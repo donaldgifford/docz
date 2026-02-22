@@ -90,12 +90,12 @@ purely the internal libraries that all commands depend on.
 - [x] Implement `internal/document/document.go`: define `Frontmatter` struct,
       implement `ParseFrontmatter(fileContent []byte) (Frontmatter, error)`
       that splits on `---` delimiters and unmarshals YAML
-- [ ] Write unit tests for `internal/template/`: template resolution order,
+- [x] Write unit tests for `internal/template/`: template resolution order,
       rendering with all placeholder variables, slug generation edge cases
-- [ ] Write unit tests for `internal/config/`: default values, loading from
+- [x] Write unit tests for `internal/config/`: default values, loading from
       file, deep merge behavior (repo config key overrides global, unset keys
       inherit from global, both missing returns defaults)
-- [ ] Write unit tests for `internal/document/`: frontmatter parsing with
+- [x] Write unit tests for `internal/document/`: frontmatter parsing with
       valid YAML, missing fields, no frontmatter, malformed delimiters
 
 #### Success Criteria
