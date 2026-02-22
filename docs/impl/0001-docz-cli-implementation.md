@@ -59,13 +59,13 @@ purely the internal libraries that all commands depend on.
 
 - [x] Fix `go.mod`: move `cobra` and `viper` from indirect to direct
       dependencies (run `go mod tidy`)
-- [ ] Create directory structure:
+- [x] Create directory structure:
       `internal/config/`, `internal/document/`, `internal/index/`,
       `internal/template/`, `internal/template/templates/`
-- [ ] Write the four default document template files under
+- [x] Write the four default document template files under
       `internal/template/templates/` (`rfc.md`, `adr.md`, `design.md`,
       `impl.md`) using the templates defined in DESIGN-0001
-- [ ] Write the four default index header template files under
+- [x] Write the four default index header template files under
       `internal/template/templates/` (`index_rfc.md`, `index_adr.md`,
       `index_design.md`, `index_impl.md`)
 - [ ] Implement `internal/template/embed.go`: use `//go:embed templates/*.md`
