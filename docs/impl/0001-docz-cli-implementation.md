@@ -178,7 +178,7 @@ all documents in a type directory and produces an auto-generated table.
 
 #### Tasks
 
-- [ ] Implement `internal/index/index.go`:
+- [x] Implement `internal/index/index.go`:
   - `ScanDocuments(dir string) ([]Frontmatter, error)` -- find all
     `NNNN-*.md` files in a directory, parse frontmatter from each, skip files
     without valid frontmatter (no error, silent skip), return sorted by ID
@@ -192,20 +192,20 @@ all documents in a type directory and produces an auto-generated table.
     `docz init --force` or manually add the markers. If the file doesn't
     exist, create it with the default index header template plus the
     markers and table
-- [ ] Implement `cmd/update.go`: accept optional `[type]` argument; if no type
+- [x] Implement `cmd/update.go`: accept optional `[type]` argument; if no type
       given, update all four; for each type, resolve the directory path from
       config, call `ScanDocuments` and `UpdateReadme`; register `--dry-run`
       flag that prints what would change without writing
-- [ ] Wire `docz create` to automatically call `update` after creating a
+- [x] Wire `docz create` to automatically call `update` after creating a
       document (unless `--no-update` is passed)
-- [ ] Write unit tests for `internal/index/`: table generation with 0, 1, and
+- [x] Write unit tests for `internal/index/`: table generation with 0, 1, and
       multiple documents; README update with existing markers; README without
       markers is not modified (warning emitted); README creation from scratch
       when file doesn't exist; preservation of content above the begin marker
-- [ ] Write integration tests for `docz update`: create several documents,
+- [x] Write integration tests for `docz update`: create several documents,
       run update, verify README contents; test `--dry-run` produces no file
       changes; test empty directory produces empty table
-- [ ] Write golden file tests for index generation: compare generated README
+- [x] Write golden file tests for index generation: compare generated README
       output against checked-in expected files for various scenarios
 
 #### Success Criteria

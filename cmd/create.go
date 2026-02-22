@@ -78,6 +78,13 @@ func runCreate(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Created %s: %s\n", strings.ToUpper(docType), result.FilePath)
+
+	if !createNoUpdate && appCfg.Index.AutoUpdate {
+		if err := updateType(docType); err != nil {
+			return fmt.Errorf("auto-updating index: %w", err)
+		}
+	}
+
 	return nil
 }
 
