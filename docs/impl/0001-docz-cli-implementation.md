@@ -148,12 +148,12 @@ phase a user can initialize a repo and create documents.
 - [x] Add author resolution helper: check flag, then config `author.default`,
       then `git config user.name` (exec `git config user.name` and trim),
       then fallback string
-- [ ] Write integration tests for `docz init`: test directory/file creation,
+- [x] Write integration tests for `docz init`: test directory/file creation,
       idempotency (safe to run twice), `--force` overwrites READMEs
-- [ ] Write integration tests for `docz create`: test file creation with
+- [x] Write integration tests for `docz create`: test file creation with
       correct filename, frontmatter content, auto-increment IDs, duplicate
       filename rejection, invalid type rejection
-- [ ] Write golden file tests: render each of the four templates with sample
+- [x] Write golden file tests: render each of the four templates with sample
       data and compare against checked-in expected output files
 
 #### Success Criteria
