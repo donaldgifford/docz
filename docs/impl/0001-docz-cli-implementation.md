@@ -117,7 +117,7 @@ phase a user can initialize a repo and create documents.
 
 #### Tasks
 
-- [ ] Move `main.go` to `cmd/docz/main.go` to follow the standard Go project
+- [x] Move `main.go` to `cmd/docz/main.go` to follow the standard Go project
       layout (`cmd/<name>/main.go`). Update the `main` package to import
       `github.com/donaldgifford/docz/cmd`. The Makefile `build-core` target
       already points to `./cmd/$(PROJECT_NAME)` so this aligns with it
