@@ -121,31 +121,31 @@ phase a user can initialize a repo and create documents.
       layout (`cmd/<name>/main.go`). Update the `main` package to import
       `github.com/donaldgifford/docz/cmd`. The Makefile `build-core` target
       already points to `./cmd/$(PROJECT_NAME)` so this aligns with it
-- [ ] Update `cmd/root.go`: replace boilerplate descriptions with actual docz
+- [x] Update `cmd/root.go`: replace boilerplate descriptions with actual docz
       descriptions; integrate config loading via `internal/config` in
       `initConfig()`; register `--docs-dir` and `--verbose` persistent flags;
       remove the placeholder `--toggle` flag
-- [ ] Implement `cmd/version.go`: define `var Version` and `var Commit` in the
+- [x] Implement `cmd/version.go`: define `var Version` and `var Commit` in the
       `cmd` package; Makefile ldflags will target
       `-X github.com/donaldgifford/docz/cmd.Version=...` and
       `-X github.com/donaldgifford/docz/cmd.Commit=...`; register `version`
       as subcommand of root that prints these values
-- [ ] Implement `cmd/init.go`: create `.docz.yaml` at repo root if it doesn't
+- [x] Implement `cmd/init.go`: create `.docz.yaml` at repo root if it doesn't
       exist (write default config); create `docs/{rfc,adr,design,impl}/`
       directories (mkdir -p semantics); write default `README.md` index files
       into each directory using embedded index header templates with an empty
       auto-generated table section; skip existing README files unless `--force`
       is passed; register `--force` flag
-- [ ] Implement `internal/document/create.go`: scan target directory for
+- [x] Implement `internal/document/create.go`: scan target directory for
       `NNNN-*.md` files to find next ID number; build `TemplateData` from
       inputs; resolve and render the template; write the output file; return
       the created file path
-- [ ] Implement `cmd/create.go`: accept `<type> <title>` arguments; validate
+- [x] Implement `cmd/create.go`: accept `<type> <title>` arguments; validate
       type is one of rfc/adr/design/impl; resolve author from `--author` flag,
       then config, then `git config user.name`, then "Unknown"; call
       `internal/document` create logic; print confirmation with file path and
       next-steps hints; register `--status`, `--author`, `--no-update` flags
-- [ ] Add author resolution helper: check flag, then config `author.default`,
+- [x] Add author resolution helper: check flag, then config `author.default`,
       then `git config user.name` (exec `git config user.name` and trim),
       then fallback string
 - [ ] Write integration tests for `docz init`: test directory/file creation,
