@@ -68,18 +68,18 @@ purely the internal libraries that all commands depend on.
 - [x] Write the four default index header template files under
       `internal/template/templates/` (`index_rfc.md`, `index_adr.md`,
       `index_design.md`, `index_impl.md`)
-- [ ] Implement `internal/template/embed.go`: use `//go:embed templates/*.md`
+- [x] Implement `internal/template/embed.go`: use `//go:embed templates/*.md`
       to embed all template files; export functions to retrieve a document
       template or index header template by type name
-- [ ] Implement `internal/template/template.go`: template resolution logic
+- [x] Implement `internal/template/template.go`: template resolution logic
       (config path > local override > embedded default), rendering a template
       with a `TemplateData` struct via `text/template`
-- [ ] Define `TemplateData` struct with fields: `Number`, `Title`, `Date`,
+- [x] Define `TemplateData` struct with fields: `Number`, `Title`, `Date`,
       `Author`, `Status`, `Type`, `Prefix`, `Slug`, `Filename`
-- [ ] Implement slug generation: title to kebab-case (lowercase, spaces to
+- [x] Implement slug generation: title to kebab-case (lowercase, spaces to
       hyphens, strip non-alphanumeric except hyphens, trim leading/trailing
       hyphens)
-- [ ] Implement `internal/config/config.go`: define `Config` struct matching
+- [x] Implement `internal/config/config.go`: define `Config` struct matching
       the `.docz.yaml` schema from DESIGN-0001, including `TypeConfig` for
       each document type; implement `Load()` using two separate Viper
       instances -- one for `~/.docz.yaml` (global), one for repo root
@@ -87,7 +87,7 @@ purely the internal libraries that all commands depend on.
       top via `MergeConfigMap`. Deep merge means the repo config overrides
       only the keys it explicitly sets; unset keys inherit from global.
       Apply built-in defaults for any keys missing from both files
-- [ ] Implement `internal/document/document.go`: define `Frontmatter` struct,
+- [x] Implement `internal/document/document.go`: define `Frontmatter` struct,
       implement `ParseFrontmatter(fileContent []byte) (Frontmatter, error)`
       that splits on `---` delimiters and unmarshals YAML
 - [ ] Write unit tests for `internal/template/`: template resolution order,
