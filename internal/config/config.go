@@ -10,33 +10,33 @@ import (
 
 // TypeConfig holds configuration for a single document type.
 type TypeConfig struct {
-	Enabled     bool     `mapstructure:"enabled"`
-	Dir         string   `mapstructure:"dir"`
-	Template    string   `mapstructure:"template"`
-	IDPrefix    string   `mapstructure:"id_prefix"`
-	IDWidth     int      `mapstructure:"id_width"`
-	Statuses    []string `mapstructure:"statuses"`
-	StatusField string   `mapstructure:"status_field"`
+	Enabled     bool     `mapstructure:"enabled"      yaml:"enabled"`
+	Dir         string   `mapstructure:"dir"          yaml:"dir"`
+	Template    string   `mapstructure:"template"     yaml:"template"`
+	IDPrefix    string   `mapstructure:"id_prefix"    yaml:"id_prefix"`
+	IDWidth     int      `mapstructure:"id_width"     yaml:"id_width"`
+	Statuses    []string `mapstructure:"statuses"     yaml:"statuses"`
+	StatusField string   `mapstructure:"status_field" yaml:"status_field"`
 }
 
 // IndexConfig holds configuration for index/README generation.
 type IndexConfig struct {
-	AutoUpdate     bool `mapstructure:"auto_update"`
-	PreserveHeader bool `mapstructure:"preserve_header"`
+	AutoUpdate     bool `mapstructure:"auto_update"     yaml:"auto_update"`
+	PreserveHeader bool `mapstructure:"preserve_header" yaml:"preserve_header"`
 }
 
 // AuthorConfig holds configuration for author resolution.
 type AuthorConfig struct {
-	FromGit bool   `mapstructure:"from_git"`
-	Default string `mapstructure:"default"`
+	FromGit bool   `mapstructure:"from_git" yaml:"from_git"`
+	Default string `mapstructure:"default"  yaml:"default"`
 }
 
 // Config is the top-level configuration for docz.
 type Config struct {
-	DocsDir string                `mapstructure:"docs_dir"`
-	Types   map[string]TypeConfig `mapstructure:"types"`
-	Index   IndexConfig           `mapstructure:"index"`
-	Author  AuthorConfig          `mapstructure:"author"`
+	DocsDir string                `mapstructure:"docs_dir" yaml:"docs_dir"`
+	Types   map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
+	Index   IndexConfig           `mapstructure:"index"    yaml:"index"`
+	Author  AuthorConfig          `mapstructure:"author"   yaml:"author"`
 }
 
 // DefaultConfig returns the built-in default configuration.
