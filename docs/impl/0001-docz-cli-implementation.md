@@ -1,14 +1,14 @@
 ---
 id: IMPL-0001
 title: "docz CLI Implementation"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-02-22
 ---
 
 # IMPL 0001: docz CLI Implementation
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-02-22
 
@@ -280,31 +280,31 @@ the Makefile build pipeline works end-to-end, and prepare for release.
 
 #### Tasks
 
-- [ ] Audit all commands for consistent error messages: invalid arguments,
+- [x] Audit all commands for consistent error messages: invalid arguments,
       missing directories, permission errors, file-already-exists errors
-- [ ] Add `--verbose` flag behavior: when set, print additional context during
+- [x] Add `--verbose` flag behavior: when set, print additional context during
       operations (template resolution path chosen, config file locations
       checked, files scanned during update)
-- [ ] Validate config on load: warn on unknown keys, error on invalid type
+- [x] Validate config on load: warn on unknown keys, error on invalid type
       names, error on empty statuses list
-- [ ] Handle edge cases in ID assignment: directories with non-sequential IDs,
+- [x] Handle edge cases in ID assignment: directories with non-sequential IDs,
       directories with only non-matching files, empty directories
-- [ ] Handle edge cases in slug generation: titles with unicode, titles that
+- [x] Handle edge cases in slug generation: titles with unicode, titles that
       are all special characters, very long titles (truncate slug at a
       reasonable length), empty title after slug conversion
-- [ ] Update `Makefile` `build-core` target: update ldflags to target
+- [x] Update `Makefile` `build-core` target: update ldflags to target
       `github.com/donaldgifford/docz/cmd.Version` and
       `github.com/donaldgifford/docz/cmd.Commit` instead of `main.version`
       and `main.commit` (build path `./cmd/$(PROJECT_NAME)` is now correct
       after the `main.go` move in Phase 2)
-- [ ] Add `Makefile` targets for docz operations: `make docs-init`,
+- [x] Add `Makefile` targets for docz operations: `make docs-init`,
       `make docs-update`, etc. as convenience wrappers
-- [ ] Ensure `make ci` passes: `lint`, `test`, `build`, `license-check` all
+- [x] Ensure `make ci` passes: `lint`, `test`, `build`, `license-check` all
       succeed
-- [ ] Ensure `make test-coverage` reports reasonable coverage across
+- [x] Ensure `make test-coverage` reports reasonable coverage across
       `internal/` packages (target: >80%)
-- [ ] Review and clean up any TODO/FIXME comments left during implementation
-- [ ] Verify `go vet ./...` and `golangci-lint run ./...` produce no warnings
+- [x] Review and clean up any TODO/FIXME comments left during implementation
+- [x] Verify `go vet ./...` and `golangci-lint run ./...` produce no warnings
 
 #### Success Criteria
 
