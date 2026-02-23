@@ -1,3 +1,4 @@
+// Package document provides frontmatter parsing and document creation.
 package document
 
 import (

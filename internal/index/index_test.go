@@ -33,9 +33,9 @@ func TestScanDocuments_NonexistentDir(t *testing.T) {
 func TestScanDocuments_WithDocuments(t *testing.T) {
 	dir := t.TempDir()
 
-	writeDoc(t, dir, "0001-first.md", "RFC-0001", "First Doc", "Draft", "Author", "2026-01-01")
-	writeDoc(t, dir, "0003-third.md", "RFC-0003", "Third Doc", "Accepted", "Author", "2026-03-01")
-	writeDoc(t, dir, "0002-second.md", "RFC-0002", "Second Doc", "Proposed", "Author", "2026-02-01")
+	writeDoc(t, dir, "0001-first.md", "RFC-0001", "First Doc", "Draft", "2026-01-01")
+	writeDoc(t, dir, "0003-third.md", "RFC-0003", "Third Doc", "Accepted", "2026-03-01")
+	writeDoc(t, dir, "0002-second.md", "RFC-0002", "Second Doc", "Proposed", "2026-02-01")
 
 	docs, err := ScanDocuments(dir)
 	if err != nil {
@@ -60,7 +60,7 @@ func TestScanDocuments_WithDocuments(t *testing.T) {
 func TestScanDocuments_SkipsNoFrontmatter(t *testing.T) {
 	dir := t.TempDir()
 
-	writeDoc(t, dir, "0001-valid.md", "RFC-0001", "Valid", "Draft", "Author", "2026-01-01")
+	writeDoc(t, dir, "0001-valid.md", "RFC-0001", "Valid", "Draft", "2026-01-01")
 
 	// Write a file without frontmatter.
 	if err := os.WriteFile(filepath.Join(dir, "0002-no-fm.md"), []byte("# No frontmatter\n"), 0o644); err != nil {
@@ -79,7 +79,7 @@ func TestScanDocuments_SkipsNoFrontmatter(t *testing.T) {
 func TestScanDocuments_SkipsNonMatchingFiles(t *testing.T) {
 	dir := t.TempDir()
 
-	writeDoc(t, dir, "0001-valid.md", "RFC-0001", "Valid", "Draft", "Author", "2026-01-01")
+	writeDoc(t, dir, "0001-valid.md", "RFC-0001", "Valid", "Draft", "2026-01-01")
 
 	// Non-matching files.
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# README"), 0o644); err != nil {
@@ -223,13 +223,13 @@ func TestUpdateReadme_NewFile(t *testing.T) {
 	}
 }
 
-func writeDoc(t *testing.T, dir, filename, id, title, status, author, created string) {
+func writeDoc(t *testing.T, dir, filename, id, title, status, created string) {
 	t.Helper()
 	content := "---\n" +
 		"id: " + id + "\n" +
 		"title: \"" + title + "\"\n" +
 		"status: " + status + "\n" +
-		"author: " + author + "\n" +
+		"author: Author\n" +
 		"created: " + created + "\n" +
 		"---\n\n# Body\n"
 	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0o644); err != nil {

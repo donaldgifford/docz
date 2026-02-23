@@ -1,3 +1,4 @@
+// Package template provides embedded templates, resolution, and rendering.
 package template
 
 import (
@@ -68,7 +69,7 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 
 // Render executes a Go text/template with the provided data and returns the
 // rendered output.
-func Render(tmplContent string, data TemplateData) (string, error) {
+func Render(tmplContent string, data *TemplateData) (string, error) {
 	t, err := template.New("doc").Parse(tmplContent)
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)

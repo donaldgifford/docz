@@ -1,3 +1,4 @@
+// Package config provides configuration loading and merging for docz.
 package config
 
 import (
@@ -102,30 +103,15 @@ func Load(configFile string) (Config, error) {
 	setDefaults(v, cfg)
 
 	// Load global config first.
-	home, err := os.UserHomeDir()
-	if err == nil {
-		globalPath := filepath.Join(home, ".docz.yaml")
-		if _, statErr := os.Stat(globalPath); statErr == nil {
-			globalV := viper.New()
-			globalV.SetConfigFile(globalPath)
-			if readErr := globalV.ReadInConfig(); readErr == nil {
-				if mergeErr := v.MergeConfigMap(globalV.AllSettings()); mergeErr != nil {
-					return cfg, mergeErr
-				}
-			}
+	if home, err := os.UserHomeDir(); err == nil {
+		if mergeErr := mergeConfigFile(v, filepath.Join(home, ".docz.yaml")); mergeErr != nil {
+			return cfg, mergeErr
 		}
 	}
 
 	// Load repo-root config on top (deep merge, repo wins).
-	repoPath := ".docz.yaml"
-	if _, statErr := os.Stat(repoPath); statErr == nil {
-		repoV := viper.New()
-		repoV.SetConfigFile(repoPath)
-		if readErr := repoV.ReadInConfig(); readErr == nil {
-			if mergeErr := v.MergeConfigMap(repoV.AllSettings()); mergeErr != nil {
-				return cfg, mergeErr
-			}
-		}
+	if mergeErr := mergeConfigFile(v, ".docz.yaml"); mergeErr != nil {
+		return cfg, mergeErr
 	}
 
 	if err := v.Unmarshal(&cfg); err != nil {
@@ -148,6 +134,20 @@ func (c *Config) TypeDir(docType string) string {
 // ValidTypes returns the list of built-in document type names.
 func ValidTypes() []string {
 	return []string{"rfc", "adr", "design", "impl"}
+}
+
+// mergeConfigFile reads a YAML config file and merges it into v. If the file
+// does not exist or cannot be read, it is silently skipped.
+func mergeConfigFile(v *viper.Viper, path string) error {
+	if _, err := os.Stat(path); err != nil {
+		return nil //nolint:nilerr // missing config file is not an error
+	}
+	fileV := viper.New()
+	fileV.SetConfigFile(path)
+	if err := fileV.ReadInConfig(); err != nil {
+		return nil //nolint:nilerr // unreadable config file is silently skipped
+	}
+	return v.MergeConfigMap(fileV.AllSettings())
 }
 
 func loadFromFile(path string, defaults Config) (Config, error) {

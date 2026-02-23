@@ -1,3 +1,4 @@
+// Package index provides document scanning and README index generation.
 package index
 
 import (
@@ -158,7 +159,7 @@ func createNewReadme(path, typeName, tableContent string) (string, error) {
 	content := header + beginMarker + "\n" + tableContent + endMarker + "\n"
 
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return "", fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 

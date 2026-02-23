@@ -35,7 +35,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 
 	for _, typeName := range config.ValidTypes() {
 		typeDir := appCfg.TypeDir(typeName)
-		if err := os.MkdirAll(typeDir, 0o755); err != nil {
+		if err := os.MkdirAll(typeDir, 0o750); err != nil {
 			return fmt.Errorf("creating directory %s: %w", typeDir, err)
 		}
 

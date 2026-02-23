@@ -24,9 +24,9 @@ func TestGoldenTemplates(t *testing.T) {
 
 	types := map[string]TemplateData{
 		"rfc":    data,
-		"adr":    withOverrides(data, "adr", "ADR", "Proposed"),
-		"design": withOverrides(data, "design", "DESIGN", "Draft"),
-		"impl":   withOverrides(data, "impl", "IMPL", "Draft"),
+		"adr":    withOverrides(&data, "adr", "ADR", "Proposed"),
+		"design": withOverrides(&data, "design", "DESIGN", "Draft"),
+		"impl":   withOverrides(&data, "impl", "IMPL", "Draft"),
 	}
 
 	for typeName, td := range types {
@@ -36,7 +36,7 @@ func TestGoldenTemplates(t *testing.T) {
 				t.Fatalf("EmbeddedDocumentTemplate(%q): %v", typeName, err)
 			}
 
-			got, err := Render(tmpl, td)
+			got, err := Render(tmpl, &td)
 			if err != nil {
 				t.Fatalf("Render(): %v", err)
 			}
@@ -65,9 +65,10 @@ func TestGoldenTemplates(t *testing.T) {
 	}
 }
 
-func withOverrides(base TemplateData, typeName, prefix, status string) TemplateData {
-	base.Type = typeName
-	base.Prefix = prefix
-	base.Status = status
-	return base
+func withOverrides(base *TemplateData, typeName, prefix, status string) TemplateData {
+	result := *base
+	result.Type = typeName
+	result.Prefix = prefix
+	result.Status = status
+	return result
 }

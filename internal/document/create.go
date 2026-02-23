@@ -37,19 +37,14 @@ var idPattern = regexp.MustCompile(`^(\d+)-.*\.md$`)
 
 // Create generates a new document from a template and writes it to the
 // appropriate directory with an auto-incremented ID.
-func Create(opts CreateOptions) (CreateResult, error) {
+func Create(opts *CreateOptions) (CreateResult, error) {
 	dir := filepath.Join(opts.DocsDir, opts.TypeDir)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return CreateResult{}, fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
-	nextID, err := nextID(dir)
-	if err != nil {
-		return CreateResult{}, err
-	}
-
-	number := fmt.Sprintf("%0*d", opts.IDWidth, nextID)
+	number := fmt.Sprintf("%0*d", opts.IDWidth, nextID(dir))
 	slug := doctemplate.Slugify(opts.Title)
 	filename := number + "-" + slug + ".md"
 	filePath := filepath.Join(dir, filename)
@@ -75,7 +70,7 @@ func Create(opts CreateOptions) (CreateResult, error) {
 		Filename: filename,
 	}
 
-	rendered, err := doctemplate.Render(tmplContent, data)
+	rendered, err := doctemplate.Render(tmplContent, &data)
 	if err != nil {
 		return CreateResult{}, fmt.Errorf("rendering template: %w", err)
 	}
@@ -93,10 +88,10 @@ func Create(opts CreateOptions) (CreateResult, error) {
 
 // nextID scans the directory for existing NNNN-*.md files and returns the
 // next sequential ID number.
-func nextID(dir string) (int, error) {
+func nextID(dir string) int {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return 1, nil //nolint:nilerr // empty or missing directory starts at 1
+		return 1 // empty or missing directory starts at 1
 	}
 
 	maxID := 0
@@ -117,7 +112,7 @@ func nextID(dir string) (int, error) {
 		}
 	}
 
-	return maxID + 1, nil
+	return maxID + 1
 }
 
 func currentDate() string {

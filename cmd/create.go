@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -72,7 +73,7 @@ func runCreate(_ *cobra.Command, args []string) error {
 		TemplatePath: tc.Template,
 	}
 
-	result, err := document.Create(opts)
+	result, err := document.Create(&opts)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func resolveAuthor() string {
 }
 
 func gitUserName() string {
-	out, err := exec.Command("git", "config", "user.name").Output()
+	out, err := exec.CommandContext(context.Background(), "git", "config", "user.name").Output()
 	if err != nil {
 		return ""
 	}

@@ -144,7 +144,7 @@ func TestRender(t *testing.T) {
 		Filename: "0001-test-document.md",
 	}
 
-	got, err := Render(tmpl, data)
+	got, err := Render(tmpl, &data)
 	if err != nil {
 		t.Fatalf("Render() error: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestRender_InvalidTemplate(t *testing.T) {
-	_, err := Render("{{ .Invalid", TemplateData{})
+	_, err := Render("{{ .Invalid", &TemplateData{})
 	if err == nil {
 		t.Error("expected error for invalid template, got nil")
 	}

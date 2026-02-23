@@ -32,7 +32,7 @@ func TestCreate(t *testing.T) {
 		TypeDir: "rfc",
 	}
 
-	result, err := Create(opts)
+	result, err := Create(&opts)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestCreate_AutoIncrement(t *testing.T) {
 		TypeDir: "adr",
 	}
 
-	result, err := Create(opts)
+	result, err := Create(&opts)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -128,12 +128,12 @@ func TestCreate_DuplicateFilename(t *testing.T) {
 	}
 
 	// First create should succeed.
-	if _, err := Create(opts); err != nil {
+	if _, err := Create(&opts); err != nil {
 		t.Fatalf("first Create() error: %v", err)
 	}
 
 	// Second create should get next ID (not duplicate).
-	result, err := Create(opts)
+	result, err := Create(&opts)
 	if err != nil {
 		t.Fatalf("second Create() error: %v", err)
 	}
@@ -144,10 +144,7 @@ func TestCreate_DuplicateFilename(t *testing.T) {
 
 func TestNextID_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	id, err := nextID(dir)
-	if err != nil {
-		t.Fatalf("nextID() error: %v", err)
-	}
+	id := nextID(dir)
 	if id != 1 {
 		t.Errorf("nextID() = %d, want 1", id)
 	}
@@ -162,10 +159,7 @@ func TestNextID_NonSequential(t *testing.T) {
 		}
 	}
 
-	id, err := nextID(dir)
-	if err != nil {
-		t.Fatalf("nextID() error: %v", err)
-	}
+	id := nextID(dir)
 	if id != 6 {
 		t.Errorf("nextID() = %d, want 6", id)
 	}
