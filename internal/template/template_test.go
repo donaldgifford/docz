@@ -24,6 +24,12 @@ func TestSlugify(t *testing.T) {
 		{name: "mixed special", input: "go-based CLI (v2)", want: "go-based-cli-v2"},
 		{name: "leading hyphens after strip", input: "---leading", want: "leading"},
 		{name: "trailing hyphens after strip", input: "trailing---", want: "trailing"},
+		{name: "unicode chars", input: "über design für API", want: "ber-design-fr-api"},
+		{
+			name:  "very long title",
+			input: "This Is A Very Long Title That Should Be Truncated Because It Exceeds The Maximum Slug Length Limit",
+			want:  "this-is-a-very-long-title-that-should-be-truncated-because-it",
+		},
 	}
 
 	for _, tt := range tests {

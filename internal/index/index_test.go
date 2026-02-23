@@ -223,6 +223,74 @@ func TestUpdateReadme_NewFile(t *testing.T) {
 	}
 }
 
+func TestDryRunReadme_WithMarkers(t *testing.T) {
+	dir := t.TempDir()
+	readmePath := filepath.Join(dir, "README.md")
+
+	existing := "# Header\n\n" +
+		"<!-- BEGIN DOCZ AUTO-GENERATED -->\nold content\n<!-- END DOCZ AUTO-GENERATED -->\n"
+	if err := os.WriteFile(readmePath, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := DryRunReadme(readmePath, "rfc", "| new data |\n")
+	if err != nil {
+		t.Fatalf("DryRunReadme() error: %v", err)
+	}
+
+	if !strings.Contains(result, "| new data |") {
+		t.Error("dry run result should contain new data")
+	}
+	if strings.Contains(result, "old content") {
+		t.Error("dry run result should not contain old content")
+	}
+
+	// Verify file was NOT modified.
+	content, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "old content") {
+		t.Error("file should not be modified during dry run")
+	}
+}
+
+func TestDryRunReadme_NoFile(t *testing.T) {
+	dir := t.TempDir()
+	readmePath := filepath.Join(dir, "nonexistent", "README.md")
+
+	result, err := DryRunReadme(readmePath, "rfc", "| table |\n")
+	if err != nil {
+		t.Fatalf("DryRunReadme() error: %v", err)
+	}
+
+	if !strings.Contains(result, "| table |") {
+		t.Error("dry run result should contain table content")
+	}
+	if !strings.Contains(result, "<!-- BEGIN DOCZ AUTO-GENERATED -->") {
+		t.Error("dry run result should contain markers")
+	}
+}
+
+func TestDryRunReadme_NoMarkers(t *testing.T) {
+	dir := t.TempDir()
+	readmePath := filepath.Join(dir, "README.md")
+
+	existing := "# Manual README\n"
+	if err := os.WriteFile(readmePath, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := DryRunReadme(readmePath, "rfc", "table")
+	if err != nil {
+		t.Fatalf("DryRunReadme() error: %v", err)
+	}
+
+	if !strings.Contains(result, "Warning") {
+		t.Errorf("expected warning for no markers, got %q", result)
+	}
+}
+
 func writeDoc(t *testing.T, dir, filename, id, title, status, created string) {
 	t.Helper()
 	content := "---\n" +

@@ -164,3 +164,48 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "custom-docs")
 	}
 }
+
+func TestValidate_DefaultConfig(t *testing.T) {
+	cfg := DefaultConfig()
+	warnings, err := cfg.Validate()
+	if err != nil {
+		t.Errorf("Validate() error: %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("expected no warnings, got %v", warnings)
+	}
+}
+
+func TestValidate_EmptyDocsDir(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.DocsDir = ""
+	_, err := cfg.Validate()
+	if err == nil {
+		t.Error("expected error for empty docs_dir, got nil")
+	}
+}
+
+func TestValidate_EmptyStatuses(t *testing.T) {
+	cfg := DefaultConfig()
+	tc := cfg.Types["rfc"]
+	tc.Statuses = nil
+	cfg.Types["rfc"] = tc
+
+	_, err := cfg.Validate()
+	if err == nil {
+		t.Error("expected error for empty statuses, got nil")
+	}
+}
+
+func TestValidate_UnknownType(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Types["custom"] = TypeConfig{Enabled: true, Statuses: []string{"Draft"}}
+
+	warnings, err := cfg.Validate()
+	if err != nil {
+		t.Errorf("Validate() error: %v", err)
+	}
+	if len(warnings) == 0 {
+		t.Error("expected warning for unknown type, got none")
+	}
+}

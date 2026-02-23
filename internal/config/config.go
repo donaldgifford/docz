@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -134,6 +135,32 @@ func (c *Config) TypeDir(docType string) string {
 // ValidTypes returns the list of built-in document type names.
 func ValidTypes() []string {
 	return []string{"rfc", "adr", "design", "impl"}
+}
+
+// Validate checks the configuration for common errors and returns a list of
+// warnings and the first error found (if any).
+func (c *Config) Validate() (warnings []string, err error) {
+	if c.DocsDir == "" {
+		err = fmt.Errorf("docs_dir must not be empty")
+		return warnings, err
+	}
+
+	validTypes := map[string]bool{}
+	for _, t := range ValidTypes() {
+		validTypes[t] = true
+	}
+
+	for name, tc := range c.Types {
+		if !validTypes[name] {
+			warnings = append(warnings, fmt.Sprintf("unknown document type %q in config", name))
+		}
+		if tc.Enabled && len(tc.Statuses) == 0 {
+			err = fmt.Errorf("type %q has no statuses defined", name)
+			return warnings, err
+		}
+	}
+
+	return warnings, nil
 }
 
 // mergeConfigFile reads a YAML config file and merges it into v. If the file

@@ -146,5 +146,12 @@ func validateType(docType string) error {
 
 func resolveTemplate(docType string) (string, error) {
 	tc := appCfg.Types[docType]
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Resolving template for type %q\n", docType)
+		if tc.Template != "" {
+			fmt.Fprintf(os.Stderr, "  Config template path: %s\n", tc.Template)
+		}
+		fmt.Fprintf(os.Stderr, "  Docs dir: %s\n", appCfg.DocsDir)
+	}
 	return doctemplate.Resolve(docType, tc.Template, appCfg.DocsDir)
 }

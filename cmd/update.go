@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -50,13 +51,20 @@ func runUpdate(_ *cobra.Command, args []string) error {
 }
 
 func updateType(typeName string) error {
-	tc := appCfg.Types[typeName]
 	typeDir := appCfg.TypeDir(typeName)
 	readmePath := filepath.Join(typeDir, "README.md")
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", typeDir)
+	}
 
 	docs, err := index.ScanDocuments(typeDir)
 	if err != nil {
 		return fmt.Errorf("scanning %s: %w", typeDir, err)
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "  Found %d documents\n", len(docs))
 	}
 
 	heading := "All " + strings.ToUpper(typeName) + "s"
@@ -79,7 +87,6 @@ func updateType(typeName string) error {
 		return err
 	}
 
-	_ = tc // used for future verbose output
 	fmt.Println(msg)
 	return nil
 }

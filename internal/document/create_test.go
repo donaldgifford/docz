@@ -142,6 +142,42 @@ func TestCreate_DuplicateFilename(t *testing.T) {
 	}
 }
 
+func TestCreate_CreatesDirectory(t *testing.T) {
+	timeNow = func() time.Time {
+		return time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
+	}
+	t.Cleanup(func() { timeNow = time.Now })
+
+	dir := t.TempDir()
+	// Don't pre-create the docs/design dir - Create should make it.
+	opts := CreateOptions{
+		Type:    "design",
+		Title:   "New Design",
+		Author:  "Author",
+		Status:  "Draft",
+		Prefix:  "DESIGN",
+		IDWidth: 4,
+		DocsDir: filepath.Join(dir, "docs"),
+		TypeDir: "design",
+	}
+
+	result, err := Create(&opts)
+	if err != nil {
+		t.Fatalf("Create() error: %v", err)
+	}
+
+	if result.Filename != "0001-new-design.md" {
+		t.Errorf("Filename = %q, want %q", result.Filename, "0001-new-design.md")
+	}
+}
+
+func TestNextID_NonexistentDir(t *testing.T) {
+	id := nextID("/nonexistent/path")
+	if id != 1 {
+		t.Errorf("nextID() = %d, want 1 for nonexistent dir", id)
+	}
+}
+
 func TestNextID_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
 	id := nextID(dir)

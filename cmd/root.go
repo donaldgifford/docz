@@ -18,6 +18,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -70,6 +71,14 @@ func initConfig() {
 
 	if docsDir != "" {
 		cfg.DocsDir = docsDir
+	}
+
+	warnings, validErr := cfg.Validate()
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
+	}
+	if validErr != nil {
+		fmt.Fprintf(os.Stderr, "Config error: %v\n", validErr)
 	}
 
 	appCfg = cfg

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -56,9 +57,16 @@ func runCreate(_ *cobra.Command, args []string) error {
 	}
 
 	author := resolveAuthor()
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Resolved author: %s\n", author)
+	}
 	status := createStatus
 	if status == "" && len(tc.Statuses) > 0 {
 		status = tc.Statuses[0]
+	}
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Using status: %s\n", status)
+		fmt.Fprintf(os.Stderr, "Template path: %q\n", tc.Template)
 	}
 
 	opts := document.CreateOptions{

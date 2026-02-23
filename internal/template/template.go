@@ -28,17 +28,28 @@ var (
 	multipleHyphens   = regexp.MustCompile(`-{2,}`)
 )
 
+const maxSlugLength = 64
+
 // Slugify converts a title to kebab-case.
 //
 // Transformation: lowercase, spaces to hyphens, strip non-alphanumeric
 // characters (except hyphens), collapse multiple hyphens, trim
-// leading/trailing hyphens.
+// leading/trailing hyphens, truncate to 64 characters on a word boundary.
 func Slugify(title string) string {
 	s := strings.ToLower(title)
 	s = strings.ReplaceAll(s, " ", "-")
 	s = nonAlphanumHyphen.ReplaceAllString(s, "")
 	s = multipleHyphens.ReplaceAllString(s, "-")
 	s = strings.Trim(s, "-")
+
+	if len(s) > maxSlugLength {
+		s = s[:maxSlugLength]
+		// Trim at last hyphen to avoid cutting mid-word.
+		if idx := strings.LastIndex(s, "-"); idx > 0 {
+			s = s[:idx]
+		}
+	}
+
 	return s
 }
 

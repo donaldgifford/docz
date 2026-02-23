@@ -229,16 +229,16 @@ templates.
 
 #### Tasks
 
-- [ ] Implement `cmd/list.go`: accept optional `[type]` argument; if no type
+- [x] Implement `cmd/list.go`: accept optional `[type]` argument; if no type
       given, list across all four types; use `internal/index.ScanDocuments` to
       read documents; display as a formatted table to stdout (ID, Title,
       Status, Date, Author, Type); register `--status` flag to filter by
       status (case-insensitive match); register `--format` flag supporting
       `table` (default), `json`, `csv` output
-- [ ] Implement table formatter: aligned columns using `text/tabwriter`
-- [ ] Implement JSON output: marshal document list as JSON array to stdout
-- [ ] Implement CSV output: write CSV with header row to stdout
-- [ ] Implement `cmd/template.go` with three subcommands:
+- [x] Implement table formatter: aligned columns using `text/tabwriter`
+- [x] Implement JSON output: marshal document list as JSON array to stdout
+- [x] Implement CSV output: write CSV with header row to stdout
+- [x] Implement `cmd/template.go` with three subcommands:
   - `template show <type>` -- resolve the template for the given type and
     print it to stdout (raw template text, not rendered)
   - `template export <type> [path]` -- resolve the template and write it to
@@ -246,17 +246,17 @@ templates.
   - `template override <type>` -- copy the resolved template into the local
     overrides directory (`<docs_dir>/templates/<type>.md`) so the user can
     edit it; fail if the override file already exists
-- [ ] Implement `cmd/config.go`: print the fully resolved configuration
+- [x] Implement `cmd/config.go`: print the fully resolved configuration
       (merged repo + global + defaults) as YAML to stdout
-- [ ] Write unit tests for list formatting: table alignment, JSON structure,
+- [x] Write unit tests for list formatting: table alignment, JSON structure,
       CSV correctness, status filtering
-- [ ] Write integration tests for `docz list`: list with documents present,
+- [x] Write integration tests for `docz list`: list with documents present,
       list with no documents, list filtered by type and status, JSON and CSV
       output formats
-- [ ] Write integration tests for `docz template show/export/override`: verify
+- [x] Write integration tests for `docz template show/export/override`: verify
       correct template is printed/written, override creates file in correct
       location, override fails if file exists
-- [ ] Write integration test for `docz config`: verify merged output matches
+- [x] Write integration test for `docz config`: verify merged output matches
       expected resolved config
 
 #### Success Criteria
