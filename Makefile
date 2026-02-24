@@ -2,36 +2,34 @@
 
 ## Project Variables
 
-PROJECT_NAME  := docz
+PROJECT_NAME := docz
 PROJECT_OWNER := donaldgifford
-DESCRIPTION   := A cli tool to help make managing repo docs easier.
-PROJECT_URL   := https://github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
+DESCRIPTION := A cli tool to help make managing repo docs easier.
+PROJECT_URL := https://github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
 
 ## Go Variables
 
-GO          ?= go
-GO_PACKAGE  := github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
-GOOS        ?= $(shell $(GO) env GOOS)
-GOARCH      ?= $(shell $(GO) env GOARCH)
+GO ?= go
+GO_PACKAGE := github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
+GOOS ?= $(shell $(GO) env GOOS)
+GOARCH ?= $(shell $(GO) env GOARCH)
 
 GOIMPORTS_LOCAL_ARG := -local github.com/donaldgifford
 
 ## Build Directories
 
-BUILD_DIR      := build
-BIN_DIR        := $(BUILD_DIR)/bin
+BUILD_DIR := build
+BIN_DIR := $(BUILD_DIR)/bin
 
 ## Version Information
 
 COMMIT_HASH ?= $(shell git rev-parse --short HEAD 2>/dev/null)
-VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 CUR_VERSION ?= $(shell git describe --tags --exact-match 2>/dev/null || git describe --tags 2>/dev/null || echo "v0.0.0-$(COMMIT_HASH)")
 
 ## Build Variables
 
 COVERAGE_OUT := coverage.out
-
-
 
 ###############
 ##@ Go Development
@@ -49,7 +47,7 @@ build: build-core ## Build everything (core)
 build-core: ## Build core binary
 	@ $(MAKE) --no-print-directory log-$@
 	@mkdir -p $(BIN_DIR)
-	@go build -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT_HASH)" -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
+	@go build -ldflags "-X github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)/cmd.Version=$(VERSION) -X github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)/cmd.Commit=$(COMMIT_HASH)" -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
 	@echo "✓ Core binaries built"
 
 ## Testing
@@ -72,7 +70,6 @@ test-report: ## Run tests with coverage report then open
 test-coverage: ## Run tests with coverage report
 	@ $(MAKE) --no-print-directory log-$@
 	@go test -v -race -coverprofile=$(COVERAGE_OUT) ./...
-
 
 ## Code Quality
 
@@ -99,13 +96,28 @@ clean: ## Remove build artifacts
 
 ## Application Services
 
-run: ## Run CLI command
+run: build ## Run docz CLI
 	@ $(MAKE) --no-print-directory log-$@
-	./build/bin/repo-guardian
+	@$(BIN_DIR)/$(PROJECT_NAME) $(ARGS)
 
-run-local: build ## Run exporter with local config
+###############
+##@ Documentation
+
+docs-init: build ## Initialize docz in the repository
 	@ $(MAKE) --no-print-directory log-$@
-	@$(BIN_DIR)/$(PROJECT_NAME)
+	@$(BIN_DIR)/$(PROJECT_NAME) init
+
+docs-update: build ## Update all document indexes
+	@ $(MAKE) --no-print-directory log-$@
+	@$(BIN_DIR)/$(PROJECT_NAME) update
+
+docs-list: build ## List all documents
+	@ $(MAKE) --no-print-directory log-$@
+	@$(BIN_DIR)/$(PROJECT_NAME) list
+
+docs-config: build ## Show resolved configuration
+	@ $(MAKE) --no-print-directory log-$@
+	@$(BIN_DIR)/$(PROJECT_NAME) config
 
 ## License Compliance
 
@@ -133,9 +145,9 @@ check: lint test ## Quick pre-commit check (lint + test)
 
 release: ## Create release (use with TAG=v1.0.0)
 	@ $(MAKE) --no-print-directory log-$@
-	@if [ -z "$(TAG)" ]; then \
-		echo "Error: TAG is required. Usage: make release TAG=v1.0.0"; \
-		exit 1; \
+	@if [ -z "$(TAG)" ]; then                                                    \
+		echo "Error: TAG is required. Usage: make release TAG=v1.0.0";              \
+		exit 1;                                                                     \
 	fi
 	git tag -a $(TAG) -m "Release $(TAG)"
 	git push origin $(TAG)
@@ -144,11 +156,9 @@ release-check:
 	@ $(MAKE) --no-print-directory log-$@
 	goreleaser check
 
-
 release-local: ## Test goreleaser without publishing
 	@ $(MAKE) --no-print-directory log-$@
 	goreleaser release --snapshot --clean --skip=publish --skip=sign
-
 
 ########################################################################
 ## Self-Documenting Makefile Help                                     ##

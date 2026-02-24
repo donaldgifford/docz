@@ -1,0 +1,5 @@
+---
+formatter:
+  max_blank_lines: 1
+  assignment_spacing: space
+  indent_conditionals: false
