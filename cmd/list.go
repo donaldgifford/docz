@@ -14,6 +14,8 @@ import (
 	"github.com/donaldgifford/docz/internal/index"
 )
 
+const formatJSON = "json"
+
 var (
 	listStatus string
 	listFormat string
@@ -83,7 +85,7 @@ func runList(_ *cobra.Command, args []string) error {
 	}
 
 	switch strings.ToLower(listFormat) {
-	case "json":
+	case formatJSON:
 		return outputJSON(entries)
 	case "csv":
 		return outputCSV(entries)

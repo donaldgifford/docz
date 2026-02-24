@@ -206,7 +206,7 @@ func TestRunList_FilterByType(t *testing.T) {
 	os.Stdout = w
 
 	listStatus = ""
-	listFormat = "json"
+	listFormat = formatJSON
 	err := runList(nil, []string{"rfc"})
 
 	w.Close()
@@ -240,7 +240,7 @@ func TestRunList_FilterByStatus(t *testing.T) {
 	os.Stdout = w
 
 	listStatus = "draft"
-	listFormat = "json"
+	listFormat = formatJSON
 	err := runList(nil, nil)
 
 	w.Close()
