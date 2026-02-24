@@ -4,7 +4,7 @@ version: 2
 builds:
   - id: docz
     binary: docz
-    main: ./main.go
+    main: ./cmd/docz/main.go
     goos:
       - linux
       - darwin
