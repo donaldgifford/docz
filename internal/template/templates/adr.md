@@ -5,6 +5,7 @@ status: {{ .Status }}
 author: {{ .Author }}
 created: {{ .Date }}
 ---
+<!-- markdownlint-disable-file MD025 MD041 -->
 
 # {{ .Number }}. {{ .Title }}
 

@@ -1,8 +1,13 @@
-# DESIGN-0001: docz CLI Tool
+---
+id: DESIGN-0001
+title: "docz CLI Tool"
+status: Draft
+author: Donald Gifford
+created: 2026-02-22
+---
+<!-- markdownlint-disable-file MD025 MD041 -->
 
-**Author:** Donald Gifford
-**Date:** 2026-02-22
-**Status:** Draft
+# DESIGN-0001: docz CLI Tool
 
 ## Problem Statement
 
