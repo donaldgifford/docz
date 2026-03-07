@@ -191,7 +191,7 @@ Add the new type to `DefaultConfig()`:
 
 ```go
 func ValidTypes() []string {
-    return []string{"rfc", "adr", "design", "impl", "plan"}
+    return []string{"rfc", "adr", "design", "impl", "investigation"}
 }
 ```
 
