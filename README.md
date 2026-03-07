@@ -166,6 +166,19 @@ docs/impl/
 └── 0001-telemetry-pipeline-implementation.md
 ```
 
+### INV — Investigation
+
+Time-boxed research spikes and validation experiments. Use to answer a specific
+question before committing to a design or implementation — e.g. proving a
+library handles a requirement, reproducing a weird error, or validating a
+performance assumption. Design, plan, and impl docs can reference investigations
+by ID to document how open questions were resolved.
+
+```
+docs/investigation/
+└── 0001-can-pgvector-handle-concurrent-writes.md
+```
+
 ## Configuration
 
 `docz` reads configuration from two locations, deep-merged with repo taking
@@ -231,6 +244,17 @@ types:
       - Completed
       - Paused
       - Cancelled
+  investigation:
+    enabled: true
+    dir: investigation
+    id_prefix: INV
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
 ```
 
 Run `docz config` to see the fully resolved configuration.
