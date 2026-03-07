@@ -43,7 +43,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestValidTypes(t *testing.T) {
 	types := ValidTypes()
-	want := []string{"rfc", "adr", "design", "impl", "investigation"}
+	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if len(types) != len(want) {
 		t.Fatalf("ValidTypes() has %d elements, want %d", len(types), len(want))
 	}
@@ -100,8 +100,8 @@ func TestLoad_NoConfigFiles(t *testing.T) {
 	if cfg.DocsDir != "docs" {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
-	if len(cfg.Types) != 5 {
-		t.Errorf("expected 5 types, got %d", len(cfg.Types))
+	if len(cfg.Types) != 6 {
+		t.Errorf("expected 6 types, got %d", len(cfg.Types))
 	}
 }
 
@@ -141,8 +141,8 @@ author:
 		t.Error("Author.FromGit should be false")
 	}
 	// Types should still have defaults.
-	if len(cfg.Types) != 5 {
-		t.Errorf("expected 5 types, got %d", len(cfg.Types))
+	if len(cfg.Types) != 6 {
+		t.Errorf("expected 6 types, got %d", len(cfg.Types))
 	}
 }
 

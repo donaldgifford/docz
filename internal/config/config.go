@@ -77,6 +77,14 @@ func DefaultConfig() Config {
 				Statuses:    []string{"Draft", "In Progress", "Completed", "Paused", "Cancelled"},
 				StatusField: "status",
 			},
+			"plan": {
+				Enabled:     true,
+				Dir:         "plan",
+				IDPrefix:    "PLAN",
+				IDWidth:     4,
+				Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
+				StatusField: "status",
+			},
 			"investigation": {
 				Enabled:     true,
 				Dir:         "investigation",
@@ -142,7 +150,7 @@ func (c *Config) TypeDir(docType string) string {
 
 // ValidTypes returns the list of built-in document type names.
 func ValidTypes() []string {
-	return []string{"rfc", "adr", "design", "impl", "investigation"}
+	return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 }
 
 // Validate checks the configuration for common errors and returns a list of
