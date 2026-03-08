@@ -7,7 +7,7 @@ README index tables up to date.
 
 ## Features
 
-- **Four built-in document types:** RFC, ADR, DESIGN, IMPL
+- **Six built-in document types:** RFC, ADR, DESIGN, IMPL, PLAN, INV
 - **Auto-incremented IDs:** documents are numbered sequentially within their type directory
 - **YAML frontmatter:** every document carries structured metadata (id, title, status, author, created)
 - **Auto-generated index tables:** README files in each type directory are updated automatically after each `create`
@@ -166,6 +166,17 @@ docs/impl/
 └── 0001-telemetry-pipeline-implementation.md
 ```
 
+### PLAN — Plan
+
+Mid-level planning documents that sit between an RFC (what and why) and an IMPL
+(step-by-step execution). Use a plan to work out the approach and component
+breakdown before writing detailed tasks.
+
+```
+docs/plan/
+└── 0001-telemetry-pipeline-approach.md
+```
+
 ### INV — Investigation
 
 Time-boxed research spikes and validation experiments. Use to answer a specific
@@ -243,6 +254,16 @@ types:
       - In Progress
       - Completed
       - Paused
+      - Cancelled
+  plan:
+    enabled: true
+    dir: plan
+    id_prefix: PLAN
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
       - Cancelled
   investigation:
     enabled: true
