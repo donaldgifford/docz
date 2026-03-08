@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -162,6 +163,45 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 
 	if cfg.DocsDir != "custom-docs" {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "custom-docs")
+	}
+}
+
+func TestResolveTypeAlias(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"impl", "impl"},
+		{"implementation", "impl"},
+		{"investigation", "investigation"},
+		{"inv", "investigation"},
+		{"rfc", "rfc"},
+		{"adr", "adr"},
+		{"design", "design"},
+		{"plan", "plan"},
+		{"unknown", "unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := ResolveTypeAlias(tt.input)
+			if got != tt.want {
+				t.Errorf("ResolveTypeAlias(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTypesHelp(t *testing.T) {
+	help := TypesHelp()
+	for _, typeName := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
+		if !strings.Contains(help, typeName) {
+			t.Errorf("TypesHelp() missing type %q", typeName)
+		}
+	}
+	for _, alias := range []string{"implementation", "inv"} {
+		if !strings.Contains(help, alias) {
+			t.Errorf("TypesHelp() missing alias %q", alias)
+		}
 	}
 }
 

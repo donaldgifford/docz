@@ -24,13 +24,17 @@ var createCmd = &cobra.Command{
 	Short: "Create a new document from a template",
 	Long: `Create a new document of the specified type with an auto-incremented ID.
 
-Types: rfc, adr, design, impl
+` + config.TypesHelp() + `
 
 Examples:
   docz create rfc "API Rate Limiting Strategy"
   docz create adr "Use PostgreSQL for Primary Storage"
   docz create design "User Authentication Flow"
-  docz create impl "Migrate to gRPC"`,
+  docz create impl "Migrate to gRPC"
+  docz create implementation "Migrate to gRPC"
+  docz create plan "Telemetry Pipeline Approach"
+  docz create investigation "Can pgvector Handle Concurrent Writes"
+  docz create inv "Can pgvector Handle Concurrent Writes"`,
 	Args: cobra.ExactArgs(2),
 	RunE: runCreate,
 }
@@ -43,7 +47,7 @@ func init() {
 }
 
 func runCreate(_ *cobra.Command, args []string) error {
-	docType := strings.ToLower(args[0])
+	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
 	title := args[1]
 
 	tc, ok := appCfg.Types[docType]

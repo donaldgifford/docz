@@ -36,15 +36,11 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "docz",
 	Short: "A CLI tool for managing standardized repository documentation",
-	Long: `docz generates and manages standardized documentation files (RFC, ADR,
-DESIGN, IMPL) from templates. It creates documents with auto-incremented IDs,
-YAML frontmatter, and auto-generated index pages.
+	Long: `docz generates and manages standardized documentation files from templates.
+It creates documents with auto-incremented IDs, YAML frontmatter, and
+auto-generated index pages.
 
-Document types:
-  rfc      Request for Comments — high-level proposals
-  adr      Architecture Decision Records — technical decisions
-  design   Design documents — detailed feature designs
-  impl     Implementation plans — concrete tasks and milestones`,
+` + config.TypesHelp(),
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
