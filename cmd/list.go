@@ -37,7 +37,7 @@ var listCmd = &cobra.Command{
 	Short: "List documents, optionally filtered by type",
 	Long: `List all documents across all types, or filter by a specific type.
 
-Types: rfc, adr, design, impl`,
+` + config.TypesHelp(),
 	Args: cobra.MaximumNArgs(1),
 	RunE: runList,
 }
@@ -51,7 +51,7 @@ func init() {
 func runList(_ *cobra.Command, args []string) error {
 	types := config.ValidTypes()
 	if len(args) > 0 {
-		typeName := strings.ToLower(args[0])
+		typeName := config.ResolveTypeAlias(strings.ToLower(args[0]))
 		if _, ok := appCfg.Types[typeName]; !ok {
 			return fmt.Errorf("unknown document type %q (valid types: %s)",
 				typeName, strings.Join(config.ValidTypes(), ", "))

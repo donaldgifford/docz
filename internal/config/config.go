@@ -153,6 +153,32 @@ func ValidTypes() []string {
 	return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 }
 
+// typeAliases maps short or alternate names to their canonical type name.
+var typeAliases = map[string]string{
+	"implementation": "impl",
+	"inv":            "investigation",
+}
+
+// ResolveTypeAlias returns the canonical type name for the given input.
+// If the input is already a canonical name or has no alias, it is returned as-is.
+func ResolveTypeAlias(name string) string {
+	if canonical, ok := typeAliases[name]; ok {
+		return canonical
+	}
+	return name
+}
+
+// TypesHelp returns a formatted help string listing all valid types with aliases.
+func TypesHelp() string {
+	return `Document types:
+  rfc              Request for Comments — high-level proposals
+  adr              Architecture Decision Records — technical decisions
+  design           Design documents — detailed feature designs
+  impl             Implementation plans (alias: implementation)
+  plan             Planning documents — goal, approach, components
+  investigation    Research spikes — validate theories and errors (alias: inv)`
+}
+
 // Validate checks the configuration for common errors and returns a list of
 // warnings and the first error found (if any).
 func (c *Config) Validate() (warnings []string, err error) {

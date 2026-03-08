@@ -68,7 +68,7 @@ func init() {
 }
 
 func runTemplateShow(_ *cobra.Command, args []string) error {
-	docType := strings.ToLower(args[0])
+	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
 	if err := validateType(docType); err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func runTemplateShow(_ *cobra.Command, args []string) error {
 }
 
 func runTemplateExport(_ *cobra.Command, args []string) error {
-	docType := strings.ToLower(args[0])
+	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
 	if err := validateType(docType); err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 }
 
 func runTemplateOverride(_ *cobra.Command, args []string) error {
-	docType := strings.ToLower(args[0])
+	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
 	if err := validateType(docType); err != nil {
 		return err
 	}

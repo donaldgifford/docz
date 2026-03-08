@@ -20,7 +20,7 @@ var updateCmd = &cobra.Command{
 	Long: `Regenerate the auto-generated table in the README.md for the specified
 document type directory. If no type is given, all types are updated.
 
-Types: rfc, adr, design, impl`,
+` + config.TypesHelp(),
 	Args: cobra.MaximumNArgs(1),
 	RunE: runUpdate,
 }
@@ -33,7 +33,7 @@ func init() {
 func runUpdate(_ *cobra.Command, args []string) error {
 	types := config.ValidTypes()
 	if len(args) > 0 {
-		typeName := strings.ToLower(args[0])
+		typeName := config.ResolveTypeAlias(strings.ToLower(args[0]))
 		if _, ok := appCfg.Types[typeName]; !ok {
 			return fmt.Errorf("unknown document type %q (valid types: %s)",
 				typeName, strings.Join(config.ValidTypes(), ", "))
