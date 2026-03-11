@@ -56,7 +56,7 @@ CLI commands yet — this phase is purely the internal libraries.
 
 #### Tasks
 
-- [ ] Add `WikiConfig` struct to `internal/config/config.go`:
+- [x] Add `WikiConfig` struct to `internal/config/config.go`:
       ```go
       type WikiConfig struct {
           AutoUpdate bool              `mapstructure:"auto_update" yaml:"auto_update"`
@@ -65,14 +65,14 @@ CLI commands yet — this phase is purely the internal libraries.
           NavTitles  map[string]string `mapstructure:"nav_titles"  yaml:"nav_titles"`
       }
       ```
-- [ ] Add `Wiki WikiConfig` field to the `Config` struct
-- [ ] Set defaults in `DefaultConfig()`: `AutoUpdate: true`,
+- [x] Add `Wiki WikiConfig` field to the `Config` struct
+- [x] Set defaults in `DefaultConfig()`: `AutoUpdate: true`,
       `MkDocsPath: "mkdocs.yml"`, `Exclude: ["templates", "examples"]`,
       `NavTitles` with docz-managed type mappings (`rfc` → `RFCs`,
       `adr` → `ADRs`, `design` → `Design`, `impl` → `Implementation Plans`,
       `plan` → `Plans`, `investigation` → `Investigations`)
-- [ ] Wire `WikiConfig` defaults into `setDefaults()` for Viper
-- [ ] Update `cmd/init.go` `writeDefaultConfig()` to include `wiki` section,
+- [x] Wire `WikiConfig` defaults into `setDefaults()` for Viper
+- [x] Update `cmd/init.go` `writeDefaultConfig()` to include `wiki` section,
       and also include `plan` and `investigation` type blocks in the generated
       `.docz.yaml`
 - [ ] Update config tests: `TestDefaultConfig` checks wiki defaults,

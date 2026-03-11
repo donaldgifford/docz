@@ -49,7 +49,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func writeDefaultConfig() error {
+func writeDefaultConfig() error { //nolint:funlen // config template string
 	const configPath = ".docz.yaml"
 
 	if _, err := os.Stat(configPath); err == nil {
@@ -117,6 +117,33 @@ types:
       - Cancelled
     status_field: "status"
 
+  plan:
+    enabled: true
+    dir: plan
+    template: ""
+    id_prefix: "PLAN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Cancelled
+    status_field: "status"
+
+  investigation:
+    enabled: true
+    dir: investigation
+    template: ""
+    id_prefix: "INV"
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+    status_field: "status"
+
 index:
   auto_update: true
   preserve_header: true
@@ -124,6 +151,13 @@ index:
 author:
   from_git: true
   default: ""
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  exclude:
+    - templates
+    - examples
 `
 
 	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
