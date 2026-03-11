@@ -95,9 +95,12 @@ docz wiki
 ### `docz wiki init`
 
 Creates a `mkdocs.yml` at the repo root with sensible TechDocs defaults.
+If the project hasn't been initialized with `docz init`, it runs `docz init`
+automatically before creating the mkdocs file.
 
 ```bash
 docz wiki init
+# → Initialized docz (if needed)
 # → Created mkdocs.yml
 
 docz wiki init --site-name "My Service"
@@ -206,7 +209,7 @@ nav:
   - Design:
       - Overview: design/README.md
       - "DESIGN-0001: Auth Flow": design/0001-auth-flow.md
-  - Implementation:
+  - Implementation Plans:
       - Overview: impl/README.md
       - "IMPL-0001: Auth Implementation": impl/0001-auth-implementation.md
   - Plans:
@@ -229,7 +232,7 @@ Docz-managed type directories use human-friendly pluralized names:
 | `rfc` | RFCs |
 | `adr` | ADRs |
 | `design` | Design |
-| `impl` | Implementation |
+| `impl` | Implementation Plans |
 | `plan` | Plans |
 | `investigation` | Investigations |
 
@@ -247,11 +250,13 @@ Within each section:
 2. Docz documents are sorted by their numeric ID (ascending)
 3. Other files are sorted alphabetically
 
-Top-level sections are ordered:
+Top-level sections on `wiki init` are ordered alphabetically:
 
 1. `index.md` (Home) always first
-2. Docz-managed type directories in `ValidTypes()` order
-3. Non-docz directories sorted alphabetically
+2. All other sections sorted alphabetically
+
+On `wiki update`, existing section order is preserved. New sections are
+appended alphabetically at the end.
 
 ### Handling `docs/index.md`
 
@@ -275,12 +280,12 @@ Welcome to the documentation for <site_name>.
 ### Edge Cases
 
 - **Empty directories** — Skipped in the nav (no group created)
-- **Deeply nested directories** — Supported up to 3 levels of nesting
+- **Deeply nested directories** — Supported at arbitrary depth
 - **Files without frontmatter** — Use filename-derived titles
 - **`mkdocs.yml` missing** — `wiki update` errors with a message to run
   `wiki init` first
-- **`docs/` directory missing** — `wiki update` errors with a message to run
-  `docz init` first
+- **`docs/` directory missing** — `wiki init` runs `docz init` automatically;
+  `wiki update` errors with a message to run `wiki init` first
 - **Excluded directories** — `templates/` and `examples/` are excluded by
   default (configurable)
 
@@ -384,26 +389,26 @@ For non-docz markdown files, use a two-pass approach:
 - **Integration tests** for `wiki update` (scans real directories, writes nav)
 - **Golden file tests** for nav output given a known directory structure
 
-## Open Questions
+## Decisions
 
-1. **Should `wiki update` sort sections alphabetically or preserve a manual
-   order?** — If someone manually reorders sections in `mkdocs.yml`, should
-   `wiki update` preserve that order or overwrite it?
+1. **Ordering behavior** — `wiki init` generates the nav in alphabetical order.
+   `wiki update` preserves the existing section order in `mkdocs.yml` and
+   appends new sections alphabetically at the end. This lets users manually
+   reorder sections and have that order survive updates.
 
-2. **Should `wiki init` also run `docz init` if not already initialized?** —
-   Or should it error and tell the user to run `docz init` first?
+2. **`wiki init` runs `docz init`** — If the project hasn't been initialized
+   with `docz init`, `wiki init` runs it automatically rather than erroring.
+   This reduces friction for new setups.
 
-3. **How should deeply nested non-docz directories be handled?** — e.g.,
-   `docs/guides/getting-started/setup.md`. Flatten to 2 levels? Allow
-   arbitrary depth?
+3. **Arbitrary nesting depth** — Deeply nested non-docz directories are
+   supported at arbitrary depth. No flattening or depth limit is imposed.
 
-4. **Should there be a config-based exclusion list?** — To skip directories
-   like `docs/templates/` or `docs/examples/` from the nav. The design above
-   proposes `wiki.exclude` with `templates` and `examples` as defaults.
+4. **Config-based exclusion list** — The `wiki.exclude` key in `.docz.yaml`
+   controls which directories are excluded from the nav. Defaults to
+   `[templates, examples]`.
 
-5. **MkDocs nav title for `impl`** — Should it be "Implementation",
-   "Implementation Plans", or "Impl"? Same question for `investigation` →
-   "Investigations" vs "Research Spikes".
+5. **Nav titles for `impl` and `investigation`** — `impl` maps to
+   "Implementation Plans" and `investigation` maps to "Investigations".
 
 ## References
 
