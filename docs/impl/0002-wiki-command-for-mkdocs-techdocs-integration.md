@@ -110,7 +110,7 @@ CLI commands yet — this phase is purely the internal libraries.
     ordered list of top-level section titles from an existing nav
   - `MergeNavOrder(existing []string, newEntries []NavEntry) []NavEntry` —
     preserve existing section order, append new sections alphabetically
-- [ ] Write unit tests for `internal/wiki/titles.go`: title extraction from
+- [x] Write unit tests for `internal/wiki/titles.go`: title extraction from
       frontmatter, H1 heading, filename fallback; directory title mapping
       with overrides and defaults
 - [ ] Write unit tests for `internal/wiki/wiki.go`: nav tree building from
