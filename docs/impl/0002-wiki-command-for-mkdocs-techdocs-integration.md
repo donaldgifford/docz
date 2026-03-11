@@ -75,7 +75,7 @@ CLI commands yet — this phase is purely the internal libraries.
 - [x] Update `cmd/init.go` `writeDefaultConfig()` to include `wiki` section,
       and also include `plan` and `investigation` type blocks in the generated
       `.docz.yaml`
-- [ ] Update config tests: `TestDefaultConfig` checks wiki defaults,
+- [x] Update config tests: `TestDefaultConfig` checks wiki defaults,
       `TestLoad_*` tests include wiki config round-trip
 - [ ] Create `internal/wiki/titles.go`:
   - `DefaultNavTitles() map[string]string` — returns the default directory-to-

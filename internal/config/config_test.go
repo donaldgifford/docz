@@ -40,6 +40,33 @@ func TestDefaultConfig(t *testing.T) {
 	if !cfg.Author.FromGit {
 		t.Error("Author.FromGit should be true by default")
 	}
+
+	// Wiki defaults.
+	if !cfg.Wiki.AutoUpdate {
+		t.Error("Wiki.AutoUpdate should be true by default")
+	}
+	if cfg.Wiki.MkDocsPath != "mkdocs.yml" {
+		t.Errorf("Wiki.MkDocsPath = %q, want %q", cfg.Wiki.MkDocsPath, "mkdocs.yml")
+	}
+	wantExclude := []string{"templates", "examples"}
+	if len(cfg.Wiki.Exclude) != len(wantExclude) {
+		t.Fatalf("Wiki.Exclude has %d elements, want %d", len(cfg.Wiki.Exclude), len(wantExclude))
+	}
+	for i, got := range cfg.Wiki.Exclude {
+		if got != wantExclude[i] {
+			t.Errorf("Wiki.Exclude[%d] = %q, want %q", i, got, wantExclude[i])
+		}
+	}
+	wantTitles := map[string]string{
+		"rfc": "RFCs", "adr": "ADRs", "design": "Design",
+		"impl": "Implementation Plans", "plan": "Plans",
+		"investigation": "Investigations",
+	}
+	for k, want := range wantTitles {
+		if got := cfg.Wiki.NavTitles[k]; got != want {
+			t.Errorf("Wiki.NavTitles[%q] = %q, want %q", k, got, want)
+		}
+	}
 }
 
 func TestValidTypes(t *testing.T) {
@@ -163,6 +190,40 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 
 	if cfg.DocsDir != "custom-docs" {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "custom-docs")
+	}
+}
+
+func TestLoad_WikiConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "custom.yaml")
+	configContent := `wiki:
+  auto_update: false
+  mkdocs_path: docs/mkdocs.yml
+  exclude:
+    - drafts
+  nav_titles:
+    rfc: "Request for Comments"
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	if cfg.Wiki.AutoUpdate {
+		t.Error("Wiki.AutoUpdate should be false")
+	}
+	if cfg.Wiki.MkDocsPath != "docs/mkdocs.yml" {
+		t.Errorf("Wiki.MkDocsPath = %q, want %q", cfg.Wiki.MkDocsPath, "docs/mkdocs.yml")
+	}
+	if len(cfg.Wiki.Exclude) != 1 || cfg.Wiki.Exclude[0] != "drafts" {
+		t.Errorf("Wiki.Exclude = %v, want [drafts]", cfg.Wiki.Exclude)
+	}
+	if got := cfg.Wiki.NavTitles["rfc"]; got != "Request for Comments" {
+		t.Errorf("Wiki.NavTitles[rfc] = %q, want %q", got, "Request for Comments")
 	}
 }
 
