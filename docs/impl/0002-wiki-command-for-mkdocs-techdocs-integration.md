@@ -77,7 +77,7 @@ CLI commands yet — this phase is purely the internal libraries.
       `.docz.yaml`
 - [x] Update config tests: `TestDefaultConfig` checks wiki defaults,
       `TestLoad_*` tests include wiki config round-trip
-- [ ] Create `internal/wiki/titles.go`:
+- [x] Create `internal/wiki/titles.go`:
   - `DefaultNavTitles() map[string]string` — returns the default directory-to-
     nav-title mapping for docz types
   - `DirTitle(dir string, navTitles map[string]string) string` — resolve a
