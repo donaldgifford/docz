@@ -99,7 +99,7 @@ CLI commands yet — this phase is purely the internal libraries.
     Support arbitrary nesting depth
   - `SortEntries(entries []NavEntry) []NavEntry` — sort top-level: `index.md`
     (Home) first, then remaining entries alphabetically by title
-- [ ] Create `internal/wiki/mkdocs.go`:
+- [x] Create `internal/wiki/mkdocs.go`:
   - `ReadMkDocs(path string) (map[string]interface{}, error)` — read
     `mkdocs.yml` into a generic map, preserving all fields
   - `WriteMkDocs(path string, data map[string]interface{}) error` — write
