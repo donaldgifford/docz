@@ -89,7 +89,7 @@ CLI commands yet — this phase is purely the internal libraries.
     `# Heading`; fall back to filename title-cased
   - `FilenameTitle(filename string) string` — convert filename to title case
     (`system-overview.md` → `System Overview`)
-- [ ] Create `internal/wiki/wiki.go`:
+- [x] Create `internal/wiki/wiki.go`:
   - `NavEntry` struct: `Title string`, `Path string`, `Children []NavEntry`
   - `ScanDocs(docsDir string, exclude []string) ([]NavEntry, error)` — walk
     the docs directory recursively, build a tree of `NavEntry` structs.
