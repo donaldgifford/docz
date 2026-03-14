@@ -227,8 +227,8 @@ and prepare for merge.
 - [x] Verify test coverage for `internal/wiki/` is >80%
 - [x] Write golden file tests: create a known directory structure, run
       `wiki update`, compare generated `mkdocs.yml` nav against expected output
-- [ ] Update `README.md` with `docz wiki` command documentation
-- [ ] Update `DEVELOPMENT.md` if wiki package introduces new patterns
+- [x] Update `README.md` with `docz wiki` command documentation
+- [x] Update `DEVELOPMENT.md` if wiki package introduces new patterns
 
 #### Success Criteria
 
