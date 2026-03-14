@@ -33,5 +33,5 @@ docz create impl "Your Implementation Title"
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | IMPL-0001 | docz CLI Implementation | Completed | 2026-02-22 | Donald Gifford | [0001-docz-cli-implementation.md](0001-docz-cli-implementation.md) |
-| IMPL-0002 | Wiki Command for MkDocs TechDocs Integration | Draft | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
+| IMPL-0002 | Wiki Command for MkDocs TechDocs Integration | Completed | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
 <!-- END DOCZ AUTO-GENERATED -->

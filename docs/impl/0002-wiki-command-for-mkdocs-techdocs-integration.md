@@ -1,7 +1,7 @@
 ---
 id: IMPL-0002
 title: "Wiki Command for MkDocs TechDocs Integration"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-03-11
 ---
@@ -9,7 +9,7 @@ created: 2026-03-11
 
 # IMPL 0002: Wiki Command for MkDocs TechDocs Integration
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-03-11
 
@@ -279,20 +279,20 @@ Key files that will be created or modified, organized by phase.
 
 ## Testing Plan
 
-- [ ] Unit tests for `internal/wiki/titles.go`: frontmatter title extraction,
+- [x] Unit tests for `internal/wiki/titles.go`: frontmatter title extraction,
       H1 fallback, filename fallback, directory title with overrides
-- [ ] Unit tests for `internal/wiki/wiki.go`: nav tree from directory structure,
+- [x] Unit tests for `internal/wiki/wiki.go`: nav tree from directory structure,
       sorting, exclusion, empty directory skipping, arbitrary nesting
-- [ ] Unit tests for `internal/wiki/mkdocs.go`: YAML round-trip preserves
+- [x] Unit tests for `internal/wiki/mkdocs.go`: YAML round-trip preserves
       unknown fields, nav serialization format, nav order merging
-- [ ] Integration tests for `wiki init`: creates all expected files, auto-runs
+- [x] Integration tests for `wiki init`: creates all expected files, auto-runs
       `docz init`, `--force` behavior, flag overrides
-- [ ] Integration tests for `wiki update`: various directory layouts, order
+- [x] Integration tests for `wiki update`: various directory layouts, order
       preservation, `--dry-run`, error on missing mkdocs.yml
-- [ ] Integration tests for `docz create` auto-update: nav updated when
+- [x] Integration tests for `docz create` auto-update: nav updated when
       mkdocs.yml present, skipped when absent or disabled
-- [ ] Golden file tests for nav output given a representative directory tree
-- [ ] Table-driven tests for title extraction edge cases
+- [x] Golden file tests for nav output given a representative directory tree
+- [x] Table-driven tests for title extraction edge cases
 
 ## Dependencies
 
