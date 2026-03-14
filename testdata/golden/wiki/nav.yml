@@ -1,0 +1,12 @@
+nav:
+    - My Project: index.md
+    - ADRs:
+        - Overview: adr/README.md
+        - 'ADR-0001: Use PostgreSQL': adr/0001-use-postgresql.md
+    - Architecture:
+        - Deployment: architecture/deployment.md
+        - System Overview: architecture/system-overview.md
+    - RFCs:
+        - Overview: rfc/README.md
+        - 'RFC-0001: API Rate Limiting': rfc/0001-api-rate-limiting.md
+        - 'RFC-0002: Event Sourcing': rfc/0002-event-sourcing.md

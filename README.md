@@ -14,6 +14,7 @@ README index tables up to date.
 - **Template overrides:** customize any template per-repository without forking
 - **Configuration:** repo-level `.docz.yaml` deep-merged with global `~/.docz.yaml`
 - **Multiple output formats:** `list` supports table, JSON, and CSV
+- **MkDocs/TechDocs integration:** `wiki` commands generate and maintain `mkdocs.yml` for Backstage TechDocs
 
 ## Getting Started
 
@@ -86,6 +87,8 @@ docz update --dry-run  # preview changes without writing
 | `docz template show <type>` | Print the resolved template to stdout |
 | `docz template export <type> [path]` | Write the resolved template to a file |
 | `docz template override <type>` | Copy the template into the local overrides directory |
+| `docz wiki init` | Create `mkdocs.yml` with TechDocs defaults |
+| `docz wiki update` | Rebuild the MkDocs nav from docs/ contents |
 | `docz config` | Print the fully resolved configuration as YAML |
 | `docz version` | Print version and commit hash |
 
@@ -123,6 +126,20 @@ docz update --dry-run  # preview changes without writing
 |------|-------------|
 | `--status <status>` | Filter documents by status (case-insensitive) |
 | `--format <fmt>` | Output format: `table` (default), `json`, `csv` |
+
+### `docz wiki init` Flags
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Overwrite existing `mkdocs.yml` |
+| `--site-name <name>` | Set `site_name` (default: repo directory name) |
+| `--site-description <desc>` | Set `site_description` |
+
+### `docz wiki update` Flags
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Print the generated nav without modifying `mkdocs.yml` |
 
 ## Document Types
 
@@ -338,6 +355,48 @@ documents. The table is bounded by HTML comments:
 Content outside these markers (headers, descriptions, links) is preserved across
 updates. If a README has no markers, `docz update` will warn rather than modify
 it — run `docz init --force` or add the markers manually.
+
+## MkDocs / Backstage TechDocs Integration
+
+`docz wiki` generates and maintains a `mkdocs.yml` compatible with Backstage's
+TechDocs plugin. The nav section is rebuilt from the docs directory contents.
+
+```bash
+# Initialize mkdocs.yml and docs/index.md
+docz wiki init
+docz wiki init --site-name "My Service"
+
+# Rebuild the nav section from docs/ contents
+docz wiki update
+docz wiki update --dry-run    # preview without writing
+
+# Auto-update: docz create also updates the nav when mkdocs.yml exists
+docz create rfc "My Proposal"  # → nav is updated automatically
+```
+
+### Configuration
+
+Wiki behavior is controlled by the `wiki` section in `.docz.yaml`:
+
+```yaml
+wiki:
+  auto_update: true          # auto-run wiki update after docz create
+  mkdocs_path: mkdocs.yml    # path to mkdocs.yml
+  exclude:                   # directories excluded from nav
+    - templates
+    - examples
+  nav_titles:                # override directory display names
+    rfc: "Request for Comments"
+```
+
+### Nav Generation
+
+- Docz documents use their frontmatter title (e.g., "RFC-0001: API Rate Limiting")
+- Other markdown files use their first H1 heading or filename
+- `wiki init` sorts sections alphabetically
+- `wiki update` preserves existing section order, appending new sections at the end
+- README.md / index.md files become "Overview" entries
+- Empty directories and excluded directories are skipped
 
 ## Makefile Integration
 

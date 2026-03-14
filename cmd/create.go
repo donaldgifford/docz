@@ -98,6 +98,14 @@ func runCreate(_ *cobra.Command, args []string) error {
 		}
 	}
 
+	if !createNoUpdate && appCfg.Wiki.AutoUpdate {
+		if _, err := os.Stat(appCfg.Wiki.MkDocsPath); err == nil {
+			if err := runWikiUpdateNav(appCfg.Wiki.MkDocsPath); err != nil {
+				return fmt.Errorf("auto-updating wiki nav: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -17,6 +17,7 @@ docz/
 │   ├── list.go              # docz list
 │   ├── template.go          # docz template show/export/override
 │   ├── config.go            # docz config
+│   ├── wiki.go              # docz wiki init/update
 │   └── version.go           # docz version (Version/Commit vars for ldflags)
 ├── internal/
 │   ├── config/
@@ -27,20 +28,24 @@ docz/
 │   │   └── time.go          # var timeNow (overridable in tests)
 │   ├── index/
 │   │   └── index.go         # ScanDocuments(), GenerateTable(), UpdateReadme(), DryRunReadme()
-│   └── template/
-│       ├── embed.go          # //go:embed, EmbeddedDocumentTemplate(), EmbeddedIndexHeader()
-│       ├── template.go       # Slugify(), Resolve(), Render(), TemplateData
-│       └── templates/        # embedded template files
-│           ├── rfc.md
-│           ├── adr.md
-│           ├── design.md
-│           ├── impl.md
-│           ├── index_rfc.md
-│           ├── index_adr.md
-│           ├── index_design.md
-│           └── index_impl.md
+│   ├── template/
+│   │   ├── embed.go          # //go:embed, EmbeddedDocumentTemplate(), EmbeddedIndexHeader()
+│   │   ├── template.go       # Slugify(), Resolve(), Render(), TemplateData
+│   │   └── templates/        # embedded template files
+│   │       ├── rfc.md
+│   │       ├── adr.md
+│   │       ├── design.md
+│   │       ├── impl.md
+│   │       ├── index_rfc.md
+│   │       ├── index_adr.md
+│   │       ├── index_design.md
+│   │       └── index_impl.md
+│   └── wiki/
+│       ├── titles.go         # DirTitle(), DocTitle(), FilenameTitle()
+│       ├── wiki.go           # NavEntry, ScanDocs(), SortEntries(), CountPages()
+│       └── mkdocs.go         # ReadMkDocs(), WriteMkDocs(), NavToYAML(), MergeNavOrder()
 └── testdata/
-    └── golden/              # golden file fixtures for template tests
+    └── golden/              # golden file fixtures for template and wiki tests
 ```
 
 ## Package Responsibilities
@@ -125,6 +130,21 @@ msg, err := index.UpdateReadme(path, docType, table)   // splices between marker
 If a README exists but has no markers, it is left untouched and a warning is
 printed. If the README does not exist, it is created using the embedded index
 header template.
+
+### `internal/wiki`
+
+Generates and maintains MkDocs nav from the docs directory tree. Split across
+three files:
+
+- **`titles.go`** — Title extraction: `DirTitle()` maps directory names to
+  nav titles using configurable overrides. `DocTitle()` extracts titles from
+  frontmatter, H1 headings, or filename fallback.
+- **`wiki.go`** — Nav tree building: `ScanDocs()` recursively walks the docs
+  directory and builds a `[]NavEntry` tree. `SortEntries()` sorts top-level
+  entries (Home first, rest alphabetical). `CountPages()` counts leaf entries.
+- **`mkdocs.go`** — MkDocs YAML I/O: `ReadMkDocs()`/`WriteMkDocs()` preserve
+  non-nav fields. `NavToYAML()` converts `[]NavEntry` to MkDocs nav format.
+  `MergeNavOrder()` preserves existing section order when updating.
 
 ## Adding a Built-In Document Type
 

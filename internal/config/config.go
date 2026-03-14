@@ -32,12 +32,21 @@ type AuthorConfig struct {
 	Default string `mapstructure:"default"  yaml:"default"`
 }
 
+// WikiConfig holds configuration for the wiki/MkDocs integration.
+type WikiConfig struct {
+	AutoUpdate bool              `mapstructure:"auto_update" yaml:"auto_update"`
+	MkDocsPath string            `mapstructure:"mkdocs_path" yaml:"mkdocs_path"`
+	Exclude    []string          `mapstructure:"exclude"     yaml:"exclude"`
+	NavTitles  map[string]string `mapstructure:"nav_titles"  yaml:"nav_titles"`
+}
+
 // Config is the top-level configuration for docz.
 type Config struct {
 	DocsDir string                `mapstructure:"docs_dir" yaml:"docs_dir"`
 	Types   map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
 	Index   IndexConfig           `mapstructure:"index"    yaml:"index"`
 	Author  AuthorConfig          `mapstructure:"author"   yaml:"author"`
+	Wiki    WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
 }
 
 // DefaultConfig returns the built-in default configuration.
@@ -101,6 +110,12 @@ func DefaultConfig() Config {
 		Author: AuthorConfig{
 			FromGit: true,
 		},
+		Wiki: WikiConfig{
+			AutoUpdate: true,
+			MkDocsPath: "mkdocs.yml",
+			Exclude:    []string{"templates", "examples"},
+			NavTitles:  DefaultNavTitles(),
+		},
 	}
 }
 
@@ -113,11 +128,11 @@ func Load(configFile string) (Config, error) {
 	cfg := DefaultConfig()
 
 	if configFile != "" {
-		return loadFromFile(configFile, cfg)
+		return loadFromFile(configFile, &cfg)
 	}
 
 	v := viper.New()
-	setDefaults(v, cfg)
+	setDefaults(v, &cfg)
 
 	// Load global config first.
 	if home, err := os.UserHomeDir(); err == nil {
@@ -146,6 +161,19 @@ func (c *Config) TypeDir(docType string) string {
 		return filepath.Join(c.DocsDir, docType)
 	}
 	return filepath.Join(c.DocsDir, tc.Dir)
+}
+
+// DefaultNavTitles returns the default directory-to-nav-title mapping for
+// docz-managed type directories.
+func DefaultNavTitles() map[string]string {
+	return map[string]string{
+		"rfc":           "RFCs",
+		"adr":           "ADRs",
+		"design":        "Design",
+		"impl":          "Implementation Plans",
+		"plan":          "Plans",
+		"investigation": "Investigations",
+	}
 }
 
 // ValidTypes returns the list of built-in document type names.
@@ -219,24 +247,24 @@ func mergeConfigFile(v *viper.Viper, path string) error {
 	return v.MergeConfigMap(fileV.AllSettings())
 }
 
-func loadFromFile(path string, defaults Config) (Config, error) {
+func loadFromFile(path string, defaults *Config) (Config, error) {
 	v := viper.New()
 	setDefaults(v, defaults)
 	v.SetConfigFile(path)
 
 	if err := v.ReadInConfig(); err != nil {
-		return defaults, err
+		return *defaults, err
 	}
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
-		return defaults, err
+		return *defaults, err
 	}
 
 	return cfg, nil
 }
 
-func setDefaults(v *viper.Viper, cfg Config) {
+func setDefaults(v *viper.Viper, cfg *Config) {
 	v.SetDefault("docs_dir", cfg.DocsDir)
 	v.SetDefault("index.auto_update", cfg.Index.AutoUpdate)
 	v.SetDefault("index.preserve_header", cfg.Index.PreserveHeader)
@@ -252,5 +280,12 @@ func setDefaults(v *viper.Viper, cfg Config) {
 		v.SetDefault(prefix+"id_width", tc.IDWidth)
 		v.SetDefault(prefix+"statuses", tc.Statuses)
 		v.SetDefault(prefix+"status_field", tc.StatusField)
+	}
+
+	v.SetDefault("wiki.auto_update", cfg.Wiki.AutoUpdate)
+	v.SetDefault("wiki.mkdocs_path", cfg.Wiki.MkDocsPath)
+	v.SetDefault("wiki.exclude", cfg.Wiki.Exclude)
+	for k, val := range cfg.Wiki.NavTitles {
+		v.SetDefault("wiki.nav_titles."+k, val)
 	}
 }
