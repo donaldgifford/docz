@@ -222,10 +222,10 @@ and prepare for merge.
   - Symlinks in docs directory → skipped (os.ReadDir does not follow symlinked dirs)
 - [x] Add `--verbose` output to wiki commands: show directories scanned,
       files found, titles resolved, sections added/preserved
-- [ ] Ensure `make ci` passes: `lint`, `test`, `build`
-- [ ] Ensure `golangci-lint run ./...` produces no warnings for new code
-- [ ] Verify test coverage for `internal/wiki/` is >80%
-- [ ] Write golden file tests: create a known directory structure, run
+- [x] Ensure `make ci` passes: `lint`, `test`, `build`
+- [x] Ensure `golangci-lint run ./...` produces no warnings for new code
+- [x] Verify test coverage for `internal/wiki/` is >80%
+- [x] Write golden file tests: create a known directory structure, run
       `wiki update`, compare generated `mkdocs.yml` nav against expected output
 - [ ] Update `README.md` with `docz wiki` command documentation
 - [ ] Update `DEVELOPMENT.md` if wiki package introduces new patterns
