@@ -211,16 +211,16 @@ and prepare for merge.
 
 #### Tasks
 
-- [ ] Audit error messages across wiki commands for consistency with existing
+- [x] Audit error messages across wiki commands for consistency with existing
       docz commands (format: `"doing X: %w"`)
-- [ ] Handle edge cases:
+- [x] Handle edge cases:
   - Docs directory with only excluded directories → empty nav (just Home)
   - Markdown files with no frontmatter and no H1 heading → filename title
   - `mkdocs.yml` with no existing nav key → treat as fresh init
   - `mkdocs.yml` with empty nav → treat as fresh init
   - Directories containing only non-markdown files → skip
-  - Symlinks in docs directory → follow or skip (decide and document)
-- [ ] Add `--verbose` output to wiki commands: show directories scanned,
+  - Symlinks in docs directory → skipped (os.ReadDir does not follow symlinked dirs)
+- [x] Add `--verbose` output to wiki commands: show directories scanned,
       files found, titles resolved, sections added/preserved
 - [ ] Ensure `make ci` passes: `lint`, `test`, `build`
 - [ ] Ensure `golangci-lint run ./...` produces no warnings for new code

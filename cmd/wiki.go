@@ -132,6 +132,11 @@ func runWikiUpdate(_ *cobra.Command, _ []string) error {
 
 // runWikiUpdateNav scans the docs directory and updates the nav in mkdocs.yml.
 func runWikiUpdateNav(mkdocsPath string) error {
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", appCfg.DocsDir)
+		fmt.Fprintf(os.Stderr, "  Excluding: %v\n", appCfg.Wiki.Exclude)
+	}
+
 	entries, err := wiki.ScanDocs(
 		appCfg.DocsDir,
 		appCfg.Wiki.Exclude,
@@ -141,6 +146,10 @@ func runWikiUpdateNav(mkdocsPath string) error {
 		return fmt.Errorf("scanning docs: %w", err)
 	}
 
+	if verbose {
+		fmt.Fprintf(os.Stderr, "  Found %d top-level entries\n", len(entries))
+	}
+
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
 		return err
@@ -148,8 +157,14 @@ func runWikiUpdateNav(mkdocsPath string) error {
 
 	existingOrder := wiki.ExistingNavOrder(data)
 	if len(existingOrder) > 0 {
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Preserving existing nav order: %v\n", existingOrder)
+		}
 		entries = wiki.MergeNavOrder(existingOrder, entries)
 	} else {
+		if verbose {
+			fmt.Fprintln(os.Stderr, "No existing nav order, sorting alphabetically")
+		}
 		entries = wiki.SortEntries(entries)
 	}
 
