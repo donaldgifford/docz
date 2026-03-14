@@ -169,7 +169,7 @@ create`.
 - [x] Integrate with `docz create`: in `cmd/create.go`, after the existing
       index auto-update, check if `mkdocs.yml` exists at repo root and
       `appCfg.Wiki.AutoUpdate` is true; if so, call the wiki update logic
-- [ ] Write integration tests for `wiki init`:
+- [x] Write integration tests for `wiki init`:
   - Init in empty directory (should auto-run `docz init`)
   - Init in already-initialized directory
   - Init with `--site-name` and `--site-description` flags
@@ -177,14 +177,14 @@ create`.
   - Init with `--force` overwrites existing `mkdocs.yml`
   - Verify `docs/index.md` is created with correct content
   - Verify `mkdocs.yml` has correct structure
-- [ ] Write integration tests for `wiki update`:
+- [x] Write integration tests for `wiki update`:
   - Update with various directory structures (docz types, non-docz dirs,
     nested directories)
   - Update preserves existing section order
   - Update appends new sections alphabetically
   - `--dry-run` prints nav without writing
   - Error when `mkdocs.yml` doesn't exist
-- [ ] Write integration tests for `docz create` wiki auto-update:
+- [x] Write integration tests for `docz create` wiki auto-update:
   - Create a document when `mkdocs.yml` exists → nav is updated
   - Create a document when `mkdocs.yml` doesn't exist → no wiki update
   - Create with `wiki.auto_update: false` → no wiki update
