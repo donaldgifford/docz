@@ -76,12 +76,11 @@ func scanDir(absDir, relDir string, exclude map[string]bool, navTitles map[strin
 		absPath := filepath.Join(absDir, name)
 
 		if isOverviewFile(name) {
-			title, err := DocTitle(absPath)
-			if err != nil {
-				title = "Overview"
-			}
-			// Use "Overview" for subdirectory READMEs, keep extracted title for root.
-			if relDir != "" {
+			var title string
+			if relDir == "" {
+				// Root-level index.md is always "Home" in the nav.
+				title = "Home"
+			} else {
 				title = "Overview"
 			}
 			overviewEntry = &NavEntry{Title: title, Path: filepath.ToSlash(entryPath)}
@@ -139,6 +138,7 @@ func SortEntries(entries []NavEntry) []NavEntry {
 
 	for i := range entries {
 		if entries[i].Path == "index.md" {
+			entries[i].Title = "Home"
 			home = &entries[i]
 		} else {
 			rest = append(rest, entries[i])
