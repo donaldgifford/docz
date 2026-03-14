@@ -1,0 +1,23 @@
+---
+nav:
+  - Home: index.md
+  - ADRs:
+      - Overview: adr/README.md
+  - Design:
+      - Overview: design/README.md
+      - 'DESIGN-0001: docz CLI Tool': design/0001-docz-cli-design.md
+      - 'DESIGN-0002: Wiki Command for MkDocs TechDocs Integration': design/0002-wiki-command-for-mkdocs-techdocs-integration.md
+  - Implementation Plans:
+      - Overview: impl/README.md
+      - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
+      - 'IMPL-0002: Wiki Command for MkDocs TechDocs Integration': impl/0002-wiki-command-for-mkdocs-techdocs-integration.md
+  - Investigations:
+      - Overview: investigation/README.md
+  - Plans:
+      - Overview: plan/README.md
+  - RFCs:
+      - Overview: rfc/README.md
+plugins:
+  - techdocs-core
+site_description: Documentation for docz
+site_name: docz

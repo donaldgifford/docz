@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0001
 title: "docz CLI Tool"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-02-22
 ---

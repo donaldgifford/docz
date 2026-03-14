@@ -5,6 +5,7 @@
     "claude-md@donaldgifford-claude-skills": true,
     "go-development@donaldgifford-claude-skills": true,
     "systems-programming@donaldgifford-claude-skills": true,
-    "shell-scripting@donaldgifford-claude-skills": true
+    "shell-scripting@donaldgifford-claude-skills": true,
+    "docz@donaldgifford-claude-skills": true
   }
 }

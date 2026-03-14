@@ -36,10 +36,14 @@ docz/
 │   │       ├── adr.md
 │   │       ├── design.md
 │   │       ├── impl.md
+│   │       ├── plan.md
+│   │       ├── investigation.md
 │   │       ├── index_rfc.md
 │   │       ├── index_adr.md
 │   │       ├── index_design.md
-│   │       └── index_impl.md
+│   │       ├── index_impl.md
+│   │       ├── index_plan.md
+│   │       └── index_investigation.md
 │   └── wiki/
 │       ├── titles.go         # DirTitle(), DocTitle(), FilenameTitle()
 │       ├── wiki.go           # NavEntry, ScanDocs(), SortEntries(), CountPages()

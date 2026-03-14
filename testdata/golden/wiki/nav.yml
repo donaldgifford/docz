@@ -1,5 +1,5 @@
 nav:
-    - My Project: index.md
+    - Home: index.md
     - ADRs:
         - Overview: adr/README.md
         - 'ADR-0001: Use PostgreSQL': adr/0001-use-postgresql.md
