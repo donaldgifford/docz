@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0002
 title: "Wiki Command for MkDocs TechDocs Integration"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-03-11
 ---
@@ -9,7 +9,7 @@ created: 2026-03-11
 
 # DESIGN-0002: Wiki Command for MkDocs TechDocs Integration
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-03-11
 

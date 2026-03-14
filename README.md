@@ -44,6 +44,8 @@ This creates:
 - `docs/adr/README.md`
 - `docs/design/README.md`
 - `docs/impl/README.md`
+- `docs/plan/README.md`
+- `docs/investigation/README.md`
 
 ### Create your first document
 
@@ -293,6 +295,20 @@ types:
       - Concluded
       - Inconclusive
       - Abandoned
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    rfc: "RFCs"
+    adr: "ADRs"
+    design: "Design"
+    impl: "Implementation Plans"
+    plan: "Plans"
+    investigation: "Investigations"
 ```
 
 Run `docz config` to see the fully resolved configuration.
