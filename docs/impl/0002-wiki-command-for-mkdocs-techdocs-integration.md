@@ -116,7 +116,7 @@ CLI commands yet — this phase is purely the internal libraries.
 - [x] Write unit tests for `internal/wiki/wiki.go`: nav tree building from
       mock directory structures (use `t.TempDir()`); entry sorting; empty
       directory skipping; exclusion filtering; arbitrary nesting
-- [ ] Write unit tests for `internal/wiki/mkdocs.go`: YAML round-trip
+- [x] Write unit tests for `internal/wiki/mkdocs.go`: YAML round-trip
       preserves unknown fields; nav serialization format matches MkDocs
       expectations; nav order merging preserves existing order and appends new
 
