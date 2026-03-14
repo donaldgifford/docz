@@ -166,7 +166,7 @@ create`.
     - Write back `mkdocs.yml`
     - Print summary: `"Updated nav in mkdocs.yml (N pages)"`
     - Register flag: `--dry-run`
-- [ ] Integrate with `docz create`: in `cmd/create.go`, after the existing
+- [x] Integrate with `docz create`: in `cmd/create.go`, after the existing
       index auto-update, check if `mkdocs.yml` exists at repo root and
       `appCfg.Wiki.AutoUpdate` is true; if so, call the wiki update logic
 - [ ] Write integration tests for `wiki init`:
