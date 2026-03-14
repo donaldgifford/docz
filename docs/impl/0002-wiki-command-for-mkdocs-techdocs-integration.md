@@ -139,7 +139,7 @@ create`.
 
 #### Tasks
 
-- [ ] Create `cmd/wiki.go`:
+- [x] Create `cmd/wiki.go`:
   - `wiki` parent command with help text
   - `wiki init` subcommand:
     - Check if `docz init` has been run (`.docz.yaml` exists and docs dir
