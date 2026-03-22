@@ -113,16 +113,16 @@ embedded templates to include ToC markers. Update `docz init` to include the
 
 #### Tasks
 
-- [ ] Add `ToCConfig` struct to `internal/config/config.go`:
+- [x] Add `ToCConfig` struct to `internal/config/config.go`:
   ```go
   type ToCConfig struct {
       Enabled     bool `mapstructure:"enabled"      yaml:"enabled"`
       MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
   }
   ```
-- [ ] Add `ToC ToCConfig` field to the `Config` struct
-- [ ] Set defaults in `DefaultConfig()`: `Enabled: true`, `MinHeadings: 3`
-- [ ] Wire `ToCConfig` defaults into `setDefaults()` for Viper:
+- [x] Add `ToC ToCConfig` field to the `Config` struct
+- [x] Set defaults in `DefaultConfig()`: `Enabled: true`, `MinHeadings: 3`
+- [x] Wire `ToCConfig` defaults into `setDefaults()` for Viper:
   `v.SetDefault("toc.enabled", ...)`, `v.SetDefault("toc.min_headings", ...)`
 - [ ] Add config tests: `TestDefaultConfig` checks toc defaults,
   `TestLoad_ToCConfig` round-trip test

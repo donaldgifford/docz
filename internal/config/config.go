@@ -40,6 +40,12 @@ type WikiConfig struct {
 	NavTitles  map[string]string `mapstructure:"nav_titles"  yaml:"nav_titles"`
 }
 
+// ToCConfig holds configuration for table of contents generation.
+type ToCConfig struct {
+	Enabled     bool `mapstructure:"enabled"      yaml:"enabled"`
+	MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
+}
+
 // Config is the top-level configuration for docz.
 type Config struct {
 	DocsDir string                `mapstructure:"docs_dir" yaml:"docs_dir"`
@@ -47,6 +53,7 @@ type Config struct {
 	Index   IndexConfig           `mapstructure:"index"    yaml:"index"`
 	Author  AuthorConfig          `mapstructure:"author"   yaml:"author"`
 	Wiki    WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
+	ToC     ToCConfig             `mapstructure:"toc"      yaml:"toc"`
 }
 
 // DefaultConfig returns the built-in default configuration.
@@ -115,6 +122,10 @@ func DefaultConfig() Config {
 			MkDocsPath: "mkdocs.yml",
 			Exclude:    []string{"templates", "examples"},
 			NavTitles:  DefaultNavTitles(),
+		},
+		ToC: ToCConfig{
+			Enabled:     true,
+			MinHeadings: 3,
 		},
 	}
 }
@@ -288,4 +299,7 @@ func setDefaults(v *viper.Viper, cfg *Config) {
 	for k, val := range cfg.Wiki.NavTitles {
 		v.SetDefault("wiki.nav_titles."+k, val)
 	}
+
+	v.SetDefault("toc.enabled", cfg.ToC.Enabled)
+	v.SetDefault("toc.min_headings", cfg.ToC.MinHeadings)
 }
