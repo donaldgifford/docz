@@ -88,7 +88,7 @@ this phase is the self-contained library.
   - `TestUpdateToC`: markers present with headings, markers present but below
     threshold, no markers returns original content, empty between markers,
     existing ToC content gets replaced
-- [ ] Create golden file tests:
+- [x] Create golden file tests:
   - `internal/toc/golden_test.go` — representative document with mixed heading
     levels, code blocks, inline formatting; compare output against
     `testdata/golden/toc/basic.md`
