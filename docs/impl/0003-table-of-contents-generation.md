@@ -124,7 +124,7 @@ embedded templates to include ToC markers. Update `docz init` to include the
 - [x] Set defaults in `DefaultConfig()`: `Enabled: true`, `MinHeadings: 3`
 - [x] Wire `ToCConfig` defaults into `setDefaults()` for Viper:
   `v.SetDefault("toc.enabled", ...)`, `v.SetDefault("toc.min_headings", ...)`
-- [ ] Add config tests: `TestDefaultConfig` checks toc defaults,
+- [x] Add config tests: `TestDefaultConfig` checks toc defaults,
   `TestLoad_ToCConfig` round-trip test
 - [ ] Update `cmd/init.go` `writeDefaultConfig()` to include `toc` section in
   the generated `.docz.yaml`:
