@@ -133,7 +133,7 @@ embedded templates to include ToC markers. Update `docz init` to include the
     enabled: true
     min_headings: 3
   ```
-- [ ] Modify `cmd/update.go` `updateType()` to call ToC update on each document
+- [x] Modify `cmd/update.go` `updateType()` to call ToC update on each document
   before generating the README index table:
   - Read each document file in the type directory
   - If `appCfg.ToC.Enabled` is true, call `toc.UpdateToC(content, appCfg.ToC.MinHeadings)`
