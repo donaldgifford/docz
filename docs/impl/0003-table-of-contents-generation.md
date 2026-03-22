@@ -1,7 +1,7 @@
 ---
 id: IMPL-0003
 title: "Table of Contents Generation"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-03-22
 ---
@@ -9,14 +9,15 @@ created: 2026-03-22
 
 # IMPL 0003: Table of Contents Generation
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-03-22
 
 ## Objective
 
 Implement automatic table of contents generation integrated into `docz update`,
-as specified in DESIGN-0003. Documents with `<!--toc:start-->` / `<!--toc:end-->`
+as specified in DESIGN-0003. Documents with `<!--toc:start-->
+<!--toc:end-->`
 markers will have their ToC regenerated from document headings on each update.
 
 **Implements:** DESIGN-0003
@@ -193,14 +194,14 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
   - Add `internal/toc` package responsibility section describing the heading
     parser, slug generator, and marker splicing
 - [x] Update `CLAUDE.md` if any new conventions emerge
-- [ ] Verify edge cases manually:
+- [x] Verify edge cases manually:
   - Document with headings only inside code blocks (should produce empty ToC)
   - Document with duplicate heading text at different levels
   - Document with markers but no headings after them
   - Very long document with many headings
-- [ ] Run `make ci` and ensure it passes cleanly
-- [ ] Review test coverage: target >90% for `internal/toc/`, >80% overall
-- [ ] Clean up any TODO/FIXME comments introduced during implementation
+- [x] Run `make ci` and ensure it passes cleanly
+- [x] Review test coverage: target >90% for `internal/toc/`, >80% overall
+- [x] Clean up any TODO/FIXME comments introduced during implementation
 
 #### Success Criteria
 
