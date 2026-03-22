@@ -158,6 +158,10 @@ wiki:
   exclude:
     - templates
     - examples
+
+toc:
+  enabled: true
+  min_headings: 3
 `
 
 	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
