@@ -155,7 +155,7 @@ embedded templates to include ToC markers. Update `docz init` to include the
     ```
 - [x] Regenerate golden files for template rendering: run
   `go test ./internal/template/... -update` and review the diffs
-- [ ] Add integration tests in `cmd/`:
+- [x] Add integration tests in `cmd/`:
   - `TestUpdateGeneratesToC`: create a doc with markers and headings, run
     `updateType`, verify ToC was generated between markers
   - `TestUpdateToCDisabled`: set `appCfg.ToC.Enabled = false`, verify no ToC
