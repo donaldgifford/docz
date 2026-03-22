@@ -13,6 +13,30 @@ created: 2026-03-11
 **Author:** Donald Gifford
 **Date:** 2026-03-11
 
+  <!--toc:start-->
+- [Objective](#objective)
+- [Scope](#scope)
+  - [In Scope](#in-scope)
+  - [Out of Scope](#out-of-scope)
+- [Implementation Phases](#implementation-phases)
+  - [Phase 1: Configuration and Wiki Package Foundation](#phase-1-configuration-and-wiki-package-foundation)
+    - [Tasks](#tasks)
+    - [Success Criteria](#success-criteria)
+  - [Phase 2: CLI Commands — wiki init and wiki update](#phase-2-cli-commands--wiki-init-and-wiki-update)
+    - [Tasks](#tasks-1)
+    - [Success Criteria](#success-criteria-1)
+  - [Phase 3: Polish, Edge Cases, and CI Readiness](#phase-3-polish-edge-cases-and-ci-readiness)
+    - [Tasks](#tasks-2)
+    - [Success Criteria](#success-criteria-2)
+- [File Changes](#file-changes)
+  - [Phase 1](#phase-1)
+  - [Phase 2](#phase-2)
+  - [Phase 3](#phase-3)
+- [Testing Plan](#testing-plan)
+- [Dependencies](#dependencies)
+- [References](#references)
+<!--toc:end-->
+
 ## Objective
 
 Implement the `docz wiki` command group that generates and maintains a

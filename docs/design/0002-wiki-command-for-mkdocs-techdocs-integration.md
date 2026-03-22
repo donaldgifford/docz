@@ -13,6 +13,42 @@ created: 2026-03-11
 **Author:** Donald Gifford
 **Date:** 2026-03-11
 
+  <!--toc:start-->
+- [Overview](#overview)
+- [Goals and Non-Goals](#goals-and-non-goals)
+  - [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Background](#background)
+  - [Backstage TechDocs mkdocs.yml Format](#backstage-techdocs-mkdocsyml-format)
+- [CLI Interface](#cli-interface)
+  - [Command Structure](#command-structure)
+  - [docz wiki init](#docz-wiki-init)
+    - [Generated mkdocs.yml](#generated-mkdocsyml)
+    - [Flags](#flags)
+  - [docz wiki update](#docz-wiki-update)
+    - [Flags](#flags-1)
+  - [Integration with docz create](#integration-with-docz-create)
+- [Nav Generation](#nav-generation)
+  - [Directory Scanning](#directory-scanning)
+  - [Nav Structure](#nav-structure)
+  - [Directory Title Mapping](#directory-title-mapping)
+  - [Ordering](#ordering)
+  - [Handling docs/index.md](#handling-docsindexmd)
+  - [Edge Cases](#edge-cases)
+- [Configuration](#configuration)
+  - [New Config Keys](#new-config-keys)
+  - [WikiConfig Struct](#wikiconfig-struct)
+- [Implementation](#implementation)
+  - [Package Layout](#package-layout)
+  - [Key Types](#key-types)
+  - [MkDocs YAML Handling](#mkdocs-yaml-handling)
+  - [Nav Serialization](#nav-serialization)
+  - [Title Extraction from Documents](#title-extraction-from-documents)
+- [Testing Strategy](#testing-strategy)
+- [Decisions](#decisions)
+- [References](#references)
+<!--toc:end-->
+
 ## Overview
 
 Add a `docz wiki` command group that generates and maintains a `mkdocs.yml`

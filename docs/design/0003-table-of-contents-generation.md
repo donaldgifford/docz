@@ -12,6 +12,33 @@ created: 2026-03-22
 
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-03-22
 
+ <!--toc:start-->
+- [Overview](#overview)
+- [Goals and Non-Goals](#goals-and-non-goals)
+  - [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Background](#background)
+  - [Prior Art](#prior-art)
+- [Detailed Design](#detailed-design)
+  - [Marker Format](#marker-format)
+  - [ToC Generation Algorithm](#toc-generation-algorithm)
+  - [Anchor Slug Generation](#anchor-slug-generation)
+  - [Heading Depth and Indentation](#heading-depth-and-indentation)
+  - [Integration with docz update](#integration-with-docz-update)
+  - [Integration with docz create](#integration-with-docz-create)
+  - [Package Structure](#package-structure)
+  - [Configuration](#configuration)
+- [API / Interface Changes](#api--interface-changes)
+  - [CLI Changes](#cli-changes)
+  - [Config Changes](#config-changes)
+  - [Template Changes](#template-changes)
+- [Data Model](#data-model)
+- [Testing Strategy](#testing-strategy)
+- [Migration / Rollout Plan](#migration--rollout-plan)
+- [Decisions](#decisions)
+- [References](#references)
+<!--toc:end-->
+
 ## Overview
 
 Add automatic table of contents (ToC) generation to `docz update`. When
@@ -44,7 +71,9 @@ navigable ToC within longer documents like RFCs and design docs.
 Longer docz documents (RFCs, design docs, implementation plans) benefit from a
 table of contents for navigation. Currently this is handled by editor plugins
 like the lazyvim markdown ToC plugin, which generates a ToC between
-`<!--toc:start-->` and `<!--toc:end-->` markers.
+`<!--toc:start-->
+
+<!--toc:end-->` markers.
 
 The limitation is that these ToC entries only update when the file is open in
 the editor. When documents are created or modified programmatically (e.g., via
@@ -295,22 +324,22 @@ files.
 
 ## Decisions
 
-1. **ToC scoping follows `docz update` scoping.** `docz update rfc` only
-   updates ToC in `docs/rfc/` documents. Same directory-scoped behavior as
-   README index updates.
+1. **ToC scoping follows `docz update` scoping.** `docz update rfc` only updates
+   ToC in `docs/rfc/` documents. Same directory-scoped behavior as README index
+   updates.
 
 2. **Headings inside fenced code blocks are excluded.** The parser must track
-   whether it is inside a ` ``` ` block and skip any headings found there.
-   This prevents false positives from markdown examples in code blocks.
+   whether it is inside a ` ``` ` block and skip any headings found there. This
+   prevents false positives from markdown examples in code blocks.
 
-3. **Duplicate heading slugs get `-1`, `-2` suffixes.** Matches GitHub's
-   anchor behavior so ToC links work correctly in GitHub rendered views.
+3. **Duplicate heading slugs get `-1`, `-2` suffixes.** Matches GitHub's anchor
+   behavior so ToC links work correctly in GitHub rendered views.
 
 4. **No standalone `docz toc` command.** ToC generation runs as part of
    `docz update`. A standalone command can be added later if needed.
 
-5. **Markers are placed after the metadata block, before the first `##`.**
-   The `<!--toc:start-->` / `<!--toc:end-->` markers go after the
+5. **Markers are placed after the metadata block, before the first `##`.** The
+   `<!--toc:start-->` / `<!--toc:end-->` markers go after the
    `**Status:**`/`**Author:**`/`**Date:**` lines and before the first section
    heading.
 

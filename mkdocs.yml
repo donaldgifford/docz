@@ -11,6 +11,7 @@ nav:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
         - 'IMPL-0002: Wiki Command for MkDocs TechDocs Integration': impl/0002-wiki-command-for-mkdocs-techdocs-integration.md
+        - 'IMPL-0003: Table of Contents Generation': impl/0003-table-of-contents-generation.md
     - Investigations:
         - Overview: investigation/README.md
     - Plans:

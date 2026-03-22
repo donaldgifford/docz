@@ -13,6 +13,28 @@ created: 2026-03-22
 **Author:** Donald Gifford
 **Date:** 2026-03-22
 
+  <!--toc:start-->
+- [Objective](#objective)
+- [Scope](#scope)
+  - [In Scope](#in-scope)
+  - [Out of Scope](#out-of-scope)
+- [Implementation Phases](#implementation-phases)
+  - [Phase 1: Core ToC Package (internal/toc/)](#phase-1-core-toc-package-internaltoc)
+    - [Tasks](#tasks)
+    - [Success Criteria](#success-criteria)
+  - [Phase 2: Config, CLI Integration, and Template Updates](#phase-2-config-cli-integration-and-template-updates)
+    - [Tasks](#tasks-1)
+    - [Success Criteria](#success-criteria-1)
+  - [Phase 3: Documentation, Polish, and CI Readiness](#phase-3-documentation-polish-and-ci-readiness)
+    - [Tasks](#tasks-2)
+    - [Success Criteria](#success-criteria-2)
+- [File Changes](#file-changes)
+- [Testing Plan](#testing-plan)
+- [Decisions](#decisions)
+- [Dependencies](#dependencies)
+- [References](#references)
+<!--toc:end-->
+
 ## Objective
 
 Implement automatic table of contents generation integrated into `docz update`,
