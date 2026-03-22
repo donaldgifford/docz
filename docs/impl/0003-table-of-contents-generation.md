@@ -188,7 +188,7 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
   - Add `toc` config section to the example `.docz.yaml`
   - Document ToC behavior in a new "Table of Contents" section near the
     Index Tables section
-- [ ] Update `DEVELOPMENT.md`:
+- [x] Update `DEVELOPMENT.md`:
   - Add `internal/toc/` to the project layout tree
   - Add `internal/toc` package responsibility section describing the heading
     parser, slug generator, and marker splicing
