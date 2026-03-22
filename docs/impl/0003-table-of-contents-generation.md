@@ -183,7 +183,7 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 
 #### Tasks
 
-- [ ] Update `README.md`:
+- [x] Update `README.md`:
   - Add ToC feature bullet to Features section
   - Add `toc` config section to the example `.docz.yaml`
   - Document ToC behavior in a new "Table of Contents" section near the
