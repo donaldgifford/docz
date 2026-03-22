@@ -13,6 +13,9 @@ created: {{ .Date }}
 **Author:** {{ .Author }}
 **Date:** {{ .Date }}
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Objective
 
 <!-- What is being implemented? Link to the RFC/DESIGN/PLAN it implements. -->

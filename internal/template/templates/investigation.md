@@ -13,6 +13,9 @@ created: {{ .Date }}
 **Author:** {{ .Author }}
 **Date:** {{ .Date }}
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Question
 
 <!-- What specific question are we trying to answer? Be precise — a good

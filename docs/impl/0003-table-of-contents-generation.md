@@ -140,7 +140,7 @@ embedded templates to include ToC markers. Update `docz init` to include the
   - If the ToC was updated (markers found and content changed), write the file
   - Log updates in verbose mode; warn on errors but continue
   - Respect `--dry-run`: show what would change without writing
-- [ ] Update all six embedded templates to include ToC markers. Placement:
+- [x] Update all six embedded templates to include ToC markers. Placement:
   - **rfc.md**: after `**Date:** {{ .Date }}`, before `## Summary`
   - **design.md**: after `**Date:** {{ .Date }}`, before `## Overview`
   - **impl.md**: after `**Date:** {{ .Date }}`, before `## Objective`
