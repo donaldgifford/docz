@@ -406,6 +406,21 @@ The markers are compatible with the
 [markdown-toc.nvim](https://github.com/hedyhli/markdown-toc.nvim) plugin, so
 documents edited in Neovim/lazyvim will work with both tools.
 
+**Note:** Documents created before v0.0.8 do not include ToC markers. To add
+ToC support to existing documents, manually insert the markers between the
+metadata block and the first section heading:
+
+```markdown
+**Date:** 2026-01-01
+
+<!--toc:start-->
+<!--toc:end-->
+
+## First Section
+```
+
+Then run `docz update` to populate the ToC.
+
 ## MkDocs / Backstage TechDocs Integration
 
 `docz wiki` generates and maintains a `mkdocs.yml` compatible with Backstage's
