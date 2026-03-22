@@ -9,6 +9,9 @@ created: 2026-02-22
 
 # 0001. Test Document
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Status
 
 Proposed

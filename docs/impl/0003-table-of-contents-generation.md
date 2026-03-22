@@ -153,7 +153,7 @@ embedded templates to include ToC markers. Update `docz init` to include the
     <!--toc:start-->
     <!--toc:end-->
     ```
-- [ ] Regenerate golden files for template rendering: run
+- [x] Regenerate golden files for template rendering: run
   `go test ./internal/template/... -update` and review the diffs
 - [ ] Add integration tests in `cmd/`:
   - `TestUpdateGeneratesToC`: create a doc with markers and headings, run
