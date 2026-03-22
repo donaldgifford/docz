@@ -237,14 +237,14 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 
 ## Testing Plan
 
-- [ ] Unit tests for `Slugify` — table-driven with edge cases
-- [ ] Unit tests for `ParseHeadings` — heading levels, code blocks, inline markdown
-- [ ] Unit tests for `GenerateToC` — indentation, min_headings, empty input
-- [ ] Unit tests for `UpdateToC` — marker splicing, missing markers, replacement
-- [ ] Golden file test for representative document
-- [ ] Config tests for ToCConfig defaults and round-trip loading
-- [ ] Integration tests for `docz update` with ToC
-- [ ] Integration test for `docz create` including markers
+- [x] Unit tests for `Slugify` — table-driven with edge cases
+- [x] Unit tests for `ParseHeadings` — heading levels, code blocks, inline markdown
+- [x] Unit tests for `GenerateToC` — indentation, min_headings, empty input
+- [x] Unit tests for `UpdateToC` — marker splicing, missing markers, replacement
+- [x] Golden file test for representative document
+- [x] Config tests for ToCConfig defaults and round-trip loading
+- [x] Integration tests for `docz update` with ToC
+- [x] Integration test for `docz create` including markers
 
 ## Decisions
 

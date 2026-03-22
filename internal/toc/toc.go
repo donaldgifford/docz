@@ -34,8 +34,7 @@ var (
 
 // Slugify converts heading text to a GitHub-compatible anchor slug.
 // It lowercases the text, keeps only letters, digits, spaces, and hyphens,
-// replaces spaces with hyphens, collapses multiple hyphens, and trims
-// leading/trailing hyphens.
+// replaces spaces with hyphens, and trims leading/trailing hyphens.
 func Slugify(text string) string {
 	s := strings.ToLower(text)
 
