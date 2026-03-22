@@ -13,6 +13,9 @@ created: 2026-02-22
 **Author:** Test Author
 **Date:** 2026-02-22
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Objective
 
 <!-- What is being implemented? Link to the RFC/DESIGN/PLAN it implements. -->

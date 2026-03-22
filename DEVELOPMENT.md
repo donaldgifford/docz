@@ -44,12 +44,14 @@ docz/
 │   │       ├── index_impl.md
 │   │       ├── index_plan.md
 │   │       └── index_investigation.md
+│   ├── toc/
+│   │   └── toc.go            # Slugify(), ParseHeadings(), GenerateToC(), UpdateToC()
 │   └── wiki/
 │       ├── titles.go         # DirTitle(), DocTitle(), FilenameTitle()
 │       ├── wiki.go           # NavEntry, ScanDocs(), SortEntries(), CountPages()
 │       └── mkdocs.go         # ReadMkDocs(), WriteMkDocs(), NavToYAML(), MergeNavOrder()
 └── testdata/
-    └── golden/              # golden file fixtures for template and wiki tests
+    └── golden/              # golden file fixtures for template, toc, and wiki tests
 ```
 
 ## Package Responsibilities
@@ -134,6 +136,17 @@ msg, err := index.UpdateReadme(path, docType, table)   // splices between marker
 If a README exists but has no markers, it is left untouched and a warning is
 printed. If the README does not exist, it is created using the embedded index
 header template.
+
+### `internal/toc`
+
+Generates table of contents for markdown documents. Uses `<!--toc:start-->` /
+`<!--toc:end-->` markers (compatible with markdown-toc.nvim). Single file:
+
+- **`toc.go`** — `Slugify()` generates GitHub-compatible anchor slugs.
+  `ParseHeadings()` extracts H2-H6 headings, skipping H1, fenced code blocks,
+  and inline markdown. Handles duplicate slug suffixes (`-1`, `-2`).
+  `GenerateToC()` builds indented markdown list with relative indentation.
+  `UpdateToC()` splices the generated ToC between markers.
 
 ### `internal/wiki`
 

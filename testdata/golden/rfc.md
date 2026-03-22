@@ -13,6 +13,9 @@ created: 2026-02-22
 **Author:** Test Author
 **Date:** 2026-02-22
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Summary
 
 <!-- Brief 2-3 sentence summary of the proposal -->

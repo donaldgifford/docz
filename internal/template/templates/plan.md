@@ -13,6 +13,9 @@ created: {{ .Date }}
 **Author:** {{ .Author }}
 **Date:** {{ .Date }}
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Goal
 
 <!-- What is the end state? What should be possible after this plan is executed?

@@ -67,6 +67,14 @@ func TestDefaultConfig(t *testing.T) {
 			t.Errorf("Wiki.NavTitles[%q] = %q, want %q", k, got, want)
 		}
 	}
+
+	// ToC defaults.
+	if !cfg.ToC.Enabled {
+		t.Error("ToC.Enabled should be true by default")
+	}
+	if cfg.ToC.MinHeadings != 3 {
+		t.Errorf("ToC.MinHeadings = %d, want 3", cfg.ToC.MinHeadings)
+	}
 }
 
 func TestValidTypes(t *testing.T) {
@@ -224,6 +232,30 @@ func TestLoad_WikiConfig(t *testing.T) {
 	}
 	if got := cfg.Wiki.NavTitles["rfc"]; got != "Request for Comments" {
 		t.Errorf("Wiki.NavTitles[rfc] = %q, want %q", got, "Request for Comments")
+	}
+}
+
+func TestLoad_ToCConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "custom.yaml")
+	configContent := `toc:
+  enabled: false
+  min_headings: 5
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	if cfg.ToC.Enabled {
+		t.Error("ToC.Enabled should be false")
+	}
+	if cfg.ToC.MinHeadings != 5 {
+		t.Errorf("ToC.MinHeadings = %d, want 5", cfg.ToC.MinHeadings)
 	}
 }
 

@@ -13,6 +13,9 @@ created: {{ .Date }}
 **Author:** {{ .Author }}
 **Date:** {{ .Date }}
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Summary
 
 <!-- Brief 2-3 sentence summary of the proposal -->

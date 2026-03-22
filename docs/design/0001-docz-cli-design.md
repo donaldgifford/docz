@@ -9,6 +9,45 @@ created: 2026-02-22
 
 # DESIGN-0001: docz CLI Tool
 
+  <!--toc:start-->
+- [Problem Statement](#problem-statement)
+- [Proposed Solution](#proposed-solution)
+- [Document Types](#document-types)
+- [CLI Interface](#cli-interface)
+  - [Command Structure](#command-structure)
+  - [Examples](#examples)
+  - [Flags](#flags)
+- [Configuration](#configuration)
+  - [.docz.yaml](#doczyaml)
+  - [Template Override Resolution](#template-override-resolution)
+- [Template System](#template-system)
+  - [Placeholder Variables](#placeholder-variables)
+  - [Default Template: RFC](#default-template-rfc)
+  - [Default Template: ADR](#default-template-adr)
+  - [Default Template: DESIGN](#default-template-design)
+  - [Default Template: IMPL](#default-template-impl)
+- [Index Generation](#index-generation)
+  - [Index Format](#index-format)
+  - [Default Index Header](#default-index-header)
+  - [Index Parsing](#index-parsing)
+- [Claude Code Skills Integration](#claude-code-skills-integration)
+  - [How It Works](#how-it-works)
+  - [Plugin Structure](#plugin-structure)
+  - [Skill Definition Pattern](#skill-definition-pattern)
+  - [Planned Skills](#planned-skills)
+  - [Skill Execution Strategy](#skill-execution-strategy)
+- [Project Architecture](#project-architecture)
+  - [Package Layout](#package-layout)
+  - [Key Design Decisions](#key-design-decisions)
+  - [Frontmatter Parsing](#frontmatter-parsing)
+  - [ID Assignment](#id-assignment)
+  - [Error Handling](#error-handling)
+- [Migration from Bash Scripts](#migration-from-bash-scripts)
+- [Testing Strategy](#testing-strategy)
+- [Future Considerations](#future-considerations)
+- [Resolved Decisions](#resolved-decisions)
+<!--toc:end-->
+
 ## Problem Statement
 
 Managing standardized documentation across repositories is painful. The previous

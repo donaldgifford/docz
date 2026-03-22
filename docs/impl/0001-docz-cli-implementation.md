@@ -12,6 +12,39 @@ created: 2026-02-22
 **Author:** Donald Gifford
 **Date:** 2026-02-22
 
+  <!--toc:start-->
+- [Objective](#objective)
+- [Scope](#scope)
+  - [In Scope](#in-scope)
+  - [Out of Scope](#out-of-scope)
+- [Implementation Phases](#implementation-phases)
+  - [Phase 1: Project Foundation](#phase-1-project-foundation)
+    - [Tasks](#tasks)
+    - [Success Criteria](#success-criteria)
+  - [Phase 2: Core Commands -- init, create, version](#phase-2-core-commands----init-create-version)
+    - [Tasks](#tasks-1)
+    - [Success Criteria](#success-criteria-1)
+  - [Phase 3: Index Generation -- update](#phase-3-index-generation----update)
+    - [Tasks](#tasks-2)
+    - [Success Criteria](#success-criteria-2)
+  - [Phase 4: Listing and Template Management -- list, template](#phase-4-listing-and-template-management----list-template)
+    - [Tasks](#tasks-3)
+    - [Success Criteria](#success-criteria-3)
+  - [Phase 5: Polish, Error Handling, and CI Readiness](#phase-5-polish-error-handling-and-ci-readiness)
+    - [Tasks](#tasks-4)
+    - [Success Criteria](#success-criteria-4)
+- [File Changes](#file-changes)
+  - [Phase 1](#phase-1)
+  - [Phase 2](#phase-2)
+  - [Phase 3](#phase-3)
+  - [Phase 4](#phase-4)
+  - [Phase 5](#phase-5)
+- [Testing Plan](#testing-plan)
+- [Dependencies](#dependencies)
+- [Resolved Decisions](#resolved-decisions)
+- [References](#references)
+<!--toc:end-->
+
 ## Objective
 
 Implement the `docz` CLI tool as described in

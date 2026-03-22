@@ -10,6 +10,7 @@ import (
 
 	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/index"
+	"github.com/donaldgifford/docz/internal/toc"
 )
 
 var updateDryRun bool
@@ -67,6 +68,11 @@ func updateType(typeName string) error {
 		fmt.Fprintf(os.Stderr, "  Found %d documents\n", len(docs))
 	}
 
+	// Update ToC in each document before regenerating the README index.
+	if appCfg.ToC.Enabled {
+		updateToCs(typeDir, docs)
+	}
+
 	heading := "All " + strings.ToUpper(typeName) + "s"
 	if typeName == "adr" {
 		heading = "All ADRs"
@@ -89,4 +95,48 @@ func updateType(typeName string) error {
 
 	fmt.Println(msg)
 	return nil
+}
+
+// updateToCs updates the table of contents in each document file that has
+// ToC markers. Errors are logged as warnings but do not stop processing.
+func updateToCs(typeDir string, docs []index.DocEntry) {
+	for _, doc := range docs {
+		docPath := filepath.Join(typeDir, doc.Filename)
+		data, err := os.ReadFile(docPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: reading %s for ToC: %v\n", docPath, err)
+			continue
+		}
+
+		updated, found := toc.UpdateToC(string(data), appCfg.ToC.MinHeadings)
+		if !found {
+			continue
+		}
+
+		if updated == string(data) {
+			if verbose {
+				fmt.Fprintf(os.Stderr, "  ToC unchanged in %s\n", docPath)
+			}
+			continue
+		}
+
+		if updateDryRun {
+			headings := toc.ParseHeadings(string(data))
+			fmt.Printf(
+				"Would update ToC in %s (%d headings)\n",
+				docPath,
+				len(headings),
+			)
+			continue
+		}
+
+		if err := os.WriteFile(docPath, []byte(updated), 0o644); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", docPath, err)
+			continue
+		}
+
+		if verbose {
+			fmt.Fprintf(os.Stderr, "  Updated ToC in %s\n", docPath)
+		}
+	}
 }

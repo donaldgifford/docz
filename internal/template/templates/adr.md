@@ -9,6 +9,9 @@ created: {{ .Date }}
 
 # {{ .Number }}. {{ .Title }}
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Status
 
 {{ .Status }}

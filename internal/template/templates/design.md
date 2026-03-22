@@ -13,6 +13,9 @@ created: {{ .Date }}
 **Author:** {{ .Author }}
 **Date:** {{ .Date }}
 
+<!--toc:start-->
+<!--toc:end-->
+
 ## Overview
 
 <!-- What is being designed and why? 2-3 sentences. -->

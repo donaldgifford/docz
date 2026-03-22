@@ -14,6 +14,7 @@ README index tables up to date.
 - **Template overrides:** customize any template per-repository without forking
 - **Configuration:** repo-level `.docz.yaml` deep-merged with global `~/.docz.yaml`
 - **Multiple output formats:** `list` supports table, JSON, and CSV
+- **Table of contents:** automatic ToC generation in documents using `<!--toc:start-->` / `<!--toc:end-->` markers
 - **MkDocs/TechDocs integration:** `wiki` commands generate and maintain `mkdocs.yml` for Backstage TechDocs
 
 ## Getting Started
@@ -309,6 +310,10 @@ wiki:
     impl: "Implementation Plans"
     plan: "Plans"
     investigation: "Investigations"
+
+toc:
+  enabled: true            # generate ToC during docz update
+  min_headings: 3          # minimum headings to generate a ToC
 ```
 
 Run `docz config` to see the fully resolved configuration.
@@ -371,6 +376,50 @@ documents. The table is bounded by HTML comments:
 Content outside these markers (headers, descriptions, links) is preserved across
 updates. If a README has no markers, `docz update` will warn rather than modify
 it — run `docz init --force` or add the markers manually.
+
+## Table of Contents
+
+`docz update` automatically generates a table of contents in documents that
+contain `<!--toc:start-->` and `<!--toc:end-->` markers. New documents created
+with `docz create` include these markers by default.
+
+```markdown
+<!--toc:start-->
+- [Summary](#summary)
+- [Problem Statement](#problem-statement)
+- [Design](#design)
+  - [Phase 1: Setup](#phase-1-setup)
+  - [Phase 2: Migration](#phase-2-migration)
+- [References](#references)
+<!--toc:end-->
+```
+
+The ToC uses GitHub-compatible anchor links, relative indentation based on
+heading depth, and handles duplicate headings with `-1`, `-2` suffixes. Headings
+inside fenced code blocks are excluded.
+
+Documents with fewer headings than `toc.min_headings` (default: 3) will have
+empty markers. The feature can be disabled with `toc.enabled: false` in
+`.docz.yaml`.
+
+The markers are compatible with the
+[markdown-toc.nvim](https://github.com/hedyhli/markdown-toc.nvim) plugin, so
+documents edited in Neovim/lazyvim will work with both tools.
+
+**Note:** Documents created before v0.0.8 do not include ToC markers. To add
+ToC support to existing documents, manually insert the markers between the
+metadata block and the first section heading:
+
+```markdown
+**Date:** 2026-01-01
+
+<!--toc:start-->
+<!--toc:end-->
+
+## First Section
+```
+
+Then run `docz update` to populate the ToC.
 
 ## MkDocs / Backstage TechDocs Integration
 
