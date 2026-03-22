@@ -77,7 +77,7 @@ this phase is the self-contained library.
   - `UpdateToC(content string, minHeadings int) (string, bool)` — find markers,
     call `ParseHeadings` on content after end marker, call `GenerateToC`, splice
     result between markers; return `(content, false)` if markers not found
-- [ ] Create `internal/toc/toc_test.go` with unit tests:
+- [x] Create `internal/toc/toc_test.go` with unit tests:
   - `TestSlugify`: basic text, special characters, unicode, colons, slashes,
     leading/trailing hyphens, empty string
   - `TestParseHeadings`: H2-H6 levels, skip H1, skip headings before end

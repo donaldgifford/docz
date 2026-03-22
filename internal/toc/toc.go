@@ -52,12 +52,6 @@ func Slugify(text string) string {
 	s = b.String()
 
 	s = strings.ReplaceAll(s, " ", "-")
-
-	// Collapse multiple hyphens.
-	for strings.Contains(s, "--") {
-		s = strings.ReplaceAll(s, "--", "-")
-	}
-
 	s = strings.Trim(s, "-")
 	return s
 }
