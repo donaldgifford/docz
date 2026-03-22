@@ -192,7 +192,7 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
   - Add `internal/toc/` to the project layout tree
   - Add `internal/toc` package responsibility section describing the heading
     parser, slug generator, and marker splicing
-- [ ] Update `CLAUDE.md` if any new conventions emerge
+- [x] Update `CLAUDE.md` if any new conventions emerge
 - [ ] Verify edge cases manually:
   - Document with headings only inside code blocks (should produce empty ToC)
   - Document with duplicate heading text at different levels
