@@ -163,6 +163,8 @@ author:
 wiki:
   auto_update: true
   mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
   exclude:
     - templates
     - examples

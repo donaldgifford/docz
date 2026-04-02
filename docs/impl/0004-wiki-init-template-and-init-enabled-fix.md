@@ -88,7 +88,7 @@ foundational changes that the wiki template work depends on.
   `internal/config/config.go`:
   - Default in `DefaultConfig()`: `Plugins: []string{"techdocs-core"}`
   - Wire into `setDefaults()`: `v.SetDefault("wiki.plugins", cfg.Wiki.Plugins)`
-- [ ] Update `cmd/init.go` `writeDefaultConfig()` to include `wiki.plugins`
+- [x] Update `cmd/init.go` `writeDefaultConfig()` to include `wiki.plugins`
   in the generated `.docz.yaml`:
   ```yaml
   wiki:
