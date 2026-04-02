@@ -104,7 +104,7 @@ foundational changes that the wiki template work depends on.
   plugins instead of hardcoding `techdocs-core`:
   - Build the plugins YAML block from `appCfg.Wiki.Plugins`
   - Handle empty plugins list (omit plugins section entirely)
-- [ ] Add tests:
+- [x] Add tests:
   - `TestInitSkipsDisabledTypes`: set a type to `enabled: false`, run
     `runInit`, verify its directory and README are not created
   - `TestDefaultConfig` — extend to verify `Wiki.Plugins` default

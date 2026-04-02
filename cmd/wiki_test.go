@@ -475,6 +475,63 @@ func TestCreateNoWikiUpdateWhenMissing(t *testing.T) {
 	}
 }
 
+func TestWikiInit_Plugins(t *testing.T) {
+	_ = setupWikiTestDir(t)
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile("mkdocs.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "- techdocs-core") {
+		t.Error("mkdocs.yml should contain techdocs-core plugin")
+	}
+}
+
+func TestWikiInit_MultiplePlugins(t *testing.T) {
+	_ = setupWikiTestDir(t)
+	appCfg.Wiki.Plugins = []string{"techdocs-core", "search", "mermaid"}
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile("mkdocs.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	for _, plugin := range []string{"techdocs-core", "search", "mermaid"} {
+		if !strings.Contains(content, "- "+plugin) {
+			t.Errorf("mkdocs.yml should contain plugin %q", plugin)
+		}
+	}
+}
+
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
