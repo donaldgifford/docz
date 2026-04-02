@@ -195,7 +195,7 @@ Update docs, verify edge cases, and ensure CI passes.
   - Document the wiki index template override at
     `docs/templates/wiki_index.md`
   - Note that `docz init` skips disabled types
-- [ ] Update `DEVELOPMENT.md`:
+- [x] Update `DEVELOPMENT.md`:
   - Add `wiki_index.md` to the templates listing in the project layout
   - Note the `ResolveWikiIndex` resolution pattern
 - [ ] Verify edge cases:

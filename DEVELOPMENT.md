@@ -43,7 +43,8 @@ docz/
 │   │       ├── index_design.md
 │   │       ├── index_impl.md
 │   │       ├── index_plan.md
-│   │       └── index_investigation.md
+│   │       ├── index_investigation.md
+│   │       └── wiki_index.md
 │   ├── toc/
 │   │   └── toc.go            # Slugify(), ParseHeadings(), GenerateToC(), UpdateToC()
 │   └── wiki/
@@ -92,6 +93,13 @@ rendered, err := template.Render(content, &template.TemplateData{...})
 
 `Slugify(title)` converts a title to kebab-case, strips non-alphanumeric
 characters, and truncates to 64 characters on a word boundary.
+
+`ResolveWikiIndex(docsDir)` resolves the wiki homepage template:
+1. Local override at `<docs_dir>/templates/wiki_index.md`
+2. Embedded default (`internal/template/templates/wiki_index.md`)
+
+`RenderWikiIndex(tmpl, data)` renders the template with `WikiIndexData`
+(site name and enabled types).
 
 ### `internal/document`
 
