@@ -244,17 +244,20 @@ func repoName() string {
 }
 
 func writeMkDocsYAML(path, siteName, siteDesc string) error {
-	content := fmt.Sprintf(`site_name: %s
-site_description: %s
+	var b strings.Builder
+	fmt.Fprintf(&b, "site_name: %s\n", siteName)
+	fmt.Fprintf(&b, "site_description: %s\n", siteDesc)
 
-plugins:
-    - techdocs-core
+	if len(appCfg.Wiki.Plugins) > 0 {
+		b.WriteString("\nplugins:\n")
+		for _, plugin := range appCfg.Wiki.Plugins {
+			fmt.Fprintf(&b, "    - %s\n", plugin)
+		}
+	}
 
-nav:
-    - Home: index.md
-`, siteName, siteDesc)
+	b.WriteString("\nnav:\n    - Home: index.md\n")
 
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 

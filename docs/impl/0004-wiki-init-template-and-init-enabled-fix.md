@@ -100,7 +100,7 @@ foundational changes that the wiki template work depends on.
       - templates
       - examples
   ```
-- [ ] Update `writeMkDocsYAML()` in `cmd/wiki.go` to write all configured
+- [x] Update `writeMkDocsYAML()` in `cmd/wiki.go` to write all configured
   plugins instead of hardcoding `techdocs-core`:
   - Build the plugins YAML block from `appCfg.Wiki.Plugins`
   - Handle empty plugins list (omit plugins section entirely)
