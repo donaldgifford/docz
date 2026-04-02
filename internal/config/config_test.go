@@ -68,6 +68,15 @@ func TestDefaultConfig(t *testing.T) {
 		}
 	}
 
+	// Wiki plugins default.
+	wantPlugins := []string{"techdocs-core"}
+	if len(cfg.Wiki.Plugins) != len(wantPlugins) {
+		t.Fatalf("Wiki.Plugins has %d elements, want %d", len(cfg.Wiki.Plugins), len(wantPlugins))
+	}
+	if cfg.Wiki.Plugins[0] != "techdocs-core" {
+		t.Errorf("Wiki.Plugins[0] = %q, want %q", cfg.Wiki.Plugins[0], "techdocs-core")
+	}
+
 	// ToC defaults.
 	if !cfg.ToC.Enabled {
 		t.Error("ToC.Enabled should be true by default")
@@ -256,6 +265,35 @@ func TestLoad_ToCConfig(t *testing.T) {
 	}
 	if cfg.ToC.MinHeadings != 5 {
 		t.Errorf("ToC.MinHeadings = %d, want 5", cfg.ToC.MinHeadings)
+	}
+}
+
+func TestLoad_WikiPlugins(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "custom.yaml")
+	configContent := `wiki:
+  plugins:
+    - techdocs-core
+    - search
+    - mermaid
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	want := []string{"techdocs-core", "search", "mermaid"}
+	if len(cfg.Wiki.Plugins) != len(want) {
+		t.Fatalf("Wiki.Plugins has %d elements, want %d", len(cfg.Wiki.Plugins), len(want))
+	}
+	for i, got := range cfg.Wiki.Plugins {
+		if got != want[i] {
+			t.Errorf("Wiki.Plugins[%d] = %q, want %q", i, got, want[i])
+		}
 	}
 }
 

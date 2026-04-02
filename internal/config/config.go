@@ -36,6 +36,7 @@ type AuthorConfig struct {
 type WikiConfig struct {
 	AutoUpdate bool              `mapstructure:"auto_update" yaml:"auto_update"`
 	MkDocsPath string            `mapstructure:"mkdocs_path" yaml:"mkdocs_path"`
+	Plugins    []string          `mapstructure:"plugins"     yaml:"plugins"`
 	Exclude    []string          `mapstructure:"exclude"     yaml:"exclude"`
 	NavTitles  map[string]string `mapstructure:"nav_titles"  yaml:"nav_titles"`
 }
@@ -120,6 +121,7 @@ func DefaultConfig() Config {
 		Wiki: WikiConfig{
 			AutoUpdate: true,
 			MkDocsPath: "mkdocs.yml",
+			Plugins:    []string{"techdocs-core"},
 			Exclude:    []string{"templates", "examples"},
 			NavTitles:  DefaultNavTitles(),
 		},
@@ -295,6 +297,7 @@ func setDefaults(v *viper.Viper, cfg *Config) {
 
 	v.SetDefault("wiki.auto_update", cfg.Wiki.AutoUpdate)
 	v.SetDefault("wiki.mkdocs_path", cfg.Wiki.MkDocsPath)
+	v.SetDefault("wiki.plugins", cfg.Wiki.Plugins)
 	v.SetDefault("wiki.exclude", cfg.Wiki.Exclude)
 	for k, val := range cfg.Wiki.NavTitles {
 		v.SetDefault("wiki.nav_titles."+k, val)

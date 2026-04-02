@@ -168,6 +168,74 @@ func TestRender_InvalidTemplate(t *testing.T) {
 	}
 }
 
+func TestEmbeddedWikiIndex(t *testing.T) {
+	content, err := EmbeddedWikiIndex()
+	if err != nil {
+		t.Fatalf("EmbeddedWikiIndex() error: %v", err)
+	}
+	if content == "" {
+		t.Error("EmbeddedWikiIndex() returned empty content")
+	}
+	if !containsAll(content, "{{ .SiteName }}", ".Types") {
+		t.Error("wiki index template missing expected placeholders")
+	}
+}
+
+func TestResolveWikiIndex_Embedded(t *testing.T) {
+	content, err := ResolveWikiIndex("/nonexistent/path")
+	if err != nil {
+		t.Fatalf("ResolveWikiIndex() error: %v", err)
+	}
+	if content == "" {
+		t.Error("ResolveWikiIndex() returned empty content")
+	}
+}
+
+func TestResolveWikiIndex_LocalOverride(t *testing.T) {
+	dir := t.TempDir()
+	templatesDir := filepath.Join(dir, "templates")
+	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	override := "# Custom Home\n{{ .SiteName }}\n"
+	if err := os.WriteFile(
+		filepath.Join(templatesDir, "wiki_index.md"),
+		[]byte(override),
+		0o644,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := ResolveWikiIndex(dir)
+	if err != nil {
+		t.Fatalf("ResolveWikiIndex() error: %v", err)
+	}
+	if content != override {
+		t.Errorf("ResolveWikiIndex() = %q, want %q", content, override)
+	}
+}
+
+func TestRenderWikiIndex(t *testing.T) {
+	tmpl := "# {{ .SiteName }}\n{{ range .Types }}- {{ .NavTitle }}\n{{ end }}"
+	data := &WikiIndexData{
+		SiteName: "My Project",
+		Types: []WikiIndexType{
+			{Name: "rfc", NavTitle: "RFCs", Dir: "rfc"},
+			{Name: "adr", NavTitle: "ADRs", Dir: "adr"},
+		},
+	}
+
+	got, err := RenderWikiIndex(tmpl, data)
+	if err != nil {
+		t.Fatalf("RenderWikiIndex() error: %v", err)
+	}
+
+	if !containsAll(got, "# My Project", "- RFCs", "- ADRs") {
+		t.Errorf("RenderWikiIndex() missing expected content:\n%s", got)
+	}
+}
+
 func containsAll(s string, substrings ...string) bool {
 	for _, sub := range substrings {
 		found := false
