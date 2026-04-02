@@ -157,7 +157,7 @@ Add the embedded `wiki_index.md` template with override support and rewrite
     override at `<docsDir>/templates/wiki_index.md`, falls back to embedded
   - `RenderWikiIndex(tmplContent string, data *WikiIndexData) (string, error)`
     — executes the template
-- [ ] Rewrite `ensureDocsIndex()` in `cmd/wiki.go`:
+- [x] Rewrite `ensureDocsIndex()` in `cmd/wiki.go`:
   - Resolve the wiki index template via `template.ResolveWikiIndex()`
   - Build `WikiIndexData` with site name and only enabled types
   - Render and write the result to `docs/index.md`

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/internal/config"
+	doctemplate "github.com/donaldgifford/docz/internal/template"
 	"github.com/donaldgifford/docz/internal/wiki"
 )
 
@@ -274,23 +275,39 @@ func ensureDocsIndex(siteName string) error {
 		return nil
 	}
 
-	var b strings.Builder
-	b.WriteString("# " + siteName + "\n\n")
-	b.WriteString("Welcome to the documentation for " + siteName + ".\n\n")
-	b.WriteString("## Document Types\n\n")
+	tmplContent, err := doctemplate.ResolveWikiIndex(appCfg.DocsDir)
+	if err != nil {
+		return fmt.Errorf("resolving wiki index template: %w", err)
+	}
 
+	var types []doctemplate.WikiIndexType
 	for _, typeName := range config.ValidTypes() {
-		tc := appCfg.Types[typeName]
+		tc, ok := appCfg.Types[typeName]
+		if !ok || !tc.Enabled {
+			continue
+		}
 		navTitle := appCfg.Wiki.NavTitles[typeName]
 		if navTitle == "" {
 			navTitle = strings.ToUpper(typeName)
 		}
-		b.WriteString(
-			fmt.Sprintf("- [%s](%s/README.md)\n", navTitle, tc.Dir),
-		)
+		types = append(types, doctemplate.WikiIndexType{
+			Name:     typeName,
+			NavTitle: navTitle,
+			Dir:      tc.Dir,
+		})
 	}
 
-	if err := os.WriteFile(indexPath, []byte(b.String()), 0o644); err != nil {
+	data := &doctemplate.WikiIndexData{
+		SiteName: siteName,
+		Types:    types,
+	}
+
+	content, err := doctemplate.RenderWikiIndex(tmplContent, data)
+	if err != nil {
+		return fmt.Errorf("rendering wiki index: %w", err)
+	}
+
+	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", indexPath, err)
 	}
 
