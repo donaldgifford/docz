@@ -128,7 +128,7 @@ Add the embedded `wiki_index.md` template with override support and rewrite
 
 #### Tasks
 
-- [ ] Create `internal/template/templates/wiki_index.md` with template content:
+- [x] Create `internal/template/templates/wiki_index.md` with template content:
   ```markdown
   # {{ .SiteName }}
 
