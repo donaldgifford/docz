@@ -43,6 +43,14 @@ func runUpdate(_ *cobra.Command, args []string) error {
 	}
 
 	for _, typeName := range types {
+		tc, ok := appCfg.Types[typeName]
+		if !ok || !tc.Enabled {
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Type %s is disabled, skipping.\n", typeName)
+			}
+			continue
+		}
+
 		if err := updateType(typeName); err != nil {
 			return err
 		}
