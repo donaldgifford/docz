@@ -139,7 +139,7 @@ Add the embedded `wiki_index.md` template with override support and rewrite
   {{ range .Types }}- [{{ .NavTitle }}]({{ .Dir }}/README.md)
   {{ end }}
   ```
-- [ ] Add `EmbeddedWikiIndex()` function to `internal/template/embed.go`:
+- [x] Add `EmbeddedWikiIndex()` function to `internal/template/embed.go`:
   ```go
   func EmbeddedWikiIndex() (string, error) {
       data, err := templateFS.ReadFile("templates/wiki_index.md")

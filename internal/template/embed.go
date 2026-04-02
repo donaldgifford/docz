@@ -27,3 +27,13 @@ func EmbeddedIndexHeader(docType string) (string, error) {
 	}
 	return string(data), nil
 }
+
+// EmbeddedWikiIndex returns the embedded default wiki index template
+// used to generate docs/index.md.
+func EmbeddedWikiIndex() (string, error) {
+	data, err := templateFS.ReadFile("templates/wiki_index.md")
+	if err != nil {
+		return "", fmt.Errorf("reading embedded wiki index template: %w", err)
+	}
+	return string(data), nil
+}
