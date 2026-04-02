@@ -13,6 +13,9 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - -X github.com/donaldgifford/docz/cmd.Version={{ .Version }}
+      - -X github.com/donaldgifford/docz/cmd.Commit={{ .ShortCommit }}
 
 archives:
   - id: default
@@ -72,7 +75,7 @@ release:
     # Download the appropriate binary for your system
     # Extract and move to your PATH
     tar -xzf docz_*.tar.gz
-    mv forge ~/.local/bin/
+    mv docz ~/.local/bin/
     ```
 
   footer: |
