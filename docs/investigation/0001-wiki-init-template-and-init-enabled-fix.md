@@ -1,7 +1,7 @@
 ---
 id: INV-0001
 title: "Wiki Init Template and Init Enabled Fix"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-04-02
 ---
@@ -9,7 +9,7 @@ created: 2026-04-02
 
 # INV 0001: Wiki Init Template and Init Enabled Fix
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-04-02
 
@@ -28,7 +28,7 @@ created: 2026-04-02
   - [Change 1: Wiki index template](#change-1-wiki-index-template)
   - [Change 2: Configurable MkDocs plugins](#change-2-configurable-mkdocs-plugins)
   - [Change 3: docz init respects enabled: false](#change-3-docz-init-respects-enabled-false)
-- [Open Questions](#open-questions)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -189,38 +189,24 @@ types.
 - Same guard in `writeDefaultConfig()` — or leave that as-is since it's the
   reference config showing all available types
 
-## Open Questions
+## Decisions
 
-1. **Should `writeDefaultConfig()` include disabled types in the generated
-   `.docz.yaml`?** The config file serves as documentation of available types.
-   If we skip disabled types, users wouldn't know about them. Recommendation:
-   keep all types in the generated config (as documentation) but respect
-   `enabled: false` in `init` and `wiki init` when creating directories.
+1. **`writeDefaultConfig()` keeps all types in generated `.docz.yaml`.** The
+   config file serves as documentation. `docz init` and `wiki init` respect
+   `enabled: false` when creating directories and listing types.
 
-2. **Should `wiki.index_template` be a new config key, or should we reuse the
-   existing `<docs_dir>/templates/wiki_index.md` override path?** The type
-   template system checks for local overrides at `<docs_dir>/templates/<type>.md`
-   automatically. We could follow the same pattern:
-   `<docs_dir>/templates/wiki_index.md` overrides the embedded default. No new
-   config key needed.
+2. **Wiki index template uses the existing override pattern.** Override at
+   `<docs_dir>/templates/wiki_index.md`. No new config key needed.
 
-3. **Should `wiki.plugins` default to `["techdocs-core"]` or be empty?** If
-   empty by default, first-time users would get an `mkdocs.yml` with no
-   plugins. Since the primary use case is Backstage TechDocs, defaulting to
-   `["techdocs-core"]` makes sense. Users who don't use Backstage can override
-   it.
+3. **`wiki.plugins` defaults to `["techdocs-core"]`.** Primary use case is
+   Backstage TechDocs. Users who don't use Backstage can override.
 
-4. **Should `wiki update` also update the plugins list from config?** Currently
-   `wiki update` only touches `nav`. If we make plugins configurable, should
-   `wiki update` also sync the plugins key? This could surprise users who
-   manually added plugins. Recommendation: only write plugins during
-   `wiki init`, not during `wiki update`. Manual edits to plugins are preserved.
+4. **`wiki update` does not sync plugins.** Only `wiki init` writes plugins.
+   Manual edits to plugins in `mkdocs.yml` are preserved.
 
-5. **What template variables should the wiki index template have?** Proposed:
-   - `{{ .SiteName }}` — site name from flag or repo dir
-   - `{{ .Types }}` — slice of structs with `.Name`, `.NavTitle`, `.Dir` for
-     each enabled type
-   - Are there other variables that would be useful?
+5. **Wiki index template variables:** `{{ .SiteName }}` and `{{ .Types }}`
+   (slice of structs with `.Name`, `.NavTitle`, `.Dir` for each enabled type).
+   Start with these and extend if needed.
 
 ## References
 
