@@ -190,7 +190,7 @@ Update docs, verify edge cases, and ensure CI passes.
 
 #### Tasks
 
-- [ ] Update `README.md`:
+- [x] Update `README.md`:
   - Add `wiki.plugins` to the wiki config example
   - Document the wiki index template override at
     `docs/templates/wiki_index.md`

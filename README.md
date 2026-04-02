@@ -48,6 +48,9 @@ This creates:
 - `docs/plan/README.md`
 - `docs/investigation/README.md`
 
+Types with `enabled: false` in `.docz.yaml` are skipped — no directory or
+README is created for them.
+
 ### Create your first document
 
 ```bash
@@ -300,6 +303,8 @@ types:
 wiki:
   auto_update: true
   mkdocs_path: mkdocs.yml
+  plugins:                   # MkDocs plugins for wiki init
+    - techdocs-core
   exclude:
     - templates
     - examples
@@ -447,12 +452,27 @@ Wiki behavior is controlled by the `wiki` section in `.docz.yaml`:
 wiki:
   auto_update: true          # auto-run wiki update after docz create
   mkdocs_path: mkdocs.yml    # path to mkdocs.yml
+  plugins:                   # MkDocs plugins written by wiki init
+    - techdocs-core
   exclude:                   # directories excluded from nav
     - templates
     - examples
   nav_titles:                # override directory display names
     rfc: "Request for Comments"
 ```
+
+### Homepage Template
+
+`docz wiki init` generates `docs/index.md` from an embedded template. To
+customize the homepage, place a template at `docs/templates/wiki_index.md`.
+The template uses Go `text/template` syntax with these variables:
+
+| Variable | Description |
+|----------|-------------|
+| `{{ .SiteName }}` | Site name from `--site-name` flag or repo directory |
+| `{{ .Types }}` | Slice of enabled types, each with `.Name`, `.NavTitle`, `.Dir` |
+
+Only enabled types (those with `enabled: true` in config) are included.
 
 ### Nav Generation
 
