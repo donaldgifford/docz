@@ -149,7 +149,7 @@ Add the embedded `wiki_index.md` template with override support and rewrite
       return string(data), nil
   }
   ```
-- [ ] Add `WikiIndexData` struct and `ResolveWikiIndex()` function to
+- [x] Add `WikiIndexData` struct and `ResolveWikiIndex()` function to
   `internal/template/template.go`:
   - `WikiIndexType` struct: `Name string`, `NavTitle string`, `Dir string`
   - `WikiIndexData` struct: `SiteName string`, `Types []WikiIndexType`

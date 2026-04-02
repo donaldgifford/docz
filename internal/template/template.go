@@ -78,6 +78,46 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	return EmbeddedDocumentTemplate(docType)
 }
 
+// WikiIndexType represents a single document type entry for the wiki index template.
+type WikiIndexType struct {
+	Name     string // canonical type name (e.g., "rfc")
+	NavTitle string // display name (e.g., "RFCs")
+	Dir      string // directory relative to docs_dir (e.g., "rfc")
+}
+
+// WikiIndexData holds variables for the wiki index template.
+type WikiIndexData struct {
+	SiteName string
+	Types    []WikiIndexType
+}
+
+// ResolveWikiIndex returns the wiki index template content, checking for a
+// local override at <docsDir>/templates/wiki_index.md before falling back to
+// the embedded default.
+func ResolveWikiIndex(docsDir string) (string, error) {
+	localPath := docsDir + "/templates/wiki_index.md"
+	if data, err := os.ReadFile(localPath); err == nil {
+		return string(data), nil
+	}
+
+	return EmbeddedWikiIndex()
+}
+
+// RenderWikiIndex executes the wiki index template with the provided data.
+func RenderWikiIndex(tmplContent string, data *WikiIndexData) (string, error) {
+	t, err := template.New("wiki_index").Parse(tmplContent)
+	if err != nil {
+		return "", fmt.Errorf("parsing wiki index template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("executing wiki index template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
 // Render executes a Go text/template with the provided data and returns the
 // rendered output.
 func Render(tmplContent string, data *TemplateData) (string, error) {
