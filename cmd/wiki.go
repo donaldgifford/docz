@@ -249,10 +249,33 @@ func writeMkDocsYAML(path, siteName, siteDesc string) error {
 	fmt.Fprintf(&b, "site_name: %s\n", siteName)
 	fmt.Fprintf(&b, "site_description: %s\n", siteDesc)
 
+	if appCfg.Wiki.DocsDir != "" {
+		fmt.Fprintf(&b, "docs_dir: %s\n", appCfg.Wiki.DocsDir)
+	}
+
+	if appCfg.Wiki.RepoURL != "" {
+		fmt.Fprintf(&b, "repo_url: %s\n", appCfg.Wiki.RepoURL)
+	}
+
+	if appCfg.Wiki.SiteURL != "" {
+		fmt.Fprintf(&b, "site_url: %s\n", appCfg.Wiki.SiteURL)
+	}
+
+	if appCfg.Wiki.Theme != "" {
+		fmt.Fprintf(&b, "theme: %s\n", appCfg.Wiki.Theme)
+	}
+
 	if len(appCfg.Wiki.Plugins) > 0 {
 		b.WriteString("\nplugins:\n")
 		for _, plugin := range appCfg.Wiki.Plugins {
 			fmt.Fprintf(&b, "    - %s\n", plugin)
+		}
+	}
+
+	if len(appCfg.Wiki.MarkdownExtensions) > 0 {
+		b.WriteString("\nmarkdown_extensions:\n")
+		for _, ext := range appCfg.Wiki.MarkdownExtensions {
+			fmt.Fprintf(&b, "    - %s\n", ext)
 		}
 	}
 
