@@ -35,4 +35,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0001 | docz CLI Implementation | Completed | 2026-02-22 | Donald Gifford | [0001-docz-cli-implementation.md](0001-docz-cli-implementation.md) |
 | IMPL-0002 | Wiki Command for MkDocs TechDocs Integration | Completed | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
 | IMPL-0003 | Table of Contents Generation | Completed | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
+| IMPL-0004 | Wiki Init Template and Init Enabled Fix | Draft | 2026-04-02 | Donald Gifford | [0004-wiki-init-template-and-init-enabled-fix.md](0004-wiki-init-template-and-init-enabled-fix.md) |
 <!-- END DOCZ AUTO-GENERATED -->
