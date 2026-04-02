@@ -14,6 +14,7 @@ nav:
         - 'IMPL-0003: Table of Contents Generation': impl/0003-table-of-contents-generation.md
     - Investigations:
         - Overview: investigation/README.md
+        - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
     - Plans:
         - Overview: plan/README.md
     - RFCs:
