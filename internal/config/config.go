@@ -34,11 +34,16 @@ type AuthorConfig struct {
 
 // WikiConfig holds configuration for the wiki/MkDocs integration.
 type WikiConfig struct {
-	AutoUpdate bool              `mapstructure:"auto_update" yaml:"auto_update"`
-	MkDocsPath string            `mapstructure:"mkdocs_path" yaml:"mkdocs_path"`
-	Plugins    []string          `mapstructure:"plugins"     yaml:"plugins"`
-	Exclude    []string          `mapstructure:"exclude"     yaml:"exclude"`
-	NavTitles  map[string]string `mapstructure:"nav_titles"  yaml:"nav_titles"`
+	AutoUpdate         bool              `mapstructure:"auto_update"         yaml:"auto_update"`
+	MkDocsPath         string            `mapstructure:"mkdocs_path"         yaml:"mkdocs_path"`
+	Plugins            []string          `mapstructure:"plugins"             yaml:"plugins,omitempty"`
+	MarkdownExtensions []string          `mapstructure:"markdown_extensions" yaml:"markdown_extensions,omitempty"`
+	Exclude            []string          `mapstructure:"exclude"             yaml:"exclude"`
+	NavTitles          map[string]string `mapstructure:"nav_titles"          yaml:"nav_titles"`
+	DocsDir            string            `mapstructure:"docs_dir"            yaml:"docs_dir,omitempty"`
+	RepoURL            string            `mapstructure:"repo_url"            yaml:"repo_url,omitempty"`
+	SiteURL            string            `mapstructure:"site_url"            yaml:"site_url,omitempty"`
+	Theme              string            `mapstructure:"theme"               yaml:"theme,omitempty"`
 }
 
 // ToCConfig holds configuration for table of contents generation.
@@ -103,11 +108,17 @@ func DefaultConfig() Config {
 				StatusField: "status",
 			},
 			"investigation": {
-				Enabled:     true,
-				Dir:         "investigation",
-				IDPrefix:    "INV",
-				IDWidth:     4,
-				Statuses:    []string{"Open", "In Progress", "Concluded", "Inconclusive", "Abandoned"},
+				Enabled:  true,
+				Dir:      "investigation",
+				IDPrefix: "INV",
+				IDWidth:  4,
+				Statuses: []string{
+					"Open",
+					"In Progress",
+					"Concluded",
+					"Inconclusive",
+					"Abandoned",
+				},
 				StatusField: "status",
 			},
 		},
