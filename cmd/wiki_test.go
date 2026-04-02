@@ -532,6 +532,107 @@ func TestWikiInit_MultiplePlugins(t *testing.T) {
 	}
 }
 
+func TestWikiInit_MarkdownExtensions(t *testing.T) {
+	_ = setupWikiTestDir(t)
+	appCfg.Wiki.MarkdownExtensions = []string{"admonition", "tables", "pymdownx.tasklist"}
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile("mkdocs.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "markdown_extensions:") {
+		t.Error("mkdocs.yml should contain markdown_extensions section")
+	}
+	for _, ext := range []string{"admonition", "tables", "pymdownx.tasklist"} {
+		if !strings.Contains(content, "- "+ext) {
+			t.Errorf("mkdocs.yml should contain extension %q", ext)
+		}
+	}
+}
+
+func TestWikiInit_AllOptionalFields(t *testing.T) {
+	_ = setupWikiTestDir(t)
+	appCfg.Wiki.DocsDir = "documentation"
+	appCfg.Wiki.RepoURL = "https://github.com/example/repo"
+	appCfg.Wiki.SiteURL = "https://example.com/docs"
+	appCfg.Wiki.Theme = "readthedocs"
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile("mkdocs.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	for _, want := range []string{
+		"docs_dir: documentation",
+		"repo_url: https://github.com/example/repo",
+		"site_url: https://example.com/docs",
+		"theme: readthedocs",
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("mkdocs.yml should contain %q", want)
+		}
+	}
+}
+
+func TestWikiInit_OmitsEmptyOptionalFields(t *testing.T) {
+	_ = setupWikiTestDir(t)
+	// All optional fields are zero values by default.
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile("mkdocs.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	for _, absent := range []string{"docs_dir:", "repo_url:", "site_url:", "theme:", "markdown_extensions:"} {
+		if strings.Contains(content, absent) {
+			t.Errorf("mkdocs.yml should not contain %q when not configured", absent)
+		}
+	}
+}
+
 func TestWikiInit_IndexTemplate(t *testing.T) {
 	_ = setupWikiTestDir(t)
 

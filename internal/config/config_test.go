@@ -268,6 +268,54 @@ func TestLoad_ToCConfig(t *testing.T) {
 	}
 }
 
+func TestLoad_WikiMarkdownExtensions(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "custom.yaml")
+	configContent := `wiki:
+  markdown_extensions:
+    - admonition
+    - tables
+    - pymdownx.tasklist
+  docs_dir: documentation
+  repo_url: https://github.com/example/repo
+  site_url: https://example.com/docs
+  theme: readthedocs
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	wantExts := []string{"admonition", "tables", "pymdownx.tasklist"}
+	if len(cfg.Wiki.MarkdownExtensions) != len(wantExts) {
+		t.Fatalf(
+			"Wiki.MarkdownExtensions has %d elements, want %d",
+			len(cfg.Wiki.MarkdownExtensions), len(wantExts),
+		)
+	}
+	for i, got := range cfg.Wiki.MarkdownExtensions {
+		if got != wantExts[i] {
+			t.Errorf("Wiki.MarkdownExtensions[%d] = %q, want %q", i, got, wantExts[i])
+		}
+	}
+	if cfg.Wiki.DocsDir != "documentation" {
+		t.Errorf("Wiki.DocsDir = %q, want %q", cfg.Wiki.DocsDir, "documentation")
+	}
+	if cfg.Wiki.RepoURL != "https://github.com/example/repo" {
+		t.Errorf("Wiki.RepoURL = %q, want %q", cfg.Wiki.RepoURL, "https://github.com/example/repo")
+	}
+	if cfg.Wiki.SiteURL != "https://example.com/docs" {
+		t.Errorf("Wiki.SiteURL = %q, want %q", cfg.Wiki.SiteURL, "https://example.com/docs")
+	}
+	if cfg.Wiki.Theme != "readthedocs" {
+		t.Errorf("Wiki.Theme = %q, want %q", cfg.Wiki.Theme, "readthedocs")
+	}
+}
+
 func TestLoad_WikiPlugins(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
