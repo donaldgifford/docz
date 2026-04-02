@@ -244,19 +244,15 @@ Update docs, verify edge cases, and ensure CI passes.
 - [ ] Integration test for index template skipping disabled types
 - [ ] Integration test for index template local override
 
-## Open Questions
+## Decisions
 
-1. **Should `docz init --force` recreate directories for disabled types?**
-   Currently `--force` only affects README files (overwrites existing ones).
-   With the enabled check, `--force` on a disabled type would still skip it.
-   This seems correct — `--force` means "overwrite existing files" not "ignore
-   config". But worth confirming the expected behavior.
+1. **`docz init --force` does not recreate directories for disabled types.**
+   `--force` means "overwrite existing files", not "ignore config". Disabled
+   types are always skipped.
 
-2. **Should the wiki index template include ToC markers?** The generated
-   `docs/index.md` is typically short (title + type list), so it may not
-   benefit from a ToC. The existing hardcoded version doesn't have them.
-   Recommendation: don't add markers — the homepage is usually brief enough
-   that a ToC adds no value.
+2. **No ToC markers in the wiki index template.** The template is a useful
+   starting point, not prescriptive. Keep it minimal so users can customize
+   freely.
 
 ## Dependencies
 
