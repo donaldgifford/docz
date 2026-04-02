@@ -1,7 +1,7 @@
 ---
 id: IMPL-0004
 title: "Wiki Init Template and Init Enabled Fix"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-04-02
 ---
@@ -9,7 +9,7 @@ created: 2026-04-02
 
 # IMPL 0004: Wiki Init Template and Init Enabled Fix
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-04-02
 
@@ -30,7 +30,7 @@ created: 2026-04-02
     - [Success Criteria](#success-criteria-2)
 - [File Changes](#file-changes)
 - [Testing Plan](#testing-plan)
-- [Open Questions](#open-questions)
+- [Decisions](#decisions)
 - [Dependencies](#dependencies)
 - [References](#references)
 <!--toc:end-->
@@ -198,14 +198,14 @@ Update docs, verify edge cases, and ensure CI passes.
 - [x] Update `DEVELOPMENT.md`:
   - Add `wiki_index.md` to the templates listing in the project layout
   - Note the `ResolveWikiIndex` resolution pattern
-- [ ] Verify edge cases:
+- [x] Verify edge cases:
   - All types disabled — `docz init` creates no type directories,
     `docs/index.md` has empty type list
   - Empty plugins list — `mkdocs.yml` has no plugins section
   - Wiki index template override with custom variables (only declared
     variables work, no errors on extra template content)
-- [ ] Run `make ci` and ensure it passes cleanly
-- [ ] Clean up any TODO/FIXME comments
+- [x] Run `make ci` and ensure it passes cleanly
+- [x] Clean up any TODO/FIXME comments
 
 #### Success Criteria
 
@@ -234,15 +234,15 @@ Update docs, verify edge cases, and ensure CI passes.
 
 ## Testing Plan
 
-- [ ] Unit test for `EmbeddedWikiIndex()` loading
-- [ ] Unit tests for `ResolveWikiIndex()` — embedded and local override
-- [ ] Unit test for `RenderWikiIndex()` — template rendering
-- [ ] Config tests for `Wiki.Plugins` default and round-trip
-- [ ] Integration test for `docz init` skipping disabled types
-- [ ] Integration test for `docz wiki init` writing configured plugins
-- [ ] Integration test for `docz wiki init` rendering index template
-- [ ] Integration test for index template skipping disabled types
-- [ ] Integration test for index template local override
+- [x] Unit test for `EmbeddedWikiIndex()` loading
+- [x] Unit tests for `ResolveWikiIndex()` — embedded and local override
+- [x] Unit test for `RenderWikiIndex()` — template rendering
+- [x] Config tests for `Wiki.Plugins` default and round-trip
+- [x] Integration test for `docz init` skipping disabled types
+- [x] Integration test for `docz wiki init` writing configured plugins
+- [x] Integration test for `docz wiki init` rendering index template
+- [x] Integration test for index template skipping disabled types
+- [x] Integration test for index template local override
 
 ## Decisions
 
