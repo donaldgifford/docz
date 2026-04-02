@@ -79,7 +79,7 @@ foundational changes that the wiki template work depends on.
 
 #### Tasks
 
-- [ ] Fix `cmd/init.go` `runInit()` to skip types with `enabled: false`:
+- [x] Fix `cmd/init.go` `runInit()` to skip types with `enabled: false`:
   - Add `tc, ok := appCfg.Types[typeName]; if !ok || !tc.Enabled { continue }`
     before creating directories and READMEs
   - Verify `writeDefaultConfig()` still lists all types (no change needed —
