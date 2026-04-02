@@ -305,6 +305,9 @@ wiki:
   mkdocs_path: mkdocs.yml
   plugins:                   # MkDocs plugins for wiki init
     - techdocs-core
+  markdown_extensions:       # MkDocs markdown extensions
+    - admonition
+    - tables
   exclude:
     - templates
     - examples
@@ -315,6 +318,10 @@ wiki:
     impl: "Implementation Plans"
     plan: "Plans"
     investigation: "Investigations"
+  # docs_dir: docs           # override MkDocs docs_dir
+  # repo_url: https://github.com/org/repo
+  # site_url: https://example.com/docs
+  # theme: readthedocs
 
 toc:
   enabled: true            # generate ToC during docz update
@@ -454,12 +461,24 @@ wiki:
   mkdocs_path: mkdocs.yml    # path to mkdocs.yml
   plugins:                   # MkDocs plugins written by wiki init
     - techdocs-core
+  markdown_extensions:       # MkDocs markdown extensions
+    - admonition
+    - tables
   exclude:                   # directories excluded from nav
     - templates
     - examples
   nav_titles:                # override directory display names
     rfc: "Request for Comments"
+  docs_dir: docs             # MkDocs docs_dir
+  repo_url: https://github.com/org/repo  # repository URL
+  site_url: https://example.com/docs     # published site URL
+  theme: readthedocs         # MkDocs theme
 ```
+
+All optional fields (`plugins`, `markdown_extensions`, `docs_dir`, `repo_url`,
+`site_url`, `theme`) are only written to `mkdocs.yml` during `wiki init` when
+set in the config. `wiki update` only modifies the `nav` section — manual edits
+to other fields are preserved.
 
 ### Homepage Template
 
