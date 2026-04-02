@@ -181,6 +181,48 @@ func TestUpdateToCNoMarkers(t *testing.T) {
 	}
 }
 
+func TestUpdateSkipsDisabledTypes(t *testing.T) {
+	dir := t.TempDir()
+	docsDir := filepath.Join(dir, "docs")
+
+	// Only create rfc dir — plan dir should NOT be created by update.
+	rfcDir := filepath.Join(docsDir, "rfc")
+	if err := os.MkdirAll(rfcDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	readme := "# RFCs\n\n<!-- BEGIN DOCZ AUTO-GENERATED -->\n<!-- END DOCZ AUTO-GENERATED -->\n"
+	if err := os.WriteFile(filepath.Join(rfcDir, "README.md"), []byte(readme), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	appCfg = config.DefaultConfig()
+	appCfg.DocsDir = docsDir
+
+	// Disable plan type.
+	tc := appCfg.Types["plan"]
+	tc.Enabled = false
+	appCfg.Types["plan"] = tc
+
+	updateDryRun = false
+	verbose = false
+
+	if err := runUpdate(nil, nil); err != nil {
+		t.Fatalf("runUpdate() error: %v", err)
+	}
+
+	// Plan directory should NOT have been created.
+	planDir := filepath.Join(docsDir, "plan")
+	if _, err := os.Stat(planDir); err == nil {
+		t.Error("plan directory should not be created for disabled type")
+	}
+
+	// RFC README should have been updated (it existed).
+	if _, err := os.Stat(filepath.Join(rfcDir, "README.md")); err != nil {
+		t.Error("rfc README should still exist")
+	}
+}
+
 func TestCreateIncludesToCMarkers(t *testing.T) {
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
