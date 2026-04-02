@@ -162,7 +162,7 @@ Add the embedded `wiki_index.md` template with override support and rewrite
   - Build `WikiIndexData` with site name and only enabled types
   - Render and write the result to `docs/index.md`
   - Skip writing if file already exists (preserve existing behavior)
-- [ ] Add tests:
+- [x] Add tests:
   - `TestEmbeddedWikiIndex` — verify embedded template loads
   - `TestResolveWikiIndex_Embedded` — no local override, returns embedded
   - `TestResolveWikiIndex_LocalOverride` — local file takes precedence

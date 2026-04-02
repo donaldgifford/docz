@@ -532,6 +532,120 @@ func TestWikiInit_MultiplePlugins(t *testing.T) {
 	}
 }
 
+func TestWikiInit_IndexTemplate(t *testing.T) {
+	_ = setupWikiTestDir(t)
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join("docs", "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	// Should contain enabled types.
+	for _, navTitle := range []string{"RFCs", "ADRs", "Design"} {
+		if !strings.Contains(content, navTitle) {
+			t.Errorf("index.md should contain %q", navTitle)
+		}
+	}
+}
+
+func TestWikiInit_IndexSkipsDisabledTypes(t *testing.T) {
+	_ = setupWikiTestDir(t)
+
+	// Pre-create .docz.yaml and docs/ so ensureDoczInit skips runInit.
+	writeTestFile(t, ".docz.yaml", "docs_dir: docs\n")
+	if err := os.MkdirAll("docs", 0o750); err != nil {
+		t.Fatal(err)
+	}
+
+	// Disable plan and investigation.
+	tc := appCfg.Types["plan"]
+	tc.Enabled = false
+	appCfg.Types["plan"] = tc
+
+	tc = appCfg.Types["investigation"]
+	tc.Enabled = false
+	appCfg.Types["investigation"] = tc
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join("docs", "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	if strings.Contains(content, "plan/README.md") {
+		t.Error("index.md should not contain disabled type plan")
+	}
+	if strings.Contains(content, "investigation/README.md") {
+		t.Error("index.md should not contain disabled type investigation")
+	}
+	// Enabled types should still be present.
+	if !strings.Contains(content, "RFCs") {
+		t.Error("index.md should contain enabled type RFCs")
+	}
+}
+
+func TestWikiInit_IndexTemplateOverride(t *testing.T) {
+	_ = setupWikiTestDir(t)
+
+	// Create a local override template.
+	templatesDir := filepath.Join("docs", "templates")
+	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	override := "# {{ .SiteName }} Custom\n\nCustom homepage.\n"
+	writeTestFile(t, filepath.Join(templatesDir, "wiki_index.md"), override)
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := runWikiInit(nil, nil)
+
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("runWikiInit() error: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join("docs", "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "Custom homepage.") {
+		t.Error("index.md should use the local override template")
+	}
+}
+
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
