@@ -84,7 +84,7 @@ foundational changes that the wiki template work depends on.
     before creating directories and READMEs
   - Verify `writeDefaultConfig()` still lists all types (no change needed —
     it's a hardcoded config string, not driven by enabled state)
-- [ ] Add `Plugins []string` field to `WikiConfig` in
+- [x] Add `Plugins []string` field to `WikiConfig` in
   `internal/config/config.go`:
   - Default in `DefaultConfig()`: `Plugins: []string{"techdocs-core"}`
   - Wire into `setDefaults()`: `v.SetDefault("wiki.plugins", cfg.Wiki.Plugins)`
