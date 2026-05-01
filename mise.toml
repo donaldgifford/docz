@@ -6,7 +6,7 @@
 "go:github.com/google/go-licenses" = "latest"
 
 go = "1.25.7"
-markdownlint-cli2 = "0.18.1"
+markdownlint-cli2 = "0.22.1"
 yamlfmt = "0.20.0"
 yamllint = "1.37.1"
 yq = "4.48.1"
