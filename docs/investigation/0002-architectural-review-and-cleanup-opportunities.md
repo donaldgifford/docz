@@ -5,15 +5,15 @@ status: Open
 author: Donald Gifford
 created: 2026-05-15
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
 # INV 0002: Architectural Review and Cleanup Opportunities
 
-**Status:** Open
-**Author:** Donald Gifford
-**Date:** 2026-05-15
+**Status:** Open **Author:** Donald Gifford **Date:** 2026-05-15
 
 <!--toc:start-->
+
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -98,9 +98,9 @@ created: 2026-05-15
 ## Question
 
 What architectural debt, idiomatic-Go gaps, style violations, and performance
-issues exist in the docz codebase today, and how should they be prioritized
-into a cleanup roadmap that improves testability, extensibility, and
-maintainability without breaking the existing public surface?
+issues exist in the docz codebase today, and how should they be prioritized into
+a cleanup roadmap that improves testability, extensibility, and maintainability
+without breaking the existing public surface?
 
 ## Hypothesis
 
@@ -110,9 +110,9 @@ patterns, so we expect to find:
 1. **Testability blockers** — package-level globals in `cmd/`, hardcoded
    `os.Stdout`/`os.Stderr` writes, and time/exec calls that cannot be
    intercepted.
-2. **Domain-modeling drift** — "document type" represented as scattered
-   strings across config maps, hardcoded slices, alias maps, and template
-   filenames with no compile-time enforcement that they stay in sync.
+2. **Domain-modeling drift** — "document type" represented as scattered strings
+   across config maps, hardcoded slices, alias maps, and template filenames with
+   no compile-time enforcement that they stay in sync.
 3. **Three-way duplication of defaults** — `internal/config.DefaultConfig()`,
    the hardcoded YAML in `cmd/init.go:writeDefaultConfig()`, and Viper's
    `setDefaults()` all encode the same truth.
@@ -126,52 +126,51 @@ We expect most issues to be mechanical fixes; the larger architectural items
 
 ## Context
 
-The docz codebase (~4,200 LOC across `cmd/` and `internal/`) was written
-before the team adopted standardized go-development style guides, the Uber
-Go Style Guide as a reference, and structured architecture-review practices.
-Dogfooding docz on its own repository surfaced several pain points
-(documented in INV-0001), and recent bug fixes (`fix/update-skips-disabled-types`,
+The docz codebase (~4,200 LOC across `cmd/` and `internal/`) was written before
+the team adopted standardized go-development style guides, the Uber Go Style
+Guide as a reference, and structured architecture-review practices. Dogfooding
+docz on its own repository surfaced several pain points (documented in
+INV-0001), and recent bug fixes (`fix/update-skips-disabled-types`,
 `fix/version-and-mkdocs-extensions`) revealed that the defaults-duplication
 problem is actively producing drift bugs.
 
-We want a single source of truth for outstanding cleanup work so the team
-can plan a phased refactor and ratchet quality up over time.
+We want a single source of truth for outstanding cleanup work so the team can
+plan a phased refactor and ratchet quality up over time.
 
-**Triggered by:** Dogfooding pain points; bug pattern of three-way default
-drift (`markdown_extensions` PR #30, disabled-types PR #31).
+**Triggered by:** Dogfooding pain points; bug pattern of three-way default drift
+(`markdown_extensions` PR #30, disabled-types PR #31).
 
 ## Approach
 
 Ran four specialized review agents in parallel against the full codebase, each
 with a distinct focus, then synthesized and deduplicated the findings:
 
-1. **Architecture review** (`go-development:go-architect`) — package
-   boundaries, global state, dependency injection, domain modeling,
-   extensibility, testability gaps, error-handling strategy.
+1. **Architecture review** (`go-development:go-architect`) — package boundaries,
+   global state, dependency injection, domain modeling, extensibility,
+   testability gaps, error-handling strategy.
 2. **Uber Go Style audit** (`go-development:go-style`) — naming, receivers,
    error wrapping, magic constants, named returns, initialism casing,
    time/path/sort idioms.
 3. **Performance review** (`go-development:go-performance`) — algorithmic
-   complexity, allocations, I/O patterns, regex/parsing efficiency, and
-   honest "do not optimize" calls for code that is fine at CLI scale.
+   complexity, allocations, I/O patterns, regex/parsing efficiency, and honest
+   "do not optimize" calls for code that is fine at CLI scale.
 4. **Idiomatic Go review** (general-purpose) — error handling pitfalls,
-   stringly-typed code, magic constants, Cobra-specific conventions
-   (`Run` vs `RunE`, `cmd.OutOrStdout()`, `SilenceUsage`), logging,
-   duplication.
+   stringly-typed code, magic constants, Cobra-specific conventions (`Run` vs
+   `RunE`, `cmd.OutOrStdout()`, `SilenceUsage`), logging, duplication.
 
 All four agents read the same set of files; findings were cross-referenced to
 identify the highest-confidence (multi-agent agreement) issues.
 
 ## Environment
 
-| Component                | Value                                       |
-|--------------------------|---------------------------------------------|
-| Go module version        | 1.25.7                                      |
-| Codebase size            | ~4,200 LOC (`cmd/` + `internal/`)           |
-| Built-in document types  | 6 (rfc, adr, design, impl, plan, inv)       |
-| CLI framework            | Cobra + Viper                               |
-| Template engine          | `text/template` with `//go:embed`           |
-| Current docz version     | v0.0.10-5-g2272af5                          |
+| Component               | Value                                 |
+| ----------------------- | ------------------------------------- |
+| Go module version       | 1.25.7                                |
+| Codebase size           | ~4,200 LOC (`cmd/` + `internal/`)     |
+| Built-in document types | 6 (rfc, adr, design, impl, plan, inv) |
+| CLI framework           | Cobra + Viper                         |
+| Template engine         | `text/template` with `//go:embed`     |
+| Current docz version    | v0.0.10-5-g2272af5                    |
 
 ## Findings
 
@@ -185,17 +184,16 @@ were flagged independently by two or more review agents.
 **Files:** `cmd/root.go:29-34`, `cmd/init.go:14`, `cmd/create.go:16-20`,
 `cmd/update.go:16`, `cmd/list.go:19-22`, `cmd/wiki.go:16-21`
 
-The `cmd` package declares 14+ mutable package-level variables for Cobra
-flags plus the resolved `appCfg`. Every test must manually reset these
-between cases; `t.Parallel()` would cause races. Tests in `cmd/` capture
-stdout via `os.Pipe` tricks (~20 occurrences) because handlers call
-`fmt.Printf` directly against `os.Stdout`. The combination of these two
-patterns is the single biggest blocker to clean unit tests.
+The `cmd` package declares 14+ mutable package-level variables for Cobra flags
+plus the resolved `appCfg`. Every test must manually reset these between cases;
+`t.Parallel()` would cause races. Tests in `cmd/` capture stdout via `os.Pipe`
+tricks (~20 occurrences) because handlers call `fmt.Printf` directly against
+`os.Stdout`. The combination of these two patterns is the single biggest blocker
+to clean unit tests.
 
-**Impact:** Tests cannot run in parallel. Flag state leaks between test
-cases. Output-capture is fragile (a `t.Fatal` before restoration leaks
-stdout). Adding any new flag adds another implicit dependency to every
-existing cmd test.
+**Impact:** Tests cannot run in parallel. Flag state leaks between test cases.
+Output-capture is fragile (a `t.Fatal` before restoration leaks stdout). Adding
+any new flag adds another implicit dependency to every existing cmd test.
 
 #### F2. Direct `fmt.Printf` / `os.Stdout` instead of `cmd.OutOrStdout()` [multi-agent]
 
@@ -207,24 +205,22 @@ existing cmd test.
 `cmd/version.go:22`, `cmd/list.go:107-122,125-129,131-145`
 
 Cobra commands receive a `*cobra.Command` whose `OutOrStdout()`,
-`ErrOrStderr()`, `Println()`, and `PrintErrf()` route through writers that
-tests can override via `cmd.SetOut(buf)` / `cmd.SetErr(buf)`. Every
-handler currently discards the `*cobra.Command` parameter (`_ *cobra.Command`)
-and writes directly to `os.Stdout` / `os.Stderr`. This is the single
-biggest testability win available.
+`ErrOrStderr()`, `Println()`, and `PrintErrf()` route through writers that tests
+can override via `cmd.SetOut(buf)` / `cmd.SetErr(buf)`. Every handler currently
+discards the `*cobra.Command` parameter (`_ *cobra.Command`) and writes directly
+to `os.Stdout` / `os.Stderr`. This is the single biggest testability win
+available.
 
 #### F3. `if verbose { fmt.Fprintf(os.Stderr, ...) }` pattern repeated 20+ times [multi-agent]
 
 **Files:** `cmd/create.go:65,72-74`, `cmd/init.go:40,65,189`,
 `cmd/update.go:49,67,76,115,126,133,142,147`,
-`cmd/wiki.go:137-138,151,162,167,173,227,233,296`,
-`cmd/template.go:150-154`
+`cmd/wiki.go:137-138,151,162,167,173,227,233,296`, `cmd/template.go:150-154`
 
 There is no logger abstraction; every cmd file has its own copies. Cannot
-configure log level beyond on/off. Cannot capture in tests. Should be
-replaced with `log/slog` (stdlib since Go 1.21; we are on 1.25). `--verbose`
-becomes a slog handler level. Plumbing slog through internal packages is
-straightforward.
+configure log level beyond on/off. Cannot capture in tests. Should be replaced
+with `log/slog` (stdlib since Go 1.21; we are on 1.25). `--verbose` becomes a
+slog handler level. Plumbing slog through internal packages is straightforward.
 
 #### F4. `internal/document/time.go` uses mutable package-global `timeNow` [multi-agent]
 
@@ -234,9 +230,9 @@ straightforward.
 var timeNow = time.Now
 ```
 
-Tests override this and restore via `t.Cleanup`. Not safe for parallel
-tests; not explicit at call sites. The idiomatic alternative is passing
-`time.Time` or a `func() time.Time` as a parameter via `CreateOptions`.
+Tests override this and restore via `t.Cleanup`. Not safe for parallel tests;
+not explicit at call sites. The idiomatic alternative is passing `time.Time` or
+a `func() time.Time` as a parameter via `CreateOptions`.
 
 #### F5. `gitUserName()` exec call not injectable
 
@@ -246,22 +242,21 @@ tests; not explicit at call sites. The idiomatic alternative is passing
 out, err := exec.CommandContext(context.Background(), "git", "config", "user.name").Output()
 ```
 
-Cannot be intercepted in tests. The author-resolution path is therefore
-not exercised in cmd tests — they either set `createAuthor = ""` and get
-"Unknown" or whatever `git config` returns in CI. Should accept a
-`func() string` or `GitUserResolver` interface; should also accept
-`cmd.Context()` instead of `context.Background()` so the lookup is
-cancellable.
+Cannot be intercepted in tests. The author-resolution path is therefore not
+exercised in cmd tests — they either set `createAuthor = ""` and get "Unknown"
+or whatever `git config` returns in CI. Should accept a `func() string` or
+`GitUserResolver` interface; should also accept `cmd.Context()` instead of
+`context.Background()` so the lookup is cancellable.
 
 #### F6. `config.Load` reads `.docz.yaml` from working directory implicitly [multi-agent]
 
 **File:** `internal/config/config.go:151-178`, `cmd/wiki_test.go:12-27`,
 `internal/config/config_test.go:127-191`
 
-`Load` reads `.docz.yaml` from `os.Getwd()`. Every test that exercises
-config loading must `os.Chdir` into a temp dir and use `t.Cleanup` to
-restore. This is process-wide state — tests cannot run in parallel even
-within a single test file. Fix: change `Load(configFile string)` to
+`Load` reads `.docz.yaml` from `os.Getwd()`. Every test that exercises config
+loading must `os.Chdir` into a temp dir and use `t.Cleanup` to restore. This is
+process-wide state — tests cannot run in parallel even within a single test
+file. Fix: change `Load(configFile string)` to
 `Load(configFile, repoRoot string)` and read from `repoRoot` instead.
 
 ### Critical: Correctness bugs
@@ -277,11 +272,10 @@ if validErr != nil { fmt.Fprintf(os.Stderr, "Config error: %v\n", validErr) }
 appCfg = cfg
 ```
 
-Validation error is printed to stderr but the program continues with the
-invalid config. A user with `statuses: []` in `.docz.yaml` sees a warning
-and then cryptic downstream failures. Fix: use `PersistentPreRunE` on
-`rootCmd` instead of `cobra.OnInitialize` and propagate the error as a
-non-zero exit.
+Validation error is printed to stderr but the program continues with the invalid
+config. A user with `statuses: []` in `.docz.yaml` sees a warning and then
+cryptic downstream failures. Fix: use `PersistentPreRunE` on `rootCmd` instead
+of `cobra.OnInitialize` and propagate the error as a non-zero exit.
 
 #### F8. `mergeConfigFile` silently swallows YAML parse errors
 
@@ -302,9 +296,9 @@ func mergeConfigFile(v *viper.Viper, path string) error {
 ```
 
 A malformed `.docz.yaml` (YAML syntax error, parse failure) is silently
-discarded — the user gets defaults plus no diagnostic, then later wonders
-why their config "doesn't work". Distinguish "file does not exist" (return
-nil) from "file exists but cannot be parsed" (return wrapped error).
+discarded — the user gets defaults plus no diagnostic, then later wonders why
+their config "doesn't work". Distinguish "file does not exist" (return nil) from
+"file exists but cannot be parsed" (return wrapped error).
 
 #### F9. `currentDate()` calls `timeNow()` three times [multi-agent]
 
@@ -327,9 +321,9 @@ return timeNow().Format(time.DateOnly)
 **Files:** `cmd/update.go:54`, `cmd/create.go:89`, `cmd/init.go:51`,
 `cmd/wiki.go:103,109,154-156,178-180,197-199`, `internal/wiki/wiki.go:58`
 
-Multiple sites return errors without wrapping in `fmt.Errorf("context: %w", err)`.
-When these surface to the user, the stack trace is lost and the message
-provides no context about which operation failed.
+Multiple sites return errors without wrapping in
+`fmt.Errorf("context: %w", err)`. When these surface to the user, the stack
+trace is lost and the message provides no context about which operation failed.
 
 #### F11. `DocTitle` returns fallback value alongside non-nil error
 
@@ -357,15 +351,15 @@ discards the value, but the contract should be one-or-the-other.
 `internal/config/config.go:66-144` (Go-literal version),
 `internal/config/config.go:291-319` (`setDefaults` Viper version)
 
-The same defaults are encoded in three places. Adding `markdown_extensions`
-to `DefaultConfig` would not propagate to the written file; PR #30 was
-exactly this drift. `setDefaults` currently misses `MarkdownExtensions`,
-`DocsDir`, `RepoURL`, `SiteURL`, and `Theme` — added later but never wired
-into Viper defaults.
+The same defaults are encoded in three places. Adding `markdown_extensions` to
+`DefaultConfig` would not propagate to the written file; PR #30 was exactly this
+drift. `setDefaults` currently misses `MarkdownExtensions`, `DocsDir`,
+`RepoURL`, `SiteURL`, and `Theme` — added later but never wired into Viper
+defaults.
 
 **Fix:** Replace the literal YAML in `writeDefaultConfig` with
-`yaml.Marshal(config.DefaultConfig())`. Either derive `setDefaults` from
-the struct via reflection or remove it in favor of pre-defaulted struct
+`yaml.Marshal(config.DefaultConfig())`. Either derive `setDefaults` from the
+struct via reflection or remove it in favor of pre-defaulted struct
 unmarshalling.
 
 ### High: Library returns user-facing strings
@@ -376,49 +370,48 @@ unmarshalling.
 `internal/index/index.go:117` (`DryRunReadme`)
 
 Returns `"Updated %s"`, `"Created %s"`, `"Warning: %s has no DOCZ markers..."`
-as the success-path string. The warning case returns `nil` error but a
-string starting with `"Warning:"` that the caller is supposed to inspect.
+as the success-path string. The warning case returns `nil` error but a string
+starting with `"Warning:"` that the caller is supposed to inspect.
 
-**Fix:** Return a typed result like `type UpdateOutcome { Action UpdateAction; Path string }`.
-The cmd layer formats the user-facing message.
+**Fix:** Return a typed result like
+`type UpdateOutcome { Action UpdateAction; Path string }`. The cmd layer formats
+the user-facing message.
 
 ### High: Domain modeling — `DocType` scattered
 
 #### F14. "Document type" expressed in 6+ locations with no compile-time enforcement [multi-agent]
 
-| Location | Content |
-|---|---|
-| `internal/config/config.go:204` | `ValidTypes()` — hardcoded ordered slice |
-| `internal/config/config.go:66-144` | `DefaultConfig().Types` — map of TypeConfig |
-| `internal/config/config.go:209-211` | `typeAliases` — private alias map |
-| `internal/config/config.go:192-201` | `DefaultNavTitles()` — separate map |
-| `internal/config/config.go:224-232` | `TypesHelp()` — hardcoded prose |
-| `internal/template/templates/*.md` | One file per type, named by convention |
-| `cmd/init.go:70-175` | YAML duplicating all of the above |
+| Location                            | Content                                     |
+| ----------------------------------- | ------------------------------------------- |
+| `internal/config/config.go:204`     | `ValidTypes()` — hardcoded ordered slice    |
+| `internal/config/config.go:66-144`  | `DefaultConfig().Types` — map of TypeConfig |
+| `internal/config/config.go:209-211` | `typeAliases` — private alias map           |
+| `internal/config/config.go:192-201` | `DefaultNavTitles()` — separate map         |
+| `internal/config/config.go:224-232` | `TypesHelp()` — hardcoded prose             |
+| `internal/template/templates/*.md`  | One file per type, named by convention      |
+| `cmd/init.go:70-175`                | YAML duplicating all of the above           |
 
-Adding a new type (e.g., `runbook`) requires changes in all of these places
-with no compile-time signal if any step is missed. A type added to
-`ValidTypes()` without an embedded template panics at runtime.
+Adding a new type (e.g., `runbook`) requires changes in all of these places with
+no compile-time signal if any step is missed. A type added to `ValidTypes()`
+without an embedded template panics at runtime.
 
 **Fix:** Introduce a `DocType` value struct that bundles canonical name,
 aliases, default `TypeConfig`, nav title, and template name. `ValidTypes()`
-derives from a registration list. Add `TestAllTypesHaveEmbeddedTemplates`
-as compile-time-style enforcement.
+derives from a registration list. Add `TestAllTypesHaveEmbeddedTemplates` as
+compile-time-style enforcement.
 
 #### F15. `ValidTypes()` iteration vs `appCfg.Types` map disconnect
 
 **Files:** `cmd/create.go:54-57`, `cmd/update.go:35-43`, `cmd/list.go:52-59`,
 `cmd/init.go:36`, `cmd/wiki.go:307`
 
-Every command iterates `config.ValidTypes()` (hardcoded slice) and looks
-each name up in `appCfg.Types` (the actual config). A user who adds a
-custom type to the map (which `Validate()` only warns about) sees their
-type ignored by all iteration. Two orderings exist: the hardcoded slice
-and the map iteration order.
+Every command iterates `config.ValidTypes()` (hardcoded slice) and looks each
+name up in `appCfg.Types` (the actual config). A user who adds a custom type to
+the map (which `Validate()` only warns about) sees their type ignored by all
+iteration. Two orderings exist: the hardcoded slice and the map iteration order.
 
-**Fix:** Add `Config.EnabledTypes() []string` returning sorted enabled
-canonical type names. Iterate that single method instead of the slice +
-map lookup.
+**Fix:** Add `Config.EnabledTypes() []string` returning sorted enabled canonical
+type names. Iterate that single method instead of the slice + map lookup.
 
 #### F16. `DocType` and `Status` are bare `string` everywhere
 
@@ -426,9 +419,9 @@ map lookup.
 `internal/template/template.go:20`, `internal/template/embed.go:14`,
 `internal/document/document.go:16`
 
-Should be `type DocType string` and `type Status string` with constants
-and validation methods. Currently every command does manual
-`strings.ToLower` + `ResolveTypeAlias` + map lookup + error wrapping.
+Should be `type DocType string` and `type Status string` with constants and
+validation methods. Currently every command does manual `strings.ToLower` +
+`ResolveTypeAlias` + map lookup + error wrapping.
 
 ### High: Stranded business logic in `cmd/`
 
@@ -436,30 +429,32 @@ and validation methods. Currently every command does manual
 
 **File:** `cmd/wiki.go:247-288`
 
-Constructs the initial `mkdocs.yml` content by manual string building.
-Knows the structure of a valid mkdocs.yml. Cannot be unit-tested without
-going through the cmd layer and the `appCfg` global. `internal/wiki`
-already handles reading/writing mkdocs.yml via `ReadMkDocs`/`WriteMkDocs`.
+Constructs the initial `mkdocs.yml` content by manual string building. Knows the
+structure of a valid mkdocs.yml. Cannot be unit-tested without going through the
+cmd layer and the `appCfg` global. `internal/wiki` already handles
+reading/writing mkdocs.yml via `ReadMkDocs`/`WriteMkDocs`.
 
-**Fix:** Move to `internal/wiki` as `wiki.CreateMkDocs(path string, cfg MkDocsConfig) error`.
+**Fix:** Move to `internal/wiki` as
+`wiki.CreateMkDocs(path string, cfg MkDocsConfig) error`.
 
 #### F18. `cmd/update.go:updateToCs` is business logic stranded in cmd
 
 **File:** `cmd/update.go:110-150`
 
-Reads files from disk, calls `toc.UpdateToC`, compares content, writes
-back. Distinct from command I/O concerns. Cannot be unit-tested in
-isolation — must go through `updateType` which also writes README.
+Reads files from disk, calls `toc.UpdateToC`, compares content, writes back.
+Distinct from command I/O concerns. Cannot be unit-tested in isolation — must go
+through `updateType` which also writes README.
 
-**Fix:** Move to `internal/toc` as `toc.UpdateFiles(paths []string, minHeadings int, dryRun bool) (UpdateReport, error)`.
+**Fix:** Move to `internal/toc` as
+`toc.UpdateFiles(paths []string, minHeadings int, dryRun bool) (UpdateReport, error)`.
 
 #### F19. `runWikiUpdateNav` and `runWikiUpdateDryRun` duplicate nav-building logic
 
 **File:** `cmd/wiki.go:135-210`
 
 Both functions have nearly identical bodies: call `wiki.ScanDocs`,
-`wiki.ReadMkDocs`, `wiki.ExistingNavOrder`, then either `MergeNavOrder`
-or `SortEntries`. Diverge only at the final output step.
+`wiki.ReadMkDocs`, `wiki.ExistingNavOrder`, then either `MergeNavOrder` or
+`SortEntries`. Diverge only at the final output step.
 
 **Fix:** Extract shared nav-building helper that returns `[]wiki.NavEntry`.
 
@@ -470,53 +465,52 @@ or `SortEntries`. Diverge only at the final output step.
 **File:** `internal/index/index.go`
 
 Package currently handles:
+
 1. Directory scanning (`ScanDocuments`, `DocEntry`)
 2. Markdown table generation (`GenerateTable`)
 3. README marker splicing (`UpdateReadme`, `DryRunReadme`, `spliceMarkers`,
    `createNewReadme`)
 
-The package comment says "document scanning and README index generation" —
-the "and" is the tell.
+The package comment says "document scanning and README index generation" — the
+"and" is the tell.
 
-**Fix:** Move `ScanDocuments` + `DocEntry` to `internal/document` (it
-already uses `document.Frontmatter` via embedding). Keep README splicing
-in `internal/index`.
+**Fix:** Move `ScanDocuments` + `DocEntry` to `internal/document` (it already
+uses `document.Frontmatter` via embedding). Keep README splicing in
+`internal/index`.
 
 #### F21. `Frontmatter` parsing duplicated across packages
 
 **Files:** `internal/index/index.go:48-56`, `internal/wiki/titles.go:33-43`
 
-Both packages read a file and call `document.ParseFrontmatter`, with
-divergent failure handling (index silently skips; wiki falls back to
-filename). Should be one helper `document.LoadFrontmatter(path string)`
-with a single documented error contract.
+Both packages read a file and call `document.ParseFrontmatter`, with divergent
+failure handling (index silently skips; wiki falls back to filename). Should be
+one helper `document.LoadFrontmatter(path string)` with a single documented
+error contract.
 
 #### F22. Three different regexes for "is this a docz file"
 
 **Files:** `internal/wiki/wiki.go:12` (`^\d{4,}-.*\.md$`),
-`internal/index/index.go:21` (`^\d+-.*\.md$`),
-`internal/document/create.go:36` (`^(\d+)-.*\.md$`)
+`internal/index/index.go:21` (`^\d+-.*\.md$`), `internal/document/create.go:36`
+(`^(\d+)-.*\.md$`)
 
-The wiki regex requires 4+ digits; the others accept 1+. A file
-`1-foo.md` would index but not appear in the wiki nav. Inconsistent
-invariant.
+The wiki regex requires 4+ digits; the others accept 1+. A file `1-foo.md` would
+index but not appear in the wiki nav. Inconsistent invariant.
 
-**Fix:** Single exported `document.DoczFilePattern` (or `document.IsDoczFile(name) bool`).
+**Fix:** Single exported `document.DoczFilePattern` (or
+`document.IsDoczFile(name) bool`).
 
 #### F23. Two `Slugify` functions with different algorithms [multi-agent]
 
-**Files:** `internal/template/template.go:38-54`,
-`internal/toc/toc.go:38-56`
+**Files:** `internal/template/template.go:38-54`, `internal/toc/toc.go:38-56`
 
 - `template.Slugify`: filename slug, strips to `[a-z0-9-]`, max 64 chars,
   word-boundary truncation.
 - `toc.Slugify`: GitHub anchor slug, keeps `[a-z0-9 -]`, no truncation.
 
-Both exported, both named `Slugify`. Confusing for any code that imports
-both.
+Both exported, both named `Slugify`. Confusing for any code that imports both.
 
-**Fix:** Rename to `template.FilenameSlug` and `toc.AnchorSlug`.
-Document the GitHub anchor algorithm reference in the toc one.
+**Fix:** Rename to `template.FilenameSlug` and `toc.AnchorSlug`. Document the
+GitHub anchor algorithm reference in the toc one.
 
 ### Medium: Stutter and naming
 
@@ -541,8 +535,8 @@ Per Uber style and Go convention, initialisms should be all uppercase:
 `TOCConfig`, `TOC`. Currently uses `ToC` which is inconsistent (would write
 `URLConfig`, not `UrlConfig`).
 
-**Fix:** Rename `ToCConfig` → `TOCConfig`, field `ToC` → `TOC`.
-Keep YAML tag `"toc"` so users' config files don't break.
+**Fix:** Rename `ToCConfig` → `TOCConfig`, field `ToC` → `TOC`. Keep YAML tag
+`"toc"` so users' config files don't break.
 
 #### F27. Named return values used as variables in `Validate()`
 
@@ -552,10 +546,10 @@ Keep YAML tag `"toc"` so users' config files don't break.
 func (c *Config) Validate() (warnings []string, err error) {
 ```
 
-Named returns add no value here — every return statement names both
-explicitly. Per Uber guide, named returns should be reserved for
-clarification or `defer` use. Inverted footgun: a future bare `return`
-silently returns whatever was assigned.
+Named returns add no value here — every return statement names both explicitly.
+Per Uber guide, named returns should be reserved for clarification or `defer`
+use. Inverted footgun: a future bare `return` silently returns whatever was
+assigned.
 
 ### Medium: Mechanical / style fixes
 
@@ -563,16 +557,16 @@ silently returns whatever was assigned.
 
 **Files:** `cmd/wiki.go:120`, `internal/index/index.go:36,95,120`
 
-The legacy form does not unwrap error chains. Modern idiom since Go 1.13
-is `errors.Is(err, fs.ErrNotExist)`.
+The legacy form does not unwrap error chains. Modern idiom since Go 1.13 is
+`errors.Is(err, fs.ErrNotExist)`.
 
 #### F29. `sort.Slice` instead of `slices.SortFunc`
 
 **Files:** `internal/index/index.go:64`,
 `internal/wiki/wiki.go:104,109,114,148`, `internal/wiki/mkdocs.go:123`
 
-We're on Go 1.25.7; `slices.SortFunc` (generics, type-safe) is preferred
-over `sort.Slice` (interface-based).
+We're on Go 1.25.7; `slices.SortFunc` (generics, type-safe) is preferred over
+`sort.Slice` (interface-based).
 
 #### F30. `strings.NewReader(string(data))` instead of `bytes.NewReader(data)` [multi-agent]
 
@@ -582,8 +576,8 @@ over `sort.Slice` (interface-based).
 scanner := bufio.NewScanner(strings.NewReader(string(data)))
 ```
 
-`data` is already `[]byte`. The conversion copies the entire file content
-into a new string allocation, then wraps it in `strings.Reader`. Use
+`data` is already `[]byte`. The conversion copies the entire file content into a
+new string allocation, then wraps it in `strings.Reader`. Use
 `bytes.NewReader(data)` directly.
 
 #### F31. String concatenation for paths instead of `filepath.Join` [multi-agent]
@@ -595,9 +589,9 @@ localPath := docsDir + "/templates/" + docType + ".md"
 localPath := docsDir + "/templates/wiki_index.md"
 ```
 
-Not portable (Windows uses `\`). Use `filepath.Join`. The `internal/template/embed.go`
-uses of `"templates/" + name` are correct because `embed.FS` always uses
-forward slashes.
+Not portable (Windows uses `\`). Use `filepath.Join`. The
+`internal/template/embed.go` uses of `"templates/" + name` are correct because
+`embed.FS` always uses forward slashes.
 
 #### F32. Hand-rolled `itoa` instead of `strconv.Itoa` [multi-agent]
 
@@ -608,10 +602,10 @@ forward slashes.
 func itoa(n int) string { ... }
 ```
 
-The "without importing strconv" rationale saves nothing — `strconv` is
-already in the standard library and adds no binary weight. The custom
-implementation prepends bytes via `append([]byte{...}, digits...)` —
-worse than `strconv.Itoa` and has subtly different `n=0` behavior.
+The "without importing strconv" rationale saves nothing — `strconv` is already
+in the standard library and adds no binary weight. The custom implementation
+prepends bytes via `append([]byte{...}, digits...)` — worse than `strconv.Itoa`
+and has subtly different `n=0` behavior.
 
 #### F33. `defer enc.Close()` missing in `cmd/config.go`
 
@@ -626,8 +620,8 @@ if err := enc.Encode(appCfg); err != nil {
 return enc.Close()
 ```
 
-If `Encode` fails, `Close` is never called. Standard `defer enc.Close()`
-fixes it.
+If `Encode` fails, `Close` is never called. Standard `defer enc.Close()` fixes
+it.
 
 #### F34. Magic strings `"adr"` and `"csv"` without constants
 
@@ -642,9 +636,9 @@ if typeName == "adr" { heading = "All ADRs" }   // magic "adr"
 case "csv":  // formatJSON is a constant, but "csv" is inline
 ```
 
-The "adr" branch is a special-case for English pluralization that should
-be a `PluralLabel` field on `TypeConfig`. The `"csv"` literal should be a
-`formatCSV` constant matching `formatJSON`.
+The "adr" branch is a special-case for English pluralization that should be a
+`PluralLabel` field on `TypeConfig`. The `"csv"` literal should be a `formatCSV`
+constant matching `formatJSON`.
 
 #### F35. `MinHeadings: 3` magic number
 
@@ -658,6 +652,7 @@ Should be `const defaultMinHeadings = 3` referenced from `DefaultConfig()`.
 `internal/index/index.go:109,162,166`, `internal/document/create.go:43,78`
 
 Define in a single location:
+
 ```go
 const (
     FileMode os.FileMode = 0o644
@@ -672,6 +667,7 @@ const (
 `internal/template/template.go:72,98`
 
 Define filename constants once:
+
 ```go
 const (
     ConfigFileName = ".docz.yaml"
@@ -692,8 +688,8 @@ const (
 Plus a fifth variation in `internal/config/config.go:249`.
 
 **Fix:** `config.ValidateType(name string) (canonicalName string, err error)`
-that resolves alias, lowercases, validates, and returns a typed error.
-Single call site per command.
+that resolves alias, lowercases, validates, and returns a typed error. Single
+call site per command.
 
 #### F39. `docType := config.ResolveTypeAlias(strings.ToLower(args[0]))` repeated 6 times
 
@@ -723,13 +719,13 @@ if !ok || !tc.Enabled {
 **Files:** `cmd/update.go:70` + `cmd/update.go:113`,
 `internal/index/index.go:48`
 
-`ScanDocuments` reads every file to parse frontmatter, then `updateToCs`
-calls `os.ReadFile` again on the exact same files. For 1000 docs that's
-2000 `ReadFile` calls. The ToC update doesn't need the frontmatter, but
-the scan threw away the bytes after parsing.
+`ScanDocuments` reads every file to parse frontmatter, then `updateToCs` calls
+`os.ReadFile` again on the exact same files. For 1000 docs that's 2000
+`ReadFile` calls. The ToC update doesn't need the frontmatter, but the scan
+threw away the bytes after parsing.
 
-**Fix:** Either cache `[]byte` on `DocEntry`, or restructure the call
-order so ToC update happens during scan.
+**Fix:** Either cache `[]byte` on `DocEntry`, or restructure the call order so
+ToC update happens during scan.
 
 #### F42. `ParseHeadings` called twice on dry-run path [multi-agent]
 
@@ -746,19 +742,19 @@ headings := toc.ParseHeadings(string(data))           // called again, same cont
 
 ### Low: Performance — leave alone
 
-Per the performance review, these were considered and rejected as
-premature optimization for a CLI:
+Per the performance review, these were considered and rejected as premature
+optimization for a CLI:
 
-- `internal/template/template.go:38` multi-pass `Slugify` — called once
-  per create.
-- `internal/toc/toc.go:92` `strings.Split` on full content — appropriate
-  for typical file sizes.
-- `internal/toc/toc.go:165` `strings.Repeat("  ", ...)` in loop — under
-  100 headings, unmeasurable.
-- `cmd/update.go:45` sequential type processing — parallelism adds
-  complexity with no measurable gain.
-- `internal/wiki/wiki.go:24` sequential directory walk — OS page cache
-  handles this efficiently.
+- `internal/template/template.go:38` multi-pass `Slugify` — called once per
+  create.
+- `internal/toc/toc.go:92` `strings.Split` on full content — appropriate for
+  typical file sizes.
+- `internal/toc/toc.go:165` `strings.Repeat("  ", ...)` in loop — under 100
+  headings, unmeasurable.
+- `cmd/update.go:45` sequential type processing — parallelism adds complexity
+  with no measurable gain.
+- `internal/wiki/wiki.go:24` sequential directory walk — OS page cache handles
+  this efficiently.
 
 ### Low: Minor cleanups
 
@@ -772,48 +768,48 @@ Use `RunE` consistently. Costs nothing, future-proofs error returns.
 
 **File:** `cmd/root.go:36`
 
-When `RunE` returns an error, Cobra prints the usage block in addition to
-the error. Production CLIs typically suppress this. Set
-`SilenceUsage: true` on `rootCmd`.
+When `RunE` returns an error, Cobra prints the usage block in addition to the
+error. Production CLIs typically suppress this. Set `SilenceUsage: true` on
+`rootCmd`.
 
 #### F45. Package comment in wrong file
 
 **File:** `internal/wiki/titles.go:1` (has the package doc) vs
 `internal/wiki/wiki.go` (does not)
 
-Convention places the canonical package comment in the file whose name
-matches the package.
+Convention places the canonical package comment in the file whose name matches
+the package.
 
 #### F46. `Pointer-to-options` where value would suffice
 
 **Files:** `internal/document/create.go:40` (`Create(opts *CreateOptions)`),
-`internal/template/template.go:123` (`Render(tmplContent string, data *TemplateData)`)
+`internal/template/template.go:123`
+(`Render(tmplContent string, data *TemplateData)`)
 
-Neither function mutates the input. Small structs (8 fields) can be passed
-by value without performance impact and clarify that the function is
-pure-in.
+Neither function mutates the input. Small structs (8 fields) can be passed by
+value without performance impact and clarify that the function is pure-in.
 
 #### F47. No input validation in `Create`
 
 **File:** `internal/document/create.go:40`
 
-Doesn't check `opts.Title != ""`, `opts.Prefix != ""`, `opts.IDWidth > 0`.
-Empty prefix produces filename `0001-.md`. Zero IDWidth produces `1-foo.md`.
+Doesn't check `opts.Title != ""`, `opts.Prefix != ""`, `opts.IDWidth > 0`. Empty
+prefix produces filename `0001-.md`. Zero IDWidth produces `1-foo.md`.
 
 #### F48. Frontmatter parse misses `\r\n` line endings
 
 **File:** `internal/document/document.go:30-39`
 
-Requires `---\n` (optionally with leading space/tab) — fails on `---\r\n`.
-Many markdown tools emit CRLF. Normalize or accept both.
+Requires `---\n` (optionally with leading space/tab) — fails on `---\r\n`. Many
+markdown tools emit CRLF. Normalize or accept both.
 
 #### F49. `setDefaults` does not cover all `Config` fields
 
 **File:** `internal/config/config.go:291-319`
 
-Missing `MarkdownExtensions`, `DocsDir`, `RepoURL`, `SiteURL`, `Theme` —
-added later but never wired into Viper defaults. This is a maintenance
-trap: adding a field to `Config` requires manually updating `setDefaults`.
+Missing `MarkdownExtensions`, `DocsDir`, `RepoURL`, `SiteURL`, `Theme` — added
+later but never wired into Viper defaults. This is a maintenance trap: adding a
+field to `Config` requires manually updating `setDefaults`.
 
 **Fix:** Derive via reflection, or remove `setDefaults` and rely on
 pre-defaulted struct unmarshalling.
@@ -823,8 +819,8 @@ pre-defaulted struct unmarshalling.
 **File:** `internal/wiki/mkdocs.go:66-89`
 
 A nav entry can legally be a bare string in mkdocs.yml. The function only
-handles `map[string]any` items. A user-written `mkdocs.yml` with a
-top-level bare-string page could lose that entry on rewrite.
+handles `map[string]any` items. A user-written `mkdocs.yml` with a top-level
+bare-string page could lose that entry on rewrite.
 
 ### What's already good
 
@@ -849,27 +845,26 @@ should not change:
 
 ## Conclusion
 
-**Answer:** Yes — there is significant, well-defined cleanup opportunity.
-The codebase is fundamentally sound (good package structure, solid test
-coverage, no concurrency or resource bugs) but suffers from three categories
-of debt:
+**Answer:** Yes — there is significant, well-defined cleanup opportunity. The
+codebase is fundamentally sound (good package structure, solid test coverage, no
+concurrency or resource bugs) but suffers from three categories of debt:
 
-1. **Testability debt** — package globals in `cmd/`, direct `os.Stdout`
-   writes, implicit working-directory dependencies, and uninjected
-   side-effects (time, exec). This blocks `t.Parallel()` and makes every
-   new feature add hidden state coupling.
-2. **Domain-modeling debt** — `DocType` represented as scattered strings
-   across config, aliases, templates, and help prose. Adding a new type
-   requires changes in 6+ places with no compile-time enforcement.
-3. **Style and idiom debt** — written before standardized style guides;
-   contains stutter (`TemplateData`), legacy idioms (`os.IsNotExist`,
-   `sort.Slice`, hand-rolled `itoa`), three-way duplication of defaults,
-   and 50+ direct `fmt.Printf` writes that prevent test capture.
+1. **Testability debt** — package globals in `cmd/`, direct `os.Stdout` writes,
+   implicit working-directory dependencies, and uninjected side-effects (time,
+   exec). This blocks `t.Parallel()` and makes every new feature add hidden
+   state coupling.
+2. **Domain-modeling debt** — `DocType` represented as scattered strings across
+   config, aliases, templates, and help prose. Adding a new type requires
+   changes in 6+ places with no compile-time enforcement.
+3. **Style and idiom debt** — written before standardized style guides; contains
+   stutter (`TemplateData`), legacy idioms (`os.IsNotExist`, `sort.Slice`,
+   hand-rolled `itoa`), three-way duplication of defaults, and 50+ direct
+   `fmt.Printf` writes that prevent test capture.
 
 None of these are blocking bugs in production usage today, but the
-defaults-drift category has already produced two real bugs (PR #30, PR #31)
-and will produce more. The testability and domain-modeling work unblocks
-future feature work.
+defaults-drift category has already produced two real bugs (PR #30, PR #31) and
+will produce more. The testability and domain-modeling work unblocks future
+feature work.
 
 ## Recommendation
 
@@ -878,8 +873,8 @@ unblocks subsequent work:
 
 ### Wave 1 — Mechanical wins (1 PR, ~1 day)
 
-Pure mechanical fixes with no design questions. Low risk, high readability
-gain. Can land as a single "style sweep" PR with focused commits.
+Pure mechanical fixes with no design questions. Low risk, high readability gain.
+Can land as a single "style sweep" PR with focused commits.
 
 - F28: `os.IsNotExist` → `errors.Is(err, fs.ErrNotExist)`
 - F29: `sort.Slice` → `slices.SortFunc`
@@ -905,8 +900,8 @@ Fix the active bug class: defaults drift and silent error swallowing.
 - F7: propagate config validation error via `PersistentPreRunE`
 - F8: distinguish "file missing" from "file unparseable" in `mergeConfigFile`
 - F10: wrap all bare `return err` sites with context
-- F38–F40: extract `ValidateType` helper and `EnabledTypes()` method;
-  collapse the four "unknown type" sites and three enabled-type-guard sites.
+- F38–F40: extract `ValidateType` helper and `EnabledTypes()` method; collapse
+  the four "unknown type" sites and three enabled-type-guard sites.
 - F34: special-case `"adr"` → `PluralLabel` field on `TypeConfig`
 
 ### Wave 3 — Performance worth fixing (1 PR, ~half day)
@@ -916,8 +911,8 @@ Fix the active bug class: defaults drift and silent error swallowing.
 
 ### Wave 4 — Stranded business logic (2 PRs, ~2 days)
 
-Move logic out of `cmd/` into testable `internal/` packages. These changes
-land independently and unblock Wave 5.
+Move logic out of `cmd/` into testable `internal/` packages. These changes land
+independently and unblock Wave 5.
 
 - F17: move `writeMkDocsYAML` to `internal/wiki.CreateMkDocs`
 - F18: move `updateToCs` to `internal/toc.UpdateFiles`
@@ -925,8 +920,8 @@ land independently and unblock Wave 5.
   `runWikiUpdateDryRun`
 - F20: split `internal/index` — move `ScanDocuments`/`DocEntry` to
   `internal/document`; keep README splicing in `internal/index`
-- F21: single `document.LoadFrontmatter(path)` helper used by both
-  `index` and `wiki`
+- F21: single `document.LoadFrontmatter(path)` helper used by both `index` and
+  `wiki`
 - F22: single `document.DoczFilePattern` regex; delete duplicates
 - F23: rename `template.Slugify` → `FilenameSlug`, `toc.Slugify` → `AnchorSlug`
 - F11: clean up `DocTitle` return contract
@@ -940,39 +935,38 @@ Worth a dedicated DESIGN doc.
 
 - F1: introduce `Runner` struct holding config + `io.Writer`s; convert cmd
   handlers to methods; per-command options struct binds flags
-- F2: switch all `fmt.Printf` / `os.Stdout` to `cmd.Println` / `cmd.OutOrStdout()`
+- F2: switch all `fmt.Printf` / `os.Stdout` to `cmd.Println` /
+  `cmd.OutOrStdout()`
 - F3: introduce `log/slog` logger; replace 20+ `if verbose { ... }` sites
 - F4: pass time as `CreateOptions.CreatedAt` instead of `timeNow` global
 - F5: make `gitUserName` injectable; accept `cmd.Context()`
-- F6: change `config.Load(configFile, repoRoot string)`; eliminate
-  `os.Chdir` in tests
+- F6: change `config.Load(configFile, repoRoot string)`; eliminate `os.Chdir` in
+  tests
 - F14: introduce `DocType` registry struct; derive `ValidTypes()`,
   `DefaultConfig().Types`, nav titles, and template names from a single
   registration list; add `TestAllTypesHaveEmbeddedTemplates`
 - F15: drive iteration from `EnabledTypes()`
-- F16: introduce `type DocType string` and `type Status string` typed
-  constants
+- F16: introduce `type DocType string` and `type Status string` typed constants
 
 ### Low priority / defer
 
-The performance review explicitly flagged these as "do not optimize":
-multi-pass `Slugify`, `strings.Split` of full content, `strings.Repeat`
-in tight loops, sequential directory walking, sequential type processing.
-Honor that judgment — they're fine for CLI scale.
+The performance review explicitly flagged these as "do not optimize": multi-pass
+`Slugify`, `strings.Split` of full content, `strings.Repeat` in tight loops,
+sequential directory walking, sequential type processing. Honor that judgment —
+they're fine for CLI scale.
 
 F47 (`Create` input validation) and F48 (CRLF frontmatter) are nice-to-have
 robustness fixes; bundle into Wave 2 or land opportunistically.
 
 ## References
 
-- INV-0001: Wiki Init Template and Init Enabled Fix — earlier dogfooding
-  pass that surfaced related issues
-- PR #30 (`fix/version-and-mkdocs-extensions`) — instance of three-way
-  defaults drift
+- INV-0001: Wiki Init Template and Init Enabled Fix — earlier dogfooding pass
+  that surfaced related issues
+- PR #30 (`fix/version-and-mkdocs-extensions`) — instance of three-way defaults
+  drift
 - PR #31 (`fix/update-skips-disabled-types`) — instance of `ValidTypes()`
   iteration vs config-map disconnect
-- Uber Go Style Guide — naming, error handling, initialism, defer,
-  named returns
+- Uber Go Style Guide — naming, error handling, initialism, defer, named returns
 - Effective Go — package layout, interface design, error wrapping
 - `cmd/` source — all command files reviewed
 - `internal/config/config.go` — config struct, defaults, validation
@@ -981,6 +975,5 @@ robustness fixes; bundle into Wave 2 or land opportunistically.
 - `internal/template/{template,embed}.go` — template resolution and rendering
 - `internal/toc/toc.go` — table-of-contents generation
 - `internal/wiki/{wiki,titles,mkdocs}.go` — MkDocs nav generation
-- Review agents used: `go-development:go-architect`,
-  `go-development:go-style`, `go-development:go-performance`, and a
-  general-purpose idiomatic Go review
+- Review agents used: `go-development:go-architect`, `go-development:go-style`,
+  `go-development:go-performance`, and a general-purpose idiomatic Go review
