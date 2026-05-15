@@ -14,6 +14,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | INV-0001 | Wiki Init Template and Init Enabled Fix | Concluded | 2026-04-02 | Donald Gifford | [0001-wiki-init-template-and-init-enabled-fix.md](0001-wiki-init-template-and-init-enabled-fix.md) |
+| INV-0002 | Architectural Review and Cleanup Opportunities | Open | 2026-05-15 | Donald Gifford | [0002-architectural-review-and-cleanup-opportunities.md](0002-architectural-review-and-cleanup-opportunities.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
