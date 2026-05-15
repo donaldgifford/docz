@@ -22,9 +22,14 @@ func init() {
 
 func runConfig(_ *cobra.Command, _ []string) error {
 	enc := yaml.NewEncoder(os.Stdout)
+	defer func() {
+		//nolint:errcheck,gosec // best-effort flush; encoder writes to
+		// os.Stdout so Close failure is not actionable for a CLI invocation.
+		enc.Close()
+	}()
 	enc.SetIndent(2)
 	if err := enc.Encode(appCfg); err != nil {
 		return fmt.Errorf("encoding config: %w", err)
 	}
-	return enc.Close()
+	return nil
 }

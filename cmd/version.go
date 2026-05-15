@@ -18,8 +18,9 @@ var (
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
-	Run: func(_ *cobra.Command, _ []string) {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		fmt.Printf("docz %s (commit: %s)\n", Version, Commit)
+		return nil
 	},
 }
 

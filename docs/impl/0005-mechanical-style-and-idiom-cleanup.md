@@ -172,22 +172,23 @@ Small Cobra hygiene and a handful of cosmetic style fixes.
 
 #### Tasks
 
-- [ ] Add `defer enc.Close()` in `cmd/config.go:24-30`; remove the explicit
+- [x] Add `defer enc.Close()` in `cmd/config.go:24-30`; remove the explicit
       `return enc.Close()` so the deferred call runs on all return paths
-- [ ] Change `cmd/version.go:21` from `Run:` to `RunE:` with a `func() error`
+- [x] Change `cmd/version.go:21` from `Run:` to `RunE:` with a `func() error`
       that returns `nil`
-- [ ] Set `SilenceUsage: true` on `rootCmd` at `cmd/root.go:36`
-- [ ] Move the `// Package wiki ...` doc-comment from
+- [x] Set `SilenceUsage: true` on `rootCmd` at `cmd/root.go:36`
+- [x] Move the `// Package wiki ...` doc-comment from
       `internal/wiki/titles.go:1` to a new comment block at the top of
       `internal/wiki/wiki.go`
-- [ ] Convert `func (c *Config) Validate() (warnings []string, err error)` at
+- [x] Convert `func (c *Config) Validate() (warnings []string, err error)` at
       `internal/config/config.go:236` to `(c *Config) Validate() ([]string, error)`
       with a local `var warnings []string`; replace all `err =` assignments
       with `return warnings, fmt.Errorf(...)`
-- [ ] Use `errors.New` for static-string errors at
+- [x] Use `errors.New` for static-string errors at
       `internal/config/config.go:238` and `:252`,
       `internal/document/document.go:44` (sentinel candidates flagged in
-      INV-0002 deferred to IMPL-0006)
+      INV-0002 deferred to IMPL-0006). `:252` keeps `fmt.Errorf` because it
+      includes a `%q` verb; only the truly static strings were swapped.
 
 #### Success Criteria
 

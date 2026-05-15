@@ -1,4 +1,3 @@
-// Package wiki provides MkDocs nav generation from a docs directory tree.
 package wiki
 
 import (

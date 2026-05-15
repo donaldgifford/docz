@@ -2,6 +2,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -233,10 +234,11 @@ func TypesHelp() string {
 
 // Validate checks the configuration for common errors and returns a list of
 // warnings and the first error found (if any).
-func (c *Config) Validate() (warnings []string, err error) {
+func (c *Config) Validate() ([]string, error) {
+	var warnings []string
+
 	if c.DocsDir == "" {
-		err = fmt.Errorf("docs_dir must not be empty")
-		return warnings, err
+		return warnings, errors.New("docs_dir must not be empty")
 	}
 
 	validTypes := map[string]bool{}
@@ -249,8 +251,7 @@ func (c *Config) Validate() (warnings []string, err error) {
 			warnings = append(warnings, fmt.Sprintf("unknown document type %q in config", name))
 		}
 		if tc.Enabled && len(tc.Statuses) == 0 {
-			err = fmt.Errorf("type %q has no statuses defined", name)
-			return warnings, err
+			return warnings, fmt.Errorf("type %q has no statuses defined", name)
 		}
 	}
 
