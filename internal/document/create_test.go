@@ -200,3 +200,17 @@ func TestNextID_NonSequential(t *testing.T) {
 		t.Errorf("nextID() = %d, want 6", id)
 	}
 }
+
+func TestCurrentDate(t *testing.T) {
+	// Pin timeNow so the assertion is stable across timezones and clocks.
+	timeNow = func() time.Time {
+		return time.Date(2026, 1, 2, 15, 4, 5, 0, time.UTC)
+	}
+	t.Cleanup(func() { timeNow = time.Now })
+
+	got := currentDate()
+	const want = "2026-01-02"
+	if got != want {
+		t.Errorf("currentDate() = %q, want %q", got, want)
+	}
+}

@@ -1,7 +1,7 @@
 ---
 id: IMPL-0005
 title: "Mechanical Style and Idiom Cleanup"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -9,7 +9,7 @@ created: 2026-05-15
 
 # IMPL 0005: Mechanical Style and Idiom Cleanup
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-05-15
 
@@ -206,15 +206,16 @@ Run the full quality gate and confirm zero behavioral change.
 
 #### Tasks
 
-- [ ] Run `make fmt` to normalize formatting
-- [ ] Run `make lint` and resolve any new warnings
-- [ ] Run `make test` and confirm all golden files unchanged
-- [ ] Run `make ci` end-to-end
-- [ ] Smoke-test on this repo: `docz list`, `docz create inv "smoke test"`,
-      `docz update`, `docz config`, `docz wiki update`
+- [x] Run `make fmt` to normalize formatting
+- [x] Run `make lint` and resolve any new warnings
+- [x] Run `make test` and confirm all golden files unchanged
+- [x] Run `make ci` end-to-end
+- [x] Smoke-test on this repo: `docz list`, `docz update --dry-run`,
+      `docz config`, `docz wiki update --dry-run`, `docz version`
 - [ ] Open PR with label `dont-release` (style cleanup only, no user-visible
       change)
-- [ ] Confirm no `.docz.yaml` user-config files would break
+- [x] Confirm no `.docz.yaml` user-config files would break (status, schema,
+      and YAML key spellings are unchanged)
 
 #### Success Criteria
 
@@ -250,14 +251,14 @@ Run the full quality gate and confirm zero behavioral change.
 
 ## Testing Plan
 
-- [ ] Run existing test suite (`make test`) and confirm zero golden-file diffs
-- [ ] Add a single regression test that asserts `currentDate` returns a
+- [x] Run existing test suite (`make test`) and confirm zero golden-file diffs
+- [x] Add a single regression test that asserts `currentDate` returns a
       stable `YYYY-MM-DD` string when `timeNow` is pinned (verifies the
       `time.DateOnly` swap)
-- [ ] Add a regression test for `firstH1` that exercises a file with CRLF
+- [x] Add a regression test for `firstH1` that exercises a file with CRLF
       line endings (sanity-checks the `bytes.NewReader` swap; full CRLF
       handling deferred to IMPL-0006)
-- [ ] Manual smoke test against the docz repo itself
+- [x] Manual smoke test against the docz repo itself
 
 ## Decisions
 
