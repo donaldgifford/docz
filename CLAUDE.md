@@ -36,7 +36,7 @@ make ci             # full CI pipeline (lint + test + build + license-check)
 ## Architecture
 
 - `cmd/` — Cobra commands (root, init, create, update, list, template, config, wiki, version)
-- `internal/config/` — Config structs, Load(), Validate(), DefaultConfig(), WikiConfig, ToCConfig
+- `internal/config/` — Config structs, Load(), Validate(), DefaultConfig(), WikiConfig, ToCConfig; centralized file-mode (`FileMode`, `DirMode`) and filename constants (`ConfigFileName`, `IndexFileName`, `WikiIndexName`, `MkDocsFileName`, `TemplatesDir`) in `constants.go`
 - `internal/document/` — Frontmatter parsing, document creation, ID scanning
 - `internal/index/` — README index table generation with marker-based splicing
 - `internal/template/` — Embedded templates, resolution, rendering

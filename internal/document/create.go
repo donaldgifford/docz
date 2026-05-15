@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"time"
 
+	"github.com/donaldgifford/docz/internal/config"
 	doctemplate "github.com/donaldgifford/docz/internal/template"
 )
 
@@ -40,7 +42,7 @@ var idPattern = regexp.MustCompile(`^(\d+)-.*\.md$`)
 func Create(opts *CreateOptions) (CreateResult, error) {
 	dir := filepath.Join(opts.DocsDir, opts.TypeDir)
 
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, config.DirMode); err != nil {
 		return CreateResult{}, fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
@@ -75,7 +77,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		return CreateResult{}, fmt.Errorf("rendering template: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, []byte(rendered), 0o644); err != nil {
+	if err := os.WriteFile(filePath, []byte(rendered), config.FileMode); err != nil {
 		return CreateResult{}, fmt.Errorf("writing file: %w", err)
 	}
 
@@ -116,6 +118,5 @@ func nextID(dir string) int {
 }
 
 func currentDate() string {
-	return fmt.Sprintf("%d-%02d-%02d",
-		timeNow().Year(), timeNow().Month(), timeNow().Day())
+	return timeNow().Format(time.DateOnly)
 }

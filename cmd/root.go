@@ -41,6 +41,7 @@ It creates documents with auto-incremented IDs, YAML frontmatter, and
 auto-generated index pages.
 
 ` + config.TypesHelp(),
+	SilenceUsage: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

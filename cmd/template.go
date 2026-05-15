@@ -98,7 +98,7 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(outPath, []byte(content), config.FileMode); err != nil {
 		return fmt.Errorf("writing template to %s: %w", outPath, err)
 	}
 
@@ -112,7 +112,7 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	overrideDir := filepath.Join(appCfg.DocsDir, "templates")
+	overrideDir := filepath.Join(appCfg.DocsDir, config.TemplatesDir)
 	overridePath := filepath.Join(overrideDir, docType+".md")
 
 	if _, err := os.Stat(overridePath); err == nil {
@@ -124,11 +124,11 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := os.MkdirAll(overrideDir, 0o750); err != nil {
+	if err := os.MkdirAll(overrideDir, config.DirMode); err != nil {
 		return fmt.Errorf("creating templates directory: %w", err)
 	}
 
-	if err := os.WriteFile(overridePath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(overridePath, []byte(content), config.FileMode); err != nil {
 		return fmt.Errorf("writing override template: %w", err)
 	}
 

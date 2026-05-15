@@ -41,7 +41,7 @@ func ParseFrontmatter(content []byte) (Frontmatter, error) {
 
 	yamlBlock, _, found := bytes.Cut(rest, []byte("\n---"))
 	if !found {
-		return fm, fmt.Errorf("unterminated YAML frontmatter: missing closing ---")
+		return fm, errors.New("unterminated YAML frontmatter: missing closing ---")
 	}
 	if err := yaml.Unmarshal(yamlBlock, &fm); err != nil {
 		return fm, fmt.Errorf("parsing YAML frontmatter: %w", err)

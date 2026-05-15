@@ -174,6 +174,10 @@ func TestFirstH1(t *testing.T) {
 		{"no heading", "Just text\n", ""},
 		{"h2 only", "## Not H1\n", ""},
 		{"heading with extra spaces", "#  Spaced  Title \n", "Spaced  Title"},
+		// Sanity-check the bytes.NewReader swap: bufio.Scanner strips trailing
+		// \r on CRLF lines, so the H1 should still parse cleanly. Full CRLF
+		// handling for non-heading lines is deferred to IMPL-0006.
+		{"crlf heading", "# CRLF Heading\r\n", "CRLF Heading"},
 	}
 
 	for _, tt := range tests {

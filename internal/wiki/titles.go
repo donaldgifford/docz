@@ -1,8 +1,8 @@
-// Package wiki provides MkDocs nav generation from a docs directory tree.
 package wiki
 
 import (
 	"bufio"
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,9 +52,12 @@ func FilenameTitle(filename string) string {
 }
 
 // firstH1 scans file content for the first markdown H1 heading and returns
-// the heading text. Returns empty string if no H1 is found.
+// the heading text. Returns empty string if no H1 is found. Scanner errors
+// (e.g. a line exceeding bufio's max token size) are read to surface intent
+// but deliberately discarded so callers don't have to handle them — title
+// derivation always falls back to the filename.
 func firstH1(data []byte) string {
-	scanner := bufio.NewScanner(strings.NewReader(string(data)))
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 	inFrontmatter := false
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -73,6 +76,11 @@ func firstH1(data []byte) string {
 			return strings.TrimSpace(after)
 		}
 	}
+	//nolint:errcheck,gosec // intentional: firstH1 contract is to never
+	// return an error; scanner errors fall back to filename-based title
+	// resolution at the call site. Proper logging arrives with slog in
+	// IMPL-0009.
+	scanner.Err()
 	return ""
 }
 

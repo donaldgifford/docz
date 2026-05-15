@@ -61,7 +61,7 @@ func runUpdate(_ *cobra.Command, args []string) error {
 
 func updateType(typeName string) error {
 	typeDir := appCfg.TypeDir(typeName)
-	readmePath := filepath.Join(typeDir, "README.md")
+	readmePath := filepath.Join(typeDir, config.IndexFileName)
 
 	if verbose {
 		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", typeDir)
@@ -138,7 +138,7 @@ func updateToCs(typeDir string, docs []index.DocEntry) {
 			continue
 		}
 
-		if err := os.WriteFile(docPath, []byte(updated), 0o644); err != nil {
+		if err := os.WriteFile(docPath, []byte(updated), config.FileMode); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", docPath, err)
 			continue
 		}

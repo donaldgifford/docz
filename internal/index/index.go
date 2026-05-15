@@ -2,13 +2,16 @@
 package index
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
+	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/document"
 	doctemplate "github.com/donaldgifford/docz/internal/template"
 )
@@ -33,7 +36,7 @@ type DocEntry struct {
 func ScanDocuments(dir string) ([]DocEntry, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
@@ -61,8 +64,8 @@ func ScanDocuments(dir string) ([]DocEntry, error) {
 		})
 	}
 
-	sort.Slice(docs, func(i, j int) bool {
-		return docs[i].ID < docs[j].ID
+	slices.SortFunc(docs, func(a, b DocEntry) int {
+		return strings.Compare(a.ID, b.ID)
 	})
 
 	return docs, nil
@@ -92,7 +95,7 @@ func GenerateTable(docs []DocEntry, heading string) string {
 func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return createNewReadme(readmePath, typeName, tableContent)
 		}
 		return "", fmt.Errorf("reading %s: %w", readmePath, err)
@@ -106,7 +109,7 @@ func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
 		return msg, nil
 	}
 
-	if err := os.WriteFile(readmePath, []byte(newContent), 0o644); err != nil {
+	if err := os.WriteFile(readmePath, []byte(newContent), config.FileMode); err != nil {
 		return "", fmt.Errorf("writing %s: %w", readmePath, err)
 	}
 
@@ -117,7 +120,7 @@ func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
 func DryRunReadme(readmePath, typeName, tableContent string) (string, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			header, headerErr := doctemplate.EmbeddedIndexHeader(typeName)
 			if headerErr != nil {
 				return "", headerErr
@@ -159,11 +162,11 @@ func createNewReadme(path, typeName, tableContent string) (string, error) {
 	content := header + beginMarker + "\n" + tableContent + endMarker + "\n"
 
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, config.DirMode); err != nil {
 		return "", fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), config.FileMode); err != nil {
 		return "", fmt.Errorf("writing %s: %w", path, err)
 	}
 

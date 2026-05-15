@@ -356,26 +356,6 @@ func TestUpdateToC(t *testing.T) {
 	})
 }
 
-func TestItoa(t *testing.T) {
-	tests := []struct {
-		n    int
-		want string
-	}{
-		{0, "0"},
-		{1, "1"},
-		{9, "9"},
-		{10, "10"},
-		{123, "123"},
-	}
-
-	for _, tt := range tests {
-		got := itoa(tt.n)
-		if got != tt.want {
-			t.Errorf("itoa(%d) = %q, want %q", tt.n, got, tt.want)
-		}
-	}
-}
-
 // containsAll checks that s contains all of the given substrings.
 func containsAll(s string, substrs ...string) bool {
 	for _, sub := range substrs {

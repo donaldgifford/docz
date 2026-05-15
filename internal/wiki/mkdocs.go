@@ -3,9 +3,12 @@ package wiki
 import (
 	"fmt"
 	"os"
-	"sort"
+	"slices"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 // ReadMkDocs reads a mkdocs.yml file into a generic map, preserving all fields.
@@ -34,7 +37,7 @@ func WriteMkDocs(path string, data map[string]any) error {
 		return fmt.Errorf("marshalling mkdocs.yml: %w", err)
 	}
 
-	if err := os.WriteFile(path, out, 0o644); err != nil {
+	if err := os.WriteFile(path, out, config.FileMode); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 
@@ -119,9 +122,8 @@ func MergeNavOrder(existing []string, newEntries []NavEntry) []NavEntry {
 		}
 	}
 
-	// Sort new entries alphabetically by title.
-	sort.Slice(newOnes, func(i, j int) bool {
-		return newOnes[i].Title < newOnes[j].Title
+	slices.SortFunc(newOnes, func(a, b NavEntry) int {
+		return strings.Compare(a.Title, b.Title)
 	})
 
 	result = append(result, newOnes...)
