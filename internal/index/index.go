@@ -2,11 +2,13 @@
 package index
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/donaldgifford/docz/internal/config"
@@ -34,7 +36,7 @@ type DocEntry struct {
 func ScanDocuments(dir string) ([]DocEntry, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
@@ -62,8 +64,8 @@ func ScanDocuments(dir string) ([]DocEntry, error) {
 		})
 	}
 
-	sort.Slice(docs, func(i, j int) bool {
-		return docs[i].ID < docs[j].ID
+	slices.SortFunc(docs, func(a, b DocEntry) int {
+		return strings.Compare(a.ID, b.ID)
 	})
 
 	return docs, nil
@@ -93,7 +95,7 @@ func GenerateTable(docs []DocEntry, heading string) string {
 func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return createNewReadme(readmePath, typeName, tableContent)
 		}
 		return "", fmt.Errorf("reading %s: %w", readmePath, err)
@@ -118,7 +120,7 @@ func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
 func DryRunReadme(readmePath, typeName, tableContent string) (string, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			header, headerErr := doctemplate.EmbeddedIndexHeader(typeName)
 			if headerErr != nil {
 				return "", headerErr

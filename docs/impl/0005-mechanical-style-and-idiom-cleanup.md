@@ -128,31 +128,31 @@ Each substitution is local; no APIs change.
 
 #### Tasks
 
-- [ ] Replace `os.IsNotExist(err)` with `errors.Is(err, fs.ErrNotExist)` at:
+- [x] Replace `os.IsNotExist(err)` with `errors.Is(err, fs.ErrNotExist)` at:
   - `cmd/wiki.go:120`
   - `internal/index/index.go:36`
   - `internal/index/index.go:95`
   - `internal/index/index.go:120`
-- [ ] Add `io/fs` imports where needed
-- [ ] Replace `sort.Slice` with `slices.SortFunc` at:
+- [x] Add `io/fs` imports where needed
+- [x] Replace `sort.Slice` with `slices.SortFunc` at:
   - `internal/index/index.go:64`
   - `internal/wiki/wiki.go:104`
   - `internal/wiki/wiki.go:109`
   - `internal/wiki/wiki.go:114`
   - `internal/wiki/wiki.go:148`
   - `internal/wiki/mkdocs.go:123`
-- [ ] Drop `sort` imports where they become unused; add `slices` imports
-- [ ] Replace `bufio.NewScanner(strings.NewReader(string(data)))` with
+- [x] Drop `sort` imports where they become unused; add `slices` imports
+- [x] Replace `bufio.NewScanner(strings.NewReader(string(data)))` with
       `bufio.NewScanner(bytes.NewReader(data))` at `internal/wiki/titles.go:57`
-- [ ] Add `scanner.Err()` check after the `firstH1` loop (currently missing)
-- [ ] Replace path string-concat with `filepath.Join` at
+- [x] Add `scanner.Err()` check after the `firstH1` loop (currently missing)
+- [x] Replace path string-concat with `filepath.Join` at
       `internal/template/template.go:72` (note: `internal/template/embed.go`
       uses must stay forward-slash for `embed.FS`)
-- [ ] Replace path string-concat with `filepath.Join` at
+- [x] Replace path string-concat with `filepath.Join` at
       `internal/template/template.go:98`
-- [ ] Delete `internal/toc/toc.go:itoa()` (lines 209-219); add `strconv` import
+- [x] Delete `internal/toc/toc.go:itoa()` (lines 209-219); add `strconv` import
       to `toc.go`; replace call site at `toc.go:133` with `strconv.Itoa(...)`
-- [ ] Replace `currentDate()` body with `timeNow().Format(time.DateOnly)` at
+- [x] Replace `currentDate()` body with `timeNow().Format(time.DateOnly)` at
       `internal/document/create.go:118-121`
 
 #### Success Criteria

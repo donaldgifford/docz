@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,7 +119,7 @@ func runWikiInit(_ *cobra.Command, _ []string) error {
 func runWikiUpdate(_ *cobra.Command, _ []string) error {
 	mkdocsPath := appCfg.Wiki.MkDocsPath
 
-	if _, err := os.Stat(mkdocsPath); os.IsNotExist(err) {
+	if _, err := os.Stat(mkdocsPath); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf(
 			"%s not found (run `docz wiki init` first)",
 			mkdocsPath,

@@ -5,6 +5,7 @@ package toc
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -130,7 +131,7 @@ func ParseHeadings(content string) []Heading {
 		// Apply duplicate suffix.
 		slugCounts[slug]++
 		if slugCounts[slug] > 1 {
-			slug = slug + "-" + itoa(slugCounts[slug]-1)
+			slug = slug + "-" + strconv.Itoa(slugCounts[slug]-1)
 		}
 
 		headings = append(headings, Heading{
@@ -203,17 +204,4 @@ func UpdateToC(content string, minHeadings int) (string, bool) {
 	sb.WriteString(afterEnd)
 
 	return sb.String(), true
-}
-
-// itoa converts a small integer to a string without importing strconv.
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	var digits []byte
-	for n > 0 {
-		digits = append([]byte{byte('0' + n%10)}, digits...)
-		n /= 10
-	}
-	return string(digits)
 }

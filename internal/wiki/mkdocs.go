@@ -3,7 +3,8 @@ package wiki
 import (
 	"fmt"
 	"os"
-	"sort"
+	"slices"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 
@@ -121,9 +122,8 @@ func MergeNavOrder(existing []string, newEntries []NavEntry) []NavEntry {
 		}
 	}
 
-	// Sort new entries alphabetically by title.
-	sort.Slice(newOnes, func(i, j int) bool {
-		return newOnes[i].Title < newOnes[j].Title
+	slices.SortFunc(newOnes, func(a, b NavEntry) int {
+		return strings.Compare(a.Title, b.Title)
 	})
 
 	result = append(result, newOnes...)

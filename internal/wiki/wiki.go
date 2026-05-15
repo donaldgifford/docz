@@ -4,9 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 )
+
+// homeTitle is the nav title applied to the root-level index.md page.
+const homeTitle = "Home"
 
 // doczDocPattern matches docz-managed document filenames like "0001-some-title.md".
 var doczDocPattern = regexp.MustCompile(`^\d{4,}-.*\.md$`)
@@ -78,8 +81,7 @@ func scanDir(absDir, relDir string, exclude map[string]bool, navTitles map[strin
 		if isOverviewFile(name) {
 			var title string
 			if relDir == "" {
-				// Root-level index.md is always "Home" in the nav.
-				title = "Home"
+				title = homeTitle
 			} else {
 				title = "Overview"
 			}
@@ -100,19 +102,16 @@ func scanDir(absDir, relDir string, exclude map[string]bool, navTitles map[strin
 		}
 	}
 
-	// Sort docz entries by filename (numeric ID order).
-	sort.Slice(doczEntries, func(i, j int) bool {
-		return filepath.Base(doczEntries[i].Path) < filepath.Base(doczEntries[j].Path)
+	slices.SortFunc(doczEntries, func(a, b NavEntry) int {
+		return strings.Compare(filepath.Base(a.Path), filepath.Base(b.Path))
 	})
 
-	// Sort other entries alphabetically by title.
-	sort.Slice(otherEntries, func(i, j int) bool {
-		return otherEntries[i].Title < otherEntries[j].Title
+	slices.SortFunc(otherEntries, func(a, b NavEntry) int {
+		return strings.Compare(a.Title, b.Title)
 	})
 
-	// Sort directory groups alphabetically by title.
-	sort.Slice(dirGroups, func(i, j int) bool {
-		return dirGroups[i].Title < dirGroups[j].Title
+	slices.SortFunc(dirGroups, func(a, b NavEntry) int {
+		return strings.Compare(a.Title, b.Title)
 	})
 
 	var result []NavEntry
@@ -138,15 +137,15 @@ func SortEntries(entries []NavEntry) []NavEntry {
 
 	for i := range entries {
 		if entries[i].Path == "index.md" {
-			entries[i].Title = "Home"
+			entries[i].Title = homeTitle
 			home = &entries[i]
 		} else {
 			rest = append(rest, entries[i])
 		}
 	}
 
-	sort.Slice(rest, func(i, j int) bool {
-		return rest[i].Title < rest[j].Title
+	slices.SortFunc(rest, func(a, b NavEntry) int {
+		return strings.Compare(a.Title, b.Title)
 	})
 
 	var result []NavEntry
