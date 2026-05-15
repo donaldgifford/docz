@@ -5,9 +5,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 // TemplateData holds all variables available for template rendering.
@@ -28,6 +31,9 @@ var (
 	multipleHyphens   = regexp.MustCompile(`-{2,}`)
 )
 
+// maxSlugLength caps generated slugs at 64 characters so resulting filenames
+// stay comfortably below typical filesystem path limits when combined with the
+// document ID prefix and directory path.
 const maxSlugLength = 64
 
 // Slugify converts a title to kebab-case.
@@ -69,7 +75,7 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	}
 
 	// 2. Local override.
-	localPath := docsDir + "/templates/" + docType + ".md"
+	localPath := filepath.Join(docsDir, config.TemplatesDir, docType+".md")
 	if data, err := os.ReadFile(localPath); err == nil {
 		return string(data), nil
 	}
@@ -95,7 +101,7 @@ type WikiIndexData struct {
 // local override at <docsDir>/templates/wiki_index.md before falling back to
 // the embedded default.
 func ResolveWikiIndex(docsDir string) (string, error) {
-	localPath := docsDir + "/templates/wiki_index.md"
+	localPath := filepath.Join(docsDir, config.TemplatesDir, "wiki_index.md")
 	if data, err := os.ReadFile(localPath); err == nil {
 		return string(data), nil
 	}

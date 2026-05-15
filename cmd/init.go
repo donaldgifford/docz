@@ -43,11 +43,11 @@ func runInit(_ *cobra.Command, _ []string) error {
 		}
 
 		typeDir := appCfg.TypeDir(typeName)
-		if err := os.MkdirAll(typeDir, 0o750); err != nil {
+		if err := os.MkdirAll(typeDir, config.DirMode); err != nil {
 			return fmt.Errorf("creating directory %s: %w", typeDir, err)
 		}
 
-		readmePath := filepath.Join(typeDir, "README.md")
+		readmePath := filepath.Join(typeDir, config.IndexFileName)
 		if err := writeIndexReadme(readmePath, typeName); err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 }
 
 func writeDefaultConfig() error { //nolint:funlen // config template string
-	const configPath = ".docz.yaml"
+	configPath := config.ConfigFileName
 
 	if _, err := os.Stat(configPath); err == nil {
 		if verbose {
@@ -174,7 +174,7 @@ toc:
   min_headings: 3
 `
 
-	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(configPath, []byte(content), config.FileMode); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 
@@ -201,7 +201,7 @@ func writeIndexReadme(path, typeName string) error {
 		"<!-- BEGIN DOCZ AUTO-GENERATED -->\n" +
 		"<!-- END DOCZ AUTO-GENERATED -->\n"
 
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), config.FileMode); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 

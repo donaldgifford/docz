@@ -87,27 +87,27 @@ mechanical extraction — no logic changes.
 
 #### Tasks
 
-- [ ] Decide constant home: extend `internal/config` or add `internal/doczfs`
+- [x] Decide constant home: extend `internal/config` or add `internal/doczfs`
       (see Decisions §1)
-- [ ] Define `FileMode os.FileMode = 0o644` and `DirMode os.FileMode = 0o750`
+- [x] Define `FileMode os.FileMode = 0o644` and `DirMode os.FileMode = 0o750`
       constants in the chosen package
-- [ ] Replace all 13 inline `0o644` occurrences with `FileMode` (across
+- [x] Replace all 13 inline `0o644` occurrences with `FileMode` (across
       `cmd/init.go:177,204`, `cmd/template.go:131`,
       `internal/index/index.go:109,166`, `internal/document/create.go:78`,
       and others)
-- [ ] Replace all 4 inline `0o750` occurrences with `DirMode` (across
+- [x] Replace all 4 inline `0o750` occurrences with `DirMode` (across
       `cmd/init.go:46`, `cmd/template.go:127`,
       `internal/index/index.go:162`, `internal/document/create.go:43`)
-- [ ] Define filename constants: `ConfigFileName = ".docz.yaml"`,
+- [x] Define filename constants: `ConfigFileName = ".docz.yaml"`,
       `IndexFileName = "README.md"`, `WikiIndexName = "index.md"`,
       `MkDocsFileName = "mkdocs.yml"`, `TemplatesDir = "templates"`
-- [ ] Replace literal usages across `cmd/init.go:50,61`, `cmd/update.go:64`,
+- [x] Replace literal usages across `cmd/init.go:50,61`, `cmd/update.go:64`,
       `cmd/template.go:115`, `cmd/wiki.go:216,292`,
       `internal/config/config.go:134,163,169`,
       `internal/template/template.go:72,98`
-- [ ] Define `const defaultMinHeadings = 3` and reference it from
+- [x] Define `const defaultMinHeadings = 3` and reference it from
       `internal/config/config.go:141`
-- [ ] Document why `maxSlugLength = 64` (filesystem path limit) inline at
+- [x] Document why `maxSlugLength = 64` (filesystem path limit) inline at
       `internal/template/template.go:31`
 
 #### Success Criteria

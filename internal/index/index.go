@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/document"
 	doctemplate "github.com/donaldgifford/docz/internal/template"
 )
@@ -106,7 +107,7 @@ func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
 		return msg, nil
 	}
 
-	if err := os.WriteFile(readmePath, []byte(newContent), 0o644); err != nil {
+	if err := os.WriteFile(readmePath, []byte(newContent), config.FileMode); err != nil {
 		return "", fmt.Errorf("writing %s: %w", readmePath, err)
 	}
 
@@ -159,11 +160,11 @@ func createNewReadme(path, typeName, tableContent string) (string, error) {
 	content := header + beginMarker + "\n" + tableContent + endMarker + "\n"
 
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, config.DirMode); err != nil {
 		return "", fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), config.FileMode); err != nil {
 		return "", fmt.Errorf("writing %s: %w", path, err)
 	}
 

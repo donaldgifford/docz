@@ -131,14 +131,14 @@ func DefaultConfig() Config {
 		},
 		Wiki: WikiConfig{
 			AutoUpdate: true,
-			MkDocsPath: "mkdocs.yml",
+			MkDocsPath: MkDocsFileName,
 			Plugins:    []string{"techdocs-core"},
-			Exclude:    []string{"templates", "examples"},
+			Exclude:    []string{TemplatesDir, "examples"},
 			NavTitles:  DefaultNavTitles(),
 		},
 		ToC: ToCConfig{
 			Enabled:     true,
-			MinHeadings: 3,
+			MinHeadings: defaultMinHeadings,
 		},
 	}
 }
@@ -160,13 +160,13 @@ func Load(configFile string) (Config, error) {
 
 	// Load global config first.
 	if home, err := os.UserHomeDir(); err == nil {
-		if mergeErr := mergeConfigFile(v, filepath.Join(home, ".docz.yaml")); mergeErr != nil {
+		if mergeErr := mergeConfigFile(v, filepath.Join(home, ConfigFileName)); mergeErr != nil {
 			return cfg, mergeErr
 		}
 	}
 
 	// Load repo-root config on top (deep merge, repo wins).
-	if mergeErr := mergeConfigFile(v, ".docz.yaml"); mergeErr != nil {
+	if mergeErr := mergeConfigFile(v, ConfigFileName); mergeErr != nil {
 		return cfg, mergeErr
 	}
 

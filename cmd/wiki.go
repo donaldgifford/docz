@@ -213,7 +213,7 @@ func runWikiUpdateDryRun(mkdocsPath string) error {
 // ensureDoczInit checks if docz has been initialized and runs init if not.
 func ensureDoczInit() error {
 	configExists := false
-	if _, err := os.Stat(".docz.yaml"); err == nil {
+	if _, err := os.Stat(config.ConfigFileName); err == nil {
 		configExists = true
 	}
 
@@ -281,7 +281,7 @@ func writeMkDocsYAML(path, siteName, siteDesc string) error {
 
 	b.WriteString("\nnav:\n    - Home: index.md\n")
 
-	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(b.String()), config.FileMode); err != nil {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 
@@ -289,7 +289,7 @@ func writeMkDocsYAML(path, siteName, siteDesc string) error {
 }
 
 func ensureDocsIndex(siteName string) error {
-	indexPath := filepath.Join(appCfg.DocsDir, "index.md")
+	indexPath := filepath.Join(appCfg.DocsDir, config.WikiIndexName)
 
 	if _, err := os.Stat(indexPath); err == nil {
 		if verbose {
@@ -330,7 +330,7 @@ func ensureDocsIndex(siteName string) error {
 		return fmt.Errorf("rendering wiki index: %w", err)
 	}
 
-	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(indexPath, []byte(content), config.FileMode); err != nil {
 		return fmt.Errorf("writing %s: %w", indexPath, err)
 	}
 
