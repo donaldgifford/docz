@@ -212,8 +212,8 @@ Run the full quality gate and confirm zero behavioral change.
 - [x] Run `make ci` end-to-end
 - [x] Smoke-test on this repo: `docz list`, `docz update --dry-run`,
       `docz config`, `docz wiki update --dry-run`, `docz version`
-- [ ] Open PR with label `dont-release` (style cleanup only, no user-visible
-      change)
+- [x] Open PR with label `dont-release` (style cleanup only, no user-visible
+      change) — [PR #36](https://github.com/donaldgifford/docz/pull/36)
 - [x] Confirm no `.docz.yaml` user-config files would break (status, schema,
       and YAML key spellings are unchanged)
 
