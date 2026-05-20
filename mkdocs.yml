@@ -13,9 +13,16 @@ nav:
         - 'IMPL-0002: Wiki Command for MkDocs TechDocs Integration': impl/0002-wiki-command-for-mkdocs-techdocs-integration.md
         - 'IMPL-0003: Table of Contents Generation': impl/0003-table-of-contents-generation.md
         - 'IMPL-0004: Wiki Init Template and Init Enabled Fix': impl/0004-wiki-init-template-and-init-enabled-fix.md
+        - 'IMPL-0005: Mechanical Style and Idiom Cleanup': impl/0005-mechanical-style-and-idiom-cleanup.md
+        - 'IMPL-0006: Correctness and Duplication Cleanup': impl/0006-correctness-and-duplication-cleanup.md
+        - 'IMPL-0007: Eliminate Redundant File Reads and Heading Parses': impl/0007-eliminate-redundant-file-reads-and-heading-parses.md
+        - 'IMPL-0008: Move Stranded Business Logic Into Internal Packages': impl/0008-move-stranded-business-logic-into-internal-packages.md
+        - 'IMPL-0009: Runner Pattern and DocType Registry Refactor': impl/0009-runner-pattern-and-doctype-registry-refactor.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
+        - 'INV-0002: Architectural Review and Cleanup Opportunities': investigation/0002-architectural-review-and-cleanup-opportunities.md
+        - 'INV-0003: Init and Update Should Respect Config-Listed Types Only': investigation/0003-init-and-update-should-respect-config-listed-types-only.md
     - Plans:
         - Overview: plan/README.md
     - RFCs:
