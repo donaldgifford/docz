@@ -2,20 +2,22 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: docz
-  title: Docz
-  description: "A cli tool to help make managing repo docs easier."
+  name: repo-guardian
+  title: Repo Guardian
+  description: "Github App to automate repo onboarding and settings"
   annotations:
     backstage.io/code-coverage: enabled
-    backstage.io/source-location: url:https://github.com/donaldgifford/dcoz
+    backstage.io/source-location: url:https://github.com/donaldgifford/repo-guardian
     backstage.io/techdocs-ref: "dir:."
-    github.com/project-slug: "donaldgifford/docz"
+    github.com/project-slug: "donaldgifford/repo-guardian"
+    jira/project-key: "DON"
+    jira/label: "repo-guardian"
   tags:
     - go
     - github
   namespace: default
 spec:
-  owner: homelab
-  type: tool
-  system: dev-tools
   lifecycle: production
+  type: service
+  owner: donaldgifford
+  system: infrastructure
