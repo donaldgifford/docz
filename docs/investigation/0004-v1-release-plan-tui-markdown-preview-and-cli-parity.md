@@ -32,7 +32,7 @@ created: 2026-05-22
 - [Recommendation](#recommendation)
   - [Phasing into IMPL docs](#phasing-into-impl-docs)
   - [Out of scope for v1](#out-of-scope-for-v1)
-  - [Open questions for design review](#open-questions-for-design-review)
+  - [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -321,25 +321,30 @@ behavior.
 - Custom Glamour themes. Ship with `dark` / `light` / `notty`; let
   v1.x add user themes if asked.
 
-### Open questions for design review
+### Decisions
 
-1. **Cobra + Bubble Tea coexistence:** keep stock Cobra, or add
-   `charmbracelet/fang` for theming? lstk uses stock Cobra. Default
-   to that unless fang adds something we need.
-2. **TUI keybindings:** standard `q` to quit, `?` for help, `/` for
-   filter, `enter` for select, `p` for preview-in-browser. Does any
-   conflict matter? (None obvious.)
-3. **mdp dependency:** runtime dep (shell out) or bundled? If
-   bundled, do we vendor the binary in releases, or push users to
-   `go install`?
-4. **State persistence:** does the TUI remember last-used filters
-   across invocations (`$XDG_STATE_HOME/docz/`) or start fresh every
-   time? v1 starts fresh; defer.
-5. **Telemetry:** lstk has otel; do we want any? **No, not for v1.**
-6. **Windows support:** v0 docz is implicitly Unix-friendly via
-   `os.Exec` to `$EDITOR`. v1 TUI on Windows works via Bubble Tea but
-   the mdp shell-out needs a Windows test. Schedule as a v1 release
-   blocker.
+Resolved during design review on 2026-05-23.
+
+1. **Cobra + Bubble Tea coexistence:** keep stock Cobra. No fang.
+   lstk's pattern translates directly; fang offers no v1-blocking
+   capability we'd miss.
+2. **TUI keybindings:** the proposed set is accepted (`q` quit,
+   `?` help, `/` filter, `enter` select, `p` preview-in-browser).
+   No conflict surfaced; revisit if a screen needs a sixth chord.
+3. **mdp dependency:** **shell out for v1.** Detect `mdp` on PATH at
+   startup; hide the preview key when absent. Future direction (v1.x
+   or later): factor mdp's `internal/server` into a shared package
+   we can import from both repos, so docz links the renderer
+   directly. Filing the mdp-side issue is part of IMPL-0010.
+4. **State persistence:** v1 starts fresh every invocation. No
+   `$XDG_STATE_HOME/docz/` writes. Deferred entirely; revisit only
+   if users ask for sticky filters.
+5. **Telemetry:** none. docz v1 ships with zero phone-home.
+6. **Windows support:** **out of scope for v1.** Document that the
+   TUI is Unix-only (macOS, Linux, *BSD). Re-evaluate when there's
+   user demand; the Bubble Tea side already works on Windows, so the
+   work would be confined to the mdp shell-out path and `$EDITOR`
+   conventions.
 
 ## References
 
