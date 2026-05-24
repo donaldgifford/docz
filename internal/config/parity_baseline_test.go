@@ -179,6 +179,102 @@ func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
 	}
 }
 
+// TestLoad_MalformedRepoConfigReturnsError is the IMPL-0006 Phase 4
+// regression guard: a .docz.yaml that fails to parse must now surface a
+// wrapped error with the file path in the message, instead of being
+// silently swallowed in mergeConfigFile.
+func TestLoad_MalformedRepoConfigReturnsError(t *testing.T) {
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	dir := t.TempDir()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Tab inside a value plus an unclosed brace -> YAML parse error.
+	content := "types: {rfc: {dir: foo\n  not valid: : :"
+	if err := os.WriteFile(".docz.yaml", []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, loadErr := config.Load("")
+	if loadErr == nil {
+		t.Fatal("expected parse error from malformed .docz.yaml, got nil")
+	}
+	msg := loadErr.Error()
+	if !bytes.Contains([]byte(msg), []byte("parsing config file")) {
+		t.Errorf("error %q missing %q prefix", msg, "parsing config file")
+	}
+	if !bytes.Contains([]byte(msg), []byte(".docz.yaml")) {
+		t.Errorf("error %q missing file path", msg)
+	}
+}
+
+// TestLoad_MissingRepoConfigSilent is the companion guard: a missing
+// .docz.yaml must continue to return defaults without error. This is the
+// green-field case (new repo, no config yet) and must keep working.
+func TestLoad_MissingRepoConfigSilent(t *testing.T) {
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	dir := t.TempDir()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, loadErr := config.Load("")
+	if loadErr != nil {
+		t.Fatalf("missing .docz.yaml should not error, got %v", loadErr)
+	}
+	if cfg.DocsDir != "docs" {
+		t.Errorf("DocsDir = %q, want defaults", cfg.DocsDir)
+	}
+}
+
+// TestLoad_UnreadableRepoConfigReturnsError covers the third Phase 4 case:
+// a .docz.yaml that exists but cannot be read (mode 0000) must surface a
+// wrapped error rather than be silently swallowed.
+//
+// Skipped when running as root (CI containers often do) because root
+// bypasses permission bits.
+func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("permission bits don't constrain root; skipping unreadable-file test")
+	}
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	dir := t.TempDir()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(".docz.yaml", []byte("docs_dir: docs\n"), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	// Make sure the file gets cleaned up even though it has mode 0000.
+	t.Cleanup(func() { _ = os.Chmod(".docz.yaml", 0o644) })
+
+	_, loadErr := config.Load("")
+	if loadErr == nil {
+		t.Fatal("expected error reading unreadable .docz.yaml, got nil")
+	}
+	if !bytes.Contains([]byte(loadErr.Error()), []byte(".docz.yaml")) {
+		t.Errorf("error %q missing file path", loadErr.Error())
+	}
+}
+
 // TestLoad_DefaultsParity is the IMPL-0006 Phase 2 reflective parity guard.
 // With no config files present, Load() must return a Config deep-equal to
 // DefaultConfig(). Catches any future drift where Load loses or mutates

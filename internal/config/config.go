@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -257,16 +258,22 @@ func (c *Config) Validate() ([]string, error) {
 	return warnings, nil
 }
 
-// mergeConfigFile reads a YAML config file and merges it into v. If the file
-// does not exist or cannot be read, it is silently skipped.
+// mergeConfigFile reads a YAML config file and merges it into v. A missing
+// file is treated as "not configured" and silently skipped. Anything else
+// (permission denied, malformed YAML, etc.) is surfaced as a wrapped error
+// so the user sees a clear message instead of a silently half-defaulted
+// config — see IMPL-0006 Phase 4.
 func mergeConfigFile(v *viper.Viper, path string) error {
 	if _, err := os.Stat(path); err != nil {
-		return nil //nolint:nilerr // missing config file is not an error
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("checking config file %s: %w", path, err)
 	}
 	fileV := viper.New()
 	fileV.SetConfigFile(path)
 	if err := fileV.ReadInConfig(); err != nil {
-		return nil //nolint:nilerr // unreadable config file is silently skipped
+		return fmt.Errorf("parsing config file %s: %w", path, err)
 	}
 	return v.MergeConfigMap(fileV.AllSettings())
 }

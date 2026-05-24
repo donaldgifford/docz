@@ -209,15 +209,19 @@ parse error" silently. Surface the parse error.
 
 #### Tasks
 
-- [ ] In `internal/config/config.go:262-272`, change the second `return nil`
-      (after `ReadInConfig`) to return a wrapped error
-- [ ] Update the first `return nil` to check specifically for
-      `errors.Is(err, fs.ErrNotExist)`; surface other stat errors (permission
-      denied, etc.)
-- [ ] Update both call sites of `mergeConfigFile` to handle the error
-- [ ] Add tests for: (a) missing file → returns defaults silently, (b)
-      malformed YAML → returns error with path in message, (c) permission
-      denied → returns error
+- [x] In `internal/config/config.go:mergeConfigFile`, change the second
+      `return nil` (after `ReadInConfig`) to return a wrapped
+      `parsing config file ...` error
+- [x] Update the first `return nil` to check specifically for
+      `errors.Is(err, fs.ErrNotExist)`; surface other stat errors
+      (permission denied, etc.)
+- [x] Call sites of `mergeConfigFile` already propagate the error
+      (`return cfg, mergeErr`) — no change required
+- [x] Add tests for: (a) missing file → returns defaults silently
+      (`TestLoad_MissingRepoConfigSilent`), (b) malformed YAML → returns
+      error with path in message (`TestLoad_MalformedRepoConfigReturnsError`),
+      (c) permission denied → returns error
+      (`TestLoad_UnreadableRepoConfigReturnsError`)
 
 #### Success Criteria
 
