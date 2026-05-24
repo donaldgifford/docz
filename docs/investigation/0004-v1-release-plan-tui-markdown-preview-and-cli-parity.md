@@ -30,6 +30,7 @@ created: 2026-05-22
   - [TUI vs CLI mode selection](#tui-vs-cli-mode-selection)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
+  - [Prerequisites (hard gate)](#prerequisites-hard-gate)
   - [Phasing into IMPL docs](#phasing-into-impl-docs)
   - [Out of scope for v1](#out-of-scope-for-v1)
   - [Decisions](#decisions)
@@ -302,6 +303,38 @@ mdp-side work to expose them. IMPL-0010 picks the v1 approach (import
 or shell out) once that mdp investigation lands.
 
 ## Recommendation
+
+### Prerequisites (hard gate)
+
+**No design or implementation work for v1 starts until IMPL-0006,
+IMPL-0007, IMPL-0008, and IMPL-0009 are all merged to `main` with
+their status set to `Completed`.**
+
+Reasons:
+
+- IMPL-0006 settles the config semantics (defaults drift, INV-0003's
+  config-listed-types fix, `EnabledTypes` helper). The TUI surfaces
+  the type list directly — building on the current behavior would
+  bake the bug into the UI.
+- IMPL-0007 cuts the file-read/parse cost in `docz update`. The TUI
+  exposes update as an interactive screen with progress feedback; a
+  slow update path is much more visible there than at the CLI.
+- IMPL-0008 moves business logic out of `cmd/` into stable internal
+  packages. TUI screens need to call those packages without
+  re-importing `cmd/` or duplicating logic.
+- IMPL-0009 introduces the Runner pattern, `io.Writer` injection,
+  and `log/slog`. Without it, the TUI cannot capture command output
+  cleanly — it would have to redirect `os.Stdout` for every screen.
+
+Concretely, the gate is: `IMPL-0006 ∧ IMPL-0007 ∧ IMPL-0008 ∧
+IMPL-0009` all show `status: Completed` in their frontmatter and
+have a merged PR linked from their Phase-N PR task. Until that is
+true, the DESIGN doc for IMPL-0011 (TUI) is not opened and IMPL-0010
+(mdp preview) does not begin coding.
+
+The mdp-side packaging investigation can run in parallel during the
+prerequisite waves — it does not gate IMPL-0006..0009 and is gated
+by nothing on our side.
 
 ### Phasing into IMPL docs
 
