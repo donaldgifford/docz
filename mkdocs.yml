@@ -23,6 +23,7 @@ nav:
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
         - 'INV-0002: Architectural Review and Cleanup Opportunities': investigation/0002-architectural-review-and-cleanup-opportunities.md
         - 'INV-0003: Init and Update Should Respect Config-Listed Types Only': investigation/0003-init-and-update-should-respect-config-listed-types-only.md
+        - 'INV-0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity': investigation/0004-v1-release-plan-tui-markdown-preview-and-cli-parity.md
     - Plans:
         - Overview: plan/README.md
     - RFCs:
