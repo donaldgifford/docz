@@ -181,13 +181,18 @@ continues with the broken config. Convert to a hard failure.
 
 #### Tasks
 
-- [ ] Move config loading + validation out of `cobra.OnInitialize` into a
-      `PersistentPreRunE` on `rootCmd`
-- [ ] Have the `PreRunE` return the validation error so Cobra exits non-zero
-- [ ] Keep printing warnings (non-fatal) before returning the error
-- [ ] Remove the `appCfg = cfg` assignment on the error path
-- [ ] Add a test: a `.docz.yaml` with `statuses: []` causes `docz create rfc "x"`
-      to exit non-zero with the validation message
+- [x] Move config loading + validation out of `cobra.OnInitialize` into a
+      `PersistentPreRunE` on `rootCmd` (`loadAndValidateConfig`)
+- [x] Have the `PreRunE` return the validation error so Cobra exits non-zero
+- [x] Keep printing warnings (non-fatal) before returning the error
+- [x] Remove the `appCfg = cfg` assignment on the error path (load failure
+      and validation failure both return before any assignment)
+- [x] Add a test: a `.docz.yaml` with `statuses: []` causes a subcommand
+      (`docz list rfc`) to fail with the validation message
+      (`TestPersistentPreRunE_ValidationErrorFailsCommand` in `cmd/root_test.go`)
+- [x] Add a test that `docz --help` still works with a broken config
+      (`TestPersistentPreRunE_HelpWorksWithBrokenConfig`) — guards the
+      Cobra-short-circuit behavior promised by Decisions §3
 
 #### Success Criteria
 
