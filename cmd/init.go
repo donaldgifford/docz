@@ -21,6 +21,11 @@ var initCmd = &cobra.Command{
 	Long: `Create a .docz.yaml configuration file and set up the documentation
 directory structure with default README index files for each document type.
 
+If .docz.yaml already exists and declares a top-level "types:" block,
+only the types listed there are scaffolded. Omit the "types:" block (or
+delete .docz.yaml entirely and let init regenerate it) to scaffold all
+six built-in types.
+
 Existing README files are not overwritten unless --force is passed.`,
 	RunE: runInit,
 }

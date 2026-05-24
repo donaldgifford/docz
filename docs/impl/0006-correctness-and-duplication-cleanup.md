@@ -244,27 +244,21 @@ reflects the user's intent.
 
 #### Tasks
 
-- [ ] In `internal/config/config.go`, parse the user's `.docz.yaml`
-      file(s) into a raw `map[string]any` (separately from the
-      viper-merged config) to detect whether a top-level `types:` key
-      was supplied
-- [ ] If the repo-root `.docz.yaml` supplies `types:`, treat its keys as
-      the authoritative set: filter `cfg.Types` to only those names
-      after Viper unmarshal. The global `~/.docz.yaml` keeps the
-      current merge behavior; the repo file is the override boundary.
-- [ ] Document the new contract on `DefaultConfig`, `Load`, and the
-      `docz init` long-help text: "If `.docz.yaml` lists `types:`, only
-      those types are scaffolded and updated. Omit the `types:` block
-      to fall back to the full default set."
-- [ ] Add the five e2e tests INV-0003 enumerated, under
-      `cmd/init_test.go` and `cmd/update_test.go`:
-  1. rfc-only `.docz.yaml` + `docz init` → only `docs/rfc/` created
-  2. same fixture + `docz update` → only `docs/rfc/README.md` touched
-  3. no `.docz.yaml` + `docz init` → all six default type dirs scaffolded
-  4. `.docz.yaml` with `{rfc: {...}, adr: {enabled: false}}` → only rfc
-  5. incremental: start rfc-only, run `docz init`, append an `adr:`
-     block to `.docz.yaml`, re-run `docz init` → `docs/adr/` is added
-     without disturbing existing rfc files
+- [x] Add `userListedTypeNames(path)` in `internal/config/config.go` that
+      parses the YAML at path into a raw `map[string]any` and returns the
+      keys of the top-level `types:` map (nil if absent or unparseable)
+- [x] Add `applyTypesReplaceOnPresence(cfg, path)` and invoke it from both
+      `Load()` (with `ConfigFileName`) and `loadFromFile()` (with the
+      explicit path). Global `~/.docz.yaml` is intentionally NOT considered
+      for this check — repo file is the override boundary.
+- [x] Document the new contract on `Load`'s doc comment and in the
+      `docz init` long-help text
+- [x] Add the five e2e tests INV-0003 enumerated in `cmd/inv0003_test.go`:
+  1. `TestINV0003_RFCOnlyConfig_InitScaffoldsOnlyRFC`
+  2. `TestINV0003_RFCOnlyConfig_UpdateTouchesOnlyRFC`
+  3. `TestINV0003_NoConfig_InitScaffoldsAllSix`
+  4. `TestINV0003_DisabledADRListed_OnlyRFCScaffolded`
+  5. `TestINV0003_IncrementalAddType_PreservesExistingFiles`
 
 #### Success Criteria
 

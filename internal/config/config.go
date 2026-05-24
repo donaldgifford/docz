@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/viper"
+	"go.yaml.in/yaml/v3"
 )
 
 // TypeConfig holds configuration for a single document type.
@@ -149,7 +150,14 @@ func DefaultConfig() Config {
 // (.docz.yaml) config files, deep-merging them with repo root taking
 // precedence. Built-in defaults are applied for any missing keys.
 //
-// If configFile is non-empty, it is used as the sole config source (no merge).
+// If the repo-root .docz.yaml declares a top-level `types:` block, that
+// list is treated as a REPLACEMENT of the default types map: only the
+// types named there are kept on the returned Config. Omitting the
+// `types:` block keeps all six built-in types. This is the INV-0003 fix
+// implemented in IMPL-0006 Phase 5.
+//
+// If configFile is non-empty, it is used as the sole config source
+// (no merge); the same types-replace-on-presence rule applies.
 func Load(configFile string) (Config, error) {
 	cfg := DefaultConfig()
 
@@ -174,6 +182,8 @@ func Load(configFile string) (Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return cfg, err
 	}
+
+	applyTypesReplaceOnPresence(&cfg, ConfigFileName)
 
 	return cfg, nil
 }
@@ -291,5 +301,56 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 		return *defaults, err
 	}
 
+	applyTypesReplaceOnPresence(&cfg, path)
+
 	return cfg, nil
+}
+
+// applyTypesReplaceOnPresence enforces the INV-0003 contract: when the
+// user's YAML at path declares a top-level `types:` map, only the named
+// types are retained on cfg. Types listed by the user but not present in
+// the built-in default set are dropped silently (unknown types are
+// surfaced separately by Validate).
+//
+// If the file does not exist, cannot be parsed, or has no `types:` key,
+// cfg is left untouched and the merge-based behavior continues.
+func applyTypesReplaceOnPresence(cfg *Config, path string) {
+	listed := userListedTypeNames(path)
+	if listed == nil {
+		return
+	}
+
+	filtered := make(map[string]TypeConfig, len(listed))
+	for _, name := range listed {
+		if tc, ok := cfg.Types[name]; ok {
+			filtered[name] = tc
+		}
+	}
+	cfg.Types = filtered
+}
+
+// userListedTypeNames returns the keys of the top-level `types:` map in
+// the YAML file at path, or nil if the file is missing, malformed, or
+// has no `types:` key. Parse errors from a malformed file are intentionally
+// swallowed here because mergeConfigFile / loadFromFile already surface
+// them via the main load path; this helper only decides the
+// replace-vs-merge mode for the types map.
+func userListedTypeNames(path string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var raw map[string]any
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+	typesNode, ok := raw["types"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	names := make([]string, 0, len(typesNode))
+	for k := range typesNode {
+		names = append(names, k)
+	}
+	return names
 }
