@@ -36,7 +36,7 @@ docz create impl "Your Implementation Title"
 | IMPL-0002 | Wiki Command for MkDocs TechDocs Integration | Completed | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
 | IMPL-0003 | Table of Contents Generation | Completed | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
 | IMPL-0004 | Wiki Init Template and Init Enabled Fix | Completed | 2026-04-02 | Donald Gifford | [0004-wiki-init-template-and-init-enabled-fix.md](0004-wiki-init-template-and-init-enabled-fix.md) |
-| IMPL-0005 | Mechanical Style and Idiom Cleanup | Draft | 2026-05-15 | Donald Gifford | [0005-mechanical-style-and-idiom-cleanup.md](0005-mechanical-style-and-idiom-cleanup.md) |
+| IMPL-0005 | Mechanical Style and Idiom Cleanup | Completed | 2026-05-15 | Donald Gifford | [0005-mechanical-style-and-idiom-cleanup.md](0005-mechanical-style-and-idiom-cleanup.md) |
 | IMPL-0006 | Correctness and Duplication Cleanup | Draft | 2026-05-15 | Donald Gifford | [0006-correctness-and-duplication-cleanup.md](0006-correctness-and-duplication-cleanup.md) |
 | IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | Draft | 2026-05-15 | Donald Gifford | [0007-eliminate-redundant-file-reads-and-heading-parses.md](0007-eliminate-redundant-file-reads-and-heading-parses.md) |
 | IMPL-0008 | Move Stranded Business Logic Into Internal Packages | Draft | 2026-05-15 | Donald Gifford | [0008-move-stranded-business-logic-into-internal-packages.md](0008-move-stranded-business-logic-into-internal-packages.md) |

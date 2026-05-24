@@ -1,7 +1,7 @@
 ---
 id: IMPL-0005
 title: "Mechanical Style and Idiom Cleanup"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -9,7 +9,7 @@ created: 2026-05-15
 
 # IMPL 0005: Mechanical Style and Idiom Cleanup
 
-**Status:** In Progress
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-05-15
 
