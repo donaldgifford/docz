@@ -36,7 +36,7 @@ make ci             # full CI pipeline (lint + test + build + license-check)
 ## Architecture
 
 - `cmd/` — Cobra commands (root, init, create, update, list, template, config, wiki, version)
-- `internal/config/` — Config structs, Load(), Validate(), DefaultConfig(), WikiConfig, ToCConfig; centralized file-mode (`FileMode`, `DirMode`) and filename constants (`ConfigFileName`, `IndexFileName`, `WikiIndexName`, `MkDocsFileName`, `TemplatesDir`) in `constants.go`
+- `internal/config/` — Config structs, Load(), Validate(), DefaultConfig(), WikiConfig, ToCConfig; centralized file-mode (`FileMode`, `DirMode`) and filename constants (`ConfigFileName`, `IndexFileName`, `WikiIndexName`, `MkDocsFileName`, `TemplatesDir`) in `constants.go`. Defaults are sourced exclusively from `DefaultConfig()`; `Load`/`loadFromFile` unmarshal Viper output onto a pre-populated `DefaultConfig()`, so sibling fields are preserved without `SetDefault` registrations
 - `internal/document/` — Frontmatter parsing, document creation, ID scanning
 - `internal/index/` — README index table generation with marker-based splicing
 - `internal/template/` — Embedded templates, resolution, rendering; includes `docz_yaml.tmpl` consumed by `cmd/init` to render `.docz.yaml` from `config.DefaultConfig()` (single source of defaults)

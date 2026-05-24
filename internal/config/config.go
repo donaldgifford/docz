@@ -157,7 +157,6 @@ func Load(configFile string) (Config, error) {
 	}
 
 	v := viper.New()
-	setDefaults(v, &cfg)
 
 	// Load global config first.
 	if home, err := os.UserHomeDir(); err == nil {
@@ -274,47 +273,16 @@ func mergeConfigFile(v *viper.Viper, path string) error {
 
 func loadFromFile(path string, defaults *Config) (Config, error) {
 	v := viper.New()
-	setDefaults(v, defaults)
 	v.SetConfigFile(path)
 
 	if err := v.ReadInConfig(); err != nil {
 		return *defaults, err
 	}
 
-	var cfg Config
+	cfg := *defaults
 	if err := v.Unmarshal(&cfg); err != nil {
 		return *defaults, err
 	}
 
 	return cfg, nil
-}
-
-func setDefaults(v *viper.Viper, cfg *Config) {
-	v.SetDefault("docs_dir", cfg.DocsDir)
-	v.SetDefault("index.auto_update", cfg.Index.AutoUpdate)
-	v.SetDefault("index.preserve_header", cfg.Index.PreserveHeader)
-	v.SetDefault("author.from_git", cfg.Author.FromGit)
-	v.SetDefault("author.default", cfg.Author.Default)
-
-	for name, tc := range cfg.Types {
-		prefix := "types." + name + "."
-		v.SetDefault(prefix+"enabled", tc.Enabled)
-		v.SetDefault(prefix+"dir", tc.Dir)
-		v.SetDefault(prefix+"template", tc.Template)
-		v.SetDefault(prefix+"id_prefix", tc.IDPrefix)
-		v.SetDefault(prefix+"id_width", tc.IDWidth)
-		v.SetDefault(prefix+"statuses", tc.Statuses)
-		v.SetDefault(prefix+"status_field", tc.StatusField)
-	}
-
-	v.SetDefault("wiki.auto_update", cfg.Wiki.AutoUpdate)
-	v.SetDefault("wiki.mkdocs_path", cfg.Wiki.MkDocsPath)
-	v.SetDefault("wiki.plugins", cfg.Wiki.Plugins)
-	v.SetDefault("wiki.exclude", cfg.Wiki.Exclude)
-	for k, val := range cfg.Wiki.NavTitles {
-		v.SetDefault("wiki.nav_titles."+k, val)
-	}
-
-	v.SetDefault("toc.enabled", cfg.ToC.Enabled)
-	v.SetDefault("toc.min_headings", cfg.ToC.MinHeadings)
 }

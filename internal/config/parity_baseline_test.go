@@ -2,6 +2,8 @@ package config_test
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"text/template"
@@ -73,5 +75,134 @@ func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
 		if !bytes.Contains([]byte(out), []byte(want)) {
 			t.Errorf("rendered output missing header line %q", want)
 		}
+	}
+}
+
+// TestLoad_PartialOverridesPreserveSiblingDefaults is the IMPL-0006 Phase 2
+// regression guard. With `setDefaults` removed, the only thing that keeps a
+// user's partial config from clobbering sibling defaults is that
+// `Load`/`loadFromFile` unmarshal viper output onto a pre-populated
+// `DefaultConfig()` (so mapstructure leaves untouched fields alone). If a
+// future refactor reintroduces a `var cfg Config` zero-init, these checks
+// catch it.
+func TestLoad_PartialOverridesPreserveSiblingDefaults(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "partial.yaml")
+	content := `wiki:
+  repo_url: https://example.com/repo
+toc:
+  enabled: false
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	defaults := config.DefaultConfig()
+
+	if cfg.Wiki.RepoURL != "https://example.com/repo" {
+		t.Errorf("Wiki.RepoURL = %q, want override", cfg.Wiki.RepoURL)
+	}
+	if cfg.Wiki.MkDocsPath != defaults.Wiki.MkDocsPath {
+		t.Errorf(
+			"Wiki.MkDocsPath = %q, want default %q",
+			cfg.Wiki.MkDocsPath, defaults.Wiki.MkDocsPath,
+		)
+	}
+	if !cfg.Wiki.AutoUpdate {
+		t.Error("Wiki.AutoUpdate lost when only repo_url set")
+	}
+	if !reflect.DeepEqual(cfg.Wiki.Plugins, defaults.Wiki.Plugins) {
+		t.Errorf("Wiki.Plugins = %v, want default %v", cfg.Wiki.Plugins, defaults.Wiki.Plugins)
+	}
+
+	if cfg.ToC.Enabled {
+		t.Error("ToC.Enabled override not applied")
+	}
+	if cfg.ToC.MinHeadings != defaults.ToC.MinHeadings {
+		t.Errorf(
+			"ToC.MinHeadings = %d, want default %d",
+			cfg.ToC.MinHeadings, defaults.ToC.MinHeadings,
+		)
+	}
+
+	if len(cfg.Types) != len(defaults.Types) {
+		t.Errorf("Types count = %d, want %d (defaults preserved)",
+			len(cfg.Types), len(defaults.Types))
+	}
+}
+
+// TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults covers the
+// repo-root config path (not explicit-file), which uses MergeConfigMap +
+// Unmarshal-on-defaults instead of loadFromFile.
+func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	dir := t.TempDir()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	content := `author:
+  default: "Test Author"
+`
+	if err := os.WriteFile(".docz.yaml", []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	defaults := config.DefaultConfig()
+
+	if cfg.Author.Default != "Test Author" {
+		t.Errorf("Author.Default = %q, want override", cfg.Author.Default)
+	}
+	if !cfg.Author.FromGit {
+		t.Error("Author.FromGit lost when only default set")
+	}
+	if cfg.DocsDir != defaults.DocsDir {
+		t.Errorf("DocsDir = %q, want default %q", cfg.DocsDir, defaults.DocsDir)
+	}
+	if !reflect.DeepEqual(cfg.Wiki, defaults.Wiki) {
+		t.Errorf("Wiki section lost defaults: got %#v, want %#v", cfg.Wiki, defaults.Wiki)
+	}
+}
+
+// TestLoad_DefaultsParity is the IMPL-0006 Phase 2 reflective parity guard.
+// With no config files present, Load() must return a Config deep-equal to
+// DefaultConfig(). Catches any future drift where Load loses or mutates
+// fields relative to DefaultConfig.
+func TestLoad_DefaultsParity(t *testing.T) {
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	dir := t.TempDir()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := config.Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	want := config.DefaultConfig()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Load() with no config files diverged from DefaultConfig()\nwant: %#v\ngot:  %#v",
+			want, got)
 	}
 }

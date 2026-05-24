@@ -148,15 +148,22 @@ removal.
 
 #### Tasks
 
-- [ ] Diff `setDefaults` against `DefaultConfig` and document every missing
-      field
-- [ ] **Option A** (reflection): rewrite `setDefaults` to walk
-      `DefaultConfig()` via reflection and call `v.SetDefault(path, value)`
-      for every leaf field
-- [ ] **Option B** (removal): delete `setDefaults` entirely; rely on Viper
-      unmarshalling onto a pre-populated `Config` struct (see Decisions §2)
-- [ ] Add a test that asserts `setDefaults` parity for every field in
-      `Config` via reflection (regardless of which option is chosen)
+- [x] Diff `setDefaults` against `DefaultConfig` and document every missing
+      field — confirmed drift: `MarkdownExtensions`, `Wiki.DocsDir`,
+      `RepoURL`, `SiteURL`, `Theme` missing; `toc.enabled` was wired to
+      `cfg.Wiki.AutoUpdate` (copy-paste bug)
+- [x] **Option B** (removal): delete `setDefaults` entirely; rely on Viper
+      unmarshalling onto a pre-populated `Config` struct (see Decisions §2).
+      Verified by full test suite passing without the function, plus three
+      new parity tests
+- [x] Add a parity test that exercises the removal: `Load("")` with no
+      config files must deep-equal `DefaultConfig()`
+      (`TestLoad_DefaultsParity` in `internal/config/parity_baseline_test.go`)
+- [x] Add a partial-override test: setting only `wiki.repo_url` and
+      `toc.enabled` does not drop sibling defaults
+      (`TestLoad_PartialOverridesPreserveSiblingDefaults`)
+- [x] Add a repo-root-config partial-override test covering the
+      `MergeConfigMap` path (`TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults`)
 
 #### Success Criteria
 
