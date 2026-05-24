@@ -31,21 +31,24 @@ created: 2026-05-15
   - [Phase 4: Distinguish missing vs. unparseable config files](#phase-4-distinguish-missing-vs-unparseable-config-files)
     - [Tasks](#tasks-3)
     - [Success Criteria](#success-criteria-3)
-  - [Phase 5: Wrap bare return err sites with context](#phase-5-wrap-bare-return-err-sites-with-context)
+  - [Phase 5: Honor user-listed types only (INV-0003 fix)](#phase-5-honor-user-listed-types-only-inv-0003-fix)
     - [Tasks](#tasks-4)
     - [Success Criteria](#success-criteria-4)
-  - [Phase 6: Extract ValidateType helper and EnabledTypes() method](#phase-6-extract-validatetype-helper-and-enabledtypes-method)
+  - [Phase 6: Wrap bare return err sites with context](#phase-6-wrap-bare-return-err-sites-with-context)
     - [Tasks](#tasks-5)
     - [Success Criteria](#success-criteria-5)
-  - [Phase 7: Add TypeConfig.PluralLabel; remove "adr" magic-string](#phase-7-add-typeconfigplurallabel-remove-adr-magic-string)
+  - [Phase 7: Extract ValidateType helper and EnabledTypes() method](#phase-7-extract-validatetype-helper-and-enabledtypes-method)
     - [Tasks](#tasks-6)
     - [Success Criteria](#success-criteria-6)
-  - [Phase 8: Frontmatter CRLF tolerance](#phase-8-frontmatter-crlf-tolerance)
+  - [Phase 8: Add TypeConfig.PluralLabel; remove "adr" magic-string](#phase-8-add-typeconfigplurallabel-remove-adr-magic-string)
     - [Tasks](#tasks-7)
     - [Success Criteria](#success-criteria-7)
-  - [Phase 9: Verify and ship](#phase-9-verify-and-ship)
+  - [Phase 9: Frontmatter CRLF tolerance](#phase-9-frontmatter-crlf-tolerance)
     - [Tasks](#tasks-8)
     - [Success Criteria](#success-criteria-8)
+  - [Phase 10: Verify and ship](#phase-10-verify-and-ship)
+    - [Tasks](#tasks-9)
+    - [Success Criteria](#success-criteria-9)
 - [File Changes](#file-changes)
 - [Testing Plan](#testing-plan)
 - [Decisions](#decisions)
@@ -92,28 +95,44 @@ edit and `.docz.yaml` validation errors should be visible.
 
 ### Phase 1: Derive `.docz.yaml` write from `DefaultConfig()`
 
-Eliminate the 100-line hardcoded YAML in `writeDefaultConfig` by marshalling
-`config.DefaultConfig()` directly. This removes the three-way duplication
-at its root.
+Eliminate the 100-line hardcoded YAML in `writeDefaultConfig` by rendering
+an embedded `.docz.yaml.tmpl` template with `config.DefaultConfig()` as
+the template data. This removes the three-way duplication at its root
+and lets us keep human-readable comments and a header block in the
+generated file.
+
+The `//nolint:funlen` directive on `writeDefaultConfig` was already
+removed as part of IMPL-0005 (per its Decisions §6), so it is not on
+this phase's task list.
 
 #### Tasks
 
-- [ ] Audit `cmd/init.go:60-183` against `config.DefaultConfig()` to confirm
-      they produce identical output today (baseline parity)
-- [ ] Replace the literal YAML string with `yaml.Marshal(config.DefaultConfig())`
-      using `go.yaml.in/yaml/v3` (same lib used elsewhere)
-- [ ] Verify the marshalled output round-trips through `config.Load()` back
-      to a `Config` equal to the original `DefaultConfig()`
-- [ ] Remove the `//nolint:funlen` directive on `writeDefaultConfig`
-- [ ] If preserving comments/header is desirable, prepend a fixed header
-      block (see Decisions §1)
+- [ ] Audit `cmd/init.go:writeDefaultConfig` against
+      `config.DefaultConfig()` to confirm they produce semantically
+      identical output today (baseline parity)
+- [ ] Add `internal/template/templates/docz_yaml.tmpl` containing the
+      `.docz.yaml` template: a header comment block at the top, then
+      `text/template` directives that iterate `.Types`, `.Index`,
+      `.Author`, `.Wiki`, `.ToC` from the template data with structured
+      per-section comments
+- [ ] `//go:embed` the new template alongside the existing embedded
+      doc templates in `internal/template/embed.go`; expose a
+      `EmbeddedDoczYAML() (string, error)` helper
+- [ ] Replace the literal YAML string in `cmd/init.go:writeDefaultConfig`
+      with a `text/template` render of `EmbeddedDoczYAML()` passed
+      `config.DefaultConfig()`
+- [ ] Verify the rendered output round-trips through `config.Load()`
+      back to a `Config` deep-equal to the original `DefaultConfig()`
 
 #### Success Criteria
 
 - `writeDefaultConfig` is under 30 lines
-- A round-trip test (`marshal → unmarshal → DeepEqual`) passes
+- A round-trip test (`render → parse → DeepEqual(DefaultConfig())`) passes
 - Running `docz init` in a fresh directory produces a `.docz.yaml` that
   parses cleanly under `docz config`
+- The generated `.docz.yaml` retains its header comment block and
+  per-section comments (regression guard against the "marshal loses
+  comments" failure mode)
 
 ---
 
@@ -193,7 +212,53 @@ parse error" silently. Surface the parse error.
 
 ---
 
-### Phase 5: Wrap bare `return err` sites with context
+### Phase 5: Honor user-listed types only (INV-0003 fix)
+
+Implement INV-0003's recommended Option A: when `.docz.yaml` includes a
+top-level `types:` block, treat it as a *replacement* of the defaults map
+rather than a merge target. Omission of a type means "not configured →
+skipped". Absent `types:` block → fall through to the full default set.
+
+This phase has to land before Phase 7's `EnabledTypes()` helper, because
+the helper's return value is only meaningful once the config truly
+reflects the user's intent.
+
+#### Tasks
+
+- [ ] In `internal/config/config.go`, parse the user's `.docz.yaml`
+      file(s) into a raw `map[string]any` (separately from the
+      viper-merged config) to detect whether a top-level `types:` key
+      was supplied
+- [ ] If the repo-root `.docz.yaml` supplies `types:`, treat its keys as
+      the authoritative set: filter `cfg.Types` to only those names
+      after Viper unmarshal. The global `~/.docz.yaml` keeps the
+      current merge behavior; the repo file is the override boundary.
+- [ ] Document the new contract on `DefaultConfig`, `Load`, and the
+      `docz init` long-help text: "If `.docz.yaml` lists `types:`, only
+      those types are scaffolded and updated. Omit the `types:` block
+      to fall back to the full default set."
+- [ ] Add the five e2e tests INV-0003 enumerated, under
+      `cmd/init_test.go` and `cmd/update_test.go`:
+  1. rfc-only `.docz.yaml` + `docz init` → only `docs/rfc/` created
+  2. same fixture + `docz update` → only `docs/rfc/README.md` touched
+  3. no `.docz.yaml` + `docz init` → all six default type dirs scaffolded
+  4. `.docz.yaml` with `{rfc: {...}, adr: {enabled: false}}` → only rfc
+  5. incremental: start rfc-only, run `docz init`, append an `adr:`
+     block to `.docz.yaml`, re-run `docz init` → `docs/adr/` is added
+     without disturbing existing rfc files
+
+#### Success Criteria
+
+- The reproduction from INV-0003 — an rfc-only `.docz.yaml` + bare
+  `docz init` — now scaffolds *only* `docs/rfc/`
+- The green-field UX (no `.docz.yaml` present → all six dirs) is
+  preserved, with a regression test guarding it
+- Status of INV-0003 can be flipped to `Concluded` and linked to the
+  PR for this wave
+
+---
+
+### Phase 6: Wrap bare `return err` sites with context
 
 Walk every flagged site and add `fmt.Errorf("doing X: %w", err)` wrapping.
 
@@ -219,7 +284,7 @@ Walk every flagged site and add `fmt.Errorf("doing X: %w", err)` wrapping.
 
 ---
 
-### Phase 6: Extract `ValidateType` helper and `EnabledTypes()` method
+### Phase 7: Extract `ValidateType` helper and `EnabledTypes()` method
 
 Collapse the four "unknown document type" sites and three enabled-type
 guard blocks into single helpers.
@@ -253,7 +318,7 @@ guard blocks into single helpers.
 
 ---
 
-### Phase 7: Add `TypeConfig.PluralLabel`; remove `"adr"` magic-string
+### Phase 8: Add `TypeConfig.PluralLabel`; remove `"adr"` magic-string
 
 Replace the special-case at `cmd/update.go:85-87` with config-driven
 pluralization.
@@ -283,7 +348,7 @@ pluralization.
 
 ---
 
-### Phase 8: Frontmatter CRLF tolerance
+### Phase 9: Frontmatter CRLF tolerance
 
 `document.ParseFrontmatter` currently rejects `---\r\n` line endings.
 
@@ -301,7 +366,7 @@ pluralization.
 
 ---
 
-### Phase 9: Verify and ship
+### Phase 10: Verify and ship
 
 #### Tasks
 
@@ -338,7 +403,7 @@ pluralization.
 
 ## Testing Plan
 
-- [ ] Round-trip test: `DefaultConfig() → yaml.Marshal → yaml.Unmarshal →
+- [ ] Round-trip test: `DefaultConfig() → template-render → yaml.Unmarshal →
       deep-equal`
 - [ ] Reflective test: every leaf field on `Config` is covered by
       `setDefaults` (or `setDefaults` no longer exists)
@@ -346,6 +411,10 @@ pluralization.
       config
 - [ ] Validation-error tests: empty `docs_dir`, type with empty `statuses` —
       both should cause non-zero exit
+- [ ] **INV-0003 e2e suite** (`cmd/init_test.go`, `cmd/update_test.go`):
+      rfc-only config → only rfc scaffolded; no-config → all six;
+      disabled adr → only rfc; incremental add of adr → adr appears
+      without disturbing rfc
 - [ ] `ValidateType` table-driven test: canonical names, aliases, unknown
       names, empty string, uppercase
 - [ ] `EnabledTypes` test: order is sorted, disabled types excluded
@@ -385,12 +454,20 @@ Resolved during INV-0002 planning review.
 
 - Builds on IMPL-0005 (assumes idiom modernization has landed; we use
   `errors.Is(err, fs.ErrNotExist)` and similar in this wave)
+- Delivers the resolution for INV-0003 as Phase 5 of this wave; INV-0003
+  can be closed when this wave merges
 - Must merge before IMPL-0008 (which assumes `EnabledTypes` and
   `ValidateType` are available)
+- Must reach `Completed` before any v1 design/implementation work begins,
+  per the INV-0004 prerequisite gate (alongside IMPL-0007/0008/0009)
 
 ## References
 
 - INV-0002 — Wave 2, findings F7–F12, F34, F38–F40, F48, F49
+- INV-0003 — Init and update should respect config-listed types only;
+  Phase 5 of this wave implements its recommended Option A
+- INV-0004 — v1 release plan; this wave is part of the hard prerequisite
+  gate for v1 design/impl
 - PR #30 — `markdown_extensions` defaults-drift case study
 - PR #31 — disabled-types defaults-drift case study
 - Viper `MergeConfigMap` semantics — relevant to Decisions §2
