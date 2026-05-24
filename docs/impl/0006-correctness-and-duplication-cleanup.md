@@ -107,22 +107,25 @@ this phase's task list.
 
 #### Tasks
 
-- [ ] Audit `cmd/init.go:writeDefaultConfig` against
+- [x] Audit `cmd/init.go:writeDefaultConfig` against
       `config.DefaultConfig()` to confirm they produce semantically
-      identical output today (baseline parity)
-- [ ] Add `internal/template/templates/docz_yaml.tmpl` containing the
+      identical output today (baseline parity) — confirmed drift:
+      hardcoded YAML omitted `wiki.nav_titles`, exactly the F12 bug
+- [x] Add `internal/template/templates/docz_yaml.tmpl` containing the
       `.docz.yaml` template: a header comment block at the top, then
       `text/template` directives that iterate `.Types`, `.Index`,
       `.Author`, `.Wiki`, `.ToC` from the template data with structured
       per-section comments
-- [ ] `//go:embed` the new template alongside the existing embedded
+- [x] `//go:embed` the new template alongside the existing embedded
       doc templates in `internal/template/embed.go`; expose a
       `EmbeddedDoczYAML() (string, error)` helper
-- [ ] Replace the literal YAML string in `cmd/init.go:writeDefaultConfig`
+- [x] Replace the literal YAML string in `cmd/init.go:writeDefaultConfig`
       with a `text/template` render of `EmbeddedDoczYAML()` passed
       `config.DefaultConfig()`
-- [ ] Verify the rendered output round-trips through `config.Load()`
+- [x] Verify the rendered output round-trips through `config.Load()`
       back to a `Config` deep-equal to the original `DefaultConfig()`
+      (guarded by `TestDoczYAMLTemplate_RoundTripsToDefaultConfig` in
+      `internal/config/parity_baseline_test.go`)
 
 #### Success Criteria
 

@@ -1,0 +1,57 @@
+# .docz.yaml -- configuration for the docz CLI.
+#
+# This file is created by `docz init` and read by every other docz command.
+# Edit anything below; rerun `docz init` only on a fresh checkout — the
+# command will not overwrite an existing .docz.yaml.
+#
+# About the `types:` block:
+#   If you include `types:`, docz uses ONLY the types you list. Omitting a
+#   type opts it out of scaffolding and updates. Remove the `types:` block
+#   entirely to keep all six built-in types (rfc, adr, design, impl, plan,
+#   investigation).
+#
+# Documentation: https://github.com/donaldgifford/docz
+
+docs_dir: {{ .DocsDir }}
+
+types:
+{{- range $name, $tc := .Types }}
+  {{ $name }}:
+    enabled: {{ $tc.Enabled }}
+    dir: {{ $tc.Dir }}
+    template: "{{ $tc.Template }}"
+    id_prefix: "{{ $tc.IDPrefix }}"
+    id_width: {{ $tc.IDWidth }}
+    statuses:
+{{- range $tc.Statuses }}
+      - {{ . }}
+{{- end }}
+    status_field: "{{ $tc.StatusField }}"
+{{ end }}
+index:
+  auto_update: {{ .Index.AutoUpdate }}
+  preserve_header: {{ .Index.PreserveHeader }}
+
+author:
+  from_git: {{ .Author.FromGit }}
+  default: "{{ .Author.Default }}"
+
+wiki:
+  auto_update: {{ .Wiki.AutoUpdate }}
+  mkdocs_path: {{ .Wiki.MkDocsPath }}
+  plugins:
+{{- range .Wiki.Plugins }}
+    - {{ . }}
+{{- end }}
+  exclude:
+{{- range .Wiki.Exclude }}
+    - {{ . }}
+{{- end }}
+  nav_titles:
+{{- range $k, $v := .Wiki.NavTitles }}
+    {{ $k }}: {{ $v }}
+{{- end }}
+
+toc:
+  enabled: {{ .ToC.Enabled }}
+  min_headings: {{ .ToC.MinHeadings }}
