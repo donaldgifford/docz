@@ -1,6 +1,7 @@
 package toc
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -364,4 +365,48 @@ func containsAll(s string, substrs ...string) bool {
 		}
 	}
 	return true
+}
+
+// buildBenchDoc synthesizes a markdown document with n H2/H3 headings,
+// realistic-looking body text between them, and the ToC marker pair.
+// Used by BenchmarkUpdateToC to feed UpdateToC a representative input
+// across 10/50/200 heading sizes.
+func buildBenchDoc(numHeadings int) string {
+	var sb strings.Builder
+	sb.WriteString("# Bench Doc\n\n")
+	sb.WriteString(BeginMarker)
+	sb.WriteByte('\n')
+	sb.WriteString(EndMarker)
+	sb.WriteString("\n\n")
+	for i := 1; i <= numHeadings; i++ {
+		level := "## "
+		if i%3 == 0 {
+			level = "### "
+		}
+		sb.WriteString(level)
+		sb.WriteString("Section ")
+		sb.WriteString(strconv.Itoa(i))
+		sb.WriteString("\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit.\n\n")
+	}
+	return sb.String()
+}
+
+// BenchmarkUpdateToC measures UpdateToC cost on a document with
+// 10 / 50 / 200 headings. Phase 1 baseline for IMPL-0007; Phase 4 will
+// expand UpdateToC's return shape and this benchmark guards against
+// regression on the hot ParseHeadings + GenerateToC path.
+func BenchmarkUpdateToC(b *testing.B) {
+	for _, n := range []int{10, 50, 200} {
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			content := buildBenchDoc(n)
+			b.ResetTimer()
+			b.ReportAllocs()
+			for b.Loop() {
+				_, found := UpdateToC(content, 3)
+				if !found {
+					b.Fatal("markers not found in synthesized doc")
+				}
+			}
+		})
+	}
 }

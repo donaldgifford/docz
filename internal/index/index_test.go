@@ -1,6 +1,7 @@
 package index
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -302,6 +303,56 @@ func writeDoc(t *testing.T, dir, filename, id, title, status, created string) {
 		"---\n\n# Body\n"
 	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// generateBenchDocs writes n synthetic docz documents into dir. Bodies
+// are deliberately non-trivial (~2KB of markdown each) so the scan cost
+// reflects a realistic large-repo profile, not a degenerate
+// frontmatter-only case.
+func generateBenchDocs(b *testing.B, dir string, n int) {
+	b.Helper()
+	body := strings.Repeat(
+		"## Section\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. "+
+			"Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\n"+
+			"### Subsection\n\nUt enim ad minim veniam, quis nostrud exercitation "+
+			"ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n",
+		8,
+	)
+	for i := 1; i <= n; i++ {
+		name := fmt.Sprintf("%04d-bench-doc-%d.md", i, i)
+		content := fmt.Sprintf(
+			"---\nid: RFC-%04d\ntitle: \"Bench Doc %d\"\nstatus: Draft\n"+
+				"author: Bench\ncreated: 2026-01-01\n---\n\n# Bench Doc %d\n\n%s",
+			i, i, i, body,
+		)
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkScanDocuments measures ScanDocuments cost across 100/500/1000
+// realistic docs. Recorded as the Phase 1 baseline for IMPL-0007 so
+// later phases can prove they did not regress the scan path.
+func BenchmarkScanDocuments(b *testing.B) {
+	for _, n := range []int{100, 500, 1000} {
+		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
+			dir := b.TempDir()
+			generateBenchDocs(b, dir, n)
+			b.ResetTimer()
+			b.ReportAllocs()
+			for b.Loop() {
+				docs, err := ScanDocuments(dir)
+				if err != nil {
+					b.Fatal(err)
+				}
+				if len(docs) != n {
+					b.Fatalf("got %d docs, want %d", len(docs), n)
+				}
+			}
+		})
 	}
 }
 

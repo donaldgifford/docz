@@ -82,27 +82,29 @@ change is a win and prevent regressions.
 
 #### Tasks
 
-- [ ] Add `BenchmarkScanDocuments` in `internal/index/index_test.go` that
-      scans a temp directory of 100 / 500 / 1000 generated docs
-- [ ] Add `BenchmarkUpdateToC` in `internal/toc/toc_test.go` that processes
-      a document with 10 / 50 / 200 headings
-- [ ] Add `BenchmarkCmdUpdate` in `cmd/update_test.go` that runs
-      `runUpdate` end-to-end against a temp directory of 100 docs (test
-      generator can synthesize realistic-looking docz files)
-- [ ] Record baseline numbers in this doc (commit them inline below)
-- [ ] Confirm the benchmarks are deterministic (run 3× and confirm
-      variance < 5%)
+- [x] Add `BenchmarkScanDocuments` in `internal/index/index_test.go`
+      (100 / 500 / 1000 generated docs with ~2KB bodies)
+- [x] Add `BenchmarkUpdateToC` in `internal/toc/toc_test.go`
+      (10 / 50 / 200 headings with realistic body text between them)
+- [x] Add `BenchmarkCmdUpdate` in `cmd/update_test.go` that runs
+      `updateType("rfc")` against a synthesized repo of 100 docs each
+      carrying ToC markers and three H2 sections
+- [x] Record baseline numbers in this doc (committed inline below)
+- [x] Confirm the benchmarks are deterministic — ran each 3× and
+      confirmed variance is under 5% for the index and toc benchmarks;
+      `BenchmarkCmdUpdate/100` was 7% (end-to-end disk + render +
+      write churn, accepted as the headline number)
 
-Baseline numbers (fill in after Phase 1):
+Baseline numbers (Apple M5 Max, Go 1.25.7, darwin/arm64, medians of 3 runs):
 
 ```
-BenchmarkScanDocuments/100   <ns/op> <B/op> <allocs/op>
-BenchmarkScanDocuments/500   ...
-BenchmarkScanDocuments/1000  ...
-BenchmarkUpdateToC/10        ...
-BenchmarkUpdateToC/50        ...
-BenchmarkUpdateToC/200       ...
-BenchmarkCmdUpdate/100       ...
+BenchmarkScanDocuments/100-18   1539236 ns/op   1324656 B/op   10724 allocs/op
+BenchmarkScanDocuments/500-18   7865092 ns/op   6591693 B/op   53537 allocs/op
+BenchmarkScanDocuments/1000-18 16143180 ns/op  13181361 B/op  107053 allocs/op
+BenchmarkUpdateToC/10-18           7950 ns/op      8764 B/op     200 allocs/op
+BenchmarkUpdateToC/50-18          40365 ns/op     43254 B/op     929 allocs/op
+BenchmarkUpdateToC/200-18        164569 ns/op    177823 B/op    3639 allocs/op
+BenchmarkCmdUpdate/100-18       6575343 ns/op   1697682 B/op   18861 allocs/op
 ```
 
 #### Success Criteria

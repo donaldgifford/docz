@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -276,5 +277,82 @@ func TestCreateIncludesToCMarkers(t *testing.T) {
 	}
 	if !strings.Contains(content, toc.EndMarker) {
 		t.Error("created document missing ToC end marker")
+	}
+}
+
+// setupBenchUpdateDir scaffolds a temp docs/rfc with n synthesized
+// documents (each carrying ToC markers and three H2 sections) and a
+// README with the auto-generated markers, so runUpdate can be measured
+// end-to-end. Used by BenchmarkCmdUpdate.
+func setupBenchUpdateDir(b *testing.B, n int) string {
+	b.Helper()
+	dir := b.TempDir()
+	rfcDir := filepath.Join(dir, "docs", "rfc")
+	if err := os.MkdirAll(rfcDir, 0o750); err != nil {
+		b.Fatal(err)
+	}
+
+	readme := "# RFCs\n\n" +
+		"<!-- BEGIN DOCZ AUTO-GENERATED -->\n" +
+		"<!-- END DOCZ AUTO-GENERATED -->\n"
+	if err := os.WriteFile(filepath.Join(rfcDir, "README.md"), []byte(readme), 0o644); err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 1; i <= n; i++ {
+		title := fmt.Sprintf("Bench RFC %d", i)
+		filename := fmt.Sprintf("%04d-bench-rfc-%d.md", i, i)
+		content := "---\n" +
+			fmt.Sprintf("id: RFC-%04d\n", i) +
+			"title: \"" + title + "\"\n" +
+			"status: Draft\nauthor: Bench\ncreated: 2026-01-01\n---\n\n" +
+			"# " + title + "\n\n" +
+			toc.BeginMarker + "\n" +
+			toc.EndMarker + "\n\n" +
+			"## Summary\n\nText here.\n\n" +
+			"## Problem Statement\n\nMore text.\n\n" +
+			"## Design\n\nDesign details.\n"
+		if err := os.WriteFile(filepath.Join(rfcDir, filename), []byte(content), 0o644); err != nil {
+			b.Fatal(err)
+		}
+	}
+	return dir
+}
+
+// BenchmarkCmdUpdate measures runUpdate end-to-end against a synthetic
+// repo of n RFC documents. Phase 1 baseline for IMPL-0007: this is the
+// headline number Phase 3 must improve by ≥30% wall clock and ≥50%
+// fewer file reads (target stated in the impl plan).
+//
+// Stdout is redirected to a discard file so the "Updated ..." lines
+// don't pollute -bench output.
+func BenchmarkCmdUpdate(b *testing.B) {
+	origStdout := os.Stdout
+	devnull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(func() {
+		_ = devnull.Close()
+		os.Stdout = origStdout
+	})
+	os.Stdout = devnull
+
+	for _, n := range []int{100} {
+		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
+			for b.Loop() {
+				b.StopTimer()
+				dir := setupBenchUpdateDir(b, n)
+				appCfg = config.DefaultConfig()
+				appCfg.DocsDir = filepath.Join(dir, "docs")
+				updateDryRun = false
+				verbose = false
+				b.StartTimer()
+
+				if err := updateType("rfc"); err != nil {
+					b.Fatalf("updateType: %v", err)
+				}
+			}
+		})
 	}
 }
