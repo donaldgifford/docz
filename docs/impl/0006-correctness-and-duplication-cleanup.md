@@ -1,7 +1,7 @@
 ---
 id: IMPL-0006
 title: "Correctness and Duplication Cleanup"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -9,7 +9,7 @@ created: 2026-05-15
 
 # IMPL 0006: Correctness and Duplication Cleanup
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-05-15
 
@@ -414,10 +414,16 @@ pluralization.
 
 #### Tasks
 
-- [ ] Run `make ci`
-- [ ] Smoke test: bootstrap a fresh repo, run `docz init`, verify
-      `.docz.yaml` matches a `DefaultConfig` round-trip
-- [ ] Smoke test: corrupt `.docz.yaml` and confirm clear error message
+- [x] Run `make ci` — green
+- [x] Smoke test: bootstrap a fresh repo, run `docz init`, confirm
+      `.docz.yaml` renders from the embedded template with the header
+      comment block + per-section comments, and all six type dirs are
+      scaffolded
+- [x] Smoke test: corrupt `.docz.yaml` to `not: valid: yaml: : :`,
+      confirm exit 1 with `loading config: parsing config file .docz.yaml: ...`
+- [x] Smoke test: `.docz.yaml` with `types: rfc: {enabled: true, statuses: []}`,
+      confirm `docz list rfc` exits 1 with
+      `invalid config: type "rfc" has no statuses defined`
 - [ ] Open PR with `dont-release` label
 - [ ] Update INV-0002 status to "In Progress" if not already
 
