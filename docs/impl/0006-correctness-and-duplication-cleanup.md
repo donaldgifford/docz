@@ -424,8 +424,8 @@ pluralization.
 - [x] Smoke test: `.docz.yaml` with `types: rfc: {enabled: true, statuses: []}`,
       confirm `docz list rfc` exits 1 with
       `invalid config: type "rfc" has no statuses defined`
-- [ ] Open PR with `dont-release` label
-- [ ] Update INV-0002 status to "In Progress" if not already
+- [x] Open PR with `dont-release` label — PR #41
+- [x] Update INV-0002 status to "In Progress"
 
 #### Success Criteria
 
