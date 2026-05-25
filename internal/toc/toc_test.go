@@ -285,16 +285,20 @@ func TestUpdateToC(t *testing.T) {
 			"## First\n\n" +
 			"## Second\n"
 
-		got, found := UpdateToC(content, 1)
-		if !found {
-			t.Fatal("UpdateToC() found = false, want true")
+		res := UpdateToC(content, 1)
+		if !res.Found {
+			t.Fatal("UpdateToC() Found = false, want true")
 		}
-		if !containsAll(got, "- [First](#first)", "- [Second](#second)") {
-			t.Errorf("UpdateToC() missing expected ToC entries:\n%s", got)
+		if !containsAll(res.Updated, "- [First](#first)", "- [Second](#second)") {
+			t.Errorf("UpdateToC() missing expected ToC entries:\n%s", res.Updated)
 		}
 		// Verify markers are preserved.
-		if !containsAll(got, BeginMarker, EndMarker) {
+		if !containsAll(res.Updated, BeginMarker, EndMarker) {
 			t.Error("markers not preserved")
+		}
+		// Headings should be surfaced for callers that need them.
+		if len(res.Headings) != 2 {
+			t.Errorf("Headings len = %d, want 2", len(res.Headings))
 		}
 	})
 
@@ -304,25 +308,33 @@ func TestUpdateToC(t *testing.T) {
 			EndMarker + "\n\n" +
 			"## Only One\n"
 
-		got, found := UpdateToC(content, 3)
-		if !found {
-			t.Fatal("UpdateToC() found = false, want true")
+		res := UpdateToC(content, 3)
+		if !res.Found {
+			t.Fatal("UpdateToC() Found = false, want true")
 		}
 		// ToC should be empty between markers.
 		expected := BeginMarker + "\n" + EndMarker
-		if !strings.Contains(got, expected) {
-			t.Errorf("expected empty ToC between markers, got:\n%s", got)
+		if !strings.Contains(res.Updated, expected) {
+			t.Errorf("expected empty ToC between markers, got:\n%s", res.Updated)
+		}
+		// Headings still returned even when below threshold so the
+		// dry-run path can report what would have been generated.
+		if len(res.Headings) != 1 {
+			t.Errorf("Headings len = %d, want 1", len(res.Headings))
 		}
 	})
 
 	t.Run("no markers returns original", func(t *testing.T) {
 		content := "# Title\n\n## Section\n"
-		got, found := UpdateToC(content, 1)
-		if found {
-			t.Error("UpdateToC() found = true, want false")
+		res := UpdateToC(content, 1)
+		if res.Found {
+			t.Error("UpdateToC() Found = true, want false")
 		}
-		if got != content {
+		if res.Updated != content {
 			t.Errorf("content was modified when no markers present")
+		}
+		if res.Headings != nil {
+			t.Errorf("Headings = %v, want nil when no markers", res.Headings)
 		}
 	})
 
@@ -333,25 +345,25 @@ func TestUpdateToC(t *testing.T) {
 			EndMarker + "\n\n" +
 			"## New Entry\n"
 
-		got, found := UpdateToC(content, 1)
-		if !found {
-			t.Fatal("UpdateToC() found = false, want true")
+		res := UpdateToC(content, 1)
+		if !res.Found {
+			t.Fatal("UpdateToC() Found = false, want true")
 		}
-		if strings.Contains(got, "Old Entry") {
+		if strings.Contains(res.Updated, "Old Entry") {
 			t.Error("old ToC entry was not replaced")
 		}
-		if !strings.Contains(got, "- [New Entry](#new-entry)") {
+		if !strings.Contains(res.Updated, "- [New Entry](#new-entry)") {
 			t.Error("new ToC entry not found")
 		}
 	})
 
 	t.Run("only begin marker no end", func(t *testing.T) {
 		content := "# Title\n\n" + BeginMarker + "\n## Section\n"
-		got, found := UpdateToC(content, 1)
-		if found {
-			t.Error("UpdateToC() found = true, want false (missing end marker)")
+		res := UpdateToC(content, 1)
+		if res.Found {
+			t.Error("UpdateToC() Found = true, want false (missing end marker)")
 		}
-		if got != content {
+		if res.Updated != content {
 			t.Error("content was modified with missing end marker")
 		}
 	})
@@ -402,8 +414,8 @@ func BenchmarkUpdateToC(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for b.Loop() {
-				_, found := UpdateToC(content, 3)
-				if !found {
+				res := UpdateToC(content, 3)
+				if !res.Found {
 					b.Fatal("markers not found in synthesized doc")
 				}
 			}

@@ -114,12 +114,12 @@ func updateToCs(typeDir string, docs []index.DocEntry) {
 		docPath := filepath.Join(typeDir, doc.Filename)
 		original := string(doc.Content)
 
-		updated, found := toc.UpdateToC(original, appCfg.ToC.MinHeadings)
-		if !found {
+		res := toc.UpdateToC(original, appCfg.ToC.MinHeadings)
+		if !res.Found {
 			continue
 		}
 
-		if updated == original {
+		if res.Updated == original {
 			if verbose {
 				fmt.Fprintf(os.Stderr, "  ToC unchanged in %s\n", docPath)
 			}
@@ -127,16 +127,18 @@ func updateToCs(typeDir string, docs []index.DocEntry) {
 		}
 
 		if updateDryRun {
-			headings := toc.ParseHeadings(original)
+			// IMPL-0007 Phase 4: reuse the headings already parsed by
+			// UpdateToC instead of calling toc.ParseHeadings a second
+			// time on the same content.
 			fmt.Printf(
 				"Would update ToC in %s (%d headings)\n",
 				docPath,
-				len(headings),
+				len(res.Headings),
 			)
 			continue
 		}
 
-		if err := os.WriteFile(docPath, []byte(updated), config.FileMode); err != nil {
+		if err := os.WriteFile(docPath, []byte(res.Updated), config.FileMode); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", docPath, err)
 			continue
 		}

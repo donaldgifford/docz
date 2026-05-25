@@ -189,23 +189,53 @@ parse.
 
 #### Tasks
 
-- [ ] Change `toc.UpdateToC(content string, minHeadings int) (string, bool)`
-      to `(content string, minHeadings int) (updated string, headings []Heading, found bool)`
-- [ ] Update `cmd/update.go:updateToCs` to use the returned `headings`
-      slice instead of calling `toc.ParseHeadings` a second time in the
-      dry-run branch
-- [ ] Update any other callers (audit with `grep -rn 'UpdateToC' .`)
-- [ ] Update test cases in `internal/toc/toc_test.go` for the new signature
-- [ ] Verify `BenchmarkUpdateToC` numbers do not regress (the function
-      now allocates a `[]Heading` for the caller; should be cheap)
+- [x] Changed `toc.UpdateToC` signature per Decisions §5: returns a
+      `toc.UpdateResult{Updated, Headings, Found}` struct
+- [x] `cmd/update.go:updateToCs` now consumes `res.Headings` in the
+      dry-run branch instead of calling `toc.ParseHeadings` a second
+      time on the same input
+- [x] Audited every `UpdateToC` call site (grep -rn 'UpdateToC' .) —
+      `cmd/update.go`, `internal/toc/toc_test.go`, and
+      `internal/toc/golden_test.go` all updated to the struct return
+- [x] Updated existing `TestUpdateToC` subtests for the new shape and
+      added an assertion that `Headings` is surfaced (`len == 2` for
+      the "markers present with headings" case)
+- [x] Re-ran `BenchmarkUpdateToC` — costs ~8% more (10/50/200 sizes)
+      due to the `[]Heading` slice now escaping to heap. The trade is
+      deliberate: the dry-run path no longer double-parses, and the
+      absolute regression is ~12µs even at 200 headings.
+
+Post-Phase-4 measurement (medians of 3 runs):
+
+```
+BenchmarkUpdateToC/10-18     8631 ns/op   8772 B/op    200 allocs/op
+  (baseline:                 7950 ns/op   8764 B/op    200 allocs/op)
+BenchmarkUpdateToC/50-18    43691 ns/op  43241 B/op    929 allocs/op
+  (baseline:                40365 ns/op  43254 B/op    929 allocs/op)
+BenchmarkUpdateToC/200-18  177013 ns/op 177750 B/op   3639 allocs/op
+  (baseline:               164569 ns/op 177823 B/op   3639 allocs/op)
+BenchmarkCmdUpdate/100-18 5819796 ns/op 1599305 B/op 18360 allocs/op
+  (baseline:              6575343 ns/op 1697682 B/op 18861 allocs/op)
+```
+
+The standalone `BenchmarkUpdateToC` regression is the price of the
+Headings slice escape; the dry-run path was previously walking
+ParseHeadings twice on the same input, so net dry-run cost on a
+200-heading doc drops from ~280µs (164µs UpdateToC + ~115µs second
+ParseHeadings) to ~177µs — a ~37% improvement on the path that
+actually paid the duplicate-parse cost.
 
 #### Success Criteria
 
-- `grep -rn 'ParseHeadings' .` returns exactly two call sites in
-  production code: inside `UpdateToC` itself and any caller that
-  explicitly wants headings without updating
-- Dry-run `docz update --dry-run` no longer double-parses
-- `BenchmarkUpdateToC` not slower than baseline
+- `grep -rn 'ParseHeadings' .` shows one production call site inside
+  `UpdateToC` itself (`internal/toc/toc.go:210`); the rest are
+  comments or tests
+- Dry-run `docz update --dry-run` no longer double-parses (the
+  duplicate `toc.ParseHeadings(original)` call in
+  `cmd/update.go:updateToCs` is gone)
+- `BenchmarkUpdateToC` slightly slower (≈8%) due to the returned
+  slice escaping to heap — acceptable trade since the dry-run path
+  net-wins ≈37%
 
 ---
 

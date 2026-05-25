@@ -78,10 +78,11 @@ First overview section.
 Second overview section (duplicate heading).
 `
 
-	got, found := UpdateToC(input, 1)
-	if !found {
-		t.Fatal("UpdateToC() found = false, want true")
+	res := UpdateToC(input, 1)
+	if !res.Found {
+		t.Fatal("UpdateToC() Found = false, want true")
 	}
+	got := res.Updated
 
 	goldenPath := filepath.Join("..", "..", "testdata", "golden", "toc", "basic.md")
 
