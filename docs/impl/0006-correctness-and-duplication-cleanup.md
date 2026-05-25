@@ -453,23 +453,39 @@ pluralization.
 
 ## Testing Plan
 
-- [ ] Round-trip test: `DefaultConfig() → template-render → yaml.Unmarshal →
-      deep-equal`
-- [ ] Reflective test: every leaf field on `Config` is covered by
-      `setDefaults` (or `setDefaults` no longer exists)
-- [ ] Error-surfacing tests: missing config, malformed config, permission-denied
-      config
-- [ ] Validation-error tests: empty `docs_dir`, type with empty `statuses` —
-      both should cause non-zero exit
-- [ ] **INV-0003 e2e suite** (`cmd/init_test.go`, `cmd/update_test.go`):
-      rfc-only config → only rfc scaffolded; no-config → all six;
-      disabled adr → only rfc; incremental add of adr → adr appears
-      without disturbing rfc
-- [ ] `ValidateType` table-driven test: canonical names, aliases, unknown
-      names, empty string, uppercase
-- [ ] `EnabledTypes` test: order is sorted, disabled types excluded
-- [ ] `PluralLabel` test: golden-file regeneration only changes the headings
-- [ ] CRLF frontmatter test
+- [x] Round-trip test: `DefaultConfig() → template-render → yaml.Unmarshal →
+      deep-equal` — `TestDoczYAMLTemplate_RoundTripsToDefaultConfig`
+- [x] Reflective parity test: `Load()` with no config files deep-equals
+      `DefaultConfig()`; `setDefaults` no longer exists —
+      `TestLoad_DefaultsParity`,
+      `TestLoad_PartialOverridesPreserveSiblingDefaults`,
+      `TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults`,
+      `TestLoad_TypeFieldDefaultsBackfilled`,
+      `TestLoad_TypeExplicitEmptyStatusesPreserved`
+- [x] Error-surfacing tests: missing config silent, malformed YAML
+      surfaces wrapped error, permission-denied surfaces wrapped error
+      — `TestLoad_MissingRepoConfigSilent`,
+      `TestLoad_MalformedRepoConfigReturnsError`,
+      `TestLoad_UnreadableRepoConfigReturnsError`
+- [x] Validation-error tests: empty `docs_dir`, type with empty
+      `statuses` — both cause non-zero exit via PersistentPreRunE:
+      `TestValidate_EmptyDocsDir`, `TestValidate_EmptyStatuses`,
+      `TestPersistentPreRunE_ValidationErrorFailsCommand`
+- [x] **INV-0003 e2e suite** in `cmd/inv0003_test.go`: rfc-only config
+      → only rfc; no-config → all six; disabled adr → only rfc;
+      incremental add of adr → adr appears without disturbing rfc
+      (five tests, all green)
+- [x] `ValidateType` table-driven test: canonical names, aliases,
+      unknown names, empty string, uppercase — `TestValidateType`
+- [x] `EnabledTypes` test: order is sorted, disabled types excluded —
+      `TestEnabledTypes`
+- [x] `PluralLabel` smoke: ran `docz update` against the repo's own
+      docs; only the expected headings changed (DESIGNs→Design,
+      IMPLs→Implementation Plans, INVESTIGATIONs→Investigations) plus
+      previously-empty headings filled for adr/plan/rfc
+- [x] CRLF frontmatter test — `TestParseFrontmatter` table extended
+      with `frontmatter with CRLF line endings` and
+      `frontmatter with mixed line endings` subtests
 
 ## Decisions
 
