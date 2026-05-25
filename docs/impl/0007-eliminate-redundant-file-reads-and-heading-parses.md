@@ -253,8 +253,9 @@ actually paid the duplicate-parse cost.
 - [x] Smoke test: `docz update` against this repo — README index
       files unchanged byte-for-byte (only the IMPL-0007 doc itself
       changed because we just edited it)
-- [ ] Open PR with `dont-release` label
-- [ ] Update INV-0002 status to reflect Wave 3 completion
+- [x] Open PR with `dont-release` label — PR #43
+- [x] INV-0002 status already `In Progress`; no flip needed until all
+      waves merge
 
 Post-change numbers (Apple M5 Max, Go 1.25.7, medians of 3 runs):
 
