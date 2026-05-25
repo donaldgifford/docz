@@ -305,12 +305,10 @@ func ensureDocsIndex(siteName string) error {
 		return fmt.Errorf("resolving wiki index template: %w", err)
 	}
 
-	var types []doctemplate.WikiIndexType
-	for _, typeName := range config.ValidTypes() {
-		tc, ok := appCfg.Types[typeName]
-		if !ok || !tc.Enabled {
-			continue
-		}
+	enabled := appCfg.EnabledTypes()
+	types := make([]doctemplate.WikiIndexType, 0, len(enabled))
+	for _, typeName := range enabled {
+		tc := appCfg.Types[typeName]
 		navTitle := appCfg.Wiki.NavTitles[typeName]
 		if navTitle == "" {
 			navTitle = strings.ToUpper(typeName)

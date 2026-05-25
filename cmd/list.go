@@ -51,10 +51,9 @@ func init() {
 func runList(_ *cobra.Command, args []string) error {
 	types := config.ValidTypes()
 	if len(args) > 0 {
-		typeName := config.ResolveTypeAlias(strings.ToLower(args[0]))
-		if _, ok := appCfg.Types[typeName]; !ok {
-			return fmt.Errorf("unknown document type %q (valid types: %s)",
-				typeName, strings.Join(config.ValidTypes(), ", "))
+		typeName, err := appCfg.ValidateType(args[0])
+		if err != nil {
+			return err
 		}
 		types = []string{typeName}
 	}

@@ -32,14 +32,15 @@ func init() {
 }
 
 func runUpdate(_ *cobra.Command, args []string) error {
-	types := config.ValidTypes()
+	var types []string
 	if len(args) > 0 {
-		typeName := config.ResolveTypeAlias(strings.ToLower(args[0]))
-		if _, ok := appCfg.Types[typeName]; !ok {
-			return fmt.Errorf("unknown document type %q (valid types: %s)",
-				typeName, strings.Join(config.ValidTypes(), ", "))
+		typeName, err := appCfg.ValidateType(args[0])
+		if err != nil {
+			return err
 		}
 		types = []string{typeName}
+	} else {
+		types = appCfg.EnabledTypes()
 	}
 
 	for _, typeName := range types {

@@ -40,15 +40,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("writing default config: %w", err)
 	}
 
-	for _, typeName := range config.ValidTypes() {
-		tc, ok := appCfg.Types[typeName]
-		if !ok || !tc.Enabled {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Type %s is disabled, skipping.\n", typeName)
-			}
-			continue
-		}
-
+	for _, typeName := range appCfg.EnabledTypes() {
 		typeDir := appCfg.TypeDir(typeName)
 		if err := os.MkdirAll(typeDir, config.DirMode); err != nil {
 			return fmt.Errorf("creating directory %s: %w", typeDir, err)

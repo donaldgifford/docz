@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/spf13/viper"
 	"go.yaml.in/yaml/v3"
@@ -216,6 +218,44 @@ func ValidTypes() []string {
 	return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 }
 
+// ErrUnknownType is the sentinel returned by ValidateType when the input
+// does not name a built-in document type. Callers can branch on it with
+// errors.Is to render a custom hint without parsing the wrapped message.
+var ErrUnknownType = errors.New("unknown document type")
+
+// ValidateType canonicalizes and validates a user-supplied type name.
+// It lowercases the input, resolves aliases (e.g. "inv" -> "investigation"),
+// and verifies the result is in the configured Config.Types map. On
+// success it returns the canonical name; on failure it returns a
+// fmt.Errorf-wrapped ErrUnknownType.
+//
+// Callers that need the canonical name and want a single error site
+// should use this helper instead of duplicating the lookup-and-format
+// block at each CLI subcommand boundary (IMPL-0006 Phase 7).
+func (c *Config) ValidateType(name string) (string, error) {
+	canonical := ResolveTypeAlias(strings.ToLower(name))
+	if _, ok := c.Types[canonical]; !ok {
+		return "", fmt.Errorf("%w %q (valid types: %s)",
+			ErrUnknownType, canonical, strings.Join(ValidTypes(), ", "))
+	}
+	return canonical, nil
+}
+
+// EnabledTypes returns the sorted list of canonical type names that are
+// both present in c.Types and have Enabled == true. The result is sorted
+// alphabetically by canonical name for deterministic iteration in
+// scaffolding and update flows.
+func (c *Config) EnabledTypes() []string {
+	enabled := make([]string, 0, len(c.Types))
+	for name, tc := range c.Types {
+		if tc.Enabled {
+			enabled = append(enabled, name)
+		}
+	}
+	sort.Strings(enabled)
+	return enabled
+}
+
 // typeAliases maps short or alternate names to their canonical type name.
 var typeAliases = map[string]string{
 	"implementation": "impl",
@@ -258,7 +298,8 @@ func (c *Config) Validate() ([]string, error) {
 
 	for name, tc := range c.Types {
 		if !validTypes[name] {
-			warnings = append(warnings, fmt.Sprintf("unknown document type %q in config", name))
+			warnings = append(warnings,
+				fmt.Sprintf("config declares non-built-in type %q (typo?)", name))
 		}
 		if tc.Enabled && len(tc.Statuses) == 0 {
 			return warnings, fmt.Errorf("type %q has no statuses defined", name)

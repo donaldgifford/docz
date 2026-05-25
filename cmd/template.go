@@ -68,10 +68,8 @@ func init() {
 }
 
 func runTemplateShow(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
-	// validateType returns a fully-formatted "unknown document type"
-	// error; further wrapping would only add noise.
-	if err := validateType(docType); err != nil {
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
 		return err
 	}
 
@@ -85,10 +83,8 @@ func runTemplateShow(_ *cobra.Command, args []string) error {
 }
 
 func runTemplateExport(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
-	// validateType returns a fully-formatted "unknown document type"
-	// error; further wrapping would only add noise.
-	if err := validateType(docType); err != nil {
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
 		return err
 	}
 
@@ -111,10 +107,8 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 }
 
 func runTemplateOverride(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
-	// validateType returns a fully-formatted "unknown document type"
-	// error; further wrapping would only add noise.
-	if err := validateType(docType); err != nil {
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
 		return err
 	}
 
@@ -139,14 +133,6 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Created override template: %s\n", overridePath)
-	return nil
-}
-
-func validateType(docType string) error {
-	if _, ok := appCfg.Types[docType]; !ok {
-		return fmt.Errorf("unknown document type %q (valid types: %s)",
-			docType, strings.Join(config.ValidTypes(), ", "))
-	}
 	return nil
 }
 

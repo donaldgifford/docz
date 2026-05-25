@@ -313,23 +313,27 @@ guard blocks into single helpers.
 
 #### Tasks
 
-- [ ] Add `config.ValidateType(name string) (canonical string, err error)`
-      that internally: lowercases, resolves alias, looks up in valid types,
-      returns canonical name or a wrapped error
-- [ ] Define `var ErrUnknownType = errors.New("unknown document type")`
-      sentinel (or a typed error) so callers can `errors.Is` on it
-- [ ] Replace the duplicated block at `cmd/create.go:50-57` with a single
-      `ValidateType` call
-- [ ] Replace the duplicated block at `cmd/list.go:54-58`
-- [ ] Replace the duplicated block at `cmd/update.go:37-42`
-- [ ] Replace the three sites in `cmd/template.go:71,86,110` + `validateType()`
-      at line 139 (delete the local helper)
-- [ ] Add `func (c *Config) EnabledTypes() []string` that returns sorted
-      enabled canonical type names (intersection of `ValidTypes()` and
-      `appCfg.Types` with `Enabled: true`)
-- [ ] Replace iteration at `cmd/init.go:36-43` with `appCfg.EnabledTypes()`
-- [ ] Replace iteration at `cmd/update.go:35-52` with `appCfg.EnabledTypes()`
-- [ ] Replace iteration at `cmd/wiki.go:307-321` with `appCfg.EnabledTypes()`
+- [x] Add `(c *Config) ValidateType(name string) (canonical, err)` to
+      `internal/config/config.go`: lowercases, resolves alias, looks up
+      in `c.Types`, returns canonical name or wrapped `ErrUnknownType`
+- [x] Define `var ErrUnknownType = errors.New("unknown document type")`
+      sentinel so callers can `errors.Is` on it
+- [x] Replace `cmd/create.go` lookup-and-format block with `ValidateType`
+- [x] Replace `cmd/list.go` lookup-and-format block with `ValidateType`
+- [x] Replace `cmd/update.go` lookup-and-format block with `ValidateType`
+- [x] Replace the three sites in `cmd/template.go` with `ValidateType`
+      and delete the local `validateType()` helper (plus its now-duplicate
+      test in `cmd/template_test.go`)
+- [x] Add `func (c *Config) EnabledTypes() []string` returning a sorted
+      slice of canonical type names with `Enabled: true`
+- [x] Replace iteration at `cmd/init.go:runInit` with `appCfg.EnabledTypes()`
+- [x] Replace iteration at `cmd/update.go:runUpdate` with
+      `appCfg.EnabledTypes()` (default branch when no positional arg)
+- [x] Replace iteration at `cmd/wiki.go:ensureDocsIndex` with
+      `appCfg.EnabledTypes()` (preallocates the slice with `len(enabled)`)
+- [x] Reword the `Validate()` warning string for "type listed in config
+      but not built-in" so the "unknown document type" phrase lives only
+      on the `ErrUnknownType` sentinel
 
 #### Success Criteria
 
