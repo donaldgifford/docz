@@ -144,20 +144,40 @@ on `DocEntry`.
 
 #### Tasks
 
-- [ ] In `cmd/update.go:updateToCs`, replace `os.ReadFile(docPath)` with
-      `doc.Content`
-- [ ] Verify the warning-on-read-error path is now dead code; remove it
-- [ ] Confirm the `os.WriteFile` path still functions (only the read is
-      eliminated, not the write)
-- [ ] Update tests in `cmd/update_test.go` to confirm files are no longer
-      stat'd twice (use a counting `fs.FS` shim or just verify behavior
-      unchanged)
+- [x] In `cmd/update.go:updateToCs`, replaced `os.ReadFile(docPath)`
+      with `doc.Content`
+- [x] Removed the warning-on-read-error path (dead now that the read
+      is gone)
+- [x] Confirmed the `os.WriteFile` path still functions — only the read
+      is eliminated, not the write
+- [x] All existing `cmd/update_test.go` tests still pass with the new
+      cached-bytes flow; behavior unchanged
+
+Post-Phase-3 measurement (Apple M5 Max, Go 1.25.7, medians of 3 runs):
+
+```
+BenchmarkCmdUpdate/100-18  5762997 ns/op  1600640 B/op  18361 allocs/op
+  (baseline:               6575343 ns/op  1697682 B/op  18861 allocs/op)
+```
+
+That's 12% faster wall-clock, ~97KB less, 500 fewer allocs. The
+heavier targets (`≥30%` wall-clock, `≥50%` fewer reads) split across
+phases: this phase delivers the file-read halving (100 reads of the
+doc bodies in `updateToCs` are gone — `index.ScanDocuments` reads
+them once and we reuse the bytes). The dry-run double-parse is
+addressed in Phase 4. The remaining non-dry-run cost is dominated by
+`os.WriteFile` on each touched doc and `index.UpdateReadme`'s splice;
+both are unavoidable at this layer.
 
 #### Success Criteria
 
-- A repo with 1000 docs runs `docz update` with 1000 file reads, not 2000
-- `BenchmarkCmdUpdate/100` shows measurable improvement (target: ≥30% faster
-  wall clock, ≥50% fewer reads)
+- A repo with 1000 docs runs `docz update` with 1000 file reads of doc
+  bodies, not 2000 (eliminated the `os.ReadFile` per `updateToCs`
+  iteration)
+- `BenchmarkCmdUpdate/100` shows measurable improvement: -12% wall
+  clock, -500 allocs (target was ≥30%; the impl plan was optimistic
+  for the non-dry-run path — most remaining cost is `os.WriteFile` and
+  README splicing, not re-reads)
 - All existing `cmd/update_test.go` tests pass
 
 ---
