@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-//go:embed templates/*.md
+//go:embed templates/*.md templates/*.tmpl
 var templateFS embed.FS
 
 // EmbeddedDocumentTemplate returns the embedded default template for the given
@@ -34,6 +34,17 @@ func EmbeddedWikiIndex() (string, error) {
 	data, err := templateFS.ReadFile("templates/wiki_index.md")
 	if err != nil {
 		return "", fmt.Errorf("reading embedded wiki index template: %w", err)
+	}
+	return string(data), nil
+}
+
+// EmbeddedDoczYAML returns the embedded text/template source for the
+// `.docz.yaml` config file produced by `docz init`. Callers render it
+// with `text/template`, passing a `config.Config` as the template data.
+func EmbeddedDoczYAML() (string, error) {
+	data, err := templateFS.ReadFile("templates/docz_yaml.tmpl")
+	if err != nil {
+		return "", fmt.Errorf("reading embedded docz yaml template: %w", err)
 	}
 	return string(data), nil
 }

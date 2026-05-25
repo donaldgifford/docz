@@ -78,7 +78,7 @@ func init() {
 func runWikiInit(_ *cobra.Command, _ []string) error {
 	// Auto-run docz init if not already initialized.
 	if err := ensureDoczInit(); err != nil {
-		return err
+		return fmt.Errorf("ensuring docz init: %w", err)
 	}
 
 	mkdocsPath := appCfg.Wiki.MkDocsPath
@@ -103,13 +103,13 @@ func runWikiInit(_ *cobra.Command, _ []string) error {
 	}
 
 	if err := writeMkDocsYAML(mkdocsPath, siteName, siteDesc); err != nil {
-		return err
+		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
 	fmt.Printf("Created %s\n", mkdocsPath)
 
 	if err := ensureDocsIndex(siteName); err != nil {
-		return err
+		return fmt.Errorf("ensuring docs index: %w", err)
 	}
 
 	// Populate the nav from existing docs.
@@ -155,7 +155,7 @@ func runWikiUpdateNav(mkdocsPath string) error {
 
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
 
 	existingOrder := wiki.ExistingNavOrder(data)
@@ -178,7 +178,7 @@ func runWikiUpdateNav(mkdocsPath string) error {
 	data["nav"] = wiki.NavToYAML(entries)
 
 	if err := wiki.WriteMkDocs(mkdocsPath, data); err != nil {
-		return err
+		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
 	pageCount := wiki.CountPages(entries)
@@ -198,7 +198,7 @@ func runWikiUpdateDryRun(mkdocsPath string) error {
 
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
 
 	existingOrder := wiki.ExistingNavOrder(data)
@@ -305,13 +305,18 @@ func ensureDocsIndex(siteName string) error {
 		return fmt.Errorf("resolving wiki index template: %w", err)
 	}
 
-	var types []doctemplate.WikiIndexType
-	for _, typeName := range config.ValidTypes() {
-		tc, ok := appCfg.Types[typeName]
-		if !ok || !tc.Enabled {
-			continue
-		}
+	enabled := appCfg.EnabledTypes()
+	types := make([]doctemplate.WikiIndexType, 0, len(enabled))
+	for _, typeName := range enabled {
+		tc := appCfg.Types[typeName]
+		// WikiConfig.NavTitles wins over PluralLabel (Decisions §4
+		// back-compat); PluralLabel is the fallback. Capitalized
+		// typeName is only used as a last-resort label if neither is
+		// configured.
 		navTitle := appCfg.Wiki.NavTitles[typeName]
+		if navTitle == "" {
+			navTitle = tc.PluralLabel
+		}
 		if navTitle == "" {
 			navTitle = strings.ToUpper(typeName)
 		}

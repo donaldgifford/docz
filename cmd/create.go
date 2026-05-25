@@ -47,15 +47,13 @@ func init() {
 }
 
 func runCreate(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
+		return err
+	}
 	title := args[1]
 
-	tc, ok := appCfg.Types[docType]
-	if !ok {
-		return fmt.Errorf("unknown document type %q (valid types: %s)",
-			docType, strings.Join(config.ValidTypes(), ", "))
-	}
-
+	tc := appCfg.Types[docType]
 	if !tc.Enabled {
 		return fmt.Errorf("document type %q is disabled in configuration", docType)
 	}
@@ -87,7 +85,7 @@ func runCreate(_ *cobra.Command, args []string) error {
 
 	result, err := document.Create(&opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating %s document: %w", docType, err)
 	}
 
 	fmt.Printf("Created %s: %s\n", strings.ToUpper(docType), result.FilePath)

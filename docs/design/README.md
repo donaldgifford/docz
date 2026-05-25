@@ -28,7 +28,7 @@ docz create design "Your Design Title"
 - **Abandoned**: Design was not pursued
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
-## All DESIGNs
+## All Design
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|

@@ -4,13 +4,26 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
+	"strings"
 
 	"github.com/spf13/viper"
+	"go.yaml.in/yaml/v3"
 )
 
 // TypeConfig holds configuration for a single document type.
+//
+// PluralLabel is the human-readable section heading and (per Decisions §4
+// of IMPL-0006) the single source for the README index "All ADRs", "All
+// RFCs", "All Implementation Plans", etc. It also wins over a missing
+// `WikiConfig.NavTitles` entry when rendering the wiki landing page.
+// `WikiConfig.NavTitles[name]`, when set, still overrides `PluralLabel`
+// for the wiki nav for one release; deprecation/removal of NavTitles is
+// deferred to a future release.
 type TypeConfig struct {
 	Enabled     bool     `mapstructure:"enabled"      yaml:"enabled"`
 	Dir         string   `mapstructure:"dir"          yaml:"dir"`
@@ -19,6 +32,7 @@ type TypeConfig struct {
 	IDWidth     int      `mapstructure:"id_width"     yaml:"id_width"`
 	Statuses    []string `mapstructure:"statuses"     yaml:"statuses"`
 	StatusField string   `mapstructure:"status_field" yaml:"status_field"`
+	PluralLabel string   `mapstructure:"plural_label" yaml:"plural_label,omitempty"`
 }
 
 // IndexConfig holds configuration for index/README generation.
@@ -75,6 +89,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "Proposed", "Accepted", "Rejected", "Superseded"},
 				StatusField: "status",
+				PluralLabel: "RFCs",
 			},
 			"adr": {
 				Enabled:     true,
@@ -83,6 +98,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Proposed", "Accepted", "Deprecated", "Superseded"},
 				StatusField: "status",
+				PluralLabel: "ADRs",
 			},
 			"design": {
 				Enabled:     true,
@@ -91,6 +107,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "In Review", "Approved", "Implemented", "Abandoned"},
 				StatusField: "status",
+				PluralLabel: "Design",
 			},
 			"impl": {
 				Enabled:     true,
@@ -99,6 +116,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "In Progress", "Completed", "Paused", "Cancelled"},
 				StatusField: "status",
+				PluralLabel: "Implementation Plans",
 			},
 			"plan": {
 				Enabled:     true,
@@ -107,6 +125,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
 				StatusField: "status",
+				PluralLabel: "Plans",
 			},
 			"investigation": {
 				Enabled:  true,
@@ -121,6 +140,7 @@ func DefaultConfig() Config {
 					"Abandoned",
 				},
 				StatusField: "status",
+				PluralLabel: "Investigations",
 			},
 		},
 		Index: IndexConfig{
@@ -148,7 +168,14 @@ func DefaultConfig() Config {
 // (.docz.yaml) config files, deep-merging them with repo root taking
 // precedence. Built-in defaults are applied for any missing keys.
 //
-// If configFile is non-empty, it is used as the sole config source (no merge).
+// If the repo-root .docz.yaml declares a top-level `types:` block, that
+// list is treated as a REPLACEMENT of the default types map: only the
+// types named there are kept on the returned Config. Omitting the
+// `types:` block keeps all six built-in types. This is the INV-0003 fix
+// implemented in IMPL-0006 Phase 5.
+//
+// If configFile is non-empty, it is used as the sole config source
+// (no merge); the same types-replace-on-presence rule applies.
 func Load(configFile string) (Config, error) {
 	cfg := DefaultConfig()
 
@@ -157,7 +184,6 @@ func Load(configFile string) (Config, error) {
 	}
 
 	v := viper.New()
-	setDefaults(v, &cfg)
 
 	// Load global config first.
 	if home, err := os.UserHomeDir(); err == nil {
@@ -174,6 +200,9 @@ func Load(configFile string) (Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return cfg, err
 	}
+
+	applyTypesReplaceOnPresence(&cfg, ConfigFileName)
+	fillTypeFieldDefaults(&cfg)
 
 	return cfg, nil
 }
@@ -204,6 +233,44 @@ func DefaultNavTitles() map[string]string {
 // ValidTypes returns the list of built-in document type names.
 func ValidTypes() []string {
 	return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
+}
+
+// ErrUnknownType is the sentinel returned by ValidateType when the input
+// does not name a built-in document type. Callers can branch on it with
+// errors.Is to render a custom hint without parsing the wrapped message.
+var ErrUnknownType = errors.New("unknown document type")
+
+// ValidateType canonicalizes and validates a user-supplied type name.
+// It lowercases the input, resolves aliases (e.g. "inv" -> "investigation"),
+// and verifies the result is in the configured Config.Types map. On
+// success it returns the canonical name; on failure it returns a
+// fmt.Errorf-wrapped ErrUnknownType.
+//
+// Callers that need the canonical name and want a single error site
+// should use this helper instead of duplicating the lookup-and-format
+// block at each CLI subcommand boundary (IMPL-0006 Phase 7).
+func (c *Config) ValidateType(name string) (string, error) {
+	canonical := ResolveTypeAlias(strings.ToLower(name))
+	if _, ok := c.Types[canonical]; !ok {
+		return "", fmt.Errorf("%w %q (valid types: %s)",
+			ErrUnknownType, canonical, strings.Join(ValidTypes(), ", "))
+	}
+	return canonical, nil
+}
+
+// EnabledTypes returns the sorted list of canonical type names that are
+// both present in c.Types and have Enabled == true. The result is sorted
+// alphabetically by canonical name for deterministic iteration in
+// scaffolding and update flows.
+func (c *Config) EnabledTypes() []string {
+	enabled := make([]string, 0, len(c.Types))
+	for name, tc := range c.Types {
+		if tc.Enabled {
+			enabled = append(enabled, name)
+		}
+	}
+	sort.Strings(enabled)
+	return enabled
 }
 
 // typeAliases maps short or alternate names to their canonical type name.
@@ -248,7 +315,8 @@ func (c *Config) Validate() ([]string, error) {
 
 	for name, tc := range c.Types {
 		if !validTypes[name] {
-			warnings = append(warnings, fmt.Sprintf("unknown document type %q in config", name))
+			warnings = append(warnings,
+				fmt.Sprintf("config declares non-built-in type %q (typo?)", name))
 		}
 		if tc.Enabled && len(tc.Statuses) == 0 {
 			return warnings, fmt.Errorf("type %q has no statuses defined", name)
@@ -258,63 +326,141 @@ func (c *Config) Validate() ([]string, error) {
 	return warnings, nil
 }
 
-// mergeConfigFile reads a YAML config file and merges it into v. If the file
-// does not exist or cannot be read, it is silently skipped.
+// mergeConfigFile reads a YAML config file and merges it into v. A missing
+// file is treated as "not configured" and silently skipped. Anything else
+// (permission denied, malformed YAML, etc.) is surfaced as a wrapped error
+// so the user sees a clear message instead of a silently half-defaulted
+// config — see IMPL-0006 Phase 4.
 func mergeConfigFile(v *viper.Viper, path string) error {
 	if _, err := os.Stat(path); err != nil {
-		return nil //nolint:nilerr // missing config file is not an error
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("checking config file %s: %w", path, err)
 	}
 	fileV := viper.New()
 	fileV.SetConfigFile(path)
 	if err := fileV.ReadInConfig(); err != nil {
-		return nil //nolint:nilerr // unreadable config file is silently skipped
+		return fmt.Errorf("parsing config file %s: %w", path, err)
 	}
 	return v.MergeConfigMap(fileV.AllSettings())
 }
 
 func loadFromFile(path string, defaults *Config) (Config, error) {
 	v := viper.New()
-	setDefaults(v, defaults)
 	v.SetConfigFile(path)
 
 	if err := v.ReadInConfig(); err != nil {
 		return *defaults, err
 	}
 
-	var cfg Config
+	cfg := *defaults
 	if err := v.Unmarshal(&cfg); err != nil {
 		return *defaults, err
 	}
 
+	applyTypesReplaceOnPresence(&cfg, path)
+	fillTypeFieldDefaults(&cfg)
+
 	return cfg, nil
 }
 
-func setDefaults(v *viper.Viper, cfg *Config) {
-	v.SetDefault("docs_dir", cfg.DocsDir)
-	v.SetDefault("index.auto_update", cfg.Index.AutoUpdate)
-	v.SetDefault("index.preserve_header", cfg.Index.PreserveHeader)
-	v.SetDefault("author.from_git", cfg.Author.FromGit)
-	v.SetDefault("author.default", cfg.Author.Default)
-
+// fillTypeFieldDefaults backfills zero-valued string, int, and slice
+// fields on each cfg.Types entry from the corresponding DefaultConfig()
+// entry. This works around an mapstructure behavior: for
+// `map[string]TypeConfig` fields, the decoder allocates a fresh
+// TypeConfig per key in the source rather than decoding in place over
+// the pre-populated entry, so any field absent from the user's YAML
+// is left at the zero value instead of inheriting the default.
+//
+// Bool fields (notably Enabled) are intentionally NOT filled here:
+// the YAML decoder cannot distinguish "omitted" from "explicit false"
+// for bools, so backfilling would silently re-enable a type the user
+// disabled. Users must set `enabled: false` explicitly per type.
+//
+// For slice fields the distinguisher is nil-vs-empty: an omitted
+// `statuses:` key decodes to a nil slice and IS filled from defaults;
+// an explicit `statuses: []` decodes to a non-nil zero-length slice
+// and is left alone so Validate can flag it.
+//
+// Custom types (entries not in DefaultConfig) are skipped — they have
+// no defaults to draw from.
+func fillTypeFieldDefaults(cfg *Config) {
+	defaults := DefaultConfig()
 	for name, tc := range cfg.Types {
-		prefix := "types." + name + "."
-		v.SetDefault(prefix+"enabled", tc.Enabled)
-		v.SetDefault(prefix+"dir", tc.Dir)
-		v.SetDefault(prefix+"template", tc.Template)
-		v.SetDefault(prefix+"id_prefix", tc.IDPrefix)
-		v.SetDefault(prefix+"id_width", tc.IDWidth)
-		v.SetDefault(prefix+"statuses", tc.Statuses)
-		v.SetDefault(prefix+"status_field", tc.StatusField)
+		dtc, ok := defaults.Types[name]
+		if !ok {
+			continue
+		}
+		dstV := reflect.ValueOf(&tc).Elem()
+		srcV := reflect.ValueOf(dtc)
+		for i := 0; i < dstV.NumField(); i++ {
+			f := dstV.Field(i)
+			s := srcV.Field(i)
+			switch f.Kind() {
+			case reflect.String:
+				if f.String() == "" {
+					f.SetString(s.String())
+				}
+			case reflect.Int, reflect.Int64:
+				if f.Int() == 0 {
+					f.SetInt(s.Int())
+				}
+			case reflect.Slice:
+				if f.IsNil() {
+					f.Set(s)
+				}
+			}
+		}
+		cfg.Types[name] = tc
+	}
+}
+
+// applyTypesReplaceOnPresence enforces the INV-0003 contract: when the
+// user's YAML at path declares a top-level `types:` map, only the named
+// types are retained on cfg. Types listed by the user but not present in
+// the built-in default set are dropped silently (unknown types are
+// surfaced separately by Validate).
+//
+// If the file does not exist, cannot be parsed, or has no `types:` key,
+// cfg is left untouched and the merge-based behavior continues.
+func applyTypesReplaceOnPresence(cfg *Config, path string) {
+	listed := userListedTypeNames(path)
+	if listed == nil {
+		return
 	}
 
-	v.SetDefault("wiki.auto_update", cfg.Wiki.AutoUpdate)
-	v.SetDefault("wiki.mkdocs_path", cfg.Wiki.MkDocsPath)
-	v.SetDefault("wiki.plugins", cfg.Wiki.Plugins)
-	v.SetDefault("wiki.exclude", cfg.Wiki.Exclude)
-	for k, val := range cfg.Wiki.NavTitles {
-		v.SetDefault("wiki.nav_titles."+k, val)
+	filtered := make(map[string]TypeConfig, len(listed))
+	for _, name := range listed {
+		if tc, ok := cfg.Types[name]; ok {
+			filtered[name] = tc
+		}
 	}
+	cfg.Types = filtered
+}
 
-	v.SetDefault("toc.enabled", cfg.ToC.Enabled)
-	v.SetDefault("toc.min_headings", cfg.ToC.MinHeadings)
+// userListedTypeNames returns the keys of the top-level `types:` map in
+// the YAML file at path, or nil if the file is missing, malformed, or
+// has no `types:` key. Parse errors from a malformed file are intentionally
+// swallowed here because mergeConfigFile / loadFromFile already surface
+// them via the main load path; this helper only decides the
+// replace-vs-merge mode for the types map.
+func userListedTypeNames(path string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var raw map[string]any
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+	typesNode, ok := raw["types"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	names := make([]string, 0, len(typesNode))
+	for k := range typesNode {
+		names = append(names, k)
+	}
+	return names
 }

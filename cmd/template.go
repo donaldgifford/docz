@@ -68,14 +68,14 @@ func init() {
 }
 
 func runTemplateShow(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
-	if err := validateType(docType); err != nil {
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
 		return err
 	}
 
 	content, err := resolveTemplate(docType)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
 	fmt.Print(content)
@@ -83,8 +83,8 @@ func runTemplateShow(_ *cobra.Command, args []string) error {
 }
 
 func runTemplateExport(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
-	if err := validateType(docType); err != nil {
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
 		return err
 	}
 
@@ -95,7 +95,7 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 
 	content, err := resolveTemplate(docType)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
 	if err := os.WriteFile(outPath, []byte(content), config.FileMode); err != nil {
@@ -107,8 +107,8 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 }
 
 func runTemplateOverride(_ *cobra.Command, args []string) error {
-	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
-	if err := validateType(docType); err != nil {
+	docType, err := appCfg.ValidateType(args[0])
+	if err != nil {
 		return err
 	}
 
@@ -121,7 +121,7 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 
 	content, err := resolveTemplate(docType)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
 	if err := os.MkdirAll(overrideDir, config.DirMode); err != nil {
@@ -133,14 +133,6 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Created override template: %s\n", overridePath)
-	return nil
-}
-
-func validateType(docType string) error {
-	if _, ok := appCfg.Types[docType]; !ok {
-		return fmt.Errorf("unknown document type %q (valid types: %s)",
-			docType, strings.Join(config.ValidTypes(), ", "))
-	}
 	return nil
 }
 

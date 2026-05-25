@@ -1,8 +1,10 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -413,6 +415,65 @@ func TestValidate_EmptyStatuses(t *testing.T) {
 	_, err := cfg.Validate()
 	if err == nil {
 		t.Error("expected error for empty statuses, got nil")
+	}
+}
+
+func TestValidateType(t *testing.T) {
+	cfg := DefaultConfig()
+
+	tests := []struct {
+		name        string
+		input       string
+		wantName    string
+		wantUnknown bool
+	}{
+		{"canonical", "rfc", "rfc", false},
+		{"alias_inv", "inv", "investigation", false},
+		{"alias_implementation", "implementation", "impl", false},
+		{"uppercase", "RFC", "rfc", false},
+		{"mixed_case_alias", "InV", "investigation", false},
+		{"unknown", "foo", "", true},
+		{"empty", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := cfg.ValidateType(tt.input)
+			if tt.wantUnknown {
+				if err == nil {
+					t.Fatalf("ValidateType(%q) = %q, want error", tt.input, got)
+				}
+				if !errors.Is(err, ErrUnknownType) {
+					t.Errorf("error %v does not wrap ErrUnknownType", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ValidateType(%q) unexpected error: %v", tt.input, err)
+			}
+			if got != tt.wantName {
+				t.Errorf("ValidateType(%q) = %q, want %q", tt.input, got, tt.wantName)
+			}
+		})
+	}
+}
+
+func TestEnabledTypes(t *testing.T) {
+	cfg := DefaultConfig()
+	got := cfg.EnabledTypes()
+	want := []string{"adr", "design", "impl", "investigation", "plan", "rfc"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("EnabledTypes() = %v, want sorted %v", got, want)
+	}
+
+	// Disable a type and confirm it disappears from the sorted list.
+	tc := cfg.Types["plan"]
+	tc.Enabled = false
+	cfg.Types["plan"] = tc
+
+	got = cfg.EnabledTypes()
+	want = []string{"adr", "design", "impl", "investigation", "rfc"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("EnabledTypes() with plan disabled = %v, want %v", got, want)
 	}
 }
 

@@ -153,14 +153,3 @@ func TestRunTemplateOverride_AlreadyExists(t *testing.T) {
 		t.Errorf("error should mention 'already exists', got: %v", err)
 	}
 }
-
-func TestValidateType(t *testing.T) {
-	appCfg = config.DefaultConfig()
-
-	if err := validateType("rfc"); err != nil {
-		t.Errorf("validateType(rfc) error: %v", err)
-	}
-	if err := validateType("badtype"); err == nil {
-		t.Error("validateType(badtype) should return error")
-	}
-}

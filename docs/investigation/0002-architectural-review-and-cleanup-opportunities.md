@@ -1,7 +1,7 @@
 ---
 id: INV-0002
 title: "Architectural Review and Cleanup Opportunities"
-status: Open
+status: In Progress
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -10,7 +10,7 @@ created: 2026-05-15
 
 # INV 0002: Architectural Review and Cleanup Opportunities
 
-**Status:** Open **Author:** Donald Gifford **Date:** 2026-05-15
+**Status:** In Progress **Author:** Donald Gifford **Date:** 2026-05-15
 
 <!--toc:start-->
 - [Question](#question)

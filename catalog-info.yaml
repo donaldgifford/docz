@@ -7,7 +7,7 @@ metadata:
   description: "A cli tool to help make managing repo docs easier."
   annotations:
     backstage.io/code-coverage: enabled
-    backstage.io/source-location: url:https://github.com/donaldgifford/dcoz
+    backstage.io/source-location: url:https://github.com/donaldgifford/docz
     backstage.io/techdocs-ref: "dir:."
     github.com/project-slug: "donaldgifford/docz"
   tags:

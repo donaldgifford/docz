@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/spf13/cobra"
 
@@ -19,6 +21,11 @@ var initCmd = &cobra.Command{
 	Long: `Create a .docz.yaml configuration file and set up the documentation
 directory structure with default README index files for each document type.
 
+If .docz.yaml already exists and declares a top-level "types:" block,
+only the types listed there are scaffolded. Omit the "types:" block (or
+delete .docz.yaml entirely and let init regenerate it) to scaffold all
+six built-in types.
+
 Existing README files are not overwritten unless --force is passed.`,
 	RunE: runInit,
 }
@@ -30,18 +37,10 @@ func init() {
 
 func runInit(_ *cobra.Command, _ []string) error {
 	if err := writeDefaultConfig(); err != nil {
-		return err
+		return fmt.Errorf("writing default config: %w", err)
 	}
 
-	for _, typeName := range config.ValidTypes() {
-		tc, ok := appCfg.Types[typeName]
-		if !ok || !tc.Enabled {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Type %s is disabled, skipping.\n", typeName)
-			}
-			continue
-		}
-
+	for _, typeName := range appCfg.EnabledTypes() {
 		typeDir := appCfg.TypeDir(typeName)
 		if err := os.MkdirAll(typeDir, config.DirMode); err != nil {
 			return fmt.Errorf("creating directory %s: %w", typeDir, err)
@@ -49,7 +48,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 
 		readmePath := filepath.Join(typeDir, config.IndexFileName)
 		if err := writeIndexReadme(readmePath, typeName); err != nil {
-			return err
+			return fmt.Errorf("writing index readme for %s: %w", typeName, err)
 		}
 	}
 
@@ -57,7 +56,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func writeDefaultConfig() error { //nolint:funlen // config template string
+func writeDefaultConfig() error {
 	configPath := config.ConfigFileName
 
 	if _, err := os.Stat(configPath); err == nil {
@@ -67,112 +66,10 @@ func writeDefaultConfig() error { //nolint:funlen // config template string
 		return nil
 	}
 
-	content := `docs_dir: docs
-
-types:
-  rfc:
-    enabled: true
-    dir: rfc
-    template: ""
-    id_prefix: "RFC"
-    id_width: 4
-    statuses:
-      - Draft
-      - Proposed
-      - Accepted
-      - Rejected
-      - Superseded
-    status_field: "status"
-
-  adr:
-    enabled: true
-    dir: adr
-    template: ""
-    id_prefix: "ADR"
-    id_width: 4
-    statuses:
-      - Proposed
-      - Accepted
-      - Deprecated
-      - Superseded
-    status_field: "status"
-
-  design:
-    enabled: true
-    dir: design
-    template: ""
-    id_prefix: "DESIGN"
-    id_width: 4
-    statuses:
-      - Draft
-      - In Review
-      - Approved
-      - Implemented
-      - Abandoned
-    status_field: "status"
-
-  impl:
-    enabled: true
-    dir: impl
-    template: ""
-    id_prefix: "IMPL"
-    id_width: 4
-    statuses:
-      - Draft
-      - In Progress
-      - Completed
-      - Paused
-      - Cancelled
-    status_field: "status"
-
-  plan:
-    enabled: true
-    dir: plan
-    template: ""
-    id_prefix: "PLAN"
-    id_width: 4
-    statuses:
-      - Draft
-      - In Progress
-      - Completed
-      - Cancelled
-    status_field: "status"
-
-  investigation:
-    enabled: true
-    dir: investigation
-    template: ""
-    id_prefix: "INV"
-    id_width: 4
-    statuses:
-      - Open
-      - In Progress
-      - Concluded
-      - Inconclusive
-      - Abandoned
-    status_field: "status"
-
-index:
-  auto_update: true
-  preserve_header: true
-
-author:
-  from_git: true
-  default: ""
-
-wiki:
-  auto_update: true
-  mkdocs_path: mkdocs.yml
-  plugins:
-    - techdocs-core
-  exclude:
-    - templates
-    - examples
-
-toc:
-  enabled: true
-  min_headings: 3
-`
+	content, err := renderDefaultConfig()
+	if err != nil {
+		return fmt.Errorf("rendering default config: %w", err)
+	}
 
 	if err := os.WriteFile(configPath, []byte(content), config.FileMode); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
@@ -180,6 +77,28 @@ toc:
 
 	fmt.Printf("Created %s\n", configPath)
 	return nil
+}
+
+// renderDefaultConfig renders the embedded .docz.yaml template using
+// config.DefaultConfig() as the template data, so the generated file is
+// derived from the same source the binary uses at runtime.
+func renderDefaultConfig() (string, error) {
+	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
+	if err != nil {
+		return "", fmt.Errorf("loading docz yaml template: %w", err)
+	}
+
+	tmpl, err := template.New("docz_yaml").Parse(tmplSrc)
+	if err != nil {
+		return "", fmt.Errorf("parsing docz yaml template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, config.DefaultConfig()); err != nil {
+		return "", fmt.Errorf("rendering docz yaml template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 func writeIndexReadme(path, typeName string) error {

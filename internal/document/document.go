@@ -31,13 +31,21 @@ func ParseFrontmatter(content []byte) (Frontmatter, error) {
 		return fm, ErrNoFrontmatter
 	}
 
-	// Find the closing delimiter.
+	// Find the closing delimiter. The opening `---` must be followed by
+	// a newline; accept either LF or CRLF so files authored on Windows
+	// parse the same as LF-only files. The closing `\n---` lookup below
+	// already tolerates CRLF because the trailing `\r` lands on the
+	// preceding line.
 	rest := content[3:]
 	rest = bytes.TrimLeft(rest, " \t")
-	if len(rest) == 0 || rest[0] != '\n' {
+	switch {
+	case len(rest) >= 2 && rest[0] == '\r' && rest[1] == '\n':
+		rest = rest[2:]
+	case len(rest) >= 1 && rest[0] == '\n':
+		rest = rest[1:]
+	default:
 		return fm, ErrNoFrontmatter
 	}
-	rest = rest[1:]
 
 	yamlBlock, _, found := bytes.Cut(rest, []byte("\n---"))
 	if !found {

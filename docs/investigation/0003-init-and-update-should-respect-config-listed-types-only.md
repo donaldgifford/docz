@@ -1,7 +1,7 @@
 ---
 id: INV-0003
 title: "Init and Update Should Respect Config-Listed Types Only"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-05-20
 ---
@@ -9,9 +9,15 @@ created: 2026-05-20
 
 # INV 0003: Init and Update Should Respect Config-Listed Types Only
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-05-20
+
+**Resolution:** Option A (replace-on-presence) implemented as IMPL-0006
+Phase 5. `internal/config.applyTypesReplaceOnPresence` filters
+`cfg.Types` to the user-listed set when the repo-root `.docz.yaml`
+declares a top-level `types:` block. Guarded by the five e2e tests
+enumerated in this doc, now living in `cmd/inv0003_test.go`.
 
 <!--toc:start-->
 - [Question](#question)

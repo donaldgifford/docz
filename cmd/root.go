@@ -41,7 +41,8 @@ It creates documents with auto-incremented IDs, YAML frontmatter, and
 auto-generated index pages.
 
 ` + config.TypesHelp(),
-	SilenceUsage: true,
+	SilenceUsage:      true,
+	PersistentPreRunE: loadAndValidateConfig,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -53,17 +54,20 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .docz.yaml in repo root)")
 	rootCmd.PersistentFlags().StringVar(&docsDir, "docs-dir", "", "base documentation directory (default: docs)")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable verbose output")
 }
 
-func initConfig() {
+// loadAndValidateConfig is wired as the rootCmd PersistentPreRunE so a
+// broken .docz.yaml causes a hard, non-zero exit at startup instead of
+// silently printing warnings and continuing with a half-defaulted config.
+// Cobra short-circuits PersistentPreRunE when --help/-h is set or no
+// runnable subcommand was given, so help still works with a broken config.
+func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
 	cfg, err := config.Load(cfgFile)
 	if err != nil {
-		cfg = config.DefaultConfig()
+		return fmt.Errorf("loading config: %w", err)
 	}
 
 	if docsDir != "" {
@@ -75,8 +79,9 @@ func initConfig() {
 		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
 	}
 	if validErr != nil {
-		fmt.Fprintf(os.Stderr, "Config error: %v\n", validErr)
+		return fmt.Errorf("invalid config: %w", validErr)
 	}
 
 	appCfg = cfg
+	return nil
 }
