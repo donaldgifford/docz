@@ -171,33 +171,29 @@ want the renderer, not Glow. Glamour:
 
 ### mdp integration approach
 
-mdp's server lives at `internal/server` in donaldgifford/mdp, which
-means it cannot be imported from docz today. Three options:
+Originally there were three options here (shell out, vendor, public
+API) because mdp's server lived under `internal/server` and was not
+importable. That blocker is now gone: mdp `main` has factored the
+library-consumable pieces into the public `pkg/` tree —
+`pkg/livereload`, `pkg/parser`, and `pkg/theme` — at
+<https://github.com/donaldgifford/mdp/tree/main/pkg>. docz can link
+those packages directly.
 
-1. **Shell out** — `exec.Command("mdp", "serve", path)`. Lowest
-   friction. Requires mdp on PATH. Detected at runtime; the
-   preview-in-browser TUI action is hidden when mdp is absent.
-   Trade-off: a separate process, weak lifecycle coupling, and the
-   user has to install mdp themselves.
-2. **Vendor the server** — copy `internal/server/`, `internal/parser/`,
-   `internal/theme/`, `internal/watcher/` into docz under
-   `internal/preview/`. Heaviest option; couples docz to mdp's release
-   cadence; would need to be re-synced manually.
-3. **Expose a public API in mdp** — factor the relevant pieces of
-   `internal/server` (and likely `internal/parser` + `internal/theme`)
-   into a `pkg/` package in a new mdp release, then import it from
-   docz. Cleanest long-term answer and the **preferred path**, but it
-   needs design work on mdp's side first: deciding the API shape,
-   teasing apart the Neovim-plugin couplings from the
-   library-consumable bits, and shipping a coordinated mdp release.
+**Decision:** option 3 (library import) is the v1 path. docz adds
+`github.com/donaldgifford/mdp` as a go.mod dependency and IMPL-0010
+builds `internal/preview/` on top of `mdp/pkg/parser` and
+`mdp/pkg/theme` (for rendering) and `mdp/pkg/livereload` (for the
+browser preview lifecycle). No subprocess, no PATH dependency, no
+vendored copy.
 
-**Status:** open. The preferred path is option 3; the prerequisite is
-an mdp-side investigation that designs the public package and ships
-it. Until that lands, docz's preview integration is unimplemented and
-IMPL-0010 owns picking the v1 approach once we know mdp's timeline.
-If the mdp work is on the v1 critical path, IMPL-0010 lands the
-library import directly; if not, IMPL-0010 lands option 1 (shell out)
-as a placeholder and IMPL-0011+ migrates to the library when ready.
+The shell-out and vendor options are retained here only as historical
+context — they are no longer on the table for v1.
+
+**Status:** resolved. Non-blocking for v1 — mdp's `pkg/` is available
+on `main` today; no coordinated mdp release is required before
+IMPL-0010 starts. The remaining IMPL-0010 work is docz-side: choosing
+which `pkg/` symbols to depend on, designing `internal/preview/`'s
+public surface, and wiring the TUI `p` key to it.
 
 ### lstk reference architecture
 
@@ -284,8 +280,10 @@ Match lstk exactly. Document the env var alongside the flag in
 but bounded — about three weeks of focused implementation on top of the
 already-planned IMPL-0006 through IMPL-0009 cleanup. The dependency
 risk is low: Bubble Tea v2 is stable, Bubbles tracks it, Glamour is a
-mature import-only library, and mdp is our own project so the
-shell-out plus future-API path is fully under our control.
+mature import-only library, and mdp now exposes its renderer + theme +
+live-reload under `pkg/` (`mdp/pkg/parser`, `pkg/theme`,
+`pkg/livereload`) so docz can link it in-process. The integration is
+fully under our control end-to-end.
 
 The two leverage points are:
 
@@ -297,10 +295,10 @@ The two leverage points are:
    current `cmd/` package with its global `appCfg`. IMPL-0009 (Runner
    pattern, output injection, slog) is a prerequisite.
 
-The one genuinely open item is the mdp integration shape — the
-preferred path imports mdp packages directly, but that requires
-mdp-side work to expose them. IMPL-0010 picks the v1 approach (import
-or shell out) once that mdp investigation lands.
+The previously-open item was the mdp integration shape; it is now
+resolved. mdp's `pkg/` namespace exists on `main` today, so IMPL-0010
+lands the library-import path directly — no shell-out fallback, no
+mdp-side prerequisite, no coordinated release.
 
 ## Recommendation
 
@@ -332,9 +330,10 @@ have a merged PR linked from their Phase-N PR task. Until that is
 true, the DESIGN doc for IMPL-0011 (TUI) is not opened and IMPL-0010
 (mdp preview) does not begin coding.
 
-The mdp-side packaging investigation can run in parallel during the
-prerequisite waves — it does not gate IMPL-0006..0009 and is gated
-by nothing on our side.
+mdp is no longer part of the gate: its `pkg/` surface is published on
+`main` (`pkg/livereload`, `pkg/parser`, `pkg/theme`), so IMPL-0010 can
+proceed via library import as soon as IMPL-0006..0009 are merged.
+There is no mdp-side prerequisite work left to track.
 
 ### Phasing into IMPL docs
 
@@ -346,15 +345,15 @@ The path to v1 is six implementation waves. Three exist; three are new:
 | IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | Drafted | Update performance for big repos |
 | IMPL-0008 | Move Stranded Business Logic Into Internal Packages | Drafted | Stable seams the TUI screens will call |
 | IMPL-0009 | Runner Pattern and DocType Registry Refactor | Drafted | Output routing for the TUI, no globals |
-| **IMPL-0010** | **mdp Preview Integration** | NEW | Browser preview; integration approach (library import vs shell out) decided by the doc itself, pending the mdp-side packaging investigation |
+| **IMPL-0010** | **mdp Preview Integration** | NEW | Browser preview via library import of `mdp/pkg/{parser,theme,livereload}` (no shell-out, no vendoring); now non-blocking — proceeds as soon as IMPL-0006..0009 are merged |
 | **IMPL-0011** | **Bubble Tea v2 TUI Layer** | NEW | The actual v1 user-facing change |
 
 The choice to slot IMPL-0010 before IMPL-0011 is deliberate: getting
 the preview pipeline working as a `docz preview <path>` CLI verb
 first lets us validate it without dragging the TUI into the same PR.
 The TUI then wires a key binding to the existing preview verb. The
-exact integration shape (library import vs subprocess) is decided
-inside IMPL-0010 once the mdp-side packaging investigation lands.
+integration shape is decided: IMPL-0010 imports `mdp/pkg/`
+(parser/theme/livereload) directly.
 
 A separate **IMPL-0012: v1 release engineering** wraps it: changelog,
 goreleaser polish, semver bump to v1.0.0, the v1 README rewrite, and
@@ -367,9 +366,9 @@ behavior.
   `$EDITOR` instead; lstk-style.
 - A `docz tui` explicit subcommand. We use bare-invocation dispatch
   exclusively; `--non-interactive` is the escape hatch.
-- Vendoring mdp's server. Migrating mdp to a public API is on the
-  table for v1 if the mdp-side investigation lands in time; tracked
-  inside IMPL-0010 rather than deferred wholesale.
+- Vendoring mdp's server. mdp now exposes `pkg/livereload`,
+  `pkg/parser`, and `pkg/theme` on `main`, so IMPL-0010 takes a direct
+  library import — no vendor copy, no shell-out fallback.
 - Multi-pane layouts. v1 is one screen at a time.
 - Custom Glamour themes. Ship with `dark` / `light` / `notty`; let
   v1.x add user themes if asked.
@@ -384,15 +383,14 @@ Resolved during design review on 2026-05-23.
 2. **TUI keybindings:** the proposed set is accepted (`q` quit,
    `?` help, `/` filter, `enter` select, `p` preview-in-browser).
    No conflict surfaced; revisit if a screen needs a sixth chord.
-3. **mdp dependency:** **open — needs investigation.** The
-   preferred path is to import mdp packages directly so docz links
-   the renderer in-process. That requires mdp-side work to factor
-   `internal/server` (and likely `internal/parser` + `internal/theme`)
-   into a public `pkg/` package. A separate mdp-side investigation
-   designs that API and ships the release. Filing that work is part
-   of IMPL-0010; IMPL-0010 itself decides which integration shape
-   ships in v1 based on the mdp timeline (library import preferred;
-   shell out as the fallback).
+3. **mdp dependency:** **resolved — library import.** mdp's `pkg/`
+   namespace exists on `main` (`pkg/livereload`, `pkg/parser`,
+   `pkg/theme`) at
+   <https://github.com/donaldgifford/mdp/tree/main/pkg>. docz takes a
+   direct go.mod dependency on `github.com/donaldgifford/mdp` and
+   builds `internal/preview/` on top of those packages. No subprocess,
+   no PATH dependency, no vendored copy. Non-blocking for v1 — the
+   integration begins as soon as IMPL-0006..0009 are merged.
 4. **State persistence:** v1 starts fresh every invocation. No
    `$XDG_STATE_HOME/docz/` writes. Deferred entirely; revisit only
    if users ask for sticky filters.
