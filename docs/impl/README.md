@@ -38,7 +38,7 @@ docz create impl "Your Implementation Title"
 | IMPL-0004 | Wiki Init Template and Init Enabled Fix | Completed | 2026-04-02 | Donald Gifford | [0004-wiki-init-template-and-init-enabled-fix.md](0004-wiki-init-template-and-init-enabled-fix.md) |
 | IMPL-0005 | Mechanical Style and Idiom Cleanup | Completed | 2026-05-15 | Donald Gifford | [0005-mechanical-style-and-idiom-cleanup.md](0005-mechanical-style-and-idiom-cleanup.md) |
 | IMPL-0006 | Correctness and Duplication Cleanup | In Progress | 2026-05-15 | Donald Gifford | [0006-correctness-and-duplication-cleanup.md](0006-correctness-and-duplication-cleanup.md) |
-| IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | Draft | 2026-05-15 | Donald Gifford | [0007-eliminate-redundant-file-reads-and-heading-parses.md](0007-eliminate-redundant-file-reads-and-heading-parses.md) |
+| IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | In Progress | 2026-05-15 | Donald Gifford | [0007-eliminate-redundant-file-reads-and-heading-parses.md](0007-eliminate-redundant-file-reads-and-heading-parses.md) |
 | IMPL-0008 | Move Stranded Business Logic Into Internal Packages | Draft | 2026-05-15 | Donald Gifford | [0008-move-stranded-business-logic-into-internal-packages.md](0008-move-stranded-business-logic-into-internal-packages.md) |
 | IMPL-0009 | Runner Pattern and DocType Registry Refactor | Draft | 2026-05-15 | Donald Gifford | [0009-runner-pattern-and-doctype-registry-refactor.md](0009-runner-pattern-and-doctype-registry-refactor.md) |
 <!-- END DOCZ AUTO-GENERATED -->

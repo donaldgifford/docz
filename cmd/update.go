@@ -105,21 +105,21 @@ func updateType(typeName string) error {
 
 // updateToCs updates the table of contents in each document file that has
 // ToC markers. Errors are logged as warnings but do not stop processing.
+//
+// IMPL-0007 Phase 3: operates on the bytes cached on DocEntry.Content
+// (populated during ScanDocuments) so each document is read once per
+// `docz update`, not twice.
 func updateToCs(typeDir string, docs []index.DocEntry) {
 	for _, doc := range docs {
 		docPath := filepath.Join(typeDir, doc.Filename)
-		data, err := os.ReadFile(docPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: reading %s for ToC: %v\n", docPath, err)
+		original := string(doc.Content)
+
+		res := toc.UpdateToC(original, appCfg.ToC.MinHeadings)
+		if !res.Found {
 			continue
 		}
 
-		updated, found := toc.UpdateToC(string(data), appCfg.ToC.MinHeadings)
-		if !found {
-			continue
-		}
-
-		if updated == string(data) {
+		if res.Updated == original {
 			if verbose {
 				fmt.Fprintf(os.Stderr, "  ToC unchanged in %s\n", docPath)
 			}
@@ -127,16 +127,18 @@ func updateToCs(typeDir string, docs []index.DocEntry) {
 		}
 
 		if updateDryRun {
-			headings := toc.ParseHeadings(string(data))
+			// IMPL-0007 Phase 4: reuse the headings already parsed by
+			// UpdateToC instead of calling toc.ParseHeadings a second
+			// time on the same content.
 			fmt.Printf(
 				"Would update ToC in %s (%d headings)\n",
 				docPath,
-				len(headings),
+				len(res.Headings),
 			)
 			continue
 		}
 
-		if err := os.WriteFile(docPath, []byte(updated), config.FileMode); err != nil {
+		if err := os.WriteFile(docPath, []byte(res.Updated), config.FileMode); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", docPath, err)
 			continue
 		}

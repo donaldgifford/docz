@@ -175,19 +175,36 @@ func GenerateToC(headings []Heading, minHeadings int) string {
 	return sb.String()
 }
 
-// UpdateToC replaces the content between ToC markers in a document with a
-// freshly generated table of contents. Returns the updated content and true
-// if markers were found. If no markers are found, returns the original content
-// and false.
-func UpdateToC(content string, minHeadings int) (string, bool) {
+// UpdateResult is what UpdateToC returns: the updated content, the
+// parsed headings (so callers don't have to invoke ParseHeadings a
+// second time), and whether the ToC markers were found in the input.
+//
+// Headings is the same slice UpdateToC used internally to build the
+// ToC. When Found is false, both Updated and Headings reflect the
+// original input (Updated == content; Headings is nil).
+type UpdateResult struct {
+	Updated  string
+	Headings []Heading
+	Found    bool
+}
+
+// UpdateToC replaces the content between ToC markers in a document with
+// a freshly generated table of contents. If the markers are not present
+// the input is returned untouched with Found=false.
+//
+// The parsed headings are surfaced via UpdateResult.Headings so callers
+// that need the metadata (notably the `docz update --dry-run` summary)
+// can read them directly instead of calling ParseHeadings a second time
+// on the same content — see IMPL-0007 Phase 4 / Decisions §5.
+func UpdateToC(content string, minHeadings int) UpdateResult {
 	before, afterBegin, foundBegin := strings.Cut(content, BeginMarker)
 	if !foundBegin {
-		return content, false
+		return UpdateResult{Updated: content}
 	}
 
 	_, afterEnd, foundEnd := strings.Cut(afterBegin, EndMarker)
 	if !foundEnd {
-		return content, false
+		return UpdateResult{Updated: content}
 	}
 
 	headings := ParseHeadings(content)
@@ -203,5 +220,9 @@ func UpdateToC(content string, minHeadings int) (string, bool) {
 	sb.WriteString(EndMarker)
 	sb.WriteString(afterEnd)
 
-	return sb.String(), true
+	return UpdateResult{
+		Updated:  sb.String(),
+		Headings: headings,
+		Found:    true,
+	}
 }
