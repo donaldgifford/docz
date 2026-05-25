@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -61,6 +60,7 @@ func runUpdate(_ *cobra.Command, args []string) error {
 }
 
 func updateType(typeName string) error {
+	tc := appCfg.Types[typeName]
 	typeDir := appCfg.TypeDir(typeName)
 	readmePath := filepath.Join(typeDir, config.IndexFileName)
 
@@ -82,10 +82,7 @@ func updateType(typeName string) error {
 		updateToCs(typeDir, docs)
 	}
 
-	heading := "All " + strings.ToUpper(typeName) + "s"
-	if typeName == "adr" {
-		heading = "All ADRs"
-	}
+	heading := "All " + tc.PluralLabel
 	tableContent := index.GenerateTable(docs, heading)
 
 	if updateDryRun {

@@ -351,19 +351,36 @@ pluralization.
 
 #### Tasks
 
-- [ ] Add `PluralLabel string` field to `TypeConfig` with `yaml:"plural_label,omitempty"`
-- [ ] Default values in `DefaultConfig()`:
-      `rfc: "RFCs"`, `adr: "ADRs"`, `design: "Designs"`,
-      `impl: "Implementation Plans"`, `plan: "Plans"`,
-      `investigation: "Investigations"`
-- [ ] Replace `cmd/update.go:84-87` with `heading := "All " + tc.PluralLabel`
-- [ ] Audit `cmd/wiki.go:312-315` — the nav-title fallback that does
-      `strings.ToUpper(typeName)` — and use `PluralLabel` here too if it
-      conceptually maps (see Decisions §4)
-- [ ] Re-run golden file regeneration; verify only the `design` index
-      heading changes (`"DESIGNs"` → `"Design"` — see Decisions §5)
-- [ ] Update the embedded index header templates if they reference the
-      old heading
+- [x] Add `PluralLabel string` field to `TypeConfig` with
+      `yaml:"plural_label,omitempty"`; document the precedence rule on
+      the struct
+- [x] Defaults in `DefaultConfig()` per Decisions §5:
+      `rfc:"RFCs"`, `adr:"ADRs"`, `design:"Design"`,
+      `impl:"Implementation Plans"`, `plan:"Plans"`,
+      `investigation:"Investigations"`
+- [x] Replace the magic-string block in `cmd/update.go:updateType` with
+      `heading := "All " + tc.PluralLabel`; the `if typeName == "adr"`
+      special case is gone
+- [x] Update `cmd/wiki.go:ensureDocsIndex` nav-title fallback chain to
+      `Wiki.NavTitles[name]` -> `tc.PluralLabel` -> `strings.ToUpper(name)`
+      per Decisions §4
+- [x] Add `fillTypeFieldDefaults` to `internal/config/config.go`: a
+      reflective post-Unmarshal pass that backfills zero-valued
+      string/int/nil-slice fields on each `cfg.Types` entry from
+      `DefaultConfig()`. Closes the F49 case where mapstructure's
+      map-of-struct decoding allocated fresh entries and dropped
+      sibling defaults (the bug that surfaced when PluralLabel was
+      added: existing user configs would have rendered "All " with
+      no label).
+- [x] Add `TestLoad_TypeFieldDefaultsBackfilled` and
+      `TestLoad_TypeExplicitEmptyStatusesPreserved` regression tests
+      covering the backfill and the nil-vs-empty slice distinction
+- [x] Add `plural_label` to `docz_yaml.tmpl` so new `.docz.yaml` files
+      include it
+- [x] Re-run `docz update` against the repo's own docs; the only heading
+      changes are the expected ones (DESIGNs→Design, IMPLs→Implementation
+      Plans, INVESTIGATIONs→Investigations) plus the empty headings
+      filled in for adr, plan, rfc (which were never rendered before)
 
 #### Success Criteria
 

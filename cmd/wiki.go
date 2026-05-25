@@ -309,7 +309,14 @@ func ensureDocsIndex(siteName string) error {
 	types := make([]doctemplate.WikiIndexType, 0, len(enabled))
 	for _, typeName := range enabled {
 		tc := appCfg.Types[typeName]
+		// WikiConfig.NavTitles wins over PluralLabel (Decisions §4
+		// back-compat); PluralLabel is the fallback. Capitalized
+		// typeName is only used as a last-resort label if neither is
+		// configured.
 		navTitle := appCfg.Wiki.NavTitles[typeName]
+		if navTitle == "" {
+			navTitle = tc.PluralLabel
+		}
 		if navTitle == "" {
 			navTitle = strings.ToUpper(typeName)
 		}

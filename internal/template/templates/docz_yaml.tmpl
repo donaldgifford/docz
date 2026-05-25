@@ -27,6 +27,7 @@ types:
       - {{ . }}
 {{- end }}
     status_field: "{{ $tc.StatusField }}"
+    plural_label: "{{ $tc.PluralLabel }}"
 {{ end }}
 index:
   auto_update: {{ .Index.AutoUpdate }}

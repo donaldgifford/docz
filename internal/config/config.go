@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -15,6 +16,14 @@ import (
 )
 
 // TypeConfig holds configuration for a single document type.
+//
+// PluralLabel is the human-readable section heading and (per Decisions §4
+// of IMPL-0006) the single source for the README index "All ADRs", "All
+// RFCs", "All Implementation Plans", etc. It also wins over a missing
+// `WikiConfig.NavTitles` entry when rendering the wiki landing page.
+// `WikiConfig.NavTitles[name]`, when set, still overrides `PluralLabel`
+// for the wiki nav for one release; deprecation/removal of NavTitles is
+// deferred to a future release.
 type TypeConfig struct {
 	Enabled     bool     `mapstructure:"enabled"      yaml:"enabled"`
 	Dir         string   `mapstructure:"dir"          yaml:"dir"`
@@ -23,6 +32,7 @@ type TypeConfig struct {
 	IDWidth     int      `mapstructure:"id_width"     yaml:"id_width"`
 	Statuses    []string `mapstructure:"statuses"     yaml:"statuses"`
 	StatusField string   `mapstructure:"status_field" yaml:"status_field"`
+	PluralLabel string   `mapstructure:"plural_label" yaml:"plural_label,omitempty"`
 }
 
 // IndexConfig holds configuration for index/README generation.
@@ -79,6 +89,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "Proposed", "Accepted", "Rejected", "Superseded"},
 				StatusField: "status",
+				PluralLabel: "RFCs",
 			},
 			"adr": {
 				Enabled:     true,
@@ -87,6 +98,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Proposed", "Accepted", "Deprecated", "Superseded"},
 				StatusField: "status",
+				PluralLabel: "ADRs",
 			},
 			"design": {
 				Enabled:     true,
@@ -95,6 +107,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "In Review", "Approved", "Implemented", "Abandoned"},
 				StatusField: "status",
+				PluralLabel: "Design",
 			},
 			"impl": {
 				Enabled:     true,
@@ -103,6 +116,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "In Progress", "Completed", "Paused", "Cancelled"},
 				StatusField: "status",
+				PluralLabel: "Implementation Plans",
 			},
 			"plan": {
 				Enabled:     true,
@@ -111,6 +125,7 @@ func DefaultConfig() Config {
 				IDWidth:     4,
 				Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
 				StatusField: "status",
+				PluralLabel: "Plans",
 			},
 			"investigation": {
 				Enabled:  true,
@@ -125,6 +140,7 @@ func DefaultConfig() Config {
 					"Abandoned",
 				},
 				StatusField: "status",
+				PluralLabel: "Investigations",
 			},
 		},
 		Index: IndexConfig{
@@ -186,6 +202,7 @@ func Load(configFile string) (Config, error) {
 	}
 
 	applyTypesReplaceOnPresence(&cfg, ConfigFileName)
+	fillTypeFieldDefaults(&cfg)
 
 	return cfg, nil
 }
@@ -343,8 +360,60 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 	}
 
 	applyTypesReplaceOnPresence(&cfg, path)
+	fillTypeFieldDefaults(&cfg)
 
 	return cfg, nil
+}
+
+// fillTypeFieldDefaults backfills zero-valued string, int, and slice
+// fields on each cfg.Types entry from the corresponding DefaultConfig()
+// entry. This works around an mapstructure behavior: for
+// `map[string]TypeConfig` fields, the decoder allocates a fresh
+// TypeConfig per key in the source rather than decoding in place over
+// the pre-populated entry, so any field absent from the user's YAML
+// is left at the zero value instead of inheriting the default.
+//
+// Bool fields (notably Enabled) are intentionally NOT filled here:
+// the YAML decoder cannot distinguish "omitted" from "explicit false"
+// for bools, so backfilling would silently re-enable a type the user
+// disabled. Users must set `enabled: false` explicitly per type.
+//
+// For slice fields the distinguisher is nil-vs-empty: an omitted
+// `statuses:` key decodes to a nil slice and IS filled from defaults;
+// an explicit `statuses: []` decodes to a non-nil zero-length slice
+// and is left alone so Validate can flag it.
+//
+// Custom types (entries not in DefaultConfig) are skipped — they have
+// no defaults to draw from.
+func fillTypeFieldDefaults(cfg *Config) {
+	defaults := DefaultConfig()
+	for name, tc := range cfg.Types {
+		dtc, ok := defaults.Types[name]
+		if !ok {
+			continue
+		}
+		dstV := reflect.ValueOf(&tc).Elem()
+		srcV := reflect.ValueOf(dtc)
+		for i := 0; i < dstV.NumField(); i++ {
+			f := dstV.Field(i)
+			s := srcV.Field(i)
+			switch f.Kind() {
+			case reflect.String:
+				if f.String() == "" {
+					f.SetString(s.String())
+				}
+			case reflect.Int, reflect.Int64:
+				if f.Int() == 0 {
+					f.SetInt(s.Int())
+				}
+			case reflect.Slice:
+				if f.IsNil() {
+					f.Set(s)
+				}
+			}
+		}
+		cfg.Types[name] = tc
+	}
 }
 
 // applyTypesReplaceOnPresence enforces the INV-0003 contract: when the

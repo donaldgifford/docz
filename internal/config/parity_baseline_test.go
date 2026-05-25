@@ -275,6 +275,92 @@ func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
 	}
 }
 
+// TestLoad_TypeFieldDefaultsBackfilled is the IMPL-0006 Phase 8
+// regression guard. mapstructure's map-of-struct decoding allocates a
+// fresh TypeConfig per source key, so any field absent from the user's
+// YAML is left at the zero value rather than inheriting the default —
+// the F49 bug for the Types map. fillTypeFieldDefaults closes that gap
+// for string, int, and (nil) slice fields; this test pins the
+// PluralLabel + IDPrefix + Statuses backfill so a future refactor
+// can't regress it.
+//
+// Bool fields (Enabled) are intentionally NOT backfilled and are
+// covered by a sibling subtest.
+func TestLoad_TypeFieldDefaultsBackfilled(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "partial.yaml")
+	// User declares rfc with only a custom dir — everything else
+	// (id_prefix, id_width, statuses, status_field, plural_label) is
+	// omitted and should be filled from DefaultConfig().
+	content := `types:
+  rfc:
+    enabled: true
+    dir: rfc-custom
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	tc, ok := cfg.Types["rfc"]
+	if !ok {
+		t.Fatal("rfc type missing after partial config")
+	}
+	if tc.Dir != "rfc-custom" {
+		t.Errorf("Dir = %q, want override", tc.Dir)
+	}
+	defaults := config.DefaultConfig()
+	dtc := defaults.Types["rfc"]
+	if tc.IDPrefix != dtc.IDPrefix {
+		t.Errorf("IDPrefix = %q, want default %q", tc.IDPrefix, dtc.IDPrefix)
+	}
+	if tc.IDWidth != dtc.IDWidth {
+		t.Errorf("IDWidth = %d, want default %d", tc.IDWidth, dtc.IDWidth)
+	}
+	if tc.PluralLabel != dtc.PluralLabel {
+		t.Errorf("PluralLabel = %q, want default %q", tc.PluralLabel, dtc.PluralLabel)
+	}
+	if tc.StatusField != dtc.StatusField {
+		t.Errorf("StatusField = %q, want default %q", tc.StatusField, dtc.StatusField)
+	}
+	if !reflect.DeepEqual(tc.Statuses, dtc.Statuses) {
+		t.Errorf("Statuses = %v, want default %v", tc.Statuses, dtc.Statuses)
+	}
+}
+
+// TestLoad_TypeExplicitEmptyStatusesPreserved guards the nil-vs-empty
+// distinction for slice fields: `statuses: []` in YAML must NOT be
+// backfilled from defaults, so Validate can still flag the type as
+// misconfigured.
+func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "explicit-empty.yaml")
+	content := `types:
+  rfc:
+    enabled: true
+    dir: rfc
+    statuses: []
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got := cfg.Types["rfc"].Statuses; len(got) != 0 {
+		t.Errorf("Statuses = %v, want explicit empty preserved", got)
+	}
+	if _, err := cfg.Validate(); err == nil {
+		t.Error("Validate should error on explicit empty statuses")
+	}
+}
+
 // TestLoad_DefaultsParity is the IMPL-0006 Phase 2 reflective parity guard.
 // With no config files present, Load() must return a Config deep-equal to
 // DefaultConfig(). Catches any future drift where Load loses or mutates
