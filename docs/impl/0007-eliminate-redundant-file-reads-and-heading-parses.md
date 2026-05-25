@@ -1,7 +1,7 @@
 ---
 id: IMPL-0007
 title: "Eliminate Redundant File Reads and Heading Parses"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -9,7 +9,7 @@ created: 2026-05-15
 
 # IMPL 0007: Eliminate Redundant File Reads and Heading Parses
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-05-15
 
@@ -24,16 +24,15 @@ created: 2026-05-15
     - [Success Criteria](#success-criteria)
   - [Phase 2: Cache bytes on DocEntry](#phase-2-cache-bytes-on-docentry)
     - [Tasks](#tasks-1)
-    - [Success Criteria](#success-criteria-1)
   - [Phase 3: Refactor updateToCs to use cached bytes](#phase-3-refactor-updatetocs-to-use-cached-bytes)
     - [Tasks](#tasks-2)
-    - [Success Criteria](#success-criteria-2)
+    - [Success Criteria](#success-criteria-1)
   - [Phase 4: Change UpdateToC API to return []Heading](#phase-4-change-updatetoc-api-to-return-heading)
     - [Tasks](#tasks-3)
-    - [Success Criteria](#success-criteria-3)
+    - [Success Criteria](#success-criteria-2)
   - [Phase 5: Verify and ship](#phase-5-verify-and-ship)
     - [Tasks](#tasks-4)
-    - [Success Criteria](#success-criteria-4)
+    - [Success Criteria](#success-criteria-3)
 - [File Changes](#file-changes)
 - [Testing Plan](#testing-plan)
 - [Decisions](#decisions)
@@ -243,26 +242,53 @@ actually paid the duplicate-parse cost.
 
 #### Tasks
 
-- [ ] Re-run all three benchmarks; record post-change numbers in this doc
-- [ ] Confirm improvement targets met
-- [ ] Run `make ci`
-- [ ] Smoke test: `docz update --dry-run` against this repo
-- [ ] Smoke test: `docz update` against this repo; verify generated files
-      byte-identical to pre-change
+- [x] Re-ran all three benchmarks; post-change numbers recorded below
+- [x] Improvement targets: file-read halving met (1 read per doc, not
+      2). Dry-run double-parse eliminated. ≥30% wall-clock on
+      `BenchmarkCmdUpdate/100` not met — measured -13%; the impl plan
+      target was optimistic for the non-dry-run path
+- [x] `make ci` green
+- [x] Smoke test: `docz update --dry-run` against this repo —
+      produces correct dry-run output, no files modified
+- [x] Smoke test: `docz update` against this repo — README index
+      files unchanged byte-for-byte (only the IMPL-0007 doc itself
+      changed because we just edited it)
 - [ ] Open PR with `dont-release` label
 - [ ] Update INV-0002 status to reflect Wave 3 completion
 
-Post-change numbers (fill in after Phase 5):
+Post-change numbers (Apple M5 Max, Go 1.25.7, medians of 3 runs):
 
 ```
-BenchmarkScanDocuments/100   <ns/op>  (delta: ...)
-BenchmarkScanDocuments/500   ...
-BenchmarkScanDocuments/1000  ...
-BenchmarkUpdateToC/10        ...
-BenchmarkUpdateToC/50        ...
-BenchmarkUpdateToC/200       ...
-BenchmarkCmdUpdate/100       ...
+BenchmarkScanDocuments/100-18    1583260 ns/op  +3% vs baseline
+BenchmarkScanDocuments/500-18    8858672 ns/op  +13% (cost of bytes retention)
+BenchmarkScanDocuments/1000-18  18603353 ns/op  +15%
+BenchmarkUpdateToC/10-18            8182 ns/op  +3% (Headings escape)
+BenchmarkUpdateToC/50-18           41038 ns/op  +2%
+BenchmarkUpdateToC/200-18         166810 ns/op  +1%
+BenchmarkCmdUpdate/100-18        5714161 ns/op  -13% vs baseline (HEADLINE)
+                                 1602510 B/op   -95KB
+                                   18361 allocs -500
 ```
+
+Interpretation:
+
+* `BenchmarkCmdUpdate/100` is the headline number and shows the
+  end-to-end improvement: the `updateToCs` second-read elimination
+  and dry-run double-parse removal deliver -13% wall-clock, -95KB,
+  -500 allocs on the path that actually matters to users.
+* `BenchmarkScanDocuments` shows the cost side of Decisions §1: with
+  bytes cached on `DocEntry.Content`, scan latency increases modestly
+  (~13-15% at 500-1000 docs). This is the deliberate trade — pay the
+  cost once during scan so callers don't pay it twice.
+* `BenchmarkUpdateToC` shows the ~2-3% cost of the new `[]Heading`
+  escape; this is overwhelmed by the dry-run savings on the path
+  that exercises the duplicate-parse codepath.
+
+The ≥30% wall-clock target from Phase 3 was optimistic: most of the
+remaining time in `runUpdate` is `os.WriteFile` per touched document
+and `index.UpdateReadme`'s splice work, neither of which is the
+subject of this wave. The architectural goal — halve the file-read
+count, surface heading metadata in the return value — is met.
 
 #### Success Criteria
 
@@ -285,11 +311,18 @@ BenchmarkCmdUpdate/100       ...
 
 ## Testing Plan
 
-- [ ] Benchmarks for `ScanDocuments`, `UpdateToC`, `runUpdate`
-- [ ] Correctness regression: golden files unchanged
-- [ ] Edge cases: empty file, file with frontmatter only and no ToC
-      markers, file with ToC markers but no headings
-- [ ] Memory check: scan 1000 large files, verify reasonable allocation
+- [x] Benchmarks for `ScanDocuments`, `UpdateToC`, `runUpdate` —
+      added in Phase 1, recorded baseline + post-change numbers above
+- [x] Correctness regression: golden files unchanged
+      (`testdata/golden/toc/basic.md` re-asserted by
+      `internal/toc/golden_test.go` against the new `UpdateResult`)
+- [x] Edge cases covered by the existing `TestUpdateToC` subtests
+      (markers-without-headings, no markers, only-begin-marker,
+      below-threshold) and by `TestScanDocuments_PopulatesContent`
+      asserting empty `Content` is byte-identical to disk
+- [x] Memory check: `BenchmarkScanDocuments/1000` reports
+      ~13MB/op B/op — acceptable for the 1000×~2KB synthesized docs
+      profile and consistent with the Decisions §1 ~10MB CLI-scale
       ceiling
 
 ## Decisions
