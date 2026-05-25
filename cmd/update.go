@@ -52,7 +52,7 @@ func runUpdate(_ *cobra.Command, args []string) error {
 		}
 
 		if err := updateType(typeName); err != nil {
-			return err
+			return fmt.Errorf("updating %s: %w", typeName, err)
 		}
 	}
 
@@ -90,7 +90,7 @@ func updateType(typeName string) error {
 	if updateDryRun {
 		result, err := index.DryRunReadme(readmePath, typeName, tableContent)
 		if err != nil {
-			return err
+			return fmt.Errorf("dry-run readme %s: %w", readmePath, err)
 		}
 		fmt.Println(result)
 		return nil
@@ -98,7 +98,7 @@ func updateType(typeName string) error {
 
 	msg, err := index.UpdateReadme(readmePath, typeName, tableContent)
 	if err != nil {
-		return err
+		return fmt.Errorf("updating readme %s: %w", readmePath, err)
 	}
 
 	fmt.Println(msg)

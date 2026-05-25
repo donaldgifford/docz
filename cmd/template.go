@@ -69,13 +69,15 @@ func init() {
 
 func runTemplateShow(_ *cobra.Command, args []string) error {
 	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
+	// validateType returns a fully-formatted "unknown document type"
+	// error; further wrapping would only add noise.
 	if err := validateType(docType); err != nil {
 		return err
 	}
 
 	content, err := resolveTemplate(docType)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
 	fmt.Print(content)
@@ -84,6 +86,8 @@ func runTemplateShow(_ *cobra.Command, args []string) error {
 
 func runTemplateExport(_ *cobra.Command, args []string) error {
 	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
+	// validateType returns a fully-formatted "unknown document type"
+	// error; further wrapping would only add noise.
 	if err := validateType(docType); err != nil {
 		return err
 	}
@@ -95,7 +99,7 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 
 	content, err := resolveTemplate(docType)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
 	if err := os.WriteFile(outPath, []byte(content), config.FileMode); err != nil {
@@ -108,6 +112,8 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 
 func runTemplateOverride(_ *cobra.Command, args []string) error {
 	docType := config.ResolveTypeAlias(strings.ToLower(args[0]))
+	// validateType returns a fully-formatted "unknown document type"
+	// error; further wrapping would only add noise.
 	if err := validateType(docType); err != nil {
 		return err
 	}
@@ -121,7 +127,7 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 
 	content, err := resolveTemplate(docType)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
 	if err := os.MkdirAll(overrideDir, config.DirMode); err != nil {

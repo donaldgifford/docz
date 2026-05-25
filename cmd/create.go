@@ -87,7 +87,7 @@ func runCreate(_ *cobra.Command, args []string) error {
 
 	result, err := document.Create(&opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating %s document: %w", docType, err)
 	}
 
 	fmt.Printf("Created %s: %s\n", strings.ToUpper(docType), result.FilePath)

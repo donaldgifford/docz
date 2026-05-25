@@ -107,16 +107,16 @@ func filterByStatus(entries []listEntry, status string) []listEntry {
 func outputTable(entries []listEntry) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	if _, err := fmt.Fprintln(w, "ID\tTITLE\tSTATUS\tDATE\tAUTHOR\tTYPE"); err != nil {
-		return err
+		return fmt.Errorf("writing table header: %w", err)
 	}
 	if _, err := fmt.Fprintln(w, "--\t-----\t------\t----\t------\t----"); err != nil {
-		return err
+		return fmt.Errorf("writing table separator: %w", err)
 	}
 	for i := range entries {
 		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
 			entries[i].ID, entries[i].Title, entries[i].Status, entries[i].Date,
 			entries[i].Author, entries[i].Type); err != nil {
-			return err
+			return fmt.Errorf("writing table row %d: %w", i, err)
 		}
 	}
 	return w.Flush()
@@ -131,14 +131,14 @@ func outputJSON(entries []listEntry) error {
 func outputCSV(entries []listEntry) error {
 	w := csv.NewWriter(os.Stdout)
 	if err := w.Write([]string{"ID", "Title", "Status", "Date", "Author", "Type", "File"}); err != nil {
-		return err
+		return fmt.Errorf("writing csv header: %w", err)
 	}
 	for i := range entries {
 		if err := w.Write([]string{
 			entries[i].ID, entries[i].Title, entries[i].Status,
 			entries[i].Date, entries[i].Author, entries[i].Type, entries[i].File,
 		}); err != nil {
-			return err
+			return fmt.Errorf("writing csv row %d: %w", i, err)
 		}
 	}
 	w.Flush()

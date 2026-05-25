@@ -277,16 +277,25 @@ Walk every flagged site and add `fmt.Errorf("doing X: %w", err)` wrapping.
 
 #### Tasks
 
-- [ ] Wrap `cmd/update.go:54` — `runUpdate` loop
-- [ ] Wrap `cmd/create.go:89` — `document.Create` call
-- [ ] Wrap `cmd/init.go:51` — `writeIndexReadme` call
-- [ ] Wrap `cmd/wiki.go:103` — `writeMkDocsYAML` call
-- [ ] Wrap `cmd/wiki.go:109` — `ensureDocsIndex` call
-- [ ] Wrap `cmd/wiki.go:154-156` — `ReadMkDocs`
-- [ ] Wrap `cmd/wiki.go:178-180` — `WriteMkDocs`
-- [ ] Wrap `cmd/wiki.go:197-199` — dry-run `ReadMkDocs`
-- [ ] Wrap `internal/wiki/wiki.go:58` — recursive `scanDir`
-- [ ] Audit any sites missed by INV-0002 with `grep -rn 'return err$' cmd/ internal/`
+- [x] Wrap `cmd/update.go` runUpdate loop (`updating %s: %w`) and
+      `updateType` dry-run / readme paths
+- [x] Wrap `cmd/create.go` `document.Create` call (`creating %s document`)
+- [x] Wrap `cmd/init.go` `writeIndexReadme` call (`writing index readme for %s`),
+      `writeDefaultConfig` call (`writing default config`), and
+      `renderDefaultConfig` invocation (`rendering default config`)
+- [x] Wrap `cmd/wiki.go` `writeMkDocsYAML`, `ensureDocsIndex`,
+      `ensureDoczInit`, both `ReadMkDocs`, and `WriteMkDocs` sites with
+      path-bearing wrappers
+- [x] Wrap `cmd/list.go` table-writer / csv-writer stdout writes with
+      `writing table header/separator/row %d` and `writing csv header/row %d`
+- [x] `internal/wiki/wiki.go` recursive scanDir already returns wrapped
+      errors at every site; verified via grep -- no bare `return err`
+      remains in `internal/`
+- [x] Audit sites missed by INV-0002: `grep -rn 'return err$' cmd/ internal/`
+      now shows only three sites in `cmd/template.go`, each documented with
+      a code comment explaining the unwrapped propagation (validateType
+      already returns a fully-formatted error). Phase 7 collapses them
+      further.
 
 #### Success Criteria
 

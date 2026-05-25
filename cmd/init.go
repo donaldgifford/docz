@@ -37,7 +37,7 @@ func init() {
 
 func runInit(_ *cobra.Command, _ []string) error {
 	if err := writeDefaultConfig(); err != nil {
-		return err
+		return fmt.Errorf("writing default config: %w", err)
 	}
 
 	for _, typeName := range config.ValidTypes() {
@@ -56,7 +56,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 
 		readmePath := filepath.Join(typeDir, config.IndexFileName)
 		if err := writeIndexReadme(readmePath, typeName); err != nil {
-			return err
+			return fmt.Errorf("writing index readme for %s: %w", typeName, err)
 		}
 	}
 
@@ -76,7 +76,7 @@ func writeDefaultConfig() error {
 
 	content, err := renderDefaultConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("rendering default config: %w", err)
 	}
 
 	if err := os.WriteFile(configPath, []byte(content), config.FileMode); err != nil {

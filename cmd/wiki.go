@@ -78,7 +78,7 @@ func init() {
 func runWikiInit(_ *cobra.Command, _ []string) error {
 	// Auto-run docz init if not already initialized.
 	if err := ensureDoczInit(); err != nil {
-		return err
+		return fmt.Errorf("ensuring docz init: %w", err)
 	}
 
 	mkdocsPath := appCfg.Wiki.MkDocsPath
@@ -103,13 +103,13 @@ func runWikiInit(_ *cobra.Command, _ []string) error {
 	}
 
 	if err := writeMkDocsYAML(mkdocsPath, siteName, siteDesc); err != nil {
-		return err
+		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
 	fmt.Printf("Created %s\n", mkdocsPath)
 
 	if err := ensureDocsIndex(siteName); err != nil {
-		return err
+		return fmt.Errorf("ensuring docs index: %w", err)
 	}
 
 	// Populate the nav from existing docs.
@@ -155,7 +155,7 @@ func runWikiUpdateNav(mkdocsPath string) error {
 
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
 
 	existingOrder := wiki.ExistingNavOrder(data)
@@ -178,7 +178,7 @@ func runWikiUpdateNav(mkdocsPath string) error {
 	data["nav"] = wiki.NavToYAML(entries)
 
 	if err := wiki.WriteMkDocs(mkdocsPath, data); err != nil {
-		return err
+		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
 	pageCount := wiki.CountPages(entries)
@@ -198,7 +198,7 @@ func runWikiUpdateDryRun(mkdocsPath string) error {
 
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
 
 	existingOrder := wiki.ExistingNavOrder(data)
