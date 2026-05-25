@@ -1,6 +1,7 @@
 package index
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,6 +56,33 @@ func TestScanDocuments_WithDocuments(t *testing.T) {
 	}
 	if docs[2].ID != "RFC-0003" {
 		t.Errorf("docs[2].ID = %q, want %q", docs[2].ID, "RFC-0003")
+	}
+}
+
+// TestScanDocuments_PopulatesContent guards the IMPL-0007 Phase 2
+// contract: every returned DocEntry carries the raw file bytes so
+// downstream callers (cmd/update.go ToC pass) can skip re-reading.
+func TestScanDocuments_PopulatesContent(t *testing.T) {
+	dir := t.TempDir()
+	writeDoc(t, dir, "0001-first.md", "RFC-0001", "First", "Draft", "2026-01-01")
+
+	docs, err := ScanDocuments(dir)
+	if err != nil {
+		t.Fatalf("ScanDocuments: %v", err)
+	}
+	if len(docs) != 1 {
+		t.Fatalf("got %d docs, want 1", len(docs))
+	}
+	if len(docs[0].Content) == 0 {
+		t.Fatal("DocEntry.Content is empty; should hold file bytes")
+	}
+
+	want, err := os.ReadFile(filepath.Join(dir, "0001-first.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(docs[0].Content, want) {
+		t.Errorf("DocEntry.Content diverges from on-disk bytes")
 	}
 }
 

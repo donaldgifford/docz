@@ -122,22 +122,18 @@ that need the file content don't have to re-read.
 
 #### Tasks
 
-- [ ] Add `Content []byte` to `index.DocEntry` (after the existing
+- [x] Add `Content []byte` to `index.DocEntry` (after the existing
       `Filename` field)
-- [ ] In `index.ScanDocuments`, populate `Content` from the bytes already
+- [x] In `index.ScanDocuments`, populate `Content` from the bytes already
       read for `ParseFrontmatter` (no extra read)
-- [ ] Decide whether to keep `Content` always-populated, or add a
-      `ScanOptions` parameter (see Decisions §1)
-- [ ] Update `index.GenerateTable` — it doesn't need `Content`, so verify
-      no caller relies on `DocEntry` being lightweight
-- [ ] Document the memory implication in `DocEntry`'s doc comment
-
-#### Success Criteria
-
-- `DocEntry.Content` holds the raw file bytes after `ScanDocuments`
-- No existing test breaks; golden files unchanged
-- Memory increase per `DocEntry`: roughly the document's size in bytes
-  (acceptable at CLI scale — a repo with 1000×10KB docs uses ~10MB)
+- [x] Decision §1 honored: `Content` is always populated, no
+      `ScanOptions` parameter introduced
+- [x] `index.GenerateTable` audit: it only reads `Frontmatter` +
+      `Filename`, so the heavier `DocEntry` does not affect it
+- [x] Memory implication and ~10MB ceiling at CLI scale documented in
+      `DocEntry`'s doc comment
+- [x] Regression test `TestScanDocuments_PopulatesContent` asserts
+      `Content` equals the on-disk bytes byte-for-byte
 
 ---
 
