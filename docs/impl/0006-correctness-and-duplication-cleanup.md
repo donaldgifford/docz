@@ -424,7 +424,11 @@ pluralization.
 - [x] Smoke test: `.docz.yaml` with `types: rfc: {enabled: true, statuses: []}`,
       confirm `docz list rfc` exits 1 with
       `invalid config: type "rfc" has no statuses defined`
-- [x] Open PR with `dont-release` label — PR #41
+- [x] Open PR — PR #41 (label corrected from `dont-release` to `minor`
+      post-review: this wave has user-visible behavior changes
+      — hard-fail on broken `.docz.yaml`, README heading text shifts via
+      `PluralLabel`, INV-0003 `types:` replace-on-presence semantics,
+      parse-error surfacing — so it's not a no-release refactor)
 - [x] Update INV-0002 status to "In Progress"
 
 #### Success Criteria
