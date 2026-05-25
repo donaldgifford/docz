@@ -397,10 +397,11 @@ pluralization.
 
 #### Tasks
 
-- [ ] In `internal/document/document.go:30-39`, normalize `\r\n` to `\n` in
-      the prefix-check region, or relax `rest[0] != '\n'` to accept
-      `'\r'` followed by `'\n'`
-- [ ] Add a table-driven test covering `\n`, `\r\n`, and mixed line endings
+- [x] In `internal/document/document.go`, relax the post-`---` check to
+      accept either `\r\n` or `\n` (Windows or Unix line endings); the
+      closing `\n---` cut already tolerated CRLF
+- [x] Add table-driven cases covering `\n`, `\r\n`, and mixed line endings
+      to `TestParseFrontmatter`
 
 #### Success Criteria
 

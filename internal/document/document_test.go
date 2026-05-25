@@ -81,6 +81,28 @@ title: "Leading newlines"
 				Title: "Leading newlines",
 			},
 		},
+		{
+			// IMPL-0006 Phase 9: a docs file authored on Windows uses
+			// CRLF line endings; ParseFrontmatter previously rejected
+			// the opening `---\r\n`.
+			name:    "frontmatter with CRLF line endings",
+			content: "---\r\nid: RFC-0001\r\ntitle: \"CRLF\"\r\n---\r\n\r\nBody\r\n",
+			want: Frontmatter{
+				ID:    "RFC-0001",
+				Title: "CRLF",
+			},
+		},
+		{
+			// Mixed line endings (LF for header, CRLF for body) must
+			// still parse. The opening `---\n` already worked; pin it
+			// alongside the CRLF case to lock the contract.
+			name:    "frontmatter with mixed line endings",
+			content: "---\nid: RFC-0001\ntitle: \"Mixed\"\n---\r\n\r\nBody\r\n",
+			want: Frontmatter{
+				ID:    "RFC-0001",
+				Title: "Mixed",
+			},
+		},
 	}
 
 	for _, tt := range tests {
