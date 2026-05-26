@@ -175,14 +175,15 @@ Extract the shared piece.
 
 #### Tasks
 
-- [ ] Add `wiki.BuildNav(docsDir string, exclude []string, navTitles map[string]string, existingOrder []string) ([]NavEntry, error)`
+- [x] Add `wiki.BuildNav(docsDir, exclude, navTitles, existingOrder) ([]NavEntry, error)`
       that encapsulates: `ScanDocs` → `ExistingNavOrder` decision →
       `MergeNavOrder` or `SortEntries`
-- [ ] Replace the bodies of `runWikiUpdateNav` (cmd/wiki.go:135-185) and
-      `runWikiUpdateDryRun` (cmd/wiki.go:187-211) with calls to
-      `wiki.BuildNav`; only the "write vs. print" final step diverges
-- [ ] Add tests for `wiki.BuildNav` covering: empty existing order,
-      partial existing order, no docs found
+- [x] Replace the bodies of `runWikiUpdateNav` and `runWikiUpdateDryRun`
+      with calls to `wiki.BuildNav`; verbose logging hoisted to
+      `logScan` / `logScanResult` helpers; only the "write vs. print"
+      final step diverges
+- [x] Add tests for `wiki.BuildNav` covering: empty existing order,
+      partial existing order, no docs found, scan error
 
 #### Success Criteria
 

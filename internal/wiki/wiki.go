@@ -163,6 +163,31 @@ func isOverviewFile(name string) bool {
 	return lower == "readme.md" || lower == "index.md"
 }
 
+// BuildNav scans docsDir and returns the final ordered nav. When
+// existingOrder is non-empty the result preserves that order via
+// MergeNavOrder (new sections appended alphabetically); otherwise the
+// result is sorted alphabetically with index.md pinned first via
+// SortEntries.
+//
+// Callers typically fetch existingOrder from a previously read
+// mkdocs.yml using ExistingNavOrder, and pass nil for a fresh wiki.
+func BuildNav(
+	docsDir string,
+	exclude []string,
+	navTitles map[string]string,
+	existingOrder []string,
+) ([]NavEntry, error) {
+	entries, err := ScanDocs(docsDir, exclude, navTitles)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(existingOrder) > 0 {
+		return MergeNavOrder(existingOrder, entries), nil
+	}
+	return SortEntries(entries), nil
+}
+
 // CountPages returns the total number of leaf (non-directory) entries in the nav tree.
 func CountPages(entries []NavEntry) int {
 	count := 0

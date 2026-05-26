@@ -145,77 +145,68 @@ func runWikiUpdate(_ *cobra.Command, _ []string) error {
 
 // runWikiUpdateNav scans the docs directory and updates the nav in mkdocs.yml.
 func runWikiUpdateNav(mkdocsPath string) error {
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", appCfg.DocsDir)
-		fmt.Fprintf(os.Stderr, "  Excluding: %v\n", appCfg.Wiki.Exclude)
-	}
-
-	entries, err := wiki.ScanDocs(
-		appCfg.DocsDir,
-		appCfg.Wiki.Exclude,
-		appCfg.Wiki.NavTitles,
-	)
-	if err != nil {
-		return fmt.Errorf("scanning docs: %w", err)
-	}
-
-	if verbose {
-		fmt.Fprintf(os.Stderr, "  Found %d top-level entries\n", len(entries))
-	}
-
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
-
 	existingOrder := wiki.ExistingNavOrder(data)
-	if len(existingOrder) > 0 {
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Preserving existing nav order: %v\n", existingOrder)
-		}
-		entries = wiki.MergeNavOrder(existingOrder, entries)
-	} else {
-		if verbose {
-			fmt.Fprintln(os.Stderr, "No existing nav order, sorting alphabetically")
-		}
-		entries = wiki.SortEntries(entries)
-	}
+	logScan(existingOrder)
 
-	if verbose {
-		printNavDebug(entries, "")
+	entries, err := wiki.BuildNav(
+		appCfg.DocsDir,
+		appCfg.Wiki.Exclude,
+		appCfg.Wiki.NavTitles,
+		existingOrder,
+	)
+	if err != nil {
+		return fmt.Errorf("scanning docs: %w", err)
 	}
+	logScanResult(entries)
 
 	data["nav"] = wiki.NavToYAML(entries)
-
 	if err := wiki.WriteMkDocs(mkdocsPath, data); err != nil {
 		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
-	pageCount := wiki.CountPages(entries)
-	fmt.Printf("Updated nav in %s (%d pages)\n", mkdocsPath, pageCount)
+	fmt.Printf("Updated nav in %s (%d pages)\n", mkdocsPath, wiki.CountPages(entries))
 	return nil
 }
 
-func runWikiUpdateDryRun(mkdocsPath string) error {
-	entries, err := wiki.ScanDocs(
-		appCfg.DocsDir,
-		appCfg.Wiki.Exclude,
-		appCfg.Wiki.NavTitles,
-	)
-	if err != nil {
-		return fmt.Errorf("scanning docs: %w", err)
+func logScan(existingOrder []string) {
+	if !verbose {
+		return
 	}
+	fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", appCfg.DocsDir)
+	fmt.Fprintf(os.Stderr, "  Excluding: %v\n", appCfg.Wiki.Exclude)
+	if len(existingOrder) > 0 {
+		fmt.Fprintf(os.Stderr, "Preserving existing nav order: %v\n", existingOrder)
+	} else {
+		fmt.Fprintln(os.Stderr, "No existing nav order, sorting alphabetically")
+	}
+}
 
+func logScanResult(entries []wiki.NavEntry) {
+	if !verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "  Found %d top-level entries\n", len(entries))
+	printNavDebug(entries, "")
+}
+
+func runWikiUpdateDryRun(mkdocsPath string) error {
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
 
-	existingOrder := wiki.ExistingNavOrder(data)
-	if len(existingOrder) > 0 {
-		entries = wiki.MergeNavOrder(existingOrder, entries)
-	} else {
-		entries = wiki.SortEntries(entries)
+	entries, err := wiki.BuildNav(
+		appCfg.DocsDir,
+		appCfg.Wiki.Exclude,
+		appCfg.Wiki.NavTitles,
+		wiki.ExistingNavOrder(data),
+	)
+	if err != nil {
+		return fmt.Errorf("scanning docs: %w", err)
 	}
 
 	printNav(entries, "")
