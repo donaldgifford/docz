@@ -230,16 +230,17 @@ and call `ParseFrontmatter` with different error handling. Consolidate.
 
 #### Tasks
 
-- [ ] Add `document.LoadFrontmatter(path string) (Frontmatter, []byte, error)`
+- [x] Add `document.LoadFrontmatter(path string) (Frontmatter, []byte, error)`
       that reads the file and parses; returns bytes alongside frontmatter
-      so callers like the new `ScanDocuments` get both in one call
-- [ ] Replace the file-read + parse block in `document.ScanDocuments`
-      (after Phase 4 move) with `LoadFrontmatter`
-- [ ] Replace the equivalent block in `wiki.DocTitle` with `LoadFrontmatter`
-- [ ] Document the contract: "returns `ErrNoFrontmatter` for files without
-      frontmatter (not an error); other errors are fatal"
-- [ ] Update callers to use `errors.Is(err, document.ErrNoFrontmatter)`
-      where they fall back to filename
+      so callers like `ScanDocuments` get both in one call
+- [x] Replace the file-read + parse block in `document.ScanDocuments`
+      with `LoadFrontmatter`
+- [x] Replace the equivalent block in `wiki.DocTitle` with `LoadFrontmatter`
+- [x] Document the contract: `ErrNoFrontmatter` for files without
+      frontmatter is non-fatal (callers fall back); other errors are
+      fatal — captured as a doc comment on `LoadFrontmatter`
+- [x] `wiki.DocTitle` uses `errors.Is(err, document.ErrNoFrontmatter)`
+      to choose the H1 → filename fallback path
 
 #### Success Criteria
 

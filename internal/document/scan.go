@@ -52,13 +52,12 @@ func ScanDocuments(dir string) ([]DocEntry, error) {
 			continue
 		}
 
-		content, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		fm, content, err := LoadFrontmatter(filepath.Join(dir, entry.Name()))
 		if err != nil {
-			continue
-		}
-
-		fm, err := ParseFrontmatter(content)
-		if err != nil {
+			// Silently skip unreadable files and files without
+			// frontmatter; ScanDocuments treats both as "not a
+			// docz document". Surfaced as errors by callers that
+			// want stricter behavior (none today).
 			continue
 		}
 

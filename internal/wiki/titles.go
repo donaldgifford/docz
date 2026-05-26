@@ -3,7 +3,7 @@ package wiki
 import (
 	"bufio"
 	"bytes"
-	"os"
+	"errors"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -25,14 +25,17 @@ func DirTitle(dir string, navTitles map[string]string) string {
 // For docz documents with frontmatter, it returns "<ID>: <Title>".
 // Otherwise it falls back to the first H1 heading, then to a title-cased filename.
 func DocTitle(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
+	fm, data, err := document.LoadFrontmatter(filePath)
+	switch {
+	case err == nil:
+		if fm.ID != "" && fm.Title != "" {
+			return fm.ID + ": " + fm.Title, nil
+		}
+	case errors.Is(err, document.ErrNoFrontmatter):
+		// No frontmatter is not fatal — fall through to H1 / filename
+		// fallback using the bytes LoadFrontmatter returned.
+	default:
 		return FilenameTitle(filepath.Base(filePath)), err
-	}
-
-	fm, fmErr := document.ParseFrontmatter(data)
-	if fmErr == nil && fm.ID != "" && fm.Title != "" {
-		return fm.ID + ": " + fm.Title, nil
 	}
 
 	if h1 := firstH1(data); h1 != "" {
