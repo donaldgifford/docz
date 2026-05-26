@@ -304,14 +304,14 @@ error. Decide the contract.
 
 #### Tasks
 
-- [ ] Change `DocTitle(filePath string) (string, error)` to never return
-      a value with an error: on read failure return `"", err`
-- [ ] Move the filename-fallback logic to the caller (`wiki.scanDir`),
-      which already has the filename and can call `wiki.FilenameTitle`
-      explicitly
-- [ ] Or alternatively, return `Result{Title string, IsFallback bool}` —
-      see Decisions §3
-- [ ] Update tests
+- [x] `DocTitle(filePath string) (string, error)` now returns `("", err)`
+      on read failure per Decisions §3 — no more value-alongside-error
+- [x] `wiki.scanDir` calls `FilenameTitle(name)` explicitly when DocTitle
+      errors (single caller, behavior preserved at the call site)
+- [x] Result-struct alternative rejected per Decisions §3 — simple
+      `(string, error)` is the canonical contract
+- [x] `TestDocTitle_NonexistentFile` updated to assert the strict
+      empty-string return
 
 #### Success Criteria
 

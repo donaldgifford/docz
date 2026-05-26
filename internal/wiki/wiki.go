@@ -88,8 +88,12 @@ func scanDir(absDir, relDir string, exclude map[string]bool, navTitles map[strin
 			continue
 		}
 
+		// DocTitle returns ("", err) on read failure (Decisions §3).
+		// scanDir is happy to keep the entry in the nav using a
+		// filename-derived title, so the error is intentionally
+		// swallowed here. A future logger pass can surface it.
 		title, err := DocTitle(absPath)
-		if err != nil {
+		if err != nil || title == "" {
 			title = FilenameTitle(name)
 		}
 
