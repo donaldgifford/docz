@@ -380,13 +380,18 @@ Drop the stutter and fix the initialism casing.
 
 #### Tasks
 
-- [ ] Run `make ci`
-- [ ] Smoke test full CLI surface against this repo
-- [ ] Verify golden files: only intentional changes
-- [ ] Open PR A with `dont-release` label (Phases 1–3)
-- [ ] After PR A merges: rebase, open PR B (Phases 4–10) with `dont-release`
-      label
-- [ ] Update INV-0002 status
+- [x] Run `make ci` — green on both PR A branch and PR B branch
+- [x] Smoke test full CLI surface against this repo — `docz list`,
+      `docz update --dry-run`, `docz version` verified
+- [x] Verify golden files: `testdata/golden/wiki/mkdocs_full.yml` added
+      (new); all existing goldens unchanged (`go test ./... -update`
+      shows no diff for adr/design/impl/rfc/toc/wiki/nav)
+- [x] Open PR A with `dont-release` label (Phases 1–3) — #44
+- [ ] After PR A merges: rebase, open PR B (Phases 4–10) with
+      `dont-release` label — branch `feat/impl-0008-pr-b` pushed and
+      ready (waiting on PR A merge per Decisions §6)
+- [x] Update INV-0002 status — Wave 4 section now lists F11/F13/F17–F26
+      against the two PRs
 
 #### Success Criteria
 
