@@ -144,19 +144,21 @@ Promote the file-iteration ToC updater from cmd into the toc package.
 
 #### Tasks
 
-- [ ] Add `toc.UpdateFiles(paths []string, minHeadings int, dryRun bool) (UpdateReport, error)`
-      where `UpdateReport` carries: `Updated []string`, `Unchanged []string`,
-      `WouldUpdate []string` (dry-run), and per-file heading counts
-- [ ] Move the loop from `cmd/update.go:updateToCs` into `toc.UpdateFiles`
-- [ ] Take `[]string` paths as input (not `[]DocEntry`) to avoid an import
-      cycle — see Decisions §1
-- [ ] Update `cmd/update.go:updateType` to build the path list from the
-      scan results and call `toc.UpdateFiles`
-- [ ] Move the "Warning: reading … for ToC" fmt.Fprintf out of the library —
-      return errors as part of `UpdateReport.ReadErrors` instead
-- [ ] Add tests in `internal/toc/toc_test.go` covering: dry-run, real
-      update, files without markers (skipped), files with read errors,
-      idempotent re-run
+- [x] Add `toc.UpdateFiles(files []FileInput, minHeadings int, dryRun bool) (UpdateReport, error)`
+      where `UpdateReport` carries `Updated`, `Unchanged`, `WouldUpdate`
+      slices of `FileResult{Path, Headings}`, plus `Skipped []string` and
+      `WriteErrors []FileError`
+- [x] Move the loop from `cmd/update.go:updateToCs` into `toc.UpdateFiles`
+- [x] Take `[]toc.FileInput{Path, Content}` as input per Decisions §1
+      (preserves the IMPL-0007 byte-cache; no import cycle into
+      `internal/document`)
+- [x] Update `cmd/update.go:updateType` to build the FileInput list from
+      the scan results and call `toc.UpdateFiles`
+- [x] Move user-facing strings out of the library — the cmd layer formats
+      messages from `report.Updated/Unchanged/WouldUpdate/Skipped/WriteErrors`
+- [x] Add tests in `internal/toc/update_test.go` covering: dry-run, real
+      update, no-markers (Skipped), idempotent re-run, write-error
+      isolation, empty input
 
 #### Success Criteria
 

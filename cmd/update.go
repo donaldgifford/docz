@@ -79,7 +79,7 @@ func updateType(typeName string) error {
 
 	// Update ToC in each document before regenerating the README index.
 	if appCfg.ToC.Enabled {
-		updateToCs(typeDir, docs)
+		runToCUpdate(typeDir, docs)
 	}
 
 	heading := "All " + tc.PluralLabel
@@ -103,48 +103,42 @@ func updateType(typeName string) error {
 	return nil
 }
 
-// updateToCs updates the table of contents in each document file that has
-// ToC markers. Errors are logged as warnings but do not stop processing.
-//
-// IMPL-0007 Phase 3: operates on the bytes cached on DocEntry.Content
-// (populated during ScanDocuments) so each document is read once per
-// `docz update`, not twice.
-func updateToCs(typeDir string, docs []index.DocEntry) {
-	for _, doc := range docs {
-		docPath := filepath.Join(typeDir, doc.Filename)
-		original := string(doc.Content)
+// runToCUpdate builds the toc.FileInput list from cached scan results,
+// delegates to toc.UpdateFiles, and formats user-facing messages so the
+// internal/toc package stays free of I/O-shaped strings.
+func runToCUpdate(typeDir string, docs []index.DocEntry) {
+	if len(docs) == 0 {
+		return
+	}
 
-		res := toc.UpdateToC(original, appCfg.ToC.MinHeadings)
-		if !res.Found {
-			continue
+	files := make([]toc.FileInput, len(docs))
+	for i, doc := range docs {
+		files[i] = toc.FileInput{
+			Path:    filepath.Join(typeDir, doc.Filename),
+			Content: doc.Content,
 		}
+	}
 
-		if res.Updated == original {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "  ToC unchanged in %s\n", docPath)
-			}
-			continue
-		}
+	report, err := toc.UpdateFiles(files, appCfg.ToC.MinHeadings, updateDryRun)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: ToC update failed: %v\n", err)
+		return
+	}
 
-		if updateDryRun {
-			// IMPL-0007 Phase 4: reuse the headings already parsed by
-			// UpdateToC instead of calling toc.ParseHeadings a second
-			// time on the same content.
-			fmt.Printf(
-				"Would update ToC in %s (%d headings)\n",
-				docPath,
-				len(res.Headings),
-			)
-			continue
-		}
+	for _, r := range report.WouldUpdate {
+		fmt.Printf("Would update ToC in %s (%d headings)\n", r.Path, r.Headings)
+	}
 
-		if err := os.WriteFile(docPath, []byte(res.Updated), config.FileMode); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", docPath, err)
-			continue
+	if verbose {
+		for _, r := range report.Updated {
+			fmt.Fprintf(os.Stderr, "  Updated ToC in %s\n", r.Path)
 		}
+		for _, r := range report.Unchanged {
+			fmt.Fprintf(os.Stderr, "  ToC unchanged in %s\n", r.Path)
+		}
+	}
 
-		if verbose {
-			fmt.Fprintf(os.Stderr, "  Updated ToC in %s\n", docPath)
-		}
+	for _, fe := range report.WriteErrors {
+		fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", fe.Path, fe.Err)
 	}
 }
