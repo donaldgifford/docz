@@ -908,24 +908,32 @@ Fix the active bug class: defaults drift and silent error swallowing.
 - F41: cache `[]byte` on `DocEntry` to eliminate double file reads
 - F42: change `UpdateToC` signature to return `[]Heading`
 
-### Wave 4 — Stranded business logic (2 PRs, ~2 days)
+### Wave 4 — Stranded business logic (2 PRs, ~2 days) — **In Progress (IMPL-0008)**
 
 Move logic out of `cmd/` into testable `internal/` packages. These changes land
 independently and unblock Wave 5.
 
-- F17: move `writeMkDocsYAML` to `internal/wiki.CreateMkDocs`
-- F18: move `updateToCs` to `internal/toc.UpdateFiles`
-- F19: extract shared nav-building helper for `runWikiUpdateNav` /
-  `runWikiUpdateDryRun`
-- F20: split `internal/index` — move `ScanDocuments`/`DocEntry` to
-  `internal/document`; keep README splicing in `internal/index`
-- F21: single `document.LoadFrontmatter(path)` helper used by both `index` and
-  `wiki`
-- F22: single `document.DoczFilePattern` regex; delete duplicates
-- F23: rename `template.Slugify` → `FilenameSlug`, `toc.Slugify` → `AnchorSlug`
-- F11: clean up `DocTitle` return contract
-- F13: typed `UpdateOutcome` instead of `(msg, err)` from `UpdateReadme`
-- F24–F26: rename `TemplateData` → `Data`; `ToCConfig` → `TOCConfig`
+Status as of 2026-05-25:
+
+- **PR A (Phases 1–3)** — open at #44, awaiting CI/merge
+  - [x] F17: `writeMkDocsYAML` → `internal/wiki.CreateMkDocs`
+  - [x] F18: `updateToCs` → `internal/toc.UpdateFiles` (with categorized
+        `UpdateReport`)
+  - [x] F19: `wiki.BuildNav` extracted; cmd functions <30 lines
+- **PR B (Phases 4–10)** — pushed at `feat/impl-0008-pr-b`, opens after
+  PR A merges per IMPL-0008 Decisions §6
+  - [x] F20: `internal/index` split — `ScanDocuments` + `DocEntry` moved to
+        `internal/document/scan.go`
+  - [x] F21: `document.LoadFrontmatter(path)` — single read+parse site
+  - [x] F22: single `document.DoczFilePattern` + `IsDoczFile`
+  - [x] F23: `template.Slugify` → `FilenameSlug`,
+        `toc.Slugify` → `AnchorSlug`, `nonAlphanumHyphen` → `nonSlugChar`
+  - [x] F11: `DocTitle` returns strict `(string, error)` per Decisions §3
+  - [x] F13: typed `index.UpdateOutcome` + `UpdateAction` enum
+  - [x] F24: `template.TemplateData` → `template.Data`
+  - [x] F25: `WikiIndexType` / `WikiIndexData` left as-is per Decisions §4
+  - [x] F26: `ToCConfig` → `TOCConfig`, field `ToC` → `TOC` (YAML tag
+        stays `toc:` for back-compat — guarded by `TestLoad_TOCConfig`)
 
 ### Wave 5 — Architecture refactor (separate DESIGN doc, ~1 week)
 
