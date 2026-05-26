@@ -44,7 +44,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 	}
 
 	number := fmt.Sprintf("%0*d", opts.IDWidth, nextID(dir))
-	slug := doctemplate.Slugify(opts.Title)
+	slug := doctemplate.FilenameSlug(opts.Title)
 	filename := number + "-" + slug + ".md"
 	filePath := filepath.Join(dir, filename)
 

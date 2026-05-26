@@ -282,15 +282,13 @@ Two `Slugify` functions today with different algorithms. Rename for clarity.
 
 #### Tasks
 
-- [ ] Rename `template.Slugify` → `template.FilenameSlug`; update doc
-      comment to explain "kebab-case for filenames, max 64 chars,
-      word-boundary truncation"
-- [ ] Rename `toc.Slugify` → `toc.AnchorSlug`; update doc comment to
-      reference the GitHub anchor algorithm
-- [ ] Update all call sites (audit with `grep -rn '\.Slugify' .`)
-- [ ] Update tests
-- [ ] Confirm `nonAlphanumHyphen` regex variable name renamed to
-      something clearer (`nonSlugChar` per INV-0002 note 11.2)
+- [x] Rename `template.Slugify` → `template.FilenameSlug`; expanded doc
+      comment covers kebab-case, max 64 chars, word-boundary truncation
+- [x] Rename `toc.Slugify` → `toc.AnchorSlug`; doc comment references the
+      GitHub anchor algorithm and contrasts with `FilenameSlug`
+- [x] Updated all call sites and tests (`grep -rn '\.Slugify'` returns
+      zero matches)
+- [x] Renamed `nonAlphanumHyphen` regex variable to `nonSlugChar`
 
 #### Success Criteria
 

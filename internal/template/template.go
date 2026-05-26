@@ -27,8 +27,8 @@ type TemplateData struct {
 }
 
 var (
-	nonAlphanumHyphen = regexp.MustCompile(`[^a-z0-9-]`)
-	multipleHyphens   = regexp.MustCompile(`-{2,}`)
+	nonSlugChar     = regexp.MustCompile(`[^a-z0-9-]`)
+	multipleHyphens = regexp.MustCompile(`-{2,}`)
 )
 
 // maxSlugLength caps generated slugs at 64 characters so resulting filenames
@@ -36,15 +36,23 @@ var (
 // document ID prefix and directory path.
 const maxSlugLength = 64
 
-// Slugify converts a title to kebab-case.
+// FilenameSlug converts a document title into a kebab-case identifier
+// suitable for use in a filename (e.g. "API Rate Limiting!" →
+// "api-rate-limiting"). It is paired with the document ID and used by
+// internal/document/create.go to produce names like
+// "0001-api-rate-limiting.md".
 //
-// Transformation: lowercase, spaces to hyphens, strip non-alphanumeric
-// characters (except hyphens), collapse multiple hyphens, trim
-// leading/trailing hyphens, truncate to 64 characters on a word boundary.
-func Slugify(title string) string {
+// Transformation: lowercase, spaces to hyphens, strip every character
+// that is not a-z / 0-9 / hyphen, collapse runs of hyphens, trim
+// leading/trailing hyphens, then truncate to 64 characters on a word
+// boundary (last hyphen before the cap).
+//
+// This is distinct from toc.AnchorSlug, which generates GitHub-style
+// markdown anchor slugs and preserves spaces as hyphens differently.
+func FilenameSlug(title string) string {
 	s := strings.ToLower(title)
 	s = strings.ReplaceAll(s, " ", "-")
-	s = nonAlphanumHyphen.ReplaceAllString(s, "")
+	s = nonSlugChar.ReplaceAllString(s, "")
 	s = multipleHyphens.ReplaceAllString(s, "-")
 	s = strings.Trim(s, "-")
 

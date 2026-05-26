@@ -33,10 +33,17 @@ var (
 	linkPattern   = regexp.MustCompile(`\[([^\]]+)\]\([^)]+\)`)
 )
 
-// Slugify converts heading text to a GitHub-compatible anchor slug.
-// It lowercases the text, keeps only letters, digits, spaces, and hyphens,
-// replaces spaces with hyphens, and trims leading/trailing hyphens.
-func Slugify(text string) string {
+// AnchorSlug converts heading text to a GitHub-compatible anchor slug
+// suitable for the fragment portion of an in-page link (e.g.
+// `[See section](#api-rate-limiting)`). It mirrors the algorithm GitHub
+// uses for auto-generated heading anchors: lowercase the text, keep
+// only letters/digits/spaces/hyphens, replace spaces with hyphens, and
+// trim leading/trailing hyphens.
+//
+// This is distinct from template.FilenameSlug, which generates
+// kebab-case identifiers for filesystem names and additionally strips
+// runs of hyphens and truncates to a maximum length.
+func AnchorSlug(text string) string {
 	s := strings.ToLower(text)
 
 	var b strings.Builder
@@ -126,7 +133,7 @@ func ParseHeadings(content string) []Heading {
 
 		level := len(matches[1])
 		text := stripInlineMarkdown(strings.TrimSpace(matches[2]))
-		slug := Slugify(text)
+		slug := AnchorSlug(text)
 
 		// Apply duplicate suffix.
 		slugCounts[slug]++
