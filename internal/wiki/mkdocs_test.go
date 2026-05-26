@@ -3,8 +3,118 @@ package wiki
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestCreateMkDocs(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  MkDocsConfig
+		want string
+	}{
+		{
+			name: "minimal_only_site_name_and_description",
+			cfg: MkDocsConfig{
+				SiteName:        "My Service",
+				SiteDescription: "Documentation for My Service",
+			},
+			want: "site_name: My Service\n" +
+				"site_description: Documentation for My Service\n" +
+				"\nnav:\n    - Home: index.md\n",
+		},
+		{
+			name: "full_config_all_optional_fields",
+			cfg: MkDocsConfig{
+				SiteName:        "My Service",
+				SiteDescription: "Documentation for My Service",
+				DocsDir:         "docs",
+				RepoURL:         "https://github.com/example/my-service",
+				SiteURL:         "https://docs.example.com",
+				Theme:           "material",
+				Plugins: []string{
+					"techdocs-core",
+					"search",
+				},
+				MarkdownExtensions: []string{
+					"admonition",
+					"toc",
+				},
+			},
+			want: "site_name: My Service\n" +
+				"site_description: Documentation for My Service\n" +
+				"docs_dir: docs\n" +
+				"repo_url: https://github.com/example/my-service\n" +
+				"site_url: https://docs.example.com\n" +
+				"theme: material\n" +
+				"\nplugins:\n" +
+				"    - techdocs-core\n" +
+				"    - search\n" +
+				"\nmarkdown_extensions:\n" +
+				"    - admonition\n" +
+				"    - toc\n" +
+				"\nnav:\n    - Home: index.md\n",
+		},
+		{
+			name: "plugins_preserve_input_order",
+			cfg: MkDocsConfig{
+				SiteName:        "X",
+				SiteDescription: "Y",
+				Plugins:         []string{"zeta", "alpha", "mike"},
+			},
+			want: "site_name: X\n" +
+				"site_description: Y\n" +
+				"\nplugins:\n" +
+				"    - zeta\n" +
+				"    - alpha\n" +
+				"    - mike\n" +
+				"\nnav:\n    - Home: index.md\n",
+		},
+		{
+			name: "markdown_extensions_emitted_alone",
+			cfg: MkDocsConfig{
+				SiteName:           "X",
+				SiteDescription:    "Y",
+				MarkdownExtensions: []string{"admonition"},
+			},
+			want: "site_name: X\n" +
+				"site_description: Y\n" +
+				"\nmarkdown_extensions:\n" +
+				"    - admonition\n" +
+				"\nnav:\n    - Home: index.md\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "mkdocs.yml")
+			if err := CreateMkDocs(path, &tc.cfg); err != nil {
+				t.Fatalf("CreateMkDocs() error: %v", err)
+			}
+
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("reading written file: %v", err)
+			}
+
+			if string(got) != tc.want {
+				t.Errorf("output mismatch\nwant:\n%s\n\ngot:\n%s", tc.want, string(got))
+			}
+		})
+	}
+}
+
+func TestCreateMkDocs_WriteError(t *testing.T) {
+	// Writing to a path whose parent directory does not exist should fail.
+	missingDir := filepath.Join(t.TempDir(), "nonexistent", "mkdocs.yml")
+	err := CreateMkDocs(missingDir, &MkDocsConfig{SiteName: "X", SiteDescription: "Y"})
+	if err == nil {
+		t.Fatal("expected error for missing parent directory, got nil")
+	}
+	if !strings.Contains(err.Error(), "writing") {
+		t.Errorf("error %q does not mention 'writing'", err.Error())
+	}
+}
 
 func TestReadWriteMkDocs_RoundTrip(t *testing.T) {
 	dir := t.TempDir()

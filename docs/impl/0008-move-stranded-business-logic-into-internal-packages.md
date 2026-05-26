@@ -113,21 +113,22 @@ package alongside the existing `ReadMkDocs`/`WriteMkDocs`.
 
 #### Tasks
 
-- [ ] Define `wiki.MkDocsConfig` struct in `internal/wiki/mkdocs.go` with
+- [x] Define `wiki.MkDocsConfig` struct in `internal/wiki/mkdocs.go` with
       fields: `SiteName`, `SiteDescription`, `DocsDir`, `RepoURL`, `SiteURL`,
       `Theme`, `Plugins`, `MarkdownExtensions`
-- [ ] Add `wiki.CreateMkDocs(path string, cfg MkDocsConfig) error` that
-      builds the YAML and writes it
-- [ ] Move the string-building loop from `cmd/wiki.go:247-289` into
+- [x] Add `wiki.CreateMkDocs(path string, cfg *MkDocsConfig) error` that
+      builds the YAML and writes it (pointer receiver per gocritic
+      `hugeParam`; matches `template.RenderWikiIndex` pattern)
+- [x] Move the string-building loop from `cmd/wiki.go:247-289` into
       `wiki.CreateMkDocs`
-- [ ] Update `cmd/wiki.go:runWikiInit` to populate `MkDocsConfig` from
+- [x] Update `cmd/wiki.go:runWikiInit` to populate `MkDocsConfig` from
       `appCfg.Wiki` and call `wiki.CreateMkDocs`
-- [ ] Delete `cmd/wiki.go:writeMkDocsYAML`
-- [ ] Add table-driven tests in `internal/wiki/mkdocs_test.go` covering:
+- [x] Delete `cmd/wiki.go:writeMkDocsYAML`
+- [x] Add table-driven tests in `internal/wiki/mkdocs_test.go` covering:
       minimal config (only site_name), full config (all optional fields),
       plugins ordering, markdown_extensions presence
-- [ ] Add a golden file under `internal/wiki/testdata/golden/` for the
-      full-config case
+- [x] Add a golden file under `testdata/golden/wiki/mkdocs_full.yml` for
+      the full-config case
 
 #### Success Criteria
 

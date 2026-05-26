@@ -1,0 +1,18 @@
+site_name: docz
+site_description: Documentation for docz
+docs_dir: docs
+repo_url: https://github.com/donaldgifford/docz
+site_url: https://docs.example.com
+theme: material
+
+plugins:
+    - techdocs-core
+    - search
+
+markdown_extensions:
+    - admonition
+    - toc
+    - tables
+
+nav:
+    - Home: index.md

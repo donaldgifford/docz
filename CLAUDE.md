@@ -41,4 +41,4 @@ make ci             # full CI pipeline (lint + test + build + license-check)
 - `internal/index/` — README index table generation with marker-based splicing. `DocEntry.Content []byte` caches the raw file bytes during `ScanDocuments` so downstream callers (notably `cmd/update.go`'s ToC pass) do not re-read each document
 - `internal/template/` — Embedded templates, resolution, rendering; includes `docz_yaml.tmpl` consumed by `cmd/init` to render `.docz.yaml` from `config.DefaultConfig()` (single source of defaults)
 - `internal/toc/` — Table of contents generation with marker-based splicing (toc.go). `UpdateToC` returns an `UpdateResult{Updated, Headings, Found}` struct so callers (e.g. `docz update --dry-run`) reuse the parsed `[]Heading` without calling `ParseHeadings` a second time
-- `internal/wiki/` — MkDocs nav generation (titles.go, wiki.go, mkdocs.go)
+- `internal/wiki/` — MkDocs nav generation (titles.go, wiki.go, mkdocs.go). `wiki.CreateMkDocs(path, *MkDocsConfig)` builds the initial `mkdocs.yml` (cmd/ no longer constructs YAML strings inline)
