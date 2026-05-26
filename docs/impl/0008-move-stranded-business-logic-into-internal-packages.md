@@ -255,16 +255,19 @@ Three different regexes for "is this a docz file" today. Pick one.
 
 #### Tasks
 
-- [ ] Define `document.DoczFilePattern = regexp.MustCompile(...)` with the
-      canonical shape `^\d+-.*\.md$`
-- [ ] Add `document.IsDoczFile(name string) bool` convenience function
-- [ ] Replace the regex at `internal/wiki/wiki.go:12` with
-      `document.IsDoczFile(name)`
-- [ ] Replace the regex at `internal/index/index.go:21` (moved to
-      `internal/document/scan.go` in Phase 4) with `DoczFilePattern`
-- [ ] Replace the regex at `internal/document/create.go:36` with
+- [x] Define `document.DoczFilePattern = regexp.MustCompile(\`^(\d+)-.*\.md$\`)`
+      — canonical shape with a capture group so the next-ID extractor
+      shares it with the bare match-only callers
+- [x] Add `document.IsDoczFile(name string) bool` convenience function
+- [x] Replace the regex at `internal/wiki/wiki.go` with
+      `document.IsDoczFile(name)` (drops the prior `\d{4,}` minimum
+      so wiki nav stops silently hiding small-ID docs)
+- [x] Replace the regex at `internal/document/scan.go` (moved in Phase 4)
+      with `IsDoczFile`
+- [x] Replace the regex at `internal/document/create.go` with
+      `DoczFilePattern.FindStringSubmatch` (uses the new capture group)
+- [x] Document the invariant in a single doc-comment on
       `DoczFilePattern`
-- [ ] Document the invariant in a single doc-comment
 
 #### Success Criteria
 

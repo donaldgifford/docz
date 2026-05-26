@@ -11,10 +11,21 @@ import (
 	"strings"
 )
 
-// docFilePattern matches docz-managed filenames like "0001-some-slug.md".
-// Lives in internal/document so a single canonical pattern is shared by
-// the scan, README index, and wiki nav builders.
-var docFilePattern = regexp.MustCompile(`^\d+-.*\.md$`)
+// DoczFilePattern matches docz-managed filenames like "0001-some-slug.md".
+// The leading digit group is a capture group so callers that need the
+// sequential ID number (cmd/create's next-ID scan) can reuse the same
+// pattern as the bare match-only callers (scan, wiki).
+//
+// This is the single source of truth for "is this a docz document
+// filename" across the codebase. Tests and callers should use
+// IsDoczFile rather than building their own regex.
+var DoczFilePattern = regexp.MustCompile(`^(\d+)-.*\.md$`)
+
+// IsDoczFile reports whether name matches the docz file convention
+// (one or more leading digits, a hyphen, any body, .md extension).
+func IsDoczFile(name string) bool {
+	return DoczFilePattern.MatchString(name)
+}
 
 // DocEntry pairs a document's parsed Frontmatter with its source filename
 // and the raw file bytes read during scanning.
@@ -48,7 +59,7 @@ func ScanDocuments(dir string) ([]DocEntry, error) {
 
 	var docs []DocEntry
 	for _, entry := range entries {
-		if entry.IsDir() || !docFilePattern.MatchString(entry.Name()) {
+		if entry.IsDir() || !IsDoczFile(entry.Name()) {
 			continue
 		}
 

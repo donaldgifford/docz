@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -34,8 +33,6 @@ type CreateResult struct {
 	Number   string // Zero-padded document number
 	Filename string // Filename only (e.g., "0001-my-doc.md")
 }
-
-var idPattern = regexp.MustCompile(`^(\d+)-.*\.md$`)
 
 // Create generates a new document from a template and writes it to the
 // appropriate directory with an auto-incremented ID.
@@ -101,7 +98,7 @@ func nextID(dir string) int {
 		if entry.IsDir() {
 			continue
 		}
-		matches := idPattern.FindStringSubmatch(entry.Name())
+		matches := DoczFilePattern.FindStringSubmatch(entry.Name())
 		if matches == nil {
 			continue
 		}

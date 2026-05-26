@@ -123,6 +123,31 @@ func TestScanDocuments_SkipsNonMatchingFiles(t *testing.T) {
 	}
 }
 
+func TestIsDoczFile(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{"four_digit_id", "0001-my-doc.md", true},
+		{"three_digit_id", "001-something.md", true},
+		{"single_digit_id", "1-x.md", true},
+		{"large_id", "12345-big.md", true},
+		{"no_id_prefix", "README.md", false},
+		{"id_but_no_md", "0001-something.txt", false},
+		{"no_hyphen", "0001.md", false},
+		{"leading_text", "doc-0001.md", false},
+		{"empty", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsDoczFile(tc.in); got != tc.want {
+				t.Errorf("IsDoczFile(%q) = %v, want %v", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
 func writeDoc(t *testing.T, dir, filename, id, title, status, created string) {
 	t.Helper()
 	content := "---\n" +

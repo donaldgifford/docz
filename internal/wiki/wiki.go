@@ -4,16 +4,14 @@ package wiki
 import (
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/donaldgifford/docz/internal/document"
 )
 
 // homeTitle is the nav title applied to the root-level index.md page.
 const homeTitle = "Home"
-
-// doczDocPattern matches docz-managed document filenames like "0001-some-title.md".
-var doczDocPattern = regexp.MustCompile(`^\d{4,}-.*\.md$`)
 
 // NavEntry represents a single entry in the MkDocs nav.
 type NavEntry struct {
@@ -96,7 +94,7 @@ func scanDir(absDir, relDir string, exclude map[string]bool, navTitles map[strin
 		}
 
 		entry := NavEntry{Title: title, Path: filepath.ToSlash(entryPath)}
-		if doczDocPattern.MatchString(name) {
+		if document.IsDoczFile(name) {
 			doczEntries = append(doczEntries, entry)
 		} else {
 			otherEntries = append(otherEntries, entry)
