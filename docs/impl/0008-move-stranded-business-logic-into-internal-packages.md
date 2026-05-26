@@ -327,16 +327,17 @@ the success value. Replace with a typed result.
 
 #### Tasks
 
-- [ ] Define `index.UpdateAction int` enum with values: `ActionCreated`,
+- [x] Define `index.UpdateAction int` enum with values `ActionCreated`,
       `ActionUpdated`, `ActionNoMarkers`, `ActionDryRunCreated`,
       `ActionDryRunUpdated`
-- [ ] Define `index.UpdateOutcome struct { Action UpdateAction; Path string; Body string }`
-      where `Body` carries the would-be content for dry-run
-- [ ] Change `UpdateReadme` and `DryRunReadme` to return `UpdateOutcome` +
-      `error`
-- [ ] Update `cmd/update.go:updateType` to format messages from
-      `UpdateOutcome.Action` (e.g., `switch outcome.Action { case ActionCreated: fmt.Printf("Created %s", outcome.Path) ... }`)
-- [ ] Add tests
+- [x] Define `index.UpdateOutcome{Action, Path, Body}`; `Body` carries
+      the would-be content for the dry-run actions
+- [x] `UpdateReadme` / `DryRunReadme` return `UpdateOutcome` + `error`
+- [x] `cmd/update.go:printIndexOutcome` switches on `outcome.Action` to
+      format messages — internal/index no longer produces user-facing
+      English
+- [x] Tests assert `Action` / `Path` / `Body` directly instead of
+      grepping the old string return
 
 #### Success Criteria
 

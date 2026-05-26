@@ -50,12 +50,15 @@ func TestUpdateReadme_WithMarkers(t *testing.T) {
 	}
 
 	table := "| ID | new data |\n"
-	msg, err := UpdateReadme(readmePath, "rfc", table)
+	outcome, err := UpdateReadme(readmePath, "rfc", table)
 	if err != nil {
 		t.Fatalf("UpdateReadme() error: %v", err)
 	}
-	if !strings.Contains(msg, "Updated") {
-		t.Errorf("expected 'Updated' message, got %q", msg)
+	if outcome.Action != ActionUpdated {
+		t.Errorf("Action = %v, want ActionUpdated", outcome.Action)
+	}
+	if outcome.Path != readmePath {
+		t.Errorf("Path = %q, want %q", outcome.Path, readmePath)
 	}
 
 	content, err := os.ReadFile(readmePath)
@@ -90,12 +93,12 @@ func TestUpdateReadme_NoMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg, err := UpdateReadme(readmePath, "rfc", "table content")
+	outcome, err := UpdateReadme(readmePath, "rfc", "table content")
 	if err != nil {
 		t.Fatalf("UpdateReadme() error: %v", err)
 	}
-	if !strings.Contains(msg, "Warning") {
-		t.Errorf("expected warning message, got %q", msg)
+	if outcome.Action != ActionNoMarkers {
+		t.Errorf("Action = %v, want ActionNoMarkers", outcome.Action)
 	}
 
 	// File should not be modified.
@@ -112,12 +115,12 @@ func TestUpdateReadme_NewFile(t *testing.T) {
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "subdir", "README.md")
 
-	msg, err := UpdateReadme(readmePath, "rfc", "| table |\n")
+	outcome, err := UpdateReadme(readmePath, "rfc", "| table |\n")
 	if err != nil {
 		t.Fatalf("UpdateReadme() error: %v", err)
 	}
-	if !strings.Contains(msg, "Created") {
-		t.Errorf("expected 'Created' message, got %q", msg)
+	if outcome.Action != ActionCreated {
+		t.Errorf("Action = %v, want ActionCreated", outcome.Action)
 	}
 
 	content, err := os.ReadFile(readmePath)
@@ -144,16 +147,18 @@ func TestDryRunReadme_WithMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := DryRunReadme(readmePath, "rfc", "| new data |\n")
+	outcome, err := DryRunReadme(readmePath, "rfc", "| new data |\n")
 	if err != nil {
 		t.Fatalf("DryRunReadme() error: %v", err)
 	}
-
-	if !strings.Contains(result, "| new data |") {
-		t.Error("dry run result should contain new data")
+	if outcome.Action != ActionDryRunUpdated {
+		t.Errorf("Action = %v, want ActionDryRunUpdated", outcome.Action)
 	}
-	if strings.Contains(result, "old content") {
-		t.Error("dry run result should not contain old content")
+	if !strings.Contains(outcome.Body, "| new data |") {
+		t.Error("Body should contain new data")
+	}
+	if strings.Contains(outcome.Body, "old content") {
+		t.Error("Body should not contain old content")
 	}
 
 	// Verify file was NOT modified.
@@ -170,16 +175,18 @@ func TestDryRunReadme_NoFile(t *testing.T) {
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "nonexistent", "README.md")
 
-	result, err := DryRunReadme(readmePath, "rfc", "| table |\n")
+	outcome, err := DryRunReadme(readmePath, "rfc", "| table |\n")
 	if err != nil {
 		t.Fatalf("DryRunReadme() error: %v", err)
 	}
-
-	if !strings.Contains(result, "| table |") {
-		t.Error("dry run result should contain table content")
+	if outcome.Action != ActionDryRunCreated {
+		t.Errorf("Action = %v, want ActionDryRunCreated", outcome.Action)
 	}
-	if !strings.Contains(result, "<!-- BEGIN DOCZ AUTO-GENERATED -->") {
-		t.Error("dry run result should contain markers")
+	if !strings.Contains(outcome.Body, "| table |") {
+		t.Error("Body should contain table content")
+	}
+	if !strings.Contains(outcome.Body, "<!-- BEGIN DOCZ AUTO-GENERATED -->") {
+		t.Error("Body should contain markers")
 	}
 }
 
@@ -192,13 +199,12 @@ func TestDryRunReadme_NoMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := DryRunReadme(readmePath, "rfc", "table")
+	outcome, err := DryRunReadme(readmePath, "rfc", "table")
 	if err != nil {
 		t.Fatalf("DryRunReadme() error: %v", err)
 	}
-
-	if !strings.Contains(result, "Warning") {
-		t.Errorf("expected warning for no markers, got %q", result)
+	if outcome.Action != ActionNoMarkers {
+		t.Errorf("Action = %v, want ActionNoMarkers", outcome.Action)
 	}
 }
 

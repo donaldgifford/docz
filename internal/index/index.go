@@ -22,6 +22,39 @@ const (
 	endMarker   = "<!-- END DOCZ AUTO-GENERATED -->"
 )
 
+// UpdateAction names the kind of work UpdateReadme / DryRunReadme
+// performed. The cmd layer switches on this value to format the
+// user-facing message; index/* never produces English strings.
+type UpdateAction int
+
+const (
+	// ActionCreated indicates UpdateReadme wrote a brand-new README
+	// from the embedded index header.
+	ActionCreated UpdateAction = iota + 1
+	// ActionUpdated indicates UpdateReadme found existing markers
+	// and rewrote the auto-generated table between them.
+	ActionUpdated
+	// ActionNoMarkers indicates the target README exists but has no
+	// DOCZ auto-generated markers; the file is left unchanged.
+	ActionNoMarkers
+	// ActionDryRunCreated is the dry-run analogue of ActionCreated.
+	// Body holds the README content that would have been written.
+	ActionDryRunCreated
+	// ActionDryRunUpdated is the dry-run analogue of ActionUpdated.
+	// Body holds the README content that would have been written.
+	ActionDryRunUpdated
+)
+
+// UpdateOutcome is the typed result of UpdateReadme / DryRunReadme. The
+// Action discriminator drives caller-side message formatting; Body is
+// populated for the two dry-run actions so the cmd layer can print the
+// would-be content.
+type UpdateOutcome struct {
+	Action UpdateAction
+	Path   string
+	Body   string
+}
+
 // GenerateTable produces a markdown table from a list of document entries.
 func GenerateTable(docs []document.DocEntry, heading string) string {
 	var sb strings.Builder
@@ -40,54 +73,66 @@ func GenerateTable(docs []document.DocEntry, heading string) string {
 }
 
 // UpdateReadme updates the auto-generated section of a README file between
-// the DOCZ markers. If the file exists but has no markers, it is not modified
-// and a warning is returned. If the file doesn't exist, it is created with
-// the default index header.
-func UpdateReadme(readmePath, typeName, tableContent string) (string, error) {
+// the DOCZ markers. If the file doesn't exist, it is created with the
+// default index header (Action=ActionCreated). If it exists with markers,
+// the table is rewritten (Action=ActionUpdated). If it exists without
+// markers, nothing is written and Action=ActionNoMarkers — the caller
+// decides how to surface that.
+func UpdateReadme(readmePath, typeName, tableContent string) (UpdateOutcome, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return createNewReadme(readmePath, typeName, tableContent)
 		}
-		return "", fmt.Errorf("reading %s: %w", readmePath, err)
+		return UpdateOutcome{}, fmt.Errorf("reading %s: %w", readmePath, err)
 	}
 
 	content := string(data)
 	newContent, ok := spliceMarkers(content, tableContent)
 	if !ok {
-		msg := fmt.Sprintf("Warning: %s has no DOCZ auto-generated markers. "+
-			"Run 'docz init --force' or manually add markers to update it.", readmePath)
-		return msg, nil
+		return UpdateOutcome{Action: ActionNoMarkers, Path: readmePath}, nil
 	}
 
 	if err := os.WriteFile(readmePath, []byte(newContent), config.FileMode); err != nil {
-		return "", fmt.Errorf("writing %s: %w", readmePath, err)
+		return UpdateOutcome{}, fmt.Errorf("writing %s: %w", readmePath, err)
 	}
 
-	return fmt.Sprintf("Updated %s", readmePath), nil
+	return UpdateOutcome{Action: ActionUpdated, Path: readmePath}, nil
 }
 
-// DryRunReadme returns what UpdateReadme would write without modifying files.
-func DryRunReadme(readmePath, typeName, tableContent string) (string, error) {
+// DryRunReadme returns what UpdateReadme would write without modifying
+// files. Action is one of ActionDryRunCreated, ActionDryRunUpdated, or
+// ActionNoMarkers; Body holds the would-be content for the two dry-run
+// success cases.
+func DryRunReadme(readmePath, typeName, tableContent string) (UpdateOutcome, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			header, headerErr := doctemplate.EmbeddedIndexHeader(typeName)
 			if headerErr != nil {
-				return "", headerErr
+				return UpdateOutcome{}, headerErr
 			}
-			return header + beginMarker + "\n" + tableContent + endMarker + "\n", nil
+			body := header + beginMarker + "\n" + tableContent + endMarker + "\n"
+			return UpdateOutcome{
+				Action: ActionDryRunCreated,
+				Path:   readmePath,
+				Body:   body,
+			}, nil
 		}
-		return "", fmt.Errorf("reading %s: %w", readmePath, err)
+		return UpdateOutcome{}, fmt.Errorf("reading %s: %w", readmePath, err)
 	}
 
 	content := string(data)
-	result, ok := spliceMarkers(content, tableContent)
+	body, ok := spliceMarkers(content, tableContent)
 	if !ok {
-		return fmt.Sprintf("Warning: %s has no DOCZ markers, would be skipped.", readmePath), nil
+		return UpdateOutcome{Action: ActionNoMarkers, Path: readmePath}, nil
 	}
 
-	return result, nil
+	return UpdateOutcome{
+		Action: ActionDryRunUpdated,
+		Path:   readmePath,
+		Body:   body,
+	}, nil
 }
 
 // spliceMarkers replaces the content between the begin and end markers with
@@ -104,22 +149,22 @@ func spliceMarkers(content, tableContent string) (string, bool) {
 	return before + beginMarker + "\n" + tableContent + endMarker + afterEnd, true
 }
 
-func createNewReadme(path, typeName, tableContent string) (string, error) {
+func createNewReadme(path, typeName, tableContent string) (UpdateOutcome, error) {
 	header, err := doctemplate.EmbeddedIndexHeader(typeName)
 	if err != nil {
-		return "", fmt.Errorf("loading index header for %s: %w", typeName, err)
+		return UpdateOutcome{}, fmt.Errorf("loading index header for %s: %w", typeName, err)
 	}
 
 	content := header + beginMarker + "\n" + tableContent + endMarker + "\n"
 
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, config.DirMode); err != nil {
-		return "", fmt.Errorf("creating directory %s: %w", dir, err)
+		return UpdateOutcome{}, fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
 	if err := os.WriteFile(path, []byte(content), config.FileMode); err != nil {
-		return "", fmt.Errorf("writing %s: %w", path, err)
+		return UpdateOutcome{}, fmt.Errorf("writing %s: %w", path, err)
 	}
 
-	return fmt.Sprintf("Created %s", path), nil
+	return UpdateOutcome{Action: ActionCreated, Path: path}, nil
 }

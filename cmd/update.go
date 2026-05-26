@@ -87,21 +87,40 @@ func updateType(typeName string) error {
 	tableContent := index.GenerateTable(docs, heading)
 
 	if updateDryRun {
-		result, err := index.DryRunReadme(readmePath, typeName, tableContent)
+		outcome, err := index.DryRunReadme(readmePath, typeName, tableContent)
 		if err != nil {
 			return fmt.Errorf("dry-run readme %s: %w", readmePath, err)
 		}
-		fmt.Println(result)
+		printIndexOutcome(outcome)
 		return nil
 	}
 
-	msg, err := index.UpdateReadme(readmePath, typeName, tableContent)
+	outcome, err := index.UpdateReadme(readmePath, typeName, tableContent)
 	if err != nil {
 		return fmt.Errorf("updating readme %s: %w", readmePath, err)
 	}
-
-	fmt.Println(msg)
+	printIndexOutcome(outcome)
 	return nil
+}
+
+// printIndexOutcome translates the typed index.UpdateOutcome into a
+// user-facing message. The internal/index package is intentionally
+// silent on English wording — that lives here.
+func printIndexOutcome(o index.UpdateOutcome) {
+	switch o.Action {
+	case index.ActionCreated:
+		fmt.Printf("Created %s\n", o.Path)
+	case index.ActionUpdated:
+		fmt.Printf("Updated %s\n", o.Path)
+	case index.ActionNoMarkers:
+		fmt.Printf(
+			"Warning: %s has no DOCZ auto-generated markers. "+
+				"Run 'docz init --force' or manually add markers to update it.\n",
+			o.Path,
+		)
+	case index.ActionDryRunCreated, index.ActionDryRunUpdated:
+		fmt.Println(o.Body)
+	}
 }
 
 // runToCUpdate builds the toc.FileInput list from cached scan results,
