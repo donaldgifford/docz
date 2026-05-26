@@ -94,7 +94,7 @@ func TestUpdateToCDisabled(t *testing.T) {
 
 	appCfg = config.DefaultConfig()
 	appCfg.DocsDir = filepath.Join(dir, "docs")
-	appCfg.ToC.Enabled = false
+	appCfg.TOC.Enabled = false
 	updateDryRun = false
 	verbose = false
 

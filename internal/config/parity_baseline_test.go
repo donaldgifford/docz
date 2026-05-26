@@ -120,13 +120,13 @@ toc:
 		t.Errorf("Wiki.Plugins = %v, want default %v", cfg.Wiki.Plugins, defaults.Wiki.Plugins)
 	}
 
-	if cfg.ToC.Enabled {
+	if cfg.TOC.Enabled {
 		t.Error("ToC.Enabled override not applied")
 	}
-	if cfg.ToC.MinHeadings != defaults.ToC.MinHeadings {
+	if cfg.TOC.MinHeadings != defaults.TOC.MinHeadings {
 		t.Errorf(
 			"ToC.MinHeadings = %d, want default %d",
-			cfg.ToC.MinHeadings, defaults.ToC.MinHeadings,
+			cfg.TOC.MinHeadings, defaults.TOC.MinHeadings,
 		)
 	}
 

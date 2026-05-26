@@ -57,7 +57,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		return CreateResult{}, fmt.Errorf("resolving template: %w", err)
 	}
 
-	data := doctemplate.TemplateData{
+	data := doctemplate.Data{
 		Number:   number,
 		Title:    opts.Title,
 		Date:     currentDate(),

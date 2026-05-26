@@ -13,8 +13,11 @@ import (
 	"github.com/donaldgifford/docz/internal/config"
 )
 
-// TemplateData holds all variables available for template rendering.
-type TemplateData struct {
+// Data holds all variables available for document-template rendering.
+// (Renamed from TemplateData in IMPL-0008 Phase 10 — the package
+// qualifier `template.Data` reads better than the stuttering
+// `template.TemplateData`.)
+type Data struct {
 	Number   string // Zero-padded document ID (e.g., "0001")
 	Title    string // Document title as provided
 	Date     string // Creation date (YYYY-MM-DD)
@@ -134,7 +137,7 @@ func RenderWikiIndex(tmplContent string, data *WikiIndexData) (string, error) {
 
 // Render executes a Go text/template with the provided data and returns the
 // rendered output.
-func Render(tmplContent string, data *TemplateData) (string, error) {
+func Render(tmplContent string, data *Data) (string, error) {
 	t, err := template.New("doc").Parse(tmplContent)
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)

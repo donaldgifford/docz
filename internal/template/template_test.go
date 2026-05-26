@@ -138,7 +138,7 @@ func TestResolve_ConfigPathNotFound(t *testing.T) {
 
 func TestRender(t *testing.T) {
 	tmpl := "# {{ .Prefix }}-{{ .Number }}: {{ .Title }}\nBy {{ .Author }} on {{ .Date }}"
-	data := TemplateData{
+	data := Data{
 		Number:   "0001",
 		Title:    "Test Document",
 		Date:     "2026-02-22",
@@ -162,7 +162,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestRender_InvalidTemplate(t *testing.T) {
-	_, err := Render("{{ .Invalid", &TemplateData{})
+	_, err := Render("{{ .Invalid", &Data{})
 	if err == nil {
 		t.Error("expected error for invalid template, got nil")
 	}

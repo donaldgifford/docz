@@ -10,7 +10,7 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 func TestGoldenTemplates(t *testing.T) {
-	data := TemplateData{
+	data := Data{
 		Number:   "0001",
 		Title:    "Test Document",
 		Date:     "2026-02-22",
@@ -22,7 +22,7 @@ func TestGoldenTemplates(t *testing.T) {
 		Filename: "0001-test-document.md",
 	}
 
-	types := map[string]TemplateData{
+	types := map[string]Data{
 		"rfc":    data,
 		"adr":    withOverrides(&data, "adr", "ADR", "Proposed"),
 		"design": withOverrides(&data, "design", "DESIGN", "Draft"),
@@ -65,7 +65,7 @@ func TestGoldenTemplates(t *testing.T) {
 	}
 }
 
-func withOverrides(base *TemplateData, typeName, prefix, status string) TemplateData {
+func withOverrides(base *Data, typeName, prefix, status string) Data {
 	result := *base
 	result.Type = typeName
 	result.Prefix = prefix

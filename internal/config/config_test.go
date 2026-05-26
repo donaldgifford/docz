@@ -80,11 +80,11 @@ func TestDefaultConfig(t *testing.T) {
 	}
 
 	// ToC defaults.
-	if !cfg.ToC.Enabled {
+	if !cfg.TOC.Enabled {
 		t.Error("ToC.Enabled should be true by default")
 	}
-	if cfg.ToC.MinHeadings != 3 {
-		t.Errorf("ToC.MinHeadings = %d, want 3", cfg.ToC.MinHeadings)
+	if cfg.TOC.MinHeadings != 3 {
+		t.Errorf("ToC.MinHeadings = %d, want 3", cfg.TOC.MinHeadings)
 	}
 }
 
@@ -246,7 +246,12 @@ func TestLoad_WikiConfig(t *testing.T) {
 	}
 }
 
-func TestLoad_ToCConfig(t *testing.T) {
+// TestLoad_TOCConfig also doubles as the back-compat guard for the
+// IMPL-0008 Phase 10 rename (ToCConfig → TOCConfig, field ToC → TOC).
+// The YAML key stays lowercase `toc:` so existing .docz.yaml files
+// keep working — if this test breaks after a future YAML tag change,
+// user configs in the wild will silently stop applying.
+func TestLoad_TOCConfig(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `toc:
@@ -262,11 +267,11 @@ func TestLoad_ToCConfig(t *testing.T) {
 		t.Fatalf("Load() error: %v", err)
 	}
 
-	if cfg.ToC.Enabled {
+	if cfg.TOC.Enabled {
 		t.Error("ToC.Enabled should be false")
 	}
-	if cfg.ToC.MinHeadings != 5 {
-		t.Errorf("ToC.MinHeadings = %d, want 5", cfg.ToC.MinHeadings)
+	if cfg.TOC.MinHeadings != 5 {
+		t.Errorf("ToC.MinHeadings = %d, want 5", cfg.TOC.MinHeadings)
 	}
 }
 

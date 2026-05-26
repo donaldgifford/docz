@@ -61,8 +61,12 @@ type WikiConfig struct {
 	Theme              string            `mapstructure:"theme"               yaml:"theme,omitempty"`
 }
 
-// ToCConfig holds configuration for table of contents generation.
-type ToCConfig struct {
+// TOCConfig holds configuration for table of contents generation.
+//
+// The YAML/mapstructure tags deliberately stay as "toc" so existing
+// .docz.yaml files keep working unchanged after the Go-side rename
+// (`ToC` → `TOC`) — see IMPL-0008 Decisions §5.
+type TOCConfig struct {
 	Enabled     bool `mapstructure:"enabled"      yaml:"enabled"`
 	MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
 }
@@ -74,7 +78,7 @@ type Config struct {
 	Index   IndexConfig           `mapstructure:"index"    yaml:"index"`
 	Author  AuthorConfig          `mapstructure:"author"   yaml:"author"`
 	Wiki    WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
-	ToC     ToCConfig             `mapstructure:"toc"      yaml:"toc"`
+	TOC     TOCConfig             `mapstructure:"toc"      yaml:"toc"`
 }
 
 // DefaultConfig returns the built-in default configuration.
@@ -157,7 +161,7 @@ func DefaultConfig() Config {
 			Exclude:    []string{TemplatesDir, "examples"},
 			NavTitles:  DefaultNavTitles(),
 		},
-		ToC: ToCConfig{
+		TOC: TOCConfig{
 			Enabled:     true,
 			MinHeadings: defaultMinHeadings,
 		},

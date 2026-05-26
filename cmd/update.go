@@ -79,7 +79,7 @@ func updateType(typeName string) error {
 	}
 
 	// Update ToC in each document before regenerating the README index.
-	if appCfg.ToC.Enabled {
+	if appCfg.TOC.Enabled {
 		runToCUpdate(typeDir, docs)
 	}
 
@@ -139,7 +139,7 @@ func runToCUpdate(typeDir string, docs []document.DocEntry) {
 		}
 	}
 
-	report, err := toc.UpdateFiles(files, appCfg.ToC.MinHeadings, updateDryRun)
+	report, err := toc.UpdateFiles(files, appCfg.TOC.MinHeadings, updateDryRun)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: ToC update failed: %v\n", err)
 		return

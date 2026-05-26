@@ -352,19 +352,21 @@ Drop the stutter and fix the initialism casing.
 
 #### Tasks
 
-- [ ] Rename `template.TemplateData` → `template.Data`
-- [ ] Update all call sites: `internal/document/create.go:61`, tests, golden
-      generators
-- [ ] Consider renaming `template.WikiIndexType`/`WikiIndexData` — they
-      stutter only mildly (qualified with `template.` they read fine).
-      See Decisions §4.
-- [ ] Rename `config.ToCConfig` → `config.TOCConfig`
-- [ ] Rename `config.Config.ToC` → `config.Config.TOC` (field)
-- [ ] **Critical:** keep the YAML tag `toc:` and mapstructure tag `"toc"`
-      unchanged so existing `.docz.yaml` files continue to work
-- [ ] Update all call sites: `cmd/update.go:80`, `internal/config/config.go`,
-      tests
-- [ ] Add a back-compat test: a `.docz.yaml` with `toc:` parses identically
+- [x] Rename `template.TemplateData` → `template.Data`
+- [x] Updated all call sites: `internal/document/create.go`,
+      `internal/template/golden_test.go`, `internal/template/template_test.go`
+- [x] `WikiIndexType` / `WikiIndexData` left as-is per Decisions §4
+- [x] Rename `config.ToCConfig` → `config.TOCConfig`
+- [x] Rename `config.Config.ToC` → `config.Config.TOC` (field)
+- [x] **Critical:** YAML/mapstructure tags stay `toc` (verified by
+      `TestLoad_TOCConfig` which parses a `toc:` key into the renamed
+      `TOC` field)
+- [x] Updated call sites: `cmd/update.go`, `cmd/update_test.go`,
+      `internal/config/config.go`, `internal/config/config_test.go`,
+      `internal/config/parity_baseline_test.go`,
+      `internal/template/templates/docz_yaml.tmpl` (template now uses
+      `.TOC.Enabled` / `.TOC.MinHeadings`)
+- [x] Back-compat test in place — see `TestLoad_TOCConfig` doc comment
 
 #### Success Criteria
 
