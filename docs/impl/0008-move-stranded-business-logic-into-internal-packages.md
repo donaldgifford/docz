@@ -200,18 +200,18 @@ keeps README splicing only.
 
 #### Tasks
 
-- [ ] Move `ScanDocuments`, `DocEntry`, and `docFilePattern` from
+- [x] Move `ScanDocuments`, `DocEntry`, and `docFilePattern` from
       `internal/index/index.go` into a new file `internal/document/scan.go`
 - [ ] Update `DocEntry` to use the shared `document.DoczFilePattern`
-      (introduced in Phase 6)
-- [ ] Re-export `DocEntry` from `internal/index` as a type alias for one
-      release to avoid breaking imports (or delete cleanly — see
-      Decisions §2)
-- [ ] Update `cmd/list.go`, `cmd/update.go` to import from
+      (deferred to Phase 6)
+- [x] Clean delete per Decisions §2 — no type alias re-exported from
+      `internal/index`
+- [x] Update `cmd/list.go`, `cmd/update.go` to import from
       `internal/document`
-- [ ] Move `internal/index/index_test.go` tests that target `ScanDocuments`
-      to `internal/document/scan_test.go`; keep tests that target
-      `UpdateReadme`/`GenerateTable` in `internal/index`
+- [x] Move `internal/index/index_test.go` tests that target `ScanDocuments`
+      (plus the bench helpers + `BenchmarkScanDocuments`) to
+      `internal/document/scan_test.go`; keep `UpdateReadme`/`GenerateTable`
+      tests in `internal/index`
 
 #### Success Criteria
 

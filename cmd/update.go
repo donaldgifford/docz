@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/internal/document"
 	"github.com/donaldgifford/docz/internal/index"
 	"github.com/donaldgifford/docz/internal/toc"
 )
@@ -68,7 +69,7 @@ func updateType(typeName string) error {
 		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", typeDir)
 	}
 
-	docs, err := index.ScanDocuments(typeDir)
+	docs, err := document.ScanDocuments(typeDir)
 	if err != nil {
 		return fmt.Errorf("scanning %s: %w", typeDir, err)
 	}
@@ -106,7 +107,7 @@ func updateType(typeName string) error {
 // runToCUpdate builds the toc.FileInput list from cached scan results,
 // delegates to toc.UpdateFiles, and formats user-facing messages so the
 // internal/toc package stays free of I/O-shaped strings.
-func runToCUpdate(typeDir string, docs []index.DocEntry) {
+func runToCUpdate(typeDir string, docs []document.DocEntry) {
 	if len(docs) == 0 {
 		return
 	}

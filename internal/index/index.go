@@ -1,4 +1,7 @@
-// Package index provides document scanning and README index generation.
+// Package index provides README index generation for docz document
+// directories. Scanning lives in internal/document; this package only
+// builds the table markdown and splices it between the BEGIN/END
+// markers in each type's README.md.
 package index
 
 import (
@@ -7,8 +10,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/donaldgifford/docz/internal/config"
@@ -21,69 +22,8 @@ const (
 	endMarker   = "<!-- END DOCZ AUTO-GENERATED -->"
 )
 
-var docFilePattern = regexp.MustCompile(`^\d+-.*\.md$`)
-
-// DocEntry holds the frontmatter, source filename, and raw file bytes
-// for a single document found during a directory scan.
-//
-// Content is the verbatim file contents read by ScanDocuments. It is
-// populated unconditionally (Decisions §1 of IMPL-0007) so downstream
-// callers — notably cmd/update.go's ToC pass — can operate on the bytes
-// without re-reading the file. The expected memory ceiling at CLI
-// scale is roughly the on-disk size of the scanned directory: a repo
-// with 1000 docs × ~10KB averages 10MB resident, which is acceptable
-// for a one-shot CLI. A future library consumer running ScanDocuments
-// on very large trees should be aware of this assumption.
-type DocEntry struct {
-	document.Frontmatter
-	Filename string
-	Content  []byte
-}
-
-// ScanDocuments reads all NNNN-*.md files in dir, parses their YAML
-// frontmatter, and returns them sorted by ID. Files without valid
-// frontmatter are silently skipped.
-func ScanDocuments(dir string) ([]DocEntry, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
-	}
-
-	var docs []DocEntry
-	for _, entry := range entries {
-		if entry.IsDir() || !docFilePattern.MatchString(entry.Name()) {
-			continue
-		}
-
-		content, err := os.ReadFile(filepath.Join(dir, entry.Name()))
-		if err != nil {
-			continue
-		}
-
-		fm, err := document.ParseFrontmatter(content)
-		if err != nil {
-			continue // silently skip files without valid frontmatter
-		}
-
-		docs = append(docs, DocEntry{
-			Frontmatter: fm,
-			Filename:    entry.Name(),
-			Content:     content,
-		})
-	}
-
-	slices.SortFunc(docs, func(a, b DocEntry) int {
-		return strings.Compare(a.ID, b.ID)
-	})
-
-	return docs, nil
-}
-
 // GenerateTable produces a markdown table from a list of document entries.
-func GenerateTable(docs []DocEntry, heading string) string {
+func GenerateTable(docs []document.DocEntry, heading string) string {
 	var sb strings.Builder
 
 	sb.WriteString("## " + heading + "\n\n")
