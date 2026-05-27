@@ -1,7 +1,7 @@
 ---
 id: IMPL-0008
 title: "Move Stranded Business Logic Into Internal Packages"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -9,7 +9,7 @@ created: 2026-05-15
 
 # IMPL 0008: Move Stranded Business Logic Into Internal Packages
 
-**Status:** Draft
+**Status:** Completed (2026-05-27)
 **Author:** Donald Gifford
 **Date:** 2026-05-15
 
@@ -386,19 +386,19 @@ Drop the stutter and fix the initialism casing.
 - [x] Verify golden files: `testdata/golden/wiki/mkdocs_full.yml` added
       (new); all existing goldens unchanged (`go test ./... -update`
       shows no diff for adr/design/impl/rfc/toc/wiki/nav)
-- [x] Open PR A with `dont-release` label (Phases 1–3) — #44
-- [ ] After PR A merges: rebase, open PR B (Phases 4–10) with
-      `dont-release` label — branch `feat/impl-0008-pr-b` pushed and
-      ready (waiting on PR A merge per Decisions §6)
+- [x] Open PR A with `dont-release` label (Phases 1–3) — #44 (merged
+      2026-05-27)
+- [x] After PR A merges: rebase, open PR B (Phases 4–10) with
+      `dont-release` label — #45 (merged 2026-05-27)
 - [x] Update INV-0002 status — Wave 4 section now lists F11/F13/F17–F26
       against the two PRs
 
 #### Success Criteria
 
-- Two PRs merged with green CI
-- Manual smoke test passes
-- The `cmd/` package contains no business logic — only flag parsing,
-  config wiring, and calls into `internal/`
+- [x] Two PRs merged with green CI — PR #44 and PR #45
+- [x] Manual smoke test passes
+- [x] The `cmd/` package contains no business logic — only flag parsing,
+      config wiring, and calls into `internal/`
 
 ---
 
@@ -420,13 +420,15 @@ Drop the stutter and fix the initialism casing.
 
 ## Testing Plan
 
-- [ ] Each moved function gets unit tests in its new location (most will
+- [x] Each moved function gets unit tests in its new location (most will
       be copied + adapted from existing tests)
-- [ ] Back-compat test for `.docz.yaml` parsing with `toc:` key
-- [ ] Smoke test: run docz against the docz repo, verify all generated
+- [x] Back-compat test for `.docz.yaml` parsing with `toc:` key —
+      `TestLoad_TOCConfig`
+- [x] Smoke test: run docz against the docz repo, verify all generated
       files identical
-- [ ] Golden file regen happens exactly once (renames + reorganization
-      shouldn't change output)
+- [x] Golden file regen happens exactly once (renames + reorganization
+      shouldn't change output) — `testdata/golden/wiki/mkdocs_full.yml`
+      added; all others unchanged
 
 ## Decisions
 
