@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -35,8 +34,6 @@ type CreateResult struct {
 	Filename string // Filename only (e.g., "0001-my-doc.md")
 }
 
-var idPattern = regexp.MustCompile(`^(\d+)-.*\.md$`)
-
 // Create generates a new document from a template and writes it to the
 // appropriate directory with an auto-incremented ID.
 func Create(opts *CreateOptions) (CreateResult, error) {
@@ -47,7 +44,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 	}
 
 	number := fmt.Sprintf("%0*d", opts.IDWidth, nextID(dir))
-	slug := doctemplate.Slugify(opts.Title)
+	slug := doctemplate.FilenameSlug(opts.Title)
 	filename := number + "-" + slug + ".md"
 	filePath := filepath.Join(dir, filename)
 
@@ -60,7 +57,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		return CreateResult{}, fmt.Errorf("resolving template: %w", err)
 	}
 
-	data := doctemplate.TemplateData{
+	data := doctemplate.Data{
 		Number:   number,
 		Title:    opts.Title,
 		Date:     currentDate(),
@@ -101,7 +98,7 @@ func nextID(dir string) int {
 		if entry.IsDir() {
 			continue
 		}
-		matches := idPattern.FindStringSubmatch(entry.Name())
+		matches := DoczFilePattern.FindStringSubmatch(entry.Name())
 		if matches == nil {
 			continue
 		}

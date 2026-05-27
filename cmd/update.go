@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/internal/document"
 	"github.com/donaldgifford/docz/internal/index"
 	"github.com/donaldgifford/docz/internal/toc"
 )
@@ -68,7 +69,7 @@ func updateType(typeName string) error {
 		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", typeDir)
 	}
 
-	docs, err := index.ScanDocuments(typeDir)
+	docs, err := document.ScanDocuments(typeDir)
 	if err != nil {
 		return fmt.Errorf("scanning %s: %w", typeDir, err)
 	}
@@ -78,7 +79,7 @@ func updateType(typeName string) error {
 	}
 
 	// Update ToC in each document before regenerating the README index.
-	if appCfg.ToC.Enabled {
+	if appCfg.TOC.Enabled {
 		runToCUpdate(typeDir, docs)
 	}
 
@@ -86,27 +87,46 @@ func updateType(typeName string) error {
 	tableContent := index.GenerateTable(docs, heading)
 
 	if updateDryRun {
-		result, err := index.DryRunReadme(readmePath, typeName, tableContent)
+		outcome, err := index.DryRunReadme(readmePath, typeName, tableContent)
 		if err != nil {
 			return fmt.Errorf("dry-run readme %s: %w", readmePath, err)
 		}
-		fmt.Println(result)
+		printIndexOutcome(outcome)
 		return nil
 	}
 
-	msg, err := index.UpdateReadme(readmePath, typeName, tableContent)
+	outcome, err := index.UpdateReadme(readmePath, typeName, tableContent)
 	if err != nil {
 		return fmt.Errorf("updating readme %s: %w", readmePath, err)
 	}
-
-	fmt.Println(msg)
+	printIndexOutcome(outcome)
 	return nil
+}
+
+// printIndexOutcome translates the typed index.UpdateOutcome into a
+// user-facing message. The internal/index package is intentionally
+// silent on English wording — that lives here.
+func printIndexOutcome(o index.UpdateOutcome) {
+	switch o.Action {
+	case index.ActionCreated:
+		fmt.Printf("Created %s\n", o.Path)
+	case index.ActionUpdated:
+		fmt.Printf("Updated %s\n", o.Path)
+	case index.ActionNoMarkers:
+		fmt.Printf(
+			"Warning: %s has no DOCZ auto-generated markers. "+
+				"Run 'docz init --force' or manually add markers to update it.\n",
+			o.Path,
+		)
+	case index.ActionDryRunCreated, index.ActionDryRunUpdated:
+		fmt.Println(o.Body)
+	}
 }
 
 // runToCUpdate builds the toc.FileInput list from cached scan results,
 // delegates to toc.UpdateFiles, and formats user-facing messages so the
 // internal/toc package stays free of I/O-shaped strings.
-func runToCUpdate(typeDir string, docs []index.DocEntry) {
+func runToCUpdate(typeDir string, docs []document.DocEntry) {
 	if len(docs) == 0 {
 		return
 	}
@@ -119,7 +139,7 @@ func runToCUpdate(typeDir string, docs []index.DocEntry) {
 		}
 	}
 
-	report, err := toc.UpdateFiles(files, appCfg.ToC.MinHeadings, updateDryRun)
+	report, err := toc.UpdateFiles(files, appCfg.TOC.MinHeadings, updateDryRun)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: ToC update failed: %v\n", err)
 		return

@@ -13,8 +13,11 @@ import (
 	"github.com/donaldgifford/docz/internal/config"
 )
 
-// TemplateData holds all variables available for template rendering.
-type TemplateData struct {
+// Data holds all variables available for document-template rendering.
+// (Renamed from TemplateData in IMPL-0008 Phase 10 — the package
+// qualifier `template.Data` reads better than the stuttering
+// `template.TemplateData`.)
+type Data struct {
 	Number   string // Zero-padded document ID (e.g., "0001")
 	Title    string // Document title as provided
 	Date     string // Creation date (YYYY-MM-DD)
@@ -27,8 +30,8 @@ type TemplateData struct {
 }
 
 var (
-	nonAlphanumHyphen = regexp.MustCompile(`[^a-z0-9-]`)
-	multipleHyphens   = regexp.MustCompile(`-{2,}`)
+	nonSlugChar     = regexp.MustCompile(`[^a-z0-9-]`)
+	multipleHyphens = regexp.MustCompile(`-{2,}`)
 )
 
 // maxSlugLength caps generated slugs at 64 characters so resulting filenames
@@ -36,15 +39,23 @@ var (
 // document ID prefix and directory path.
 const maxSlugLength = 64
 
-// Slugify converts a title to kebab-case.
+// FilenameSlug converts a document title into a kebab-case identifier
+// suitable for use in a filename (e.g. "API Rate Limiting!" →
+// "api-rate-limiting"). It is paired with the document ID and used by
+// internal/document/create.go to produce names like
+// "0001-api-rate-limiting.md".
 //
-// Transformation: lowercase, spaces to hyphens, strip non-alphanumeric
-// characters (except hyphens), collapse multiple hyphens, trim
-// leading/trailing hyphens, truncate to 64 characters on a word boundary.
-func Slugify(title string) string {
+// Transformation: lowercase, spaces to hyphens, strip every character
+// that is not a-z / 0-9 / hyphen, collapse runs of hyphens, trim
+// leading/trailing hyphens, then truncate to 64 characters on a word
+// boundary (last hyphen before the cap).
+//
+// This is distinct from toc.AnchorSlug, which generates GitHub-style
+// markdown anchor slugs and preserves spaces as hyphens differently.
+func FilenameSlug(title string) string {
 	s := strings.ToLower(title)
 	s = strings.ReplaceAll(s, " ", "-")
-	s = nonAlphanumHyphen.ReplaceAllString(s, "")
+	s = nonSlugChar.ReplaceAllString(s, "")
 	s = multipleHyphens.ReplaceAllString(s, "-")
 	s = strings.Trim(s, "-")
 
@@ -126,7 +137,7 @@ func RenderWikiIndex(tmplContent string, data *WikiIndexData) (string, error) {
 
 // Render executes a Go text/template with the provided data and returns the
 // rendered output.
-func Render(tmplContent string, data *TemplateData) (string, error) {
+func Render(tmplContent string, data *Data) (string, error) {
 	t, err := template.New("doc").Parse(tmplContent)
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)

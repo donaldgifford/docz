@@ -1,7 +1,10 @@
 package document
 
 import (
+	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -136,5 +139,73 @@ title: "Leading newlines"
 				t.Errorf("Created = %q, want %q", got.Created, tt.want.Created)
 			}
 		})
+	}
+}
+
+func TestLoadFrontmatter_Valid(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "doc.md")
+	content := []byte("---\nid: RFC-0001\ntitle: \"Hello\"\nstatus: Draft\nauthor: T\ncreated: 2026-01-01\n---\n# Body\n")
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fm, got, err := LoadFrontmatter(path)
+	if err != nil {
+		t.Fatalf("LoadFrontmatter() error: %v", err)
+	}
+	if fm.ID != "RFC-0001" || fm.Title != "Hello" {
+		t.Errorf("frontmatter = %+v", fm)
+	}
+	if !bytes.Equal(got, content) {
+		t.Errorf("returned bytes do not equal file content")
+	}
+}
+
+func TestLoadFrontmatter_NoFrontmatterReturnsSentinel(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "doc.md")
+	content := []byte("# Just a heading, no frontmatter\n")
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fm, got, err := LoadFrontmatter(path)
+	if !errors.Is(err, ErrNoFrontmatter) {
+		t.Fatalf("err = %v, want ErrNoFrontmatter wrapped", err)
+	}
+	if fm != (Frontmatter{}) {
+		t.Errorf("expected zero Frontmatter, got %+v", fm)
+	}
+	if !bytes.Equal(got, content) {
+		t.Errorf("bytes should still be returned on no-frontmatter so callers can fall back")
+	}
+}
+
+func TestLoadFrontmatter_ReadError(t *testing.T) {
+	_, _, err := LoadFrontmatter("/definitely/does/not/exist/load-fm-test.md")
+	if err == nil {
+		t.Fatal("expected error for nonexistent file, got nil")
+	}
+	if errors.Is(err, ErrNoFrontmatter) {
+		t.Errorf("read error should not be classified as ErrNoFrontmatter: %v", err)
+	}
+}
+
+func TestLoadFrontmatter_ParseError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "doc.md")
+	// Frontmatter opens but never closes.
+	content := []byte("---\nid: RFC-0001\nno closing delimiter\n# Body\n")
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err := LoadFrontmatter(path)
+	if err == nil {
+		t.Fatal("expected parse error for unterminated frontmatter, got nil")
+	}
+	if errors.Is(err, ErrNoFrontmatter) {
+		t.Errorf("parse error should not be classified as ErrNoFrontmatter: %v", err)
 	}
 }

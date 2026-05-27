@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestSlugify(t *testing.T) {
+func TestAnchorSlug(t *testing.T) {
 	tests := []struct {
 		name string
 		text string
@@ -27,9 +27,9 @@ func TestSlugify(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Slugify(tt.text)
+			got := AnchorSlug(tt.text)
 			if got != tt.want {
-				t.Errorf("Slugify(%q) = %q, want %q", tt.text, got, tt.want)
+				t.Errorf("AnchorSlug(%q) = %q, want %q", tt.text, got, tt.want)
 			}
 		})
 	}

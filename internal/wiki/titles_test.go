@@ -108,9 +108,16 @@ func TestDocTitle_FilenameFallback(t *testing.T) {
 }
 
 func TestDocTitle_NonexistentFile(t *testing.T) {
-	_, err := DocTitle("/nonexistent/file.md")
+	// Per Decisions §3, DocTitle now follows the standard "value OR
+	// error" contract: a read failure returns "" alongside the error,
+	// not a filename-derived fallback. Callers that want a fallback
+	// must call FilenameTitle themselves.
+	got, err := DocTitle("/nonexistent/file.md")
 	if err == nil {
-		t.Error("expected error for nonexistent file, got nil")
+		t.Fatal("expected error for nonexistent file, got nil")
+	}
+	if got != "" {
+		t.Errorf("DocTitle() = %q on error, want empty string per the strict contract", got)
 	}
 }
 

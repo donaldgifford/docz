@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -56,4 +57,29 @@ func ParseFrontmatter(content []byte) (Frontmatter, error) {
 	}
 
 	return fm, nil
+}
+
+// LoadFrontmatter reads path and parses its YAML frontmatter. The raw
+// file bytes are returned alongside the parsed Frontmatter so callers
+// that also want the body (e.g. ScanDocuments) get both in one call.
+//
+// Contract:
+//   - Returns (fm, content, nil) when the file is readable and contains
+//     valid frontmatter.
+//   - Returns (zero Frontmatter, content, ErrNoFrontmatter) when the
+//     file is readable but has no frontmatter delimiters. Callers that
+//     can derive metadata another way (filename, first H1) should use
+//     errors.Is(err, ErrNoFrontmatter) and fall back; this is not a
+//     fatal failure.
+//   - All other returns are fatal read or parse errors.
+func LoadFrontmatter(path string) (Frontmatter, []byte, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return Frontmatter{}, nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	fm, err := ParseFrontmatter(content)
+	if err != nil {
+		return Frontmatter{}, content, err
+	}
+	return fm, content, nil
 }

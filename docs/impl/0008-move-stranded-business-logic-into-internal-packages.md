@@ -200,18 +200,18 @@ keeps README splicing only.
 
 #### Tasks
 
-- [ ] Move `ScanDocuments`, `DocEntry`, and `docFilePattern` from
+- [x] Move `ScanDocuments`, `DocEntry`, and `docFilePattern` from
       `internal/index/index.go` into a new file `internal/document/scan.go`
 - [ ] Update `DocEntry` to use the shared `document.DoczFilePattern`
-      (introduced in Phase 6)
-- [ ] Re-export `DocEntry` from `internal/index` as a type alias for one
-      release to avoid breaking imports (or delete cleanly — see
-      Decisions §2)
-- [ ] Update `cmd/list.go`, `cmd/update.go` to import from
+      (deferred to Phase 6)
+- [x] Clean delete per Decisions §2 — no type alias re-exported from
+      `internal/index`
+- [x] Update `cmd/list.go`, `cmd/update.go` to import from
       `internal/document`
-- [ ] Move `internal/index/index_test.go` tests that target `ScanDocuments`
-      to `internal/document/scan_test.go`; keep tests that target
-      `UpdateReadme`/`GenerateTable` in `internal/index`
+- [x] Move `internal/index/index_test.go` tests that target `ScanDocuments`
+      (plus the bench helpers + `BenchmarkScanDocuments`) to
+      `internal/document/scan_test.go`; keep `UpdateReadme`/`GenerateTable`
+      tests in `internal/index`
 
 #### Success Criteria
 
@@ -230,16 +230,17 @@ and call `ParseFrontmatter` with different error handling. Consolidate.
 
 #### Tasks
 
-- [ ] Add `document.LoadFrontmatter(path string) (Frontmatter, []byte, error)`
+- [x] Add `document.LoadFrontmatter(path string) (Frontmatter, []byte, error)`
       that reads the file and parses; returns bytes alongside frontmatter
-      so callers like the new `ScanDocuments` get both in one call
-- [ ] Replace the file-read + parse block in `document.ScanDocuments`
-      (after Phase 4 move) with `LoadFrontmatter`
-- [ ] Replace the equivalent block in `wiki.DocTitle` with `LoadFrontmatter`
-- [ ] Document the contract: "returns `ErrNoFrontmatter` for files without
-      frontmatter (not an error); other errors are fatal"
-- [ ] Update callers to use `errors.Is(err, document.ErrNoFrontmatter)`
-      where they fall back to filename
+      so callers like `ScanDocuments` get both in one call
+- [x] Replace the file-read + parse block in `document.ScanDocuments`
+      with `LoadFrontmatter`
+- [x] Replace the equivalent block in `wiki.DocTitle` with `LoadFrontmatter`
+- [x] Document the contract: `ErrNoFrontmatter` for files without
+      frontmatter is non-fatal (callers fall back); other errors are
+      fatal — captured as a doc comment on `LoadFrontmatter`
+- [x] `wiki.DocTitle` uses `errors.Is(err, document.ErrNoFrontmatter)`
+      to choose the H1 → filename fallback path
 
 #### Success Criteria
 
@@ -254,16 +255,19 @@ Three different regexes for "is this a docz file" today. Pick one.
 
 #### Tasks
 
-- [ ] Define `document.DoczFilePattern = regexp.MustCompile(...)` with the
-      canonical shape `^\d+-.*\.md$`
-- [ ] Add `document.IsDoczFile(name string) bool` convenience function
-- [ ] Replace the regex at `internal/wiki/wiki.go:12` with
-      `document.IsDoczFile(name)`
-- [ ] Replace the regex at `internal/index/index.go:21` (moved to
-      `internal/document/scan.go` in Phase 4) with `DoczFilePattern`
-- [ ] Replace the regex at `internal/document/create.go:36` with
+- [x] Define `document.DoczFilePattern = regexp.MustCompile(\`^(\d+)-.*\.md$\`)`
+      — canonical shape with a capture group so the next-ID extractor
+      shares it with the bare match-only callers
+- [x] Add `document.IsDoczFile(name string) bool` convenience function
+- [x] Replace the regex at `internal/wiki/wiki.go` with
+      `document.IsDoczFile(name)` (drops the prior `\d{4,}` minimum
+      so wiki nav stops silently hiding small-ID docs)
+- [x] Replace the regex at `internal/document/scan.go` (moved in Phase 4)
+      with `IsDoczFile`
+- [x] Replace the regex at `internal/document/create.go` with
+      `DoczFilePattern.FindStringSubmatch` (uses the new capture group)
+- [x] Document the invariant in a single doc-comment on
       `DoczFilePattern`
-- [ ] Document the invariant in a single doc-comment
 
 #### Success Criteria
 
@@ -278,15 +282,13 @@ Two `Slugify` functions today with different algorithms. Rename for clarity.
 
 #### Tasks
 
-- [ ] Rename `template.Slugify` → `template.FilenameSlug`; update doc
-      comment to explain "kebab-case for filenames, max 64 chars,
-      word-boundary truncation"
-- [ ] Rename `toc.Slugify` → `toc.AnchorSlug`; update doc comment to
-      reference the GitHub anchor algorithm
-- [ ] Update all call sites (audit with `grep -rn '\.Slugify' .`)
-- [ ] Update tests
-- [ ] Confirm `nonAlphanumHyphen` regex variable name renamed to
-      something clearer (`nonSlugChar` per INV-0002 note 11.2)
+- [x] Rename `template.Slugify` → `template.FilenameSlug`; expanded doc
+      comment covers kebab-case, max 64 chars, word-boundary truncation
+- [x] Rename `toc.Slugify` → `toc.AnchorSlug`; doc comment references the
+      GitHub anchor algorithm and contrasts with `FilenameSlug`
+- [x] Updated all call sites and tests (`grep -rn '\.Slugify'` returns
+      zero matches)
+- [x] Renamed `nonAlphanumHyphen` regex variable to `nonSlugChar`
 
 #### Success Criteria
 
@@ -302,14 +304,14 @@ error. Decide the contract.
 
 #### Tasks
 
-- [ ] Change `DocTitle(filePath string) (string, error)` to never return
-      a value with an error: on read failure return `"", err`
-- [ ] Move the filename-fallback logic to the caller (`wiki.scanDir`),
-      which already has the filename and can call `wiki.FilenameTitle`
-      explicitly
-- [ ] Or alternatively, return `Result{Title string, IsFallback bool}` —
-      see Decisions §3
-- [ ] Update tests
+- [x] `DocTitle(filePath string) (string, error)` now returns `("", err)`
+      on read failure per Decisions §3 — no more value-alongside-error
+- [x] `wiki.scanDir` calls `FilenameTitle(name)` explicitly when DocTitle
+      errors (single caller, behavior preserved at the call site)
+- [x] Result-struct alternative rejected per Decisions §3 — simple
+      `(string, error)` is the canonical contract
+- [x] `TestDocTitle_NonexistentFile` updated to assert the strict
+      empty-string return
 
 #### Success Criteria
 
@@ -325,16 +327,17 @@ the success value. Replace with a typed result.
 
 #### Tasks
 
-- [ ] Define `index.UpdateAction int` enum with values: `ActionCreated`,
+- [x] Define `index.UpdateAction int` enum with values `ActionCreated`,
       `ActionUpdated`, `ActionNoMarkers`, `ActionDryRunCreated`,
       `ActionDryRunUpdated`
-- [ ] Define `index.UpdateOutcome struct { Action UpdateAction; Path string; Body string }`
-      where `Body` carries the would-be content for dry-run
-- [ ] Change `UpdateReadme` and `DryRunReadme` to return `UpdateOutcome` +
-      `error`
-- [ ] Update `cmd/update.go:updateType` to format messages from
-      `UpdateOutcome.Action` (e.g., `switch outcome.Action { case ActionCreated: fmt.Printf("Created %s", outcome.Path) ... }`)
-- [ ] Add tests
+- [x] Define `index.UpdateOutcome{Action, Path, Body}`; `Body` carries
+      the would-be content for the dry-run actions
+- [x] `UpdateReadme` / `DryRunReadme` return `UpdateOutcome` + `error`
+- [x] `cmd/update.go:printIndexOutcome` switches on `outcome.Action` to
+      format messages — internal/index no longer produces user-facing
+      English
+- [x] Tests assert `Action` / `Path` / `Body` directly instead of
+      grepping the old string return
 
 #### Success Criteria
 
@@ -349,19 +352,21 @@ Drop the stutter and fix the initialism casing.
 
 #### Tasks
 
-- [ ] Rename `template.TemplateData` → `template.Data`
-- [ ] Update all call sites: `internal/document/create.go:61`, tests, golden
-      generators
-- [ ] Consider renaming `template.WikiIndexType`/`WikiIndexData` — they
-      stutter only mildly (qualified with `template.` they read fine).
-      See Decisions §4.
-- [ ] Rename `config.ToCConfig` → `config.TOCConfig`
-- [ ] Rename `config.Config.ToC` → `config.Config.TOC` (field)
-- [ ] **Critical:** keep the YAML tag `toc:` and mapstructure tag `"toc"`
-      unchanged so existing `.docz.yaml` files continue to work
-- [ ] Update all call sites: `cmd/update.go:80`, `internal/config/config.go`,
-      tests
-- [ ] Add a back-compat test: a `.docz.yaml` with `toc:` parses identically
+- [x] Rename `template.TemplateData` → `template.Data`
+- [x] Updated all call sites: `internal/document/create.go`,
+      `internal/template/golden_test.go`, `internal/template/template_test.go`
+- [x] `WikiIndexType` / `WikiIndexData` left as-is per Decisions §4
+- [x] Rename `config.ToCConfig` → `config.TOCConfig`
+- [x] Rename `config.Config.ToC` → `config.Config.TOC` (field)
+- [x] **Critical:** YAML/mapstructure tags stay `toc` (verified by
+      `TestLoad_TOCConfig` which parses a `toc:` key into the renamed
+      `TOC` field)
+- [x] Updated call sites: `cmd/update.go`, `cmd/update_test.go`,
+      `internal/config/config.go`, `internal/config/config_test.go`,
+      `internal/config/parity_baseline_test.go`,
+      `internal/template/templates/docz_yaml.tmpl` (template now uses
+      `.TOC.Enabled` / `.TOC.MinHeadings`)
+- [x] Back-compat test in place — see `TestLoad_TOCConfig` doc comment
 
 #### Success Criteria
 
@@ -375,13 +380,18 @@ Drop the stutter and fix the initialism casing.
 
 #### Tasks
 
-- [ ] Run `make ci`
-- [ ] Smoke test full CLI surface against this repo
-- [ ] Verify golden files: only intentional changes
-- [ ] Open PR A with `dont-release` label (Phases 1–3)
-- [ ] After PR A merges: rebase, open PR B (Phases 4–10) with `dont-release`
-      label
-- [ ] Update INV-0002 status
+- [x] Run `make ci` — green on both PR A branch and PR B branch
+- [x] Smoke test full CLI surface against this repo — `docz list`,
+      `docz update --dry-run`, `docz version` verified
+- [x] Verify golden files: `testdata/golden/wiki/mkdocs_full.yml` added
+      (new); all existing goldens unchanged (`go test ./... -update`
+      shows no diff for adr/design/impl/rfc/toc/wiki/nav)
+- [x] Open PR A with `dont-release` label (Phases 1–3) — #44
+- [ ] After PR A merges: rebase, open PR B (Phases 4–10) with
+      `dont-release` label — branch `feat/impl-0008-pr-b` pushed and
+      ready (waiting on PR A merge per Decisions §6)
+- [x] Update INV-0002 status — Wave 4 section now lists F11/F13/F17–F26
+      against the two PRs
 
 #### Success Criteria
 

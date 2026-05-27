@@ -3,7 +3,7 @@ package wiki
 import (
 	"bufio"
 	"bytes"
-	"os"
+	"errors"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -22,17 +22,28 @@ func DirTitle(dir string, navTitles map[string]string) string {
 }
 
 // DocTitle extracts a nav title from a markdown file.
-// For docz documents with frontmatter, it returns "<ID>: <Title>".
-// Otherwise it falls back to the first H1 heading, then to a title-cased filename.
+//
+// Contract: standard "value OR error" — on read failure DocTitle returns
+// "", err. Callers that want a fallback title for unreadable files
+// should detect the error and call FilenameTitle explicitly.
+//
+// For docz documents with valid frontmatter the result is
+// "<ID>: <Title>". Files with no frontmatter (or with frontmatter
+// missing ID/Title) fall back to the first H1 heading; if there is no
+// H1 either, the title-cased filename is returned. None of those
+// fallbacks count as an error.
 func DocTitle(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return FilenameTitle(filepath.Base(filePath)), err
-	}
-
-	fm, fmErr := document.ParseFrontmatter(data)
-	if fmErr == nil && fm.ID != "" && fm.Title != "" {
-		return fm.ID + ": " + fm.Title, nil
+	fm, data, err := document.LoadFrontmatter(filePath)
+	switch {
+	case err == nil:
+		if fm.ID != "" && fm.Title != "" {
+			return fm.ID + ": " + fm.Title, nil
+		}
+	case errors.Is(err, document.ErrNoFrontmatter):
+		// No frontmatter is not fatal — fall through to H1 / filename
+		// fallback using the bytes LoadFrontmatter returned.
+	default:
+		return "", err
 	}
 
 	if h1 := firstH1(data); h1 != "" {

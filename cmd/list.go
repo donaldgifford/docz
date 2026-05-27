@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/internal/config"
-	"github.com/donaldgifford/docz/internal/index"
+	"github.com/donaldgifford/docz/internal/document"
 )
 
 const formatJSON = "json"
@@ -61,7 +61,7 @@ func runList(_ *cobra.Command, args []string) error {
 	var entries []listEntry
 	for _, typeName := range types {
 		typeDir := appCfg.TypeDir(typeName)
-		docs, err := index.ScanDocuments(typeDir)
+		docs, err := document.ScanDocuments(typeDir)
 		if err != nil {
 			return fmt.Errorf("scanning %s: %w", typeDir, err)
 		}
