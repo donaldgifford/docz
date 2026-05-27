@@ -83,5 +83,6 @@ func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
 	}
 
 	appCfg = cfg
+	runner = NewRunner(&cfg)
 	return nil
 }

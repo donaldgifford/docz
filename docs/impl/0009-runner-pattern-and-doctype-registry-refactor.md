@@ -171,7 +171,7 @@ Establish the Runner shape with no functional change to handlers yet.
 
 #### Tasks
 
-- [ ] Define `cmd.Runner` struct per the DESIGN doc, e.g.:
+- [x] Define `cmd.Runner` struct per the DESIGN doc, e.g.:
 
   ```
   type Runner struct {
@@ -184,18 +184,30 @@ Establish the Runner shape with no functional change to handlers yet.
   }
   ```
 
-- [ ] Add `NewRunner(cfg config.Config) *Runner` with defaults
-      (`os.Stdout`, `os.Stderr`, `slog.Default()`, `time.Now`, real git)
-- [ ] Add a single root-level `runner *Runner` global initialized in
+- [x] Add `NewRunner(cfg *config.Config) *Runner` with defaults
+      (`os.Stdout`, `os.Stderr`, `slog.TextHandler` at `LevelInfo`,
+      `time.Now`, `realGit{}`). Signature deviates from the DESIGN
+      sketch — takes `*config.Config` per `gocritic hugeParam` (Config
+      is ~240B); semantically equivalent (Runner stores `*cfg` as a
+      value copy).
+- [x] Add `GitResolver` interface plus `realGit`/`staticGit`
+      implementations in `cmd/git.go`. (Bundled into Phase 2 because
+      `Runner.Git` requires the type to compile; Phase 6 still owns
+      the conversion of `cmd/create.go:gitUserName` callers.)
+- [x] Add a single root-level `runner *Runner` global initialized in
       `PersistentPreRunE` — this is a temporary scaffolding step; later
-      phases convert handlers one at a time
-- [ ] Confirm all existing tests pass with no changes
+      phases convert handlers one at a time.
+- [x] Confirm all existing tests pass with no changes. New tests added:
+      `cmd/runner_test.go` (`TestNewRunner_Defaults`,
+      `TestRunner_DirectConstruction`, `TestPackageRunner_AssignedFromNewRunner`)
+      and `cmd/git_test.go` (`TestStaticGit_UserName`,
+      `TestRealGit_UserName_Smoke`).
 
 #### Success Criteria
 
-- `Runner` defined and importable
-- No handler converted yet — pure plumbing
-- `make ci` green
+- [x] `Runner` defined and importable
+- [x] No handler converted yet — pure plumbing
+- [x] `make ci` green
 
 ---
 
