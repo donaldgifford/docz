@@ -123,28 +123,37 @@ document. This is the prerequisite gate.
 
 #### Tasks
 
-- [ ] Create DESIGN doc: `docz create design "Runner Pattern and DocType Registry"`
-- [ ] DESIGN doc must cover:
+- [x] Create DESIGN doc: `docz create design "Runner Pattern and DocType Registry"`
+      — DESIGN-0004 scaffolded 2026-05-27
+- [x] DESIGN doc must cover:
   - Runner struct shape and lifecycle (constructed where? scoped per
-    command vs. per process?)
-  - How flags bind to per-command options structs vs. Runner fields
+    command vs. per process?) — DESIGN-0004 §A
+  - How flags bind to per-command options structs vs. Runner fields —
+    DESIGN-0004 §B
   - Output writers — single writer or stdout+stderr split, how `--quiet`
-    integrates
+    integrates — DESIGN-0004 §C
   - Logger handler: text or JSON, configurable level, where it's threaded
+    — DESIGN-0004 §D
   - DocType registry API: registration model (init-time or explicit?),
-    aliasing model, lookup model
+    aliasing model, lookup model — DESIGN-0004 §E
   - Typed `DocType` / `Status` migration: where the alias is enforced,
-    YAML tag compatibility, validation surface
+    YAML tag compatibility, validation surface — DESIGN-0004 §F
+    (revises this IMPL's Decision §3 — no custom YAML unmarshaler
+    required)
   - Library/pattern evaluation:
-    - `charmbracelet/fang` — verify current Bubble Tea major version
-      (was on v1 at last check; may not be the cleanest fit)
-    - Bubble Tea v2 components used directly alongside Cobra
-      (alternative to fang for a cleaner CLI surface)
-    - `localstack/lstk` as a design reference for Runner pattern,
-      command organization, and option handling
+    - `charmbracelet/fang` — DESIGN-0004 §G: rejected (experimental;
+      no payoff for current scope)
+    - Bubble Tea v2 alongside Cobra — DESIGN-0004 §G: rejected (no TUI
+      requirement today)
+    - `localstack/lstk` — DESIGN-0004 §G: pattern reference for
+      per-command options structs, not a dependency
   - Test strategy: how does a typical handler test look post-refactor?
+    — DESIGN-0004 §H
   - Migration plan: can the refactor land in one PR or must be split?
-- [ ] DESIGN doc reviewed and accepted (status: Approved)
+    — DESIGN-0004 §Migration: single PR for phases 2–11 with an 11-commit
+    sequence
+- [ ] DESIGN doc reviewed and accepted (status: Approved) — currently
+      `In Review`; ships as PR 1 before implementation begins
 
 #### Success Criteria
 
