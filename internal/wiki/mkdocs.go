@@ -11,6 +11,66 @@ import (
 	"github.com/donaldgifford/docz/internal/config"
 )
 
+// MkDocsConfig is the input for CreateMkDocs. Empty optional fields are
+// omitted from the generated YAML.
+type MkDocsConfig struct {
+	SiteName           string
+	SiteDescription    string
+	DocsDir            string
+	RepoURL            string
+	SiteURL            string
+	Theme              string
+	Plugins            []string
+	MarkdownExtensions []string
+}
+
+// CreateMkDocs writes an initial mkdocs.yml to path using cfg. The generated
+// file always includes a placeholder nav of `Home: index.md`; callers
+// typically follow this with a wiki update to populate the real nav.
+func CreateMkDocs(path string, cfg *MkDocsConfig) error {
+	var b strings.Builder
+	fmt.Fprintf(&b, "site_name: %s\n", cfg.SiteName)
+	fmt.Fprintf(&b, "site_description: %s\n", cfg.SiteDescription)
+
+	if cfg.DocsDir != "" {
+		fmt.Fprintf(&b, "docs_dir: %s\n", cfg.DocsDir)
+	}
+
+	if cfg.RepoURL != "" {
+		fmt.Fprintf(&b, "repo_url: %s\n", cfg.RepoURL)
+	}
+
+	if cfg.SiteURL != "" {
+		fmt.Fprintf(&b, "site_url: %s\n", cfg.SiteURL)
+	}
+
+	if cfg.Theme != "" {
+		fmt.Fprintf(&b, "theme: %s\n", cfg.Theme)
+	}
+
+	if len(cfg.Plugins) > 0 {
+		b.WriteString("\nplugins:\n")
+		for _, plugin := range cfg.Plugins {
+			fmt.Fprintf(&b, "    - %s\n", plugin)
+		}
+	}
+
+	if len(cfg.MarkdownExtensions) > 0 {
+		b.WriteString("\nmarkdown_extensions:\n")
+		for _, ext := range cfg.MarkdownExtensions {
+			fmt.Fprintf(&b, "    - %s\n", ext)
+		}
+	}
+
+	b.WriteString("\nnav:\n    - Home: index.md\n")
+
+	if err := os.WriteFile(path, []byte(b.String()), config.FileMode); err != nil {
+		return fmt.Errorf("writing %s: %w", path, err)
+	}
+
+	return nil
+}
+
 // ReadMkDocs reads a mkdocs.yml file into a generic map, preserving all fields.
 func ReadMkDocs(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)

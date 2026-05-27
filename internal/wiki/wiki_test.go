@@ -269,6 +269,93 @@ func TestCountPages(t *testing.T) {
 	}
 }
 
+func TestBuildNav_EmptyExistingOrderSortsAlphabetically(t *testing.T) {
+	dir := t.TempDir()
+	navTitles := map[string]string{"rfc": "RFCs", "adr": "ADRs"}
+
+	writeFile(t, dir, "index.md", "# Home\n")
+	mkdirAll(t, dir, "rfc")
+	writeFile(
+		t, dir, "rfc/0001-zeta.md",
+		"---\nid: RFC-0001\ntitle: \"Zeta\"\nstatus: Draft\nauthor: T\ncreated: 2026-01-01\n---\n",
+	)
+	mkdirAll(t, dir, "adr")
+	writeFile(
+		t, dir, "adr/0001-alpha.md",
+		"---\nid: ADR-0001\ntitle: \"Alpha\"\nstatus: Draft\nauthor: T\ncreated: 2026-01-01\n---\n",
+	)
+
+	entries, err := BuildNav(dir, nil, navTitles, nil)
+	if err != nil {
+		t.Fatalf("BuildNav() error: %v", err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("len(entries) = %d, want 3 (Home + ADRs + RFCs)", len(entries))
+	}
+	if entries[0].Title != "Home" {
+		t.Errorf("entries[0].Title = %q, want Home", entries[0].Title)
+	}
+	if entries[1].Title != "ADRs" {
+		t.Errorf("entries[1].Title = %q, want ADRs (alphabetical)", entries[1].Title)
+	}
+	if entries[2].Title != "RFCs" {
+		t.Errorf("entries[2].Title = %q, want RFCs (alphabetical)", entries[2].Title)
+	}
+}
+
+func TestBuildNav_PartialExistingOrderPreservesPlusAppends(t *testing.T) {
+	dir := t.TempDir()
+	navTitles := map[string]string{
+		"rfc":    "RFCs",
+		"adr":    "ADRs",
+		"design": "Design",
+	}
+
+	writeFile(t, dir, "index.md", "# Home\n")
+	for _, sub := range []string{"rfc", "adr", "design"} {
+		mkdirAll(t, dir, sub)
+		writeFile(
+			t, dir, sub+"/0001-x.md",
+			"---\nid: X-0001\ntitle: \"X\"\nstatus: Draft\nauthor: T\ncreated: 2026-01-01\n---\n",
+		)
+	}
+
+	// Existing order pins RFCs ahead of ADRs; "Design" is new and should
+	// append in alphabetical position relative to remaining new entries.
+	existing := []string{"Home", "RFCs", "ADRs"}
+	entries, err := BuildNav(dir, nil, navTitles, existing)
+	if err != nil {
+		t.Fatalf("BuildNav() error: %v", err)
+	}
+	if len(entries) != 4 {
+		t.Fatalf("len(entries) = %d, want 4", len(entries))
+	}
+	want := []string{"Home", "RFCs", "ADRs", "Design"}
+	for i, w := range want {
+		if entries[i].Title != w {
+			t.Errorf("entries[%d].Title = %q, want %q", i, entries[i].Title, w)
+		}
+	}
+}
+
+func TestBuildNav_NoDocsFound(t *testing.T) {
+	dir := t.TempDir()
+	entries, err := BuildNav(dir, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("BuildNav() error: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("len(entries) = %d, want 0 for empty docs dir", len(entries))
+	}
+}
+
+func TestBuildNav_ScanError(t *testing.T) {
+	_, err := BuildNav("/definitely/not/here/docz-build-nav-test", nil, nil, nil)
+	if err == nil {
+		t.Error("expected error for nonexistent docs dir, got nil")
+	}
+}
+
 // Test helpers
 
 func writeFile(t *testing.T, base, relPath, content string) {

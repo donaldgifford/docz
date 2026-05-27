@@ -124,3 +124,62 @@ func writeGoldenFile(t *testing.T, dir, name, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestGoldenCreateMkDocs(t *testing.T) {
+	cfg := &MkDocsConfig{
+		SiteName:        "docz",
+		SiteDescription: "Documentation for docz",
+		DocsDir:         "docs",
+		RepoURL:         "https://github.com/donaldgifford/docz",
+		SiteURL:         "https://docs.example.com",
+		Theme:           "material",
+		Plugins: []string{
+			"techdocs-core",
+			"search",
+		},
+		MarkdownExtensions: []string{
+			"admonition",
+			"toc",
+			"tables",
+		},
+	}
+
+	path := filepath.Join(t.TempDir(), "mkdocs.yml")
+	if err := CreateMkDocs(path, cfg); err != nil {
+		t.Fatalf("CreateMkDocs() error: %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading written file: %v", err)
+	}
+
+	goldenPath := filepath.Join(
+		"..", "..", "testdata", "golden", "wiki", "mkdocs_full.yml",
+	)
+
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(goldenPath, got, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		t.Log("Updated golden file:", goldenPath)
+		return
+	}
+
+	want, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatalf(
+			"reading golden file %s: %v\nRun with -update to create it",
+			goldenPath, err,
+		)
+	}
+
+	if !bytes.Equal(got, want) {
+		t.Errorf(
+			"mkdocs output differs from golden file %s\nGot:\n%s\nRun with -update to update",
+			goldenPath, string(got),
+		)
+	}
+}

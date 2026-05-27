@@ -102,7 +102,17 @@ func runWikiInit(_ *cobra.Command, _ []string) error {
 		siteDesc = "Documentation for " + siteName
 	}
 
-	if err := writeMkDocsYAML(mkdocsPath, siteName, siteDesc); err != nil {
+	mkdocsCfg := &wiki.MkDocsConfig{
+		SiteName:           siteName,
+		SiteDescription:    siteDesc,
+		DocsDir:            appCfg.Wiki.DocsDir,
+		RepoURL:            appCfg.Wiki.RepoURL,
+		SiteURL:            appCfg.Wiki.SiteURL,
+		Theme:              appCfg.Wiki.Theme,
+		Plugins:            appCfg.Wiki.Plugins,
+		MarkdownExtensions: appCfg.Wiki.MarkdownExtensions,
+	}
+	if err := wiki.CreateMkDocs(mkdocsPath, mkdocsCfg); err != nil {
 		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
@@ -135,77 +145,68 @@ func runWikiUpdate(_ *cobra.Command, _ []string) error {
 
 // runWikiUpdateNav scans the docs directory and updates the nav in mkdocs.yml.
 func runWikiUpdateNav(mkdocsPath string) error {
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", appCfg.DocsDir)
-		fmt.Fprintf(os.Stderr, "  Excluding: %v\n", appCfg.Wiki.Exclude)
-	}
-
-	entries, err := wiki.ScanDocs(
-		appCfg.DocsDir,
-		appCfg.Wiki.Exclude,
-		appCfg.Wiki.NavTitles,
-	)
-	if err != nil {
-		return fmt.Errorf("scanning docs: %w", err)
-	}
-
-	if verbose {
-		fmt.Fprintf(os.Stderr, "  Found %d top-level entries\n", len(entries))
-	}
-
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
-
 	existingOrder := wiki.ExistingNavOrder(data)
-	if len(existingOrder) > 0 {
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Preserving existing nav order: %v\n", existingOrder)
-		}
-		entries = wiki.MergeNavOrder(existingOrder, entries)
-	} else {
-		if verbose {
-			fmt.Fprintln(os.Stderr, "No existing nav order, sorting alphabetically")
-		}
-		entries = wiki.SortEntries(entries)
-	}
+	logScan(existingOrder)
 
-	if verbose {
-		printNavDebug(entries, "")
+	entries, err := wiki.BuildNav(
+		appCfg.DocsDir,
+		appCfg.Wiki.Exclude,
+		appCfg.Wiki.NavTitles,
+		existingOrder,
+	)
+	if err != nil {
+		return fmt.Errorf("scanning docs: %w", err)
 	}
+	logScanResult(entries)
 
 	data["nav"] = wiki.NavToYAML(entries)
-
 	if err := wiki.WriteMkDocs(mkdocsPath, data); err != nil {
 		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
 	}
 
-	pageCount := wiki.CountPages(entries)
-	fmt.Printf("Updated nav in %s (%d pages)\n", mkdocsPath, pageCount)
+	fmt.Printf("Updated nav in %s (%d pages)\n", mkdocsPath, wiki.CountPages(entries))
 	return nil
 }
 
-func runWikiUpdateDryRun(mkdocsPath string) error {
-	entries, err := wiki.ScanDocs(
-		appCfg.DocsDir,
-		appCfg.Wiki.Exclude,
-		appCfg.Wiki.NavTitles,
-	)
-	if err != nil {
-		return fmt.Errorf("scanning docs: %w", err)
+func logScan(existingOrder []string) {
+	if !verbose {
+		return
 	}
+	fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", appCfg.DocsDir)
+	fmt.Fprintf(os.Stderr, "  Excluding: %v\n", appCfg.Wiki.Exclude)
+	if len(existingOrder) > 0 {
+		fmt.Fprintf(os.Stderr, "Preserving existing nav order: %v\n", existingOrder)
+	} else {
+		fmt.Fprintln(os.Stderr, "No existing nav order, sorting alphabetically")
+	}
+}
 
+func logScanResult(entries []wiki.NavEntry) {
+	if !verbose {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "  Found %d top-level entries\n", len(entries))
+	printNavDebug(entries, "")
+}
+
+func runWikiUpdateDryRun(mkdocsPath string) error {
 	data, err := wiki.ReadMkDocs(mkdocsPath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
 	}
 
-	existingOrder := wiki.ExistingNavOrder(data)
-	if len(existingOrder) > 0 {
-		entries = wiki.MergeNavOrder(existingOrder, entries)
-	} else {
-		entries = wiki.SortEntries(entries)
+	entries, err := wiki.BuildNav(
+		appCfg.DocsDir,
+		appCfg.Wiki.Exclude,
+		appCfg.Wiki.NavTitles,
+		wiki.ExistingNavOrder(data),
+	)
+	if err != nil {
+		return fmt.Errorf("scanning docs: %w", err)
 	}
 
 	printNav(entries, "")
@@ -244,50 +245,6 @@ func repoName() string {
 		return "my-project"
 	}
 	return filepath.Base(dir)
-}
-
-func writeMkDocsYAML(path, siteName, siteDesc string) error {
-	var b strings.Builder
-	fmt.Fprintf(&b, "site_name: %s\n", siteName)
-	fmt.Fprintf(&b, "site_description: %s\n", siteDesc)
-
-	if appCfg.Wiki.DocsDir != "" {
-		fmt.Fprintf(&b, "docs_dir: %s\n", appCfg.Wiki.DocsDir)
-	}
-
-	if appCfg.Wiki.RepoURL != "" {
-		fmt.Fprintf(&b, "repo_url: %s\n", appCfg.Wiki.RepoURL)
-	}
-
-	if appCfg.Wiki.SiteURL != "" {
-		fmt.Fprintf(&b, "site_url: %s\n", appCfg.Wiki.SiteURL)
-	}
-
-	if appCfg.Wiki.Theme != "" {
-		fmt.Fprintf(&b, "theme: %s\n", appCfg.Wiki.Theme)
-	}
-
-	if len(appCfg.Wiki.Plugins) > 0 {
-		b.WriteString("\nplugins:\n")
-		for _, plugin := range appCfg.Wiki.Plugins {
-			fmt.Fprintf(&b, "    - %s\n", plugin)
-		}
-	}
-
-	if len(appCfg.Wiki.MarkdownExtensions) > 0 {
-		b.WriteString("\nmarkdown_extensions:\n")
-		for _, ext := range appCfg.Wiki.MarkdownExtensions {
-			fmt.Fprintf(&b, "    - %s\n", ext)
-		}
-	}
-
-	b.WriteString("\nnav:\n    - Home: index.md\n")
-
-	if err := os.WriteFile(path, []byte(b.String()), config.FileMode); err != nil {
-		return fmt.Errorf("writing %s: %w", path, err)
-	}
-
-	return nil
 }
 
 func ensureDocsIndex(siteName string) error {

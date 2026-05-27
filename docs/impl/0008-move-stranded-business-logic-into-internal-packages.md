@@ -113,21 +113,22 @@ package alongside the existing `ReadMkDocs`/`WriteMkDocs`.
 
 #### Tasks
 
-- [ ] Define `wiki.MkDocsConfig` struct in `internal/wiki/mkdocs.go` with
+- [x] Define `wiki.MkDocsConfig` struct in `internal/wiki/mkdocs.go` with
       fields: `SiteName`, `SiteDescription`, `DocsDir`, `RepoURL`, `SiteURL`,
       `Theme`, `Plugins`, `MarkdownExtensions`
-- [ ] Add `wiki.CreateMkDocs(path string, cfg MkDocsConfig) error` that
-      builds the YAML and writes it
-- [ ] Move the string-building loop from `cmd/wiki.go:247-289` into
+- [x] Add `wiki.CreateMkDocs(path string, cfg *MkDocsConfig) error` that
+      builds the YAML and writes it (pointer receiver per gocritic
+      `hugeParam`; matches `template.RenderWikiIndex` pattern)
+- [x] Move the string-building loop from `cmd/wiki.go:247-289` into
       `wiki.CreateMkDocs`
-- [ ] Update `cmd/wiki.go:runWikiInit` to populate `MkDocsConfig` from
+- [x] Update `cmd/wiki.go:runWikiInit` to populate `MkDocsConfig` from
       `appCfg.Wiki` and call `wiki.CreateMkDocs`
-- [ ] Delete `cmd/wiki.go:writeMkDocsYAML`
-- [ ] Add table-driven tests in `internal/wiki/mkdocs_test.go` covering:
+- [x] Delete `cmd/wiki.go:writeMkDocsYAML`
+- [x] Add table-driven tests in `internal/wiki/mkdocs_test.go` covering:
       minimal config (only site_name), full config (all optional fields),
       plugins ordering, markdown_extensions presence
-- [ ] Add a golden file under `internal/wiki/testdata/golden/` for the
-      full-config case
+- [x] Add a golden file under `testdata/golden/wiki/mkdocs_full.yml` for
+      the full-config case
 
 #### Success Criteria
 
@@ -143,19 +144,21 @@ Promote the file-iteration ToC updater from cmd into the toc package.
 
 #### Tasks
 
-- [ ] Add `toc.UpdateFiles(paths []string, minHeadings int, dryRun bool) (UpdateReport, error)`
-      where `UpdateReport` carries: `Updated []string`, `Unchanged []string`,
-      `WouldUpdate []string` (dry-run), and per-file heading counts
-- [ ] Move the loop from `cmd/update.go:updateToCs` into `toc.UpdateFiles`
-- [ ] Take `[]string` paths as input (not `[]DocEntry`) to avoid an import
-      cycle — see Decisions §1
-- [ ] Update `cmd/update.go:updateType` to build the path list from the
-      scan results and call `toc.UpdateFiles`
-- [ ] Move the "Warning: reading … for ToC" fmt.Fprintf out of the library —
-      return errors as part of `UpdateReport.ReadErrors` instead
-- [ ] Add tests in `internal/toc/toc_test.go` covering: dry-run, real
-      update, files without markers (skipped), files with read errors,
-      idempotent re-run
+- [x] Add `toc.UpdateFiles(files []FileInput, minHeadings int, dryRun bool) (UpdateReport, error)`
+      where `UpdateReport` carries `Updated`, `Unchanged`, `WouldUpdate`
+      slices of `FileResult{Path, Headings}`, plus `Skipped []string` and
+      `WriteErrors []FileError`
+- [x] Move the loop from `cmd/update.go:updateToCs` into `toc.UpdateFiles`
+- [x] Take `[]toc.FileInput{Path, Content}` as input per Decisions §1
+      (preserves the IMPL-0007 byte-cache; no import cycle into
+      `internal/document`)
+- [x] Update `cmd/update.go:updateType` to build the FileInput list from
+      the scan results and call `toc.UpdateFiles`
+- [x] Move user-facing strings out of the library — the cmd layer formats
+      messages from `report.Updated/Unchanged/WouldUpdate/Skipped/WriteErrors`
+- [x] Add tests in `internal/toc/update_test.go` covering: dry-run, real
+      update, no-markers (Skipped), idempotent re-run, write-error
+      isolation, empty input
 
 #### Success Criteria
 
@@ -172,14 +175,15 @@ Extract the shared piece.
 
 #### Tasks
 
-- [ ] Add `wiki.BuildNav(docsDir string, exclude []string, navTitles map[string]string, existingOrder []string) ([]NavEntry, error)`
+- [x] Add `wiki.BuildNav(docsDir, exclude, navTitles, existingOrder) ([]NavEntry, error)`
       that encapsulates: `ScanDocs` → `ExistingNavOrder` decision →
       `MergeNavOrder` or `SortEntries`
-- [ ] Replace the bodies of `runWikiUpdateNav` (cmd/wiki.go:135-185) and
-      `runWikiUpdateDryRun` (cmd/wiki.go:187-211) with calls to
-      `wiki.BuildNav`; only the "write vs. print" final step diverges
-- [ ] Add tests for `wiki.BuildNav` covering: empty existing order,
-      partial existing order, no docs found
+- [x] Replace the bodies of `runWikiUpdateNav` and `runWikiUpdateDryRun`
+      with calls to `wiki.BuildNav`; verbose logging hoisted to
+      `logScan` / `logScanResult` helpers; only the "write vs. print"
+      final step diverges
+- [x] Add tests for `wiki.BuildNav` covering: empty existing order,
+      partial existing order, no docs found, scan error
 
 #### Success Criteria
 
