@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,6 +57,86 @@ func TestRunner_DirectConstruction(t *testing.T) {
 	}
 	if got := r.Now(); !got.Equal(epoch) {
 		t.Errorf("Now() = %v, want %v", got, epoch)
+	}
+}
+
+// TestBuildLogger_VerboseSelectsDebug confirms that --verbose without
+// an explicit --log-level routes Debug records to the buffer (the
+// default Info handler would drop them).
+func TestBuildLogger_VerboseSelectsDebug(t *testing.T) {
+	var buf bytes.Buffer
+	logger, err := buildLogger(&buf, true, "", "")
+	if err != nil {
+		t.Fatalf("buildLogger error: %v", err)
+	}
+	logger.Debug("hello", "k", "v")
+	out := buf.String()
+	if !strings.Contains(out, "hello") || !strings.Contains(out, "k=v") {
+		t.Errorf("verbose=true did not emit debug record; got %q", out)
+	}
+}
+
+// TestBuildLogger_DefaultDropsDebug confirms that the default level
+// (no --verbose, no --log-level) is Info, so Debug records are dropped.
+func TestBuildLogger_DefaultDropsDebug(t *testing.T) {
+	var buf bytes.Buffer
+	logger, err := buildLogger(&buf, false, "", "")
+	if err != nil {
+		t.Fatalf("buildLogger error: %v", err)
+	}
+	logger.Debug("hello")
+	if got := buf.String(); got != "" {
+		t.Errorf("default level should drop debug; got %q", got)
+	}
+}
+
+// TestBuildLogger_LogLevelOverridesVerbose confirms that --log-level=warn
+// silences debug records even when --verbose is set.
+func TestBuildLogger_LogLevelOverridesVerbose(t *testing.T) {
+	var buf bytes.Buffer
+	logger, err := buildLogger(&buf, true, "warn", "")
+	if err != nil {
+		t.Fatalf("buildLogger error: %v", err)
+	}
+	logger.Info("info-line")
+	logger.Warn("warn-line")
+	out := buf.String()
+	if strings.Contains(out, "info-line") {
+		t.Errorf("warn level should drop info; got %q", out)
+	}
+	if !strings.Contains(out, "warn-line") {
+		t.Errorf("warn level should keep warn; got %q", out)
+	}
+}
+
+// TestBuildLogger_JSONFormat confirms that --log-format=json emits a
+// JSON-decodable line per record. This pins the choice for downstream
+// log aggregators that parse records by field rather than regex.
+func TestBuildLogger_JSONFormat(t *testing.T) {
+	var buf bytes.Buffer
+	logger, err := buildLogger(&buf, false, "info", logFormatJSON)
+	if err != nil {
+		t.Fatalf("buildLogger error: %v", err)
+	}
+	logger.Info("structured", "key", "value")
+
+	var record map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &record); err != nil {
+		t.Fatalf("json.Unmarshal failed for %q: %v", buf.String(), err)
+	}
+	if record["msg"] != "structured" || record["key"] != "value" {
+		t.Errorf("json record missing fields: %+v", record)
+	}
+}
+
+// TestBuildLogger_InvalidFlagsError pins the error path for the two
+// CLI surfaces that a typo could hit.
+func TestBuildLogger_InvalidFlagsError(t *testing.T) {
+	if _, err := buildLogger(io.Discard, false, "trace", ""); err == nil {
+		t.Error("invalid --log-level should error, got nil")
+	}
+	if _, err := buildLogger(io.Discard, false, "", "xml"); err == nil {
+		t.Error("invalid --log-format should error, got nil")
 	}
 }
 
