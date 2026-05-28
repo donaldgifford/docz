@@ -106,6 +106,7 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		DocsDir:      r.Cfg.DocsDir,
 		TypeDir:      tc.Dir,
 		TemplatePath: tc.Template,
+		CreatedAt:    r.Now(),
 	}
 
 	result, err := document.Create(&createOpts)

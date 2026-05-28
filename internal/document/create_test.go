@@ -8,13 +8,11 @@ import (
 	"time"
 )
 
-func TestCreate(t *testing.T) {
-	// Use a fixed time for deterministic output.
-	timeNow = func() time.Time {
-		return time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
-	}
-	t.Cleanup(func() { timeNow = time.Now })
+// fixedTime is the deterministic timestamp shared by every test that
+// asserts on the rendered `created:` frontmatter field.
+var fixedTime = time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
 
+func TestCreate(t *testing.T) {
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 	if err := os.MkdirAll(filepath.Join(docsDir, "rfc"), 0o755); err != nil {
@@ -22,14 +20,15 @@ func TestCreate(t *testing.T) {
 	}
 
 	opts := CreateOptions{
-		Type:    "rfc",
-		Title:   "API Rate Limiting",
-		Author:  "Test Author",
-		Status:  "Draft",
-		Prefix:  "RFC",
-		IDWidth: 4,
-		DocsDir: docsDir,
-		TypeDir: "rfc",
+		Type:      "rfc",
+		Title:     "API Rate Limiting",
+		Author:    "Test Author",
+		Status:    "Draft",
+		Prefix:    "RFC",
+		IDWidth:   4,
+		DocsDir:   docsDir,
+		TypeDir:   "rfc",
+		CreatedAt: fixedTime,
 	}
 
 	result, err := Create(&opts)
@@ -69,11 +68,6 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreate_AutoIncrement(t *testing.T) {
-	timeNow = func() time.Time {
-		return time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
-	}
-	t.Cleanup(func() { timeNow = time.Now })
-
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 	adrDir := filepath.Join(docsDir, "adr")
@@ -87,14 +81,15 @@ func TestCreate_AutoIncrement(t *testing.T) {
 	}
 
 	opts := CreateOptions{
-		Type:    "adr",
-		Title:   "Second Decision",
-		Author:  "Author",
-		Status:  "Proposed",
-		Prefix:  "ADR",
-		IDWidth: 4,
-		DocsDir: docsDir,
-		TypeDir: "adr",
+		Type:      "adr",
+		Title:     "Second Decision",
+		Author:    "Author",
+		Status:    "Proposed",
+		Prefix:    "ADR",
+		IDWidth:   4,
+		DocsDir:   docsDir,
+		TypeDir:   "adr",
+		CreatedAt: fixedTime,
 	}
 
 	result, err := Create(&opts)
@@ -108,23 +103,19 @@ func TestCreate_AutoIncrement(t *testing.T) {
 }
 
 func TestCreate_DuplicateFilename(t *testing.T) {
-	timeNow = func() time.Time {
-		return time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
-	}
-	t.Cleanup(func() { timeNow = time.Now })
-
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 
 	opts := CreateOptions{
-		Type:    "rfc",
-		Title:   "Duplicate Test",
-		Author:  "Author",
-		Status:  "Draft",
-		Prefix:  "RFC",
-		IDWidth: 4,
-		DocsDir: docsDir,
-		TypeDir: "rfc",
+		Type:      "rfc",
+		Title:     "Duplicate Test",
+		Author:    "Author",
+		Status:    "Draft",
+		Prefix:    "RFC",
+		IDWidth:   4,
+		DocsDir:   docsDir,
+		TypeDir:   "rfc",
+		CreatedAt: fixedTime,
 	}
 
 	// First create should succeed.
@@ -143,22 +134,18 @@ func TestCreate_DuplicateFilename(t *testing.T) {
 }
 
 func TestCreate_CreatesDirectory(t *testing.T) {
-	timeNow = func() time.Time {
-		return time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
-	}
-	t.Cleanup(func() { timeNow = time.Now })
-
 	dir := t.TempDir()
 	// Don't pre-create the docs/design dir - Create should make it.
 	opts := CreateOptions{
-		Type:    "design",
-		Title:   "New Design",
-		Author:  "Author",
-		Status:  "Draft",
-		Prefix:  "DESIGN",
-		IDWidth: 4,
-		DocsDir: filepath.Join(dir, "docs"),
-		TypeDir: "design",
+		Type:      "design",
+		Title:     "New Design",
+		Author:    "Author",
+		Status:    "Draft",
+		Prefix:    "DESIGN",
+		IDWidth:   4,
+		DocsDir:   filepath.Join(dir, "docs"),
+		TypeDir:   "design",
+		CreatedAt: fixedTime,
 	}
 
 	result, err := Create(&opts)
@@ -168,6 +155,46 @@ func TestCreate_CreatesDirectory(t *testing.T) {
 
 	if result.Filename != "0001-new-design.md" {
 		t.Errorf("Filename = %q, want %q", result.Filename, "0001-new-design.md")
+	}
+}
+
+// TestCreate_ZeroCreatedAtFallsBackToNow asserts that a CreateOptions
+// with CreatedAt left zero still produces a valid Date — Create
+// substitutes time.Now() so callers without a time source keep
+// working.
+func TestCreate_ZeroCreatedAtFallsBackToNow(t *testing.T) {
+	dir := t.TempDir()
+	docsDir := filepath.Join(dir, "docs")
+	if err := os.MkdirAll(filepath.Join(docsDir, "rfc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	before := time.Now().UTC().Truncate(24 * time.Hour)
+	opts := CreateOptions{
+		Type:    "rfc",
+		Title:   "Zero Time",
+		Author:  "Author",
+		Status:  "Draft",
+		Prefix:  "RFC",
+		IDWidth: 4,
+		DocsDir: docsDir,
+		TypeDir: "rfc",
+		// CreatedAt is intentionally the zero Time.
+	}
+
+	result, err := Create(&opts)
+	if err != nil {
+		t.Fatalf("Create() error: %v", err)
+	}
+
+	content, err := os.ReadFile(result.FilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+	wantDate := before.Format(time.DateOnly)
+	if !strings.Contains(contentStr, "created: "+wantDate) {
+		t.Errorf("frontmatter date should be %q (today), got content:\n%s", wantDate, contentStr)
 	}
 }
 
@@ -198,19 +225,5 @@ func TestNextID_NonSequential(t *testing.T) {
 	id := nextID(dir)
 	if id != 6 {
 		t.Errorf("nextID() = %d, want 6", id)
-	}
-}
-
-func TestCurrentDate(t *testing.T) {
-	// Pin timeNow so the assertion is stable across timezones and clocks.
-	timeNow = func() time.Time {
-		return time.Date(2026, 1, 2, 15, 4, 5, 0, time.UTC)
-	}
-	t.Cleanup(func() { timeNow = time.Now })
-
-	got := currentDate()
-	const want = "2026-01-02"
-	if got != want {
-		t.Errorf("currentDate() = %q, want %q", got, want)
 	}
 }

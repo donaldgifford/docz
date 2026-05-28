@@ -25,6 +25,14 @@ type CreateOptions struct {
 	// TemplatePath is an explicit template file path from config. Empty uses
 	// the default resolution (local override > embedded).
 	TemplatePath string
+
+	// CreatedAt is the document creation timestamp written to the
+	// rendered template's `Date` field. Zero value falls back to
+	// time.Now() so callers without a time source still get the
+	// expected behavior; cmd/create.go populates this from
+	// runner.Now() so tests can pin time without touching package
+	// globals.
+	CreatedAt time.Time
 }
 
 // CreateResult contains the output from a successful document creation.
@@ -57,10 +65,15 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		return CreateResult{}, fmt.Errorf("resolving template: %w", err)
 	}
 
+	createdAt := opts.CreatedAt
+	if createdAt.IsZero() {
+		createdAt = time.Now()
+	}
+
 	data := doctemplate.Data{
 		Number:   number,
 		Title:    opts.Title,
-		Date:     currentDate(),
+		Date:     createdAt.Format(time.DateOnly),
 		Author:   opts.Author,
 		Status:   opts.Status,
 		Type:     opts.Type,
@@ -112,8 +125,4 @@ func nextID(dir string) int {
 	}
 
 	return maxID + 1
-}
-
-func currentDate() string {
-	return timeNow().Format(time.DateOnly)
 }
