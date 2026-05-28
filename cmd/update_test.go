@@ -66,7 +66,7 @@ func TestUpdateGeneratesToC(t *testing.T) {
 	updateDryRun = false
 	verbose = false
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -98,7 +98,7 @@ func TestUpdateToCDisabled(t *testing.T) {
 	updateDryRun = false
 	verbose = false
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -131,7 +131,7 @@ func TestUpdateToCDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -163,7 +163,7 @@ func TestUpdateToCNoMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -349,7 +349,7 @@ func BenchmarkCmdUpdate(b *testing.B) {
 				verbose = false
 				b.StartTimer()
 
-				if err := updateType("rfc"); err != nil {
+				if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 					b.Fatalf("updateType: %v", err)
 				}
 			}

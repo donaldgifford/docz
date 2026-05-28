@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -18,6 +17,16 @@ var (
 	createAuthor   string
 	createNoUpdate bool
 )
+
+// createOpts captures the per-invocation flag values that
+// (*Runner).Create needs. During the Phase 3 transition the package
+// globals above still hold the bound flag values; the wrapper packs
+// them into a createOpts so the method itself never touches a global.
+type createOpts struct {
+	status   string
+	author   string
+	noUpdate bool
+}
 
 var createCmd = &cobra.Command{
 	Use:   "create <type> <title>",
@@ -46,59 +55,78 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 }
 
-func runCreate(_ *cobra.Command, args []string) error {
-	docType, err := appCfg.ValidateType(args[0])
+func runCreate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	if cmd != nil {
+		ctx = cmd.Context()
+	}
+	opts := createOpts{
+		status:   createStatus,
+		author:   createAuthor,
+		noUpdate: createNoUpdate,
+	}
+	return getRunner().Create(ctx, opts, args)
+}
+
+// Create runs the `docz create` workflow: validates the document type,
+// resolves the author (config default → git → fallback), instantiates
+// the template, and (unless opts.noUpdate is set) refreshes the type's
+// README index and wiki nav.
+func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) error {
+	docType, err := r.Cfg.ValidateType(args[0])
 	if err != nil {
 		return err
 	}
 	title := args[1]
 
-	tc := appCfg.Types[docType]
+	tc := r.Cfg.Types[docType]
 	if !tc.Enabled {
 		return fmt.Errorf("document type %q is disabled in configuration", docType)
 	}
 
-	author := resolveAuthor()
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Resolved author: %s\n", author)
-	}
-	status := createStatus
+	author := r.resolveAuthor(ctx, opts.author)
+	r.Logger.Debug("resolved author", "author", author)
+
+	status := opts.status
 	if status == "" && len(tc.Statuses) > 0 {
 		status = tc.Statuses[0]
 	}
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Using status: %s\n", status)
-		fmt.Fprintf(os.Stderr, "Template path: %q\n", tc.Template)
-	}
+	r.Logger.Debug("create plan",
+		"status", status,
+		"template", tc.Template,
+	)
 
-	opts := document.CreateOptions{
+	createOpts := document.CreateOptions{
 		Type:         docType,
 		Title:        title,
 		Author:       author,
 		Status:       status,
 		Prefix:       tc.IDPrefix,
 		IDWidth:      tc.IDWidth,
-		DocsDir:      appCfg.DocsDir,
+		DocsDir:      r.Cfg.DocsDir,
 		TypeDir:      tc.Dir,
 		TemplatePath: tc.Template,
 	}
 
-	result, err := document.Create(&opts)
+	result, err := document.Create(&createOpts)
 	if err != nil {
 		return fmt.Errorf("creating %s document: %w", docType, err)
 	}
 
-	fmt.Printf("Created %s: %s\n", strings.ToUpper(docType), result.FilePath)
+	if _, err := fmt.Fprintf(r.Out, "Created %s: %s\n",
+		strings.ToUpper(docType), result.FilePath); err != nil {
+		return err
+	}
 
-	if !createNoUpdate && appCfg.Index.AutoUpdate {
-		if err := updateType(docType); err != nil {
+	if !opts.noUpdate && r.Cfg.Index.AutoUpdate {
+		if err := r.updateType(docType, false); err != nil {
 			return fmt.Errorf("auto-updating index: %w", err)
 		}
 	}
 
-	if !createNoUpdate && appCfg.Wiki.AutoUpdate {
-		if _, err := os.Stat(appCfg.Wiki.MkDocsPath); err == nil {
-			if err := runWikiUpdateNav(appCfg.Wiki.MkDocsPath); err != nil {
+	if !opts.noUpdate && r.Cfg.Wiki.AutoUpdate {
+		if _, err := os.Stat(r.Cfg.Wiki.MkDocsPath); err == nil {
+			if err := runWikiUpdateNav(r.Cfg.Wiki.MkDocsPath); err != nil {
 				return fmt.Errorf("auto-updating wiki nav: %w", err)
 			}
 		}
@@ -109,28 +137,20 @@ func runCreate(_ *cobra.Command, args []string) error {
 
 // resolveAuthor determines the document author from (in order):
 // flag, config default, git config user.name, fallback.
-func resolveAuthor() string {
-	if createAuthor != "" {
-		return createAuthor
+func (r *Runner) resolveAuthor(ctx context.Context, flagAuthor string) string {
+	if flagAuthor != "" {
+		return flagAuthor
 	}
 
-	if appCfg.Author.Default != "" {
-		return appCfg.Author.Default
+	if r.Cfg.Author.Default != "" {
+		return r.Cfg.Author.Default
 	}
 
-	if appCfg.Author.FromGit {
-		if name := gitUserName(); name != "" {
+	if r.Cfg.Author.FromGit {
+		if name := r.Git.UserName(ctx); name != "" {
 			return name
 		}
 	}
 
 	return "Unknown"
-}
-
-func gitUserName() string {
-	out, err := exec.CommandContext(context.Background(), "git", "config", "user.name").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
 }

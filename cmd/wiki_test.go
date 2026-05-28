@@ -418,8 +418,9 @@ func TestCreateAutoUpdatesWikiNav(t *testing.T) {
 	appCfg.Wiki.AutoUpdate = true
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
 	os.Stdout = w
+	defer pipeR.Close()
 
 	err := runCreate(nil, []string{"rfc", "Test RFC"})
 
@@ -457,8 +458,9 @@ func TestCreateNoWikiUpdateWhenMissing(t *testing.T) {
 	appCfg.Wiki.AutoUpdate = true
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
 	os.Stdout = w
+	defer pipeR.Close()
 
 	err := runCreate(nil, []string{"rfc", "Test RFC"})
 
