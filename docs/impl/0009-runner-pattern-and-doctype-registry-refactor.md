@@ -373,34 +373,52 @@ Replace the scattered type definitions with a single registration list.
 
 #### Tasks
 
-- [ ] Define `internal/config/doctype.go` with:
+- [x] Define `internal/config/doctype.go` with the registry struct.
+      Named `DocTypeDef` (not `DocType`) to leave `DocType` free for the
+      typed-string in Phase 10 (DESIGN-0004 Open Question 2); `DefaultConfig`
+      is a `func() TypeConfig` constructor so each lookup yields a fresh
+      `Statuses` slice (DESIGN-0004 §E):
 
-  ```
-  type DocType struct {
-      Name          string         // canonical name ("rfc")
-      Aliases       []string       // alternate names ("implementation")
-      DefaultConfig TypeConfig     // includes prefix, statuses, etc.
-      NavTitle      string         // "RFCs"
-      PluralLabel   string         // "RFCs" (could differ from NavTitle)
-      TemplateName  string         // "rfc" — used to locate embedded template
+  ```go
+  type DocTypeDef struct {
+      Name          string
+      Aliases       []string
+      DefaultConfig func() TypeConfig
+      NavTitle      string
+      PluralLabel   string
+      TemplateName  string
   }
   ```
 
-- [ ] Define `var allDocTypes = []DocType{ ... }` listing all 6 types
+- [x] Define `var allDocTypes = []DocTypeDef{ ... }` listing all 6 types
       with their full metadata in one place
-- [ ] Add helpers: `AllDocTypes() []DocType`, `LookupDocType(name string)
-      (DocType, bool)` (handles aliases), `DocTypeNames() []string`
-- [ ] Derive `DefaultConfig().Types` from `allDocTypes`
-- [ ] Derive `ValidTypes()` from `allDocTypes` (or delete in favor of
-      `DocTypeNames()`)
-- [ ] Derive `DefaultNavTitles()` from `allDocTypes`
-- [ ] Derive `typeAliases` from `allDocTypes`
-- [ ] Derive `TypesHelp()` text from `allDocTypes`
-- [ ] Add a test: every registered `DocType` has a corresponding
+- [x] Add helpers: `AllDocTypes() []DocTypeDef` (returns `slices.Clone`),
+      `LookupDocType(name string) (DocTypeDef, bool)` (case-insensitive,
+      whitespace-trimmed, canonical + alias), `DocTypeNames() []string`
+      (registry-declaration order — `ValidateType`'s error message and
+      the existing `TestValidTypes` depend on this ordering)
+- [x] Derive `DefaultConfig().Types` from `allDocTypes` via `defaultTypesMap()`
+- [x] Derive `ValidTypes()` from `allDocTypes` (now delegates to `DocTypeNames()`)
+- [x] Derive `DefaultNavTitles()` from `allDocTypes` via `defaultNavTitlesMap()`
+- [x] Derive `typeAliases` from `allDocTypes` via `defaultTypeAliases()`
+- [ ] Derive `TypesHelp()` text from `allDocTypes` — deferred. The
+      registry doesn't carry a human-readable help description per type;
+      adding one is a small registry expansion left for a follow-up
+      commit. `TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp` pins the
+      static-string contract until then.
+- [x] Add a test: every registered `DocTypeDef` has a corresponding
       `internal/template/templates/<TemplateName>.md` embedded file
-      (compile-time-style enforcement)
-- [ ] Add a test: every registered `DocType` has a corresponding
+      (`TestDocTypeRegistry_AllHaveEmbeddedTemplate`)
+- [x] Add a test: every registered `DocTypeDef` has a corresponding
       `internal/template/templates/index_<TemplateName>.md`
+      (`TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`)
+- [x] Add the rest of the DESIGN-0004 §E consistency invariant tests:
+      no duplicate canonical names, no alias collides with a canonical
+      name, `DefaultConfig()` validates, every entry's `DefaultConfig()`
+      ships non-empty `Statuses`, `DefaultConfig()` hands back a fresh
+      `Statuses` backing array per call, `LookupDocType` resolves
+      canonical/aliases case-insensitively, and the derived
+      `DefaultConfig()` matches the registry literal field-for-field
 
 #### Success Criteria
 
