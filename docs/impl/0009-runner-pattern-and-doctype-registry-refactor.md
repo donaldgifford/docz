@@ -288,20 +288,23 @@ Eliminate the `internal/document/time.go` package global.
 
 #### Tasks
 
-- [ ] Add `CreatedAt time.Time` to `document.CreateOptions`
-- [ ] In `document.Create`, use `opts.CreatedAt` (with zero-value fallback
+- [x] Add `CreatedAt time.Time` to `document.CreateOptions`
+- [x] In `document.Create`, use `opts.CreatedAt` (with zero-value fallback
       to `time.Now()`) and remove the call to `currentDate()` /
       `timeNow()`
-- [ ] Delete `internal/document/time.go` and the `timeNow` package
+- [x] Delete `internal/document/time.go` and the `timeNow` package
       variable
-- [ ] In `cmd/create.go`, populate `opts.CreatedAt = runner.Now()`
-- [ ] Update `internal/document/create_test.go` to pass `CreatedAt`
-      directly; remove `t.Cleanup` time-restore patterns
+- [x] In `cmd/create.go`, populate `opts.CreatedAt = r.Now()` inside
+      `(*Runner).Create`
+- [x] Update `internal/document/create_test.go` to pass `CreatedAt`
+      directly; remove `t.Cleanup` time-restore patterns; add
+      `TestCreate_ZeroCreatedAtFallsBackToNow` to cover the
+      zero-value path
 
 #### Success Criteria
 
-- `grep -rn 'timeNow' internal/` returns no matches
-- Tests no longer mutate package globals to control time
+- [x] `grep -rn 'timeNow' internal/` returns no matches
+- [x] Tests no longer mutate package globals to control time
 
 ---
 
