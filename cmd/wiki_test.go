@@ -23,6 +23,11 @@ func setupWikiTestDir(t *testing.T) string {
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
 	appCfg = config.DefaultConfig()
+	// Clear any Runner left behind by a previous test (its Out writer
+	// may point at a now-closed pipe). getRunner() will lazily build a
+	// fresh one with the current os.Stdout when the handler runs.
+	runner = nil
+	t.Cleanup(func() { runner = nil })
 	return dir
 }
 
