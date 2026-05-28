@@ -4,7 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 	"text/tabwriter"
 
@@ -32,6 +32,12 @@ type listEntry struct {
 	TypeDir string `json:"-"`
 }
 
+// listOpts holds the per-invocation flag values for `docz list`.
+type listOpts struct {
+	status string
+	format string
+}
+
 var listCmd = &cobra.Command{
 	Use:   "list [type]",
 	Short: "List documents, optionally filtered by type",
@@ -49,9 +55,15 @@ func init() {
 }
 
 func runList(_ *cobra.Command, args []string) error {
+	return getRunner().List(listOpts{status: listStatus, format: listFormat}, args)
+}
+
+// List gathers documents across one or all types, applies any status
+// filter, and emits them through r.Out in the requested format.
+func (r *Runner) List(opts listOpts, args []string) error {
 	types := config.ValidTypes()
 	if len(args) > 0 {
-		typeName, err := appCfg.ValidateType(args[0])
+		typeName, err := r.Cfg.ValidateType(args[0])
 		if err != nil {
 			return err
 		}
@@ -60,7 +72,7 @@ func runList(_ *cobra.Command, args []string) error {
 
 	var entries []listEntry
 	for _, typeName := range types {
-		typeDir := appCfg.TypeDir(typeName)
+		typeDir := r.Cfg.TypeDir(typeName)
 		docs, err := document.ScanDocuments(typeDir)
 		if err != nil {
 			return fmt.Errorf("scanning %s: %w", typeDir, err)
@@ -79,17 +91,17 @@ func runList(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	if listStatus != "" {
-		entries = filterByStatus(entries, listStatus)
+	if opts.status != "" {
+		entries = filterByStatus(entries, opts.status)
 	}
 
-	switch strings.ToLower(listFormat) {
+	switch strings.ToLower(opts.format) {
 	case formatJSON:
-		return outputJSON(entries)
+		return outputJSON(r.Out, entries)
 	case "csv":
-		return outputCSV(entries)
+		return outputCSV(r.Out, entries)
 	default:
-		return outputTable(entries)
+		return outputTable(r.Out, entries)
 	}
 }
 
@@ -103,8 +115,8 @@ func filterByStatus(entries []listEntry, status string) []listEntry {
 	return filtered
 }
 
-func outputTable(entries []listEntry) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+func outputTable(out io.Writer, entries []listEntry) error {
+	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 	if _, err := fmt.Fprintln(w, "ID\tTITLE\tSTATUS\tDATE\tAUTHOR\tTYPE"); err != nil {
 		return fmt.Errorf("writing table header: %w", err)
 	}
@@ -121,14 +133,14 @@ func outputTable(entries []listEntry) error {
 	return w.Flush()
 }
 
-func outputJSON(entries []listEntry) error {
-	enc := json.NewEncoder(os.Stdout)
+func outputJSON(out io.Writer, entries []listEntry) error {
+	enc := json.NewEncoder(out)
 	enc.SetIndent("", "  ")
 	return enc.Encode(entries)
 }
 
-func outputCSV(entries []listEntry) error {
-	w := csv.NewWriter(os.Stdout)
+func outputCSV(out io.Writer, entries []listEntry) error {
+	w := csv.NewWriter(out)
 	if err := w.Write([]string{"ID", "Title", "Status", "Date", "Author", "Type", "File"}); err != nil {
 		return fmt.Errorf("writing csv header: %w", err)
 	}

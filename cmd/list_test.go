@@ -74,22 +74,9 @@ func TestOutputTable(t *testing.T) {
 		{ID: "RFC-0002", Title: "Second", Status: "Accepted", Date: "2026-02-01", Author: "Author", Type: "RFC"},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputTable(entries)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
-		t.Fatalf("outputTable() error: %v", err)
-	}
-
 	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
+	if err := outputTable(&buf, entries); err != nil {
+		t.Fatalf("outputTable() error: %v", err)
 	}
 	output := buf.String()
 
@@ -109,22 +96,9 @@ func TestOutputJSON(t *testing.T) {
 		{ID: "RFC-0001", Title: "First", Status: "Draft", Date: "2026-01-01", Author: "Author", Type: "RFC", File: "0001-first.md"},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputJSON(entries)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
-		t.Fatalf("outputJSON() error: %v", err)
-	}
-
 	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
+	if err := outputJSON(&buf, entries); err != nil {
+		t.Fatalf("outputJSON() error: %v", err)
 	}
 
 	var result []listEntry
@@ -144,22 +118,9 @@ func TestOutputCSV(t *testing.T) {
 		{ID: "RFC-0001", Title: "First", Status: "Draft", Date: "2026-01-01", Author: "Author", Type: "RFC", File: "0001-first.md"},
 	}
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := outputCSV(entries)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
-		t.Fatalf("outputCSV() error: %v", err)
-	}
-
 	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
+	if err := outputCSV(&buf, entries); err != nil {
+		t.Fatalf("outputCSV() error: %v", err)
 	}
 	output := buf.String()
 

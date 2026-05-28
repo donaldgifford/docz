@@ -59,6 +59,12 @@ func runRoot(t *testing.T, args ...string) {
 		_ = w.Close()
 		os.Stdout = oldStdout
 		_, _ = r.Read(nil)
+		// rootCmd.Execute() ran PersistentPreRunE which set the
+		// package-level `runner` to a Runner whose Out is the now-closed
+		// pipe `w`. Reset it so later tests construct a fresh ad-hoc
+		// Runner via getRunner(). IMPL-0009 Phase 3 cleanup will
+		// eliminate the global once all wrappers are removed.
+		runner = nil
 	}()
 
 	if err := rootCmd.Execute(); err != nil {

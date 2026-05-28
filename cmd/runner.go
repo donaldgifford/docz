@@ -11,9 +11,26 @@ import (
 )
 
 // runner is the process-wide Runner constructed in PersistentPreRunE.
-// Command handlers will reach it through method-receiver conversion
-// during IMPL-0009 Phase 3 onward.
+// Command handlers reach it through method-receiver conversion during
+// IMPL-0009 Phase 3 onward. The getRunner accessor below covers the
+// transitional period when handler wrappers (`runCreate`, `runConfig`,
+// etc.) may be invoked from tests that bypass PersistentPreRunE.
 var runner *Runner
+
+// getRunner returns the package-level Runner if it has been constructed
+// (the normal production path via PersistentPreRunE) or, as a transitional
+// safety net for tests that call handler wrappers directly without
+// invoking Cobra, builds an ad-hoc Runner from the current appCfg.
+// The ad-hoc Runner captures os.Stdout/os.Stderr at call time, which
+// preserves the existing test pattern that redirects os.Stdout via
+// os.Pipe to capture output. Once Phase 3 conversion is complete and
+// tests construct Runners directly, this fallback will be removed.
+func getRunner() *Runner {
+	if runner != nil {
+		return runner
+	}
+	return NewRunner(&appCfg)
+}
 
 // Runner bundles resolved config with the injectable dependencies that
 // command handlers need: writers for output, a slog logger, a time

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
@@ -21,14 +20,19 @@ func init() {
 }
 
 func runConfig(_ *cobra.Command, _ []string) error {
-	enc := yaml.NewEncoder(os.Stdout)
+	return getRunner().Config()
+}
+
+// Config writes the resolved config as YAML to r.Out.
+func (r *Runner) Config() error {
+	enc := yaml.NewEncoder(r.Out)
 	defer func() {
 		//nolint:errcheck,gosec // best-effort flush; encoder writes to
-		// os.Stdout so Close failure is not actionable for a CLI invocation.
+		// r.Out so Close failure is not actionable for a CLI invocation.
 		enc.Close()
 	}()
 	enc.SetIndent(2)
-	if err := enc.Encode(appCfg); err != nil {
+	if err := enc.Encode(r.Cfg); err != nil {
 		return fmt.Errorf("encoding config: %w", err)
 	}
 	return nil
