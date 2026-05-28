@@ -180,11 +180,23 @@ func DefaultConfig() Config {
 //
 // If configFile is non-empty, it is used as the sole config source
 // (no merge); the same types-replace-on-presence rule applies.
-func Load(configFile string) (Config, error) {
+//
+// repoRoot is the directory to search for ConfigFileName when configFile
+// is empty. An empty repoRoot falls back to the current working
+// directory for backwards compatibility with callers that have not yet
+// been updated; new callers (cmd/root.go since IMPL-0009 Phase 7)
+// should pass an explicit path so tests can scope config discovery to
+// a t.TempDir() without os.Chdir.
+func Load(configFile, repoRoot string) (Config, error) {
 	cfg := DefaultConfig()
 
 	if configFile != "" {
 		return loadFromFile(configFile, &cfg)
+	}
+
+	repoConfigPath := ConfigFileName
+	if repoRoot != "" {
+		repoConfigPath = filepath.Join(repoRoot, ConfigFileName)
 	}
 
 	v := viper.New()
@@ -197,7 +209,7 @@ func Load(configFile string) (Config, error) {
 	}
 
 	// Load repo-root config on top (deep merge, repo wins).
-	if mergeErr := mergeConfigFile(v, ConfigFileName); mergeErr != nil {
+	if mergeErr := mergeConfigFile(v, repoConfigPath); mergeErr != nil {
 		return cfg, mergeErr
 	}
 
@@ -205,7 +217,7 @@ func Load(configFile string) (Config, error) {
 		return cfg, err
 	}
 
-	applyTypesReplaceOnPresence(&cfg, ConfigFileName)
+	applyTypesReplaceOnPresence(&cfg, repoConfigPath)
 	fillTypeFieldDefaults(&cfg)
 
 	return cfg, nil

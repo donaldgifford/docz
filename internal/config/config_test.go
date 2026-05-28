@@ -126,19 +126,9 @@ func TestTypeDir(t *testing.T) {
 }
 
 func TestLoad_NoConfigFiles(t *testing.T) {
-	// Run in a temp dir with no config files.
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
-	cfg, err := Load("")
+	cfg, err := Load("", dir)
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -153,27 +143,18 @@ func TestLoad_NoConfigFiles(t *testing.T) {
 }
 
 func TestLoad_RepoConfig(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
 	configContent := `docs_dir: documentation
 author:
   default: "Test Author"
   from_git: false
 `
-	if err := os.WriteFile(".docz.yaml", []byte(configContent), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load("")
+	cfg, err := Load("", dir)
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -202,7 +183,7 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -227,7 +208,7 @@ func TestLoad_WikiConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -262,7 +243,7 @@ func TestLoad_TOCConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -292,7 +273,7 @@ func TestLoad_WikiMarkdownExtensions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -336,7 +317,7 @@ func TestLoad_WikiPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
