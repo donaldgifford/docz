@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/document"
 )
 
@@ -212,7 +213,7 @@ func makeFM(id, title, status, author, created string) document.Frontmatter {
 	return document.Frontmatter{
 		ID:      id,
 		Title:   title,
-		Status:  status,
+		Status:  config.Status(status),
 		Author:  author,
 		Created: created,
 	}

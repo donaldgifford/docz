@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 var update = flag.Bool("update", false, "update golden files")
@@ -22,7 +24,7 @@ func TestGoldenTemplates(t *testing.T) {
 		Filename: "0001-test-document.md",
 	}
 
-	types := map[string]Data{
+	types := map[config.DocType]Data{
 		"rfc":    data,
 		"adr":    withOverrides(&data, "adr", "ADR", "Proposed"),
 		"design": withOverrides(&data, "design", "DESIGN", "Draft"),
@@ -30,7 +32,7 @@ func TestGoldenTemplates(t *testing.T) {
 	}
 
 	for typeName, td := range types {
-		t.Run(typeName, func(t *testing.T) {
+		t.Run(string(typeName), func(t *testing.T) {
 			tmpl, err := EmbeddedDocumentTemplate(typeName)
 			if err != nil {
 				t.Fatalf("EmbeddedDocumentTemplate(%q): %v", typeName, err)
@@ -41,7 +43,7 @@ func TestGoldenTemplates(t *testing.T) {
 				t.Fatalf("Render(): %v", err)
 			}
 
-			goldenPath := filepath.Join("..", "..", "testdata", "golden", typeName+".md")
+			goldenPath := filepath.Join("..", "..", "testdata", "golden", string(typeName)+".md")
 
 			if *update {
 				if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
@@ -65,7 +67,7 @@ func TestGoldenTemplates(t *testing.T) {
 	}
 }
 
-func withOverrides(base *Data, typeName, prefix, status string) Data {
+func withOverrides(base *Data, typeName config.DocType, prefix string, status config.Status) Data {
 	result := *base
 	result.Type = typeName
 	result.Prefix = prefix

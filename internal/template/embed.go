@@ -3,15 +3,21 @@ package template
 import (
 	"embed"
 	"fmt"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 //go:embed templates/*.md templates/*.tmpl
 var templateFS embed.FS
 
 // EmbeddedDocumentTemplate returns the embedded default template for the given
-// document type. Valid types: rfc, adr, design, impl.
-func EmbeddedDocumentTemplate(docType string) (string, error) {
-	data, err := templateFS.ReadFile("templates/" + docType + ".md")
+// document type. Valid types: rfc, adr, design, impl, plan, investigation.
+//
+// docType is the typed config.DocType (DESIGN-0004 §F) so a stray
+// status or path string fails to compile here rather than producing a
+// confusing "no embedded template for type %q" miss at runtime.
+func EmbeddedDocumentTemplate(docType config.DocType) (string, error) {
+	data, err := templateFS.ReadFile("templates/" + string(docType) + ".md")
 	if err != nil {
 		return "", fmt.Errorf("no embedded template for type %q: %w", docType, err)
 	}

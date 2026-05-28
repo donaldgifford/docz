@@ -15,7 +15,7 @@ import (
 // render a doc without bespoke per-type plumbing — see DESIGN-0004 §E.
 func TestDocTypeRegistry_AllHaveEmbeddedTemplate(t *testing.T) {
 	for _, dt := range config.AllDocTypes() {
-		if _, err := template.EmbeddedDocumentTemplate(dt.TemplateName); err != nil {
+		if _, err := template.EmbeddedDocumentTemplate(config.DocType(dt.TemplateName)); err != nil {
 			t.Errorf(
 				"doc type %q has no embedded template %q.md: %v",
 				dt.Name, dt.TemplateName, err,

@@ -97,7 +97,7 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 	)
 
 	createOpts := document.CreateOptions{
-		Type:         docType,
+		Type:         config.DocType(docType),
 		Title:        title,
 		Author:       author,
 		Status:       status,

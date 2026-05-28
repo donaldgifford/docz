@@ -12,15 +12,21 @@ import (
 )
 
 // CreateOptions holds the inputs for creating a new document.
+//
+// Type is the typed config.DocType wrapper (DESIGN-0004 §F) so a
+// stray status or title string in its place is a compile error.
+// Status stays plain string here: it flows in from a CLI flag where
+// the value is whatever the user typed, and is validated against
+// TypeConfig.Statuses higher up the stack.
 type CreateOptions struct {
-	Type    string // Document type (rfc, adr, design, impl)
-	Title   string // Document title
-	Author  string // Author name
-	Status  string // Initial status
-	Prefix  string // ID prefix (e.g., "RFC")
-	IDWidth int    // Zero-pad width (e.g., 4)
-	DocsDir string // Base docs directory
-	TypeDir string // Type subdirectory relative to DocsDir
+	Type    config.DocType // Document type (rfc, adr, design, impl, ...)
+	Title   string         // Document title
+	Author  string         // Author name
+	Status  string         // Initial status
+	Prefix  string         // ID prefix (e.g., "RFC")
+	IDWidth int            // Zero-pad width (e.g., 4)
+	DocsDir string         // Base docs directory
+	TypeDir string         // Type subdirectory relative to DocsDir
 
 	// TemplatePath is an explicit template file path from config. Empty uses
 	// the default resolution (local override > embedded).
@@ -60,7 +66,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		return CreateResult{}, fmt.Errorf("file already exists: %s", filePath)
 	}
 
-	tmplContent, err := doctemplate.Resolve(opts.Type, opts.TemplatePath, opts.DocsDir)
+	tmplContent, err := doctemplate.Resolve(string(opts.Type), opts.TemplatePath, opts.DocsDir)
 	if err != nil {
 		return CreateResult{}, fmt.Errorf("resolving template: %w", err)
 	}
@@ -75,7 +81,7 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		Title:    opts.Title,
 		Date:     createdAt.Format(time.DateOnly),
 		Author:   opts.Author,
-		Status:   opts.Status,
+		Status:   config.Status(opts.Status),
 		Type:     opts.Type,
 		Prefix:   opts.Prefix,
 		Slug:     slug,

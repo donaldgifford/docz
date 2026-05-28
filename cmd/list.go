@@ -81,7 +81,7 @@ func (r *Runner) List(opts listOpts, args []string) error {
 			entries = append(entries, listEntry{
 				ID:      doc.ID,
 				Title:   doc.Title,
-				Status:  doc.Status,
+				Status:  string(doc.Status),
 				Date:    doc.Created,
 				Author:  doc.Author,
 				Type:    strings.ToUpper(typeName),
