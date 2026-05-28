@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 func TestFilenameSlug(t *testing.T) {
@@ -43,8 +45,8 @@ func TestFilenameSlug(t *testing.T) {
 }
 
 func TestEmbeddedDocumentTemplate(t *testing.T) {
-	for _, docType := range []string{"rfc", "adr", "design", "impl"} {
-		t.Run(docType, func(t *testing.T) {
+	for _, docType := range []config.DocType{"rfc", "adr", "design", "impl"} {
+		t.Run(string(docType), func(t *testing.T) {
 			content, err := EmbeddedDocumentTemplate(docType)
 			if err != nil {
 				t.Fatalf("EmbeddedDocumentTemplate(%q) error: %v", docType, err)
@@ -61,7 +63,7 @@ func TestEmbeddedDocumentTemplate(t *testing.T) {
 }
 
 func TestEmbeddedDocumentTemplate_InvalidType(t *testing.T) {
-	_, err := EmbeddedDocumentTemplate("nonexistent")
+	_, err := EmbeddedDocumentTemplate(config.DocType("nonexistent"))
 	if err == nil {
 		t.Error("expected error for nonexistent type, got nil")
 	}

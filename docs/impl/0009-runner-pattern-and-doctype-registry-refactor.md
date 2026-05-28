@@ -472,24 +472,37 @@ Add typed-string definitions for compile-time signal at API boundaries.
 
 #### Tasks
 
-- [ ] Define `type DocType string` (typed wrapper, not the struct)
-- [ ] Define `type Status string`
-- [ ] Rename the registry struct to avoid the collision — see Open
-      Question 2
-- [ ] Update `document.CreateOptions.Type` to `DocType`
-- [ ] Update `template.Data.Type` (renamed from `TemplateData` in
-      IMPL-0008) to `DocType`
-- [ ] Update `template.EmbeddedDocumentTemplate(docType DocType)`
-- [ ] Update `Frontmatter.Status` to `Status` typed string with custom
-      YAML marshaler (or leave as plain string at the YAML boundary —
-      see Decisions §3)
-- [ ] Verify YAML round-trip back-compat with a test
+- [x] Define `type DocType string` (typed wrapper, not the struct)
+      in `internal/config/doctype.go`
+- [x] Define `type Status string` alongside `DocType`
+- [x] No registry rename needed — Phase 8 already named the struct
+      `DocTypeDef`, so `DocType` is free for the typed-string wrapper
+      (DESIGN-0004 Decision §2 resolves Open Question 2)
+- [x] Update `document.CreateOptions.Type` to `config.DocType`
+- [x] Update `template.Data.Type` (renamed from `TemplateData` in
+      IMPL-0008) to `config.DocType` and `template.Data.Status` to
+      `config.Status`
+- [x] Update `template.EmbeddedDocumentTemplate(docType config.DocType)`
+      — `template.Resolve` keeps `string` (internal resolution path,
+      not in §F's enforcement surface) and casts once at the embed
+      call site
+- [x] Update `document.Frontmatter.Status` to `config.Status`. No custom
+      YAML marshaler needed — `go.yaml.in/yaml/v3` round-trips typed
+      strings whose underlying kind is `string` transparently. DESIGN-0004
+      §F revises Decision §3.
+- [x] Verify YAML round-trip back-compat with two tests in
+      `document_test.go`: `TestFrontmatter_TypedStatus_YAMLRoundTrip`
+      pins the bare-scalar emit and field-level round trip;
+      `TestFrontmatter_TypedStatus_LegacyYAMLParses` pins parsing of a
+      pre-typed-string YAML fixture
 
 #### Success Criteria
 
-- `DocType` and `Status` typed wrappers exist
-- Function signatures across `internal/` use the typed forms
-- `.docz.yaml` files written by any prior docz version still parse
+- [x] `DocType` and `Status` typed wrappers exist
+- [x] Function signatures across `internal/` use the typed forms
+- [x] `.docz.yaml` files written by any prior docz version still parse
+      (no top-level field changed type — only Frontmatter.Status and
+      template.Data fields, neither of which appear in `.docz.yaml`)
 
 ---
 

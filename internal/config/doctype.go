@@ -5,6 +5,28 @@ import (
 	"strings"
 )
 
+// DocType is a typed wrapper around a canonical document-type name
+// ("rfc", "adr", ...). It exists for compile-time signal at function
+// parameter and struct field boundaries — e.g. template.Data.Type and
+// document.CreateOptions.Type — so a swap of a stray status string for
+// a doc type fails to compile rather than silently mis-rendering a
+// template. The Config.Types map key intentionally stays plain string
+// (DESIGN-0004 §F): the typed wrapper at every map access added noise
+// without catching real bugs.
+//
+// The underlying kind is `string`, so go.yaml.in/yaml/v3 unmarshals
+// YAML scalars into DocType-typed fields transparently without a
+// custom unmarshaler (DESIGN-0004 §F revises Decision §3).
+type DocType string
+
+// Status is a typed wrapper around a document status value
+// ("Draft", "Accepted", ...). It carries the same justification as
+// DocType: it appears on document.Frontmatter and template.Data so a
+// swap with another string field at a call site is a compile error.
+//
+// The underlying kind is `string`; YAML unmarshal works transparently.
+type Status string
+
 // DocTypeDef is the per-document-type metadata that previously lived
 // scattered across DefaultConfig, ValidTypes, DefaultNavTitles,
 // typeAliases, and TypesHelp. Consolidating it here turns "add a new
