@@ -34,15 +34,6 @@ func runUpdate(_ *cobra.Command, args []string) error {
 	return getRunner().Update(updateDryRun, args)
 }
 
-// updateType is a package-level helper retained during the Phase 3
-// transition so cross-file callers (cmd/create.go:runCreate, tests)
-// don't need to know about the Runner. It delegates to the method on
-// the package-level runner (or an ad-hoc one if tests bypass
-// PersistentPreRunE) and uses the current updateDryRun flag.
-func updateType(typeName string) error {
-	return getRunner().updateType(typeName, updateDryRun)
-}
-
 // Update is the `docz update` handler. With no args it iterates every
 // enabled type; with one arg it updates only that type.
 func (r *Runner) Update(dryRun bool, args []string) error {
