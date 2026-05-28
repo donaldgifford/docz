@@ -81,72 +81,13 @@ type Config struct {
 	TOC     TOCConfig             `mapstructure:"toc"      yaml:"toc"`
 }
 
-// DefaultConfig returns the built-in default configuration.
+// DefaultConfig returns the built-in default configuration. The per-type
+// metadata (Types and Wiki.NavTitles) is sourced from the DocType
+// registry in doctype.go so adding a new doc type is a single-file edit.
 func DefaultConfig() Config {
 	return Config{
 		DocsDir: "docs",
-		Types: map[string]TypeConfig{
-			"rfc": {
-				Enabled:     true,
-				Dir:         "rfc",
-				IDPrefix:    "RFC",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "Proposed", "Accepted", "Rejected", "Superseded"},
-				StatusField: "status",
-				PluralLabel: "RFCs",
-			},
-			"adr": {
-				Enabled:     true,
-				Dir:         "adr",
-				IDPrefix:    "ADR",
-				IDWidth:     4,
-				Statuses:    []string{"Proposed", "Accepted", "Deprecated", "Superseded"},
-				StatusField: "status",
-				PluralLabel: "ADRs",
-			},
-			"design": {
-				Enabled:     true,
-				Dir:         "design",
-				IDPrefix:    "DESIGN",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Review", "Approved", "Implemented", "Abandoned"},
-				StatusField: "status",
-				PluralLabel: "Design",
-			},
-			"impl": {
-				Enabled:     true,
-				Dir:         "impl",
-				IDPrefix:    "IMPL",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Progress", "Completed", "Paused", "Cancelled"},
-				StatusField: "status",
-				PluralLabel: "Implementation Plans",
-			},
-			"plan": {
-				Enabled:     true,
-				Dir:         "plan",
-				IDPrefix:    "PLAN",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
-				StatusField: "status",
-				PluralLabel: "Plans",
-			},
-			"investigation": {
-				Enabled:  true,
-				Dir:      "investigation",
-				IDPrefix: "INV",
-				IDWidth:  4,
-				Statuses: []string{
-					"Open",
-					"In Progress",
-					"Concluded",
-					"Inconclusive",
-					"Abandoned",
-				},
-				StatusField: "status",
-				PluralLabel: "Investigations",
-			},
-		},
+		Types:   defaultTypesMap(),
 		Index: IndexConfig{
 			AutoUpdate:     true,
 			PreserveHeader: true,
@@ -159,7 +100,7 @@ func DefaultConfig() Config {
 			MkDocsPath: MkDocsFileName,
 			Plugins:    []string{"techdocs-core"},
 			Exclude:    []string{TemplatesDir, "examples"},
-			NavTitles:  DefaultNavTitles(),
+			NavTitles:  defaultNavTitlesMap(),
 		},
 		TOC: TOCConfig{
 			Enabled:     true,
@@ -234,21 +175,15 @@ func (c *Config) TypeDir(docType string) string {
 }
 
 // DefaultNavTitles returns the default directory-to-nav-title mapping for
-// docz-managed type directories.
+// docz-managed type directories, sourced from the DocType registry.
 func DefaultNavTitles() map[string]string {
-	return map[string]string{
-		"rfc":           "RFCs",
-		"adr":           "ADRs",
-		"design":        "Design",
-		"impl":          "Implementation Plans",
-		"plan":          "Plans",
-		"investigation": "Investigations",
-	}
+	return defaultNavTitlesMap()
 }
 
-// ValidTypes returns the list of built-in document type names.
+// ValidTypes returns the sorted list of built-in document type names,
+// sourced from the DocType registry.
 func ValidTypes() []string {
-	return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
+	return DocTypeNames()
 }
 
 // ErrUnknownType is the sentinel returned by ValidateType when the input
@@ -290,10 +225,8 @@ func (c *Config) EnabledTypes() []string {
 }
 
 // typeAliases maps short or alternate names to their canonical type name.
-var typeAliases = map[string]string{
-	"implementation": "impl",
-	"inv":            "investigation",
-}
+// Sourced from the DocType registry's Aliases entries.
+var typeAliases = defaultTypeAliases()
 
 // ResolveTypeAlias returns the canonical type name for the given input.
 // If the input is already a canonical name or has no alias, it is returned as-is.
