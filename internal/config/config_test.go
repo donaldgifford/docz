@@ -16,7 +16,7 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
 
-	for _, typeName := range ValidTypes() {
+	for _, typeName := range DocTypeNames() {
 		tc, ok := cfg.Types[typeName]
 		if !ok {
 			t.Errorf("missing type config for %q", typeName)
@@ -88,15 +88,15 @@ func TestDefaultConfig(t *testing.T) {
 	}
 }
 
-func TestValidTypes(t *testing.T) {
-	types := ValidTypes()
+func TestDocTypeNames(t *testing.T) {
+	types := DocTypeNames()
 	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if len(types) != len(want) {
-		t.Fatalf("ValidTypes() has %d elements, want %d", len(types), len(want))
+		t.Fatalf("DocTypeNames() has %d elements, want %d", len(types), len(want))
 	}
 	for i, got := range types {
 		if got != want[i] {
-			t.Errorf("ValidTypes()[%d] = %q, want %q", i, got, want[i])
+			t.Errorf("DocTypeNames()[%d] = %q, want %q", i, got, want[i])
 		}
 	}
 }
@@ -446,18 +446,18 @@ func TestValidateType(t *testing.T) {
 func TestEnabledTypes(t *testing.T) {
 	cfg := DefaultConfig()
 	got := cfg.EnabledTypes()
-	want := []string{"adr", "design", "impl", "investigation", "plan", "rfc"}
+	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("EnabledTypes() = %v, want sorted %v", got, want)
+		t.Errorf("EnabledTypes() = %v, want registry-order %v", got, want)
 	}
 
-	// Disable a type and confirm it disappears from the sorted list.
+	// Disable a type and confirm it drops out of the registry-order list.
 	tc := cfg.Types["plan"]
 	tc.Enabled = false
 	cfg.Types["plan"] = tc
 
 	got = cfg.EnabledTypes()
-	want = []string{"adr", "design", "impl", "investigation", "rfc"}
+	want = []string{"rfc", "adr", "design", "impl", "investigation"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("EnabledTypes() with plan disabled = %v, want %v", got, want)
 	}

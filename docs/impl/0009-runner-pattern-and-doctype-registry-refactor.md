@@ -436,16 +436,26 @@ registry rather than the hardcoded `ValidTypes()` slice.
 
 #### Tasks
 
-- [ ] Update `Config.EnabledTypes()` (from IMPL-0006) to iterate
-      `allDocTypes` and filter by `Config.Types[name].Enabled`
-- [ ] Audit all remaining `ValidTypes()` call sites and replace with
-      `EnabledTypes()` or `DocTypeNames()` as appropriate
-- [ ] Delete `ValidTypes()` if no callers remain
+- [x] Update `Config.EnabledTypes()` (from IMPL-0006) to iterate
+      `allDocTypes` (via `DocTypeNames`) and filter by
+      `Config.Types[name].Enabled`. The old sort step is dropped —
+      registry-declaration order is now the canonical order.
+- [x] Audit all remaining `ValidTypes()` call sites and replace with
+      `EnabledTypes()` or `DocTypeNames()` as appropriate:
+      - `cmd/list.go` (`docz list`) → `r.Cfg.EnabledTypes()` so disabled
+        types are skipped instead of attempting to scan a directory
+        the user removed
+      - `cmd/template.go` (three help strings) → `config.DocTypeNames()`
+      - `config.ValidateType` error message → `config.DocTypeNames()`
+      - `config.Validate` membership set → `config.DocTypeNames()`
+- [x] Delete `ValidTypes()` — no callers remain
+- [x] Update `TestValidTypes` → `TestDocTypeNames`; update
+      `TestEnabledTypes` and `TestDefaultConfig` to assert registry order
 
 #### Success Criteria
 
-- `grep -rn 'ValidTypes()' .` returns no matches (or only the function
-  definition if kept for back-compat)
+- `grep -rn 'ValidTypes' .` returns only one match: a historical comment
+  in `doctype.go` documenting the consolidation
 - All iteration goes through the registry
 
 ---

@@ -61,7 +61,7 @@ func runList(_ *cobra.Command, args []string) error {
 // List gathers documents across one or all types, applies any status
 // filter, and emits them through r.Out in the requested format.
 func (r *Runner) List(opts listOpts, args []string) error {
-	types := config.ValidTypes()
+	types := r.Cfg.EnabledTypes()
 	if len(args) > 0 {
 		typeName, err := r.Cfg.ValidateType(args[0])
 		if err != nil {

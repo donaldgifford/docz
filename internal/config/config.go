@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -180,12 +179,6 @@ func DefaultNavTitles() map[string]string {
 	return defaultNavTitlesMap()
 }
 
-// ValidTypes returns the sorted list of built-in document type names,
-// sourced from the DocType registry.
-func ValidTypes() []string {
-	return DocTypeNames()
-}
-
 // ErrUnknownType is the sentinel returned by ValidateType when the input
 // does not name a built-in document type. Callers can branch on it with
 // errors.Is to render a custom hint without parsing the wrapped message.
@@ -204,23 +197,26 @@ func (c *Config) ValidateType(name string) (string, error) {
 	canonical := ResolveTypeAlias(strings.ToLower(name))
 	if _, ok := c.Types[canonical]; !ok {
 		return "", fmt.Errorf("%w %q (valid types: %s)",
-			ErrUnknownType, canonical, strings.Join(ValidTypes(), ", "))
+			ErrUnknownType, canonical, strings.Join(DocTypeNames(), ", "))
 	}
 	return canonical, nil
 }
 
-// EnabledTypes returns the sorted list of canonical type names that are
-// both present in c.Types and have Enabled == true. The result is sorted
-// alphabetically by canonical name for deterministic iteration in
-// scaffolding and update flows.
+// EnabledTypes returns the list of canonical type names that are both
+// present in c.Types and have Enabled == true, in DocType-registry
+// declaration order. Iterating the registry instead of c.Types gives
+// callers a deterministic order without a separate sort step.
 func (c *Config) EnabledTypes() []string {
 	enabled := make([]string, 0, len(c.Types))
-	for name, tc := range c.Types {
+	for _, name := range DocTypeNames() {
+		tc, ok := c.Types[name]
+		if !ok {
+			continue
+		}
 		if tc.Enabled {
 			enabled = append(enabled, name)
 		}
 	}
-	sort.Strings(enabled)
 	return enabled
 }
 
@@ -258,7 +254,7 @@ func (c *Config) Validate() ([]string, error) {
 	}
 
 	validTypes := map[string]bool{}
-	for _, t := range ValidTypes() {
+	for _, t := range DocTypeNames() {
 		validTypes[t] = true
 	}
 

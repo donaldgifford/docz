@@ -30,7 +30,7 @@ var templateShowCmd = &cobra.Command{
 
 The template is resolved in order: config path > local override > embedded default.
 
-Types: ` + strings.Join(config.ValidTypes(), ", "),
+Types: ` + strings.Join(config.DocTypeNames(), ", "),
 	Args: cobra.ExactArgs(1),
 	RunE: runTemplateShow,
 }
@@ -42,7 +42,7 @@ var templateExportCmd = &cobra.Command{
 
 If no path is specified, the file is written to ./<type>.md in the current directory.
 
-Types: ` + strings.Join(config.ValidTypes(), ", "),
+Types: ` + strings.Join(config.DocTypeNames(), ", "),
 	Args: cobra.RangeArgs(1, 2),
 	RunE: runTemplateExport,
 }
@@ -55,7 +55,7 @@ edit it locally. Future document creation will use this override.
 
 Fails if the override file already exists.
 
-Types: ` + strings.Join(config.ValidTypes(), ", "),
+Types: ` + strings.Join(config.DocTypeNames(), ", "),
 	Args: cobra.ExactArgs(1),
 	RunE: runTemplateOverride,
 }
