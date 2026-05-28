@@ -214,54 +214,71 @@ Establish the Runner shape with no functional change to handlers yet.
 ### Phase 3: Migrate handlers to Runner methods + output writers
 
 Convert command handlers from package-level functions to `Runner` methods.
-Replace direct `fmt.Printf` / `os.Stdout` writes with `cmd.OutOrStdout()`.
+Per DESIGN-0004 §C, handlers write to `r.Out` / `r.Err` (NOT
+`cmd.OutOrStdout()` — the task wording below predates the DESIGN and is
+superseded).
 
 #### Tasks
 
-- [ ] Convert `runCreate` → `(*Runner).Create` accepting `*cobra.Command`
-      and `args`; use `cmd.OutOrStdout()` / `cmd.PrintErrf`
-- [ ] Convert `runUpdate`, `runList`, `runInit`, `runTemplateShow`,
+- [x] Convert `runCreate` → `(*Runner).Create` accepting context and
+      args; output through `r.Out` (Phase 3e)
+- [x] Convert `runUpdate`, `runList`, `runInit`, `runTemplateShow`,
       `runTemplateExport`, `runTemplateOverride`, `runWikiInit`,
-      `runWikiUpdate`, `runConfig`, `runVersion` similarly
-- [ ] Replace ~50 `fmt.Printf` / `os.Stdout` sites with `cmd.Println` /
-      `cmd.Print` / `cmd.OutOrStdout()`
-- [ ] Replace ~12 `fmt.Fprintf(os.Stderr, ...)` sites with `cmd.PrintErrf`
-- [ ] Update tests to use `cmd.SetOut(&buf)` / `cmd.SetErr(&buf)` instead
-      of `os.Pipe` tricks (~20 test files affected)
+      `runWikiUpdate`, `runConfig`, `runVersion` similarly (Phases 3a/3b/3c/3d/3f)
+- [x] Replace `fmt.Printf` / `os.Stdout` sites with writes through
+      `r.Out` (single residual at `cmd/root.go:79` is in the
+      bootstrap path before the Runner exists — acceptable)
+- [x] Replace `fmt.Fprintf(os.Stderr, ...)` sites with `r.Err` writes
+      or `r.Logger.Debug` (Phase 4 work folded in)
+- [ ] Update tests to construct a Runner with `bytes.Buffer` writers
+      instead of `os.Pipe` tricks — partial: `TestOutputTable/JSON/CSV`
+      converted in Phase 3a; the remaining ~12 tests still use the
+      `os.Pipe` pattern (acceptable for the transitional period;
+      deferred to a cleanup commit alongside wrapper removal)
 
 #### Success Criteria
 
-- `grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/` returns no
-  matches in handlers (only in tests, if anywhere)
-- No test uses `os.Pipe` to capture output
-- Tests can run `t.Parallel()` (where the underlying handler is
-  side-effect-free)
+- [x] `grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/*.go | grep -v _test.go`
+      returns only `cmd/root.go:79` (bootstrap path)
+- [ ] No test uses `os.Pipe` to capture output — partial (see above)
+- [ ] Tests can run `t.Parallel()` (where the underlying handler is
+      side-effect-free) — deferred to cleanup commit (still blocked by
+      `appCfg`/`createStatus`/etc. globals until per-command opts
+      structs land in `newXxxCmd` factories)
 
 ---
 
 ### Phase 4: Introduce `log/slog` logger; eliminate `if verbose`
 
-Replace 20+ verbose-guard blocks with structured logging.
+Replace verbose-guard blocks with structured logging. (Note: the
+mechanical replacements landed alongside the Phase 3 conversions;
+the `--log-level` / `--log-format` flag wiring remains.)
 
 #### Tasks
 
 - [ ] In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag
-      (verbose → debug level; default → info level)
-- [ ] Replace every `if verbose { fmt.Fprintf(os.Stderr, ...) }` block
-      with `r.Logger.Debug(msg, "key", value)`
-- [ ] Plumb `*slog.Logger` into internal packages where logging makes
-      sense (probably none — internal packages should remain quiet and
-      return data; logging stays at the cmd layer)
-- [ ] Decide on `slog.TextHandler` vs `slog.JSONHandler` — see Open
-      Question 1
-- [ ] Add a `--log-format` flag if both handlers are supported
+      (verbose → debug level; default → info level). Currently the
+      logger is hard-wired to `LevelInfo` in `NewRunner`; wiring
+      `--verbose` happens here.
+- [x] Replace every `if verbose { fmt.Fprintf(os.Stderr, ...) }` block
+      with `r.Logger.Debug(msg, "key", value)` — done as part of
+      Phase 3 conversions
+- [x] Internal packages remain quiet (no logger handle plumbed in —
+      see DESIGN-0004 §D)
+- [x] Decision §1 locked: `slog.TextHandler` default
+- [ ] Add `--log-level` flag (debug/info/warn/error) and `--log-format`
+      flag (text/json) with the JSON handler swap
 
 #### Success Criteria
 
-- `grep -rn 'if verbose' cmd/` returns no matches
-- `grep -rn '\bverbose\b' cmd/` returns only the flag declaration and
-  the logger-level wiring
-- Tests can capture log output by configuring a buffer-backed handler
+- [x] `grep -rn 'if verbose' cmd/*.go | grep -v _test.go` returns no
+      matches
+- [x] `grep -rn '\bverbose\b' cmd/*.go | grep -v _test.go` returns
+      only the `cmd/root.go` flag declaration and the level wiring
+      (currently only the flag declaration; level wiring lands with
+      `--log-level`)
+- [ ] Tests can capture log output by configuring a buffer-backed
+      handler — needs `Logger.Handler.Writer` test pattern
 
 ---
 
@@ -292,23 +309,27 @@ Eliminate the `internal/document/time.go` package global.
 
 #### Tasks
 
-- [ ] Define `type GitResolver interface { UserName(ctx context.Context) string }`
-      in `cmd/` (or `internal/vcs`)
-- [ ] Implement `realGit struct{}` that calls
-      `exec.CommandContext(ctx, "git", "config", "user.name")`
-- [ ] Add a test-friendly `staticGit{Name string}` implementation
-- [ ] In `Runner`, hold `Git GitResolver`
-- [ ] In `(*Runner).resolveAuthor`, call `r.Git.UserName(cmd.Context())`
-      instead of the package-level `gitUserName()`
-- [ ] Delete `cmd/create.go:gitUserName`
-- [ ] Test author resolution by passing `staticGit{Name: "Test User"}`
+- [x] Define `type GitResolver interface { UserName(ctx context.Context) string }`
+      in `cmd/git.go` (Phase 2)
+- [x] Implement `realGit struct{}` that calls
+      `exec.CommandContext(ctx, "git", "config", "user.name")` (Phase 2)
+- [x] Add a test-friendly `staticGit{Name string}` implementation (Phase 2)
+- [x] In `Runner`, hold `Git GitResolver` (Phase 2)
+- [x] In `(*Runner).resolveAuthor`, call `r.Git.UserName(ctx)`
+      instead of the package-level `gitUserName()` (Phase 3e)
+- [x] Delete `cmd/create.go:gitUserName` (Phase 3e)
+- [ ] Author-resolution unit test that passes `staticGit{Name: "Test User"}`
+      — `TestRunner_DirectConstruction` exercises the interface, but
+      a focused `TestRunner_resolveAuthor_*` table test belongs here
 
 #### Success Criteria
 
-- `gitUserName` is gone
-- Author resolution is fully unit-testable
-- `Ctrl+C` during `docz create` cancels the git lookup (a `cmd.Context()`
-  benefit verified by a test that uses a cancellable context)
+- [x] `gitUserName` is gone
+- [x] Author resolution is fully unit-testable (Runner.resolveAuthor
+      takes ctx + flagAuthor and reads only r.Cfg/r.Git)
+- [ ] `Ctrl+C` during `docz create` cancels the git lookup (a `cmd.Context()`
+      benefit verified by a test that uses a cancellable context) — ctx
+      propagation is in place; explicit cancellation test still TODO
 
 ---
 
