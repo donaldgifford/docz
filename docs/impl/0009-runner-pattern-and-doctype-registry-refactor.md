@@ -256,29 +256,35 @@ the `--log-level` / `--log-format` flag wiring remains.)
 
 #### Tasks
 
-- [ ] In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag
-      (verbose → debug level; default → info level). Currently the
-      logger is hard-wired to `LevelInfo` in `NewRunner`; wiring
-      `--verbose` happens here.
+- [x] In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag
+      (verbose → debug level; default → info level). `NewRunner` still
+      installs the safe default (TextHandler at LevelInfo, stderr); the
+      flag-driven swap happens in `loadAndValidateConfig` via
+      `buildLogger`, which then overwrites `r.Logger` before the global
+      `runner` is published. This keeps `NewRunner` callable from tests
+      with no flag plumbing.
 - [x] Replace every `if verbose { fmt.Fprintf(os.Stderr, ...) }` block
       with `r.Logger.Debug(msg, "key", value)` — done as part of
       Phase 3 conversions
 - [x] Internal packages remain quiet (no logger handle plumbed in —
       see DESIGN-0004 §D)
 - [x] Decision §1 locked: `slog.TextHandler` default
-- [ ] Add `--log-level` flag (debug/info/warn/error) and `--log-format`
-      flag (text/json) with the JSON handler swap
+- [x] Add `--log-level` flag (debug/info/warn/error) and `--log-format`
+      flag (text/json) with the JSON handler swap. Resolution order:
+      explicit `--log-level` wins, else `--verbose`→debug, else info.
+      Invalid values surface a startup error rather than silently
+      defaulting.
 
 #### Success Criteria
 
 - [x] `grep -rn 'if verbose' cmd/*.go | grep -v _test.go` returns no
       matches
 - [x] `grep -rn '\bverbose\b' cmd/*.go | grep -v _test.go` returns
-      only the `cmd/root.go` flag declaration and the level wiring
-      (currently only the flag declaration; level wiring lands with
-      `--log-level`)
-- [ ] Tests can capture log output by configuring a buffer-backed
-      handler — needs `Logger.Handler.Writer` test pattern
+      only the `cmd/root.go` flag declaration and the buildLogger call
+      site that consumes it
+- [x] Tests can capture log output by configuring a buffer-backed
+      handler — `TestBuildLogger_*` cases use a `bytes.Buffer` as the
+      slog Writer and assert on emitted records (text and JSON)
 
 ---
 

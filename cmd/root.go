@@ -27,10 +27,12 @@ import (
 )
 
 var (
-	cfgFile string
-	docsDir string
-	verbose bool
-	appCfg  config.Config
+	cfgFile   string
+	docsDir   string
+	verbose   bool
+	logLevel  string
+	logFormat string
+	appCfg    config.Config
 )
 
 var rootCmd = &cobra.Command{
@@ -56,7 +58,9 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .docz.yaml in repo root)")
 	rootCmd.PersistentFlags().StringVar(&docsDir, "docs-dir", "", "base documentation directory (default: docs)")
-	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable verbose output")
+	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "shorthand for --log-level=debug")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "", "log level: debug, info, warn, error (overrides --verbose)")
+	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", logFormatText, "log handler format: text or json")
 }
 
 // loadAndValidateConfig is wired as the rootCmd PersistentPreRunE so a
@@ -88,6 +92,12 @@ func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
 	}
 
 	appCfg = cfg
-	runner = NewRunner(&cfg)
+	r := NewRunner(&cfg)
+	logger, err := buildLogger(r.Err, verbose, logLevel, logFormat)
+	if err != nil {
+		return err
+	}
+	r.Logger = logger
+	runner = r
 	return nil
 }

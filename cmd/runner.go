@@ -2,12 +2,20 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/donaldgifford/docz/internal/config"
+)
+
+// LogFormat values for the --log-format flag.
+const (
+	logFormatText = "text"
+	logFormatJSON = "json"
 )
 
 // runner is the process-wide Runner constructed in PersistentPreRunE.
@@ -52,9 +60,9 @@ type Runner struct {
 // NewRunner returns a Runner wired with default real-world
 // implementations: stdout/stderr writers, a slog.TextHandler at
 // LevelInfo writing to stderr, time.Now, and a realGit resolver that
-// shells out to `git config user.name`. IMPL-0009 Phase 4 will wire the
-// logger level to the --verbose flag and add --log-level / --log-format
-// flags.
+// shells out to `git config user.name`. Callers that need a non-default
+// logger (e.g. Cobra's loadAndValidateConfig wiring --verbose,
+// --log-level, --log-format) overwrite `r.Logger` after construction.
 //
 // cfg is taken by pointer per gocritic hugeParam (Config is ~240B);
 // the Runner stores a value copy so it owns an immutable snapshot.
@@ -68,5 +76,60 @@ func NewRunner(cfg *config.Config) *Runner {
 		})),
 		Now: time.Now,
 		Git: realGit{},
+	}
+}
+
+// buildLogger returns a slog.Logger configured per the CLI flags.
+//
+// Resolution order for the level: if `level` is non-empty it wins; else
+// `verbose` selects debug; else the default is info. This lets users
+// pin a specific level with --log-level while keeping --verbose as the
+// familiar shorthand for "more output".
+//
+// `format` selects between the text and JSON slog handlers. Anything
+// other than the constants logFormatText / logFormatJSON returns an
+// error so a typo at the CLI surfaces immediately instead of silently
+// defaulting.
+func buildLogger(w io.Writer, verbose bool, level, format string) (*slog.Logger, error) {
+	lvl, err := resolveLogLevel(verbose, level)
+	if err != nil {
+		return nil, err
+	}
+	opts := &slog.HandlerOptions{Level: lvl}
+	switch strings.ToLower(format) {
+	case "", logFormatText:
+		return slog.New(slog.NewTextHandler(w, opts)), nil
+	case logFormatJSON:
+		return slog.New(slog.NewJSONHandler(w, opts)), nil
+	default:
+		return nil, fmt.Errorf(
+			"invalid --log-format %q (want %q or %q)",
+			format, logFormatText, logFormatJSON,
+		)
+	}
+}
+
+// resolveLogLevel picks the slog.Level per the --log-level / --verbose
+// flag precedence documented on buildLogger.
+func resolveLogLevel(verbose bool, level string) (slog.Level, error) {
+	switch strings.ToLower(level) {
+	case "":
+		if verbose {
+			return slog.LevelDebug, nil
+		}
+		return slog.LevelInfo, nil
+	case "debug":
+		return slog.LevelDebug, nil
+	case "info":
+		return slog.LevelInfo, nil
+	case "warn", "warning":
+		return slog.LevelWarn, nil
+	case "error":
+		return slog.LevelError, nil
+	default:
+		return 0, fmt.Errorf(
+			"invalid --log-level %q (want debug, info, warn, or error)",
+			level,
+		)
 	}
 }
