@@ -342,16 +342,22 @@ Eliminate `os.Chdir` in tests.
 
 #### Tasks
 
-- [ ] Change `config.Load(configFile string) (Config, error)` to
+- [x] Change `config.Load(configFile string) (Config, error)` to
       `config.Load(configFile, repoRoot string) (Config, error)`
-- [ ] `repoRoot` is the directory to scan for `.docz.yaml` (empty string
+- [x] `repoRoot` is the directory to scan for `.docz.yaml` (empty string
       = current working directory for back-compat default)
-- [ ] In `initConfig` (now `(*Runner).LoadConfig` or similar), pass
-      `os.Getwd()` explicitly
-- [ ] Update tests in `internal/config/config_test.go` and `cmd/*_test.go`
-      to pass `t.TempDir()` directly; remove all `os.Chdir` +
-      `t.Cleanup(os.Chdir)` patterns
-- [ ] Verify tests can run `t.Parallel()` now
+- [x] In `loadAndValidateConfig` (cmd/root.go), pass `os.Getwd()`
+      explicitly
+- [x] Update tests in `internal/config/config_test.go` and
+      `internal/config/parity_baseline_test.go` to pass `t.TempDir()`
+      directly via the new repoRoot param; remove every `os.Chdir` +
+      `t.Cleanup(os.Chdir)` pattern in these files
+- [ ] Remove `os.Chdir` from `cmd/init_test.go`, `cmd/wiki_test.go`,
+      and `cmd/template_test.go` — requires plumbing a working
+      directory into init/wiki write paths so the helpers don't
+      assume cwd; deferred to the wrapper-cleanup commit
+- [ ] Verify tests can run `t.Parallel()` now — still blocked by
+      remaining `cmd/` `os.Chdir` + `appCfg`/flag-globals
 
 #### Success Criteria
 

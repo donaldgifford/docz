@@ -65,7 +65,12 @@ func init() {
 // Cobra short-circuits PersistentPreRunE when --help/-h is set or no
 // runnable subcommand was given, so help still works with a broken config.
 func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
-	cfg, err := config.Load(cfgFile)
+	repoRoot, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("resolving working directory: %w", err)
+	}
+
+	cfg, err := config.Load(cfgFile, repoRoot)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
 	}
