@@ -233,15 +233,29 @@ func ResolveTypeAlias(name string) string {
 	return name
 }
 
-// TypesHelp returns a formatted help string listing all valid types with aliases.
+// TypesHelp returns a formatted help string listing all valid types
+// with aliases. The body is derived from the DocType registry —
+// adding a new entry to `allDocTypes` with a `HelpDescription` is
+// the only step required to surface it in `docz --help`.
 func TypesHelp() string {
-	return `Document types:
-  rfc              Request for Comments — high-level proposals
-  adr              Architecture Decision Records — technical decisions
-  design           Design documents — detailed feature designs
-  impl             Implementation plans (alias: implementation)
-  plan             Planning documents — goal, approach, components
-  investigation    Research spikes — validate theories and errors (alias: inv)`
+	const nameColWidth = 17
+
+	var b strings.Builder
+	b.WriteString("Document types:")
+	for _, dt := range allDocTypes {
+		b.WriteString("\n  ")
+		b.WriteString(dt.Name)
+		for i := len(dt.Name); i < nameColWidth; i++ {
+			b.WriteByte(' ')
+		}
+		b.WriteString(dt.HelpDescription)
+		if len(dt.Aliases) > 0 {
+			b.WriteString(" (alias: ")
+			b.WriteString(strings.Join(dt.Aliases, ", "))
+			b.WriteByte(')')
+		}
+	}
+	return b.String()
 }
 
 // Validate checks the configuration for common errors and returns a list of
