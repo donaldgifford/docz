@@ -88,8 +88,8 @@ created: 2026-05-15
   - [Wave 1 — Mechanical wins (1 PR, ~1 day)](#wave-1--mechanical-wins-1-pr-1-day)
   - [Wave 2 — Correctness and duplication (1 PR, ~1 day)](#wave-2--correctness-and-duplication-1-pr-1-day)
   - [Wave 3 — Performance worth fixing (1 PR, ~half day)](#wave-3--performance-worth-fixing-1-pr-half-day)
-  - [Wave 4 — Stranded business logic (2 PRs, ~2 days)](#wave-4--stranded-business-logic-2-prs-2-days)
-  - [Wave 5 — Architecture refactor (separate DESIGN doc, ~1 week)](#wave-5--architecture-refactor-separate-design-doc-1-week)
+  - [Wave 4 — Stranded business logic (2 PRs, ~2 days) — Done (IMPL-0008)](#wave-4--stranded-business-logic-2-prs-2-days--done-impl-0008)
+  - [Wave 5 — Architecture refactor — Done (DESIGN-0004 + IMPL-0009)](#wave-5--architecture-refactor--done-design-0004--impl-0009)
   - [Low priority / defer](#low-priority--defer)
 - [References](#references)
 <!--toc:end-->

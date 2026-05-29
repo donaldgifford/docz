@@ -35,5 +35,5 @@ docz create design "Your Design Title"
 | DESIGN-0001 | docz CLI Tool | Implemented | 2026-02-22 | Donald Gifford | [0001-docz-cli-design.md](0001-docz-cli-design.md) |
 | DESIGN-0002 | Wiki Command for MkDocs TechDocs Integration | Implemented | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
 | DESIGN-0003 | Table of Contents Generation | Draft | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
-| DESIGN-0004 | Runner Pattern and DocType Registry | In Review | 2026-05-27 | Donald Gifford | [0004-runner-pattern-and-doctype-registry.md](0004-runner-pattern-and-doctype-registry.md) |
+| DESIGN-0004 | Runner Pattern and DocType Registry | Approved | 2026-05-27 | Donald Gifford | [0004-runner-pattern-and-doctype-registry.md](0004-runner-pattern-and-doctype-registry.md) |
 <!-- END DOCZ AUTO-GENERATED -->
