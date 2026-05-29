@@ -7,6 +7,7 @@ import (
 )
 
 func TestStaticGit_UserName(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		git  staticGit
@@ -18,6 +19,7 @@ func TestStaticGit_UserName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.git.UserName(context.Background()); got != tt.want {
 				t.Errorf("UserName() = %q, want %q", got, tt.want)
 			}
@@ -28,7 +30,8 @@ func TestStaticGit_UserName(t *testing.T) {
 // TestRealGit_UserName_Smoke verifies realGit does not panic and
 // returns either the configured git user.name or "". The exact value
 // depends on the test environment, so the assertion is permissive.
-func TestRealGit_UserName_Smoke(_ *testing.T) {
+func TestRealGit_UserName_Smoke(t *testing.T) {
+	t.Parallel()
 	_ = realGit{}.UserName(context.Background())
 }
 
@@ -42,6 +45,7 @@ func TestRealGit_UserName_Smoke(_ *testing.T) {
 // regression where the ctx is dropped surfaces as a timeout rather than
 // a hung test.
 func TestRealGit_UserName_CtxCancel(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel before invoking
 
