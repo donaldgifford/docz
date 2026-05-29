@@ -40,5 +40,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0006 | Correctness and Duplication Cleanup | In Progress | 2026-05-15 | Donald Gifford | [0006-correctness-and-duplication-cleanup.md](0006-correctness-and-duplication-cleanup.md) |
 | IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | In Progress | 2026-05-15 | Donald Gifford | [0007-eliminate-redundant-file-reads-and-heading-parses.md](0007-eliminate-redundant-file-reads-and-heading-parses.md) |
 | IMPL-0008 | Move Stranded Business Logic Into Internal Packages | Completed | 2026-05-15 | Donald Gifford | [0008-move-stranded-business-logic-into-internal-packages.md](0008-move-stranded-business-logic-into-internal-packages.md) |
-| IMPL-0009 | Runner Pattern and DocType Registry Refactor | Draft | 2026-05-15 | Donald Gifford | [0009-runner-pattern-and-doctype-registry-refactor.md](0009-runner-pattern-and-doctype-registry-refactor.md) |
+| IMPL-0009 | Runner Pattern and DocType Registry Refactor | Completed | 2026-05-15 | Donald Gifford | [0009-runner-pattern-and-doctype-registry-refactor.md](0009-runner-pattern-and-doctype-registry-refactor.md) |
 <!-- END DOCZ AUTO-GENERATED -->

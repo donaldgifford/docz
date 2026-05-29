@@ -1,7 +1,7 @@
 ---
 id: INV-0002
 title: "Architectural Review and Cleanup Opportunities"
-status: In Progress
+status: Concluded
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -88,8 +88,8 @@ created: 2026-05-15
   - [Wave 1 — Mechanical wins (1 PR, ~1 day)](#wave-1--mechanical-wins-1-pr-1-day)
   - [Wave 2 — Correctness and duplication (1 PR, ~1 day)](#wave-2--correctness-and-duplication-1-pr-1-day)
   - [Wave 3 — Performance worth fixing (1 PR, ~half day)](#wave-3--performance-worth-fixing-1-pr-half-day)
-  - [Wave 4 — Stranded business logic (2 PRs, ~2 days)](#wave-4--stranded-business-logic-2-prs-2-days)
-  - [Wave 5 — Architecture refactor (separate DESIGN doc, ~1 week)](#wave-5--architecture-refactor-separate-design-doc-1-week)
+  - [Wave 4 — Stranded business logic (2 PRs, ~2 days) — Done (IMPL-0008)](#wave-4--stranded-business-logic-2-prs-2-days--done-impl-0008)
+  - [Wave 5 — Architecture refactor — Done (DESIGN-0004 + IMPL-0009)](#wave-5--architecture-refactor--done-design-0004--impl-0009)
   - [Low priority / defer](#low-priority--defer)
 - [References](#references)
 <!--toc:end-->
@@ -908,20 +908,18 @@ Fix the active bug class: defaults drift and silent error swallowing.
 - F41: cache `[]byte` on `DocEntry` to eliminate double file reads
 - F42: change `UpdateToC` signature to return `[]Heading`
 
-### Wave 4 — Stranded business logic (2 PRs, ~2 days) — **In Progress (IMPL-0008)**
+### Wave 4 — Stranded business logic (2 PRs, ~2 days) — **Done (IMPL-0008)**
 
-Move logic out of `cmd/` into testable `internal/` packages. These changes land
-independently and unblock Wave 5.
+Move logic out of `cmd/` into testable `internal/` packages. These changes
+landed in IMPL-0008 PRs #44, #45, #46 (all merged with `dont-release`; the
+release cut bundled with IMPL-0009).
 
-Status as of 2026-05-25:
-
-- **PR A (Phases 1–3)** — open at #44, awaiting CI/merge
+- **PR A (Phases 1–3)** — merged at #44
   - [x] F17: `writeMkDocsYAML` → `internal/wiki.CreateMkDocs`
   - [x] F18: `updateToCs` → `internal/toc.UpdateFiles` (with categorized
         `UpdateReport`)
   - [x] F19: `wiki.BuildNav` extracted; cmd functions <30 lines
-- **PR B (Phases 4–10)** — pushed at `feat/impl-0008-pr-b`, opens after
-  PR A merges per IMPL-0008 Decisions §6
+- **PR B (Phases 4–10)** — merged at #45, #46
   - [x] F20: `internal/index` split — `ScanDocuments` + `DocEntry` moved to
         `internal/document/scan.go`
   - [x] F21: `document.LoadFrontmatter(path)` — single read+parse site
@@ -935,25 +933,46 @@ Status as of 2026-05-25:
   - [x] F26: `ToCConfig` → `TOCConfig`, field `ToC` → `TOC` (YAML tag
         stays `toc:` for back-compat — guarded by `TestLoad_TOCConfig`)
 
-### Wave 5 — Architecture refactor (separate DESIGN doc, ~1 week)
+### Wave 5 — Architecture refactor — **Done (DESIGN-0004 + IMPL-0009)**
 
-These changes require alignment on the new architecture before implementation.
-Worth a dedicated DESIGN doc.
+Designed in DESIGN-0004 and implemented across IMPL-0009 Phases 2–10.
+The single PR covering phases 2–11 stacks behind the DESIGN-0004 PR per
+IMPL-0009 Decisions §6.
 
-- F1: introduce `Runner` struct holding config + `io.Writer`s; convert cmd
-  handlers to methods; per-command options struct binds flags
-- F2: switch all `fmt.Printf` / `os.Stdout` to `cmd.Println` /
-  `cmd.OutOrStdout()`
-- F3: introduce `log/slog` logger; replace 20+ `if verbose { ... }` sites
-- F4: pass time as `CreateOptions.CreatedAt` instead of `timeNow` global
-- F5: make `gitUserName` injectable; accept `cmd.Context()`
-- F6: change `config.Load(configFile, repoRoot string)`; eliminate `os.Chdir` in
-  tests
-- F14: introduce `DocType` registry struct; derive `ValidTypes()`,
-  `DefaultConfig().Types`, nav titles, and template names from a single
-  registration list; add `TestAllTypesHaveEmbeddedTemplates`
-- F15: drive iteration from `EnabledTypes()`
-- F16: introduce `type DocType string` and `type Status string` typed constants
+- [x] F1: `Runner` struct + per-command options. `cmd.Runner` (runner.go)
+      bundles config + Out/Err writers + slog logger + `Now func()` +
+      `GitResolver`; handlers are `(*Runner).Foo` methods. Per-command
+      options structs (`createOpts`, `updateOpts`, `listOpts`, …) carry
+      flag values into methods.
+- [x] F2: all `fmt.Printf` / `os.Stdout` writes go through `r.Out`/`r.Err`
+      (IMPL-0009 Phase 3); tests pass `bytes.Buffer` writers.
+- [x] F3: `log/slog` logger; `if verbose { fmt.Fprintf(os.Stderr, ... )}`
+      sites are gone. `--verbose`, `--log-level`, `--log-format` resolve
+      in `buildLogger`; default is TextHandler at LevelInfo. (Phase 4)
+- [x] F4: `document.CreateOptions.CreatedAt` accepts a `time.Time`;
+      `internal/document/time.go` and the `timeNow` global are deleted.
+      (Phase 5)
+- [x] F5: `GitResolver.UserName(ctx context.Context)` interface; `realGit`
+      shells out via `exec.CommandContext`, `staticGit` powers tests.
+      (Phase 6)
+- [x] F6: `config.Load(configFile, repoRoot string)`; cmd/root.go passes
+      `os.Getwd()` once. Tests pass a `t.TempDir()` instead of
+      `os.Chdir`. (Phase 7)
+- [x] F14: `DocTypeDef` registry struct in `internal/config/doctype.go`.
+      `allDocTypes` is the single source of truth — `DefaultConfig`,
+      `DefaultNavTitles`, `typeAliases`, and `DocTypeNames` all derive
+      from it. `TestDocTypeRegistry_AllHaveEmbeddedTemplate` /
+      `_AllHaveEmbeddedIndexHeader` plus seven more invariants guard
+      consistency. (Phase 8)
+- [x] F15: `Config.EnabledTypes()` iterates the registry in declaration
+      order; `cmd/list.go` calls it instead of `ValidTypes()`. The old
+      `ValidTypes()` shim is deleted. (Phase 9)
+- [x] F16: `type DocType string` and `type Status string` in
+      `internal/config/doctype.go` flow through `document.CreateOptions.Type`,
+      `template.Data.{Type,Status}`, `template.EmbeddedDocumentTemplate`,
+      and `document.Frontmatter.Status`. yaml/v3 round-trips them with
+      no custom unmarshaler (DESIGN-0004 §F revises Decision §3).
+      (Phase 10)
 
 ### Low priority / defer
 

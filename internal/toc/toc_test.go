@@ -7,6 +7,7 @@ import (
 )
 
 func TestAnchorSlug(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		text string
@@ -27,6 +28,7 @@ func TestAnchorSlug(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := AnchorSlug(tt.text)
 			if got != tt.want {
 				t.Errorf("AnchorSlug(%q) = %q, want %q", tt.text, got, tt.want)
@@ -36,6 +38,7 @@ func TestAnchorSlug(t *testing.T) {
 }
 
 func TestStripInlineMarkdown(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		text string
@@ -53,6 +56,7 @@ func TestStripInlineMarkdown(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := stripInlineMarkdown(tt.text)
 			if got != tt.want {
 				t.Errorf("stripInlineMarkdown(%q) = %q, want %q", tt.text, got, tt.want)
@@ -62,7 +66,9 @@ func TestStripInlineMarkdown(t *testing.T) {
 }
 
 func TestParseHeadings(t *testing.T) {
+	t.Parallel()
 	t.Run("H2 through H6 levels", func(t *testing.T) {
+		t.Parallel()
 		content := EndMarker + "\n" +
 			"## Level 2\n" +
 			"### Level 3\n" +
@@ -83,6 +89,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("skips H1", func(t *testing.T) {
+		t.Parallel()
 		content := EndMarker + "\n" +
 			"# Title\n" +
 			"## Section\n"
@@ -97,6 +104,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("skips headings before end marker", func(t *testing.T) {
+		t.Parallel()
 		content := "## Before Marker\n" +
 			BeginMarker + "\n" +
 			EndMarker + "\n" +
@@ -112,6 +120,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("skips headings inside fenced code blocks", func(t *testing.T) {
+		t.Parallel()
 		content := EndMarker + "\n" +
 			"## Real Heading\n" +
 			"```\n" +
@@ -132,6 +141,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("skips headings in code blocks with language", func(t *testing.T) {
+		t.Parallel()
 		content := EndMarker + "\n" +
 			"## Before\n" +
 			"```go\n" +
@@ -146,6 +156,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("strips inline markdown", func(t *testing.T) {
+		t.Parallel()
 		content := EndMarker + "\n" +
 			"## **Bold** Heading\n" +
 			"## `Code` Heading\n" +
@@ -167,6 +178,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("duplicate slug suffixes", func(t *testing.T) {
+		t.Parallel()
 		content := EndMarker + "\n" +
 			"## Overview\n" +
 			"## Details\n" +
@@ -192,6 +204,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("no end marker parses from start", func(t *testing.T) {
+		t.Parallel()
 		content := "## First\n## Second\n"
 		headings := ParseHeadings(content)
 		if len(headings) != 2 {
@@ -200,6 +213,7 @@ func TestParseHeadings(t *testing.T) {
 	})
 
 	t.Run("empty content", func(t *testing.T) {
+		t.Parallel()
 		headings := ParseHeadings("")
 		if len(headings) != 0 {
 			t.Fatalf("got %d headings, want 0", len(headings))
@@ -208,7 +222,9 @@ func TestParseHeadings(t *testing.T) {
 }
 
 func TestGenerateToC(t *testing.T) {
+	t.Parallel()
 	t.Run("single level", func(t *testing.T) {
+		t.Parallel()
 		headings := []Heading{
 			{Level: 2, Text: "First", Slug: "first"},
 			{Level: 2, Text: "Second", Slug: "second"},
@@ -221,6 +237,7 @@ func TestGenerateToC(t *testing.T) {
 	})
 
 	t.Run("mixed levels with relative indentation", func(t *testing.T) {
+		t.Parallel()
 		headings := []Heading{
 			{Level: 2, Text: "Section", Slug: "section"},
 			{Level: 3, Text: "Subsection", Slug: "subsection"},
@@ -238,6 +255,7 @@ func TestGenerateToC(t *testing.T) {
 	})
 
 	t.Run("relative indentation starts at min level", func(t *testing.T) {
+		t.Parallel()
 		headings := []Heading{
 			{Level: 3, Text: "First", Slug: "first"},
 			{Level: 4, Text: "Second", Slug: "second"},
@@ -250,6 +268,7 @@ func TestGenerateToC(t *testing.T) {
 	})
 
 	t.Run("below min_headings returns empty", func(t *testing.T) {
+		t.Parallel()
 		headings := []Heading{
 			{Level: 2, Text: "Only One", Slug: "only-one"},
 		}
@@ -260,6 +279,7 @@ func TestGenerateToC(t *testing.T) {
 	})
 
 	t.Run("empty input returns empty", func(t *testing.T) {
+		t.Parallel()
 		got := GenerateToC(nil, 1)
 		if got != "" {
 			t.Errorf("GenerateToC(nil) = %q, want empty string", got)
@@ -267,6 +287,7 @@ func TestGenerateToC(t *testing.T) {
 	})
 
 	t.Run("zero min_headings generates toc", func(t *testing.T) {
+		t.Parallel()
 		headings := []Heading{
 			{Level: 2, Text: "One", Slug: "one"},
 		}
@@ -278,7 +299,9 @@ func TestGenerateToC(t *testing.T) {
 }
 
 func TestUpdateToC(t *testing.T) {
+	t.Parallel()
 	t.Run("markers present with headings", func(t *testing.T) {
+		t.Parallel()
 		content := "# Title\n\n" +
 			BeginMarker + "\n" +
 			EndMarker + "\n\n" +
@@ -303,6 +326,7 @@ func TestUpdateToC(t *testing.T) {
 	})
 
 	t.Run("markers present but below threshold", func(t *testing.T) {
+		t.Parallel()
 		content := "# Title\n\n" +
 			BeginMarker + "\n" +
 			EndMarker + "\n\n" +
@@ -325,6 +349,7 @@ func TestUpdateToC(t *testing.T) {
 	})
 
 	t.Run("no markers returns original", func(t *testing.T) {
+		t.Parallel()
 		content := "# Title\n\n## Section\n"
 		res := UpdateToC(content, 1)
 		if res.Found {
@@ -339,6 +364,7 @@ func TestUpdateToC(t *testing.T) {
 	})
 
 	t.Run("existing ToC content gets replaced", func(t *testing.T) {
+		t.Parallel()
 		content := "# Title\n\n" +
 			BeginMarker + "\n" +
 			"- [Old Entry](#old-entry)\n" +
@@ -358,6 +384,7 @@ func TestUpdateToC(t *testing.T) {
 	})
 
 	t.Run("only begin marker no end", func(t *testing.T) {
+		t.Parallel()
 		content := "# Title\n\n" + BeginMarker + "\n## Section\n"
 		res := UpdateToC(content, 1)
 		if res.Found {

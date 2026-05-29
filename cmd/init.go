@@ -36,33 +36,37 @@ func init() {
 }
 
 func runInit(_ *cobra.Command, _ []string) error {
-	if err := writeDefaultConfig(); err != nil {
+	return getRunner().Init(forceInit)
+}
+
+// Init scaffolds .docz.yaml plus a README index per enabled doc type.
+// Existing files are skipped unless force is true.
+func (r *Runner) Init(force bool) error {
+	if err := r.writeDefaultConfig(); err != nil {
 		return fmt.Errorf("writing default config: %w", err)
 	}
 
-	for _, typeName := range appCfg.EnabledTypes() {
-		typeDir := appCfg.TypeDir(typeName)
+	for _, typeName := range r.Cfg.EnabledTypes() {
+		typeDir := r.Cfg.TypeDir(typeName)
 		if err := os.MkdirAll(typeDir, config.DirMode); err != nil {
 			return fmt.Errorf("creating directory %s: %w", typeDir, err)
 		}
 
 		readmePath := filepath.Join(typeDir, config.IndexFileName)
-		if err := writeIndexReadme(readmePath, typeName); err != nil {
+		if err := r.writeIndexReadme(readmePath, typeName, force); err != nil {
 			return fmt.Errorf("writing index readme for %s: %w", typeName, err)
 		}
 	}
 
-	fmt.Println("Initialized docz successfully.")
-	return nil
+	_, err := fmt.Fprintln(r.Out, "Initialized docz successfully.")
+	return err
 }
 
-func writeDefaultConfig() error {
-	configPath := config.ConfigFileName
+func (r *Runner) writeDefaultConfig() error {
+	configPath := r.inRepo(config.ConfigFileName)
 
 	if _, err := os.Stat(configPath); err == nil {
-		if verbose {
-			fmt.Printf("Config file %s already exists, skipping.\n", configPath)
-		}
+		r.Logger.Debug("config file exists, skipping", "path", configPath)
 		return nil
 	}
 
@@ -75,8 +79,8 @@ func writeDefaultConfig() error {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 
-	fmt.Printf("Created %s\n", configPath)
-	return nil
+	_, err = fmt.Fprintf(r.Out, "Created %s\n", configPath)
+	return err
 }
 
 // renderDefaultConfig renders the embedded .docz.yaml template using
@@ -101,12 +105,11 @@ func renderDefaultConfig() (string, error) {
 	return buf.String(), nil
 }
 
-func writeIndexReadme(path, typeName string) error {
-	if !forceInit {
+func (r *Runner) writeIndexReadme(path, typeName string, force bool) error {
+	if !force {
 		if _, err := os.Stat(path); err == nil {
-			if verbose {
-				fmt.Printf("README %s already exists, skipping (use --force to overwrite).\n", path)
-			}
+			r.Logger.Debug("readme exists, skipping",
+				"path", path, "hint", "use --force to overwrite")
 			return nil
 		}
 	}
@@ -124,6 +127,6 @@ func writeIndexReadme(path, typeName string) error {
 		return fmt.Errorf("writing %s: %w", path, err)
 	}
 
-	fmt.Printf("Created %s\n", path)
-	return nil
+	_, err = fmt.Fprintf(r.Out, "Created %s\n", path)
+	return err
 }

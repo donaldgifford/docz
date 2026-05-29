@@ -20,6 +20,7 @@ import (
 // drift between the template, DefaultConfig, and the YAML schema if
 // any of the three change without the others.
 func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
+	t.Parallel()
 	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
 	if err != nil {
 		t.Fatalf("loading template: %v", err)
@@ -51,6 +52,7 @@ func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
 // drop comments; the template approach preserves them. If a future change
 // switches back to marshal, this catches it.
 func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
+	t.Parallel()
 	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
 	if err != nil {
 		t.Fatalf("loading template: %v", err)
@@ -86,6 +88,7 @@ func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
 // future refactor reintroduces a `var cfg Config` zero-init, these checks
 // catch it.
 func TestLoad_PartialOverridesPreserveSiblingDefaults(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "partial.yaml")
 	content := `wiki:
@@ -97,7 +100,7 @@ toc:
 		t.Fatal(err)
 	}
 
-	cfg, err := config.Load(configPath)
+	cfg, err := config.Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -140,25 +143,17 @@ toc:
 // repo-root config path (not explicit-file), which uses MergeConfigMap +
 // Unmarshal-on-defaults instead of loadFromFile.
 func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
+	t.Parallel()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
 	content := `author:
   default: "Test Author"
 `
-	if err := os.WriteFile(".docz.yaml", []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	cfg, err := config.Load("")
+	cfg, err := config.Load("", dir)
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -184,24 +179,16 @@ func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
 // wrapped error with the file path in the message, instead of being
 // silently swallowed in mergeConfigFile.
 func TestLoad_MalformedRepoConfigReturnsError(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
+	t.Parallel()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
 	// Tab inside a value plus an unclosed brace -> YAML parse error.
 	content := "types: {rfc: {dir: foo\n  not valid: : :"
-	if err := os.WriteFile(".docz.yaml", []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	_, loadErr := config.Load("")
+	_, loadErr := config.Load("", dir)
 	if loadErr == nil {
 		t.Fatal("expected parse error from malformed .docz.yaml, got nil")
 	}
@@ -218,18 +205,10 @@ func TestLoad_MalformedRepoConfigReturnsError(t *testing.T) {
 // .docz.yaml must continue to return defaults without error. This is the
 // green-field case (new repo, no config yet) and must keep working.
 func TestLoad_MissingRepoConfigSilent(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
+	t.Parallel()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
-	cfg, loadErr := config.Load("")
+	cfg, loadErr := config.Load("", dir)
 	if loadErr != nil {
 		t.Fatalf("missing .docz.yaml should not error, got %v", loadErr)
 	}
@@ -245,28 +224,21 @@ func TestLoad_MissingRepoConfigSilent(t *testing.T) {
 // Skipped when running as root (CI containers often do) because root
 // bypasses permission bits.
 func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
+	t.Parallel()
 	if os.Geteuid() == 0 {
 		t.Skip("permission bits don't constrain root; skipping unreadable-file test")
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(dir, ".docz.yaml")
 
-	if err := os.WriteFile(".docz.yaml", []byte("docs_dir: docs\n"), 0o000); err != nil {
+	if err := os.WriteFile(cfgPath, []byte("docs_dir: docs\n"), 0o000); err != nil {
 		t.Fatal(err)
 	}
 	// Make sure the file gets cleaned up even though it has mode 0000.
-	t.Cleanup(func() { _ = os.Chmod(".docz.yaml", 0o644) })
+	t.Cleanup(func() { _ = os.Chmod(cfgPath, 0o644) })
 
-	_, loadErr := config.Load("")
+	_, loadErr := config.Load("", dir)
 	if loadErr == nil {
 		t.Fatal("expected error reading unreadable .docz.yaml, got nil")
 	}
@@ -287,6 +259,7 @@ func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
 // Bool fields (Enabled) are intentionally NOT backfilled and are
 // covered by a sibling subtest.
 func TestLoad_TypeFieldDefaultsBackfilled(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "partial.yaml")
 	// User declares rfc with only a custom dir — everything else
@@ -301,7 +274,7 @@ func TestLoad_TypeFieldDefaultsBackfilled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := config.Load(configPath)
+	cfg, err := config.Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -337,6 +310,7 @@ func TestLoad_TypeFieldDefaultsBackfilled(t *testing.T) {
 // backfilled from defaults, so Validate can still flag the type as
 // misconfigured.
 func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "explicit-empty.yaml")
 	content := `types:
@@ -349,7 +323,7 @@ func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := config.Load(configPath)
+	cfg, err := config.Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -366,18 +340,10 @@ func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
 // DefaultConfig(). Catches any future drift where Load loses or mutates
 // fields relative to DefaultConfig.
 func TestLoad_DefaultsParity(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
+	t.Parallel()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
-	got, err := config.Load("")
+	got, err := config.Load("", dir)
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}

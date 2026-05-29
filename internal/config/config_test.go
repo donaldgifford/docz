@@ -10,13 +10,14 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	if cfg.DocsDir != "docs" {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
 
-	for _, typeName := range ValidTypes() {
+	for _, typeName := range DocTypeNames() {
 		tc, ok := cfg.Types[typeName]
 		if !ok {
 			t.Errorf("missing type config for %q", typeName)
@@ -88,20 +89,22 @@ func TestDefaultConfig(t *testing.T) {
 	}
 }
 
-func TestValidTypes(t *testing.T) {
-	types := ValidTypes()
+func TestDocTypeNames(t *testing.T) {
+	t.Parallel()
+	types := DocTypeNames()
 	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if len(types) != len(want) {
-		t.Fatalf("ValidTypes() has %d elements, want %d", len(types), len(want))
+		t.Fatalf("DocTypeNames() has %d elements, want %d", len(types), len(want))
 	}
 	for i, got := range types {
 		if got != want[i] {
-			t.Errorf("ValidTypes()[%d] = %q, want %q", i, got, want[i])
+			t.Errorf("DocTypeNames()[%d] = %q, want %q", i, got, want[i])
 		}
 	}
 }
 
 func TestTypeDir(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	tests := []struct {
@@ -117,6 +120,7 @@ func TestTypeDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.docType, func(t *testing.T) {
+			t.Parallel()
 			got := cfg.TypeDir(tt.docType)
 			if got != tt.want {
 				t.Errorf("TypeDir(%q) = %q, want %q", tt.docType, got, tt.want)
@@ -126,19 +130,10 @@ func TestTypeDir(t *testing.T) {
 }
 
 func TestLoad_NoConfigFiles(t *testing.T) {
-	// Run in a temp dir with no config files.
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
+	t.Parallel()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
-	cfg, err := Load("")
+	cfg, err := Load("", dir)
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -153,27 +148,19 @@ func TestLoad_NoConfigFiles(t *testing.T) {
 }
 
 func TestLoad_RepoConfig(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
+	t.Parallel()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
 	configContent := `docs_dir: documentation
 author:
   default: "Test Author"
   from_git: false
 `
-	if err := os.WriteFile(".docz.yaml", []byte(configContent), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load("")
+	cfg, err := Load("", dir)
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -194,6 +181,7 @@ author:
 }
 
 func TestLoad_ExplicitConfigFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `docs_dir: custom-docs
@@ -202,7 +190,7 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -213,6 +201,7 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 }
 
 func TestLoad_WikiConfig(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `wiki:
@@ -227,7 +216,7 @@ func TestLoad_WikiConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -252,6 +241,7 @@ func TestLoad_WikiConfig(t *testing.T) {
 // keep working — if this test breaks after a future YAML tag change,
 // user configs in the wild will silently stop applying.
 func TestLoad_TOCConfig(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `toc:
@@ -262,7 +252,7 @@ func TestLoad_TOCConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -276,6 +266,7 @@ func TestLoad_TOCConfig(t *testing.T) {
 }
 
 func TestLoad_WikiMarkdownExtensions(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `wiki:
@@ -292,7 +283,7 @@ func TestLoad_WikiMarkdownExtensions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -324,6 +315,7 @@ func TestLoad_WikiMarkdownExtensions(t *testing.T) {
 }
 
 func TestLoad_WikiPlugins(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `wiki:
@@ -336,7 +328,7 @@ func TestLoad_WikiPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := Load(configPath)
+	cfg, err := Load(configPath, "")
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
@@ -353,6 +345,7 @@ func TestLoad_WikiPlugins(t *testing.T) {
 }
 
 func TestResolveTypeAlias(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -369,6 +362,7 @@ func TestResolveTypeAlias(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			got := ResolveTypeAlias(tt.input)
 			if got != tt.want {
 				t.Errorf("ResolveTypeAlias(%q) = %q, want %q", tt.input, got, tt.want)
@@ -378,6 +372,7 @@ func TestResolveTypeAlias(t *testing.T) {
 }
 
 func TestTypesHelp(t *testing.T) {
+	t.Parallel()
 	help := TypesHelp()
 	for _, typeName := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
 		if !strings.Contains(help, typeName) {
@@ -392,6 +387,7 @@ func TestTypesHelp(t *testing.T) {
 }
 
 func TestValidate_DefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	warnings, err := cfg.Validate()
 	if err != nil {
@@ -403,6 +399,7 @@ func TestValidate_DefaultConfig(t *testing.T) {
 }
 
 func TestValidate_EmptyDocsDir(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	cfg.DocsDir = ""
 	_, err := cfg.Validate()
@@ -412,6 +409,7 @@ func TestValidate_EmptyDocsDir(t *testing.T) {
 }
 
 func TestValidate_EmptyStatuses(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	tc := cfg.Types["rfc"]
 	tc.Statuses = nil
@@ -424,6 +422,7 @@ func TestValidate_EmptyStatuses(t *testing.T) {
 }
 
 func TestValidateType(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	tests := []struct {
@@ -442,6 +441,7 @@ func TestValidateType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := cfg.ValidateType(tt.input)
 			if tt.wantUnknown {
 				if err == nil {
@@ -463,26 +463,28 @@ func TestValidateType(t *testing.T) {
 }
 
 func TestEnabledTypes(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	got := cfg.EnabledTypes()
-	want := []string{"adr", "design", "impl", "investigation", "plan", "rfc"}
+	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("EnabledTypes() = %v, want sorted %v", got, want)
+		t.Errorf("EnabledTypes() = %v, want registry-order %v", got, want)
 	}
 
-	// Disable a type and confirm it disappears from the sorted list.
+	// Disable a type and confirm it drops out of the registry-order list.
 	tc := cfg.Types["plan"]
 	tc.Enabled = false
 	cfg.Types["plan"] = tc
 
 	got = cfg.EnabledTypes()
-	want = []string{"adr", "design", "impl", "investigation", "rfc"}
+	want = []string{"rfc", "adr", "design", "impl", "investigation"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("EnabledTypes() with plan disabled = %v, want %v", got, want)
 	}
 }
 
 func TestValidate_UnknownType(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	cfg.Types["custom"] = TypeConfig{Enabled: true, Statuses: []string{"Draft"}}
 

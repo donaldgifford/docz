@@ -121,16 +121,59 @@ make fmt         # run gofmt + goimports
 
 ## Adding a New Built-In Document Type
 
-See [DEVELOPMENT.md](DEVELOPMENT.md#adding-a-built-in-document-type) for the
-step-by-step guide.
+Since IMPL-0009 (DocType registry, DESIGN-0004 §E) the canonical list of
+built-in types lives in a single `allDocTypes` slice in
+`internal/config/doctype.go`. Adding a type is a one-file Go edit plus two
+embedded templates:
 
-New built-in types require:
+1. Append a new entry to `allDocTypes` in `internal/config/doctype.go`:
 
-1. A document template under `internal/template/templates/<type>.md`
-2. An index header template under `internal/template/templates/index_<type>.md`
-3. Default config entry in `internal/config/config.go`
-4. Updated `ValidTypes()` in `internal/config/config.go`
-5. Tests covering the new type
+   ```go
+   {
+       Name:    "newtype",
+       Aliases: nil, // or []string{"alias1"}
+       DefaultConfig: func() config.TypeConfig {
+           return config.TypeConfig{
+               Enabled:     true,
+               Dir:         "newtype",
+               IDPrefix:    "NEW",
+               IDWidth:     4,
+               Statuses:    []string{"Draft", "Accepted"},
+               StatusField: "status",
+               PluralLabel: "New Types",
+           }
+       },
+       NavTitle:     "New Types",
+       PluralLabel:  "New Types",
+       TemplateName: "newtype",
+   },
+   ```
+
+2. Add the document template at `internal/template/templates/<TemplateName>.md`
+3. Add the index header at `internal/template/templates/index_<TemplateName>.md`
+4. Optionally extend the help string in `config.TypesHelp` (the
+   `TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp` test will fail
+   loudly if you forget)
+
+`DefaultConfig().Types`, `Wiki.NavTitles`, `DocTypeNames()`, the
+`typeAliases` map, `Config.EnabledTypes()`, and the `valid types` error
+list in `Config.ValidateType` are all derived from the registry — no
+other code edits are required. The Phase 8 consistency tests in
+`internal/config/doctype_test.go` (`AllHaveEmbeddedTemplate`,
+`AllHaveEmbeddedIndexHeader`, `NoDuplicateNames`,
+`NoAliasCollidesWithCanonical`, `DefaultConfigValidates`,
+`DefaultConfigStatusesNonEmpty`, `DefaultConfigReturnsFreshSlice`,
+`LookupDocTypeResolvesCanonicalAndAliases`,
+`DerivedDefaultConfigMatchesHardcoded`) catch missing templates,
+duplicate names, alias collisions, broken defaults, and shared-slice
+mutation.
+
+`DocType` and `Status` are typed string wrappers
+(`internal/config/doctype.go`) used at `document.CreateOptions.Type`,
+`document.Frontmatter.Status`, `template.Data.{Type,Status}`, and
+`template.EmbeddedDocumentTemplate`. Untyped string literals (e.g.
+`Status: "Draft"`) implicitly convert; use `config.DocType(s)` /
+`config.Status(s)` only when passing a `string` variable.
 
 ## Changing Embedded Templates
 

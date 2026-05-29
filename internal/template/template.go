@@ -17,16 +17,21 @@ import (
 // (Renamed from TemplateData in IMPL-0008 Phase 10 — the package
 // qualifier `template.Data` reads better than the stuttering
 // `template.TemplateData`.)
+//
+// Type and Status are typed wrappers (DESIGN-0004 §F) so a stray
+// title or filename string in their place fails to compile. The
+// underlying kind is string, so text/template renders them via the
+// underlying value without a Stringer; no template-syntax change.
 type Data struct {
-	Number   string // Zero-padded document ID (e.g., "0001")
-	Title    string // Document title as provided
-	Date     string // Creation date (YYYY-MM-DD)
-	Author   string // Author name
-	Status   string // Initial status
-	Type     string // Document type (e.g., "RFC")
-	Prefix   string // ID prefix from config (e.g., "RFC")
-	Slug     string // Kebab-case title
-	Filename string // Generated filename (e.g., "0001-api-rate-limiting.md")
+	Number   string         // Zero-padded document ID (e.g., "0001")
+	Title    string         // Document title as provided
+	Date     string         // Creation date (YYYY-MM-DD)
+	Author   string         // Author name
+	Status   config.Status  // Initial status
+	Type     config.DocType // Document type (e.g., "RFC")
+	Prefix   string         // ID prefix from config (e.g., "RFC")
+	Slug     string         // Kebab-case title
+	Filename string         // Generated filename (e.g., "0001-api-rate-limiting.md")
 }
 
 var (
@@ -92,7 +97,7 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	}
 
 	// 3. Embedded default.
-	return EmbeddedDocumentTemplate(docType)
+	return EmbeddedDocumentTemplate(config.DocType(docType))
 }
 
 // WikiIndexType represents a single document type entry for the wiki index template.

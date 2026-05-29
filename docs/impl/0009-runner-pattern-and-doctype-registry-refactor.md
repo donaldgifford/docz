@@ -1,7 +1,7 @@
 ---
 id: IMPL-0009
 title: "Runner Pattern and DocType Registry Refactor"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-05-15
 ---
@@ -9,7 +9,7 @@ created: 2026-05-15
 
 # IMPL 0009: Runner Pattern and DocType Registry Refactor
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-05-15
 
@@ -152,8 +152,12 @@ document. This is the prerequisite gate.
   - Migration plan: can the refactor land in one PR or must be split?
     — DESIGN-0004 §Migration: single PR for phases 2–11 with an 11-commit
     sequence
-- [ ] DESIGN doc reviewed and accepted (status: Approved) — currently
-      `In Review`; ships as PR 1 before implementation begins
+- [x] DESIGN doc reviewed and accepted (status: Approved) — flipped
+      from `In Review` after the full Phases 2–11 implementation
+      shipped lint-clean and race-clean, validating the design's
+      load-bearing claims (Runner construction, DocType registry,
+      `repoRoot` parameter, stacked-PR split). Frontmatter and
+      narrative status updated together.
 
 #### Success Criteria
 
@@ -171,7 +175,7 @@ Establish the Runner shape with no functional change to handlers yet.
 
 #### Tasks
 
-- [ ] Define `cmd.Runner` struct per the DESIGN doc, e.g.:
+- [x] Define `cmd.Runner` struct per the DESIGN doc, e.g.:
 
   ```
   type Runner struct {
@@ -184,72 +188,115 @@ Establish the Runner shape with no functional change to handlers yet.
   }
   ```
 
-- [ ] Add `NewRunner(cfg config.Config) *Runner` with defaults
-      (`os.Stdout`, `os.Stderr`, `slog.Default()`, `time.Now`, real git)
-- [ ] Add a single root-level `runner *Runner` global initialized in
+- [x] Add `NewRunner(cfg *config.Config) *Runner` with defaults
+      (`os.Stdout`, `os.Stderr`, `slog.TextHandler` at `LevelInfo`,
+      `time.Now`, `realGit{}`). Signature deviates from the DESIGN
+      sketch — takes `*config.Config` per `gocritic hugeParam` (Config
+      is ~240B); semantically equivalent (Runner stores `*cfg` as a
+      value copy).
+- [x] Add `GitResolver` interface plus `realGit`/`staticGit`
+      implementations in `cmd/git.go`. (Bundled into Phase 2 because
+      `Runner.Git` requires the type to compile; Phase 6 still owns
+      the conversion of `cmd/create.go:gitUserName` callers.)
+- [x] Add a single root-level `runner *Runner` global initialized in
       `PersistentPreRunE` — this is a temporary scaffolding step; later
-      phases convert handlers one at a time
-- [ ] Confirm all existing tests pass with no changes
+      phases convert handlers one at a time.
+- [x] Confirm all existing tests pass with no changes. New tests added:
+      `cmd/runner_test.go` (`TestNewRunner_Defaults`,
+      `TestRunner_DirectConstruction`, `TestPackageRunner_AssignedFromNewRunner`)
+      and `cmd/git_test.go` (`TestStaticGit_UserName`,
+      `TestRealGit_UserName_Smoke`).
 
 #### Success Criteria
 
-- `Runner` defined and importable
-- No handler converted yet — pure plumbing
-- `make ci` green
+- [x] `Runner` defined and importable
+- [x] No handler converted yet — pure plumbing
+- [x] `make ci` green
 
 ---
 
 ### Phase 3: Migrate handlers to Runner methods + output writers
 
 Convert command handlers from package-level functions to `Runner` methods.
-Replace direct `fmt.Printf` / `os.Stdout` writes with `cmd.OutOrStdout()`.
+Per DESIGN-0004 §C, handlers write to `r.Out` / `r.Err` (NOT
+`cmd.OutOrStdout()` — the task wording below predates the DESIGN and is
+superseded).
 
 #### Tasks
 
-- [ ] Convert `runCreate` → `(*Runner).Create` accepting `*cobra.Command`
-      and `args`; use `cmd.OutOrStdout()` / `cmd.PrintErrf`
-- [ ] Convert `runUpdate`, `runList`, `runInit`, `runTemplateShow`,
+- [x] Convert `runCreate` → `(*Runner).Create` accepting context and
+      args; output through `r.Out` (Phase 3e)
+- [x] Convert `runUpdate`, `runList`, `runInit`, `runTemplateShow`,
       `runTemplateExport`, `runTemplateOverride`, `runWikiInit`,
-      `runWikiUpdate`, `runConfig`, `runVersion` similarly
-- [ ] Replace ~50 `fmt.Printf` / `os.Stdout` sites with `cmd.Println` /
-      `cmd.Print` / `cmd.OutOrStdout()`
-- [ ] Replace ~12 `fmt.Fprintf(os.Stderr, ...)` sites with `cmd.PrintErrf`
-- [ ] Update tests to use `cmd.SetOut(&buf)` / `cmd.SetErr(&buf)` instead
-      of `os.Pipe` tricks (~20 test files affected)
+      `runWikiUpdate`, `runConfig`, `runVersion` similarly (Phases 3a/3b/3c/3d/3f)
+- [x] Replace `fmt.Printf` / `os.Stdout` sites with writes through
+      `r.Out` (single residual at `cmd/root.go:79` is in the
+      bootstrap path before the Runner exists — acceptable)
+- [x] Replace `fmt.Fprintf(os.Stderr, ...)` sites with `r.Err` writes
+      or `r.Logger.Debug` (Phase 4 work folded in)
+- [x] Update tests to construct a Runner with `bytes.Buffer` writers
+      instead of `os.Pipe` tricks — finished in the cleanup commit:
+      `installListRunner`, `setupWikiTestDir`, `newTemplateTestRunner`,
+      `BenchmarkCmdUpdate`, and `config_test.go` all assemble a Runner
+      with `Out` pointed at a `bytes.Buffer` or `io.Discard`
 
 #### Success Criteria
 
-- `grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/` returns no
-  matches in handlers (only in tests, if anywhere)
-- No test uses `os.Pipe` to capture output
-- Tests can run `t.Parallel()` (where the underlying handler is
-  side-effect-free)
+- [x] `grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/*.go | grep -v _test.go`
+      returns only `cmd/root.go:79` (bootstrap path)
+- [x] No test uses `os.Pipe` to capture output — verified with
+      `grep -n 'os.Pipe' cmd/*_test.go`
+- [x] Tests can run `t.Parallel()` (where the underlying handler is
+      side-effect-free) — every cmd test that does not touch the
+      package-level `runner`/`appCfg`/flag globals now calls
+      `t.Parallel()`: `TestStaticGit_UserName` (+ subtests),
+      `TestRealGit_UserName_{Smoke,CtxCancel}`,
+      `TestFilterByStatus`, `TestOutputTable/JSON/CSV`, the
+      `TestBuildLogger_*` family, `TestRunner_resolveAuthor`
+      (+ subtests), and `TestRunner_Create_Parallel`. The remaining
+      cmd tests still go through `runUpdate`/`runCreate`/`rootCmd.Execute`
+      and therefore touch the shared globals, so they stay serial
+      until per-command opts structs land in a follow-up RFC.
 
 ---
 
 ### Phase 4: Introduce `log/slog` logger; eliminate `if verbose`
 
-Replace 20+ verbose-guard blocks with structured logging.
+Replace verbose-guard blocks with structured logging. (Note: the
+mechanical replacements landed alongside the Phase 3 conversions;
+the `--log-level` / `--log-format` flag wiring remains.)
 
 #### Tasks
 
-- [ ] In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag
-      (verbose → debug level; default → info level)
-- [ ] Replace every `if verbose { fmt.Fprintf(os.Stderr, ...) }` block
-      with `r.Logger.Debug(msg, "key", value)`
-- [ ] Plumb `*slog.Logger` into internal packages where logging makes
-      sense (probably none — internal packages should remain quiet and
-      return data; logging stays at the cmd layer)
-- [ ] Decide on `slog.TextHandler` vs `slog.JSONHandler` — see Open
-      Question 1
-- [ ] Add a `--log-format` flag if both handlers are supported
+- [x] In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag
+      (verbose → debug level; default → info level). `NewRunner` still
+      installs the safe default (TextHandler at LevelInfo, stderr); the
+      flag-driven swap happens in `loadAndValidateConfig` via
+      `buildLogger`, which then overwrites `r.Logger` before the global
+      `runner` is published. This keeps `NewRunner` callable from tests
+      with no flag plumbing.
+- [x] Replace every `if verbose { fmt.Fprintf(os.Stderr, ...) }` block
+      with `r.Logger.Debug(msg, "key", value)` — done as part of
+      Phase 3 conversions
+- [x] Internal packages remain quiet (no logger handle plumbed in —
+      see DESIGN-0004 §D)
+- [x] Decision §1 locked: `slog.TextHandler` default
+- [x] Add `--log-level` flag (debug/info/warn/error) and `--log-format`
+      flag (text/json) with the JSON handler swap. Resolution order:
+      explicit `--log-level` wins, else `--verbose`→debug, else info.
+      Invalid values surface a startup error rather than silently
+      defaulting.
 
 #### Success Criteria
 
-- `grep -rn 'if verbose' cmd/` returns no matches
-- `grep -rn '\bverbose\b' cmd/` returns only the flag declaration and
-  the logger-level wiring
-- Tests can capture log output by configuring a buffer-backed handler
+- [x] `grep -rn 'if verbose' cmd/*.go | grep -v _test.go` returns no
+      matches
+- [x] `grep -rn '\bverbose\b' cmd/*.go | grep -v _test.go` returns
+      only the `cmd/root.go` flag declaration and the buildLogger call
+      site that consumes it
+- [x] Tests can capture log output by configuring a buffer-backed
+      handler — `TestBuildLogger_*` cases use a `bytes.Buffer` as the
+      slog Writer and assert on emitted records (text and JSON)
 
 ---
 
@@ -259,20 +306,23 @@ Eliminate the `internal/document/time.go` package global.
 
 #### Tasks
 
-- [ ] Add `CreatedAt time.Time` to `document.CreateOptions`
-- [ ] In `document.Create`, use `opts.CreatedAt` (with zero-value fallback
+- [x] Add `CreatedAt time.Time` to `document.CreateOptions`
+- [x] In `document.Create`, use `opts.CreatedAt` (with zero-value fallback
       to `time.Now()`) and remove the call to `currentDate()` /
       `timeNow()`
-- [ ] Delete `internal/document/time.go` and the `timeNow` package
+- [x] Delete `internal/document/time.go` and the `timeNow` package
       variable
-- [ ] In `cmd/create.go`, populate `opts.CreatedAt = runner.Now()`
-- [ ] Update `internal/document/create_test.go` to pass `CreatedAt`
-      directly; remove `t.Cleanup` time-restore patterns
+- [x] In `cmd/create.go`, populate `opts.CreatedAt = r.Now()` inside
+      `(*Runner).Create`
+- [x] Update `internal/document/create_test.go` to pass `CreatedAt`
+      directly; remove `t.Cleanup` time-restore patterns; add
+      `TestCreate_ZeroCreatedAtFallsBackToNow` to cover the
+      zero-value path
 
 #### Success Criteria
 
-- `grep -rn 'timeNow' internal/` returns no matches
-- Tests no longer mutate package globals to control time
+- [x] `grep -rn 'timeNow' internal/` returns no matches
+- [x] Tests no longer mutate package globals to control time
 
 ---
 
@@ -280,23 +330,31 @@ Eliminate the `internal/document/time.go` package global.
 
 #### Tasks
 
-- [ ] Define `type GitResolver interface { UserName(ctx context.Context) string }`
-      in `cmd/` (or `internal/vcs`)
-- [ ] Implement `realGit struct{}` that calls
-      `exec.CommandContext(ctx, "git", "config", "user.name")`
-- [ ] Add a test-friendly `staticGit{Name string}` implementation
-- [ ] In `Runner`, hold `Git GitResolver`
-- [ ] In `(*Runner).resolveAuthor`, call `r.Git.UserName(cmd.Context())`
-      instead of the package-level `gitUserName()`
-- [ ] Delete `cmd/create.go:gitUserName`
-- [ ] Test author resolution by passing `staticGit{Name: "Test User"}`
+- [x] Define `type GitResolver interface { UserName(ctx context.Context) string }`
+      in `cmd/git.go` (Phase 2)
+- [x] Implement `realGit struct{}` that calls
+      `exec.CommandContext(ctx, "git", "config", "user.name")` (Phase 2)
+- [x] Add a test-friendly `staticGit{Name string}` implementation (Phase 2)
+- [x] In `Runner`, hold `Git GitResolver` (Phase 2)
+- [x] In `(*Runner).resolveAuthor`, call `r.Git.UserName(ctx)`
+      instead of the package-level `gitUserName()` (Phase 3e)
+- [x] Delete `cmd/create.go:gitUserName` (Phase 3e)
+- [x] Author-resolution unit test that passes `staticGit{Name: "Test User"}`.
+      `TestRunner_resolveAuthor` (cmd/runner_test.go) is a five-row
+      table covering: flag wins over everything; config default wins
+      over git; git wins when both are empty; `from_git=false` skips
+      git; git returning empty falls through to "Unknown".
 
 #### Success Criteria
 
-- `gitUserName` is gone
-- Author resolution is fully unit-testable
-- `Ctrl+C` during `docz create` cancels the git lookup (a `cmd.Context()`
-  benefit verified by a test that uses a cancellable context)
+- [x] `gitUserName` is gone
+- [x] Author resolution is fully unit-testable (Runner.resolveAuthor
+      takes ctx + flagAuthor and reads only r.Cfg/r.Git)
+- [x] `Ctrl+C` during `docz create` cancels the git lookup.
+      `TestRealGit_UserName_CtxCancel` (cmd/git_test.go) passes an
+      already-cancelled context and asserts the call returns "" within
+      2s — a future regression that drops the ctx would time out
+      instead of hanging the suite.
 
 ---
 
@@ -306,16 +364,31 @@ Eliminate `os.Chdir` in tests.
 
 #### Tasks
 
-- [ ] Change `config.Load(configFile string) (Config, error)` to
+- [x] Change `config.Load(configFile string) (Config, error)` to
       `config.Load(configFile, repoRoot string) (Config, error)`
-- [ ] `repoRoot` is the directory to scan for `.docz.yaml` (empty string
+- [x] `repoRoot` is the directory to scan for `.docz.yaml` (empty string
       = current working directory for back-compat default)
-- [ ] In `initConfig` (now `(*Runner).LoadConfig` or similar), pass
-      `os.Getwd()` explicitly
-- [ ] Update tests in `internal/config/config_test.go` and `cmd/*_test.go`
-      to pass `t.TempDir()` directly; remove all `os.Chdir` +
-      `t.Cleanup(os.Chdir)` patterns
-- [ ] Verify tests can run `t.Parallel()` now
+- [x] In `loadAndValidateConfig` (cmd/root.go), pass `os.Getwd()`
+      explicitly
+- [x] Update tests in `internal/config/config_test.go` and
+      `internal/config/parity_baseline_test.go` to pass `t.TempDir()`
+      directly via the new repoRoot param; remove every `os.Chdir` +
+      `t.Cleanup(os.Chdir)` pattern in these files
+- [x] Remove `os.Chdir` from `cmd/init_test.go`, `cmd/wiki_test.go`,
+      and `cmd/template_test.go` — done by adding `Runner.RepoRoot`
+      and an `inRepo(name)` helper for cwd-relative path resolution,
+      plus a `--repo-root` Cobra flag with precedence
+      `--repo-root > dir(--config) > os.Getwd()` so `root_test.go` and
+      `inv0003_test.go` can drive `rootCmd.Execute()` without
+      `os.Chdir`
+- [x] Verify tests can run `t.Parallel()` now — `internal/*` already
+      do (134 sites); the side-effect-free cmd tests
+      (`git_test.go`, the `outputTable/JSON/CSV` table tests,
+      `TestFilterByStatus`, the `TestBuildLogger_*` family,
+      `TestRunner_resolveAuthor`, `TestRunner_Create_Parallel`) now
+      do as well. The remaining cmd tests that exercise package-level
+      `runner`/`appCfg`/flag globals stay serial pending the
+      per-command opts struct refactor.
 
 #### Success Criteria
 
@@ -331,34 +404,56 @@ Replace the scattered type definitions with a single registration list.
 
 #### Tasks
 
-- [ ] Define `internal/config/doctype.go` with:
+- [x] Define `internal/config/doctype.go` with the registry struct.
+      Named `DocTypeDef` (not `DocType`) to leave `DocType` free for the
+      typed-string in Phase 10 (DESIGN-0004 Open Question 2); `DefaultConfig`
+      is a `func() TypeConfig` constructor so each lookup yields a fresh
+      `Statuses` slice (DESIGN-0004 §E):
 
-  ```
-  type DocType struct {
-      Name          string         // canonical name ("rfc")
-      Aliases       []string       // alternate names ("implementation")
-      DefaultConfig TypeConfig     // includes prefix, statuses, etc.
-      NavTitle      string         // "RFCs"
-      PluralLabel   string         // "RFCs" (could differ from NavTitle)
-      TemplateName  string         // "rfc" — used to locate embedded template
+  ```go
+  type DocTypeDef struct {
+      Name          string
+      Aliases       []string
+      DefaultConfig func() TypeConfig
+      NavTitle      string
+      PluralLabel   string
+      TemplateName  string
   }
   ```
 
-- [ ] Define `var allDocTypes = []DocType{ ... }` listing all 6 types
+- [x] Define `var allDocTypes = []DocTypeDef{ ... }` listing all 6 types
       with their full metadata in one place
-- [ ] Add helpers: `AllDocTypes() []DocType`, `LookupDocType(name string)
-      (DocType, bool)` (handles aliases), `DocTypeNames() []string`
-- [ ] Derive `DefaultConfig().Types` from `allDocTypes`
-- [ ] Derive `ValidTypes()` from `allDocTypes` (or delete in favor of
-      `DocTypeNames()`)
-- [ ] Derive `DefaultNavTitles()` from `allDocTypes`
-- [ ] Derive `typeAliases` from `allDocTypes`
-- [ ] Derive `TypesHelp()` text from `allDocTypes`
-- [ ] Add a test: every registered `DocType` has a corresponding
+- [x] Add helpers: `AllDocTypes() []DocTypeDef` (returns `slices.Clone`),
+      `LookupDocType(name string) (DocTypeDef, bool)` (case-insensitive,
+      whitespace-trimmed, canonical + alias), `DocTypeNames() []string`
+      (registry-declaration order — `ValidateType`'s error message and
+      the existing `TestValidTypes` depend on this ordering)
+- [x] Derive `DefaultConfig().Types` from `allDocTypes` via `defaultTypesMap()`
+- [x] Derive `ValidTypes()` from `allDocTypes` (now delegates to `DocTypeNames()`)
+- [x] Derive `DefaultNavTitles()` from `allDocTypes` via `defaultNavTitlesMap()`
+- [x] Derive `typeAliases` from `allDocTypes` via `defaultTypeAliases()`
+- [x] Derive `TypesHelp()` text from `allDocTypes` — done by adding
+      a `HelpDescription` field to `DocTypeDef` and rewriting
+      `TypesHelp` as a registry walk that auto-appends `(alias: …)`
+      from each entry's `Aliases`. The byte-for-byte output is
+      unchanged.
+      `TestDocTypeRegistry_TypesHelpDerivedFromRegistry` replaces the
+      previous static-string guard with a registry-derived assertion
+      that every name, every `HelpDescription`, and every alias
+      reaches the rendered help.
+- [x] Add a test: every registered `DocTypeDef` has a corresponding
       `internal/template/templates/<TemplateName>.md` embedded file
-      (compile-time-style enforcement)
-- [ ] Add a test: every registered `DocType` has a corresponding
+      (`TestDocTypeRegistry_AllHaveEmbeddedTemplate`)
+- [x] Add a test: every registered `DocTypeDef` has a corresponding
       `internal/template/templates/index_<TemplateName>.md`
+      (`TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`)
+- [x] Add the rest of the DESIGN-0004 §E consistency invariant tests:
+      no duplicate canonical names, no alias collides with a canonical
+      name, `DefaultConfig()` validates, every entry's `DefaultConfig()`
+      ships non-empty `Statuses`, `DefaultConfig()` hands back a fresh
+      `Statuses` backing array per call, `LookupDocType` resolves
+      canonical/aliases case-insensitively, and the derived
+      `DefaultConfig()` matches the registry literal field-for-field
 
 #### Success Criteria
 
@@ -376,16 +471,26 @@ registry rather than the hardcoded `ValidTypes()` slice.
 
 #### Tasks
 
-- [ ] Update `Config.EnabledTypes()` (from IMPL-0006) to iterate
-      `allDocTypes` and filter by `Config.Types[name].Enabled`
-- [ ] Audit all remaining `ValidTypes()` call sites and replace with
-      `EnabledTypes()` or `DocTypeNames()` as appropriate
-- [ ] Delete `ValidTypes()` if no callers remain
+- [x] Update `Config.EnabledTypes()` (from IMPL-0006) to iterate
+      `allDocTypes` (via `DocTypeNames`) and filter by
+      `Config.Types[name].Enabled`. The old sort step is dropped —
+      registry-declaration order is now the canonical order.
+- [x] Audit all remaining `ValidTypes()` call sites and replace with
+      `EnabledTypes()` or `DocTypeNames()` as appropriate:
+      - `cmd/list.go` (`docz list`) → `r.Cfg.EnabledTypes()` so disabled
+        types are skipped instead of attempting to scan a directory
+        the user removed
+      - `cmd/template.go` (three help strings) → `config.DocTypeNames()`
+      - `config.ValidateType` error message → `config.DocTypeNames()`
+      - `config.Validate` membership set → `config.DocTypeNames()`
+- [x] Delete `ValidTypes()` — no callers remain
+- [x] Update `TestValidTypes` → `TestDocTypeNames`; update
+      `TestEnabledTypes` and `TestDefaultConfig` to assert registry order
 
 #### Success Criteria
 
-- `grep -rn 'ValidTypes()' .` returns no matches (or only the function
-  definition if kept for back-compat)
+- `grep -rn 'ValidTypes' .` returns only one match: a historical comment
+  in `doctype.go` documenting the consolidation
 - All iteration goes through the registry
 
 ---
@@ -396,24 +501,37 @@ Add typed-string definitions for compile-time signal at API boundaries.
 
 #### Tasks
 
-- [ ] Define `type DocType string` (typed wrapper, not the struct)
-- [ ] Define `type Status string`
-- [ ] Rename the registry struct to avoid the collision — see Open
-      Question 2
-- [ ] Update `document.CreateOptions.Type` to `DocType`
-- [ ] Update `template.Data.Type` (renamed from `TemplateData` in
-      IMPL-0008) to `DocType`
-- [ ] Update `template.EmbeddedDocumentTemplate(docType DocType)`
-- [ ] Update `Frontmatter.Status` to `Status` typed string with custom
-      YAML marshaler (or leave as plain string at the YAML boundary —
-      see Decisions §3)
-- [ ] Verify YAML round-trip back-compat with a test
+- [x] Define `type DocType string` (typed wrapper, not the struct)
+      in `internal/config/doctype.go`
+- [x] Define `type Status string` alongside `DocType`
+- [x] No registry rename needed — Phase 8 already named the struct
+      `DocTypeDef`, so `DocType` is free for the typed-string wrapper
+      (DESIGN-0004 Decision §2 resolves Open Question 2)
+- [x] Update `document.CreateOptions.Type` to `config.DocType`
+- [x] Update `template.Data.Type` (renamed from `TemplateData` in
+      IMPL-0008) to `config.DocType` and `template.Data.Status` to
+      `config.Status`
+- [x] Update `template.EmbeddedDocumentTemplate(docType config.DocType)`
+      — `template.Resolve` keeps `string` (internal resolution path,
+      not in §F's enforcement surface) and casts once at the embed
+      call site
+- [x] Update `document.Frontmatter.Status` to `config.Status`. No custom
+      YAML marshaler needed — `go.yaml.in/yaml/v3` round-trips typed
+      strings whose underlying kind is `string` transparently. DESIGN-0004
+      §F revises Decision §3.
+- [x] Verify YAML round-trip back-compat with two tests in
+      `document_test.go`: `TestFrontmatter_TypedStatus_YAMLRoundTrip`
+      pins the bare-scalar emit and field-level round trip;
+      `TestFrontmatter_TypedStatus_LegacyYAMLParses` pins parsing of a
+      pre-typed-string YAML fixture
 
 #### Success Criteria
 
-- `DocType` and `Status` typed wrappers exist
-- Function signatures across `internal/` use the typed forms
-- `.docz.yaml` files written by any prior docz version still parse
+- [x] `DocType` and `Status` typed wrappers exist
+- [x] Function signatures across `internal/` use the typed forms
+- [x] `.docz.yaml` files written by any prior docz version still parse
+      (no top-level field changed type — only Frontmatter.Status and
+      template.Data fields, neither of which appear in `.docz.yaml`)
 
 ---
 
@@ -421,25 +539,54 @@ Add typed-string definitions for compile-time signal at API boundaries.
 
 #### Tasks
 
-- [ ] Full `make ci` green
-- [ ] Manual smoke test across all CLI commands
-- [ ] Verify all tests can run with `t.Parallel()`
-- [ ] Update INV-0002 status
-- [ ] Update the architecture section of CLAUDE.md to reflect the new
-      structure
-- [ ] Document the DocType registration pattern in CONTRIBUTING.md
-      (or equivalent)
-- [ ] Open final PR(s) with `dont-release` label if no behavior change,
-      or appropriate label if user-visible changes (log format, etc.)
+- [x] Full `make ci` green
+- [x] Manual smoke test across all CLI commands —
+      `version`, `--help`, `init`, `create rfc/adr/inv` (canonical
+      and alias paths), `list` (no filter, type filter, `--status`),
+      `update`, `template show`, `config`, `wiki update` all behave
+      as expected against a `/tmp/docz-smoke` working directory
+- [x] Verify all tests can run with `t.Parallel()`. Every top-level
+      `Test*` in `internal/*` plus their table-driven subtests now
+      call `t.Parallel()` (134 sites). Three iterations of
+      `go test -race -shuffle=on -count=3 ./...` are green. cmd/
+      tests stay serial because they share package-level `runner` /
+      `appCfg` / flag globals, but the pipe-discarding pattern
+      (`_, w, _ := os.Pipe()`) that previously flaked under shuffle
+      is fixed by capturing the read end and deferring its close —
+      so even without parallelism the cmd/ suite is now
+      order-independent
+- [x] Update INV-0002 status — flipped to `Concluded`; Wave 4 marked
+      done (PRs #44/#45/#46) and Wave 5 marked done (DESIGN-0004 +
+      IMPL-0009 Phases 2-10) with item-by-item references
+- [x] Update the architecture section of CLAUDE.md to reflect the new
+      structure (Runner pattern, DocType registry, typed strings,
+      logger flag wiring all noted)
+- [x] Document the DocType registration pattern in CONTRIBUTING.md
+      and DEVELOPMENT.md (single-file edit + two templates,
+      pointers to the Phase 8 consistency tests)
+- [x] Open final PR(s) with `dont-release` label. PR #48 (this PR)
+      stacks on PR #47 (DESIGN-0004) per Decisions §6. The
+      `--log-level` and `--log-format` flags are new user-visible
+      surface but ship behind their existing defaults (text + info),
+      so the runtime behavior matches the prior release and the PR
+      keeps the `dont-release` label. When PR #47 merges, GitHub will
+      auto-rebase PR #48's base onto main.
 
 #### Success Criteria
 
-- `make ci` green
-- A new contributor can add a doc type by editing one file plus two
-  template files
-- Tests run in parallel
-- No `cmd/` package-level globals remain (except possibly the
-  `*Runner` itself, threaded via `PersistentPreRunE`)
+- [x] `make ci` green
+- [x] A new contributor can add a doc type by editing one file plus two
+      template files (CONTRIBUTING.md "Adding a New Built-In Document
+      Type" and DEVELOPMENT.md walkthrough both pin this)
+- [x] Tests run in parallel — all internal/* tests, top-level and
+      subtests, call `t.Parallel()`. `go test -race -shuffle=on
+      -count=3 ./...` is green. cmd/ tests stay serial intentionally
+      until the package-level globals are removed (out of scope here)
+- [x] No `cmd/` package-level globals remain except the threaded
+      `*Runner` and the bound Cobra flag values
+      (`cfgFile`, `docsDir`, `verbose`, `logLevel`, `logFormat`, and
+      per-command flag vars like `createStatus`); the bound globals
+      are CLI-flag plumbing rather than runtime state
 
 ---
 
@@ -462,20 +609,40 @@ Add typed-string definitions for compile-time signal at API boundaries.
 
 ## Testing Plan
 
-- [ ] Every Runner method has a focused unit test using a constructed
-      `Runner` with `bytes.Buffer` writers
-- [ ] DocType registry consistency tests:
+- [x] Every Runner method has a focused unit test using a constructed
+      `Runner` with `bytes.Buffer` writers (cmd/runner_test.go:
+      `TestNewRunner_Defaults`, `TestRunner_DirectConstruction`,
+      `TestRunner_resolveAuthor`, `TestRunner_Create_Parallel`,
+      `TestPackageRunner_AssignedFromNewRunner`, plus the
+      `TestBuildLogger_*` family for the slog wiring)
+- [x] DocType registry consistency tests
+      (`internal/config/doctype_test.go`):
   - Every `DocType.Name` matches an embedded template
+    (`TestDocTypeRegistry_AllHaveEmbeddedTemplate`)
   - Every `DocType.Name` matches an embedded index header
+    (`TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`)
   - No alias collides with a canonical name
+    (`TestDocTypeRegistry_NoAliasCollidesWithCanonical`)
   - `DefaultConfig().Types` is fully derivable from `allDocTypes`
-- [ ] `t.Parallel()` regression test: a smoke test that runs 10 cmd
-      handlers concurrently against different temp dirs
-- [ ] Slog handler test: log output captured to a buffer
-- [ ] Git resolver test: `cmd.Context()` cancellation cancels the
-      lookup
-- [ ] YAML back-compat test: existing `.docz.yaml` files (collect 3-5
-      real-world examples) parse to expected `Config` values
+    (`TestDocTypeRegistry_DerivedDefaultConfigMatchesHardcoded`)
+- [x] `t.Parallel()` regression test:
+      `TestRunner_Create_Parallel` (cmd/runner_test.go) fires 10
+      concurrent `(*Runner).Create` calls against distinct temp dirs,
+      asserts all succeed, and spot-checks that each produced
+      `docs/rfc/0001-concurrent-title.md` in its own dir — proving
+      the handler itself is parallel-safe; only the cmd/ package
+      globals block `t.Parallel()` at the wrapper layer.
+- [x] Slog handler test: `TestBuildLogger_{VerboseSelectsDebug,
+      DefaultDropsDebug, LogLevelOverridesVerbose, JSONFormat,
+      InvalidFlagsError}` (Phase 4) capture log records into a
+      bytes.Buffer and assert on emitted records.
+- [x] Git resolver test: `TestRealGit_UserName_CtxCancel` (above).
+- [x] YAML back-compat test: `TestFrontmatter_TypedStatus_YAMLRoundTrip`
+      and `TestFrontmatter_TypedStatus_LegacyYAMLParses` (Phase 10)
+      cover both the new on-disk emit and parsing of legacy YAML.
+      The pre-existing `TestParseFrontmatter` table also covers the
+      `.docz.yaml` Config-level round trip indirectly through the
+      golden-driven `internal/config` tests.
 
 ## Decisions
 

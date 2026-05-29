@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -32,27 +31,31 @@ func init() {
 }
 
 func runUpdate(_ *cobra.Command, args []string) error {
+	return getRunner().Update(updateDryRun, args)
+}
+
+// Update is the `docz update` handler. With no args it iterates every
+// enabled type; with one arg it updates only that type.
+func (r *Runner) Update(dryRun bool, args []string) error {
 	var types []string
 	if len(args) > 0 {
-		typeName, err := appCfg.ValidateType(args[0])
+		typeName, err := r.Cfg.ValidateType(args[0])
 		if err != nil {
 			return err
 		}
 		types = []string{typeName}
 	} else {
-		types = appCfg.EnabledTypes()
+		types = r.Cfg.EnabledTypes()
 	}
 
 	for _, typeName := range types {
-		tc, ok := appCfg.Types[typeName]
+		tc, ok := r.Cfg.Types[typeName]
 		if !ok || !tc.Enabled {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Type %s is disabled, skipping.\n", typeName)
-			}
+			r.Logger.Debug("type disabled, skipping", "type", typeName)
 			continue
 		}
 
-		if err := updateType(typeName); err != nil {
+		if err := r.updateType(typeName, dryRun); err != nil {
 			return fmt.Errorf("updating %s: %w", typeName, err)
 		}
 	}
@@ -60,73 +63,72 @@ func runUpdate(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func updateType(typeName string) error {
-	tc := appCfg.Types[typeName]
-	typeDir := appCfg.TypeDir(typeName)
+func (r *Runner) updateType(typeName string, dryRun bool) error {
+	tc := r.Cfg.Types[typeName]
+	typeDir := r.Cfg.TypeDir(typeName)
 	readmePath := filepath.Join(typeDir, config.IndexFileName)
 
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Scanning %s for documents...\n", typeDir)
-	}
+	r.Logger.Debug("scanning type", "dir", typeDir)
 
 	docs, err := document.ScanDocuments(typeDir)
 	if err != nil {
 		return fmt.Errorf("scanning %s: %w", typeDir, err)
 	}
 
-	if verbose {
-		fmt.Fprintf(os.Stderr, "  Found %d documents\n", len(docs))
-	}
+	r.Logger.Debug("scan complete", "type", typeName, "count", len(docs))
 
-	// Update ToC in each document before regenerating the README index.
-	if appCfg.TOC.Enabled {
-		runToCUpdate(typeDir, docs)
+	if r.Cfg.TOC.Enabled {
+		r.runToCUpdate(typeDir, docs, dryRun)
 	}
 
 	heading := "All " + tc.PluralLabel
 	tableContent := index.GenerateTable(docs, heading)
 
-	if updateDryRun {
+	if dryRun {
 		outcome, err := index.DryRunReadme(readmePath, typeName, tableContent)
 		if err != nil {
 			return fmt.Errorf("dry-run readme %s: %w", readmePath, err)
 		}
-		printIndexOutcome(outcome)
-		return nil
+		return r.printIndexOutcome(outcome)
 	}
 
 	outcome, err := index.UpdateReadme(readmePath, typeName, tableContent)
 	if err != nil {
 		return fmt.Errorf("updating readme %s: %w", readmePath, err)
 	}
-	printIndexOutcome(outcome)
-	return nil
+	return r.printIndexOutcome(outcome)
 }
 
 // printIndexOutcome translates the typed index.UpdateOutcome into a
-// user-facing message. The internal/index package is intentionally
-// silent on English wording — that lives here.
-func printIndexOutcome(o index.UpdateOutcome) {
+// user-facing message on r.Out. The internal/index package is
+// intentionally silent on English wording — that lives here.
+func (r *Runner) printIndexOutcome(o index.UpdateOutcome) error {
 	switch o.Action {
 	case index.ActionCreated:
-		fmt.Printf("Created %s\n", o.Path)
+		_, err := fmt.Fprintf(r.Out, "Created %s\n", o.Path)
+		return err
 	case index.ActionUpdated:
-		fmt.Printf("Updated %s\n", o.Path)
+		_, err := fmt.Fprintf(r.Out, "Updated %s\n", o.Path)
+		return err
 	case index.ActionNoMarkers:
-		fmt.Printf(
+		_, err := fmt.Fprintf(
+			r.Out,
 			"Warning: %s has no DOCZ auto-generated markers. "+
 				"Run 'docz init --force' or manually add markers to update it.\n",
 			o.Path,
 		)
+		return err
 	case index.ActionDryRunCreated, index.ActionDryRunUpdated:
-		fmt.Println(o.Body)
+		_, err := fmt.Fprintln(r.Out, o.Body)
+		return err
 	}
+	return nil
 }
 
 // runToCUpdate builds the toc.FileInput list from cached scan results,
 // delegates to toc.UpdateFiles, and formats user-facing messages so the
 // internal/toc package stays free of I/O-shaped strings.
-func runToCUpdate(typeDir string, docs []document.DocEntry) {
+func (r *Runner) runToCUpdate(typeDir string, docs []document.DocEntry, dryRun bool) {
 	if len(docs) == 0 {
 		return
 	}
@@ -139,26 +141,29 @@ func runToCUpdate(typeDir string, docs []document.DocEntry) {
 		}
 	}
 
-	report, err := toc.UpdateFiles(files, appCfg.TOC.MinHeadings, updateDryRun)
+	report, err := toc.UpdateFiles(files, r.Cfg.TOC.MinHeadings, dryRun)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: ToC update failed: %v\n", err)
+		//nolint:errcheck // warning to stderr; nothing actionable
+		// if the warning itself fails to print.
+		fmt.Fprintf(r.Err, "Warning: ToC update failed: %v\n", err)
 		return
 	}
 
-	for _, r := range report.WouldUpdate {
-		fmt.Printf("Would update ToC in %s (%d headings)\n", r.Path, r.Headings)
+	for _, fr := range report.WouldUpdate {
+		//nolint:errcheck // user-facing dry-run line; write failures
+		// would surface again on the next normal write.
+		fmt.Fprintf(r.Out, "Would update ToC in %s (%d headings)\n", fr.Path, fr.Headings)
 	}
 
-	if verbose {
-		for _, r := range report.Updated {
-			fmt.Fprintf(os.Stderr, "  Updated ToC in %s\n", r.Path)
-		}
-		for _, r := range report.Unchanged {
-			fmt.Fprintf(os.Stderr, "  ToC unchanged in %s\n", r.Path)
-		}
+	for _, fr := range report.Updated {
+		r.Logger.Debug("ToC updated", "path", fr.Path)
+	}
+	for _, fr := range report.Unchanged {
+		r.Logger.Debug("ToC unchanged", "path", fr.Path)
 	}
 
 	for _, fe := range report.WriteErrors {
-		fmt.Fprintf(os.Stderr, "Warning: writing ToC to %s: %v\n", fe.Path, fe.Err)
+		//nolint:errcheck // warning to stderr; see above.
+		fmt.Fprintf(r.Err, "Warning: writing ToC to %s: %v\n", fe.Path, fe.Err)
 	}
 }

@@ -30,7 +30,7 @@ var templateShowCmd = &cobra.Command{
 
 The template is resolved in order: config path > local override > embedded default.
 
-Types: ` + strings.Join(config.ValidTypes(), ", "),
+Types: ` + strings.Join(config.DocTypeNames(), ", "),
 	Args: cobra.ExactArgs(1),
 	RunE: runTemplateShow,
 }
@@ -42,7 +42,7 @@ var templateExportCmd = &cobra.Command{
 
 If no path is specified, the file is written to ./<type>.md in the current directory.
 
-Types: ` + strings.Join(config.ValidTypes(), ", "),
+Types: ` + strings.Join(config.DocTypeNames(), ", "),
 	Args: cobra.RangeArgs(1, 2),
 	RunE: runTemplateExport,
 }
@@ -55,7 +55,7 @@ edit it locally. Future document creation will use this override.
 
 Fails if the override file already exists.
 
-Types: ` + strings.Join(config.ValidTypes(), ", "),
+Types: ` + strings.Join(config.DocTypeNames(), ", "),
 	Args: cobra.ExactArgs(1),
 	RunE: runTemplateOverride,
 }
@@ -68,32 +68,48 @@ func init() {
 }
 
 func runTemplateShow(_ *cobra.Command, args []string) error {
-	docType, err := appCfg.ValidateType(args[0])
+	return getRunner().TemplateShow(args)
+}
+
+func runTemplateExport(_ *cobra.Command, args []string) error {
+	return getRunner().TemplateExport(args)
+}
+
+func runTemplateOverride(_ *cobra.Command, args []string) error {
+	return getRunner().TemplateOverride(args)
+}
+
+// TemplateShow prints the resolved template for the given document
+// type to r.Out.
+func (r *Runner) TemplateShow(args []string) error {
+	docType, err := r.Cfg.ValidateType(args[0])
 	if err != nil {
 		return err
 	}
 
-	content, err := resolveTemplate(docType)
+	content, err := r.resolveTemplate(docType)
 	if err != nil {
 		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
 
-	fmt.Print(content)
-	return nil
+	_, err = fmt.Fprint(r.Out, content)
+	return err
 }
 
-func runTemplateExport(_ *cobra.Command, args []string) error {
-	docType, err := appCfg.ValidateType(args[0])
+// TemplateExport writes the resolved template to a file (default
+// ./<type>.md) and reports the path on r.Out.
+func (r *Runner) TemplateExport(args []string) error {
+	docType, err := r.Cfg.ValidateType(args[0])
 	if err != nil {
 		return err
 	}
 
-	outPath := docType + ".md"
+	outPath := r.inRepo(docType + ".md")
 	if len(args) > 1 {
 		outPath = args[1]
 	}
 
-	content, err := resolveTemplate(docType)
+	content, err := r.resolveTemplate(docType)
 	if err != nil {
 		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
@@ -102,24 +118,27 @@ func runTemplateExport(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("writing template to %s: %w", outPath, err)
 	}
 
-	fmt.Printf("Exported %s template to %s\n", docType, outPath)
-	return nil
+	_, err = fmt.Fprintf(r.Out, "Exported %s template to %s\n", docType, outPath)
+	return err
 }
 
-func runTemplateOverride(_ *cobra.Command, args []string) error {
-	docType, err := appCfg.ValidateType(args[0])
+// TemplateOverride copies the resolved template into
+// <docs_dir>/templates/<type>.md, failing if the override file already
+// exists.
+func (r *Runner) TemplateOverride(args []string) error {
+	docType, err := r.Cfg.ValidateType(args[0])
 	if err != nil {
 		return err
 	}
 
-	overrideDir := filepath.Join(appCfg.DocsDir, config.TemplatesDir)
+	overrideDir := filepath.Join(r.Cfg.DocsDir, config.TemplatesDir)
 	overridePath := filepath.Join(overrideDir, docType+".md")
 
 	if _, err := os.Stat(overridePath); err == nil {
 		return fmt.Errorf("override file already exists: %s", overridePath)
 	}
 
-	content, err := resolveTemplate(docType)
+	content, err := r.resolveTemplate(docType)
 	if err != nil {
 		return fmt.Errorf("resolving %s template: %w", docType, err)
 	}
@@ -132,18 +151,16 @@ func runTemplateOverride(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("writing override template: %w", err)
 	}
 
-	fmt.Printf("Created override template: %s\n", overridePath)
-	return nil
+	_, err = fmt.Fprintf(r.Out, "Created override template: %s\n", overridePath)
+	return err
 }
 
-func resolveTemplate(docType string) (string, error) {
-	tc := appCfg.Types[docType]
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Resolving template for type %q\n", docType)
-		if tc.Template != "" {
-			fmt.Fprintf(os.Stderr, "  Config template path: %s\n", tc.Template)
-		}
-		fmt.Fprintf(os.Stderr, "  Docs dir: %s\n", appCfg.DocsDir)
-	}
-	return doctemplate.Resolve(docType, tc.Template, appCfg.DocsDir)
+func (r *Runner) resolveTemplate(docType string) (string, error) {
+	tc := r.Cfg.Types[docType]
+	r.Logger.Debug("resolving template",
+		"type", docType,
+		"config_template_path", tc.Template,
+		"docs_dir", r.Cfg.DocsDir,
+	)
+	return doctemplate.Resolve(docType, tc.Template, r.Cfg.DocsDir)
 }

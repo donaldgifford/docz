@@ -1,65 +1,72 @@
 package cmd
 
 import (
+	"bytes"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/donaldgifford/docz/internal/config"
 )
 
+// setupWikiTestDir builds an isolated repo root in t.TempDir() and
+// installs a fresh package-level Runner that writes its output to
+// io.Discard and resolves cwd-relative paths under that temp dir
+// (via Runner.RepoRoot). Tests do not need to os.Chdir, capture
+// stdout via os.Pipe, or share state with neighbor tests — all paths
+// they assert on live under the returned dir.
 func setupWikiTestDir(t *testing.T) string {
 	t.Helper()
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	cfg := config.DefaultConfig()
+	cfg.DocsDir = filepath.Join(dir, "docs")
+	cfg.Wiki.MkDocsPath = filepath.Join(dir, "mkdocs.yml")
 
-	appCfg = config.DefaultConfig()
+	appCfg = cfg
+	runner = &Runner{
+		Cfg:      cfg,
+		Out:      io.Discard,
+		Err:      io.Discard,
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Now:      time.Now,
+		Git:      staticGit{},
+		RepoRoot: dir,
+	}
+	t.Cleanup(func() { runner = nil })
 	return dir
 }
 
 func TestWikiInit_EmptyDirectory(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 
 	// Capture stdout.
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
 	// Should have auto-run docz init → .docz.yaml exists.
-	if _, err := os.Stat(".docz.yaml"); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, ".docz.yaml")); err != nil {
 		t.Error("expected .docz.yaml to exist after wiki init")
 	}
 
 	// mkdocs.yml should exist.
-	if _, err := os.Stat("mkdocs.yml"); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "mkdocs.yml")); err != nil {
 		t.Error("expected mkdocs.yml to exist")
 	}
 
 	// docs/index.md should exist.
-	if _, err := os.Stat(filepath.Join("docs", "index.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "docs", "index.md")); err != nil {
 		t.Error("expected docs/index.md to exist")
 	}
 
 	// Check mkdocs.yml content.
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,47 +84,29 @@ func TestWikiInit_AlreadyInitialized(t *testing.T) {
 	if err := os.MkdirAll(docsDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(".docz.yaml", []byte("docs_dir: docs\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte("docs_dir: docs\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	if _, err := os.Stat("mkdocs.yml"); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "mkdocs.yml")); err != nil {
 		t.Error("expected mkdocs.yml to exist")
 	}
 }
 
 func TestWikiInit_SiteName(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 	wikiSiteName = "My Service"
 	t.Cleanup(func() { wikiSiteName = "" })
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,24 +116,15 @@ func TestWikiInit_SiteName(t *testing.T) {
 }
 
 func TestWikiInit_SiteDescription(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 	wikiSiteDescription = "Custom description"
 	t.Cleanup(func() { wikiSiteDescription = "" })
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,17 +134,17 @@ func TestWikiInit_SiteDescription(t *testing.T) {
 }
 
 func TestWikiInit_FailsIfExists(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 
 	// Create mkdocs.yml first.
-	if err := os.WriteFile("mkdocs.yml", []byte("site_name: test\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "mkdocs.yml"), []byte("site_name: test\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Also create .docz.yaml and docs/ to skip auto-init.
-	if err := os.WriteFile(".docz.yaml", []byte("docs_dir: docs\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte("docs_dir: docs\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll("docs", 0o750); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "docs"), 0o750); err != nil {
 		t.Fatal(err)
 	}
 
@@ -179,16 +159,16 @@ func TestWikiInit_FailsIfExists(t *testing.T) {
 }
 
 func TestWikiInit_ForceOverwrites(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 
 	// Create existing mkdocs.yml.
-	if err := os.WriteFile("mkdocs.yml", []byte("site_name: old\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "mkdocs.yml"), []byte("site_name: old\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(".docz.yaml", []byte("docs_dir: docs\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte("docs_dir: docs\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll("docs", 0o750); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "docs"), 0o750); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,21 +178,12 @@ func TestWikiInit_ForceOverwrites(t *testing.T) {
 		wikiForce = false
 		wikiSiteName = ""
 	})
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,16 +219,7 @@ func TestWikiUpdate_BasicNav(t *testing.T) {
 		t, filepath.Join(dir, "mkdocs.yml"),
 		"site_name: test\nplugins:\n    - techdocs-core\nnav:\n    - Home: index.md\n",
 	)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiUpdate(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiUpdate() error: %v", err)
 	}
@@ -308,26 +270,17 @@ func TestWikiUpdate_DryRun(t *testing.T) {
 	wikiDryRun = true
 	t.Cleanup(func() { wikiDryRun = false })
 
-	// Capture stdout to verify output.
-	r, w, _ := os.Pipe()
-	old := os.Stdout
-	os.Stdout = w
+	// Capture handler output via the Runner's Out writer — no
+	// os.Stdout redirection or pipe.
+	var capture bytes.Buffer
+	runner.Out = &capture
 
-	err := runWikiUpdate(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runWikiUpdate(nil, nil); err != nil {
 		t.Fatalf("runWikiUpdate() error: %v", err)
 	}
 
-	buf := make([]byte, 4096)
-	n, _ := r.Read(buf)
-	output := string(buf[:n])
-
-	if !strings.Contains(output, "Home") {
-		t.Error("dry-run output should contain 'Home'")
+	if !strings.Contains(capture.String(), "Home") {
+		t.Errorf("dry-run output should contain 'Home', got %q", capture.String())
 	}
 
 	// Verify mkdocs.yml was NOT modified.
@@ -365,16 +318,7 @@ func TestWikiUpdate_PreservesExistingOrder(t *testing.T) {
 		filepath.Join(dir, "mkdocs.yml"),
 		"site_name: test\nnav:\n    - Home: index.md\n    - ADRs:\n        - Overview: adr/README.md\n    - RFCs:\n        - Overview: rfc/README.md\n",
 	)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiUpdate(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiUpdate() error: %v", err)
 	}
@@ -415,17 +359,8 @@ func TestCreateAutoUpdatesWikiNav(t *testing.T) {
 	)
 
 	// Ensure wiki auto-update is enabled.
-	appCfg.Wiki.AutoUpdate = true
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	runner.Cfg.Wiki.AutoUpdate = true
 	err := runCreate(nil, []string{"rfc", "Test RFC"})
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runCreate() error: %v", err)
 	}
@@ -454,17 +389,8 @@ func TestCreateNoWikiUpdateWhenMissing(t *testing.T) {
 		"# RFCs\n\n<!-- BEGIN DOCZ AUTO-GENERATED -->\n<!-- END DOCZ AUTO-GENERATED -->\n",
 	)
 
-	appCfg.Wiki.AutoUpdate = true
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	runner.Cfg.Wiki.AutoUpdate = true
 	err := runCreate(nil, []string{"rfc", "Test RFC"})
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runCreate() should succeed without mkdocs.yml: %v", err)
 	}
@@ -476,22 +402,13 @@ func TestCreateNoWikiUpdateWhenMissing(t *testing.T) {
 }
 
 func TestWikiInit_Plugins(t *testing.T) {
-	_ = setupWikiTestDir(t)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	dir := setupWikiTestDir(t)
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -503,23 +420,14 @@ func TestWikiInit_Plugins(t *testing.T) {
 }
 
 func TestWikiInit_MultiplePlugins(t *testing.T) {
-	_ = setupWikiTestDir(t)
-	appCfg.Wiki.Plugins = []string{"techdocs-core", "search", "mermaid"}
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	dir := setupWikiTestDir(t)
+	runner.Cfg.Wiki.Plugins = []string{"techdocs-core", "search", "mermaid"}
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -533,23 +441,14 @@ func TestWikiInit_MultiplePlugins(t *testing.T) {
 }
 
 func TestWikiInit_MarkdownExtensions(t *testing.T) {
-	_ = setupWikiTestDir(t)
-	appCfg.Wiki.MarkdownExtensions = []string{"admonition", "tables", "pymdownx.tasklist"}
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	dir := setupWikiTestDir(t)
+	runner.Cfg.Wiki.MarkdownExtensions = []string{"admonition", "tables", "pymdownx.tasklist"}
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -566,26 +465,17 @@ func TestWikiInit_MarkdownExtensions(t *testing.T) {
 }
 
 func TestWikiInit_AllOptionalFields(t *testing.T) {
-	_ = setupWikiTestDir(t)
-	appCfg.Wiki.DocsDir = "documentation"
-	appCfg.Wiki.RepoURL = "https://github.com/example/repo"
-	appCfg.Wiki.SiteURL = "https://example.com/docs"
-	appCfg.Wiki.Theme = "readthedocs"
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	dir := setupWikiTestDir(t)
+	runner.Cfg.Wiki.DocsDir = "documentation"
+	runner.Cfg.Wiki.RepoURL = "https://github.com/example/repo"
+	runner.Cfg.Wiki.SiteURL = "https://example.com/docs"
+	runner.Cfg.Wiki.Theme = "readthedocs"
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -604,23 +494,14 @@ func TestWikiInit_AllOptionalFields(t *testing.T) {
 }
 
 func TestWikiInit_OmitsEmptyOptionalFields(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 	// All optional fields are zero values by default.
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile("mkdocs.yml")
+	data, err := os.ReadFile(filepath.Join(dir, "mkdocs.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -634,22 +515,13 @@ func TestWikiInit_OmitsEmptyOptionalFields(t *testing.T) {
 }
 
 func TestWikiInit_IndexTemplate(t *testing.T) {
-	_ = setupWikiTestDir(t)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	dir := setupWikiTestDir(t)
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join("docs", "index.md"))
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "index.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -664,37 +536,28 @@ func TestWikiInit_IndexTemplate(t *testing.T) {
 }
 
 func TestWikiInit_IndexSkipsDisabledTypes(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 
 	// Pre-create .docz.yaml and docs/ so ensureDoczInit skips runInit.
-	writeTestFile(t, ".docz.yaml", "docs_dir: docs\n")
-	if err := os.MkdirAll("docs", 0o750); err != nil {
+	writeTestFile(t, filepath.Join(dir, ".docz.yaml"), "docs_dir: docs\n")
+	if err := os.MkdirAll(filepath.Join(dir, "docs"), 0o750); err != nil {
 		t.Fatal(err)
 	}
 
 	// Disable plan and investigation.
-	tc := appCfg.Types["plan"]
+	tc := runner.Cfg.Types["plan"]
 	tc.Enabled = false
-	appCfg.Types["plan"] = tc
+	runner.Cfg.Types["plan"] = tc
 
-	tc = appCfg.Types["investigation"]
+	tc = runner.Cfg.Types["investigation"]
 	tc.Enabled = false
-	appCfg.Types["investigation"] = tc
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
+	runner.Cfg.Types["investigation"] = tc
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join("docs", "index.md"))
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "index.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -713,30 +576,21 @@ func TestWikiInit_IndexSkipsDisabledTypes(t *testing.T) {
 }
 
 func TestWikiInit_IndexTemplateOverride(t *testing.T) {
-	_ = setupWikiTestDir(t)
+	dir := setupWikiTestDir(t)
 
 	// Create a local override template.
-	templatesDir := filepath.Join("docs", "templates")
+	templatesDir := filepath.Join(dir, "docs", "templates")
 	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	override := "# {{ .SiteName }} Custom\n\nCustom homepage.\n"
 	writeTestFile(t, filepath.Join(templatesDir, "wiki_index.md"), override)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
 	err := runWikiInit(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
 	if err != nil {
 		t.Fatalf("runWikiInit() error: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join("docs", "index.md"))
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "index.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

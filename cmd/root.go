@@ -20,6 +20,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -27,10 +28,13 @@ import (
 )
 
 var (
-	cfgFile string
-	docsDir string
-	verbose bool
-	appCfg  config.Config
+	cfgFile   string
+	repoRoot  string
+	docsDir   string
+	verbose   bool
+	logLevel  string
+	logFormat string
+	appCfg    config.Config
 )
 
 var rootCmd = &cobra.Command{
@@ -54,9 +58,42 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is .docz.yaml in repo root)")
-	rootCmd.PersistentFlags().StringVar(&docsDir, "docs-dir", "", "base documentation directory (default: docs)")
-	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable verbose output")
+	rootCmd.PersistentFlags().StringVar(
+		&cfgFile,
+		"config",
+		"",
+		"config file (default is .docz.yaml in repo root)",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&repoRoot,
+		"repo-root",
+		"",
+		"repository root to scan for .docz.yaml and to scaffold against (default: working directory)",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&docsDir,
+		"docs-dir",
+		"",
+		"base documentation directory (default: docs)",
+	)
+	rootCmd.PersistentFlags().BoolVar(
+		&verbose,
+		"verbose",
+		false,
+		"shorthand for --log-level=debug",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&logLevel,
+		"log-level",
+		"",
+		"log level: debug, info, warn, error (overrides --verbose)",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&logFormat,
+		"log-format",
+		logFormatText,
+		"log handler format: text or json",
+	)
 }
 
 // loadAndValidateConfig is wired as the rootCmd PersistentPreRunE so a
@@ -65,7 +102,17 @@ func init() {
 // Cobra short-circuits PersistentPreRunE when --help/-h is set or no
 // runnable subcommand was given, so help still works with a broken config.
 func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
-	cfg, err := config.Load(cfgFile)
+	// Precedence for the repo root: explicit --repo-root flag, else
+	// directory of --config when that's set, else process cwd. The
+	// repo-root knob lets tests drive PersistentPreRunE without
+	// os.Chdir and lets users scaffold a different tree than the
+	// directory they invoked from.
+	root, err := resolveRepoRoot()
+	if err != nil {
+		return err
+	}
+
+	cfg, err := config.Load(cfgFile, root)
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
 	}
@@ -82,6 +129,40 @@ func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("invalid config: %w", validErr)
 	}
 
+	// Absolutize cwd-relative config paths against root so handlers
+	// don't carry an implicit dependency on the process cwd.
+	if !filepath.IsAbs(cfg.DocsDir) {
+		cfg.DocsDir = filepath.Join(root, cfg.DocsDir)
+	}
+	if cfg.Wiki.MkDocsPath != "" && !filepath.IsAbs(cfg.Wiki.MkDocsPath) {
+		cfg.Wiki.MkDocsPath = filepath.Join(root, cfg.Wiki.MkDocsPath)
+	}
+
 	appCfg = cfg
+	r := NewRunner(&cfg)
+	r.RepoRoot = root
+	logger, err := buildLogger(r.Err, verbose, logLevel, logFormat)
+	if err != nil {
+		return err
+	}
+	r.Logger = logger
+	runner = r
 	return nil
+}
+
+// resolveRepoRoot picks the directory PersistentPreRunE should treat as
+// the repo root. Precedence: explicit --repo-root flag, else directory
+// of --config when set, else process cwd.
+func resolveRepoRoot() (string, error) {
+	if repoRoot != "" {
+		return repoRoot, nil
+	}
+	if cfgFile != "" {
+		return filepath.Dir(cfgFile), nil
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("resolving working directory: %w", err)
+	}
+	return wd, nil
 }

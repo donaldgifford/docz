@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -81,72 +80,13 @@ type Config struct {
 	TOC     TOCConfig             `mapstructure:"toc"      yaml:"toc"`
 }
 
-// DefaultConfig returns the built-in default configuration.
+// DefaultConfig returns the built-in default configuration. The per-type
+// metadata (Types and Wiki.NavTitles) is sourced from the DocType
+// registry in doctype.go so adding a new doc type is a single-file edit.
 func DefaultConfig() Config {
 	return Config{
 		DocsDir: "docs",
-		Types: map[string]TypeConfig{
-			"rfc": {
-				Enabled:     true,
-				Dir:         "rfc",
-				IDPrefix:    "RFC",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "Proposed", "Accepted", "Rejected", "Superseded"},
-				StatusField: "status",
-				PluralLabel: "RFCs",
-			},
-			"adr": {
-				Enabled:     true,
-				Dir:         "adr",
-				IDPrefix:    "ADR",
-				IDWidth:     4,
-				Statuses:    []string{"Proposed", "Accepted", "Deprecated", "Superseded"},
-				StatusField: "status",
-				PluralLabel: "ADRs",
-			},
-			"design": {
-				Enabled:     true,
-				Dir:         "design",
-				IDPrefix:    "DESIGN",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Review", "Approved", "Implemented", "Abandoned"},
-				StatusField: "status",
-				PluralLabel: "Design",
-			},
-			"impl": {
-				Enabled:     true,
-				Dir:         "impl",
-				IDPrefix:    "IMPL",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Progress", "Completed", "Paused", "Cancelled"},
-				StatusField: "status",
-				PluralLabel: "Implementation Plans",
-			},
-			"plan": {
-				Enabled:     true,
-				Dir:         "plan",
-				IDPrefix:    "PLAN",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
-				StatusField: "status",
-				PluralLabel: "Plans",
-			},
-			"investigation": {
-				Enabled:  true,
-				Dir:      "investigation",
-				IDPrefix: "INV",
-				IDWidth:  4,
-				Statuses: []string{
-					"Open",
-					"In Progress",
-					"Concluded",
-					"Inconclusive",
-					"Abandoned",
-				},
-				StatusField: "status",
-				PluralLabel: "Investigations",
-			},
-		},
+		Types:   defaultTypesMap(),
 		Index: IndexConfig{
 			AutoUpdate:     true,
 			PreserveHeader: true,
@@ -159,7 +99,7 @@ func DefaultConfig() Config {
 			MkDocsPath: MkDocsFileName,
 			Plugins:    []string{"techdocs-core"},
 			Exclude:    []string{TemplatesDir, "examples"},
-			NavTitles:  DefaultNavTitles(),
+			NavTitles:  defaultNavTitlesMap(),
 		},
 		TOC: TOCConfig{
 			Enabled:     true,
@@ -180,11 +120,23 @@ func DefaultConfig() Config {
 //
 // If configFile is non-empty, it is used as the sole config source
 // (no merge); the same types-replace-on-presence rule applies.
-func Load(configFile string) (Config, error) {
+//
+// repoRoot is the directory to search for ConfigFileName when configFile
+// is empty. An empty repoRoot falls back to the current working
+// directory for backwards compatibility with callers that have not yet
+// been updated; new callers (cmd/root.go since IMPL-0009 Phase 7)
+// should pass an explicit path so tests can scope config discovery to
+// a t.TempDir() without os.Chdir.
+func Load(configFile, repoRoot string) (Config, error) {
 	cfg := DefaultConfig()
 
 	if configFile != "" {
 		return loadFromFile(configFile, &cfg)
+	}
+
+	repoConfigPath := ConfigFileName
+	if repoRoot != "" {
+		repoConfigPath = filepath.Join(repoRoot, ConfigFileName)
 	}
 
 	v := viper.New()
@@ -197,7 +149,7 @@ func Load(configFile string) (Config, error) {
 	}
 
 	// Load repo-root config on top (deep merge, repo wins).
-	if mergeErr := mergeConfigFile(v, ConfigFileName); mergeErr != nil {
+	if mergeErr := mergeConfigFile(v, repoConfigPath); mergeErr != nil {
 		return cfg, mergeErr
 	}
 
@@ -205,7 +157,7 @@ func Load(configFile string) (Config, error) {
 		return cfg, err
 	}
 
-	applyTypesReplaceOnPresence(&cfg, ConfigFileName)
+	applyTypesReplaceOnPresence(&cfg, repoConfigPath)
 	fillTypeFieldDefaults(&cfg)
 
 	return cfg, nil
@@ -222,21 +174,9 @@ func (c *Config) TypeDir(docType string) string {
 }
 
 // DefaultNavTitles returns the default directory-to-nav-title mapping for
-// docz-managed type directories.
+// docz-managed type directories, sourced from the DocType registry.
 func DefaultNavTitles() map[string]string {
-	return map[string]string{
-		"rfc":           "RFCs",
-		"adr":           "ADRs",
-		"design":        "Design",
-		"impl":          "Implementation Plans",
-		"plan":          "Plans",
-		"investigation": "Investigations",
-	}
-}
-
-// ValidTypes returns the list of built-in document type names.
-func ValidTypes() []string {
-	return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
+	return defaultNavTitlesMap()
 }
 
 // ErrUnknownType is the sentinel returned by ValidateType when the input
@@ -257,31 +197,32 @@ func (c *Config) ValidateType(name string) (string, error) {
 	canonical := ResolveTypeAlias(strings.ToLower(name))
 	if _, ok := c.Types[canonical]; !ok {
 		return "", fmt.Errorf("%w %q (valid types: %s)",
-			ErrUnknownType, canonical, strings.Join(ValidTypes(), ", "))
+			ErrUnknownType, canonical, strings.Join(DocTypeNames(), ", "))
 	}
 	return canonical, nil
 }
 
-// EnabledTypes returns the sorted list of canonical type names that are
-// both present in c.Types and have Enabled == true. The result is sorted
-// alphabetically by canonical name for deterministic iteration in
-// scaffolding and update flows.
+// EnabledTypes returns the list of canonical type names that are both
+// present in c.Types and have Enabled == true, in DocType-registry
+// declaration order. Iterating the registry instead of c.Types gives
+// callers a deterministic order without a separate sort step.
 func (c *Config) EnabledTypes() []string {
 	enabled := make([]string, 0, len(c.Types))
-	for name, tc := range c.Types {
+	for _, name := range DocTypeNames() {
+		tc, ok := c.Types[name]
+		if !ok {
+			continue
+		}
 		if tc.Enabled {
 			enabled = append(enabled, name)
 		}
 	}
-	sort.Strings(enabled)
 	return enabled
 }
 
 // typeAliases maps short or alternate names to their canonical type name.
-var typeAliases = map[string]string{
-	"implementation": "impl",
-	"inv":            "investigation",
-}
+// Sourced from the DocType registry's Aliases entries.
+var typeAliases = defaultTypeAliases()
 
 // ResolveTypeAlias returns the canonical type name for the given input.
 // If the input is already a canonical name or has no alias, it is returned as-is.
@@ -292,15 +233,29 @@ func ResolveTypeAlias(name string) string {
 	return name
 }
 
-// TypesHelp returns a formatted help string listing all valid types with aliases.
+// TypesHelp returns a formatted help string listing all valid types
+// with aliases. The body is derived from the DocType registry —
+// adding a new entry to `allDocTypes` with a `HelpDescription` is
+// the only step required to surface it in `docz --help`.
 func TypesHelp() string {
-	return `Document types:
-  rfc              Request for Comments — high-level proposals
-  adr              Architecture Decision Records — technical decisions
-  design           Design documents — detailed feature designs
-  impl             Implementation plans (alias: implementation)
-  plan             Planning documents — goal, approach, components
-  investigation    Research spikes — validate theories and errors (alias: inv)`
+	const nameColWidth = 17
+
+	var b strings.Builder
+	b.WriteString("Document types:")
+	for _, dt := range allDocTypes {
+		b.WriteString("\n  ")
+		b.WriteString(dt.Name)
+		for i := len(dt.Name); i < nameColWidth; i++ {
+			b.WriteByte(' ')
+		}
+		b.WriteString(dt.HelpDescription)
+		if len(dt.Aliases) > 0 {
+			b.WriteString(" (alias: ")
+			b.WriteString(strings.Join(dt.Aliases, ", "))
+			b.WriteByte(')')
+		}
+	}
+	return b.String()
 }
 
 // Validate checks the configuration for common errors and returns a list of
@@ -313,7 +268,7 @@ func (c *Config) Validate() ([]string, error) {
 	}
 
 	validTypes := map[string]bool{}
-	for _, t := range ValidTypes() {
+	for _, t := range DocTypeNames() {
 		validTypes[t] = true
 	}
 

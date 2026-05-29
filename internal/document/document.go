@@ -8,15 +8,23 @@ import (
 	"os"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 // Frontmatter holds the YAML frontmatter metadata from a document file.
+//
+// Status is the typed config.Status wrapper (DESIGN-0004 §F) so a
+// mistaken assignment from a generic string field (e.g. Title) is a
+// compile error rather than a silent mis-classification at list/index
+// time. yaml/v3 unmarshals the string scalar into the typed field
+// without a custom UnmarshalYAML.
 type Frontmatter struct {
-	ID      string `yaml:"id"`
-	Title   string `yaml:"title"`
-	Status  string `yaml:"status"`
-	Author  string `yaml:"author"`
-	Created string `yaml:"created"`
+	ID      string        `yaml:"id"`
+	Title   string        `yaml:"title"`
+	Status  config.Status `yaml:"status"`
+	Author  string        `yaml:"author"`
+	Created string        `yaml:"created"`
 }
 
 // ErrNoFrontmatter is returned when a file has no YAML frontmatter delimiters.

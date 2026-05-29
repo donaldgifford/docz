@@ -173,26 +173,35 @@ three files:
 
 ## Adding a Built-In Document Type
 
-To add a new document type to `docz` (e.g. `plan`):
+Since IMPL-0009 (DocType registry, DESIGN-0004 §E) adding a built-in type is a
+single Go edit plus two embedded templates. The example below walks through
+adding `plan`-style doc.
 
 ### Step 1: Add the document template
 
 Create `internal/template/templates/plan.md`. The file is a Go `text/template`
-with access to all `TemplateData` fields.
+with access to all `template.Data` fields:
 
-```
-internal/template/templates/plan.md
-```
+| Variable | Type | Notes |
+|----------|------|-------|
+| `{{ .Number }}` | string | Zero-padded ID, e.g. `0001` |
+| `{{ .Title }}` | string | Document title as provided on the CLI |
+| `{{ .Slug }}` | string | Kebab-case title for the filename |
+| `{{ .Filename }}` | string | e.g. `0001-my-plan.md` |
+| `{{ .Date }}` | string | ISO date (`YYYY-MM-DD`) |
+| `{{ .Author }}` | string | Resolved from config/flag/git |
+| `{{ .Status }}` | `config.Status` (typed string) | Initial status |
+| `{{ .Type }}` | `config.DocType` (typed string) | Canonical type name |
+| `{{ .Prefix }}` | string | ID prefix from the registry entry |
 
-Available template variables: `{{ .Number }}`, `{{ .Title }}`, `{{ .Slug }}`,
-`{{ .Filename }}`, `{{ .Date }}`, `{{ .Author }}`, `{{ .Status }}`, `{{ .Type }}`,
-`{{ .Prefix }}`.
+The typed-string types render via their underlying value; no template-syntax
+changes are needed when working with `Status` / `Type`.
 
 ### Step 2: Add the index header template
 
-Create `internal/template/templates/index_plan.md`. This file is written to
-`docs/plan/README.md` when `docz init` is run. It must include the auto-generated
-markers so that `docz update` can splice the table:
+Create `internal/template/templates/index_plan.md`. This is written to
+`docs/plan/README.md` by `docz init` and must include the auto-generated
+markers so `docz update` can splice the table:
 
 ```markdown
 # Plans
@@ -203,42 +212,54 @@ Description of what plan documents are for.
 <!-- END DOCZ AUTO-GENERATED -->
 ```
 
-### Step 3: Register the type in `embed.go`
+### Step 3: Embed pick-up
 
-The `//go:embed templates/*.md` directive picks up the new files automatically
-since they match the glob. No changes needed to `embed.go` unless you need to
-handle the new type name explicitly.
+The `//go:embed templates/*.md` directive in `internal/template/embed.go`
+picks the new files up automatically. The Phase 8 consistency tests in
+`internal/config/doctype_test.go`
+(`TestDocTypeRegistry_AllHaveEmbeddedTemplate` and
+`TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`) fail loudly if either
+template is missing.
 
-Verify `EmbeddedDocumentTemplate("plan")` returns the content:
+### Step 4: Register the type in `internal/config/doctype.go`
+
+Append one entry to the `allDocTypes` slice. This is the only Go code
+change required — `DefaultConfig().Types`, `Wiki.NavTitles`,
+`DocTypeNames()`, the `typeAliases` map, `Config.EnabledTypes()`, and the
+`valid types` list in `Config.ValidateType` are all derived from it.
 
 ```go
-// internal/template/embed.go
-// No changes needed — the glob covers *.md files automatically.
-```
-
-### Step 4: Add default config in `config.go`
-
-Add the new type to `DefaultConfig()`:
-
-```go
-// internal/config/config.go
-"plan": {
-    Enabled:     true,
-    Dir:         "plan",
-    IDPrefix:    "PLAN",
-    IDWidth:     4,
-    Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
-    StatusField: "status",
+// internal/config/doctype.go
+{
+    Name:    "plan",
+    Aliases: nil, // or []string{"planning"}
+    DefaultConfig: func() TypeConfig {
+        return TypeConfig{
+            Enabled:     true,
+            Dir:         "plan",
+            IDPrefix:    "PLAN",
+            IDWidth:     4,
+            Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
+            StatusField: "status",
+            PluralLabel: "Plans",
+        }
+    },
+    NavTitle:     "Plans",
+    PluralLabel:  "Plans",
+    TemplateName: "plan",
 },
 ```
 
-### Step 5: Add the type to `ValidTypes()`
+`DefaultConfig` is a `func() TypeConfig` (not a value) so each lookup
+yields a fresh `Statuses` slice — a Config that mutates `Statuses` won't
+poison the next caller (DESIGN-0004 §E).
 
-```go
-func ValidTypes() []string {
-    return []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
-}
-```
+### Step 5: Optionally extend the help string
+
+`config.TypesHelp` is still a static string. The
+`TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp` test fails if the
+new type's canonical name is missing from the help block — add a line
+for the new type so `docz --help` lists it.
 
 ### Step 6: Add golden file test fixtures
 
@@ -248,19 +269,10 @@ Run the template tests with `-update` to generate new golden files:
 go test ./internal/template/... -update
 ```
 
-This creates `testdata/golden/plan.md` from a sample render. Review it before
-committing.
+This creates `testdata/golden/plan.md` from a sample render. Review it
+before committing.
 
-### Step 7: Update tests
-
-The golden tests in `internal/template/golden_test.go` iterate over the types
-from `config.ValidTypes()`. Adding `"plan"` to that list automatically includes
-it in the golden test suite once the fixture file exists.
-
-Add a test case for the new type in `internal/template/template_test.go` if it
-has any template-specific behavior.
-
-### Step 8: Verify
+### Step 7: Verify
 
 ```bash
 make build

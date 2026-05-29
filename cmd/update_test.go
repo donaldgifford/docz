@@ -3,10 +3,13 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/toc"
@@ -66,7 +69,7 @@ func TestUpdateGeneratesToC(t *testing.T) {
 	updateDryRun = false
 	verbose = false
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -98,7 +101,7 @@ func TestUpdateToCDisabled(t *testing.T) {
 	updateDryRun = false
 	verbose = false
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -131,7 +134,7 @@ func TestUpdateToCDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -163,7 +166,7 @@ func TestUpdateToCNoMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := updateType("rfc"); err != nil {
+	if err := getRunner().updateType("rfc", updateDryRun); err != nil {
 		t.Fatalf("updateType() error: %v", err)
 	}
 
@@ -324,35 +327,35 @@ func setupBenchUpdateDir(b *testing.B, n int) string {
 // headline number Phase 3 must improve by ≥30% wall clock and ≥50%
 // fewer file reads (target stated in the impl plan).
 //
-// Stdout is redirected to a discard file so the "Updated ..." lines
-// don't pollute -bench output.
+// Output is captured into a Runner with io.Discard so the "Updated ..."
+// lines don't pollute -bench output.
 func BenchmarkCmdUpdate(b *testing.B) {
-	origStdout := os.Stdout
-	devnull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.Cleanup(func() {
-		_ = devnull.Close()
-		os.Stdout = origStdout
-	})
-	os.Stdout = devnull
-
 	for _, n := range []int{100} {
 		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
 			for b.Loop() {
 				b.StopTimer()
 				dir := setupBenchUpdateDir(b, n)
-				appCfg = config.DefaultConfig()
-				appCfg.DocsDir = filepath.Join(dir, "docs")
+				cfg := config.DefaultConfig()
+				cfg.DocsDir = filepath.Join(dir, "docs")
+				appCfg = cfg
+				runner = &Runner{
+					Cfg:      cfg,
+					Out:      io.Discard,
+					Err:      io.Discard,
+					Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+					Now:      time.Now,
+					Git:      staticGit{},
+					RepoRoot: dir,
+				}
 				updateDryRun = false
 				verbose = false
 				b.StartTimer()
 
-				if err := updateType("rfc"); err != nil {
+				if err := runner.updateType("rfc", updateDryRun); err != nil {
 					b.Fatalf("updateType: %v", err)
 				}
 			}
+			runner = nil
 		})
 	}
 }

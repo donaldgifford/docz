@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0004
 title: "Runner Pattern and DocType Registry"
-status: In Review
+status: Approved
 author: Donald Gifford
 created: 2026-05-27
 ---
@@ -9,7 +9,7 @@ created: 2026-05-27
 
 # DESIGN 0004: Runner Pattern and DocType Registry
 
-**Status:** In Review
+**Status:** Approved
 **Author:** Donald Gifford
 **Date:** 2026-05-27
 

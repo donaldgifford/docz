@@ -6,9 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"go.yaml.in/yaml/v3"
+
+	"github.com/donaldgifford/docz/internal/config"
 )
 
 func TestParseFrontmatter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -110,6 +115,7 @@ title: "Leading newlines"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseFrontmatter([]byte(tt.content))
 			if tt.wantErr {
 				if err == nil {
@@ -143,6 +149,7 @@ title: "Leading newlines"
 }
 
 func TestLoadFrontmatter_Valid(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "doc.md")
 	content := []byte("---\nid: RFC-0001\ntitle: \"Hello\"\nstatus: Draft\nauthor: T\ncreated: 2026-01-01\n---\n# Body\n")
@@ -163,6 +170,7 @@ func TestLoadFrontmatter_Valid(t *testing.T) {
 }
 
 func TestLoadFrontmatter_NoFrontmatterReturnsSentinel(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "doc.md")
 	content := []byte("# Just a heading, no frontmatter\n")
@@ -183,6 +191,7 @@ func TestLoadFrontmatter_NoFrontmatterReturnsSentinel(t *testing.T) {
 }
 
 func TestLoadFrontmatter_ReadError(t *testing.T) {
+	t.Parallel()
 	_, _, err := LoadFrontmatter("/definitely/does/not/exist/load-fm-test.md")
 	if err == nil {
 		t.Fatal("expected error for nonexistent file, got nil")
@@ -193,6 +202,7 @@ func TestLoadFrontmatter_ReadError(t *testing.T) {
 }
 
 func TestLoadFrontmatter_ParseError(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "doc.md")
 	// Frontmatter opens but never closes.
@@ -207,5 +217,65 @@ func TestLoadFrontmatter_ParseError(t *testing.T) {
 	}
 	if errors.Is(err, ErrNoFrontmatter) {
 		t.Errorf("parse error should not be classified as ErrNoFrontmatter: %v", err)
+	}
+}
+
+// TestFrontmatter_TypedStatus_YAMLRoundTrip pins the DESIGN-0004 §F
+// revised-§3 contract: typed-string fields whose underlying kind is
+// `string` round-trip through go.yaml.in/yaml/v3 with no custom
+// UnmarshalYAML. A pre-typed-Status `.docz`-rendered document must
+// still parse, and the parsed value must equal the original literal.
+//
+// Verifying both directions guards against future YAML library swaps
+// that handle typed strings less gracefully.
+func TestFrontmatter_TypedStatus_YAMLRoundTrip(t *testing.T) {
+	t.Parallel()
+	original := Frontmatter{
+		ID:      "RFC-0042",
+		Title:   "Phase 10 round-trip",
+		Status:  config.Status("Accepted"),
+		Author:  "Donald",
+		Created: "2026-05-27",
+	}
+
+	encoded, err := yaml.Marshal(original)
+	if err != nil {
+		t.Fatalf("yaml.Marshal failed: %v", err)
+	}
+	// The on-disk representation must remain a bare scalar, not a
+	// !!str-tagged value or struct-shaped node. Older docz versions
+	// wrote plain `status: Accepted`; reading downstream tools must
+	// keep working byte-for-byte.
+	if !bytes.Contains(encoded, []byte("status: Accepted\n")) {
+		t.Errorf("expected bare `status: Accepted` scalar, got %q", encoded)
+	}
+
+	var round Frontmatter
+	if err := yaml.Unmarshal(encoded, &round); err != nil {
+		t.Fatalf("yaml.Unmarshal failed: %v", err)
+	}
+	if round != original {
+		t.Errorf("round-trip mismatch:\n got  %+v\n want %+v", round, original)
+	}
+}
+
+// TestFrontmatter_TypedStatus_LegacyYAMLParses asserts that a
+// frontmatter YAML block authored before typed strings existed (plain
+// `status: Draft` with no quoting tricks) still unmarshals into the
+// typed Status field. This is the back-compat half of the §F contract.
+func TestFrontmatter_TypedStatus_LegacyYAMLParses(t *testing.T) {
+	t.Parallel()
+	legacy := []byte(`id: RFC-0001
+title: "Legacy doc"
+status: Draft
+author: Old Tool
+created: "2025-01-01"
+`)
+	var fm Frontmatter
+	if err := yaml.Unmarshal(legacy, &fm); err != nil {
+		t.Fatalf("legacy frontmatter failed to parse: %v", err)
+	}
+	if fm.Status != config.Status("Draft") {
+		t.Errorf("Status = %q, want %q", fm.Status, "Draft")
 	}
 }

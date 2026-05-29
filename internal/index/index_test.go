@@ -6,10 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/document"
 )
 
 func TestGenerateTable_Empty(t *testing.T) {
+	t.Parallel()
 	result := GenerateTable(nil, "All RFCs")
 	if !strings.Contains(result, "## All RFCs") {
 		t.Error("missing heading")
@@ -25,6 +27,7 @@ func TestGenerateTable_Empty(t *testing.T) {
 }
 
 func TestGenerateTable_WithDocs(t *testing.T) {
+	t.Parallel()
 	docs := []document.DocEntry{
 		{Frontmatter: makeFM("RFC-0001", "First", "Draft", "Author", "2026-01-01"), Filename: "0001-first.md"},
 		{Frontmatter: makeFM("RFC-0002", "Second", "Accepted", "Author", "2026-02-01"), Filename: "0002-second.md"},
@@ -40,6 +43,7 @@ func TestGenerateTable_WithDocs(t *testing.T) {
 }
 
 func TestUpdateReadme_WithMarkers(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "README.md")
 
@@ -85,6 +89,7 @@ func TestUpdateReadme_WithMarkers(t *testing.T) {
 }
 
 func TestUpdateReadme_NoMarkers(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "README.md")
 
@@ -112,6 +117,7 @@ func TestUpdateReadme_NoMarkers(t *testing.T) {
 }
 
 func TestUpdateReadme_NewFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "subdir", "README.md")
 
@@ -138,6 +144,7 @@ func TestUpdateReadme_NewFile(t *testing.T) {
 }
 
 func TestDryRunReadme_WithMarkers(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "README.md")
 
@@ -172,6 +179,7 @@ func TestDryRunReadme_WithMarkers(t *testing.T) {
 }
 
 func TestDryRunReadme_NoFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "nonexistent", "README.md")
 
@@ -191,6 +199,7 @@ func TestDryRunReadme_NoFile(t *testing.T) {
 }
 
 func TestDryRunReadme_NoMarkers(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "README.md")
 
@@ -212,7 +221,7 @@ func makeFM(id, title, status, author, created string) document.Frontmatter {
 	return document.Frontmatter{
 		ID:      id,
 		Title:   title,
-		Status:  status,
+		Status:  config.Status(status),
 		Author:  author,
 		Created: created,
 	}
