@@ -344,7 +344,7 @@ The path to v1 is six implementation waves. Three exist; three are new:
 | IMPL-0006 | Correctness and Duplication Cleanup | Drafted | Defaults drift + INV-0003 semantics fix |
 | IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | Drafted | Update performance for big repos |
 | IMPL-0008 | Move Stranded Business Logic Into Internal Packages | Drafted | Stable seams the TUI screens will call |
-| IMPL-0009 | Runner Pattern and DocType Registry Refactor | Drafted | Output routing for the TUI, no globals |
+| IMPL-0009 | Runner Pattern and DocType Registry Refactor | Completed | Output routing for the TUI, no globals |
 | **IMPL-0010** | **mdp Preview Integration** | NEW | Browser preview via library import of `mdp/pkg/{parser,theme,livereload}` (no shell-out, no vendoring); now non-blocking — proceeds as soon as IMPL-0006..0009 are merged |
 | **IMPL-0011** | **Bubble Tea v2 TUI Layer** | NEW | The actual v1 user-facing change |
 
