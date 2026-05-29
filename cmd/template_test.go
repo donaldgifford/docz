@@ -52,7 +52,8 @@ func TestRunTemplateExport(t *testing.T) {
 	outPath := filepath.Join(dir, "exported-rfc.md")
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runTemplateExport(nil, []string{"rfc", outPath})
@@ -86,7 +87,8 @@ func TestRunTemplateExport_DefaultPath(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runTemplateExport(nil, []string{"adr"})
@@ -109,7 +111,8 @@ func TestRunTemplateOverride(t *testing.T) {
 	appCfg.DocsDir = filepath.Join(dir, "docs")
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runTemplateOverride(nil, []string{"rfc"})

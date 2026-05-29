@@ -13,6 +13,7 @@ import (
 var fixedTime = time.Date(2026, 2, 22, 0, 0, 0, 0, time.UTC)
 
 func TestCreate(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 	if err := os.MkdirAll(filepath.Join(docsDir, "rfc"), 0o755); err != nil {
@@ -68,6 +69,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreate_AutoIncrement(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 	adrDir := filepath.Join(docsDir, "adr")
@@ -103,6 +105,7 @@ func TestCreate_AutoIncrement(t *testing.T) {
 }
 
 func TestCreate_DuplicateFilename(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 
@@ -134,6 +137,7 @@ func TestCreate_DuplicateFilename(t *testing.T) {
 }
 
 func TestCreate_CreatesDirectory(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	// Don't pre-create the docs/design dir - Create should make it.
 	opts := CreateOptions{
@@ -163,13 +167,19 @@ func TestCreate_CreatesDirectory(t *testing.T) {
 // substitutes time.Now() so callers without a time source keep
 // working.
 func TestCreate_ZeroCreatedAtFallsBackToNow(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	docsDir := filepath.Join(dir, "docs")
 	if err := os.MkdirAll(filepath.Join(docsDir, "rfc"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	before := time.Now().UTC().Truncate(24 * time.Hour)
+	// Compare in local time because Create formats with time.Now() (the
+	// system local clock), not UTC. A previous version of this test used
+	// time.Now().UTC().Truncate(24h) which races at the local-vs-UTC
+	// day boundary — when the local date and UTC date differ, the file
+	// shows the local date but the test expects the UTC one.
+	wantDate := time.Now().Format(time.DateOnly)
 	opts := CreateOptions{
 		Type:    "rfc",
 		Title:   "Zero Time",
@@ -192,13 +202,13 @@ func TestCreate_ZeroCreatedAtFallsBackToNow(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStr := string(content)
-	wantDate := before.Format(time.DateOnly)
 	if !strings.Contains(contentStr, "created: "+wantDate) {
 		t.Errorf("frontmatter date should be %q (today), got content:\n%s", wantDate, contentStr)
 	}
 }
 
 func TestNextID_NonexistentDir(t *testing.T) {
+	t.Parallel()
 	id := nextID("/nonexistent/path")
 	if id != 1 {
 		t.Errorf("nextID() = %d, want 1 for nonexistent dir", id)
@@ -206,6 +216,7 @@ func TestNextID_NonexistentDir(t *testing.T) {
 }
 
 func TestNextID_EmptyDir(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	id := nextID(dir)
 	if id != 1 {
@@ -214,6 +225,7 @@ func TestNextID_EmptyDir(t *testing.T) {
 }
 
 func TestNextID_NonSequential(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	// Create files with non-sequential IDs.
 	for _, name := range []string{"0001-first.md", "0005-fifth.md", "0003-third.md"} {

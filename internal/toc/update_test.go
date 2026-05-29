@@ -42,6 +42,7 @@ func writeDocFile(t *testing.T, dir, name, content string) string {
 }
 
 func TestUpdateFiles_DryRun(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := writeDocFile(t, dir, "doc.md", docWithMarkers)
 	originalBytes, err := os.ReadFile(path)
@@ -81,6 +82,7 @@ func TestUpdateFiles_DryRun(t *testing.T) {
 }
 
 func TestUpdateFiles_RealUpdate(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := writeDocFile(t, dir, "doc.md", docWithMarkers)
 
@@ -111,6 +113,7 @@ func TestUpdateFiles_RealUpdate(t *testing.T) {
 }
 
 func TestUpdateFiles_NoMarkersSkipped(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := writeDocFile(t, dir, "doc.md", docWithoutMarkers)
 
@@ -142,6 +145,7 @@ func TestUpdateFiles_NoMarkersSkipped(t *testing.T) {
 }
 
 func TestUpdateFiles_IdempotentRerun(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := writeDocFile(t, dir, "doc.md", docWithMarkers)
 
@@ -178,6 +182,7 @@ func TestUpdateFiles_IdempotentRerun(t *testing.T) {
 }
 
 func TestUpdateFiles_WriteErrorIsNonFatal(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	goodPath := writeDocFile(t, dir, "good.md", docWithMarkers)
 
@@ -213,6 +218,7 @@ func TestUpdateFiles_WriteErrorIsNonFatal(t *testing.T) {
 }
 
 func TestUpdateFiles_EmptyInput(t *testing.T) {
+	t.Parallel()
 	report, err := UpdateFiles(nil, 1, false)
 	if err != nil {
 		t.Fatalf("UpdateFiles(nil) error: %v", err)

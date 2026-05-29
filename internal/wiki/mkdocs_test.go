@@ -8,6 +8,7 @@ import (
 )
 
 func TestCreateMkDocs(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		cfg  MkDocsConfig
@@ -87,6 +88,7 @@ func TestCreateMkDocs(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			path := filepath.Join(t.TempDir(), "mkdocs.yml")
 			if err := CreateMkDocs(path, &tc.cfg); err != nil {
 				t.Fatalf("CreateMkDocs() error: %v", err)
@@ -105,6 +107,7 @@ func TestCreateMkDocs(t *testing.T) {
 }
 
 func TestCreateMkDocs_WriteError(t *testing.T) {
+	t.Parallel()
 	// Writing to a path whose parent directory does not exist should fail.
 	missingDir := filepath.Join(t.TempDir(), "nonexistent", "mkdocs.yml")
 	err := CreateMkDocs(missingDir, &MkDocsConfig{SiteName: "X", SiteDescription: "Y"})
@@ -117,6 +120,7 @@ func TestCreateMkDocs_WriteError(t *testing.T) {
 }
 
 func TestReadWriteMkDocs_RoundTrip(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "mkdocs.yml")
 
@@ -170,6 +174,7 @@ nav:
 }
 
 func TestReadMkDocs_FileNotFound(t *testing.T) {
+	t.Parallel()
 	_, err := ReadMkDocs("/nonexistent/mkdocs.yml")
 	if err == nil {
 		t.Error("expected error for nonexistent file, got nil")
@@ -177,6 +182,7 @@ func TestReadMkDocs_FileNotFound(t *testing.T) {
 }
 
 func TestReadMkDocs_InvalidYAML(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "mkdocs.yml")
 	if err := os.WriteFile(path, []byte(":::invalid yaml"), 0o644); err != nil {
@@ -190,6 +196,7 @@ func TestReadMkDocs_InvalidYAML(t *testing.T) {
 }
 
 func TestReadMkDocs_EmptyFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "mkdocs.yml")
 	if err := os.WriteFile(path, []byte(""), 0o644); err != nil {
@@ -206,6 +213,7 @@ func TestReadMkDocs_EmptyFile(t *testing.T) {
 }
 
 func TestNavToYAML_Leaves(t *testing.T) {
+	t.Parallel()
 	entries := []NavEntry{
 		{Title: "Home", Path: "index.md"},
 		{Title: "About", Path: "about.md"},
@@ -226,6 +234,7 @@ func TestNavToYAML_Leaves(t *testing.T) {
 }
 
 func TestNavToYAML_Groups(t *testing.T) {
+	t.Parallel()
 	entries := []NavEntry{
 		{Title: "Home", Path: "index.md"},
 		{Title: "RFCs", Children: []NavEntry{
@@ -253,6 +262,7 @@ func TestNavToYAML_Groups(t *testing.T) {
 }
 
 func TestExistingNavOrder(t *testing.T) {
+	t.Parallel()
 	data := map[string]any{
 		"site_name": "Test",
 		"nav": []any{
@@ -275,6 +285,7 @@ func TestExistingNavOrder(t *testing.T) {
 }
 
 func TestExistingNavOrder_NoNav(t *testing.T) {
+	t.Parallel()
 	data := map[string]any{"site_name": "Test"}
 	order := ExistingNavOrder(data)
 	if order != nil {
@@ -283,6 +294,7 @@ func TestExistingNavOrder_NoNav(t *testing.T) {
 }
 
 func TestMergeNavOrder_PreservesExisting(t *testing.T) {
+	t.Parallel()
 	existing := []string{"Home", "RFCs", "ADRs"}
 	newEntries := []NavEntry{
 		{Title: "ADRs"},
@@ -310,6 +322,7 @@ func TestMergeNavOrder_PreservesExisting(t *testing.T) {
 }
 
 func TestMergeNavOrder_EmptyExisting(t *testing.T) {
+	t.Parallel()
 	entries := []NavEntry{{Title: "B"}, {Title: "A"}}
 	result := MergeNavOrder(nil, entries)
 	// Should return entries unchanged (no reordering by MergeNavOrder itself).
@@ -319,6 +332,7 @@ func TestMergeNavOrder_EmptyExisting(t *testing.T) {
 }
 
 func TestMergeNavOrder_NewSectionsSorted(t *testing.T) {
+	t.Parallel()
 	existing := []string{"Home"}
 	newEntries := []NavEntry{
 		{Title: "Home", Path: "index.md"},

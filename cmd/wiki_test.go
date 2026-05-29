@@ -36,7 +36,8 @@ func TestWikiInit_EmptyDirectory(t *testing.T) {
 
 	// Capture stdout.
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -87,7 +88,8 @@ func TestWikiInit_AlreadyInitialized(t *testing.T) {
 	}
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -110,7 +112,8 @@ func TestWikiInit_SiteName(t *testing.T) {
 	t.Cleanup(func() { wikiSiteName = "" })
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -137,7 +140,8 @@ func TestWikiInit_SiteDescription(t *testing.T) {
 	t.Cleanup(func() { wikiSiteDescription = "" })
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -205,7 +209,8 @@ func TestWikiInit_ForceOverwrites(t *testing.T) {
 	})
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -255,7 +260,8 @@ func TestWikiUpdate_BasicNav(t *testing.T) {
 	)
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiUpdate(nil, nil)
@@ -372,7 +378,8 @@ func TestWikiUpdate_PreservesExistingOrder(t *testing.T) {
 	)
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiUpdate(nil, nil)
@@ -486,7 +493,8 @@ func TestWikiInit_Plugins(t *testing.T) {
 	_ = setupWikiTestDir(t)
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -514,7 +522,8 @@ func TestWikiInit_MultiplePlugins(t *testing.T) {
 	appCfg.Wiki.Plugins = []string{"techdocs-core", "search", "mermaid"}
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -544,7 +553,8 @@ func TestWikiInit_MarkdownExtensions(t *testing.T) {
 	appCfg.Wiki.MarkdownExtensions = []string{"admonition", "tables", "pymdownx.tasklist"}
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -580,7 +590,8 @@ func TestWikiInit_AllOptionalFields(t *testing.T) {
 	appCfg.Wiki.Theme = "readthedocs"
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -615,7 +626,8 @@ func TestWikiInit_OmitsEmptyOptionalFields(t *testing.T) {
 	// All optional fields are zero values by default.
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -644,7 +656,8 @@ func TestWikiInit_IndexTemplate(t *testing.T) {
 	_ = setupWikiTestDir(t)
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -689,7 +702,8 @@ func TestWikiInit_IndexSkipsDisabledTypes(t *testing.T) {
 	appCfg.Types["investigation"] = tc
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)
@@ -731,7 +745,8 @@ func TestWikiInit_IndexTemplateOverride(t *testing.T) {
 	writeTestFile(t, filepath.Join(templatesDir, "wiki_index.md"), override)
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err := runWikiInit(nil, nil)

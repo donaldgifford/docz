@@ -10,6 +10,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	if cfg.DocsDir != "docs" {
@@ -89,6 +90,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestDocTypeNames(t *testing.T) {
+	t.Parallel()
 	types := DocTypeNames()
 	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if len(types) != len(want) {
@@ -102,6 +104,7 @@ func TestDocTypeNames(t *testing.T) {
 }
 
 func TestTypeDir(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	tests := []struct {
@@ -117,6 +120,7 @@ func TestTypeDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.docType, func(t *testing.T) {
+			t.Parallel()
 			got := cfg.TypeDir(tt.docType)
 			if got != tt.want {
 				t.Errorf("TypeDir(%q) = %q, want %q", tt.docType, got, tt.want)
@@ -126,6 +130,7 @@ func TestTypeDir(t *testing.T) {
 }
 
 func TestLoad_NoConfigFiles(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	cfg, err := Load("", dir)
@@ -143,6 +148,7 @@ func TestLoad_NoConfigFiles(t *testing.T) {
 }
 
 func TestLoad_RepoConfig(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	configContent := `docs_dir: documentation
@@ -175,6 +181,7 @@ author:
 }
 
 func TestLoad_ExplicitConfigFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `docs_dir: custom-docs
@@ -194,6 +201,7 @@ func TestLoad_ExplicitConfigFile(t *testing.T) {
 }
 
 func TestLoad_WikiConfig(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `wiki:
@@ -233,6 +241,7 @@ func TestLoad_WikiConfig(t *testing.T) {
 // keep working — if this test breaks after a future YAML tag change,
 // user configs in the wild will silently stop applying.
 func TestLoad_TOCConfig(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `toc:
@@ -257,6 +266,7 @@ func TestLoad_TOCConfig(t *testing.T) {
 }
 
 func TestLoad_WikiMarkdownExtensions(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `wiki:
@@ -305,6 +315,7 @@ func TestLoad_WikiMarkdownExtensions(t *testing.T) {
 }
 
 func TestLoad_WikiPlugins(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "custom.yaml")
 	configContent := `wiki:
@@ -334,6 +345,7 @@ func TestLoad_WikiPlugins(t *testing.T) {
 }
 
 func TestResolveTypeAlias(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -350,6 +362,7 @@ func TestResolveTypeAlias(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			got := ResolveTypeAlias(tt.input)
 			if got != tt.want {
 				t.Errorf("ResolveTypeAlias(%q) = %q, want %q", tt.input, got, tt.want)
@@ -359,6 +372,7 @@ func TestResolveTypeAlias(t *testing.T) {
 }
 
 func TestTypesHelp(t *testing.T) {
+	t.Parallel()
 	help := TypesHelp()
 	for _, typeName := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
 		if !strings.Contains(help, typeName) {
@@ -373,6 +387,7 @@ func TestTypesHelp(t *testing.T) {
 }
 
 func TestValidate_DefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	warnings, err := cfg.Validate()
 	if err != nil {
@@ -384,6 +399,7 @@ func TestValidate_DefaultConfig(t *testing.T) {
 }
 
 func TestValidate_EmptyDocsDir(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	cfg.DocsDir = ""
 	_, err := cfg.Validate()
@@ -393,6 +409,7 @@ func TestValidate_EmptyDocsDir(t *testing.T) {
 }
 
 func TestValidate_EmptyStatuses(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	tc := cfg.Types["rfc"]
 	tc.Statuses = nil
@@ -405,6 +422,7 @@ func TestValidate_EmptyStatuses(t *testing.T) {
 }
 
 func TestValidateType(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	tests := []struct {
@@ -423,6 +441,7 @@ func TestValidateType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := cfg.ValidateType(tt.input)
 			if tt.wantUnknown {
 				if err == nil {
@@ -444,6 +463,7 @@ func TestValidateType(t *testing.T) {
 }
 
 func TestEnabledTypes(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	got := cfg.EnabledTypes()
 	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
@@ -464,6 +484,7 @@ func TestEnabledTypes(t *testing.T) {
 }
 
 func TestValidate_UnknownType(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	cfg.Types["custom"] = TypeConfig{Enabled: true, Statuses: []string{"Draft"}}
 

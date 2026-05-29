@@ -20,6 +20,7 @@ import (
 // drift between the template, DefaultConfig, and the YAML schema if
 // any of the three change without the others.
 func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
+	t.Parallel()
 	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
 	if err != nil {
 		t.Fatalf("loading template: %v", err)
@@ -51,6 +52,7 @@ func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
 // drop comments; the template approach preserves them. If a future change
 // switches back to marshal, this catches it.
 func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
+	t.Parallel()
 	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
 	if err != nil {
 		t.Fatalf("loading template: %v", err)
@@ -86,6 +88,7 @@ func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
 // future refactor reintroduces a `var cfg Config` zero-init, these checks
 // catch it.
 func TestLoad_PartialOverridesPreserveSiblingDefaults(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "partial.yaml")
 	content := `wiki:
@@ -140,6 +143,7 @@ toc:
 // repo-root config path (not explicit-file), which uses MergeConfigMap +
 // Unmarshal-on-defaults instead of loadFromFile.
 func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	content := `author:
@@ -175,6 +179,7 @@ func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
 // wrapped error with the file path in the message, instead of being
 // silently swallowed in mergeConfigFile.
 func TestLoad_MalformedRepoConfigReturnsError(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	// Tab inside a value plus an unclosed brace -> YAML parse error.
@@ -200,6 +205,7 @@ func TestLoad_MalformedRepoConfigReturnsError(t *testing.T) {
 // .docz.yaml must continue to return defaults without error. This is the
 // green-field case (new repo, no config yet) and must keep working.
 func TestLoad_MissingRepoConfigSilent(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	cfg, loadErr := config.Load("", dir)
@@ -218,6 +224,7 @@ func TestLoad_MissingRepoConfigSilent(t *testing.T) {
 // Skipped when running as root (CI containers often do) because root
 // bypasses permission bits.
 func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
+	t.Parallel()
 	if os.Geteuid() == 0 {
 		t.Skip("permission bits don't constrain root; skipping unreadable-file test")
 	}
@@ -252,6 +259,7 @@ func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
 // Bool fields (Enabled) are intentionally NOT backfilled and are
 // covered by a sibling subtest.
 func TestLoad_TypeFieldDefaultsBackfilled(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "partial.yaml")
 	// User declares rfc with only a custom dir — everything else
@@ -302,6 +310,7 @@ func TestLoad_TypeFieldDefaultsBackfilled(t *testing.T) {
 // backfilled from defaults, so Validate can still flag the type as
 // misconfigured.
 func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "explicit-empty.yaml")
 	content := `types:
@@ -331,6 +340,7 @@ func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
 // DefaultConfig(). Catches any future drift where Load loses or mutates
 // fields relative to DefaultConfig.
 func TestLoad_DefaultsParity(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	got, err := config.Load("", dir)
