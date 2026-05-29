@@ -14,6 +14,7 @@ import (
 // (`<TemplateName>.md`). This is the contract that lets `docz create`
 // render a doc without bespoke per-type plumbing — see DESIGN-0004 §E.
 func TestDocTypeRegistry_AllHaveEmbeddedTemplate(t *testing.T) {
+	t.Parallel()
 	for _, dt := range config.AllDocTypes() {
 		if _, err := template.EmbeddedDocumentTemplate(config.DocType(dt.TemplateName)); err != nil {
 			t.Errorf(
@@ -29,6 +30,7 @@ func TestDocTypeRegistry_AllHaveEmbeddedTemplate(t *testing.T) {
 // (`index_<TemplateName>.md`) so `docz update` can write the per-type
 // README without bespoke per-type plumbing.
 func TestDocTypeRegistry_AllHaveEmbeddedIndexHeader(t *testing.T) {
+	t.Parallel()
 	for _, dt := range config.AllDocTypes() {
 		if _, err := template.EmbeddedIndexHeader(dt.TemplateName); err != nil {
 			t.Errorf(
@@ -43,6 +45,7 @@ func TestDocTypeRegistry_AllHaveEmbeddedIndexHeader(t *testing.T) {
 // entries claiming the same canonical name — a silent footgun where
 // the later entry would shadow the earlier one in maps.
 func TestDocTypeRegistry_NoDuplicateNames(t *testing.T) {
+	t.Parallel()
 	seen := make(map[string]bool, len(config.AllDocTypes()))
 	for _, dt := range config.AllDocTypes() {
 		if seen[dt.Name] {
@@ -56,6 +59,7 @@ func TestDocTypeRegistry_NoDuplicateNames(t *testing.T) {
 // alias that shadows a different type's canonical name — e.g. an
 // alias "rfc" on the adr entry would route `rfc` lookups to adr.
 func TestDocTypeRegistry_NoAliasCollidesWithCanonical(t *testing.T) {
+	t.Parallel()
 	canonical := make(map[string]bool, len(config.AllDocTypes()))
 	for _, dt := range config.AllDocTypes() {
 		canonical[dt.Name] = true
@@ -78,6 +82,7 @@ func TestDocTypeRegistry_NoAliasCollidesWithCanonical(t *testing.T) {
 // entry that ships a broken default would surface as a startup error
 // in every fresh installation.
 func TestDocTypeRegistry_DefaultConfigValidates(t *testing.T) {
+	t.Parallel()
 	cfg := config.DefaultConfig()
 	warnings, err := cfg.Validate()
 	if err != nil {
@@ -93,6 +98,7 @@ func TestDocTypeRegistry_DefaultConfigValidates(t *testing.T) {
 // the active Config, but registry entries are the source of those
 // defaults so we check them directly too.
 func TestDocTypeRegistry_DefaultConfigStatusesNonEmpty(t *testing.T) {
+	t.Parallel()
 	for _, dt := range config.AllDocTypes() {
 		tc := dt.DefaultConfig()
 		if len(tc.Statuses) == 0 {
@@ -107,6 +113,7 @@ func TestDocTypeRegistry_DefaultConfigStatusesNonEmpty(t *testing.T) {
 // exists so callers can't mutate one Config and bleed the change into
 // another — append-to-shared-slice would defeat the whole point.
 func TestDocTypeRegistry_DefaultConfigReturnsFreshSlice(t *testing.T) {
+	t.Parallel()
 	for _, dt := range config.AllDocTypes() {
 		a := dt.DefaultConfig()
 		b := dt.DefaultConfig()
@@ -130,6 +137,7 @@ func TestDocTypeRegistry_DefaultConfigReturnsFreshSlice(t *testing.T) {
 // and aliases, and that the lookup is case-insensitive and
 // whitespace-tolerant per its doc comment.
 func TestDocTypeRegistry_LookupDocTypeResolvesCanonicalAndAliases(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		input string
 		want  string
@@ -166,6 +174,7 @@ func TestDocTypeRegistry_LookupDocTypeResolvesCanonicalAndAliases(t *testing.T) 
 // `docz --help` will silently omit the new type. Until TypesHelp is
 // derived from the registry, this test pins the relationship.
 func TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp(t *testing.T) {
+	t.Parallel()
 	help := config.TypesHelp()
 	for _, name := range config.DocTypeNames() {
 		if !strings.Contains(help, name) {
@@ -182,6 +191,7 @@ func TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp(t *testing.T) {
 // the registry encodes. If a registry entry's PluralLabel or NavTitle
 // changes without an intentional doc update, this test catches it.
 func TestDocTypeRegistry_DerivedDefaultConfigMatchesHardcoded(t *testing.T) {
+	t.Parallel()
 	cfg := config.DefaultConfig()
 	for _, dt := range config.AllDocTypes() {
 		tc, ok := cfg.Types[dt.Name]

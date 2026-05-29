@@ -516,10 +516,16 @@ Add typed-string definitions for compile-time signal at API boundaries.
       and alias paths), `list` (no filter, type filter, `--status`),
       `update`, `template show`, `config`, `wiki update` all behave
       as expected against a `/tmp/docz-smoke` working directory
-- [ ] Verify all tests can run with `t.Parallel()` — deferred. cmd/
-      tests still rely on the package-level `runner` global and a few
-      `os.Chdir` patterns; full t.Parallel() rollout would need a
-      separate cleanup pass and is out of the IMPL-0009 critical path
+- [x] Verify all tests can run with `t.Parallel()`. Every top-level
+      `Test*` in `internal/*` plus their table-driven subtests now
+      call `t.Parallel()` (134 sites). Three iterations of
+      `go test -race -shuffle=on -count=3 ./...` are green. cmd/
+      tests stay serial because they share package-level `runner` /
+      `appCfg` / flag globals, but the pipe-discarding pattern
+      (`_, w, _ := os.Pipe()`) that previously flaked under shuffle
+      is fixed by capturing the read end and deferring its close —
+      so even without parallelism the cmd/ suite is now
+      order-independent
 - [x] Update INV-0002 status — flipped to `Concluded`; Wave 4 marked
       done (PRs #44/#45/#46) and Wave 5 marked done (DESIGN-0004 +
       IMPL-0009 Phases 2-10) with item-by-item references
@@ -540,7 +546,10 @@ Add typed-string definitions for compile-time signal at API boundaries.
 - [x] A new contributor can add a doc type by editing one file plus two
       template files (CONTRIBUTING.md "Adding a New Built-In Document
       Type" and DEVELOPMENT.md walkthrough both pin this)
-- [ ] Tests run in parallel — deferred (see Tasks)
+- [x] Tests run in parallel — all internal/* tests, top-level and
+      subtests, call `t.Parallel()`. `go test -race -shuffle=on
+      -count=3 ./...` is green. cmd/ tests stay serial intentionally
+      until the package-level globals are removed (out of scope here)
 - [x] No `cmd/` package-level globals remain except the threaded
       `*Runner` and the bound Cobra flag values
       (`cfgFile`, `docsDir`, `verbose`, `logLevel`, `logFormat`, and

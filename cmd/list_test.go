@@ -142,7 +142,8 @@ func TestRunList_AllTypes(t *testing.T) {
 	appCfg.DocsDir = filepath.Join(dir, "docs")
 
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	listStatus = ""

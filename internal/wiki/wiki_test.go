@@ -7,6 +7,7 @@ import (
 )
 
 func TestScanDocs_BasicStructure(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	navTitles := map[string]string{"rfc": "RFCs", "adr": "ADRs"}
 
@@ -72,6 +73,7 @@ func TestScanDocs_BasicStructure(t *testing.T) {
 }
 
 func TestScanDocs_ExcludesDirectories(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	exclude := []string{"templates", "examples"}
 
@@ -97,6 +99,7 @@ func TestScanDocs_ExcludesDirectories(t *testing.T) {
 }
 
 func TestScanDocs_SkipsEmptyDirectories(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	mkdirAll(t, dir, "empty-dir")
@@ -117,6 +120,7 @@ func TestScanDocs_SkipsEmptyDirectories(t *testing.T) {
 }
 
 func TestScanDocs_ArbitraryNesting(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	mkdirAll(t, dir, "guides/getting-started/setup")
@@ -151,6 +155,7 @@ func TestScanDocs_ArbitraryNesting(t *testing.T) {
 }
 
 func TestScanDocs_SkipsNonMarkdown(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	mkdirAll(t, dir, "assets")
@@ -171,6 +176,7 @@ func TestScanDocs_SkipsNonMarkdown(t *testing.T) {
 }
 
 func TestScanDocs_DoczDocsSortedByID(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	mkdirAll(t, dir, "rfc")
@@ -203,6 +209,7 @@ func TestScanDocs_DoczDocsSortedByID(t *testing.T) {
 }
 
 func TestSortEntries(t *testing.T) {
+	t.Parallel()
 	entries := []NavEntry{
 		{Title: "RFCs", Children: []NavEntry{{Title: "Overview"}}},
 		{Title: "Home", Path: "index.md"},
@@ -230,6 +237,7 @@ func TestSortEntries(t *testing.T) {
 }
 
 func TestSortEntries_NoHome(t *testing.T) {
+	t.Parallel()
 	entries := []NavEntry{
 		{Title: "RFCs", Children: []NavEntry{}},
 		{Title: "ADRs", Children: []NavEntry{}},
@@ -245,6 +253,7 @@ func TestSortEntries_NoHome(t *testing.T) {
 }
 
 func TestSortEntries_Empty(t *testing.T) {
+	t.Parallel()
 	sorted := SortEntries(nil)
 	if sorted != nil {
 		t.Errorf("expected nil, got %v", sorted)
@@ -252,6 +261,7 @@ func TestSortEntries_Empty(t *testing.T) {
 }
 
 func TestCountPages(t *testing.T) {
+	t.Parallel()
 	entries := []NavEntry{
 		{Title: "Home", Path: "index.md"},
 		{Title: "RFCs", Children: []NavEntry{
@@ -270,6 +280,7 @@ func TestCountPages(t *testing.T) {
 }
 
 func TestBuildNav_EmptyExistingOrderSortsAlphabetically(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	navTitles := map[string]string{"rfc": "RFCs", "adr": "ADRs"}
 
@@ -304,6 +315,7 @@ func TestBuildNav_EmptyExistingOrderSortsAlphabetically(t *testing.T) {
 }
 
 func TestBuildNav_PartialExistingOrderPreservesPlusAppends(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	navTitles := map[string]string{
 		"rfc":    "RFCs",
@@ -339,6 +351,7 @@ func TestBuildNav_PartialExistingOrderPreservesPlusAppends(t *testing.T) {
 }
 
 func TestBuildNav_NoDocsFound(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	entries, err := BuildNav(dir, nil, nil, nil)
 	if err != nil {
@@ -350,6 +363,7 @@ func TestBuildNav_NoDocsFound(t *testing.T) {
 }
 
 func TestBuildNav_ScanError(t *testing.T) {
+	t.Parallel()
 	_, err := BuildNav("/definitely/not/here/docz-build-nav-test", nil, nil, nil)
 	if err == nil {
 		t.Error("expected error for nonexistent docs dir, got nil")

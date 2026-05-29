@@ -12,6 +12,7 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 func TestGoldenTemplates(t *testing.T) {
+	t.Parallel()
 	data := Data{
 		Number:   "0001",
 		Title:    "Test Document",
@@ -33,6 +34,7 @@ func TestGoldenTemplates(t *testing.T) {
 
 	for typeName, td := range types {
 		t.Run(string(typeName), func(t *testing.T) {
+			t.Parallel()
 			tmpl, err := EmbeddedDocumentTemplate(typeName)
 			if err != nil {
 				t.Fatalf("EmbeddedDocumentTemplate(%q): %v", typeName, err)

@@ -9,6 +9,7 @@ import (
 )
 
 func TestFilenameSlug(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		input string
@@ -36,6 +37,7 @@ func TestFilenameSlug(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := FilenameSlug(tt.input)
 			if got != tt.want {
 				t.Errorf("FilenameSlug(%q) = %q, want %q", tt.input, got, tt.want)
@@ -45,8 +47,10 @@ func TestFilenameSlug(t *testing.T) {
 }
 
 func TestEmbeddedDocumentTemplate(t *testing.T) {
+	t.Parallel()
 	for _, docType := range []config.DocType{"rfc", "adr", "design", "impl"} {
 		t.Run(string(docType), func(t *testing.T) {
+			t.Parallel()
 			content, err := EmbeddedDocumentTemplate(docType)
 			if err != nil {
 				t.Fatalf("EmbeddedDocumentTemplate(%q) error: %v", docType, err)
@@ -63,6 +67,7 @@ func TestEmbeddedDocumentTemplate(t *testing.T) {
 }
 
 func TestEmbeddedDocumentTemplate_InvalidType(t *testing.T) {
+	t.Parallel()
 	_, err := EmbeddedDocumentTemplate(config.DocType("nonexistent"))
 	if err == nil {
 		t.Error("expected error for nonexistent type, got nil")
@@ -70,8 +75,10 @@ func TestEmbeddedDocumentTemplate_InvalidType(t *testing.T) {
 }
 
 func TestEmbeddedIndexHeader(t *testing.T) {
+	t.Parallel()
 	for _, docType := range []string{"rfc", "adr", "design", "impl"} {
 		t.Run(docType, func(t *testing.T) {
+			t.Parallel()
 			content, err := EmbeddedIndexHeader(docType)
 			if err != nil {
 				t.Fatalf("EmbeddedIndexHeader(%q) error: %v", docType, err)
@@ -84,6 +91,7 @@ func TestEmbeddedIndexHeader(t *testing.T) {
 }
 
 func TestResolve_EmbeddedDefault(t *testing.T) {
+	t.Parallel()
 	content, err := Resolve("rfc", "", "/nonexistent/path")
 	if err != nil {
 		t.Fatalf("Resolve() error: %v", err)
@@ -94,6 +102,7 @@ func TestResolve_EmbeddedDefault(t *testing.T) {
 }
 
 func TestResolve_LocalOverride(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	templatesDir := filepath.Join(dir, "templates")
 	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
@@ -115,6 +124,7 @@ func TestResolve_LocalOverride(t *testing.T) {
 }
 
 func TestResolve_ConfigPath(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	customPath := filepath.Join(dir, "my-rfc.md")
 	customContent := "# My Custom Template"
@@ -132,6 +142,7 @@ func TestResolve_ConfigPath(t *testing.T) {
 }
 
 func TestResolve_ConfigPathNotFound(t *testing.T) {
+	t.Parallel()
 	_, err := Resolve("rfc", "/nonexistent/template.md", "/nonexistent")
 	if err == nil {
 		t.Error("expected error for missing config path, got nil")
@@ -139,6 +150,7 @@ func TestResolve_ConfigPathNotFound(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
+	t.Parallel()
 	tmpl := "# {{ .Prefix }}-{{ .Number }}: {{ .Title }}\nBy {{ .Author }} on {{ .Date }}"
 	data := Data{
 		Number:   "0001",
@@ -164,6 +176,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestRender_InvalidTemplate(t *testing.T) {
+	t.Parallel()
 	_, err := Render("{{ .Invalid", &Data{})
 	if err == nil {
 		t.Error("expected error for invalid template, got nil")
@@ -171,6 +184,7 @@ func TestRender_InvalidTemplate(t *testing.T) {
 }
 
 func TestEmbeddedWikiIndex(t *testing.T) {
+	t.Parallel()
 	content, err := EmbeddedWikiIndex()
 	if err != nil {
 		t.Fatalf("EmbeddedWikiIndex() error: %v", err)
@@ -184,6 +198,7 @@ func TestEmbeddedWikiIndex(t *testing.T) {
 }
 
 func TestResolveWikiIndex_Embedded(t *testing.T) {
+	t.Parallel()
 	content, err := ResolveWikiIndex("/nonexistent/path")
 	if err != nil {
 		t.Fatalf("ResolveWikiIndex() error: %v", err)
@@ -194,6 +209,7 @@ func TestResolveWikiIndex_Embedded(t *testing.T) {
 }
 
 func TestResolveWikiIndex_LocalOverride(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	templatesDir := filepath.Join(dir, "templates")
 	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
@@ -219,6 +235,7 @@ func TestResolveWikiIndex_LocalOverride(t *testing.T) {
 }
 
 func TestRenderWikiIndex(t *testing.T) {
+	t.Parallel()
 	tmpl := "# {{ .SiteName }}\n{{ range .Types }}- {{ .NavTitle }}\n{{ end }}"
 	data := &WikiIndexData{
 		SiteName: "My Project",

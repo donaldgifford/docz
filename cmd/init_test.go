@@ -32,7 +32,8 @@ func TestInitSkipsDisabledTypes(t *testing.T) {
 
 	// Suppress stdout.
 	old := os.Stdout
-	_, w, _ := os.Pipe()
+	pipeR, w, _ := os.Pipe()
+	defer pipeR.Close()
 	os.Stdout = w
 
 	err = runInit(nil, nil)

@@ -10,6 +10,7 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 func TestGoldenToCOutput(t *testing.T) {
+	t.Parallel()
 	// A representative document with mixed heading levels, code blocks,
 	// inline formatting, and duplicate headings.
 	input := `---

@@ -23,7 +23,7 @@ make ci             # full CI pipeline (lint + test + build + license-check)
 - Type aliases: `implementation` -> `impl`, `inv` -> `investigation`
 - Templates must have `<!-- markdownlint-disable-file MD025 MD041 -->` after frontmatter
 - Lint: `golangci-lint` with `golines` for line length
-- Tests: `t.TempDir()` for filesystem tests, golden files under `testdata/golden/`
+- Tests: `t.TempDir()` for filesystem tests, golden files under `testdata/golden/`. `internal/*` tests run in parallel (`t.Parallel()` on every top-level test and subtest); cmd/ tests stay serial because of the package-level `runner` and flag globals. Avoid `_, w, _ := os.Pipe()` — capture the read end (`pipeR, w, _ := os.Pipe(); defer pipeR.Close()`) so the GC can't collect the read FD mid-test and produce `write |1: broken pipe`
 - Golden files are regenerated with `go test ./... -update`, never hand-edited
 
 ## Git Workflow

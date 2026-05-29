@@ -7,6 +7,7 @@ import (
 )
 
 func TestDirTitle(t *testing.T) {
+	t.Parallel()
 	navTitles := map[string]string{
 		"rfc":           "RFCs",
 		"adr":           "ADRs",
@@ -30,6 +31,7 @@ func TestDirTitle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.dir, func(t *testing.T) {
+			t.Parallel()
 			got := DirTitle(tt.dir, navTitles)
 			if got != tt.want {
 				t.Errorf("DirTitle(%q) = %q, want %q", tt.dir, got, tt.want)
@@ -39,6 +41,7 @@ func TestDirTitle(t *testing.T) {
 }
 
 func TestDirTitle_EmptyNavTitles(t *testing.T) {
+	t.Parallel()
 	got := DirTitle("getting-started", nil)
 	if got != "Getting Started" {
 		t.Errorf("DirTitle with nil navTitles = %q, want %q", got, "Getting Started")
@@ -46,6 +49,7 @@ func TestDirTitle_EmptyNavTitles(t *testing.T) {
 }
 
 func TestDocTitle_Frontmatter(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `---
 id: RFC-0001
@@ -71,6 +75,7 @@ created: 2026-01-01
 }
 
 func TestDocTitle_H1Fallback(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `# System Overview
 
@@ -91,6 +96,7 @@ Some content here.
 }
 
 func TestDocTitle_FilenameFallback(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := "Just some text without a heading.\n"
 	path := filepath.Join(dir, "deployment-guide.md")
@@ -108,6 +114,7 @@ func TestDocTitle_FilenameFallback(t *testing.T) {
 }
 
 func TestDocTitle_NonexistentFile(t *testing.T) {
+	t.Parallel()
 	// Per Decisions §3, DocTitle now follows the standard "value OR
 	// error" contract: a read failure returns "" alongside the error,
 	// not a filename-derived fallback. Callers that want a fallback
@@ -122,6 +129,7 @@ func TestDocTitle_NonexistentFile(t *testing.T) {
 }
 
 func TestDocTitle_FrontmatterWithMarkdownDisable(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `---
 id: DESIGN-0002
@@ -149,6 +157,7 @@ created: 2026-03-11
 }
 
 func TestFilenameTitle(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -162,6 +171,7 @@ func TestFilenameTitle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			got := FilenameTitle(tt.input)
 			if got != tt.want {
 				t.Errorf("FilenameTitle(%q) = %q, want %q", tt.input, got, tt.want)
@@ -171,6 +181,7 @@ func TestFilenameTitle(t *testing.T) {
 }
 
 func TestFirstH1(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -189,6 +200,7 @@ func TestFirstH1(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := firstH1([]byte(tt.content))
 			if got != tt.want {
 				t.Errorf("firstH1() = %q, want %q", got, tt.want)
@@ -198,6 +210,7 @@ func TestFirstH1(t *testing.T) {
 }
 
 func TestTitleCase(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -211,6 +224,7 @@ func TestTitleCase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			got := titleCase(tt.input)
 			if got != tt.want {
 				t.Errorf("titleCase(%q) = %q, want %q", tt.input, got, tt.want)

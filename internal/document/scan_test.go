@@ -10,6 +10,7 @@ import (
 )
 
 func TestScanDocuments_Empty(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	docs, err := ScanDocuments(dir)
 	if err != nil {
@@ -21,6 +22,7 @@ func TestScanDocuments_Empty(t *testing.T) {
 }
 
 func TestScanDocuments_NonexistentDir(t *testing.T) {
+	t.Parallel()
 	docs, err := ScanDocuments("/nonexistent/path")
 	if err != nil {
 		t.Fatalf("ScanDocuments() error: %v", err)
@@ -31,6 +33,7 @@ func TestScanDocuments_NonexistentDir(t *testing.T) {
 }
 
 func TestScanDocuments_WithDocuments(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	writeDoc(t, dir, "0001-first.md", "RFC-0001", "First Doc", "Draft", "2026-01-01")
@@ -61,6 +64,7 @@ func TestScanDocuments_WithDocuments(t *testing.T) {
 // contract: every returned DocEntry carries the raw file bytes so
 // downstream callers (cmd/update.go ToC pass) can skip re-reading.
 func TestScanDocuments_PopulatesContent(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	writeDoc(t, dir, "0001-first.md", "RFC-0001", "First", "Draft", "2026-01-01")
 
@@ -85,6 +89,7 @@ func TestScanDocuments_PopulatesContent(t *testing.T) {
 }
 
 func TestScanDocuments_SkipsNoFrontmatter(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	writeDoc(t, dir, "0001-valid.md", "RFC-0001", "Valid", "Draft", "2026-01-01")
@@ -103,6 +108,7 @@ func TestScanDocuments_SkipsNoFrontmatter(t *testing.T) {
 }
 
 func TestScanDocuments_SkipsNonMatchingFiles(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	writeDoc(t, dir, "0001-valid.md", "RFC-0001", "Valid", "Draft", "2026-01-01")
@@ -124,6 +130,7 @@ func TestScanDocuments_SkipsNonMatchingFiles(t *testing.T) {
 }
 
 func TestIsDoczFile(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		in   string
@@ -141,6 +148,7 @@ func TestIsDoczFile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			if got := IsDoczFile(tc.in); got != tc.want {
 				t.Errorf("IsDoczFile(%q) = %v, want %v", tc.in, got, tc.want)
 			}

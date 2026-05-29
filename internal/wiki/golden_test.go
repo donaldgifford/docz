@@ -13,6 +13,7 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 func TestGoldenNavOutput(t *testing.T) {
+	t.Parallel()
 	// Build a representative docs directory structure.
 	docsDir := t.TempDir()
 	navTitles := map[string]string{
@@ -126,6 +127,7 @@ func writeGoldenFile(t *testing.T, dir, name, content string) {
 }
 
 func TestGoldenCreateMkDocs(t *testing.T) {
+	t.Parallel()
 	cfg := &MkDocsConfig{
 		SiteName:        "docz",
 		SiteDescription: "Documentation for docz",
