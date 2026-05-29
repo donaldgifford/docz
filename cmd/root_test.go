@@ -3,11 +3,43 @@ package cmd
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/donaldgifford/docz/internal/config"
 )
+
+// writeBrokenConfig writes a `.docz.yaml` whose rfc type has an empty
+// statuses list (Validate() returns "no statuses defined") into dir
+// and points the package-level `repoRoot` flag at it so
+// PersistentPreRunE picks dir up without any os.Chdir.
+func writeBrokenConfig(t *testing.T, dir string) {
+	t.Helper()
+	content := `types:
+  rfc:
+    enabled: true
+    dir: rfc
+    statuses: []
+`
+	if err := os.WriteFile(
+		filepath.Join(dir, ".docz.yaml"),
+		[]byte(content),
+		0o644,
+	); err != nil {
+		t.Fatal(err)
+	}
+	cfgFile = ""
+	repoRoot = dir
+	docsDir = ""
+	t.Cleanup(func() {
+		cfgFile = ""
+		repoRoot = ""
+		docsDir = ""
+		appCfg = config.DefaultConfig()
+		runner = nil
+	})
+}
 
 // TestPersistentPreRunE_ValidationErrorFailsCommand is the IMPL-0006 Phase 3
 // regression guard: a .docz.yaml that fails Validate() must cause a
@@ -15,36 +47,7 @@ import (
 // of silently warning and continuing on a broken config (the pre-Phase-3
 // behavior in initConfig).
 func TestPersistentPreRunE_ValidationErrorFailsCommand(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(origDir)
-		cfgFile = ""
-		docsDir = ""
-		appCfg = config.DefaultConfig()
-	})
-
-	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-
-	// rfc enabled but with an empty statuses list -> Validate() returns
-	// "no statuses defined" error.
-	content := `types:
-  rfc:
-    enabled: true
-    dir: rfc
-    statuses: []
-`
-	if err := os.WriteFile(".docz.yaml", []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	cfgFile = ""
-	docsDir = ""
+	writeBrokenConfig(t, t.TempDir())
 
 	var stderr bytes.Buffer
 	rootCmd.SetOut(&stderr)
@@ -69,34 +72,7 @@ func TestPersistentPreRunE_ValidationErrorFailsCommand(t *testing.T) {
 // set; this test guards that contract so a future refactor doesn't move
 // validation somewhere that runs before help is resolved.
 func TestPersistentPreRunE_HelpWorksWithBrokenConfig(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(origDir)
-		cfgFile = ""
-		docsDir = ""
-		appCfg = config.DefaultConfig()
-	})
-
-	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-
-	content := `types:
-  rfc:
-    enabled: true
-    dir: rfc
-    statuses: []
-`
-	if err := os.WriteFile(".docz.yaml", []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	cfgFile = ""
-	docsDir = ""
+	writeBrokenConfig(t, t.TempDir())
 
 	var buf bytes.Buffer
 	rootCmd.SetOut(&buf)

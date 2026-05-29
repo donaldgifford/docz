@@ -2,35 +2,34 @@ package cmd
 
 import (
 	"bytes"
-	"os"
+	"io"
+	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/donaldgifford/docz/internal/config"
 )
 
 func TestRunConfig(t *testing.T) {
-	appCfg = config.DefaultConfig()
+	var out bytes.Buffer
+	cfg := config.DefaultConfig()
+	appCfg = cfg
+	runner = &Runner{
+		Cfg:    cfg,
+		Out:    &out,
+		Err:    io.Discard,
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Now:    time.Now,
+		Git:    staticGit{},
+	}
+	t.Cleanup(func() { runner = nil })
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := runConfig(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runConfig(nil, nil); err != nil {
 		t.Fatalf("runConfig() error: %v", err)
 	}
 
-	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
-	}
-	output := buf.String()
-
+	output := out.String()
 	// Verify key config fields are present.
 	if !strings.Contains(output, "docs_dir: docs") {
 		t.Error("missing docs_dir in config output")

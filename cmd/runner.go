@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -55,6 +56,14 @@ type Runner struct {
 	Logger *slog.Logger
 	Now    func() time.Time
 	Git    GitResolver
+
+	// RepoRoot is the directory cwd-relative path lookups resolve
+	// against. Production wires it to os.Getwd() in
+	// loadAndValidateConfig; tests set it to t.TempDir() so they can
+	// run without an os.Chdir. An empty RepoRoot preserves the
+	// pre-refactor "cwd" behavior for any caller that constructs a
+	// Runner without setting it.
+	RepoRoot string
 }
 
 // NewRunner returns a Runner wired with default real-world
@@ -107,6 +116,19 @@ func buildLogger(w io.Writer, verbose bool, level, format string) (*slog.Logger,
 			format, logFormatText, logFormatJSON,
 		)
 	}
+}
+
+// inRepo resolves name against r.RepoRoot, returning name unchanged
+// if it is already absolute or if RepoRoot is empty (preserving the
+// pre-refactor cwd-relative behavior for callers that have not opted
+// in). When RepoRoot is set, this gives handlers a consistent way to
+// reach a docz config file or wiki path without depending on the
+// process working directory — which is what lets tests skip os.Chdir.
+func (r *Runner) inRepo(name string) string {
+	if name == "" || filepath.IsAbs(name) || r.RepoRoot == "" {
+		return name
+	}
+	return filepath.Join(r.RepoRoot, name)
 }
 
 // resolveLogLevel picks the slog.Level per the --log-level / --verbose

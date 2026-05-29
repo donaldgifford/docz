@@ -2,43 +2,52 @@ package cmd
 
 import (
 	"bytes"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/donaldgifford/docz/internal/config"
 )
 
+// newTemplateTestRunner builds a Runner that captures Out into the
+// supplied buffer and resolves cwd-relative paths under dir. Tests
+// can mutate `runner.Cfg` to override the supplied cfg after setup.
+func newTemplateTestRunner(t *testing.T, dir string, cfg *config.Config, out io.Writer) {
+	t.Helper()
+	appCfg = *cfg
+	runner = &Runner{
+		Cfg:      *cfg,
+		Out:      out,
+		Err:      io.Discard,
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Now:      time.Now,
+		Git:      staticGit{},
+		RepoRoot: dir,
+	}
+	t.Cleanup(func() { runner = nil })
+}
+
 func TestRunTemplateShow(t *testing.T) {
-	appCfg = config.DefaultConfig()
+	var out bytes.Buffer
+	cfg := config.DefaultConfig()
+	newTemplateTestRunner(t, t.TempDir(), &cfg, &out)
 
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := runTemplateShow(nil, []string{"rfc"})
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runTemplateShow(nil, []string{"rfc"}); err != nil {
 		t.Fatalf("runTemplateShow() error: %v", err)
 	}
 
-	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
-	}
-	output := buf.String()
-
-	if !strings.Contains(output, "{{ .Title }}") {
+	if !strings.Contains(out.String(), "{{ .Title }}") {
 		t.Error("template output should contain {{ .Title }} placeholder")
 	}
 }
 
 func TestRunTemplateShow_InvalidType(t *testing.T) {
-	appCfg = config.DefaultConfig()
+	cfg := config.DefaultConfig()
+	newTemplateTestRunner(t, t.TempDir(), &cfg, io.Discard)
 	err := runTemplateShow(nil, []string{"badtype"})
 	if err == nil {
 		t.Error("expected error for invalid type, got nil")
@@ -47,21 +56,11 @@ func TestRunTemplateShow_InvalidType(t *testing.T) {
 
 func TestRunTemplateExport(t *testing.T) {
 	dir := t.TempDir()
-	appCfg = config.DefaultConfig()
-
 	outPath := filepath.Join(dir, "exported-rfc.md")
+	cfg := config.DefaultConfig()
+	newTemplateTestRunner(t, dir, &cfg, io.Discard)
 
-	old := os.Stdout
-	pipeR, w, _ := os.Pipe()
-	defer pipeR.Close()
-	os.Stdout = w
-
-	err := runTemplateExport(nil, []string{"rfc", outPath})
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runTemplateExport(nil, []string{"rfc", outPath}); err != nil {
 		t.Fatalf("runTemplateExport() error: %v", err)
 	}
 
@@ -75,52 +74,31 @@ func TestRunTemplateExport(t *testing.T) {
 	}
 }
 
+// TestRunTemplateExport_DefaultPath confirms that with no explicit
+// output path the handler writes the template alongside the caller's
+// repo root (Runner.RepoRoot), not the process cwd — so the test
+// doesn't need to os.Chdir.
 func TestRunTemplateExport_DefaultPath(t *testing.T) {
-	appCfg = config.DefaultConfig()
-
-	// Change to temp dir to avoid polluting the working directory.
-	origDir, _ := os.Getwd()
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	cfg := config.DefaultConfig()
+	newTemplateTestRunner(t, dir, &cfg, io.Discard)
 
-	old := os.Stdout
-	pipeR, w, _ := os.Pipe()
-	defer pipeR.Close()
-	os.Stdout = w
-
-	err := runTemplateExport(nil, []string{"adr"})
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runTemplateExport(nil, []string{"adr"}); err != nil {
 		t.Fatalf("runTemplateExport() error: %v", err)
 	}
 
 	if _, statErr := os.Stat(filepath.Join(dir, "adr.md")); statErr != nil {
-		t.Errorf("expected adr.md to be created: %v", statErr)
+		t.Errorf("expected adr.md to be created under RepoRoot: %v", statErr)
 	}
 }
 
 func TestRunTemplateOverride(t *testing.T) {
 	dir := t.TempDir()
-	appCfg = config.DefaultConfig()
-	appCfg.DocsDir = filepath.Join(dir, "docs")
+	cfg := config.DefaultConfig()
+	cfg.DocsDir = filepath.Join(dir, "docs")
+	newTemplateTestRunner(t, dir, &cfg, io.Discard)
 
-	old := os.Stdout
-	pipeR, w, _ := os.Pipe()
-	defer pipeR.Close()
-	os.Stdout = w
-
-	err := runTemplateOverride(nil, []string{"rfc"})
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runTemplateOverride(nil, []string{"rfc"}); err != nil {
 		t.Fatalf("runTemplateOverride() error: %v", err)
 	}
 
@@ -137,8 +115,9 @@ func TestRunTemplateOverride(t *testing.T) {
 
 func TestRunTemplateOverride_AlreadyExists(t *testing.T) {
 	dir := t.TempDir()
-	appCfg = config.DefaultConfig()
-	appCfg.DocsDir = filepath.Join(dir, "docs")
+	cfg := config.DefaultConfig()
+	cfg.DocsDir = filepath.Join(dir, "docs")
+	newTemplateTestRunner(t, dir, &cfg, io.Discard)
 
 	overrideDir := filepath.Join(dir, "docs", "templates")
 	if err := os.MkdirAll(overrideDir, 0o750); err != nil {

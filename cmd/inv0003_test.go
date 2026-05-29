@@ -15,33 +15,35 @@ import (
 // runUpdate calls) so they exercise the same Load() pathway end users
 // hit.
 
-func setupINV0003Test(t *testing.T, configContent string) {
+// setupINV0003Test writes the supplied config content (if any) into a
+// fresh t.TempDir() and points `repoRoot` at it. The Cobra
+// PersistentPreRunE then resolves the repo root from the flag rather
+// than process cwd, so scaffolding lands under dir without any
+// os.Chdir.
+func setupINV0003Test(t *testing.T, configContent string) string {
 	t.Helper()
-
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(origDir)
-		cfgFile = ""
-		docsDir = ""
-		appCfg = config.DefaultConfig()
-	})
-
 	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
 
 	if configContent != "" {
-		if err := os.WriteFile(".docz.yaml", []byte(configContent), 0o644); err != nil {
+		if err := os.WriteFile(
+			filepath.Join(dir, ".docz.yaml"),
+			[]byte(configContent),
+			0o644,
+		); err != nil {
 			t.Fatal(err)
 		}
 	}
-
 	cfgFile = ""
+	repoRoot = dir
 	docsDir = ""
+	t.Cleanup(func() {
+		cfgFile = ""
+		repoRoot = ""
+		docsDir = ""
+		appCfg = config.DefaultConfig()
+		runner = nil
+	})
+	return dir
 }
 
 func runRoot(t *testing.T, args ...string) {
@@ -51,29 +53,13 @@ func runRoot(t *testing.T, args ...string) {
 	rootCmd.SetErr(&buf)
 	rootCmd.SetArgs(args)
 
-	// Capture stdout for commands that fmt.Println directly.
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	defer func() {
-		_ = w.Close()
-		os.Stdout = oldStdout
-		_, _ = r.Read(nil)
-		// rootCmd.Execute() ran PersistentPreRunE which set the
-		// package-level `runner` to a Runner whose Out is the now-closed
-		// pipe `w`. Reset it so later tests construct a fresh ad-hoc
-		// Runner via getRunner(). IMPL-0009 Phase 3 cleanup will
-		// eliminate the global once all wrappers are removed.
-		runner = nil
-	}()
-
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("docz %v failed: %v (output: %s)", args, err, buf.String())
 	}
 }
 
 func TestINV0003_RFCOnlyConfig_InitScaffoldsOnlyRFC(t *testing.T) {
-	setupINV0003Test(t, `types:
+	dir := setupINV0003Test(t, `types:
   rfc:
     enabled: true
     dir: rfc
@@ -85,19 +71,19 @@ func TestINV0003_RFCOnlyConfig_InitScaffoldsOnlyRFC(t *testing.T) {
 
 	runRoot(t, "init")
 
-	if _, err := os.Stat(filepath.Join("docs", "rfc")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "docs", "rfc")); err != nil {
 		t.Errorf("docs/rfc should exist: %v", err)
 	}
 
-	for _, dir := range []string{"adr", "design", "impl", "plan", "investigation"} {
-		if _, err := os.Stat(filepath.Join("docs", dir)); err == nil {
-			t.Errorf("docs/%s must NOT be created when config only lists rfc", dir)
+	for _, typeName := range []string{"adr", "design", "impl", "plan", "investigation"} {
+		if _, err := os.Stat(filepath.Join(dir, "docs", typeName)); err == nil {
+			t.Errorf("docs/%s must NOT be created when config only lists rfc", typeName)
 		}
 	}
 }
 
 func TestINV0003_RFCOnlyConfig_UpdateTouchesOnlyRFC(t *testing.T) {
-	setupINV0003Test(t, `types:
+	dir := setupINV0003Test(t, `types:
   rfc:
     enabled: true
     dir: rfc
@@ -109,8 +95,8 @@ func TestINV0003_RFCOnlyConfig_UpdateTouchesOnlyRFC(t *testing.T) {
 
 	runRoot(t, "init")
 	// Touch sentinel files in directories that should NOT be revived.
-	for _, dir := range []string{"adr", "design"} {
-		fullDir := filepath.Join("docs", dir)
+	for _, typeName := range []string{"adr", "design"} {
+		fullDir := filepath.Join(dir, "docs", typeName)
 		if err := os.MkdirAll(fullDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -124,8 +110,8 @@ func TestINV0003_RFCOnlyConfig_UpdateTouchesOnlyRFC(t *testing.T) {
 	type snap struct{ path, body string }
 	sentinelDirs := []string{"adr", "design"}
 	sentinels := make([]snap, 0, len(sentinelDirs))
-	for _, dir := range sentinelDirs {
-		readme := filepath.Join("docs", dir, "README.md")
+	for _, typeName := range sentinelDirs {
+		readme := filepath.Join(dir, "docs", typeName, "README.md")
 		data, err := os.ReadFile(readme)
 		if err != nil {
 			t.Fatal(err)
@@ -148,19 +134,19 @@ func TestINV0003_RFCOnlyConfig_UpdateTouchesOnlyRFC(t *testing.T) {
 }
 
 func TestINV0003_NoConfig_InitScaffoldsAllSix(t *testing.T) {
-	setupINV0003Test(t, "")
+	dir := setupINV0003Test(t, "")
 
 	runRoot(t, "init")
 
-	for _, dir := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
-		if _, err := os.Stat(filepath.Join("docs", dir)); err != nil {
-			t.Errorf("docs/%s should be scaffolded in green-field init: %v", dir, err)
+	for _, typeName := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
+		if _, err := os.Stat(filepath.Join(dir, "docs", typeName)); err != nil {
+			t.Errorf("docs/%s should be scaffolded in green-field init: %v", typeName, err)
 		}
 	}
 }
 
 func TestINV0003_DisabledADRListed_OnlyRFCScaffolded(t *testing.T) {
-	setupINV0003Test(t, `types:
+	dir := setupINV0003Test(t, `types:
   rfc:
     enabled: true
     dir: rfc
@@ -179,22 +165,22 @@ func TestINV0003_DisabledADRListed_OnlyRFCScaffolded(t *testing.T) {
 
 	runRoot(t, "init")
 
-	if _, err := os.Stat(filepath.Join("docs", "rfc")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "docs", "rfc")); err != nil {
 		t.Errorf("docs/rfc should exist: %v", err)
 	}
 	// adr is listed but disabled -> still skipped by init's enabled gate.
-	if _, err := os.Stat(filepath.Join("docs", "adr")); err == nil {
+	if _, err := os.Stat(filepath.Join(dir, "docs", "adr")); err == nil {
 		t.Error("docs/adr should NOT be scaffolded when enabled:false")
 	}
-	for _, dir := range []string{"design", "impl", "plan", "investigation"} {
-		if _, err := os.Stat(filepath.Join("docs", dir)); err == nil {
-			t.Errorf("docs/%s should NOT be scaffolded (not listed in config)", dir)
+	for _, typeName := range []string{"design", "impl", "plan", "investigation"} {
+		if _, err := os.Stat(filepath.Join(dir, "docs", typeName)); err == nil {
+			t.Errorf("docs/%s should NOT be scaffolded (not listed in config)", typeName)
 		}
 	}
 }
 
 func TestINV0003_IncrementalAddType_PreservesExistingFiles(t *testing.T) {
-	setupINV0003Test(t, `types:
+	dir := setupINV0003Test(t, `types:
   rfc:
     enabled: true
     dir: rfc
@@ -207,14 +193,14 @@ func TestINV0003_IncrementalAddType_PreservesExistingFiles(t *testing.T) {
 	runRoot(t, "init")
 
 	// Capture the initial rfc README to detect unwanted mutation.
-	rfcReadme := filepath.Join("docs", "rfc", "README.md")
+	rfcReadme := filepath.Join(dir, "docs", "rfc", "README.md")
 	originalReadme, err := os.ReadFile(rfcReadme)
 	if err != nil {
 		t.Fatalf("reading rfc README after first init: %v", err)
 	}
 
 	// Drop a sentinel "user document" so we can prove it survives re-init.
-	userDoc := filepath.Join("docs", "rfc", "0001-keep-me.md")
+	userDoc := filepath.Join(dir, "docs", "rfc", "0001-keep-me.md")
 	if err := os.WriteFile(userDoc, []byte("# keep me\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +214,7 @@ func TestINV0003_IncrementalAddType_PreservesExistingFiles(t *testing.T) {
     statuses: [Accepted]
     status_field: status
 `
-	f, err := os.OpenFile(".docz.yaml", os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(filepath.Join(dir, ".docz.yaml"), os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +225,7 @@ func TestINV0003_IncrementalAddType_PreservesExistingFiles(t *testing.T) {
 
 	runRoot(t, "init")
 
-	if _, err := os.Stat(filepath.Join("docs", "adr")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "docs", "adr")); err != nil {
 		t.Errorf("docs/adr should be scaffolded after adding adr to config: %v", err)
 	}
 	if _, err := os.Stat(userDoc); err != nil {

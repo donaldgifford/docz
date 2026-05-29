@@ -63,7 +63,7 @@ func (r *Runner) Init(force bool) error {
 }
 
 func (r *Runner) writeDefaultConfig() error {
-	configPath := config.ConfigFileName
+	configPath := r.inRepo(config.ConfigFileName)
 
 	if _, err := os.Stat(configPath); err == nil {
 		r.Logger.Debug("config file exists, skipping", "path", configPath)

@@ -230,21 +230,22 @@ superseded).
       bootstrap path before the Runner exists — acceptable)
 - [x] Replace `fmt.Fprintf(os.Stderr, ...)` sites with `r.Err` writes
       or `r.Logger.Debug` (Phase 4 work folded in)
-- [ ] Update tests to construct a Runner with `bytes.Buffer` writers
-      instead of `os.Pipe` tricks — partial: `TestOutputTable/JSON/CSV`
-      converted in Phase 3a; the remaining ~12 tests still use the
-      `os.Pipe` pattern (acceptable for the transitional period;
-      deferred to a cleanup commit alongside wrapper removal)
+- [x] Update tests to construct a Runner with `bytes.Buffer` writers
+      instead of `os.Pipe` tricks — finished in the cleanup commit:
+      `installListRunner`, `setupWikiTestDir`, `newTemplateTestRunner`,
+      `BenchmarkCmdUpdate`, and `config_test.go` all assemble a Runner
+      with `Out` pointed at a `bytes.Buffer` or `io.Discard`
 
 #### Success Criteria
 
 - [x] `grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/*.go | grep -v _test.go`
       returns only `cmd/root.go:79` (bootstrap path)
-- [ ] No test uses `os.Pipe` to capture output — partial (see above)
+- [x] No test uses `os.Pipe` to capture output — verified with
+      `grep -n 'os.Pipe' cmd/*_test.go`
 - [ ] Tests can run `t.Parallel()` (where the underlying handler is
-      side-effect-free) — deferred to cleanup commit (still blocked by
-      `appCfg`/`createStatus`/etc. globals until per-command opts
-      structs land in `newXxxCmd` factories)
+      side-effect-free) — still blocked by `appCfg`/`createStatus`/etc.
+      `cmd/` globals (per-command opts structs deferred to a follow-up
+      RFC)
 
 ---
 
@@ -362,12 +363,17 @@ Eliminate `os.Chdir` in tests.
       `internal/config/parity_baseline_test.go` to pass `t.TempDir()`
       directly via the new repoRoot param; remove every `os.Chdir` +
       `t.Cleanup(os.Chdir)` pattern in these files
-- [ ] Remove `os.Chdir` from `cmd/init_test.go`, `cmd/wiki_test.go`,
-      and `cmd/template_test.go` — requires plumbing a working
-      directory into init/wiki write paths so the helpers don't
-      assume cwd; deferred to the wrapper-cleanup commit
-- [ ] Verify tests can run `t.Parallel()` now — still blocked by
-      remaining `cmd/` `os.Chdir` + `appCfg`/flag-globals
+- [x] Remove `os.Chdir` from `cmd/init_test.go`, `cmd/wiki_test.go`,
+      and `cmd/template_test.go` — done by adding `Runner.RepoRoot`
+      and an `inRepo(name)` helper for cwd-relative path resolution,
+      plus a `--repo-root` Cobra flag with precedence
+      `--repo-root > dir(--config) > os.Getwd()` so `root_test.go` and
+      `inv0003_test.go` can drive `rootCmd.Execute()` without
+      `os.Chdir`
+- [ ] Verify tests can run `t.Parallel()` now — `internal/*` already
+      do (134 sites); `cmd/` still blocked by `appCfg`/`createStatus`
+      flag globals (per-command opts structs deferred to a follow-up
+      RFC)
 
 #### Success Criteria
 
@@ -584,13 +590,22 @@ Add typed-string definitions for compile-time signal at API boundaries.
 
 ## Testing Plan
 
-- [ ] Every Runner method has a focused unit test using a constructed
-      `Runner` with `bytes.Buffer` writers
-- [ ] DocType registry consistency tests:
+- [x] Every Runner method has a focused unit test using a constructed
+      `Runner` with `bytes.Buffer` writers (cmd/runner_test.go:
+      `TestNewRunner_Defaults`, `TestRunner_DirectConstruction`,
+      `TestRunner_resolveAuthor`, `TestRunner_Create_Parallel`,
+      `TestPackageRunner_AssignedFromNewRunner`, plus the
+      `TestBuildLogger_*` family for the slog wiring)
+- [x] DocType registry consistency tests
+      (`internal/config/doctype_test.go`):
   - Every `DocType.Name` matches an embedded template
+    (`TestDocTypeRegistry_AllHaveEmbeddedTemplate`)
   - Every `DocType.Name` matches an embedded index header
+    (`TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`)
   - No alias collides with a canonical name
+    (`TestDocTypeRegistry_NoAliasCollidesWithCanonical`)
   - `DefaultConfig().Types` is fully derivable from `allDocTypes`
+    (`TestDocTypeRegistry_DerivedDefaultConfigMatchesHardcoded`)
 - [x] `t.Parallel()` regression test:
       `TestRunner_Create_Parallel` (cmd/runner_test.go) fires 10
       concurrent `(*Runner).Create` calls against distinct temp dirs,

@@ -124,7 +124,7 @@ func (r *Runner) WikiInit(opts wikiInitOpts) error {
 
 	siteName := opts.siteName
 	if siteName == "" {
-		siteName = repoName()
+		siteName = r.repoName()
 	}
 
 	siteDesc := opts.siteDescription
@@ -246,7 +246,7 @@ func (r *Runner) updateWikiNavDryRun(mkdocsPath string) error {
 // ensureDoczInit checks if docz has been initialized and runs init if not.
 func (r *Runner) ensureDoczInit() error {
 	configExists := false
-	if _, err := os.Stat(config.ConfigFileName); err == nil {
+	if _, err := os.Stat(r.inRepo(config.ConfigFileName)); err == nil {
 		configExists = true
 	}
 
@@ -264,7 +264,10 @@ func (r *Runner) ensureDoczInit() error {
 	return r.Init(forceInit)
 }
 
-func repoName() string {
+func (r *Runner) repoName() string {
+	if r.RepoRoot != "" {
+		return filepath.Base(r.RepoRoot)
+	}
 	dir, err := os.Getwd()
 	if err != nil {
 		return "my-project"
