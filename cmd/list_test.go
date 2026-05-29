@@ -68,6 +68,7 @@ func writeTestDoc(t *testing.T, dir, filename, id, title, status, author, create
 }
 
 func TestFilterByStatus(t *testing.T) {
+	t.Parallel()
 	entries := []listEntry{
 		{Status: "Draft"},
 		{Status: "Accepted"},
@@ -92,6 +93,7 @@ func TestFilterByStatus(t *testing.T) {
 }
 
 func TestOutputTable(t *testing.T) {
+	t.Parallel()
 	entries := []listEntry{
 		{ID: "RFC-0001", Title: "First", Status: "Draft", Date: "2026-01-01", Author: "Author", Type: "RFC"},
 		{ID: "RFC-0002", Title: "Second", Status: "Accepted", Date: "2026-02-01", Author: "Author", Type: "RFC"},
@@ -115,6 +117,7 @@ func TestOutputTable(t *testing.T) {
 }
 
 func TestOutputJSON(t *testing.T) {
+	t.Parallel()
 	entries := []listEntry{
 		{ID: "RFC-0001", Title: "First", Status: "Draft", Date: "2026-01-01", Author: "Author", Type: "RFC", File: "0001-first.md"},
 	}
@@ -137,6 +140,7 @@ func TestOutputJSON(t *testing.T) {
 }
 
 func TestOutputCSV(t *testing.T) {
+	t.Parallel()
 	entries := []listEntry{
 		{ID: "RFC-0001", Title: "First", Status: "Draft", Date: "2026-01-01", Author: "Author", Type: "RFC", File: "0001-first.md"},
 	}

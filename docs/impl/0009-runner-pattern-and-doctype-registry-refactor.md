@@ -242,10 +242,17 @@ superseded).
       returns only `cmd/root.go:79` (bootstrap path)
 - [x] No test uses `os.Pipe` to capture output — verified with
       `grep -n 'os.Pipe' cmd/*_test.go`
-- [ ] Tests can run `t.Parallel()` (where the underlying handler is
-      side-effect-free) — still blocked by `appCfg`/`createStatus`/etc.
-      `cmd/` globals (per-command opts structs deferred to a follow-up
-      RFC)
+- [x] Tests can run `t.Parallel()` (where the underlying handler is
+      side-effect-free) — every cmd test that does not touch the
+      package-level `runner`/`appCfg`/flag globals now calls
+      `t.Parallel()`: `TestStaticGit_UserName` (+ subtests),
+      `TestRealGit_UserName_{Smoke,CtxCancel}`,
+      `TestFilterByStatus`, `TestOutputTable/JSON/CSV`, the
+      `TestBuildLogger_*` family, `TestRunner_resolveAuthor`
+      (+ subtests), and `TestRunner_Create_Parallel`. The remaining
+      cmd tests still go through `runUpdate`/`runCreate`/`rootCmd.Execute`
+      and therefore touch the shared globals, so they stay serial
+      until per-command opts structs land in a follow-up RFC.
 
 ---
 
@@ -370,10 +377,14 @@ Eliminate `os.Chdir` in tests.
       `--repo-root > dir(--config) > os.Getwd()` so `root_test.go` and
       `inv0003_test.go` can drive `rootCmd.Execute()` without
       `os.Chdir`
-- [ ] Verify tests can run `t.Parallel()` now — `internal/*` already
-      do (134 sites); `cmd/` still blocked by `appCfg`/`createStatus`
-      flag globals (per-command opts structs deferred to a follow-up
-      RFC)
+- [x] Verify tests can run `t.Parallel()` now — `internal/*` already
+      do (134 sites); the side-effect-free cmd tests
+      (`git_test.go`, the `outputTable/JSON/CSV` table tests,
+      `TestFilterByStatus`, the `TestBuildLogger_*` family,
+      `TestRunner_resolveAuthor`, `TestRunner_Create_Parallel`) now
+      do as well. The remaining cmd tests that exercise package-level
+      `runner`/`appCfg`/flag globals stay serial pending the
+      per-command opts struct refactor.
 
 #### Success Criteria
 
