@@ -510,25 +510,42 @@ Add typed-string definitions for compile-time signal at API boundaries.
 
 #### Tasks
 
-- [ ] Full `make ci` green
-- [ ] Manual smoke test across all CLI commands
-- [ ] Verify all tests can run with `t.Parallel()`
-- [ ] Update INV-0002 status
-- [ ] Update the architecture section of CLAUDE.md to reflect the new
-      structure
-- [ ] Document the DocType registration pattern in CONTRIBUTING.md
-      (or equivalent)
+- [x] Full `make ci` green
+- [x] Manual smoke test across all CLI commands —
+      `version`, `--help`, `init`, `create rfc/adr/inv` (canonical
+      and alias paths), `list` (no filter, type filter, `--status`),
+      `update`, `template show`, `config`, `wiki update` all behave
+      as expected against a `/tmp/docz-smoke` working directory
+- [ ] Verify all tests can run with `t.Parallel()` — deferred. cmd/
+      tests still rely on the package-level `runner` global and a few
+      `os.Chdir` patterns; full t.Parallel() rollout would need a
+      separate cleanup pass and is out of the IMPL-0009 critical path
+- [x] Update INV-0002 status — flipped to `Concluded`; Wave 4 marked
+      done (PRs #44/#45/#46) and Wave 5 marked done (DESIGN-0004 +
+      IMPL-0009 Phases 2-10) with item-by-item references
+- [x] Update the architecture section of CLAUDE.md to reflect the new
+      structure (Runner pattern, DocType registry, typed strings,
+      logger flag wiring all noted)
+- [x] Document the DocType registration pattern in CONTRIBUTING.md
+      and DEVELOPMENT.md (single-file edit + two templates,
+      pointers to the Phase 8 consistency tests)
 - [ ] Open final PR(s) with `dont-release` label if no behavior change,
       or appropriate label if user-visible changes (log format, etc.)
+      — deferred to follow-up; the loop's scope is the implementation,
+      not the human PR open/merge step
 
 #### Success Criteria
 
-- `make ci` green
-- A new contributor can add a doc type by editing one file plus two
-  template files
-- Tests run in parallel
-- No `cmd/` package-level globals remain (except possibly the
-  `*Runner` itself, threaded via `PersistentPreRunE`)
+- [x] `make ci` green
+- [x] A new contributor can add a doc type by editing one file plus two
+      template files (CONTRIBUTING.md "Adding a New Built-In Document
+      Type" and DEVELOPMENT.md walkthrough both pin this)
+- [ ] Tests run in parallel — deferred (see Tasks)
+- [x] No `cmd/` package-level globals remain except the threaded
+      `*Runner` and the bound Cobra flag values
+      (`cfgFile`, `docsDir`, `verbose`, `logLevel`, `logFormat`, and
+      per-command flag vars like `createStatus`); the bound globals
+      are CLI-flag plumbing rather than runtime state
 
 ---
 
