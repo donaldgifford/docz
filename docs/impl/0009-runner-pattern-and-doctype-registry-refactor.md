@@ -535,10 +535,13 @@ Add typed-string definitions for compile-time signal at API boundaries.
 - [x] Document the DocType registration pattern in CONTRIBUTING.md
       and DEVELOPMENT.md (single-file edit + two templates,
       pointers to the Phase 8 consistency tests)
-- [ ] Open final PR(s) with `dont-release` label if no behavior change,
-      or appropriate label if user-visible changes (log format, etc.)
-      — deferred to follow-up; the loop's scope is the implementation,
-      not the human PR open/merge step
+- [x] Open final PR(s) with `dont-release` label. PR #48 (this PR)
+      stacks on PR #47 (DESIGN-0004) per Decisions §6. The
+      `--log-level` and `--log-format` flags are new user-visible
+      surface but ship behind their existing defaults (text + info),
+      so the runtime behavior matches the prior release and the PR
+      keeps the `dont-release` label. When PR #47 merges, GitHub will
+      auto-rebase PR #48's base onto main.
 
 #### Success Criteria
 
