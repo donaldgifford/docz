@@ -417,11 +417,15 @@ Replace the scattered type definitions with a single registration list.
 - [x] Derive `ValidTypes()` from `allDocTypes` (now delegates to `DocTypeNames()`)
 - [x] Derive `DefaultNavTitles()` from `allDocTypes` via `defaultNavTitlesMap()`
 - [x] Derive `typeAliases` from `allDocTypes` via `defaultTypeAliases()`
-- [ ] Derive `TypesHelp()` text from `allDocTypes` — deferred. The
-      registry doesn't carry a human-readable help description per type;
-      adding one is a small registry expansion left for a follow-up
-      commit. `TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp` pins the
-      static-string contract until then.
+- [x] Derive `TypesHelp()` text from `allDocTypes` — done by adding
+      a `HelpDescription` field to `DocTypeDef` and rewriting
+      `TypesHelp` as a registry walk that auto-appends `(alias: …)`
+      from each entry's `Aliases`. The byte-for-byte output is
+      unchanged.
+      `TestDocTypeRegistry_TypesHelpDerivedFromRegistry` replaces the
+      previous static-string guard with a registry-derived assertion
+      that every name, every `HelpDescription`, and every alias
+      reaches the rendered help.
 - [x] Add a test: every registered `DocTypeDef` has a corresponding
       `internal/template/templates/<TemplateName>.md` embedded file
       (`TestDocTypeRegistry_AllHaveEmbeddedTemplate`)

@@ -42,6 +42,12 @@ type DocTypeDef struct {
 	NavTitle      string
 	PluralLabel   string
 	TemplateName  string
+
+	// HelpDescription is the short one-line summary rendered by
+	// TypesHelp for `docz --help`. Aliases are appended automatically
+	// from the Aliases slice, so HelpDescription should NOT include
+	// any "(alias: ...)" suffix.
+	HelpDescription string
 }
 
 // allDocTypes is the single source of truth for built-in doc types.
@@ -62,9 +68,10 @@ var allDocTypes = []DocTypeDef{
 				PluralLabel: "RFCs",
 			}
 		},
-		NavTitle:     "RFCs",
-		PluralLabel:  "RFCs",
-		TemplateName: "rfc",
+		NavTitle:        "RFCs",
+		PluralLabel:     "RFCs",
+		TemplateName:    "rfc",
+		HelpDescription: "Request for Comments — high-level proposals",
 	},
 	{
 		Name:    "adr",
@@ -80,9 +87,10 @@ var allDocTypes = []DocTypeDef{
 				PluralLabel: "ADRs",
 			}
 		},
-		NavTitle:     "ADRs",
-		PluralLabel:  "ADRs",
-		TemplateName: "adr",
+		NavTitle:        "ADRs",
+		PluralLabel:     "ADRs",
+		TemplateName:    "adr",
+		HelpDescription: "Architecture Decision Records — technical decisions",
 	},
 	{
 		Name:    "design",
@@ -98,9 +106,10 @@ var allDocTypes = []DocTypeDef{
 				PluralLabel: "Design",
 			}
 		},
-		NavTitle:     "Design",
-		PluralLabel:  "Design",
-		TemplateName: "design",
+		NavTitle:        "Design",
+		PluralLabel:     "Design",
+		TemplateName:    "design",
+		HelpDescription: "Design documents — detailed feature designs",
 	},
 	{
 		Name:    "impl",
@@ -116,9 +125,10 @@ var allDocTypes = []DocTypeDef{
 				PluralLabel: "Implementation Plans",
 			}
 		},
-		NavTitle:     "Implementation Plans",
-		PluralLabel:  "Implementation Plans",
-		TemplateName: "impl",
+		NavTitle:        "Implementation Plans",
+		PluralLabel:     "Implementation Plans",
+		TemplateName:    "impl",
+		HelpDescription: "Implementation plans",
 	},
 	{
 		Name:    "plan",
@@ -134,9 +144,10 @@ var allDocTypes = []DocTypeDef{
 				PluralLabel: "Plans",
 			}
 		},
-		NavTitle:     "Plans",
-		PluralLabel:  "Plans",
-		TemplateName: "plan",
+		NavTitle:        "Plans",
+		PluralLabel:     "Plans",
+		TemplateName:    "plan",
+		HelpDescription: "Planning documents — goal, approach, components",
 	},
 	{
 		Name:    "investigation",
@@ -158,9 +169,10 @@ var allDocTypes = []DocTypeDef{
 				PluralLabel: "Investigations",
 			}
 		},
-		NavTitle:     "Investigations",
-		PluralLabel:  "Investigations",
-		TemplateName: "investigation",
+		NavTitle:        "Investigations",
+		PluralLabel:     "Investigations",
+		TemplateName:    "investigation",
+		HelpDescription: "Research spikes — validate theories and errors",
 	},
 }
 

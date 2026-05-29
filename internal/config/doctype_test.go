@@ -168,20 +168,41 @@ func TestDocTypeRegistry_LookupDocTypeResolvesCanonicalAndAliases(t *testing.T) 
 	}
 }
 
-// TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp guards against the
-// registry drifting out of sync with the static TypesHelp string. If
-// someone adds a new registry entry but forgets to update TypesHelp,
-// `docz --help` will silently omit the new type. Until TypesHelp is
-// derived from the registry, this test pins the relationship.
-func TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp(t *testing.T) {
+// TestDocTypeRegistry_TypesHelpDerivedFromRegistry pins that every
+// registered doc type — canonical name, HelpDescription, and every
+// alias — appears in the rendered TypesHelp output. TypesHelp now
+// builds its body from `allDocTypes`, so this test asserts the
+// derivation didn't drop any registry field.
+func TestDocTypeRegistry_TypesHelpDerivedFromRegistry(t *testing.T) {
 	t.Parallel()
 	help := config.TypesHelp()
-	for _, name := range config.DocTypeNames() {
-		if !strings.Contains(help, name) {
+	for _, dt := range config.AllDocTypes() {
+		if !strings.Contains(help, dt.Name) {
 			t.Errorf(
-				"TypesHelp() missing entry for registered doc type %q",
-				name,
+				"TypesHelp() missing canonical name %q",
+				dt.Name,
 			)
+		}
+		if dt.HelpDescription == "" {
+			t.Errorf(
+				"DocTypeDef %q has empty HelpDescription — TypesHelp will render a blank entry",
+				dt.Name,
+			)
+			continue
+		}
+		if !strings.Contains(help, dt.HelpDescription) {
+			t.Errorf(
+				"TypesHelp() missing HelpDescription %q for %q",
+				dt.HelpDescription, dt.Name,
+			)
+		}
+		for _, alias := range dt.Aliases {
+			if !strings.Contains(help, alias) {
+				t.Errorf(
+					"TypesHelp() missing alias %q for %q",
+					alias, dt.Name,
+				)
+			}
 		}
 	}
 }
