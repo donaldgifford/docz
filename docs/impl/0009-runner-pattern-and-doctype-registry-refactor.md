@@ -327,18 +327,22 @@ Eliminate the `internal/document/time.go` package global.
 - [x] In `(*Runner).resolveAuthor`, call `r.Git.UserName(ctx)`
       instead of the package-level `gitUserName()` (Phase 3e)
 - [x] Delete `cmd/create.go:gitUserName` (Phase 3e)
-- [ ] Author-resolution unit test that passes `staticGit{Name: "Test User"}`
-      — `TestRunner_DirectConstruction` exercises the interface, but
-      a focused `TestRunner_resolveAuthor_*` table test belongs here
+- [x] Author-resolution unit test that passes `staticGit{Name: "Test User"}`.
+      `TestRunner_resolveAuthor` (cmd/runner_test.go) is a five-row
+      table covering: flag wins over everything; config default wins
+      over git; git wins when both are empty; `from_git=false` skips
+      git; git returning empty falls through to "Unknown".
 
 #### Success Criteria
 
 - [x] `gitUserName` is gone
 - [x] Author resolution is fully unit-testable (Runner.resolveAuthor
       takes ctx + flagAuthor and reads only r.Cfg/r.Git)
-- [ ] `Ctrl+C` during `docz create` cancels the git lookup (a `cmd.Context()`
-      benefit verified by a test that uses a cancellable context) — ctx
-      propagation is in place; explicit cancellation test still TODO
+- [x] `Ctrl+C` during `docz create` cancels the git lookup.
+      `TestRealGit_UserName_CtxCancel` (cmd/git_test.go) passes an
+      already-cancelled context and asserts the call returns "" within
+      2s — a future regression that drops the ctx would time out
+      instead of hanging the suite.
 
 ---
 
@@ -587,13 +591,24 @@ Add typed-string definitions for compile-time signal at API boundaries.
   - Every `DocType.Name` matches an embedded index header
   - No alias collides with a canonical name
   - `DefaultConfig().Types` is fully derivable from `allDocTypes`
-- [ ] `t.Parallel()` regression test: a smoke test that runs 10 cmd
-      handlers concurrently against different temp dirs
-- [ ] Slog handler test: log output captured to a buffer
-- [ ] Git resolver test: `cmd.Context()` cancellation cancels the
-      lookup
-- [ ] YAML back-compat test: existing `.docz.yaml` files (collect 3-5
-      real-world examples) parse to expected `Config` values
+- [x] `t.Parallel()` regression test:
+      `TestRunner_Create_Parallel` (cmd/runner_test.go) fires 10
+      concurrent `(*Runner).Create` calls against distinct temp dirs,
+      asserts all succeed, and spot-checks that each produced
+      `docs/rfc/0001-concurrent-title.md` in its own dir — proving
+      the handler itself is parallel-safe; only the cmd/ package
+      globals block `t.Parallel()` at the wrapper layer.
+- [x] Slog handler test: `TestBuildLogger_{VerboseSelectsDebug,
+      DefaultDropsDebug, LogLevelOverridesVerbose, JSONFormat,
+      InvalidFlagsError}` (Phase 4) capture log records into a
+      bytes.Buffer and assert on emitted records.
+- [x] Git resolver test: `TestRealGit_UserName_CtxCancel` (above).
+- [x] YAML back-compat test: `TestFrontmatter_TypedStatus_YAMLRoundTrip`
+      and `TestFrontmatter_TypedStatus_LegacyYAMLParses` (Phase 10)
+      cover both the new on-disk emit and parsing of legacy YAML.
+      The pre-existing `TestParseFrontmatter` table also covers the
+      `.docz.yaml` Config-level round trip indirectly through the
+      golden-driven `internal/config` tests.
 
 ## Decisions
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -137,6 +138,147 @@ func TestBuildLogger_InvalidFlagsError(t *testing.T) {
 	}
 	if _, err := buildLogger(io.Discard, false, "", "xml"); err == nil {
 		t.Error("invalid --log-format should error, got nil")
+	}
+}
+
+// TestRunner_resolveAuthor pins the four-way author resolution
+// precedence documented on (*Runner).resolveAuthor: flag wins over
+// config default wins over git wins over "Unknown" fallback. Each
+// row builds a minimal Runner with the relevant stubs and asserts
+// the chosen branch. This is the Phase 6 focused unit test
+// IMPL-0009 calls for.
+func TestRunner_resolveAuthor(t *testing.T) {
+	t.Parallel()
+
+	withAuthorCfg := func(def string, fromGit bool) config.Config {
+		cfg := config.DefaultConfig()
+		cfg.Author.Default = def
+		cfg.Author.FromGit = fromGit
+		return cfg
+	}
+
+	tests := []struct {
+		name       string
+		cfg        config.Config
+		git        GitResolver
+		flagAuthor string
+		want       string
+	}{
+		{
+			name:       "flag wins over everything else",
+			cfg:        withAuthorCfg("ConfigDefault", true),
+			git:        staticGit{Name: "GitName"},
+			flagAuthor: "FlagName",
+			want:       "FlagName",
+		},
+		{
+			name:       "config default wins over git when flag empty",
+			cfg:        withAuthorCfg("ConfigDefault", true),
+			git:        staticGit{Name: "GitName"},
+			flagAuthor: "",
+			want:       "ConfigDefault",
+		},
+		{
+			name:       "git wins when flag and default empty",
+			cfg:        withAuthorCfg("", true),
+			git:        staticGit{Name: "GitName"},
+			flagAuthor: "",
+			want:       "GitName",
+		},
+		{
+			name:       "git skipped when from_git=false",
+			cfg:        withAuthorCfg("", false),
+			git:        staticGit{Name: "GitName"},
+			flagAuthor: "",
+			want:       "Unknown",
+		},
+		{
+			name:       "git returning empty falls through to Unknown",
+			cfg:        withAuthorCfg("", true),
+			git:        staticGit{Name: ""},
+			flagAuthor: "",
+			want:       "Unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := &Runner{
+				Cfg:    tt.cfg,
+				Out:    io.Discard,
+				Err:    io.Discard,
+				Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				Now:    time.Now,
+				Git:    tt.git,
+			}
+			got := r.resolveAuthor(context.Background(), tt.flagAuthor)
+			if got != tt.want {
+				t.Errorf("resolveAuthor() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestRunner_Create_Parallel exercises 10 concurrent (*Runner).Create
+// invocations against per-runner temp dirs. This is the Phase 11
+// "t.Parallel() regression test" the Testing Plan calls for: it
+// proves the handler is parallel-safe when callers each construct
+// their own Runner — the only thing blocking package-level
+// t.Parallel() in cmd/ is the shared `runner`/`appCfg` globals, not
+// the underlying handler logic.
+func TestRunner_Create_Parallel(t *testing.T) {
+	t.Parallel()
+
+	const goroutines = 10
+	dirs := make([]string, goroutines)
+	for i := range dirs {
+		dirs[i] = t.TempDir()
+	}
+
+	type result struct {
+		i   int
+		err error
+	}
+	results := make(chan result, goroutines)
+
+	for i := range goroutines {
+		go func() {
+			cfg := config.DefaultConfig()
+			cfg.DocsDir = filepath.Join(dirs[i], "docs")
+			r := &Runner{
+				Cfg:    cfg,
+				Out:    io.Discard,
+				Err:    io.Discard,
+				Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				Now:    func() time.Time { return time.Unix(0, 0).UTC() },
+				Git:    staticGit{Name: "Parallel Tester"},
+			}
+			err := r.Create(
+				context.Background(),
+				createOpts{},
+				[]string{"rfc", "Concurrent Title"},
+			)
+			results <- result{i: i, err: err}
+		}()
+	}
+
+	for range goroutines {
+		res := <-results
+		if res.err != nil {
+			t.Errorf("goroutine %d: Create() error: %v", res.i, res.err)
+		}
+	}
+
+	// Each goroutine should have produced docs/rfc/0001-concurrent-title.md
+	// in its own scratch dir. Spot-check one to be sure the per-runner
+	// isolation actually held (a leak would have caused 0002, 0003, ...
+	// to land in another runner's dir).
+	for i := range goroutines {
+		path := filepath.Join(dirs[i], "docs", "rfc", "0001-concurrent-title.md")
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("expected %s to exist: %v", path, err)
+		}
 	}
 }
 
