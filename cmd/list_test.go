@@ -3,13 +3,36 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/donaldgifford/docz/internal/config"
 )
+
+// installListRunner wires up the package-level runner for the list
+// tests. Each test gets its own bytes.Buffer Out so output capture is
+// race-safe — no os.Pipe redirection.
+func installListRunner(t *testing.T, dir string, out io.Writer) {
+	t.Helper()
+	cfg := config.DefaultConfig()
+	cfg.DocsDir = filepath.Join(dir, "docs")
+	appCfg = cfg
+	runner = &Runner{
+		Cfg:      cfg,
+		Out:      out,
+		Err:      io.Discard,
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Now:      time.Now,
+		Git:      staticGit{},
+		RepoRoot: dir,
+	}
+	t.Cleanup(func() { runner = nil })
+}
 
 func setupListTestDir(t *testing.T) string {
 	t.Helper()
@@ -138,53 +161,28 @@ func TestOutputCSV(t *testing.T) {
 
 func TestRunList_AllTypes(t *testing.T) {
 	dir := setupListTestDir(t)
-	appCfg = config.DefaultConfig()
-	appCfg.DocsDir = filepath.Join(dir, "docs")
-
-	old := os.Stdout
-	pipeR, w, _ := os.Pipe()
-	defer pipeR.Close()
-	os.Stdout = w
+	installListRunner(t, dir, io.Discard)
 
 	listStatus = ""
 	listFormat = "table"
-	err := runList(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runList(nil, nil); err != nil {
 		t.Fatalf("runList() error: %v", err)
 	}
 }
 
 func TestRunList_FilterByType(t *testing.T) {
 	dir := setupListTestDir(t)
-	appCfg = config.DefaultConfig()
-	appCfg.DocsDir = filepath.Join(dir, "docs")
-
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	var out bytes.Buffer
+	installListRunner(t, dir, &out)
 
 	listStatus = ""
 	listFormat = formatJSON
-	err := runList(nil, []string{"rfc"})
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runList(nil, []string{"rfc"}); err != nil {
 		t.Fatalf("runList() error: %v", err)
 	}
 
-	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
-	}
-
 	var result []listEntry
-	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+	if jsonErr := json.Unmarshal(out.Bytes(), &result); jsonErr != nil {
 		t.Fatalf("invalid JSON: %v", jsonErr)
 	}
 	if len(result) != 2 {
@@ -194,31 +192,17 @@ func TestRunList_FilterByType(t *testing.T) {
 
 func TestRunList_FilterByStatus(t *testing.T) {
 	dir := setupListTestDir(t)
-	appCfg = config.DefaultConfig()
-	appCfg.DocsDir = filepath.Join(dir, "docs")
-
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	var out bytes.Buffer
+	installListRunner(t, dir, &out)
 
 	listStatus = "draft"
 	listFormat = formatJSON
-	err := runList(nil, nil)
-
-	w.Close()
-	os.Stdout = old
-
-	if err != nil {
+	if err := runList(nil, nil); err != nil {
 		t.Fatalf("runList() error: %v", err)
 	}
 
-	var buf bytes.Buffer
-	if _, cpErr := buf.ReadFrom(r); cpErr != nil {
-		t.Fatal(cpErr)
-	}
-
 	var result []listEntry
-	if jsonErr := json.Unmarshal(buf.Bytes(), &result); jsonErr != nil {
+	if jsonErr := json.Unmarshal(out.Bytes(), &result); jsonErr != nil {
 		t.Fatalf("invalid JSON: %v", jsonErr)
 	}
 	if len(result) != 1 {
@@ -227,7 +211,7 @@ func TestRunList_FilterByStatus(t *testing.T) {
 }
 
 func TestRunList_InvalidType(t *testing.T) {
-	appCfg = config.DefaultConfig()
+	installListRunner(t, t.TempDir(), io.Discard)
 	listStatus = ""
 	listFormat = "table"
 	err := runList(nil, []string{"badtype"})

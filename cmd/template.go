@@ -104,7 +104,7 @@ func (r *Runner) TemplateExport(args []string) error {
 		return err
 	}
 
-	outPath := docType + ".md"
+	outPath := r.inRepo(docType + ".md")
 	if len(args) > 1 {
 		outPath = args[1]
 	}
