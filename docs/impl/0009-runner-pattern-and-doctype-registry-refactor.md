@@ -152,8 +152,12 @@ document. This is the prerequisite gate.
   - Migration plan: can the refactor land in one PR or must be split?
     — DESIGN-0004 §Migration: single PR for phases 2–11 with an 11-commit
     sequence
-- [ ] DESIGN doc reviewed and accepted (status: Approved) — currently
-      `In Review`; ships as PR 1 before implementation begins
+- [x] DESIGN doc reviewed and accepted (status: Approved) — flipped
+      from `In Review` after the full Phases 2–11 implementation
+      shipped lint-clean and race-clean, validating the design's
+      load-bearing claims (Runner construction, DocType registry,
+      `repoRoot` parameter, stacked-PR split). Frontmatter and
+      narrative status updated together.
 
 #### Success Criteria
 
