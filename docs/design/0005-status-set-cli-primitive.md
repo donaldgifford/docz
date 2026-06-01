@@ -30,16 +30,16 @@ created: 2026-05-30
 - [Testing Strategy](#testing-strategy)
 - [Migration / Rollout Plan](#migration--rollout-plan)
 - [Open Questions](#open-questions)
-  - [A. Command shape](#a-command-shape)
-  - [B. Status value case sensitivity](#b-status-value-case-sensitivity)
-  - [C. ID prefix matching](#c-id-prefix-matching)
-  - [D. Transition validation depth](#d-transition-validation-depth)
-  - [E. Multi-document batch mode](#e-multi-document-batch-mode)
-  - [F. Output format](#f-output-format)
-  - [G. CRLF / Windows line endings](#g-crlf--windows-line-endings)
-  - [H. Idempotency placement](#h-idempotency-placement)
-  - [I. Status field name](#i-status-field-name)
-  - [J. status get / status list-allowed companion verbs](#j-status-get--status-list-allowed-companion-verbs)
+  - [1. Command shape](#1-command-shape)
+  - [2. Status value case sensitivity](#2-status-value-case-sensitivity)
+  - [3. ID prefix matching](#3-id-prefix-matching)
+  - [4. Transition validation depth](#4-transition-validation-depth)
+  - [5. Multi-document batch mode](#5-multi-document-batch-mode)
+  - [6. Output format](#6-output-format)
+  - [7. CRLF / Windows line endings](#7-crlf--windows-line-endings)
+  - [8. Idempotency placement](#8-idempotency-placement)
+  - [9. Status field name](#9-status-field-name)
+  - [10. status get / status list-allowed companion verbs](#10-status-get--status-list-allowed-companion-verbs)
 - [References](#references)
 <!--toc:end-->
 
@@ -84,7 +84,7 @@ the mutation is a minimal, reviewable diff.
   `docz update` needs to fire after mutation, the caller chains it
 - Transition validation beyond list membership (e.g.
   `Draft → Accepted` requires going through `Proposed`). See Open
-  Question §D
+  Question 4
 - Writing or reading any field other than `status:` in the
   frontmatter
 
@@ -164,8 +164,8 @@ $ docz status set --dry-run rfc RFC-0042 Accepted
 3. Scan documents via the existing `document.ScanDocuments(typeDir)`
    — returns `[]DocEntry` with cached frontmatter. The id lookup
    walks this slice; no new filesystem code
-4. Match `<id>` against `entry.Frontmatter.ID` (Open Question §B
-   covers case sensitivity, §C covers prefix matching). On no
+4. Match `<id>` against `entry.Frontmatter.ID` (Open Question 2
+   covers case sensitivity, 3 covers prefix matching). On no
    match, exit 1
 5. Validate `<new-status>` against `typeConfig.Statuses` — list
    membership only, no transition graph. On invalid, exit 2 and
@@ -181,7 +181,7 @@ The mutation is intentionally byte-level, not a YAML round-trip:
 
 - Read the file via `os.ReadFile`
 - Locate the leading `---\n` and the closing `---\n` (or `---\r\n`
-  — see Open Question §G for Windows line endings)
+  — see Open Question 7 for Windows line endings)
 - Within that range, find the line whose trimmed left side matches
   the pattern `^status:\s*(?:"([^"]*)"|'([^']*)'|(\S.*?))\s*$`,
   capturing the existing value and the surrounding quoting
@@ -201,14 +201,14 @@ but necessary for the use case.
 |------|---------|
 | 0 | Success: wrote the change, or no-op (already at target), or `--dry-run` printed the planned change |
 | 1 | Lookup failure: id not found in the type's doc list, or file IO error |
-| 2 | Validation failure: unknown type, invalid status (not in `statuses:`), ambiguous id (if §C enables prefix matching) |
+| 2 | Validation failure: unknown type, invalid status (not in `statuses:`), ambiguous id (if Open Question 3 enables prefix matching) |
 
 These match the conventions Issue #52 calls out (typo → exit 2,
 not-found → exit 1).
 
 ### Output format
 
-Default text shape (Open Question §F covers JSON):
+Default text shape (Open Question 6 covers JSON):
 
 ```text
 <relative-path>: status <old> -> <new>
@@ -292,7 +292,7 @@ Implementation notes:
   - File with no frontmatter: `ErrNoFrontmatter`
 - Idempotency: `SetStatus(p, "Draft")` on a doc already at `Draft`
   is a byte-perfect no-op (or — equivalent — returns the same old
-  status without rewriting). See Open Question §H — should the
+  status without rewriting). See Open Question 8 — should the
   helper short-circuit or let the cmd layer decide? Recommendation
   is to keep `SetStatus` always-write and let `cmd/status.go`
   short-circuit; the unit tests cover the byte-perfect property
@@ -337,7 +337,7 @@ Action can be coordinated with the next docz release.
 Each option is lettered. **(a) is the recommendation**; (b+) are
 alternatives kept in scope. Type `other: <freeform>` to override.
 
-### A. Command shape
+### 1. Command shape
 
 - **(a) `docz status set <type> <id> <new-status>`** — parent +
   subcommand; leaves room for `status get` / `status list-allowed`
@@ -348,7 +348,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   semantics, but ambiguous for future readers
 - (d) other: `<your value>`
 
-### B. Status value case sensitivity
+### 2. Status value case sensitivity
 
 - **(a) Case-sensitive** — `Accepted` must match exactly; reject
   `accepted`. Matches the convention DESIGN-0004 §F locked in for
@@ -360,7 +360,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   the user typed; diverges from canonical display values
 - (d) other: `<your value>`
 
-### C. ID prefix matching
+### 3. ID prefix matching
 
 - **(a) Exact match only** (`RFC-0042` required) — predictable, easy
   to script, mirrors `docz list` which accepts full IDs only
@@ -371,7 +371,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   shortcut; introduces ambiguity logic
 - (d) other: `<your value>`
 
-### D. Transition validation depth
+### 4. Transition validation depth
 
 - **(a) Membership only** — new status must be in `statuses:`; any
   → any allowed. Matches Issue #52's spec and keeps docz unaware
@@ -383,7 +383,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   membership is the only check
 - (d) other: `<your value>`
 
-### E. Multi-document batch mode
+### 5. Multi-document batch mode
 
 - **(a) Out of scope** (matches issue) — one id per invocation;
   callers loop. Keeps the contract simple
@@ -394,7 +394,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   dangerous, unclear use case
 - (d) other: `<your value>`
 
-### F. Output format
+### 6. Output format
 
 - **(a) Plain text** — `<path>: status <old> -> <new>`; human-
   readable, grep/awk-friendly. `--quiet` suppresses
@@ -404,7 +404,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   increase; matches `docz list` which already has `--format`
 - (d) other: `<your value>`
 
-### G. CRLF / Windows line endings
+### 7. CRLF / Windows line endings
 
 - **(a) Reject non-LF endings** with a clear "unsupported line
   endings" error — keeps the byte mutator simple; matches docz's
@@ -415,7 +415,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   changes more than the user asked for; surprises CRLF users
 - (d) other: `<your value>`
 
-### H. Idempotency placement
+### 8. Idempotency placement
 
 - **(a) Cmd-level short-circuit** — `cmd/status.go` checks current
   == new before calling `SetStatus`; `SetStatus` always writes when
@@ -427,7 +427,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
 - (c) Both — defensive double-check; redundant
 - (d) other: `<your value>`
 
-### I. Status field name
+### 9. Status field name
 
 - **(a) Hard-coded `status:`** — matches every built-in template
   and every existing doc; `TypeConfig.StatusField` is `"status"`
@@ -438,7 +438,7 @@ alternatives kept in scope. Type `other: <freeform>` to override.
   who diverge from the default; broadens the CLI for an edge case
 - (d) other: `<your value>`
 
-### J. `status get` / `status list-allowed` companion verbs
+### 10. `status get` / `status list-allowed` companion verbs
 
 - **(a) Not in this design** — DESIGN-0005 is `set` only; leave
   `get` / `list-allowed` for a follow-up design if demand
