@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0005
 title: "Status Set CLI Primitive"
-status: Draft
+status: Approved
 author: Donald Gifford
 created: 2026-05-30
 ---
@@ -9,7 +9,7 @@ created: 2026-05-30
 
 # DESIGN 0005: Status Set CLI Primitive
 
-**Status:** Draft
+**Status:** Approved
 **Author:** Donald Gifford
 **Date:** 2026-05-30
 
@@ -29,17 +29,7 @@ created: 2026-05-30
 - [Data Model](#data-model)
 - [Testing Strategy](#testing-strategy)
 - [Migration / Rollout Plan](#migration--rollout-plan)
-- [Open Questions](#open-questions)
-  - [1. Command shape](#1-command-shape)
-  - [2. Status value case sensitivity](#2-status-value-case-sensitivity)
-  - [3. ID prefix matching](#3-id-prefix-matching)
-  - [4. Transition validation depth](#4-transition-validation-depth)
-  - [5. Multi-document batch mode](#5-multi-document-batch-mode)
-  - [6. Output format](#6-output-format)
-  - [7. CRLF / Windows line endings](#7-crlf--windows-line-endings)
-  - [8. Idempotency placement](#8-idempotency-placement)
-  - [9. Status field name](#9-status-field-name)
-  - [10. status get / status list-allowed companion verbs](#10-status-get--status-list-allowed-companion-verbs)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -83,8 +73,8 @@ the mutation is a minimal, reviewable diff.
 - Updating computed indexes (`README.md` status tables). If
   `docz update` needs to fire after mutation, the caller chains it
 - Transition validation beyond list membership (e.g.
-  `Draft → Accepted` requires going through `Proposed`). See Open
-  Question 4
+  `Draft → Accepted` requires going through `Proposed`). List
+  membership is the only check — Decision 4
 - Writing or reading any field other than `status:` in the
   frontmatter
 
@@ -123,8 +113,9 @@ primitive" (PR <https://github.com/donaldgifford/rfc-api/pull/34>).
 
 ```text
 docz status set <type> <id> <new-status>
-  --dry-run    print the change, do not write
-  --quiet      suppress success messages on stdout (exit code unchanged)
+  --dry-run         print the change, do not write
+  --quiet           suppress success messages on stdout (exit code unchanged)
+  --format text|json  output format (default: text)
 ```
 
 `status` is introduced as a parent command so future verbs
@@ -164,11 +155,12 @@ $ docz status set --dry-run rfc RFC-0042 Accepted
 3. Scan documents via the existing `document.ScanDocuments(typeDir)`
    — returns `[]DocEntry` with cached frontmatter. The id lookup
    walks this slice; no new filesystem code
-4. Match `<id>` against `entry.Frontmatter.ID` (Open Question 2
-   covers case sensitivity, 3 covers prefix matching). On no
-   match, exit 1
-5. Validate `<new-status>` against `typeConfig.Statuses` — list
-   membership only, no transition graph. On invalid, exit 2 and
+4. Match `<id>` against `entry.Frontmatter.ID` with case-sensitive
+   exact equality (Decisions 2 and 3 — no fuzzy/prefix matching).
+   On no match, exit 1
+5. Validate `<new-status>` against `typeConfig.Statuses` with
+   case-sensitive exact equality (Decision 2); list membership
+   only, no transition graph (Decision 4). On invalid, exit 2 and
    list the valid values
 6. No-op short-circuit: if `entry.Frontmatter.Status == new-status`,
    print "already at <status>" and exit 0 without touching the file
@@ -180,8 +172,9 @@ $ docz status set --dry-run rfc RFC-0042 Accepted
 The mutation is intentionally byte-level, not a YAML round-trip:
 
 - Read the file via `os.ReadFile`
-- Locate the leading `---\n` and the closing `---\n` (or `---\r\n`
-  — see Open Question 7 for Windows line endings)
+- Locate the leading `---\n` and the closing `---\n`. Non-LF
+  endings are rejected with a clear "unsupported line endings"
+  error per Decision 7
 - Within that range, find the line whose trimmed left side matches
   the pattern `^status:\s*(?:"([^"]*)"|'([^']*)'|(\S.*?))\s*$`,
   capturing the existing value and the surrounding quoting
@@ -201,26 +194,51 @@ but necessary for the use case.
 |------|---------|
 | 0 | Success: wrote the change, or no-op (already at target), or `--dry-run` printed the planned change |
 | 1 | Lookup failure: id not found in the type's doc list, or file IO error |
-| 2 | Validation failure: unknown type, invalid status (not in `statuses:`), ambiguous id (if Open Question 3 enables prefix matching) |
+| 2 | Validation failure: unknown type, invalid status (not in `statuses:`), unsupported line endings (Decision 7) |
 
 These match the conventions Issue #52 calls out (typo → exit 2,
 not-found → exit 1).
 
 ### Output format
 
-Default text shape (Open Question 6 covers JSON):
+`--format` selects the output shape; default is `text`. The flag
+mirrors `docz list` which already uses `--format=table|json|csv`,
+keeping the cmd's flag surface consistent (Decision 6).
+
+**Text** (`--format=text`):
 
 ```text
 <relative-path>: status <old> -> <new>
 ```
 
-Prefixed with `[dry-run] ` when `--dry-run` is set. Errors go to
-stderr in the existing `Error: <message>` format used by every other
-command.
+The no-op message is `<relative-path>: already at <status>`. Both
+are prefixed with `[dry-run] ` when `--dry-run` is set.
+
+**JSON** (`--format=json`):
+
+```json
+{
+  "path": "docs/rfc/0042-payment-rate-limits.md",
+  "from": "Draft",
+  "to": "Accepted",
+  "dry_run": false,
+  "changed": true
+}
+```
+
+The `changed` field is `false` on a no-op (current == new); `from`
+and `to` are equal in that case. JSON output is always a single
+object on stdout terminated by a trailing newline; errors still go
+to stderr as plain text so CI logs aren't confused by partial JSON
+on a failure path.
+
+Errors always go to stderr in the existing `Error: <message>` plain
+format used by every other command, regardless of `--format`.
 
 `--quiet` suppresses stdout on success and no-op (exit code is the
 contract; the line is for humans). Errors still print to stderr
-under `--quiet`.
+under `--quiet`. When `--quiet` is combined with `--format=json` the
+JSON object is also suppressed — `--quiet` always wins.
 
 ## API / Interface Changes
 
@@ -229,10 +247,11 @@ New Cobra commands (`cmd/status.go`):
 - `statusCmd` parent command, no `RunE`
 - `statusSetCmd` subcommand with `RunE: runStatusSet` → calls
   `(*Runner).statusSet(ctx context.Context, args []string) error`
-- Flags: `--dry-run bool`, `--quiet bool` (each bound to package-level
-  vars per the existing pattern; the broader cmd-globals cleanup is
-  deferred to a follow-up RFC per IMPL-0009 Phase 7's "blocked on
-  per-command opts structs" note)
+- Flags: `--dry-run bool`, `--quiet bool`, `--format string`
+  (validated against `{text, json}` at startup, default `text`).
+  Each bound to package-level vars per the existing pattern; the
+  broader cmd-globals cleanup is deferred to a follow-up RFC per
+  IMPL-0009 Phase 7's "blocked on per-command opts structs" note
 
 No `.docz.yaml` schema changes. `TypeConfig.Statuses` and
 `TypeConfig.StatusField` already exist; this design only reads them.
@@ -290,13 +309,11 @@ Implementation notes:
   - Missing `status:` line in an otherwise-valid block:
     `ErrStatusFieldMissing`
   - File with no frontmatter: `ErrNoFrontmatter`
-- Idempotency: `SetStatus(p, "Draft")` on a doc already at `Draft`
-  is a byte-perfect no-op (or — equivalent — returns the same old
-  status without rewriting). See Open Question 8 — should the
-  helper short-circuit or let the cmd layer decide? Recommendation
-  is to keep `SetStatus` always-write and let `cmd/status.go`
-  short-circuit; the unit tests cover the byte-perfect property
-  separately
+- Idempotency: `cmd/status.go` does the current-vs-new check and
+  short-circuits before calling `SetStatus`, so the helper itself
+  always writes when called (Decision 8). Unit tests still cover
+  the byte-perfect property by passing the helper a status it
+  already has and comparing the bytes against the input file
 
 `cmd/status_test.go` (cmd, table-driven, constructed Runner per the
 IMPL-0009 pattern with `Out: &bytes.Buffer{}` and
@@ -313,6 +330,12 @@ IMPL-0009 pattern with `Out: &bytes.Buffer{}` and
   line
 - `--quiet` happy path → exit 0, file mutated, empty buffer
 - `--quiet` error path → exit 2, error still on stderr
+- `--format=json` happy path → exit 0, single JSON object on stdout
+  with `from`, `to`, `path`, `dry_run`, `changed` fields
+- `--format=json` no-op → `changed:false`, `from == to`
+- `--format=json` with `--dry-run` → `dry_run:true`, file unchanged
+- `--format=json --quiet` → exit 0, empty buffer (quiet wins)
+- `--format=bogus` → exit 2, error lists `text` and `json`
 
 Smoke test: against this repo, run `docz status set design
 DESIGN-0005 "In Review"` and watch the diff (one line changed).
@@ -332,123 +355,24 @@ task list. Suggested phases there:
 Ship behind the existing `dont-release` PR label so the rfc-api
 Action can be coordinated with the next docz release.
 
-## Open Questions
+## Decisions
 
-Each option is lettered. **(a) is the recommendation**; (b+) are
-alternatives kept in scope. Type `other: <freeform>` to override.
+Resolved by user review on 2026-06-01. Every recommendation
+accepted except #6, where the user picked (c) to give scripts a
+first-class JSON output.
 
-### 1. Command shape
-
-- **(a) `docz status set <type> <id> <new-status>`** — parent +
-  subcommand; leaves room for `status get` / `status list-allowed`
-  without growing the top-level verb list
-- (b) `docz set-status <type> <id> <new-status>` — flat verb; one
-  fewer namespace level; matches `docz wiki update` flat style
-- (c) `docz status <type> <id> <new-status>` — flattest; default-set
-  semantics, but ambiguous for future readers
-- (d) other: `<your value>`
-
-### 2. Status value case sensitivity
-
-- **(a) Case-sensitive** — `Accepted` must match exactly; reject
-  `accepted`. Matches the convention DESIGN-0004 §F locked in for
-  the `Status` typed string (canonical display values)
-- (b) Case-insensitive accept, canonical write — accept `accepted`
-  from CLI, but write `Accepted` to the file from the
-  `statuses:` list
-- (c) Case-insensitive both ways — accept any case, store whatever
-  the user typed; diverges from canonical display values
-- (d) other: `<your value>`
-
-### 3. ID prefix matching
-
-- **(a) Exact match only** (`RFC-0042` required) — predictable, easy
-  to script, mirrors `docz list` which accepts full IDs only
-- (b) Case-insensitive exact (`rfc-0042` matches `RFC-0042`) —
-  small friction reduction; no ambiguity risk
-- (c) Case-insensitive prefix (`RFC-42` matches `RFC-0042` if
-  unambiguous; ambiguous case is exit 2 with a list) — power-user
-  shortcut; introduces ambiguity logic
-- (d) other: `<your value>`
-
-### 4. Transition validation depth
-
-- **(a) Membership only** — new status must be in `statuses:`; any
-  → any allowed. Matches Issue #52's spec and keeps docz unaware
-  of business workflow
-- (b) Order-aware — `Draft → Accepted` rejected unless `Proposed`
-  comes between; would require encoding allowed transitions per
-  type in `.docz.yaml`; significant scope creep
-- (c) Optional `--force` to bypass membership — pointless since
-  membership is the only check
-- (d) other: `<your value>`
-
-### 5. Multi-document batch mode
-
-- **(a) Out of scope** (matches issue) — one id per invocation;
-  callers loop. Keeps the contract simple
-- (b) Accept multiple ids — `docz status set rfc RFC-0042 RFC-0043
-  Accepted`; surface ambiguity: is the last arg the status or
-  another id?
-- (c) Accept `--all` to set every doc of a type to one status —
-  dangerous, unclear use case
-- (d) other: `<your value>`
-
-### 6. Output format
-
-- **(a) Plain text** — `<path>: status <old> -> <new>`; human-
-  readable, grep/awk-friendly. `--quiet` suppresses
-- (b) JSON output behind `--json` — first-class scripting;
-  `{"path":"...","from":"Draft","to":"Accepted","dry_run":false}`
-- (c) Both: `--format=text|json` — covers both cases; small surface
-  increase; matches `docz list` which already has `--format`
-- (d) other: `<your value>`
-
-### 7. CRLF / Windows line endings
-
-- **(a) Reject non-LF endings** with a clear "unsupported line
-  endings" error — keeps the byte mutator simple; matches docz's
-  Unix-only stance per INV-0004 §Decisions 6
-- (b) Detect and preserve — mutate in whatever line ending the
-  file uses; ~10 lines of extra logic
-- (c) Force-normalize to LF on write — fixes mixed endings but
-  changes more than the user asked for; surprises CRLF users
-- (d) other: `<your value>`
-
-### 8. Idempotency placement
-
-- **(a) Cmd-level short-circuit** — `cmd/status.go` checks current
-  == new before calling `SetStatus`; `SetStatus` always writes when
-  called. Keeps the helper's contract simple; cmd layer owns the
-  "already at" message
-- (b) Helper-level short-circuit — `SetStatus` reads, compares,
-  and returns the old status without writing when current ==
-  new; cmd layer just reports
-- (c) Both — defensive double-check; redundant
-- (d) other: `<your value>`
-
-### 9. Status field name
-
-- **(a) Hard-coded `status:`** — matches every built-in template
-  and every existing doc; `TypeConfig.StatusField` is `"status"`
-  for every default type
-- (b) Read `TypeConfig.StatusField` — supports user-renamed
-  fields; mostly hypothetical but cheap
-- (c) Accept `--field <name>` override — flexibility for users
-  who diverge from the default; broadens the CLI for an edge case
-- (d) other: `<your value>`
-
-### 10. `status get` / `status list-allowed` companion verbs
-
-- **(a) Not in this design** — DESIGN-0005 is `set` only; leave
-  `get` / `list-allowed` for a follow-up design if demand
-  materializes. The `status` parent verb is created here so that
-  followup is a one-file addition
-- (b) Include `status get <type> <id>` in this design — easy
-  scope add; reuses the same resolution algorithm
-- (c) Include `status list-allowed <type>` — exposes
-  `TypeConfig.Statuses` to scripts; trivial to implement
-- (d) other: `<your value>`
+| # | Topic | Decision |
+|---|-------|----------|
+| 1 | Command shape | (a) `docz status set <type> <id> <new-status>` — parent + subcommand; leaves room for `status get` / `status list-allowed` without growing the top-level verb list |
+| 2 | Status value case sensitivity | (a) Case-sensitive exact match — `Accepted` matches, `accepted` does not. Aligns with DESIGN-0004 §F's canonical `Status` display values |
+| 3 | ID prefix matching | (a) Exact match only — `RFC-0042` required; mirrors `docz list` |
+| 4 | Transition validation depth | (a) Membership only — new status must be in `statuses:`; any → any allowed |
+| 5 | Multi-document batch mode | (a) Out of scope — one id per invocation, callers loop |
+| 6 | Output format | **(c) Both — `--format=text|json`** with default `text`. Matches `docz list`'s existing flag style |
+| 7 | CRLF / Windows line endings | (a) Reject non-LF endings with a clear error — matches docz's Unix-only stance per INV-0004 §Decisions 6 |
+| 8 | Idempotency placement | (a) Cmd-level short-circuit — `cmd/status.go` checks current == new before calling `SetStatus`; the helper always writes when invoked |
+| 9 | Status field name | (a) Hard-coded `status:` — `TypeConfig.StatusField` is `"status"` for every default type |
+| 10 | `status get` / `status list-allowed` companion verbs | (a) Not in this design — `set` only; the `status` parent verb is established here so follow-up additions are one-file |
 
 ## References
 
