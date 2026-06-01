@@ -32,6 +32,8 @@ make ci             # full CI pipeline (lint + test + build + license-check)
 - Branch naming: `feat/`, `fix/`, `chore/`, `docs/` prefixes
 - Conventional commits required (e.g. `feat(wiki):`, `fix(config):`, `docs:`)
 - `docs/examples/plans/` contains user reference material — never commit these files
+- Merge style: `gh pr merge <n> --squash --delete-branch`. PR titles become the squash commit subject; keep titles under 70 chars (long detail belongs in the PR body)
+- Stacked PRs: when the base PR is squash-merged with `--delete-branch`, GitHub **auto-closes** the child PR (`reopenPullRequest` errors and `edit --base main` is forbidden on closed PRs). Recovery is `git rebase origin/main` on the child branch, `git push --force-with-lease`, then `gh pr create` a fresh PR targeting main
 
 ## Architecture
 
