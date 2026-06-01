@@ -8,6 +8,7 @@ nav:
         - 'DESIGN-0002: Wiki Command for MkDocs TechDocs Integration': design/0002-wiki-command-for-mkdocs-techdocs-integration.md
         - 'DESIGN-0003: Table of Contents Generation': design/0003-table-of-contents-generation.md
         - 'DESIGN-0004: Runner Pattern and DocType Registry': design/0004-runner-pattern-and-doctype-registry.md
+        - 'DESIGN-0005: Status Set CLI Primitive': design/0005-status-set-cli-primitive.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
