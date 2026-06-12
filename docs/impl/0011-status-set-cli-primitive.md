@@ -179,13 +179,13 @@ Phase 2.
 
 #### Tasks
 
-- [ ] Create `cmd/status.go` with `statusCmd` (parent, no `RunE`,
+- [x] Create `cmd/status.go` with `statusCmd` (parent, no `RunE`,
       relies on Cobra's default help-when-no-subcommand behavior)
-- [ ] Add `statusSetCmd` with `Args: cobra.ExactArgs(3)` and
+- [x] Add `statusSetCmd` with `Args: cobra.ExactArgs(3)` and
       `RunE: runStatusSet`
-- [ ] Implement `func runStatusSet(cmd *cobra.Command, args []string)
+- [x] Implement `func runStatusSet(cmd *cobra.Command, args []string)
       error` that calls `(*Runner).statusSet(cmd.Context(), args)`
-- [ ] Implement `(r *Runner) statusSet(ctx context.Context, args
+- [x] Implement `(r *Runner) statusSet(ctx context.Context, args
       []string) error` with the DESIGN-0005 §Resolution algorithm:
   1. `args[0]` → `Config.ValidateType` (error → exit 2)
   2. Resolve type dir via `r.inRepo(typeConfig.Dir)`
@@ -199,26 +199,26 @@ Phase 2.
      "already at" line, exit 0 without calling `SetStatus`
   6. Otherwise, if not `--dry-run`: call
      `document.SetStatus(entry.Path, args[2])`. On error, exit 1
-- [ ] Add `--dry-run`, `--quiet`, `--format` flag declarations on
+- [x] Add `--dry-run`, `--quiet`, `--format` flag declarations on
       `statusSetCmd`. `--format` defaults to `text`; validate
       `text|json` membership at the top of `statusSet` (Decision 2)
-- [ ] Register `statusCmd` in `cmd/root.go`'s `init()` next to the
+- [x] Register `statusCmd` in `cmd/root.go`'s `init()` next to the
       other top-level command registrations
-- [ ] Build the text output line via a small `formatStatusText(...)`
+- [x] Build the text output line via a small `formatStatusText(...)`
       helper inside `cmd/status.go`. Format:
       `<relpath>: status <old> -> <new>` (success) or
       `<relpath>: already at <status>` (no-op), prefixed with
       `[dry-run] ` when `--dry-run` is set
-- [ ] Relative path printed is **relative to `r.RepoRoot`** (Decision 3)
-- [ ] Errors print to `r.Err` in the existing `Error: <message>`
+- [x] Relative path printed is **relative to `r.RepoRoot`** (Decision 3)
+- [x] Errors print to `r.Err` in the existing `Error: <message>`
       format — never JSON
-- [ ] `--quiet` suppresses success/no-op stdout but never stderr
-- [ ] Define `errExitCode1` and `errExitCode2` as sentinel errors in
+- [x] `--quiet` suppresses success/no-op stdout but never stderr
+- [x] Define `errExitCode1` and `errExitCode2` as sentinel errors in
       `cmd/status.go` (Decision 6); `runStatusSet` returns them and
       `Execute()` in `cmd/root.go` translates them to `os.Exit(1)` and
       `os.Exit(2)`. Cobra's `SilenceUsage: true` (already set on
       rootCmd) prevents the usage dump on a non-zero exit
-- [ ] Write `cmd/status_test.go` covering the text path:
+- [x] Write `cmd/status_test.go` covering the text path:
   - Happy: type=rfc, id=RFC-0001, new=Accepted → exit 0, file
     mutated, buffer matches expected line
   - No-op: current == new → exit 0, file unchanged, buffer
@@ -234,9 +234,31 @@ Phase 2.
   - `--format=bogus` → exit 2, error lists `text` and `json`
   - Path arg with `--repo-root` set: id resolved under the
     repo-root, not cwd
-- [ ] Every cmd test constructs a `Runner` directly with
+- [x] Every cmd test constructs a `Runner` directly with
       `Out: &bytes.Buffer{}` and `RepoRoot: t.TempDir()` per the
       IMPL-0009 pattern (no `os.Pipe`, no `os.Chdir`)
+
+> **Implementation notes (intentional deviations from the literal task
+> text above):**
+>
+> - **Resolution step 2** uses `r.inRepo(r.Cfg.TypeDir(typeName))`, not
+>   `r.inRepo(typeConfig.Dir)`. `typeConfig.Dir` is just the leaf (e.g.
+>   `rfc`) and omits the configured `docs_dir`; `TypeDir` joins both
+>   (`docs/rfc`) the same way `cmd/list.go` does, and `inRepo` roots it
+>   under `RepoRoot`.
+> - **Resolution step 6** uses `filepath.Join(typeDir, entry.Filename)`
+>   because `document.DocEntry` exposes `Filename`, not a `Path` field.
+> - **Handler signature** is `statusSet(opts statusSetOpts, args []string)`
+>   — no `context.Context`. The handler does no context-aware work, and
+>   `unparam`/`revive` flag an unused `ctx`; this matches
+>   `cmd/list.go`'s `List(opts, args)`. Flags are packed into
+>   `statusSetOpts` (like `createOpts`/`listOpts`) so the method never
+>   reads a package global.
+> - **Exit-code plumbing** wraps `errExitCode1`/`errExitCode2` in an
+>   `exitCodeError{msg, marker}` so the user-facing message rides on the
+>   returned error (Cobra prints `Error: <message>`) while
+>   `exitCodeFor` in `root.go` selects the code via `errors.Is`. The
+>   handler returns errors; it never writes to `r.Err` itself.
 
 #### Success Criteria
 
