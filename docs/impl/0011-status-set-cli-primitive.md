@@ -113,33 +113,33 @@ it without re-testing the byte-level invariants.
 
 #### Tasks
 
-- [ ] Create `internal/document/status.go` with the documented
+- [x] Create `internal/document/status.go` with the documented
       `SetStatus(path, newStatus string) (oldStatus string, err error)`
       signature
-- [ ] Define `ErrStatusFieldMissing` and `ErrUnsupportedLineEndings`
+- [x] Define `ErrStatusFieldMissing` and `ErrUnsupportedLineEndings`
       as exported sentinels next to the existing `ErrNoFrontmatter`
       in `internal/document/document.go`
-- [ ] Implement the frontmatter delimiter scan: locate `---\n`
+- [x] Implement the frontmatter delimiter scan: locate `---\n`
       opening on line 0 or 1, locate the closing `---\n`. Reject
       CRLF / mixed endings with `ErrUnsupportedLineEndings`
-- [ ] Implement the status-line finder using a tight regex that
+- [x] Implement the status-line finder using a tight regex that
       captures the value across three quoting shapes (bare,
       double-quoted, single-quoted). Block scalars and flow
       mappings return `ErrStatusFieldMissing` with a clear message
-- [ ] Implement the byte-level value replacement: preserve the key
+- [x] Implement the byte-level value replacement: preserve the key
       token, the colon, the spacing, the quoting glyphs, and any
       trailing comment. Only the value bytes change
-- [ ] Wrap all `os.ReadFile` / `os.WriteFile` errors with the file
+- [x] Wrap all `os.ReadFile` / `os.WriteFile` errors with the file
       path: `fmt.Errorf("%s: %w", path, err)` (Decision 5)
-- [ ] Write `os.WriteFile` at the `config.FileMode` constant (0o644)
+- [x] Write `os.WriteFile` at the `config.FileMode` constant (0o644)
       to match every other writer in docz
-- [ ] Create golden fixtures under
+- [x] Create golden fixtures under
       `internal/document/testdata/golden/status/` — one input file
       per built-in template (rfc/adr/design/impl/plan/investigation)
       plus six matching outputs after a status mutation. Use the
       `-update` flag pattern already established for other golden
       tests in this repo (Decision 4)
-- [ ] Write `internal/document/status_test.go` with `t.Parallel()`
+- [x] Write `internal/document/status_test.go` with `t.Parallel()`
       on every top-level test and subtest:
   - Six-template golden round-trip table
   - Quoting shape table: bare, `"Draft"`, `'Draft'`
