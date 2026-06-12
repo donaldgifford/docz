@@ -334,27 +334,33 @@ emitter and the test cases that exercise it.
 
 #### Tasks
 
-- [ ] Full `make ci` green (lint + test + build + license-check)
-- [ ] `go test -race -shuffle=on -count=3 ./...` green
-- [ ] Manual smoke against this repo:
+- [x] Full `make ci` green (lint + test + build + license-check)
+- [x] `go test -race -shuffle=on -count=3 ./...` green
+- [x] Manual smoke against this repo:
       `docz status set design DESIGN-0005 Implemented` then
       `git diff docs/design/0005-status-set-cli-primitive.md` shows
       exactly one line changed (the `status:` value); the
-      `**Status:**` body line is *not* touched (Decision 8)
-- [ ] Manual smoke with `--format=json` against this repo;
-      pipe through `jq` to confirm shape
-- [ ] Update CLAUDE.md architecture section to add a one-line
+      `**Status:**` body line is *not* touched (Decision 8). Verified
+      (numstat `1 1`, body `**Status:** Approved` untouched), then the
+      smoke mutation was reverted — the real flip is task below.
+- [x] Manual smoke with `--format=json` against this repo;
+      pipe through `jq` to confirm shape (ran as `--dry-run` so the
+      repo stays clean; `jq '.changed'` → `true`)
+- [x] Update CLAUDE.md architecture section to add a one-line
       entry under `cmd/` describing `status set` and pointing at
-      `internal/document.SetStatus` as the byte-level seam
-- [ ] Run `docz update` to refresh the impl/design index READMEs
-      and the mkdocs nav
+      `internal/document.SetStatus` as the byte-level seam (landed
+      in the Phase 2 commit)
+- [x] Run `docz update` to refresh the impl/design index READMEs
+      and the mkdocs nav (no diff — indexes already current)
 - [ ] Flip DESIGN-0005 frontmatter status from `Approved` to
-      `Implemented` after the PR merges to main
+      `Implemented` after the PR merges to main *(post-merge: not done
+      while unmerged)*
 - [ ] Flip this doc's frontmatter status from `Draft` to
-      `Completed` after the PR merges to main
+      `Completed` after the PR merges to main *(post-merge: not done
+      while unmerged)*
 - [ ] Open the PR with the `dont-release` label so the rfc-api
       Action consuming this can be coordinated with the next docz
-      release
+      release *(left to the user; not auto-opening a PR)*
 
 #### Success Criteria
 
@@ -385,17 +391,17 @@ emitter and the test cases that exercise it.
 
 ## Testing Plan
 
-- [ ] `internal/document/status_test.go` covers every quoting
+- [x] `internal/document/status_test.go` covers every quoting
       shape and edge case from Phase 1's task list
-- [ ] Golden fixtures live under
+- [x] Golden fixtures live under
       `internal/document/testdata/golden/status/` and are
       regenerable with `go test -run TestSetStatus -update ./internal/document/...`
-- [ ] `cmd/status_test.go` covers the full happy/no-op/error
+- [x] `cmd/status_test.go` covers the full happy/no-op/error
       matrix for both text and JSON output and every flag
       combination
-- [ ] `go test -race -shuffle=on -count=3 ./...` green at the end
+- [x] `go test -race -shuffle=on -count=3 ./...` green at the end
       of every phase
-- [ ] One end-to-end smoke against this repo's own docs is captured
+- [x] One end-to-end smoke against this repo's own docs is captured
       in Phase 4's task list
 
 ## Decisions
