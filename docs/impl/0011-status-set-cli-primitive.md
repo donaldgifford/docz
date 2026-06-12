@@ -285,15 +285,15 @@ emitter and the test cases that exercise it.
 
 #### Tasks
 
-- [ ] Add `formatStatusJSON(...)` helper returning a single-line
+- [x] Add `formatStatusJSON(...)` helper returning a single-line
       JSON object via `encoding/json` (`Marshal` + a trailing
       `\n`). Fields: `path`, `from`, `to`, `dry_run`, `changed`
-- [ ] On no-op: `from` and `to` are equal, `changed: false` (Decision 7)
-- [ ] On `--dry-run`: `dry_run: true`, file unchanged, `changed`
+- [x] On no-op: `from` and `to` are equal, `changed: false` (Decision 7)
+- [x] On `--dry-run`: `dry_run: true`, file unchanged, `changed`
       still reports what *would* have happened
-- [ ] `--quiet` suppresses the JSON object completely (DESIGN-0005
+- [x] `--quiet` suppresses the JSON object completely (DESIGN-0005
       Decision 6's "quiet wins" clause)
-- [ ] Add JSON cmd tests parallel to the text ones:
+- [x] Add JSON cmd tests parallel to the text ones:
   - `--format=json` happy → exit 0, single JSON object on stdout
     with all five fields populated correctly
   - `--format=json` no-op → `changed:false`, `from == to`
@@ -301,11 +301,17 @@ emitter and the test cases that exercise it.
   - `--format=json --quiet` → exit 0, empty buffer
   - `--format=json` on error → JSON not emitted, stderr has plain
     `Error: …` text
-- [ ] JSON tests use `json.Unmarshal` into a struct rather than
+- [x] JSON tests use `json.Unmarshal` into a struct rather than
       string-matching, to avoid spurious failures from field
       ordering (Go's `encoding/json` happens to emit struct field
       order deterministically, but the test shouldn't depend on
       that)
+
+> **Implementation note:** the emitter is the `(*Runner).emitStatusJSON`
+> method (with a `statusJSON` struct), not a free `formatStatusJSON`
+> function — it writes through `r.Out` like `emitStatusText`. The Phase 2
+> `emitStatus` json branch (previously a "not yet implemented" stub) now
+> dispatches to it.
 
 #### Success Criteria
 

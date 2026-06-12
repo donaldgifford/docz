@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -220,6 +221,120 @@ func TestStatusSet_ResolvesUnderRepoRoot(t *testing.T) {
 	}
 	if !strings.HasPrefix(out.String(), "docs/rfc/0001-first.md:") {
 		t.Errorf("path not repo-root relative: %q", out.String())
+	}
+}
+
+// parseStatusJSON unmarshals the JSON status output into a struct so the
+// assertions do not depend on field ordering (DESIGN-0005 Phase 3).
+func parseStatusJSON(t *testing.T, b []byte) statusJSON {
+	t.Helper()
+	var got statusJSON
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("invalid JSON output %q: %v", b, err)
+	}
+	return got
+}
+
+func TestStatusSet_JSONHappy(t *testing.T) {
+	dir, rfcDir := setupStatusRepo(t)
+	var out bytes.Buffer
+	r := newStatusRunner(t, dir, &out)
+
+	err := r.statusSet(statusSetOpts{format: formatJSON}, []string{"rfc", "RFC-0001", "Accepted"})
+	if err != nil {
+		t.Fatalf("statusSet() error: %v", err)
+	}
+
+	got := parseStatusJSON(t, out.Bytes())
+	want := statusJSON{
+		Path:    "docs/rfc/0001-first.md",
+		From:    "Draft",
+		To:      "Accepted",
+		DryRun:  false,
+		Changed: true,
+	}
+	if got != want {
+		t.Errorf("json = %+v, want %+v", got, want)
+	}
+	if !strings.HasSuffix(out.String(), "}\n") {
+		t.Errorf("json output not newline-terminated: %q", out.String())
+	}
+	if doc := readDoc(t, filepath.Join(rfcDir, "0001-first.md")); !strings.Contains(doc, "status: Accepted") {
+		t.Errorf("file not mutated:\n%s", doc)
+	}
+}
+
+func TestStatusSet_JSONNoOp(t *testing.T) {
+	dir, _ := setupStatusRepo(t)
+	var out bytes.Buffer
+	r := newStatusRunner(t, dir, &out)
+
+	err := r.statusSet(statusSetOpts{format: formatJSON}, []string{"rfc", "RFC-0001", "Draft"})
+	if err != nil {
+		t.Fatalf("statusSet() error: %v", err)
+	}
+
+	got := parseStatusJSON(t, out.Bytes())
+	if got.Changed {
+		t.Errorf("no-op changed = true, want false")
+	}
+	if got.From != got.To {
+		t.Errorf("no-op from %q != to %q, want equal", got.From, got.To)
+	}
+}
+
+func TestStatusSet_JSONDryRun(t *testing.T) {
+	dir, rfcDir := setupStatusRepo(t)
+	var out bytes.Buffer
+	r := newStatusRunner(t, dir, &out)
+
+	before := readDoc(t, filepath.Join(rfcDir, "0001-first.md"))
+	err := r.statusSet(statusSetOpts{format: formatJSON, dryRun: true}, []string{"rfc", "RFC-0001", "Accepted"})
+	if err != nil {
+		t.Fatalf("statusSet() error: %v", err)
+	}
+
+	got := parseStatusJSON(t, out.Bytes())
+	if !got.DryRun {
+		t.Errorf("dry_run = false, want true")
+	}
+	if !got.Changed {
+		t.Errorf("changed = false, want true (reports what would happen)")
+	}
+	if after := readDoc(t, filepath.Join(rfcDir, "0001-first.md")); after != before {
+		t.Errorf("--dry-run mutated file")
+	}
+}
+
+func TestStatusSet_JSONQuiet(t *testing.T) {
+	dir, _ := setupStatusRepo(t)
+	var out bytes.Buffer
+	r := newStatusRunner(t, dir, &out)
+
+	err := r.statusSet(statusSetOpts{format: formatJSON, quiet: true}, []string{"rfc", "RFC-0001", "Accepted"})
+	if err != nil {
+		t.Fatalf("statusSet() error: %v", err)
+	}
+	if out.Len() != 0 {
+		t.Errorf("--quiet --format=json wrote to stdout: %q", out.String())
+	}
+}
+
+func TestStatusSet_JSONError(t *testing.T) {
+	dir, _ := setupStatusRepo(t)
+	var out bytes.Buffer
+	r := newStatusRunner(t, dir, &out)
+
+	err := r.statusSet(statusSetOpts{format: formatJSON}, []string{"rfc", "RFC-9999", "Accepted"})
+	if !errors.Is(err, errExitCode1) {
+		t.Errorf("error = %v, want errExitCode1", err)
+	}
+	if out.Len() != 0 {
+		t.Errorf("error path emitted JSON to stdout: %q", out.String())
+	}
+	// The error message is plain text, not JSON.
+	if err == nil || strings.HasPrefix(strings.TrimSpace(err.Error()), "{") {
+		t.Errorf("error message looks like JSON: %v", err)
 	}
 }
 

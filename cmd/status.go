@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -71,6 +72,18 @@ type statusResult struct {
 	changed bool
 	quiet   bool
 	format  string
+}
+
+// statusJSON is the machine-readable shape emitted by
+// `status set --format=json`. On a no-op From == To and Changed is false;
+// on --dry-run DryRun is true and Changed still reports what would have
+// happened (DESIGN-0005 §Output format, Decision 7).
+type statusJSON struct {
+	Path    string `json:"path"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+	DryRun  bool   `json:"dry_run"`
+	Changed bool   `json:"changed"`
 }
 
 var statusCmd = &cobra.Command{
@@ -229,15 +242,33 @@ func (r *Runner) relPath(p string) string {
 // emitStatus writes the result through r.Out in the configured format.
 // --quiet suppresses all stdout (the exit code is the contract); errors
 // always go to stderr as plain text, never JSON (DESIGN-0005 §Output
-// format). JSON output is layered on in Phase 3.
+// format).
 func (r *Runner) emitStatus(res statusResult) error {
 	if res.quiet {
 		return nil
 	}
 	if res.format == formatJSON {
-		return errors.New("json output not yet implemented")
+		return r.emitStatusJSON(res)
 	}
 	_, err := fmt.Fprintln(r.Out, formatStatusText(res))
+	return err
+}
+
+// emitStatusJSON writes a single-line JSON object terminated by a newline
+// (DESIGN-0005 §Output format). It uses json.Marshal so the object is one
+// line; consumers branch on the `changed` field.
+func (r *Runner) emitStatusJSON(res statusResult) error {
+	data, err := json.Marshal(statusJSON{
+		Path:    res.path,
+		From:    res.from,
+		To:      res.to,
+		DryRun:  res.dryRun,
+		Changed: res.changed,
+	})
+	if err != nil {
+		return fmt.Errorf("marshaling status json: %w", err)
+	}
+	_, err = fmt.Fprintf(r.Out, "%s\n", data)
 	return err
 }
 
