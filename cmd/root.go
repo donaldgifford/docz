@@ -18,6 +18,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,10 +52,19 @@ auto-generated index pages.
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(exitCodeFor(err))
 	}
+}
+
+// exitCodeFor maps a command error to a process exit code. Only the
+// errExitCode2 validation marker is special-cased; errExitCode1 and every
+// other failure exit 1, preserving the pre-existing behavior.
+func exitCodeFor(err error) int {
+	if errors.Is(err, errExitCode2) {
+		return 2
+	}
+	return 1
 }
 
 func init() {
