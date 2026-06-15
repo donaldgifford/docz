@@ -1,7 +1,7 @@
 ---
 id: IMPL-0011
 title: "Status Set CLI Primitive"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-06-01
 ---
@@ -9,7 +9,7 @@ created: 2026-06-01
 
 # IMPL 0011: Status Set CLI Primitive
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-06-01
 

@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0005
 title: "Status Set CLI Primitive"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-05-30
 ---
@@ -9,7 +9,7 @@ created: 2026-05-30
 
 # DESIGN 0005: Status Set CLI Primitive
 
-**Status:** Approved
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-05-30
 
