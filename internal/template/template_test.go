@@ -3,6 +3,7 @@ package template
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/donaldgifford/docz/internal/config"
@@ -98,6 +99,89 @@ func TestResolve_EmbeddedDefault(t *testing.T) {
 	}
 	if content == "" {
 		t.Error("Resolve() returned empty content for embedded default")
+	}
+}
+
+// TestResolveIndexHeader_LocalOverride proves tier 1 wins and is returned
+// byte-for-byte, including a literal "{{" that must NOT be rendered.
+func TestResolveIndexHeader_LocalOverride(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	tmplDir := filepath.Join(dir, config.TemplatesDir)
+	if err := os.MkdirAll(tmplDir, 0o755); err != nil {
+		t.Fatalf("creating templates dir: %v", err)
+	}
+	override := "# Custom Header {{ raw }}\n\nVerbatim override.\n\n"
+	if err := os.WriteFile(filepath.Join(tmplDir, "index_frameworks.md"), []byte(override), 0o644); err != nil {
+		t.Fatalf("writing override: %v", err)
+	}
+
+	got, err := ResolveIndexHeader("frameworks", dir, IndexHeaderData{TypeName: "frameworks", PluralLabel: "Frameworks"})
+	if err != nil {
+		t.Fatalf("ResolveIndexHeader() error: %v", err)
+	}
+	if got != override {
+		t.Errorf("ResolveIndexHeader() = %q, want verbatim override %q", got, override)
+	}
+}
+
+// TestResolveIndexHeader_EmbeddedBuiltin is the golden-stability guard: for
+// every built-in type, the resolved header equals the embedded file
+// byte-for-byte (tier 2 is verbatim, so built-in README output never churns).
+func TestResolveIndexHeader_EmbeddedBuiltin(t *testing.T) {
+	t.Parallel()
+	for _, docType := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
+		t.Run(docType, func(t *testing.T) {
+			t.Parallel()
+			want, err := templateFS.ReadFile("templates/index_" + docType + ".md")
+			if err != nil {
+				t.Fatalf("reading embedded index_%s.md: %v", docType, err)
+			}
+			got, err := ResolveIndexHeader(docType, "/nonexistent/path", IndexHeaderData{TypeName: docType})
+			if err != nil {
+				t.Fatalf("ResolveIndexHeader(%q) error: %v", docType, err)
+			}
+			if got != string(want) {
+				t.Errorf("ResolveIndexHeader(%q) not byte-identical to embedded header", docType)
+			}
+		})
+	}
+}
+
+// TestResolveIndexHeader_GenericFallback covers tier 3 — a custom type with
+// no override and no embedded header renders index_default.md with its label.
+func TestResolveIndexHeader_GenericFallback(t *testing.T) {
+	t.Parallel()
+	got, err := ResolveIndexHeader(
+		"frameworks", "/nonexistent/path",
+		IndexHeaderData{TypeName: "frameworks", PluralLabel: "Frameworks"},
+	)
+	if err != nil {
+		t.Fatalf("ResolveIndexHeader() error: %v", err)
+	}
+	for _, want := range []string{"Frameworks", "docz create frameworks"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("ResolveIndexHeader() generic fallback = %q, want it to contain %q", got, want)
+		}
+	}
+}
+
+// TestResolveIndexHeader_GenericFallbackEmptyLabel proves an empty
+// PluralLabel still yields a non-empty, well-formed header.
+func TestResolveIndexHeader_GenericFallbackEmptyLabel(t *testing.T) {
+	t.Parallel()
+	got, err := ResolveIndexHeader(
+		"frameworks", "/nonexistent/path",
+		IndexHeaderData{TypeName: "frameworks"},
+	)
+	if err != nil {
+		t.Fatalf("ResolveIndexHeader() error: %v", err)
+	}
+	if got == "" {
+		t.Fatal("ResolveIndexHeader() with empty label returned empty content")
+	}
+	if !strings.Contains(got, "docz create frameworks") {
+		t.Errorf("ResolveIndexHeader() = %q, want the create example", got)
 	}
 }
 

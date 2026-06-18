@@ -100,6 +100,61 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	return EmbeddedDocumentTemplate(config.DocType(docType))
 }
 
+// IndexHeaderData is the render context for the generic fallback index
+// header (templates/index_default.md). Type-specific embedded headers and
+// on-disk overrides are emitted verbatim and ignore this data.
+type IndexHeaderData struct {
+	TypeName    string // canonical type name, e.g. "frameworks"
+	PluralLabel string // display label, e.g. "Frameworks"
+}
+
+// ResolveIndexHeader returns the index-header prose for docType — the prose
+// spliced above the auto-generated table in a type's README — checking
+// override sources in order:
+//  1. On-disk override at <docsDir>/templates/index_<docType>.md (verbatim)
+//  2. Embedded type-specific header templates/index_<docType>.md (verbatim)
+//  3. Embedded generic header templates/index_default.md (rendered with data)
+//
+// Only tier 3 is rendered through text/template; tiers 1 and 2 are returned
+// byte-for-byte so a literal "{{" in a user override or a built-in header is
+// never reinterpreted (DESIGN-0006 Decision 2). This mirrors Resolve's
+// disk-override → embedded fallback shape for body templates, closing the
+// asymmetry where index headers were embedded-only.
+func ResolveIndexHeader(docType, docsDir string, data IndexHeaderData) (string, error) {
+	// 1. On-disk override.
+	localPath := filepath.Join(docsDir, config.TemplatesDir, "index_"+docType+".md")
+	if b, err := os.ReadFile(localPath); err == nil {
+		return string(b), nil
+	}
+
+	// 2. Embedded type-specific header (hits for the six built-ins).
+	if b, err := templateFS.ReadFile("templates/index_" + docType + ".md"); err == nil {
+		return string(b), nil
+	}
+
+	// 3. Embedded generic fallback, rendered with data.
+	b, err := templateFS.ReadFile("templates/index_default.md")
+	if err != nil {
+		return "", fmt.Errorf("reading embedded default index header: %w", err)
+	}
+	return renderIndexHeader(string(b), data)
+}
+
+// renderIndexHeader executes the generic index-header template with data.
+func renderIndexHeader(tmplContent string, data IndexHeaderData) (string, error) {
+	t, err := template.New("index_header").Parse(tmplContent)
+	if err != nil {
+		return "", fmt.Errorf("parsing index header template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("executing index header template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
 // WikiIndexType represents a single document type entry for the wiki index template.
 type WikiIndexType struct {
 	Name     string // canonical type name (e.g., "rfc")

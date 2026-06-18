@@ -128,24 +128,24 @@ which keeps the six built-in headers byte-identical.
 
 #### Tasks
 
-- [ ] Create `internal/template/templates/index_default.md` as a
+- [x] Create `internal/template/templates/index_default.md` as a
       `text/template` referencing `{{ .PluralLabel }}` and `{{ .TypeName }}`
       (title heading, one-line description, and a `docz create {{ .TypeName }}`
       example). Match the trailing-newline shape of the built-in
       `index_*.md` files so the spliced marker block spacing is identical
-- [ ] Add `type IndexHeaderData struct { TypeName, PluralLabel string }` in
+- [x] Add `type IndexHeaderData struct { TypeName, PluralLabel string }` in
       `internal/template/template.go`, next to `Resolve`/`Data`
-- [ ] Implement `ResolveIndexHeader(docType, docsDir string, data
+- [x] Implement `ResolveIndexHeader(docType, docsDir string, data
       IndexHeaderData) (string, error)` with three tiers:
   1. on-disk override `filepath.Join(docsDir, config.TemplatesDir,
      "index_"+docType+".md")` → return verbatim if readable
   2. embedded `templates/index_<docType>.md` → return verbatim if present
   3. embedded `templates/index_default.md` → parse with `text/template`,
      execute with `data`, return rendered
-- [ ] Only tier 3 is rendered; tiers 1–2 return raw bytes (a literal `{{`
+- [x] Only tier 3 is rendered; tiers 1–2 return raw bytes (a literal `{{`
       in a user override or built-in header must survive untouched)
-- [ ] Leave `EmbeddedIndexHeader` in place for this phase (removed Phase 2)
-- [ ] Write `internal/template` tests:
+- [x] Leave `EmbeddedIndexHeader` in place for this phase (removed Phase 2)
+- [x] Write `internal/template` tests:
   - tier 1: a `t.TempDir()` `templates/index_x.md` (containing a literal
     `{{ raw }}`) is returned byte-for-byte
   - tier 2: `ResolveIndexHeader("rfc", …)` equals the current
