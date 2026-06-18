@@ -36,15 +36,7 @@ created: 2026-06-18
     - [Success Criteria](#success-criteria-4)
 - [File Changes](#file-changes)
 - [Testing Plan](#testing-plan)
-- [Open Questions](#open-questions)
-  - [1. Ordering of custom types in EnabledTypes()](#1-ordering-of-custom-types-in-enabledtypes)
-  - [2. Scope of the EnabledTypes() fix](#2-scope-of-the-enabledtypes-fix)
-  - [3. Placement of ResolveIndexHeader / IndexHeaderData](#3-placement-of-resolveindexheader--indexheaderdata)
-  - [4. Content of index_default.md](#4-content-of-indexdefaultmd)
-  - [5. Collision domain for Validate](#5-collision-domain-for-validate)
-  - [6. Should TypeConfig.Aliases apply to built-in types too?](#6-should-typeconfigaliases-apply-to-built-in-types-too)
-  - [7. Should docz init scaffold editable template stubs for custom types?](#7-should-docz-init-scaffold-editable-template-stubs-for-custom-types)
-  - [8. PR strategy](#8-pr-strategy)
+- [Decisions](#decisions)
 - [Dependencies](#dependencies)
 - [References](#references)
 <!--toc:end-->
@@ -76,7 +68,7 @@ This implements both axes of the design:
 decisions in that doc's §Decisions table are locked and inherited here
 (notably **6b**: add an explicit per-type `aliases:` field on top of
 implicit `id_prefix` matching). Implementation-level questions not settled
-by the design are collected in [Open Questions](#open-questions) for review.
+by the design are recorded in the [Decisions](#decisions) table.
 
 ## Scope
 
@@ -112,8 +104,7 @@ by the design are collected in [Open Questions](#open-questions) for review.
 - Validating or templating the *contents* of user-authored index headers —
   a disk override is emitted verbatim
 - Scaffolding editable `docs/templates/<type>.md` / `index_<type>.md` stubs
-  on `docz init` — the generated fallback removes the need (see Open
-  Questions §7)
+  on `docz init` — the generated fallback removes the need (Decision 7)
 - Per-type custom *status lifecycles* beyond what `TypeConfig.Statuses`
   already supports — unchanged
 
@@ -252,7 +243,7 @@ single-`<type>` command (`create`, `update <type>`, `list <type>`,
       configured enabled types (via `EnabledTypes()` — see Phase 4) rather
       than only the built-in registry
 - [ ] Honor `TypeConfig.Aliases` for any type, built-in or custom (union
-      with registry aliases) per Open Questions §6
+      with registry aliases) per Decision 6
 - [ ] Write `internal/config` tests (table-driven, `t.Parallel()`):
   - prefix resolution: `FW` and `fw` → `frameworks`
   - per-type alias resolution: a declared `aliases: [fw]` → `frameworks`
@@ -283,7 +274,7 @@ resolution keys require.
 - [ ] Fix `EnabledTypes()` to include enabled custom types. Built-in types
       stay in registry-declaration order; enabled custom keys (those not in
       the built-in registry) are appended in a deterministic order
-      (sorted — Open Questions §1) so map iteration never makes
+      (sorted — Decision 1) so map iteration never makes
       `docz update`/`list`/wiki output unstable
 - [ ] Add `Validate` rule: duplicate `id_prefix` (case-insensitive) across
       enabled types is a hard error (Decision 5), naming the prefix and the
@@ -291,7 +282,7 @@ resolution keys require.
 - [ ] Add `Validate` rule: a `TypeConfig.Aliases` entry that collides
       (case-insensitive) with another enabled type's canonical name, its
       registry alias, its `id_prefix`, or another type's alias is a hard
-      error (Open Questions §5 fixes the exact collision domain)
+      error (Decision 5 fixes the exact collision domain)
 - [ ] Keep the existing `non-built-in type %q (typo?)` warning (Decision 8)
 - [ ] Write tests:
   - `EnabledTypes()` includes an enabled custom type at the expected
@@ -346,7 +337,7 @@ resolution keys require.
 - [ ] Flip this doc's frontmatter status `Draft` → `Completed` after merge
       to main *(post-merge)*
 - [ ] Open the PR with the `minor` release label (new user-facing feature,
-      additive) — Open Questions §8 on single-vs-split PR
+      additive) — single PR per Decision 8
 
 #### Success Criteria
 
@@ -399,107 +390,22 @@ resolution keys require.
       phase
 - [ ] One end-to-end scratch-repo smoke captured in Phase 5
 
-## Open Questions
+## Decisions
 
-Implementation-level questions not settled by DESIGN-0006. `a` is my
-recommendation; `b`+ are concrete alternatives; pick "other" to specify
-your own.
+Resolved by user review on 2026-06-18. All recommendations accepted.
+These are implementation-level choices; DESIGN-0006 §Decisions remains
+authoritative for the design-level choices this plan inherits.
 
-### 1. Ordering of custom types in `EnabledTypes()`
-
-Go maps are unordered, so once custom types are included they need a
-deterministic order (it drives `docz list`/`update`/`init`/wiki output).
-
-- **a (recommended).** Built-in types first in registry-declaration order,
-  then enabled custom types sorted alphabetically. Stable, predictable,
-  built-ins keep their familiar order.
-- **b.** All enabled types (built-in + custom) sorted alphabetically.
-  Uniform rule, but reorders the built-ins from today's order.
-- **c.** Preserve the order types appear in `.docz.yaml`. Most intuitive
-  for authors, but Viper unmarshals into a `map` and loses source order, so
-  it needs a custom decode step (capture key order from the raw YAML).
-- **Other.**
-
-### 2. Scope of the `EnabledTypes()` fix
-
-This gap (custom types skipped by no-arg commands) is implied by the design
-but not named in it.
-
-- **a (recommended).** Fix it in this IMPL (Phase 4) — the design's "succeed
-  for any enabled type" goal is unmet without it; it's the difference
-  between custom types being usable and being first-class.
-- **b.** Split it to a follow-up IMPL; ship only index-header resolution +
-  single-type invocation now. Smaller PR, but no-arg `docz update`/`list`
-  still silently skip custom types until the follow-up.
-- **Other.**
-
-### 3. Placement of `ResolveIndexHeader` / `IndexHeaderData`
-
-- **a (recommended).** In `internal/template/template.go`, next to
-  `Resolve`/`ResolveWikiIndex` — keeps all resolvers together and leaves
-  `embed.go` as pure embedded-FS accessors.
-- **b.** In `internal/template/embed.go`, next to the (departing)
-  `EmbeddedIndexHeader`.
-- **c.** A new `internal/template/index_header.go` file.
-- **Other.**
-
-### 4. Content of `index_default.md`
-
-- **a (recommended).** Minimal: a `# {{ .PluralLabel }}` heading, a
-  one-line description, and a `docz create {{ .TypeName }} "Your Title"`
-  example. Safe for a type of unknown semantics.
-- **b.** Richer, mirroring the built-in headers (a "What is …?" section and
-  a status-list block). More polished, but the status list can't be
-  accurate without rendering `TypeConfig.Statuses` (more template data) and
-  the prose can't fit an arbitrary type well.
-- **c.** Render `TypeConfig.Statuses` into the fallback too (extend
-  `IndexHeaderData` with the status slice).
-- **Other.**
-
-### 5. Collision domain for `Validate`
-
-What set does a new alias / prefix get checked against for ambiguity?
-
-- **a (recommended).** The union over **enabled** types of {canonical name,
-  registry alias (for enabled built-ins), per-type `aliases:`, `id_prefix`},
-  matched case-insensitively. Mirrors exactly what `resolveType` can reach,
-  so any in-set duplicate is a real ambiguity.
-- **b.** Only check `id_prefix` uniqueness (Decision 5's literal text) and
-  leave alias collisions to "first match wins" at resolution time. Less
-  validation, but reintroduces nondeterminism for colliding aliases.
-- **c.** Check against **all** built-in names/aliases regardless of whether
-  they're enabled. Stricter, but rejects configs that disable a built-in
-  and reuse its alias — arguably legitimate.
-- **Other.**
-
-### 6. Should `TypeConfig.Aliases` apply to built-in types too?
-
-- **a (recommended).** Yes — union a built-in's `aliases:` with its registry
-  aliases. Simplest rule (one code path), lets users add `r` for `rfc`.
-- **b.** Custom types only; ignore `aliases:` on a built-in type (warn).
-  Narrower surface, but an inconsistent rule to document.
-- **Other.**
-
-### 7. Should `docz init` scaffold editable template stubs for custom types?
-
-- **a (recommended).** No. Rely on the generated fallback header and the
-  optional `docs/templates/index_<type>.md` / `<type>.md` overrides. A
-  custom type works with zero scaffolded files. (Note: a custom type still
-  needs a body template — `docs/templates/<type>.md` or a `template:` path —
-  to `create`, since there's no embedded body default.)
-- **b.** On `init`, write commented stub files for each enabled custom type
-  so users have an obvious editing surface. More discoverable, but litters
-  the tree and duplicates the fallback.
-- **Other.**
-
-### 8. PR strategy
-
-- **a (recommended).** One PR for all five phases — cohesive feature,
-  estimated <~600 LOC, matches IMPL-0009/0011 precedent; label `minor`.
-- **b.** Two PRs — output axis (Phases 1–2) then input axis (Phases 3–5).
-  Smaller reviews, but the feature is only half-usable after the first
-  merge.
-- **Other.**
+| # | Topic | Choice | Rationale |
+|---|-------|--------|-----------|
+| 1 | `EnabledTypes()` ordering | (a) Built-ins in registry-declaration order, then enabled custom types sorted alphabetically | Stable and predictable; built-ins keep their familiar order; Go maps need a deterministic sort |
+| 2 | Scope of the `EnabledTypes()` fix | (a) Fix it in this IMPL (Phase 4) | The design's "succeed for any enabled type" is unmet without it — the line between usable and first-class |
+| 3 | Placement of `ResolveIndexHeader` | (a) `internal/template/template.go`, next to `Resolve`/`ResolveWikiIndex` | Keeps all resolvers together; `embed.go` stays a pure embedded-FS accessor |
+| 4 | `index_default.md` content | (a) Minimal — `# {{ .PluralLabel }}` heading, one-line description, `docz create {{ .TypeName }}` example | Safe for a type of unknown semantics; no dependence on `TypeConfig.Statuses` |
+| 5 | `Validate` collision domain | (a) Union over enabled types of {canonical name, registry alias, per-type `aliases:`, `id_prefix`}, case-insensitive | Mirrors exactly what `resolveType` can reach, so any in-set duplicate is a real ambiguity |
+| 6 | `TypeConfig.Aliases` on built-ins | (a) Yes — union a built-in's `aliases:` with its registry aliases | One code path; lets users add e.g. `r` for `rfc` |
+| 7 | `docz init` template stubs | (a) No — rely on the generated fallback + optional `docs/templates/` overrides | A custom type works with zero scaffolded files; avoids littering the tree (a body template is still required to `create`) |
+| 8 | PR strategy | (a) One PR for all five phases, label `minor` | Cohesive feature, ~<600 LOC; matches the IMPL-0009/0011 single-PR precedent |
 
 ## Dependencies
 
