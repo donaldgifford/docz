@@ -10,6 +10,11 @@ import (
 	"github.com/donaldgifford/docz/internal/document"
 )
 
+// indexHeader is a stand-in for the caller-resolved header string that
+// UpdateReadme/DryRunReadme now splice above the table (IMPL-0012 Phase 2).
+// The index package no longer resolves headers itself, so any string works.
+const indexHeader = "# Test Index Header\n\n"
+
 func TestGenerateTable_Empty(t *testing.T) {
 	t.Parallel()
 	result := GenerateTable(nil, "All RFCs")
@@ -54,7 +59,7 @@ func TestUpdateReadme_WithMarkers(t *testing.T) {
 	}
 
 	table := "| ID | new data |\n"
-	outcome, err := UpdateReadme(readmePath, "rfc", table)
+	outcome, err := UpdateReadme(readmePath, indexHeader, table)
 	if err != nil {
 		t.Fatalf("UpdateReadme() error: %v", err)
 	}
@@ -98,7 +103,7 @@ func TestUpdateReadme_NoMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	outcome, err := UpdateReadme(readmePath, "rfc", "table content")
+	outcome, err := UpdateReadme(readmePath, indexHeader, "table content")
 	if err != nil {
 		t.Fatalf("UpdateReadme() error: %v", err)
 	}
@@ -121,7 +126,7 @@ func TestUpdateReadme_NewFile(t *testing.T) {
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "subdir", "README.md")
 
-	outcome, err := UpdateReadme(readmePath, "rfc", "| table |\n")
+	outcome, err := UpdateReadme(readmePath, indexHeader, "| table |\n")
 	if err != nil {
 		t.Fatalf("UpdateReadme() error: %v", err)
 	}
@@ -135,6 +140,10 @@ func TestUpdateReadme_NewFile(t *testing.T) {
 	}
 	contentStr := string(content)
 
+	// The caller-provided header is spliced verbatim above the markers.
+	if !strings.HasPrefix(contentStr, indexHeader) {
+		t.Errorf("content does not start with the provided header verbatim:\n%q", contentStr)
+	}
 	if !strings.Contains(contentStr, "<!-- BEGIN DOCZ AUTO-GENERATED -->") {
 		t.Error("missing begin marker")
 	}
@@ -154,7 +163,7 @@ func TestDryRunReadme_WithMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	outcome, err := DryRunReadme(readmePath, "rfc", "| new data |\n")
+	outcome, err := DryRunReadme(readmePath, indexHeader, "| new data |\n")
 	if err != nil {
 		t.Fatalf("DryRunReadme() error: %v", err)
 	}
@@ -183,12 +192,15 @@ func TestDryRunReadme_NoFile(t *testing.T) {
 	dir := t.TempDir()
 	readmePath := filepath.Join(dir, "nonexistent", "README.md")
 
-	outcome, err := DryRunReadme(readmePath, "rfc", "| table |\n")
+	outcome, err := DryRunReadme(readmePath, indexHeader, "| table |\n")
 	if err != nil {
 		t.Fatalf("DryRunReadme() error: %v", err)
 	}
 	if outcome.Action != ActionDryRunCreated {
 		t.Errorf("Action = %v, want ActionDryRunCreated", outcome.Action)
+	}
+	if !strings.HasPrefix(outcome.Body, indexHeader) {
+		t.Errorf("Body does not start with the provided header verbatim:\n%q", outcome.Body)
 	}
 	if !strings.Contains(outcome.Body, "| table |") {
 		t.Error("Body should contain table content")
@@ -208,7 +220,7 @@ func TestDryRunReadme_NoMarkers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	outcome, err := DryRunReadme(readmePath, "rfc", "table")
+	outcome, err := DryRunReadme(readmePath, indexHeader, "table")
 	if err != nil {
 		t.Fatalf("DryRunReadme() error: %v", err)
 	}

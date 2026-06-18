@@ -75,22 +75,6 @@ func TestEmbeddedDocumentTemplate_InvalidType(t *testing.T) {
 	}
 }
 
-func TestEmbeddedIndexHeader(t *testing.T) {
-	t.Parallel()
-	for _, docType := range []string{"rfc", "adr", "design", "impl"} {
-		t.Run(docType, func(t *testing.T) {
-			t.Parallel()
-			content, err := EmbeddedIndexHeader(docType)
-			if err != nil {
-				t.Fatalf("EmbeddedIndexHeader(%q) error: %v", docType, err)
-			}
-			if content == "" {
-				t.Errorf("EmbeddedIndexHeader(%q) returned empty content", docType)
-			}
-		})
-	}
-}
-
 func TestResolve_EmbeddedDefault(t *testing.T) {
 	t.Parallel()
 	content, err := Resolve("rfc", "", "/nonexistent/path")
@@ -125,24 +109,27 @@ func TestResolveIndexHeader_LocalOverride(t *testing.T) {
 	}
 }
 
-// TestResolveIndexHeader_EmbeddedBuiltin is the golden-stability guard: for
-// every built-in type, the resolved header equals the embedded file
-// byte-for-byte (tier 2 is verbatim, so built-in README output never churns).
+// TestResolveIndexHeader_EmbeddedBuiltin is the golden-stability guard and
+// the registry-coupling invariant: for every doc type in the registry, a
+// matching embedded index_<TemplateName>.md must exist and ResolveIndexHeader
+// must return it byte-for-byte (tier 2 is verbatim, so a built-in's curated
+// header is never replaced by the generic fallback and README output never
+// churns). Adding a registry entry without its embedded header fails here.
 func TestResolveIndexHeader_EmbeddedBuiltin(t *testing.T) {
 	t.Parallel()
-	for _, docType := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
-		t.Run(docType, func(t *testing.T) {
+	for _, dt := range config.AllDocTypes() {
+		t.Run(dt.Name, func(t *testing.T) {
 			t.Parallel()
-			want, err := templateFS.ReadFile("templates/index_" + docType + ".md")
+			want, err := templateFS.ReadFile("templates/index_" + dt.TemplateName + ".md")
 			if err != nil {
-				t.Fatalf("reading embedded index_%s.md: %v", docType, err)
+				t.Fatalf("doc type %q has no embedded index_%s.md: %v", dt.Name, dt.TemplateName, err)
 			}
-			got, err := ResolveIndexHeader(docType, "/nonexistent/path", IndexHeaderData{TypeName: docType})
+			got, err := ResolveIndexHeader(dt.Name, "/nonexistent/path", IndexHeaderData{TypeName: dt.Name})
 			if err != nil {
-				t.Fatalf("ResolveIndexHeader(%q) error: %v", docType, err)
+				t.Fatalf("ResolveIndexHeader(%q) error: %v", dt.Name, err)
 			}
 			if got != string(want) {
-				t.Errorf("ResolveIndexHeader(%q) not byte-identical to embedded header", docType)
+				t.Errorf("ResolveIndexHeader(%q) not byte-identical to embedded header", dt.Name)
 			}
 		})
 	}

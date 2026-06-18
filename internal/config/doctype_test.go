@@ -25,21 +25,11 @@ func TestDocTypeRegistry_AllHaveEmbeddedTemplate(t *testing.T) {
 	}
 }
 
-// TestDocTypeRegistry_AllHaveEmbeddedIndexHeader asserts that every doc
-// type has a matching embedded index header template
-// (`index_<TemplateName>.md`) so `docz update` can write the per-type
-// README without bespoke per-type plumbing.
-func TestDocTypeRegistry_AllHaveEmbeddedIndexHeader(t *testing.T) {
-	t.Parallel()
-	for _, dt := range config.AllDocTypes() {
-		if _, err := template.EmbeddedIndexHeader(dt.TemplateName); err != nil {
-			t.Errorf(
-				"doc type %q has no embedded index header index_%s.md: %v",
-				dt.Name, dt.TemplateName, err,
-			)
-		}
-	}
-}
+// The registry<->embedded-index-header coupling invariant (every doc type
+// ships index_<TemplateName>.md) now lives in internal/template's
+// TestResolveIndexHeader_EmbeddedBuiltin, which reads the embedded FS
+// directly and also asserts byte-identity. EmbeddedIndexHeader was removed
+// in IMPL-0012 Phase 2 in favor of template.ResolveIndexHeader.
 
 // TestDocTypeRegistry_NoDuplicateNames guards against two registry
 // entries claiming the same canonical name — a silent footgun where

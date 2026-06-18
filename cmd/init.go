@@ -114,9 +114,12 @@ func (r *Runner) writeIndexReadme(path, typeName string, force bool) error {
 		}
 	}
 
-	header, err := doctemplate.EmbeddedIndexHeader(typeName)
+	header, err := doctemplate.ResolveIndexHeader(typeName, r.Cfg.DocsDir, doctemplate.IndexHeaderData{
+		TypeName:    typeName,
+		PluralLabel: indexLabel(r.Cfg.Types[typeName].PluralLabel, typeName),
+	})
 	if err != nil {
-		return fmt.Errorf("loading index header for %s: %w", typeName, err)
+		return fmt.Errorf("resolving index header for %s: %w", typeName, err)
 	}
 
 	content := header +

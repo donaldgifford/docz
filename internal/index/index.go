@@ -14,7 +14,6 @@ import (
 
 	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/document"
-	doctemplate "github.com/donaldgifford/docz/internal/template"
 )
 
 const (
@@ -29,7 +28,7 @@ type UpdateAction int
 
 const (
 	// ActionCreated indicates UpdateReadme wrote a brand-new README
-	// from the embedded index header.
+	// from the caller-provided index header.
 	ActionCreated UpdateAction = iota + 1
 	// ActionUpdated indicates UpdateReadme found existing markers
 	// and rewrote the auto-generated table between them.
@@ -74,15 +73,16 @@ func GenerateTable(docs []document.DocEntry, heading string) string {
 
 // UpdateReadme updates the auto-generated section of a README file between
 // the DOCZ markers. If the file doesn't exist, it is created with the
-// default index header (Action=ActionCreated). If it exists with markers,
-// the table is rewritten (Action=ActionUpdated). If it exists without
-// markers, nothing is written and Action=ActionNoMarkers — the caller
-// decides how to surface that.
-func UpdateReadme(readmePath, typeName, tableContent string) (UpdateOutcome, error) {
+// provided header (Action=ActionCreated). If it exists with markers, the
+// table is rewritten (Action=ActionUpdated). If it exists without markers,
+// nothing is written and Action=ActionNoMarkers — the caller decides how to
+// surface that. The header is resolved by the caller (see
+// template.ResolveIndexHeader) so this package stays a pure marker-splicer.
+func UpdateReadme(readmePath, header, tableContent string) (UpdateOutcome, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return createNewReadme(readmePath, typeName, tableContent)
+			return createNewReadme(readmePath, header, tableContent)
 		}
 		return UpdateOutcome{}, fmt.Errorf("reading %s: %w", readmePath, err)
 	}
@@ -104,14 +104,10 @@ func UpdateReadme(readmePath, typeName, tableContent string) (UpdateOutcome, err
 // files. Action is one of ActionDryRunCreated, ActionDryRunUpdated, or
 // ActionNoMarkers; Body holds the would-be content for the two dry-run
 // success cases.
-func DryRunReadme(readmePath, typeName, tableContent string) (UpdateOutcome, error) {
+func DryRunReadme(readmePath, header, tableContent string) (UpdateOutcome, error) {
 	data, err := os.ReadFile(readmePath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			header, headerErr := doctemplate.EmbeddedIndexHeader(typeName)
-			if headerErr != nil {
-				return UpdateOutcome{}, headerErr
-			}
 			body := header + beginMarker + "\n" + tableContent + endMarker + "\n"
 			return UpdateOutcome{
 				Action: ActionDryRunCreated,
@@ -149,12 +145,7 @@ func spliceMarkers(content, tableContent string) (string, bool) {
 	return before + beginMarker + "\n" + tableContent + endMarker + afterEnd, true
 }
 
-func createNewReadme(path, typeName, tableContent string) (UpdateOutcome, error) {
-	header, err := doctemplate.EmbeddedIndexHeader(typeName)
-	if err != nil {
-		return UpdateOutcome{}, fmt.Errorf("loading index header for %s: %w", typeName, err)
-	}
-
+func createNewReadme(path, header, tableContent string) (UpdateOutcome, error) {
 	content := header + beginMarker + "\n" + tableContent + endMarker + "\n"
 
 	dir := filepath.Dir(path)

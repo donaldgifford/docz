@@ -3,12 +3,14 @@ package cmd
 import (
 	"fmt"
 	"path/filepath"
+	"unicode"
 
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/document"
 	"github.com/donaldgifford/docz/internal/index"
+	doctemplate "github.com/donaldgifford/docz/internal/template"
 	"github.com/donaldgifford/docz/internal/toc"
 )
 
@@ -81,22 +83,47 @@ func (r *Runner) updateType(typeName string, dryRun bool) error {
 		r.runToCUpdate(typeDir, docs, dryRun)
 	}
 
-	heading := "All " + tc.PluralLabel
+	label := indexLabel(tc.PluralLabel, typeName)
+	heading := "All " + label
 	tableContent := index.GenerateTable(docs, heading)
 
+	header, err := doctemplate.ResolveIndexHeader(typeName, r.Cfg.DocsDir, doctemplate.IndexHeaderData{
+		TypeName:    typeName,
+		PluralLabel: label,
+	})
+	if err != nil {
+		return fmt.Errorf("resolving index header for %s: %w", typeName, err)
+	}
+
 	if dryRun {
-		outcome, err := index.DryRunReadme(readmePath, typeName, tableContent)
+		outcome, err := index.DryRunReadme(readmePath, header, tableContent)
 		if err != nil {
 			return fmt.Errorf("dry-run readme %s: %w", readmePath, err)
 		}
 		return r.printIndexOutcome(outcome)
 	}
 
-	outcome, err := index.UpdateReadme(readmePath, typeName, tableContent)
+	outcome, err := index.UpdateReadme(readmePath, header, tableContent)
 	if err != nil {
 		return fmt.Errorf("updating readme %s: %w", readmePath, err)
 	}
 	return r.printIndexOutcome(outcome)
+}
+
+// indexLabel is the display label for a type's index header and table
+// heading: the configured plural_label, or a Title-cased type name when the
+// type (typically a custom one) declares no plural_label (DESIGN-0006
+// Decision 3).
+func indexLabel(pluralLabel, typeName string) string {
+	if pluralLabel != "" {
+		return pluralLabel
+	}
+	if typeName == "" {
+		return typeName
+	}
+	r := []rune(typeName)
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
 }
 
 // printIndexOutcome translates the typed index.UpdateOutcome into a

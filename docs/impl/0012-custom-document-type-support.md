@@ -178,34 +178,44 @@ header was missing).
 
 #### Tasks
 
-- [ ] Change `index.UpdateReadme(readmePath, header, tableContent string)`
+- [x] Change `index.UpdateReadme(readmePath, header, tableContent string)`
       and `index.DryRunReadme(readmePath, header, tableContent string)` —
       replace the `typeName` parameter with the resolved `header`
-- [ ] `createNewReadme` and the `DryRunReadme` not-exist branch use the
+- [x] `createNewReadme` and the `DryRunReadme` not-exist branch use the
       passed-in `header` directly; remove the `doctemplate` import and the
       `EmbeddedIndexHeader` calls (`index.go:111`, `:153`)
-- [ ] Add a shared `indexLabel(tc config.TypeConfig, typeName string)
+- [x] Add a shared `indexLabel(tc config.TypeConfig, typeName string)
       string` cmd helper: `tc.PluralLabel` when set, else a Title-cased
       `typeName` (Decision 3). Place it where both `update.go` and
       `init.go` can use it
-- [ ] `cmd/update.go` `updateType`: build `IndexHeaderData{TypeName:
+- [x] `cmd/update.go` `updateType`: build `IndexHeaderData{TypeName:
       typeName, PluralLabel: indexLabel(tc, typeName)}`, call
       `doctemplate.ResolveIndexHeader(typeName, r.Cfg.DocsDir, data)`, and
       pass the resulting `header` into `DryRunReadme`/`UpdateReadme`
-- [ ] `cmd/init.go` `writeIndexReadme`: look up `tc := r.Cfg.Types[typeName]`,
+- [x] `cmd/init.go` `writeIndexReadme`: look up `tc := r.Cfg.Types[typeName]`,
       resolve the header via `ResolveIndexHeader`, drop the
       `EmbeddedIndexHeader` call (`init.go:117`)
-- [ ] Remove `EmbeddedIndexHeader` from `internal/template/embed.go`
-- [ ] Update `internal/index` tests for the new signature; add a case
+- [x] Remove `EmbeddedIndexHeader` from `internal/template/embed.go`
+- [x] Update `internal/index` tests for the new signature; add a case
       proving an arbitrary header string is spliced above the table verbatim
-- [ ] Add cmd integration tests (constructed `Runner`, `RepoRoot:
+- [x] Add cmd integration tests (constructed `Runner`, `RepoRoot:
       t.TempDir()`): a repo whose `.docz.yaml` enables `frameworks` →
       `docz update frameworks` creates `docs/frameworks/README.md` with the
       generated header; with a `docs/templates/index_frameworks.md`
       override present, the override wins
-- [ ] Update CLAUDE.md: `internal/index` no longer depends on
+- [x] Update CLAUDE.md: `internal/index` no longer depends on
       `internal/template`; note `ResolveIndexHeader` + `index_default.md` +
       `indexLabel`
+
+> **Implementation note (intentional deviation):** `indexLabel` takes
+> `(pluralLabel, typeName string)` rather than `(tc config.TypeConfig,
+> typeName string)`. golangci-lint's `gocritic hugeParam` flags passing the
+> 120-byte `TypeConfig` by value; the helper only needs the label, so callers
+> pass `tc.PluralLabel`. The registry-coupling test
+> `TestDocTypeRegistry_AllHaveEmbeddedIndexHeader` moved from
+> `internal/config` to `internal/template`'s
+> `TestResolveIndexHeader_EmbeddedBuiltin` (it now reads the embedded FS
+> directly and asserts byte-identity for every registry type).
 
 #### Success Criteria
 
