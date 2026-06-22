@@ -239,22 +239,22 @@ single-`<type>` command (`create`, `update <type>`, `list <type>`,
 
 #### Tasks
 
-- [ ] Add `Aliases []string` to `TypeConfig`
+- [x] Add `Aliases []string` to `TypeConfig`
       (`mapstructure:"aliases" yaml:"aliases,omitempty"`), documented as
       per-type shorthands (Decision 6)
-- [ ] Implement `(c *Config) resolveType(name string) (canonical string,
+- [x] Implement `(c *Config) resolveType(name string) (canonical string,
       ok bool)` with case-insensitive precedence:
   1. canonical name — `c.Types[lower(name)]`
   2. alias — built-in registry alias (`ResolveTypeAlias`) **or** any enabled
      type whose `TypeConfig.Aliases` contains `lower(name)`
   3. `id_prefix` — the type whose `strings.EqualFold(tc.IDPrefix, name)`
-- [ ] Refactor `ValidateType` to delegate to `resolveType`, keeping its
+- [x] Refactor `ValidateType` to delegate to `resolveType`, keeping its
       single `ErrUnknownType` error site. The "valid types" hint lists the
       configured enabled types (via `EnabledTypes()` — see Phase 4) rather
       than only the built-in registry
-- [ ] Honor `TypeConfig.Aliases` for any type, built-in or custom (union
+- [x] Honor `TypeConfig.Aliases` for any type, built-in or custom (union
       with registry aliases) per Decision 6
-- [ ] Write `internal/config` tests (table-driven, `t.Parallel()`):
+- [x] Write `internal/config` tests (table-driven, `t.Parallel()`):
   - prefix resolution: `FW` and `fw` → `frameworks`
   - per-type alias resolution: a declared `aliases: [fw]` → `frameworks`
   - precedence: a custom type with `id_prefix: PLAN` does not shadow the
@@ -262,6 +262,15 @@ single-`<type>` command (`create`, `update <type>`, `list <type>`,
   - built-ins still resolve by name and registry alias (`inv`,
     `implementation`); `RFC`/`rfc` both resolve
   - an unknown token returns `ErrUnknownType`
+
+> **Implementation notes:** `resolveType` resolves by name/alias/prefix
+> regardless of a type's `enabled` flag — matching the pre-existing name-tier
+> behavior, where the `enabled` gate lives in the cmd layer
+> (`Create` rejects a disabled type). The alias and prefix loops range
+> `c.Types` keys only (not value) because adding `Aliases` pushed
+> `TypeConfig` to 144 bytes, over gocritic's `rangeValCopy` threshold; the
+> two pre-existing value-range loops in `config.go` (`Validate`,
+> `fillTypeFieldDefaults`) were converted the same way in this phase.
 
 #### Success Criteria
 

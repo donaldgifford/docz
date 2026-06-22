@@ -32,6 +32,11 @@ type TypeConfig struct {
 	Statuses    []string `mapstructure:"statuses"     yaml:"statuses"`
 	StatusField string   `mapstructure:"status_field" yaml:"status_field"`
 	PluralLabel string   `mapstructure:"plural_label" yaml:"plural_label,omitempty"`
+	// Aliases are optional per-type CLI shorthands (e.g. "fw" for a
+	// "frameworks" type), resolved by resolveType alongside the built-in
+	// registry aliases (DESIGN-0006 Decision 6). Empty for the built-ins,
+	// whose aliases live in the DocType registry.
+	Aliases []string `mapstructure:"aliases" yaml:"aliases,omitempty"`
 }
 
 // IndexConfig holds configuration for index/README generation.
@@ -184,22 +189,65 @@ func DefaultNavTitles() map[string]string {
 // errors.Is to render a custom hint without parsing the wrapped message.
 var ErrUnknownType = errors.New("unknown document type")
 
-// ValidateType canonicalizes and validates a user-supplied type name.
-// It lowercases the input, resolves aliases (e.g. "inv" -> "investigation"),
-// and verifies the result is in the configured Config.Types map. On
-// success it returns the canonical name; on failure it returns a
-// fmt.Errorf-wrapped ErrUnknownType.
+// ValidateType canonicalizes and validates a user-supplied type name via
+// resolveType (canonical name → alias → id_prefix, case-insensitive). On
+// success it returns the canonical Config.Types key; on failure it returns
+// a fmt.Errorf-wrapped ErrUnknownType listing the enabled types.
 //
 // Callers that need the canonical name and want a single error site
 // should use this helper instead of duplicating the lookup-and-format
 // block at each CLI subcommand boundary (IMPL-0006 Phase 7).
 func (c *Config) ValidateType(name string) (string, error) {
-	canonical := ResolveTypeAlias(strings.ToLower(name))
-	if _, ok := c.Types[canonical]; !ok {
-		return "", fmt.Errorf("%w %q (valid types: %s)",
-			ErrUnknownType, canonical, strings.Join(DocTypeNames(), ", "))
+	if canonical, ok := c.resolveType(name); ok {
+		return canonical, nil
 	}
-	return canonical, nil
+	// Quote name verbatim so the user sees what they typed, not the
+	// normalized form resolveType matched against.
+	return "", fmt.Errorf("%w %q (valid types: %s)",
+		ErrUnknownType, name, strings.Join(c.EnabledTypes(), ", "))
+}
+
+// resolveType maps a user-supplied token to a canonical Config.Types key,
+// case-insensitively, in precedence order: canonical name, then alias (a
+// built-in registry alias such as "inv", or a per-type Aliases entry), then
+// id_prefix (so "FW"/"fw" resolve the type whose id_prefix is "FW"). ok is
+// false when nothing matches. Name beats alias beats prefix, so a prefix or
+// alias can never shadow a real type name. Ambiguous aliases/prefixes across
+// types are rejected by Validate (DESIGN-0006 Decision 5), so at most one
+// match is expected at the alias and prefix tiers.
+func (c *Config) resolveType(name string) (string, bool) {
+	lower := strings.ToLower(strings.TrimSpace(name))
+
+	// 1. Canonical name.
+	if _, ok := c.Types[lower]; ok {
+		return lower, true
+	}
+
+	// 2a. Built-in registry alias (e.g. "inv" -> "investigation").
+	if canonical := ResolveTypeAlias(lower); canonical != lower {
+		if _, ok := c.Types[canonical]; ok {
+			return canonical, true
+		}
+	}
+
+	// 2b. Per-type alias declared in .docz.yaml. Range keys only —
+	// TypeConfig is heavy, so a value-copy range trips gocritic.
+	for key := range c.Types {
+		for _, alias := range c.Types[key].Aliases {
+			if strings.EqualFold(alias, lower) {
+				return key, true
+			}
+		}
+	}
+
+	// 3. id_prefix.
+	for key := range c.Types {
+		if prefix := c.Types[key].IDPrefix; prefix != "" && strings.EqualFold(prefix, lower) {
+			return key, true
+		}
+	}
+
+	return "", false
 }
 
 // EnabledTypes returns the list of canonical type names that are both
@@ -272,12 +320,12 @@ func (c *Config) Validate() ([]string, error) {
 		validTypes[t] = true
 	}
 
-	for name, tc := range c.Types {
+	for name := range c.Types {
 		if !validTypes[name] {
 			warnings = append(warnings,
 				fmt.Sprintf("config declares non-built-in type %q (typo?)", name))
 		}
-		if tc.Enabled && len(tc.Statuses) == 0 {
+		if c.Types[name].Enabled && len(c.Types[name].Statuses) == 0 {
 			return warnings, fmt.Errorf("type %q has no statuses defined", name)
 		}
 	}
@@ -346,11 +394,15 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 // no defaults to draw from.
 func fillTypeFieldDefaults(cfg *Config) {
 	defaults := DefaultConfig()
-	for name, tc := range cfg.Types {
+	for name := range cfg.Types {
 		dtc, ok := defaults.Types[name]
 		if !ok {
 			continue
 		}
+		// Explicit local copy (not a range-value copy) so we can mutate
+		// via reflect and write back; TypeConfig is heavy enough that a
+		// range-value copy trips gocritic's rangeValCopy.
+		tc := cfg.Types[name]
 		dstV := reflect.ValueOf(&tc).Elem()
 		srcV := reflect.ValueOf(dtc)
 		for i := 0; i < dstV.NumField(); i++ {

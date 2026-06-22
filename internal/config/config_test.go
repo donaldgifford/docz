@@ -483,6 +483,90 @@ func TestEnabledTypes(t *testing.T) {
 	}
 }
 
+// configWithFrameworks returns a DefaultConfig plus a custom "frameworks"
+// type (id_prefix FW, per-type aliases) and a second custom type whose
+// alias collides with the built-in "rfc" name — used to prove name beats
+// alias/prefix in resolveType.
+func configWithFrameworks() Config {
+	cfg := DefaultConfig()
+	cfg.Types["frameworks"] = TypeConfig{
+		Enabled:     true,
+		Dir:         "frameworks",
+		IDPrefix:    "FW",
+		IDWidth:     4,
+		Statuses:    []string{"Draft"},
+		StatusField: "status",
+		PluralLabel: "Frameworks",
+		Aliases:     []string{"fw-alias", "Frmwk"},
+	}
+	cfg.Types["custom"] = TypeConfig{
+		Enabled:     true,
+		Dir:         "custom",
+		IDPrefix:    "CUS",
+		IDWidth:     4,
+		Statuses:    []string{"Draft"},
+		StatusField: "status",
+		Aliases:     []string{"rfc"}, // must NOT shadow the built-in rfc
+	}
+	return cfg
+}
+
+// TestResolveType covers the IMPL-0012 Phase 3 precedence: canonical name,
+// then alias (registry or per-type), then id_prefix — case-insensitive,
+// with name always beating a colliding alias/prefix.
+func TestResolveType(t *testing.T) {
+	t.Parallel()
+	cfg := configWithFrameworks()
+
+	tests := []struct {
+		name     string
+		input    string
+		wantName string
+		wantOK   bool
+	}{
+		{"custom canonical", "frameworks", "frameworks", true},
+		{"prefix uppercase", "FW", "frameworks", true},
+		{"prefix lowercase", "fw", "frameworks", true},
+		{"per-type alias", "fw-alias", "frameworks", true},
+		{"per-type alias mixed case", "FRMWK", "frameworks", true},
+		{"built-in canonical", "rfc", "rfc", true},
+		{"built-in registry alias", "inv", "investigation", true},
+		{"built-in uppercase name", "RFC", "rfc", true},
+		{"name beats colliding alias", "rfc", "rfc", true},
+		{"unknown", "nope", "", false},
+		{"empty", "", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := cfg.resolveType(tt.input)
+			if ok != tt.wantOK {
+				t.Fatalf("resolveType(%q) ok = %v, want %v", tt.input, ok, tt.wantOK)
+			}
+			if got != tt.wantName {
+				t.Errorf("resolveType(%q) = %q, want %q", tt.input, got, tt.wantName)
+			}
+		})
+	}
+}
+
+// TestValidateType_CustomByPrefix confirms the cmd-facing ValidateType
+// resolves a custom type by its id_prefix and per-type alias (the
+// docz create FW / docz create fw-alias path).
+func TestValidateType_CustomByPrefix(t *testing.T) {
+	t.Parallel()
+	cfg := configWithFrameworks()
+	for _, input := range []string{"FW", "fw", "frameworks", "fw-alias"} {
+		got, err := cfg.ValidateType(input)
+		if err != nil {
+			t.Fatalf("ValidateType(%q) unexpected error: %v", input, err)
+		}
+		if got != "frameworks" {
+			t.Errorf("ValidateType(%q) = %q, want %q", input, got, "frameworks")
+		}
+	}
+}
+
 func TestValidate_UnknownType(t *testing.T) {
 	t.Parallel()
 	cfg := DefaultConfig()
