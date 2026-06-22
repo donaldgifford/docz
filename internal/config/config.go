@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -250,22 +251,32 @@ func (c *Config) resolveType(name string) (string, bool) {
 	return "", false
 }
 
-// EnabledTypes returns the list of canonical type names that are both
-// present in c.Types and have Enabled == true, in DocType-registry
-// declaration order. Iterating the registry instead of c.Types gives
-// callers a deterministic order without a separate sort step.
+// EnabledTypes returns the canonical names of every enabled type in c.Types:
+// the built-ins first in DocType-registry declaration order, then any enabled
+// custom types (those not in the registry) sorted alphabetically. The two-part
+// order is deterministic — built-ins keep their familiar order and custom
+// types get a stable sort, since Go map iteration is unordered (IMPL-0012
+// Phase 4, Decision 1). Including custom types here is what lets no-argument
+// commands (docz update / init / list / wiki) scaffold and iterate them.
 func (c *Config) EnabledTypes() []string {
 	enabled := make([]string, 0, len(c.Types))
+	builtin := make(map[string]bool, len(DocTypeNames()))
 	for _, name := range DocTypeNames() {
-		tc, ok := c.Types[name]
-		if !ok {
-			continue
-		}
-		if tc.Enabled {
+		builtin[name] = true
+		if c.Types[name].Enabled {
 			enabled = append(enabled, name)
 		}
 	}
-	return enabled
+
+	custom := make([]string, 0, len(c.Types))
+	for name := range c.Types {
+		if !builtin[name] && c.Types[name].Enabled {
+			custom = append(custom, name)
+		}
+	}
+	slices.Sort(custom)
+
+	return append(enabled, custom...)
 }
 
 // typeAliases maps short or alternate names to their canonical type name.
@@ -330,7 +341,72 @@ func (c *Config) Validate() ([]string, error) {
 		}
 	}
 
+	if err := c.validateResolution(); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
+}
+
+// validateResolution rejects configs where two enabled types could resolve
+// from the same token, which would make resolveType ambiguous (and Go's
+// unordered map iteration nondeterministic). The collision domain is the
+// union, over enabled types, of {canonical name, built-in registry alias,
+// per-type alias, id_prefix}, matched case-insensitively (IMPL-0012 Phase 4,
+// DESIGN-0006 Decision 5). A token claimed twice by the same type (e.g. a
+// built-in whose name and id_prefix lower-case to the same value) is fine;
+// only cross-type duplicates are errors.
+func (c *Config) validateResolution() error {
+	seen := make(map[string]string) // resolution token -> owning type key
+	claim := func(token, owner, kind string) error {
+		t := strings.ToLower(strings.TrimSpace(token))
+		if t == "" {
+			return nil
+		}
+		if prev, ok := seen[t]; ok && prev != owner {
+			return fmt.Errorf(
+				"type %q %s %q collides with type %q: resolution would be ambiguous",
+				owner, kind, token, prev)
+		}
+		seen[t] = owner
+		return nil
+	}
+
+	enabledList := c.EnabledTypes()
+	enabled := make(map[string]bool, len(enabledList))
+	for _, name := range enabledList {
+		enabled[name] = true
+	}
+
+	for _, name := range enabledList {
+		if err := claim(name, name, "name"); err != nil {
+			return err
+		}
+		for _, alias := range c.Types[name].Aliases {
+			if err := claim(alias, name, "alias"); err != nil {
+				return err
+			}
+		}
+		if err := claim(c.Types[name].IDPrefix, name, "id_prefix"); err != nil {
+			return err
+		}
+	}
+
+	// Built-in registry aliases (e.g. "inv", "implementation") for enabled
+	// built-ins — resolveType consults these in tier 2a, so a custom alias
+	// or prefix that shadows one is the same class of ambiguity.
+	for _, dt := range allDocTypes {
+		if !enabled[dt.Name] {
+			continue
+		}
+		for _, alias := range dt.Aliases {
+			if err := claim(alias, dt.Name, "registry alias"); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // mergeConfigFile reads a YAML config file and merges it into v. A missing

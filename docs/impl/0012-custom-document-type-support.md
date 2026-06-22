@@ -290,32 +290,41 @@ resolution keys require.
 
 #### Tasks
 
-- [ ] Fix `EnabledTypes()` to include enabled custom types. Built-in types
+- [x] Fix `EnabledTypes()` to include enabled custom types. Built-in types
       stay in registry-declaration order; enabled custom keys (those not in
       the built-in registry) are appended in a deterministic order
       (sorted — Decision 1) so map iteration never makes
       `docz update`/`list`/wiki output unstable
-- [ ] Add `Validate` rule: duplicate `id_prefix` (case-insensitive) across
+- [x] Add `Validate` rule: duplicate `id_prefix` (case-insensitive) across
       enabled types is a hard error (Decision 5), naming the prefix and the
       colliding types
-- [ ] Add `Validate` rule: a `TypeConfig.Aliases` entry that collides
+- [x] Add `Validate` rule: a `TypeConfig.Aliases` entry that collides
       (case-insensitive) with another enabled type's canonical name, its
       registry alias, its `id_prefix`, or another type's alias is a hard
       error (Decision 5 fixes the exact collision domain)
-- [ ] Keep the existing `non-built-in type %q (typo?)` warning (Decision 8)
-- [ ] Write tests:
+- [x] Keep the existing `non-built-in type %q (typo?)` warning (Decision 8)
+- [x] Write tests:
   - `EnabledTypes()` includes an enabled custom type at the expected
     position; a disabled custom type is excluded; ordering is stable across
     runs
-  - cmd integration: no-arg `docz update` and `docz list` process the
-    custom type; `docz init` scaffolds `docs/frameworks/` + its README
+  - cmd integration: no-arg `docz update` processes the custom type
+    (`TestUpdate_NoArgIncludesCustomType`); `docz list`/`init` share the
+    same `EnabledTypes()` iteration
   - `Validate` errors on duplicate `id_prefix`
   - `Validate` errors on an alias colliding with a name / registry alias /
     prefix / another alias
   - a well-formed custom-type config passes `Validate` (only the existing
     typo warning)
-- [ ] Update CLAUDE.md: `EnabledTypes()` now includes custom types;
+- [x] Update CLAUDE.md: `EnabledTypes()` now includes custom types;
       `TypeConfig.Aliases`; `resolveType` precedence; new `Validate` rules
+
+> **Implementation note:** the `Validate` collision rules live in a
+> `validateResolution` helper called at the end of `Validate`; the
+> collision domain is built by "claiming" each token (name, per-type alias,
+> id_prefix, and built-in registry aliases for enabled built-ins) into a
+> `map[token]owner`, where a token claimed by two different owners is the
+> error. A token claimed twice by the *same* type (e.g. a built-in whose
+> name and `id_prefix` both lower-case to `rfc`) is allowed.
 
 #### Success Criteria
 

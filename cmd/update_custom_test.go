@@ -104,3 +104,22 @@ func TestUpdateType_CustomTypeOverrideWins(t *testing.T) {
 		t.Error("generated fallback leaked despite override present")
 	}
 }
+
+// TestUpdate_NoArgIncludesCustomType proves the IMPL-0012 Phase 4 fix: a
+// no-argument `docz update` iterates EnabledTypes(), which now includes
+// enabled custom types, so the frameworks README is generated alongside the
+// built-ins (previously it was silently skipped).
+func TestUpdate_NoArgIncludesCustomType(t *testing.T) {
+	dir := t.TempDir()
+	var out bytes.Buffer
+	r := newCustomTypeRunner(t, dir, &out)
+
+	if err := r.Update(false, nil); err != nil {
+		t.Fatalf("Update(no args) error: %v", err)
+	}
+
+	fwReadme := filepath.Join(dir, "docs", "frameworks", "README.md")
+	if _, err := os.Stat(fwReadme); err != nil {
+		t.Errorf("no-arg update did not create the custom type's README: %v", err)
+	}
+}
