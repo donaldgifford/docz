@@ -342,30 +342,41 @@ resolution keys require.
 
 #### Tasks
 
-- [ ] Full `make ci` green (lint + test + build + license-check)
-- [ ] `go test -race -shuffle=on -count=3 ./...` green
-- [ ] End-to-end smoke in a scratch repo (`/tmp`): a `.docz.yaml` enabling a
+- [x] Full `make ci` green (lint + test + build + license-check)
+- [x] `go test -race -shuffle=on -count=3 ./...` green
+- [x] End-to-end smoke in a scratch repo (`/tmp`): a `.docz.yaml` enabling a
       `frameworks` type with `id_prefix: FW`, `aliases: [fw]`, and a
       `docs/templates/frameworks.md` body template. Verify, in order:
-  - `docz create FW "First Framework"` → `docs/frameworks/FW-0001-first-framework.md`
-    from the body template, and `docs/frameworks/README.md` written with a
-    header
+  - `docz create FW "First Framework"` → `docs/frameworks/0001-first-framework.md`
+    with frontmatter `id: FW-0001` from the body template, and
+    `docs/frameworks/README.md` written with a header
   - `docz create fw "Second"` resolves the same type
   - `docz list fw` and no-arg `docz update` include the type
   - `docz status set FW FW-0001 <status>` mutates one frontmatter line
-  - a `docs/templates/index_frameworks.md` override is honored on the next
-    `docz update`
-- [ ] Confirm built-in goldens unchanged: `docz update` on this repo shows
+  - a `docs/templates/index_frameworks.md` override is honored when the
+    README is (re)generated
+- [x] Confirm built-in goldens unchanged: `docz update` on this repo shows
       no diff to the six built-in `README.md` files
-- [ ] CLAUDE.md fully reflects the final architecture (consolidate the
+- [x] CLAUDE.md fully reflects the final architecture (consolidate the
       per-phase edits)
-- [ ] Run `docz update` to refresh the impl/design index READMEs and nav
+- [x] Run `docz update` to refresh the impl/design index READMEs and nav
 - [ ] Flip DESIGN-0006 frontmatter status `Approved` → `Implemented` after
       merge to main *(post-merge)*
 - [ ] Flip this doc's frontmatter status `Draft` → `Completed` after merge
       to main *(post-merge)*
-- [ ] Open the PR with the `minor` release label (new user-facing feature,
+- [x] Open the PR with the `minor` release label (new user-facing feature,
       additive) — single PR per Decision 8
+
+> **Smoke-test findings (verified 2026-06-22):** created filenames follow
+> the existing `<number>-<slug>.md` convention (`0001-first-framework.md`),
+> not a prefix-bearing name — the `id_prefix` lands in the frontmatter `id:`
+> (`FW-0001`), matching the built-in types. The index `index_<type>.md`
+> override is applied by `internal/index` only when the README is created
+> (no markers yet); on an existing README, `UpdateReadme` is a pure
+> marker-splicer and preserves the user-editable header prose above the
+> markers — so an override added after first generation takes effect on the
+> next regeneration (e.g. after the README is removed), which is the
+> intended marker semantics, not a regression.
 
 #### Success Criteria
 
