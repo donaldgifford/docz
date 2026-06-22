@@ -412,22 +412,22 @@ resolution keys require.
 
 ## Testing Plan
 
-- [ ] `internal/template` — tier-1 verbatim (incl. literal `{{`), tier-2
+- [x] `internal/template` — tier-1 verbatim (incl. literal `{{`), tier-2
       byte-equality for all six built-ins, tier-3 render with and without a
       `PluralLabel`
-- [ ] `internal/index` — new `header`-string signature; arbitrary header
+- [x] `internal/index` — new `header`-string signature; arbitrary header
       spliced verbatim; existing marker/no-marker/dry-run cases preserved
-- [ ] `internal/config` — `resolveType` precedence matrix (name / registry
+- [x] `internal/config` — `resolveType` precedence matrix (name / registry
       alias / per-type alias / prefix / unknown); `EnabledTypes` inclusion +
       stable ordering; `Validate` duplicate-prefix and alias-collision errors
-- [ ] `cmd` integration (constructed `Runner`, `RepoRoot: t.TempDir()`) —
+- [x] `cmd` integration (constructed `Runner`, `RepoRoot: t.TempDir()`) —
       custom type through `create` (by prefix and alias), no-arg `update`,
       `list`, `init`, `status set`; index override precedence
-- [ ] Golden stability — `go test ./... -update` changes **no** built-in
+- [x] Golden stability — `go test ./... -update` changes **no** built-in
       golden files
-- [ ] `go test -race -shuffle=on -count=3 ./...` green at the end of every
+- [x] `go test -race -shuffle=on -count=3 ./...` green at the end of every
       phase
-- [ ] One end-to-end scratch-repo smoke captured in Phase 5
+- [x] One end-to-end scratch-repo smoke captured in Phase 5
 
 ## Decisions
 
