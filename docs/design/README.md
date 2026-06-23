@@ -37,4 +37,5 @@ docz create design "Your Design Title"
 | DESIGN-0003 | Table of Contents Generation | Draft | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
 | DESIGN-0004 | Runner Pattern and DocType Registry | Approved | 2026-05-27 | Donald Gifford | [0004-runner-pattern-and-doctype-registry.md](0004-runner-pattern-and-doctype-registry.md) |
 | DESIGN-0005 | Status Set CLI Primitive | Implemented | 2026-05-30 | Donald Gifford | [0005-status-set-cli-primitive.md](0005-status-set-cli-primitive.md) |
+| DESIGN-0006 | Custom Document Type Support | Approved | 2026-06-17 | Donald Gifford | [0006-custom-document-type-support.md](0006-custom-document-type-support.md) |
 <!-- END DOCZ AUTO-GENERATED -->

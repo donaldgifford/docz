@@ -35,6 +35,9 @@ var createCmd = &cobra.Command{
 
 ` + config.TypesHelp() + `
 
+Custom types defined in .docz.yaml can be created the same way — by their
+canonical name, their id_prefix, or any configured alias.
+
 Examples:
   docz create rfc "API Rate Limiting Strategy"
   docz create adr "Use PostgreSQL for Primary Storage"

@@ -483,6 +483,90 @@ func TestEnabledTypes(t *testing.T) {
 	}
 }
 
+// configWithFrameworks returns a DefaultConfig plus a custom "frameworks"
+// type (id_prefix FW, per-type aliases) and a second custom type whose
+// alias collides with the built-in "rfc" name — used to prove name beats
+// alias/prefix in resolveType.
+func configWithFrameworks() Config {
+	cfg := DefaultConfig()
+	cfg.Types["frameworks"] = TypeConfig{
+		Enabled:     true,
+		Dir:         "frameworks",
+		IDPrefix:    "FW",
+		IDWidth:     4,
+		Statuses:    []string{"Draft"},
+		StatusField: "status",
+		PluralLabel: "Frameworks",
+		Aliases:     []string{"fw-alias", "Frmwk"},
+	}
+	cfg.Types["custom"] = TypeConfig{
+		Enabled:     true,
+		Dir:         "custom",
+		IDPrefix:    "CUS",
+		IDWidth:     4,
+		Statuses:    []string{"Draft"},
+		StatusField: "status",
+		Aliases:     []string{"rfc"}, // must NOT shadow the built-in rfc
+	}
+	return cfg
+}
+
+// TestResolveType covers the IMPL-0012 Phase 3 precedence: canonical name,
+// then alias (registry or per-type), then id_prefix — case-insensitive,
+// with name always beating a colliding alias/prefix.
+func TestResolveType(t *testing.T) {
+	t.Parallel()
+	cfg := configWithFrameworks()
+
+	tests := []struct {
+		name     string
+		input    string
+		wantName string
+		wantOK   bool
+	}{
+		{"custom canonical", "frameworks", "frameworks", true},
+		{"prefix uppercase", "FW", "frameworks", true},
+		{"prefix lowercase", "fw", "frameworks", true},
+		{"per-type alias", "fw-alias", "frameworks", true},
+		{"per-type alias mixed case", "FRMWK", "frameworks", true},
+		{"built-in canonical", "rfc", "rfc", true},
+		{"built-in registry alias", "inv", "investigation", true},
+		{"built-in uppercase name", "RFC", "rfc", true},
+		{"name beats colliding alias", "rfc", "rfc", true},
+		{"unknown", "nope", "", false},
+		{"empty", "", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, ok := cfg.resolveType(tt.input)
+			if ok != tt.wantOK {
+				t.Fatalf("resolveType(%q) ok = %v, want %v", tt.input, ok, tt.wantOK)
+			}
+			if got != tt.wantName {
+				t.Errorf("resolveType(%q) = %q, want %q", tt.input, got, tt.wantName)
+			}
+		})
+	}
+}
+
+// TestValidateType_CustomByPrefix confirms the cmd-facing ValidateType
+// resolves a custom type by its id_prefix and per-type alias (the
+// docz create FW / docz create fw-alias path).
+func TestValidateType_CustomByPrefix(t *testing.T) {
+	t.Parallel()
+	cfg := configWithFrameworks()
+	for _, input := range []string{"FW", "fw", "frameworks", "fw-alias"} {
+		got, err := cfg.ValidateType(input)
+		if err != nil {
+			t.Fatalf("ValidateType(%q) unexpected error: %v", input, err)
+		}
+		if got != "frameworks" {
+			t.Errorf("ValidateType(%q) = %q, want %q", input, got, "frameworks")
+		}
+	}
+}
+
 func TestValidate_UnknownType(t *testing.T) {
 	t.Parallel()
 	cfg := DefaultConfig()
@@ -494,5 +578,113 @@ func TestValidate_UnknownType(t *testing.T) {
 	}
 	if len(warnings) == 0 {
 		t.Error("expected warning for unknown type, got none")
+	}
+}
+
+// customType is a small constructor for a well-formed enabled custom type
+// in these Phase 4 tests.
+func customType(dir, prefix string, aliases ...string) TypeConfig {
+	return TypeConfig{
+		Enabled:     true,
+		Dir:         dir,
+		IDPrefix:    prefix,
+		IDWidth:     4,
+		Statuses:    []string{"Draft"},
+		StatusField: "status",
+		Aliases:     aliases,
+	}
+}
+
+// TestEnabledTypes_IncludesCustom proves custom types appear in EnabledTypes
+// after the built-ins, sorted alphabetically, and disabled customs are
+// excluded (IMPL-0012 Phase 4, Decision 1).
+func TestEnabledTypes_IncludesCustom(t *testing.T) {
+	t.Parallel()
+	cfg := DefaultConfig()
+	cfg.Types["frameworks"] = customType("frameworks", "FW")
+	cfg.Types["adapters"] = customType("adapters", "AD")
+	disabled := customType("x", "XX")
+	disabled.Enabled = false
+	cfg.Types["disabledcustom"] = disabled
+
+	got := cfg.EnabledTypes()
+	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation", "adapters", "frameworks"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("EnabledTypes() = %v, want %v (built-ins registry-order, then custom sorted)", got, want)
+	}
+}
+
+// TestValidate_DuplicateIDPrefix rejects two enabled types sharing a prefix.
+func TestValidate_DuplicateIDPrefix(t *testing.T) {
+	t.Parallel()
+	cfg := DefaultConfig()
+	// "RFC" collides with the built-in rfc type's name/prefix.
+	cfg.Types["frameworks"] = customType("frameworks", "RFC")
+
+	_, err := cfg.Validate()
+	if err == nil {
+		t.Fatal("Validate() = nil, want a duplicate id_prefix collision error")
+	}
+	if !strings.Contains(err.Error(), "collides") {
+		t.Errorf("error = %v, want a collision message", err)
+	}
+}
+
+// TestValidate_AliasCollision rejects a per-type alias that shadows another
+// type's name, registry alias, or prefix.
+func TestValidate_AliasCollision(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		alias string
+	}{
+		{"alias vs built-in name", "rfc"},
+		{"alias vs registry alias", "inv"},
+		{"alias vs built-in name+prefix", "adr"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := DefaultConfig()
+			cfg.Types["frameworks"] = customType("frameworks", "FW", tt.alias)
+			if _, err := cfg.Validate(); err == nil {
+				t.Errorf("Validate() = nil, want collision error for alias %q", tt.alias)
+			}
+		})
+	}
+}
+
+// TestValidate_AliasCollidesWithOtherCustomPrefix covers a custom-vs-custom
+// collision: one type's alias equals another's id_prefix.
+func TestValidate_AliasCollidesWithOtherCustomPrefix(t *testing.T) {
+	t.Parallel()
+	cfg := DefaultConfig()
+	cfg.Types["frameworks"] = customType("frameworks", "FW")
+	cfg.Types["adapters"] = customType("adapters", "AD", "fw") // "fw" == frameworks prefix
+
+	if _, err := cfg.Validate(); err == nil {
+		t.Fatal("Validate() = nil, want collision between adapters alias 'fw' and frameworks prefix 'FW'")
+	}
+}
+
+// TestValidate_ValidCustomConfigPasses confirms a well-formed custom type
+// validates with only the non-built-in typo warning (Decision 8).
+func TestValidate_ValidCustomConfigPasses(t *testing.T) {
+	t.Parallel()
+	cfg := DefaultConfig()
+	cfg.Types["frameworks"] = customType("frameworks", "FW", "fw", "framework")
+
+	warnings, err := cfg.Validate()
+	if err != nil {
+		t.Fatalf("Validate() error = %v, want nil for a well-formed custom config", err)
+	}
+	found := false
+	for _, w := range warnings {
+		if strings.Contains(w, "frameworks") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected the non-built-in type warning for 'frameworks', got %v", warnings)
 	}
 }

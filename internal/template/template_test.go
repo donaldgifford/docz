@@ -3,6 +3,7 @@ package template
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/donaldgifford/docz/internal/config"
@@ -74,22 +75,6 @@ func TestEmbeddedDocumentTemplate_InvalidType(t *testing.T) {
 	}
 }
 
-func TestEmbeddedIndexHeader(t *testing.T) {
-	t.Parallel()
-	for _, docType := range []string{"rfc", "adr", "design", "impl"} {
-		t.Run(docType, func(t *testing.T) {
-			t.Parallel()
-			content, err := EmbeddedIndexHeader(docType)
-			if err != nil {
-				t.Fatalf("EmbeddedIndexHeader(%q) error: %v", docType, err)
-			}
-			if content == "" {
-				t.Errorf("EmbeddedIndexHeader(%q) returned empty content", docType)
-			}
-		})
-	}
-}
-
 func TestResolve_EmbeddedDefault(t *testing.T) {
 	t.Parallel()
 	content, err := Resolve("rfc", "", "/nonexistent/path")
@@ -98,6 +83,92 @@ func TestResolve_EmbeddedDefault(t *testing.T) {
 	}
 	if content == "" {
 		t.Error("Resolve() returned empty content for embedded default")
+	}
+}
+
+// TestResolveIndexHeader_LocalOverride proves tier 1 wins and is returned
+// byte-for-byte, including a literal "{{" that must NOT be rendered.
+func TestResolveIndexHeader_LocalOverride(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	tmplDir := filepath.Join(dir, config.TemplatesDir)
+	if err := os.MkdirAll(tmplDir, 0o755); err != nil {
+		t.Fatalf("creating templates dir: %v", err)
+	}
+	override := "# Custom Header {{ raw }}\n\nVerbatim override.\n\n"
+	if err := os.WriteFile(filepath.Join(tmplDir, "index_frameworks.md"), []byte(override), 0o644); err != nil {
+		t.Fatalf("writing override: %v", err)
+	}
+
+	got, err := ResolveIndexHeader("frameworks", dir, IndexHeaderData{TypeName: "frameworks", PluralLabel: "Frameworks"})
+	if err != nil {
+		t.Fatalf("ResolveIndexHeader() error: %v", err)
+	}
+	if got != override {
+		t.Errorf("ResolveIndexHeader() = %q, want verbatim override %q", got, override)
+	}
+}
+
+// TestResolveIndexHeader_EmbeddedBuiltin is the golden-stability guard and
+// the registry-coupling invariant: for every doc type in the registry, a
+// matching embedded index_<TemplateName>.md must exist and ResolveIndexHeader
+// must return it byte-for-byte (tier 2 is verbatim, so a built-in's curated
+// header is never replaced by the generic fallback and README output never
+// churns). Adding a registry entry without its embedded header fails here.
+func TestResolveIndexHeader_EmbeddedBuiltin(t *testing.T) {
+	t.Parallel()
+	for _, dt := range config.AllDocTypes() {
+		t.Run(dt.Name, func(t *testing.T) {
+			t.Parallel()
+			want, err := templateFS.ReadFile("templates/index_" + dt.TemplateName + ".md")
+			if err != nil {
+				t.Fatalf("doc type %q has no embedded index_%s.md: %v", dt.Name, dt.TemplateName, err)
+			}
+			got, err := ResolveIndexHeader(dt.Name, "/nonexistent/path", IndexHeaderData{TypeName: dt.Name})
+			if err != nil {
+				t.Fatalf("ResolveIndexHeader(%q) error: %v", dt.Name, err)
+			}
+			if got != string(want) {
+				t.Errorf("ResolveIndexHeader(%q) not byte-identical to embedded header", dt.Name)
+			}
+		})
+	}
+}
+
+// TestResolveIndexHeader_GenericFallback covers tier 3 — a custom type with
+// no override and no embedded header renders index_default.md with its label.
+func TestResolveIndexHeader_GenericFallback(t *testing.T) {
+	t.Parallel()
+	got, err := ResolveIndexHeader(
+		"frameworks", "/nonexistent/path",
+		IndexHeaderData{TypeName: "frameworks", PluralLabel: "Frameworks"},
+	)
+	if err != nil {
+		t.Fatalf("ResolveIndexHeader() error: %v", err)
+	}
+	for _, want := range []string{"Frameworks", "docz create frameworks"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("ResolveIndexHeader() generic fallback = %q, want it to contain %q", got, want)
+		}
+	}
+}
+
+// TestResolveIndexHeader_GenericFallbackEmptyLabel proves an empty
+// PluralLabel still yields a non-empty, well-formed header.
+func TestResolveIndexHeader_GenericFallbackEmptyLabel(t *testing.T) {
+	t.Parallel()
+	got, err := ResolveIndexHeader(
+		"frameworks", "/nonexistent/path",
+		IndexHeaderData{TypeName: "frameworks"},
+	)
+	if err != nil {
+		t.Fatalf("ResolveIndexHeader() error: %v", err)
+	}
+	if got == "" {
+		t.Fatal("ResolveIndexHeader() with empty label returned empty content")
+	}
+	if !strings.Contains(got, "docz create frameworks") {
+		t.Errorf("ResolveIndexHeader() = %q, want the create example", got)
 	}
 }
 

@@ -10,6 +10,13 @@
 #   entirely to keep all six built-in types (rfc, adr, design, impl, plan,
 #   investigation).
 #
+# Custom types:
+#   Add your own type by giving it a unique `id_prefix` and `dir`. It can then
+#   be created/listed by its name, its `id_prefix`, or any `aliases:` entry
+#   (e.g. `docz create frameworks`, `docz create FW`, `docz create fw`).
+#   A duplicate `id_prefix` or an alias that collides with another type is
+#   rejected at startup. See the commented example below the built-in types.
+#
 # Documentation: https://github.com/donaldgifford/docz
 
 docs_dir: {{ .DocsDir }}
@@ -29,6 +36,21 @@ types:
     status_field: "{{ $tc.StatusField }}"
     plural_label: "{{ $tc.PluralLabel }}"
 {{ end }}
+  # Example custom type (uncomment and edit):
+  # frameworks:
+  #   enabled: true
+  #   dir: frameworks
+  #   template: ""              # defaults to docs/templates/frameworks.md, else embedded
+  #   id_prefix: "FW"           # must be unique across all types
+  #   id_width: 4
+  #   aliases: ["fw"]           # optional CLI shorthands
+  #   statuses:
+  #     - Draft
+  #     - Active
+  #     - Deprecated
+  #   status_field: "status"
+  #   plural_label: "Frameworks"
+
 index:
   auto_update: {{ .Index.AutoUpdate }}
   preserve_header: {{ .Index.PreserveHeader }}

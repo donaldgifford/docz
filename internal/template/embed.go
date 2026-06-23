@@ -24,16 +24,6 @@ func EmbeddedDocumentTemplate(docType config.DocType) (string, error) {
 	return string(data), nil
 }
 
-// EmbeddedIndexHeader returns the embedded default index header template for
-// the given document type. Valid types: rfc, adr, design, impl.
-func EmbeddedIndexHeader(docType string) (string, error) {
-	data, err := templateFS.ReadFile("templates/index_" + docType + ".md")
-	if err != nil {
-		return "", fmt.Errorf("no embedded index header for type %q: %w", docType, err)
-	}
-	return string(data), nil
-}
-
 // EmbeddedWikiIndex returns the embedded default wiki index template
 // used to generate docs/index.md.
 func EmbeddedWikiIndex() (string, error) {
