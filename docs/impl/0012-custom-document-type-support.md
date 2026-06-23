@@ -1,7 +1,7 @@
 ---
 id: IMPL-0012
 title: "Custom Document Type Support"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-06-18
 ---
@@ -9,7 +9,7 @@ created: 2026-06-18
 
 # IMPL 0012: Custom Document Type Support
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-06-18
 
@@ -364,9 +364,9 @@ resolution keys require.
       Features bullet + index-header override note; generated `.docz.yaml`
       `types:` comment block and commented example custom type; `docz create`
       `--help` note that custom types resolve by name / alias / `id_prefix`
-- [ ] Flip DESIGN-0006 frontmatter status `Approved` → `Implemented` after
+- [x] Flip DESIGN-0006 frontmatter status `Approved` → `Implemented` after
       merge to main *(post-merge)*
-- [ ] Flip this doc's frontmatter status `Draft` → `Completed` after merge
+- [x] Flip this doc's frontmatter status `Draft` → `Completed` after merge
       to main *(post-merge)*
 - [x] Open the PR with the `minor` release label (new user-facing feature,
       additive) — single PR per Decision 8
