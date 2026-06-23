@@ -360,6 +360,10 @@ resolution keys require.
 - [x] CLAUDE.md fully reflects the final architecture (consolidate the
       per-phase edits)
 - [x] Run `docz update` to refresh the impl/design index READMEs and nav
+- [x] Update user-facing docs: README "Custom Document Types" section +
+      Features bullet + index-header override note; generated `.docz.yaml`
+      `types:` comment block and commented example custom type; `docz create`
+      `--help` note that custom types resolve by name / alias / `id_prefix`
 - [ ] Flip DESIGN-0006 frontmatter status `Approved` → `Implemented` after
       merge to main *(post-merge)*
 - [ ] Flip this doc's frontmatter status `Draft` → `Completed` after merge

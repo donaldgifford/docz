@@ -8,6 +8,7 @@ README index tables up to date.
 ## Features
 
 - **Six built-in document types:** RFC, ADR, DESIGN, IMPL, PLAN, INV
+- **Custom document types:** define your own types in `.docz.yaml` — own prefix, statuses, aliases, and templates — invoked by name, alias, or `id_prefix`
 - **Auto-incremented IDs:** documents are numbered sequentially within their type directory
 - **YAML frontmatter:** every document carries structured metadata (id, title, status, author, created)
 - **Auto-generated index tables:** README files in each type directory are updated automatically after each `create`
@@ -213,6 +214,62 @@ docs/investigation/
 └── 0001-can-pgvector-handle-concurrent-writes.md
 ```
 
+## Custom Document Types
+
+Beyond the six built-ins, you can define your own document types entirely in
+`.docz.yaml` — no rebuild required. Add an entry under `types:` with a unique
+`id_prefix` and a directory:
+
+```yaml
+types:
+  # ...built-in types...
+  frameworks:
+    enabled: true
+    dir: frameworks
+    id_prefix: FW
+    id_width: 4
+    aliases: [fw]            # optional CLI shorthands
+    statuses:
+      - Draft
+      - Active
+      - Deprecated
+    status_field: status
+    plural_label: Frameworks
+```
+
+Once declared, the type behaves exactly like a built-in:
+
+```bash
+docz create frameworks "Service Mesh"   # by canonical name
+docz create FW "Service Mesh"           # by id_prefix
+docz create fw "Service Mesh"           # by alias
+docz list fw                            # aliases work wherever a type is accepted
+docz update                             # no-arg update includes custom types
+docz status set FW FW-0001 Active       # status mutation resolves the type too
+```
+
+The file is named with the usual `<number>-<slug>.md` convention
+(`docs/frameworks/0001-service-mesh.md`); the `id_prefix` is applied to the
+frontmatter `id:` (`FW-0001`), matching the built-in types.
+
+**Resolution precedence.** A type token is matched case-insensitively as
+**canonical name → alias → `id_prefix`**, so a canonical name always wins over a
+colliding alias or prefix.
+
+**Templates.** A custom type uses the same override resolution as the built-ins:
+
+- **Body template** — `docs/templates/<type>.md` (e.g. `docs/templates/frameworks.md`).
+  Without one, creation falls back to the embedded generic document template.
+- **Index header** — `docs/templates/index_<type>.md` (the prose above the
+  auto-generated table in the type's `README.md`). Without one, `docz` generates
+  a generic header from the type's `plural_label`.
+
+**Validation.** Custom types must resolve unambiguously. A duplicate `id_prefix`,
+or an `aliases` entry that collides with another type's name, alias, or prefix,
+is rejected at startup with a clear error. `docz` also prints a harmless
+`config declares non-built-in type "<name>" (typo?)` notice for any type outside
+the built-in set, so a genuine typo is easy to spot.
+
 ## Configuration
 
 `docz` reads configuration from two locations, deep-merged with repo taking
@@ -388,6 +445,11 @@ documents. The table is bounded by HTML comments:
 Content outside these markers (headers, descriptions, links) is preserved across
 updates. If a README has no markers, `docz update` will warn rather than modify
 it — run `docz init --force` or add the markers manually.
+
+The header prose written above the markers when a `README.md` is first created
+can be customized per type with a `docs/templates/index_<type>.md` override
+(used verbatim). This resolution mirrors the body-template tiers and works for
+both built-in and custom types.
 
 ## Table of Contents
 
