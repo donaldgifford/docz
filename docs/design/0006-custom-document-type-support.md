@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0006
 title: "Custom Document Type Support"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-06-17
 ---
@@ -9,7 +9,7 @@ created: 2026-06-17
 
 # DESIGN 0006: Custom Document Type Support
 
-**Status:** Approved
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-06-17
 
