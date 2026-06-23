@@ -1,4 +1,5 @@
 ---
+# $schema=https://www.schemastore.org/prettierrc.json
 # This will autoformat existing lines over 80 characters and also long lines
 # that you paste that exceed the 80 characters
 
