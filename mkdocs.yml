@@ -10,6 +10,9 @@ nav:
         - 'DESIGN-0004: Runner Pattern and DocType Registry': design/0004-runner-pattern-and-doctype-registry.md
         - 'DESIGN-0005: Status Set CLI Primitive': design/0005-status-set-cli-primitive.md
         - 'DESIGN-0006: Custom Document Type Support': design/0006-custom-document-type-support.md
+        - 'DESIGN-0007: docz changes to support docz-api and docz-site': design/0007-docz-changes-to-support-docz-api-and-docz-site.md
+        - 'DESIGN-0008: docz-api: cross-repo docz registry and ingestion service': design/0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md
+        - 'DESIGN-0009: docz-site: cross-repo docz viewer and search UI': design/0009-docz-site-cross-repo-docz-viewer-and-search-ui.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
