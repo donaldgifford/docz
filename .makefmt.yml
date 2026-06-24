@@ -1,5 +1,7 @@
 ---
 formatter:
   max_blank_lines: 1
-  assignment_spacing: space
+  assignment_spacing: preserve
+  align_assignments: true
+  align_backslash_continuations: false
   indent_conditionals: false
