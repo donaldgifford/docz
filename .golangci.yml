@@ -117,6 +117,9 @@ linters:
     goconst:
       min-len: 3
       min-occurrences: 3  # Uber: Extract repeated strings
+      # Test fixtures legitimately repeat literals; don't let them inflate
+      # production occurrence counts and force single-use prod constants.
+      ignore-tests: true
 
     gocritic:
       enabled-tags:
@@ -246,6 +249,23 @@ linters:
           - gosec
         text: "G104:"
         path: cmd/(compare|diff)\.go$
+
+      # CLI tool writes to config/scan-derived doc paths by design — the
+      # write-side analogue of the G304 read exclusion above, not untrusted
+      # input.
+      - linters:
+          - gosec
+        text: "G703:"
+
+      # doctype.go is the declarative built-in doc-type registry: Name/Dir/
+      # TemplateName/labels are config data that coincidentally share values,
+      # not magic constants. Per DESIGN-0004 the type names stay plain strings
+      # (not typed DocType consts), so goconst here would force a wall of
+      # single-char-differing constants that hurts readability. Uber's style
+      # guide mandates no such extraction (its enum guidance is iota ints).
+      - path: internal/config/doctype\.go
+        linters:
+          - goconst
 
     paths:
       - vendor
