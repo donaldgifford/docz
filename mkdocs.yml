@@ -9,6 +9,7 @@ nav:
         - 'DESIGN-0003: Table of Contents Generation': design/0003-table-of-contents-generation.md
         - 'DESIGN-0004: Runner Pattern and DocType Registry': design/0004-runner-pattern-and-doctype-registry.md
         - 'DESIGN-0005: Status Set CLI Primitive': design/0005-status-set-cli-primitive.md
+        - 'DESIGN-0006: Custom Document Type Support': design/0006-custom-document-type-support.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -21,12 +22,14 @@ nav:
         - 'IMPL-0008: Move Stranded Business Logic Into Internal Packages': impl/0008-move-stranded-business-logic-into-internal-packages.md
         - 'IMPL-0009: Runner Pattern and DocType Registry Refactor': impl/0009-runner-pattern-and-doctype-registry-refactor.md
         - 'IMPL-0011: Status Set CLI Primitive': impl/0011-status-set-cli-primitive.md
+        - 'IMPL-0012: Custom Document Type Support': impl/0012-custom-document-type-support.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
         - 'INV-0002: Architectural Review and Cleanup Opportunities': investigation/0002-architectural-review-and-cleanup-opportunities.md
         - 'INV-0003: Init and Update Should Respect Config-Listed Types Only': investigation/0003-init-and-update-should-respect-config-listed-types-only.md
         - 'INV-0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity': investigation/0004-v1-release-plan-tui-markdown-preview-and-cli-parity.md
+        - 'INV-0005: docz-api and docz-site: centralized cross-repo docz registry and viewer': investigation/0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md
     - Plans:
         - Overview: plan/README.md
     - RFCs:
