@@ -17,7 +17,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0002 | Architectural Review and Cleanup Opportunities | Concluded | 2026-05-15 | Donald Gifford | [0002-architectural-review-and-cleanup-opportunities.md](0002-architectural-review-and-cleanup-opportunities.md) |
 | INV-0003 | Init and Update Should Respect Config-Listed Types Only | Concluded | 2026-05-20 | Donald Gifford | [0003-init-and-update-should-respect-config-listed-types-only.md](0003-init-and-update-should-respect-config-listed-types-only.md) |
 | INV-0004 | v1 Release Plan: TUI, Markdown Preview, and CLI Parity | Open | 2026-05-22 | Donald Gifford | [0004-v1-release-plan-tui-markdown-preview-and-cli-parity.md](0004-v1-release-plan-tui-markdown-preview-and-cli-parity.md) |
-| INV-0005 | docz-api and docz-site: centralized cross-repo docz registry and viewer | Open | 2026-06-23 | Donald Gifford | [0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md](0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md) |
+| INV-0005 | docz-api and docz-site: centralized cross-repo docz registry and viewer | Concluded | 2026-06-23 | Donald Gifford | [0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md](0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

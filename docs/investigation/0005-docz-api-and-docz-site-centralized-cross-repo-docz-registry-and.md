@@ -1,7 +1,7 @@
 ---
 id: INV-0005
 title: "docz-api and docz-site: centralized cross-repo docz registry and viewer"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-06-23
 ---
@@ -9,7 +9,7 @@ created: 2026-06-23
 
 # INV 0005: docz-api and docz-site: centralized cross-repo docz registry and viewer
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-06-23
 
@@ -37,6 +37,7 @@ created: 2026-06-23
   - [6. What is the visibility / access model?](#6-what-is-the-visibility--access-model)
   - [7. How does the API obtain the doc list without re-implementing docz?](#7-how-does-the-api-obtain-the-doc-list-without-re-implementing-docz)
   - [8. Scope of the first deliverable?](#8-scope-of-the-first-deliverable)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -111,14 +112,15 @@ reached and how a follow-on design would be de-risked:
 
 Proposed stack (assumed, to be confirmed in design):
 
-| Component        | Proposed choice                                            |
-|------------------|------------------------------------------------------------|
-| Onboarding/auth  | GitHub App (installation tokens, webhooks)                 |
-| API service      | Go (reuses docz's own parsing packages)                    |
-| Registry store   | PostgreSQL                                                 |
-| Search           | Meilisearch (full-text + faceting)                         |
-| Markdown render  | mdp renderer (parity with docz preview) → cached HTML      |
-| Front end        | docz-site (repos → types → docs nav + search + reader)     |
+| Component            | Proposed choice                                        |
+|----------------------|--------------------------------------------------------|
+| Ingestion/onboarding | GitHub App (installation tokens, webhooks)             |
+| Site user auth       | Pluggable OIDC: GitHub (default), Okta, Keycloak       |
+| API service          | Go (reuses docz's own parsing packages)                |
+| Registry store       | PostgreSQL (caches raw markdown + metadata at ingest)  |
+| Search               | Meilisearch (full-text + faceting)                     |
+| Markdown render      | JS renderer in docz-site (e.g. markdown-it)            |
+| Front end            | docz-site (repos → types → docs nav + search + reader) |
 
 ## Findings
 
@@ -162,9 +164,10 @@ docz-api enumerates installed repos and ingests any that contain a `.docz.yaml`
 at the repo root.
 
 **Ingestion (docz-api).** Per repo: fetch `.docz.yaml` + the doc files, parse,
-upsert into Postgres, index into Meilisearch, render+cache HTML. Fetching can use
-the GitHub Git Trees/Contents API (no checkout) for small doc sets, or a shallow
-clone for large ones.
+upsert into Postgres (caching the raw markdown + metadata), and index into
+Meilisearch. Markdown→HTML is **not** done here — docz-site renders client-side
+(Decision 3). Fetching can use the GitHub Git Trees/Contents API (no checkout)
+for small doc sets, or a shallow clone for large ones.
 
 **Data model (Postgres), sketch:**
 
@@ -172,14 +175,15 @@ clone for large ones.
   config_snapshot jsonb, last_synced_sha, updated_at)`
 - `doc_types(id, repo_id, name, dir, id_prefix, plural_label, statuses jsonb)`
 - `documents(id, repo_id, type, doc_id, title, status, author, created_at,
-  path, git_sha, content_hash, raw_md, rendered_html, updated_at)` — unique on
-  `(repo_id, doc_id)`.
+  path, git_sha, content_hash, raw_md, updated_at)` — unique on
+  `(repo_id, doc_id)`. `raw_md` is the cached markdown; docz-site renders it to
+  HTML client-side (Decision 3), so no `rendered_html` column is stored.
 
 **Refresh via webhooks.** A `push` to the default branch touching `docs_dir`
 (or `.docz.yaml`) triggers a diff-based re-ingest of only the changed files;
 `.docz.yaml` changes re-sync the type set. A `release`/tag can optionally
-snapshot a version. Events are debounced. `content_hash` gates re-rendering so
-unchanged docs are not re-processed.
+snapshot a version. Events are debounced. `content_hash` gates re-ingest so
+unchanged docs are not re-processed or re-indexed.
 
 **Search (Meilisearch).** One index of documents with searchable `title`/`body`
 and facets on `repo`, `type`, `status`, `author`. Drives both global search and
@@ -212,11 +216,32 @@ a real, additive docz roadmap item, not a blocker for a prototype.
 ### Observation 5 — the hard part is visibility/auth, and it is not docz-specific
 
 The one piece that is *not* simplified: a viewer aggregating private-repo content
-must enforce that a site user only sees docs from repos they can access on
-GitHub. This is exactly rfc-api's hardest problem. Options range from "org-
-internal, trust everyone in the org" (simplest, viable for an MVP) to "OAuth the
-site user and check their GitHub repo access per request" (correct, more work).
-This must be decided early because it shapes the API and the site session model.
+must enforce that a site user only sees docs they are allowed to see. This is
+exactly rfc-api's hardest problem, and it splits into two layers:
+
+- **Authentication (who is this user?)** is **pluggable** (Decision 6). The site
+  supports three providers behind one OIDC-shaped abstraction: **GitHub**
+  (default and preferred — the GitHub App already in play for ingestion doubles
+  as the OAuth identity provider), **Okta**, and **Keycloak**. GitHub uses
+  OAuth; Okta and Keycloak use standard OIDC. A single provider interface
+  (`issuer`, `client_id/secret`, scopes/claims) keeps the three configurable
+  rather than forked.
+- **Authorization (what may they see?)** is where the providers diverge and must
+  be designed explicitly:
+  - *GitHub provider* — mirror GitHub access: a user sees a repo's docs only if
+    their token can read that repo (checked/cached per session). This is the
+    natural, tightest mapping.
+  - *Okta / Keycloak providers* — there is no GitHub repo-permission signal, so
+    authorization comes from **OIDC group/role claims** mapped to repos or repo
+    groups in docz-api config (e.g. `group:platform → repos[…]`), or a coarser
+    "any authenticated org member sees all onboarded repos" for an internal
+    deployment.
+
+Note the **asymmetry**: ingestion is *always* via the GitHub App (that is how
+docz-api reads repo content), independent of how site *users* authenticate. So
+"auth provider" is strictly about the human reading the site, not about how the
+service pulls content. This must be decided early because it shapes the API,
+the session model, and the config surface.
 
 ### Observation 6 — why docz-site is not "just MkDocs per repo"
 
@@ -233,27 +258,36 @@ location (`.docz.yaml`), structure (typed dirs), and metadata (frontmatter), the
 ingestion side of docz-api is largely mechanical, and the rfc-api/rfc-site
 architecture (GitHub App → Postgres registry → Meilisearch → viewer, refreshed by
 webhooks) maps cleanly onto it. The dominant remaining complexity is the
-visibility/auth model, which is inherent to any cross-repo viewer of private
-content and not unique to docz. A clean implementation also motivates a small,
-additive docz change: exposing the existing config/document parsing as a shared
-library (or a JSON manifest export) so the API and CLI never diverge.
+visibility/auth model — now scoped to a **pluggable provider abstraction**
+(GitHub by default, plus Okta and Keycloak via OIDC; Decision 6) — which is
+inherent to any cross-repo viewer of private content and not unique to docz. A
+clean implementation also motivates a small, additive docz change: exposing the
+existing config/document parsing as a shared library so the API and CLI never
+diverge (Decision 7).
 
 ## Recommendation
+
+The open questions are resolved (see [Decisions](#decisions)). Next steps:
 
 1. **Proceed to a DESIGN** for docz-api (the service: GitHub App, ingestion,
    data model, webhook refresh, search) and either a combined or sibling DESIGN
    for docz-site (the viewer: nav, search, reader). One service design with the
    site as a section is likely enough to start.
-2. **Resolve the Open Questions below** during that design — especially the
-   visibility/auth model (Q6), which gates almost everything else.
-3. **Scope the docz prerequisite** (Observation 4 / Q7–Q8): decide whether to
-   extract a shared parsing package or add a `docz export --json` before, or in
-   parallel with, the service prototype.
-4. **Build a thin vertical slice first:** one repo onboarded by hand → ingest →
-   one type rendered in a bare docz-site, deferring auth and webhooks, to prove
-   the fetch→parse→render→serve loop before investing in the full pipeline.
+2. **Design the pluggable auth layer first** (Decision 6) — the GitHub /
+   Okta / Keycloak provider abstraction and, critically, the per-provider
+   *authorization* mapping (GitHub repo access vs. OIDC group claims). It gates
+   the API and the session model.
+3. **Scope the docz prerequisite** (Observation 4 / Decisions 7): extract a
+   shared `pkg/…` parsing library from `internal/config` + `internal/document`
+   so docz-api and the CLI never diverge.
+4. **Build a thin vertical slice first** (Decision 8): one repo onboarded by
+   hand → ingest → one type rendered in a bare docz-site, deferring auth and
+   webhooks, to prove the fetch→parse→render→serve loop before the full pipeline.
 
 ## Open Questions
+
+> **Resolved 2026-06-23** — see the [Decisions](#decisions) table below for the
+> chosen option per question. The menu of alternatives is kept for the record.
 
 Each question is numbered; option `a` is the recommendation, later letters are
 alternatives, and "other" is free-form for review.
@@ -324,6 +358,22 @@ alternatives, and "other" is free-form for review.
 - c. Site/UX prototype first against mocked data.
 - d. Other.
 
+## Decisions
+
+Resolved by user review on 2026-06-23. Recommendations accepted except
+Decisions 3 and 6, which were adjusted per reviewer guidance.
+
+| # | Topic | Choice | Rationale |
+|---|-------|--------|-----------|
+| 1 | Repo content fetch | (a) GitHub Git Trees / Contents API | No checkout; simplest ops for typical doc-set sizes |
+| 2 | Cache point | (a) Cache at ingest | Cache the raw markdown + metadata in Postgres at ingest (HTML itself is rendered client-side per Decision 3) |
+| 3 | Markdown renderer | **(c) JS renderer in docz-site** | mdp is intentionally small for single-user neovim/terminal use and isn't a fit for a server-side multi-tenant renderer; render in the site instead |
+| 4 | "Version" semantics | (a) Default-branch HEAD as current version | Simplest correct MVP; store `git_sha` per doc |
+| 5 | Branch scope | (a) Default branch only | Avoids preview/PR-branch noise |
+| 6 | Auth model | **(a) GitHub default + pluggable OIDC** | GitHub App OAuth is default/preferred; a generic OIDC provider abstraction must also support Okta and Keycloak. All three are required; authorization mapping differs per provider (see Observation 5) |
+| 7 | Doc-list source | (a) Shared `pkg/…` library from docz | Single source of truth; API and CLI never drift |
+| 8 | First deliverable | (a) Thin vertical slice | Prove fetch→parse→render→serve on one repo before the full pipeline |
+
 ## References
 
 - docz `.docz.yaml` schema and type model — `internal/config`
@@ -333,4 +383,6 @@ alternatives, and "other" is free-form for review.
   type-agnostic, driven by each repo's config)
 - docz per-repo wiki (MkDocs/TechDocs) — the per-repo counterpart to docz-site
 - mdp markdown renderer — [[0004-v1-release-plan-tui-markdown-preview-and-cli-parity]]
+  (considered for server-side rendering but rejected in Decision 3 — it is
+  intentionally scoped to single-user neovim/terminal use)
 - Prior art: rfc-api / rfc-site (the general system docz-api simplifies)
