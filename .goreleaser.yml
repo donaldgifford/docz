@@ -1,0 +1,103 @@
+---
+# $schema=https://goreleaser.com/static/schema.json
+# goreleaser config for docz-api
+# Triggered by .forgejo/workflows/release.yml or .github/workflows/release.yml on tag push.
+version: 2
+
+project_name: docz-api
+
+builds:
+  - id: docz-api
+    main: ./cmd/docz-api
+    binary: docz-api
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    formats: ["tar.gz"]
+    files:
+      - none*
+
+sboms:
+  - id: archives
+    artifacts: archive
+    documents:
+      - "${artifact}.spdx.json"
+    cmd: syft
+    args: ["$artifact", "--output", "spdx-json=$document"]
+
+checksum:
+  name_template: 'checksums.txt'
+
+signs:
+  - artifacts: checksum
+    args:
+      - "--batch"
+      - "--local-user"
+      - '{{ .Env.GPG_FINGERPRINT }}'
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^feat:"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^fix:"
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: donaldgifford
+    name: docz-api
+  draft: false
+  prerelease: auto
+  mode: prepend
+  header: |
+    ## Release {{ .Tag }} ({{ .Date }})
+
+    ### Installation
+
+    #### Linux/macOS (Manual)
+    ```bash
+    # Download the appropriate binary for your system
+    # Extract and move to your PATH
+    tar -xzf docz-api*.tar.gz
+    mv docz-api ~/.local/bin/
+    ```
+
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/donaldgifford/docz-api/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+snapshot:
+  version_template: '{{ .Tag }}-dev'

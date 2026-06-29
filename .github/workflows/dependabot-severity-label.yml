@@ -1,0 +1,49 @@
+---
+# $schema=https://www.schemastore.org/github-action.json
+# Reads the severity out of a Dependabot security PR's body and applies
+# a matching `severity:<level>` label. Dependabot's body contains lines
+# like "[CVE-YYYY-NNNNN](url) (high severity)" — we grep for that.
+# Highest severity wins if multiple advisories are bundled.
+name: Label Dependabot Security Severity
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Detect severity from PR body
+        id: sev
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |-
+          if echo "$BODY" | grep -qiE '\(critical severity\)'; then
+            echo "level=critical" >>"$GITHUB_OUTPUT"
+          elif echo "$BODY" | grep -qiE '\(high severity\)'; then
+            echo "level=high" >>"$GITHUB_OUTPUT"
+          elif echo "$BODY" | grep -qiE '\(medium severity\)'; then
+            echo "level=medium" >>"$GITHUB_OUTPUT"
+          elif echo "$BODY" | grep -qiE '\(low severity\)'; then
+            echo "level=low" >>"$GITHUB_OUTPUT"
+          else
+            echo "level=" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply severity label
+        if: steps.sev.outputs.level != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LEVEL: ${{ steps.sev.outputs.level }}
+        run: |-
+          gh pr edit "$PR_NUMBER" \
+            --add-label "severity:$LEVEL" \
+            --repo "${{ github.repository }}"

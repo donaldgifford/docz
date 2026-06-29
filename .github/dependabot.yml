@@ -1,0 +1,59 @@
+---
+# $schema=https://www.schemastore.org/dependabot-2.0.json
+# Security-updates-only mode. Renovate owns routine version bumps
+# (per the `# renovate:` annotations in mise.toml, docker-bake.hcl,
+# etc.); Dependabot's only job here is the GitHub Advisory feed —
+# when GHAS flags a CVE in our dep tree, open a PR.
+#
+# `open-pull-requests-limit: 0` is the documented switch that disables
+# version updates while keeping security updates enabled:
+# https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/configuring-dependabot-security-updates#overriding-the-default-behavior-with-a-configuration-file
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    labels:
+      - security
+      - dependencies
+      - github_actions
+    assignees:
+      - ${project_owner}
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    labels:
+      - security
+      - dependencies
+      - docker
+    assignees:
+      - ${project_owner}
+    groups:
+      docker-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    labels:
+      - security
+      - dependencies
+      - go
+    assignees:
+      - ${project_owner}
+    groups:
+      gomod-security:
+        applies-to: security-updates
+        patterns: ["*"]

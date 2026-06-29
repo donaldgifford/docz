@@ -1,0 +1,56 @@
+---
+# $schema=https://www.schemastore.org/github-action.json
+name: Changelog Regen
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Loop guard: skip the run when the head commit is itself a
+# chore(changelog) auto-sync (this workflow's own output). Without this,
+# the chore(changelog) push the regen step makes would re-trigger the
+# workflow on main and we'd cycle. cliff.toml's commit_parsers separately
+# skip chore-changelog commits from the generated CHANGELOG body via
+# `^chore.*[Cc]hangelog`, so even if the guard misfires the output stays
+# stable — but the guard saves an extra workflow run.
+jobs:
+  regen:
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(changelog)') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5  # v2.19.3
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+          # Use the default GITHUB_TOKEN so the push uses bot credentials;
+          # `permissions: contents: write` above is required for it to push.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up mise (for git-cliff)
+        uses: jdx/mise-action@v4
+        with:
+          experimental: true
+
+      - name: Regenerate CHANGELOG.md
+        run: |
+          git fetch --tags origin
+          git-cliff -o CHANGELOG.md
+
+      - name: Commit and push if changed
+        run: |-
+          if git diff --quiet CHANGELOG.md; then
+            echo "CHANGELOG.md is up to date — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(changelog): Auto-sync"
+          git push origin HEAD:main

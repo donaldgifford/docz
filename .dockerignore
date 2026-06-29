@@ -1,0 +1,9 @@
+.git
+.github
+.forgejo
+docs
+dist
+*.md
+.vscode
+.idea
+.claude

@@ -1,0 +1,103 @@
+---
+docs_dir: docs
+
+author:
+  from_git: true  # use git config user.name
+  default: ""  # fallback if git name unavailable
+
+index:
+  auto_update: true  # update README after docz create
+  preserve_header: true
+
+types:
+  rfc:
+    enabled: true
+    dir: rfc
+    id_prefix: RFC
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+  adr:
+    enabled: true
+    dir: adr
+    id_prefix: ADR
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+  design:
+    enabled: true
+    dir: design
+    id_prefix: DESIGN
+    id_width: 4
+    statuses:
+      - Draft
+      - In Review
+      - Approved
+      - Implemented
+      - Abandoned
+  impl:
+    enabled: true
+    dir: impl
+    id_prefix: IMPL
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Paused
+      - Cancelled
+  plan:
+    enabled: true
+    dir: plan
+    id_prefix: PLAN
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Cancelled
+  investigation:
+    enabled: true
+    dir: investigation
+    id_prefix: INV
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:  # MkDocs plugins for wiki init
+    - techdocs-core
+  markdown_extensions:  # MkDocs markdown extensions
+    - admonition
+    - tables
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    rfc: "RFCs"
+    adr: "ADRs"
+    design: "Design"
+    impl: "Implementation Plans"
+    plan: "Plans"
+    investigation: "Investigations"
+    # docs_dir: docs           # override MkDocs docs_dir
+    # repo_url: https://github.com/org/repo
+    # site_url: https://example.com/docs
+    # theme: readthedocs
+
+toc:
+  enabled: true  # generate ToC during docz update
+  min_headings: 3  # minimum headings to generate a ToC

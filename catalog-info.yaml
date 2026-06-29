@@ -1,0 +1,19 @@
+---
+# $schema=https://www.schemastore.org/catalog-info.json
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: docz-api
+  title: docz-api
+  description: A Go API for docz repos
+  annotations:
+    backstage.io/source-location: url:https://github.com/donaldgifford/docz-api
+    backstage.io/techdocs-ref: "dir:."
+  tags:
+    - go
+  namespace: default
+spec:
+  lifecycle: production
+  type: service
+  owner: donaldgifford
+  system: infrastructure

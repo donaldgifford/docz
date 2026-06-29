@@ -1,0 +1,56 @@
+[tools]
+
+# Go
+# renovate: datasource=github-tags depName=golang/go
+go = "1.26.3"
+# renovate: datasource=github-releases depName=segmentio/golines
+golines = "latest"
+# renovate: datasource=go depName=golang.org/x/tools
+"go:golang.org/x/tools/cmd/goimports" = "latest"
+# renovate: datasource=go depName=golang.org/x/tools
+"go:golang.org/x/tools/cmd/godoc" = "latest"
+
+
+# Repo utilities
+# Formatters and linters
+# renovate: datasource=github-releases depName=DavidAnson/markdownlint-cli2
+markdownlint-cli2 = "0.18.1"
+# renovate: datasource=github-releases depName=google/yamlfmt
+yamlfmt = "0.20.0"
+# renovate: datasource=github-tags depName=adrienverge/yamllint
+yamllint = "1.37.1"
+# renovate: datasource=npm depName=prettier
+prettier = "3.7.4"
+# renovate: datasource=github-releases depName=donaldgifford/makefmt
+"github:donaldgifford/makefmt" = "latest"
+# renovate: datasource=github-releases depName=mrtazz/checkmake
+checkmake = "latest"
+# renovate: datasource=github-releases depName=orhun/git-cliff
+git-cliff = "latest"
+# renovate: datasource=github-releases depName=rhysd/actionlint
+actionlint = "latest"
+# renovate: datasource=github-releases depName=casey/just
+just = "latest"
+
+# tools
+# renovate: datasource=github-releases depName=mikefarah/yq
+yq = "4.48.1"
+# renovate: datasource=github-releases depName=jqlang/jq
+jq = "latest"
+# renovate: datasource=github-releases depName=donaldgifford/docz
+"github:donaldgifford/docz" = "latest"
+
+
+# Release tools
+# renovate: datasource=github-releases depName=golangci/golangci-lint
+golangci-lint = "2.11.4"
+
+# Security
+# renovate: datasource=github-releases depName=anchore/syft
+syft = "latest"
+# renovate: datasource=go depName=golang.org/x/vuln
+"go:golang.org/x/vuln/cmd/govulncheck" = "latest"
+
+# Compliance
+# renovate: datasource=go depName=github.com/google/go-licenses
+"go:github.com/google/go-licenses" = "latest"
