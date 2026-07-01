@@ -43,4 +43,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0009 | Runner Pattern and DocType Registry Refactor | Completed | 2026-05-15 | Donald Gifford | [0009-runner-pattern-and-doctype-registry-refactor.md](0009-runner-pattern-and-doctype-registry-refactor.md) |
 | IMPL-0011 | Status Set CLI Primitive | Completed | 2026-06-01 | Donald Gifford | [0011-status-set-cli-primitive.md](0011-status-set-cli-primitive.md) |
 | IMPL-0012 | Custom Document Type Support | Completed | 2026-06-18 | Donald Gifford | [0012-custom-document-type-support.md](0012-custom-document-type-support.md) |
+| IMPL-0013 | Promote parsing core to pkg/doczcore | Draft | 2026-06-30 | Donald Gifford | [0013-promote-parsing-core-to-pkgdoczcore.md](0013-promote-parsing-core-to-pkgdoczcore.md) |
 <!-- END DOCZ AUTO-GENERATED -->

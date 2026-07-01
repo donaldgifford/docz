@@ -26,6 +26,7 @@ nav:
         - 'IMPL-0009: Runner Pattern and DocType Registry Refactor': impl/0009-runner-pattern-and-doctype-registry-refactor.md
         - 'IMPL-0011: Status Set CLI Primitive': impl/0011-status-set-cli-primitive.md
         - 'IMPL-0012: Custom Document Type Support': impl/0012-custom-document-type-support.md
+        - 'IMPL-0013: Promote parsing core to pkg/doczcore': impl/0013-promote-parsing-core-to-pkgdoczcore.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
