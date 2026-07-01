@@ -266,14 +266,20 @@ Land the move as a public, pinnable surface and bring the living docs in line.
       paths (`doctype.go`, `doctype_test.go`, `document.CreateOptions.Type`,
       package sections). **Leave historical `docs/impl/*` and `docs/design/*`
       untouched.**
-- [ ] Add release notes: `pkg/doczcore` is now a supported, semver-governed
+- [x] Add release notes: `pkg/doczcore` is now a supported, semver-governed
       public surface; `internal/config` / `internal/document` import paths are
-      gone (invisible outside the repo).
-- [ ] Open the promotion PR with the **`minor`** release label (satisfies the
+      gone (invisible outside the repo). _(In PR #66's `### RELEASE NOTES`
+      section, which `pr-semver-bump` extracts for the GitHub release.)_
+- [x] Open the promotion PR with the **`minor`** release label (satisfies the
       required-label gate); on merge, the release automation cuts and pushes
       **`v0.5.0`** — no manual `git tag`. Confirm the goreleaser release runs.
+      _(PR [#66](https://github.com/donaldgifford/docz/pull/66) open, `minor`
+      labeled. **Merge + goreleaser run are human-gated** — merging is a push to
+      `main`, which the workflow reserves for a human.)_
 - [ ] Flip DESIGN-0007 `status: Draft → Implemented` (frontmatter + body) and
       record OQ3/OQ5/OQ8 resolutions in its Decisions table once tagged.
+      _(Blocked: gated on `v0.5.0` existing, which happens on human merge of
+      PR #66.)_
 
 #### Success Criteria
 
