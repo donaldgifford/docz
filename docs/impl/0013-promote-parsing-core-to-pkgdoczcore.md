@@ -1,7 +1,7 @@
 ---
 id: IMPL-0013
 title: "Promote parsing core to pkg/doczcore"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-06-30
 ---
@@ -9,7 +9,7 @@ created: 2026-06-30
 
 # IMPL 0013: Promote parsing core to pkg/doczcore
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-06-30
 
