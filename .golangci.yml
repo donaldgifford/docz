@@ -263,7 +263,7 @@ linters:
       # (not typed DocType consts), so goconst here would force a wall of
       # single-char-differing constants that hurts readability. Uber's style
       # guide mandates no such extraction (its enum guidance is iota ints).
-      - path: internal/config/doctype\.go
+      - path: pkg/doczcore/config/doctype\.go
         linters:
           - goconst
 

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/internal/config"
-	"github.com/donaldgifford/docz/internal/document"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
 // newStatusRunner builds a Runner rooted at dir with docs under dir/docs,

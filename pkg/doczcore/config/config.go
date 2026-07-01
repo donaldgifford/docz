@@ -1,4 +1,11 @@
 // Package config provides configuration loading and merging for docz.
+//
+// It is part of the public docz core (pkg/doczcore): both the docz CLI and
+// external consumers such as docz-api import Load, Validate, the type
+// resolution helpers (EnabledTypes, TypeDir, ValidateType), and the Config /
+// TypeConfig shapes to read a repo's .docz.yaml identically. This surface is
+// semver-governed (DESIGN-0007): adding fields is non-breaking; renaming or
+// removing an exported symbol is a major change.
 package config
 
 import (

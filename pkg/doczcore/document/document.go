@@ -1,4 +1,10 @@
-// Package document provides frontmatter parsing and document creation.
+// Package document provides docz frontmatter parsing and document scanning.
+//
+// It is the read side of the docz core: parsing already-fetched bytes
+// (ParseFrontmatter), reading and scanning files on disk (LoadFrontmatter,
+// ScanDocuments), and the docz filename convention (IsDoczFile). The
+// CLI-only write side — creating documents and mutating frontmatter status
+// in place — lives in internal/docwrite (DESIGN-0007).
 package document
 
 import (
@@ -9,7 +15,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // Frontmatter holds the YAML frontmatter metadata from a document file.
@@ -29,18 +35,6 @@ type Frontmatter struct {
 
 // ErrNoFrontmatter is returned when a file has no YAML frontmatter delimiters.
 var ErrNoFrontmatter = errors.New("no YAML frontmatter found")
-
-// ErrStatusFieldMissing is returned by SetStatus when a file has valid
-// frontmatter delimiters but no usable status: key — either the key is
-// absent, or its value uses an unsupported YAML shape (block scalar,
-// flow mapping/sequence, anchor, or alias) that the byte-level mutator
-// deliberately refuses to rewrite.
-var ErrStatusFieldMissing = errors.New("no status field in frontmatter")
-
-// ErrUnsupportedLineEndings is returned by SetStatus when a file uses CR
-// or CRLF line endings. The byte-level mutator only supports LF, matching
-// docz's Unix-only stance (DESIGN-0005 Decision 7).
-var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
 
 // ParseFrontmatter extracts and parses YAML frontmatter from file content.
 // Frontmatter must be delimited by "---" lines at the start of the file.

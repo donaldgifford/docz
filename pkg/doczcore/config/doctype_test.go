@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/internal/config"
 	"github.com/donaldgifford/docz/internal/template"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // TestDocTypeRegistry_AllHaveEmbeddedTemplate asserts that every doc

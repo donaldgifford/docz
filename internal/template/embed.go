@@ -4,7 +4,7 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 //go:embed templates/*.md templates/*.tmpl

@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/donaldgifford/docz/internal/config"
-	"github.com/donaldgifford/docz/internal/document"
+	"github.com/donaldgifford/docz/internal/docwrite"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 var (
@@ -99,7 +99,7 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		"template", tc.Template,
 	)
 
-	createOpts := document.CreateOptions{
+	createOpts := docwrite.CreateOptions{
 		Type:         config.DocType(docType),
 		Title:        title,
 		Author:       author,
@@ -112,7 +112,7 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		CreatedAt:    r.Now(),
 	}
 
-	result, err := document.Create(&createOpts)
+	result, err := docwrite.Create(&createOpts)
 	if err != nil {
 		return fmt.Errorf("creating %s document: %w", docType, err)
 	}

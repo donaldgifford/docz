@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 func TestFilenameSlug(t *testing.T) {

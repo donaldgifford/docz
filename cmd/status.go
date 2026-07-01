@@ -10,7 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/donaldgifford/docz/internal/document"
+	"github.com/donaldgifford/docz/internal/docwrite"
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
 // formatText is the default --format value for `status set`; formatJSON
@@ -182,7 +183,7 @@ func (r *Runner) statusSet(opts statusSetOpts, args []string) error {
 	}
 
 	if res.changed && !opts.dryRun {
-		if _, err := document.SetStatus(docPath, newStatus); err != nil {
+		if _, err := docwrite.SetStatus(docPath, newStatus); err != nil {
 			return statusWriteError(err)
 		}
 	}
@@ -215,12 +216,12 @@ func findByID(docs []document.DocEntry, id string) *document.DocEntry {
 	return nil
 }
 
-// statusWriteError maps a document.SetStatus failure to the right exit
+// statusWriteError maps a docwrite.SetStatus failure to the right exit
 // code: unsupported line endings are a validation failure (exit 2,
 // Decision 7); everything else (missing frontmatter, IO) is a lookup or
 // write failure (exit 1).
 func statusWriteError(err error) error {
-	if errors.Is(err, document.ErrUnsupportedLineEndings) {
+	if errors.Is(err, docwrite.ErrUnsupportedLineEndings) {
 		return exitErrorf(errExitCode2, "%v", err)
 	}
 	return exitErrorf(errExitCode1, "%v", err)

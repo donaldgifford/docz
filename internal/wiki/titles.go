@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/donaldgifford/docz/internal/document"
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
 // DirTitle resolves a directory name to a human-friendly nav title.

@@ -1,4 +1,4 @@
-package document
+package docwrite
 
 import (
 	"fmt"
@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/donaldgifford/docz/internal/config"
 	doctemplate "github.com/donaldgifford/docz/internal/template"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
 // CreateOptions holds the inputs for creating a new document.
@@ -117,7 +118,7 @@ func nextID(dir string) int {
 		if entry.IsDir() {
 			continue
 		}
-		matches := DoczFilePattern.FindStringSubmatch(entry.Name())
+		matches := document.DoczFilePattern.FindStringSubmatch(entry.Name())
 		if matches == nil {
 			continue
 		}

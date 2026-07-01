@@ -35,7 +35,7 @@ COVERAGE_OUT := coverage.out
 ##@ Go Development
 
 .PHONY: build
-.PHONY: test test-all test-coverage
+.PHONY: test test-all test-coverage test-consumer
 .PHONY: lint lint-fix fmt clean
 .PHONY: run run-local test-api ci check
 .PHONY: release-check release-local
@@ -70,6 +70,10 @@ test-report: ## Run tests with coverage report then open
 test-coverage: ## Run tests with coverage report
 	@ $(MAKE) --no-print-directory log-$@
 	@go test -v -race -coverprofile=$(COVERAGE_OUT) ./...
+
+test-consumer: ## Run the external-module consumer smoke test (separate go.mod)
+	@ $(MAKE) --no-print-directory log-$@
+	@cd test/consumer && go test ./...
 
 ## Code Quality
 
@@ -131,7 +135,7 @@ license-report: ## Generate CSV report of all dependency licenses
 
 ## CI/CD
 
-ci: lint test build license-check ## Run CI pipeline (lint + test + build + license check)
+ci: lint test test-consumer build license-check ## Run CI pipeline (lint + test + build + license check)
 	@ $(MAKE) --no-print-directory log-$@
 	@echo "✓ CI pipeline complete"
 

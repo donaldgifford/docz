@@ -43,6 +43,7 @@ created: 2026-06-23
   - [6. If docz export ships, what is the manifest schema shape?](#6-if-docz-export-ships-what-is-the-manifest-schema-shape)
   - [7. Does docz-api vendor a docz checkout or always consume the library via go.mod?](#7-does-docz-api-vendor-a-docz-checkout-or-always-consume-the-library-via-gomod)
   - [8. Where does the consumer import smoke test live?](#8-where-does-the-consumer-import-smoke-test-live)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -626,6 +627,8 @@ no data or config migration to undo.
 
 ### 1. What is the public package name/path and shape?
 
+**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
+
 - **a. (Recommended)** `pkg/doczcore/config` + `pkg/doczcore/document` — preserve
   the existing two-package split under a `doczcore` namespace, moving each
   wholesale with minimal in-file churn and keeping the typed `Status`/`DocType`
@@ -637,6 +640,8 @@ no data or config migration to undo.
 - d. Other.
 
 ### 2. Move wholesale (update all imports) vs. leave permanent re-export shims?
+
+**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
 
 - **a. (Recommended)** Move wholesale and update every in-repo import; no shim
   survives the release. One canonical path, no rot.
@@ -657,6 +662,9 @@ no data or config migration to undo.
 - d. Other.
 
 ### 4. Module/versioning strategy?
+
+**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions). The next
+minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 - **a. (Recommended)** Same module, new `pkg/doczcore` path; tag a normal minor
   `vX.Y.0` and let docz-api pin it. Stay in the current major; cut `v1.0.0` only
@@ -710,6 +718,20 @@ no data or config migration to undo.
 - c. Both — in-repo test for fast feedback, plus a periodic external-module CI
   job.
 - d. Other.
+
+## Decisions
+
+Resolved by user review on 2026-06-30. OQ1/OQ2/OQ4 are locked now because
+DESIGN-0008's "Requirements for the docz repo" (R1/R2/R6) treats them as
+acceptance criteria and needs concrete package paths, a no-shim guarantee, and a
+pinnable tag to build against. The remaining questions (3, 5, 6, 7, 8) stay open
+until the promotion PR is drafted.
+
+| #   | Topic                     | Choice                                                              | Rationale / notes                                                                                                                                    |
+| --- | ------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Public package path/shape | (a) `pkg/doczcore/config` + `pkg/doczcore/document`                 | Preserves the two-package split and the typed `Status`/`DocType` boundary; DESIGN-0008 R1/R2 import these exact paths                                |
+| 2   | Move wholesale vs. shims  | (a) wholesale move, no surviving shim                              | One canonical import path, no rot; DESIGN-0008 R1 requires that no permanent re-export shim exists on docz-api's behalf                              |
+| 4   | Module/versioning         | (a) same module, new path, minor `vX.Y.0` — next is `v0.5.0`       | Stay in the current major; cut `v1.0.0` only when the broader CLI is ready. docz-api pins the tag and drops its `replace` (DESIGN-0008 R6)           |
 
 ## References
 

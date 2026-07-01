@@ -1,13 +1,32 @@
-package document
+// Package docwrite provides the CLI-only write side of docz documents:
+// creating new documents from templates (Create) and mutating frontmatter
+// status in place (SetStatus). It is intentionally internal — the public
+// pkg/doczcore surface is read-only (DESIGN-0007) — and depends on the
+// read-side pkg/doczcore/document for the shared parsing primitives.
+package docwrite
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
+
+// ErrStatusFieldMissing is returned by SetStatus when a file has valid
+// frontmatter delimiters but no usable status: key — either the key is
+// absent, or its value uses an unsupported YAML shape (block scalar,
+// flow mapping/sequence, anchor, or alias) that the byte-level mutator
+// deliberately refuses to rewrite.
+var ErrStatusFieldMissing = errors.New("no status field in frontmatter")
+
+// ErrUnsupportedLineEndings is returned by SetStatus when a file uses CR
+// or CRLF line endings. The byte-level mutator only supports LF, matching
+// docz's Unix-only stance (DESIGN-0005 Decision 7).
+var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
 
 // statusKeyRE matches a frontmatter status line anchored at column 0,
 // consuming the `status:` key and the spacing that precedes the value.
@@ -74,7 +93,7 @@ func SetStatus(path, newStatus string) (oldStatus string, err error) {
 func findStatusValue(content []byte) (start, end int, value string, err error) {
 	blockStart, blockEnd, ok := frontmatterBounds(content)
 	if !ok {
-		return 0, 0, "", ErrNoFrontmatter
+		return 0, 0, "", document.ErrNoFrontmatter
 	}
 
 	block := content[blockStart:blockEnd]

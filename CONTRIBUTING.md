@@ -123,10 +123,10 @@ make fmt         # run gofmt + goimports
 
 Since IMPL-0009 (DocType registry, DESIGN-0004 §E) the canonical list of
 built-in types lives in a single `allDocTypes` slice in
-`internal/config/doctype.go`. Adding a type is a one-file Go edit plus two
+`pkg/doczcore/config/doctype.go`. Adding a type is a one-file Go edit plus two
 embedded templates:
 
-1. Append a new entry to `allDocTypes` in `internal/config/doctype.go`:
+1. Append a new entry to `allDocTypes` in `pkg/doczcore/config/doctype.go`:
 
    ```go
    {
@@ -159,7 +159,7 @@ embedded templates:
 `typeAliases` map, `Config.EnabledTypes()`, and the `valid types` error
 list in `Config.ValidateType` are all derived from the registry — no
 other code edits are required. The Phase 8 consistency tests in
-`internal/config/doctype_test.go` (`AllHaveEmbeddedTemplate`,
+`pkg/doczcore/config/doctype_test.go` (`AllHaveEmbeddedTemplate`,
 `AllHaveEmbeddedIndexHeader`, `NoDuplicateNames`,
 `NoAliasCollidesWithCanonical`, `DefaultConfigValidates`,
 `DefaultConfigStatusesNonEmpty`, `DefaultConfigReturnsFreshSlice`,
@@ -169,7 +169,7 @@ duplicate names, alias collisions, broken defaults, and shared-slice
 mutation.
 
 `DocType` and `Status` are typed string wrappers
-(`internal/config/doctype.go`) used at `document.CreateOptions.Type`,
+(`pkg/doczcore/config/doctype.go`) used at `docwrite.CreateOptions.Type`,
 `document.Frontmatter.Status`, `template.Data.{Type,Status}`, and
 `template.EmbeddedDocumentTemplate`. Untyped string literals (e.g.
 `Status: "Draft"`) implicitly convert; use `config.DocType(s)` /

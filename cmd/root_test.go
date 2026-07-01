@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // writeBrokenConfig writes a `.docz.yaml` whose rfc type has an empty
