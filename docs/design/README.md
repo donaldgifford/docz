@@ -38,7 +38,7 @@ docz create design "Your Design Title"
 | DESIGN-0004 | Runner Pattern and DocType Registry | Approved | 2026-05-27 | Donald Gifford | [0004-runner-pattern-and-doctype-registry.md](0004-runner-pattern-and-doctype-registry.md) |
 | DESIGN-0005 | Status Set CLI Primitive | Implemented | 2026-05-30 | Donald Gifford | [0005-status-set-cli-primitive.md](0005-status-set-cli-primitive.md) |
 | DESIGN-0006 | Custom Document Type Support | Implemented | 2026-06-17 | Donald Gifford | [0006-custom-document-type-support.md](0006-custom-document-type-support.md) |
-| DESIGN-0007 | docz changes to support docz-api and docz-site | Draft | 2026-06-23 | Donald Gifford | [0007-docz-changes-to-support-docz-api-and-docz-site.md](0007-docz-changes-to-support-docz-api-and-docz-site.md) |
+| DESIGN-0007 | docz changes to support docz-api and docz-site | Implemented | 2026-06-23 | Donald Gifford | [0007-docz-changes-to-support-docz-api-and-docz-site.md](0007-docz-changes-to-support-docz-api-and-docz-site.md) |
 | DESIGN-0008 | docz-api: cross-repo docz registry and ingestion service | Approved | 2026-06-23 | Donald Gifford | [0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md](0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md) |
 | DESIGN-0009 | docz-site: cross-repo docz viewer and search UI | Draft | 2026-06-23 | Donald Gifford | [0009-docz-site-cross-repo-docz-viewer-and-search-ui.md](0009-docz-site-cross-repo-docz-viewer-and-search-ui.md) |
 <!-- END DOCZ AUTO-GENERATED -->

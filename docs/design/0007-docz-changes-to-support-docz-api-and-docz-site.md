@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0007
 title: "docz changes to support docz-api and docz-site"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-06-23
 ---
@@ -9,7 +9,7 @@ created: 2026-06-23
 
 # DESIGN 0007: docz changes to support docz-api and docz-site
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-06-23
 
@@ -653,6 +653,9 @@ no data or config migration to undo.
 
 ### 3. Add `docz export --json` now, or defer it?
 
+**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped in
+`v0.5.0` without `export`; the library is the sole consumer path so far.
+
 - **a. (Recommended)** Defer. Decision 7 chose the library as primary; ship the
   promotion first and add `export` only when a concrete non-Go consumer appears.
 - b. Ship `docz export --json` in the same release as the promotion, as a
@@ -677,6 +680,10 @@ minor is `v0.5.0` (latest tag today is `v0.4.1`).
 - d. Other.
 
 ### 5. How much surface to expose?
+
+**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Read-side
+only: `SetStatus`/`Create` stayed **internal** (`internal/docwrite`), so the
+public surface is read-only (IMPL-0013 Decision 1).
 
 - **a. (Recommended)** Minimal: config (`Load`/`Validate`/resolution/
   `EnabledTypes`/`TypeDir`) + document (`ScanDocuments`/`LoadFrontmatter`/
@@ -710,6 +717,10 @@ minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 ### 8. Where does the consumer import smoke test live?
 
+**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped as
+`test/consumer/` (own `go.mod` + local `replace`), wired into `make test-consumer`
+/ `make ci` (IMPL-0013 Decision 2 / Phase 3).
+
 - **a. (Recommended)** A separate minimal module under `test/consumer/` with its
   own `go.mod`, importing the published-style path — the truest proof an
   external module can import and scan.
@@ -721,17 +732,22 @@ minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 ## Decisions
 
-Resolved by user review on 2026-06-30. OQ1/OQ2/OQ4 are locked now because
-DESIGN-0008's "Requirements for the docz repo" (R1/R2/R6) treats them as
-acceptance criteria and needs concrete package paths, a no-shim guarantee, and a
-pinnable tag to build against. The remaining questions (3, 5, 6, 7, 8) stay open
-until the promotion PR is drafted.
+OQ1/OQ2/OQ4 were locked by user review on 2026-06-30 because DESIGN-0008's
+"Requirements for the docz repo" (R1/R2/R6) treats them as acceptance criteria
+and needs concrete package paths, a no-shim guarantee, and a pinnable tag to
+build against. OQ3/OQ5/OQ8 were resolved on 2026-07-01 as the promotion shipped
+(IMPL-0013, PR #66 → `v0.5.0`). OQ6 and OQ7 concern the deferred `docz export`
+manifest and docz-api's own consumption model, and stay open in DESIGN-0008's
+scope.
 
 | #   | Topic                     | Choice                                                              | Rationale / notes                                                                                                                                    |
 | --- | ------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Public package path/shape | (a) `pkg/doczcore/config` + `pkg/doczcore/document`                 | Preserves the two-package split and the typed `Status`/`DocType` boundary; DESIGN-0008 R1/R2 import these exact paths                                |
 | 2   | Move wholesale vs. shims  | (a) wholesale move, no surviving shim                              | One canonical import path, no rot; DESIGN-0008 R1 requires that no permanent re-export shim exists on docz-api's behalf                              |
-| 4   | Module/versioning         | (a) same module, new path, minor `vX.Y.0` — next is `v0.5.0`       | Stay in the current major; cut `v1.0.0` only when the broader CLI is ready. docz-api pins the tag and drops its `replace` (DESIGN-0008 R6)           |
+| 4   | Module/versioning         | (a) same module, new path, minor `vX.Y.0` — shipped `v0.5.0`       | Stay in the current major; cut `v1.0.0` only when the broader CLI is ready. docz-api pins the tag and drops its `replace` (DESIGN-0008 R6)           |
+| 3   | `docz export --json`      | (a) defer                                                          | Shipped `v0.5.0` library-only; add `export` only when a concrete non-Go consumer appears                                                            |
+| 5   | Surface to expose         | (a) minimal, read-only                                             | `SetStatus`/`Create` kept internal (`internal/docwrite`); public surface is read-only (IMPL-0013 Decision 1) — smallest semver obligation           |
+| 8   | Consumer smoke test       | (a) separate `test/consumer/` module                              | Own `go.mod` + local `replace`, wired into `make test-consumer` / `make ci`; truest external-import proof (IMPL-0013 Decision 2 / Phase 3)          |
 
 ## References
 
