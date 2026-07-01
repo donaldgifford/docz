@@ -258,11 +258,11 @@ Land the move as a public, pinnable surface and bring the living docs in line.
 
 #### Tasks
 
-- [ ] Update `CLAUDE.md` Architecture bullets: `internal/config` →
+- [x] Update `CLAUDE.md` Architecture bullets: `internal/config` →
       `pkg/doczcore/config`, `internal/document` → `pkg/doczcore/document`, and
       the `internal/index` "scanning lives in `internal/document`" note →
       `pkg/doczcore/document`.
-- [ ] Update `CONTRIBUTING.md` and `DEVELOPMENT.md` references to the moved
+- [x] Update `CONTRIBUTING.md` and `DEVELOPMENT.md` references to the moved
       paths (`doctype.go`, `doctype_test.go`, `document.CreateOptions.Type`,
       package sections). **Leave historical `docs/impl/*` and `docs/design/*`
       untouched.**

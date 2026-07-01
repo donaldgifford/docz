@@ -57,7 +57,7 @@ docz/
 
 ## Package Responsibilities
 
-### `internal/config`
+### `pkg/doczcore/config`
 
 Loads and validates the `docz` configuration. The entry point is `Load()`.
 
@@ -101,12 +101,14 @@ characters, and truncates to 64 characters on a word boundary.
 `RenderWikiIndex(tmpl, data)` renders the template with `WikiIndexData`
 (site name and enabled types).
 
-### `internal/document`
+### `internal/docwrite`
 
-Creates document files on disk.
+Creates document files on disk. This is the CLI-only **write side** of the
+docz core; the read side (frontmatter parsing and directory scanning) is the
+public `pkg/doczcore/document` package.
 
 ```go
-result, err := document.Create(&document.CreateOptions{
+result, err := docwrite.Create(&docwrite.CreateOptions{
     Type:    "rfc",
     Title:   "My Proposal",
     Author:  "Alice",
@@ -117,12 +119,13 @@ result, err := document.Create(&document.CreateOptions{
     TypeDir: "rfc",
 })
 // result.Filename  → "0001-my-proposal.md"
-// result.Path      → "docs/rfc/0001-my-proposal.md"
+// result.FilePath  → "docs/rfc/0001-my-proposal.md"
 // result.Number    → "0001"
 ```
 
-`nextID()` scans the target directory for `NNNN-*.md` files and returns
-`max(existing IDs) + 1`. It starts at 1 if the directory is empty or missing.
+`nextID()` scans the target directory for `document.DoczFilePattern`
+(`NNNN-*.md`) files and returns `max(existing IDs) + 1`. It starts at 1 if the
+directory is empty or missing.
 
 ### `internal/index`
 
@@ -216,12 +219,12 @@ Description of what plan documents are for.
 
 The `//go:embed templates/*.md` directive in `internal/template/embed.go`
 picks the new files up automatically. The Phase 8 consistency tests in
-`internal/config/doctype_test.go`
+`pkg/doczcore/config/doctype_test.go`
 (`TestDocTypeRegistry_AllHaveEmbeddedTemplate` and
 `TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`) fail loudly if either
 template is missing.
 
-### Step 4: Register the type in `internal/config/doctype.go`
+### Step 4: Register the type in `pkg/doczcore/config/doctype.go`
 
 Append one entry to the `allDocTypes` slice. This is the only Go code
 change required — `DefaultConfig().Types`, `Wiki.NavTitles`,
@@ -229,7 +232,7 @@ change required — `DefaultConfig().Types`, `Wiki.NavTitles`,
 `valid types` list in `Config.ValidateType` are all derived from it.
 
 ```go
-// internal/config/doctype.go
+// pkg/doczcore/config/doctype.go
 {
     Name:    "plan",
     Aliases: nil, // or []string{"planning"}
@@ -412,14 +415,16 @@ the diff.
 
 ### Time injection
 
-`internal/document/time.go` exports `var timeNow = time.Now` so tests can
-override the current time:
+`docwrite.Create` stamps the document's `created:` date from
+`CreateOptions.CreatedAt`; a zero value falls back to `time.Now()`. Tests (and
+`cmd/create.go`, which sources it from `runner.Now()`) pin the date by setting
+the field explicitly — no package-level clock global to reset:
 
 ```go
-document.TimeNow = func() time.Time {
-    return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+opts := docwrite.CreateOptions{
+    // ...
+    CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 }
-t.Cleanup(func() { document.TimeNow = time.Now })
 ```
 
 ### Config in command tests
