@@ -25,6 +25,7 @@ make ci             # full CI pipeline (lint + test + build + license-check)
 - Lint: `golangci-lint` with `golines` for line length
 - Tests: `t.TempDir()` for filesystem tests, golden files under `testdata/golden/`. `internal/*` tests run in parallel (`t.Parallel()` on every top-level test and subtest); cmd/ tests stay serial because of the package-level `runner` and flag globals. cmd/ tests no longer use `os.Pipe` for output capture or `os.Chdir` for cwd manipulation — they construct a `Runner` with `Out: &bytes.Buffer{}` (or `io.Discard`) and `RepoRoot: t.TempDir()`, and set `repoRoot = dir` when going through `rootCmd.Execute()` so PersistentPreRunE picks up the test dir without process-level cwd changes
 - Golden files are regenerated with `go test ./... -update`, never hand-edited
+- `test/consumer/` is a **separate module** (its own `go.mod`, `replace github.com/donaldgifford/docz => ../..`) that imports `pkg/doczcore/{config,document}` by their public paths as an external consumer would — the DESIGN-0007/IMPL-0013 proof that the promoted surface is importable (and that `internal/docwrite` is *not*, from outside the module). It is outside root `./...`, so `make test-consumer` runs it via a dedicated `go test`, wired into `make ci` and the `test-go` CI job
 
 ## Git Workflow
 

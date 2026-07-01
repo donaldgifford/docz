@@ -229,16 +229,16 @@ or a broken `document → config` typed-field link.
 
 #### Tasks
 
-- [ ] Add the consumer test per Open Question 2 (separate module under
+- [x] Add the consumer test per Open Question 2 (separate module under
       `test/consumer/` with its own `go.mod`, recommended).
-- [ ] Import `pkg/doczcore/config` + `pkg/doczcore/document` by their public
+- [x] Import `pkg/doczcore/config` + `pkg/doczcore/document` by their public
       paths; write a `.docz.yaml` + a couple of docs into `t.TempDir()`.
-- [ ] Run `Load → Validate → EnabledTypes → ScanDocuments`; assert the
+- [x] Run `Load → Validate → EnabledTypes → ScanDocuments`; assert the
       `DocEntry` set, including a **custom type** (locks in the type-agnostic
       contract, DESIGN-0006 / INV-0005 Obs 1).
-- [ ] Call `ParseFrontmatter` on raw bytes (the no-checkout path) and assert the
+- [x] Call `ParseFrontmatter` on raw bytes (the no-checkout path) and assert the
       parsed `Frontmatter`.
-- [ ] Wire the consumer module into `make ci` (a dedicated `go test` invocation,
+- [x] Wire the consumer module into `make ci` (a dedicated `go test` invocation,
       since a separate module is outside root `./...`) and CI; add the license
       header to its files.
 
@@ -309,7 +309,7 @@ Land the move as a public, pinnable surface and bring the living docs in line.
       behavior is preserved; `go test ./... -update` yields zero churn.
 - [x] **CLI regression suite stays green** — `cmd/` tests (serial, `Runner` +
       `bytes.Buffer`, `RepoRoot: t.TempDir()`) pass untouched except imports.
-- [ ] **Consumer import smoke test** (Phase 3) — external module runs
+- [x] **Consumer import smoke test** (Phase 3) — external module runs
       `Load→Validate→EnabledTypes→ScanDocuments` + `ParseFrontmatter`, asserts a
       custom type.
 - [ ] **`make ci` gates the move** — lint (`golangci-lint` + `golines`),
