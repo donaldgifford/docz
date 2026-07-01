@@ -312,7 +312,7 @@ Land the move as a public, pinnable surface and bring the living docs in line.
 - [x] **Consumer import smoke test** (Phase 3) — external module runs
       `Load→Validate→EnabledTypes→ScanDocuments` + `ParseFrontmatter`, asserts a
       custom type.
-- [ ] **`make ci` gates the move** — lint (`golangci-lint` + `golines`),
+- [x] **`make ci` gates the move** — lint (`golangci-lint` + `golines`),
       license-check, build, full suite, and the consumer module.
 
 ## Dependencies
