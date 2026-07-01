@@ -8,7 +8,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // MkDocsConfig is the input for CreateMkDocs. Empty optional fields are

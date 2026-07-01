@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/donaldgifford/docz/internal/config"
-	"github.com/donaldgifford/docz/internal/document"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
 const (

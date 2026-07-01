@@ -3,7 +3,7 @@ package toc
 import (
 	"os"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // FileInput is a single document handed to UpdateFiles. Content is the

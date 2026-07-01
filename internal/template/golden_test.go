@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 var update = flag.Bool("update", false, "update golden files")

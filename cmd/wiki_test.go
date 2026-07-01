@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // setupWikiTestDir builds an isolated repo root in t.TempDir() and

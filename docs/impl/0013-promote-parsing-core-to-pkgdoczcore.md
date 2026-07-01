@@ -157,26 +157,26 @@ must prove "byte-for-byte identical behavior."
 
 #### Tasks
 
-- [ ] `git mv internal/config pkg/doczcore/config` (preserve package name
+- [x] `git mv internal/config pkg/doczcore/config` (preserve package name
       `config`).
-- [ ] `git mv internal/document pkg/doczcore/document` (preserve package name
+- [x] `git mv internal/document pkg/doczcore/document` (preserve package name
       `document`, including `testdata/`), then relocate the write-side —
       `status.go` (`SetStatus` + `ErrStatusFieldMissing` /
       `ErrUnsupportedLineEndings`) and `create.go`
       (`Create`/`CreateOptions`/`CreateResult`) — into a new `internal/docwrite`
       package that imports the public read-side (Decision 1).
-- [ ] Repoint the `document → config` cross-package import to
+- [x] Repoint the `document → config` cross-package import to
       `github.com/donaldgifford/docz/pkg/doczcore/config`.
-- [ ] Repoint all `cmd/*` and `internal/{template,index,toc,wiki}` imports to the
+- [x] Repoint all `cmd/*` and `internal/{template,index,toc,wiki}` imports to the
       new `pkg/doczcore/...` paths (goimports/gci ordering preserved).
-- [ ] Repoint `cmd/status.go` and `cmd/create.go` to `internal/docwrite` for
+- [x] Repoint `cmd/status.go` and `cmd/create.go` to `internal/docwrite` for
       `SetStatus` / `Create` (they still import `pkg/doczcore/{config,document}`
       for the read-side types).
-- [ ] Repoint every in-package `_test.go` import (config/document external test
+- [x] Repoint every in-package `_test.go` import (config/document external test
       packages, `parity_baseline_test.go`).
-- [ ] Update `.golangci.yml` goconst exclusion path from
+- [x] Update `.golangci.yml` goconst exclusion path from
       `internal/config/doctype\.go` to `pkg/doczcore/config/doctype\.go`.
-- [ ] `make fmt` + `go build ./...` until the tree compiles clean.
+- [x] `make fmt` + `go build ./...` until the tree compiles clean.
 
 #### Success Criteria
 
@@ -304,10 +304,10 @@ Land the move as a public, pinnable surface and bring the living docs in line.
 
 ## Testing Plan
 
-- [ ] **Moved tests pass unchanged except import paths** — `config`/`document`
+- [x] **Moved tests pass unchanged except import paths** — `config`/`document`
       table-driven tests (`t.Parallel()`, golden `status/` fixtures) prove
       behavior is preserved; `go test ./... -update` yields zero churn.
-- [ ] **CLI regression suite stays green** — `cmd/` tests (serial, `Runner` +
+- [x] **CLI regression suite stays green** — `cmd/` tests (serial, `Runner` +
       `bytes.Buffer`, `RepoRoot: t.TempDir()`) pass untouched except imports.
 - [ ] **Consumer import smoke test** (Phase 3) — external module runs
       `Load→Validate→EnabledTypes→ScanDocuments` + `ParseFrontmatter`, asserts a

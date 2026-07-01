@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/internal/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/config"
 )
 
 // newCustomTypeRunner builds a Runner rooted at dir whose config enables a

@@ -1,4 +1,4 @@
-package document
+package docwrite
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
 var update = flag.Bool("update", false, "update golden files")
@@ -267,12 +269,12 @@ func TestSetStatus_Errors(t *testing.T) {
 		{
 			name:    "no frontmatter",
 			input:   "just a plain markdown file\nwith no frontmatter\n",
-			wantErr: ErrNoFrontmatter,
+			wantErr: document.ErrNoFrontmatter,
 		},
 		{
 			name:    "false closing delimiter",
 			input:   "---\nstatus: Draft\n---more text here\n",
-			wantErr: ErrNoFrontmatter,
+			wantErr: document.ErrNoFrontmatter,
 		},
 	}
 
