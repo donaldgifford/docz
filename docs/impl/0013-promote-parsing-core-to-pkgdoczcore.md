@@ -198,18 +198,18 @@ future semver constraint (DESIGN-0007), so the surface is trimmed on purpose.
 
 #### Tasks
 
-- [ ] Confirm the write-side (`SetStatus`, `Create`) lives only in
+- [x] Confirm the write-side (`SetStatus`, `Create`) lives only in
       `internal/docwrite` and is absent from the public `pkg/doczcore/document`
       surface (Decision 1).
-- [ ] Add/verify package doc comments on `pkg/doczcore/config` and
+- [x] Add/verify package doc comments on `pkg/doczcore/config` and
       `pkg/doczcore/document` so `go doc` presents the intended surface.
-- [ ] Confirm the intended read-side surface is exported and unchanged: `Load`,
+- [x] Confirm the intended read-side surface is exported and unchanged: `Load`,
       `DefaultConfig`, `Validate`, `EnabledTypes`, `TypeDir`, `ValidateType`,
       `DocTypeNames`, `AllDocTypes`, `LookupDocType`, `ErrUnknownType`; `Config`,
       `TypeConfig`, `DocType`, `Status`; `ScanDocuments`, `LoadFrontmatter`,
       `ParseFrontmatter`, `IsDoczFile`, `Frontmatter`, `DocEntry`,
       `ErrNoFrontmatter`.
-- [ ] Verify the `goheader` license header is present on every moved (and any
+- [x] Verify the `goheader` license header is present on every moved (and any
       relocated) file.
 
 #### Success Criteria
