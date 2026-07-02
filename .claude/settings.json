@@ -18,6 +18,7 @@
     "donald-loop@donaldgifford-claude-skills": true,
     "todo-comments@donaldgifford-claude-skills": true,
     "helm@donaldgifford-claude-skills": true,
+    "renovate@donaldgifford-claude-skills": true,
     "docz@donaldgifford-claude-skills": true
   },
   "permissions": {
