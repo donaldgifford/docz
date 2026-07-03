@@ -145,8 +145,11 @@ progresses:
 
 - **Phase 0 — Foundations:** docz `v0.5.0` pinned + `internal/doczcontract`
   smoke test ✅; core deps pinned (chi/pgx/go-redis/asynq/meilisearch) ✅;
-  `internal/config` (typed env config, validation, `Secret`) ✅ (100% cover).
-  Remaining: `main()` wiring, `compose.yaml`.
+  `internal/config` (typed env config, validation, `Secret`) ✅ (100% cover);
+  `main()` wiring (chi server, `/healthz` liveness, graceful shutdown,
+  `-version`) ✅. Remaining: `compose.yaml`, then confirm the skeleton green.
+  - `cmd/docz-api` is the composition root — `run()`/`serve()` are covered by a
+    live smoke test, not unit tests, so its statement coverage is low by design.
   - Core deps are still staged `// indirect` until their packages import them —
     **do not run a bare `go mod tidy`** while they're unused (it prunes them);
     use `go get`. `viper` is now direct (used by `internal/config`).

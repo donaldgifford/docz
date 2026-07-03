@@ -145,10 +145,14 @@ Meilisearch) for development and tests.
       (github/okta/keycloak); PEM path-or-body resolution; a redacting `Secret`
       type (slog + fmt); added operational `HTTP_ADDR`/`LOG_LEVEL`/`LOG_FORMAT`.
       100% test coverage.)_
-- [ ] Expand `cmd/docz-api/main.go`: flag parsing, `slog` handler selection
+- [x] Expand `cmd/docz-api/main.go`: flag parsing, `slog` handler selection
       (text/json + level via env), config load, dependency wiring, an HTTP
       server with graceful shutdown, and `--version` using the existing
-      `version`/`commit`/`date` ldflags vars.
+      `version`/`commit`/`date` ldflags vars. _(done — `run()` composition root:
+      `-version` flag, `config.Load`, `newLogger` (text/json × level), a chi
+      server with `RequestID`/`Recoverer` and a `/healthz` liveness probe, and
+      `signal.NotifyContext` graceful shutdown. Smoke-tested: start → healthz →
+      clean SIGTERM drain.)_
 - [ ] Add a `compose.yaml` (or equivalent) that brings up Postgres, Redis, and
       Meilisearch for local dev (OQ 9).
 - [ ] Confirm `just build`, `just test`, `just lint`, and `just fmt` are green
