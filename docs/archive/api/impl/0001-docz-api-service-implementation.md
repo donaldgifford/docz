@@ -117,11 +117,15 @@ Meilisearch) for development and tests.
 
 #### Tasks
 
-- [ ] Pin the docz parsing library in `go.mod`:
+- [x] Pin the docz parsing library in `go.mod`:
       `require github.com/donaldgifford/docz v0.5.0` (DESIGN-0007 shipped; no
       `replace` needed — Decision 2 / OQ 2). Add a smoke test that imports
       `pkg/doczcore/config` + `pkg/doczcore/document`, parses a fixture, and
-      resolves a type by name / `id_prefix` / alias via `ValidateType`.
+      resolves a type by name / `id_prefix` / alias via `ValidateType`. _(done —
+      `internal/doczcontract` guards the R1–R5 surface: `config.Load` +
+      `Validate` + `EnabledTypes` + `TypeDir` + `ValidateType`
+      name/alias/id_prefix resolution, `document.ParseFrontmatter`,
+      `ScanDocuments` → `DocEntry.Content`, and `IsDoczFile`.)_
 - [x] Align the Go toolchain: `go.mod` and `mise.toml` both on **go 1.26.4**
       (docz `v0.5.0`'s minimum). _(done — `mise.toml` bumped)_
 - [ ] Add core dependencies: HTTP router (`chi`, Decision 3), Postgres driver
