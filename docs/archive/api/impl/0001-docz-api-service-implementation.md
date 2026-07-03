@@ -285,13 +285,27 @@ synchronous, triggered manually).
       precise per-type filtering to ingest. Blobs base64-decoded (newline-
       stripped). Unit-tested via a stub `http.RoundTripper` (tree classify +
       decode table + no-config error) — no network/token exchange.)_
-- [ ] Implement `internal/ingest` core (synchronous): fetch → `doczcfg.Load` +
+- [x] Implement `internal/ingest` core (synchronous): fetch → `doczcfg.Load` +
       `Validate` → `doczdoc.ParseFrontmatter` per blob → `content_hash` gate →
       map to rows → `store` upsert/reconcile. Type set comes only from
-      `.docz.yaml` (no hardcoded built-ins).
-- [ ] If a root `CHANGELOG.md` exists, fetch and **cache it raw** onto the
+      `.docz.yaml` (no hardcoded built-ins). _(done — `Service.Run` (narrow
+      `reconciler` interface) fetches, `loadConfig` bridges `doczcfg.Load` via a
+      throwaway temp dir (no `HOME` mutation — tests neutralize `HOME`),
+      `Validate` (error fatal, warnings logged), `buildDocTypes` maps every
+      `EnabledTypes()` entry, `buildDocuments` assigns each blob to a type by its
+      `docs_dir/<type.dir>/` prefix (over-fetched blobs ignored) and skips
+      missing-frontmatter docs with a warn (repo not aborted); `mapper.go` maps
+      `TypeConfig`→`DocTypeInput` and blob+`Frontmatter`→`DocumentInput`
+      (`content_hash = hex(sha256(raw))`, `created` parsed, `Status` via the
+      `config.Status` string). `config_snapshot` = `json.Marshal(cfg)` (jsonb;
+      raw YAML can't be stored in jsonb). The store's content-hash gate does the
+      diff. Unit + fake-fetcher e2e tests green.)_
+- [x] If a root `CHANGELOG.md` exists, fetch and **cache it raw** onto the
       `repos` row (`content_hash`-gated, no parsing), per OQ 10 — available for
-      the future versions/audit UI.
+      the future versions/audit UI. _(done — `githubapp.Fetch` pulls a root
+      `CHANGELOG.md` blob into `RepoSnapshot.ChangelogMD`/`ChangelogSHA`;
+      `Service.Run` sets them on `RepoInput` (`changelog_md`/`changelog_sha`);
+      the store upsert writes them unparsed. Covered by the e2e test.)_
 - [ ] Implement the manual onboard / re-sync trigger (OQ 4) to seed an
       `installations` + `repos` row and run an ingest for one repo.
 - [ ] Implement `internal/httpapi` with `chi`: the read endpoints
