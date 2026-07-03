@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,7 +24,9 @@ import (
 
 	"github.com/donaldgifford/docz-api/internal/authorize"
 	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz-api/internal/githubapp"
 	"github.com/donaldgifford/docz-api/internal/httpapi"
+	"github.com/donaldgifford/docz-api/internal/ingest"
 	"github.com/donaldgifford/docz-api/internal/store"
 )
 
@@ -63,6 +67,8 @@ func main() {
 func run() error {
 	showVersion := flag.Bool("version", false, "print version information and exit")
 	migrateOnly := flag.Bool("migrate", false, "apply database migrations and exit")
+	onboardSpec := flag.String("onboard", "",
+		"seed a repo and run one ingest, then exit: owner/name@installation_id")
 	flag.Parse()
 
 	if *showVersion {
@@ -100,6 +106,12 @@ func run() error {
 	defer pool.Close()
 	st := store.NewStore(pool)
 
+	// `-onboard` hand-seeds one repo and runs a synchronous ingest, then exits —
+	// the Phase 2 manual trigger (webhooks take over in Phase 5).
+	if *onboardSpec != "" {
+		return runOnboard(context.Background(), st, &cfg, *onboardSpec)
+	}
+
 	slog.Info("starting docz-api",
 		"version", version,
 		"commit", commit,
@@ -113,6 +125,71 @@ func run() error {
 	httpapi.NewHandler(st).Mount(router, authorize.Middleware(authorizer))
 
 	return serve(cfg.HTTP.Addr, router)
+}
+
+// runOnboard seeds an installation + repo and runs one synchronous ingest for
+// spec (owner/name@installation_id), then returns. It is the Phase 2 manual
+// onboard/re-sync trigger; Phase 5 drives the same ingest from webhooks.
+func runOnboard(ctx context.Context, st *store.Store, cfg *config.Config, spec string) error {
+	owner, name, installationID, err := parseOnboardSpec(spec)
+	if err != nil {
+		return fmt.Errorf("parse -onboard: %w", err)
+	}
+
+	// Account login/type are placeholders here; the installation webhook
+	// (Phase 5) overwrites them with the real values on the next event.
+	if uerr := st.UpsertInstallation(ctx, store.InstallationInput{
+		ID:           installationID,
+		AccountLogin: owner,
+		AccountType:  "Organization",
+	}); uerr != nil {
+		return fmt.Errorf("seed installation: %w", uerr)
+	}
+
+	ghClient, err := githubapp.NewClient(
+		cfg.GitHub.AppID,
+		[]byte(cfg.GitHub.PrivateKey.Reveal()),
+		cfg.GitHub.APIBase,
+		installationID,
+	)
+	if err != nil {
+		return fmt.Errorf("build github client: %w", err)
+	}
+
+	res, err := ingest.NewService(st, ghClient).Run(ctx, installationID, owner, name)
+	if err != nil {
+		return fmt.Errorf("ingest %s/%s: %w", owner, name, err)
+	}
+
+	slog.Info("onboard complete",
+		"repo", owner+"/"+name,
+		"docs_upserted", res.DocsUpserted,
+		"docs_deleted", res.DocsDeleted,
+		"docs_unchanged", res.DocsUnchanged,
+		"types_upserted", res.TypesUpserted,
+		"types_deleted", res.TypesDeleted,
+	)
+	return nil
+}
+
+// parseOnboardSpec splits "owner/name@installation_id" into its parts.
+func parseOnboardSpec(spec string) (owner, name string, installationID int64, err error) {
+	repoPart, idPart, ok := strings.Cut(spec, "@")
+	if !ok {
+		return "", "", 0, fmt.Errorf("expected owner/name@installation_id, got %q", spec)
+	}
+	owner, name, ok = strings.Cut(repoPart, "/")
+	if !ok || owner == "" || name == "" {
+		return "", "", 0, fmt.Errorf("expected owner/name, got %q", repoPart)
+	}
+	installationID, err = strconv.ParseInt(idPart, 10, 64)
+	if err != nil {
+		return "", "", 0, fmt.Errorf("invalid installation id %q: %w", idPart, err)
+	}
+	if installationID <= 0 {
+		return "", "", 0, fmt.Errorf("installation id must be positive, got %d", installationID)
+	}
+	return owner, name, installationID, nil
 }
 
 // newLogger builds the slog handler selected by the log config. Config

@@ -73,6 +73,44 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
+func TestParseOnboardSpec(t *testing.T) {
+	tests := []struct {
+		name     string
+		spec     string
+		wantOwn  string
+		wantName string
+		wantID   int64
+		wantErr  bool
+	}{
+		{"valid", "acme/platform@42", "acme", "platform", 42, false},
+		{"missing at", "acme/platform", "", "", 0, true},
+		{"missing slash", "acme@42", "", "", 0, true},
+		{"empty owner", "/platform@42", "", "", 0, true},
+		{"empty name", "acme/@42", "", "", 0, true},
+		{"bad id", "acme/platform@notanumber", "", "", 0, true},
+		{"zero id", "acme/platform@0", "", "", 0, true},
+		{"negative id", "acme/platform@-1", "", "", 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			owner, name, id, err := parseOnboardSpec(tt.spec)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("parseOnboardSpec(%q) = nil error, want error", tt.spec)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("parseOnboardSpec(%q): %v", tt.spec, err)
+			}
+			if owner != tt.wantOwn || name != tt.wantName || id != tt.wantID {
+				t.Errorf("parseOnboardSpec(%q) = (%q, %q, %d), want (%q, %q, %d)",
+					tt.spec, owner, name, id, tt.wantOwn, tt.wantName, tt.wantID)
+			}
+		})
+	}
+}
+
 func TestReadyz(t *testing.T) {
 	tests := []struct {
 		name     string

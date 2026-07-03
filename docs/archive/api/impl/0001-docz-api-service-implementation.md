@@ -306,8 +306,14 @@ synchronous, triggered manually).
       `CHANGELOG.md` blob into `RepoSnapshot.ChangelogMD`/`ChangelogSHA`;
       `Service.Run` sets them on `RepoInput` (`changelog_md`/`changelog_sha`);
       the store upsert writes them unparsed. Covered by the e2e test.)_
-- [ ] Implement the manual onboard / re-sync trigger (OQ 4) to seed an
-      `installations` + `repos` row and run an ingest for one repo.
+- [x] Implement the manual onboard / re-sync trigger (OQ 4) to seed an
+      `installations` + `repos` row and run an ingest for one repo. _(done —
+      `-onboard owner/name@installation_id` flag on the binary (like `-migrate`):
+      `runOnboard` seeds the installation (`UpsertInstallation`), builds a
+      per-installation `githubapp.Client`, runs one `ingest.Service.Run`, logs
+      the `ReconcileResult`, and exits. `parseOnboardSpec` validates the spec
+      (unit-tested: valid + malformed/empty/bad-id cases). No admin HTTP surface;
+      Phase 5 webhooks drive the same ingest.)_
 - [x] Implement `internal/httpapi` with `chi`: the read endpoints
       `/api/v1/repos`, `/api/v1/repos/{owner}/{name}`, `…/types`,
       `…/types/{type}/docs`, and `…/types/{type}/docs/{doc_id}`. Resolve
