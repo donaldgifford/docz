@@ -22,3 +22,15 @@ ON CONFLICT (repo_id, doc_id) DO UPDATE SET
 
 -- name: DeleteDocument :exec
 DELETE FROM documents WHERE repo_id = $1 AND doc_id = $2;
+
+-- name: ListDocumentsByType :many
+-- Metadata only (no raw_md) for the list endpoint; type is the canonical name.
+SELECT id, repo_id, type, doc_id, title, status, author, created,
+       path, git_sha, content_hash, updated_at
+FROM documents
+WHERE repo_id = $1 AND type = $2
+ORDER BY doc_id;
+
+-- name: GetDocumentByID :one
+-- Full row including raw_md for the single-doc endpoint.
+SELECT * FROM documents WHERE repo_id = $1 AND doc_id = $2;

@@ -25,6 +25,37 @@ func (q *Queries) DeleteDocument(ctx context.Context, arg DeleteDocumentParams) 
 	return err
 }
 
+const getDocumentByID = `-- name: GetDocumentByID :one
+SELECT id, repo_id, type, doc_id, title, status, author, created, path, git_sha, content_hash, raw_md, updated_at FROM documents WHERE repo_id = $1 AND doc_id = $2
+`
+
+type GetDocumentByIDParams struct {
+	RepoID int64  `json:"repo_id"`
+	DocID  string `json:"doc_id"`
+}
+
+// Full row including raw_md for the single-doc endpoint.
+func (q *Queries) GetDocumentByID(ctx context.Context, arg GetDocumentByIDParams) (Document, error) {
+	row := q.db.QueryRow(ctx, getDocumentByID, arg.RepoID, arg.DocID)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.RepoID,
+		&i.Type,
+		&i.DocID,
+		&i.Title,
+		&i.Status,
+		&i.Author,
+		&i.Created,
+		&i.Path,
+		&i.GitSha,
+		&i.ContentHash,
+		&i.RawMd,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listDocumentHashes = `-- name: ListDocumentHashes :many
 SELECT doc_id, content_hash FROM documents WHERE repo_id = $1
 `
@@ -44,6 +75,68 @@ func (q *Queries) ListDocumentHashes(ctx context.Context, repoID int64) ([]ListD
 	for rows.Next() {
 		var i ListDocumentHashesRow
 		if err := rows.Scan(&i.DocID, &i.ContentHash); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDocumentsByType = `-- name: ListDocumentsByType :many
+SELECT id, repo_id, type, doc_id, title, status, author, created,
+       path, git_sha, content_hash, updated_at
+FROM documents
+WHERE repo_id = $1 AND type = $2
+ORDER BY doc_id
+`
+
+type ListDocumentsByTypeParams struct {
+	RepoID int64  `json:"repo_id"`
+	Type   string `json:"type"`
+}
+
+type ListDocumentsByTypeRow struct {
+	ID          int64              `json:"id"`
+	RepoID      int64              `json:"repo_id"`
+	Type        string             `json:"type"`
+	DocID       string             `json:"doc_id"`
+	Title       string             `json:"title"`
+	Status      pgtype.Text        `json:"status"`
+	Author      pgtype.Text        `json:"author"`
+	Created     pgtype.Date        `json:"created"`
+	Path        string             `json:"path"`
+	GitSha      string             `json:"git_sha"`
+	ContentHash string             `json:"content_hash"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Metadata only (no raw_md) for the list endpoint; type is the canonical name.
+func (q *Queries) ListDocumentsByType(ctx context.Context, arg ListDocumentsByTypeParams) ([]ListDocumentsByTypeRow, error) {
+	rows, err := q.db.Query(ctx, listDocumentsByType, arg.RepoID, arg.Type)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDocumentsByTypeRow{}
+	for rows.Next() {
+		var i ListDocumentsByTypeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RepoID,
+			&i.Type,
+			&i.DocID,
+			&i.Title,
+			&i.Status,
+			&i.Author,
+			&i.Created,
+			&i.Path,
+			&i.GitSha,
+			&i.ContentHash,
+			&i.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

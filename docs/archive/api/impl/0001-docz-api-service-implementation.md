@@ -308,10 +308,21 @@ synchronous, triggered manually).
       the store upsert writes them unparsed. Covered by the e2e test.)_
 - [ ] Implement the manual onboard / re-sync trigger (OQ 4) to seed an
       `installations` + `repos` row and run an ingest for one repo.
-- [ ] Implement `internal/httpapi` with `chi`: the read endpoints
+- [x] Implement `internal/httpapi` with `chi`: the read endpoints
       `/api/v1/repos`, `/api/v1/repos/{owner}/{name}`, `…/types`,
       `…/types/{type}/docs`, and `…/types/{type}/docs/{doc_id}`. Resolve
-      `{type}` by name / `id_prefix` / alias via `doczcfg` (R4).
+      `{type}` by name / `id_prefix` / alias via `doczcfg` (R4). _(done —
+      `Handler.Mount(r, authz)` mounts all five under `/api/v1` behind the
+      authorize middleware. Wire DTOs (`dto.go`) flatten `pgtype` nullables to
+      `""`/`YYYY-MM-DD`/RFC3339 and never leak sqlc types; single-doc returns
+      `raw_md`, list omits it. `{type}` resolved by a pure `resolveType` over the
+      repo's `doc_types` rows (name / `id_prefix` case-insensitive / alias) — no
+      live `doczcfg` at serve time. Store gained `GetRepo`/`ListDocumentsByType`/
+      `GetDocumentByID` (+ queries). `pgx.ErrNoRows`→404; repos outside the
+      allowed set 404 (existence hiding). Wired into `main` (`newRouter` returns
+      `chi.Router`; probes stay open). Tested: `resolveType` table + full
+      fake-store endpoint suite incl. name/prefix/alias equivalence and the
+      unauthorized-404 path.)_
 - [x] Add the `authorize` middleware seam (returns the full onboarded-repo set
       for now) and apply it to every read endpoint. _(done — `internal/authorize`:
       `Authorizer.Allowed(ctx, r) (AllowedRepos, error)`, `Middleware(a)` injects

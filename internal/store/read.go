@@ -15,6 +15,16 @@ func (s *Store) ListRepos(ctx context.Context) ([]Repo, error) {
 	return repos, nil
 }
 
+// GetRepo returns one repo by owner and name. A missing row surfaces as
+// pgx.ErrNoRows for the caller to map to 404.
+func (s *Store) GetRepo(ctx context.Context, owner, name string) (Repo, error) {
+	repo, err := s.q.GetRepoByOwnerName(ctx, GetRepoByOwnerNameParams{Owner: owner, Name: name})
+	if err != nil {
+		return Repo{}, fmt.Errorf("get repo %s/%s: %w", owner, name, err)
+	}
+	return repo, nil
+}
+
 // GetDocTypesForRepo returns a repo's doc types. It wraps the same query the
 // reconcile path uses, presenting one coherent store surface to the read API.
 func (s *Store) GetDocTypesForRepo(ctx context.Context, repoID int64) ([]DocType, error) {
@@ -23,4 +33,26 @@ func (s *Store) GetDocTypesForRepo(ctx context.Context, repoID int64) ([]DocType
 		return nil, fmt.Errorf("list doc types for repo %d: %w", repoID, err)
 	}
 	return types, nil
+}
+
+// ListDocumentsByType returns a repo's documents of one canonical type, metadata
+// only (no raw markdown), ordered by doc id.
+func (s *Store) ListDocumentsByType(
+	ctx context.Context, repoID int64, typeName string,
+) ([]ListDocumentsByTypeRow, error) {
+	docs, err := s.q.ListDocumentsByType(ctx, ListDocumentsByTypeParams{RepoID: repoID, Type: typeName})
+	if err != nil {
+		return nil, fmt.Errorf("list documents for repo %d type %q: %w", repoID, typeName, err)
+	}
+	return docs, nil
+}
+
+// GetDocumentByID returns one document (including raw markdown) by repo and doc
+// id. A missing row surfaces as pgx.ErrNoRows for the caller to map to 404.
+func (s *Store) GetDocumentByID(ctx context.Context, repoID int64, docID string) (Document, error) {
+	doc, err := s.q.GetDocumentByID(ctx, GetDocumentByIDParams{RepoID: repoID, DocID: docID})
+	if err != nil {
+		return Document{}, fmt.Errorf("get document %q in repo %d: %w", docID, repoID, err)
+	}
+	return doc, nil
 }

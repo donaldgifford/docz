@@ -20,7 +20,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/donaldgifford/docz-api/internal/authorize"
 	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz-api/internal/httpapi"
 	"github.com/donaldgifford/docz-api/internal/store"
 )
 
@@ -105,7 +107,12 @@ func run() error {
 		"auth_providers", cfg.Auth.Providers,
 	)
 
-	return serve(cfg.HTTP.Addr, newRouter(st))
+	// Probes plus the /api/v1 read surface behind the authorize seam.
+	router := newRouter(st)
+	authorizer := authorize.NewAllReposAuthorizer(st)
+	httpapi.NewHandler(st).Mount(router, authorize.Middleware(authorizer))
+
+	return serve(cfg.HTTP.Addr, router)
 }
 
 // newLogger builds the slog handler selected by the log config. Config
@@ -137,9 +144,10 @@ func newLogger(cfg config.LogConfig) (*slog.Logger, error) {
 	}
 }
 
-// newRouter builds the HTTP handler. At this phase it serves the liveness and
-// readiness probes; read endpoints and the auth surface land in later phases.
-func newRouter(ready readyChecker) http.Handler {
+// newRouter builds the base chi router with the liveness and readiness probes.
+// The /api/v1 read routes are mounted onto it by the caller so they sit behind
+// the authorize middleware while the probes stay open.
+func newRouter(ready readyChecker) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
