@@ -128,9 +128,13 @@ Meilisearch) for development and tests.
       `ScanDocuments` → `DocEntry.Content`, and `IsDoczFile`.)_
 - [x] Align the Go toolchain: `go.mod` and `mise.toml` both on **go 1.26.4**
       (docz `v0.5.0`'s minimum). _(done — `mise.toml` bumped)_
-- [ ] Add core dependencies: HTTP router (`chi`, Decision 3), Postgres driver
+- [x] Add core dependencies: HTTP router (`chi`, Decision 3), Postgres driver
       (`pgx`, Decision 4), Redis client + `hibiken/asynq` (OQ 1), Meilisearch
       client. Note `spf13/viper` arrives transitively via `pkg/doczcore/config`.
+      _(done — pinned `go-chi/chi/v5 v5.3.0`, `jackc/pgx/v5 v5.10.0`,
+      `redis/go-redis/v9 v9.21.0`, `hibiken/asynq v0.26.0`,
+      `meilisearch-go v0.36.3`; staged `// indirect`, promoted to direct as each
+      package imports them in Phases 1–4.)_
 - [ ] Implement `internal/config`: a typed struct loaded from the environment
       (every var in DESIGN-0001's config surface) with validation and clear
       errors for missing/invalid required values, using **`spf13/viper`** —

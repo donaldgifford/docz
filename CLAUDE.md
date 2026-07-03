@@ -137,8 +137,11 @@ progresses:
 ### Phase progress
 
 - **Phase 0 — Foundations:** docz `v0.5.0` pinned + `internal/doczcontract`
-  smoke test ✅. Remaining: core deps, `internal/config`, `main()` wiring,
-  `compose.yaml`.
+  smoke test ✅; core deps pinned (chi/pgx/go-redis/asynq/meilisearch) ✅.
+  Remaining: `internal/config`, `main()` wiring, `compose.yaml`.
+  - Core deps are staged `// indirect` until their packages import them — **do
+    not run a bare `go mod tidy`** while they're unused (it prunes them); use
+    `go get`. They become direct as Phases 1–4 land.
 
 ## Renovate
 
