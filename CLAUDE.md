@@ -150,10 +150,22 @@ progresses:
   liveness, graceful shutdown, `-version`); `compose.yaml` + `.env.example`
   (Postgres/Redis/Meili, all healthy). All success criteria met; skeleton green
   (`build`/`test`/`lint`/`fmt`).
-- **Phase 1 — Persistence (next):** goose migrations for the DESIGN-0001 data
-  model, sqlc-generated store with the transactional upsert/reconcile +
-  delete-absent ops, `/readyz` Postgres reachability, testcontainers integration
-  tests.
+- **Phase 1 — Persistence (in progress):** initial goose migration
+  (`internal/store/migrations/`, all 6 tables + indexes, verified up/down) ✅.
+  Remaining: goose embed + startup runner, sqlc config + queries, the
+  `internal/store` `ReconcileRepo` tx (upsert/reconcile/delete-absent),
+  `/readyz`, testcontainers integration tests.
+  - **Persistence conventions** (per go-architect): pgx v5 + pgxpool at runtime;
+    goose runs migrations via the `pgx/v5/stdlib` `database/sql` adapter (never
+    shares the pool); sqlc (`sql_package: pgx/v5`) generates typed queries into
+    `internal/store`; JSONB → `json.RawMessage`, nullable TEXT → a local
+    `NullableText`, nullable time/date → `pgtype`. `ReconcileRepo` is one tx:
+    `pool.Begin` → `queries.WithTx(tx)` → deferred `Rollback` → explicit
+    `Commit`; content-hash gate lives in Go, not SQL. Store constructor is
+    `NewStore` (avoids colliding with sqlc's generated `New`). Integration tests
+    behind `//go:build integration` with testcontainers.
+  - `users` / `webhook_deliveries` Go code is **YAGNI until Phases 6/5** — the
+    tables exist now; queries/methods come when first needed.
   - `cmd/docz-api` is the composition root — `run()`/`serve()` are covered by a
     live smoke test, not unit tests, so its statement coverage is low by design.
   - Local infra: `docker compose up -d` (Postgres 5432 / Redis 6379 / Meili

@@ -185,11 +185,14 @@ upsert/reconcile operation ingestion needs.
 
 #### Tasks
 
-- [ ] Write `goose` migrations (Decision 5) for `installations`, `repos`,
+- [x] Write `goose` migrations (Decision 5) for `installations`, `repos`,
       `doc_types`, `documents`, `users`, `webhook_deliveries`, plus the
       `documents_repo_type_idx` / `documents_status_idx` indexes, and nullable
       `changelog_md` + `changelog_sha` columns on `repos` for the cached
-      `CHANGELOG.md` (OQ 10). Forward-only, additive where possible.
+      `CHANGELOG.md` (OQ 10). Forward-only, additive where possible. _(done —
+      `internal/store/migrations/20260702000000_initial_schema.sql` (Up + Down).
+      Verified: Up creates all 6 tables + both custom indexes against real
+      Postgres, Down rolls back cleanly.)_
 - [ ] Embed migrations and run `migrate up` on startup; expose an explicit
       `migrate` path for CI/ops.
 - [ ] Configure `sqlc` (Decision 4) + write the queries; generate the typed Go
