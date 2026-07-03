@@ -143,12 +143,17 @@ progresses:
 
 ### Phase progress
 
-- **Phase 0 — Foundations:** docz `v0.5.0` pinned + `internal/doczcontract`
-  smoke test ✅; core deps pinned (chi/pgx/go-redis/asynq/meilisearch) ✅;
-  `internal/config` (typed env config, validation, `Secret`) ✅ (100% cover);
-  `main()` wiring (chi server, `/healthz` liveness, graceful shutdown,
-  `-version`) ✅; `compose.yaml` + `.env.example` (Postgres/Redis/Meili, all
-  healthy) ✅. Phase 0 essentially complete.
+- **Phase 0 — Foundations: COMPLETE ✅** — docz `v0.5.0` pinned +
+  `internal/doczcontract` smoke test; core deps pinned
+  (chi/pgx/go-redis/asynq/meilisearch); `internal/config` (typed env config,
+  validation, `Secret`, 100% cover); `main()` wiring (chi server, `/healthz`
+  liveness, graceful shutdown, `-version`); `compose.yaml` + `.env.example`
+  (Postgres/Redis/Meili, all healthy). All success criteria met; skeleton green
+  (`build`/`test`/`lint`/`fmt`).
+- **Phase 1 — Persistence (next):** goose migrations for the DESIGN-0001 data
+  model, sqlc-generated store with the transactional upsert/reconcile +
+  delete-absent ops, `/readyz` Postgres reachability, testcontainers integration
+  tests.
   - `cmd/docz-api` is the composition root — `run()`/`serve()` are covered by a
     live smoke test, not unit tests, so its statement coverage is low by design.
   - Local infra: `docker compose up -d` (Postgres 5432 / Redis 6379 / Meili

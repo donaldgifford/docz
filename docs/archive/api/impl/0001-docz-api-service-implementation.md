@@ -159,8 +159,9 @@ Meilisearch) for development and tests.
       `.env.example` mapping the DEV connection settings to `internal/config`.
       Verified: `docker compose up` brings all three to **healthy** and each is
       reachable.)_
-- [ ] Confirm `just build`, `just test`, `just lint`, and `just fmt` are green
-      on the skeleton.
+- [x] Confirm `just build`, `just test`, `just lint`, and `just fmt` are green
+      on the skeleton. _(done — all four green; `git status` clean after `fmt`.
+      **Phase 0 success criteria all met.**)_
 
 #### Success Criteria
 
