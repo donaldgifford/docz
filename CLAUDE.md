@@ -189,11 +189,12 @@ progresses:
   - Core deps are still staged `// indirect` until their packages import them —
     **do not run a bare `go mod tidy`** while they're unused (it prunes them);
     use `go get`. `viper` is now direct (used by `internal/config`).
-- **Phase 2 — Thin vertical slice (in progress):** synchronous hand-onboarded
-  fetch→parse→upsert→serve. **Done:** Task 1 (githubapp), Tasks 2+3 (ingest core
-  + changelog). **Remaining:** Task 4 (`-onboard` flag), Task 5 (httpapi read
-  endpoints + store read queries), Task 6 (authorize seam), Task 7 (e2e wiring
-  test). Architecture (per go-architect):
+- **Phase 2 — Thin vertical slice: COMPLETE ✅** — synchronous hand-onboarded
+  fetch→parse→upsert→serve, all 7 tasks done and all acceptance criteria proven
+  by the `internal/e2e` integration test (five endpoints match DESIGN-0001, the
+  custom type is addressable by name/prefix/alias, the content-hash gate makes an
+  unchanged re-onboard a no-op, changed docs rewrite and removed docs delete).
+  Architecture (per go-architect):
   - **`internal/ingest`** owns the consumer-side boundary: `RepoFetcher`
     interface (`Fetch(ctx, owner, name) (*RepoSnapshot, error)`) + `RepoSnapshot`
     {HeadSHA, DefaultBranch, ConfigYAML []byte, ChangelogMD []byte, ChangelogSHA,

@@ -338,11 +338,20 @@ synchronous, triggered manually).
       impl only. Store gained `ListRepos`/`GetDocTypesForRepo` (`read.go`) +
       `ListRepos :many` query. Unit-tested (contains, all-ids, ctx injection, 500
       path). Applied to every `/api/v1` route in the httpapi Task 5 commit.)_
-- [ ] Tests: unit parse→row mapping incl. a **custom type** fixture
+- [x] Tests: unit parse→row mapping incl. a **custom type** fixture
       (`frameworks`/`FW-0001`, addressable by name/prefix/alias) and a
       **missing-frontmatter** doc (skipped, repo not aborted); e2e onboarding of
       a `testdata/` fixture repo through a replayed/recorded GitHub client
-      asserting the read-endpoint shapes.
+      asserting the read-endpoint shapes. _(done — unit mapping in
+      `internal/ingest` (custom `frameworks` type; nofm/stray-dir skips).
+      `internal/e2e` (`//go:build integration`) onboards a fixture repo through
+      the **real** ingest pipeline into a **real** Postgres (testcontainers) and
+      serves it via the **real** httpapi handler — only GitHub is faked (an
+      in-memory `RepoFetcher`), so it is hermetic. Asserts: five endpoints return
+      the DESIGN-0001 shapes; the custom type is addressable via name / `FW` /
+      `fw` / `framework` equivalently; a re-onboard of unchanged HEAD is a
+      Postgres no-op (2 unchanged / 0 upserted); a changed doc rewrites exactly
+      its row and a removed doc is deleted, reflected by the list endpoint.)_
 
 #### Success Criteria
 
