@@ -1,0 +1,22 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    # sqlc reads the goose migration files as its schema source (it honors the
+    # +goose Up/Down annotations, applying only Up).
+    schema: "internal/store/migrations"
+    queries: "internal/store/queries"
+    gen:
+      go:
+        package: "store"
+        out: "internal/store"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_interface: false
+        emit_empty_slices: true
+        overrides:
+          # JSONB columns are marshaled/unmarshaled by the store layer, so
+          # surface them as json.RawMessage rather than []byte.
+          - db_type: "jsonb"
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"

@@ -153,7 +153,8 @@ progresses:
 - **Phase 1 — Persistence (in progress):** initial goose migration (all 6
   tables + indexes, verified up/down) ✅; migrations embedded + `store.Migrate`/
   `MigrateDown` runner, `main()` auto-migrates on startup, `-migrate` flag for
-  CI/ops (idempotent, verified) ✅. Remaining: sqlc config + queries, the
+  CI/ops (idempotent, verified) ✅; sqlc config + query sets generated (typed
+  access in package `store`; `just generate`/`generate-check`) ✅. Remaining: the
   `internal/store` `ReconcileRepo` tx (upsert/reconcile/delete-absent),
   `/readyz`, testcontainers integration tests.
   - Migrations run via goose's global-free
@@ -164,8 +165,11 @@ progresses:
   - **Persistence conventions** (per go-architect): pgx v5 + pgxpool at runtime;
     goose runs migrations via the `pgx/v5/stdlib` `database/sql` adapter (never
     shares the pool); sqlc (`sql_package: pgx/v5`) generates typed queries into
-    `internal/store`; JSONB → `json.RawMessage`, nullable TEXT → a local
-    `NullableText`, nullable time/date → `pgtype`. `ReconcileRepo` is one tx:
+    `internal/store`. Only JSONB is overridden (→ `json.RawMessage`); nullable
+    TEXT/time/date stay as sqlc's `pgtype.Text`/`pgtype.Timestamptz`/`pgtype.Date`
+    defaults (deviated from the architect's local `NullableText` — simpler; the
+    `pgtype` values get mapped to clean DTOs at the Phase 2 boundary).
+    `ReconcileRepo` is one tx:
     `pool.Begin` → `queries.WithTx(tx)` → deferred `Rollback` → explicit
     `Commit`; content-hash gate lives in Go, not SQL. Store constructor is
     `NewStore` (avoids colliding with sqlc's generated `New`). Integration tests

@@ -112,6 +112,20 @@ fmt:
     @gofmt -s -w .
     @goimports -w -local {{ goimports_local }} .
 
+# ─── Codegen ────────────────────────────────────────────────────────
+
+# Regenerate typed DB access from SQL (sqlc reads internal/store/queries)
+[group('codegen')]
+generate:
+    @sqlc generate
+    @echo "✓ sqlc generate complete"
+
+# Verify committed sqlc output is up to date with the SQL sources
+[group('codegen')]
+generate-check:
+    @sqlc diff
+    @echo "✓ sqlc output is up to date"
+
 # ─── License compliance ─────────────────────────────────────────────
 
 # Check dependency licenses against the allow list

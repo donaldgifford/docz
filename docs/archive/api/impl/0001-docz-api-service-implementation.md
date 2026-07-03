@@ -200,8 +200,17 @@ upsert/reconcile operation ingestion needs.
       serving, and the `-migrate` flag runs migrations then exits. Verified
       idempotent against Postgres — `goose_db_version` records
       `20260702000000`.)_
-- [ ] Configure `sqlc` (Decision 4) + write the queries; generate the typed Go
-      access code.
+- [x] Configure `sqlc` (Decision 4) + write the queries; generate the typed Go
+      access code. _(done — `sqlc.yaml` (`sql_package: pgx/v5`, `emit_json_tags`,
+      `emit_empty_slices`, jsonb → `json.RawMessage` override) reads the
+      goose-annotated migrations as its schema (Up only). Query sets in
+      `internal/store/queries/{installations,repos,doc_types,documents}.sql`
+      cover the upsert/list/get/delete surface the reconcile path needs
+      (`UpsertRepo :one` RETURNING id; `ListDocumentHashes`/`ListDocTypes` for
+      the content-hash gate; `UpsertDocument`/`DeleteDocument`,
+      `UpsertDocType`/`DeleteDocType`). Generated into package `store`; nullable
+      text left as `pgtype.Text` (mapped to clean DTOs in Phase 2). `just
+      generate` regenerates, `just generate-check` (sqlc diff) guards drift.)_
 - [ ] Implement `internal/store`: CRUD over the tables plus the
       **transactional** `documents` upsert + `doc_types` reconcile (one tx), and
       the delete-absent-from-HEAD operation, modeling JSONB columns

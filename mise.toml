@@ -9,6 +9,8 @@ golines = "latest"
 "go:golang.org/x/tools/cmd/goimports" = "latest"
 # renovate: datasource=go depName=golang.org/x/tools
 "go:golang.org/x/tools/cmd/godoc" = "latest"
+# renovate: datasource=go depName=github.com/sqlc-dev/sqlc
+"go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "latest"
 
 
 # Repo utilities
