@@ -2,6 +2,7 @@ nav:
     - Home: index.md
     - ADRs:
         - Overview: adr/README.md
+        - 'ADR-0001: pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)': adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md
     - Design:
         - Overview: design/README.md
         - 'DESIGN-0001: docz CLI Tool': design/0001-docz-cli-design.md
@@ -27,6 +28,7 @@ nav:
         - 'IMPL-0011: Status Set CLI Primitive': impl/0011-status-set-cli-primitive.md
         - 'IMPL-0012: Custom Document Type Support': impl/0012-custom-document-type-support.md
         - 'IMPL-0013: Promote parsing core to pkg/doczcore': impl/0013-promote-parsing-core-to-pkgdoczcore.md
+        - 'IMPL-0014: v1.0.0: the five-package pkg/doczcore public core': impl/0014-v100-the-five-package-pkgdoczcore-public-core.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
@@ -34,6 +36,7 @@ nav:
         - 'INV-0003: Init and Update Should Respect Config-Listed Types Only': investigation/0003-init-and-update-should-respect-config-listed-types-only.md
         - 'INV-0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity': investigation/0004-v1-release-plan-tui-markdown-preview-and-cli-parity.md
         - 'INV-0005: docz-api and docz-site: centralized cross-repo docz registry and viewer': investigation/0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md
+        - 'INV-0006: Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh': investigation/0006-per-package-core-requirements-docz-cli-vs-docz-api-docz-site.md
     - Plans:
         - Overview: plan/README.md
     - RFCs:

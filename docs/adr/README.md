@@ -31,4 +31,5 @@ docz create adr "Your ADR Title"
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
+| ADR-0001 | pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0) | Accepted | 2026-07-03 | Donald Gifford | [0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md](0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md) |
 <!-- END DOCZ AUTO-GENERATED -->
