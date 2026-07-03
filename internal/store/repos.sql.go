@@ -47,7 +47,7 @@ INSERT INTO repos (
     installation_id, owner, name, default_branch, docs_dir, config_snapshot,
     last_synced_sha, last_synced_at, changelog_md, changelog_sha, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()
+    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, now()
 )
 ON CONFLICT (owner, name) DO UPDATE SET
     installation_id = EXCLUDED.installation_id,
@@ -55,7 +55,7 @@ ON CONFLICT (owner, name) DO UPDATE SET
     docs_dir        = EXCLUDED.docs_dir,
     config_snapshot = EXCLUDED.config_snapshot,
     last_synced_sha = EXCLUDED.last_synced_sha,
-    last_synced_at  = EXCLUDED.last_synced_at,
+    last_synced_at  = now(),
     changelog_md    = EXCLUDED.changelog_md,
     changelog_sha   = EXCLUDED.changelog_sha,
     updated_at      = now()
@@ -63,16 +63,15 @@ RETURNING id
 `
 
 type UpsertRepoParams struct {
-	InstallationID int64              `json:"installation_id"`
-	Owner          string             `json:"owner"`
-	Name           string             `json:"name"`
-	DefaultBranch  string             `json:"default_branch"`
-	DocsDir        string             `json:"docs_dir"`
-	ConfigSnapshot json.RawMessage    `json:"config_snapshot"`
-	LastSyncedSha  pgtype.Text        `json:"last_synced_sha"`
-	LastSyncedAt   pgtype.Timestamptz `json:"last_synced_at"`
-	ChangelogMd    pgtype.Text        `json:"changelog_md"`
-	ChangelogSha   pgtype.Text        `json:"changelog_sha"`
+	InstallationID int64           `json:"installation_id"`
+	Owner          string          `json:"owner"`
+	Name           string          `json:"name"`
+	DefaultBranch  string          `json:"default_branch"`
+	DocsDir        string          `json:"docs_dir"`
+	ConfigSnapshot json.RawMessage `json:"config_snapshot"`
+	LastSyncedSha  pgtype.Text     `json:"last_synced_sha"`
+	ChangelogMd    pgtype.Text     `json:"changelog_md"`
+	ChangelogSha   pgtype.Text     `json:"changelog_sha"`
 }
 
 func (q *Queries) UpsertRepo(ctx context.Context, arg UpsertRepoParams) (int64, error) {
@@ -84,7 +83,6 @@ func (q *Queries) UpsertRepo(ctx context.Context, arg UpsertRepoParams) (int64, 
 		arg.DocsDir,
 		arg.ConfigSnapshot,
 		arg.LastSyncedSha,
-		arg.LastSyncedAt,
 		arg.ChangelogMd,
 		arg.ChangelogSha,
 	)

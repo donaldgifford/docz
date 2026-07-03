@@ -154,8 +154,10 @@ progresses:
   tables + indexes, verified up/down) ✅; migrations embedded + `store.Migrate`/
   `MigrateDown` runner, `main()` auto-migrates on startup, `-migrate` flag for
   CI/ops (idempotent, verified) ✅; sqlc config + query sets generated (typed
-  access in package `store`; `just generate`/`generate-check`) ✅. Remaining: the
-  `internal/store` `ReconcileRepo` tx (upsert/reconcile/delete-absent),
+  access in package `store`; `just generate`/`generate-check`) ✅; `internal/store`
+  `ReconcileRepo` tx (repo upsert + doc_types reconcile + documents
+  content-hash gate + delete-absent, one tx) with plain-Go input DTOs + a
+  `ReconcileResult` summary ✅. Remaining: wire `pgxpool` + `Store` into `main`,
   `/readyz`, testcontainers integration tests.
   - Migrations run via goose's global-free
     `goose.NewProvider(DialectPostgres, db, migrations.FS)`; `db` is a

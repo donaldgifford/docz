@@ -211,10 +211,21 @@ upsert/reconcile operation ingestion needs.
       `UpsertDocType`/`DeleteDocType`). Generated into package `store`; nullable
       text left as `pgtype.Text` (mapped to clean DTOs in Phase 2). `just
       generate` regenerates, `just generate-check` (sqlc diff) guards drift.)_
-- [ ] Implement `internal/store`: CRUD over the tables plus the
+- [x] Implement `internal/store`: CRUD over the tables plus the
       **transactional** `documents` upsert + `doc_types` reconcile (one tx), and
       the delete-absent-from-HEAD operation, modeling JSONB columns
-      (`config_snapshot`, `statuses`, `aliases`).
+      (`config_snapshot`, `statuses`, `aliases`). _(done — `store.go`
+      (`Store`/`NewStore`, `Ping`, `Close`, `UpsertInstallation`, plain-Go input
+      DTOs that keep `pgtype` out of the ingest boundary + `textOrNull`/
+      `dateOrNull` null mappers) and `reconcile.go` (`ReconcileRepo`: one tx via
+      `pool.Begin` → `q.WithTx(tx)` → committed-gated deferred `Rollback` →
+      `Commit`; `reconcileDocTypes` upsert-present/delete-absent;
+      `reconcileDocuments` with the **content-hash gate** — unchanged docs
+      skipped, new/changed upserted, absent deleted). JSONB surfaces as
+      `json.RawMessage`; `last_synced_at`/`updated_at` are DB-authoritative
+      (`now()`). Returns a `ReconcileResult` (upsert/delete/unchanged counts) for
+      logging + tests. Style-reviewed (go-style) and lint-clean. Integration
+      tests land in Task 6.)_
 - [ ] Implement `/readyz` reporting Postgres reachability (readiness probe; OQ
       8).
 - [ ] Integration tests with the chosen harness (OQ 7): migrations apply
