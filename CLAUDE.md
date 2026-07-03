@@ -189,6 +189,59 @@ progresses:
   - Core deps are still staged `// indirect` until their packages import them —
     **do not run a bare `go mod tidy`** while they're unused (it prunes them);
     use `go get`. `viper` is now direct (used by `internal/config`).
+- **Phase 2 — Thin vertical slice (in progress):** synchronous hand-onboarded
+  fetch→parse→upsert→serve. Architecture (per go-architect):
+  - **`internal/ingest`** owns the consumer-side boundary: `RepoFetcher`
+    interface (`Fetch(ctx, owner, name) (*RepoSnapshot, error)`) + `RepoSnapshot`
+    {HeadSHA, DefaultBranch, ConfigYAML []byte, ChangelogMD []byte, ChangelogSHA,
+    Blobs []BlobEntry{Path,GitSHA,Content}}. `Service` (`NewService(reconciler,
+    RepoFetcher)`, `Run(ctx, installationID, owner, name) (ReconcileResult,
+    error)`) does fetch → `loadConfig` → `Validate` → per-blob
+    `doczdoc.ParseFrontmatter` (skip `ErrNoFrontmatter` with a warn, don't abort)
+    → map → `store.ReconcileRepo`. Narrow `reconciler` interface (just
+    `ReconcileRepo`).
+  - **`loadConfig` bridge**: `doczcfg.Load` is disk-based, so write ONLY
+    `.docz.yaml` to an `os.MkdirTemp` dir + point `HOME` at an empty temp dir
+    (suppress the `$HOME/.docz.yaml` merge, like doczcontract tests), `Load("",
+    tmp)`, deferred `RemoveAll`. Doc blobs never touch disk (byte-based
+    `ParseFrontmatter`). `config_snapshot` stores the **raw `.docz.yaml` bytes**
+    (`json.RawMessage(snap.ConfigYAML)`) — faithful to HEAD, no marshal risk.
+  - **mapper** (`internal/ingest/mapper.go`): `TypeConfig`→`DocTypeInput`
+    (Statuses/Aliases→`json.Marshal`), blob+`Frontmatter`→`DocumentInput`
+    (DocID=`fm.ID`, Type=canonical name, ContentHash=`hex(sha256(raw))`,
+    Created=`time.Parse("2006-01-02")` zero-on-empty, Status=`string(fm.Status)`).
+  - **`internal/githubapp`**: concrete `Client` implementing `ingest.RepoFetcher`
+    via `ghinstallation/v2` (App JWT→installation token transport, auto-refresh) +
+    `google/go-github/v66`. `NewClient(appID, pemKey []byte, apiBase,
+    installationID, httpClient)` — inject `*http.Client` (stub RoundTripper in
+    tests). Fetch: get `.docz.yaml` blob first → parse for DocsDir/type dirs →
+    resolve default-branch HEAD → recursive tree → filter to `.docz.yaml` +
+    `docs_dir/<type.dir>/` via `doczdoc.IsDoczFile` → fetch blobs (base64) +
+    optional root `CHANGELOG.md`.
+  - **`internal/httpapi`**: chi `Handler.Mount(r, authzMiddleware)` at `/api/v1`.
+    Response **DTOs** (own structs, map `pgtype` nullables → `string`/`YYYY-MM-DD`,
+    never expose sqlc types). `{type}` resolved by `resolveType(types
+    []store.DocType, input) (canonical, ok)` — pure match over name/id_prefix/
+    aliases (no live doczcfg at serve time). Narrow `storeReader` interface.
+  - **`internal/authorize`**: seam middleware. `Authorizer.Allowed(ctx, r)
+    (AllowedRepos, error)`; `Middleware(a)` injects `AllowedRepos []int64` into
+    ctx; `FromContext(ctx)` + `AllowedRepos.Contains(id)`. Phase 2 stub
+    `AllReposAuthorizer` (narrow `repoLister`) returns all repo IDs; Phase 5 swaps
+    impl only. Handlers use allowed-set for **existence hiding** (404 when a repo
+    id isn't allowed).
+  - **onboard**: `-onboard owner/name@installationID` flag on the binary (like
+    `-migrate`); seeds installation+repo, runs one `Service.Run`. No admin HTTP
+    surface in Phase 2.
+  - **New store read methods/queries**: `ListRepos :many`, `ListDocumentsByType
+    :many` (no `raw_md`), `GetDocumentByID :one` (with `raw_md`); reuse
+    `ListDocTypes` for `GetDocTypesForRepo`.
+  - **New deps**: `google/go-github/v66`, `bradleyfalzon/ghinstallation/v2` (add
+    via `go get`, direct).
+  - **Testing**: unit mapper tests (custom `frameworks`/`FW-0001` fixture +
+    missing-frontmatter skip); hermetic e2e via an in-memory **fake
+    `RepoFetcher`** at the ingest boundary (not a network VCR); `githubapp` token/
+    tree-filter logic tested with a stub `http.RoundTripper` + `testdata/` JSON
+    fixtures.
 
 ## Renovate
 

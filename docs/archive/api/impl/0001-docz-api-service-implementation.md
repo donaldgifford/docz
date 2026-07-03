@@ -269,12 +269,22 @@ synchronous, triggered manually).
 
 #### Tasks
 
-- [ ] Implement `internal/githubapp`: the App JWT → installation-token flow
+- [x] Implement `internal/githubapp`: the App JWT → installation-token flow
       (`google/go-github` + `bradleyfalzon/ghinstallation`, OQ 2 / 3b) **and**
       the fetch surface — resolve default-branch HEAD, pull the recursive tree,
       filter to `.docz.yaml` + blobs under `docs_dir/<type.dir>/` (using
       `doczcfg` + `doczdoc.IsDoczFile`), and fetch blobs (base64-decoded).
-      Authenticate every fetch with an installation token.
+      Authenticate every fetch with an installation token. _(done — `Client`
+      implements `ingest.RepoFetcher` (boundary types in `internal/ingest/
+      fetcher.go`: `RepoSnapshot`/`BlobEntry`). Auth via `ghinstallation/v2`
+      transport (auto JWT→token refresh) on `go-github/v88` (`WithTransport` for
+      stub injection, `WithEnterpriseURLs` for GHE). `Fetch` resolves
+      default-branch HEAD → recursive tree (errors if truncated) → classifies
+      `.docz.yaml`/`CHANGELOG.md`/doc blobs; **githubapp applies only the
+      `doczdoc.IsDoczFile` convention filter** (no doczcfg dependency), leaving
+      precise per-type filtering to ingest. Blobs base64-decoded (newline-
+      stripped). Unit-tested via a stub `http.RoundTripper` (tree classify +
+      decode table + no-config error) — no network/token exchange.)_
 - [ ] Implement `internal/ingest` core (synchronous): fetch → `doczcfg.Load` +
       `Validate` → `doczdoc.ParseFrontmatter` per blob → `content_hash` gate →
       map to rows → `store` upsert/reconcile. Type set comes only from

@@ -3,8 +3,10 @@ module github.com/donaldgifford/docz-api
 go 1.26.4
 
 require (
+	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/donaldgifford/docz v0.5.0
 	github.com/go-chi/chi/v5 v5.3.0
+	github.com/google/go-github/v88 v88.0.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/pressly/goose/v3 v3.27.2
 	github.com/spf13/viper v1.21.0
@@ -34,7 +36,9 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hibiken/asynq v0.26.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
