@@ -32,11 +32,20 @@ var (
 )
 
 // Server timeouts. readHeaderTimeout bounds slow-header (Slowloris) clients;
-// shutdownTimeout bounds in-flight request draining on shutdown.
+// shutdownTimeout bounds in-flight request draining on shutdown; readyzTimeout
+// bounds the dependency check behind the readiness probe.
 const (
 	readHeaderTimeout = 10 * time.Second
 	shutdownTimeout   = 15 * time.Second
+	readyzTimeout     = 2 * time.Second
 )
+
+// readyChecker reports whether the service's downstream dependencies are
+// reachable. *store.Store satisfies it via Ping; the readiness probe depends on
+// this narrow interface rather than the concrete store.
+type readyChecker interface {
+	Ping(ctx context.Context) error
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -80,6 +89,15 @@ func run() error {
 		return nil
 	}
 
+	// Runtime connection pool (separate from the migration connection). Owned
+	// here for the process lifetime; closed on shutdown.
+	pool, err := store.NewPool(context.Background(), cfg.Store.DatabaseURL)
+	if err != nil {
+		return fmt.Errorf("connecting to postgres: %w", err)
+	}
+	defer pool.Close()
+	st := store.NewStore(pool)
+
 	slog.Info("starting docz-api",
 		"version", version,
 		"commit", commit,
@@ -87,7 +105,7 @@ func run() error {
 		"auth_providers", cfg.Auth.Providers,
 	)
 
-	return serve(cfg.HTTP.Addr, newRouter())
+	return serve(cfg.HTTP.Addr, newRouter(st))
 }
 
 // newLogger builds the slog handler selected by the log config. Config
@@ -119,23 +137,46 @@ func newLogger(cfg config.LogConfig) (*slog.Logger, error) {
 	}
 }
 
-// newRouter builds the HTTP handler. At this phase it serves only the liveness
-// probe; read endpoints, readiness, and the auth surface land in later phases.
-func newRouter() http.Handler {
+// newRouter builds the HTTP handler. At this phase it serves the liveness and
+// readiness probes; read endpoints and the auth surface land in later phases.
+func newRouter(ready readyChecker) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Get("/healthz", handleHealthz)
+	r.Get("/readyz", handleReadyz(ready))
 	return r
 }
 
 // handleHealthz is the liveness probe: it reports that the process is up,
 // independent of downstream dependencies (readiness covers those).
 func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, `{"status":"ok"}`)
+}
+
+// handleReadyz is the readiness probe: healthy only when Postgres is reachable.
+// It gates traffic during rollout and dependency outages. Later phases extend
+// the check to cover Meilisearch and Redis.
+func handleReadyz(ready readyChecker) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), readyzTimeout)
+		defer cancel()
+		if err := ready.Ping(ctx); err != nil {
+			slog.Warn("readiness check failed", "err", err)
+			writeJSON(w, http.StatusServiceUnavailable, `{"status":"unavailable"}`)
+			return
+		}
+		writeJSON(w, http.StatusOK, `{"status":"ok"}`)
+	}
+}
+
+// writeJSON writes a status code and a JSON body, logging a failed write at
+// debug (the client has already gone away; nothing else to do).
+func writeJSON(w http.ResponseWriter, status int, body string) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(`{"status":"ok"}`)); err != nil {
-		slog.Debug("healthz response write failed", "err", err)
+	w.WriteHeader(status)
+	if _, err := w.Write([]byte(body)); err != nil {
+		slog.Debug("response write failed", "status", status, "err", err)
 	}
 }
 

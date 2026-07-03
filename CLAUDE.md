@@ -157,8 +157,10 @@ progresses:
   access in package `store`; `just generate`/`generate-check`) ✅; `internal/store`
   `ReconcileRepo` tx (repo upsert + doc_types reconcile + documents
   content-hash gate + delete-absent, one tx) with plain-Go input DTOs + a
-  `ReconcileResult` summary ✅. Remaining: wire `pgxpool` + `Store` into `main`,
-  `/readyz`, testcontainers integration tests.
+  `ReconcileResult` summary ✅; `store.NewPool` + `main()` wires the runtime
+  pgxpool/`Store` and serves `/readyz` (Postgres reachability via a narrow
+  `readyChecker` interface, 200/503, unit-tested with a stub) ✅. Remaining:
+  testcontainers integration tests.
   - Migrations run via goose's global-free
     `goose.NewProvider(DialectPostgres, db, migrations.FS)`; `db` is a
     `database/sql` conn from `sql.Open("pgx", …)` (pgx stdlib adapter),

@@ -226,8 +226,15 @@ upsert/reconcile operation ingestion needs.
       (`now()`). Returns a `ReconcileResult` (upsert/delete/unchanged counts) for
       logging + tests. Style-reviewed (go-style) and lint-clean. Integration
       tests land in Task 6.)_
-- [ ] Implement `/readyz` reporting Postgres reachability (readiness probe; OQ
-      8).
+- [x] Implement `/readyz` reporting Postgres reachability (readiness probe; OQ
+      8). _(done — `store.NewPool` opens the runtime pgxpool (ping-verified,
+      separate from the migration conn); `main()` builds the pool after
+      migrations, wires a `Store`, and closes the pool on shutdown. `/readyz`
+      depends on a narrow `readyChecker` interface (`Ping(ctx) error`) satisfied
+      by `*store.Store`: 200 `{"status":"ok"}` when reachable, 503
+      `{"status":"unavailable"}` + a `slog.Warn` otherwise, with a 2s check
+      timeout. Unit-tested both paths via a stub (no DB needed); shared
+      `writeJSON` helper.)_
 - [ ] Integration tests with the chosen harness (OQ 7): migrations apply
       cleanly; CRUD round-trips; the transactional upsert/reconcile and delete
       paths behave correctly under a simulated changed/new/deleted set.

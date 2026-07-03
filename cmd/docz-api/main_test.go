@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +10,12 @@ import (
 
 	"github.com/donaldgifford/docz-api/internal/config"
 )
+
+// stubReady is a readyChecker whose Ping returns a fixed error, letting the
+// readiness probe be tested without a real database.
+type stubReady struct{ err error }
+
+func (s stubReady) Ping(context.Context) error { return s.err }
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
@@ -45,7 +53,7 @@ func TestHealthz(t *testing.T) {
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", http.NoBody)
 	rec := httptest.NewRecorder()
 
-	newRouter().ServeHTTP(rec, req)
+	newRouter(stubReady{}).ServeHTTP(rec, req)
 
 	res := rec.Result()
 	defer res.Body.Close()
@@ -62,5 +70,39 @@ func TestHealthz(t *testing.T) {
 	}
 	if got := string(body); got != `{"status":"ok"}` {
 		t.Errorf("body = %q, want the ok payload", got)
+	}
+}
+
+func TestReadyz(t *testing.T) {
+	tests := []struct {
+		name     string
+		pingErr  error
+		wantCode int
+		wantBody string
+	}{
+		{"reachable", nil, http.StatusOK, `{"status":"ok"}`},
+		{"unreachable", errors.New("dial tcp: refused"), http.StatusServiceUnavailable, `{"status":"unavailable"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/readyz", http.NoBody)
+			rec := httptest.NewRecorder()
+
+			newRouter(stubReady{err: tt.pingErr}).ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			if res.StatusCode != tt.wantCode {
+				t.Errorf("status = %d, want %d", res.StatusCode, tt.wantCode)
+			}
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatalf("read body: %v", err)
+			}
+			if got := string(body); got != tt.wantBody {
+				t.Errorf("body = %q, want %q", got, tt.wantBody)
+			}
+		})
 	}
 }
