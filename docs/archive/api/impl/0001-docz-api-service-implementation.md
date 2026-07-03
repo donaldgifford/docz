@@ -153,8 +153,12 @@ Meilisearch) for development and tests.
       server with `RequestID`/`Recoverer` and a `/healthz` liveness probe, and
       `signal.NotifyContext` graceful shutdown. Smoke-tested: start → healthz →
       clean SIGTERM drain.)_
-- [ ] Add a `compose.yaml` (or equivalent) that brings up Postgres, Redis, and
-      Meilisearch for local dev (OQ 9).
+- [x] Add a `compose.yaml` (or equivalent) that brings up Postgres, Redis, and
+      Meilisearch for local dev (OQ 9). _(done — `compose.yaml` (Postgres 17,
+      Redis 7.4, Meilisearch v1.12) with healthchecks + named volumes, plus
+      `.env.example` mapping the DEV connection settings to `internal/config`.
+      Verified: `docker compose up` brings all three to **healthy** and each is
+      reachable.)_
 - [ ] Confirm `just build`, `just test`, `just lint`, and `just fmt` are green
       on the skeleton.
 

@@ -1,0 +1,66 @@
+# Local development infrastructure for docz-api: Postgres, Redis, Meilisearch.
+#
+# Not for production. Brings up the three stateful dependencies the service
+# needs so `just run` (or `go run ./cmd/docz-api`) can reach them on localhost.
+# Hermetic CI tests use testcontainers-go instead (IMPL-0001 OQ 7 / OQ 9).
+#
+# Usage:
+#   docker compose up -d       # start in the background
+#   docker compose ps          # check health
+#   docker compose down        # stop (add -v to also wipe the volumes)
+#
+# The credentials below are DEV-ONLY defaults that mirror .env.example; never
+# reuse them in a real deployment.
+---
+name: docz-api-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: docz
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: docz_api
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docz -d docz_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      MEILI_MASTER_KEY: masterKey
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data: {}
+  redis-data: {}
+  meili-data: {}

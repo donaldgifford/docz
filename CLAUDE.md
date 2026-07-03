@@ -147,9 +147,13 @@ progresses:
   smoke test ✅; core deps pinned (chi/pgx/go-redis/asynq/meilisearch) ✅;
   `internal/config` (typed env config, validation, `Secret`) ✅ (100% cover);
   `main()` wiring (chi server, `/healthz` liveness, graceful shutdown,
-  `-version`) ✅. Remaining: `compose.yaml`, then confirm the skeleton green.
+  `-version`) ✅; `compose.yaml` + `.env.example` (Postgres/Redis/Meili, all
+  healthy) ✅. Phase 0 essentially complete.
   - `cmd/docz-api` is the composition root — `run()`/`serve()` are covered by a
     live smoke test, not unit tests, so its statement coverage is low by design.
+  - Local infra: `docker compose up -d` (Postgres 5432 / Redis 6379 / Meili
+    7700); copy `.env.example` → `.env` for `just run`. CI uses testcontainers
+    (later phases), not compose.
   - Core deps are still staged `// indirect` until their packages import them —
     **do not run a bare `go mod tidy`** while they're unused (it prunes them);
     use `go get`. `viper` is now direct (used by `internal/config`).
