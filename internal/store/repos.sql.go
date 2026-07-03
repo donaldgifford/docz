@@ -42,6 +42,44 @@ func (q *Queries) GetRepoByOwnerName(ctx context.Context, arg GetRepoByOwnerName
 	return i, err
 }
 
+const listRepos = `-- name: ListRepos :many
+SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at FROM repos ORDER BY owner, name
+`
+
+func (q *Queries) ListRepos(ctx context.Context) ([]Repo, error) {
+	rows, err := q.db.Query(ctx, listRepos)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Repo{}
+	for rows.Next() {
+		var i Repo
+		if err := rows.Scan(
+			&i.ID,
+			&i.InstallationID,
+			&i.Owner,
+			&i.Name,
+			&i.DefaultBranch,
+			&i.DocsDir,
+			&i.ConfigSnapshot,
+			&i.LastSyncedSha,
+			&i.LastSyncedAt,
+			&i.ChangelogMd,
+			&i.ChangelogSha,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertRepo = `-- name: UpsertRepo :one
 INSERT INTO repos (
     installation_id, owner, name, default_branch, docs_dir, config_snapshot,

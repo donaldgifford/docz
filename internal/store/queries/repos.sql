@@ -19,3 +19,6 @@ RETURNING id;
 
 -- name: GetRepoByOwnerName :one
 SELECT * FROM repos WHERE owner = $1 AND name = $2;
+
+-- name: ListRepos :many
+SELECT * FROM repos ORDER BY owner, name;

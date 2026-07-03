@@ -312,8 +312,15 @@ synchronous, triggered manually).
       `/api/v1/repos`, `/api/v1/repos/{owner}/{name}`, `…/types`,
       `…/types/{type}/docs`, and `…/types/{type}/docs/{doc_id}`. Resolve
       `{type}` by name / `id_prefix` / alias via `doczcfg` (R4).
-- [ ] Add the `authorize` middleware seam (returns the full onboarded-repo set
-      for now) and apply it to every read endpoint.
+- [x] Add the `authorize` middleware seam (returns the full onboarded-repo set
+      for now) and apply it to every read endpoint. _(done — `internal/authorize`:
+      `Authorizer.Allowed(ctx, r) (AllowedRepos, error)`, `Middleware(a)` injects
+      the set into the request context (500 on authorizer error), `FromContext` +
+      `AllowedRepos.Contains(id)`. Phase 2 stub `AllReposAuthorizer` (narrow
+      `repoLister` = `store.ListRepos`) returns all repo ids; Phase 5 swaps the
+      impl only. Store gained `ListRepos`/`GetDocTypesForRepo` (`read.go`) +
+      `ListRepos :many` query. Unit-tested (contains, all-ids, ctx injection, 500
+      path). Applied to every `/api/v1` route in the httpapi Task 5 commit.)_
 - [ ] Tests: unit parse→row mapping incl. a **custom type** fixture
       (`frameworks`/`FW-0001`, addressable by name/prefix/alias) and a
       **missing-frontmatter** doc (skipped, repo not aborted); e2e onboarding of
