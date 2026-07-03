@@ -193,8 +193,13 @@ upsert/reconcile operation ingestion needs.
       `internal/store/migrations/20260702000000_initial_schema.sql` (Up + Down).
       Verified: Up creates all 6 tables + both custom indexes against real
       Postgres, Down rolls back cleanly.)_
-- [ ] Embed migrations and run `migrate up` on startup; expose an explicit
-      `migrate` path for CI/ops.
+- [x] Embed migrations and run `migrate up` on startup; expose an explicit
+      `migrate` path for CI/ops. _(done — `migrations.FS` (go:embed) +
+      `store.     Migrate`/`MigrateDown` via goose's global-free `Provider` over
+      pgx's `database/sql` stdlib adapter; `main()` auto-migrates before
+      serving, and the `-migrate` flag runs migrations then exits. Verified
+      idempotent against Postgres — `goose_db_version` records
+      `20260702000000`.)_
 - [ ] Configure `sqlc` (Decision 4) + write the queries; generate the typed Go
       access code.
 - [ ] Implement `internal/store`: CRUD over the tables plus the

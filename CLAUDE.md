@@ -150,11 +150,17 @@ progresses:
   liveness, graceful shutdown, `-version`); `compose.yaml` + `.env.example`
   (Postgres/Redis/Meili, all healthy). All success criteria met; skeleton green
   (`build`/`test`/`lint`/`fmt`).
-- **Phase 1 — Persistence (in progress):** initial goose migration
-  (`internal/store/migrations/`, all 6 tables + indexes, verified up/down) ✅.
-  Remaining: goose embed + startup runner, sqlc config + queries, the
+- **Phase 1 — Persistence (in progress):** initial goose migration (all 6
+  tables + indexes, verified up/down) ✅; migrations embedded + `store.Migrate`/
+  `MigrateDown` runner, `main()` auto-migrates on startup, `-migrate` flag for
+  CI/ops (idempotent, verified) ✅. Remaining: sqlc config + queries, the
   `internal/store` `ReconcileRepo` tx (upsert/reconcile/delete-absent),
   `/readyz`, testcontainers integration tests.
+  - Migrations run via goose's global-free
+    `goose.NewProvider(DialectPostgres, db, migrations.FS)`; `db` is a
+    `database/sql` conn from `sql.Open("pgx", …)` (pgx stdlib adapter),
+    **separate from** the runtime pgxpool. `-migrate` applies + exits; normal
+    startup applies then serves.
   - **Persistence conventions** (per go-architect): pgx v5 + pgxpool at runtime;
     goose runs migrations via the `pgx/v5/stdlib` `database/sql` adapter (never
     shares the pool); sqlc (`sql_package: pgx/v5`) generates typed queries into

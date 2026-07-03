@@ -21,6 +21,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz-api/internal/store"
 )
 
 // Build metadata, injected via -ldflags at release time (see justfile).
@@ -50,6 +51,7 @@ func main() {
 // termination signal arrives.
 func run() error {
 	showVersion := flag.Bool("version", false, "print version information and exit")
+	migrateOnly := flag.Bool("migrate", false, "apply database migrations and exit")
 	flag.Parse()
 
 	if *showVersion {
@@ -67,6 +69,16 @@ func run() error {
 		return err
 	}
 	slog.SetDefault(logger)
+
+	// Apply pending migrations before serving so the schema is always current.
+	// `-migrate` runs them and exits — a CI/ops pre-deploy step.
+	if err := store.Migrate(context.Background(), cfg.Store.DatabaseURL); err != nil {
+		return fmt.Errorf("applying migrations: %w", err)
+	}
+	if *migrateOnly {
+		slog.Info("migrations applied; exiting")
+		return nil
+	}
 
 	slog.Info("starting docz-api",
 		"version", version,
