@@ -704,6 +704,11 @@ SESSION_TTL=720h               # session lifetime in Redis (e.g. 30d)
 
 # Ingestion tuning
 INGEST_DEBOUNCE=5s
+
+# Server + logging (operational; defaults shown)
+HTTP_ADDR=:8080
+LOG_LEVEL=info                 # debug|info|warn|error
+LOG_FORMAT=text                # text|json
 ```
 
 No group→repo authorization mapping appears here: authorization is deferred to a

@@ -135,11 +135,16 @@ Meilisearch) for development and tests.
       `redis/go-redis/v9 v9.21.0`, `hibiken/asynq v0.26.0`,
       `meilisearch-go v0.36.3`; staged `// indirect`, promoted to direct as each
       package imports them in Phases 1–4.)_
-- [ ] Implement `internal/config`: a typed struct loaded from the environment
+- [x] Implement `internal/config`: a typed struct loaded from the environment
       (every var in DESIGN-0001's config surface) with validation and clear
       errors for missing/invalid required values, using **`spf13/viper`** —
       already pulled in transitively by `pkg/doczcore/config`, so no new
-      top-level dependency (OQ 5).
+      top-level dependency (OQ 5). _(done — grouped sub-structs; `Load()`
+      collects **all** missing/invalid required vars into one
+      `ErrInvalidConfig`; provider-conditional validation
+      (github/okta/keycloak); PEM path-or-body resolution; a redacting `Secret`
+      type (slog + fmt); added operational `HTTP_ADDR`/`LOG_LEVEL`/`LOG_FORMAT`.
+      100% test coverage.)_
 - [ ] Expand `cmd/docz-api/main.go`: flag parsing, `slog` handler selection
       (text/json + level via env), config load, dependency wiring, an HTTP
       server with graceful shutdown, and `--version` using the existing

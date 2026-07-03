@@ -133,15 +133,23 @@ progresses:
 - **Tests use the standard-library `testing` package only** — no testify or
   other assertion deps. Prefer table-driven tests; positional struct literals
   are fine for tables with ≤3 fields.
+- **Secrets use `config.Secret`** (a `string` type that redacts on slog, `%s`,
+  `%v`, `%+v`, `%#v`). Read the real value only via `.Reveal()` — every unwrap
+  is explicit and greppable. Never log a raw credential.
+- **`internal/config` is env-only** (`spf13/viper` + `AutomaticEnv`, no config
+  file). `Load()` returns one `ErrInvalidConfig` listing **all** problems.
+  Config value receivers are heavy — `AuthEnabled` uses a pointer receiver on
+  purpose (gocritic `hugeParam`); don't flip it back to a value receiver.
 
 ### Phase progress
 
 - **Phase 0 — Foundations:** docz `v0.5.0` pinned + `internal/doczcontract`
-  smoke test ✅; core deps pinned (chi/pgx/go-redis/asynq/meilisearch) ✅.
-  Remaining: `internal/config`, `main()` wiring, `compose.yaml`.
-  - Core deps are staged `// indirect` until their packages import them — **do
-    not run a bare `go mod tidy`** while they're unused (it prunes them); use
-    `go get`. They become direct as Phases 1–4 land.
+  smoke test ✅; core deps pinned (chi/pgx/go-redis/asynq/meilisearch) ✅;
+  `internal/config` (typed env config, validation, `Secret`) ✅ (100% cover).
+  Remaining: `main()` wiring, `compose.yaml`.
+  - Core deps are still staged `// indirect` until their packages import them —
+    **do not run a bare `go mod tidy`** while they're unused (it prunes them);
+    use `go get`. `viper` is now direct (used by `internal/config`).
 
 ## Renovate
 
