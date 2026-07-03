@@ -150,17 +150,18 @@ progresses:
   liveness, graceful shutdown, `-version`); `compose.yaml` + `.env.example`
   (Postgres/Redis/Meili, all healthy). All success criteria met; skeleton green
   (`build`/`test`/`lint`/`fmt`).
-- **Phase 1 — Persistence (in progress):** initial goose migration (all 6
-  tables + indexes, verified up/down) ✅; migrations embedded + `store.Migrate`/
+- **Phase 1 — Persistence: COMPLETE ✅** — initial goose migration (all 6
+  tables + indexes, verified up/down); migrations embedded + `store.Migrate`/
   `MigrateDown` runner, `main()` auto-migrates on startup, `-migrate` flag for
-  CI/ops (idempotent, verified) ✅; sqlc config + query sets generated (typed
-  access in package `store`; `just generate`/`generate-check`) ✅; `internal/store`
+  CI/ops (idempotent); sqlc config + query sets generated (typed access in
+  package `store`; `just generate`/`generate-check`); `internal/store`
   `ReconcileRepo` tx (repo upsert + doc_types reconcile + documents
   content-hash gate + delete-absent, one tx) with plain-Go input DTOs + a
-  `ReconcileResult` summary ✅; `store.NewPool` + `main()` wires the runtime
+  `ReconcileResult` summary; `store.NewPool` + `main()` wires the runtime
   pgxpool/`Store` and serves `/readyz` (Postgres reachability via a narrow
-  `readyChecker` interface, 200/503, unit-tested with a stub) ✅. Remaining:
-  testcontainers integration tests.
+  `readyChecker` interface, 200/503, unit-tested with a stub); testcontainers
+  integration tests (`//go:build integration`, `just test-integration`) covering
+  reconcile/gate/delete-absent against a real Postgres. All success criteria met.
   - Migrations run via goose's global-free
     `goose.NewProvider(DialectPostgres, db, migrations.FS)`; `db` is a
     `database/sql` conn from `sql.Open("pgx", …)` (pgx stdlib adapter),

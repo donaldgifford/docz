@@ -73,6 +73,11 @@ test-all: test
 test-pkg pkg:
     @go test -v -race {{ pkg }}
 
+# Run integration tests (build tag `integration`; needs Docker for testcontainers)
+[group('test')]
+test-integration:
+    @go test -tags=integration -count=1 ./...
+
 # Run tests with a coverage profile written to coverage.out
 [group('test')]
 test-coverage:

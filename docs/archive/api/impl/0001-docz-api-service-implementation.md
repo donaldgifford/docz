@@ -235,9 +235,16 @@ upsert/reconcile operation ingestion needs.
       `{"status":"unavailable"}` + a `slog.Warn` otherwise, with a 2s check
       timeout. Unit-tested both paths via a stub (no DB needed); shared
       `writeJSON` helper.)_
-- [ ] Integration tests with the chosen harness (OQ 7): migrations apply
+- [x] Integration tests with the chosen harness (OQ 7): migrations apply
       cleanly; CRUD round-trips; the transactional upsert/reconcile and delete
-      paths behave correctly under a simulated changed/new/deleted set.
+      paths behave correctly under a simulated changed/new/deleted set. _(done —
+      `store_integration_test.go` behind `//go:build integration`, testcontainers
+      `postgres:17-alpine` via one shared container (`TestMain`/`runMain`; tests
+      isolate on unique owner/name). Covers: `Ping`; new-repo reconcile (row
+      counts + jsonb/changelog/`last_synced_at` round-trip); the **content-hash
+      gate** (identical→all unchanged, one changed→exactly one upsert); and
+      delete-absent for both documents and doc types. `just test-integration`
+      runs them; verified green against Docker.)_
 
 #### Success Criteria
 
