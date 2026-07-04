@@ -30,7 +30,7 @@ type TaskItem struct {
 	// Line is the 1-based line number of the item in the input,
 	// counted by LF. It is byte-accurate against the input, so a
 	// writer can splice the checkbox at exactly this line (the
-	// docwrite package's write contract).
+	// sibling docwrite package's write contract).
 	Line int
 }
 

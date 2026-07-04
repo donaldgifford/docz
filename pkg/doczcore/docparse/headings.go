@@ -113,8 +113,8 @@ func isFenceToggle(line string) bool {
 // get -1, -2, … suffixes matching GitHub behavior.
 //
 // The entire input is walked. Callers that want to exclude a region —
-// as the toc package does for the ToC marker block — slice the input
-// first; Line values are then relative to the slice.
+// as the sibling toc package does for its ToC marker block — slice the
+// input first; Line values are then relative to the slice.
 func Headings(content []byte) []Heading {
 	lines := strings.Split(string(content), "\n")
 

@@ -13,5 +13,6 @@
 // arbitrary markdown is never "invalid" for a fact extractor — the
 // worst case is an empty result. Line numbers use LF ("\n") accounting,
 // matching the docz write contract; write helpers that consume these
-// line numbers (the docwrite package) enforce LF-only input themselves.
+// line numbers (the sibling docwrite package) enforce LF-only input
+// themselves.
 package docparse
