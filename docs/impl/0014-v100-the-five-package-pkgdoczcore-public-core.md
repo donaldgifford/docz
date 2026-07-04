@@ -209,7 +209,7 @@ plan/phase model is deliberately absent (Decisions Q3): sdk-booty-sh's
 
 - [x] Create the package — bytes-in/values-out (ADR-0001 Decision 5):
       `Heading{Level, Text, Slug, Line}`, `Headings(content []byte) []Heading`.
-- [ ] Port the `internal/toc` walker semantics — fence-aware, H2–H6 (H1
+- [x] Port the `internal/toc` walker semantics — fence-aware, H2–H6 (H1
       excluded), inline-markdown stripping, GitHub-compatible slugs — adding
       1-based `Line`; move the `AnchorSlug` slug logic here (exported), with
       slug output **byte-identical** to `internal/toc`'s on its existing test
