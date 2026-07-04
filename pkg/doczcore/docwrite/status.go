@@ -1,8 +1,3 @@
-// Package docwrite provides the CLI-only write side of docz documents:
-// creating new documents from templates (Create) and mutating frontmatter
-// status in place (SetStatus). It is intentionally internal — the public
-// pkg/doczcore surface is read-only (DESIGN-0007) — and depends on the
-// read-side pkg/doczcore/document for the shared parsing primitives.
 package docwrite
 
 import (
@@ -23,9 +18,9 @@ import (
 // deliberately refuses to rewrite.
 var ErrStatusFieldMissing = errors.New("no status field in frontmatter")
 
-// ErrUnsupportedLineEndings is returned by SetStatus when a file uses CR
-// or CRLF line endings. The byte-level mutator only supports LF, matching
-// docz's Unix-only stance (DESIGN-0005 Decision 7).
+// ErrUnsupportedLineEndings is returned by SetStatus and CheckTask when
+// a file uses CR or CRLF line endings. The byte-level mutators only
+// support LF, matching docz's Unix-only stance (DESIGN-0005 Decision 7).
 var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
 
 // statusKeyRE matches a frontmatter status line anchored at column 0,

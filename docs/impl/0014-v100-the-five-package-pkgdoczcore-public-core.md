@@ -259,7 +259,7 @@ behind it.
 - [x] Golden byte-diff tests for `CheckTask`: the on-disk diff touches exactly
       one line, byte-identical elsewhere; existing `SetStatus`/`Create` tests
       pass unchanged from the new import path.
-- [ ] Package doc comment stating the deliberate write surface — status +
+- [x] Package doc comment stating the deliberate write surface — status +
       checkbox + create; **not** a general editor.
 - [ ] Add the dated amendment to DESIGN-0007: the read-only-public stance is
       revised; the public write surface is status + checkbox + create, by design
