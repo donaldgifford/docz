@@ -56,3 +56,18 @@ func (s *Store) GetDocumentByID(ctx context.Context, repoID int64, docID string)
 	}
 	return doc, nil
 }
+
+// GetDocumentsByIDs returns full document rows (including raw markdown) for the
+// given doc ids within one repo, ordered by doc id. The search indexer calls it
+// after a reconcile commit to build index documents for the docs that changed.
+// The result may be shorter than docIDs if a doc was removed concurrently.
+func (s *Store) GetDocumentsByIDs(ctx context.Context, repoID int64, docIDs []string) ([]Document, error) {
+	if len(docIDs) == 0 {
+		return nil, nil
+	}
+	docs, err := s.q.GetDocumentsByIDs(ctx, GetDocumentsByIDsParams{RepoID: repoID, DocIds: docIDs})
+	if err != nil {
+		return nil, fmt.Errorf("get documents by ids in repo %d: %w", repoID, err)
+	}
+	return docs, nil
+}

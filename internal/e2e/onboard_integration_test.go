@@ -115,7 +115,7 @@ func onboard(t *testing.T, name string, instID int64, snap *ingest.RepoSnapshot)
 	}); err != nil {
 		t.Fatalf("seed installation: %v", err)
 	}
-	res, err := ingest.NewService(testStore, staticFetcher{snap: snap}).Run(t.Context(), instID, fixtureOwner, name)
+	res, err := ingest.NewService(testStore, staticFetcher{snap: snap}, nil).Run(t.Context(), instID, fixtureOwner, name)
 	if err != nil {
 		t.Fatalf("ingest %s/%s: %v", fixtureOwner, name, err)
 	}

@@ -34,3 +34,10 @@ ORDER BY doc_id;
 -- name: GetDocumentByID :one
 -- Full row including raw_md for the single-doc endpoint.
 SELECT * FROM documents WHERE repo_id = $1 AND doc_id = $2;
+
+-- name: GetDocumentsByIDs :many
+-- Full rows (including raw_md) for a set of doc ids in one repo; the search
+-- indexer uses this to build index documents after a reconcile commit.
+SELECT * FROM documents
+WHERE repo_id = @repo_id AND doc_id = ANY(@doc_ids::text[])
+ORDER BY doc_id;

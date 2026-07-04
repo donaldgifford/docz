@@ -56,6 +56,53 @@ func (q *Queries) GetDocumentByID(ctx context.Context, arg GetDocumentByIDParams
 	return i, err
 }
 
+const getDocumentsByIDs = `-- name: GetDocumentsByIDs :many
+SELECT id, repo_id, type, doc_id, title, status, author, created, path, git_sha, content_hash, raw_md, updated_at FROM documents
+WHERE repo_id = $1 AND doc_id = ANY($2::text[])
+ORDER BY doc_id
+`
+
+type GetDocumentsByIDsParams struct {
+	RepoID int64    `json:"repo_id"`
+	DocIds []string `json:"doc_ids"`
+}
+
+// Full rows (including raw_md) for a set of doc ids in one repo; the search
+// indexer uses this to build index documents after a reconcile commit.
+func (q *Queries) GetDocumentsByIDs(ctx context.Context, arg GetDocumentsByIDsParams) ([]Document, error) {
+	rows, err := q.db.Query(ctx, getDocumentsByIDs, arg.RepoID, arg.DocIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Document{}
+	for rows.Next() {
+		var i Document
+		if err := rows.Scan(
+			&i.ID,
+			&i.RepoID,
+			&i.Type,
+			&i.DocID,
+			&i.Title,
+			&i.Status,
+			&i.Author,
+			&i.Created,
+			&i.Path,
+			&i.GitSha,
+			&i.ContentHash,
+			&i.RawMd,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDocumentHashes = `-- name: ListDocumentHashes :many
 SELECT doc_id, content_hash FROM documents WHERE repo_id = $1
 `

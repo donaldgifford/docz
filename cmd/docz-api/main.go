@@ -27,6 +27,7 @@ import (
 	"github.com/donaldgifford/docz-api/internal/githubapp"
 	"github.com/donaldgifford/docz-api/internal/httpapi"
 	"github.com/donaldgifford/docz-api/internal/ingest"
+	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
 )
 
@@ -106,10 +107,17 @@ func run() error {
 	defer pool.Close()
 	st := store.NewStore(pool)
 
+	// Search client: ensure the documents index + settings exist before any
+	// ingest writes to it or the search endpoint reads from it.
+	searchClient := search.New(cfg.Meili.Host, cfg.Meili.APIKey.Reveal())
+	if err := searchClient.EnsureIndex(context.Background()); err != nil {
+		return fmt.Errorf("ensuring search index: %w", err)
+	}
+
 	// `-onboard` hand-seeds one repo and runs a synchronous ingest, then exits —
 	// the Phase 2 manual trigger (webhooks take over in Phase 5).
 	if *onboardSpec != "" {
-		return runOnboard(context.Background(), st, &cfg, *onboardSpec)
+		return runOnboard(context.Background(), st, searchClient, &cfg, *onboardSpec)
 	}
 
 	slog.Info("starting docz-api",
@@ -130,7 +138,7 @@ func run() error {
 // runOnboard seeds an installation + repo and runs one synchronous ingest for
 // spec (owner/name@installation_id), then returns. It is the Phase 2 manual
 // onboard/re-sync trigger; Phase 5 drives the same ingest from webhooks.
-func runOnboard(ctx context.Context, st *store.Store, cfg *config.Config, spec string) error {
+func runOnboard(ctx context.Context, st *store.Store, idx ingest.Indexer, cfg *config.Config, spec string) error {
 	owner, name, installationID, err := parseOnboardSpec(spec)
 	if err != nil {
 		return fmt.Errorf("parse -onboard: %w", err)
@@ -156,7 +164,7 @@ func runOnboard(ctx context.Context, st *store.Store, cfg *config.Config, spec s
 		return fmt.Errorf("build github client: %w", err)
 	}
 
-	res, err := ingest.NewService(st, ghClient).Run(ctx, installationID, owner, name)
+	res, err := ingest.NewService(st, ghClient, idx).Run(ctx, installationID, owner, name)
 	if err != nil {
 		return fmt.Errorf("ingest %s/%s: %w", owner, name, err)
 	}

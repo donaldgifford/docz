@@ -272,6 +272,23 @@ progresses:
     `WaitForTask` only errors on ctx-cancel/fetch-fail, so `waitTask` inspects
     `Task.Status != TaskStatusSucceeded` and surfaces `Task.Error.Message`.
     `Settings.SearchableAttributes` order sets relevance priority.
+  - **content-hash-gated indexing** (task 2): the store reconcile is the single
+    source of "what changed" — `ReconcileResult` now carries `UpsertedDocIDs`
+    /`DeletedDocIDs`, populated by `reconcileDocuments` exactly where the
+    content-hash gate decides. A new `GetDocumentsByIDs` store read (`= ANY
+    (@doc_ids::text[])` → sqlc param `DocIds`, returns `[]Document`) fetches the
+    changed rows. `ingest.Service` broadened its store interface to `repoStore`
+    (`ReconcileRepo` + `GetDocumentsByIDs`) and gained a narrow `Indexer` dep
+    (`IndexDocuments`/`DeleteDocuments`, satisfied by `*search.Client`). After
+    the Postgres commit, `Run`→`indexSearch`→`syncIndex` deletes removed PKs
+    then indexes upserted rows via `toIndexDoc` (`internal/ingest/indexmap.go`:
+    PK `<repo_id>:<doc_id>`, repo label `owner/name`, `created` `YYYY-MM-DD`,
+    `updated_at` Unix secs). **Indexing is best-effort**: an index failure logs
+    at error and does NOT fail the ingest (Postgres is the source of truth; the
+    next reconcile re-indexes — eventual consistency, Phase 4's queue makes it
+    reliable). `NewService(st, fetcher, indexer)` — pass `nil` indexer to
+    disable (e2e/unit paths that don't need Meili). `IndexDocuments`/
+    `DeleteDocuments` wait on their tasks for read-after-write consistency.
 
 ## Renovate
 

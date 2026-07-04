@@ -142,6 +142,7 @@ func reconcileDocuments(
 			return fmt.Errorf("upsert document %q: %w", d.DocID, uerr)
 		}
 		res.DocsUpserted++
+		res.UpsertedDocIDs = append(res.UpsertedDocIDs, d.DocID)
 	}
 
 	for docID := range current {
@@ -152,6 +153,7 @@ func reconcileDocuments(
 			return fmt.Errorf("delete document %q: %w", docID, derr)
 		}
 		res.DocsDeleted++
+		res.DeletedDocIDs = append(res.DeletedDocIDs, docID)
 	}
 	return nil
 }

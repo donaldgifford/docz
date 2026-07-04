@@ -2,8 +2,10 @@ package ingest
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
 )
 
@@ -19,7 +21,8 @@ func (f fakeFetcher) Fetch(context.Context, string, string) (*RepoSnapshot, erro
 }
 
 // captureReconciler records the ReconcileInput the service builds, standing in
-// for the real store.
+// for the real store. It reports every input document as upserted so the
+// indexing path is exercised, and answers GetDocumentsByIDs from that input.
 type captureReconciler struct {
 	in *store.ReconcileInput
 }
@@ -28,11 +31,67 @@ func (c *captureReconciler) ReconcileRepo(
 	_ context.Context, in *store.ReconcileInput,
 ) (store.ReconcileResult, error) {
 	c.in = in
-	return store.ReconcileResult{
+	res := store.ReconcileResult{
 		RepoID:        1,
 		DocsUpserted:  len(in.Documents),
 		TypesUpserted: len(in.DocTypes),
-	}, nil
+	}
+	for i := range in.Documents {
+		res.UpsertedDocIDs = append(res.UpsertedDocIDs, in.Documents[i].DocID)
+	}
+	return res, nil
+}
+
+func (c *captureReconciler) GetDocumentsByIDs(
+	_ context.Context, _ int64, docIDs []string,
+) ([]store.Document, error) {
+	out := make([]store.Document, 0, len(docIDs))
+	if c.in == nil {
+		return out, nil
+	}
+	for _, id := range docIDs {
+		for i := range c.in.Documents {
+			d := &c.in.Documents[i]
+			if d.DocID == id {
+				out = append(out, store.Document{
+					RepoID: 1,
+					DocID:  d.DocID,
+					Type:   d.Type,
+					Title:  d.Title,
+					RawMd:  d.RawMD,
+				})
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
+// captureIndexer records the documents and ids passed to the search indexer.
+type captureIndexer struct {
+	indexed []search.IndexDoc
+	deleted []string
+}
+
+func (c *captureIndexer) IndexDocuments(_ context.Context, docs []search.IndexDoc) error {
+	c.indexed = append(c.indexed, docs...)
+	return nil
+}
+
+func (c *captureIndexer) DeleteDocuments(_ context.Context, ids []string) error {
+	c.deleted = append(c.deleted, ids...)
+	return nil
+}
+
+// failIndexer fails every write, to prove indexing errors don't fail ingest.
+type failIndexer struct{}
+
+func (failIndexer) IndexDocuments(context.Context, []search.IndexDoc) error {
+	return errors.New("index boom")
+}
+
+func (failIndexer) DeleteDocuments(context.Context, []string) error {
+	return errors.New("delete boom")
 }
 
 const fixtureConfig = `---
@@ -78,7 +137,7 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 		},
 	}
 	rec := &captureReconciler{}
-	svc := NewService(rec, fakeFetcher{snap: snap})
+	svc := NewService(rec, fakeFetcher{snap: snap}, nil)
 
 	res, err := svc.Run(t.Context(), 42, "acme", "platform")
 	if err != nil {
@@ -121,5 +180,58 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 	}
 	if res.DocsUpserted != 1 || res.TypesUpserted != 1 {
 		t.Errorf("result = %+v, want 1 doc / 1 type", res)
+	}
+}
+
+func TestRunIndexesUpsertedDocuments(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	snap := &RepoSnapshot{
+		HeadSHA:       "head-sha",
+		DefaultBranch: "main",
+		ConfigYAML:    []byte(fixtureConfig),
+		Blobs: []BlobEntry{
+			{Path: "docs/frameworks/0001-intro.md", GitSHA: "d1", Content: []byte(fixtureDoc)},
+		},
+	}
+	rec := &captureReconciler{}
+	idx := &captureIndexer{}
+	svc := NewService(rec, fakeFetcher{snap: snap}, idx)
+
+	if _, err := svc.Run(t.Context(), 42, "acme", "platform"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	if len(idx.indexed) != 1 {
+		t.Fatalf("indexed %d docs, want 1", len(idx.indexed))
+	}
+	got := idx.indexed[0]
+	if got.ID != "1:FW-0001" || got.Repo != "acme/platform" || got.RepoID != 1 {
+		t.Errorf("index doc identity = %+v", got)
+	}
+	if got.Type != "frameworks" || got.DocID != "FW-0001" || got.Title == "" || got.Body == "" {
+		t.Errorf("index doc fields = %+v", got)
+	}
+	if len(idx.deleted) != 0 {
+		t.Errorf("deleted = %v, want none", idx.deleted)
+	}
+}
+
+func TestRunIndexErrorDoesNotFailIngest(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	snap := &RepoSnapshot{
+		HeadSHA:       "head-sha",
+		DefaultBranch: "main",
+		ConfigYAML:    []byte(fixtureConfig),
+		Blobs: []BlobEntry{
+			{Path: "docs/frameworks/0001-intro.md", GitSHA: "d1", Content: []byte(fixtureDoc)},
+		},
+	}
+	svc := NewService(&captureReconciler{}, fakeFetcher{snap: snap}, failIndexer{})
+
+	// Postgres has committed; a search-index failure must not fail the ingest.
+	if _, err := svc.Run(t.Context(), 42, "acme", "platform"); err != nil {
+		t.Fatalf("Run should tolerate an index failure, got: %v", err)
 	}
 }

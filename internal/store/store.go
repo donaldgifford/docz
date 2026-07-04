@@ -107,13 +107,18 @@ type (
 
 	// ReconcileResult summarizes what one ReconcileRepo call changed. It drives
 	// structured logging and lets tests assert on the content-hash gate.
+	// UpsertedDocIDs/DeletedDocIDs name the documents that actually changed, so
+	// the search indexer can reuse the same content-hash gate instead of
+	// re-indexing every document each run.
 	ReconcileResult struct {
-		RepoID        int64
-		DocsUpserted  int
-		DocsDeleted   int
-		DocsUnchanged int
-		TypesUpserted int
-		TypesDeleted  int
+		RepoID         int64
+		DocsUpserted   int
+		DocsDeleted    int
+		DocsUnchanged  int
+		TypesUpserted  int
+		TypesDeleted   int
+		UpsertedDocIDs []string
+		DeletedDocIDs  []string
 	}
 )
 

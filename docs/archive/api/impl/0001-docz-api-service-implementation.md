@@ -388,9 +388,23 @@ Index every document and expose faceted full-text search through the API
       (`IndexDoc`, `SearchParams`, `SearchHit`, `SearchResult`, `FacetMap`) live
       in `types.go` so no meilisearch type leaks to ingest/httpapi. Dep promoted
       to direct in `go.mod`._
-- [ ] Add/replace/delete index documents keyed off the same `content_hash` gate
+- [x] Add/replace/delete index documents keyed off the same `content_hash` gate
       as Postgres; remove deleted docs by primary key. Hook this into
       `internal/ingest` after the Postgres commit.
+      <br>_Done: `Client.IndexDocuments`/`DeleteDocuments` add/replace by PK and
+      delete by PK, each waiting on its Meili task. `store.ReconcileResult` now
+      carries `UpsertedDocIDs`/`DeletedDocIDs` (populated by `reconcileDocuments`
+      as the content-hash gate decides), and a new `GetDocumentsByIDs` store
+      read (`SELECT … WHERE doc_id = ANY(@doc_ids)`) fetches the changed rows.
+      `ingest.Service` gained a narrow `Indexer` dep + broadened `repoStore`
+      interface; after the Postgres commit `Run` calls `indexSearch` →
+      `syncIndex` (delete removed PKs, then index the upserted rows via
+      `toIndexDoc`). Indexing is best-effort: failures log at error and do NOT
+      fail the ingest (Postgres already committed; next reconcile re-indexes —
+      eventual consistency). `NewService` takes a third `Indexer` arg (nil
+      disables indexing); callers updated. Tests: `captureIndexer` asserts the
+      upserted doc is indexed with PK `1:FW-0001`; `failIndexer` proves an index
+      error doesn't fail `Run`._
 - [ ] Implement `GET /api/v1/search` (q + `repo`/`type`/`status`/`author`
       facets), returning hits + facet counts; inject the `repo IN (allowed…)`
       filter via the `authorize` seam (pass-through for now).

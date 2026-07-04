@@ -9,27 +9,44 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
 	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
 	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
-// reconciler is the narrow store surface the pipeline needs. *store.Store
-// satisfies it.
-type reconciler interface {
+// repoStore is the persistence surface the pipeline needs: reconcile a repo in
+// one transaction, then read back the documents that changed so they can be
+// pushed to the search index. *store.Store satisfies it.
+type repoStore interface {
 	ReconcileRepo(ctx context.Context, in *store.ReconcileInput) (store.ReconcileResult, error)
+	GetDocumentsByIDs(ctx context.Context, repoID int64, docIDs []string) ([]store.Document, error)
 }
+
+// Indexer is the narrow Meilisearch surface ingest needs after a reconcile
+// commit. *search.Client satisfies it. Declared here (consumer side) so ingest
+// depends on the search package only for the IndexDoc boundary type.
+type Indexer interface {
+	IndexDocuments(ctx context.Context, docs []search.IndexDoc) error
+	DeleteDocuments(ctx context.Context, ids []string) error
+}
+
+// *search.Client is the production Indexer.
+var _ Indexer = (*search.Client)(nil)
 
 // Service runs the synchronous fetch → parse → map → reconcile pipeline for one
-// repo.
+// repo, then mirrors the reconcile's document changes into the search index.
 type Service struct {
-	store   reconciler
+	store   repoStore
 	fetcher RepoFetcher
+	indexer Indexer
 }
 
-// NewService builds a Service over a store and a repo fetcher.
-func NewService(st reconciler, f RepoFetcher) *Service {
-	return &Service{store: st, fetcher: f}
+// NewService builds a Service over a store, a repo fetcher, and an optional
+// indexer. A nil indexer disables search indexing (used by tests and the
+// Postgres-only paths).
+func NewService(st repoStore, f RepoFetcher, idx Indexer) *Service {
+	return &Service{store: st, fetcher: f, indexer: idx}
 }
 
 // Run ingests one repo at HEAD: fetch, parse .docz.yaml, map its doc types and
@@ -92,7 +109,58 @@ func (s *Service) Run(
 	if err != nil {
 		return zero, fmt.Errorf("reconcile %s/%s: %w", owner, name, err)
 	}
+
+	// Postgres is the source of truth and has committed; mirror the change set
+	// into the search index best-effort (see indexSearch).
+	s.indexSearch(ctx, owner, name, &result)
 	return result, nil
+}
+
+// indexSearch mirrors a reconcile's document changes into the search index
+// after the Postgres commit. Failures are logged, not returned: Postgres has
+// already committed, and the next reconcile re-indexes the affected documents
+// (eventual consistency; Phase 4's queue makes this reliable). It is a no-op
+// when no indexer is configured.
+func (s *Service) indexSearch(ctx context.Context, owner, name string, result *store.ReconcileResult) {
+	if s.indexer == nil {
+		return
+	}
+	if err := s.syncIndex(ctx, owner, name, result); err != nil {
+		slog.Error("search index sync failed; index may lag postgres",
+			"repo", owner+"/"+name, "err", err)
+	}
+}
+
+// syncIndex deletes removed documents from the index by primary key, then
+// fetches the full rows for the upserted (new/changed) documents and indexes
+// them. It reuses the reconcile's content-hash gate: only changed doc ids reach
+// the index.
+func (s *Service) syncIndex(ctx context.Context, owner, name string, result *store.ReconcileResult) error {
+	if len(result.DeletedDocIDs) > 0 {
+		ids := make([]string, len(result.DeletedDocIDs))
+		for i, docID := range result.DeletedDocIDs {
+			ids[i] = primaryKey(result.RepoID, docID)
+		}
+		if err := s.indexer.DeleteDocuments(ctx, ids); err != nil {
+			return fmt.Errorf("delete from index: %w", err)
+		}
+	}
+
+	if len(result.UpsertedDocIDs) == 0 {
+		return nil
+	}
+	rows, err := s.store.GetDocumentsByIDs(ctx, result.RepoID, result.UpsertedDocIDs)
+	if err != nil {
+		return fmt.Errorf("fetch upserted docs: %w", err)
+	}
+	docs := make([]search.IndexDoc, 0, len(rows))
+	for i := range rows {
+		docs = append(docs, toIndexDoc(owner, name, result.RepoID, &rows[i]))
+	}
+	if err := s.indexer.IndexDocuments(ctx, docs); err != nil {
+		return fmt.Errorf("index documents: %w", err)
+	}
+	return nil
 }
 
 // buildDocTypes maps every enabled type in the config to a store.DocTypeInput.
