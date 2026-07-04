@@ -245,7 +245,7 @@ behind it.
 
 #### Tasks
 
-- [ ] `git mv internal/docwrite pkg/doczcore/docwrite` (package name `docwrite`
+- [x] `git mv internal/docwrite pkg/doczcore/docwrite` (package name `docwrite`
       preserved, `testdata/golden/status/` rides along); `create.go` keeps its
       `internal/template` import (public→internal, legal — ADR-0001 Decision 3).
 - [ ] Add `CheckTask(path string, line int) error`: flips the unchecked
@@ -255,7 +255,7 @@ behind it.
       task-already-checked; reject CR/CRLF via the existing
       `ErrUnsupportedLineEndings`; same read-whole-file / single-splice /
       write-back approach as `SetStatus`.
-- [ ] Repoint `cmd/status.go` and `cmd/create.go` to `pkg/doczcore/docwrite`.
+- [x] Repoint `cmd/status.go` and `cmd/create.go` to `pkg/doczcore/docwrite`.
 - [ ] Golden byte-diff tests for `CheckTask`: the on-disk diff touches exactly
       one line, byte-identical elsewhere; existing `SetStatus`/`Create` tests
       pass unchanged from the new import path.

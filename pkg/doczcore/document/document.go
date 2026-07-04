@@ -3,8 +3,9 @@
 // It is the read side of the docz core: parsing already-fetched bytes
 // (ParseFrontmatter), reading and scanning files on disk (LoadFrontmatter,
 // ScanDocuments), and the docz filename convention (IsDoczFile). The
-// CLI-only write side — creating documents and mutating frontmatter status
-// in place — lives in internal/docwrite (DESIGN-0007).
+// write side — creating documents and mutating frontmatter status in
+// place — lives in the sibling docwrite package (DESIGN-0007, revised by
+// ADR-0001).
 package document
 
 import (
