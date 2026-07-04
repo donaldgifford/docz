@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -11,11 +12,11 @@ import (
 	"github.com/donaldgifford/docz-api/internal/config"
 )
 
-// stubReady is a readyChecker whose Ping returns a fixed error, letting the
-// readiness probe be tested without a real database.
-type stubReady struct{ err error }
-
-func (s stubReady) Ping(context.Context) error { return s.err }
+// checkersFor builds a single-dependency readiness checker returning err,
+// letting the probe be tested without real dependencies.
+func checkersFor(name string, err error) []namedChecker {
+	return []namedChecker{{name: name, check: func(context.Context) error { return err }}}
+}
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
@@ -53,7 +54,7 @@ func TestHealthz(t *testing.T) {
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", http.NoBody)
 	rec := httptest.NewRecorder()
 
-	newRouter(stubReady{}).ServeHTTP(rec, req)
+	newRouter(nil).ServeHTTP(rec, req)
 
 	res := rec.Result()
 	defer res.Body.Close()
@@ -114,19 +115,19 @@ func TestParseOnboardSpec(t *testing.T) {
 func TestReadyz(t *testing.T) {
 	tests := []struct {
 		name     string
-		pingErr  error
+		checkErr error
 		wantCode int
-		wantBody string
+		wantVal  string
 	}{
-		{"reachable", nil, http.StatusOK, `{"status":"ok"}`},
-		{"unreachable", errors.New("dial tcp: refused"), http.StatusServiceUnavailable, `{"status":"unavailable"}`},
+		{"reachable", nil, http.StatusOK, "ok"},
+		{"unreachable", errors.New("dial tcp: refused"), http.StatusServiceUnavailable, "unavailable"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/readyz", http.NoBody)
 			rec := httptest.NewRecorder()
 
-			newRouter(stubReady{err: tt.pingErr}).ServeHTTP(rec, req)
+			newRouter(checkersFor("postgres", tt.checkErr)).ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()
@@ -134,13 +135,38 @@ func TestReadyz(t *testing.T) {
 			if res.StatusCode != tt.wantCode {
 				t.Errorf("status = %d, want %d", res.StatusCode, tt.wantCode)
 			}
-			body, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatalf("read body: %v", err)
+			var body map[string]string
+			if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+				t.Fatalf("decode body: %v", err)
 			}
-			if got := string(body); got != tt.wantBody {
-				t.Errorf("body = %q, want %q", got, tt.wantBody)
+			if body["postgres"] != tt.wantVal {
+				t.Errorf("postgres = %q, want %q (body %v)", body["postgres"], tt.wantVal, body)
 			}
 		})
+	}
+}
+
+func TestReadyzReportsPerDependency(t *testing.T) {
+	checkers := []namedChecker{
+		{name: "postgres", check: func(context.Context) error { return nil }},
+		{name: "meilisearch", check: func(context.Context) error { return errors.New("down") }},
+	}
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/readyz", http.NoBody)
+	rec := httptest.NewRecorder()
+	newRouter(checkers).ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want 503 when a dependency is down", res.StatusCode)
+	}
+	var body map[string]string
+	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body["postgres"] != "ok" || body["meilisearch"] != "unavailable" {
+		t.Errorf("body = %v, want postgres ok + meilisearch unavailable", body)
 	}
 }

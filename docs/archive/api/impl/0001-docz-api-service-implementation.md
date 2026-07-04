@@ -422,7 +422,14 @@ Index every document and expose faceted full-text search through the API
       (fake `Searcher`): param mapping, seam injects the authorizer's set
       ([999]), response shape (hits+snippet+facets), and route-absent-without-
       searcher._
-- [ ] Extend `/readyz` to report Meilisearch reachability.
+- [x] Extend `/readyz` to report Meilisearch reachability.
+      <br>_Done: replaced the single `readyChecker` interface with a
+      `[]namedChecker` (name + `func(ctx) error`). `handleReadyz` runs each,
+      building a per-dependency status map (`{"meilisearch":"ok","postgres":
+      "ok"}`, sorted keys via `json.Marshal`), 503 if any fails so the body
+      names the offender. `main` wires `postgres`→`st.Ping` and `meilisearch`→
+      `searchClient.Health`. Tests: per-dep reachable/unreachable + a mixed case
+      (postgres ok, meilisearch down → 503)._
 - [ ] Integration tests (Meilisearch via the chosen harness): index population,
       facet counts, snippet/highlight, deletion removes from the index, and the
       filter-injection seam.

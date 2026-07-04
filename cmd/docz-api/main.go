@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -47,11 +48,12 @@ const (
 	readyzTimeout     = 2 * time.Second
 )
 
-// readyChecker reports whether the service's downstream dependencies are
-// reachable. *store.Store satisfies it via Ping; the readiness probe depends on
-// this narrow interface rather than the concrete store.
-type readyChecker interface {
-	Ping(ctx context.Context) error
+// namedChecker pairs a downstream dependency's name with its readiness check.
+// The readiness probe runs each one and reports per-dependency status, so an
+// outage names the offender.
+type namedChecker struct {
+	name  string
+	check func(ctx context.Context) error
 }
 
 func main() {
@@ -128,7 +130,11 @@ func run() error {
 	)
 
 	// Probes plus the /api/v1 read + search surface behind the authorize seam.
-	router := newRouter(st)
+	// Readiness covers both durable dependencies: Postgres and Meilisearch.
+	router := newRouter([]namedChecker{
+		{name: "postgres", check: st.Ping},
+		{name: "meilisearch", check: searchClient.Health},
+	})
 	authorizer := authorize.NewAllReposAuthorizer(st)
 	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, authorize.Middleware(authorizer))
 
@@ -232,12 +238,12 @@ func newLogger(cfg config.LogConfig) (*slog.Logger, error) {
 // newRouter builds the base chi router with the liveness and readiness probes.
 // The /api/v1 read routes are mounted onto it by the caller so they sit behind
 // the authorize middleware while the probes stay open.
-func newRouter(ready readyChecker) chi.Router {
+func newRouter(checkers []namedChecker) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Get("/healthz", handleHealthz)
-	r.Get("/readyz", handleReadyz(ready))
+	r.Get("/readyz", handleReadyz(checkers))
 	return r
 }
 
@@ -247,19 +253,48 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, `{"status":"ok"}`)
 }
 
-// handleReadyz is the readiness probe: healthy only when Postgres is reachable.
-// It gates traffic during rollout and dependency outages. Later phases extend
-// the check to cover Meilisearch and Redis.
-func handleReadyz(ready readyChecker) http.HandlerFunc {
+// handleReadyz is the readiness probe: it checks every named dependency and
+// reports each one's status (e.g. {"meilisearch":"ok","postgres":"ok"}). It
+// returns 503 if any check fails, 200 otherwise, so a rollout or dependency
+// outage gates traffic and the body names the offender.
+func handleReadyz(checkers []namedChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), readyzTimeout)
 		defer cancel()
-		if err := ready.Ping(ctx); err != nil {
-			slog.Warn("readiness check failed", "err", err)
-			writeJSON(w, http.StatusServiceUnavailable, `{"status":"unavailable"}`)
-			return
+
+		status := make(map[string]string, len(checkers))
+		healthy := true
+		for _, c := range checkers {
+			if err := c.check(ctx); err != nil {
+				slog.Warn("readiness check failed", "dep", c.name, "err", err)
+				status[c.name] = "unavailable"
+				healthy = false
+				continue
+			}
+			status[c.name] = "ok"
 		}
-		writeJSON(w, http.StatusOK, `{"status":"ok"}`)
+
+		code := http.StatusOK
+		if !healthy {
+			code = http.StatusServiceUnavailable
+		}
+		writeReadyz(w, code, status)
+	}
+}
+
+// writeReadyz writes the readiness status map as JSON with the given code. Map
+// keys marshal in sorted order, so the body is deterministic.
+func writeReadyz(w http.ResponseWriter, code int, status map[string]string) {
+	body, err := json.Marshal(status)
+	if err != nil {
+		// status is a map[string]string; marshaling cannot realistically fail.
+		body = []byte(`{"status":"error"}`)
+		code = http.StatusInternalServerError
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	if _, werr := w.Write(body); werr != nil {
+		slog.Debug("readyz write failed", "err", werr)
 	}
 }
 

@@ -305,6 +305,14 @@ progresses:
     (the route is always behind `authorize.Middleware`, so the set is present).
     `main` wires `search.New(cfg.Meili…)` → `EnsureIndex` → both the onboard
     ingest indexer and `NewHandlerWithSearch`.
+  - **/readyz multi-dep** (task 4): the single `readyChecker` interface is
+    replaced by a `[]namedChecker` (`{name string; check func(ctx) error}`).
+    `handleReadyz` runs each, reports a per-dependency status map (sorted keys
+    via `json.Marshal` → deterministic body), and returns 503 if ANY fails so
+    the body names the offender. `main` wires `postgres`→`st.Ping`,
+    `meilisearch`→`searchClient.Health`. `newRouter` now takes `[]namedChecker`
+    (pass `nil` when only `/healthz` matters). Body shape changed from
+    `{"status":"ok"}` to `{"postgres":"ok","meilisearch":"ok"}`.
 
 ## Renovate
 
