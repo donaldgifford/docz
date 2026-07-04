@@ -222,7 +222,7 @@ plan/phase model is deliberately absent (Decisions Q3): sdk-booty-sh's
       (leading-whitespace width) exposed so consumers apply their own
       top-level/nesting policy. **No** phase grouping, no `#### Tasks` scoping —
       facts only.
-- [ ] Golden fixtures: template-conformant IMPL output **and** a messy
+- [x] Golden fixtures: template-conformant IMPL output **and** a messy
       hand-written corpus; add a write-through test that byte-splices at
       reported `TaskItem.Line` values against the raw file bytes.
 - [ ] Package doc comment (stating the facts-not-interpretation contract) +

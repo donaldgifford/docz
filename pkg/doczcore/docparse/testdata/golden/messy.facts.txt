@@ -1,0 +1,17 @@
+# headings
+level=2 line=5 slug="tasks-top" text="Tasks (top)"
+level=3 line=22 slug="fenced-decoys" text="Fenced decoys"
+level=2 line=33 slug="tasks-bottom" text="Tasks (bottom)"
+level=2 line=37 slug="tasks-top-1" text="Tasks (top)"
+# tasks
+line=7 checked=false indent=0 text="plain unchecked"
+line=8 checked=true indent=0 text="plain checked"
+line=9 checked=true indent=0 text="SHOUTED checked"
+line=10 checked=false indent=0 text="star bullet"
+line=11 checked=false indent=2 text="two-space nested"
+line=12 checked=true indent=4 text="four-space nested star"
+line=13 checked=false indent=1 text="tab-indented"
+line=18 checked=false indent=0 text="roomy spacing after bullet"
+line=19 checked=false indent=0 text=""
+line=20 checked=false indent=0 text="task with [a link](https://example.com) and `code`"
+line=41 checked=true indent=0 text="final task with trailing spaces"
