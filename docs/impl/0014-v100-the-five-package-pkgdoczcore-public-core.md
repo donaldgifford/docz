@@ -256,7 +256,7 @@ behind it.
       `ErrUnsupportedLineEndings`; same read-whole-file / single-splice /
       write-back approach as `SetStatus`.
 - [x] Repoint `cmd/status.go` and `cmd/create.go` to `pkg/doczcore/docwrite`.
-- [ ] Golden byte-diff tests for `CheckTask`: the on-disk diff touches exactly
+- [x] Golden byte-diff tests for `CheckTask`: the on-disk diff touches exactly
       one line, byte-identical elsewhere; existing `SetStatus`/`Create` tests
       pass unchanged from the new import path.
 - [ ] Package doc comment stating the deliberate write surface — status +

@@ -1,8 +1,10 @@
 package docwrite
 
 import (
+	"bytes"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -145,6 +147,24 @@ func TestCheckTask(t *testing.T) {
 		}
 	})
 
+	t.Run("fixture line inside a code fence is not a task item", func(t *testing.T) {
+		t.Parallel()
+		// Line 74 of the golden input fixture is "// - [ ] this
+		// checkbox is inside a fence" — a comment inside a Go fence.
+		// docparse never reports it, and CheckTask's line-shape
+		// validation rejects it too.
+		data, err := os.ReadFile(
+			filepath.Join("testdata", "golden", "checktask", "impl.input.md"),
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p := writeTemp(t, string(data))
+		if err := CheckTask(p, 74); !errors.Is(err, ErrNotTaskItem) {
+			t.Errorf("CheckTask(fenced line) error = %v, want ErrNotTaskItem", err)
+		}
+	})
+
 	t.Run("no trailing newline final line", func(t *testing.T) {
 		t.Parallel()
 		p := writeTemp(t, "# Doc\n- [ ] last")
@@ -159,4 +179,66 @@ func TestCheckTask(t *testing.T) {
 			t.Errorf("file = %q, want %q", got, "# Doc\n- [x] last")
 		}
 	})
+}
+
+// TestCheckTask_Golden flips one task in a template-conformant IMPL
+// fixture and byte-compares the on-disk result against a committed
+// golden file, asserting the diff touches exactly one line and is
+// byte-identical elsewhere. Regenerate with `go test -run
+// TestCheckTask_Golden -update ./pkg/doczcore/docwrite/...`.
+func TestCheckTask_Golden(t *testing.T) {
+	t.Parallel()
+
+	const targetLine = 51 // "- [ ] Write unit tests for `Widget`"
+
+	inputPath := filepath.Join("testdata", "golden", "checktask", "impl.input.md")
+	input, err := os.ReadFile(inputPath)
+	if err != nil {
+		t.Fatalf("reading input fixture %s: %v", inputPath, err)
+	}
+	tmp := writeTemp(t, string(input))
+
+	if err := CheckTask(tmp, targetLine); err != nil {
+		t.Fatalf("CheckTask(%s, %d) error: %v", inputPath, targetLine, err)
+	}
+
+	got, err := os.ReadFile(tmp)
+	if err != nil {
+		t.Fatalf("reading mutated file: %v", err)
+	}
+
+	goldenPath := filepath.Join("testdata", "golden", "checktask", "impl.output.md")
+	if *update {
+		if err := os.WriteFile(goldenPath, got, 0o644); err != nil {
+			t.Fatalf("writing golden file %s: %v", goldenPath, err)
+		}
+		t.Log("updated golden file:", goldenPath)
+		return
+	}
+
+	want, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatalf("reading golden file %s: %v\nRun with -update to create it",
+			goldenPath, err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("output differs from golden %s\nRun with -update to update", goldenPath)
+	}
+
+	// Line-level diff accounting against the input: exactly one line
+	// changed, and it is the target line.
+	inLines := strings.Split(string(input), "\n")
+	outLines := strings.Split(string(got), "\n")
+	if len(inLines) != len(outLines) {
+		t.Fatalf("line count changed: %d -> %d", len(inLines), len(outLines))
+	}
+	var changed []int
+	for i := range inLines {
+		if inLines[i] != outLines[i] {
+			changed = append(changed, i+1)
+		}
+	}
+	if len(changed) != 1 || changed[0] != targetLine {
+		t.Errorf("changed lines = %v, want exactly [%d]", changed, targetLine)
+	}
 }
