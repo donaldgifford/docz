@@ -127,10 +127,10 @@ func run() error {
 		"auth_providers", cfg.Auth.Providers,
 	)
 
-	// Probes plus the /api/v1 read surface behind the authorize seam.
+	// Probes plus the /api/v1 read + search surface behind the authorize seam.
 	router := newRouter(st)
 	authorizer := authorize.NewAllReposAuthorizer(st)
-	httpapi.NewHandler(st).Mount(router, authorize.Middleware(authorizer))
+	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, authorize.Middleware(authorizer))
 
 	return serve(cfg.HTTP.Addr, router)
 }

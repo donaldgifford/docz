@@ -405,9 +405,23 @@ Index every document and expose faceted full-text search through the API
       disables indexing); callers updated. Tests: `captureIndexer` asserts the
       upserted doc is indexed with PK `1:FW-0001`; `failIndexer` proves an index
       error doesn't fail `Run`._
-- [ ] Implement `GET /api/v1/search` (q + `repo`/`type`/`status`/`author`
+- [x] Implement `GET /api/v1/search` (q + `repo`/`type`/`status`/`author`
       facets), returning hits + facet counts; inject the `repo IN (allowed…)`
       filter via the `authorize` seam (pass-through for now).
+      <br>_Done: `Client.Search` runs the query with `AttributesToCrop`/
+      `AttributesToHighlight` on `body` (`<em>` tags, 40-word crop → the
+      snippet), facets `repo`/`type`/`status`/`author`, decodes hits via the
+      non-deprecated `Hits.DecodeInto` (pulls `_formatted.body`) and facet
+      counts from `FacetDistribution`. `buildFilter` composes `repo_id IN
+      [ids] AND field = "value"` clauses, escaping user values (`\`,`"`); a nil
+      allowed-set disables the scope (tests), an empty set matches nothing
+      (`repo_id IN [-1]`). httpapi `Handler` gained a `Searcher` seam +
+      `NewHandlerWithSearch`; `Mount` registers `GET /api/v1/search` only when a
+      searcher is present. The `searchDocs` handler reads `q`/facets/`limit`/
+      `offset` and injects `authorize.FromContext` as `AllowedRepoIDs`. Tests
+      (fake `Searcher`): param mapping, seam injects the authorizer's set
+      ([999]), response shape (hits+snippet+facets), and route-absent-without-
+      searcher._
 - [ ] Extend `/readyz` to report Meilisearch reachability.
 - [ ] Integration tests (Meilisearch via the chosen harness): index population,
       facet counts, snippet/highlight, deletion removes from the index, and the

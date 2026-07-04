@@ -289,6 +289,22 @@ progresses:
     reliable). `NewService(st, fetcher, indexer)` — pass `nil` indexer to
     disable (e2e/unit paths that don't need Meili). `IndexDocuments`/
     `DeleteDocuments` wait on their tasks for read-after-write consistency.
+  - **search endpoint** (task 3): `Client.Search(ctx, *SearchParams)
+    SearchResult` uses `AttributesToCrop`+`AttributesToHighlight` on `body`
+    (`<em>`/`</em>`, 40-word crop) so `_formatted.body` IS the snippet; facets
+    `repo`/`type`/`status`/`author`. Decode hits via **`Hits.DecodeInto`** (NOT
+    the deprecated `Hits.Decode` — staticcheck SA1019); it populates the nested
+    `_formatted` struct field. `buildFilter` composes `repo_id IN [ids] AND
+    field = "value"`, escaping `\` and `"` in user values; **nil** AllowedRepoIDs
+    disables the repo scope (library/test convenience), **empty** slice matches
+    nothing (`repo_id IN [-1]`, since ids are positive serials). Set
+    `req.Filter` only when non-empty (empty-string filter is invalid). httpapi:
+    `Searcher` seam + `NewHandlerWithSearch(st, s)`; `Mount` registers `GET
+    /api/v1/search` only when a searcher is present (nil → route absent). The
+    `searchDocs` handler injects `authorize.FromContext` as `AllowedRepoIDs`
+    (the route is always behind `authorize.Middleware`, so the set is present).
+    `main` wires `search.New(cfg.Meili…)` → `EnsureIndex` → both the onboard
+    ingest indexer and `NewHandlerWithSearch`.
 
 ## Renovate
 

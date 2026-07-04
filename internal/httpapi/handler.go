@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/donaldgifford/docz-api/internal/authorize"
+	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
 )
 
@@ -28,18 +29,32 @@ type storeReader interface {
 	GetDocumentByID(ctx context.Context, repoID int64, docID string) (store.Document, error)
 }
 
-// Handler serves the /api/v1 read routes.
-type Handler struct {
-	store storeReader
+// Searcher is the search surface httpapi needs. *search.Client satisfies it.
+type Searcher interface {
+	Search(ctx context.Context, p *search.SearchParams) (search.SearchResult, error)
 }
 
-// NewHandler builds a Handler over a store reader.
+// Handler serves the /api/v1 read and search routes. searcher is optional: when
+// nil, the /search route is not mounted.
+type Handler struct {
+	store    storeReader
+	searcher Searcher
+}
+
+// NewHandler builds a Handler over a store reader, without search.
 func NewHandler(st storeReader) *Handler {
 	return &Handler{store: st}
 }
 
+// NewHandlerWithSearch builds a Handler with both the store reader and a
+// searcher, enabling the /search route.
+func NewHandlerWithSearch(st storeReader, s Searcher) *Handler {
+	return &Handler{store: st, searcher: s}
+}
+
 // Mount registers the read routes on r behind the authorize middleware. Liveness
-// and readiness probes are mounted elsewhere and bypass authorization.
+// and readiness probes are mounted elsewhere and bypass authorization. The
+// /search route is registered only when a searcher was provided.
 func (h *Handler) Mount(r chi.Router, authz func(http.Handler) http.Handler) {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authz)
@@ -50,6 +65,9 @@ func (h *Handler) Mount(r chi.Router, authz func(http.Handler) http.Handler) {
 			r.Get("/types/{type}/docs", h.listDocs)
 			r.Get("/types/{type}/docs/{doc_id}", h.getDoc)
 		})
+		if h.searcher != nil {
+			r.Get("/search", h.searchDocs)
+		}
 	})
 }
 
