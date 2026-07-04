@@ -246,6 +246,32 @@ progresses:
     `RepoFetcher`** at the ingest boundary (not a network VCR); `githubapp` token/
     tree-filter logic tested with a stub `http.RoundTripper` + `testdata/` JSON
     fixtures.
+- **Phase 3 — Search: IN PROGRESS** — Meilisearch indexer + faceted search.
+  Architecture (per go-architect):
+  - **`internal/search`** wraps `meilisearch.ServiceManager` (meilisearch-go
+    `v0.36.3`, now a direct dep). `Client` (`New(host, apiKey)`) satisfies the
+    consumer-side `ingest.Indexer` and `httpapi.Searcher` interfaces. Boundary
+    types in `types.go` keep meilisearch out of ingest/httpapi: `IndexDoc`
+    (index schema, PK `id="<repo_id>:<doc_id>"`, `created` `YYYY-MM-DD`,
+    `updated_at` Unix secs), `SearchParams` (`Query`, `AllowedRepoIDs` from the
+    authorize seam, `Repo`/`Type`/`Status`/`Author` facet filters), `SearchHit`,
+    `SearchResult` (matches DESIGN-0001 wire shape), `FacetMap`.
+  - **`EnsureIndex(ctx)`** creates the `documents` index (PK `id`) + applies
+    settings idempotently, called once at startup: searchable `title`,`body`
+    (title first → higher relevance via the `attribute` ranking rule);
+    filterable `repo`,`repo_id`,`type`,`status`,`author` (`repo_id` for the
+    authorize `repo_id IN […]` filter); sortable `created`,`updated_at`. FIFO
+    per-index task ordering means the enqueued create runs before the settings
+    update (fresh index gets its PK); on an existing index the create task fails
+    harmlessly (never waited on).
+  - **meilisearch-go usage**: use the `…WithContext` API variants everywhere
+    (`CreateIndexWithContext`, `UpdateSettingsWithContext`,
+    `HealthWithContext`, `WaitForTaskWithContext`, later `AddDocumentsWithContext`
+    /`DeleteDocumentsWithContext`/`SearchWithContext`) — `contextcheck` +
+    revive `unused-parameter` require the ctx be threaded, not dropped.
+    `WaitForTask` only errors on ctx-cancel/fetch-fail, so `waitTask` inspects
+    `Task.Status != TaskStatusSucceeded` and surfaces `Task.Error.Message`.
+    `Settings.SearchableAttributes` order sets relevance priority.
 
 ## Renovate
 

@@ -373,10 +373,21 @@ Index every document and expose faceted full-text search through the API
 
 #### Tasks
 
-- [ ] Implement `internal/search`: configure the `documents` index (searchable
+- [x] Implement `internal/search`: configure the `documents` index (searchable
       `title`/`body` with `title` boosted; filterable `repo`/`type`/
       `status`/`author`; sortable `created`/`updated_at`; composite primary key
       `"<repo_id>:<doc_id>"`).
+      <br>_Done: `internal/search` wraps `meilisearch.ServiceManager`.
+      `Client.EnsureIndex` creates the `documents` index (primary key `id`) and
+      applies settings idempotently — searchable `title`,`body` (title first =
+      higher relevance via the `attribute` ranking rule), filterable
+      `repo`,`repo_id`,`type`,`status`,`author` (`repo_id` added for the
+      authorize filter), sortable `created`,`updated_at`. Uses the
+      `…WithContext` API variants (contextcheck) and waits on the settings task
+      via `waitTask`, which surfaces a failed task's message. Boundary types
+      (`IndexDoc`, `SearchParams`, `SearchHit`, `SearchResult`, `FacetMap`) live
+      in `types.go` so no meilisearch type leaks to ingest/httpapi. Dep promoted
+      to direct in `go.mod`._
 - [ ] Add/replace/delete index documents keyed off the same `content_hash` gate
       as Postgres; remove deleted docs by primary key. Hook this into
       `internal/ingest` after the Postgres commit.

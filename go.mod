@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/go-github/v88 v88.0.0
 	github.com/jackc/pgx/v5 v5.10.0
+	github.com/meilisearch/meilisearch-go v0.36.3
 	github.com/pressly/goose/v3 v3.27.2
 	github.com/spf13/viper v1.21.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.43.0
@@ -47,7 +48,6 @@ require (
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
-	github.com/meilisearch/meilisearch-go v0.36.3 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
