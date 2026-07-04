@@ -214,7 +214,7 @@ plan/phase model is deliberately absent (Decisions Q3): sdk-booty-sh's
       1-based `Line`; move the `AnchorSlug` slug logic here (exported), with
       slug output **byte-identical** to `internal/toc`'s on its existing test
       corpus.
-- [ ] Add the checkbox primitive: `TaskItem{Text, Checked, Indent, Line}`,
+- [x] Add the checkbox primitive: `TaskItem{Text, Checked, Indent, Line}`,
       `TaskItems(content []byte) []TaskItem` — every `- [ ]` / `- [x]` list item
       (`-` or `*` bullets, marker stripped from `Text`), fence-aware (checkboxes
       inside code fences ignored), LF-only line accounting matching `docwrite`'s
