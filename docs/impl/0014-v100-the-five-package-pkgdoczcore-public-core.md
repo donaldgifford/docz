@@ -248,7 +248,7 @@ behind it.
 - [x] `git mv internal/docwrite pkg/doczcore/docwrite` (package name `docwrite`
       preserved, `testdata/golden/status/` rides along); `create.go` keeps its
       `internal/template` import (public→internal, legal — ADR-0001 Decision 3).
-- [ ] Add `CheckTask(path string, line int) error`: flips the unchecked
+- [x] Add `CheckTask(path string, line int) error`: flips the unchecked
       top-level checkbox item on the given 1-based line to checked (`[ ]` →
       `[x]`), changing **exactly the three marker bytes**; typed,
       distinguishable sentinels for line-out-of-range / not-a-task-item /
