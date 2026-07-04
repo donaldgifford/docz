@@ -83,9 +83,9 @@ func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
 // TestLoad_PartialOverridesPreserveSiblingDefaults is the IMPL-0006 Phase 2
 // regression guard. With `setDefaults` removed, the only thing that keeps a
 // user's partial config from clobbering sibling defaults is that
-// `Load`/`loadFromFile` unmarshal viper output onto a pre-populated
-// `DefaultConfig()` (so mapstructure leaves untouched fields alone). If a
-// future refactor reintroduces a `var cfg Config` zero-init, these checks
+// `Load`/`loadFromFile` decode the file onto a pre-populated
+// `DefaultConfig()` (so the yaml decoder leaves untouched fields alone). If
+// a future refactor reintroduces a `var cfg Config` zero-init, these checks
 // catch it.
 func TestLoad_PartialOverridesPreserveSiblingDefaults(t *testing.T) {
 	t.Parallel()
@@ -140,8 +140,9 @@ toc:
 }
 
 // TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults covers the
-// repo-root config path (not explicit-file), which uses MergeConfigMap +
-// Unmarshal-on-defaults instead of loadFromFile.
+// repo-root config path (not explicit-file), which merges the raw settings
+// maps (global + repo) and decodes them onto defaults instead of using
+// loadFromFile.
 func TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -248,10 +249,11 @@ func TestLoad_UnreadableRepoConfigReturnsError(t *testing.T) {
 }
 
 // TestLoad_TypeFieldDefaultsBackfilled is the IMPL-0006 Phase 8
-// regression guard. mapstructure's map-of-struct decoding allocates a
-// fresh TypeConfig per source key, so any field absent from the user's
-// YAML is left at the zero value rather than inheriting the default —
-// the F49 bug for the Types map. fillTypeFieldDefaults closes that gap
+// regression guard. The decoder's map-of-struct handling (yaml.v3 today,
+// mapstructure before IMPL-0014) allocates a fresh TypeConfig per source
+// key, so any field absent from the user's YAML is left at the zero value
+// rather than inheriting the default — the F49 bug for the Types map.
+// fillTypeFieldDefaults closes that gap
 // for string, int, and (nil) slice fields; this test pins the
 // PluralLabel + IDPrefix + Statuses backfill so a future refactor
 // can't regress it.
@@ -332,6 +334,61 @@ func TestLoad_TypeExplicitEmptyStatusesPreserved(t *testing.T) {
 	}
 	if _, err := cfg.Validate(); err == nil {
 		t.Error("Validate should error on explicit empty statuses")
+	}
+}
+
+// TestLoad_MixedCaseKeysNotMatched pins the documented v1.0.0 decode delta
+// (IMPL-0014 Phase 1): viper matched config keys case-insensitively, so
+// `Docs_Dir:` used to override docs_dir. The yaml.v3 loader is
+// case-sensitive — mixed-case keys are ignored and the default survives.
+// Real-world .docz.yaml files use lowercase keys (the embedded template
+// only ever emitted lowercase), so this pins the delta, not a regression.
+func TestLoad_MixedCaseKeysNotMatched(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	content := "Docs_Dir: elsewhere\n"
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load("", dir)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.DocsDir != "docs" {
+		t.Errorf("DocsDir = %q, want default %q — mixed-case keys must not match (case-sensitive decode)",
+			cfg.DocsDir, "docs")
+	}
+}
+
+// TestLoad_UnknownKeysIgnored pins IMPL-0014 Decision 2 (lenient decode,
+// viper parity): unknown top-level and nested keys are silently ignored, and
+// the known keys around them still apply. A typo'd key falls back to
+// defaults exactly as it did before the viper removal.
+func TestLoad_UnknownKeysIgnored(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	content := `docs_dir: mydocs
+not_a_real_key: true
+wiki:
+  also_not_real: 42
+  repo_url: https://example.com/repo
+`
+	if err := os.WriteFile(filepath.Join(dir, ".docz.yaml"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load("", dir)
+	if err != nil {
+		t.Fatalf("Load with unknown keys should not error, got %v", err)
+	}
+	if cfg.DocsDir != "mydocs" {
+		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "mydocs")
+	}
+	if cfg.Wiki.RepoURL != "https://example.com/repo" {
+		t.Errorf("Wiki.RepoURL = %q, want override to survive the unknown sibling key", cfg.Wiki.RepoURL)
 	}
 }
 

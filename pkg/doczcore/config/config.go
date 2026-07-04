@@ -18,7 +18,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/spf13/viper"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -152,21 +151,25 @@ func Load(configFile, repoRoot string) (Config, error) {
 		repoConfigPath = filepath.Join(repoRoot, ConfigFileName)
 	}
 
-	v := viper.New()
+	var settings map[string]any
 
 	// Load global config first.
 	if home, err := os.UserHomeDir(); err == nil {
-		if mergeErr := mergeConfigFile(v, filepath.Join(home, ConfigFileName)); mergeErr != nil {
+		globalSettings, mergeErr := readConfigMap(filepath.Join(home, ConfigFileName))
+		if mergeErr != nil {
 			return cfg, mergeErr
 		}
+		settings = mergeMaps(settings, globalSettings)
 	}
 
 	// Load repo-root config on top (deep merge, repo wins).
-	if mergeErr := mergeConfigFile(v, repoConfigPath); mergeErr != nil {
+	repoSettings, mergeErr := readConfigMap(repoConfigPath)
+	if mergeErr != nil {
 		return cfg, mergeErr
 	}
+	settings = mergeMaps(settings, repoSettings)
 
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := decodeSettings(settings, &cfg); err != nil {
 		return cfg, err
 	}
 
@@ -416,36 +419,76 @@ func (c *Config) validateResolution() error {
 	return nil
 }
 
-// mergeConfigFile reads a YAML config file and merges it into v. A missing
-// file is treated as "not configured" and silently skipped. Anything else
+// readConfigMap reads a YAML config file into a raw settings map. A missing
+// file is treated as "not configured" and returns an empty map. Anything else
 // (permission denied, malformed YAML, etc.) is surfaced as a wrapped error
 // so the user sees a clear message instead of a silently half-defaulted
-// config — see IMPL-0006 Phase 4.
-func mergeConfigFile(v *viper.Viper, path string) error {
+// config — see IMPL-0006 Phase 4. Keys are matched case-sensitively by the
+// yaml decoder downstream — the documented v1.0.0 decode delta vs the old
+// case-insensitive viper loader (IMPL-0014 Phase 1).
+func readConfigMap(path string) (map[string]any, error) {
 	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil
+			return map[string]any{}, nil
 		}
-		return fmt.Errorf("checking config file %s: %w", path, err)
+		return nil, fmt.Errorf("checking config file %s: %w", path, err)
 	}
-	fileV := viper.New()
-	fileV.SetConfigFile(path)
-	if err := fileV.ReadInConfig(); err != nil {
-		return fmt.Errorf("parsing config file %s: %w", path, err)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("parsing config file %s: %w", path, err)
 	}
-	return v.MergeConfigMap(fileV.AllSettings())
+	var settings map[string]any
+	if err := yaml.Unmarshal(data, &settings); err != nil {
+		return nil, fmt.Errorf("parsing config file %s: %w", path, err)
+	}
+	return settings, nil
+}
+
+// mergeMaps deep-merges src into dst and returns the result (src wins on
+// conflicts). Nested string-keyed maps merge key-by-key; scalars and slices
+// replace wholesale. This mirrors the semantics of viper's MergeConfigMap,
+// which Load relied on before the yaml.v3 port, so global-config +
+// repo-config precedence is unchanged.
+func mergeMaps(dst, src map[string]any) map[string]any {
+	if dst == nil {
+		dst = make(map[string]any, len(src))
+	}
+	for key, srcVal := range src {
+		if dstMap, ok := dst[key].(map[string]any); ok {
+			if srcMap, ok := srcVal.(map[string]any); ok {
+				dst[key] = mergeMaps(dstMap, srcMap)
+				continue
+			}
+		}
+		dst[key] = srcVal
+	}
+	return dst
+}
+
+// decodeSettings decodes a merged raw settings map onto cfg by
+// round-tripping it through yaml, so a partial config only touches the keys
+// it names and every sibling default on the pre-populated cfg survives (the
+// IMPL-0006 Phase 2 contract). Unknown keys are ignored (viper-parity
+// leniency — IMPL-0014 Decision 2).
+func decodeSettings(settings map[string]any, cfg *Config) error {
+	if len(settings) == 0 {
+		return nil
+	}
+	data, err := yaml.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(data, cfg)
 }
 
 func loadFromFile(path string, defaults *Config) (Config, error) {
-	v := viper.New()
-	v.SetConfigFile(path)
-
-	if err := v.ReadInConfig(); err != nil {
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return *defaults, err
 	}
 
 	cfg := *defaults
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return *defaults, err
 	}
 
@@ -457,8 +500,9 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 
 // fillTypeFieldDefaults backfills zero-valued string, int, and slice
 // fields on each cfg.Types entry from the corresponding DefaultConfig()
-// entry. This works around an mapstructure behavior: for
-// `map[string]TypeConfig` fields, the decoder allocates a fresh
+// entry. This works around the decoder's map handling (yaml.v3 today,
+// mapstructure before the IMPL-0014 viper removal — both behave the same
+// way): for `map[string]TypeConfig` fields, the decoder allocates a fresh
 // TypeConfig per key in the source rather than decoding in place over
 // the pre-populated entry, so any field absent from the user's YAML
 // is left at the zero value instead of inheriting the default.

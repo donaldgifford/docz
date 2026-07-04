@@ -1,7 +1,7 @@
 ---
 id: IMPL-0014
 title: "v1.0.0: the five-package pkg/doczcore public core"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-07-03
 ---
@@ -9,7 +9,7 @@ created: 2026-07-03
 
 # IMPL 0014: v1.0.0: the five-package pkg/doczcore public core
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-07-03
 
@@ -167,25 +167,25 @@ behavior the tests pin.
 
 #### Tasks
 
-- [ ] Replace the viper path (`mergeConfigFile`, `loadFromFile`, the
+- [x] Replace the viper path (`mergeConfigFile`, `loadFromFile`, the
       `viper.New` call sites in `Load`) with `go.yaml.in/yaml/v3` decoding
       onto a pre-populated `DefaultConfig()` (the `yaml` tags are already on
       every struct), preserving: defaults fill, `.docz.yaml` discovery from
       `repoRoot`, explicit `configFile` override, types-replace-on-presence,
       and validation order.
-- [ ] Keep the exported signature byte-identical:
+- [x] Keep the exported signature byte-identical:
       `Load(configFile, repoRoot string) (Config, error)`.
-- [ ] Apply Open Question 2's resolution for unknown-key handling (default
+- [x] Apply Open Question 2's resolution for unknown-key handling (default
       posture: lenient, viper-parity).
-- [ ] Audit error-path wording: malformed-YAML messages may differ from
+- [x] Audit error-path wording: malformed-YAML messages may differ from
       viper's — exit codes and success paths must not; note any wording
       delta for the release notes.
-- [ ] `go mod tidy` — confirm `github.com/spf13/viper` and the
+- [x] `go mod tidy` — confirm `github.com/spf13/viper` and the
       `go-viper/mapstructure` indirect leave `go.mod`/`go.sum`.
-- [ ] Extend the parity baseline test to pin the **case-sensitivity delta**:
+- [x] Extend the parity baseline test to pin the **case-sensitivity delta**:
       lowercase keys behave identically; a MixedCase key is no longer
       matched (documented, not honored — viper was case-insensitive).
-- [ ] Draft the release-notes lines: viper removal, case-sensitivity delta,
+- [x] Draft the release-notes lines: viper removal, case-sensitivity delta,
       any error-wording changes.
 
 #### Success Criteria
