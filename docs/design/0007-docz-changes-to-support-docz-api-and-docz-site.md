@@ -49,6 +49,13 @@ created: 2026-06-23
 
 ## Overview
 
+> **Amendment (2026-07-04 — ADR-0001 / IMPL-0014 Phase 3):** Decision 5's
+> read-only-public stance is revised. `internal/docwrite` is promoted **whole**
+> to `pkg/doczcore/docwrite`, and the public write surface is deliberately
+> **status + checkbox + create** (`SetStatus`, `CheckTask`, `Create`) — not a
+> general markdown or frontmatter editor. The embedded template machinery stays
+> private behind `Create` via a public→internal import (ADR-0001 Decision 3).
+
 INV-0005 concluded that a cross-repo aggregation service (**docz-api**) and a
 viewer (**docz-site**) are feasible, and that the dominant simplification over a
 general system like rfc-api is that docz already standardizes location
@@ -683,7 +690,10 @@ minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Read-side
 only: `SetStatus`/`Create` stayed **internal** (`internal/docwrite`), so the
-public surface is read-only (IMPL-0013 Decision 1).
+public surface is read-only (IMPL-0013 Decision 1). **Revised 2026-07-04**
+(ADR-0001 / IMPL-0014 Phase 3): `docwrite` promoted whole to
+`pkg/doczcore/docwrite`; the public write surface is status + checkbox +
+create, by design — see the amendment in [Overview](#overview).
 
 - **a. (Recommended)** Minimal: config (`Load`/`Validate`/resolution/
   `EnabledTypes`/`TypeDir`) + document (`ScanDocuments`/`LoadFrontmatter`/
@@ -746,7 +756,7 @@ scope.
 | 2   | Move wholesale vs. shims  | (a) wholesale move, no surviving shim                              | One canonical import path, no rot; DESIGN-0008 R1 requires that no permanent re-export shim exists on docz-api's behalf                              |
 | 4   | Module/versioning         | (a) same module, new path, minor `vX.Y.0` — shipped `v0.5.0`       | Stay in the current major; cut `v1.0.0` only when the broader CLI is ready. docz-api pins the tag and drops its `replace` (DESIGN-0008 R6)           |
 | 3   | `docz export --json`      | (a) defer                                                          | Shipped `v0.5.0` library-only; add `export` only when a concrete non-Go consumer appears                                                            |
-| 5   | Surface to expose         | (a) minimal, read-only                                             | `SetStatus`/`Create` kept internal (`internal/docwrite`); public surface is read-only (IMPL-0013 Decision 1) — smallest semver obligation           |
+| 5   | Surface to expose         | (a) minimal, read-only — **revised 2026-07-04** by ADR-0001        | Original: `SetStatus`/`Create` kept internal (IMPL-0013 Decision 1). Revised: `docwrite` promoted whole; public write surface = status + checkbox + create (IMPL-0014 Phase 3) — see the Overview amendment |
 | 8   | Consumer smoke test       | (a) separate `test/consumer/` module                              | Own `go.mod` + local `replace`, wired into `make test-consumer` / `make ci`; truest external-import proof (IMPL-0013 Decision 2 / Phase 3)          |
 
 ## References

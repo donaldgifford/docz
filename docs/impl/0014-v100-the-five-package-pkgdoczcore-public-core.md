@@ -261,7 +261,7 @@ behind it.
       pass unchanged from the new import path.
 - [x] Package doc comment stating the deliberate write surface — status +
       checkbox + create; **not** a general editor.
-- [ ] Add the dated amendment to DESIGN-0007: the read-only-public stance is
+- [x] Add the dated amendment to DESIGN-0007: the read-only-public stance is
       revised; the public write surface is status + checkbox + create, by design
       (per ADR-0001).
 
