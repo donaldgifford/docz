@@ -348,11 +348,11 @@ consumer.
 
 #### Tasks
 
-- [ ] Update `CLAUDE.md` (architecture bullets: `docwrite`/`toc` new homes,
+- [x] Update `CLAUDE.md` (architecture bullets: `docwrite`/`toc` new homes,
       `docparse` addition, viper gone — including the "Cobra/Viper for CLI"
       conventions line), `CONTRIBUTING.md`, `DEVELOPMENT.md`, and `README.md` as
       needed. **Historical `docs/*` records stay untouched.**
-- [ ] Delete the root `docz-v0.6.0-requirements.md` handoff — its R1–R3 slate is
+- [x] Delete the root `docz-v0.6.0-requirements.md` handoff — its R1–R3 slate is
       fully absorbed by Phases 1–3 of this plan.
 - [ ] Write the PR's `### RELEASE NOTES`: the v1.0.0 stability contract
       (five-package surface; semver covers exported identifiers under
