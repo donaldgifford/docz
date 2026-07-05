@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/donaldgifford/docz/internal/docwrite"
 	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/pkg/doczcore/docwrite"
 )
 
 // formatText is the default --format value for `status set`; formatJSON

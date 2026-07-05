@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/internal/toc"
 	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/pkg/doczcore/toc"
 )
 
 func setupUpdateTestDir(t *testing.T) string {

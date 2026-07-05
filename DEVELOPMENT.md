@@ -19,38 +19,36 @@ docz/
 │   ├── config.go            # docz config
 │   ├── wiki.go              # docz wiki init/update
 │   └── version.go           # docz version (Version/Commit vars for ldflags)
-├── internal/
+├── pkg/doczcore/            # PUBLIC, semver-governed core (ADR-0001; frozen at v1.0.0)
 │   ├── config/
-│   │   └── config.go        # Config structs, Load(), Validate(), DefaultConfig()
-│   ├── document/
-│   │   ├── document.go      # Frontmatter struct, ParseFrontmatter()
+│   │   ├── config.go        # Config structs, Load(), Validate(), DefaultConfig()
+│   │   ├── constants.go     # FileMode/DirMode + filename constants
+│   │   └── doctype.go       # allDocTypes registry, DocTypeNames(), TypesHelp()
+│   ├── document/            # read side: frontmatter parsing + scanning
+│   │   ├── document.go      # Frontmatter, ParseFrontmatter(), LoadFrontmatter()
+│   │   └── scan.go          # ScanDocuments(), DoczFilePattern, IsDoczFile()
+│   ├── docparse/            # markdown fact extractor (stdlib-only)
+│   │   ├── headings.go      # Heading, Headings(), AnchorSlug()
+│   │   └── taskitems.go     # TaskItem, TaskItems()
+│   ├── docwrite/            # write side: create + status + checkbox
 │   │   ├── create.go        # Create(), nextID(), document file writing
-│   │   └── time.go          # var timeNow (overridable in tests)
+│   │   ├── status.go        # SetStatus() byte-level frontmatter mutator
+│   │   └── checktask.go     # CheckTask() checkbox splice
+│   └── toc/
+│       ├── toc.go           # GenerateToC(), UpdateToC() (walks via docparse)
+│       └── update.go        # UpdateFiles() batch splice + UpdateReport
+├── internal/
 │   ├── index/
-│   │   └── index.go         # ScanDocuments(), GenerateTable(), UpdateReadme(), DryRunReadme()
+│   │   └── index.go         # GenerateTable(), UpdateReadme(), DryRunReadme()
 │   ├── template/
 │   │   ├── embed.go          # //go:embed, EmbeddedDocumentTemplate(), EmbeddedIndexHeader()
 │   │   ├── template.go       # Slugify(), Resolve(), Render(), TemplateData
-│   │   └── templates/        # embedded template files
-│   │       ├── rfc.md
-│   │       ├── adr.md
-│   │       ├── design.md
-│   │       ├── impl.md
-│   │       ├── plan.md
-│   │       ├── investigation.md
-│   │       ├── index_rfc.md
-│   │       ├── index_adr.md
-│   │       ├── index_design.md
-│   │       ├── index_impl.md
-│   │       ├── index_plan.md
-│   │       ├── index_investigation.md
-│   │       └── wiki_index.md
-│   ├── toc/
-│   │   └── toc.go            # Slugify(), ParseHeadings(), GenerateToC(), UpdateToC()
+│   │   └── templates/        # embedded template files (doc + index_* + wiki_index)
 │   └── wiki/
 │       ├── titles.go         # DirTitle(), DocTitle(), FilenameTitle()
 │       ├── wiki.go           # NavEntry, ScanDocs(), SortEntries(), CountPages()
 │       └── mkdocs.go         # ReadMkDocs(), WriteMkDocs(), NavToYAML(), MergeNavOrder()
+├── test/consumer/           # separate module proving the public surface externally
 └── testdata/
     └── golden/              # golden file fixtures for template, toc, and wiki tests
 ```
@@ -67,13 +65,18 @@ Loads and validates the `docz` configuration. The entry point is `Load()`.
 3. Repo config (`.docz.yaml`)
 4. Flags (`--docs-dir`, etc.)
 
-Deep merge is implemented with two Viper instances: global config loaded first,
-repo config merged on top via `MergeConfigMap`. This means the repo config
-overrides only the keys it explicitly sets; unset keys inherit from global.
-Slices (e.g. `statuses`) are replaced entirely, not appended.
+Deep merge is dependency-free (viper was removed in IMPL-0014 Phase 1):
+each file is read into a raw `map[string]any` with `yaml.v3`
+(`readConfigMap`), the maps are merged recursively with repo keys winning
+(`mergeMaps`), and the result is decoded onto a pre-populated
+`DefaultConfig()` (`decodeSettings`). The repo config overrides only the
+keys it explicitly sets; unset keys inherit from global. Slices (e.g.
+`statuses`) are replaced entirely, not appended. Unknown keys are ignored
+(lenient decode) and config keys are case-sensitive — both pinned by the
+parity tests in `parity_baseline_test.go`.
 
 ```go
-cfg, err := config.Load(cfgFile)
+cfg, err := config.Load(configFile, repoRoot)
 cfg.Validate()  // returns (warnings []string, err error)
 ```
 
@@ -101,11 +104,15 @@ characters, and truncates to 64 characters on a word boundary.
 `RenderWikiIndex(tmpl, data)` renders the template with `WikiIndexData`
 (site name and enabled types).
 
-### `internal/docwrite`
+### `pkg/doczcore/docwrite`
 
-Creates document files on disk. This is the CLI-only **write side** of the
-docz core; the read side (frontmatter parsing and directory scanning) is the
-public `pkg/doczcore/document` package.
+The public **write side** of the docz core (promoted whole in IMPL-0014;
+the read side is `pkg/doczcore/document`). Three operations, deliberately
+not a general editor: `Create` renders a template into a new document,
+`SetStatus` rewrites only the frontmatter status value bytes, and
+`CheckTask(path, line)` flips the `[ ]` on a 1-based line (typically a
+`docparse.TaskItem.Line`) to `[x]` with a single-byte splice. Both
+mutators are LF-only (`ErrUnsupportedLineEndings`).
 
 ```go
 result, err := docwrite.Create(&docwrite.CreateOptions{
@@ -148,16 +155,27 @@ If a README exists but has no markers, it is left untouched and a warning is
 printed. If the README does not exist, it is created using the embedded index
 header template.
 
-### `internal/toc`
+### `pkg/doczcore/docparse`
+
+The module's one markdown fact extractor (stdlib-only, no errors):
+`Headings()` returns every H2–H6 heading with inline markdown stripped,
+GitHub-compatible anchor slugs (`AnchorSlug()`, duplicate `-1`/`-2`
+suffixes), and 1-based line numbers; `TaskItems()` returns every `- [ ]` /
+`- [x]` checkbox item with text, checked state, raw indent width, and line.
+Both walkers skip fenced code blocks. Facts only — plan/phase
+interpretation is left to consumers (ADR-0001).
+
+### `pkg/doczcore/toc`
 
 Generates table of contents for markdown documents. Uses `<!--toc:start-->` /
-`<!--toc:end-->` markers (compatible with markdown-toc.nvim). Single file:
+`<!--toc:end-->` markers (compatible with markdown-toc.nvim).
 
-- **`toc.go`** — `Slugify()` generates GitHub-compatible anchor slugs.
-  `ParseHeadings()` extracts H2-H6 headings, skipping H1, fenced code blocks,
-  and inline markdown. Handles duplicate slug suffixes (`-1`, `-2`).
-  `GenerateToC()` builds indented markdown list with relative indentation.
-  `UpdateToC()` splices the generated ToC between markers.
+- **`toc.go`** — heading walks delegate to `docparse.Headings` (only the
+  slice-past-end-marker policy lives here). `GenerateToC()` builds an
+  indented markdown list from `[]docparse.Heading` with relative
+  indentation. `UpdateToC()` splices the generated ToC between markers.
+- **`update.go`** — `UpdateFiles()` batch splice over in-memory docs,
+  returning a categorized `UpdateReport`.
 
 ### `internal/wiki`
 
@@ -360,7 +378,8 @@ Empty slug after these transforms is valid — the document is still created.
 
 ## Config Deep Merge Behavior
 
-Viper deep-merges nested maps recursively but replaces slices entirely. This
+The config loader deep-merges nested maps recursively but replaces slices
+entirely. This
 means a repo config that sets `types.rfc.statuses` replaces the whole list —
 it does not append to the global default. This is intentional: a status list
 should be a complete, coherent set, not a combination of global and local

@@ -6,6 +6,14 @@
 // TypeConfig shapes to read a repo's .docz.yaml identically. This surface is
 // semver-governed (DESIGN-0007): adding fields is non-breaking; renaming or
 // removing an exported symbol is a major change.
+//
+// A few exported helpers exist to serve the docz CLI's presentation layer
+// rather than general consumers: TypesHelp (the `docz --help` body),
+// DefaultNavTitles (MkDocs nav titles), and ResolveTypeAlias (bare
+// registry-alias lookup; most callers want Config.ValidateType, which also
+// honors per-type aliases and id_prefix resolution). They are public and
+// semver-governed like everything else, but external consumers rarely need
+// them (ADR-0001 Decisions).
 package config
 
 import (

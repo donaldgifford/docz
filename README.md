@@ -564,6 +564,27 @@ Only enabled types (those with `enabled: true` in config) are included.
 - README.md / index.md files become "Overview" entries
 - Empty directories and excluded directories are skipped
 
+## Using docz as a Go Library
+
+Since v1.0.0 the parsing and writing core is a public, semver-governed Go
+API under `pkg/doczcore` — the same code the CLI runs on:
+
+```bash
+go get github.com/donaldgifford/docz@latest
+```
+
+| Package | What it provides |
+|---------|------------------|
+| `pkg/doczcore/config` | `.docz.yaml` loading, validation, type resolution (`Load`, `Validate`, `EnabledTypes`) |
+| `pkg/doczcore/document` | Frontmatter parsing and directory scanning (`ParseFrontmatter`, `ScanDocuments`) |
+| `pkg/doczcore/docparse` | Markdown facts: headings with GitHub anchor slugs, checkbox task items, 1-based line numbers (`Headings`, `TaskItems`) |
+| `pkg/doczcore/docwrite` | The write side: `Create` from templates, byte-preserving `SetStatus`, checkbox `CheckTask` |
+| `pkg/doczcore/toc` | ToC generation and marker splicing over `docparse` facts (`UpdateToC`, `UpdateFiles`) |
+
+Semver covers exported identifiers under `pkg/doczcore/*` only; `cmd/`,
+`internal/`, CLI output text, and embedded template contents are not part
+of the contract. See `go doc` on each package for the full API.
+
 ## Makefile Integration
 
 After `docz init`, the Makefile in this repository includes convenience targets:

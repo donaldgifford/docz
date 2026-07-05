@@ -28,7 +28,7 @@ func writeTemp(t *testing.T, content string) string {
 // TestSetStatus_Golden round-trips each built-in template's create output
 // through a status mutation and byte-compares the result against a
 // committed fixture. Regenerate with `go test -run TestSetStatus_Golden
-// -update ./internal/document/...`.
+// -update ./pkg/doczcore/docwrite/...`.
 func TestSetStatus_Golden(t *testing.T) {
 	t.Parallel()
 
