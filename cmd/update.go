@@ -9,9 +9,9 @@ import (
 
 	"github.com/donaldgifford/docz/internal/index"
 	doctemplate "github.com/donaldgifford/docz/internal/template"
-	"github.com/donaldgifford/docz/internal/toc"
 	"github.com/donaldgifford/docz/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/pkg/doczcore/toc"
 )
 
 var updateDryRun bool

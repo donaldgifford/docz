@@ -85,7 +85,7 @@ Second overview section (duplicate heading).
 	}
 	got := res.Updated
 
-	goldenPath := filepath.Join("..", "..", "testdata", "golden", "toc", "basic.md")
+	goldenPath := filepath.Join("..", "..", "..", "testdata", "golden", "toc", "basic.md")
 
 	if *update {
 		if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {

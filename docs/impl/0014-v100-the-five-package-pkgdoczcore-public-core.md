@@ -280,19 +280,19 @@ heading walk to `docparse`. Depends on Phase 2.
 
 #### Tasks
 
-- [ ] `git mv internal/toc pkg/doczcore/toc`; retire `ParseHeadings`, `Heading`,
+- [x] `git mv internal/toc pkg/doczcore/toc`; retire `ParseHeadings`, `Heading`,
       and `AnchorSlug` from the surface — all walking goes through
       `docparse.Headings`.
-- [ ] Reshape the delegating surface:
+- [x] Reshape the delegating surface:
       `GenerateToC(headings []docparse.Heading, minHeadings int) string`;
       `UpdateToC` delegates internally and `UpdateResult.Headings` becomes
       `[]docparse.Heading`; keep `BeginMarker`/`EndMarker` exported; the
       `UpdateFiles` family per Open Question 4's resolution.
-- [ ] Repoint `cmd/update.go` (the only non-test `toc` importer).
-- [ ] Move `toc_test.go`/`update_test.go`/`golden_test.go` and fixtures; adapt
+- [x] Repoint `cmd/update.go` (the only non-test `toc` importer).
+- [x] Move `toc_test.go`/`update_test.go`/`golden_test.go` and fixtures; adapt
       to the `docparse` types; assert generated ToC output is **byte-identical**
       on the existing corpus.
-- [ ] Package doc comment + license headers.
+- [x] Package doc comment + license headers.
 
 #### Success Criteria
 
