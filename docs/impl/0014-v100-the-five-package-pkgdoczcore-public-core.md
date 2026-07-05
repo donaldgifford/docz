@@ -310,13 +310,13 @@ deliberate API before it freezes.
 
 #### Tasks
 
-- [ ] Extend `test/consumer/` to import **all five** subpackages by public path
+- [x] Extend `test/consumer/` to import **all five** subpackages by public path
       and exercise: viper-free `Load → Validate → EnabledTypes → ScanDocuments`
       (incl. a custom type); `docparse.Headings` + `TaskItems` on fixture bytes;
       `SetStatus` + `CheckTask` round-trips in `t.TempDir()`; `Create` into
       `t.TempDir()` (exercising the embedded template through the private
       engine); a `toc.UpdateToC` splice.
-- [ ] Spot-check and record in the PR: temporarily narrowing a promoted symbol
+- [x] Spot-check and record in the PR: temporarily narrowing a promoted symbol
       breaks the consumer build; `internal/template` is **not** importable from
       the consumer module.
 - [ ] `go doc` review of all five packages: doc comments present, intended
@@ -324,6 +324,14 @@ deliberate API before it freezes.
       as CLI-support helpers in the `config` package doc (ADR-0001 Decisions).
 - [ ] Re-verify `.golangci.yml` needs no path updates after the moves;
       `make lint` and the goheader license check green.
+
+> **Spot-check record (2026-07-05):** renaming `docwrite.CheckTask` to
+> `checkTask` broke the consumer build as expected
+> (`undefined: docwrite.CheckTask` at `consumer_v1_test.go:105,108`);
+> adding `_ "github.com/donaldgifford/docz/internal/template"` to the
+> consumer failed with `use of internal package
+> github.com/donaldgifford/docz/internal/template not allowed`. Both
+> changes reverted; `make test-consumer` green after revert.
 
 #### Success Criteria
 
