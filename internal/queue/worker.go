@@ -5,11 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/hibiken/asynq"
 
 	"github.com/donaldgifford/docz-api/internal/store"
 )
+
+// delayedTaskCheckInterval is how often the asynq server forwards scheduled
+// (debounced) and retry tasks to the pending queue. asynq defaults to 5s; 1s
+// keeps ingestion snappy — a debounced job runs within ~1s of its window
+// closing rather than up to 5s later.
+const delayedTaskCheckInterval = time.Second
 
 // Ingestor is the narrow surface the worker needs to run one ingest. It matches
 // ingest.Service.Run; the production implementation (in the composition root)
@@ -37,9 +44,10 @@ func NewWorker(redisURL string, concurrency int, ing Ingestor) (*Worker, error) 
 		return nil, fmt.Errorf("parse redis url for worker: %w", err)
 	}
 	srv := asynq.NewServer(opt, asynq.Config{
-		Concurrency: concurrency,
-		Queues:      map[string]int{queueName: 1},
-		IsFailure:   isFailure,
+		Concurrency:              concurrency,
+		Queues:                   map[string]int{queueName: 1},
+		IsFailure:                isFailure,
+		DelayedTaskCheckInterval: delayedTaskCheckInterval,
 	})
 	return &Worker{srv: srv, ingestor: ing}, nil
 }

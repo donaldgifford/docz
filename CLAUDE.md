@@ -332,6 +332,62 @@ progresses:
     index and never appears in the search response, so this is a safe deviation;
     `repo_id` is numeric so the first `_` splits the two parts unambiguously.
 
+- **Phase 4 — Async ingestion: COMPLETE ✅** — ingest moved off the request
+  path onto an asynq + Redis job queue, in-process with the API binary. All
+  acceptance criteria proven by `internal/queue/queue_integration_test.go`
+  (real Redis via testcontainers): a job drains through the worker, a
+  five-trigger burst coalesces to one run, and shutdown drains an in-flight
+  job. Task 5 (installation-token cache) is deferred to Phase 5, where the
+  webhook/App-auth work lives.
+  Architecture (per go-architect):
+  - **`internal/queue`** owns the job contract and both ends of the queue.
+    `IngestJob{InstallationID, Owner, Name, Reason}` carries **no HeadSHA** —
+    the worker refetches HEAD at process time, so a debounced burst always
+    ingests the latest commit ("latest-HEAD-wins" is free). `job.go` marshals
+    via `encoding/json`; `repoLabel()` = `owner/name` is the coalesce key.
+  - **`Client`** (`client.go`) wraps both `asynq.Client` (enqueue) and a
+    go-redis client (`Ping` for `/readyz`), parsing the one `redisURL` for
+    both. `EnqueueIngest` sets **`TaskID = "ingest:" + owner/name`** (dedup key)
+    + **`ProcessIn(debounce)`** (schedules into the future so repeat triggers
+    within the window collapse onto the pending task) + `MaxRetry(5)` +
+    `Retention(24h)`. `asynq.ErrTaskIDConflict`/`ErrDuplicateTask` are the
+    coalesce signal → treated as success (nil error). `Enqueuer` interface +
+    `var _ Enqueuer = (*Client)(nil)` so `main`/onboard depend on the seam.
+    `Close()` joins the asynq + redis close errors via `errors.Join`.
+  - **`Worker`** (`worker.go`) wraps `asynq.Server` (holds a pointer — must not
+    be copied). `NewWorker(redisURL, concurrency, ing)`; `Start()` is
+    non-blocking (registers `handleIngest` on a `ServeMux`, calls
+    `srv.Start`), `Shutdown()` drains in-flight handlers. The `Ingestor`
+    interface (`Run(ctx, installationID, owner, name) (store.ReconcileResult,
+    error)`) matches `ingest.Service.Run` and is declared consumer-side so the
+    worker tests with a fake. `handleIngest`: a malformed payload is unfixable
+    → `asynq.SkipRetry`; any ingest error is returned so asynq retries with
+    backoff (the content-hash gate makes retries idempotent). `isFailure`
+    excludes `context.Canceled` so a shutdown re-queues the task instead of
+    burning a retry.
+  - **GOTCHA — `DelayedTaskCheckInterval` defaults to 5s.** asynq forwards
+    scheduled (`ProcessIn`) and retry tasks to the pending queue only every 5s
+    by default, so a debounced job could sit up to 5s past its window. Set to
+    **`1 * time.Second`** in the worker `Config` — snappier ingestion in prod
+    and it makes the debounce/drain integration tests pass within their waits.
+  - **`ingestRunner`** (`cmd/docz-api/runner.go`) is the production `Ingestor`.
+    It builds a **per-installation** `githubapp` client for each job (from
+    `config.GitHubConfig` — `AppID`, `PrivateKey.Reveal()`, `APIBase`,
+    `installationID`), then runs `ingest.NewService(store, ghClient,
+    indexer).Run(...)`. This adapter avoids a `RepoFetcher.Fetch(installationID)`
+    interface refactor: one worker serves every installation, building the
+    client per job (cheap — ghinstallation caches the JWT; jobs are infrequent).
+  - **in-process worker + wiring** (`cmd/docz-api/main.go`): `run()` builds one
+    `queue.NewClient(cfg.Store.RedisURL, cfg.Ingest.Debounce)`. The
+    `-onboard` path calls `runOnboard(ctx, st, enq queue.Enqueuer, spec)` —
+    `UpsertInstallation` (synchronous) then `EnqueueIngest` (Reason `"onboard"`).
+    The serve path builds the `ingestRunner`, `queue.NewWorker(..,
+    workerConcurrency=2, ..)`, `worker.Start()`, and a router with **three**
+    `namedChecker`s (`postgres`→`st.Ping`, `meilisearch`→`search.Health`,
+    `redis`→`queueClient.Ping`). `serveWithWorker` drains in order: HTTP
+    first (stop accepting requests/enqueues) → `worker.Shutdown()` (drain
+    in-flight) → `closeQueueClient` — so no enqueue races the drain.
+
 ## Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.

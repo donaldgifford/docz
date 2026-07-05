@@ -496,12 +496,30 @@ fast; a worker pool drains them; per-repo debounce coalesces bursts (Decision
       `githubapp.Client` per job — so one worker serves every installation with
       NO change to the Phase 2/3 `RepoFetcher`/`githubapp` signatures. `/readyz`
       gained a third `redis` checker (`queueClient.Ping`)._
-- [ ] Implement per-repo debounce/coalesce (`INGEST_DEBOUNCE`) so a repo with a
+- [x] Implement per-repo debounce/coalesce (`INGEST_DEBOUNCE`) so a repo with a
       pending job collapses duplicates and the latest HEAD wins.
-- [ ] Add at-least-once delivery + retry semantics; rely on the `content_hash`
+      <br>_Done: `EnqueueIngest` uses `TaskID("ingest:"+owner+"/"+name)` +
+      `ProcessIn(INGEST_DEBOUNCE)`; a second enqueue in the window returns
+      `ErrTaskIDConflict` → coalesced. The single scheduled job runs after the
+      window and re-fetches HEAD, so the latest wins for free. The worker's
+      `DelayedTaskCheckInterval` is tuned to 1s (asynq defaults to 5s) so a
+      debounced job runs within ~1s of its window closing. Proven by
+      `TestDebounceCoalesces` (5-trigger burst → exactly 1 run)._
+- [x] Add at-least-once delivery + retry semantics; rely on the `content_hash`
       gate to keep re-runs cheap and safe.
-- [ ] (Optional) Cache GitHub installation tokens in Redis keyed by
-      `installation_id` so replicas share one token.
+      <br>_Done: `MaxRetry(5)` + asynq's default exponential backoff; the worker
+      returns ingest errors for retry and drops only malformed payloads via
+      `asynq.SkipRetry`. `IsFailure` excludes `context.Canceled` so a
+      shutdown-interrupted job re-queues. Idempotency rides on the store's
+      content-hash gate + the overwrite-by-PK indexer (proven by the Phase 2/3
+      e2e tests); `TestEnqueueAndDrain` proves at-least-once delivery._
+- [ ] ~~(Optional) Cache GitHub installation tokens in Redis keyed by
+      `installation_id` so replicas share one token.~~ **DEFERRED to Phase 5.**
+      <br>_Rationale: no token pressure in Phase 4 — the homelab runs one
+      replica and `ghinstallation/v2` already caches the token in-memory per
+      process. The cache is a drop-in for `githubapp.Client` and belongs in
+      Phase 5 when webhook-driven onboarding actually creates multi-replica
+      token demand (per go-architect)._
 - [x] Graceful shutdown: stop accepting, drain in-flight jobs, close cleanly.
       <br>_Done: `serveWithWorker` drains in a strict order on SIGTERM/SIGINT —
       (1) `http.Server.Shutdown` stops accepting + drains in-flight requests so
@@ -511,8 +529,15 @@ fast; a worker pool drains them; per-repo debounce coalesces bursts (Decision
       last via the deferred `pool.Close()`. `isFailure` treats `context.Canceled`
       as non-failure so a shutdown-interrupted job re-queues rather than burning
       a retry._
-- [ ] Tests: enqueue → worker drains; bursts coalesce to a single latest-HEAD
+- [x] Tests: enqueue → worker drains; bursts coalesce to a single latest-HEAD
       run; a re-delivered job is idempotent; shutdown drains without loss.
+      <br>_Done: unit tests (`worker_test.go`) cover the handler (success,
+      SkipRetry-on-bad-payload, transient-retries, isFailure) with a fake
+      ingestor + hand-built tasks. Integration tests (`queue_integration_test.go`,
+      testcontainers `redis:7-alpine`): `TestEnqueueAndDrain`,
+      `TestDebounceCoalesces` (burst → 1), `TestShutdownDrainsInFlight` (an
+      in-flight job completes before `Shutdown` returns). Redelivery idempotency
+      is proven at the store/index layer by the Phase 2/3 e2e tests._
 
 #### Success Criteria
 
@@ -522,6 +547,14 @@ fast; a worker pool drains them; per-repo debounce coalesces bursts (Decision
   HEAD (debounce proven by test).
 - Re-running a job is idempotent (no duplicate rows / no double-index); shutdown
   drains in-flight work.
+
+**Status: COMPLETE ✅** — all criteria met (task 5 token-cache deferred to Phase
+5 with rationale). `EnqueueIngest` returns promptly and the in-process worker
+ingests asynchronously (`TestEnqueueAndDrain`); a 5-trigger burst coalesces to
+one run via `TaskID` + `ProcessIn` (`TestDebounceCoalesces`); shutdown drains an
+in-flight job (`TestShutdownDrainsInFlight`); redelivery is idempotent via the
+content-hash gate + overwrite-by-PK indexer (Phase 2/3 e2e). Full unit +
+integration suites green (Postgres + Meilisearch + Redis testcontainers).
 
 ---
 
