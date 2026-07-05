@@ -319,10 +319,10 @@ deliberate API before it freezes.
 - [x] Spot-check and record in the PR: temporarily narrowing a promoted symbol
       breaks the consumer build; `internal/template` is **not** importable from
       the consumer module.
-- [ ] `go doc` review of all five packages: doc comments present, intended
+- [x] `go doc` review of all five packages: doc comments present, intended
       surface only; document `TypesHelp`/`DefaultNavTitles`/ `ResolveTypeAlias`
       as CLI-support helpers in the `config` package doc (ADR-0001 Decisions).
-- [ ] Re-verify `.golangci.yml` needs no path updates after the moves;
+- [x] Re-verify `.golangci.yml` needs no path updates after the moves;
       `make lint` and the goheader license check green.
 
 > **Spot-check record (2026-07-05):** renaming `docwrite.CheckTask` to
