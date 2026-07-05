@@ -470,8 +470,21 @@ fast; a worker pool drains them; per-repo debounce coalesces bursts (Decision
 
 #### Tasks
 
-- [ ] Implement `internal/queue` over Redis (`hibiken/asynq`, OQ 1): an enqueue
+- [x] Implement `internal/queue` over Redis (`hibiken/asynq`, OQ 1): an enqueue
       API and a worker pool that runs the Phase-2 ingest pipeline.
+      <br>_Done: `internal/queue` (asynq + go-redis, both promoted to direct).
+      `IngestJob{InstallationID, Owner, Name, Reason}` (no HEAD SHA — the worker
+      re-fetches HEAD, so "latest wins" is free). `Client` (`NewClient(redisURL,
+      debounce)`) satisfies the consumer-side `Enqueuer`; `EnqueueIngest` builds
+      an asynq task with `TaskID("ingest:"+owner+"/"+name)` (coalesce key known
+      before the repo row exists), `ProcessIn(debounce)`, `MaxRetry(5)`,
+      `Retention(24h)`; `ErrTaskIDConflict`/`ErrDuplicateTask` → coalesced (nil).
+      `Client.Ping` (go-redis) backs /readyz; `Close` joins both clients.
+      `Worker` (holds `Ingestor` + `*asynq.Server`) `Start`s non-blocking and
+      `Shutdown`s draining; `handleIngest` decodes → `Ingestor.Run`, dropping a
+      malformed payload via `asynq.SkipRetry` and returning ingest errors for
+      retry (content-hash gate makes retries idempotent). Unit tests: handler
+      success, SkipRetry-on-bad-payload, transient-error-retries, isFailure._
 - [ ] Move ingest invocation behind the queue; the manual trigger (OQ 4) and
       (later) webhooks enqueue jobs rather than running inline.
 - [ ] Implement per-repo debounce/coalesce (`INGEST_DEBOUNCE`) so a repo with a
