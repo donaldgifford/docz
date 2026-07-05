@@ -73,6 +73,16 @@ func TestGenerateToC(t *testing.T) {
 		}
 	})
 
+	t.Run("empty input with zero min_headings returns empty", func(t *testing.T) {
+		t.Parallel()
+		// min_headings: 0 in config plus a doc whose post-marker
+		// content has no headings must not panic (frozen public API).
+		got := GenerateToC(nil, 0)
+		if got != "" {
+			t.Errorf("GenerateToC(nil, 0) = %q, want empty string", got)
+		}
+	})
+
 	t.Run("zero min_headings generates toc", func(t *testing.T) {
 		t.Parallel()
 		headings := []docparse.Heading{
@@ -132,6 +142,27 @@ func TestUpdateToC(t *testing.T) {
 		// dry-run path can report what would have been generated.
 		if len(res.Headings) != 1 {
 			t.Errorf("Headings len = %d, want 1", len(res.Headings))
+		}
+	})
+
+	t.Run("no headings after markers with zero threshold", func(t *testing.T) {
+		t.Parallel()
+		// All post-marker content fenced -> zero headings; with
+		// minHeadings 0 this used to panic in GenerateToC.
+		content := "# Title\n\n" +
+			BeginMarker + "\n" +
+			EndMarker + "\n\n" +
+			"```\n## Fenced Only\n```\n"
+
+		res := UpdateToC(content, 0)
+		if !res.Found {
+			t.Fatal("UpdateToC() Found = false, want true")
+		}
+		if len(res.Headings) != 0 {
+			t.Errorf("Headings len = %d, want 0", len(res.Headings))
+		}
+		if !strings.Contains(res.Updated, BeginMarker+"\n"+EndMarker) {
+			t.Errorf("expected empty ToC between markers, got:\n%s", res.Updated)
 		}
 	})
 

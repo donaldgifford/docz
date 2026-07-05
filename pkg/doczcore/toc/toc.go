@@ -44,7 +44,9 @@ func parseHeadings(content string) []docparse.Heading {
 // 2-space indent per level. Returns an empty string if the number of headings
 // is below minHeadings.
 func GenerateToC(headings []docparse.Heading, minHeadings int) string {
-	if len(headings) < minHeadings {
+	// The explicit empty check matters when minHeadings <= 0: the
+	// threshold guard alone would fall through to headings[0] below.
+	if len(headings) == 0 || len(headings) < minHeadings {
 		return ""
 	}
 
