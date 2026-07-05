@@ -206,7 +206,7 @@ func TestRunIndexesUpsertedDocuments(t *testing.T) {
 		t.Fatalf("indexed %d docs, want 1", len(idx.indexed))
 	}
 	got := idx.indexed[0]
-	if got.ID != "1:FW-0001" || got.Repo != "acme/platform" || got.RepoID != 1 {
+	if got.ID != "1_FW-0001" || got.Repo != "acme/platform" || got.RepoID != 1 {
 		t.Errorf("index doc identity = %+v", got)
 	}
 	if got.Type != "frameworks" || got.DocID != "FW-0001" || got.Title == "" || got.Body == "" {

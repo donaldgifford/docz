@@ -20,7 +20,7 @@ func (c *Client) IndexDocuments(ctx context.Context, docs []IndexDoc) error {
 	return c.waitTask(ctx, task.TaskUID)
 }
 
-// DeleteDocuments removes documents by primary key ("<repo_id>:<doc_id>"),
+// DeleteDocuments removes documents by primary key ("<repo_id>_<doc_id>"),
 // blocking until the delete task completes. An empty slice is a no-op.
 func (c *Client) DeleteDocuments(ctx context.Context, ids []string) error {
 	if len(ids) == 0 {

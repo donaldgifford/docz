@@ -430,9 +430,18 @@ Index every document and expose faceted full-text search through the API
       names the offender. `main` wires `postgres`→`st.Ping` and `meilisearch`→
       `searchClient.Health`. Tests: per-dep reachable/unreachable + a mixed case
       (postgres ok, meilisearch down → 503)._
-- [ ] Integration tests (Meilisearch via the chosen harness): index population,
+- [x] Integration tests (Meilisearch via the chosen harness): index population,
       facet counts, snippet/highlight, deletion removes from the index, and the
       filter-injection seam.
+      <br>_Done: `internal/search/search_integration_test.go` (`//go:build
+      integration`, testcontainers `getmeili/meilisearch:v1.12`, shared
+      container via TestMain). Five cases over a 3-doc / 2-repo / 2-type corpus:
+      index+search (title outranks body), facet counts (type/status/repo/
+      author), snippet `<em>` highlight, deletion removes from the index, and
+      the filter-injection seam (repo-1 scope, repo-2 scope, empty scope → no
+      results). **Bug caught by the integration test**: Meilisearch document ids
+      allow only `[a-zA-Z0-9-_]`, so the composite PK separator is `_` not the
+      `:` DESIGN-0001 illustrated (internal-only; not in the response)._
 
 #### Success Criteria
 

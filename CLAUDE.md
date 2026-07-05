@@ -313,6 +313,17 @@ progresses:
     `meilisearch`→`searchClient.Health`. `newRouter` now takes `[]namedChecker`
     (pass `nil` when only `/healthz` matters). Body shape changed from
     `{"status":"ok"}` to `{"postgres":"ok","meilisearch":"ok"}`.
+  - **integration tests** (task 5): `internal/search/search_integration_test.go`
+    (`//go:build integration`) spins up `getmeili/meilisearch:v1.12` via
+    testcontainers (generic container, `wait.ForHTTP("/health")` 200), shared
+    across cases via TestMain. Covers index+search, facet counts, `<em>`
+    snippet highlight, deletion, and the repo-scope filter seam.
+  - **GOTCHA — Meilisearch document ids** allow only `[a-zA-Z0-9-_]`. The
+    composite primary key uses `_` as the separator (`<repo_id>_<doc_id>`, e.g.
+    `1_RFC-0001`), NOT the `:` DESIGN-0001 illustrates — a `:` id makes the add
+    task fail with "Document identifier … is invalid". The PK is internal to the
+    index and never appears in the search response, so this is a safe deviation;
+    `repo_id` is numeric so the first `_` splits the two parts unambiguously.
 
 ## Renovate
 

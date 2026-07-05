@@ -10,9 +10,12 @@ import (
 )
 
 // primaryKey returns the Meilisearch primary key for a document, the composite
-// "<repo_id>:<doc_id>".
+// "<repo_id>_<doc_id>". Meilisearch ids allow only [a-zA-Z0-9-_], so the
+// separator is "_" (not the ":" of DESIGN-0001's illustration); repo_id is
+// purely numeric, so the first "_" unambiguously splits the two parts. The key
+// is internal to the index and never appears in the search response.
 func primaryKey(repoID int64, docID string) string {
-	return fmt.Sprintf("%d:%s", repoID, docID)
+	return fmt.Sprintf("%d_%s", repoID, docID)
 }
 
 // toIndexDoc maps a stored document row to a search.IndexDoc. owner/name form

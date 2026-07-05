@@ -11,7 +11,7 @@ import (
 const (
 	// indexUID is the Meilisearch index holding every onboarded document.
 	indexUID = "documents"
-	// primaryKeyField is the composite key "<repo_id>:<doc_id>" on each document.
+	// primaryKeyField names the composite key "<repo_id>_<doc_id>" on each document.
 	primaryKeyField = "id"
 	// taskPollInterval is how often index writes poll Meilisearch task status.
 	taskPollInterval = 50 * time.Millisecond

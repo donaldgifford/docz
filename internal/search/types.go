@@ -2,8 +2,9 @@ package search
 
 // IndexDoc is one document as stored in the Meilisearch documents index. The
 // ingest layer builds these from Postgres rows; the field names and JSON tags
-// are the index schema. ID is the composite primary key "<repo_id>:<doc_id>".
-// Created is a "YYYY-MM-DD" date (empty when unset); UpdatedAt is Unix seconds.
+// are the index schema. ID is the composite primary key "<repo_id>_<doc_id>"
+// ("_" not ":" — Meilisearch ids allow only [a-zA-Z0-9-_]). Created is a
+// "YYYY-MM-DD" date (empty when unset); UpdatedAt is Unix seconds.
 type IndexDoc struct {
 	ID        string `json:"id"`
 	Repo      string `json:"repo"`
