@@ -44,5 +44,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0011 | Status Set CLI Primitive | Completed | 2026-06-01 | Donald Gifford | [0011-status-set-cli-primitive.md](0011-status-set-cli-primitive.md) |
 | IMPL-0012 | Custom Document Type Support | Completed | 2026-06-18 | Donald Gifford | [0012-custom-document-type-support.md](0012-custom-document-type-support.md) |
 | IMPL-0013 | Promote parsing core to pkg/doczcore | Completed | 2026-06-30 | Donald Gifford | [0013-promote-parsing-core-to-pkgdoczcore.md](0013-promote-parsing-core-to-pkgdoczcore.md) |
-| IMPL-0014 | v1.0.0: the five-package pkg/doczcore public core | In Progress | 2026-07-03 | Donald Gifford | [0014-v100-the-five-package-pkgdoczcore-public-core.md](0014-v100-the-five-package-pkgdoczcore-public-core.md) |
+| IMPL-0014 | v1.0.0: the five-package pkg/doczcore public core | Completed | 2026-07-03 | Donald Gifford | [0014-v100-the-five-package-pkgdoczcore-public-core.md](0014-v100-the-five-package-pkgdoczcore-public-core.md) |
 <!-- END DOCZ AUTO-GENERATED -->

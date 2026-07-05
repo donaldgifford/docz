@@ -1,7 +1,7 @@
 ---
 id: IMPL-0014
 title: "v1.0.0: the five-package pkg/doczcore public core"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-07-03
 ---
@@ -13,7 +13,6 @@ created: 2026-07-03
 **Status:** In Progress **Author:** Donald Gifford **Date:** 2026-07-03
 
 <!--toc:start-->
-
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -362,7 +361,7 @@ consumer.
       case-sensitivity delta; note that v1 requires no module-path change.
 - [x] The release PR carries the **`major`** label; on merge, `pr-semver-bump` +
       goreleaser cut and publish **`v1.0.0`** (merge to `main` is human-gated).
-- [ ] Post-tag: flip this IMPL → Completed; notify sdk-booty-sh — its IMPL-0002
+- [x] Post-tag: flip this IMPL → Completed; notify sdk-booty-sh — its IMPL-0002
       Phase 0/W gate now pins `v1.0.0` (not `v0.6.0`).
 
 #### Success Criteria
