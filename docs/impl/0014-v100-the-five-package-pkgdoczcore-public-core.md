@@ -354,13 +354,13 @@ consumer.
       needed. **Historical `docs/*` records stay untouched.**
 - [x] Delete the root `docz-v0.6.0-requirements.md` handoff — its R1–R3 slate is
       fully absorbed by Phases 1–3 of this plan.
-- [ ] Write the PR's `### RELEASE NOTES`: the v1.0.0 stability contract
+- [x] Write the PR's `### RELEASE NOTES`: the v1.0.0 stability contract
       (five-package surface; semver covers exported identifiers under
       `pkg/doczcore/*`; `cmd/`, `internal/`, `test/`, CLI output text, and
       embedded template contents excluded; roll-forward posture — breaking
       changes ship in a major bump, ADR-0001 OQ7); viper removal + the
       case-sensitivity delta; note that v1 requires no module-path change.
-- [ ] The release PR carries the **`major`** label; on merge, `pr-semver-bump` +
+- [x] The release PR carries the **`major`** label; on merge, `pr-semver-bump` +
       goreleaser cut and publish **`v1.0.0`** (merge to `main` is human-gated).
 - [ ] Post-tag: flip this IMPL → Completed; notify sdk-booty-sh — its IMPL-0002
       Phase 0/W gate now pins `v1.0.0` (not `v0.6.0`).
