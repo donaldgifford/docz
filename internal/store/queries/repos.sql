@@ -22,3 +22,13 @@ SELECT * FROM repos WHERE owner = $1 AND name = $2;
 
 -- name: ListRepos :many
 SELECT * FROM repos ORDER BY owner, name;
+
+-- name: DeleteRepoByOwnerName :one
+-- Removes one repo (CASCADE wipes its doc_types + documents) and returns its id
+-- so the caller can purge the same repo's documents from the search index.
+DELETE FROM repos WHERE owner = $1 AND name = $2 RETURNING id;
+
+-- name: ListRepoIDsByInstallation :many
+-- Repo ids under an installation, collected before DeleteInstallation removes
+-- the rows so the search index can be purged for each.
+SELECT id FROM repos WHERE installation_id = $1;

@@ -218,6 +218,7 @@ linters:
           - gosec
           - dupl
           - nilnil
+          - unparam # test helpers keep params that document intent even if fixed
 
       # Main files often have init functions
       - path: ./main.go
@@ -258,6 +259,14 @@ linters:
           - gosec
         text: "G104:"
         path: cmd/(compare|diff)\.go$
+
+      # G706 (log injection) is a false positive for slog: structured
+      # attributes are rendered as escaped key-value pairs by both the text and
+      # JSON handlers, so untrusted values (e.g. webhook payload fields) cannot
+      # forge log lines. We log via slog everywhere, never fmt into a message.
+      - linters:
+          - gosec
+        text: "G706:"
 
     paths:
       - vendor

@@ -12,6 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteRepoByOwnerName = `-- name: DeleteRepoByOwnerName :one
+DELETE FROM repos WHERE owner = $1 AND name = $2 RETURNING id
+`
+
+type DeleteRepoByOwnerNameParams struct {
+	Owner string `json:"owner"`
+	Name  string `json:"name"`
+}
+
+// Removes one repo (CASCADE wipes its doc_types + documents) and returns its id
+// so the caller can purge the same repo's documents from the search index.
+func (q *Queries) DeleteRepoByOwnerName(ctx context.Context, arg DeleteRepoByOwnerNameParams) (int64, error) {
+	row := q.db.QueryRow(ctx, deleteRepoByOwnerName, arg.Owner, arg.Name)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getRepoByOwnerName = `-- name: GetRepoByOwnerName :one
 SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at FROM repos WHERE owner = $1 AND name = $2
 `
@@ -40,6 +58,32 @@ func (q *Queries) GetRepoByOwnerName(ctx context.Context, arg GetRepoByOwnerName
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listRepoIDsByInstallation = `-- name: ListRepoIDsByInstallation :many
+SELECT id FROM repos WHERE installation_id = $1
+`
+
+// Repo ids under an installation, collected before DeleteInstallation removes
+// the rows so the search index can be purged for each.
+func (q *Queries) ListRepoIDsByInstallation(ctx context.Context, installationID int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, listRepoIDsByInstallation, installationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listRepos = `-- name: ListRepos :many

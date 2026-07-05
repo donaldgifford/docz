@@ -566,31 +566,91 @@ refresh, replacing the slice's manual onboarding trigger.
 
 #### Tasks
 
-- [ ] Reuse the App auth flow in `internal/githubapp` (built in Phase 2 per OQ
+- [x] Reuse the App auth flow in `internal/githubapp` (built in Phase 2 per OQ
       3b): the app JWT (RS256) → installation-token exchange via
       `POST /app/installations/{id}/access_tokens`, cached per `installation_id`
       until just before expiry — now driving onboarding + webhook ingest, not
       just the slice.
-- [ ] Onboarding: handle `installation` / `installation_repositories` —
+      <br>_Done: webhook-enqueued jobs flow through the existing per-installation
+      `githubapp.Client` (built per job by `ingestRunner`), whose
+      `ghinstallation/v2` transport does the JWT → installation-token exchange
+      and caches the token in-memory until just before expiry. No separate
+      `GET /installation/repositories` call was needed: the `installation` /
+      `installation_repositories` payloads already carry the repo list, so
+      onboarding enumerates from the payload (complete at homelab scale). The
+      cross-replica Redis token cache stays deferred (Phase 4 task 5 rationale)._
+- [x] Onboarding: handle `installation` / `installation_repositories` —
       enumerate installation repos, detect root `.docz.yaml`, insert
       `installations`/`repos`, enqueue full ingest; mark repos without a
       manifest unconfigured.
-- [ ] Implement `internal/webhook`: HMAC-SHA256 verification with `hmac.Equal`
+      <br>_Done: `handleInstallation` (`created` → upsert installation + enqueue
+      an ingest per granted repo from the payload; `deleted` → offboard) and
+      `handleInstallationRepos` (`added` → upsert + enqueue; `removed` → delete
+      repos + purge index). `.docz.yaml` detection is left to the ingest worker
+      rather than a pre-check: a repo with no manifest fails `githubapp.Fetch`
+      with "no .docz.yaml at HEAD", logged by the worker (per go-architect — a
+      dedicated `configured` flag is a YAGNI candidate). Offboarding deletes the
+      installation/repo rows (`ON DELETE CASCADE` wipes doc_types + documents)
+      and purges each repo from Meilisearch by `repo_id` filter._
+- [x] Implement `internal/webhook`: HMAC-SHA256 verification with `hmac.Equal`
       (constant-time); reject mismatch with `401` and no work; route events.
-- [ ] `push` handling: default-branch + `docs_dir`/`.docz.yaml` filter;
+      <br>_Done: `webhook.Handler` reads the raw body once, `verifyHMAC` recomputes
+      `HMAC-SHA256(secret, body)` and compares with `hmac.Equal`; a bad/missing/
+      malformed `X-Hub-Signature-256` returns `401` before any store write or
+      enqueue. `route` dispatches parsed `go-github` events (`ParseWebHook`) to
+      per-event handlers; unhandled events (ping, …) are accepted and ignored._
+- [x] `push` handling: default-branch + `docs_dir`/`.docz.yaml` filter;
       diff-based partial re-ingest (narrow blob fetches; delete docs absent from
       new HEAD); `.docz.yaml` change → `doc_types` reconcile (add/remove/update
       types).
-- [ ] `release` handling: wired but **log-only** for the versions feature (OQ 10
+      <br>_Done: `shouldIngest` gates on default-branch (`refs/heads/<default>`)
+      AND a changed path (union of every commit's added/modified/removed) that is
+      `.docz.yaml` or under `docs_dir/`; on a match it enqueues a **full**
+      re-ingest. The existing reconcile is a desired-state replace — its
+      content-hash gate rewrites only changed docs, deletes docs absent from the
+      new HEAD, and reconciles `doc_types` (add/remove/update) — so the full
+      re-ingest achieves diff/delete/type-reconcile idempotently. **Narrow blob
+      fetches are deliberately deferred** (documented in `handlePush`): they only
+      save GitHub fetch cost, negligible at homelab scale._
+- [x] `release` handling: wired but **log-only** for the versions feature (OQ 10
       / Decision 12); `push` / `release` also refresh the cached `CHANGELOG.md`
       on the `repos` row when it changes.
-- [ ] Idempotency: record `X-GitHub-Delivery` in `webhook_deliveries`; a
+      <br>_Done: `logRelease` records the event (repo/action/tag) and takes no
+      other action, keeping the subscription wired for the deferred versions
+      feature. `CHANGELOG.md` is refreshed as a side effect of every full ingest
+      (`githubapp.Fetch` re-fetches it and reconcile caches it on the repo row),
+      so a docz-relevant push refreshes it for free; a standalone changelog-only
+      refresh path is deferred with the versions feature._
+- [x] Idempotency: record `X-GitHub-Delivery` in `webhook_deliveries`; a
       duplicate delivery is a no-op; reconcile against `last_synced_sha`.
-- [ ] Wire webhook events to enqueue ingest jobs (Phase 4 queue).
-- [ ] Tests: table-driven HMAC (correct passes; wrong secret / tampered body /
+      <br>_Done: `store.RecordDelivery` (`INSERT … ON CONFLICT (delivery_id) DO
+      NOTHING RETURNING` → `isNew`) gates the handler right after signature
+      verification: a replayed delivery returns `200` with no routing. Every
+      operation is independently idempotent too (coalesced enqueue, content-hash
+      + HEAD gate, `ErrNoRows`-tolerant deletes), so the delivery table is a
+      redundant-work optimization on top of a self-idempotent pipeline._
+- [x] Wire webhook events to enqueue ingest jobs (Phase 4 queue).
+      <br>_Done: `main` mounts `POST /webhooks/github` on the root router
+      (outside `/api/v1` and the authorize seam — it is HMAC-authenticated, not
+      session-authenticated) via `webhook.New(secret, store, queueClient,
+      searchClient)`. Onboard/push handlers call `queue.Client.EnqueueIngest`;
+      the in-process worker drains them through the same pipeline as Phase 4._
+- [x] Tests: table-driven HMAC (correct passes; wrong secret / tampered body /
       missing header → `401`, no DB writes; constant-time asserted); synthetic
       `push` payloads exercise reconcile + delete; a replayed delivery is a
       no-op.
+      <br>_Done: `internal/webhook/webhook_test.go` — table-driven `verifyHMAC`
+      (valid / wrong-secret / tampered-body / missing-header / bad-prefix /
+      non-hex / near-miss), `ServeHTTP` bad-signature → `401` with zero
+      deliveries + zero enqueues, replayed delivery → `200` + single enqueue,
+      push filter (branch/path/unknown-repo), installation onboard/offboard,
+      `shouldIngest` + `ownerName` tables. Constant-time is exercised by the
+      near-miss case (same-length, shared-prefix signature still rejected).
+      New store SQL is proven against real Postgres
+      (`store/webhook_integration_test.go`: `RecordDelivery` idempotency,
+      `DeleteRepo`/`DeleteInstallation` CASCADE, `ListRepoIDsByInstallation`);
+      the index purge is proven against real Meilisearch
+      (`search` `TestIntegrationDeleteRepoDocuments`, scoped by `repo_id`)._
 
 #### Success Criteria
 
@@ -601,6 +661,19 @@ refresh, replacing the slice's manual onboarding trigger.
   is removed from Postgres and the index.
 - Bad webhook signatures are rejected with `401` and zero writes; a replayed
   `X-GitHub-Delivery` performs no duplicate work.
+
+**Status: COMPLETE ✅** — all criteria met. Installing the app (`installation`
+created) upserts the installation and enqueues an ingest per granted repo, which
+detects `.docz.yaml` and ingests; uninstall/repo-removal deletes the rows
+(CASCADE) and purges the index. A default-branch push touching docz paths
+enqueues a full re-ingest whose content-hash gate rewrites only changed docs,
+reconciles `doc_types`, and deletes docs absent from HEAD (from Postgres and,
+via `syncIndex`, the index). Bad signatures return `401` with zero writes and a
+replayed `X-GitHub-Delivery` is a `200` no-op (unit-tested); the new store SQL
+and index purge are proven by integration tests. Documented MVP simplifications:
+payload-based repo enumeration (no `GET /installation/repositories`), ingest-time
+`.docz.yaml` detection (no pre-check / `configured` flag), and full re-ingest on
+push (narrow blob fetches deferred). Full unit + integration suites green.
 
 ---
 

@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"fmt"
+	"strconv"
 )
 
 // IndexDocuments adds or replaces docs in the index by primary key, blocking
@@ -29,6 +30,21 @@ func (c *Client) DeleteDocuments(ctx context.Context, ids []string) error {
 	task, err := c.svc.Index(indexUID).DeleteDocumentsWithContext(ctx, ids, nil)
 	if err != nil {
 		return fmt.Errorf("delete %d documents from index: %w", len(ids), err)
+	}
+	return c.waitTask(ctx, task.TaskUID)
+}
+
+// DeleteRepoDocuments removes every document for one repo from the index,
+// matching on the filterable "repo_id" attribute, and blocks until the delete
+// task completes. It backs offboarding (uninstall / repo removal), where the
+// Postgres rows are gone (ON DELETE CASCADE) but the index still holds the
+// repo's documents. repo_id is a positive serial, so the filter value needs no
+// escaping.
+func (c *Client) DeleteRepoDocuments(ctx context.Context, repoID int64) error {
+	filter := "repo_id = " + strconv.FormatInt(repoID, 10)
+	task, err := c.svc.Index(indexUID).DeleteDocumentsByFilterWithContext(ctx, filter, nil)
+	if err != nil {
+		return fmt.Errorf("delete documents for repo %d from index: %w", repoID, err)
 	}
 	return c.waitTask(ctx, task.TaskUID)
 }

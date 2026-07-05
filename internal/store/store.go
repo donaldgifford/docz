@@ -3,9 +3,11 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -44,6 +46,56 @@ func (s *Store) UpsertInstallation(ctx context.Context, in InstallationInput) er
 		return fmt.Errorf("upsert installation %d: %w", in.ID, err)
 	}
 	return nil
+}
+
+// DeleteInstallation removes an installation row. The ON DELETE CASCADE on
+// repos (and transitively doc_types and documents) wipes every subordinate row
+// in one statement. To also purge the search index, collect the installation's
+// repo ids via ListRepoIDsByInstallation before calling this.
+func (s *Store) DeleteInstallation(ctx context.Context, id int64) error {
+	if err := s.q.DeleteInstallation(ctx, id); err != nil {
+		return fmt.Errorf("delete installation %d: %w", id, err)
+	}
+	return nil
+}
+
+// ListRepoIDsByInstallation returns the ids of every repo under an installation.
+// It is called before DeleteInstallation so the caller can purge each repo's
+// documents from the search index once the CASCADE has removed the rows.
+func (s *Store) ListRepoIDsByInstallation(ctx context.Context, installationID int64) ([]int64, error) {
+	ids, err := s.q.ListRepoIDsByInstallation(ctx, installationID)
+	if err != nil {
+		return nil, fmt.Errorf("list repo ids for installation %d: %w", installationID, err)
+	}
+	return ids, nil
+}
+
+// DeleteRepo removes one repo by owner/name (CASCADE wipes its doc_types and
+// documents) and returns the deleted repo's id so the caller can purge the same
+// documents from the search index. A missing repo surfaces as pgx.ErrNoRows for
+// the caller to treat as already-absent.
+func (s *Store) DeleteRepo(ctx context.Context, owner, name string) (int64, error) {
+	id, err := s.q.DeleteRepoByOwnerName(ctx, DeleteRepoByOwnerNameParams{Owner: owner, Name: name})
+	if err != nil {
+		return 0, fmt.Errorf("delete repo %s/%s: %w", owner, name, err)
+	}
+	return id, nil
+}
+
+// RecordDelivery records a webhook delivery id for idempotency. It returns
+// isNew=true when the delivery was newly inserted and false when it was already
+// present (a replayed or duplicate delivery), so the webhook handler can treat
+// a repeat as a no-op. The underlying INSERT ... ON CONFLICT DO NOTHING returns
+// no row on conflict, surfacing as pgx.ErrNoRows.
+func (s *Store) RecordDelivery(ctx context.Context, deliveryID, event string) (bool, error) {
+	_, err := s.q.RecordDelivery(ctx, RecordDeliveryParams{DeliveryID: deliveryID, Event: event})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("record delivery %s: %w", deliveryID, err)
+	}
+	return true, nil
 }
 
 // The input types below are the store's public boundary. They use plain Go

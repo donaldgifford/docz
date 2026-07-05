@@ -29,6 +29,7 @@ import (
 	"github.com/donaldgifford/docz-api/internal/queue"
 	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz-api/internal/webhook"
 )
 
 // Build metadata, injected via -ldflags at release time (see justfile).
@@ -159,6 +160,14 @@ func run() error {
 	})
 	authorizer := authorize.NewAllReposAuthorizer(st)
 	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, authorize.Middleware(authorizer))
+
+	// The GitHub webhook receiver sits outside /api/v1 and the authorize seam:
+	// it is authenticated by its HMAC signature, not a session. It inherits the
+	// router's RequestID + Recoverer middleware and enqueues onto the same queue.
+	webhookHandler := webhook.New(
+		[]byte(cfg.GitHub.WebhookSecret.Reveal()), st, queueClient, searchClient,
+	)
+	router.Post("/webhooks/github", webhookHandler.ServeHTTP)
 
 	return serveWithWorker(cfg.HTTP.Addr, router, worker, queueClient)
 }

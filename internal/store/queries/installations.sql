@@ -8,3 +8,8 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- name: GetInstallation :one
 SELECT * FROM installations WHERE id = $1;
+
+-- name: DeleteInstallation :exec
+-- Removes an installation; ON DELETE CASCADE on repos wipes every subordinate
+-- repo, doc_type, and document. Used to offboard on app uninstall.
+DELETE FROM installations WHERE id = $1;

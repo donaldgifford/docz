@@ -388,6 +388,71 @@ progresses:
     first (stop accepting requests/enqueues) → `worker.Shutdown()` (drain
     in-flight) → `closeQueueClient` — so no enqueue races the drain.
 
+- **Phase 5 — GitHub App onboarding + webhooks: COMPLETE ✅** — install-driven
+  onboarding and HMAC-verified webhooks now drive ingestion; the `-onboard` flag
+  remains as a manual fallback. All acceptance criteria met; the new store SQL
+  and index purge are proven by integration tests (real Postgres + Meilisearch).
+  Architecture (per go-architect):
+  - **`internal/webhook`** owns HMAC verification, event routing, and delivery
+    idempotency only — business logic is delegated through unexported consumer
+    interfaces (`webhookStore`/`enqueuer`/`indexPurger`, satisfied by
+    `*store.Store`/`*queue.Client`/`*search.Client`). `Handler` is an
+    `http.Handler`; `New(secret, store, enq, purger)` (nil purger disables index
+    cleanup in tests). `ServeHTTP` flow: read raw body **once** (HMAC is over the
+    exact bytes GitHub signed) with a 5 MiB `MaxBytesReader` cap → `verifyHMAC`
+    (`hmac.Equal` constant-time, fails closed on bad/missing/malformed
+    `X-Hub-Signature-256`) → `401` on mismatch **before any work** → dedupe via
+    `RecordDelivery(X-GitHub-Delivery)` (`200` no-op on replay) → `ParseWebHook`
+    (`go-github` v88 typed events; first arg is the `X-GitHub-Event` header, NOT
+    the media type) → `route` → `202`.
+  - **payloads via `go-github`** (`github.ParseWebHook`): `InstallationEvent`,
+    `InstallationRepositoriesEvent`, `PushEvent`, `ReleaseEvent`. Onboarding
+    reads the repo list **from the event payload** (`ev.Repositories` /
+    `RepositoriesAdded`), deriving `owner`/`name` by splitting `full_name` — no
+    `GET /installation/repositories` call (payload is complete at homelab scale).
+    App auth is reused via the existing per-installation `githubapp.Client` that
+    the worker builds per job.
+  - **onboarding / offboarding** (`events.go`): `installation` created → upsert
+    installation + enqueue an ingest per repo (Reason `onboard`); `deleted` →
+    `ListRepoIDsByInstallation` (collect ids **before** delete) →
+    `DeleteInstallation` (CASCADE wipes repos/doc_types/documents) → purge each
+    repo from Meili by `repo_id` filter (best-effort). `installation_repositories`
+    added → upsert + enqueue (Reason `repo_added`); removed → `DeleteRepo` +
+    purge. `.docz.yaml` detection is left to the ingest worker (a repo with no
+    manifest fails `Fetch` and is logged; no pre-check / `configured` flag).
+  - **push handling**: `shouldIngest` requires the default branch
+    (`refs/heads/<default_branch>`) AND a changed path (union of every commit's
+    added/modified/removed — not just `head_commit`) equal to `.docz.yaml` or
+    under `docs_dir/`. On a match it enqueues a **full** re-ingest (Reason
+    `push`, no HeadSHA — worker refetches HEAD). The reconcile's content-hash
+    gate + desired-state replace already do diff/delete/`doc_types` reconcile
+    idempotently, so full re-ingest is correct; **narrow blob fetches are
+    deferred** (a fetch-cost optimization only). A push for an un-onboarded repo
+    (GetRepo → `ErrNoRows`) is skipped. `release` is **log-only** (`logRelease`;
+    versions feature deferred).
+  - **idempotency store surface** (`store.go` + `queries/deliveries.sql`):
+    `RecordDelivery(ctx, id, event) (isNew bool, err error)` backed by `INSERT …
+    ON CONFLICT (delivery_id) DO NOTHING RETURNING` — a conflicting insert
+    returns no row (`pgx.ErrNoRows`) → mapped to `isNew=false`. Offboard surface:
+    `DeleteInstallation`, `DeleteRepo(owner,name) (id, err)` (returns id for the
+    index purge; `ErrNoRows` = already absent), `ListRepoIDsByInstallation`.
+    `search.Client.DeleteRepoDocuments(repoID)` uses
+    `DeleteDocumentsByFilterWithContext("repo_id = <id>")`.
+  - **wiring** (`main.go`): `POST /webhooks/github` mounts on the **root** router
+    (inherits `RequestID`/`Recoverer`, but NOT `/api/v1`'s `authorize`
+    middleware — HMAC is the auth). `webhook.New([]byte(cfg.GitHub.WebhookSecret
+    .Reveal()), st, queueClient, searchClient)`.
+  - **GOTCHA — `github.ParseWebHook(event, body)`**: the first arg is the
+    `X-GitHub-Event` header value (`"push"`, `"installation"`, …), NOT the
+    Content-Type media type. `github.ValidatePayload`/`ValidateSignature` exist
+    but we hand-roll `verifyHMAC` to satisfy the "constant-time via `hmac.Equal`"
+    requirement and keep the taint out of a shared helper.
+  - **GOTCHA — gosec G706** (log injection) fires on `slog` calls that log
+    webhook payload fields. It is a false positive for structured logging (slog
+    escapes attribute values); excluded globally in `.golangci.yml` with a
+    justification, alongside a `_test.go` `unparam` relaxation (test helpers keep
+    intent-documenting params).
+
 ## Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.

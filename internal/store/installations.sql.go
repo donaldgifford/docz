@@ -9,6 +9,17 @@ import (
 	"context"
 )
 
+const deleteInstallation = `-- name: DeleteInstallation :exec
+DELETE FROM installations WHERE id = $1
+`
+
+// Removes an installation; ON DELETE CASCADE on repos wipes every subordinate
+// repo, doc_type, and document. Used to offboard on app uninstall.
+func (q *Queries) DeleteInstallation(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteInstallation, id)
+	return err
+}
+
 const getInstallation = `-- name: GetInstallation :one
 SELECT id, account_login, account_type, created_at, updated_at FROM installations WHERE id = $1
 `

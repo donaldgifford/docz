@@ -219,6 +219,44 @@ func TestIntegrationDeletionRemovesFromIndex(t *testing.T) {
 	}
 }
 
+func TestIntegrationDeleteRepoDocuments(t *testing.T) {
+	seed(t)
+
+	// Repo 2 has one document before the purge.
+	before, err := testClient.Search(t.Context(), &SearchParams{AllowedRepoIDs: []int64{2}})
+	if err != nil {
+		t.Fatalf("search repo 2 before purge: %v", err)
+	}
+	if before.EstimatedTotal == 0 {
+		t.Fatalf("expected repo 2 documents before purge")
+	}
+
+	if derr := testClient.DeleteRepoDocuments(t.Context(), 2); derr != nil {
+		t.Fatalf("DeleteRepoDocuments: %v", derr)
+	}
+
+	// Repo 2 is now empty...
+	after, err := testClient.Search(t.Context(), &SearchParams{AllowedRepoIDs: []int64{2}})
+	if err != nil {
+		t.Fatalf("search repo 2 after purge: %v", err)
+	}
+	if after.EstimatedTotal != 0 || len(after.Hits) != 0 {
+		t.Errorf("repo 2 has %d hits after purge, want 0", len(after.Hits))
+	}
+
+	// ...while repo 1's documents are untouched (the purge is scoped by repo_id).
+	repo1, err := testClient.Search(t.Context(), &SearchParams{AllowedRepoIDs: []int64{1}})
+	if err != nil {
+		t.Fatalf("search repo 1 after purge: %v", err)
+	}
+	if repo1.EstimatedTotal == 0 {
+		t.Errorf("repo 1 documents were removed by a repo-2 purge")
+	}
+
+	// Restore the corpus so the shared index stays order-independent.
+	seed(t)
+}
+
 func TestIntegrationFilterInjectionSeam(t *testing.T) {
 	seed(t)
 
