@@ -246,7 +246,14 @@ progresses:
     `RepoFetcher`** at the ingest boundary (not a network VCR); `githubapp` token/
     tree-filter logic tested with a stub `http.RoundTripper` + `testdata/` JSON
     fixtures.
-- **Phase 3 — Search: IN PROGRESS** — Meilisearch indexer + faceted search.
+- **Phase 3 — Search: COMPLETE ✅** — Meilisearch indexer + faceted search, all
+  5 tasks done and all success criteria proven. The headline criterion is
+  proven end-to-end by `internal/e2e/search_integration_test.go`: onboarding a
+  repo through the real ingest pipeline (real Postgres + real Meilisearch
+  indexer) makes its docs searchable via `GET /api/v1/search`, returning hits,
+  facet counts, and `<em>` snippets. Deletion removes from the index and the
+  content-hash gate skips unchanged docs (proven by the search integration
+  tests + ingest unit tests).
   Architecture (per go-architect):
   - **`internal/search`** wraps `meilisearch.ServiceManager` (meilisearch-go
     `v0.36.3`, now a direct dep). `Client` (`New(host, apiKey)`) satisfies the

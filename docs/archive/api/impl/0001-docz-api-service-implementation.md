@@ -452,6 +452,14 @@ Index every document and expose faceted full-text search through the API
 - The endpoint is usable directly from `curl` (the surface a future MCP search
   tool would reuse).
 
+**Status: COMPLETE ✅** — all criteria met. The ingest→index→search path is
+proven end-to-end by `internal/e2e/search_integration_test.go` (real Postgres +
+real Meilisearch): after onboard, `GET /api/v1/search?q=logging` returns the
+FW-0001 hit with a `<em>`-highlighted snippet and a `frameworks` facet count.
+Deletion-removes-from-index and the unchanged-not-reindexed gate are proven by
+the `internal/search` integration tests and the `internal/ingest` unit tests.
+The endpoint is a plain chi `GET` behind the authorize seam — curl-usable.
+
 ---
 
 ### Phase 4: Async ingestion — Redis queue, worker, debounce
