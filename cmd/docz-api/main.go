@@ -25,9 +25,8 @@ import (
 
 	"github.com/donaldgifford/docz-api/internal/authorize"
 	"github.com/donaldgifford/docz-api/internal/config"
-	"github.com/donaldgifford/docz-api/internal/githubapp"
 	"github.com/donaldgifford/docz-api/internal/httpapi"
-	"github.com/donaldgifford/docz-api/internal/ingest"
+	"github.com/donaldgifford/docz-api/internal/queue"
 	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
 )
@@ -116,10 +115,31 @@ func run() error {
 		return fmt.Errorf("ensuring search index: %w", err)
 	}
 
-	// `-onboard` hand-seeds one repo and runs a synchronous ingest, then exits —
-	// the Phase 2 manual trigger (webhooks take over in Phase 5).
+	// Async ingest queue: the enqueue client is shared; the worker (started
+	// below for the server path) drains jobs through the ingest pipeline.
+	queueClient, err := queue.NewClient(cfg.Store.RedisURL, cfg.Ingest.Debounce)
+	if err != nil {
+		return fmt.Errorf("connecting to redis: %w", err)
+	}
+
+	// `-onboard` seeds the installation and enqueues one ingest, then exits — the
+	// manual trigger now goes through the queue (a running server drains it).
 	if *onboardSpec != "" {
-		return runOnboard(context.Background(), st, searchClient, &cfg, *onboardSpec)
+		defer closeQueueClient(queueClient)
+		return runOnboard(context.Background(), st, queueClient, *onboardSpec)
+	}
+
+	// The worker runs in-process alongside the HTTP server (single-binary ethos).
+	// It builds a per-installation GitHub client per job via ingestRunner.
+	runner := &ingestRunner{store: st, indexer: searchClient, github: cfg.GitHub}
+	worker, err := queue.NewWorker(cfg.Store.RedisURL, workerConcurrency, runner)
+	if err != nil {
+		closeQueueClient(queueClient)
+		return fmt.Errorf("building queue worker: %w", err)
+	}
+	if err := worker.Start(); err != nil {
+		closeQueueClient(queueClient)
+		return fmt.Errorf("starting queue worker: %w", err)
 	}
 
 	slog.Info("starting docz-api",
@@ -127,31 +147,40 @@ func run() error {
 		"commit", commit,
 		"addr", cfg.HTTP.Addr,
 		"auth_providers", cfg.Auth.Providers,
+		"worker_concurrency", workerConcurrency,
 	)
 
 	// Probes plus the /api/v1 read + search surface behind the authorize seam.
-	// Readiness covers both durable dependencies: Postgres and Meilisearch.
+	// Readiness covers all three durable dependencies.
 	router := newRouter([]namedChecker{
 		{name: "postgres", check: st.Ping},
 		{name: "meilisearch", check: searchClient.Health},
+		{name: "redis", check: queueClient.Ping},
 	})
 	authorizer := authorize.NewAllReposAuthorizer(st)
 	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, authorize.Middleware(authorizer))
 
-	return serve(cfg.HTTP.Addr, router)
+	return serveWithWorker(cfg.HTTP.Addr, router, worker, queueClient)
 }
 
-// runOnboard seeds an installation + repo and runs one synchronous ingest for
-// spec (owner/name@installation_id), then returns. It is the Phase 2 manual
-// onboard/re-sync trigger; Phase 5 drives the same ingest from webhooks.
-func runOnboard(ctx context.Context, st *store.Store, idx ingest.Indexer, cfg *config.Config, spec string) error {
+// workerConcurrency bounds the number of parallel ingest jobs. Two balances
+// homelab resource use with throughput: each job holds a pool connection and
+// issues GitHub API calls.
+const workerConcurrency = 2
+
+// runOnboard seeds an installation and enqueues one ingest for spec
+// (owner/name@installation_id), then returns. The manual trigger now goes
+// through the queue — a running server's worker performs the ingest. Phase 5
+// drives the same enqueue from webhooks.
+func runOnboard(ctx context.Context, st *store.Store, enq queue.Enqueuer, spec string) error {
 	owner, name, installationID, err := parseOnboardSpec(spec)
 	if err != nil {
 		return fmt.Errorf("parse -onboard: %w", err)
 	}
 
 	// Account login/type are placeholders here; the installation webhook
-	// (Phase 5) overwrites them with the real values on the next event.
+	// (Phase 5) overwrites them with the real values on the next event. The
+	// installation row must exist before the worker reconciles (repos FK it).
 	if uerr := st.UpsertInstallation(ctx, store.InstallationInput{
 		ID:           installationID,
 		AccountLogin: owner,
@@ -160,29 +189,17 @@ func runOnboard(ctx context.Context, st *store.Store, idx ingest.Indexer, cfg *c
 		return fmt.Errorf("seed installation: %w", uerr)
 	}
 
-	ghClient, err := githubapp.NewClient(
-		cfg.GitHub.AppID,
-		[]byte(cfg.GitHub.PrivateKey.Reveal()),
-		cfg.GitHub.APIBase,
-		installationID,
-	)
-	if err != nil {
-		return fmt.Errorf("build github client: %w", err)
+	if eerr := enq.EnqueueIngest(ctx, &queue.IngestJob{
+		InstallationID: installationID,
+		Owner:          owner,
+		Name:           name,
+		Reason:         "onboard",
+	}); eerr != nil {
+		return fmt.Errorf("enqueue onboard ingest: %w", eerr)
 	}
 
-	res, err := ingest.NewService(st, ghClient, idx).Run(ctx, installationID, owner, name)
-	if err != nil {
-		return fmt.Errorf("ingest %s/%s: %w", owner, name, err)
-	}
-
-	slog.Info("onboard complete",
-		"repo", owner+"/"+name,
-		"docs_upserted", res.DocsUpserted,
-		"docs_deleted", res.DocsDeleted,
-		"docs_unchanged", res.DocsUnchanged,
-		"types_upserted", res.TypesUpserted,
-		"types_deleted", res.TypesDeleted,
-	)
+	slog.Info("onboard enqueued; a running worker will ingest shortly",
+		"repo", owner+"/"+name, "installation_id", installationID)
 	return nil
 }
 
@@ -308,9 +325,11 @@ func writeJSON(w http.ResponseWriter, status int, body string) {
 	}
 }
 
-// serve runs srv until an interrupt/terminate signal, then drains in-flight
-// requests within shutdownTimeout.
-func serve(addr string, handler http.Handler) error {
+// serveWithWorker runs the HTTP server and the async ingest worker until an
+// interrupt/terminate signal, then drains in order: HTTP first (so no new
+// webhook/onboard enqueues arrive), then the worker (drain in-flight ingests),
+// then the queue client. This ordering guarantees no ingest job is lost.
+func serveWithWorker(addr string, handler http.Handler, w *queue.Worker, qc *queue.Client) error {
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           handler,
@@ -330,16 +349,31 @@ func serve(addr string, handler http.Handler) error {
 
 	select {
 	case err := <-serveErr:
+		w.Shutdown()
+		closeQueueClient(qc)
 		return fmt.Errorf("http server: %w", err)
 	case <-ctx.Done():
 		slog.Info("shutdown signal received, draining")
 	}
 
+	// 1) Stop accepting HTTP and drain in-flight requests (no new enqueues).
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("graceful shutdown: %w", err)
+		slog.Warn("http shutdown did not complete cleanly", "err", err)
 	}
+	// 2) Drain in-flight ingest jobs.
+	slog.Info("draining ingest worker")
+	w.Shutdown()
+	// 3) Close the enqueue/redis client.
+	closeQueueClient(qc)
 	slog.Info("shutdown complete")
 	return nil
+}
+
+// closeQueueClient closes the queue client, logging a close error at warn.
+func closeQueueClient(qc *queue.Client) {
+	if err := qc.Close(); err != nil {
+		slog.Warn("close queue client", "err", err)
+	}
 }

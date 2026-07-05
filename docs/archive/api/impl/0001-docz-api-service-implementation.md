@@ -485,15 +485,32 @@ fast; a worker pool drains them; per-repo debounce coalesces bursts (Decision
       malformed payload via `asynq.SkipRetry` and returning ingest errors for
       retry (content-hash gate makes retries idempotent). Unit tests: handler
       success, SkipRetry-on-bad-payload, transient-error-retries, isFailure._
-- [ ] Move ingest invocation behind the queue; the manual trigger (OQ 4) and
+- [x] Move ingest invocation behind the queue; the manual trigger (OQ 4) and
       (later) webhooks enqueue jobs rather than running inline.
+      <br>_Done: `-onboard` now seeds the installation synchronously then
+      **enqueues** an ingest job (Reason `onboard`) and exits — a running
+      server's worker performs the ingest. The server runs the worker
+      **in-process** alongside HTTP (`workerConcurrency=2`, single-binary
+      ethos). The worker's `queue.Ingestor` is the composition-root
+      `ingestRunner` (cmd/docz-api/runner.go), which builds a per-installation
+      `githubapp.Client` per job — so one worker serves every installation with
+      NO change to the Phase 2/3 `RepoFetcher`/`githubapp` signatures. `/readyz`
+      gained a third `redis` checker (`queueClient.Ping`)._
 - [ ] Implement per-repo debounce/coalesce (`INGEST_DEBOUNCE`) so a repo with a
       pending job collapses duplicates and the latest HEAD wins.
 - [ ] Add at-least-once delivery + retry semantics; rely on the `content_hash`
       gate to keep re-runs cheap and safe.
 - [ ] (Optional) Cache GitHub installation tokens in Redis keyed by
       `installation_id` so replicas share one token.
-- [ ] Graceful shutdown: stop accepting, drain in-flight jobs, close cleanly.
+- [x] Graceful shutdown: stop accepting, drain in-flight jobs, close cleanly.
+      <br>_Done: `serveWithWorker` drains in a strict order on SIGTERM/SIGINT —
+      (1) `http.Server.Shutdown` stops accepting + drains in-flight requests so
+      no new webhook/onboard enqueues arrive, (2) `worker.Shutdown()` blocks
+      until in-flight ingests finish (asynq graceful drain), (3)
+      `queueClient.Close()` joins the asynq + redis clients; the pgxpool closes
+      last via the deferred `pool.Close()`. `isFailure` treats `context.Canceled`
+      as non-failure so a shutdown-interrupted job re-queues rather than burning
+      a retry._
 - [ ] Tests: enqueue → worker drains; bursts coalesce to a single latest-HEAD
       run; a re-delivered job is idempotent; shutdown drains without loss.
 
