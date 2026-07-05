@@ -165,25 +165,25 @@ tests pin.
 
 #### Tasks
 
-- [ ] Replace the viper path (`mergeConfigFile`, `loadFromFile`, the `viper.New`
+- [x] Replace the viper path (`mergeConfigFile`, `loadFromFile`, the `viper.New`
       call sites in `Load`) with `go.yaml.in/yaml/v3` decoding onto a
       pre-populated `DefaultConfig()` (the `yaml` tags are already on every
       struct), preserving: defaults fill, `.docz.yaml` discovery from
       `repoRoot`, explicit `configFile` override, types-replace-on-presence, and
       validation order.
-- [ ] Keep the exported signature byte-identical:
+- [x] Keep the exported signature byte-identical:
       `Load(configFile, repoRoot string) (Config, error)`.
-- [ ] Apply Open Question 2's resolution for unknown-key handling (default
+- [x] Apply Open Question 2's resolution for unknown-key handling (default
       posture: lenient, viper-parity).
-- [ ] Audit error-path wording: malformed-YAML messages may differ from viper's
+- [x] Audit error-path wording: malformed-YAML messages may differ from viper's
       — exit codes and success paths must not; note any wording delta for the
       release notes.
-- [ ] `go mod tidy` — confirm `github.com/spf13/viper` and the
+- [x] `go mod tidy` — confirm `github.com/spf13/viper` and the
       `go-viper/mapstructure` indirect leave `go.mod`/`go.sum`.
-- [ ] Extend the parity baseline test to pin the **case-sensitivity delta**:
+- [x] Extend the parity baseline test to pin the **case-sensitivity delta**:
       lowercase keys behave identically; a MixedCase key is no longer matched
       (documented, not honored — viper was case-insensitive).
-- [ ] Draft the release-notes lines: viper removal, case-sensitivity delta, any
+- [x] Draft the release-notes lines: viper removal, case-sensitivity delta, any
       error-wording changes.
 
 #### Success Criteria
@@ -394,19 +394,19 @@ consumer.
 
 ## Testing Plan
 
-- [ ] **Moved tests pass unchanged except import paths** — `docwrite` status
+- [x] **Moved tests pass unchanged except import paths** — `docwrite` status
       goldens and `toc` splice goldens prove behavior preserved;
       `go test ./... -update` yields zero churn at every phase boundary.
-- [ ] **Parity baseline pins the config decode** — including the new
+- [x] **Parity baseline pins the config decode** — including the new
       case-sensitivity case (Phase 1).
-- [ ] **`docparse` golden corpus** — template-conformant + messy fixtures; slug
+- [x] **`docparse` golden corpus** — template-conformant + messy fixtures; slug
       parity vs the old walker; `TaskItem.Line` write-through accuracy.
-- [ ] **`CheckTask` byte-diff goldens** — exactly one line changes.
-- [ ] **CLI regression suite stays green** — `cmd/` tests (serial `Runner` +
+- [x] **`CheckTask` byte-diff goldens** — exactly one line changes.
+- [x] **CLI regression suite stays green** — `cmd/` tests (serial `Runner` +
       `bytes.Buffer`) untouched except imports and any flagged error-text pins.
-- [ ] **Consumer module exercises all five subpackages** as an external importer
+- [x] **Consumer module exercises all five subpackages** as an external importer
       (Phase 5).
-- [ ] **`make ci` gates every phase** — lint, license-check, build, full suite,
+- [x] **`make ci` gates every phase** — lint, license-check, build, full suite,
       consumer module.
 
 ## Dependencies
