@@ -685,25 +685,60 @@ pass-through seam (Decision 10).
 
 #### Tasks
 
-- [ ] Implement `internal/auth`: the `Provider` interface (`Name` /
+- [x] Implement `internal/auth`: the `Provider` interface (`Name` /
       `AuthCodeURL` / `Exchange`) and the GitHub OAuth provider (default).
-- [ ] Implement the Okta and Keycloak OIDC providers via discovery
+      <br>_Done: `internal/auth/provider.go` (`Provider` interface + `Identity`),
+      `internal/auth/github.go` (`GitHubProvider` over `golang.org/x/oauth2`;
+      `Exchange` fetches the user via go-github and requires a **primary +
+      verified** email), `internal/auth/registry.go` (name→provider lookup, sorted
+      `Names()`), `internal/auth/state.go` (HMAC-SHA256 signed, 5-min-TTL OAuth
+      `state` carrying the provider — the stateless CSRF guard, `hmac.Equal`
+      constant-time verify)._
+- [x] Implement the Okta and Keycloak OIDC providers via discovery
       (`issuer`/`client_id`/`client_secret`/scopes), using `coreos/go-oidc` +
       `golang.org/x/oauth2` (OQ 6).
-- [ ] Implement `internal/session`: Redis session store (`sess:<id>` →
+      <br>_Done: `internal/auth/oidc.go` — one `OIDCProvider` backs both (they
+      differ only by issuer/credentials). Discovery runs at startup under a bounded
+      context; `Exchange` verifies the `id_token` (JWKS signature + audience +
+      issuer + expiry, go-oidc defaults) before reading `sub`/`email`/`groups`, and
+      drops an email the issuer asserts `email_verified:false`._
+- [x] Implement `internal/session`: Redis session store (`sess:<id>` →
       identity + groups + expiry, `SESSION_TTL`), issue/lookup/revoke; set an
       httpOnly, SameSite cookie.
-- [ ] Auth endpoints: `/auth/login?provider=…`, `/auth/callback` (exchange →
+      <br>_Done: `internal/session/store.go` — opaque 32-byte `crypto/rand`
+      session id, `sess:<id>` → JSON identity with a `SESSION_TTL` Redis
+      expiry; `Issue`/`Lookup`/`Revoke` (`redis.Nil`→`ErrSessionNotFound`);
+      `SetCookie` is `HttpOnly` + `SameSite=Lax` + `Secure`-when-https, mirrored by
+      `ClearCookie`. Owns its own Redis client (`Close`/`Ping`)._
+- [x] Auth endpoints: `/auth/login?provider=…`, `/auth/callback` (exchange →
       upsert `users` row → issue session), `GET /api/v1/auth/session`,
       `POST /api/v1/auth/logout` (single `DEL`).
-- [ ] Session middleware resolves the session into request context; the
+      <br>_Done: `internal/authhttp/{handler,endpoints}.go` — `login` signs state
+      and redirects; `callback` verifies state, `Exchange`s, `UpsertUser`s
+      (`store.UpsertUser`, `users.sql` `ON CONFLICT (provider,subject)`), issues the
+      session, sets the cookie, redirects to `/`; `getSession` returns the current
+      user; `logout` revokes + clears. `MountPublic` (login/callback) vs `MountAPI`
+      (session/logout, behind the gate)._
+- [x] Session middleware resolves the session into request context; the
       `authorize` seam still returns "all onboarded repos" (authZ deferred), but
       now keyed off a real identity. Protected endpoints return `401` without a
       valid session.
-- [ ] Tests: a provider stub drives login/callback → session issued; session
+      <br>_Done: `internal/session/middleware.go` — cookie → `Lookup` → inject
+      `Session` into context or `401`; `FromContext` reads it back. In
+      `cmd/docz-api/main.go` the `/api/v1` `gate` composes `session.Middleware`
+      (runs first) over `authorize.Middleware`, so authorization resolves behind a
+      real identity._
+- [x] Tests: a provider stub drives login/callback → session issued; session
       lookup populates identity; logout revokes; unauthenticated requests to
       protected endpoints → `401`; `Groups` claims persisted for the future
       authZ layer.
+      <br>_Done: `internal/authhttp/handler_test.go` (stub provider drives
+      login→redirect, callback→upsert+issue+cookie, rejects invalid/forged state +
+      exchange failure, `getSession`/`logout` behind the real middleware),
+      `internal/session/middleware_test.go` (valid/unknown/no-cookie → `200`/`401`,
+      parallel-safe), `internal/auth/{state,registry}_test.go`, and
+      `internal/session/store_integration_test.go` (real Redis: issue→lookup→revoke,
+      unknown→NotFound, TTL expiry, **`Groups` round-trip persisted**)._
 
 #### Success Criteria
 
@@ -713,6 +748,24 @@ pass-through seam (Decision 10).
 - Protected endpoints require a session (`401` otherwise); the `authorize` seam
   is the single, isolated switch point where the future SpiceDB resolver plugs
   in.
+
+**Status: COMPLETE ✅** — all criteria met. GitHub login works end to end
+(`/auth/login?provider=github` → provider authorize → `/auth/callback` →
+verified-email Exchange → `users` upsert → session + cookie → `/`); Okta and
+Keycloak ride the same `/auth/callback` via one discovery-driven `OIDCProvider`
+selected by the signed state. The session cookie (`HttpOnly`, `SameSite=Lax`,
+`Secure`-when-https, opaque 32-byte id) is issued on callback, validated by the
+`/api/v1` session middleware on every subsequent request, and revoked on logout;
+`GET /api/v1/auth/session` reflects the current user and `401`s without a
+session. The `authorize` seam still grants all onboarded repos but now resolves
+behind a real identity — it remains the single switch point for the future
+SpiceDB resolver. `Groups` claims are persisted (Redis round-trip proven by
+integration test) for that authZ layer. State is a stateless HMAC-SHA256 CSRF
+guard (constant-time verify, 5-min TTL). Full unit + integration suites green;
+`golangci-lint` at 0 issues. Documented MVP simplification: OIDC `nonce`
+binding is deferred (the signed `state` already guards CSRF for the code flow) —
+a cheap hardening follow-up since `statePayload` already carries a per-login
+nonce.
 
 ---
 

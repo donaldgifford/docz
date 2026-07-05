@@ -453,6 +453,73 @@ progresses:
     justification, alongside a `_test.go` `unparam` relaxation (test helpers keep
     intent-documenting params).
 
+- **Phase 6 — Authentication (pluggable providers + Redis sessions): COMPLETE
+  ✅** — site users log in via one `Provider` abstraction (GitHub default, plus
+  discovery-driven Okta/Keycloak) and carry an opaque Redis-backed session.
+  Authorization stays the pass-through seam (Decision 10) — now keyed off a real
+  identity. Architecture:
+  - **`internal/auth`** — `Provider` interface (`Name`/`AuthCodeURL`/`Exchange`)
+    returning an `Identity{Provider, Subject, Email, Login, Groups}`.
+    `GitHubProvider` (OAuth via `golang.org/x/oauth2`; `Exchange` pulls the user
+    with go-github and requires a **primary + verified** email). `OIDCProvider`
+    backs **both** Okta and Keycloak — they differ only by issuer/credentials;
+    discovery (`oidc.NewProvider`) runs **at startup** under a bounded context so
+    a bad issuer fails the boot, not the first login, and `Exchange` verifies the
+    `id_token` (JWKS signature + audience + issuer + expiry via go-oidc defaults)
+    before reading claims, dropping an email the issuer marks
+    `email_verified:false`. `Registry` is a name→provider map with sorted
+    `Names()`.
+  - **stateless CSRF via signed state** (`auth/state.go`): the OAuth `state` is
+    `base64url(payload).hex(HMAC-SHA256(secret, payload))` where payload carries
+    `{Provider, Nonce, ExpiresAt}` (5-min TTL). `VerifyState` is constant-time
+    (`hmac.Equal`), fails closed on any tamper/expiry, and is checked **before**
+    the payload is decoded. The signing secret is `SESSION_SECRET`. **No
+    server-side state row** — the provider is recovered from the verified state.
+  - **`internal/session`** — opaque **32-byte `crypto/rand`** session id (the id
+    is the *only* credential; no identity is encoded in it). `sess:<id>` → JSON
+    identity in Redis with a `SESSION_TTL` expiry. `Issue`/`Lookup`/`Revoke`
+    (`redis.Nil` → `ErrSessionNotFound` via `errors.Is`). `SetCookie` is
+    `HttpOnly` + `SameSite=Lax` (Lax, so the cookie survives the top-level
+    provider redirect back to `/auth/callback`) + `Secure`-when-https +
+    `Path:/`; `ClearCookie` mirrors it with `MaxAge:-1`. The store owns its
+    **own** Redis client (separate from the queue's), closed via `closeSession`.
+    `Middleware` resolves the cookie → `Lookup` → injects `Session` into the
+    request context (or `401`); `FromContext` reads it back.
+  - **`internal/authhttp`** — four endpoints over unexported consumer interfaces
+    (`userUpserter`/`sessionStore`, satisfied by `*store.Store`/`*session.Store`).
+    `MountPublic`: `GET /auth/login` (sign state → redirect to `AuthCodeURL`),
+    `GET /auth/callback` (verify state → `Exchange` → `UpsertUser` → `Issue` →
+    `SetCookie` → redirect `/`). `MountAPI` (behind the gate): `GET
+    /api/v1/auth/session` (current user or `401`), `POST /api/v1/auth/logout`
+    (`Revoke` + `ClearCookie`, idempotent). `UpsertUser` (`users.sql`) is `INSERT
+    … ON CONFLICT (provider,subject) DO UPDATE`.
+  - **the `/api/v1` gate** (`main.go` `runServer`): `session.Middleware` composed
+    **over** `authorize.Middleware` — session runs **first** so authorization
+    resolves behind a real identity. `authHandler.MountAPI` is threaded into the
+    gated group via `httpapi.Handler.Mount(r, gate, extras…)`; `MountPublic` sits
+    on the root router (login has no session yet; callback is authed by its
+    state). The webhook receiver stays outside both (HMAC is its auth).
+  - **config**: `AUTH_REDIRECT_BASE` (required, trailing-slash-trimmed) builds
+    each provider's absolute `/auth/callback` `redirect_uri`; `cookiesSecure`
+    keys `Secure` off its `https` scheme. Providers built by
+    `cmd/docz-api/auth.go` `buildAuthProviders` (OIDC discovery bounded by
+    `oidcDiscoveryTimeout=15s`).
+  - **GOTCHA — funlen on `run()`**: wiring the auth stack + worker + router
+    pushed `run()` over the 50-statement `funlen` limit; the serve path is
+    extracted into `runServer(cfg, st, searchClient, queueClient)` (the
+    `-onboard` early-return stays in `run()`).
+  - **GOTCHA — `Issue(*auth.Identity)`**: `auth.Identity` is ~88 B, so gocritic
+    `hugeParam` flags passing it by value; `session.Store.Issue` and the
+    `sessionStore` interface take a **pointer**. Same for `session.Middleware`
+    fakes (pointer receivers, `&fakeLookuper{}`).
+  - **new deps**: `golang.org/x/oauth2` + `github.com/coreos/go-oidc/v3` (direct);
+    `github.com/go-jose/go-jose/v4` (indirect, go-oidc's transitive). Promote via
+    the go.mod direct-require block + `go mod edit -fmt`, never a bare
+    `go mod tidy`.
+  - **deferred (documented)**: OIDC `nonce` binding (the signed state already
+    guards the code flow's CSRF; `statePayload` already carries a nonce, so it's a
+    cheap hardening follow-up).
+
 ## Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.

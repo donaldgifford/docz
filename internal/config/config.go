@@ -59,12 +59,15 @@ type MeiliConfig struct {
 
 // AuthConfig holds site-user authentication configuration. Providers lists the
 // enabled login providers; a provider's credentials are required only when it
-// is enabled.
+// is enabled. RedirectBase is the public origin used to build each provider's
+// OAuth/OIDC redirect URL (<base>/auth/callback), so it must match what the
+// provider app is registered with.
 type AuthConfig struct {
-	Providers []string // AUTH_PROVIDERS — default ["github"].
-	GitHub    GitHubOAuth
-	Okta      OIDCProvider
-	Keycloak  OIDCProvider
+	Providers    []string // AUTH_PROVIDERS — default ["github"].
+	RedirectBase string   // AUTH_REDIRECT_BASE — required; e.g. https://docz-api.internal.
+	GitHub       GitHubOAuth
+	Okta         OIDCProvider
+	Keycloak     OIDCProvider
 }
 
 // GitHubOAuth holds the GitHub OAuth app credentials for site login. Required
@@ -140,7 +143,8 @@ func Load() (Config, error) {
 			APIKey: Secret(v.GetString("meili_api_key")),
 		},
 		Auth: AuthConfig{
-			Providers: splitTrimmed(v.GetString("auth_providers")),
+			Providers:    splitTrimmed(v.GetString("auth_providers")),
+			RedirectBase: strings.TrimSuffix(v.GetString("auth_redirect_base"), "/"),
 			GitHub: GitHubOAuth{
 				ClientID:     v.GetString("github_oauth_client_id"),
 				ClientSecret: Secret(v.GetString("github_oauth_client_secret")),

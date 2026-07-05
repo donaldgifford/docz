@@ -26,6 +26,7 @@ func validEnv() map[string]string {
 		"GITHUB_APP_PRIVATE_KEY":     testPEM,
 		"GITHUB_WEBHOOK_SECRET":      "whsec",
 		"SESSION_SECRET":             "sess",
+		"AUTH_REDIRECT_BASE":         "https://docz-api.internal",
 		"GITHUB_OAUTH_CLIENT_ID":     "gh-oauth-id",
 		"GITHUB_OAUTH_CLIENT_SECRET": "gh-oauth-secret",
 	}
@@ -80,7 +81,8 @@ func TestLoadMissingRequired(t *testing.T) {
 	required := []string{
 		"DATABASE_URL", "REDIS_URL", "MEILI_HOST", "MEILI_API_KEY",
 		"GITHUB_APP_ID", "GITHUB_APP_PRIVATE_KEY", "GITHUB_WEBHOOK_SECRET",
-		"SESSION_SECRET", "GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET",
+		"SESSION_SECRET", "AUTH_REDIRECT_BASE", "GITHUB_OAUTH_CLIENT_ID",
+		"GITHUB_OAUTH_CLIENT_SECRET",
 	}
 	for _, name := range required {
 		t.Run(name, func(t *testing.T) {

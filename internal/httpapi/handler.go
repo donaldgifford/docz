@@ -55,12 +55,15 @@ func NewHandlerWithSearch(st storeReader, s Searcher) *Handler {
 	return &Handler{store: st, searcher: s}
 }
 
-// Mount registers the read routes on r behind the authorize middleware. Liveness
-// and readiness probes are mounted elsewhere and bypass authorization. The
-// /search route is registered only when a searcher was provided.
-func (h *Handler) Mount(r chi.Router, authz func(http.Handler) http.Handler) {
+// Mount registers the read routes on r behind the gate middleware (Phase 6
+// composes the session gate and the authorize seam into gate). Liveness and
+// readiness probes are mounted elsewhere and bypass it. The /search route is
+// registered only when a searcher was provided. extras run inside the same
+// gated /api/v1 group, letting callers add routes (e.g. the auth session /
+// logout endpoints) that share the gate without re-declaring it.
+func (h *Handler) Mount(r chi.Router, gate func(http.Handler) http.Handler, extras ...func(chi.Router)) {
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(authz)
+		r.Use(gate)
 		r.Get("/repos", h.listRepos)
 		r.Route("/repos/{owner}/{name}", func(r chi.Router) {
 			r.Get("/", h.getRepo)
@@ -70,6 +73,9 @@ func (h *Handler) Mount(r chi.Router, authz func(http.Handler) http.Handler) {
 		})
 		if h.searcher != nil {
 			r.Get("/search", h.searchDocs)
+		}
+		for _, extra := range extras {
+			extra(r)
 		}
 	})
 }

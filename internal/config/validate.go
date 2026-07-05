@@ -50,6 +50,9 @@ func validateAuth(errs *[]string, a *AuthConfig) {
 		*errs = append(*errs, "AUTH_PROVIDERS: at least one provider is required")
 		return
 	}
+	// Every enabled provider builds its redirect URL from this base, so it is
+	// required whenever any provider is enabled (always, given the check above).
+	requireNonEmpty(errs, "AUTH_REDIRECT_BASE", a.RedirectBase)
 	for _, p := range a.Providers {
 		switch p {
 		case "github":

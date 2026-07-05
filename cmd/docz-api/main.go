@@ -23,11 +23,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/donaldgifford/docz-api/internal/auth"
+	"github.com/donaldgifford/docz-api/internal/authhttp"
 	"github.com/donaldgifford/docz-api/internal/authorize"
 	"github.com/donaldgifford/docz-api/internal/config"
 	"github.com/donaldgifford/docz-api/internal/httpapi"
 	"github.com/donaldgifford/docz-api/internal/queue"
 	"github.com/donaldgifford/docz-api/internal/search"
+	"github.com/donaldgifford/docz-api/internal/session"
 	"github.com/donaldgifford/docz-api/internal/store"
 	"github.com/donaldgifford/docz-api/internal/webhook"
 )
@@ -130,6 +133,35 @@ func run() error {
 		return runOnboard(context.Background(), st, queueClient, *onboardSpec)
 	}
 
+	// Serve path (not -onboard): build the auth stack + in-process worker + HTTP
+	// surface and serve until shutdown.
+	return runServer(&cfg, st, searchClient, queueClient)
+}
+
+// runServer builds the site-user auth stack, the in-process ingest worker, and
+// the HTTP surface, then serves until a termination signal. It owns the session
+// store and worker lifecycles; the caller owns the pool, and serveWithWorker
+// owns the queue client on the happy path.
+func runServer(
+	cfg *config.Config, st *store.Store, searchClient *search.Client, queueClient *queue.Client,
+) error {
+	// Site-user auth: build the enabled providers (OIDC discovery happens here,
+	// bounded by a startup context) and the Redis session store, before the
+	// worker so a discovery/Redis failure aborts startup cleanly.
+	startCtx, startCancel := context.WithTimeout(context.Background(), oidcDiscoveryTimeout)
+	defer startCancel()
+	providers, err := buildAuthProviders(startCtx, cfg)
+	if err != nil {
+		closeQueueClient(queueClient)
+		return fmt.Errorf("building auth providers: %w", err)
+	}
+	sessionStore, err := session.New(cfg.Store.RedisURL, cfg.Session.TTL, cookiesSecure(cfg))
+	if err != nil {
+		closeQueueClient(queueClient)
+		return fmt.Errorf("building session store: %w", err)
+	}
+	defer closeSession(sessionStore)
+
 	// The worker runs in-process alongside the HTTP server (single-binary ethos).
 	// It builds a per-installation GitHub client per job via ingestRunner.
 	runner := &ingestRunner{store: st, indexer: searchClient, github: cfg.GitHub}
@@ -138,9 +170,9 @@ func run() error {
 		closeQueueClient(queueClient)
 		return fmt.Errorf("building queue worker: %w", err)
 	}
-	if err := worker.Start(); err != nil {
+	if serr := worker.Start(); serr != nil {
 		closeQueueClient(queueClient)
-		return fmt.Errorf("starting queue worker: %w", err)
+		return fmt.Errorf("starting queue worker: %w", serr)
 	}
 
 	slog.Info("starting docz-api",
@@ -151,18 +183,29 @@ func run() error {
 		"worker_concurrency", workerConcurrency,
 	)
 
-	// Probes plus the /api/v1 read + search surface behind the authorize seam.
-	// Readiness covers all three durable dependencies.
 	router := newRouter([]namedChecker{
 		{name: "postgres", check: st.Ping},
 		{name: "meilisearch", check: searchClient.Health},
 		{name: "redis", check: queueClient.Ping},
 	})
+	// The /api/v1 gate is the session authn check (401 without a valid session)
+	// composed over the authorize seam (which still grants all onboarded repos;
+	// the future SpiceDB resolver plugs in here). Session runs first so authorize
+	// resolves behind a real identity.
 	authorizer := authorize.NewAllReposAuthorizer(st)
-	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, authorize.Middleware(authorizer))
+	gate := func(next http.Handler) http.Handler {
+		return session.Middleware(sessionStore)(authorize.Middleware(authorizer)(next))
+	}
+	authHandler := authhttp.New(
+		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
+	)
+	// The read/search API plus the two session-gated auth endpoints share the gate.
+	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, gate, authHandler.MountAPI)
+	// /auth/login and /auth/callback are public (state is their CSRF guard).
+	authHandler.MountPublic(router)
 
-	// The GitHub webhook receiver sits outside /api/v1 and the authorize seam:
-	// it is authenticated by its HMAC signature, not a session. It inherits the
+	// The GitHub webhook receiver sits outside /api/v1 and the auth gate: it is
+	// authenticated by its HMAC signature, not a session. It inherits the
 	// router's RequestID + Recoverer middleware and enqueues onto the same queue.
 	webhookHandler := webhook.New(
 		[]byte(cfg.GitHub.WebhookSecret.Reveal()), st, queueClient, searchClient,
@@ -384,5 +427,12 @@ func serveWithWorker(addr string, handler http.Handler, w *queue.Worker, qc *que
 func closeQueueClient(qc *queue.Client) {
 	if err := qc.Close(); err != nil {
 		slog.Warn("close queue client", "err", err)
+	}
+}
+
+// closeSession closes the session store, logging a close error at warn.
+func closeSession(s *session.Store) {
+	if err := s.Close(); err != nil {
+		slog.Warn("close session store", "err", err)
 	}
 }

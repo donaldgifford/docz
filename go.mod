@@ -4,6 +4,7 @@ go 1.26.4
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
+	github.com/coreos/go-oidc/v3 v3.19.0
 	github.com/donaldgifford/docz v0.5.0
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/go-github/v88 v88.0.0
@@ -15,6 +16,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/testcontainers/testcontainers-go v0.43.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.43.0
+	golang.org/x/oauth2 v0.36.0
 )
 
 require (
@@ -36,6 +38,7 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

@@ -96,6 +96,7 @@ linters:
       check-blank: true
       exclude-functions:
         - (io.Closer).Close  # Common pattern to defer close
+        - (hash.Hash).Write  # Documented never to return an error (hmac/sha256 sinks)
         - (*github.com/fatih/color.Color).Printf  # CLI color output to stdout.
         - (*github.com/fatih/color.Color).Println  # CLI color output to stdout.
         - (*github.com/spf13/cobra.Command).MarkFlagRequired  # Only fails if flag name is wrong.

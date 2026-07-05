@@ -98,6 +98,21 @@ func (s *Store) RecordDelivery(ctx context.Context, deliveryID, event string) (b
 	return true, nil
 }
 
+// UpsertUser creates or refreshes the durable user row for a provider identity
+// and returns its id. Email/login are optional (mapped to SQL NULL when empty).
+func (s *Store) UpsertUser(ctx context.Context, in UserInput) (int64, error) {
+	id, err := s.q.UpsertUser(ctx, UpsertUserParams{
+		Provider: in.Provider,
+		Subject:  in.Subject,
+		Email:    textOrNull(in.Email),
+		Login:    textOrNull(in.Login),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("upsert user %s/%s: %w", in.Provider, in.Subject, err)
+	}
+	return id, nil
+}
+
 // The input types below are the store's public boundary. They use plain Go
 // zero values for nullable columns (empty string / zero time); the store maps
 // those to SQL NULL, keeping pgtype out of the ingest layer.
@@ -108,6 +123,15 @@ type (
 		ID           int64
 		AccountLogin string
 		AccountType  string
+	}
+
+	// UserInput is the desired state for a site-user row, populated at login
+	// time from a provider Identity. Email/Login are optional.
+	UserInput struct {
+		Provider string
+		Subject  string
+		Email    string
+		Login    string
 	}
 
 	// RepoInput is the desired top-level state for a repo at a given HEAD.
