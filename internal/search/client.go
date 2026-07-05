@@ -8,14 +8,16 @@ import (
 	"github.com/meilisearch/meilisearch-go"
 )
 
+// Index schema identifiers.
 const (
 	// indexUID is the Meilisearch index holding every onboarded document.
 	indexUID = "documents"
 	// primaryKeyField names the composite key "<repo_id>_<doc_id>" on each document.
 	primaryKeyField = "id"
-	// taskPollInterval is how often index writes poll Meilisearch task status.
-	taskPollInterval = 50 * time.Millisecond
 )
+
+// taskPollInterval is how often index writes poll Meilisearch task status.
+const taskPollInterval = 50 * time.Millisecond
 
 // Client is the Meilisearch access layer. One Client serves the whole process;
 // it satisfies the ingest.Indexer and httpapi.Searcher interfaces.

@@ -1,7 +1,7 @@
 package ingest
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -15,7 +15,7 @@ import (
 // purely numeric, so the first "_" unambiguously splits the two parts. The key
 // is internal to the index and never appears in the search response.
 func primaryKey(repoID int64, docID string) string {
-	return fmt.Sprintf("%d_%s", repoID, docID)
+	return strconv.FormatInt(repoID, 10) + "_" + docID
 }
 
 // toIndexDoc maps a stored document row to a search.IndexDoc. owner/name form

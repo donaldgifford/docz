@@ -10,13 +10,18 @@ import (
 	"github.com/meilisearch/meilisearch-go"
 )
 
+// Search tuning knobs.
 const (
 	// defaultSearchLimit caps hits when the caller does not specify a limit.
 	defaultSearchLimit = 20
 	// snippetCropLength is the word window Meilisearch crops the body snippet to.
 	snippetCropLength = 40
-	highlightPreTag   = "<em>"
-	highlightPostTag  = "</em>"
+)
+
+// Body-highlight tags wrapped around matched terms in the snippet.
+const (
+	highlightPreTag  = "<em>"
+	highlightPostTag = "</em>"
 )
 
 // facetNames are the attributes faceted (and returned as counts) on every search.
@@ -114,7 +119,7 @@ func decodeHits(h meilisearch.Hits) ([]SearchHit, error) {
 // parseFacets decodes Meilisearch's facetDistribution, shaped as
 // {"type":{"rfc":2},"status":{"Accepted":1,"Draft":1},...}.
 func parseFacets(raw json.RawMessage) (map[string]FacetMap, error) {
-	out := map[string]FacetMap{}
+	out := make(map[string]FacetMap)
 	if len(raw) == 0 {
 		return out, nil
 	}

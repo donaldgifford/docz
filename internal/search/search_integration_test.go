@@ -111,6 +111,15 @@ func seed(t *testing.T) {
 	}
 }
 
+func TestIntegrationEnsureIndexIdempotent(t *testing.T) {
+	// TestMain already called EnsureIndex once (cold). A second call must
+	// succeed on the existing index: the create task fails harmlessly (never
+	// waited on) and only the settings update is applied.
+	if err := testClient.EnsureIndex(t.Context()); err != nil {
+		t.Fatalf("EnsureIndex on an existing index: %v", err)
+	}
+}
+
 func TestIntegrationIndexAndSearch(t *testing.T) {
 	seed(t)
 

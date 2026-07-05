@@ -34,6 +34,9 @@ type Searcher interface {
 	Search(ctx context.Context, p *search.SearchParams) (search.SearchResult, error)
 }
 
+// *search.Client is the production Searcher.
+var _ Searcher = (*search.Client)(nil)
+
 // Handler serves the /api/v1 read and search routes. searcher is optional: when
 // nil, the /search route is not mounted.
 type Handler struct {

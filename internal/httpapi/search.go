@@ -8,9 +8,6 @@ import (
 	"github.com/donaldgifford/docz-api/internal/search"
 )
 
-// *search.Client is the production Searcher.
-var _ Searcher = (*search.Client)(nil)
-
 // searchDocs handles GET /api/v1/search: full-text query q with optional
 // repo/type/status/author facet filters. The route is always mounted behind the
 // authorize middleware, so the caller's allowed-repo set is present in context;
