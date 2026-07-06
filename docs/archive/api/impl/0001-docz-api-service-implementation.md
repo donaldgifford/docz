@@ -784,8 +784,16 @@ the service release-ready.
       require with **no `replace` directive**; the module resolves from the
       published tag. v0.5.0 remains the current published release (DESIGN-0007), so
       no deliberate bump is warranted this phase._
-- [ ] Add contract golden fixtures matching the response shapes DESIGN-0009
+- [x] Add contract golden fixtures matching the response shapes DESIGN-0009
       consumes, asserted in CI so a breaking JSON change fails here first.
+      <br>_Done: `internal/httpapi/contract_test.go` drives the real chi router
+      (behind the authorize seam, with a deterministic searcher) for all six
+      read/search endpoints plus the 404 error envelope, freezing
+      status + `Content-Type` + JSON body per endpoint in
+      `testdata/contract/*.json`. `TestContractGolden` asserts them on every
+      `just test` run (so CI catches a renamed/removed/retyped field — verified by
+      a tampered-fixture check); `-update` regenerates them for an intentional
+      change. Locks the DESIGN-0001 wire shapes DESIGN-0009 consumes._
 - [ ] Observability (OQ 8 — full stack): request-logging middleware over `slog`;
       a Prometheus `/metrics` endpoint; a `/healthz` liveness endpoint and the
       `/readyz` readiness probe extended to cover Redis (Postgres + Meilisearch
