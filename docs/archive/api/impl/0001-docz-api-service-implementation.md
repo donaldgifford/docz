@@ -776,10 +776,14 @@ the service release-ready.
 
 #### Tasks
 
-- [ ] Confirm the docz dependency stays a **pinned published tag**
+- [x] Confirm the docz dependency stays a **pinned published tag**
       (`require github.com/donaldgifford/docz v0.5.0`, no `replace`), and bump
       it deliberately if a newer docz ships (R6; DESIGN-0007 already published
       v0.5.0).
+      <br>_Done: `go.mod` pins `github.com/donaldgifford/docz v0.5.0` as a direct
+      require with **no `replace` directive**; the module resolves from the
+      published tag. v0.5.0 remains the current published release (DESIGN-0007), so
+      no deliberate bump is warranted this phase._
 - [ ] Add contract golden fixtures matching the response shapes DESIGN-0009
       consumes, asserted in CI so a breaking JSON change fails here first.
 - [ ] Observability (OQ 8 — full stack): request-logging middleware over `slog`;
