@@ -8,8 +8,12 @@
 package queue
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 // TaskTypeIngest is the asynq task type for a repository ingest job. The worker
@@ -28,6 +32,11 @@ type IngestJob struct {
 	Owner          string `json:"owner"`
 	Name           string `json:"name"`
 	Reason         string `json:"reason"`
+	// Trace context (W3C traceparent/tracestate) captured at the enqueue site so
+	// the worker's span links back to the request that triggered it. Empty when
+	// the trigger ran outside a trace (e.g. the -onboard CLI); safe either way.
+	TraceParent string `json:"traceparent,omitempty"`
+	TraceState  string `json:"tracestate,omitempty"`
 }
 
 // repoLabel is the "owner/name" identifier, used both for logging and as the
@@ -51,4 +60,28 @@ func unmarshalJob(payload []byte) (*IngestJob, error) {
 		return nil, fmt.Errorf("unmarshal ingest job: %w", err)
 	}
 	return &j, nil
+}
+
+// injectTrace records the active span's W3C trace context onto job using the
+// global propagator, so a downstream worker can continue the trace. It is a
+// no-op when ctx carries no span (the fields stay empty).
+func injectTrace(ctx context.Context, job *IngestJob) {
+	carrier := propagation.MapCarrier{}
+	otel.GetTextMapPropagator().Inject(ctx, carrier)
+	job.TraceParent = carrier["traceparent"]
+	job.TraceState = carrier["tracestate"]
+}
+
+// extractTrace returns a context carrying the remote span referenced by job's
+// trace fields, so a worker span becomes a child of the enqueue-time span. It
+// returns ctx unchanged when the job carries no trace context.
+func extractTrace(ctx context.Context, job *IngestJob) context.Context {
+	if job.TraceParent == "" {
+		return ctx
+	}
+	carrier := propagation.MapCarrier{"traceparent": job.TraceParent}
+	if job.TraceState != "" {
+		carrier["tracestate"] = job.TraceState
+	}
+	return otel.GetTextMapPropagator().Extract(ctx, carrier)
 }

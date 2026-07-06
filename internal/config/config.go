@@ -26,14 +26,15 @@ import (
 // Sub-structs group related settings so main() can hand each downstream
 // package (store, githubapp, auth, ...) only the section it needs.
 type Config struct {
-	Store   StoreConfig
-	GitHub  GitHubConfig
-	Meili   MeiliConfig
-	Auth    AuthConfig
-	Session SessionConfig
-	Ingest  IngestConfig
-	HTTP    HTTPConfig
-	Log     LogConfig
+	Store     StoreConfig
+	GitHub    GitHubConfig
+	Meili     MeiliConfig
+	Auth      AuthConfig
+	Session   SessionConfig
+	Ingest    IngestConfig
+	HTTP      HTTPConfig
+	Log       LogConfig
+	Telemetry TelemetryConfig
 }
 
 // StoreConfig holds connection strings for the durable stores.
@@ -107,6 +108,17 @@ type LogConfig struct {
 	Format string // LOG_FORMAT — default "text" (text|json).
 }
 
+// TelemetryConfig holds observability settings (OQ 8). Every field has safe
+// zero-value behavior: an empty OTLPEndpoint disables trace export entirely
+// (the tracer becomes a no-op), so a homelab install without a collector needs
+// no telemetry configuration and pays no overhead.
+type TelemetryConfig struct {
+	ServiceName    string  // OTEL_SERVICE_NAME — default "docz-api".
+	OTLPEndpoint   string  // OTEL_EXPORTER_OTLP_ENDPOINT — default ""; empty = tracing off.
+	SampleRate     float64 // OTEL_SAMPLE_RATE — default 1.0 (head sampling ratio, 0–1).
+	MetricsEnabled bool    // METRICS_ENABLED — default true; exposes /metrics.
+}
+
 // Load reads the service configuration from the environment and validates it.
 // It returns a wrapped ErrInvalidConfig listing every problem when validation
 // fails, so an operator sees all misconfigurations at once.
@@ -121,6 +133,9 @@ func Load() (Config, error) {
 	v.SetDefault("http_addr", ":8080")
 	v.SetDefault("log_level", "info")
 	v.SetDefault("log_format", "text")
+	v.SetDefault("otel_service_name", "docz-api")
+	v.SetDefault("otel_sample_rate", 1.0)
+	v.SetDefault("metrics_enabled", true)
 
 	privateKey, err := resolvePrivateKey(v.GetString("github_app_private_key"))
 	if err != nil {
@@ -173,6 +188,12 @@ func Load() (Config, error) {
 		Log: LogConfig{
 			Level:  v.GetString("log_level"),
 			Format: v.GetString("log_format"),
+		},
+		Telemetry: TelemetryConfig{
+			ServiceName:    v.GetString("otel_service_name"),
+			OTLPEndpoint:   v.GetString("otel_exporter_otlp_endpoint"),
+			SampleRate:     v.GetFloat64("otel_sample_rate"),
+			MetricsEnabled: v.GetBool("metrics_enabled"),
 		},
 	}
 

@@ -32,6 +32,7 @@ import (
 	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/session"
 	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz-api/internal/telemetry"
 	"github.com/donaldgifford/docz-api/internal/webhook"
 )
 
@@ -92,6 +93,20 @@ func run() error {
 		return err
 	}
 	slog.SetDefault(logger)
+
+	// Telemetry (OQ 8): install the global tracer + W3C propagator and register
+	// the Prometheus instruments. Non-blocking (the OTLP/HTTP exporter connects
+	// lazily); a no-op when no collector endpoint is configured.
+	telShutdown, err := telemetry.Setup(context.Background(), telemetry.Config{
+		ServiceName:    cfg.Telemetry.ServiceName,
+		OTLPEndpoint:   cfg.Telemetry.OTLPEndpoint,
+		SampleRate:     cfg.Telemetry.SampleRate,
+		MetricsEnabled: cfg.Telemetry.MetricsEnabled,
+	})
+	if err != nil {
+		return fmt.Errorf("setting up telemetry: %w", err)
+	}
+	defer shutdownTelemetry(telShutdown)
 
 	// Apply pending migrations before serving so the schema is always current.
 	// `-migrate` runs them and exits — a CI/ops pre-deploy step.
@@ -188,6 +203,11 @@ func runServer(
 		{name: "meilisearch", check: searchClient.Health},
 		{name: "redis", check: queueClient.Ping},
 	})
+	// The Prometheus scrape endpoint sits alongside the probes, outside the auth
+	// gate (pull-based, typically scraped on the internal network).
+	if cfg.Telemetry.MetricsEnabled {
+		router.Handle("/metrics", telemetry.MetricsHandler())
+	}
 	// The /api/v1 gate is the session authn check (401 without a valid session)
 	// composed over the authorize seam (which still grants all onboarded repos;
 	// the future SpiceDB resolver plugs in here). Session runs first so authorize
@@ -310,6 +330,10 @@ func newLogger(cfg config.LogConfig) (*slog.Logger, error) {
 func newRouter(checkers []namedChecker) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
+	// RequestLogger + Instrument sit outside Recoverer so a recovered panic is
+	// still logged and metered as a 500; probe paths are skipped inside them.
+	r.Use(telemetry.RequestLogger(slog.Default()))
+	r.Use(telemetry.Instrument())
 	r.Use(middleware.Recoverer)
 	r.Get("/healthz", handleHealthz)
 	r.Get("/readyz", handleReadyz(checkers))
@@ -434,5 +458,15 @@ func closeQueueClient(qc *queue.Client) {
 func closeSession(s *session.Store) {
 	if err := s.Close(); err != nil {
 		slog.Warn("close session store", "err", err)
+	}
+}
+
+// shutdownTelemetry flushes any pending spans, bounded by shutdownTimeout. It is
+// a no-op when tracing is disabled.
+func shutdownTelemetry(shutdown func(context.Context) error) {
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	if err := shutdown(ctx); err != nil {
+		slog.Warn("telemetry shutdown", "err", err)
 	}
 }

@@ -794,11 +794,26 @@ the service release-ready.
       `just test` run (so CI catches a renamed/removed/retyped field — verified by
       a tampered-fixture check); `-update` regenerates them for an intentional
       change. Locks the DESIGN-0001 wire shapes DESIGN-0009 consumes._
-- [ ] Observability (OQ 8 — full stack): request-logging middleware over `slog`;
+- [x] Observability (OQ 8 — full stack): request-logging middleware over `slog`;
       a Prometheus `/metrics` endpoint; a `/healthz` liveness endpoint and the
       `/readyz` readiness probe extended to cover Redis (Postgres + Meilisearch
       already wired in Phases 1/3); and full OpenTelemetry tracing across the
       ingest, HTTP, and worker paths.
+      <br>_Done: new `internal/telemetry` package (per go-architect) —
+      `Setup(ctx, Config)` installs the global W3C propagator and (when
+      `OTEL_EXPORTER_OTLP_ENDPOINT` is set) a batching OTLP/HTTP `TracerProvider`,
+      returning a flush-bounded shutdown; no-op and zero-overhead when unset.
+      `RequestLogger` logs one structured slog line per request (probes skipped);
+      `Instrument` starts a server span + records Prometheus HTTP metrics keyed by
+      chi **route template** (bounded cardinality), extracting upstream W3C context
+      and marking 5xx as span errors. Metrics via `prometheus/client_golang` on the
+      default registry (RED for HTTP + ingest); `/metrics` mounted alongside the
+      probes, outside the auth gate. Tracing propagates across the asynq boundary:
+      `IngestJob` carries `traceparent`/`tracestate` (inject at enqueue, extract in
+      the worker → `queue.ingest` consumer span → `ingest.run` with
+      `fetch`/`reconcile`/`index` child spans). `/healthz` + `/readyz` (all three
+      deps) already stood up in Phases 0/1/3. go-style + go-review clean (handle-once
+      + OTel error-status fixes applied); unit + integration suites green._
 - [ ] Container: confirm the distroless `Dockerfile` builds the service; provide
       deploy manifests/compose wiring Postgres + Redis + Meilisearch; secrets
       via env/secret store.

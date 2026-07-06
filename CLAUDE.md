@@ -520,6 +520,62 @@ progresses:
     guards the code flow's CSRF; `statePayload` already carries a nonce, so it's a
     cheap hardening follow-up).
 
+- **Phase 7 — Hardening, contract, observability (in progress)** — the docz
+  `v0.5.0` pin is confirmed (no `replace`); the read+search wire contract is
+  frozen by golden fixtures; the full OQ 8 observability stack is wired.
+  Observability architecture (per go-architect):
+  - **`internal/telemetry`** is the single observability package.
+    `Setup(ctx, Config) (shutdown, error)` installs the **global** W3C
+    `TextMapPropagator` (TraceContext + Baggage) always, and — only when
+    `OTEL_EXPORTER_OTLP_ENDPOINT` is set — a batching `sdktrace.TracerProvider`
+    exporting over **OTLP/HTTP** (`otlptracehttp`, `WithInsecure`, host:port →
+    `/v1/traces` on :4318). Empty endpoint ⇒ the global no-op tracer stays: spans
+    are created but not exported, so a collector-less homelab pays ~zero overhead
+    and needs no config. `Setup` does **no** network I/O (the HTTP exporter
+    connects lazily on first export), so it never blocks startup.
+  - **decision — metrics via `prometheus/client_golang`, OTel for traces only.**
+    Metrics are package-level `promauto` instruments on the **default registry**
+    (idiomatic; also exposes Go-runtime/process collectors). RED for HTTP
+    (`docz_api_http_requests_total`, `..._request_duration_seconds`) and ingest
+    (`docz_api_ingest_jobs_total{reason,status}`, `..._job_duration_seconds` with
+    **wide buckets** up to 120s for slow GitHub-bound ingests). `ObserveIngest` is
+    the one exported metric helper (called by the queue worker).
+  - **HTTP middleware** (mounted in `newRouter`, order
+    `RequestID → RequestLogger → Instrument → Recoverer` so a recovered panic is
+    still logged + metered as 500): `RequestLogger` emits one structured slog line
+    per request; `Instrument` starts a server span and records HTTP metrics. Both
+    **skip** `/healthz`, `/readyz`, `/metrics` (`skipPaths`). The span name and
+    the metric `route` label use chi's **matched route template**
+    (`chi.RouteContext(r.Context()).RoutePattern()`, read **after**
+    `next.ServeHTTP`), never the expanded URL — bounded cardinality; falls back to
+    `"unmatched"`. 5xx ⇒ `span.SetStatus(codes.Error, …)`.
+  - **trace propagation across the asynq boundary** (`internal/queue/job.go`):
+    `IngestJob` carries `traceparent`/`tracestate` (`json:",omitempty"`).
+    `injectTrace` (called in `EnqueueIngest` before marshal) writes the active
+    span's W3C context via `otel.GetTextMapPropagator().Inject` into a
+    `propagation.MapCarrier`; `extractTrace` (called in `handleIngest`) rebuilds
+    the remote parent. The worker starts a `queue.ingest` **consumer** span; the
+    ingest pipeline starts `ingest.run` with `ingest.fetch` / `ingest.reconcile`
+    / `ingest.index` child spans. So webhook request → enqueue → worker → ingest
+    is **one trace**.
+  - **GOTCHA — global tracer/propagator are safe before `Setup`**: package-level
+    `var tracer = otel.Tracer(...)` in `queue`/`ingest` and
+    `otel.GetTextMapPropagator()` return **delegating** globals that retroactively
+    bind to the real provider when `Setup` calls `SetTracerProvider` /
+    `SetTextMapPropagator`. Never nil, so tests and the `-onboard` path (no
+    `Setup`) just no-op.
+  - **`/metrics`** is mounted in `runServer` (not `newRouter`) gated on
+    `cfg.Telemetry.MetricsEnabled`, alongside the probes and **outside** the auth
+    gate (pull-based, scraped internally). `run()` calls `telemetry.Setup` right
+    after the logger and `defer shutdownTelemetry(...)` (bounded by
+    `shutdownTimeout`), covering every return path.
+  - **new deps** (all otel v1.43.0 line): `go.opentelemetry.io/otel/sdk`,
+    `.../exporters/otlp/otlptrace/otlptracehttp`, `.../otel` + `.../otel/trace`
+    (direct); `github.com/prometheus/client_golang`. `grpc` rides along
+    transitively via `proto/otlp` even with the HTTP exporter. **Offline `go mod
+    tidy` fails** (some dependencies' *test* deps aren't cached); settle go.sum
+    with targeted `GOPROXY=off go get <pkg>@<ver>` instead.
+
 ## Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.

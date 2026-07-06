@@ -9,11 +9,19 @@ import (
 	"path"
 	"path/filepath"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/store"
 	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
 	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
 )
+
+// tracer is the instrumentation scope for the ingest pipeline spans.
+var tracer = otel.Tracer("github.com/donaldgifford/docz-api/internal/ingest")
 
 // repoStore is the persistence surface the pipeline needs: reconcile a repo in
 // one transaction, then read back the documents that changed so they can be
@@ -58,7 +66,13 @@ func (s *Service) Run(
 ) (store.ReconcileResult, error) {
 	var zero store.ReconcileResult
 
-	snap, err := s.fetcher.Fetch(ctx, owner, name)
+	ctx, span := tracer.Start(ctx, "ingest.run", trace.WithAttributes(
+		attribute.String("repo", owner+"/"+name),
+		attribute.Int64("installation_id", installationID),
+	))
+	defer span.End()
+
+	snap, err := s.fetchSnapshot(ctx, owner, name)
 	if err != nil {
 		return zero, fmt.Errorf("fetch %s/%s: %w", owner, name, err)
 	}
@@ -105,7 +119,7 @@ func (s *Service) Run(
 		Documents: documents,
 	}
 
-	result, err := s.store.ReconcileRepo(ctx, in)
+	result, err := s.reconcile(ctx, in)
 	if err != nil {
 		return zero, fmt.Errorf("reconcile %s/%s: %w", owner, name, err)
 	}
@@ -114,6 +128,41 @@ func (s *Service) Run(
 	// into the search index best-effort (see indexSearch).
 	s.indexSearch(ctx, owner, name, &result)
 	return result, nil
+}
+
+// fetchSnapshot fetches the repo snapshot under a child span. It returns the
+// raw fetcher error (Run wraps it with repo context).
+func (s *Service) fetchSnapshot(ctx context.Context, owner, name string) (*RepoSnapshot, error) {
+	ctx, span := tracer.Start(ctx, "ingest.fetch")
+	defer span.End()
+	snap, err := s.fetcher.Fetch(ctx, owner, name)
+	if err != nil {
+		recordSpanError(span, err)
+		return nil, err
+	}
+	return snap, nil
+}
+
+// reconcile runs the store transaction under a child span. It returns the raw
+// store error (Run wraps it with repo context).
+func (s *Service) reconcile(
+	ctx context.Context, in *store.ReconcileInput,
+) (store.ReconcileResult, error) {
+	ctx, span := tracer.Start(ctx, "ingest.reconcile")
+	defer span.End()
+	res, err := s.store.ReconcileRepo(ctx, in)
+	if err != nil {
+		recordSpanError(span, err)
+	}
+	return res, err
+}
+
+// recordSpanError marks span as failed: it records the error as a span event
+// and sets the OTel error status so failed operations aren't rendered as
+// successful in trace tooling.
+func recordSpanError(span trace.Span, err error) {
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
 }
 
 // indexSearch mirrors a reconcile's document changes into the search index
@@ -135,7 +184,17 @@ func (s *Service) indexSearch(ctx context.Context, owner, name string, result *s
 // fetches the full rows for the upserted (new/changed) documents and indexes
 // them. It reuses the reconcile's content-hash gate: only changed doc ids reach
 // the index.
-func (s *Service) syncIndex(ctx context.Context, owner, name string, result *store.ReconcileResult) error {
+func (s *Service) syncIndex(
+	ctx context.Context, owner, name string, result *store.ReconcileResult,
+) (err error) {
+	ctx, span := tracer.Start(ctx, "ingest.index")
+	defer func() {
+		if err != nil {
+			recordSpanError(span, err)
+		}
+		span.End()
+	}()
+
 	if len(result.DeletedDocIDs) > 0 {
 		ids := make([]string, len(result.DeletedDocIDs))
 		for i, docID := range result.DeletedDocIDs {

@@ -8,9 +8,17 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz-api/internal/telemetry"
 )
+
+// tracer is the instrumentation scope for the ingest worker spans.
+var tracer = otel.Tracer("github.com/donaldgifford/docz-api/internal/queue")
 
 // delayedTaskCheckInterval is how often the asynq server forwards scheduled
 // (debounced) and retry tasks to the pending queue. asynq defaults to 5s; 1s
@@ -78,14 +86,32 @@ func (w *Worker) handleIngest(ctx context.Context, task *asynq.Task) error {
 		return fmt.Errorf("%w: %w", asynq.SkipRetry, err)
 	}
 
+	// Continue the trace started at the enqueue site (the webhook/HTTP request),
+	// so the whole trigger → ingest flow is one trace.
+	ctx = extractTrace(ctx, job)
+	ctx, span := tracer.Start(ctx, "queue.ingest",
+		trace.WithSpanKind(trace.SpanKindConsumer),
+		trace.WithAttributes(
+			attribute.String("repo", job.repoLabel()),
+			attribute.String("reason", job.Reason),
+		),
+	)
+	defer span.End()
+
 	slog.Info("processing ingest job", "repo", job.repoLabel(), "reason", job.Reason)
 
+	start := time.Now()
 	res, err := w.ingestor.Run(ctx, job.InstallationID, job.Owner, job.Name)
 	if err != nil {
-		slog.Warn("ingest job failed; will retry", "repo", job.repoLabel(), "err", err)
+		// The span, the failure metric, and the returned error (which asynq logs
+		// with the repo-labeled context) carry the signal; don't also log here.
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		telemetry.ObserveIngest(job.Reason, "failure", time.Since(start))
 		return fmt.Errorf("ingest %s: %w", job.repoLabel(), err)
 	}
 
+	telemetry.ObserveIngest(job.Reason, "success", time.Since(start))
 	slog.Info("ingest job complete",
 		"repo", job.repoLabel(),
 		"docs_upserted", res.DocsUpserted,

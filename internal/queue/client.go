@@ -72,6 +72,10 @@ func NewClient(redisURL string, debounce time.Duration) (*Client, error) {
 // That is acceptable for Phase 4: the next trigger re-enqueues once the run
 // finishes, and the content-hash gate makes any redundant re-run a cheap no-op.
 func (c *Client) EnqueueIngest(ctx context.Context, job *IngestJob) error {
+	// Capture the caller's trace context into the payload so the worker span
+	// continues this trace across the Redis boundary.
+	injectTrace(ctx, job)
+
 	payload, err := marshalJob(job)
 	if err != nil {
 		return err
