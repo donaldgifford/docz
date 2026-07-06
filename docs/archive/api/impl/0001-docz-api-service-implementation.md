@@ -814,9 +814,19 @@ the service release-ready.
       `fetch`/`reconcile`/`index` child spans). `/healthz` + `/readyz` (all three
       deps) already stood up in Phases 0/1/3. go-style + go-review clean (handle-once
       + OTel error-status fixes applied); unit + integration suites green._
-- [ ] Container: confirm the distroless `Dockerfile` builds the service; provide
+- [x] Container: confirm the distroless `Dockerfile` builds the service; provide
       deploy manifests/compose wiring Postgres + Redis + Meilisearch; secrets
       via env/secret store.
+      <br>_Done: the multi-stage `Dockerfile` builds and runs — `docker build` +
+      `docker run --rm docz-api:dev --version` prints the injected
+      `version`/`commit`/`date`; a 47.8 MB `distroless/static:nonroot` image.
+      New `deploy/` reference stack: `deploy/compose.yaml` runs the service plus
+      all three dependencies on a private network, health-gated
+      (`depends_on: condition: service_healthy`), publishing only `:8080`. Secrets
+      are externalized — all config via a gitignored `.env.production` env store
+      (`deploy/.env.production.example` template), the GitHub App private key via a
+      mounted Docker secret referenced by path; `deploy/README.md` documents
+      bring-up, probes, and the k8s translation. `compose config` validates._
 - [ ] Audit error messages for consistency and wrapping (`%w`); resolve
       TODO/FIXME comments.
 - [ ] Ensure `make ci` / `just lint` + `just test` pass; review coverage

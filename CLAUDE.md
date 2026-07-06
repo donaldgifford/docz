@@ -575,6 +575,14 @@ progresses:
     transitively via `proto/otlp` even with the HTTP exporter. **Offline `go mod
     tidy` fails** (some dependencies' *test* deps aren't cached); settle go.sum
     with targeted `GOPROXY=off go get <pkg>@<ver>` instead.
+  - **deploy** (`deploy/`): `deploy/compose.yaml` is the full reference stack
+    (service + Postgres + Redis + Meili, health-gated, only `:8080` published);
+    the repo-root `compose.yaml` stays deps-only for `just run`. Config is an
+    env store (gitignored `deploy/.env.production`, template committed); the
+    GitHub App private key is a mounted Docker **secret** referenced by path
+    (`GITHUB_APP_PRIVATE_KEY` accepts a path or a PEM body). The distroless image
+    has **no shell**, so there is no in-container healthcheck for the service —
+    orchestrators probe `/healthz` + `/readyz` over HTTP.
 
 ## Renovate
 
