@@ -827,8 +827,16 @@ the service release-ready.
       (`deploy/.env.production.example` template), the GitHub App private key via a
       mounted Docker secret referenced by path; `deploy/README.md` documents
       bring-up, probes, and the k8s translation. `compose config` validates._
-- [ ] Audit error messages for consistency and wrapping (`%w`); resolve
+- [x] Audit error messages for consistency and wrapping (`%w`); resolve
       TODO/FIXME comments.
+      <br>_Done: zero TODO/FIXME/XXX/HACK comments in the tree. Every wrapping
+      `fmt.Errorf` uses `%w` (no `%v`-on-error chain breaks); the non-`%w` cases
+      are all new-error constructions with no wrappable cause (validation, missing
+      config, unsupported encoding). Message style is uniform Go convention —
+      lowercase, no trailing punctuation, no "failed to" prefix, "verb-ing
+      context: %w". Fixed the two naked returns in `ingest.Service.Run`
+      (`buildDocTypes`/`buildDocuments`) to carry `owner/name` context like the
+      rest of `Run`._
 - [ ] Ensure `make ci` / `just lint` + `just test` pass; review coverage
       (target >80%).
 

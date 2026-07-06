@@ -96,11 +96,11 @@ func (s *Service) Run(
 
 	docTypes, err := buildDocTypes(&cfg)
 	if err != nil {
-		return zero, err
+		return zero, fmt.Errorf("doc types for %s/%s: %w", owner, name, err)
 	}
 	documents, err := buildDocuments(&cfg, snap.Blobs)
 	if err != nil {
-		return zero, err
+		return zero, fmt.Errorf("documents for %s/%s: %w", owner, name, err)
 	}
 
 	in := &store.ReconcileInput{
