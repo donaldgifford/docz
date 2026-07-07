@@ -906,19 +906,42 @@ homelab scale (there is no CI coverage gate).
 
 ## Testing Plan
 
-- [ ] Unit tests for parse→row mapping, type resolution (name/prefix/alias),
+All items below are implemented and green across the phases.
+
+- [x] Unit tests for parse→row mapping, type resolution (name/prefix/alias),
       `content_hash` stability, and config loading (table-driven where
       applicable).
-- [ ] Integration tests (Postgres + Redis + Meilisearch via OQ 7) for the store,
+      <br>_`internal/ingest/mapper_test.go`, `internal/httpapi/typeresolver_test.go`,
+      `internal/config/config_test.go` (100% cover), content-hash gate proven by the
+      e2e re-onboard no-op._
+- [x] Integration tests (Postgres + Redis + Meilisearch via OQ 7) for the store,
       queue, search, and webhook-driven ingest paths.
-- [ ] Webhook HMAC table-driven tests (pass / wrong secret / tampered / missing
+      <br>_`internal/store/{store,webhook}_integration_test.go`,
+      `internal/queue/queue_integration_test.go`,
+      `internal/search/search_integration_test.go`, `internal/e2e/` — all
+      testcontainers, `//go:build integration`._
+- [x] Webhook HMAC table-driven tests (pass / wrong secret / tampered / missing
       → `401`, no writes; constant-time comparison).
-- [ ] Hermetic e2e onboarding test using recorded GitHub fixtures.
-- [ ] Auth tests with a provider stub: login/callback/session/logout and `401`
+      <br>_`internal/webhook/webhook_test.go` `TestVerifyHMAC` (7 cases incl. a
+      same-length near-miss for the constant-time path) + `ServeHTTP` bad-sig →
+      `401` with zero writes._
+- [x] Hermetic e2e onboarding test using recorded GitHub fixtures.
+      <br>_`internal/e2e/onboard_integration_test.go` +
+      `search_integration_test.go` — fixture repo tree through the full
+      fetch→parse→reconcile→index→serve path against real Postgres/Meili._
+- [x] Auth tests with a provider stub: login/callback/session/logout and `401`
       on protected endpoints.
-- [ ] Contract golden fixtures matching DESIGN-0009's consumed shapes.
-- [ ] Golden/fixture discipline: an `-update` flag regenerates fixtures; never
+      <br>_`internal/authhttp/handler_test.go` (stub provider drives
+      login/callback/session/logout; unauthenticated → `401`) +
+      `internal/session/` middleware/store tests._
+- [x] Contract golden fixtures matching DESIGN-0009's consumed shapes.
+      <br>_`internal/httpapi/contract_test.go` freezes status + content-type + body
+      for all read/search endpoints in `testdata/contract/*.json`, asserted every
+      run._
+- [x] Golden/fixture discipline: an `-update` flag regenerates fixtures; never
       hand-edited.
+      <br>_`contract_test.go` `-update` flag regenerates the fixtures; the
+      committed files are asserted byte-for-byte otherwise (drift fails CI)._
 
 ## Dependencies
 
