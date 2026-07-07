@@ -59,4 +59,5 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Close out Phase 0 — skeleton green
 - *(deploy)* Reference deployment stack + confirm distroless image
 - Repair template leftovers and add Apache-2.0 license
+- Trufflehog fails only on verified secrets
 
