@@ -13,8 +13,11 @@ here too — only Go-specific guidance is captured below.
   to the module).
 - Built into a distroless container via `Dockerfile`; released as multi-arch
   (linux+darwin × amd64+arm64) archives via `goreleaser`.
-- Lives on Forgejo (`github.com/donaldgifford/docz-api`); a `.github/workflows/`
-  mirror exists so the repo can also build on GitHub once it's mirrored.
+- Hosted on GitHub (`github.com/donaldgifford/docz-api`) — that's the `origin`
+  remote and the **only** active CI (GitHub Actions, under `.github/workflows/`).
+  A Forgejo mirror is aspirational: there is **no `.forgejo/workflows/`** yet, and
+  some release plumbing (`gitea_urls`, `GITEA_TOKEN`) is stubbed for when one
+  exists. Don't assume Forgejo-primary.
 
 ## Layout
 
@@ -25,8 +28,8 @@ Dockerfile              # multi-stage distroless build, cached layers
 .goreleaser.yml         # release config (multi-arch archives + checksums)
 mise.toml               # pinned go + golangci-lint + goreleaser + universal tools
 justfile                # `just` task runner — `just` for the menu
-.forgejo/workflows/     # CI (Forgejo Actions) — primary
-.github/workflows/      # CI (GitHub Actions) — mirror
+.github/workflows/      # CI (GitHub Actions) — the only CI today
+# .forgejo/workflows/   # NOT present — Forgejo mirror is aspirational
 ```
 
 ## Workflows
@@ -46,8 +49,9 @@ justfile                # `just` task runner — `just` for the menu
 ### Release
 
 - `just release v0.1.0` — tag + push. CI picks up the `v*` tag and runs
-  `goreleaser release --clean`, producing multi-arch archives and a release
-  entry on Forgejo (via `GITEA_TOKEN`) or GitHub (via `GITHUB_TOKEN`).
+  `goreleaser release --clean`, producing multi-arch archives and a GitHub
+  release (via `GITHUB_TOKEN`). The Forgejo path (`GITEA_TOKEN`) is stubbed for
+  a future mirror.
 - Version metadata is injected into the binary via `-ldflags`: `main.version`,
   `main.commit`, `main.date`. `--version`-style output should print these.
 
@@ -89,12 +93,20 @@ layers.
 
 ## CI matrix
 
-- `.forgejo/workflows/ci.yml` runs on every push/PR — `just test` + `just lint`.
-- `.github/workflows/ci.yml` is the mirror; identical jobs, runs on the GitHub
-  mirror if/when one exists.
-- Release workflows fire only on `v*` tag push; `goreleaser` consumes
-  `.goreleaser.yml` and the appropriate token (`GITEA_TOKEN` for Forgejo,
-  `GITHUB_TOKEN` for GitHub).
+- **GitHub Actions is the only CI** — everything lives under
+  `.github/workflows/`. There is **no `.forgejo/workflows/`**; the Forgejo
+  mirror is aspirational, so don't assume a Forgejo-primary setup.
+- `.github/workflows/ci.yml` runs on every push/PR: `Lint` (golangci-lint via
+  the action, **not** `just lint`), `Test Go` (`just test-coverage` + Codecov),
+  `Security Scan` (govulncheck + Trivy), and `Build` (goreleaser `--snapshot`
+  + SBOM scan). Sibling workflows add CodeQL, license-check (`go-licenses`,
+  which needs a root `LICENSE`), trufflehog (verified-only), a changelog drift
+  check + auto-regen (`git-cliff` via `cliff.toml`; sync commits match
+  `^chore.*changelog` and are skipped to stay idempotent), and a required
+  semver label (`major`/`minor`/`patch`/`dont-release`) on PRs.
+- `release.yml` fires only on `v*` tag push; `goreleaser` consumes
+  `.goreleaser.yml` with `GITHUB_TOKEN` (the `GITEA_TOKEN`/`gitea_urls` path is
+  stubbed for a future Forgejo mirror).
 
 ## Gotchas
 
