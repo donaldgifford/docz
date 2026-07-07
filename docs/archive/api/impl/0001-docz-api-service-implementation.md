@@ -175,6 +175,12 @@ Meilisearch) for development and tests.
 - `docker compose up` (or chosen tool) starts Postgres + Redis + Meilisearch
   locally; `just lint` and `just test` pass.
 
+**Status: COMPLETE ✅** — all criteria met. `just build` produces the binary and
+`--version` prints the injected metadata; `internal/config` loads/validates from
+env (100% cover); the `pkg/doczcore` smoke test passes against the pinned
+`v0.5.0`; `compose.yaml` brings Postgres + Redis + Meilisearch up healthy;
+`just lint`/`just test` green.
+
 ---
 
 ### Phase 1: Persistence — Postgres schema, migrations, store
@@ -254,6 +260,12 @@ upsert/reconcile operation ingestion needs.
   (testcontainers or chosen harness), including the one-transaction
   upsert+reconcile and the delete-absent path.
 - `/readyz` returns healthy only when Postgres is reachable.
+
+**Status: COMPLETE ✅** — all criteria met. The embedded goose migrations apply
+the full schema up/down against a fresh Postgres and startup auto-migrates; the
+`internal/store` integration tests (testcontainers) prove the one-transaction
+upsert+reconcile, the content-hash gate, and delete-absent; `/readyz` reports
+healthy only when Postgres is reachable.
 
 ---
 
@@ -363,6 +375,13 @@ synchronous, triggered manually).
   `content_hash` gate is proven by test); a changed doc rewrites exactly its
   row; a removed doc is deleted.
 - The e2e onboarding test is hermetic (recorded GitHub fixtures) and green.
+
+**Status: COMPLETE ✅** — all criteria met. A fixture repo is hand-onboarded end
+to end and the five read endpoints return the DESIGN-0001 shapes; the custom
+type is addressable by name / `id_prefix` / alias equivalently; a re-onboard of
+unchanged HEAD is a Postgres no-op (content-hash gate), a changed doc rewrites
+exactly its row, and a removed doc is deleted. The e2e test is hermetic
+(in-memory fetcher) and green.
 
 ---
 
