@@ -20,6 +20,10 @@ coverage.html
 # Local env
 .env
 .env.local
+.env.production
+
+# Deploy secrets (private keys, PEMs) — never commit
+deploy/secrets/
 
 # Binaries for programs and plugins
 *.exe

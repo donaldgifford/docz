@@ -28,4 +28,9 @@ docz create design "Your Design Title"
 - **Abandoned**: Design was not pursued
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Design
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| DESIGN-0001 | docz-api cross-repo docz registry and ingestion service | Approved | 2026-06-29 | Donald Gifford | [0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md](0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md) |
 <!-- END DOCZ AUTO-GENERATED -->

@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "content_type": "application/json",
+  "body": {
+    "repo": "acme/platform",
+    "doc_id": "FW-0001",
+    "type": "frameworks",
+    "title": "Intro",
+    "status": "Draft",
+    "author": "Jane",
+    "created": "",
+    "path": "docs/frameworks/0001-intro.md",
+    "git_sha": "abc",
+    "content_hash": "hash1",
+    "updated_at": "",
+    "raw_md": "# Intro\n"
+  }
+}

@@ -73,6 +73,11 @@ test-all: test
 test-pkg pkg:
     @go test -v -race {{ pkg }}
 
+# Run integration tests (build tag `integration`; needs Docker for testcontainers)
+[group('test')]
+test-integration:
+    @go test -tags=integration -count=1 ./...
+
 # Run tests with a coverage profile written to coverage.out
 [group('test')]
 test-coverage:
@@ -111,6 +116,20 @@ lint-actions:
 fmt:
     @gofmt -s -w .
     @goimports -w -local {{ goimports_local }} .
+
+# ─── Codegen ────────────────────────────────────────────────────────
+
+# Regenerate typed DB access from SQL (sqlc reads internal/store/queries)
+[group('codegen')]
+generate:
+    @sqlc generate
+    @echo "✓ sqlc generate complete"
+
+# Verify committed sqlc output is up to date with the SQL sources
+[group('codegen')]
+generate-check:
+    @sqlc diff
+    @echo "✓ sqlc output is up to date"
 
 # ─── License compliance ─────────────────────────────────────────────
 

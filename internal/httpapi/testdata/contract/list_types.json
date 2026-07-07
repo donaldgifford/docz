@@ -1,0 +1,21 @@
+{
+  "status": 200,
+  "content_type": "application/json",
+  "body": {
+    "types": [
+      {
+        "name": "frameworks",
+        "dir": "frameworks",
+        "id_prefix": "FW",
+        "plural_label": "Frameworks",
+        "statuses": [
+          "Draft",
+          "Adopted"
+        ],
+        "aliases": [
+          "framework"
+        ]
+      }
+    ]
+  }
+}
