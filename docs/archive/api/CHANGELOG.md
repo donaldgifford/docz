@@ -42,6 +42,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0001)* Confirm docz v0.5.0 pin (Phase 7 task 1)
 - *(impl-0001)* Check off the Testing Plan checklist
 - *(impl-0001)* Add explicit Status blocks for Phases 0-2
+- Correct CI matrix to GitHub-only (no Forgejo workflows)
 
 ### Testing
 
