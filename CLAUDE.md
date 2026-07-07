@@ -520,9 +520,14 @@ progresses:
     guards the code flow's CSRF; `statePayload` already carries a nonce, so it's a
     cheap hardening follow-up).
 
-- **Phase 7 — Hardening, contract, observability (in progress)** — the docz
-  `v0.5.0` pin is confirmed (no `replace`); the read+search wire contract is
-  frozen by golden fixtures; the full OQ 8 observability stack is wired.
+- **Phase 7 — Hardening, deploy, contract, observability: COMPLETE ✅** — the
+  docz `v0.5.0` pin is confirmed (no `replace`); the read+search wire contract is
+  frozen by golden fixtures (`internal/httpapi/contract_test.go`,
+  `testdata/contract/*.json`, `-update` to regenerate); the distroless image
+  builds/runs and `deploy/` is the reference stack; the full OQ 8 observability
+  stack is wired; the error/TODO audit is clean; coverage reviewed (78% internal
+  aggregate, 7/13 packages ≥80%; sub-80% is network-bound provider/fetch code +
+  the cross-covered store + the composition root, no CI coverage gate).
   Observability architecture (per go-architect):
   - **`internal/telemetry`** is the single observability package.
     `Setup(ctx, Config) (shutdown, error)` installs the **global** W3C
