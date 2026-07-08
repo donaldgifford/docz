@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/coreos/go-oidc/v3 v3.19.0
-	github.com/donaldgifford/docz v0.5.0
+	github.com/donaldgifford/docz v1.0.0
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/go-github/v88 v88.0.0
 	github.com/hibiken/asynq v0.26.0

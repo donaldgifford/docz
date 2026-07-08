@@ -40,7 +40,7 @@ yq = "4.48.1"
 # renovate: datasource=github-releases depName=jqlang/jq
 jq = "latest"
 # renovate: datasource=github-releases depName=donaldgifford/docz
-"github:donaldgifford/docz" = "latest"
+"github:donaldgifford/docz" = "1.0.0"
 
 
 # Release tools
