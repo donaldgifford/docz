@@ -9,6 +9,11 @@ Design docs, plans, and implementation docs can reference investigations by ID
 (e.g. `INV-0001`) to document how open questions were resolved.
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Investigations
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| INV-0001 | Migrate docz-api to docz v1.0.0 | Concluded | 2026-07-07 | Donald Gifford | [0001-migrate-docz-api-to-docz-v100.md](0001-migrate-docz-api-to-docz-v100.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

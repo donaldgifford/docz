@@ -132,9 +132,13 @@ progresses:
 - **Build/lint/test entry points are `just`** — `just build`, `just test`,
   `just lint`, `just fmt`. There is no `Makefile`; any "`make lint`/`make fmt`"
   instruction maps to the corresponding `just` recipe.
-- **docz parsing library** is pinned at `github.com/donaldgifford/docz v0.5.0`
-  (a plain `require`, no `replace`; brings `spf13/viper` transitively). Import
-  its packages with the **aliases `doczcfg` / `doczdoc`** everywhere, per
+- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.0.0`
+  (a plain `require`, no `replace`; bumped from `v0.5.0` — see INV-0001, the
+  contract-guarded surface was unchanged). As of `v1.0.0` docz **no longer pulls
+  `spf13/viper` transitively** (it moved `config.Load` to `yaml.v3`); `viper`
+  (`v1.21.0`) is now a **standalone direct dep** used only by `internal/config`,
+  so DESIGN-0001 Decision 2's "reuse viper from docz" rationale no longer holds.
+  Import its packages with the **aliases `doczcfg` / `doczdoc`** everywhere, per
   DESIGN-0001 — this repo has its own `internal/config`, so the alias keeps "the
   docz library" unambiguous at every call site even in files that don't
   currently import `internal/config`. This deliberately overrides the generic
