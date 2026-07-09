@@ -171,7 +171,7 @@ useful surface; later phases only widen it.
       `Document.raw_md`. Proven to pass kin-openapi `doc.Validate` via a
       throwaway loader test, removed before commit — the real harness in Task 6
       revalidates in CI.)_
-- [ ] Author `components.responses` (`Unauthorized` → 401 `Error`, `NotFound` →
+- [x] Author `components.responses` (`Unauthorized` → 401 `Error`, `NotFound` →
       404 `Error`) and the six paths with lowerCamelCase `operationId`s:
       `listRepos` (`{repos:[…]}`), `getRepo` (`RepoDetail`; 404), `listTypes`
       (`{types:[…]}`), `listDocs` (`{docs:[…]}`, no `raw_md`; 404), `getDoc`
@@ -179,7 +179,11 @@ useful surface; later phases only widen it.
       params `q`/`repo`/`type`/`status`/`author` + `offset` default 0 / `limit`
       default 20, both `integer` `format: int64` `minimum: 0`). Path params:
       `owner`, `name`, `type`, `doc_id`. **List responses stay envelope
-      objects** (OQ-2a); **error stays `{"error": string}`** (OQ-1a).
+      objects** (OQ-2a); **error stays `{"error": string}`** (OQ-1a). _(done —
+      shared `Owner`/`Name`/`Type`/`DocID` path parameters + `Unauthorized`/
+      `NotFound` responses; the same `Document` schema serves `listDocs` (raw_md
+      absent) and `getDoc` (raw_md present) since raw_md is optional. Proven:
+      `doc.Validate` passes and `gorillamux.FindRoute` resolves all six paths.)_
 - [ ] Port rfc-api's three-function harness to
       **`internal/httpapi/openapi_contract_test.go`** (OQ-6a): `loadSpec`
       (`openapi3.NewLoader().LoadFromData(api.Spec)` per **OQ-2a** →

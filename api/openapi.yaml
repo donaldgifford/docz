@@ -18,7 +18,175 @@ tags:
     description: Full-text search across indexed documents.
 security:
   - sessionCookie: []
-paths: {}
+paths:
+  /api/v1/repos:
+    get:
+      tags: [repos]
+      operationId: listRepos
+      summary: List onboarded repositories the caller may see.
+      responses:
+        "200":
+          description: Repositories visible to the caller.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [repos]
+                properties:
+                  repos:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RepoSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/repos/{owner}/{name}:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: getRepo
+      summary: Repository detail with its doc types.
+      responses:
+        "200":
+          description: Repository detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepoDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/types:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: listTypes
+      summary: List the repository's doc types.
+      responses:
+        "200":
+          description: The repository's doc types.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [types]
+                properties:
+                  types:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/types/{type}/docs:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+      - $ref: "#/components/parameters/Type"
+    get:
+      tags: [docs]
+      operationId: listDocs
+      summary: List documents of a type (without raw_md).
+      responses:
+        "200":
+          description: Documents of the given type. Each omits `raw_md`.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [docs]
+                properties:
+                  docs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/types/{type}/docs/{doc_id}:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+      - $ref: "#/components/parameters/Type"
+      - $ref: "#/components/parameters/DocID"
+    get:
+      tags: [docs]
+      operationId: getDoc
+      summary: Fetch a single document, including raw_md.
+      responses:
+        "200":
+          description: The document, including `raw_md`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/search:
+    get:
+      tags: [search]
+      operationId: searchDocs
+      summary: Full-text search across indexed documents.
+      parameters:
+        - name: q
+          in: query
+          description: Query string.
+          schema:
+            type: string
+        - name: repo
+          in: query
+          description: Filter by "owner/name".
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by canonical type name.
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: author
+          in: query
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: Zero-based result offset.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Max results to return.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 20
+      responses:
+        "200":
+          description: Search hits with facet counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
   securitySchemes:
     sessionCookie:
@@ -29,6 +197,54 @@ components:
         Opaque Redis-backed session id set by the auth flow. Sent as the
         `docz_session` cookie; required on every `/api/v1` operation unless the
         operation overrides `security` (public routes use `security: []`).
+  parameters:
+    Owner:
+      name: owner
+      in: path
+      required: true
+      description: Repository owner (org or user login).
+      schema:
+        type: string
+      example: acme
+    Name:
+      name: name
+      in: path
+      required: true
+      description: Repository name.
+      schema:
+        type: string
+      example: platform
+    Type:
+      name: type
+      in: path
+      required: true
+      description: Doc type, addressable by canonical name, id_prefix, or alias.
+      schema:
+        type: string
+      example: frameworks
+    DocID:
+      name: doc_id
+      in: path
+      required: true
+      description: Document id.
+      schema:
+        type: string
+      example: FW-0001
+  responses:
+    Unauthorized:
+      description: Missing or invalid session.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: |
+        Repository, type, or document not found. Also returned for repositories
+        outside the caller's allowed set, to hide their existence.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     Error:
       type: object
