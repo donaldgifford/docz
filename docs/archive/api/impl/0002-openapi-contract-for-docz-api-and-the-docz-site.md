@@ -132,11 +132,16 @@ useful surface; later phases only widen it.
       `v0.135.0`; `go mod edit -fmt`; `go mod verify` clean. Staged `// indirect`
       per the repo convention until the contract test imports it in Task 6, then
       it promotes to direct; `go build ./...` + `just lint` green.)_
-- [ ] Create the **`api` package** (`api/spec.go`, `package api`) with
+- [x] Create the **`api` package** (`api/spec.go`, `package api`) with
       `//go:embed openapi.yaml` exposing `var Spec []byte` (**OQ-2a**) — the
       single embedded copy consumed by both the runtime server (Phase 3) and the
       contract test (`LoadFromData(api.Spec)`), so served bytes provably equal
-      tested bytes and there are no relative `../../` load paths.
+      tested bytes and there are no relative `../../` load paths. _(done —
+      go-architect confirmed the root-level `api/` home + leaf-package shape;
+      `var Spec []byte` (not `embed.FS`/func) is the idiomatic single-file embed.
+      A minimal valid `openapi.yaml` skeleton lands in the same commit so the
+      embed compiles; Task 3+ expand it. `go build ./...` + `go vet` + `just
+      lint` green.)_
 - [ ] Create **`api/openapi.yaml`** header: `openapi: 3.1.0`; `info` with
       `title` / `version` / `description` **only** (NOT `info.summary` —
       kin-openapi rejects it); `servers: [{ url: "/" }]` (same-origin, so the

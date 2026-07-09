@@ -1,0 +1,9 @@
+openapi: 3.1.0
+info:
+  title: docz-api
+  version: 1.0.0
+  description: |
+    HTTP contract for docz-api's `/api/v1` read and search surface, plus the
+    site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
+    honest by an in-process kin-openapi contract test (see IMPL-0002).
+paths: {}
