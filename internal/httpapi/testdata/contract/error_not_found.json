@@ -1,7 +1,0 @@
-{
-  "status": 404,
-  "content_type": "application/json",
-  "body": {
-    "error": "repo not found"
-  }
-}

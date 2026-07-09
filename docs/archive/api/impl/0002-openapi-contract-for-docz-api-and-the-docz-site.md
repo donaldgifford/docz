@@ -324,14 +324,22 @@ byte-frozen golden fixtures (OQ-7b).
       `githubWebhook` added). `validateRoundTrip` now takes a built `*http.Request`
       and snapshots the body so it survives both `ValidateRequest` and
       `ServeHTTP`.)_
-- [ ] Reach **endpoint parity** with the golden-fixture test, then **retire it
+- [x] Reach **endpoint parity** with the golden-fixture test, then **retire it
       (OQ-7b):** delete `internal/httpapi/contract_test.go` and
       `internal/httpapi/testdata/contract/*.json`. The OpenAPI contract test is
       now the single wire-contract owner. Keep the shared fakes (`seededStore`,
       `contractSearcher`) — they move to / stay in the OpenAPI test's file or a
-      small shared test helper.
-- [ ] `just test` / `just lint` / `just fmt` green; CI green. Check off and
-      commit (`refactor(openapi): retire golden fixtures at parity`).
+      small shared test helper. _(done — the OpenAPI test covers all 7
+      golden-fixture endpoints plus the 5 new auth/webhook ones (12 ≥ 7), so
+      parity is exceeded. Deleted `contract_test.go` + the 7 `testdata/contract/
+      *.json` fixtures; `contractSearcher` moved into `openapi_contract_test.go`;
+      `seededStore`/`doGet`/`validText` stay in `handler_test.go` (still used by
+      the handler/error/search tests). The OpenAPI contract test is now the sole
+      wire-contract gate.)_
+- [x] `just test` / `just lint` / `just fmt` green; CI green. Check off and
+      commit (`refactor(openapi): retire golden fixtures at parity`). _(done —
+      `go test ./...` all pass, `just lint` 0 issues, `just fmt` a no-op,
+      `go vet` clean.)_
 
 #### Success Criteria
 

@@ -23,6 +23,7 @@ import (
 	"github.com/donaldgifford/docz-api/internal/authhttp"
 	"github.com/donaldgifford/docz-api/internal/authorize"
 	"github.com/donaldgifford/docz-api/internal/queue"
+	"github.com/donaldgifford/docz-api/internal/search"
 	"github.com/donaldgifford/docz-api/internal/session"
 	"github.com/donaldgifford/docz-api/internal/store"
 	"github.com/donaldgifford/docz-api/internal/webhook"
@@ -46,6 +47,27 @@ const (
 	// requests carry it so the real session middleware resolves an identity.
 	sessionCookieName = "docz_session"
 )
+
+// contractSearcher returns one fixed result so the /search contract is
+// deterministic (the real Meilisearch response is exercised by the search
+// integration test).
+type contractSearcher struct{}
+
+func (contractSearcher) Search(context.Context, *search.SearchParams) (search.SearchResult, error) {
+	return search.SearchResult{
+		Query:          "intro",
+		EstimatedTotal: 1,
+		Hits: []search.SearchHit{{
+			Repo: "acme/platform", DocID: "FW-0001", Type: "frameworks",
+			Title: "Intro", Status: "Draft", Author: "Jane",
+			Snippet: "an <em>intro</em> to frameworks",
+		}},
+		Facets: map[string]search.FacetMap{
+			"type":   {"frameworks": 1},
+			"status": {"Draft": 1},
+		},
+	}, nil
+}
 
 // fakeSessions stands in for the Redis session store. It satisfies both the
 // session middleware's lookuper (Lookup) and authhttp's sessionStore (Issue/
