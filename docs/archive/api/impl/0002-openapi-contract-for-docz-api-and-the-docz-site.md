@@ -220,9 +220,13 @@ useful surface; later phases only widen it.
       `just lint-openapi` runs vacuum (`-n warn`, fails on warnings) +
       `yamlfmt -lint`; `just fmt` now yamlfmt-canonicalizes the spec; CI's Lint
       job gained a mise step + `just lint-openapi`.)_
-- [ ] Run `just test`, `just lint`, `just lint-openapi`, `just fmt`; confirm the
+- [x] Run `just test`, `just lint`, `just lint-openapi`, `just fmt`; confirm the
       contract test runs in the CI `Test Go` job with no new workflow. Check off
-      and commit (`feat(openapi): ...`).
+      and commit (`feat(openapi): ...`). _(done — `just test` green with
+      `TestOpenAPIContract` riding it (no build tag); `just lint` 0 issues;
+      `just lint-openapi` 100/100; `just fmt` a no-op. Drift proven: renaming a
+      DTO json tag fails the contract test with `property … is unsupported`,
+      reverted.)_
 
 #### Success Criteria
 
@@ -238,6 +242,16 @@ useful surface; later phases only widen it.
 - **Drift is caught:** changing a DTO field (name/type) without updating the
   spec — or vice-versa — fails the contract test. Demonstrate once (temporarily,
   reverted) to prove the guard bites.
+
+**Status: COMPLETE ✅** — all criteria met. `api/openapi.yaml` (OAS 3.1)
+self-validates and loads via `LoadFromData(api.Spec)`; `TestOpenAPIContract`
+validates request + response for the six read/search endpoints plus the 404
+envelope, green under `just test` (no build tag, rides CI's `Test Go` job);
+`getkin/kin-openapi` is a direct dep pinned at `v0.135.0` with `go.sum` settled
+and `go mod verify` clean; `just lint` is 0 issues; `vacuum` scores **100/100**
+against `api/vacuum-ruleset.yaml` and `yamlfmt -lint` is clean (both gated in
+CI's Lint job via `just lint-openapi`); drift is proven caught (a renamed DTO
+json tag fails the contract test, reverted).
 
 ---
 
@@ -533,7 +547,7 @@ Phase 2 must validate `/api/v1/auth/*` (session-gated), the OAuth redirects, and
 accept the Phase 2 implementation. **Caveat (verified):** rfc-api's contract test
 models **no** security schemes and drives only happy-path + 404 + 400 envelopes —
 it has **no** session-auth or HMAC-webhook cases. So rfc-api is the reference for
-the *harness shape* (`loadSpec` / `buildHandler` / `validate`, `MultiError`, the
+the _harness shape_ (`loadSpec` / `buildHandler` / `validate`, `MultiError`, the
 `gorillamux` router), but **driving the authed + HMAC endpoints is net-new** to
 docz-api. Phase 2 must design those fakes ourselves (injected session context,
 computed HMAC over a fixture body, stub provider registry) — the rfc-api review is
