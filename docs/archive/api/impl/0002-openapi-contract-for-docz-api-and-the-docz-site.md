@@ -295,19 +295,35 @@ byte-frozen golden fixtures (OQ-7b).
       `auth/logout`) inherit the top-level `sessionCookie`; `login`, `callback`,
       and `githubWebhook` each set `security: []`. No meta routes are specced
       (OQ-6a).)_
-- [ ] **Acceptance gate (OQ-4a):** before implementing, review rfc-api's
+- [x] **Acceptance gate (OQ-4a):** before implementing, review rfc-api's
       `test/contract/contract_test.go` and mirror its harness style. Note (already
       verified) rfc-api models **no** auth/HMAC and tests only happy-path + 404 +
       400 — so the auth/webhook driving is **net-new** here; the review confirms
       we don't diverge from the shared harness shape, not that we copy a pattern
-      it lacks.
-- [ ] Extend the contract harness to drive the new endpoints hermetically
+      it lacks. _(done — the OQ-4a review is recorded in the decision below; the
+      Phase 1 harness already mirrors rfc-api's shape 1:1 (`loadContractSpec` ↔
+      `loadSpec`, `buildContractHandler` ↔ `buildHandler`, `validateRoundTrip` ↔
+      `validate`, `Options{MultiError:true}`, the `gorillamux` router), so the
+      extension keeps that shape and only adds the net-new auth/HMAC drivers.)_
+- [x] Extend the contract harness to drive the new endpoints hermetically
       (**OQ-4a**): inject a `session.Session` into the request context for
       `getSession`; build `authhttp.New(...)` with fake `sessionStore` /
       `userUpserter` and a **stub provider registry** so `login` asserts a 302;
       compute a **valid HMAC** over a fixture webhook body with a test secret and
       a fake delivery store so `githubWebhook` validates its required headers and
-      returns 202. Add these to the validation table.
+      returns 202. Add these to the validation table. _(done —
+      `buildContractHandler` now wires the **full** surface exactly as
+      `runServer`: read/search + gated `auth/session`/`auth/logout` behind the
+      real `session.Middleware`∘`authorize.Middleware` gate, the public
+      `login`/`callback` redirects, and the HMAC webhook. The session is injected
+      by running the **real** session middleware over a fixed cookie + a fake
+      `Lookup` (higher fidelity than a context poke); `stubProvider` makes `login`
+      302 and `callback` complete (signed state via `auth.EncodeState`);
+      `webhookRequest` signs a ping fixture with `hmac.Equal`-matching bytes. The
+      table grew from 7 to **12** cases (`getSession`/`logout`/`login`/`callback`/
+      `githubWebhook` added). `validateRoundTrip` now takes a built `*http.Request`
+      and snapshots the body so it survives both `ValidateRequest` and
+      `ServeHTTP`.)_
 - [ ] Reach **endpoint parity** with the golden-fixture test, then **retire it
       (OQ-7b):** delete `internal/httpapi/contract_test.go` and
       `internal/httpapi/testdata/contract/*.json`. The OpenAPI contract test is
