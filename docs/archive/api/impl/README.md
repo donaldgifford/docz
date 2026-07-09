@@ -33,4 +33,5 @@ docz create impl "Your Implementation Title"
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | IMPL-0001 | docz-api service implementation | Draft | 2026-06-30 | Donald Gifford | [0001-docz-api-service-implementation.md](0001-docz-api-service-implementation.md) |
+| IMPL-0002 | OpenAPI contract for docz-api and the docz-site | Draft | 2026-07-08 | Donald Gifford | [0002-openapi-contract-for-docz-api-and-the-docz-site.md](0002-openapi-contract-for-docz-api-and-the-docz-site.md) |
 <!-- END DOCZ AUTO-GENERATED -->
