@@ -17,6 +17,10 @@ tags:
     description: Documents within a repository, addressed by type and id.
   - name: search
     description: Full-text search across indexed documents.
+  - name: auth
+    description: Site-user login, logout, and the current session.
+  - name: webhooks
+    description: The GitHub App webhook receiver (HMAC-authenticated).
 security:
   - sessionCookie: []
 paths:
@@ -190,6 +194,156 @@ paths:
                 $ref: "#/components/schemas/SearchResult"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/session:
+    get:
+      tags: [auth]
+      operationId: getSession
+      summary: The current authenticated site user.
+      responses:
+        "200":
+          description: The current user's session identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Revoke the current session and clear the cookie.
+      responses:
+        "200":
+          description: The session was revoked (idempotent).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/login:
+    get:
+      tags: [auth]
+      operationId: login
+      summary: Begin the OAuth/OIDC login flow.
+      description: |
+        Redirects to the selected provider's authorization URL, carrying a
+        signed `state` that `/auth/callback` verifies. Public: the signed state
+        is the CSRF guard, so no session is required.
+      security: []
+      parameters:
+        - name: provider
+          in: query
+          description: Provider key (github | okta | keycloak); defaults to github.
+          schema:
+            type: string
+          example: github
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+        "400":
+          description: Unknown or disabled auth provider.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/callback:
+    get:
+      tags: [auth]
+      operationId: authCallback
+      summary: Complete the OAuth/OIDC login flow.
+      description: |
+        Verifies the signed `state`, exchanges the `code` for an identity,
+        upserts the durable user, issues a session, sets the session cookie, and
+        redirects to the app root. Public: authenticated by its signed state.
+      security: []
+      parameters:
+        - name: code
+          in: query
+          description: The provider authorization code.
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: The signed state issued by `/auth/login`.
+          schema:
+            type: string
+        - name: error
+          in: query
+          description: Set by the provider when authorization is denied.
+          schema:
+            type: string
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+        "400":
+          description: Missing or invalid state or code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /webhooks/github:
+    post:
+      tags: [webhooks]
+      operationId: githubWebhook
+      summary: Receive a GitHub App webhook delivery.
+      description: |
+        Authenticated by an HMAC-SHA256 signature over the raw request body (the
+        `X-Hub-Signature-256` header), verified in constant time — there is no
+        session or bearer auth. Verified deliveries are deduplicated by
+        `X-GitHub-Delivery`; the payload is GitHub's own event schema (validated
+        by go-github at runtime, opaque here) and processing is asynchronous, so
+        a valid delivery returns 202 immediately.
+      security: []
+      parameters:
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          description: Hex-encoded "sha256=…" HMAC of the raw body under the app secret.
+          schema:
+            type: string
+        - name: X-GitHub-Event
+          in: header
+          required: true
+          description: The event type (installation, push, release, …).
+          schema:
+            type: string
+        - name: X-GitHub-Delivery
+          in: header
+          required: true
+          description: Unique delivery id, used for idempotent de-duplication.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: The GitHub event payload (opaque; validated by go-github).
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "202":
+          description: Delivery accepted for asynchronous processing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "400":
+          description: Unreadable body or unparseable payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "401":
+          description: Missing or invalid HMAC signature.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
 components:
   securitySchemes:
     sessionCookie:
@@ -240,6 +394,14 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Redirect:
+      description: A 302 redirect; the target is carried in the Location header.
+      headers:
+        Location:
+          required: true
+          description: The redirect target URL.
+          schema:
+            type: string
     NotFound:
       description: |
         Repository, type, or document not found. Also returned for repositories
@@ -426,3 +588,37 @@ components:
             additionalProperties:
               type: integer
               format: int64
+    Session:
+      description: The authenticated site user's normalized identity.
+      type: object
+      additionalProperties: false
+      required: [provider, subject]
+      properties:
+        provider:
+          type: string
+          description: The auth provider key (github | okta | keycloak).
+          example: github
+        subject:
+          type: string
+          description: Stable per-provider user id.
+        email:
+          type: string
+          description: User email; omitted when the provider exposes none.
+        login:
+          type: string
+          description: GitHub login; omitted for OIDC providers.
+        groups:
+          type: array
+          description: OIDC group/role claims; omitted for GitHub OAuth.
+          items:
+            type: string
+    StatusResponse:
+      description: A minimal JSON status envelope with a single `status` field.
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: A short human-readable status word or phrase.
+          example: logged out

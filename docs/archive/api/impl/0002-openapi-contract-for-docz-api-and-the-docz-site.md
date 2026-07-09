@@ -264,24 +264,37 @@ byte-frozen golden fixtures (OQ-7b).
 
 #### Tasks
 
-- [ ] Add the auth paths: `GET /api/v1/auth/session` (`getSession` →
+- [x] Add the auth paths: `GET /api/v1/auth/session` (`getSession` →
       `Session` schema, or 401 via `Unauthorized`); `POST /api/v1/auth/logout`
       (`logout` → `{ "status": "logged out" }` object); `GET /auth/login`
       (`login` → **302** with `Location`, `provider` query param,
       `security: []`); `GET /auth/callback` (`authCallback` → **302**,
       `security: []`). Add the `Session` schema
       (`provider`, `subject`, `email?`, `login?`, `groups?`) mirroring
-      `internal/authhttp/handler.go`.
-- [ ] Add the webhook path `POST /webhooks/github` (`githubWebhook`): required
+      `internal/authhttp/handler.go`. _(done — four auth ops added; the logout
+      `{"status":…}` body is a shared `StatusResponse` schema (reused by the
+      webhook); `Session` mirrors `sessionDTO` 1:1 with `provider`/`subject`
+      required and `email`/`login`/`groups` optional (they are `omitempty`);
+      the two 302s share a `Redirect` component response with a required
+      `Location` header.)_
+- [x] Add the webhook path `POST /webhooks/github` (`githubWebhook`): required
       headers `X-Hub-Signature-256`, `X-GitHub-Event`, `X-GitHub-Delivery`;
       request body `application/json` (opaque `object` — the payload is
       GitHub's, validated by `go-github` at runtime, not the spec); responses
       **202** / **400** / **401**; `security: []`. Document the HMAC scheme in
       the operation `description` (OpenAPI has no first-class HMAC-body scheme).
-- [ ] Apply `security` overrides across the spec: the `sessionCookie` default
+      _(done — three required header params + an opaque `additionalProperties:
+      true` request body; 202/400/401 all return `StatusResponse` (the webhook
+      uses a `{"status":…}` envelope, not the `{"error":…}` one); the
+      constant-time HMAC-SHA256 scheme is documented in the op `description`.)_
+- [x] Apply `security` overrides across the spec: the `sessionCookie` default
       holds for `/api/v1/*`; the public routes (`/auth/login`, `/auth/callback`,
       `/webhooks/github`, and any meta routes per OQ-6) override with
-      `security: []`.
+      `security: []`. _(done — applied inline with each public op so no commit
+      documents a wrong security model: `/api/v1/*` (incl. `auth/session`,
+      `auth/logout`) inherit the top-level `sessionCookie`; `login`, `callback`,
+      and `githubWebhook` each set `security: []`. No meta routes are specced
+      (OQ-6a).)_
 - [ ] **Acceptance gate (OQ-4a):** before implementing, review rfc-api's
       `test/contract/contract_test.go` and mirror its harness style. Note (already
       verified) rfc-api models **no** auth/HMAC and tests only happy-path + 404 +
