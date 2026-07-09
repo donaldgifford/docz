@@ -6,4 +6,26 @@ info:
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
     honest by an in-process kin-openapi contract test (see IMPL-0002).
+servers:
+  - url: /
+    description: Same-origin. The docz-site and the API share an origin.
+tags:
+  - name: repos
+    description: Onboarded repositories and their doc types.
+  - name: docs
+    description: Documents within a repository, addressed by type and id.
+  - name: search
+    description: Full-text search across indexed documents.
+security:
+  - sessionCookie: []
 paths: {}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: docz_session
+      description: |
+        Opaque Redis-backed session id set by the auth flow. Sent as the
+        `docz_session` cookie; required on every `/api/v1` operation unless the
+        operation overrides `security` (public routes use `security: []`).

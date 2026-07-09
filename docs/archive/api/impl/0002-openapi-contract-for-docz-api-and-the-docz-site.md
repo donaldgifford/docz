@@ -142,13 +142,16 @@ useful surface; later phases only widen it.
       A minimal valid `openapi.yaml` skeleton lands in the same commit so the
       embed compiles; Task 3+ expand it. `go build ./...` + `go vet` + `just
       lint` green.)_
-- [ ] Create **`api/openapi.yaml`** header: `openapi: 3.1.0`; `info` with
+- [x] Create **`api/openapi.yaml`** header: `openapi: 3.1.0`; `info` with
       `title` / `version` / `description` **only** (NOT `info.summary` —
       kin-openapi rejects it); `servers: [{ url: "/" }]` (same-origin, so the
       test router resolves `http://localhost/api/v1/...`); `tags`
       (`repos`, `docs`, `search`); `components.securitySchemes.sessionCookie`
       (`type: apiKey`, `in: cookie`, `name: docz_session`) with a top-level
-      `security: [{ sessionCookie: [] }]` default.
+      `security: [{ sessionCookie: [] }]` default. _(done — header + servers +
+      3 tags + `sessionCookie` scheme + default `security`; no `info.summary`.
+      YAML syntax-checked; full OAS `doc.Validate` runs with the harness in
+      Task 6.)_
 - [ ] Author `components.schemas` mirroring the DTOs
       (`internal/httpapi/dto.go`, `internal/search/types.go`) **1:1**: `Error`
       (`required: [error]`, `additionalProperties: false`), `RepoSummary`
