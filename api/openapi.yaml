@@ -1,3 +1,4 @@
+---
 openapi: 3.1.0
 info:
   title: docz-api
@@ -156,10 +157,12 @@ paths:
             type: string
         - name: status
           in: query
+          description: Filter by document status.
           schema:
             type: string
         - name: author
           in: query
+          description: Filter by document author.
           schema:
             type: string
         - name: offset
@@ -247,6 +250,7 @@ components:
             $ref: "#/components/schemas/Error"
   schemas:
     Error:
+      description: A JSON error envelope with a single human-readable message.
       type: object
       additionalProperties: false
       required: [error]
@@ -256,6 +260,7 @@ components:
           description: Human-readable error message.
           example: repo not found
     RepoSummary:
+      description: A repository in a listing, without its doc types.
       type: object
       additionalProperties: false
       required: [repo, default_branch, docs_dir, last_synced_sha]
@@ -275,10 +280,10 @@ components:
           type: string
           description: HEAD SHA of the last successful ingest, or "" if never synced.
     RepoDetail:
+      description: A repository with its `.docz.yaml` snapshot and doc types.
       type: object
       additionalProperties: false
-      required:
-        [repo, default_branch, docs_dir, last_synced_sha, config_snapshot, types]
+      required: [repo, default_branch, docs_dir, last_synced_sha, config_snapshot, types]
       properties:
         repo:
           type: string
@@ -301,6 +306,7 @@ components:
           items:
             $ref: "#/components/schemas/DocType"
     DocType:
+      description: A document type declared in the repo's `.docz.yaml`.
       type: object
       additionalProperties: false
       required: [name, dir, id_prefix, plural_label, statuses, aliases]
@@ -330,22 +336,10 @@ components:
           items:
             type: string
     Document:
+      description: A single document. `raw_md` is present only on the get-one endpoint.
       type: object
       additionalProperties: false
-      required:
-        [
-          repo,
-          doc_id,
-          type,
-          title,
-          status,
-          author,
-          created,
-          path,
-          git_sha,
-          content_hash,
-          updated_at,
-        ]
+      required: [repo, doc_id, type, title, status, author, created, path, git_sha, content_hash, updated_at]
       properties:
         repo:
           type: string
@@ -382,6 +376,7 @@ components:
           type: string
           description: Full Markdown source; present only on the single-document endpoint.
     SearchHit:
+      description: One search result with a highlighted body snippet.
       type: object
       additionalProperties: false
       required: [repo, doc_id, type, title, status, author, snippet]
@@ -407,6 +402,7 @@ components:
           type: string
           description: Highlighted body excerpt with <em></em> around matches.
     SearchResult:
+      description: Search hits plus per-facet value counts.
       type: object
       additionalProperties: false
       required: [query, estimated_total_hits, hits, facets]

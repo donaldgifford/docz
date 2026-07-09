@@ -205,13 +205,21 @@ useful surface; later phases only widen it.
       (`/repos/acme/missing`). Confirm the search fixture exercises `facets` and
       the `snippet`. _(done — 7 subtests, all green; the `searchDocs` case
       exercises the `facets` map and the `<em>` `snippet` via `contractSearcher`.)_
-- [ ] Add **spec lint + format** so the hand-authored file is standards-clean
+- [x] Add **spec lint + format** so the hand-authored file is standards-clean
       from its first commit (**OQ-7b**): wire an OpenAPI linter — **`vacuum`**
       (Go-native, `mise`-installable, pb33f/`libopenapi` lineage per **FU-3**;
       `spectral` the alternative) — over `api/openapi.yaml` via a `just`
       recipe (e.g. `just lint-openapi`) **and** a CI step, plus a YAML
       format/consistency pass (`yamlfmt` or `prettier`) hooked into `just fmt` /
-      the fmt check. Pin the tool in `mise.toml`.
+      the fmt check. Pin the tool in `mise.toml`. _(done — `vacuum@0.29.9`
+      pinned in `mise.toml`; `api/vacuum-ruleset.yaml` extends the recommended
+      set and disables three rules with justifications (`camel-case-properties`
+      because the wire contract is snake_case by design;
+      `oas3-missing-example` / `description-duplication` as over-strict for a
+      DTO-mirroring spec). Added schema + parameter descriptions → **100/100**.
+      `just lint-openapi` runs vacuum (`-n warn`, fails on warnings) +
+      `yamlfmt -lint`; `just fmt` now yamlfmt-canonicalizes the spec; CI's Lint
+      job gained a mise step + `just lint-openapi`.)_
 - [ ] Run `just test`, `just lint`, `just lint-openapi`, `just fmt`; confirm the
       contract test runs in the CI `Test Go` job with no new workflow. Check off
       and commit (`feat(openapi): ...`).

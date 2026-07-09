@@ -23,6 +23,9 @@ yamlfmt = "0.20.0"
 yamllint = "1.37.1"
 # renovate: datasource=npm depName=prettier
 prettier = "3.7.4"
+# OpenAPI spec linter (IMPL-0002, `just lint-openapi`)
+# renovate: datasource=github-releases depName=daveshanley/vacuum
+"aqua:daveshanley/vacuum" = "0.29.9"
 # renovate: datasource=github-releases depName=donaldgifford/makefmt
 "github:donaldgifford/makefmt" = "latest"
 # renovate: datasource=github-releases depName=mrtazz/checkmake

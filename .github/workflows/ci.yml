@@ -37,6 +37,14 @@ jobs:
         with:
           version: v2.11.4
 
+      - name: Set up mise (for just + vacuum)
+        uses: jdx/mise-action@v4
+        with:
+          experimental: true
+
+      - name: Lint OpenAPI spec
+        run: just lint-openapi
+
   test-go:
     name: Test Go
     runs-on: ubuntu-latest

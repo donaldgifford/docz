@@ -111,11 +111,18 @@ lint-config:
 lint-actions:
     @actionlint
 
-# Format code with gofmt + goimports
+# Lint the OpenAPI spec (vacuum ruleset) and verify its canonical formatting
+[group('lint')]
+lint-openapi:
+    @vacuum lint -d -n warn -r api/vacuum-ruleset.yaml api/openapi.yaml
+    @yamlfmt -lint api/openapi.yaml api/vacuum-ruleset.yaml
+
+# Format code with gofmt + goimports; canonicalize the OpenAPI spec with yamlfmt
 [group('lint')]
 fmt:
     @gofmt -s -w .
     @goimports -w -local {{ goimports_local }} .
+    @yamlfmt api/openapi.yaml api/vacuum-ruleset.yaml
 
 # ─── Codegen ────────────────────────────────────────────────────────
 
