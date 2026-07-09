@@ -608,18 +608,18 @@ progresses:
 ## OpenAPI contract (DESIGN-0002 / IMPL-0002)
 
 A machine-readable OpenAPI 3.1 contract for the `/api/v1` surface, kept honest by
-an in-process `kin-openapi` test. Built per `docs/design/0002-*.md` (Draft) and
-`docs/impl/0002-*.md` (the phased plan). Phase 1 (spec foundation + read/search
-contract test) and Phase 2 (full auth/webhook surface + golden fixtures retired)
-are **COMPLETE ✅**; Phases 3–4 (serve `/openapi.yaml`, consumer coordination)
-are pending.
+an in-process `kin-openapi` test and served at `GET /openapi.yaml`. Built per
+`docs/design/0002-*.md` (**Implemented**) and `docs/impl/0002-*.md` (the phased
+plan) — **all four phases COMPLETE ✅** (spec foundation + read/search contract
+test; full auth/webhook surface + golden fixtures retired; serve `/openapi.yaml`;
+version + document consumption). `api/README.md` is the consumer-facing guide.
 
 - **Spec at `api/openapi.yaml`** (OAS 3.1.0), hand-authored (not generated). It is
   embedded by the tiny **`api` package** (`api/spec.go`: `//go:embed openapi.yaml`
-  → `var Spec []byte`) so both the runtime server (later) and the contract test
-  consume the **same bytes**. Root-level `api/` is deliberate (fleet convention +
-  the file the docz-site vendors); it is not under `internal/` because the wall
-  governs Go-import visibility, and this artifact is consumed by file path/HTTP.
+  → `var Spec []byte`) so both the runtime server and the contract test consume
+  the **same bytes**. Root-level `api/` is deliberate (fleet convention + the file
+  the docz-site vendors); it is not under `internal/` because the wall governs
+  Go-import visibility, and this artifact is consumed by file path/HTTP.
   It covers the **whole consumer-facing surface**: the read/search `/api/v1`
   routes, the auth endpoints (`/api/v1/auth/session` + `/logout`, public
   `/auth/login` + `/auth/callback` 302s), and the HMAC `/webhooks/github`
@@ -650,6 +650,14 @@ are pending.
   (`login`, `callback`, `githubWebhook`) override with `security: []`. The webhook
   HMAC-SHA256 scheme is documented in the op `description` (OpenAPI has no
   first-class HMAC-body scheme).
+- **Served + versioned:** `GET /openapi.yaml` serves `api.Spec` verbatim
+  (`handleOpenAPISpec` in `newRouter`, `application/yaml`, **public** — outside
+  the `/api/v1` gate, so the docz-site can fetch it without a session). No `/docs`
+  UI (OQ-3d). `info.version` is **SemVer from `1.0.0`** (OQ-5a), bumped by hand on
+  any specced wire change (patch = editorial, minor = additive, major = breaking),
+  independent of the binary version — the consumer-pin signal. The docz-site
+  vendors the file (or fetches the served spec at a pinned version) and generates
+  a typed client; see `api/README.md`.
 - **Spec lint/format (OQ-7b):** `just lint-openapi` runs **`vacuum`** (`aqua:
   daveshanley/vacuum`, pinned in `mise.toml`) against `api/vacuum-ruleset.yaml`
   (`-n warn`, fails on warnings) + `yamlfmt -lint`; `just fmt` yamlfmt-

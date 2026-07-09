@@ -427,25 +427,43 @@ work — flipping DESIGN-0002 to Implemented and logging the three follow-ups.
 
 #### Tasks
 
-- [ ] Set `info.version` (scheme per **OQ-5**) and document the bump discipline:
+- [x] Set `info.version` (scheme per **OQ-5**) and document the bump discipline:
       a wire change to any specced endpoint bumps the version so consumers can
-      pin a known shape.
-- [ ] Document the **docz-site consumption path**: vendor `api/openapi.yaml` (or
+      pin a known shape. _(done — `info.version` is `1.0.0` (SemVer, OQ-5a); the
+      patch/minor/major bump discipline is documented in `api/README.md` under
+      Versioning — independent of the binary version, bumped by hand on any
+      specced wire change.)_
+- [x] Document the **docz-site consumption path**: vendor `api/openapi.yaml` (or
       fetch `GET /openapi.yaml` at a pinned version) and generate a typed client
       — a short note under `api/README.md` or the design, matching the `rfc-site`
-      model.
-- [ ] Update **`CLAUDE.md`**: an "API contract" note (spec at `api/openapi.yaml`;
+      model. _(done — `api/README.md` documents the vendor-and-generate path
+      (vendor the file **or** fetch the served spec at a pinned version →
+      generate a typed client with `openapi-typescript`/`orval` → re-vendor on a
+      version bump), plus what the file is and how the contract test keeps it
+      honest.)_
+- [x] Update **`CLAUDE.md`**: an "API contract" note (spec at `api/openapi.yaml`;
       contract test at `internal/httpapi/openapi_contract_test.go` on every CI
       run; spec lint via `vacuum`; golden fixtures **retired**; the spec is served
-      at `/openapi.yaml`) and IMPL-0002 phase-progress lines.
-- [ ] (Optional) render the spec in the docz **mkdocs wiki** via
+      at `/openapi.yaml`) and IMPL-0002 phase-progress lines. _(done — the
+      "OpenAPI contract" section now records all four phases complete, the served
+      `/openapi.yaml` route, the `1.0.0` SemVer scheme, and points at
+      `api/README.md`.)_
+- [x] (Optional) render the spec in the docz **mkdocs wiki** via
       `mkdocs-swagger-ui-tag` — the only human-browsable API reference, since
-      there is no in-app `/docs` page (OQ-3d).
-- [ ] Flip **DESIGN-0002 → Implemented**; open the follow-up INVs for **FU-1**
+      there is no in-app `/docs` page (OQ-3d). _(skipped — optional, and it lives
+      in the docz wiki repo, out of this repo's scope. `api/README.md` notes
+      human browsing is left to the consumer's tooling or an optional mkdocs
+      render; it can be wired later without any change here.)_
+- [x] Flip **DESIGN-0002 → Implemented**; open the follow-up INVs for **FU-1**
       (RFC 7807 errors), **FU-2** (bare-array lists + header pagination), and
-      **FU-3** (`pb33f/libopenapi` evaluation) — logged, not built here.
-- [ ] Final `just lint` / `just test` / `just fmt` green; commit
-      (`docs(openapi): version, document consumption, close out`).
+      **FU-3** (`pb33f/libopenapi` evaluation) — logged, not built here. _(done —
+      DESIGN-0002 status flipped to **Implemented** (frontmatter + header) and its
+      stale golden-fixture reference updated to the implemented contract test.
+      FU-1/FU-2/FU-3 remain logged in the design's Follow-ups section as the
+      investigations to open next; no empty INV docs are created here.)_
+- [x] Final `just lint` / `just test` / `just fmt` green; commit
+      (`docs(openapi): version, document consumption, close out`). _(done — full
+      `go test ./...` green, `just lint` 0 issues, `just fmt`/`vacuum` clean.)_
 
 #### Success Criteria
 
@@ -454,6 +472,16 @@ work — flipping DESIGN-0002 to Implemented and logging the three follow-ups.
   fetch the served spec → generate a typed client).
 - `CLAUDE.md` documents the contract and its CI gate; DESIGN-0002 is marked
   **Implemented**; FU-1 / FU-2 / FU-3 are logged as follow-up investigations.
+
+**Status: COMPLETE ✅** — all criteria met. The spec carries a consumer-pinnable
+`info.version` (`1.0.0`, SemVer) with the bump discipline documented in
+`api/README.md`, which also gives the docz-site a stable vendor-and-generate
+consumption path. `CLAUDE.md` records the contract, its CI gate, the served
+`/openapi.yaml` route, and the version scheme. DESIGN-0002 is marked
+**Implemented**; FU-1 (RFC 7807), FU-2 (bare-array lists), and FU-3
+(`pb33f/libopenapi`) stay logged in the design's Follow-ups as the next
+investigations. The optional mkdocs render is deferred (out of this repo's
+scope). `just test` / `just lint` / `just fmt` green.
 
 ---
 
