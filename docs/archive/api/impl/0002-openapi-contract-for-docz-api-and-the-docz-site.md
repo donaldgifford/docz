@@ -353,6 +353,20 @@ byte-frozen golden fixtures (OQ-7b).
   no wire shape is double-maintained; `just test` is green with the OpenAPI test
   as the **sole** contract gate.
 
+**Status: COMPLETE ✅** — all criteria met. The spec now covers the full
+in-scope surface (read + search, `auth/session`, `auth/logout`, `auth/login`,
+`auth/callback`, and `webhooks/github`), and the contract test exercises all
+**12** endpoints via the real handler stack (`session.Middleware` ∘
+`authorize.Middleware` gate + the public redirects + the HMAC webhook). The
+webhook op validates its three required headers, the auth endpoints validate
+their `Session` / `StatusResponse` schemas, and `login`/`callback` assert **302**
+(a shared `Redirect` response with a required `Location` header). The
+byte-frozen golden test (`internal/httpapi/contract_test.go`) and its 7
+`testdata/contract/*.json` fixtures are **removed** — no wire shape is
+double-maintained and the kin-openapi contract test is the **sole** wire-contract
+gate. `vacuum` scores **100/100** on the widened spec; `just test` / `just lint`
+/ `just fmt` green.
+
 ---
 
 ### Phase 3: Serving and surfacing the spec
