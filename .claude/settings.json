@@ -54,6 +54,7 @@
       "Bash(docz update *)",
       "Bash(git *)",
       "WebFetch(domain:docs.anthropic.com)",
+      "Bash(npx --yes markdownlint-cli *)",
       "Bash(git commit *)"
     ]
   }
