@@ -123,12 +123,15 @@ useful surface; later phases only widen it.
 
 #### Tasks
 
-- [ ] Add **`github.com/getkin/kin-openapi@v0.135.0`** as a direct dependency
+- [x] Add **`github.com/getkin/kin-openapi@v0.135.0`** as a direct dependency
       (**OQ-1a**, rfc-api parity): `go get github.com/getkin/kin-openapi@v0.135.0`,
       then settle `go.sum` per the repo convention (**no bare `go mod tidy`** —
       deps are staged; settle via `go get` / targeted `GOPROXY=off go get`), run
       `go mod edit -fmt`, and confirm `go mod verify`. The dep is **test-path
-      only** (runtime serving is `//go:embed`, not a library).
+      only** (runtime serving is `//go:embed`, not a library). _(done — added at
+      `v0.135.0`; `go mod edit -fmt`; `go mod verify` clean. Staged `// indirect`
+      per the repo convention until the contract test imports it in Task 6, then
+      it promotes to direct; `go build ./...` + `just lint` green.)_
 - [ ] Create the **`api` package** (`api/spec.go`, `package api`) with
       `//go:embed openapi.yaml` exposing `var Spec []byte` (**OQ-2a**) — the
       single embedded copy consumed by both the runtime server (Phase 3) and the
