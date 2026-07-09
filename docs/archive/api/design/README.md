@@ -33,4 +33,5 @@ docz create design "Your Design Title"
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | DESIGN-0001 | docz-api cross-repo docz registry and ingestion service | Approved | 2026-06-29 | Donald Gifford | [0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md](0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md) |
+| DESIGN-0002 | OpenAPI contract for docz-api and the docz-site | Draft | 2026-07-08 | Donald Gifford | [0002-openapi-contract-for-docz-api-and-the-docz-site.md](0002-openapi-contract-for-docz-api-and-the-docz-site.md) |
 <!-- END DOCZ AUTO-GENERATED -->
