@@ -379,17 +379,26 @@ to the optional docz mkdocs render (Phase 4) or the consumer's own tooling. The
 
 #### Tasks
 
-- [ ] Add `GET /openapi.yaml`: serve `api.Spec` (the Phase-1 embed) with
+- [x] Add `GET /openapi.yaml`: serve `api.Spec` (the Phase-1 embed) with
       `Content-Type: application/yaml`, **public** (outside the `/api/v1` auth
       gate), mounted in `newRouter` / `runServer` alongside the `/healthz`,
       `/readyz`, `/metrics` probes in `cmd/docz-api/main.go`. **No `/docs`
-      route** (OQ-3d).
-- [ ] Tests: `GET /openapi.yaml` returns 200 + the embedded bytes + the right
+      route** (OQ-3d). _(done — `handleOpenAPISpec` writes `api.Spec` with
+      `Content-Type: application/yaml`; mounted in `newRouter` next to
+      `/healthz` + `/readyz` (always-on + dependency-free, so `newRouter` is its
+      natural home — it inherits `RequestID`/logging/metrics but **not** the
+      `/api/v1` gate, so it's public). No `/docs` route.)_
+- [x] Tests: `GET /openapi.yaml` returns 200 + the embedded bytes + the right
       content-type, and the **served bytes re-parse and `doc.Validate`** (so the
       embedded copy provably equals the source `api/openapi.yaml` and can't
       drift); the route **bypasses** the auth gate (no session → still 200).
-- [ ] `just test` / `just lint` / `just fmt` green. Check off and commit
-      (`feat(openapi): embed and serve the spec`).
+      _(done — `TestServeOpenAPISpec` asserts 200 + `application/yaml` +
+      `bytes.Equal(body, api.Spec)`, then re-parses the served bytes via
+      `openapi3.LoadFromData` + `doc.Validate`. It hits `newRouter(nil)` with no
+      cookie, proving the route is public.)_
+- [x] `just test` / `just lint` / `just fmt` green. Check off and commit
+      (`feat(openapi): embed and serve the spec`). _(done — `go test ./...` all
+      pass, `just lint` 0 issues, `just fmt` a no-op, `vacuum` 100/100.)_
 
 #### Success Criteria
 
@@ -400,6 +409,14 @@ to the optional docz mkdocs render (Phase 4) or the consumer's own tooling. The
   `security: []` overrides; **no `/docs` UI route exists** (OQ-3d).
 - A test proves the **served spec byte-equals `api/openapi.yaml`** and validates,
   closing the embed-drift gap.
+
+**Status: COMPLETE ✅** — all criteria met. `GET /openapi.yaml` serves the
+embedded `api.Spec` (`Content-Type: application/yaml`) from `handleOpenAPISpec`
+in `newRouter` — no filesystem dependency, so it works in the distroless image.
+The route is **public** (mounted outside the `/api/v1` gate, next to the probes)
+and there is **no `/docs` UI route** (OQ-3d). `TestServeOpenAPISpec` proves the
+served bytes `bytes.Equal` `api.Spec` and re-parse + `doc.Validate` cleanly,
+closing the embed-drift gap. `just test` / `just lint` / `just fmt` green.
 
 ---
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/getkin/kin-openapi/openapi3"
+
+	"github.com/donaldgifford/docz-api/api"
 	"github.com/donaldgifford/docz-api/internal/config"
 )
 
@@ -71,6 +75,43 @@ func TestHealthz(t *testing.T) {
 	}
 	if got := string(body); got != `{"status":"ok"}` {
 		t.Errorf("body = %q, want the ok payload", got)
+	}
+}
+
+func TestServeOpenAPISpec(t *testing.T) {
+	// No session cookie: /openapi.yaml is public, outside the /api/v1 auth gate.
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/openapi.yaml", http.NoBody)
+	rec := httptest.NewRecorder()
+
+	newRouter(nil).ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", res.StatusCode)
+	}
+	if ct := res.Header.Get("Content-Type"); ct != "application/yaml" {
+		t.Errorf("Content-Type = %q, want application/yaml", ct)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("read body: %v", err)
+	}
+	if !bytes.Equal(body, api.Spec) {
+		t.Errorf("served spec (%d bytes) != embedded api.Spec (%d bytes)", len(body), len(api.Spec))
+	}
+
+	// The served bytes must re-parse and self-validate, proving the served copy
+	// equals the source spec and cannot silently drift from it.
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromData(body)
+	if err != nil {
+		t.Fatalf("re-parse served spec: %v", err)
+	}
+	if err := doc.Validate(loader.Context); err != nil {
+		t.Fatalf("served spec failed validation: %v", err)
 	}
 }
 

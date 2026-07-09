@@ -23,6 +23,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/donaldgifford/docz-api/api"
 	"github.com/donaldgifford/docz-api/internal/auth"
 	"github.com/donaldgifford/docz-api/internal/authhttp"
 	"github.com/donaldgifford/docz-api/internal/authorize"
@@ -337,7 +338,23 @@ func newRouter(checkers []namedChecker) chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Get("/healthz", handleHealthz)
 	r.Get("/readyz", handleReadyz(checkers))
+	// The OpenAPI contract is public (outside the /api/v1 auth gate) so consumers
+	// like the docz-site can fetch the machine contract without a session. There
+	// is no /docs UI page (IMPL-0002 OQ-3d); this raw spec is the only surface.
+	r.Get("/openapi.yaml", handleOpenAPISpec)
 	return r
+}
+
+// handleOpenAPISpec serves the embedded OpenAPI contract (api.Spec) verbatim,
+// so the served bytes are provably identical to api/openapi.yaml and to the copy
+// the contract test validates. No filesystem dependency — it works in the
+// distroless image.
+func handleOpenAPISpec(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/yaml")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(api.Spec); err != nil {
+		slog.Debug("openapi spec write failed", "err", err)
+	}
 }
 
 // handleHealthz is the liveness probe: it reports that the process is up,
