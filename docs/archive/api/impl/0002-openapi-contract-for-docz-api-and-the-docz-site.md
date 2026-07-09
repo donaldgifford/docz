@@ -503,24 +503,32 @@ scope). `just test` / `just lint` / `just fmt` green.
 
 ## Testing Plan
 
-- [ ] **kin-openapi contract test** — request + response validation for the full
+- [x] **kin-openapi contract test** — request + response validation for the full
       specced surface, hermetic (in-memory fakes), on the normal `go test ./...`
       run with **no build tag** (rides CI's `Test Go` job; no new workflow).
-- [ ] **Spec self-validation** — `doc.Validate` in the test catches malformed
+      _(done — `TestOpenAPIContract`, 12 cases, no build tag.)_
+- [x] **Spec self-validation** — `doc.Validate` in the test catches malformed
       specs and the OAS-3.1 gotchas (`info.summary` rejected; `const: X` must be
       `enum: [X]`). Run the contract test immediately after any spec edit.
-- [ ] **Drift detection** — a DTO change without a matching spec change (or the
+      _(done — `loadContractSpec` runs `doc.Validate` before any request.)_
+- [x] **Drift detection** — a DTO change without a matching spec change (or the
       reverse) fails the contract test; proven once during Phase 1.
-- [ ] **Spec lint** — `vacuum` (or `spectral`) passes over `api/openapi.yaml` in
+      _(done — proven in Phase 1 (renamed json tag → `property … is unsupported`,
+      reverted); the `additionalProperties: false` guard covers the new schemas.)_
+- [x] **Spec lint** — `vacuum` (or `spectral`) passes over `api/openapi.yaml` in
       CI, on top of `doc.Validate`'s structural check (Phase 1, **OQ-7b**).
-- [ ] **Authed + HMAC endpoints** — session injected into context; a valid HMAC
+      _(done — `just lint-openapi`, `vacuum` 100/100, gated in CI's Lint job.)_
+- [x] **Authed + HMAC endpoints** — session injected into context; a valid HMAC
       computed over a fixture webhook body; a stub provider registry for the
-      OAuth redirects (Phase 2, **OQ-4a**).
-- [ ] **Serve test** — `GET /openapi.yaml` served bytes re-validate and
+      OAuth redirects (Phase 2, **OQ-4a**). _(done — the real session middleware
+      resolves a fixed cookie; `webhookRequest` signs a ping fixture;
+      `stubProvider` drives `login`/`callback`.)_
+- [x] **Serve test** — `GET /openapi.yaml` served bytes re-validate and
       byte-equal the source; the route is public (Phase 3). No `/docs` route
-      (OQ-3d).
-- [ ] No new **integration** dependencies — the whole plan is hermetic; nothing
-      here needs Postgres / Redis / Meilisearch / testcontainers.
+      (OQ-3d). _(done — `TestServeOpenAPISpec`.)_
+- [x] No new **integration** dependencies — the whole plan is hermetic; nothing
+      here needs Postgres / Redis / Meilisearch / testcontainers. _(done — the
+      contract + serve tests are pure unit tests; no testcontainers.)_
 
 ## Dependencies
 
