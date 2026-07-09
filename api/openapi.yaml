@@ -29,3 +29,188 @@ components:
         Opaque Redis-backed session id set by the auth flow. Sent as the
         `docz_session` cookie; required on every `/api/v1` operation unless the
         operation overrides `security` (public routes use `security: []`).
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+          example: repo not found
+    RepoSummary:
+      type: object
+      additionalProperties: false
+      required: [repo, default_branch, docs_dir, last_synced_sha]
+      properties:
+        repo:
+          type: string
+          description: The "owner/name" identifier.
+          example: acme/platform
+        default_branch:
+          type: string
+          example: main
+        docs_dir:
+          type: string
+          description: The repo-relative docs root from `.docz.yaml`.
+          example: docs
+        last_synced_sha:
+          type: string
+          description: HEAD SHA of the last successful ingest, or "" if never synced.
+    RepoDetail:
+      type: object
+      additionalProperties: false
+      required:
+        [repo, default_branch, docs_dir, last_synced_sha, config_snapshot, types]
+      properties:
+        repo:
+          type: string
+          example: acme/platform
+        default_branch:
+          type: string
+          example: main
+        docs_dir:
+          type: string
+          example: docs
+        last_synced_sha:
+          type: string
+          description: HEAD SHA of the last successful ingest, or "" if never synced.
+        config_snapshot:
+          type: object
+          additionalProperties: true
+          description: The repo's `.docz.yaml` at HEAD, as a JSON object.
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocType"
+    DocType:
+      type: object
+      additionalProperties: false
+      required: [name, dir, id_prefix, plural_label, statuses, aliases]
+      properties:
+        name:
+          type: string
+          description: Canonical type name.
+          example: frameworks
+        dir:
+          type: string
+          description: Type directory under `docs_dir`.
+          example: frameworks
+        id_prefix:
+          type: string
+          example: FW
+        plural_label:
+          type: string
+          example: Frameworks
+        statuses:
+          type: array
+          description: Allowed statuses; [] when unset (never null).
+          items:
+            type: string
+        aliases:
+          type: array
+          description: Alternate names the type resolves by; [] when unset (never null).
+          items:
+            type: string
+    Document:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          repo,
+          doc_id,
+          type,
+          title,
+          status,
+          author,
+          created,
+          path,
+          git_sha,
+          content_hash,
+          updated_at,
+        ]
+      properties:
+        repo:
+          type: string
+          example: acme/platform
+        doc_id:
+          type: string
+          example: FW-0001
+        type:
+          type: string
+          description: Canonical type name.
+          example: frameworks
+        title:
+          type: string
+        status:
+          type: string
+          description: '"" when unset.'
+        author:
+          type: string
+          description: '"" when unset.'
+        created:
+          type: string
+          description: 'YYYY-MM-DD, or "" when unset.'
+        path:
+          type: string
+          example: docs/frameworks/0001-intro.md
+        git_sha:
+          type: string
+        content_hash:
+          type: string
+        updated_at:
+          type: string
+          description: 'RFC3339, or "" when unset.'
+        raw_md:
+          type: string
+          description: Full Markdown source; present only on the single-document endpoint.
+    SearchHit:
+      type: object
+      additionalProperties: false
+      required: [repo, doc_id, type, title, status, author, snippet]
+      properties:
+        repo:
+          type: string
+          example: acme/platform
+        doc_id:
+          type: string
+          example: FW-0001
+        type:
+          type: string
+          example: frameworks
+        title:
+          type: string
+        status:
+          type: string
+          description: '"" when unset.'
+        author:
+          type: string
+          description: '"" when unset.'
+        snippet:
+          type: string
+          description: Highlighted body excerpt with <em></em> around matches.
+    SearchResult:
+      type: object
+      additionalProperties: false
+      required: [query, estimated_total_hits, hits, facets]
+      properties:
+        query:
+          type: string
+          description: The echoed query string.
+        estimated_total_hits:
+          type: integer
+          format: int64
+          description: Estimated total matches across all pages.
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchHit"
+        facets:
+          type: object
+          description: Per-facet value counts (facet -> value -> count).
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+              format: int64

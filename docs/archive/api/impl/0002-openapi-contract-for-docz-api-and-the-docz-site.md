@@ -152,7 +152,7 @@ useful surface; later phases only widen it.
       3 tags + `sessionCookie` scheme + default `security`; no `info.summary`.
       YAML syntax-checked; full OAS `doc.Validate` runs with the harness in
       Task 6.)_
-- [ ] Author `components.schemas` mirroring the DTOs
+- [x] Author `components.schemas` mirroring the DTOs
       (`internal/httpapi/dto.go`, `internal/search/types.go`) **1:1**: `Error`
       (`required: [error]`, `additionalProperties: false`), `RepoSummary`
       (`repo`, `default_branch`, `docs_dir`, `last_synced_sha`), `RepoDetail`
@@ -165,7 +165,12 @@ useful surface; later phases only widen it.
       `facets`). Reflect the serialization invariants: nullable columns are
       **empty strings, never `null`**; JSONB string arrays are **`[]`, never
       `null`**; `facets` is `object` with `additionalProperties` an object of
-      `additionalProperties: { type: integer }`.
+      `additionalProperties: { type: integer }`. _(done — all 7 schemas authored
+      with `additionalProperties: false` for strict drift detection, verified
+      1:1 against the golden fixtures; every response field is `required` except
+      `Document.raw_md`. Proven to pass kin-openapi `doc.Validate` via a
+      throwaway loader test, removed before commit — the real harness in Task 6
+      revalidates in CI.)_
 - [ ] Author `components.responses` (`Unauthorized` → 401 `Error`, `NotFound` →
       404 `Error`) and the six paths with lowerCamelCase `operationId`s:
       `listRepos` (`{repos:[…]}`), `getRepo` (`RepoDetail`; 404), `listTypes`
