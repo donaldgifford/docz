@@ -184,7 +184,7 @@ useful surface; later phases only widen it.
       `NotFound` responses; the same `Document` schema serves `listDocs` (raw_md
       absent) and `getDoc` (raw_md present) since raw_md is optional. Proven:
       `doc.Validate` passes and `gorillamux.FindRoute` resolves all six paths.)_
-- [ ] Port rfc-api's three-function harness to
+- [x] Port rfc-api's three-function harness to
       **`internal/httpapi/openapi_contract_test.go`** (OQ-6a): `loadSpec`
       (`openapi3.NewLoader().LoadFromData(api.Spec)` per **OQ-2a** →
       `doc.Validate(ctx)` → `gorillamux.NewRouter(doc)`); `buildHandler`
@@ -193,12 +193,18 @@ useful surface; later phases only widen it.
       authorize.Middleware(authorize.NewAllReposAuthorizer(st)))`; `validate`
       (`router.FindRoute` → `openapi3filter.ValidateRequest` → serve in-process
       → `openapi3filter.ValidateResponse`, both `Options{MultiError: true}`). No
-      build tag, no `httptest.NewServer`.
-- [ ] Table-drive the cases: the six read/search happy paths (`/api/v1/repos`,
+      build tag, no `httptest.NewServer`. _(done — `loadContractSpec` /
+      `buildContractHandler` / `validateRoundTrip`. Security is validated with
+      `openapi3filter.NoopAuthenticationFunc` so the spec's `sessionCookie`
+      requirement doesn't fail request validation — the contract test asserts
+      schemas, auth is covered by its own tests. `getkin/kin-openapi` promoted to
+      a direct dep. go-style reviewed; passes `just lint`.)_
+- [x] Table-drive the cases: the six read/search happy paths (`/api/v1/repos`,
       `/repos/acme/platform`, `/types`, `/types/frameworks/docs`,
       `/types/FW/docs/FW-0001`, `/search?q=intro`) plus the **404** envelope
       (`/repos/acme/missing`). Confirm the search fixture exercises `facets` and
-      the `snippet`.
+      the `snippet`. _(done — 7 subtests, all green; the `searchDocs` case
+      exercises the `facets` map and the `<em>` `snippet` via `contractSearcher`.)_
 - [ ] Add **spec lint + format** so the hand-authored file is standards-clean
       from its first commit (**OQ-7b**): wire an OpenAPI linter — **`vacuum`**
       (Go-native, `mise`-installable, pb33f/`libopenapi` lineage per **FU-3**;
