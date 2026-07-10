@@ -1,0 +1,20 @@
+---
+# $schema=https://www.schemastore.org/catalog-info.json
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: docz-site
+  title: docz-site
+  description: A UI for docz repos
+  annotations:
+    backstage.io/source-location: url:https://github.com/donaldgifford/docz-site
+    backstage.io/techdocs-ref: "dir:."
+  tags:
+    - node
+    - bun
+  namespace: default
+spec:
+  lifecycle: production
+  type: tool
+  owner: donaldgifford
+  system: dev-tools

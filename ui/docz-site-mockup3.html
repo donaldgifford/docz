@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>docz · Security Engineering docs + rfcs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --font-serif: "Source Serif 4", Georgia, serif;
+
+    --bg-base:      #0C1017;
+    --bg-raised:    #121722;
+    --bg-elevated:  #181E2B;
+    --bg-hover:     #1E2635;
+    --bg-active:    #252E40;
+
+    --border-hairline: #1B2230;
+    --border-default:  #252E3F;
+    --border-strong:   #34405A;
+
+    --fg-primary:   #E8EBF0;
+    --fg-secondary: #AFB6C2;
+    --fg-tertiary:  #7A8396;
+    --fg-muted:     #505867;
+
+    --accent:        #7DCFFF;
+    --accent-dim:    #3D7FB8;
+    --accent-bg:     rgba(125, 207, 255, 0.10);
+    --accent-border: rgba(125, 207, 255, 0.30);
+
+    /* status */
+    --st-draft:      #E0AF68;
+    --st-proposed:   #7AA2F7;
+    --st-active:     #9ECE6A;
+    --st-accepted:   #9ECE6A;
+    --st-adopted:    #9ECE6A;
+    --st-rejected:   #F7768E;
+    --st-superseded: #BB9AF7;
+    --st-deprecated: #565F89;
+
+    /* doc types */
+    --t-principle: #7DCFFF;
+    --t-mandate:   #F7768E;
+    --t-guide:     #9ECE6A;
+    --t-policy:    #BB9AF7;
+    --t-framework: #73DACA;
+    --t-rfc:       #7AA2F7;
+    --t-working:   #FF9E64;
+
+    --code-bg: #161B28;
+    --r: 0;            /* sharp — zero radius */
+    --r-pill: 999px;
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+  body {
+    background: var(--bg-base); color: var(--fg-primary);
+    font-family: var(--font-sans); font-size: 15px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  .mono { font-family: var(--font-mono); }
+  ::selection { background: var(--accent-bg); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ============ TOPBAR ============ */
+  .topbar {
+    display: flex; align-items: center; gap: 1.5rem;
+    height: 52px; padding: 0 1.25rem;
+    border-bottom: 1px solid var(--border-default);
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(12,16,23,0.88); backdrop-filter: blur(10px);
+  }
+  .brand { display: flex; align-items: center; gap: 0.55rem; }
+  .brand-mark {
+    width: 22px; height: 22px; display: grid; place-items: center;
+    background: var(--accent); color: var(--bg-base);
+    font-family: var(--font-mono); font-weight: 700; font-size: 13px;
+  }
+  .brand-name { font-family: var(--font-mono); font-weight: 600; font-size: 14px; letter-spacing: 0.01em; }
+  .brand-sub { font-family: var(--font-mono); font-size: 13px; color: var(--fg-muted); }
+  .topbar-search {
+    margin-left: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    color: var(--fg-tertiary); border: 1px solid var(--border-default);
+    padding: 0.3rem 0.7rem; font-size: 12.5px; min-width: 260px; cursor: text;
+  }
+  .topbar-search .kbd-group { margin-left: auto; display: flex; gap: 3px; }
+  .kbd {
+    font-family: var(--font-mono); font-size: 11px; color: var(--fg-tertiary);
+    border: 1px solid var(--border-default); padding: 0 4px; min-width: 16px; text-align: center;
+  }
+  .topbar-nav { margin-left: auto; display: flex; align-items: center; gap: 1.4rem; }
+  .topbar-nav a { font-family: var(--font-mono); font-size: 13px; color: var(--fg-tertiary); }
+  .topbar-nav a:hover { color: var(--fg-primary); }
+  .topbar-nav a.active { color: var(--fg-primary); }
+  .topbar-avatar {
+    width: 26px; height: 26px; display: grid; place-items: center;
+    background: var(--bg-elevated); border: 1px solid var(--border-default);
+    font-family: var(--font-mono); font-size: 11px; color: var(--fg-secondary);
+  }
+  @media (max-width: 720px) {
+    .topbar-search { display: none; }
+    .topbar-nav { gap: 1rem; }
+    .topbar-nav a.opt { display: none; }
+  }
+
+  /* ============ MOCKUP SWITCHER (meta — not part of the app) ============ */
+  body { padding-bottom: 74px; }
+  .mockup-switcher {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 1000; display: flex; gap: 2px; padding: 4px;
+    background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-strong);
+    font-family: var(--font-mono); font-size: 11px;
+    box-shadow: 0 10px 36px rgba(0,0,0,0.55);
+  }
+  .mockup-switcher .label { padding: 6px 10px 6px 8px; color: var(--fg-muted); letter-spacing: 0.12em; align-self: center; border-right: 1px solid var(--border-hairline); }
+  .mockup-switcher button { padding: 6px 12px; color: var(--fg-tertiary); letter-spacing: 0.02em; white-space: nowrap; transition: color 0.15s var(--ease); }
+  .mockup-switcher button:hover { color: var(--fg-primary); }
+  .mockup-switcher button.active { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); padding: 5px 11px; }
+  @media (max-width: 820px) { .mockup-switcher { flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px); bottom: 8px; } .mockup-switcher .label { display: none; } }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 1.25rem; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ============ DIRECTORY ============ */
+  .dir-hero { padding: 2.4rem 0 1.4rem; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); letter-spacing: 0.05em; }
+  .eyebrow .crumb { color: var(--fg-muted); }
+  .dir-hero h1 { font-size: clamp(1.6rem, 4vw, 2rem); font-weight: 600; letter-spacing: -0.01em; margin: 0.4rem 0 0.2rem; }
+  .dir-hero .sub { color: var(--fg-tertiary); font-size: 14px; }
+
+  .controls-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1.4rem 0 0.4rem; }
+  .scope { display: inline-flex; border: 1px solid var(--border-default); }
+  .scope button { font-family: var(--font-mono); font-size: 12px; color: var(--fg-tertiary); padding: 0.35rem 0.8rem; }
+  .scope button + button { border-left: 1px solid var(--border-default); }
+  .scope button.on { background: var(--bg-elevated); color: var(--fg-primary); }
+  .results { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--fg-tertiary); }
+  .results b { color: var(--fg-secondary); font-weight: 500; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.9rem 0 0.4rem; }
+  .chip {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em;
+    padding: 0.25rem 0.7rem; border: 1px solid var(--border-default);
+    color: var(--fg-tertiary); text-transform: uppercase; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; background: var(--c, var(--fg-muted)); }
+  .chip[data-type="principle"] { --c: var(--t-principle); }
+  .chip[data-type="mandate"]   { --c: var(--t-mandate); }
+  .chip[data-type="guide"]     { --c: var(--t-guide); }
+  .chip[data-type="policy"]    { --c: var(--t-policy); }
+  .chip[data-type="framework"] { --c: var(--t-framework); }
+  .chip[data-type="rfc"]       { --c: var(--t-rfc); }
+  .chip[data-type="working"]   { --c: var(--t-working); }
+  .chip.on { color: var(--fg-primary); border-color: var(--border-strong); background: var(--bg-raised); }
+  .chip.all { --c: transparent; }
+  .chip.all::before { display: none; }
+
+  .doc-table { margin: 1rem 0 4rem; border-top: 1px solid var(--border-hairline); }
+  .doc-row {
+    display: grid; grid-template-columns: 116px 78px 1fr 110px 64px;
+    align-items: center; gap: 0.8rem;
+    padding: 0.7rem 0.4rem; border-bottom: 1px solid var(--border-hairline);
+    cursor: pointer; transition: background 0.12s var(--ease);
+  }
+  .doc-row:hover { background: var(--bg-raised); }
+  .type-badge {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em;
+    text-transform: uppercase; padding: 2px 7px; border: 1px solid;
+    color: var(--c); border-color: color-mix(in srgb, var(--c) 35%, transparent);
+    background: color-mix(in srgb, var(--c) 9%, transparent); width: max-content;
+  }
+  .type-badge[data-type="principle"] { --c: var(--t-principle); }
+  .type-badge[data-type="mandate"]   { --c: var(--t-mandate); }
+  .type-badge[data-type="guide"]     { --c: var(--t-guide); }
+  .type-badge[data-type="policy"]    { --c: var(--t-policy); }
+  .type-badge[data-type="framework"] { --c: var(--t-framework); }
+  .type-badge[data-type="rfc"]       { --c: var(--t-rfc); }
+  .type-badge[data-type="working"]   { --c: var(--t-working); }
+  .doc-id { font-family: var(--font-mono); font-size: 12.5px; color: var(--fg-tertiary); }
+  .doc-title { font-size: 14px; color: var(--fg-primary); }
+  .doc-title .labels { margin-top: 2px; display: flex; gap: 5px; flex-wrap: wrap; }
+  .doc-title .lab { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-muted); }
+  .doc-title .lab::before { content: "#"; opacity: 0.6; }
+  .status-badge {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.03em;
+    color: var(--c); display: inline-flex; align-items: center; gap: 5px;
+  }
+  .status-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+  .status-badge[data-st="draft"]      { --c: var(--st-draft); }
+  .status-badge[data-st="active"]     { --c: var(--st-active); }
+  .status-badge[data-st="accepted"]   { --c: var(--st-accepted); }
+  .status-badge[data-st="adopted"]    { --c: var(--st-adopted); }
+  .status-badge[data-st="proposed"]   { --c: var(--st-proposed); }
+  .status-badge[data-st="superseded"] { --c: var(--st-superseded); }
+  .repo-cell { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-tertiary); }
+  .repo-cell::before { content: "› "; color: var(--fg-muted); }
+  .upd-cell { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); text-align: right; }
+  @media (max-width: 680px) {
+    .doc-row { grid-template-columns: 92px 1fr auto; }
+    .doc-id, .repo-cell, .upd-cell { display: none; }
+  }
+
+  /* ============ DOCUMENT (info / read) ============ */
+  .seg {
+    display: inline-flex; border: 1px solid var(--border-default);
+    margin: 2rem 0 0; font-family: var(--font-mono); font-size: 12.5px;
+  }
+  .seg button { color: var(--fg-tertiary); padding: 0.4rem 1.1rem; }
+  .seg button + button { border-left: 1px solid var(--border-default); }
+  .seg button.on { background: var(--bg-elevated); color: var(--fg-primary); }
+
+  .doc-head { padding: 1.8rem 0 0.5rem; }
+  .doc-head .eyebrow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  h1.doc-title-lg { font-size: clamp(1.5rem, 4vw, 2.05rem); font-weight: 600; letter-spacing: -0.01em; margin: 0.55rem 0 0; line-height: 1.25; display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  .pill {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+    padding: 2px 9px; border: 1px solid; text-transform: uppercase;
+    color: var(--c); border-color: color-mix(in srgb, var(--c) 38%, transparent);
+    background: color-mix(in srgb, var(--c) 8%, transparent);
+  }
+  .pill[data-st="draft"] { --c: var(--st-draft); }
+
+  .banner {
+    display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap;
+    border: 1px solid color-mix(in srgb, var(--t-policy) 30%, transparent);
+    background: color-mix(in srgb, var(--t-policy) 6%, transparent);
+    padding: 0.65rem 1rem; margin: 1.3rem 0;
+    font-family: var(--font-mono); font-size: 13px; color: var(--t-policy);
+  }
+  .banner a { color: var(--fg-primary); }
+  .banner a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .meta { border: 1px solid var(--border-default); background: var(--bg-raised); margin: 1.4rem 0; }
+  .meta .row { display: grid; grid-template-columns: 150px 1fr; border-bottom: 1px solid var(--border-hairline); }
+  .meta .row:last-child { border-bottom: none; }
+  .meta .k {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-muted);
+    text-transform: uppercase; letter-spacing: 0.06em; padding: 0.6rem 1rem;
+    border-right: 1px solid var(--border-hairline);
+  }
+  .meta .v { padding: 0.55rem 1rem; font-family: var(--font-mono); font-size: 13px; color: var(--fg-secondary); }
+  .meta .v a { color: var(--accent); }
+  .meta .v a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .meta .v .tag { display: inline-block; border: 1px solid var(--border-default); padding: 1px 7px; font-size: 11.5px; color: var(--fg-tertiary); margin: 1px 4px 1px 0; }
+  @media (max-width: 560px) { .meta .row { grid-template-columns: 1fr; } .meta .k { border-right: none; padding-bottom: 0.2rem; } }
+
+  .rail-label { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.08em; margin: 2rem 0 0.9rem; }
+  .rail { position: relative; padding-left: 1.1rem; border-left: 1px solid var(--border-default); margin-left: 0.4rem; }
+  .stop { position: relative; padding-bottom: 1.3rem; }
+  .stop:last-child { padding-bottom: 0.2rem; }
+  .stop::before { content: ""; position: absolute; left: calc(-1.1rem - 5px); top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--bg-base); border: 2px solid var(--fg-muted); }
+  .stop.done::before { border-color: var(--st-active); background: var(--st-active); }
+  .stop.current::before { border-color: var(--st-draft); background: var(--st-draft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-draft) 18%, transparent); }
+  .stop .stage { font-family: var(--font-mono); font-size: 13px; color: var(--fg-primary); }
+  .stop.pending .stage { color: var(--fg-muted); }
+  .stop .when { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-muted); margin-left: 0.7rem; }
+  .stop .links { font-family: var(--font-mono); font-size: 11.5px; margin-top: 2px; }
+  .stop .links a { color: var(--accent); margin-right: 1rem; }
+  .stop .links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .formats { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 2rem 0 3.5rem; }
+  .formats a { font-family: var(--font-mono); font-size: 12px; color: var(--fg-tertiary); border: 1px solid var(--border-default); padding: 0.4rem 0.85rem; }
+  .formats a:hover { color: var(--fg-primary); border-color: var(--border-strong); }
+  .formats a b { color: var(--accent); font-weight: 500; }
+
+  /* reading view */
+  .read-grid { display: none; }
+  .read-grid.on { display: grid; grid-template-columns: 190px 1fr; gap: 2.5rem; padding: 1.6rem 0 4rem; }
+  .info-pane.on { display: block; padding-bottom: 3rem; }
+  .info-pane { display: none; }
+  .toc { position: sticky; top: 4.6rem; align-self: start; font-family: var(--font-mono); font-size: 12.5px; }
+  .toc .h { color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; margin-bottom: 0.7rem; }
+  .toc a { display: block; color: var(--fg-tertiary); padding: 0.2rem 0; }
+  .toc a:hover { color: var(--fg-primary); }
+  @media (max-width: 760px) { .read-grid.on { grid-template-columns: 1fr; } .toc { display: none; } }
+
+  article { max-width: 72ch; }
+  article > p { color: var(--fg-secondary); margin-bottom: 1rem; font-family: var(--font-serif); font-size: 16px; }
+  article h2 { font-family: var(--font-mono); font-size: 1rem; font-weight: 600; margin: 2rem 0 0.85rem; letter-spacing: -0.01em; }
+  article h2 .hash { color: var(--accent); margin-right: 0.5rem; }
+  article strong { color: var(--fg-primary); }
+  article code { font-family: var(--font-mono); font-size: 0.86em; color: var(--accent); background: var(--code-bg); border: 1px solid var(--border-hairline); padding: 1px 5px; }
+  article ul { margin: 0 0 1rem 1.1rem; color: var(--fg-secondary); }
+  article li { margin-bottom: 0.35rem; }
+
+  .ctrl-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.4rem; font-size: 13px; }
+  .ctrl-table th, .ctrl-table td { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border-hairline); vertical-align: top; }
+  .ctrl-table th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--fg-muted); border-bottom: 1px solid var(--border-default); }
+  .ctrl-table td.cid { font-family: var(--font-mono); color: var(--t-framework); white-space: nowrap; }
+  .ctrl-table td.ref { font-family: var(--font-mono); font-size: 12px; color: var(--fg-tertiary); white-space: nowrap; }
+  .ctrl-table .enf { font-family: var(--font-mono); font-size: 11px; padding: 1px 6px; border: 1px solid var(--border-default); color: var(--fg-tertiary); }
+  .ctrl-table .enf.wiz { color: var(--t-framework); border-color: color-mix(in srgb, var(--t-framework) 30%, transparent); }
+  .ctrl-table .enf.gate { color: var(--st-proposed); border-color: color-mix(in srgb, var(--st-proposed) 30%, transparent); }
+
+  pre.code { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55; background: var(--code-bg); border: 1px solid var(--border-default); padding: 1rem 1.1rem; overflow-x: auto; margin: 1rem 0; color: var(--fg-secondary); }
+  pre .cm { color: var(--fg-muted); }
+  pre .k  { color: #BB9AF7; }
+  pre .s  { color: #9ECE6A; }
+  pre .key { color: #F7768E; }
+  pre .p  { color: #89DDFF; }
+
+  /* ============ MCP ============ */
+  .mcp-hero { padding: 2.6rem 0 1.4rem; max-width: 720px; }
+  .mcp-hero .eyebrow::before { content: "▸ "; }
+  .mcp-hero h1 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); font-weight: 600; letter-spacing: -0.015em; margin: 0.5rem 0 0.7rem; }
+  .mcp-hero p { color: var(--fg-secondary); font-size: 15px; }
+  .mcp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0 2.5rem; }
+  @media (max-width: 640px) { .mcp-cards { grid-template-columns: 1fr; } }
+  .mcp-card { border: 1px solid var(--border-default); background: var(--bg-raised); padding: 1.1rem 1.2rem; transition: border-color 0.15s var(--ease); }
+  .mcp-card:hover { border-color: var(--border-strong); }
+  .c-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+  .c-title { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--fg-primary); }
+  .c-tag { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 7px; color: var(--accent); background: var(--accent-bg); border: 1px solid var(--accent-border); }
+  .c-tag.related { color: var(--st-draft); background: color-mix(in srgb, var(--st-draft) 10%, transparent); border-color: color-mix(in srgb, var(--st-draft) 30%, transparent); }
+  .c-desc { color: var(--fg-tertiary); font-size: 13px; margin-bottom: 0.7rem; }
+  .c-meta { display: flex; gap: 1rem; font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-muted); }
+  .c-meta .src { margin-left: auto; color: var(--accent); }
+
+  .mcp-section { margin: 0 0 2.2rem; }
+  .mcp-section h2 { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.7rem; display: flex; align-items: center; gap: 0.7rem; }
+  .mcp-section h2 .step { width: 22px; height: 22px; display: grid; place-items: center; background: var(--bg-elevated); border: 1px solid var(--border-default); font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+  .mcp-section p { color: var(--fg-secondary); font-size: 14px; margin-bottom: 0.8rem; }
+  .mcp-section ul { margin: 0 0 0 1.1rem; color: var(--fg-secondary); font-size: 14px; }
+  .mcp-section li { margin-bottom: 0.4rem; }
+  .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.9rem 0; }
+  @media (max-width: 560px) { .dl-grid { grid-template-columns: 1fr; } }
+  .dl-item { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-default); background: var(--bg-raised); padding: 0.6rem 0.8rem; }
+  .dl-left { display: flex; align-items: center; gap: 0.7rem; }
+  .dl-icon { width: 26px; height: 26px; display: grid; place-items: center; background: var(--bg-elevated); border: 1px solid var(--border-default); font-size: 13px; }
+  .dl-name { font-family: var(--font-mono); font-size: 12px; color: var(--fg-secondary); }
+  .dl-size { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+  .dl-go { font-family: var(--font-mono); font-size: 11.5px; color: var(--accent); }
+  .ex-tabs { display: flex; gap: 0; border: 1px solid var(--border-default); border-bottom: none; width: max-content; }
+  .ex-tab { font-family: var(--font-mono); font-size: 12px; color: var(--fg-tertiary); padding: 0.4rem 0.9rem; }
+  .ex-tab + .ex-tab { border-left: 1px solid var(--border-default); }
+  .ex-tab.on { background: var(--code-bg); color: var(--fg-primary); }
+
+  /* ============ API ============ */
+  .api-hero { padding: 2.4rem 0 1rem; }
+  .api-grid { display: grid; grid-template-columns: 220px 1fr; gap: 2.5rem; padding-bottom: 4rem; }
+  @media (max-width: 760px) { .api-grid { grid-template-columns: 1fr; } .api-side { display: none; } }
+  .api-side { position: sticky; top: 4.6rem; align-self: start; font-family: var(--font-mono); font-size: 12.5px; }
+  .api-side .h { color: var(--fg-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.07em; margin: 0 0 0.6rem; }
+  .api-ep { display: flex; gap: 0.5rem; padding: 0.3rem 0; color: var(--fg-tertiary); }
+  .api-ep .m { color: var(--st-active); }
+  .api-ep:hover { color: var(--fg-primary); }
+  .api-content h2 { font-family: var(--font-mono); font-size: 1.05rem; margin: 0 0 0.6rem; }
+  .api-content p { color: var(--fg-secondary); font-size: 14px; margin-bottom: 1rem; }
+  .ep-line { font-family: var(--font-mono); font-size: 13px; margin: 0.4rem 0 1rem; }
+  .ep-line .m { color: var(--st-active); }
+  .ep-line .u { color: var(--fg-primary); }
+
+  /* pill + banner variants */
+  .pill[data-st="active"], .pill[data-st="accepted"], .pill[data-st="adopted"] { --c: var(--st-active); }
+  .pill[data-st="proposed"] { --c: var(--st-proposed); }
+  .banner.b-acc { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
+  .banner.b-grn { border-color: color-mix(in srgb, var(--st-active) 30%, transparent); background: color-mix(in srgb, var(--st-active) 7%, transparent); color: var(--st-active); }
+  .stop.acc::before { border-color: var(--st-accepted); background: var(--st-accepted); box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-accepted) 18%, transparent); }
+
+  /* ============ SEARCH (command palette) ============ */
+  #view-search.active { display: block; }
+  .search-overlay { position: fixed; inset: 52px 0 0; z-index: 120; background: rgba(8,11,16,0.66); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: flex-start; padding: 7vh 1rem 0; }
+  .search-modal { width: min(780px, 96vw); background: var(--bg-raised); border: 1px solid var(--border-strong); box-shadow: 0 28px 90px rgba(0,0,0,0.6); display: flex; flex-direction: column; max-height: 76vh; }
+  .search-input-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-default); }
+  .search-input { flex: 1; background: none; border: none; outline: none; color: var(--fg-primary); font-family: var(--font-mono); font-size: 15px; }
+  .search-close-hint { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+  .search-filters-row { display: flex; gap: 0.4rem; padding: 0.55rem 1rem; border-bottom: 1px solid var(--border-hairline); flex-wrap: wrap; }
+  .search-filter-pill { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-tertiary); padding: 0.2rem 0.6rem; border: 1px solid var(--border-default); }
+  .search-filter-pill.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-bg); }
+  .search-results { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; flex: 1; }
+  .search-results-list { overflow-y: auto; border-right: 1px solid var(--border-hairline); padding: 0.3rem; }
+  .result-group-header { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg-muted); padding: 0.6rem 0.6rem 0.3rem; }
+  .result-item { padding: 0.5rem 0.6rem; cursor: pointer; border-left: 2px solid transparent; }
+  .result-item:hover { background: var(--bg-hover); }
+  .result-item.active { background: var(--bg-elevated); border-left-color: var(--accent); }
+  .ri-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 2px; }
+  .ri-num { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-tertiary); }
+  .ri-title { font-size: 13.5px; color: var(--fg-primary); }
+  .ri-snippet { font-size: 12px; color: var(--fg-tertiary); margin-top: 2px; line-height: 1.45; }
+  .result-preview { overflow-y: auto; padding: 1rem 1.1rem; }
+  .rp-num-line { font-family: var(--font-mono); font-size: 11.5px; color: var(--accent); }
+  .rp-title { font-size: 16px; margin: 0.3rem 0 0.5rem; font-weight: 600; }
+  .rp-meta { display: flex; gap: 0.45rem; align-items: center; font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-tertiary); margin-bottom: 0.9rem; flex-wrap: wrap; }
+  .rp-body h3 { font-family: var(--font-mono); font-size: 12px; margin: 0.9rem 0 0.3rem; color: var(--fg-secondary); }
+  .rp-body p { font-size: 13px; color: var(--fg-tertiary); margin-bottom: 0.6rem; }
+  .search-footer { display: flex; align-items: center; gap: 1.1rem; padding: 0.55rem 1rem; border-top: 1px solid var(--border-default); font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+  .search-footer .hint { display: flex; align-items: center; gap: 0.3rem; }
+  .search-footer .powered { margin-left: auto; display: flex; gap: 0.5rem; align-items: center; }
+  mark { background: var(--accent-bg); color: var(--accent); padding: 0 1px; border-radius: 0; }
+  .status-badge.sm { font-size: 10px; }
+  @media (max-width: 600px) { .search-results { grid-template-columns: 1fr; } .result-preview { display: none; } }
+
+  /* ============ DOCS PAGE (with nav) ============ */
+  .docs-layout { display: grid; grid-template-columns: 215px 1fr 170px; gap: 2rem; padding: 1.6rem 0 4rem; }
+  .docs-nav { font-family: var(--font-mono); font-size: 12.5px; position: sticky; top: 4.6rem; align-self: start; max-height: calc(100vh - 6rem); overflow-y: auto; }
+  .dn-group { margin-bottom: 1.05rem; }
+  .dn-head { color: var(--fg-muted); text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+  .dn-item { display: block; color: var(--fg-tertiary); padding: 0.16rem 0 0.16rem 0.6rem; border-left: 1px solid var(--border-hairline); }
+  .dn-item:hover { color: var(--fg-primary); }
+  .dn-item.active { color: var(--accent); border-left-color: var(--accent); }
+  @media (max-width: 860px) { .docs-layout { grid-template-columns: 1fr; } .docs-nav, .docs-layout .toc { display: none; } }
+
+  .doc-sep { border: none; border-top: 1px solid var(--border-hairline); margin: 2.5rem 0 1.4rem; }
+  .pill[data-st="published"] { --c: var(--st-active); }
+  .pill[data-st="superseded"], .pill[data-st="deprecated"], .pill[data-st="archived"] { --c: var(--st-superseded); }
+  .pill[data-st="rejected"] { --c: var(--st-rejected); }
+  .banner.b-prin { border-color: var(--accent-border); background: var(--accent-bg); color: var(--accent); }
+  .banner.b-man  { border-color: color-mix(in srgb,var(--t-mandate) 30%,transparent); background: color-mix(in srgb,var(--t-mandate) 7%,transparent); color: var(--t-mandate); }
+  .banner.b-fw   { border-color: color-mix(in srgb,var(--t-framework) 30%,transparent); background: color-mix(in srgb,var(--t-framework) 7%,transparent); color: var(--t-framework); }
+  .banner.b-pol  { border-color: color-mix(in srgb,var(--t-policy) 30%,transparent); background: color-mix(in srgb,var(--t-policy) 7%,transparent); color: var(--t-policy); }
+  .banner.b-rfc  { border-color: color-mix(in srgb,var(--t-rfc) 30%,transparent); background: color-mix(in srgb,var(--t-rfc) 7%,transparent); color: var(--t-rfc); }
+  .stop.current.pos::before { border-color: var(--st-active); background: var(--st-active); box-shadow: 0 0 0 3px color-mix(in srgb,var(--st-active) 18%,transparent); }
+
+  footer { border-top: 1px solid var(--border-default); padding: 1.4rem; text-align: center; font-family: var(--font-mono); font-size: 11.5px; color: var(--fg-muted); }
+  footer a { color: var(--fg-tertiary); }
+  footer a:hover { color: var(--fg-secondary); }
+</style>
+</head>
+<body>
+
+<!-- META: screen selector — not part of the app UI -->
+<div class="mockup-switcher">
+  <span class="label">MOCKUP</span>
+  <button class="active" data-view="directory" onclick="showView('directory')">01 · Directory</button>
+  <button data-view="search" onclick="showView('search')">02 · Search</button>
+  <button data-view="doc" onclick="openDoc('FW-0001')">03 · Document</button>
+  <button data-view="mcp" onclick="showView('mcp')">04 · MCP</button>
+  <button data-view="api" onclick="showView('api')">05 · API</button>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">D</div>
+    <span class="brand-name">docz</span>
+    <span class="brand-sub">· reader</span>
+  </div>
+  <div class="topbar-search" onclick="showView('search')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <span>Search docs, rfcs, authors…</span>
+    <span class="kbd-group"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+  </div>
+  <nav class="topbar-nav">
+    <a href="#" id="nav-directory" class="active" onclick="showView('directory');return false;">Directory</a>
+    <a href="#" id="nav-api" class="opt" onclick="showView('api');return false;">API</a>
+    <a href="#" id="nav-mcp" onclick="showView('mcp');return false;">MCP</a>
+    <a href="#" class="opt">About</a>
+    <div class="topbar-avatar">DG</div>
+  </nav>
+</header>
+
+<!-- ============ DIRECTORY ============ -->
+<div class="view active" id="view-directory">
+  <div class="wrap">
+    <div class="dir-hero">
+      <div class="eyebrow">/ docz <span class="crumb">/</span> all repos</div>
+      <h1>Documentation</h1>
+      <div class="sub">Principles, mandates, guides, policies, frameworks, and decisions — across every repo registered with the API.</div>
+    </div>
+
+    <div class="controls-row">
+      <div class="scope" role="tablist">
+        <button class="on" data-repo="all" onclick="setScope(this)">all</button>
+        <button data-repo="docs" onclick="setScope(this)">docs</button>
+        <button data-repo="rfcs" onclick="setScope(this)">rfcs</button>
+      </div>
+      <div class="results">showing <b id="rc">12</b> of 12</div>
+    </div>
+
+    <div class="chips" id="chips">
+      <span class="chip all on" onclick="toggleAll(this)">all types</span>
+      <span class="chip" data-type="principle" onclick="toggleChip(this)">principle</span>
+      <span class="chip" data-type="mandate" onclick="toggleChip(this)">mandate</span>
+      <span class="chip" data-type="guide" onclick="toggleChip(this)">guide</span>
+      <span class="chip" data-type="policy" onclick="toggleChip(this)">policy</span>
+      <span class="chip" data-type="framework" onclick="toggleChip(this)">framework</span>
+      <span class="chip" data-type="rfc" onclick="toggleChip(this)">rfc</span>
+      <span class="chip" data-type="working" onclick="toggleChip(this)">working</span>
+    </div>
+
+    <div class="doc-table" id="table">
+      <div class="doc-row" data-type="framework" data-repo="docs" onclick="openDoc('FW-0001')">
+        <span class="type-badge" data-type="framework">framework</span>
+        <span class="doc-id">FW-0001</span>
+        <div class="doc-title">AI Security Framework
+          <div class="labels"><span class="lab">ai</span><span class="lab">llm</span><span class="lab">wiz</span></div>
+        </div>
+        <span class="status-badge" data-st="draft">draft</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">just now</span>
+      </div>
+      <div class="doc-row" data-type="policy" data-repo="docs" onclick="openDoc('POL-0001')">
+        <span class="type-badge" data-type="policy">policy</span>
+        <span class="doc-id">POL-0001</span>
+        <div class="doc-title">AI Systems Policy
+          <div class="labels"><span class="lab">ai</span><span class="lab">fwsync</span></div>
+        </div>
+        <span class="status-badge" data-st="draft">draft</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">just now</span>
+      </div>
+      <div class="doc-row" data-type="principle" data-repo="docs" onclick="openDoc('PRINCIPLE-0001')">
+        <span class="type-badge" data-type="principle">principle</span>
+        <span class="doc-id">PRINCIPLE-0001</span>
+        <div class="doc-title">Interfaces around customers
+          <div class="labels"><span class="lab">values</span></div>
+        </div>
+        <span class="status-badge" data-st="active">active</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">2 days ago</span>
+      </div>
+      <div class="doc-row" data-type="principle" data-repo="docs" onclick="openDoc('PRINCIPLE-0009')">
+        <span class="type-badge" data-type="principle">principle</span>
+        <span class="doc-id">PRINCIPLE-0009</span>
+        <div class="doc-title">Ownership is maintainership
+          <div class="labels"><span class="lab">values</span><span class="lab">ownership</span></div>
+        </div>
+        <span class="status-badge" data-st="active">active</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">2 days ago</span>
+      </div>
+      <div class="doc-row" data-type="mandate" data-repo="docs" onclick="openDoc('MAN-0001')">
+        <span class="type-badge" data-type="mandate">mandate</span>
+        <span class="doc-id">MAN-0001</span>
+        <div class="doc-title">Infrastructure is code
+          <div class="labels"><span class="lab">iac</span><span class="lab">opa</span></div>
+        </div>
+        <span class="status-badge" data-st="active">active</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">2 days ago</span>
+      </div>
+      <div class="doc-row" data-type="mandate" data-repo="docs" onclick="openDoc('MAN-0006')">
+        <span class="type-badge" data-type="mandate">mandate</span>
+        <span class="doc-id">MAN-0006</span>
+        <div class="doc-title">Every system has an explicit owner
+          <div class="labels"><span class="lab">ownership</span><span class="lab">codeowners</span></div>
+        </div>
+        <span class="status-badge" data-st="active">active</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">2 days ago</span>
+      </div>
+      <div class="doc-row" data-type="guide" data-repo="docs" onclick="openDoc('GUIDE-0001')">
+        <span class="type-badge" data-type="guide">guide</span>
+        <span class="doc-id">GUIDE-0001</span>
+        <div class="doc-title">Observability &amp; SLOs
+          <div class="labels"><span class="lab">prometheus</span><span class="lab">sloth</span></div>
+        </div>
+        <span class="status-badge" data-st="draft">draft</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">3 days ago</span>
+      </div>
+      <div class="doc-row" data-type="working" data-repo="docs" onclick="openDoc('DESIGN-0001')">
+        <span class="type-badge" data-type="working">design</span>
+        <span class="doc-id">DESIGN-0001</span>
+        <div class="doc-title">Ownership Digest
+          <div class="labels"><span class="lab">backstage</span><span class="lab">slack</span></div>
+        </div>
+        <span class="status-badge" data-st="draft">draft</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">4 days ago</span>
+      </div>
+      <div class="doc-row" data-type="working" data-repo="docs" onclick="openDoc('INV-0001')">
+        <span class="type-badge" data-type="working">inv</span>
+        <span class="doc-id">INV-0001</span>
+        <div class="doc-title">Repo Governance Tooling
+          <div class="labels"><span class="lab">github-app</span><span class="lab">repo-guardian</span></div>
+        </div>
+        <span class="status-badge" data-st="draft">draft</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">5 days ago</span>
+      </div>
+      <div class="doc-row" data-type="working" data-repo="docs" onclick="openDoc('PLAN-0001')">
+        <span class="type-badge" data-type="working">plan</span>
+        <span class="doc-id">PLAN-0001</span>
+        <div class="doc-title">Operationalizing the Doc Suite
+          <div class="labels"><span class="lab">docz</span></div>
+        </div>
+        <span class="status-badge" data-st="draft">draft</span>
+        <span class="repo-cell">docs</span>
+        <span class="upd-cell">1 week ago</span>
+      </div>
+      <div class="doc-row" data-type="rfc" data-repo="rfcs" onclick="openDoc('RFC-0002')">
+        <span class="type-badge" data-type="rfc">rfc</span>
+        <span class="doc-id">RFC-0002</span>
+        <div class="doc-title">Adopt the ownership model
+          <div class="labels"><span class="lab">ownership</span><span class="lab">codeowners</span></div>
+        </div>
+        <span class="status-badge" data-st="accepted">accepted</span>
+        <span class="repo-cell">rfcs</span>
+        <span class="upd-cell">1 week ago</span>
+      </div>
+      <div class="doc-row" data-type="rfc" data-repo="rfcs" onclick="openDoc('RFC-0001')">
+        <span class="type-badge" data-type="rfc">rfc</span>
+        <span class="doc-id">RFC-0001</span>
+        <div class="doc-title">Adopt the RFC process and the two-repo doc suite
+          <div class="labels"><span class="lab">docz</span><span class="lab">process</span></div>
+        </div>
+        <span class="status-badge" data-st="accepted">accepted</span>
+        <span class="repo-cell">rfcs</span>
+        <span class="upd-cell">1 week ago</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEARCH (command palette) ============ -->
+<div class="view" id="view-search">
+  <div class="wrap">
+    <div class="dir-hero"><div class="eyebrow">/ docz <span class="crumb">/</span> all repos</div><h1>Documentation</h1></div>
+  </div>
+  <div class="search-overlay">
+    <div class="search-modal">
+      <div class="search-input-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-tertiary)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input class="search-input" value="ownership" aria-label="Search">
+        <div class="search-close-hint"><span class="kbd">esc</span><span>to close</span></div>
+      </div>
+      <div class="search-filters-row">
+        <button class="search-filter-pill active" onclick="sPill(this)">all <span style="color:var(--accent-dim);margin-left:4px;">7</span></button>
+        <button class="search-filter-pill" onclick="sPill(this)">titles</button>
+        <button class="search-filter-pill" onclick="sPill(this)">body</button>
+        <button class="search-filter-pill" onclick="sPill(this)">labels</button>
+        <button class="search-filter-pill" onclick="sPill(this)">docs</button>
+        <button class="search-filter-pill" onclick="sPill(this)">rfcs</button>
+      </div>
+      <div class="search-results">
+        <div class="search-results-list">
+          <div class="result-group-header">docs — 5 matches</div>
+          <div class="result-item active" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num">MAN-0006</span><span class="status-badge sm" data-st="active">active</span></div>
+            <div class="ri-title">Every system has an explicit <mark>owner</mark></div>
+            <div class="ri-snippet">Each tool, service, and repo names an accountable <mark>Owner</mark>, a set of maintainers, and a home team&hellip;</div>
+          </div>
+          <div class="result-item" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num">PRINCIPLE-0009</span><span class="status-badge sm" data-st="active">active</span></div>
+            <div class="ri-title"><mark>Ownership</mark> is maintainership</div>
+            <div class="ri-snippet">Final say belongs to whoever carries the responsibility &mdash; and it can be shared across teams&hellip;</div>
+          </div>
+          <div class="result-item" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num">DESIGN-0001</span><span class="status-badge sm" data-st="draft">draft</span></div>
+            <div class="ri-title"><mark>Ownership</mark> Digest</div>
+            <div class="ri-snippet">A personal, <mark>ownership</mark>-scoped digest correlating PRs, Wiz findings, tickets, and SLO burn&hellip;</div>
+          </div>
+          <div class="result-item" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num">reference/<mark>ownership</mark>.md</span><span class="ri-num" style="color:var(--fg-muted);">singleton</span></div>
+            <div class="ri-title"><mark>Ownership</mark> Model</div>
+            <div class="ri-snippet">Accountability is singular and named; responsibility is plural and earned; contribution is open&hellip;</div>
+          </div>
+          <div class="result-item" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num">POL-0001</span><span class="status-badge sm" data-st="draft">draft</span></div>
+            <div class="ri-title">AI Systems Policy</div>
+            <div class="ri-snippet">Scope is resolved from the catalog &mdash; the same <mark>owner</mark> graph that routes findings&hellip;</div>
+          </div>
+          <div class="result-group-header">rfcs — 1 match</div>
+          <div class="result-item" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num">RFC-0002</span><span class="status-badge sm" data-st="accepted">accepted</span></div>
+            <div class="ri-title">Adopt the <mark>ownership</mark> model</div>
+            <div class="ri-snippet">CODEOWNERS, MAINTAINERS, and catalog <mark>ownership</mark> &mdash; three files, checked in CI&hellip;</div>
+          </div>
+          <div class="result-group-header">labels — 1 match</div>
+          <div class="result-item" onclick="sPick(this)">
+            <div class="ri-top"><span class="ri-num" style="color:var(--fg-tertiary);">LABEL</span><span class="ri-num" style="color:var(--fg-muted);">4 docs</span></div>
+            <div class="ri-title"><mark>ownership</mark></div>
+            <div class="ri-snippet">Used across MAN-0006, PRINCIPLE-0009, DESIGN-0001, and RFC-0002.</div>
+          </div>
+        </div>
+        <div class="result-preview">
+          <div class="rp-num-line">MAN / 0006 · docs</div>
+          <h3 class="rp-title">Every system has an explicit owner</h3>
+          <div class="rp-meta"><span class="status-badge sm" data-st="active">active</span><span style="color:var(--fg-muted);">·</span><span>instantiates PRINCIPLE-0009</span><span style="color:var(--fg-muted);">·</span><span>decided by RFC-0002</span></div>
+          <div class="rp-body">
+            <h3>Property</h3>
+            <p>Each tool, service, and repo names an accountable <mark>Owner</mark> (a person), a set of maintainers, and a home team.</p>
+            <h3>Enforced by</h3>
+            <p><code>CODEOWNERS</code> referencing maintainers (not the whole team) + a <code>MAINTAINERS</code> record + Backstage <code>spec.owner</code>, checked in CI.</p>
+            <h3>Deviation</h3>
+            <p>RFC with compensating controls and an expiry.</p>
+          </div>
+        </div>
+      </div>
+      <div class="search-footer">
+        <span class="hint"><span class="kbd">↑</span><span class="kbd">↓</span> navigate</span>
+        <span class="hint"><span class="kbd">↵</span> open</span>
+        <span class="hint"><span class="kbd">tab</span> preview</span>
+        <span class="powered"><span>docz-index</span><span style="color:var(--accent);">● 9ms</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DOCUMENT (data-driven, every type) ============ -->
+<div class="view" id="view-doc">
+  <div class="wrap" style="max-width:1160px;">
+    <div class="docs-layout">
+      <nav class="docs-nav" id="doc-nav">
+  <div class="dn-group"><div class="dn-head">rfcs</div>
+    <a class="dn-item" data-id="RFC-0001" onclick="openDoc('RFC-0001')">RFC-0001 · RFC process</a>
+    <a class="dn-item" data-id="RFC-0002" onclick="openDoc('RFC-0002')">RFC-0002 · Ownership model</a></div>
+  <div class="dn-group"><div class="dn-head">docs · principles</div>
+    <a class="dn-item" data-id="PRINCIPLE-0001" onclick="openDoc('PRINCIPLE-0001')">PRINCIPLE-0001 · Interfaces</a>
+    <a class="dn-item" data-id="PRINCIPLE-0009" onclick="openDoc('PRINCIPLE-0009')">PRINCIPLE-0009 · Ownership</a></div>
+  <div class="dn-group"><div class="dn-head">docs · mandates</div>
+    <a class="dn-item" data-id="MAN-0001" onclick="openDoc('MAN-0001')">MAN-0001 · Infra is code</a>
+    <a class="dn-item" data-id="MAN-0006" onclick="openDoc('MAN-0006')">MAN-0006 · Explicit owner</a></div>
+  <div class="dn-group"><div class="dn-head">docs · guides</div>
+    <a class="dn-item" data-id="GUIDE-0001" onclick="openDoc('GUIDE-0001')">GUIDE-0001 · Observability</a></div>
+  <div class="dn-group"><div class="dn-head">docs · policy · framework</div>
+    <a class="dn-item" data-id="POL-0001" onclick="openDoc('POL-0001')">POL-0001 · AI Systems</a>
+    <a class="dn-item" data-id="FW-0001" onclick="openDoc('FW-0001')">FW-0001 · AI Security</a></div>
+  <div class="dn-group"><div class="dn-head">docs · working</div>
+    <a class="dn-item" data-id="DESIGN-0001" onclick="openDoc('DESIGN-0001')">DESIGN-0001 · Ownership Digest</a>
+    <a class="dn-item" data-id="INV-0001" onclick="openDoc('INV-0001')">INV-0001 · Repo Governance</a>
+    <a class="dn-item" data-id="PLAN-0001" onclick="openDoc('PLAN-0001')">PLAN-0001 · Operationalizing</a></div>
+      </nav>
+      <article id="doc-article"></article>
+      <aside class="toc" id="doc-toc"></aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MCP ============ -->
+<div class="view" id="view-mcp">
+  <div class="wrap">
+    <div class="mcp-hero">
+      <div class="eyebrow">Model Context Protocol</div>
+      <h1>Pull any docz repo into your editor.</h1>
+      <p>The reader ships a small MCP server that exposes the read API as callable tools. Connect Claude Code, Cursor, or any MCP-aware client and search, fetch, and cross-reference documents across every registered repo — without leaving your editor. Add a repo by registering its <code>.docz.yaml</code>; the same server then serves it too.</p>
+    </div>
+
+    <div class="mcp-cards">
+      <div class="mcp-card">
+        <div class="c-head"><div class="c-title">docz-mcp</div><span class="c-tag">this server</span></div>
+        <p class="c-desc">Exposes the read API as MCP tools — <code>list_docs</code>, <code>get_doc</code>, <code>search_docs</code>, <code>get_links</code>, <code>get_activity</code> — across <code>rfcs</code>, <code>docs</code>, and any repo you register. Read-only; authoring stays in Git.</p>
+        <div class="c-meta"><span>▸ v0.4.2</span><span>▸ Go 1.22+</span><span class="src">view source →</span></div>
+      </div>
+      <div class="mcp-card">
+        <div class="c-head"><div class="c-title">docz-api</div><span class="c-tag related">powers this</span></div>
+        <p class="c-desc">The static JSON read API the site and MCP both build from — generated from each repo's front matter and the <code>doc-model.hcl</code> type graph. No running service: just files served from the same host.</p>
+        <div class="c-meta"><span>▸ v0.4.2</span><span>▸ build artifact</span><span class="src">view source →</span></div>
+      </div>
+    </div>
+
+    <div class="mcp-section">
+      <h2><span class="step">1</span>Install the server</h2>
+      <p>Download the binary for your platform, or install with <code>go install</code>. A single static binary, no runtime dependencies — drop it on your <code>PATH</code>.</p>
+      <div class="dl-grid">
+        <div class="dl-item"><div class="dl-left"><div class="dl-icon">⌘</div><div><div class="dl-name">docz-mcp_0.4.2_darwin_arm64.tar.gz</div><div class="dl-size">macOS · Apple Silicon · 8.3 MB</div></div></div><span class="dl-go">download</span></div>
+        <div class="dl-item"><div class="dl-left"><div class="dl-icon">⌘</div><div><div class="dl-name">docz-mcp_0.4.2_darwin_amd64.tar.gz</div><div class="dl-size">macOS · Intel · 8.5 MB</div></div></div><span class="dl-go">download</span></div>
+        <div class="dl-item"><div class="dl-left"><div class="dl-icon">🐧</div><div><div class="dl-name">docz-mcp_0.4.2_linux_amd64.tar.gz</div><div class="dl-size">Linux · x86_64 · 8.1 MB</div></div></div><span class="dl-go">download</span></div>
+        <div class="dl-item"><div class="dl-left"><div class="dl-icon">🐧</div><div><div class="dl-name">docz-mcp_0.4.2_linux_arm64.tar.gz</div><div class="dl-size">Linux · ARM64 · 8.0 MB</div></div></div><span class="dl-go">download</span></div>
+      </div>
+      <pre class="code"><span class="cm"># requires Go 1.22+</span>
+$ go install github.com/your-org/docz-mcp/cmd/docz-mcp@latest
+$ docz-mcp --version
+<span class="s">docz-mcp v0.4.2 (commit 7c1f0ad, built 2026-06-24)</span></pre>
+    </div>
+
+    <div class="mcp-section">
+      <h2><span class="step">2</span>Configure your client</h2>
+      <p>Add the server to your MCP client config. The path varies by client; the examples cover the common ones.</p>
+      <div class="ex-tabs">
+        <button class="ex-tab on" onclick="exTab(this,0)">Claude Code</button>
+        <button class="ex-tab" onclick="exTab(this,1)">Cursor</button>
+        <button class="ex-tab" onclick="exTab(this,2)">Claude Desktop</button>
+      </div>
+      <pre class="code" id="ex-code"><span class="cm">// ~/.config/claude-code/mcp.json</span>
+<span class="p">{</span>
+  <span class="key">"mcpServers"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="key">"docz"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="key">"command"</span><span class="p">:</span> <span class="s">"docz-mcp"</span><span class="p">,</span>
+      <span class="key">"args"</span><span class="p">:</span> <span class="p">[</span><span class="s">"--api-url"</span><span class="p">,</span> <span class="s">"https://docz.internal/api/v1"</span><span class="p">],</span>
+      <span class="key">"env"</span><span class="p">:</span> <span class="p">{</span> <span class="key">"DOCZ_MCP_TOKEN"</span><span class="p">:</span> <span class="s">"$DOCZ_READ_TOKEN"</span> <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span></pre>
+    </div>
+
+    <div class="mcp-section">
+      <h2><span class="step">3</span>Available tools</h2>
+      <p>Once connected, these tools are available to your LLM. All are read-only and safe to invoke without confirmation.</p>
+      <ul>
+        <li><code>list_docs</code> — list documents with optional <code>repo</code>, <code>type</code>, <code>status</code>, and <code>label</code> filters. Returns id, title, type, status, owner, updated_at.</li>
+        <li><code>get_doc</code> — fetch one document by id, with rendered body and resolved cross-references.</li>
+        <li><code>search_docs</code> — full-text search across titles, bodies, and labels in every repo. Ranked, with highlighted snippets.</li>
+        <li><code>get_links</code> — the reference graph for a document: <code>instantiates</code>, <code>applies</code>, <code>satisfies</code>, <code>decides</code>, and what points back.</li>
+        <li><code>get_activity</code> — recent changes across all repos, for "what changed this week" prompts.</li>
+      </ul>
+    </div>
+
+    <div class="mcp-section">
+      <h2><span class="step">4</span>Verify it works</h2>
+      <p>Restart your client and ask it about a recent document. It should invoke <code>get_doc</code> and return a coherent answer. A good sanity check:</p>
+      <pre class="code"><span class="cm"># in your LLM chat:</span>
+<span class="s">"Summarize FW-0001 and list every document that references it."</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============ API ============ -->
+<div class="view" id="view-api">
+  <div class="wrap">
+    <div class="api-hero">
+      <div class="eyebrow">/ docz <span class="crumb">/</span> api · v1</div>
+      <h1 class="doc-title-lg">Read API</h1>
+    </div>
+    <div class="api-grid">
+      <aside class="api-side">
+        <div class="h">Endpoints</div>
+        <div class="api-ep"><span class="m">GET</span> /repos</div>
+        <div class="api-ep"><span class="m">GET</span> /docs</div>
+        <div class="api-ep"><span class="m">GET</span> /docs/{id}</div>
+        <div class="api-ep"><span class="m">GET</span> /docs/{id}/links</div>
+        <div class="api-ep"><span class="m">GET</span> /index.json</div>
+      </aside>
+      <main class="api-content">
+        <h2>Fetch a single document by ID</h2>
+        <p>Everything the site and the MCP server render is a static JSON file generated from front matter and the type graph — no running service. IDs are stable across repos.</p>
+        <div class="ep-line"><span class="m">GET</span> <span class="u">/api/v1/docs/FW-0001</span></div>
+        <pre class="code"><span class="p">{</span>
+  <span class="key">"id"</span><span class="p">:</span> <span class="s">"FW-0001"</span><span class="p">,</span>
+  <span class="key">"type"</span><span class="p">:</span> <span class="s">"framework"</span><span class="p">,</span> <span class="key">"repo"</span><span class="p">:</span> <span class="s">"docs"</span><span class="p">,</span>
+  <span class="key">"title"</span><span class="p">:</span> <span class="s">"AI Security Framework"</span><span class="p">,</span>
+  <span class="key">"status"</span><span class="p">:</span> <span class="s">"draft"</span><span class="p">,</span> <span class="key">"owner"</span><span class="p">:</span> <span class="k">null</span><span class="p">,</span>
+  <span class="key">"links"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="key">"applied_by"</span><span class="p">:</span> <span class="p">[</span><span class="s">"POL-0001"</span><span class="p">],</span>
+    <span class="key">"maps_to"</span><span class="p">:</span> <span class="p">[</span><span class="s">"OWASP-LLM-2025"</span><span class="p">,</span> <span class="s">"NIST-AI-600-1"</span><span class="p">,</span> <span class="s">"MITRE-ATLAS"</span><span class="p">]</span>
+  <span class="p">},</span>
+  <span class="key">"source"</span><span class="p">:</span> <span class="s">"fwsync/frameworks/ai-security.hcl"</span><span class="p">,</span>
+  <span class="key">"body_url"</span><span class="p">:</span> <span class="s">"/api/v1/docs/FW-0001.md"</span>
+<span class="p">}</span></pre>
+        <p>List endpoints accept <code>?repo=</code>, <code>?type=</code>, <code>?status=</code>, and <code>?label=</code> — the same filters the directory and the MCP <code>list_docs</code> tool use.</p>
+      </main>
+    </div>
+  </div>
+</div>
+
+<footer>
+  built from <a href="#">main@7c1f0ad</a> · generated by docz · serves <a href="#">rfcs</a> + <a href="#">docs</a> · <a href="#">/api/v1/index.json</a>
+</footer>
+
+<script>
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    var v = document.getElementById('view-' + name);
+    if (v) v.classList.add('active');
+    document.querySelectorAll('.mockup-switcher button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    ['directory','api','mcp'].forEach(n => {
+      var el = document.getElementById('nav-' + n);
+      if (el) el.classList.toggle('active', n === name);
+    });
+    window.scrollTo(0, 0);
+  }
+  function sPill(el) {
+    el.parentNode.querySelectorAll('.search-filter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+  function sPick(el) {
+    el.closest('.search-results-list').querySelectorAll('.result-item').forEach(r => r.classList.remove('active'));
+    el.classList.add('active');
+  }
+  // info / document toggle
+  function show(which) {
+    document.getElementById('pane-info').classList.toggle('on', which === 'info');
+    document.getElementById('pane-read').classList.toggle('on', which === 'read');
+    document.getElementById('seg-info').classList.toggle('on', which === 'info');
+    document.getElementById('seg-read').classList.toggle('on', which === 'read');
+  }
+  // directory filtering
+  var activeTypes = new Set();
+  var activeRepo = 'all';
+  function applyFilter() {
+    var rows = document.querySelectorAll('#table .doc-row');
+    var shown = 0;
+    rows.forEach(r => {
+      var okType = activeTypes.size === 0 || activeTypes.has(r.dataset.type);
+      var okRepo = activeRepo === 'all' || r.dataset.repo === activeRepo;
+      var vis = okType && okRepo;
+      r.style.display = vis ? '' : 'none';
+      if (vis) shown++;
+    });
+    document.getElementById('rc').textContent = shown;
+  }
+  function toggleChip(el) {
+    var t = el.dataset.type;
+    el.classList.toggle('on');
+    if (activeTypes.has(t)) activeTypes.delete(t); else activeTypes.add(t);
+    document.querySelector('.chip.all').classList.toggle('on', activeTypes.size === 0);
+    applyFilter();
+  }
+  function toggleAll(el) {
+    activeTypes.clear();
+    document.querySelectorAll('.chip[data-type]').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    applyFilter();
+  }
+  function setScope(el) {
+    activeRepo = el.dataset.repo;
+    document.querySelectorAll('.scope button').forEach(b => b.classList.remove('on'));
+    el.classList.add('on');
+    applyFilter();
+  }
+  // mcp client config tabs
+  var exConfigs = [
+`<span class="cm">// ~/.config/claude-code/mcp.json</span>
+<span class="p">{</span>
+  <span class="key">"mcpServers"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="key">"docz"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="key">"command"</span><span class="p">:</span> <span class="s">"docz-mcp"</span><span class="p">,</span>
+      <span class="key">"args"</span><span class="p">:</span> <span class="p">[</span><span class="s">"--api-url"</span><span class="p">,</span> <span class="s">"https://docz.internal/api/v1"</span><span class="p">],</span>
+      <span class="key">"env"</span><span class="p">:</span> <span class="p">{</span> <span class="key">"DOCZ_MCP_TOKEN"</span><span class="p">:</span> <span class="s">"$DOCZ_READ_TOKEN"</span> <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>`,
+`<span class="cm">// ~/.cursor/mcp.json</span>
+<span class="p">{</span>
+  <span class="key">"mcpServers"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="key">"docz"</span><span class="p">:</span> <span class="p">{</span> <span class="key">"command"</span><span class="p">:</span> <span class="s">"docz-mcp"</span><span class="p">,</span> <span class="key">"args"</span><span class="p">:</span> <span class="p">[</span><span class="s">"--api-url"</span><span class="p">,</span> <span class="s">"https://docz.internal/api/v1"</span><span class="p">]</span> <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>`,
+`<span class="cm">// claude_desktop_config.json</span>
+<span class="p">{</span>
+  <span class="key">"mcpServers"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="key">"docz"</span><span class="p">:</span> <span class="p">{</span> <span class="key">"command"</span><span class="p">:</span> <span class="s">"/usr/local/bin/docz-mcp"</span><span class="p">,</span> <span class="key">"args"</span><span class="p">:</span> <span class="p">[</span><span class="s">"--api-url"</span><span class="p">,</span> <span class="s">"https://docz.internal/api/v1"</span><span class="p">]</span> <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>`
+  ];
+  function exTab(el, i) {
+    document.querySelectorAll('.ex-tab').forEach(t => t.classList.remove('on'));
+    el.classList.add('on');
+    document.getElementById('ex-code').innerHTML = exConfigs[i];
+  }
+  // keyboard: '/' focuses search affordance (visual only here)
+
+  // ===== data-driven document rendering =====
+  var TYPES = {
+    principle:{life:['draft','proposed','active','deprecated','superseded']},
+    mandate:{life:['draft','proposed','active','deprecated','superseded']},
+    guide:{life:['draft','published','deprecated']},
+    policy:{life:['draft','active','deprecated']},
+    framework:{life:['draft','adopted','deprecated']},
+    rfc:{life:['draft','proposed','accepted','superseded']},
+    design:{life:['draft','active','archived']},
+    investigation:{life:['draft','active','archived']},
+    plan:{life:['draft','active','archived']}
+  };
+  function L(id,txt){ return '<a href="#" onclick="openDoc(\''+id+'\');return false;">'+txt+'</a>'; }
+  var DOCS = {
+    'PRINCIPLE-0001':{type:'principle',repo:'docs',title:'Interfaces around customers',status:'active',
+      callout:{cls:'b-man',label:'instantiated by →',target:'MAN-0003 · Services are API-driven'},
+      meta:[['Owner','unassigned'],['Repo','docs · principle/'],['Change via','RFC'],['Tags','<span class="tag">values</span>']],
+      body:'<p>We build the surface to fit the customer — not the other way around. Engineers get code, CLIs, and APIs; a team that lives in Jira gets the work delivered as Jira tickets we file for them automatically.</p><h2 id="x1"><span class="hash">#</span>In practice</h2><p>The platform internals are always code and APIs; what changes is the adapter in front of each audience. We never make a customer learn our medium to get value from us.</p>',
+      toc:[['In practice','#x1']],dates:{draft:'2026-06-08',proposed:'2026-06-11',active:'2026-06-17'},links:{active:['via RFC-0001']}},
+    'PRINCIPLE-0009':{type:'principle',repo:'docs',title:'Ownership is maintainership',status:'active',
+      callout:{cls:'b-man',label:'instantiated by →',target:'MAN-0006 · Every system has an explicit owner',to:'MAN-0006'},
+      meta:[['Owner','unassigned'],['Repo','docs · principle/'],['Instantiated by',L('MAN-0006','MAN-0006')],['Change via','RFC'],['Tags','<span class="tag">values</span><span class="tag">ownership</span>']],
+      body:'<p>The owner of a tool or system is its maintainer — the person who carries responsibility for it and therefore holds final say over its direction.</p><h2 id="x1"><span class="hash">#</span>Final say is earned</h2><p>Earned by owning the consequences, not granted by an org chart. An owner who is accountable but cannot decide has been set up to fail.</p><h2 id="x2"><span class="hash">#</span>Shared, not singular</h2><p>Ownership can and should be shared across teams — co-maintainership is a feature, not a failure.</p>',
+      toc:[['Final say is earned','#x1'],['Shared, not singular','#x2']],dates:{draft:'2026-06-10',proposed:'2026-06-12',active:'2026-06-17'},links:{active:['via RFC-0001']}},
+    'MAN-0001':{type:'mandate',repo:'docs',title:'Infrastructure is code',status:'active',
+      callout:{cls:'b-prin',label:'instantiates →',target:'PRINCIPLE-0002 · Code is the default'},
+      meta:[['Owner','unassigned'],['Repo','docs · mandate/'],['Instantiates','PRINCIPLE-0002'],['Enforced by','OPA/Conftest in CI'],['Tags','<span class="tag">iac</span><span class="tag">opa</span>']],
+      body:'<p>All infrastructure is declared and version-controlled. The principle is non-negotiable; the tool is not.</p><h2 id="x1"><span class="hash">#</span>Enforced by</h2><p>IaC plan/policy checks (OPA/Conftest) in CI / Atlantis.</p><h2 id="x2"><span class="hash">#</span>Deviation</h2><p>RFC with compensating controls and an expiry.</p>',
+      toc:[['Enforced by','#x1'],['Deviation','#x2']],dates:{draft:'2026-06-10',proposed:'2026-06-13',active:'2026-06-17'},links:{active:['via RFC-0001']}},
+    'MAN-0006':{type:'mandate',repo:'docs',title:'Every system has an explicit owner',status:'active',
+      callout:{cls:'b-prin',label:'instantiates →',target:'PRINCIPLE-0009 · Ownership is maintainership',to:'PRINCIPLE-0009'},
+      meta:[['Owner','unassigned'],['Repo','docs · mandate/'],['Instantiates',L('PRINCIPLE-0009','PRINCIPLE-0009')],['Decided by',L('RFC-0002','RFC-0002')],['Tags','<span class="tag">ownership</span><span class="tag">codeowners</span>']],
+      body:'<p>Each tool, service, and repo names an accountable <strong>Owner</strong> (a person), a set of maintainers, and a home team.</p><h2 id="x1"><span class="hash">#</span>Enforced by</h2><p><code>CODEOWNERS</code> referencing maintainers (not the whole team) + a <code>MAINTAINERS</code> record + Backstage <code>spec.owner</code> — checked for presence and cross-file consistency in CI.</p><h2 id="x2"><span class="hash">#</span>Deviation</h2><p>RFC with compensating controls and an expiry.</p>',
+      toc:[['Enforced by','#x1'],['Deviation','#x2']],dates:{draft:'2026-06-11',proposed:'2026-06-14',active:'2026-06-17'},links:{active:['via RFC-0002']}},
+    'GUIDE-0001':{type:'guide',repo:'docs',title:'Observability & SLOs',status:'draft',
+      callout:{cls:'b-man',label:'satisfies →',target:'MAN-0002 · Everything is measured'},
+      meta:[['Owner','unassigned'],['Repo','docs · guide/'],['Satisfies','MAN-0002'],['Stack','Prometheus · Loki · OTel · Sloth'],['Tags','<span class="tag">observability</span><span class="tag">slo</span>']],
+      body:'<p>The paved road for "everything is measured" — choosing it needs no justification; leaving it needs an RFC.</p><h2 id="x1"><span class="hash">#</span>The stack</h2><p>Prometheus (metrics), Grafana (dashboards as code), OpenTelemetry (instrumentation), Loki (logs), and Sloth for SLOs-as-code.</p><h2 id="x2"><span class="hash">#</span>Getting started</h2><p>Instrument with the OTel SDK, add a Sloth spec next to the service, commit it; ArgoCD applies it and the alerts and dashboards appear.</p>',
+      toc:[['The stack','#x1'],['Getting started','#x2']],dates:{draft:'2026-06-21'},links:{draft:['commit 9a2f1c']}},
+    'POL-0001':{type:'policy',repo:'docs',title:'AI Systems Policy',status:'draft',
+      callout:{cls:'b-fw',label:'applies →',target:'FW-0001 · AI Security Framework',to:'FW-0001'},
+      meta:[['Owner','unassigned'],['Repo','docs · policy/'],['Applies',L('FW-0001','FW-0001')],['Scope','all AI/LLM services'],['Source','fwsync'],['Tags','<span class="tag">ai</span><span class="tag">fwsync</span>']],
+      body:'<p>fwsync owns the binding; docz owns the model. This policy answers <em>why</em> the AI Security Framework is applied and <em>to what</em>.</p><h2 id="x1"><span class="hash">#</span>Scope</h2><p>Every AI/LLM service in the Backstage catalog — model endpoints, RAG pipelines, agentic workloads — across all environments.</p><h2 id="x2"><span class="hash">#</span>Rationale</h2><p>Scope is resolved from the catalog (<code>spec.type</code> / AI tags) so new AI services are covered by default rather than opt-in.</p>',
+      toc:[['Scope','#x1'],['Rationale','#x2']],dates:{draft:'2026-06-24'},links:{draft:['commit 7c1f0ad']}},
+    'FW-0001':{type:'framework',repo:'docs',title:'AI Security Framework',status:'draft',
+      callout:{cls:'b-pol',label:'applied by →',target:'POL-0001 · AI Systems Policy',to:'POL-0001'},
+      meta:[['Owner','unassigned'],['Repo','docs · framework/'],['Applied by',L('POL-0001','POL-0001')],['Maps to','OWASP LLM Top 10 (2025) · NIST AI RMF · MITRE ATLAS · ISO/IEC 42001'],['Source','fwsync/frameworks/ai-security.hcl'],['Tags','<span class="tag">ai</span><span class="tag">llm</span><span class="tag">wiz</span>']],
+      body:'<p>Our control set for AI/ML and LLM systems. It exists because AI systems carry an attack surface the rest of the platform does not: untrusted natural-language input as a control channel, non-deterministic output into downstream sinks, and agents that take real actions.</p><h2 id="x1"><span class="hash">#</span>Controls</h2><p>fwsync-generated — <code>wiz</code> = Wiz rule; <code>gate</code> = CI/admission gate.</p><table class="ctrl-table"><thead><tr><th>#</th><th>Control</th><th>OWASP</th><th>Enf.</th></tr></thead><tbody><tr><td class="cid">AIS-02</td><td>Least-privilege access to endpoints, data, vector stores</td><td class="ref">LLM02·08</td><td><span class="enf wiz">wiz</span></td></tr><tr><td class="cid">AIS-03</td><td>Untrusted content isolated from instructions</td><td class="ref">LLM01</td><td><span class="enf gate">gate</span></td></tr><tr><td class="cid">AIS-06</td><td>Model &amp; dependency provenance signed (AIBOM)</td><td class="ref">LLM03·04</td><td><span class="enf wiz">wiz</span></td></tr><tr><td class="cid">AIS-09</td><td>Token rate limits, quotas, cost alerting</td><td class="ref">LLM10</td><td><span class="enf wiz">wiz</span></td></tr></tbody></table>',
+      toc:[['Controls','#x1']],dates:{draft:'2026-06-24'},links:{draft:['commit 7c1f0ad']}},
+    'RFC-0001':{type:'rfc',repo:'rfcs',title:'Adopt the RFC process and the two-repo doc suite',status:'accepted',
+      callout:{cls:'b-rfc',label:'establishes →',target:'the RFC process (self-bootstrapping)'},
+      meta:[['Number','RFC-0001'],['Author','donald.gifford'],['Discussion','<a href="#">PR #1</a>'],['Decides','the RFC process · the split'],['Tags','<span class="tag">docz</span><span class="tag">process</span>']],
+      body:'<p>Stand up an RFC process managed by <code>docz</code>, and split the corpus into two repos: <code>rfcs</code> for decisions (the why) and <code>docs</code> for living material (the what and how). Accepting this RFC bootstraps the process it describes.</p><h2 id="x1"><span class="hash">#</span>Why two repos</h2><p>Permanence is the dividing line: a decision is immutable once accepted; a normative doc changes in place. Each gets its natural shape.</p>',
+      toc:[['Why two repos','#x1']],dates:{draft:'2026-06-14',proposed:'2026-06-15',accepted:'2026-06-17'},links:{draft:['commit 3f9a2c1'],proposed:['PR #1','diff draft → proposed'],accepted:['merge a81e44d','diff proposed → accepted']}},
+    'RFC-0002':{type:'rfc',repo:'rfcs',title:'Adopt the ownership model',status:'accepted',
+      callout:{cls:'b-rfc',label:'decided via →',target:'RFC-0001 · the RFC process',to:'RFC-0001'},
+      meta:[['Number','RFC-0002'],['Author','donald.gifford'],['Discussion','<a href="#">PR #2</a>'],['Decides',L('MAN-0006','MAN-0006')+' · ownership model'],['Tags','<span class="tag">ownership</span><span class="tag">codeowners</span><span class="tag">backstage</span>']],
+      body:'<p>Every system declares an explicit <strong>Owner</strong> (a named DRI), ≥2 maintainers, and a home team, recorded in three files and checked in CI. This is the mechanism that satisfies MAN-0006.</p><h2 id="x1"><span class="hash">#</span>Proposed solution</h2><p><code>.github/CODEOWNERS</code> (enforcement), <code>MAINTAINERS.md</code> (the human record), <code>catalog-info.yaml</code> (Backstage federation). One declared truth, three projections.</p><h2 id="x2"><span class="hash">#</span>Alternatives</h2><p>Whole-team CODEOWNERS — rejected. Ownership only in Backstage — rejected; the catalog isn\'t consulted at merge time.</p>',
+      toc:[['Proposed solution','#x1'],['Alternatives','#x2']],dates:{draft:'2026-06-15',proposed:'2026-06-16',accepted:'2026-06-17'},links:{draft:['commit b2d1f0e'],proposed:['PR #2','diff draft → proposed'],accepted:['merge a1c93f4','diff proposed → accepted']}},
+    'DESIGN-0001':{type:'design',repo:'docs',title:'Ownership Digest',status:'draft',
+      callout:{cls:'b-rfc',label:'relates to →',target:'RFC-0002 · the ownership model',to:'RFC-0002'},
+      meta:[['Owner','unassigned'],['Repo','docs · design/'],['Related',L('RFC-0002','RFC-0002')+' · '+L('MAN-0006','MAN-0006')],['Tags','<span class="tag">backstage</span><span class="tag">slack</span>']],
+      body:'<p>A personal, ownership-scoped digest that correlates across systems and tells a person what needs their attention on the things they own — PRs awaiting review, Wiz findings, tickets, and SLO burn.</p><h2 id="x1"><span class="hash">#</span>The join</h2><p>Everything hinges on the ownership graph (Backstage + CODEOWNERS). The digest is its first real consumer — and it surfaces gaps, since a service with no owner gets nobody in the digest.</p>',
+      toc:[['The join','#x1']],dates:{draft:'2026-06-20'},links:{draft:['commit 4e1a8b']}},
+    'INV-0001':{type:'investigation',repo:'docs',title:'Repo Governance Tooling',status:'draft',
+      callout:{cls:'b-rfc',label:'relates to →',target:'RFC-0002 · the ownership model',to:'RFC-0002'},
+      meta:[['Owner','unassigned'],['Repo','docs · investigation/'],['Tags','<span class="tag">github-app</span><span class="tag">repo-guardian</span>']],
+      body:'<p>How do we keep a large fleet of repos consistent with our principles without hand-managing each one? A menu to review, not a decision.</p><h2 id="x1"><span class="hash">#</span>A direction</h2><p>An event-driven GitHub App plus policy-as-code, with our own <code>repo-guardian</code> as the enforcement core — surfacing violations as PRs and issues, never chat messages.</p>',
+      toc:[['A direction','#x1']],dates:{draft:'2026-06-19'},links:{draft:['commit 1b7c2d']}},
+    'PLAN-0001':{type:'plan',repo:'docs',title:'Operationalizing the Doc Suite',status:'draft',
+      callout:{cls:'b-rfc',label:'promoted by →',target:'RFC-0001 (§4 superseded)',to:'RFC-0001'},
+      meta:[['Owner','unassigned'],['Repo','docs · plan/'],['Superseded by',L('RFC-0001','RFC-0001')+' (§4 only)'],['Tags','<span class="tag">docz</span>']],
+      body:'<p>The rollout for running the suite as a managed system via <code>docz</code>, <code>rfc-api</code>, and <code>rfc-site</code>. Its §4 single-repo layout is superseded by the two-repo split decided in RFC-0001.</p><h2 id="x1"><span class="hash">#</span>Phases</h2><p>docz spike → scaffold both repos → backfill onto doctypes → api + site → governance wiring → fwsync frameworks.</p>',
+      toc:[['Phases','#x1']],dates:{draft:'2026-06-16'},links:{draft:['commit 0d3e9a']}}
+  };
+
+  function lifeHTML(d){
+    var seq=TYPES[d.type].life, ci=seq.indexOf(d.status);
+    return seq.map(function(s,i){
+      var cls = i<ci ? 'done' : (i===ci ? ('done current'+(s==='draft'?'':' pos')) : 'pending');
+      var when = (d.dates&&d.dates[s]) ? d.dates[s] : (i>ci ? '—' : '');
+      var lk = (i<=ci && d.links&&d.links[s]) ? '<div class="links">'+d.links[s].map(function(x){return '<a href="#">'+x+'</a>';}).join('')+'</div>' : '';
+      return '<div class="stop '+cls+'"><span class="stage">'+s+'</span>'+(when?'<span class="when">'+when+'</span>':'')+lk+'</div>';
+    }).join('');
+  }
+  function renderDoc(id){
+    var d=DOCS[id]; if(!d) return;
+    var co='';
+    if(d.callout){
+      var tgt = d.callout.to ? '<a href="#" onclick="openDoc(\''+d.callout.to+'\');return false;">'+d.callout.target+'</a>' : '<span style="color:var(--fg-secondary);">'+d.callout.target+'</span>';
+      co='<div class="banner '+(d.callout.cls||'b-acc')+'"><span>'+d.callout.label+'</span>'+tgt+'</div>';
+    }
+    var meta='<div class="meta">'+d.meta.map(function(r){return '<div class="row"><div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div></div>';}).join('')+'</div>';
+    document.getElementById('doc-article').innerHTML =
+      '<div class="eyebrow" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;"><span>'+id+'</span><span class="crumb">/ '+d.repo+' · '+d.type+'</span></div>'+
+      '<h1 class="doc-title-lg" style="font-size:1.7rem;margin:.45rem 0 .2rem;">'+d.title+' <span class="pill" data-st="'+d.status+'">'+d.status+'</span></h1>'+
+      co+meta+d.body+
+      '<hr class="doc-sep"><div class="rail-label">Lifecycle</div><div class="rail">'+lifeHTML(d)+'</div>'+
+      '<div class="formats"><a href="#"><b>html</b> · read</a><a href="#"><b>md</b> · source</a><a href="#"><b>json</b> · /api/v1/docs/'+id.toLowerCase()+'.json</a></div>';
+    document.getElementById('doc-toc').innerHTML =
+      '<div class="h">On this page</div>'+(d.toc||[]).map(function(t){return '<a href="'+t[1]+'">'+t[0]+'</a>';}).join('')+'<a href="#" style="color:var(--fg-muted);">Lifecycle</a>';
+    document.querySelectorAll('#doc-nav .dn-item').forEach(function(n){ n.classList.toggle('active', n.dataset.id===id); });
+  }
+  function openDoc(id){ renderDoc(id); showView('doc'); }
+  renderDoc('FW-0001'); // populate default
+
+  document.addEventListener('keydown', e => {
+    var typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+    if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
+      e.preventDefault(); showView('search');
+    }
+    if (e.key === 'Escape' && document.getElementById('view-search').classList.contains('active')) {
+      showView('directory');
+    }
+  });
+</script>
+</body>
+</html>
