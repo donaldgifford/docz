@@ -151,7 +151,7 @@ repo is a clean, green shell app.
       preview, ci)
 - [ ] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
       test → build → gen-api drift check
-- [ ] Prune inherited `.github/` automation: the template ships ~10
+- [x] Prune inherited `.github/` automation: the template ships ~10
       workflows (codeql, security, trufflehog, changelog, release,
       license-check, pr-labels, dependabot-severity-label, …) written for
       the template's stack, and their *scheduled* triggers don't honor
