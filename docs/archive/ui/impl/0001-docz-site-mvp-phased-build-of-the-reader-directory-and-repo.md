@@ -158,7 +158,7 @@ repo is a clean, green shell app.
       `[skip ci]` — rewrite `ci.yml` (above), add the spec-drift workflow,
       keep security scanners only where reconfigured for the TS/Bun stack,
       delete the rest
-- [ ] Remove `.github/dependabot.yml` — Renovate (`renovate.json5`) owns
+- [x] Remove `.github/dependabot.yml` — Renovate (`renovate.json5`) owns
       dependency automation; audit its config for bun/npm coverage of the
       new stack
 - [ ] Rewrite `README.md` quickstart (mise install → bun install →
