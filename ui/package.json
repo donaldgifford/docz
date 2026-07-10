@@ -16,9 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "gen-api": "orval --config ./orval.config.ts",
-    "gen-api:check": "scripts/gen-api-check.sh"
+    "test:watch": "vitest"
   },
   "type": "module",
   "devDependencies": {

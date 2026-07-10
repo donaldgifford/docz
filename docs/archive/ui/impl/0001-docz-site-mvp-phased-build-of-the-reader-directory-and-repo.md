@@ -101,7 +101,7 @@ repo is a clean, green shell app.
 
 #### Tasks
 
-- [ ] Sweep template leftovers: delete `react-router.config.ts`, the stale
+- [x] Sweep template leftovers: delete `react-router.config.ts`, the stale
       `orval.config.ts`, `vite.config.ts`, `vitest.config.ts`,
       `eslint.config.js`, `charts/temp/`, `Dockerfile`,
       `docker-compose.yml`, `docker-bake.hcl`, `justfile.docker`, duplicate
