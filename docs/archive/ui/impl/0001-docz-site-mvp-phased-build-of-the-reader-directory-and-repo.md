@@ -151,6 +151,16 @@ repo is a clean, green shell app.
       preview, ci)
 - [ ] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
       test → build → gen-api drift check
+- [ ] Prune inherited `.github/` automation: the template ships ~10
+      workflows (codeql, security, trufflehog, changelog, release,
+      license-check, pr-labels, dependabot-severity-label, …) written for
+      the template's stack, and their *scheduled* triggers don't honor
+      `[skip ci]` — rewrite `ci.yml` (above), add the spec-drift workflow,
+      keep security scanners only where reconfigured for the TS/Bun stack,
+      delete the rest
+- [ ] Remove `.github/dependabot.yml` — Renovate (`renovate.json5`) owns
+      dependency automation; audit its config for bun/npm coverage of the
+      new stack
 - [ ] Rewrite `README.md` quickstart (mise install → bun install →
       just dev / just dev-msw)
 
@@ -164,6 +174,9 @@ repo is a clean, green shell app.
   nine spec operations
 - `grep -ri "rfc-site"` across the repo (excluding `docs/input.md`) returns
   nothing; no template leftovers remain at the root
+- The Actions tab shows only intended workflows (ci, spec-drift, and any
+  deliberately kept, reconfigured scanners); `dependabot.yml` is gone and
+  Renovate covers the bun/npm stack
 
 ---
 
