@@ -8,3 +8,15 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Generated TS client from api/openapi.yaml (bun run gen-api)
+src/api/__generated__/
+
+# Local environment (secrets live here, never in mise.toml)
+.env.local
+.env.*.local

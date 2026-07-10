@@ -1,3 +1,3 @@
 # https://bun.com/docs/runtime/bunfig
-[test]
-preload = ["./tests/setup.ts"]
+# Tests run through vitest (`bun run test`), not `bun test` — no [test]
+# config needed here.
