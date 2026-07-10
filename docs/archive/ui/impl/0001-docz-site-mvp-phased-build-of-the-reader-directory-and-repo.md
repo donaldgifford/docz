@@ -114,7 +114,7 @@ repo is a clean, green shell app.
       license aligned with the README (Apache-2.0), scripts for dev,
       dev:msw, build, preview, typecheck, lint, format, test, gen-api,
       gen-api:check
-- [ ] Scaffold Vite + React 19 + TS strict: new `vite.config.ts`
+- [x] Scaffold Vite + React 19 + TS strict: new `vite.config.ts`
       (`@vitejs/plugin-react`, `@tailwindcss/vite`, dev `server.proxy` for
       `/api`, `/auth`, `/openapi.yaml` → local docz-api), strict
       `tsconfig.json` with `@/` path alias, `index.html`, `src/main.tsx`
