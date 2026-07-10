@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0002
 title: "OpenAPI contract for docz-api and the docz-site"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-07-08
 ---
@@ -9,7 +9,7 @@ created: 2026-07-08
 
 # DESIGN 0002: OpenAPI contract for docz-api and the docz-site
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-07-08
 
@@ -491,8 +491,9 @@ shipping the baseline spec + contract test.
   — the docz-api read + search API shape
 - `internal/httpapi/dto.go`, `internal/httpapi/search.go`,
   `internal/search/types.go` — the response DTOs the schemas mirror
-- `internal/httpapi/contract_test.go` + `testdata/contract/` — the current
-  golden-fixture contract
+- `api/openapi.yaml` + `internal/httpapi/openapi_contract_test.go` — the
+  implemented contract and its kin-openapi test (the byte-frozen golden fixtures
+  were retired at parity in IMPL-0002 Phase 2)
 - rfc-api `api/openapi.yaml` + `test/contract/contract_test.go` — the reference
   spec and kin-openapi harness
 - getkin/kin-openapi — <https://github.com/getkin/kin-openapi>

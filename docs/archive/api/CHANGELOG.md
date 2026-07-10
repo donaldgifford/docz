@@ -5,11 +5,39 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(openapi)* Add kin-openapi v0.135.0 dependency
+- *(openapi)* Add api package embedding the OpenAPI spec
+- *(openapi)* Add spec header, servers, tags, security scheme
+- *(openapi)* Author component schemas from the response DTOs
+- *(openapi)* Author responses, parameters, and the six read paths
+- *(openapi)* Add kin-openapi contract test harness
+- *(openapi)* Add vacuum spec lint + yamlfmt tooling
+- *(openapi)* Spec the auth + webhook surface with security overrides
+- *(openapi)* Embed and serve the spec at GET /openapi.yaml
+
+### Refactor
+
+- *(openapi)* Retire golden fixtures at parity
+
 ### Documentation
 
 - *(investigation)* Add INV-0002 OpenAPI contract investigation
 - *(design)* Add DESIGN-0002 OpenAPI contract design
 - *(impl)* Add IMPL-0002 OpenAPI contract implementation plan
+- *(openapi)* Complete IMPL-0002 Phase 1
+- *(openapi)* Complete IMPL-0002 Phase 2
+- *(openapi)* Version, document consumption, close out
+- *(openapi)* Check off the IMPL-0002 testing plan
+
+### Testing
+
+- *(openapi)* Drive the auth + webhook endpoints in the contract test
+
+### Miscellaneous Tasks
+
+- *(settings)* Allow markdownlint-cli in Claude Code permissions
 
 ## [0.2.0] - 2026-07-08
 

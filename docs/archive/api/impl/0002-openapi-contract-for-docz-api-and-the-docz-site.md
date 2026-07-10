@@ -123,25 +123,36 @@ useful surface; later phases only widen it.
 
 #### Tasks
 
-- [ ] Add **`github.com/getkin/kin-openapi@v0.135.0`** as a direct dependency
+- [x] Add **`github.com/getkin/kin-openapi@v0.135.0`** as a direct dependency
       (**OQ-1a**, rfc-api parity): `go get github.com/getkin/kin-openapi@v0.135.0`,
       then settle `go.sum` per the repo convention (**no bare `go mod tidy`** —
       deps are staged; settle via `go get` / targeted `GOPROXY=off go get`), run
       `go mod edit -fmt`, and confirm `go mod verify`. The dep is **test-path
-      only** (runtime serving is `//go:embed`, not a library).
-- [ ] Create the **`api` package** (`api/spec.go`, `package api`) with
+      only** (runtime serving is `//go:embed`, not a library). _(done — added at
+      `v0.135.0`; `go mod edit -fmt`; `go mod verify` clean. Staged `// indirect`
+      per the repo convention until the contract test imports it in Task 6, then
+      it promotes to direct; `go build ./...` + `just lint` green.)_
+- [x] Create the **`api` package** (`api/spec.go`, `package api`) with
       `//go:embed openapi.yaml` exposing `var Spec []byte` (**OQ-2a**) — the
       single embedded copy consumed by both the runtime server (Phase 3) and the
       contract test (`LoadFromData(api.Spec)`), so served bytes provably equal
-      tested bytes and there are no relative `../../` load paths.
-- [ ] Create **`api/openapi.yaml`** header: `openapi: 3.1.0`; `info` with
+      tested bytes and there are no relative `../../` load paths. _(done —
+      go-architect confirmed the root-level `api/` home + leaf-package shape;
+      `var Spec []byte` (not `embed.FS`/func) is the idiomatic single-file embed.
+      A minimal valid `openapi.yaml` skeleton lands in the same commit so the
+      embed compiles; Task 3+ expand it. `go build ./...` + `go vet` + `just
+      lint` green.)_
+- [x] Create **`api/openapi.yaml`** header: `openapi: 3.1.0`; `info` with
       `title` / `version` / `description` **only** (NOT `info.summary` —
       kin-openapi rejects it); `servers: [{ url: "/" }]` (same-origin, so the
       test router resolves `http://localhost/api/v1/...`); `tags`
       (`repos`, `docs`, `search`); `components.securitySchemes.sessionCookie`
       (`type: apiKey`, `in: cookie`, `name: docz_session`) with a top-level
-      `security: [{ sessionCookie: [] }]` default.
-- [ ] Author `components.schemas` mirroring the DTOs
+      `security: [{ sessionCookie: [] }]` default. _(done — header + servers +
+      3 tags + `sessionCookie` scheme + default `security`; no `info.summary`.
+      YAML syntax-checked; full OAS `doc.Validate` runs with the harness in
+      Task 6.)_
+- [x] Author `components.schemas` mirroring the DTOs
       (`internal/httpapi/dto.go`, `internal/search/types.go`) **1:1**: `Error`
       (`required: [error]`, `additionalProperties: false`), `RepoSummary`
       (`repo`, `default_branch`, `docs_dir`, `last_synced_sha`), `RepoDetail`
@@ -154,8 +165,13 @@ useful surface; later phases only widen it.
       `facets`). Reflect the serialization invariants: nullable columns are
       **empty strings, never `null`**; JSONB string arrays are **`[]`, never
       `null`**; `facets` is `object` with `additionalProperties` an object of
-      `additionalProperties: { type: integer }`.
-- [ ] Author `components.responses` (`Unauthorized` → 401 `Error`, `NotFound` →
+      `additionalProperties: { type: integer }`. _(done — all 7 schemas authored
+      with `additionalProperties: false` for strict drift detection, verified
+      1:1 against the golden fixtures; every response field is `required` except
+      `Document.raw_md`. Proven to pass kin-openapi `doc.Validate` via a
+      throwaway loader test, removed before commit — the real harness in Task 6
+      revalidates in CI.)_
+- [x] Author `components.responses` (`Unauthorized` → 401 `Error`, `NotFound` →
       404 `Error`) and the six paths with lowerCamelCase `operationId`s:
       `listRepos` (`{repos:[…]}`), `getRepo` (`RepoDetail`; 404), `listTypes`
       (`{types:[…]}`), `listDocs` (`{docs:[…]}`, no `raw_md`; 404), `getDoc`
@@ -163,8 +179,12 @@ useful surface; later phases only widen it.
       params `q`/`repo`/`type`/`status`/`author` + `offset` default 0 / `limit`
       default 20, both `integer` `format: int64` `minimum: 0`). Path params:
       `owner`, `name`, `type`, `doc_id`. **List responses stay envelope
-      objects** (OQ-2a); **error stays `{"error": string}`** (OQ-1a).
-- [ ] Port rfc-api's three-function harness to
+      objects** (OQ-2a); **error stays `{"error": string}`** (OQ-1a). _(done —
+      shared `Owner`/`Name`/`Type`/`DocID` path parameters + `Unauthorized`/
+      `NotFound` responses; the same `Document` schema serves `listDocs` (raw_md
+      absent) and `getDoc` (raw_md present) since raw_md is optional. Proven:
+      `doc.Validate` passes and `gorillamux.FindRoute` resolves all six paths.)_
+- [x] Port rfc-api's three-function harness to
       **`internal/httpapi/openapi_contract_test.go`** (OQ-6a): `loadSpec`
       (`openapi3.NewLoader().LoadFromData(api.Spec)` per **OQ-2a** →
       `doc.Validate(ctx)` → `gorillamux.NewRouter(doc)`); `buildHandler`
@@ -173,22 +193,40 @@ useful surface; later phases only widen it.
       authorize.Middleware(authorize.NewAllReposAuthorizer(st)))`; `validate`
       (`router.FindRoute` → `openapi3filter.ValidateRequest` → serve in-process
       → `openapi3filter.ValidateResponse`, both `Options{MultiError: true}`). No
-      build tag, no `httptest.NewServer`.
-- [ ] Table-drive the cases: the six read/search happy paths (`/api/v1/repos`,
+      build tag, no `httptest.NewServer`. _(done — `loadContractSpec` /
+      `buildContractHandler` / `validateRoundTrip`. Security is validated with
+      `openapi3filter.NoopAuthenticationFunc` so the spec's `sessionCookie`
+      requirement doesn't fail request validation — the contract test asserts
+      schemas, auth is covered by its own tests. `getkin/kin-openapi` promoted to
+      a direct dep. go-style reviewed; passes `just lint`.)_
+- [x] Table-drive the cases: the six read/search happy paths (`/api/v1/repos`,
       `/repos/acme/platform`, `/types`, `/types/frameworks/docs`,
       `/types/FW/docs/FW-0001`, `/search?q=intro`) plus the **404** envelope
       (`/repos/acme/missing`). Confirm the search fixture exercises `facets` and
-      the `snippet`.
-- [ ] Add **spec lint + format** so the hand-authored file is standards-clean
+      the `snippet`. _(done — 7 subtests, all green; the `searchDocs` case
+      exercises the `facets` map and the `<em>` `snippet` via `contractSearcher`.)_
+- [x] Add **spec lint + format** so the hand-authored file is standards-clean
       from its first commit (**OQ-7b**): wire an OpenAPI linter — **`vacuum`**
       (Go-native, `mise`-installable, pb33f/`libopenapi` lineage per **FU-3**;
       `spectral` the alternative) — over `api/openapi.yaml` via a `just`
       recipe (e.g. `just lint-openapi`) **and** a CI step, plus a YAML
       format/consistency pass (`yamlfmt` or `prettier`) hooked into `just fmt` /
-      the fmt check. Pin the tool in `mise.toml`.
-- [ ] Run `just test`, `just lint`, `just lint-openapi`, `just fmt`; confirm the
+      the fmt check. Pin the tool in `mise.toml`. _(done — `vacuum@0.29.9`
+      pinned in `mise.toml`; `api/vacuum-ruleset.yaml` extends the recommended
+      set and disables three rules with justifications (`camel-case-properties`
+      because the wire contract is snake_case by design;
+      `oas3-missing-example` / `description-duplication` as over-strict for a
+      DTO-mirroring spec). Added schema + parameter descriptions → **100/100**.
+      `just lint-openapi` runs vacuum (`-n warn`, fails on warnings) +
+      `yamlfmt -lint`; `just fmt` now yamlfmt-canonicalizes the spec; CI's Lint
+      job gained a mise step + `just lint-openapi`.)_
+- [x] Run `just test`, `just lint`, `just lint-openapi`, `just fmt`; confirm the
       contract test runs in the CI `Test Go` job with no new workflow. Check off
-      and commit (`feat(openapi): ...`).
+      and commit (`feat(openapi): ...`). _(done — `just test` green with
+      `TestOpenAPIContract` riding it (no build tag); `just lint` 0 issues;
+      `just lint-openapi` 100/100; `just fmt` a no-op. Drift proven: renaming a
+      DTO json tag fails the contract test with `property … is unsupported`,
+      reverted.)_
 
 #### Success Criteria
 
@@ -205,6 +243,16 @@ useful surface; later phases only widen it.
   spec — or vice-versa — fails the contract test. Demonstrate once (temporarily,
   reverted) to prove the guard bites.
 
+**Status: COMPLETE ✅** — all criteria met. `api/openapi.yaml` (OAS 3.1)
+self-validates and loads via `LoadFromData(api.Spec)`; `TestOpenAPIContract`
+validates request + response for the six read/search endpoints plus the 404
+envelope, green under `just test` (no build tag, rides CI's `Test Go` job);
+`getkin/kin-openapi` is a direct dep pinned at `v0.135.0` with `go.sum` settled
+and `go mod verify` clean; `just lint` is 0 issues; `vacuum` scores **100/100**
+against `api/vacuum-ruleset.yaml` and `yamlfmt -lint` is clean (both gated in
+CI's Lint job via `just lint-openapi`); drift is proven caught (a renamed DTO
+json tag fails the contract test, reverted).
+
 ---
 
 ### Phase 2: Full-surface spec (auth, webhook, security) and retiring golden fixtures
@@ -216,45 +264,82 @@ byte-frozen golden fixtures (OQ-7b).
 
 #### Tasks
 
-- [ ] Add the auth paths: `GET /api/v1/auth/session` (`getSession` →
+- [x] Add the auth paths: `GET /api/v1/auth/session` (`getSession` →
       `Session` schema, or 401 via `Unauthorized`); `POST /api/v1/auth/logout`
       (`logout` → `{ "status": "logged out" }` object); `GET /auth/login`
       (`login` → **302** with `Location`, `provider` query param,
       `security: []`); `GET /auth/callback` (`authCallback` → **302**,
       `security: []`). Add the `Session` schema
       (`provider`, `subject`, `email?`, `login?`, `groups?`) mirroring
-      `internal/authhttp/handler.go`.
-- [ ] Add the webhook path `POST /webhooks/github` (`githubWebhook`): required
+      `internal/authhttp/handler.go`. _(done — four auth ops added; the logout
+      `{"status":…}` body is a shared `StatusResponse` schema (reused by the
+      webhook); `Session` mirrors `sessionDTO` 1:1 with `provider`/`subject`
+      required and `email`/`login`/`groups` optional (they are `omitempty`);
+      the two 302s share a `Redirect` component response with a required
+      `Location` header.)_
+- [x] Add the webhook path `POST /webhooks/github` (`githubWebhook`): required
       headers `X-Hub-Signature-256`, `X-GitHub-Event`, `X-GitHub-Delivery`;
       request body `application/json` (opaque `object` — the payload is
       GitHub's, validated by `go-github` at runtime, not the spec); responses
       **202** / **400** / **401**; `security: []`. Document the HMAC scheme in
       the operation `description` (OpenAPI has no first-class HMAC-body scheme).
-- [ ] Apply `security` overrides across the spec: the `sessionCookie` default
+      _(done — three required header params + an opaque `additionalProperties:
+      true` request body; 202/400/401 all return `StatusResponse` (the webhook
+      uses a `{"status":…}` envelope, not the `{"error":…}` one); the
+      constant-time HMAC-SHA256 scheme is documented in the op `description`.)_
+- [x] Apply `security` overrides across the spec: the `sessionCookie` default
       holds for `/api/v1/*`; the public routes (`/auth/login`, `/auth/callback`,
       `/webhooks/github`, and any meta routes per OQ-6) override with
-      `security: []`.
-- [ ] **Acceptance gate (OQ-4a):** before implementing, review rfc-api's
+      `security: []`. _(done — applied inline with each public op so no commit
+      documents a wrong security model: `/api/v1/*` (incl. `auth/session`,
+      `auth/logout`) inherit the top-level `sessionCookie`; `login`, `callback`,
+      and `githubWebhook` each set `security: []`. No meta routes are specced
+      (OQ-6a).)_
+- [x] **Acceptance gate (OQ-4a):** before implementing, review rfc-api's
       `test/contract/contract_test.go` and mirror its harness style. Note (already
       verified) rfc-api models **no** auth/HMAC and tests only happy-path + 404 +
       400 — so the auth/webhook driving is **net-new** here; the review confirms
       we don't diverge from the shared harness shape, not that we copy a pattern
-      it lacks.
-- [ ] Extend the contract harness to drive the new endpoints hermetically
+      it lacks. _(done — the OQ-4a review is recorded in the decision below; the
+      Phase 1 harness already mirrors rfc-api's shape 1:1 (`loadContractSpec` ↔
+      `loadSpec`, `buildContractHandler` ↔ `buildHandler`, `validateRoundTrip` ↔
+      `validate`, `Options{MultiError:true}`, the `gorillamux` router), so the
+      extension keeps that shape and only adds the net-new auth/HMAC drivers.)_
+- [x] Extend the contract harness to drive the new endpoints hermetically
       (**OQ-4a**): inject a `session.Session` into the request context for
       `getSession`; build `authhttp.New(...)` with fake `sessionStore` /
       `userUpserter` and a **stub provider registry** so `login` asserts a 302;
       compute a **valid HMAC** over a fixture webhook body with a test secret and
       a fake delivery store so `githubWebhook` validates its required headers and
-      returns 202. Add these to the validation table.
-- [ ] Reach **endpoint parity** with the golden-fixture test, then **retire it
+      returns 202. Add these to the validation table. _(done —
+      `buildContractHandler` now wires the **full** surface exactly as
+      `runServer`: read/search + gated `auth/session`/`auth/logout` behind the
+      real `session.Middleware`∘`authorize.Middleware` gate, the public
+      `login`/`callback` redirects, and the HMAC webhook. The session is injected
+      by running the **real** session middleware over a fixed cookie + a fake
+      `Lookup` (higher fidelity than a context poke); `stubProvider` makes `login`
+      302 and `callback` complete (signed state via `auth.EncodeState`);
+      `webhookRequest` signs a ping fixture with `hmac.Equal`-matching bytes. The
+      table grew from 7 to **12** cases (`getSession`/`logout`/`login`/`callback`/
+      `githubWebhook` added). `validateRoundTrip` now takes a built `*http.Request`
+      and snapshots the body so it survives both `ValidateRequest` and
+      `ServeHTTP`.)_
+- [x] Reach **endpoint parity** with the golden-fixture test, then **retire it
       (OQ-7b):** delete `internal/httpapi/contract_test.go` and
       `internal/httpapi/testdata/contract/*.json`. The OpenAPI contract test is
       now the single wire-contract owner. Keep the shared fakes (`seededStore`,
       `contractSearcher`) — they move to / stay in the OpenAPI test's file or a
-      small shared test helper.
-- [ ] `just test` / `just lint` / `just fmt` green; CI green. Check off and
-      commit (`refactor(openapi): retire golden fixtures at parity`).
+      small shared test helper. _(done — the OpenAPI test covers all 7
+      golden-fixture endpoints plus the 5 new auth/webhook ones (12 ≥ 7), so
+      parity is exceeded. Deleted `contract_test.go` + the 7 `testdata/contract/
+      *.json` fixtures; `contractSearcher` moved into `openapi_contract_test.go`;
+      `seededStore`/`doGet`/`validText` stay in `handler_test.go` (still used by
+      the handler/error/search tests). The OpenAPI contract test is now the sole
+      wire-contract gate.)_
+- [x] `just test` / `just lint` / `just fmt` green; CI green. Check off and
+      commit (`refactor(openapi): retire golden fixtures at parity`). _(done —
+      `go test ./...` all pass, `just lint` 0 issues, `just fmt` a no-op,
+      `go vet` clean.)_
 
 #### Success Criteria
 
@@ -268,6 +353,20 @@ byte-frozen golden fixtures (OQ-7b).
   no wire shape is double-maintained; `just test` is green with the OpenAPI test
   as the **sole** contract gate.
 
+**Status: COMPLETE ✅** — all criteria met. The spec now covers the full
+in-scope surface (read + search, `auth/session`, `auth/logout`, `auth/login`,
+`auth/callback`, and `webhooks/github`), and the contract test exercises all
+**12** endpoints via the real handler stack (`session.Middleware` ∘
+`authorize.Middleware` gate + the public redirects + the HMAC webhook). The
+webhook op validates its three required headers, the auth endpoints validate
+their `Session` / `StatusResponse` schemas, and `login`/`callback` assert **302**
+(a shared `Redirect` response with a required `Location` header). The
+byte-frozen golden test (`internal/httpapi/contract_test.go`) and its 7
+`testdata/contract/*.json` fixtures are **removed** — no wire shape is
+double-maintained and the kin-openapi contract test is the **sole** wire-contract
+gate. `vacuum` scores **100/100** on the widened spec; `just test` / `just lint`
+/ `just fmt` green.
+
 ---
 
 ### Phase 3: Serving and surfacing the spec
@@ -280,17 +379,26 @@ to the optional docz mkdocs render (Phase 4) or the consumer's own tooling. The
 
 #### Tasks
 
-- [ ] Add `GET /openapi.yaml`: serve `api.Spec` (the Phase-1 embed) with
+- [x] Add `GET /openapi.yaml`: serve `api.Spec` (the Phase-1 embed) with
       `Content-Type: application/yaml`, **public** (outside the `/api/v1` auth
       gate), mounted in `newRouter` / `runServer` alongside the `/healthz`,
       `/readyz`, `/metrics` probes in `cmd/docz-api/main.go`. **No `/docs`
-      route** (OQ-3d).
-- [ ] Tests: `GET /openapi.yaml` returns 200 + the embedded bytes + the right
+      route** (OQ-3d). _(done — `handleOpenAPISpec` writes `api.Spec` with
+      `Content-Type: application/yaml`; mounted in `newRouter` next to
+      `/healthz` + `/readyz` (always-on + dependency-free, so `newRouter` is its
+      natural home — it inherits `RequestID`/logging/metrics but **not** the
+      `/api/v1` gate, so it's public). No `/docs` route.)_
+- [x] Tests: `GET /openapi.yaml` returns 200 + the embedded bytes + the right
       content-type, and the **served bytes re-parse and `doc.Validate`** (so the
       embedded copy provably equals the source `api/openapi.yaml` and can't
       drift); the route **bypasses** the auth gate (no session → still 200).
-- [ ] `just test` / `just lint` / `just fmt` green. Check off and commit
-      (`feat(openapi): embed and serve the spec`).
+      _(done — `TestServeOpenAPISpec` asserts 200 + `application/yaml` +
+      `bytes.Equal(body, api.Spec)`, then re-parses the served bytes via
+      `openapi3.LoadFromData` + `doc.Validate`. It hits `newRouter(nil)` with no
+      cookie, proving the route is public.)_
+- [x] `just test` / `just lint` / `just fmt` green. Check off and commit
+      (`feat(openapi): embed and serve the spec`). _(done — `go test ./...` all
+      pass, `just lint` 0 issues, `just fmt` a no-op, `vacuum` 100/100.)_
 
 #### Success Criteria
 
@@ -302,6 +410,14 @@ to the optional docz mkdocs render (Phase 4) or the consumer's own tooling. The
 - A test proves the **served spec byte-equals `api/openapi.yaml`** and validates,
   closing the embed-drift gap.
 
+**Status: COMPLETE ✅** — all criteria met. `GET /openapi.yaml` serves the
+embedded `api.Spec` (`Content-Type: application/yaml`) from `handleOpenAPISpec`
+in `newRouter` — no filesystem dependency, so it works in the distroless image.
+The route is **public** (mounted outside the `/api/v1` gate, next to the probes)
+and there is **no `/docs` UI route** (OQ-3d). `TestServeOpenAPISpec` proves the
+served bytes `bytes.Equal` `api.Spec` and re-parse + `doc.Validate` cleanly,
+closing the embed-drift gap. `just test` / `just lint` / `just fmt` green.
+
 ---
 
 ### Phase 4: Consumer coordination and close-out
@@ -311,25 +427,43 @@ work — flipping DESIGN-0002 to Implemented and logging the three follow-ups.
 
 #### Tasks
 
-- [ ] Set `info.version` (scheme per **OQ-5**) and document the bump discipline:
+- [x] Set `info.version` (scheme per **OQ-5**) and document the bump discipline:
       a wire change to any specced endpoint bumps the version so consumers can
-      pin a known shape.
-- [ ] Document the **docz-site consumption path**: vendor `api/openapi.yaml` (or
+      pin a known shape. _(done — `info.version` is `1.0.0` (SemVer, OQ-5a); the
+      patch/minor/major bump discipline is documented in `api/README.md` under
+      Versioning — independent of the binary version, bumped by hand on any
+      specced wire change.)_
+- [x] Document the **docz-site consumption path**: vendor `api/openapi.yaml` (or
       fetch `GET /openapi.yaml` at a pinned version) and generate a typed client
       — a short note under `api/README.md` or the design, matching the `rfc-site`
-      model.
-- [ ] Update **`CLAUDE.md`**: an "API contract" note (spec at `api/openapi.yaml`;
+      model. _(done — `api/README.md` documents the vendor-and-generate path
+      (vendor the file **or** fetch the served spec at a pinned version →
+      generate a typed client with `openapi-typescript`/`orval` → re-vendor on a
+      version bump), plus what the file is and how the contract test keeps it
+      honest.)_
+- [x] Update **`CLAUDE.md`**: an "API contract" note (spec at `api/openapi.yaml`;
       contract test at `internal/httpapi/openapi_contract_test.go` on every CI
       run; spec lint via `vacuum`; golden fixtures **retired**; the spec is served
-      at `/openapi.yaml`) and IMPL-0002 phase-progress lines.
-- [ ] (Optional) render the spec in the docz **mkdocs wiki** via
+      at `/openapi.yaml`) and IMPL-0002 phase-progress lines. _(done — the
+      "OpenAPI contract" section now records all four phases complete, the served
+      `/openapi.yaml` route, the `1.0.0` SemVer scheme, and points at
+      `api/README.md`.)_
+- [x] (Optional) render the spec in the docz **mkdocs wiki** via
       `mkdocs-swagger-ui-tag` — the only human-browsable API reference, since
-      there is no in-app `/docs` page (OQ-3d).
-- [ ] Flip **DESIGN-0002 → Implemented**; open the follow-up INVs for **FU-1**
+      there is no in-app `/docs` page (OQ-3d). _(skipped — optional, and it lives
+      in the docz wiki repo, out of this repo's scope. `api/README.md` notes
+      human browsing is left to the consumer's tooling or an optional mkdocs
+      render; it can be wired later without any change here.)_
+- [x] Flip **DESIGN-0002 → Implemented**; open the follow-up INVs for **FU-1**
       (RFC 7807 errors), **FU-2** (bare-array lists + header pagination), and
-      **FU-3** (`pb33f/libopenapi` evaluation) — logged, not built here.
-- [ ] Final `just lint` / `just test` / `just fmt` green; commit
-      (`docs(openapi): version, document consumption, close out`).
+      **FU-3** (`pb33f/libopenapi` evaluation) — logged, not built here. _(done —
+      DESIGN-0002 status flipped to **Implemented** (frontmatter + header) and its
+      stale golden-fixture reference updated to the implemented contract test.
+      FU-1/FU-2/FU-3 remain logged in the design's Follow-ups section as the
+      investigations to open next; no empty INV docs are created here.)_
+- [x] Final `just lint` / `just test` / `just fmt` green; commit
+      (`docs(openapi): version, document consumption, close out`). _(done — full
+      `go test ./...` green, `just lint` 0 issues, `just fmt`/`vacuum` clean.)_
 
 #### Success Criteria
 
@@ -338,6 +472,16 @@ work — flipping DESIGN-0002 to Implemented and logging the three follow-ups.
   fetch the served spec → generate a typed client).
 - `CLAUDE.md` documents the contract and its CI gate; DESIGN-0002 is marked
   **Implemented**; FU-1 / FU-2 / FU-3 are logged as follow-up investigations.
+
+**Status: COMPLETE ✅** — all criteria met. The spec carries a consumer-pinnable
+`info.version` (`1.0.0`, SemVer) with the bump discipline documented in
+`api/README.md`, which also gives the docz-site a stable vendor-and-generate
+consumption path. `CLAUDE.md` records the contract, its CI gate, the served
+`/openapi.yaml` route, and the version scheme. DESIGN-0002 is marked
+**Implemented**; FU-1 (RFC 7807), FU-2 (bare-array lists), and FU-3
+(`pb33f/libopenapi`) stay logged in the design's Follow-ups as the next
+investigations. The optional mkdocs render is deferred (out of this repo's
+scope). `just test` / `just lint` / `just fmt` green.
 
 ---
 
@@ -359,24 +503,32 @@ work — flipping DESIGN-0002 to Implemented and logging the three follow-ups.
 
 ## Testing Plan
 
-- [ ] **kin-openapi contract test** — request + response validation for the full
+- [x] **kin-openapi contract test** — request + response validation for the full
       specced surface, hermetic (in-memory fakes), on the normal `go test ./...`
       run with **no build tag** (rides CI's `Test Go` job; no new workflow).
-- [ ] **Spec self-validation** — `doc.Validate` in the test catches malformed
+      _(done — `TestOpenAPIContract`, 12 cases, no build tag.)_
+- [x] **Spec self-validation** — `doc.Validate` in the test catches malformed
       specs and the OAS-3.1 gotchas (`info.summary` rejected; `const: X` must be
       `enum: [X]`). Run the contract test immediately after any spec edit.
-- [ ] **Drift detection** — a DTO change without a matching spec change (or the
+      _(done — `loadContractSpec` runs `doc.Validate` before any request.)_
+- [x] **Drift detection** — a DTO change without a matching spec change (or the
       reverse) fails the contract test; proven once during Phase 1.
-- [ ] **Spec lint** — `vacuum` (or `spectral`) passes over `api/openapi.yaml` in
+      _(done — proven in Phase 1 (renamed json tag → `property … is unsupported`,
+      reverted); the `additionalProperties: false` guard covers the new schemas.)_
+- [x] **Spec lint** — `vacuum` (or `spectral`) passes over `api/openapi.yaml` in
       CI, on top of `doc.Validate`'s structural check (Phase 1, **OQ-7b**).
-- [ ] **Authed + HMAC endpoints** — session injected into context; a valid HMAC
+      _(done — `just lint-openapi`, `vacuum` 100/100, gated in CI's Lint job.)_
+- [x] **Authed + HMAC endpoints** — session injected into context; a valid HMAC
       computed over a fixture webhook body; a stub provider registry for the
-      OAuth redirects (Phase 2, **OQ-4a**).
-- [ ] **Serve test** — `GET /openapi.yaml` served bytes re-validate and
+      OAuth redirects (Phase 2, **OQ-4a**). _(done — the real session middleware
+      resolves a fixed cookie; `webhookRequest` signs a ping fixture;
+      `stubProvider` drives `login`/`callback`.)_
+- [x] **Serve test** — `GET /openapi.yaml` served bytes re-validate and
       byte-equal the source; the route is public (Phase 3). No `/docs` route
-      (OQ-3d).
-- [ ] No new **integration** dependencies — the whole plan is hermetic; nothing
-      here needs Postgres / Redis / Meilisearch / testcontainers.
+      (OQ-3d). _(done — `TestServeOpenAPISpec`.)_
+- [x] No new **integration** dependencies — the whole plan is hermetic; nothing
+      here needs Postgres / Redis / Meilisearch / testcontainers. _(done — the
+      contract + serve tests are pure unit tests; no testcontainers.)_
 
 ## Dependencies
 
@@ -499,7 +651,7 @@ Phase 2 must validate `/api/v1/auth/*` (session-gated), the OAuth redirects, and
 accept the Phase 2 implementation. **Caveat (verified):** rfc-api's contract test
 models **no** security schemes and drives only happy-path + 404 + 400 envelopes —
 it has **no** session-auth or HMAC-webhook cases. So rfc-api is the reference for
-the *harness shape* (`loadSpec` / `buildHandler` / `validate`, `MultiError`, the
+the _harness shape_ (`loadSpec` / `buildHandler` / `validate`, `MultiError`, the
 `gorillamux` router), but **driving the authed + HMAC endpoints is net-new** to
 docz-api. Phase 2 must design those fakes ourselves (injected session context,
 computed HMAC over a fixture body, stub provider registry) — the rfc-api review is
