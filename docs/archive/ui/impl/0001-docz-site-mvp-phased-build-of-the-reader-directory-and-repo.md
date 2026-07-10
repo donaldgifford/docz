@@ -108,7 +108,7 @@ repo is a clean, green shell app.
       prettier config (`.prettierrc.json` vs `.prettierrc.yaml` — keep one),
       and `package.json` script references to missing files
       (`scripts/gen-api-check.sh`)
-- [ ] Remove superseded `docz-site-mockup3.html` (`mockup.html` is the
+- [x] Remove superseded `docz-site-mockup3.html` (`mockup.html` is the
       source of truth)
 - [ ] Rewrite `package.json`: name `docz-site`, accurate description,
       license aligned with the README (Apache-2.0), scripts for dev,
