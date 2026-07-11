@@ -131,7 +131,7 @@ repo is a clean, green shell app.
 - [x] TanStack Query provider with sane defaults; `src/api/fetcher.ts`
       mutator (same-origin base, JSON handling, error mapping: 401 →
       `SessionRequiredError`, 404 → `NotFoundError`, other → `ApiError`)
-- [ ] Vendor `api/openapi.yaml` from docz-api at `info.version` 1.0.0
+- [x] Vendor `api/openapi.yaml` from docz-api at `info.version` 1.0.0
 - [ ] New `orval.config.ts`: `client: react-query`, `httpClient: fetch`,
       custom mutator, `mock: true`, output `src/api/__generated__/`
       (gitignored, `clean: true`)
@@ -171,7 +171,9 @@ repo is a clean, green shell app.
 - `just ci` (lint + typecheck + test + build + gen-api-check) passes
   locally and in GitHub Actions
 - The generated client compiles under strict TS and exposes hooks for all
-  nine spec operations
+  nine SPA-facing spec operations (the vendored 1.0.0 spec also documents
+  `authCallback` and `githubWebhook` — server-side surfaces the SPA never
+  calls; generated code for them is inert)
 - `grep -ri "rfc-site"` across the repo (excluding `docs/input.md`) returns
   nothing; no template leftovers remain at the root
 - The Actions tab shows only intended workflows (ci, spec-drift, and any

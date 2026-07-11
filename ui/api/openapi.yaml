@@ -1,0 +1,624 @@
+---
+openapi: 3.1.0
+info:
+  title: docz-api
+  version: 1.0.0
+  description: |
+    HTTP contract for docz-api's `/api/v1` read and search surface, plus the
+    site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
+    honest by an in-process kin-openapi contract test (see IMPL-0002).
+servers:
+  - url: /
+    description: Same-origin. The docz-site and the API share an origin.
+tags:
+  - name: repos
+    description: Onboarded repositories and their doc types.
+  - name: docs
+    description: Documents within a repository, addressed by type and id.
+  - name: search
+    description: Full-text search across indexed documents.
+  - name: auth
+    description: Site-user login, logout, and the current session.
+  - name: webhooks
+    description: The GitHub App webhook receiver (HMAC-authenticated).
+security:
+  - sessionCookie: []
+paths:
+  /api/v1/repos:
+    get:
+      tags: [repos]
+      operationId: listRepos
+      summary: List onboarded repositories the caller may see.
+      responses:
+        "200":
+          description: Repositories visible to the caller.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [repos]
+                properties:
+                  repos:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RepoSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/repos/{owner}/{name}:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: getRepo
+      summary: Repository detail with its doc types.
+      responses:
+        "200":
+          description: Repository detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepoDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/types:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: listTypes
+      summary: List the repository's doc types.
+      responses:
+        "200":
+          description: The repository's doc types.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [types]
+                properties:
+                  types:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/types/{type}/docs:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+      - $ref: "#/components/parameters/Type"
+    get:
+      tags: [docs]
+      operationId: listDocs
+      summary: List documents of a type (without raw_md).
+      responses:
+        "200":
+          description: Documents of the given type. Each omits `raw_md`.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [docs]
+                properties:
+                  docs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/types/{type}/docs/{doc_id}:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+      - $ref: "#/components/parameters/Type"
+      - $ref: "#/components/parameters/DocID"
+    get:
+      tags: [docs]
+      operationId: getDoc
+      summary: Fetch a single document, including raw_md.
+      responses:
+        "200":
+          description: The document, including `raw_md`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/search:
+    get:
+      tags: [search]
+      operationId: searchDocs
+      summary: Full-text search across indexed documents.
+      parameters:
+        - name: q
+          in: query
+          description: Query string.
+          schema:
+            type: string
+        - name: repo
+          in: query
+          description: Filter by "owner/name".
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by canonical type name.
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by document status.
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Filter by document author.
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: Zero-based result offset.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Max results to return.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+            default: 20
+      responses:
+        "200":
+          description: Search hits with facet counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/session:
+    get:
+      tags: [auth]
+      operationId: getSession
+      summary: The current authenticated site user.
+      responses:
+        "200":
+          description: The current user's session identity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Revoke the current session and clear the cookie.
+      responses:
+        "200":
+          description: The session was revoked (idempotent).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/login:
+    get:
+      tags: [auth]
+      operationId: login
+      summary: Begin the OAuth/OIDC login flow.
+      description: |
+        Redirects to the selected provider's authorization URL, carrying a
+        signed `state` that `/auth/callback` verifies. Public: the signed state
+        is the CSRF guard, so no session is required.
+      security: []
+      parameters:
+        - name: provider
+          in: query
+          description: Provider key (github | okta | keycloak); defaults to github.
+          schema:
+            type: string
+          example: github
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+        "400":
+          description: Unknown or disabled auth provider.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/callback:
+    get:
+      tags: [auth]
+      operationId: authCallback
+      summary: Complete the OAuth/OIDC login flow.
+      description: |
+        Verifies the signed `state`, exchanges the `code` for an identity,
+        upserts the durable user, issues a session, sets the session cookie, and
+        redirects to the app root. Public: authenticated by its signed state.
+      security: []
+      parameters:
+        - name: code
+          in: query
+          description: The provider authorization code.
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: The signed state issued by `/auth/login`.
+          schema:
+            type: string
+        - name: error
+          in: query
+          description: Set by the provider when authorization is denied.
+          schema:
+            type: string
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+        "400":
+          description: Missing or invalid state or code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /webhooks/github:
+    post:
+      tags: [webhooks]
+      operationId: githubWebhook
+      summary: Receive a GitHub App webhook delivery.
+      description: |
+        Authenticated by an HMAC-SHA256 signature over the raw request body (the
+        `X-Hub-Signature-256` header), verified in constant time — there is no
+        session or bearer auth. Verified deliveries are deduplicated by
+        `X-GitHub-Delivery`; the payload is GitHub's own event schema (validated
+        by go-github at runtime, opaque here) and processing is asynchronous, so
+        a valid delivery returns 202 immediately.
+      security: []
+      parameters:
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          description: Hex-encoded "sha256=…" HMAC of the raw body under the app secret.
+          schema:
+            type: string
+        - name: X-GitHub-Event
+          in: header
+          required: true
+          description: The event type (installation, push, release, …).
+          schema:
+            type: string
+        - name: X-GitHub-Delivery
+          in: header
+          required: true
+          description: Unique delivery id, used for idempotent de-duplication.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: The GitHub event payload (opaque; validated by go-github).
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "202":
+          description: Delivery accepted for asynchronous processing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "400":
+          description: Unreadable body or unparseable payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "401":
+          description: Missing or invalid HMAC signature.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: docz_session
+      description: |
+        Opaque Redis-backed session id set by the auth flow. Sent as the
+        `docz_session` cookie; required on every `/api/v1` operation unless the
+        operation overrides `security` (public routes use `security: []`).
+  parameters:
+    Owner:
+      name: owner
+      in: path
+      required: true
+      description: Repository owner (org or user login).
+      schema:
+        type: string
+      example: acme
+    Name:
+      name: name
+      in: path
+      required: true
+      description: Repository name.
+      schema:
+        type: string
+      example: platform
+    Type:
+      name: type
+      in: path
+      required: true
+      description: Doc type, addressable by canonical name, id_prefix, or alias.
+      schema:
+        type: string
+      example: frameworks
+    DocID:
+      name: doc_id
+      in: path
+      required: true
+      description: Document id.
+      schema:
+        type: string
+      example: FW-0001
+  responses:
+    Unauthorized:
+      description: Missing or invalid session.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Redirect:
+      description: A 302 redirect; the target is carried in the Location header.
+      headers:
+        Location:
+          required: true
+          description: The redirect target URL.
+          schema:
+            type: string
+    NotFound:
+      description: |
+        Repository, type, or document not found. Also returned for repositories
+        outside the caller's allowed set, to hide their existence.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      description: A JSON error envelope with a single human-readable message.
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+          example: repo not found
+    RepoSummary:
+      description: A repository in a listing, without its doc types.
+      type: object
+      additionalProperties: false
+      required: [repo, default_branch, docs_dir, last_synced_sha]
+      properties:
+        repo:
+          type: string
+          description: The "owner/name" identifier.
+          example: acme/platform
+        default_branch:
+          type: string
+          example: main
+        docs_dir:
+          type: string
+          description: The repo-relative docs root from `.docz.yaml`.
+          example: docs
+        last_synced_sha:
+          type: string
+          description: HEAD SHA of the last successful ingest, or "" if never synced.
+    RepoDetail:
+      description: A repository with its `.docz.yaml` snapshot and doc types.
+      type: object
+      additionalProperties: false
+      required: [repo, default_branch, docs_dir, last_synced_sha, config_snapshot, types]
+      properties:
+        repo:
+          type: string
+          example: acme/platform
+        default_branch:
+          type: string
+          example: main
+        docs_dir:
+          type: string
+          example: docs
+        last_synced_sha:
+          type: string
+          description: HEAD SHA of the last successful ingest, or "" if never synced.
+        config_snapshot:
+          type: object
+          additionalProperties: true
+          description: The repo's `.docz.yaml` at HEAD, as a JSON object.
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocType"
+    DocType:
+      description: A document type declared in the repo's `.docz.yaml`.
+      type: object
+      additionalProperties: false
+      required: [name, dir, id_prefix, plural_label, statuses, aliases]
+      properties:
+        name:
+          type: string
+          description: Canonical type name.
+          example: frameworks
+        dir:
+          type: string
+          description: Type directory under `docs_dir`.
+          example: frameworks
+        id_prefix:
+          type: string
+          example: FW
+        plural_label:
+          type: string
+          example: Frameworks
+        statuses:
+          type: array
+          description: Allowed statuses; [] when unset (never null).
+          items:
+            type: string
+        aliases:
+          type: array
+          description: Alternate names the type resolves by; [] when unset (never null).
+          items:
+            type: string
+    Document:
+      description: A single document. `raw_md` is present only on the get-one endpoint.
+      type: object
+      additionalProperties: false
+      required: [repo, doc_id, type, title, status, author, created, path, git_sha, content_hash, updated_at]
+      properties:
+        repo:
+          type: string
+          example: acme/platform
+        doc_id:
+          type: string
+          example: FW-0001
+        type:
+          type: string
+          description: Canonical type name.
+          example: frameworks
+        title:
+          type: string
+        status:
+          type: string
+          description: '"" when unset.'
+        author:
+          type: string
+          description: '"" when unset.'
+        created:
+          type: string
+          description: 'YYYY-MM-DD, or "" when unset.'
+        path:
+          type: string
+          example: docs/frameworks/0001-intro.md
+        git_sha:
+          type: string
+        content_hash:
+          type: string
+        updated_at:
+          type: string
+          description: 'RFC3339, or "" when unset.'
+        raw_md:
+          type: string
+          description: Full Markdown source; present only on the single-document endpoint.
+    SearchHit:
+      description: One search result with a highlighted body snippet.
+      type: object
+      additionalProperties: false
+      required: [repo, doc_id, type, title, status, author, snippet]
+      properties:
+        repo:
+          type: string
+          example: acme/platform
+        doc_id:
+          type: string
+          example: FW-0001
+        type:
+          type: string
+          example: frameworks
+        title:
+          type: string
+        status:
+          type: string
+          description: '"" when unset.'
+        author:
+          type: string
+          description: '"" when unset.'
+        snippet:
+          type: string
+          description: Highlighted body excerpt with <em></em> around matches.
+    SearchResult:
+      description: Search hits plus per-facet value counts.
+      type: object
+      additionalProperties: false
+      required: [query, estimated_total_hits, hits, facets]
+      properties:
+        query:
+          type: string
+          description: The echoed query string.
+        estimated_total_hits:
+          type: integer
+          format: int64
+          description: Estimated total matches across all pages.
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchHit"
+        facets:
+          type: object
+          description: Per-facet value counts (facet -> value -> count).
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+              format: int64
+    Session:
+      description: The authenticated site user's normalized identity.
+      type: object
+      additionalProperties: false
+      required: [provider, subject]
+      properties:
+        provider:
+          type: string
+          description: The auth provider key (github | okta | keycloak).
+          example: github
+        subject:
+          type: string
+          description: Stable per-provider user id.
+        email:
+          type: string
+          description: User email; omitted when the provider exposes none.
+        login:
+          type: string
+          description: GitHub login; omitted for OIDC providers.
+        groups:
+          type: array
+          description: OIDC group/role claims; omitted for GitHub OAuth.
+          items:
+            type: string
+    StatusResponse:
+      description: A minimal JSON status envelope with a single `status` field.
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: A short human-readable status word or phrase.
+          example: logged out
