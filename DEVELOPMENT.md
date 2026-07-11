@@ -149,17 +149,32 @@ The first build is cold; BuildKit cache mounts (`/go/pkg/mod`,
 `/root/.cache/go-build`) make subsequent builds fast. The image has no shell —
 health checks must probe `/healthz` over HTTP from outside.
 
-To run the **entire stack in compose** (service container + the three
-dependencies on a private network, only `:8080` published), use the reference
-deployment:
+### Full local environment (`just local-up`)
+
+To test **everything containerized end to end** — the locally-built image,
+webhooks arriving via ngrok, login, ingest — use the local environment compose
+file (`deploy/compose.local.yaml`):
 
 ```sh
-cd deploy
-cp .env.production.example .env.production   # fill in real values
-mkdir -p secrets && cp /path/to/app.pem secrets/github-app.pem
-docker compose up -d --build
+cp deploy/.env.local.example deploy/.env.local   # fill in your dev GitHub App
+mkdir -p deploy/secrets && cp /path/to/dev-app.pem deploy/secrets/github-app.pem
+just local-up
+# ✓ Local env up — webhook URL: https://<domain>.ngrok-free.app/webhooks/github
 ```
 
+`local-up` builds the image from the working tree, starts the service +
+Postgres/Redis/Meilisearch + ngrok, waits for health, and prints the webhook URL
+to paste into your dev GitHub App. The service is at `localhost:8080` (so the
+OAuth callback stays `http://localhost:8080`), ngrok's inspector at
+`localhost:4040`. Companions: `just local-ps`, `local-logs`, `local-down`,
+`local-nuke`.
+
+This environment and the host-run dev loop are **alternatives, not roommates** —
+both claim `:8080`/`:4040`, so `just dev-down` before `just local-up` (and vice
+versa). Rebuild + restart after code changes is just `just local-up` again.
+
+There is also the production-shaped reference deployment in
+`deploy/compose.yaml` (`.env.production`, restart policies, no tunnel) —
 `deploy/README.md` covers that layout, secrets handling, and
 health/observability endpoints in detail.
 

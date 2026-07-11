@@ -7,11 +7,17 @@ service itself, use the repo-root `compose.yaml` (dependencies only) with
 
 ## Layout
 
-- `compose.yaml` — the full stack (service + three dependencies).
+- `compose.yaml` — the full production-shaped stack (service + three
+  dependencies).
+- `compose.local.yaml` — the **local environment**: the same stack built from
+  the working tree plus an ngrok webhook tunnel, driven by `just local-up`; see
+  [DEVELOPMENT.md](../DEVELOPMENT.md#full-local-environment-just-local-up).
 - `.env.production.example` — configuration template; copy to `.env.production`
   (gitignored) and fill in from your secret manager.
+- `.env.local.example` — the local environment's template; copy to `.env.local`
+  (gitignored).
 - `secrets/github-app.pem` — the GitHub App private key, mounted into the
-  service as a Docker secret (gitignored; you create it).
+  service as a Docker secret (gitignored; you create it; shared by both stacks).
 
 ## Bring-up
 

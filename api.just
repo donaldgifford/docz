@@ -98,6 +98,44 @@ dev-tunnel:
     done; \
     echo "✗ Tunnel not up after 10s — check 'just dev-logs' and http://localhost:4040"; exit 1
 
+# ─── Local environment (full stack in containers) ─────────────────
+
+local_compose := "docker compose -f deploy/compose.local.yaml --env-file deploy/.env.local"
+
+# Build + start the full local env: service, deps, ngrok (needs deploy/.env.local)
+[group('local')]
+local-up:
+    @test -f deploy/.env.local || { echo "✗ deploy/.env.local missing — cp deploy/.env.local.example deploy/.env.local and fill it in"; exit 1; }
+    @{{ local_compose }} up -d --build --wait
+    @for i in 1 2 3 4 5 6 7 8 9 10; do \
+        url=$(curl -fsS localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty'); \
+        if [ -n "$url" ]; then echo "✓ Local env up — webhook URL: $url/webhooks/github"; exit 0; fi; \
+        sleep 1; \
+    done; \
+    echo "✓ Local env up — tunnel still starting, check http://localhost:4040"
+
+# Stop the local env; volumes are kept (see local-nuke)
+[group('local')]
+local-down:
+    @{{ local_compose }} down
+    @echo "✓ Local env stopped"
+
+# Stop the local env and wipe its volumes
+[group('local')]
+local-nuke:
+    @{{ local_compose }} down -v
+    @echo "✓ Local env stopped, volumes wiped"
+
+# Show local env status and health
+[group('local')]
+local-ps:
+    @{{ local_compose }} ps
+
+# Follow local env logs (all services)
+[group('local')]
+local-logs:
+    @{{ local_compose }} logs -f
+
 # ─── Test ───────────────────────────────────────────────────────────
 
 # Run all tests with the race detector
