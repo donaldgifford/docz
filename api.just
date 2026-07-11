@@ -57,6 +57,36 @@ run: build
 run-local: build
     @{{ bin_dir }}/{{ project_name }}
 
+# ─── Dev stack ──────────────────────────────────────────────────────
+
+# Start the local dependency stack (Postgres, Redis, Meilisearch) and wait for health
+[group('dev')]
+dev-up:
+    @docker compose up -d --wait
+    @echo "✓ Dev stack up (postgres :5432, redis :6379, meilisearch :7700)"
+
+# Stop the dev stack; volumes are kept (see dev-nuke)
+[group('dev')]
+dev-down:
+    @docker compose down
+    @echo "✓ Dev stack stopped"
+
+# Stop the dev stack and wipe its volumes
+[group('dev')]
+dev-nuke:
+    @docker compose down -v
+    @echo "✓ Dev stack stopped, volumes wiped"
+
+# Show dev stack status and health
+[group('dev')]
+dev-ps:
+    @docker compose ps
+
+# Follow dev stack logs
+[group('dev')]
+dev-logs:
+    @docker compose logs -f
+
 # ─── Test ───────────────────────────────────────────────────────────
 
 # Run all tests with the race detector

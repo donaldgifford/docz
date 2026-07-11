@@ -4,10 +4,10 @@
 # needs so `just run` (or `go run ./cmd/docz-api`) can reach them on localhost.
 # Hermetic CI tests use testcontainers-go instead (IMPL-0001 OQ 7 / OQ 9).
 #
-# Usage:
-#   docker compose up -d       # start in the background
-#   docker compose ps          # check health
-#   docker compose down        # stop (add -v to also wipe the volumes)
+# Usage (just recipes wrap docker compose):
+#   just dev-up      # start in the background, wait for health
+#   just dev-ps      # check health
+#   just dev-down    # stop (dev-nuke to also wipe the volumes)
 #
 # The credentials below are DEV-ONLY defaults that mirror .env.example; never
 # reuse them in a real deployment.

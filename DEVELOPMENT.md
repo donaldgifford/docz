@@ -43,8 +43,9 @@ The service needs Postgres, Redis, and Meilisearch. The repo-root
 mirror `.env.example` — it does **not** run the service itself):
 
 ```sh
-docker compose up -d    # postgres :5432, redis :6379, meilisearch :7700
-docker compose ps       # wait for all three to report healthy
+just dev-up     # postgres :5432, redis :6379, meilisearch :7700; waits for health
+just dev-ps     # status, if you want to double-check
+just dev-logs   # follow the dependency logs
 ```
 
 Configuration is **environment-only** (no config file). Copy the template
@@ -99,7 +100,8 @@ skips webhooks.
 When you are done:
 
 ```sh
-docker compose down      # stop the dependencies (add -v to wipe their data)
+just dev-down    # stop the dependencies (volumes kept)
+just dev-nuke    # stop AND wipe the data volumes — fresh databases next dev-up
 ```
 
 ## Run with Docker
