@@ -328,7 +328,7 @@ export const demoOrgHandlers = [
 
     return HttpResponse.json({
       query: q,
-      estimated_total_hits: hits.length,
+      estimated_total_hits: matches.length,
       hits,
       facets: {
         repo: facet((doc) => doc.repo),
