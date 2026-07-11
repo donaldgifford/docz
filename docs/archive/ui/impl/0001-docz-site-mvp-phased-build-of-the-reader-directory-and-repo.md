@@ -297,7 +297,7 @@ untrusted.
 - [x] Directory four states: skeleton rows, contextual empty ("No
       documents yet — onboard a repo with the docz GitHub App" / "No
       matches — clear filters"), inline error + retry, 401 panel
-- [ ] Snippet renderer: escape snippet text, re-insert only `<em>` match
+- [x] Snippet renderer: escape snippet text, re-insert only `<em>` match
       markers as `<mark>`; XSS tests with hostile snippet fixtures
 - [ ] cmdk palette: opened by ⌘K and `/`, closed by Esc; debounced
       `searchDocs`; results grouped by repo; preview pane (title, status,
