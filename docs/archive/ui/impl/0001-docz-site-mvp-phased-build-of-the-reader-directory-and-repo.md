@@ -164,7 +164,7 @@ repo is a clean, green shell app.
 - [x] Remove `.github/dependabot.yml` — Renovate (`renovate.json5`) owns
       dependency automation; audit its config for bun/npm coverage of the
       new stack
-- [ ] Rewrite `README.md` quickstart (mise install → bun install →
+- [x] Rewrite `README.md` quickstart (mise install → bun install →
       just dev / just dev-msw)
 
 #### Success Criteria
