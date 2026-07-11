@@ -132,7 +132,7 @@ repo is a clean, green shell app.
       mutator (same-origin base, JSON handling, error mapping: 401 →
       `SessionRequiredError`, 404 → `NotFoundError`, other → `ApiError`)
 - [x] Vendor `api/openapi.yaml` from docz-api at `info.version` 1.0.0
-- [ ] New `orval.config.ts`: `client: react-query`, `httpClient: fetch`,
+- [x] New `orval.config.ts`: `client: react-query`, `httpClient: fetch`,
       custom mutator, `mock: true`, output `src/api/__generated__/`
       (gitignored, `clean: true`)
 - [ ] `scripts/gen-api-check.sh`: regenerate + `git diff --exit-code` on
