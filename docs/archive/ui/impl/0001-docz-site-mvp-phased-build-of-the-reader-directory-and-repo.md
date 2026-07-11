@@ -152,7 +152,7 @@ repo is a clean, green shell app.
 - [x] Rewrite `mise.toml` (pin bun; drop unused tools) and `justfile`
       (dev, dev-msw, gen-api, gen-api-check, lint, fmt, test, build,
       preview, ci)
-- [ ] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
+- [x] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
       test → build → gen-api drift check
 - [x] Prune inherited `.github/` automation: the template ships ~10
       workflows (codeql, security, trufflehog, changelog, release,
