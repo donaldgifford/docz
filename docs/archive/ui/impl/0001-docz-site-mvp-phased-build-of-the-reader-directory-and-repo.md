@@ -122,7 +122,7 @@ repo is a clean, green shell app.
       (`src/theme/tokens.css`): bg/fg/border scales, accent, `--st-*`
       status colors, `--t-*` type colors, font stacks, zero radius,
       focus-visible style
-- [ ] Wire fonts via self-hosted `@fontsource` packages (`ibm-plex-mono`,
+- [x] Wire fonts via self-hosted `@fontsource` packages (`ibm-plex-mono`,
       `ibm-plex-sans`, `source-serif-4`) — no third-party font requests
 - [ ] App shell: topbar (brand mark, search affordance, nav, avatar
       placeholder) + `createBrowserRouter` route table — `/`, `/repos`,

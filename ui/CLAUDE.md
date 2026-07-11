@@ -33,6 +33,9 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 
 - `vite.config.ts` — react + tailwind plugins, `@/` → `src/` alias, dev
   proxy (same-origin in prod; docz-api sends no CORS headers)
+- Fonts are self-hosted `@fontsource` imports in `src/main.tsx` (IBM
+  Plex Sans/Mono, Source Serif 4) — never add a third-party font URL.
+  New weights = new per-weight CSS import there.
 - `src/theme/tokens.css` — the single global stylesheet: Tailwind v4
   import + `@theme static` tokens ported from `mockup.html` `:root`.
   Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
