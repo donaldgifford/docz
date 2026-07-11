@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Documentation
+
+- *(repo-index)* Check off the IMPL-0003 testing plan
+
 ## [0.4.0] - 2026-07-11
 
 ### Features
