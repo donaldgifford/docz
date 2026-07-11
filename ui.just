@@ -1,5 +1,5 @@
 # Mirrors package.json scripts as `just` recipes so commands are short
-# and composable. Underlying tooling (Bun, react-router, vitest) is the
+# and composable. Underlying tooling (Bun, Vite, vitest, orval) is the
 # source of truth — recipes here just call into it.
 
 set shell := ["zsh", "-cu"]
@@ -11,32 +11,23 @@ default:
 install:
     bun install
 
-# Vite dev server (SSR + HMR)
+# Vite dev server, proxying /api,/auth,/openapi.yaml to local docz-api
 dev:
     bun run dev
 
-# Vite dev server with MSW handlers backing the API surface.
-# No rfc-api / Postgres / GitHub webhook required. See IMPL-0002.
+# Vite dev server against MSW fixtures — no docz-api required
 dev-msw:
     bun run dev:msw
 
-# Production build
-build:
-    bun run build
+# Regenerate the docz-api TS client (orval -> src/api/__generated__)
+gen-api:
+    bun run gen-api
 
-# Serve the production build
-start:
-    bun run start
+# Drift gate: snapshot, regenerate, diff the generated client
+gen-api-check:
+    ./scripts/gen-api-check.sh
 
-# Regenerate RR7 route types in .react-router/types/
-typegen:
-    bun run typegen
-
-# Strict TS check (runs typegen first)
-typecheck:
-    bun run typecheck
-
-# Lint
+# Lint (eslint flat config)
 lint:
     bun run lint
 
@@ -45,12 +36,16 @@ lint-fix:
     bun run lint:fix
 
 # Prettier write
-format:
+fmt:
     bun run format
 
 # Prettier check (no write)
-format-check:
+fmt-check:
     bun run format:check
+
+# Strict TS check (tsc -b over the project references)
+typecheck:
+    bun run typecheck
 
 # Vitest single run
 test:
@@ -60,13 +55,13 @@ test:
 test-watch:
     bun run test:watch
 
-# Composite: run all the static checks (CI parity)
-check: typecheck lint format-check test
+# Production build (tsc -b + vite build)
+build:
+    bun run build
 
-# Regenerate the rfc-api TS client (orval -> src/portal/api/__generated__)
-gen-api:
-    bun run gen-api
+# Serve the production build locally
+preview:
+    bun run preview
 
-# CI drift check: regenerate the client twice and fail if outputs diverge
-gen-api-check:
-    ./scripts/gen-api-check.sh
+# CI parity: everything the ci workflow runs, in order
+ci: gen-api lint fmt-check typecheck test build gen-api-check

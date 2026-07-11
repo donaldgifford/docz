@@ -149,7 +149,7 @@ repo is a clean, green shell app.
       smoke test (shell renders, a generated hook resolves against MSW)
 - [x] Lint/format: ESLint (typescript-eslint, react-hooks, jsx-a11y) +
       Prettier; keep markdownlint/yamllint configs
-- [ ] Rewrite `mise.toml` (pin bun; drop unused tools) and `justfile`
+- [x] Rewrite `mise.toml` (pin bun; drop unused tools) and `justfile`
       (dev, dev-msw, gen-api, gen-api-check, lint, fmt, test, build,
       preview, ci)
 - [ ] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
