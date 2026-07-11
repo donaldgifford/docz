@@ -138,10 +138,12 @@ repo is a clean, green shell app.
 - [x] `scripts/gen-api-check.sh`: regenerate + diff on the generated dir
       (PR gate; the dir is gitignored so the gate is snapshot →
       regenerate → `diff -r`, not `git diff`)
-- [ ] Spec drift workflow (scheduled + on-PR): fetch docz-api main's
+- [x] Spec drift workflow (scheduled + on-PR): fetch docz-api main's
       `api/openapi.yaml` and compare `info.version` to the vendored copy —
       the same regenerate-and-diff pattern as the git-cliff CHANGELOG
       drift check; drift opens/updates a tracking issue, never fails PRs
+      (implemented as a full-content diff with `info.version` reported,
+      since upstream has shipped spec changes without a version bump)
 - [ ] Test scaffolding: Vitest + Testing Library + MSW
       (`src/test/setup.ts`, server from generated handlers) in jsdom; one
       smoke test (shell renders, a generated hook resolves against MSW)
