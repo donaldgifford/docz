@@ -79,7 +79,27 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the TS API are clean — narrowly eslint-disabled there with explicit
   annotations. Don't blanket-disable the rule.
 
+- MSW fixtures: `src/mocks/fixtures.ts` is a curated demo org (real
+  docz markdown — docz-site docs via `?raw` imports, docz-api docs as
+  snapshots in `src/mocks/content/`) layered BEFORE the generated faker
+  handlers in both `src/test/server.ts` and `src/mocks/browser.ts`.
+  Fixture resolvers return `undefined` to fall through to faker for
+  anything outside the demo org.
+- Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
+  + `src/components/query-states.tsx` (shared 401/404/error panels).
+
 ## Toolchain notes
+
+- Never commit credential-shaped strings — even fake ones in fixture
+  prose or docs (including THIS file). trufflehog scans the full PR
+  commit range with unverified findings fatal; any database URI
+  carrying a user-colon-password pair trips it regardless of the
+  password's value (a REDACTED placeholder still matches — drop the
+  password component entirely), and a purge means rewriting branch
+  history.
+- Per-task local gate is `just ci` semantics: test, lint, `tsc -b
+  --force`, build, AND `bun run format:check` — formatting misses fail
+  CI even when everything else is green.
 
 - TypeScript is pinned to the 5.9 series: typescript-eslint's parser
   cannot load the TS 7 (native compiler) line. Don't bump the major

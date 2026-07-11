@@ -38,6 +38,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(readme)* Rewrite quickstart for the docz-site stack
 - *(impl)* Clarify rfc-site sweep criterion to exclude self-references
 - *(impl)* Record Phase 1 verification note
+- *(claude)* Record fixtures layout and phase-1 CI lessons
 
 ### Testing
 
