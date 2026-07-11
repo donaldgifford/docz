@@ -48,6 +48,16 @@ describe("repos grid", () => {
     expect(apiCard.textContent).toContain("sync fixture");
   });
 
+  it("shows skeleton cards before the list resolves", async () => {
+    mountAt("/repos");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("repos-skeleton")).toBeInTheDocument();
+    });
+    await screen.findByRole("link", { name: /donaldgifford\/docz-site/ });
+    expect(screen.queryByTestId("repos-skeleton")).not.toBeInTheDocument();
+  });
+
   it("shows the onboarding empty state when no repos exist", async () => {
     server.use(
       http.get(REPOS_ENDPOINT, () => HttpResponse.json({ repos: [] })),

@@ -101,6 +101,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   every option stays offered while one is selected. URL `offset` means
   "rows 0..offset+PAGE_SIZE shown"; the query grows `limit` from 0 so
   deep links render identical rows.
+- Repo pages share `RepoFrame` (`src/components/repo-frame.tsx`): the
+  three-column grid (sticky RepoNav · content · 190px rail, collapsing
+  at 1181px/861px) plus RepoBreadcrumbs — home, type pages, AND the
+  reader all mount inside it. Counts everywhere come from
+  `useRepoFacts` (repo-filtered limit-0 facet query) so numbers agree.
+  URL `{type}` resolves by name/id_prefix/alias via
+  `lib/docTypes.resolveDocType` (links always generated from the
+  canonical name); fixtures mirror this and 404 unknown types.
+- Repo home renders getRepoIndex's index.md (spec 1.1.0) through
+  `useRenderedSource` with its h1 KEPT; the reader strips the h1 via
+  the `useRenderedMarkdown` wrapper. 404 from getRepoIndex = generated
+  home fallback, not an error.
 - Palette (`src/components/command-palette.tsx`, mounted in AppShell):
   state is palette-local, never the URL. cmdk normalizes item values —
   keys are lowercased and navigation resolves hits through the list for

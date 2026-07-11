@@ -383,7 +383,7 @@ full three-column portal.
       accept `id_prefix`/alias URLs (the API resolves them)
       (lib/docTypes resolveDocType, mirrored in fixtures; alias test
       covers /INV → Investigations)
-- [ ] Four-state coverage + component tests for repos grid, repo home, and
+- [x] Four-state coverage + component tests for repos grid, repo home, and
       type pages
 
 #### Success Criteria
@@ -397,6 +397,18 @@ full three-column portal.
   with no `index.md` shows the generated home
 - Sibling-doc navigation in the reader swaps documents without a full
   reload (query cache hit)
+
+> Verified 2026-07-11: criterion 1 — every route test mounts its deep
+> URL cold (memory router initialEntries), including alias URLs.
+> Criterion 2 — cards, nav, and directory facets all read the same
+> useRepoFacts / searchDocs facet queries (single source, asserted as
+> 2/1/1 for the demo org in repos, repo-nav, and directory tests).
+> Criterion 3 — docz-api's zero-doc `rfc` type shows the docz-create
+> empty state; docz-site (no index.md → 404) shows the generated home.
+> Criterion 4 — the portal sibling-navigation test swaps DESIGN-0001 →
+> IMPL-0001 through the nav in-place. Bonus over plan: DESIGN-0003's
+> getRepoIndex shipped upstream (spec 1.1.0, re-vendored), so the repo
+> home renders real index.md through the reader pipeline.
 
 ---
 

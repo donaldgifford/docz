@@ -34,6 +34,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(search)* Inert snippet renderer honoring only <em> match markers
 - *(palette)* Cmdk command palette with grouped results and preview
 - *(shell)* Topbar search affordance opens the command palette
+- *(api)* Re-vendor docz-api spec 1.1.0 with getRepoIndex
+- *(repos)* Facts hook and /repos grid backed by search facets
+- *(repos)* Shared TechDocs-style repo nav
+- *(repos)* Repo home rendering index.md with generated fallback
+- *(repos)* Synthesized README-style type pages in a shared frame
+- *(reader)* Mount the reader inside the three-column portal
 
 ### Bug Fixes
 
@@ -55,6 +61,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(reader)* Pin pipeline memoization per (doc_id, content_hash)
 - *(reader)* Four-state matrix, metadata omission, lifecycle, ToC anchors
 - *(phase-2)* Close out component-test coverage and verify criteria
+- *(phase-3)* Four-state coverage for repo pages and criteria verification
 
 ### Miscellaneous Tasks
 

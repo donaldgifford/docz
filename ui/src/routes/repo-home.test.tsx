@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
@@ -78,6 +79,26 @@ describe("repo home", () => {
 
     expect(
       await screen.findByText("Not found — or not visible to you"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders an inline error whose retry recovers", async () => {
+    let failing = true;
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name", () =>
+        failing
+          ? HttpResponse.json({ error: "boom" }, { status: 500 })
+          : undefined,
+      ),
+    );
+    mountAt("/donaldgifford/docz-api");
+
+    expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
+
+    failing = false;
+    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "docz-api" }),
     ).toBeInTheDocument();
   });
 
