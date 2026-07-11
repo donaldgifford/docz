@@ -70,4 +70,17 @@ describe("preprocessDoczMarkdown", () => {
     const raw = "# Plain\n\nSome **markdown** with a [link](https://x).\n";
     expect(preprocessDoczMarkdown(raw)).toBe(raw);
   });
+
+  it("strips the leading h1 only when asked", () => {
+    const raw = "---\nid: X\n---\n\n# DESIGN 0001: title\n\nBody.";
+    expect(preprocessDoczMarkdown(raw)).toContain("# DESIGN 0001");
+    expect(preprocessDoczMarkdown(raw, { stripLeadingH1: true })).toBe(
+      "\nBody.",
+    );
+  });
+
+  it("does not strip an h1 that isn't the opening content", () => {
+    const raw = "Intro paragraph.\n\n# Late Heading\n";
+    expect(preprocessDoczMarkdown(raw, { stripLeadingH1: true })).toBe(raw);
+  });
 });

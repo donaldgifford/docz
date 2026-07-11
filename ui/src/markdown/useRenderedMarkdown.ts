@@ -16,7 +16,12 @@ export function useRenderedMarkdown(doc: Document | undefined) {
   return useQuery<RenderedMarkdown>({
     enabled: rawMd !== undefined,
     queryKey: ["rendered-markdown", doc?.doc_id, doc?.content_hash],
-    queryFn: () => renderMarkdown(preprocessDoczMarkdown(rawMd ?? "")),
+    queryFn: () =>
+      renderMarkdown(
+        // The reader header renders the structured title, so the
+        // markdown's own leading h1 would duplicate it.
+        preprocessDoczMarkdown(rawMd ?? "", { stripLeadingH1: true }),
+      ),
     staleTime: Infinity,
     // ReactNode trees aren't serializable; keep them out of any future
     // persister and don't try structural sharing on them.

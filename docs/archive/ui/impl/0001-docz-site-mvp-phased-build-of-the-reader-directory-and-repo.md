@@ -227,7 +227,7 @@ phase onward.
       article, inline error + retry, neutral not-found panel ("Not found —
       or not visible to you"), bare 401 session-required panel linking
       `/auth/login?provider=github`
-- [ ] Center column: file-path breadcrumb (from `path`), id line
+- [x] Center column: file-path breadcrumb (from `path`), id line
       (`DESIGN / 0009`), title, status pill · author · updated
 - [ ] Right rail: "On this page" ToC (sticky wide / disclosure narrow),
       trimmed metadata card (omit `""` fields; "all fields · json →" link

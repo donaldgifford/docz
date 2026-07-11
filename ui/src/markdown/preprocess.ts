@@ -15,6 +15,22 @@ const FRONTMATTER_RE = /^---\r?\n[\s\S]*?\r?\n---[ \t]*\r?\n?/;
 // writes one block, but stray extras shouldn't survive either.
 const TOC_BLOCK_RE = /[ \t]*<!--toc:start-->[\s\S]*?<!--toc:end-->[ \t]*\r?\n?/g;
 
-export function preprocessDoczMarkdown(raw: string): string {
-  return raw.replace(FRONTMATTER_RE, "").replace(TOC_BLOCK_RE, "");
+// The first ATX h1 when it's the document's opening content — the
+// reader header already renders the structured title, so keeping the
+// markdown h1 would print it twice.
+const LEADING_H1_RE = /^\s*#[ \t][^\n]*\r?\n?/;
+
+export interface PreprocessOptions {
+  stripLeadingH1?: boolean;
+}
+
+export function preprocessDoczMarkdown(
+  raw: string,
+  options: PreprocessOptions = {},
+): string {
+  let out = raw.replace(FRONTMATTER_RE, "").replace(TOC_BLOCK_RE, "");
+  if (options.stripLeadingH1 === true) {
+    out = out.replace(LEADING_H1_RE, "");
+  }
+  return out;
 }
