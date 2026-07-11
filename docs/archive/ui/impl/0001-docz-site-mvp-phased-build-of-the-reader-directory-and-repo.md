@@ -195,7 +195,7 @@ phase onward.
 
 #### Tasks
 
-- [ ] `src/markdown/preprocess.ts`: strip the YAML frontmatter block and
+- [x] `src/markdown/preprocess.ts`: strip the YAML frontmatter block and
       the `<!--toc:start-->…<!--toc:end-->` marker block from `raw_md`
 - [ ] `src/markdown/schema.ts`: rehype-sanitize schema — GitHub default
       extended with only the `id`/`class` attributes the slugger and Shiki
