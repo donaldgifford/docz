@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0003
 title: "Repo index endpoint: serve docs_dir index.md as the repo home"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-07-10
 ---
@@ -9,7 +9,7 @@ created: 2026-07-10
 
 # DESIGN 0003: Repo index endpoint: serve docs_dir index.md as the repo home
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-07-10
 
@@ -32,11 +32,11 @@ created: 2026-07-10
 - [Migration / Rollout Plan](#migration--rollout-plan)
 - [Open Questions](#open-questions)
   - [1. Response shape for the index endpoint?](#1-response-shape-for-the-index-endpoint)
-  - [2. Where is docs_dir resolved for the fetch?](#2-where-is-docs_dir-resolved-for-the-fetch)
+  - [2. Where is docs_dir resolved for the fetch?](#2-where-is-docsdir-resolved-for-the-fetch)
   - [3. Semantics when the repo has no index.md?](#3-semantics-when-the-repo-has-no-indexmd)
   - [4. Backfill for repos onboarded before this ships?](#4-backfill-for-repos-onboarded-before-this-ships)
   - [5. Endpoint path naming?](#5-endpoint-path-naming)
-  - [6. Include index_sha in the response?](#6-include-index_sha-in-the-response)
+  - [6. Include index_sha in the response?](#6-include-indexsha-in-the-response)
 - [Follow-ups](#follow-ups)
 - [References](#references)
 <!--toc:end-->

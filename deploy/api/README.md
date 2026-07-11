@@ -56,6 +56,13 @@ webhook secret, session secret, OAuth/OIDC credentials, Meili key — comes from
 
 - The service listens on `:8080`; only that port is published. Postgres, Redis,
   and Meilisearch stay on the private network.
+- **Repo index backfill (DESIGN-0003):** the `/api/v1/repos/{owner}/{name}/index`
+  endpoint serves the `docs_dir/index.md` cached at each repo's **last ingest**.
+  Repos onboarded before this feature shipped return 404 until their next
+  default-branch push touching `docs_dir/` (or `.docz.yaml`) re-ingests them —
+  or run a manual `docz-api -onboard owner/name@installationID` per repo. No
+  migration or backfill job is required; the docz-site's metadata fallback
+  covers the gap.
 - The images pin major/minor tags (`postgres:17-alpine`, `redis:7.4-alpine`,
   `getmeili/meilisearch:v1.12`); Renovate PRs updates.
 - For Kubernetes, translate this to a Deployment (service) plus StatefulSets or

@@ -1,7 +1,7 @@
 ---
 id: IMPL-0003
 title: "Repo index endpoint: serve docs_dir index.md as the repo home"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-07-10
 ---
@@ -9,7 +9,7 @@ created: 2026-07-10
 
 # IMPL 0003: Repo index endpoint: serve docs_dir index.md as the repo home
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-07-10
 
@@ -35,7 +35,7 @@ created: 2026-07-10
 - [Testing Plan](#testing-plan)
 - [Dependencies](#dependencies)
 - [Open Questions](#open-questions)
-  - [1. Which YAML library for the docs_dir hint parse?](#1-which-yaml-library-for-the-docs_dir-hint-parse)
+  - [1. Which YAML library for the docs_dir hint parse?](#1-which-yaml-library-for-the-docsdir-hint-parse)
   - [2. How does the contract test model the no-index 404?](#2-how-does-the-contract-test-model-the-no-index-404)
   - [3. Advertise index presence on existing repo DTOs?](#3-advertise-index-presence-on-existing-repo-dtos)
   - [4. Cap the cached index.md size?](#4-cap-the-cached-indexmd-size)
@@ -286,23 +286,27 @@ Prove the whole slice through the real pipeline and record the work.
 
 #### Tasks
 
-- [ ] Extend the e2e integration test (`internal/e2e`): the fake
+- [x] Extend the e2e integration test (`internal/e2e`): the fake
       `RepoFetcher` snapshot gains an `index.md` body; after onboarding
       through the real ingest + store, `GET .../index` serves it; a
       re-onboard with the file removed flips the endpoint to 404 (the
-      delete-at-HEAD path).
-- [ ] Rollout note (per DESIGN OQ-4a): document in `deploy/` notes or the PR
+      delete-at-HEAD path). _(done — `TestE2ERepoIndexServeAndRemoval`.)_
+- [x] Rollout note (per DESIGN OQ-4a): document in `deploy/` notes or the PR
       body that repos onboarded before this ships serve 404 until their next
       push or a manual `-onboard owner/name@id`; the site's fallback covers
-      the gap.
-- [ ] Update **`CLAUDE.md`**: the persistence conventions gain the new
+      the gap. _(done — `deploy/README.md` Notes section + repeated in the PR
+      body.)_
+- [x] Update **`CLAUDE.md`**: the persistence conventions gain the new
       columns/migration; the OpenAPI section records spec `1.1.0` and the new
-      endpoint; add an IMPL-0003 phase-progress note.
-- [ ] Flip **DESIGN-0003 → Implemented**; check off this plan; `docz update`
-      for the index tables.
-- [ ] Final gates: `just test`, `just test-integration` (Docker),
+      endpoint; add an IMPL-0003 phase-progress note. _(done — a dedicated
+      "Repo index endpoint" section covers persistence/fetch/serve/rollout,
+      and the OpenAPI section records the current `1.1.0`.)_
+- [x] Flip **DESIGN-0003 → Implemented**; check off this plan; `docz update`
+      for the index tables. _(done.)_
+- [x] Final gates: `just test`, `just test-integration` (Docker),
       `just lint`, `just lint-openapi`, `just fmt`; changelog sync commit;
       push + PR (label **minor** — additive endpoint), merge when green.
+      _(done — all gates green; PR merged.)_
 
 #### Success Criteria
 
