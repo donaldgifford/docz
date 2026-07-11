@@ -118,7 +118,7 @@ repo is a clean, green shell app.
       (`@vitejs/plugin-react`, `@tailwindcss/vite`, dev `server.proxy` for
       `/api`, `/auth`, `/openapi.yaml` → local docz-api), strict
       `tsconfig.json` with `@/` path alias, `index.html`, `src/main.tsx`
-- [ ] Port `mockup.html` `:root` tokens into Tailwind v4 `@theme`
+- [x] Port `mockup.html` `:root` tokens into Tailwind v4 `@theme`
       (`src/theme/tokens.css`): bg/fg/border scales, accent, `--st-*`
       status colors, `--t-*` type colors, font stacks, zero radius,
       focus-visible style

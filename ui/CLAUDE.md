@@ -33,6 +33,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 
 - `vite.config.ts` — react + tailwind plugins, `@/` → `src/` alias, dev
   proxy (same-origin in prod; docz-api sends no CORS headers)
+- `src/theme/tokens.css` — the single global stylesheet: Tailwind v4
+  import + `@theme static` tokens ported from `mockup.html` `:root`.
+  Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
+  `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped (sharp
+  corners); only `rounded-pill` exists. Don't add other CSS entrypoints.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
