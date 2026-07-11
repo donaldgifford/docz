@@ -166,33 +166,42 @@ populates the Phase 1 columns from a live (or stubbed) repo.
 
 #### Tasks
 
-- [ ] Add `IndexMD []byte` / `IndexSHA string` to `ingest.RepoSnapshot`
+- [x] Add `IndexMD []byte` / `IndexSHA string` to `ingest.RepoSnapshot`
       (`internal/ingest/fetcher.go`), doc comments mirroring the changelog
-      pair (nil/"" when absent).
-- [ ] Implement the docs_dir **hint parse** in `internal/githubapp`
+      pair (nil/"" when absent). _(done — fields + DESIGN-0003 doc comments.)_
+- [x] Implement the docs_dir **hint parse** in `internal/githubapp`
       (DESIGN OQ-2a): unexported `docsDirHint(configYAML []byte) string` —
       one-field `yaml.Unmarshal` of `docs_dir`, defaulting to
       `doczcfg.DefaultConfig().DocsDir` on empty/unparseable input (a broken
       `.docz.yaml` still fails ingest at `loadConfig`; the hint never masks
       it). Promote `gopkg.in/yaml.v3` to a direct require per the repo
       convention (go.mod edit / targeted `go get`, **no bare `go mod tidy`**)
-      — OQ-1a.
-- [ ] Wire the targeted fetch into `Client.Fetch`: after `ConfigYAML` is
+      — OQ-1a. _(done — hint parse trims a trailing `/`; yaml.v3 moved to the
+      direct require block + `go mod edit -fmt`.)_
+- [x] Wire the targeted fetch into `Client.Fetch`: after `ConfigYAML` is
       fetched, look up `docsDirHint(...) + "/" + doczcfg.WikiIndexName` in the
       already-fetched tree entries (exact path match, blob type); when
       present, `fetchBlob` → `snap.IndexMD` / `snap.IndexSHA`. Absent ⇒ both
-      zero, **zero extra API calls**.
-- [ ] Map the pair in `ingest.Service` (`RepoInput{... IndexMD:
+      zero, **zero extra API calls**. _(done — `findBlobSHA` exact-path/blob
+      match over the recursive tree; fetch wired after the changelog blob.)_
+- [x] Map the pair in `ingest.Service` (`RepoInput{... IndexMD:
       string(snap.IndexMD), IndexSHA: snap.IndexSHA}`) beside the changelog
-      mapping.
-- [ ] Tests: `githubapp` stub-RoundTripper fixtures — tree with
+      mapping. _(done — plus the `Run` doc comment now names the cached repo
+      home.)_
+- [x] Tests: `githubapp` stub-RoundTripper fixtures — tree with
       `docs/index.md` (fetched, correct sha), tree without it (zero fields, no
       extra blob request), non-default `docs_dir: notes` targeting
       `notes/index.md`, config without `docs_dir` using the default;
       `docsDirHint` table test (valid, empty, missing key, malformed YAML);
-      ingest `service_test` asserts the `RepoInput` carries the pair.
-- [ ] `just test` / `just lint` / `just fmt` green; commit
+      ingest `service_test` asserts the `RepoInput` carries the pair. _(done —
+      `TestFetchRepoIndex` (default dir, custom `notes` beating a decoy
+      `docs/index.md`, index.md-as-directory non-match), the absent case
+      asserted in `TestFetchClassifiesAndDecodes` (stub 404s unknown shas, so
+      a stray blob call would fail the fetch), `TestDocsDirHint` five-case
+      table, and the `RepoInput` pair assertion in `service_test`.)_
+- [x] `just test` / `just lint` / `just fmt` green; commit
       (`feat(ingest): fetch docs_dir index.md into the repo snapshot`).
+      _(done — lint 0 issues, fmt no-op, full unit suite green.)_
 
 #### Success Criteria
 
@@ -203,6 +212,12 @@ populates the Phase 1 columns from a live (or stubbed) repo.
   fail an otherwise-valid fetch (malformed YAML → default + ingest still
   fails later at `loadConfig`, unchanged).
 - `gopkg.in/yaml.v3` is a direct require; `go mod verify` clean.
+
+**Status: COMPLETE ✅** — all criteria met. `TestFetchRepoIndex` proves the
+targeted fetch (default and custom `docs_dir`, blob-only match);
+`TestFetchClassifiesAndDecodes` proves the absent case makes no extra blob
+call (the stub 404s unknown shas); `TestDocsDirHint` pins the fallback
+behavior; `go mod verify` reports all modules verified.
 
 ---
 
