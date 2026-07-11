@@ -213,7 +213,7 @@ phase onward.
       inline SVG/MathML, `data:` URIs — every payload neutralized;
       companion benign suite (GFM tables, fenced code, footnotes, images,
       blockquotes) survives intact; slug stability asserted
-- [ ] `src/lib/colors.ts`: curated type→color map (rfc, adr, design, impl,
+- [x] `src/lib/colors.ts`: curated type→color map (rfc, adr, design, impl,
       investigation/inv, mandate, guide, principle, policy, framework —
       values from the mockup `--t-*` tokens); deterministic hash into a
       fixed 8-color palette for unknown types; case-insensitive status

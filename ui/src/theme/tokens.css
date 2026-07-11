@@ -68,6 +68,17 @@
   --color-t-framework: #73daca;
   --color-t-working: #ff9e64;
 
+  /* Deterministic fallback palette for unknown doc types — indexed by
+     the hash in src/lib/colors.ts. Order matters; never reorder. */
+  --color-hash-0: #7aa2f7;
+  --color-hash-1: #9ece6a;
+  --color-hash-2: #e0af68;
+  --color-hash-3: #f7768e;
+  --color-hash-4: #bb9af7;
+  --color-hash-5: #73daca;
+  --color-hash-6: #ff9e64;
+  --color-hash-7: #2ac3de;
+
   /* Code blocks */
   --color-code-bg: #161b28;
 
