@@ -96,6 +96,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `SearchHit` has NO `updated_at` (additive ask in DESIGN-0001) — the
   updated column renders "—"; `src/lib/relativeTime.ts` takes over when
   the field lands.
+- Faceted controls exclude their own dimension via separate limit-0
+  searchDocs queries (directory picker/chips AND palette pills) so
+  every option stays offered while one is selected. URL `offset` means
+  "rows 0..offset+PAGE_SIZE shown"; the query grows `limit` from 0 so
+  deep links render identical rows.
+- Palette (`src/components/command-palette.tsx`, mounted in AppShell):
+  state is palette-local, never the URL. cmdk normalizes item values —
+  keys are lowercased and navigation resolves hits through the list for
+  original casing. Snippets render ONLY through
+  `src/components/snippet.tsx` (splits on literal <em> markers, emits
+  <mark>, everything else stays text) — never parse snippet HTML.
+  jsdom setup stubs scrollIntoView/ResizeObserver for cmdk.
 
 ## Toolchain notes
 

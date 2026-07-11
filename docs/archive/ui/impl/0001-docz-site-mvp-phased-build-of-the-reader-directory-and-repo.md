@@ -307,8 +307,12 @@ untrusted.
       pill-free facet query so every repo/type stays offered; palette
       state is local — the page URL is untouched until Enter)
 - [x] Topbar search affordance opens the palette
-- [ ] Component tests: URL round-tripping (params ↔ UI state), facet count
+- [x] Component tests: URL round-tripping (params ↔ UI state), facet count
       rendering, palette keyboard flow, snippet sanitization
+      (written alongside each task: searchParams.test.ts round trips,
+      directory.test.tsx URL↔UI + facet counts + states + pagination,
+      command-palette.test.tsx keyboard flow across routes,
+      snippet.test.tsx hostile fixtures)
 
 #### Success Criteria
 
@@ -320,6 +324,16 @@ untrusted.
 - An empty query shows all visible docs within the fetched page (API index
   order — `SearchHit` carries no `updated_at` to sort by; see the directory
   task note)
+
+> Verified 2026-07-11: criterion 1 by directory.test.tsx (URL seeds the
+> UI, external URL changes win, chip/picker/load-more push history and
+> `navigate(-1)` restores; typing commits with replace by design so
+> keystrokes don't litter history). Criterion 2 by
+> command-palette.test.tsx (⌘K on /, /repos, and the reader route;
+> body-text query matches; ↓+Enter navigates to the reader and closes).
+> Criterion 3 by snippet.test.tsx (hostile suite runs in `just ci`).
+> Criterion 4 by the empty-query directory test listing all demo docs
+> in API order with the updated column unset.
 
 ---
 

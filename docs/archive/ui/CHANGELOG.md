@@ -26,6 +26,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(reader)* Right rail — ToC, trimmed metadata, formats list
 - *(reader)* Position-only lifecycle rail from listTypes statuses
 - *(mocks)* Curated demo-org fixtures layered over faker handlers
+- *(directory)* Typed URL search-param helper with round-trip tests
+- *(directory)* URL-bound search directory with debounced query
+- *(directory)* Repo picker, type chips, result count, clear filters
+- *(directory)* Load-more pagination windowed by URL offset
+- *(directory)* Contextual empty states completing the four-state matrix
+- *(search)* Inert snippet renderer honoring only <em> match markers
+- *(palette)* Cmdk command palette with grouped results and preview
+- *(shell)* Topbar search affordance opens the command palette
 
 ### Bug Fixes
 
@@ -46,6 +54,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(markdown)* XSS gate — 22 hostile payloads, benign suite, slug stability
 - *(reader)* Pin pipeline memoization per (doc_id, content_hash)
 - *(reader)* Four-state matrix, metadata omission, lifecycle, ToC anchors
+- *(phase-2)* Close out component-test coverage and verify criteria
 
 ### Miscellaneous Tasks
 

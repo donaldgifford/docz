@@ -144,6 +144,35 @@ describe("command palette", () => {
     expect(router.state.location.search).toBe("");
   });
 
+  it("opens on the reader route too (mounted in the shell)", async () => {
+    const user = userEvent.setup();
+    mountAt("/donaldgifford/docz-site/design/DESIGN-0001");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    expect(screen.getByTestId("command-palette")).toBeInTheDocument();
+  });
+
+  it("finds documents by body text, not just titles", async () => {
+    const user = userEvent.setup();
+    mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    const dialog = palette();
+    await dialog.findByText("donaldgifford/docz-site — 2 matches");
+
+    // "frontmatter" appears in doc bodies, never in a fixture title.
+    await user.keyboard("frontmatter");
+    await waitFor(() => {
+      expect(dialog.getAllByText(/ — \d+ match/).length).toBeGreaterThan(0);
+    });
+    const titles = [SITE_DESIGN_TITLE, SITE_IMPL_TITLE, API_DESIGN_TITLE];
+    expect(
+      titles.some((title) => dialog.queryAllByText(title).length > 0),
+    ).toBe(true);
+  });
+
   it("opens from the topbar search affordance", async () => {
     const user = userEvent.setup();
     mountAt("/repos");
