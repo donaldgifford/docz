@@ -6,7 +6,13 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "coverage", "node_modules", "src/api/__generated__"],
+    ignores: [
+      "dist",
+      "coverage",
+      "node_modules",
+      "src/api/__generated__",
+      "public/mockServiceWorker.js",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

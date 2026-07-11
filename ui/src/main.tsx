@@ -22,17 +22,26 @@ import "@/theme/tokens.css";
 import { createQueryClient } from "@/app/query-client";
 import { router } from "@/app/router";
 
-const queryClient = createQueryClient();
+async function bootstrap(): Promise<void> {
+  if (import.meta.env.VITE_API_MODE === "msw") {
+    const { worker } = await import("@/mocks/browser");
+    await worker.start({ onUnhandledRequest: "bypass" });
+  }
 
-const rootElement = document.getElementById("root");
-if (rootElement === null) {
-  throw new Error("index.html is missing the #root mount point");
+  const queryClient = createQueryClient();
+
+  const rootElement = document.getElementById("root");
+  if (rootElement === null) {
+    throw new Error("index.html is missing the #root mount point");
+  }
+
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
 }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+void bootstrap();
