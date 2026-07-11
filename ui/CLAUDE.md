@@ -53,8 +53,16 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - `src/api/fetcher.ts` — the orval fetch mutator and the typed errors
   (`SessionRequiredError` 401, `NotFoundError` 404, `ApiError` rest).
   Match on these classes in UI code; never `fetch` the API directly.
-  Query defaults live in `src/app/query-client.ts` (no retry on
-  401/404).
+  Success returns orval's `{ data, status, headers }` envelope —
+  narrow on `status === 200` before touching `.data`. Query defaults
+  live in `src/app/query-client.ts` (no retry on 401/404).
+- Tests: Vitest + Testing Library in jsdom (`vitest.config.ts`).
+  `src/test/setup.ts` starts one MSW node server from the generated
+  handlers with `onUnhandledRequest: "error"` — override per-test with
+  `server.use(...)` from `src/test/server.ts`. Mount routes with
+  `createMemoryRouter(routes)` (`routes` is exported from
+  `src/app/router.tsx`); first paint is async (lazy routes), so use
+  `findBy*`, not `getBy*`, for the initial assertion.
 - `src/api/__generated__/` — orval output; never hand-edit, never commit
 - Generated OpenAPI types ARE the data model; don't hand-roll DTO types
 - Markdown reader pipeline (Phase 1): remark-parse → remark-gfm →

@@ -69,7 +69,15 @@ async function toApiError(response: Response, url: string): Promise<ApiError> {
 }
 
 export async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  // The generated client passes same-origin paths ("/api/v1/…"). In the
+  // browser that's already absolute enough; under jsdom (tests) Node's
+  // fetch rejects relative URLs, so resolve against the window origin.
+  const resolvedUrl =
+    url.startsWith("/") && typeof window !== "undefined"
+      ? new URL(url, window.location.origin).toString()
+      : url;
+
+  const response = await fetch(resolvedUrl, {
     credentials: "same-origin",
     ...options,
     headers: {
@@ -82,12 +90,16 @@ export async function fetcher<T>(url: string, options?: RequestInit): Promise<T>
     throw await toApiError(response, url);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const text = await response.text();
-  return (text === "" ? undefined : JSON.parse(text)) as T;
+  // Orval's fetch client types responses as an envelope of the parsed
+  // body plus status/headers — the mutator is responsible for building
+  // it. Errors never reach this shape; they throw above.
+  const text = response.status === 204 ? "" : await response.text();
+  const data: unknown = text === "" ? undefined : JSON.parse(text);
+  return {
+    data,
+    status: response.status,
+    headers: response.headers,
+  } as T;
 }
 
 export default fetcher;

@@ -144,7 +144,7 @@ repo is a clean, green shell app.
       drift check; drift opens/updates a tracking issue, never fails PRs
       (implemented as a full-content diff with `info.version` reported,
       since upstream has shipped spec changes without a version bump)
-- [ ] Test scaffolding: Vitest + Testing Library + MSW
+- [x] Test scaffolding: Vitest + Testing Library + MSW
       (`src/test/setup.ts`, server from generated handlers) in jsdom; one
       smoke test (shell renders, a generated hook resolves against MSW)
 - [ ] Lint/format: ESLint (typescript-eslint, react-hooks, jsx-a11y) +
