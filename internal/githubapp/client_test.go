@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"path"
 	"strings"
@@ -96,6 +97,11 @@ func TestFetchClassifiesAndDecodes(t *testing.T) {
 	if string(snap.ChangelogMD) != changelo || snap.ChangelogSHA != "clsha" {
 		t.Errorf("changelog = %q / %q, want decoded / clsha", snap.ChangelogMD, snap.ChangelogSHA)
 	}
+	// No docs/index.md in the tree: the index pair stays zero with no extra
+	// blob request (an unknown-sha fetch would 404 against the stub).
+	if snap.IndexMD != nil || snap.IndexSHA != "" {
+		t.Errorf("index = %q / %q, want absent (nil / empty)", snap.IndexMD, snap.IndexSHA)
+	}
 	// README.md and the tree entry are excluded; only the docz-convention doc remains.
 	if len(snap.Blobs) != 1 {
 		t.Fatalf("Blobs = %d, want 1 (docz-convention only)", len(snap.Blobs))
@@ -103,6 +109,92 @@ func TestFetchClassifiesAndDecodes(t *testing.T) {
 	got := snap.Blobs[0]
 	if got.Path != "docs/frameworks/0001-intro.md" || got.GitSHA != "docsha" || string(got.Content) != docBody {
 		t.Errorf("blob = %+v, want the decoded intro doc", got)
+	}
+}
+
+func TestFetchRepoIndex(t *testing.T) {
+	const indexBody = "# Platform\n\nRepo home.\n"
+	tests := []struct {
+		name    string
+		cfgYAML string
+		tree    string
+		blobs   map[string]string
+		wantMD  string
+		wantSHA string
+	}{
+		{
+			name:    "present under default docs_dir",
+			cfgYAML: "types:\n  rfc:\n    enabled: true\n",
+			tree: `{"sha":"headsha","truncated":false,"tree":[
+				{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+				{"path":"docs/index.md","type":"blob","sha":"idxsha"}
+			]}`,
+			blobs:   map[string]string{"idxsha": b64(indexBody)},
+			wantMD:  indexBody,
+			wantSHA: "idxsha",
+		},
+		{
+			name:    "custom docs_dir wins over the default location",
+			cfgYAML: "docs_dir: notes\ntypes:\n  rfc:\n    enabled: true\n",
+			tree: `{"sha":"headsha","truncated":false,"tree":[
+				{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+				{"path":"docs/index.md","type":"blob","sha":"decoysha"},
+				{"path":"notes/index.md","type":"blob","sha":"notesidx"}
+			]}`,
+			blobs:   map[string]string{"notesidx": b64(indexBody)},
+			wantMD:  indexBody,
+			wantSHA: "notesidx",
+		},
+		{
+			name:    "index.md as a directory is not a blob match",
+			cfgYAML: "types:\n  rfc:\n    enabled: true\n",
+			tree: `{"sha":"headsha","truncated":false,"tree":[
+				{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+				{"path":"docs/index.md","type":"tree","sha":"dirsha"}
+			]}`,
+			blobs: map[string]string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blobs := map[string]string{"cfgsha": b64(tt.cfgYAML)}
+			maps.Copy(blobs, tt.blobs)
+			gh, err := github.NewClient(github.WithTransport(stubTransport{tree: tt.tree, blobs: blobs}))
+			if err != nil {
+				t.Fatalf("NewClient: %v", err)
+			}
+			c := &Client{gh: gh}
+
+			snap, err := c.Fetch(t.Context(), "acme", "platform")
+			if err != nil {
+				t.Fatalf("Fetch: %v", err)
+			}
+			if string(snap.IndexMD) != tt.wantMD || snap.IndexSHA != tt.wantSHA {
+				t.Errorf("index = %q / %q, want %q / %q",
+					snap.IndexMD, snap.IndexSHA, tt.wantMD, tt.wantSHA)
+			}
+		})
+	}
+}
+
+func TestDocsDirHint(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want string
+	}{
+		{"explicit docs_dir", "docs_dir: notes\n", "notes"},
+		{"trailing slash trimmed", "docs_dir: notes/\n", "notes"},
+		{"missing key falls back to docz default", "types:\n  rfc:\n    enabled: true\n", "docs"},
+		{"empty value falls back to docz default", "docs_dir: \"\"\n", "docs"},
+		{"malformed yaml falls back to docz default", "\t: not yaml", "docs"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := docsDirHint([]byte(tt.yaml)); got != tt.want {
+				t.Errorf("docsDirHint(%q) = %q, want %q", tt.yaml, got, tt.want)
+			}
+		})
 	}
 }
 
