@@ -272,7 +272,7 @@ untrusted.
 
 #### Tasks
 
-- [ ] `src/lib/searchParams.ts`: typed URL param helper (`q`, `repo`,
+- [x] `src/lib/searchParams.ts`: typed URL param helper (`q`, `repo`,
       `type[]`, `status[]`, `author[]`, `offset`) with parse/serialize
       round-trip tests
 - [ ] Directory route `/`: `searchDocs` bound to URL params, debounced
