@@ -44,9 +44,9 @@ func TestSearchEndpoint(t *testing.T) {
 		t.Fatalf("status = %d, want 200", rec.Code)
 	}
 
-	// The authorized repo id (1) reached the searcher, and the query params mapped.
-	if len(fs.got.AllowedRepoIDs) != 1 || fs.got.AllowedRepoIDs[0] != 1 {
-		t.Errorf("AllowedRepoIDs = %v, want [1] from the authorize seam", fs.got.AllowedRepoIDs)
+	// Both seeded repo ids reached the searcher, and the query params mapped.
+	if len(fs.got.AllowedRepoIDs) != 2 || fs.got.AllowedRepoIDs[0] != 1 || fs.got.AllowedRepoIDs[1] != 2 {
+		t.Errorf("AllowedRepoIDs = %v, want [1 2] from the authorize seam", fs.got.AllowedRepoIDs)
 	}
 	if fs.got.Query != "logging" || fs.got.Type != "frameworks" {
 		t.Errorf("search params = %+v, want q=logging type=frameworks", fs.got)

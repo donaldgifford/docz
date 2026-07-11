@@ -38,6 +38,12 @@ type typeDTO struct {
 	Aliases     []string `json:"aliases"`
 }
 
+type repoIndexDTO struct {
+	Repo     string `json:"repo"`
+	IndexMD  string `json:"index_md"`
+	IndexSHA string `json:"index_sha"`
+}
+
 type documentDTO struct {
 	Repo        string `json:"repo"`
 	DocID       string `json:"doc_id"`
@@ -90,6 +96,17 @@ func toTypeDTOs(types []store.DocType) []typeDTO {
 		}
 	}
 	return dtos
+}
+
+// toRepoIndex maps the cached repo home (DESIGN-0003). An empty-but-present
+// index.md is stored as a NULL body with a valid sha, so nullText yields the
+// "" body the contract promises; callers gate existence on IndexSha.Valid.
+func toRepoIndex(r *store.Repo) repoIndexDTO {
+	return repoIndexDTO{
+		Repo:     repoLabel(r),
+		IndexMD:  nullText(r.IndexMd),
+		IndexSHA: nullText(r.IndexSha),
+	}
 }
 
 func toDocument(repo string, d *store.Document) documentDTO {
