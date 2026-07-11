@@ -275,9 +275,13 @@ untrusted.
 - [x] `src/lib/searchParams.ts`: typed URL param helper (`q`, `repo`,
       `type[]`, `status[]`, `author[]`, `offset`) with parse/serialize
       round-trip tests
-- [ ] Directory route `/`: `searchDocs` bound to URL params, debounced
-      `q` (~200 ms), client-side `updated_at` sort of the fetched page
-      (interim until docz-api `sort=`), relative-time updated column
+- [x] Directory route `/`: `searchDocs` bound to URL params, debounced
+      `q` (~200 ms), relative-time updated column
+      (2026-07-11: the planned interim client-side `updated_at` sort is
+      impossible — `SearchHit` carries no timestamp, verified in the
+      vendored spec and upstream main. Hits render in API order and the
+      updated column renders "—"; the additive ask in DESIGN-0001 now
+      covers both `sort=` and `updated_at` on `SearchHit`)
 - [ ] Repo picker dropdown fed by the `repo` facet (counts per repo);
       type chips from the union of `type` facet values, colored by the
       color system; "showing X of Y"; clear-filters action
@@ -303,8 +307,9 @@ untrusted.
 - The palette opens on every route, finds documents by title and body, and
   navigates on Enter
 - Hostile snippet fixtures render inert; the snippet suite is green in CI
-- An empty query shows all visible docs ordered by `updated_at` within the
-  fetched page
+- An empty query shows all visible docs within the fetched page (API index
+  order — `SearchHit` carries no `updated_at` to sort by; see the directory
+  task note)
 
 ---
 

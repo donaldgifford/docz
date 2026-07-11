@@ -87,6 +87,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   anything outside the demo org.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
+- Directory (`src/routes/directory.tsx`): the URL is the only source of
+  filter truth — read via `parseSearchParams`, write via
+  `serializeSearchState` (`src/lib/searchParams.ts`; its
+  `toSearchDocsParams` maps state → API params, first-of-array facets).
+  Typed queries debounce ~200 ms and commit with `replace: true`;
+  discrete filter actions must push so back/forward walks history.
+  `SearchHit` has NO `updated_at` (additive ask in DESIGN-0001) — the
+  updated column renders "—"; `src/lib/relativeTime.ts` takes over when
+  the field lands.
 
 ## Toolchain notes
 
@@ -108,6 +117,10 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   strict + stylistic type-checked (projectService), react-hooks flat
   recommended, jsx-a11y, eslint-config-prettier last. Generated dir is
   ignored.
+- react-hooks v7 forbids `setState` inside effects
+  (`set-state-in-effect`) — sync prop→state with the react.dev
+  "adjust state during render" pattern (guarded `setState` in render
+  body, see `SearchBox` in directory.tsx), not a `useEffect`.
 
 ## Non-negotiables
 

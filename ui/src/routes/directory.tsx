@@ -1,10 +1,223 @@
-export function Component() {
+import { keepPreviousData } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+
+import { useSearchDocs } from "@/api/__generated__/docz-api";
+import { SessionRequiredError } from "@/api/fetcher";
+import { StatusBadge, TypeBadge } from "@/components/badges";
+import { ErrorPanel, SessionRequiredPanel } from "@/components/query-states";
+import {
+  parseSearchParams,
+  serializeSearchState,
+  toSearchDocsParams,
+} from "@/lib/searchParams";
+
+import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
+
+export const PAGE_SIZE = 25;
+const Q_DEBOUNCE_MS = 200;
+
+/*
+ * The directory is a searchDocs view of the whole registry
+ * (DESIGN-0001 Decision 4). The URL is the only source of filter truth:
+ * every control reads parseSearchParams(useSearchParams()) and writes
+ * back through serializeSearchState — no mirrored component state
+ * except the debounce buffer inside SearchBox.
+ */
+
+// Mockup .doc-row grid; narrow viewports collapse to type/title/status.
+const ROW_GRID =
+  "grid grid-cols-[92px_minmax(0,1fr)_auto] items-center gap-[0.8rem] border-b border-border-hairline px-[0.4rem] py-[0.7rem] md:grid-cols-[116px_86px_minmax(0,1fr)_110px_150px_70px]";
+
+function DirectoryHero({ repo }: { repo: string | null }) {
   return (
-    <main className="p-6">
-      <h1 className="font-mono text-fg-secondary">Directory</h1>
-      <p className="text-fg-tertiary">
-        Placeholder — the search-backed directory lands in Phase 2.
+    <header className="pt-10 pb-2">
+      <div className="font-mono text-[12.5px] tracking-[0.05em] text-accent">
+        / docz <span className="text-fg-muted">/</span> {repo ?? "all repos"}
+      </div>
+      <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">
+        Documentation
+      </h1>
+      <p className="text-[14px] text-fg-tertiary">
+        Designs, plans, RFCs, and decisions — across every repo registered with
+        the API.
       </p>
-    </main>
+    </header>
+  );
+}
+
+/**
+ * Debounced query input. `value` is the committed URL state; the draft
+ * only exists while typing and yields to external URL changes
+ * (back/forward, palette navigation).
+ */
+function SearchBox({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (q: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  // Adjust-during-render (react.dev "adjusting state when a prop
+  // changes"): external URL changes override the draft without
+  // remounting, so the input keeps focus while typing.
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setDraft(value);
+  }
+
+  useEffect(() => {
+    if (draft === value) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      onCommit(draft);
+    }, Q_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [draft, value, onCommit]);
+
+  return (
+    <input
+      type="search"
+      aria-label="Search documents"
+      placeholder="search docs…"
+      value={draft}
+      onChange={(event) => {
+        setDraft(event.target.value);
+      }}
+      className="mt-5 w-full border border-border-default bg-bg-raised px-3 py-2 font-mono text-[13px] text-fg-primary placeholder:text-fg-muted focus:border-border-strong focus:outline-none"
+    />
+  );
+}
+
+function HitRow({ hit }: { hit: SearchHit }) {
+  const repoName = hit.repo.split("/").at(-1) ?? hit.repo;
+  return (
+    <li>
+      <Link
+        to={`/${hit.repo}/${hit.type}/${hit.doc_id}`}
+        className={`${ROW_GRID} transition-colors hover:bg-bg-raised`}
+      >
+        <TypeBadge type={hit.type} />
+        <span className="hidden font-mono text-[12.5px] text-fg-tertiary md:block">
+          {hit.doc_id}
+        </span>
+        <span className="truncate text-[14px] text-fg-primary">
+          {hit.title}
+        </span>
+        {hit.status === "" ? (
+          <span aria-hidden />
+        ) : (
+          <StatusBadge status={hit.status} />
+        )}
+        <span
+          title={hit.repo}
+          className="hidden truncate font-mono text-[11.5px] text-fg-tertiary before:text-fg-muted before:content-['›_'] md:block"
+        >
+          {repoName}
+        </span>
+        {/*
+         * SearchHit carries no updated_at yet (additive ask in
+         * DESIGN-0001); formatRelativeTime takes over when it lands.
+         */}
+        <span className="hidden text-right font-mono text-[11px] text-fg-muted md:block">
+          —
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <div
+      aria-hidden
+      data-testid="directory-skeleton"
+      className="mt-4 animate-pulse border-t border-border-hairline"
+    >
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className={ROW_GRID}>
+          <div className="h-4 w-16 bg-bg-elevated" />
+          <div className="hidden h-3 w-14 bg-bg-raised md:block" />
+          <div
+            className="h-3 bg-bg-elevated"
+            style={{ width: `${String(88 - (i % 3) * 14)}%` }}
+          />
+          <div className="h-3 w-12 bg-bg-raised" />
+          <div className="hidden h-3 w-20 bg-bg-raised md:block" />
+          <div className="hidden h-3 w-10 justify-self-end bg-bg-raised md:block" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function Component() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const state = useMemo(() => parseSearchParams(searchParams), [searchParams]);
+
+  const searchQuery = useSearchDocs(toSearchDocsParams(state, PAGE_SIZE), {
+    // Keep the previous page on screen while a filter change refetches;
+    // the skeleton is for first paint only.
+    query: { placeholderData: keepPreviousData },
+  });
+  const result =
+    searchQuery.data?.status === 200 ? searchQuery.data.data : undefined;
+
+  const commitQuery = useCallback(
+    (q: string) => {
+      // Typing replaces the history entry (no per-debounce litter) and
+      // resets pagination; discrete filter actions push instead, so
+      // back/forward walks filter history.
+      setSearchParams(serializeSearchState({ ...state, q, offset: 0 }), {
+        replace: true,
+      });
+    },
+    [state, setSearchParams],
+  );
+
+  if (searchQuery.error instanceof SessionRequiredError) {
+    return <SessionRequiredPanel />;
+  }
+
+  return (
+    <div className="mx-auto max-w-[940px] px-5">
+      <DirectoryHero repo={state.repo} />
+      <SearchBox value={state.q} onCommit={commitQuery} />
+
+      {searchQuery.isError ? (
+        <div className="mt-6">
+          <ErrorPanel
+            message={
+              searchQuery.error instanceof Error
+                ? searchQuery.error.message
+                : "Search failed"
+            }
+            onRetry={() => {
+              void searchQuery.refetch();
+            }}
+          />
+        </div>
+      ) : result === undefined ? (
+        <SkeletonRows />
+      ) : result.hits.length === 0 ? (
+        // Interim placeholder — the contextual empty states land with the
+        // four-states task.
+        <p className="mt-8 mb-16 font-mono text-[13px] text-fg-tertiary">
+          No matches.
+        </p>
+      ) : (
+        <ul className="mt-4 mb-16 border-t border-border-hairline">
+          {result.hits.map((hit) => (
+            <HitRow key={`${hit.repo}/${hit.type}/${hit.doc_id}`} hit={hit} />
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

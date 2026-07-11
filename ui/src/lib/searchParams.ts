@@ -8,6 +8,7 @@
  * route sends the first selection of each array (interim until the API
  * grows multi-value filters).
  */
+import type { SearchDocsParams } from "@/api/__generated__/docz-api.schemas";
 
 export interface DirectorySearchState {
   q: string;
@@ -74,6 +75,39 @@ export function serializeSearchState(
   }
   if (state.offset > 0) {
     params.set("offset", String(state.offset));
+  }
+  return params;
+}
+
+/**
+ * Map URL state onto the searchDocs query params. Facets send the first
+ * selection of each array (see the module note); defaults are omitted.
+ */
+export function toSearchDocsParams(
+  state: DirectorySearchState,
+  limit: number,
+): SearchDocsParams {
+  const params: SearchDocsParams = { limit };
+  if (state.q !== "") {
+    params.q = state.q;
+  }
+  if (state.repo !== null) {
+    params.repo = state.repo;
+  }
+  const [type] = state.types;
+  if (type !== undefined) {
+    params.type = type;
+  }
+  const [status] = state.statuses;
+  if (status !== undefined) {
+    params.status = status;
+  }
+  const [author] = state.authors;
+  if (author !== undefined) {
+    params.author = author;
+  }
+  if (state.offset > 0) {
+    params.offset = state.offset;
   }
   return params;
 }
