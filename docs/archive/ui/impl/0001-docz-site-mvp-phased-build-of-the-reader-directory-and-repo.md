@@ -233,7 +233,7 @@ phase onward.
       trimmed metadata card (omit `""` fields; "all fields · json →" link
       to the document endpoint), formats list ("md · source" view of the
       already-fetched `raw_md`; "json" endpoint link)
-- [ ] Lifecycle rail: type `statuses` via `listTypes` (cached per repo),
+- [x] Lifecycle rail: type `statuses` via `listTypes` (cached per repo),
       current status as the active stop, position-only
 - [ ] Memoize pipeline output per `(doc_id, content_hash)`
 - [ ] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —

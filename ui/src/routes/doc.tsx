@@ -4,7 +4,12 @@ import { Link, useParams } from "react-router";
 import { useGetDoc } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
-import { DocRailInfo, TocList, type DocFormat } from "@/components/doc-rail";
+import {
+  DocRailInfo,
+  LifecycleRail,
+  TocList,
+  type DocFormat,
+} from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
@@ -178,7 +183,19 @@ export function Component() {
             </div>
             <TocList toc={toc} />
           </section>
-          <DocRailInfo doc={doc} format={format} onFormatChange={setFormat} />
+          <DocRailInfo
+            doc={doc}
+            format={format}
+            onFormatChange={setFormat}
+            lifecycle={
+              <LifecycleRail
+                owner={owner}
+                name={repo}
+                typeName={doc.type}
+                currentStatus={doc.status}
+              />
+            }
+          />
         </div>
       </aside>
     </div>
