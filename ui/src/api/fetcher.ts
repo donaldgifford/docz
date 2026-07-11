@@ -43,7 +43,7 @@ function isErrorEnvelope(value: unknown): value is ErrorEnvelope {
     typeof value === "object" &&
     value !== null &&
     "error" in value &&
-    typeof (value as { error: unknown }).error === "string"
+    typeof value.error === "string"
   );
 }
 
@@ -68,7 +68,10 @@ async function toApiError(response: Response, url: string): Promise<ApiError> {
   }
 }
 
-export async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
+export async function fetcher<T>(
+  url: string,
+  options?: RequestInit,
+): Promise<T> {
   // The generated client passes same-origin paths ("/api/v1/…"). In the
   // browser that's already absolute enough; under jsdom (tests) Node's
   // fetch rejects relative URLs, so resolve against the window origin.
@@ -77,13 +80,17 @@ export async function fetcher<T>(url: string, options?: RequestInit): Promise<T>
       ? new URL(url, window.location.origin).toString()
       : url;
 
+  // Headers may arrive as a Headers instance, entries array, or record —
+  // normalize instead of spreading (spreading a Headers yields indices).
+  const headers = new Headers(options?.headers);
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+
   const response = await fetch(resolvedUrl, {
     credentials: "same-origin",
     ...options,
-    headers: {
-      Accept: "application/json",
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {

@@ -7,7 +7,7 @@ import { defineConfig } from "vite";
 // docz-api serves no CORS headers — prod is same-origin (DESIGN-0001
 // Decision 9). Dev mirrors that by proxying every path the SPA touches
 // to a locally running docz-api (HTTP_ADDR defaults to :8080).
-const doczApiUrl = process.env["DOCZ_API_URL"] ?? "http://localhost:8080";
+const doczApiUrl = process.env.DOCZ_API_URL ?? "http://localhost:8080";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

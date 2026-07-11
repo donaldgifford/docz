@@ -1,7 +1,9 @@
 import { Link, NavLink, Outlet } from "react-router";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
-  return isActive ? "text-fg-primary" : "text-fg-tertiary hover:text-fg-primary";
+  return isActive
+    ? "text-fg-primary"
+    : "text-fg-tertiary hover:text-fg-primary";
 }
 
 export function AppShell() {

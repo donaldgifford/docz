@@ -147,7 +147,7 @@ repo is a clean, green shell app.
 - [x] Test scaffolding: Vitest + Testing Library + MSW
       (`src/test/setup.ts`, server from generated handlers) in jsdom; one
       smoke test (shell renders, a generated hook resolves against MSW)
-- [ ] Lint/format: ESLint (typescript-eslint, react-hooks, jsx-a11y) +
+- [x] Lint/format: ESLint (typescript-eslint, react-hooks, jsx-a11y) +
       Prettier; keep markdownlint/yamllint configs
 - [ ] Rewrite `mise.toml` (pin bun; drop unused tools) and `justfile`
       (dev, dev-msw, gen-api, gen-api-check, lint, fmt, test, build,

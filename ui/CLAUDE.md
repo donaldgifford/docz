@@ -70,6 +70,16 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   rehype-slug → @shikijs/rehype → React. Sanitize AFTER rehype-raw,
   highlight AFTER sanitize. No `dangerouslySetInnerHTML`.
 
+## Toolchain notes
+
+- TypeScript is pinned to the 5.9 series: typescript-eslint's parser
+  cannot load the TS 7 (native compiler) line. Don't bump the major
+  until typescript-eslint supports it.
+- ESLint is flat config (`eslint.config.js`): typescript-eslint
+  strict + stylistic type-checked (projectService), react-hooks flat
+  recommended, jsx-a11y, eslint-config-prettier last. Generated dir is
+  ignored.
+
 ## Non-negotiables
 
 - This GitHub repo is PUBLIC. Secrets go in `.env.local` (gitignored),

@@ -44,7 +44,9 @@ describe("app smoke", () => {
     });
     const response = result.current.data;
     if (response?.status !== 200) {
-      throw new Error(`expected a 200 envelope, got ${String(response?.status)}`);
+      throw new Error(
+        `expected a 200 envelope, got ${String(response?.status)}`,
+      );
     }
     expect(response.data.repos).toBeDefined();
   });

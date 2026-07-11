@@ -2,11 +2,11 @@
 docs_dir: docs
 
 author:
-  from_git: true  # use git config user.name
-  default: ""  # fallback if git name unavailable
+  from_git: true # use git config user.name
+  default: "" # fallback if git name unavailable
 
 index:
-  auto_update: true  # update README after docz create
+  auto_update: true # update README after docz create
   preserve_header: true
 
 types:
@@ -78,9 +78,9 @@ types:
 wiki:
   auto_update: true
   mkdocs_path: mkdocs.yml
-  plugins:  # MkDocs plugins for wiki init
+  plugins: # MkDocs plugins for wiki init
     - techdocs-core
-  markdown_extensions:  # MkDocs markdown extensions
+  markdown_extensions: # MkDocs markdown extensions
     - admonition
     - tables
   exclude:
@@ -97,5 +97,5 @@ wiki:
     # theme: readthedocs
 
 toc:
-  enabled: true  # generate ToC during docz update
-  min_headings: 3  # minimum headings to generate a ToC
+  enabled: true # generate ToC during docz update
+  min_headings: 3 # minimum headings to generate a ToC
