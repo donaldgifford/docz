@@ -13,7 +13,6 @@ created: 2026-06-30
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-06-30
 
 <!--toc:start-->
-
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
