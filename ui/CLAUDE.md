@@ -50,6 +50,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
   `include`.
+- `src/api/fetcher.ts` — the orval fetch mutator and the typed errors
+  (`SessionRequiredError` 401, `NotFoundError` 404, `ApiError` rest).
+  Match on these classes in UI code; never `fetch` the API directly.
+  Query defaults live in `src/app/query-client.ts` (no retry on
+  401/404).
 - `src/api/__generated__/` — orval output; never hand-edit, never commit
 - Generated OpenAPI types ARE the data model; don't hand-roll DTO types
 - Markdown reader pipeline (Phase 1): remark-parse → remark-gfm →

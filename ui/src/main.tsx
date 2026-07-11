@@ -1,3 +1,4 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
@@ -18,7 +19,10 @@ import "@fontsource/source-serif-4/700.css";
 
 import "@/theme/tokens.css";
 
+import { createQueryClient } from "@/app/query-client";
 import { router } from "@/app/router";
+
+const queryClient = createQueryClient();
 
 const rootElement = document.getElementById("root");
 if (rootElement === null) {
@@ -27,6 +31,8 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>,
 );

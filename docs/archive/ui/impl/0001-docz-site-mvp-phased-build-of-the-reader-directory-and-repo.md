@@ -128,7 +128,7 @@ repo is a clean, green shell app.
       placeholder) + `createBrowserRouter` route table — `/`, `/repos`,
       `/:owner/:repo`, `/:owner/:repo/:type`, `/:owner/:repo/:type/:docId`,
       `*` — placeholder elements, route-level `lazy()`
-- [ ] TanStack Query provider with sane defaults; `src/api/fetcher.ts`
+- [x] TanStack Query provider with sane defaults; `src/api/fetcher.ts`
       mutator (same-origin base, JSON handling, error mapping: 401 →
       `SessionRequiredError`, 404 → `NotFoundError`, other → `ApiError`)
 - [ ] Vendor `api/openapi.yaml` from docz-api at `info.version` 1.0.0
