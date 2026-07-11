@@ -61,6 +61,10 @@ The webhook receiver authenticates by HMAC-SHA256 over the raw body
 (constant-time compare, fails closed), so the endpoint itself can be public; no
 session or extra auth applies to `/webhooks/github`.
 
+For **local development** the webhook URL can be an ngrok tunnel to your machine
+— `just dev-tunnel` prints it; see
+[DEVELOPMENT.md](../DEVELOPMENT.md#receiving-github-webhooks-locally-ngrok).
+
 ### Repository permissions
 
 | Permission | Access    | Why                                                                                                          |

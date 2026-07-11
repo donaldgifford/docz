@@ -1,16 +1,17 @@
 # Developing docz-api
 
-Everything a new developer needs to build, run, and test docz-api locally.
-For deploying the full stack to a real host, see [deploy/README.md](deploy/README.md).
+Everything a new developer needs to build, run, and test docz-api locally. For
+deploying the full stack to a real host, see
+[deploy/README.md](deploy/README.md).
 
 ## Prerequisites
 
-- **[mise](https://mise.jdx.dev/)** — manages the entire toolchain (Go,
-  `just`, linters, `sqlc`, `docz`, …) at the versions pinned in `mise.toml`.
-  Nothing else needs a manual install; do not install Go separately.
-- **Docker** — required for the local dependency stack (`compose.yaml`) and
-  the integration tests (testcontainers-go spins up real Postgres, Redis,
-  and Meilisearch containers).
+- **[mise](https://mise.jdx.dev/)** — manages the entire toolchain (Go, `just`,
+  linters, `sqlc`, `docz`, …) at the versions pinned in `mise.toml`. Nothing
+  else needs a manual install; do not install Go separately.
+- **Docker** — required for the local dependency stack (`compose.yaml`) and the
+  integration tests (testcontainers-go spins up real Postgres, Redis, and
+  Meilisearch containers).
 - **git**.
 
 ## First-time setup
@@ -23,8 +24,7 @@ just                         # prints the task menu — the map of everything be
 ```
 
 `just` is the single entry point for project automation. Any instruction
-elsewhere that says `make <target>` maps to the `just` recipe of the same
-name.
+elsewhere that says `make <target>` maps to the `just` recipe of the same name.
 
 ## Build
 
@@ -38,9 +38,9 @@ Version metadata (`version`, `commit`) is derived from git and injected via
 
 ## Run locally
 
-The service needs Postgres, Redis, and Meilisearch. The repo-root
-`compose.yaml` brings up exactly those three (dev-only credentials that
-mirror `.env.example` — it does **not** run the service itself):
+The service needs Postgres, Redis, and Meilisearch. The repo-root `compose.yaml`
+brings up exactly those three (dev-only credentials that mirror `.env.example` —
+it does **not** run the service itself):
 
 ```sh
 just dev-up     # postgres :5432, redis :6379, meilisearch :7700; waits for health
@@ -48,8 +48,8 @@ just dev-ps     # status, if you want to double-check
 just dev-logs   # follow the dependency logs
 ```
 
-Configuration is **environment-only** (no config file). Copy the template
-and fill in the placeholders:
+Configuration is **environment-only** (no config file). Copy the template and
+fill in the placeholders:
 
 ```sh
 cp .env.example .env
@@ -65,11 +65,11 @@ just run                          # build + run build/bin/docz-api
 go run ./cmd/docz-api
 ```
 
-On startup the service applies database migrations automatically, ensures
-the Meilisearch index exists, starts the in-process ingest worker, and
-serves on `:8080` (`HTTP_ADDR`). Config validation reports **all** problems
-in one error, so a first run with placeholder values tells you everything
-that still needs filling in.
+On startup the service applies database migrations automatically, ensures the
+Meilisearch index exists, starts the in-process ingest worker, and serves on
+`:8080` (`HTTP_ADDR`). Config validation reports **all** problems in one error,
+so a first run with placeholder values tells you everything that still needs
+filling in.
 
 Useful flags (see `cmd/docz-api`):
 
@@ -88,15 +88,15 @@ curl localhost:8080/openapi.yaml   # the served API contract
 curl localhost:8080/metrics        # Prometheus metrics (METRICS_ENABLED)
 ```
 
-Note that everything under `/api/v1` sits behind the session gate: you need
-a real auth provider configured (e.g. a GitHub OAuth app in
+Note that everything under `/api/v1` sits behind the session gate: you need a
+real auth provider configured (e.g. a GitHub OAuth app in
 `GITHUB_OAUTH_CLIENT_ID`/`_SECRET`) and a browser login via
-`/auth/login?provider=github` to exercise those routes. The probes, spec,
-and metrics endpoints above are public. Ingestion (webhooks) additionally
-needs a GitHub App (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,
-`GITHUB_WEBHOOK_SECRET`) — permissions, events, and setup steps are in
-[deploy/README.md](deploy/README.md#github-app-setup-ingestion); the
-`-onboard` flag is the manual fallback that skips webhooks.
+`/auth/login?provider=github` to exercise those routes. The probes, spec, and
+metrics endpoints above are public. Ingestion (webhooks) additionally needs a
+GitHub App (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`)
+— permissions, events, and setup steps are in
+[deploy/README.md](deploy/README.md#github-app-setup-ingestion); the `-onboard`
+flag is the manual fallback that skips webhooks.
 
 When you are done:
 
@@ -104,6 +104,30 @@ When you are done:
 just dev-down    # stop the dependencies (volumes kept)
 just dev-nuke    # stop AND wipe the data volumes — fresh databases next dev-up
 ```
+
+### Receiving GitHub webhooks locally (ngrok)
+
+To develop against a **real GitHub App** — install/uninstall onboarding,
+push-triggered re-ingest — GitHub must be able to deliver webhooks to your
+machine. The compose file ships an [ngrok](https://ngrok.com/) service behind
+the `tunnel` profile (it never starts with the normal stack):
+
+```sh
+# one-time: put NGROK_AUTHTOKEN in .env (see .env.example)
+just dev-tunnel
+# ✓ Webhook URL: https://<random>.ngrok-free.app/webhooks/github
+```
+
+Paste the printed URL into your GitHub App's **Webhook URL** setting (see
+[deploy/README.md](deploy/README.md#github-app-setup-ingestion) for the full app
+configuration). The tunnel targets the **host's** `:8080`, so start the service
+(`just run`) for deliveries to land. Inspect and replay deliveries at
+<http://localhost:4040>.
+
+Free ngrok URLs are random per start; claim your free static domain and set
+`NGROK_ARGS=--domain=<name>.ngrok-free.app` in `.env` so the GitHub App's
+webhook URL survives restarts. `just dev-down` / `dev-nuke` stop the tunnel
+along with the rest of the stack.
 
 ## Run with Docker
 
@@ -117,12 +141,12 @@ docker build -t docz-api:dev \
 ```
 
 The first build is cold; BuildKit cache mounts (`/go/pkg/mod`,
-`/root/.cache/go-build`) make subsequent builds fast. The image has no
-shell — health checks must probe `/healthz` over HTTP from outside.
+`/root/.cache/go-build`) make subsequent builds fast. The image has no shell —
+health checks must probe `/healthz` over HTTP from outside.
 
 To run the **entire stack in compose** (service container + the three
-dependencies on a private network, only `:8080` published), use the
-reference deployment:
+dependencies on a private network, only `:8080` published), use the reference
+deployment:
 
 ```sh
 cd deploy
@@ -144,10 +168,10 @@ just test-report        # opens the HTML coverage report
 just test-integration   # build tag `integration`; needs Docker (testcontainers)
 ```
 
-Integration tests are hermetic: testcontainers starts throwaway Postgres,
-Redis, and Meilisearch containers per suite — they do not touch the
-`compose.yaml` dev stack. Tests use the standard-library `testing` package
-only (no assertion libraries); prefer table-driven tests.
+Integration tests are hermetic: testcontainers starts throwaway Postgres, Redis,
+and Meilisearch containers per suite — they do not touch the `compose.yaml` dev
+stack. Tests use the standard-library `testing` package only (no assertion
+libraries); prefer table-driven tests.
 
 ## Lint and format
 
@@ -176,9 +200,9 @@ binary). Add a new timestamped `.sql` file with paired `-- +goose Up` /
 
 ## Project documentation
 
-Design docs, implementation plans, and investigations live under `docs/`
-and are managed with the [docz](https://github.com/donaldgifford/docz) CLI
-(installed by mise):
+Design docs, implementation plans, and investigations live under `docs/` and are
+managed with the [docz](https://github.com/donaldgifford/docz) CLI (installed by
+mise):
 
 ```sh
 docz list             # what exists
@@ -199,5 +223,5 @@ docz update           # regenerate the README index tables after edits
   (`major`/`minor`/`patch`/`dont-release`), and CI checks changelog drift
   (`git-cliff`).
 - CI (GitHub Actions) runs lint, tests with coverage, security scans
-  (govulncheck/Trivy/CodeQL), license checks, and a goreleaser snapshot
-  build on every PR.
+  (govulncheck/Trivy/CodeQL), license checks, and a goreleaser snapshot build on
+  every PR.

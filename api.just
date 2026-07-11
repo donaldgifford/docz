@@ -65,27 +65,38 @@ dev-up:
     @docker compose up -d --wait
     @echo "✓ Dev stack up (postgres :5432, redis :6379, meilisearch :7700)"
 
-# Stop the dev stack; volumes are kept (see dev-nuke)
+# Stop the dev stack (tunnel included); volumes are kept (see dev-nuke)
 [group('dev')]
 dev-down:
-    @docker compose down
+    @docker compose --profile tunnel down
     @echo "✓ Dev stack stopped"
 
-# Stop the dev stack and wipe its volumes
+# Stop the dev stack (tunnel included) and wipe its volumes
 [group('dev')]
 dev-nuke:
-    @docker compose down -v
+    @docker compose --profile tunnel down -v
     @echo "✓ Dev stack stopped, volumes wiped"
 
 # Show dev stack status and health
 [group('dev')]
 dev-ps:
-    @docker compose ps
+    @docker compose --profile tunnel ps
 
 # Follow dev stack logs
 [group('dev')]
 dev-logs:
-    @docker compose logs -f
+    @docker compose --profile tunnel logs -f
+
+# Expose host :8080 via ngrok for GitHub webhooks (needs NGROK_AUTHTOKEN in .env)
+[group('dev')]
+dev-tunnel:
+    @docker compose --profile tunnel up -d ngrok
+    @for i in 1 2 3 4 5 6 7 8 9 10; do \
+        url=$(curl -fsS localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty'); \
+        if [ -n "$url" ]; then echo "✓ Webhook URL: $url/webhooks/github"; exit 0; fi; \
+        sleep 1; \
+    done; \
+    echo "✗ Tunnel not up after 10s — check 'just dev-logs' and http://localhost:4040"; exit 1
 
 # ─── Test ───────────────────────────────────────────────────────────
 

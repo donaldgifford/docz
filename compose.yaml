@@ -60,6 +60,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # Webhook tunnel for local dev against a real GitHub App (profile: tunnel).
+  # The service itself runs on the HOST (`just run`), so ngrok targets
+  # host.docker.internal:8080. Start with `just dev-tunnel`; requires
+  # NGROK_AUTHTOKEN in .env (compose interpolates it from there). For a stable
+  # URL across restarts, set NGROK_ARGS=--domain=<your-free-static-domain>.
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http http://host.docker.internal:8080 --log stdout ${NGROK_ARGS:-}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "4040:4040" # ngrok inspection UI + tunnel API
+    profiles:
+      - tunnel
+
 volumes:
   postgres-data: {}
   redis-data: {}

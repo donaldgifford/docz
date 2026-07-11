@@ -2,8 +2,8 @@
 
 A Go API for docz repos
 
-New to the repo? Start with [DEVELOPMENT.md](DEVELOPMENT.md) — toolchain
-setup, running the service locally, Docker/compose, tests, and conventions.
+New to the repo? Start with [DEVELOPMENT.md](DEVELOPMENT.md) — toolchain setup,
+running the service locally, Docker/compose, tests, and conventions.
 
 ## Quickstart
 
@@ -21,9 +21,9 @@ just run                      # build + run the binary
 just release v0.1.0           # tags + pushes; CI runs goreleaser
 ```
 
-Multi-arch archives land on the Forgejo (or GitHub) release page.
-Version metadata (`version`, `commit`, `date`) is embedded via
-`-ldflags` and surfaced in the binary's startup output.
+Multi-arch archives land on the Forgejo (or GitHub) release page. Version
+metadata (`version`, `commit`, `date`) is embedded via `-ldflags` and surfaced
+in the binary's startup output.
 
 ## Container
 
@@ -49,8 +49,7 @@ justfile                task runner
 
 ## Conventions
 
-See `CLAUDE.md` for the full operating notes (Go-specific +
-homelab universals).
+See `CLAUDE.md` for the full operating notes (Go-specific + homelab universals).
 
 ## License
 
