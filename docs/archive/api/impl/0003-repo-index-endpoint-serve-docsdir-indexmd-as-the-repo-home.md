@@ -228,31 +228,39 @@ served, and contract-gated.
 
 #### Tasks
 
-- [ ] Add `repoIndexDTO` (`internal/httpapi/dto.go`): `repo` / `index_md` /
+- [x] Add `repoIndexDTO` (`internal/httpapi/dto.go`): `repo` / `index_md` /
       `index_sha` + a `toRepoIndex(*store.Repo)` mapper (`nullText` for both
-      nullable columns).
-- [ ] Add the `getRepoIndex` handler + route (`r.Get("/index", …)` in the
+      nullable columns). _(done — the mapper's doc comment records the
+      presence-keys-off-sha contract.)_
+- [x] Add the `getRepoIndex` handler + route (`r.Get("/index", …)` in the
       `/repos/{owner}/{name}` subtree): `resolveRepo` (unknown and
       unauthorized repos both 404, unchanged helper) → **absence check on
       `repo.IndexSha.Valid`** (per the Phase 1 gotcha) → 404
       `{"error": "index not found"}` when absent → 200 `repoIndexDTO`
-      otherwise.
-- [ ] httpapi unit tests: 200 envelope (body + sha), empty-file 200 + `""`,
+      otherwise. _(done — mounted between `/` and `/types`.)_
+- [x] httpapi unit tests: 200 envelope (body + sha), empty-file 200 + `""`,
       404 for a repo without an index, 404 unknown repo, 404 outside the
-      allowed set.
-- [ ] Spec (`api/openapi.yaml`): new path
+      allowed set. _(done — `TestGetRepoIndex` (four subtests, empty-file via
+      an `acme/emptyidx` NULL-body/valid-sha row) +
+      `TestGetRepoIndexUnauthorizedIs404`.)_
+- [x] Spec (`api/openapi.yaml`): new path
       `/api/v1/repos/{owner}/{name}/index` (`get`, tag `repos`,
       `operationId: getRepoIndex`, shared `Owner`/`Name` params,
       `Unauthorized`/`NotFound` responses) + `RepoIndex` schema (all three
       fields `required`, `additionalProperties: false`, descriptions for
       vacuum). Bump **`info.version` → `1.1.0`**. `just lint-openapi` 100/100.
-- [ ] Contract test: seed the fixture repo with an index body and add the
+      _(done — the `NotFound` description also gained the index flavor.)_
+- [x] Contract test: seed the fixture repo with an index body and add the
       `getRepoIndex` happy-path case; cover the no-index **404** envelope per
       OQ-2a (second bare fixture repo; update the `list repos` count
-      assertions it shifts).
-- [ ] `just test` / `just lint` / `just fmt` / `just lint-openapi` green;
+      assertions it shifts). _(done — `seededStore` grew the `acme/platform`
+      index pair + the bare `acme/bare` repo; `getRepoIndex` +
+      `getRepoIndexMissing` contract cases; the shifted assertions were the
+      `list repos` count and `TestSearchEndpoint`'s allowed-set `[1]`→`[1 2]`.)_
+- [x] `just test` / `just lint` / `just fmt` / `just lint-openapi` green;
       commit (`feat(httpapi): serve the repo index at
-      /api/v1/repos/{owner}/{name}/index`).
+      /api/v1/repos/{owner}/{name}/index`). _(done — 14 packages ok, lint 0
+      issues, vacuum 100/100.)_
 
 #### Success Criteria
 
@@ -263,6 +271,12 @@ served, and contract-gated.
   cases; the spec self-validates at `1.1.0`; vacuum stays 100/100.
 - **No existing schema changed** — the contract test passes with zero edits
   to any previously specced response (the drift detector proves additivity).
+
+**Status: COMPLETE ✅** — all criteria met. The five 200/404 flavors are
+pinned by unit tests; the contract test validates request + response for
+`getRepoIndex` and `getRepoIndexMissing` at spec `1.1.0` (vacuum 100/100);
+no previously specced schema was edited — only the fixture seed and the
+allowed-set count assertions shifted, exactly as OQ-2a predicted.
 
 ---
 
