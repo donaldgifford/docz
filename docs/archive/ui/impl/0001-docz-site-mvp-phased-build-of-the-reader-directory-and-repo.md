@@ -207,7 +207,7 @@ phase onward.
       `@shikijs/rehype` (slim grammar set: yaml, go, ts/js, bash, json,
       hcl, sql, python; lazy-loaded) → hast-to-React (no
       `dangerouslySetInnerHTML`)
-- [ ] XSS suite (`processor.xss.test.ts`): payload table — `<script>`,
+- [x] XSS suite (`processor.xss.test.ts`): payload table — `<script>`,
       `<img onerror>`, `javascript:` URLs (markdown links and raw HTML),
       event-handler attributes, `<iframe>`/`<object>`/`<embed>`, hostile
       inline SVG/MathML, `data:` URIs — every payload neutralized;
