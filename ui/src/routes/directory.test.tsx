@@ -96,6 +96,106 @@ describe("directory route", () => {
     });
   });
 
+  it("drives the repo picker, chips, and count line from facets", async () => {
+    const user = userEvent.setup();
+    mountAt("/");
+    await screen.findByText(SITE_DESIGN_TITLE);
+
+    expect(screen.getByTestId("results-count")).toHaveTextContent(
+      "showing 4 of 4",
+    );
+
+    // Chips are the union of type facet values, plus the all-types reset.
+    expect(
+      screen.getByRole("button", { name: "all types" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "design" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "impl" })).toBeInTheDocument();
+
+    // Picker menu lists per-repo counts and the cross-repo total.
+    await user.click(screen.getByRole("button", { name: /repo:/ }));
+    expect(
+      screen.getByRole("button", { name: "all repos 4" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "donaldgifford/docz-site 2" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "donaldgifford/docz-api 2" }),
+    ).toBeInTheDocument();
+  });
+
+  it("chip click filters rows, keeps every chip visible, pushes history", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/");
+    await screen.findByText(SITE_DESIGN_TITLE);
+
+    await user.click(screen.getByRole("button", { name: "impl" }));
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("?type=impl");
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(SITE_DESIGN_TITLE)).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(SITE_IMPL_TITLE)).toBeInTheDocument();
+    expect(screen.getByTestId("results-count")).toHaveTextContent(
+      "showing 1 of 1",
+    );
+
+    // The facet source excludes its own dimension, so unselected type
+    // chips stay offered while one is active.
+    expect(screen.getByRole("button", { name: "design" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "impl" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // Filter changes push history — back restores the unfiltered view.
+    await act(async () => {
+      await router.navigate(-1);
+    });
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("");
+    });
+    expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
+  });
+
+  it("scopes to a repo through the picker", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/");
+    await screen.findByText(SITE_DESIGN_TITLE);
+
+    await user.click(screen.getByRole("button", { name: /repo:/ }));
+    await user.click(
+      screen.getByRole("button", { name: "donaldgifford/docz-api 2" }),
+    );
+
+    await waitFor(() => {
+      expect(router.state.location.search).toBe(
+        `?repo=${encodeURIComponent("donaldgifford/docz-api")}`,
+      );
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(SITE_DESIGN_TITLE)).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(API_DESIGN_TITLE)).toBeInTheDocument();
+  });
+
+  it("clear filters resets to the empty state", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/?type=impl&q=phased");
+    await screen.findByText(SITE_IMPL_TITLE);
+
+    await user.click(screen.getByRole("button", { name: /clear filters/ }));
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("");
+    });
+    expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
+    expect(
+      screen.getByRole("searchbox", { name: "Search documents" }),
+    ).toHaveValue("");
+  });
+
   it("shows skeleton rows before the first page resolves", async () => {
     mountAt("/");
 

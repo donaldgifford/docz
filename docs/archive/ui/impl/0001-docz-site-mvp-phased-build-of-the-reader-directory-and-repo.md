@@ -282,9 +282,12 @@ untrusted.
       vendored spec and upstream main. Hits render in API order and the
       updated column renders "—"; the additive ask in DESIGN-0001 now
       covers both `sort=` and `updated_at` on `SearchHit`)
-- [ ] Repo picker dropdown fed by the `repo` facet (counts per repo);
+- [x] Repo picker dropdown fed by the `repo` facet (counts per repo);
       type chips from the union of `type` facet values, colored by the
       color system; "showing X of Y"; clear-filters action
+      (facet sources exclude their own dimension — separate limit-0
+      facet queries — so every repo/type stays offered while one is
+      selected; chips are single-select while the API takes one `type`)
 - [ ] "Load more" pagination via offset/limit against
       `estimated_total_hits`
 - [ ] Directory four states: skeleton rows, contextual empty ("No

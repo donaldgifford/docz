@@ -5,11 +5,15 @@ import { Link, useSearchParams } from "react-router";
 import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
 import { StatusBadge, TypeBadge } from "@/components/badges";
+import { RepoPicker, TypeChips } from "@/components/directory-controls";
 import { ErrorPanel, SessionRequiredPanel } from "@/components/query-states";
 import {
+  EMPTY_SEARCH_STATE,
+  hasActiveFilters,
   parseSearchParams,
   serializeSearchState,
   toSearchDocsParams,
+  type DirectorySearchState,
 } from "@/lib/searchParams";
 
 import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
@@ -169,6 +173,28 @@ export function Component() {
   const result =
     searchQuery.data?.status === 200 ? searchQuery.data.data : undefined;
 
+  // Facet sources exclude their own dimension (standard faceted-search
+  // behavior): the repo picker keeps listing every repo while one is
+  // selected, and the type chips keep listing every type. When nothing
+  // is filtered these collapse to one deduped request.
+  const repoFacetQuery = useSearchDocs(
+    toSearchDocsParams({ ...state, repo: null, offset: 0 }, 0),
+    { query: { placeholderData: keepPreviousData } },
+  );
+  const typeFacetQuery = useSearchDocs(
+    toSearchDocsParams({ ...state, types: [], offset: 0 }, 0),
+    { query: { placeholderData: keepPreviousData } },
+  );
+  const repoCounts =
+    (repoFacetQuery.data?.status === 200
+      ? repoFacetQuery.data.data.facets.repo
+      : undefined) ?? {};
+  const availableTypes = Object.keys(
+    (typeFacetQuery.data?.status === 200
+      ? typeFacetQuery.data.data.facets.type
+      : undefined) ?? {},
+  ).sort();
+
   const commitQuery = useCallback(
     (q: string) => {
       // Typing replaces the history entry (no per-debounce litter) and
@@ -181,6 +207,11 @@ export function Component() {
     [state, setSearchParams],
   );
 
+  const applyFilters = (partial: Partial<DirectorySearchState>) => {
+    // Pushed (not replaced): back/forward walks filter history.
+    setSearchParams(serializeSearchState({ ...state, ...partial, offset: 0 }));
+  };
+
   if (searchQuery.error instanceof SessionRequiredError) {
     return <SessionRequiredPanel />;
   }
@@ -189,6 +220,46 @@ export function Component() {
     <div className="mx-auto max-w-[940px] px-5">
       <DirectoryHero repo={state.repo} />
       <SearchBox value={state.q} onCommit={commitQuery} />
+
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        <RepoPicker
+          current={state.repo}
+          counts={repoCounts}
+          onPick={(repo) => {
+            applyFilters({ repo });
+          }}
+        />
+        {hasActiveFilters(state) && (
+          <button
+            type="button"
+            onClick={() => {
+              applyFilters(EMPTY_SEARCH_STATE);
+            }}
+            className="font-mono text-[11.5px] text-fg-muted hover:text-fg-primary"
+          >
+            clear filters ✕
+          </button>
+        )}
+        {result !== undefined && (
+          <div
+            data-testid="results-count"
+            className="ml-auto font-mono text-[12px] text-fg-tertiary"
+          >
+            showing{" "}
+            <b className="font-medium text-fg-secondary">
+              {result.hits.length}
+            </b>{" "}
+            of {result.estimated_total_hits}
+          </div>
+        )}
+      </div>
+      <TypeChips
+        available={availableTypes}
+        selected={state.types[0] ?? null}
+        onSelect={(type) => {
+          applyFilters({ types: type === null ? [] : [type] });
+        }}
+      />
 
       {searchQuery.isError ? (
         <div className="mt-6">
