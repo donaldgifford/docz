@@ -18,8 +18,10 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v88/github"
+	"gopkg.in/yaml.v3"
 
 	"github.com/donaldgifford/docz-api/internal/ingest"
+	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
 	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
@@ -100,10 +102,46 @@ func (c *Client) Fetch(ctx context.Context, owner, name string) (*ingest.RepoSna
 		}
 		snap.ChangelogSHA = changelogSHA
 	}
+	// The repo home (docs_dir/index.md, DESIGN-0003) needs docs_dir before
+	// ingest parses the config, so a fetch-scoped hint parse targets the exact
+	// path in the already-listed tree — at most one extra blob request.
+	indexPath := path.Join(docsDirHint(snap.ConfigYAML), doczcfg.WikiIndexName)
+	if indexSHA := findBlobSHA(tree, indexPath); indexSHA != "" {
+		if snap.IndexMD, err = c.fetchBlob(ctx, owner, name, indexSHA); err != nil {
+			return nil, fmt.Errorf("fetch %s: %w", indexPath, err)
+		}
+		snap.IndexSHA = indexSHA
+	}
 	if snap.Blobs, err = c.fetchDocBlobs(ctx, owner, name, docEntries); err != nil {
 		return nil, err
 	}
 	return snap, nil
+}
+
+// docsDirHint extracts docs_dir from raw .docz.yaml bytes for path targeting
+// only — the authoritative parse and validation stay in ingest's loadConfig,
+// so a malformed config falls back to docz's default here and still fails
+// ingest there. The default and dialect both come from the pinned docz
+// library, keeping the hint drift-free by construction.
+func docsDirHint(configYAML []byte) string {
+	var cfg struct {
+		DocsDir string `yaml:"docs_dir"`
+	}
+	if err := yaml.Unmarshal(configYAML, &cfg); err == nil && cfg.DocsDir != "" {
+		return strings.TrimSuffix(cfg.DocsDir, "/")
+	}
+	return doczcfg.DefaultConfig().DocsDir
+}
+
+// findBlobSHA returns the sha of the blob at exactly path p in tree, or ""
+// when no such blob exists.
+func findBlobSHA(tree *github.Tree, p string) string {
+	for _, e := range tree.Entries {
+		if e.GetType() == "blob" && e.GetPath() == p {
+			return e.GetSHA()
+		}
+	}
+	return ""
 }
 
 // classifyTree splits a recursive tree into the .docz.yaml sha, the root

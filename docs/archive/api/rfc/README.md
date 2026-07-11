@@ -29,4 +29,8 @@ docz create rfc "Your RFC Title"
 - **Superseded**: Replaced by another RFC
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
+## All RFCs
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
 <!-- END DOCZ AUTO-GENERATED -->

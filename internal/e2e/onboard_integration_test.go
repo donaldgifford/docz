@@ -267,6 +267,45 @@ func TestE2EContentHashGateAndDelete(t *testing.T) {
 	}
 }
 
+func TestE2ERepoIndexServeAndRemoval(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	const indexBody = "# Acme Home\n\nWelcome to the wiki.\n"
+	blobs := []ingest.BlobEntry{
+		{Path: "docs/frameworks/0001-intro.md", GitSHA: "g1", Content: doc("FW-0001", "Intro", "# Intro")},
+	}
+	withIndex := &ingest.RepoSnapshot{
+		HeadSHA: "h1", DefaultBranch: "main", ConfigYAML: []byte(fixtureConfig),
+		IndexMD: []byte(indexBody), IndexSHA: "idx-1",
+		Blobs: blobs,
+	}
+	onboard(t, "home", 902, withIndex)
+
+	var body struct {
+		Repo     string `json:"repo"`
+		IndexMD  string `json:"index_md"`
+		IndexSHA string `json:"index_sha"`
+	}
+	if code := getJSON(t, "/api/v1/repos/acme/home/index", &body); code != http.StatusOK {
+		t.Fatalf("get index status = %d, want 200", code)
+	}
+	if body.Repo != "acme/home" || body.IndexMD != indexBody || body.IndexSHA != "idx-1" {
+		t.Errorf("index = %+v, want the ingested body and sha", body)
+	}
+
+	// index.md removed at HEAD: the re-ingest clears the cached pair, so the
+	// endpoint flips to 404 (the delete-at-HEAD path).
+	withoutIndex := &ingest.RepoSnapshot{
+		HeadSHA: "h2", DefaultBranch: "main", ConfigYAML: []byte(fixtureConfig),
+		Blobs: blobs,
+	}
+	onboard(t, "home", 902, withoutIndex)
+
+	if code := getJSON(t, "/api/v1/repos/acme/home/index", nil); code != http.StatusNotFound {
+		t.Errorf("index after removal: status = %d, want 404", code)
+	}
+}
+
 func containsRepo(repos []struct{ Repo string }, want string) bool {
 	for _, r := range repos {
 		if r.Repo == want {

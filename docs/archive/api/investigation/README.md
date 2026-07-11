@@ -15,6 +15,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 |----|-------|--------|------|--------|------|
 | INV-0001 | Migrate docz-api to docz v1.0.0 | Concluded | 2026-07-07 | Donald Gifford | [0001-migrate-docz-api-to-docz-v100.md](0001-migrate-docz-api-to-docz-v100.md) |
 | INV-0002 | Auto-generate an OpenAPI contract for the docz-site | Open | 2026-07-07 | Donald Gifford | [0002-auto-generate-an-openapi-contract-for-the-docz-site.md](0002-auto-generate-an-openapi-contract-for-the-docz-site.md) |
+| INV-0003 | docz-site deferred features and the docz-api surface to unblock them | Open | 2026-07-10 | Donald Gifford | [0003-docz-site-deferred-features-and-the-docz-api-surface-to-unblock.md](0003-docz-site-deferred-features-and-the-docz-api-surface-to-unblock.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

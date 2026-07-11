@@ -59,8 +59,9 @@ func NewService(st repoStore, f RepoFetcher, idx Indexer) *Service {
 
 // Run ingests one repo at HEAD: fetch, parse .docz.yaml, map its doc types and
 // documents, and reconcile in one transaction (the content-hash gate lives in
-// the store). A root CHANGELOG.md is cached raw on the repo row. installationID
-// is recorded on the repo row for the later webhook path.
+// the store). A root CHANGELOG.md and the docs_dir/index.md repo home
+// (DESIGN-0003) are cached raw on the repo row. installationID is recorded on
+// the repo row for the later webhook path.
 func (s *Service) Run(
 	ctx context.Context, installationID int64, owner, name string,
 ) (store.ReconcileResult, error) {
@@ -114,6 +115,8 @@ func (s *Service) Run(
 			LastSyncedSHA:  snap.HeadSHA,
 			ChangelogMD:    string(snap.ChangelogMD),
 			ChangelogSHA:   snap.ChangelogSHA,
+			IndexMD:        string(snap.IndexMD),
+			IndexSHA:       snap.IndexSHA,
 		},
 		DocTypes:  docTypes,
 		Documents: documents,

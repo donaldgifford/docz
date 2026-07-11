@@ -13,7 +13,6 @@ created: 2026-06-29
 **Status:** Approved **Author:** Donald Gifford **Date:** 2026-06-29
 
 <!--toc:start-->
-
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)

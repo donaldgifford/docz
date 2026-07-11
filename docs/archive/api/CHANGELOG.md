@@ -3,6 +3,36 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Features
+
+- *(store)* Add repos.index_md/index_sha migration
+- *(store)* Carry index_md/index_sha through UpsertRepo
+- *(store)* Map RepoInput index pair through ReconcileRepo
+- *(ingest)* Add the index pair to the repo snapshot
+- *(githubapp)* Fetch docs_dir index.md via a targeted blob lookup
+- *(ingest)* Map the cached index pair into the reconcile input
+- *(httpapi)* Serve the repo index at /api/v1/repos/{owner}/{name}/index
+
+### Documentation
+
+- *(repo-index)* Add INV-0003 and DESIGN-0003 for the repo index endpoint
+- *(repo-index)* Add IMPL-0003 with resolved open questions
+- *(repo-index)* Complete IMPL-0003 Phase 1 (persistence)
+- *(repo-index)* Complete IMPL-0003 Phase 2 (fetch + ingest)
+- *(repo-index)* Complete IMPL-0003 Phase 3 (endpoint + contract)
+- *(repo-index)* Close out IMPL-0003
+
+### Styling
+
+- *(githubapp)* Join the index path with path.Join
+
+### Testing
+
+- *(store)* Cover the index pair lifecycle and migration round-trip
+- *(e2e)* Prove the repo index serve and removal path
+
 ## [0.3.0] - 2026-07-10
 
 ### Features

@@ -130,6 +130,8 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 		ConfigYAML:    []byte(fixtureConfig),
 		ChangelogMD:   []byte("# Changelog\n"),
 		ChangelogSHA:  "cl-sha",
+		IndexMD:       []byte("# Home\n"),
+		IndexSHA:      "idx-sha",
 		Blobs: []BlobEntry{
 			{Path: "docs/frameworks/0001-intro.md", GitSHA: "d1", Content: []byte(fixtureDoc)},
 			{Path: "docs/frameworks/0002-nofm.md", GitSHA: "d2", Content: []byte("# no frontmatter here\n")},
@@ -157,6 +159,9 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 	}
 	if repo.ChangelogMD != "# Changelog\n" || repo.ChangelogSHA != "cl-sha" {
 		t.Errorf("changelog = %q / %q, want cached raw", repo.ChangelogMD, repo.ChangelogSHA)
+	}
+	if repo.IndexMD != "# Home\n" || repo.IndexSHA != "idx-sha" {
+		t.Errorf("index = %q / %q, want cached raw", repo.IndexMD, repo.IndexSHA)
 	}
 	if len(repo.ConfigSnapshot) == 0 {
 		t.Error("ConfigSnapshot is empty, want the marshaled config")

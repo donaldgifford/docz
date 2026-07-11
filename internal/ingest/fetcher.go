@@ -29,6 +29,11 @@ type RepoSnapshot struct {
 	ChangelogMD []byte
 	// ChangelogSHA is the git blob sha of CHANGELOG.md, or "" if absent.
 	ChangelogSHA string
+	// IndexMD is the raw bytes of docs_dir/index.md — the repo home document
+	// docz's wiki renders as its landing page (DESIGN-0003) — or nil if absent.
+	IndexMD []byte
+	// IndexSHA is the git blob sha of docs_dir/index.md, or "" if absent.
+	IndexSHA string
 	// Blobs is every matched doc file fetched under docs_dir/<type.dir>/.
 	Blobs []BlobEntry
 }

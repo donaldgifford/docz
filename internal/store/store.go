@@ -135,6 +135,10 @@ type (
 	}
 
 	// RepoInput is the desired top-level state for a repo at a given HEAD.
+	// IndexMD/IndexSHA cache docs_dir/index.md (the repo home, DESIGN-0003);
+	// both empty means the file was absent at HEAD. An empty-but-present file
+	// arrives as IndexMD "" with a non-empty IndexSHA — textOrNull maps the
+	// body to NULL, so presence is keyed off index_sha, not index_md.
 	RepoInput struct {
 		InstallationID int64
 		Owner          string
@@ -145,6 +149,8 @@ type (
 		LastSyncedSHA  string
 		ChangelogMD    string
 		ChangelogSHA   string
+		IndexMD        string
+		IndexSHA       string
 	}
 
 	// DocTypeInput is one desired doc-type row (from .docz.yaml).

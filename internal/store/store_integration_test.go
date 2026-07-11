@@ -172,6 +172,101 @@ func TestReconcileRepoCreatesRows(t *testing.T) {
 	}
 }
 
+// TestMigrateUpDownRoundTrip proves every migration's Down mirrors its Up: a
+// fresh database migrates up, all the way back down to zero, and up again. It
+// uses its own container so the shared testStore schema is never torn down.
+func TestMigrateUpDownRoundTrip(t *testing.T) {
+	ctx := t.Context()
+
+	ctr, err := postgres.Run(ctx, "postgres:17-alpine",
+		postgres.WithDatabase("docz_api_roundtrip"),
+		postgres.WithUsername("docz"),
+		postgres.WithPassword("secret"),
+		postgres.BasicWaitStrategies(),
+	)
+	if err != nil {
+		t.Fatalf("start postgres container: %v", err)
+	}
+	t.Cleanup(func() {
+		if terr := ctr.Terminate(context.Background()); terr != nil {
+			t.Logf("terminate container: %v", terr)
+		}
+	})
+
+	dsn, err := ctr.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		t.Fatalf("connection string: %v", err)
+	}
+
+	if err := Migrate(ctx, dsn); err != nil {
+		t.Fatalf("initial up: %v", err)
+	}
+	if err := MigrateDown(ctx, dsn); err != nil {
+		t.Fatalf("down to zero: %v", err)
+	}
+	if err := Migrate(ctx, dsn); err != nil {
+		t.Fatalf("re-up after down: %v", err)
+	}
+}
+
+// TestReconcileRepoIndexPair covers the index_md/index_sha lifecycle: set on
+// first reconcile, kept-with-NULL-body for an empty-but-present index.md, and
+// cleared when the file is absent at HEAD (DESIGN-0003).
+func TestReconcileRepoIndexPair(t *testing.T) {
+	ctx := t.Context()
+	seedInstallation(t, 400)
+
+	repoInput := func(indexMD, indexSHA string) *ReconcileInput {
+		return &ReconcileInput{
+			Repo: RepoInput{
+				InstallationID: 400, Owner: "acme", Name: "index", DefaultBranch: "main",
+				DocsDir: "docs", ConfigSnapshot: json.RawMessage(`{}`),
+				IndexMD: indexMD, IndexSHA: indexSHA,
+			},
+		}
+	}
+	fetch := func() Repo {
+		t.Helper()
+		repo, err := testStore.q.GetRepoByOwnerName(ctx, GetRepoByOwnerNameParams{Owner: "acme", Name: "index"})
+		if err != nil {
+			t.Fatalf("GetRepoByOwnerName: %v", err)
+		}
+		return repo
+	}
+
+	// Present: both columns persist.
+	if _, err := testStore.ReconcileRepo(ctx, repoInput("# Home\n", "idxsha-1")); err != nil {
+		t.Fatalf("reconcile with index: %v", err)
+	}
+	repo := fetch()
+	if repo.IndexMd.String != "# Home\n" || repo.IndexSha.String != "idxsha-1" {
+		t.Errorf("index pair = (%q valid=%v, %q), want the seeded values",
+			repo.IndexMd.String, repo.IndexMd.Valid, repo.IndexSha.String)
+	}
+
+	// Empty-but-present: body NULL (textOrNull), sha stays valid — the
+	// presence signal the API keys off.
+	if _, err := testStore.ReconcileRepo(ctx, repoInput("", "idxsha-2")); err != nil {
+		t.Fatalf("reconcile with empty index: %v", err)
+	}
+	repo = fetch()
+	if repo.IndexMd.Valid {
+		t.Errorf("IndexMd.Valid = true for empty body, want NULL")
+	}
+	if repo.IndexSha.String != "idxsha-2" {
+		t.Errorf("IndexSha = %q, want idxsha-2 (presence signal)", repo.IndexSha.String)
+	}
+
+	// Absent at HEAD (file deleted): both cleared.
+	if _, err := testStore.ReconcileRepo(ctx, repoInput("", "")); err != nil {
+		t.Fatalf("reconcile without index: %v", err)
+	}
+	repo = fetch()
+	if repo.IndexMd.Valid || repo.IndexSha.Valid {
+		t.Errorf("index pair not cleared: md.valid=%v sha.valid=%v", repo.IndexMd.Valid, repo.IndexSha.Valid)
+	}
+}
+
 func TestReconcileContentHashGate(t *testing.T) {
 	ctx := t.Context()
 	seedInstallation(t, 200)

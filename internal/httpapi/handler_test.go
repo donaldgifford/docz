@@ -66,13 +66,21 @@ func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID strin
 
 func validText(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
 
-// seededStore returns a fakeStore with one repo, one custom type, and one doc.
+// seededStore returns a fakeStore with a full repo (custom type, doc, cached
+// index.md) plus a bare repo with no index, for the 404 flavors (OQ-2a).
 func seededStore() *fakeStore {
 	return &fakeStore{
-		repos: []store.Repo{{
-			ID: 1, Owner: "acme", Name: "platform", DefaultBranch: "main", DocsDir: "docs",
-			ConfigSnapshot: json.RawMessage(`{"docs_dir":"docs"}`), LastSyncedSha: validText("headsha"),
-		}},
+		repos: []store.Repo{
+			{
+				ID: 1, Owner: "acme", Name: "platform", DefaultBranch: "main", DocsDir: "docs",
+				ConfigSnapshot: json.RawMessage(`{"docs_dir":"docs"}`), LastSyncedSha: validText("headsha"),
+				IndexMd: validText("# Platform\n"), IndexSha: validText("idxsha"),
+			},
+			{
+				ID: 2, Owner: "acme", Name: "bare", DefaultBranch: "main", DocsDir: "docs",
+				ConfigSnapshot: json.RawMessage(`{"docs_dir":"docs"}`), LastSyncedSha: validText("baresha"),
+			},
+		},
 		types: map[int64][]store.DocType{
 			1: {{
 				ID: 10, RepoID: 1, Name: "frameworks", Dir: "frameworks", IDPrefix: "FW",
@@ -122,8 +130,8 @@ func TestReadEndpoints(t *testing.T) {
 			} `json:"repos"`
 		}
 		mustDecode(t, rec, &body)
-		if len(body.Repos) != 1 || body.Repos[0].Repo != "acme/platform" {
-			t.Errorf("repos = %+v, want one acme/platform", body.Repos)
+		if len(body.Repos) != 2 || body.Repos[0].Repo != "acme/platform" || body.Repos[1].Repo != "acme/bare" {
+			t.Errorf("repos = %+v, want acme/platform + acme/bare", body.Repos)
 		}
 	})
 
@@ -195,6 +203,71 @@ func TestReadEndpoints(t *testing.T) {
 			t.Errorf("status = %d, want 404", rec.Code)
 		}
 	})
+}
+
+func TestGetRepoIndex(t *testing.T) {
+	st := seededStore()
+	// An empty-but-present index.md persists as a NULL body with a valid sha
+	// (the textOrNull gotcha), which must serve as 200 with an empty string.
+	st.repos = append(st.repos, store.Repo{
+		ID: 3, Owner: "acme", Name: "emptyidx", DefaultBranch: "main", DocsDir: "docs",
+		ConfigSnapshot: json.RawMessage(`{"docs_dir":"docs"}`), IndexSha: validText("emptysha"),
+	})
+	srv := testServer(st, authorize.NewAllReposAuthorizer(st))
+
+	t.Run("present index serves body and sha", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/platform/index")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var body repoIndexDTO
+		mustDecode(t, rec, &body)
+		if body.Repo != "acme/platform" || body.IndexMD != "# Platform\n" || body.IndexSHA != "idxsha" {
+			t.Errorf("index = %+v, want the cached body and sha", body)
+		}
+	})
+
+	t.Run("empty index file is 200 with empty body", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/emptyidx/index")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var body repoIndexDTO
+		mustDecode(t, rec, &body)
+		if body.IndexMD != "" || body.IndexSHA != "emptysha" {
+			t.Errorf("index = %+v, want empty body with a valid sha", body)
+		}
+	})
+
+	t.Run("repo without an index is 404", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/bare/index")
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want 404", rec.Code)
+		}
+		var body struct {
+			Error string `json:"error"`
+		}
+		mustDecode(t, rec, &body)
+		if body.Error != "index not found" {
+			t.Errorf("error = %q, want 'index not found'", body.Error)
+		}
+	})
+
+	t.Run("unknown repo is 404", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/missing/index")
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404", rec.Code)
+		}
+	})
+}
+
+func TestGetRepoIndexUnauthorizedIs404(t *testing.T) {
+	srv := testServer(seededStore(), fixedAuthorizer{allowed: authorize.AllowedRepos{999}})
+
+	rec := doGet(t, srv, "/api/v1/repos/acme/platform/index")
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404 (existence hidden)", rec.Code)
+	}
 }
 
 func TestUnauthorizedRepoHiddenAs404(t *testing.T) {

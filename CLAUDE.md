@@ -655,7 +655,8 @@ version + document consumption). `api/README.md` is the consumer-facing guide.
   the `/api/v1` gate, so the docz-site can fetch it without a session). No `/docs`
   UI (OQ-3d). `info.version` is **SemVer from `1.0.0`** (OQ-5a), bumped by hand on
   any specced wire change (patch = editorial, minor = additive, major = breaking),
-  independent of the binary version — the consumer-pin signal. The docz-site
+  independent of the binary version — the consumer-pin signal. **Currently
+  `1.1.0`** (IMPL-0003 added `getRepoIndex`). The docz-site
   vendors the file (or fetches the served spec at a pinned version) and generates
   a typed client; see `api/README.md`.
 - **Spec lint/format (OQ-7b):** `just lint-openapi` runs **`vacuum`** (`aqua:
@@ -670,6 +671,46 @@ version + document consumption). `api/README.md` is the consumer-facing guide.
   `go.sum` entries (nothing imports them yet). Settle them with targeted `go get
   <subpkg>@v0.135.0` (or a `go mod tidy` once the harness imports them, which also
   promotes `kin-openapi` to a direct require).
+
+## Repo index endpoint (DESIGN-0003 / IMPL-0003)
+
+The docz-site repo home: `docs_dir/index.md` (docz's wiki landing page,
+`doczcfg.WikiIndexName`) is fetched at ingest, cached on the repo row, and
+served at **`GET /api/v1/repos/{owner}/{name}/index`** as
+`{repo, index_md, index_sha}` (spec `1.1.0`, additive). Built per
+`docs/design/0003-*.md` (all six design OQs = `a`) and `docs/impl/0003-*.md`
+(all five impl OQs = `a`) — **all four phases COMPLETE ✅**.
+
+- **Persistence:** `repos.index_md` / `repos.index_sha` (nullable TEXT,
+  migration `20260710000000_add_repo_index.sql`, mirrors the
+  `changelog_md`/`changelog_sha` precedent); `UpsertRepo` writes both;
+  `RepoInput.IndexMD/IndexSHA` map through `textOrNull`.
+  **GOTCHA — presence keys off `index_sha`:** `textOrNull("")` is NULL, so an
+  empty-but-present `index.md` stores a NULL body with a **valid sha** — the
+  handler gates on `IndexSha.Valid` and `nullText` yields the `""` body, which
+  is exactly DESIGN OQ-3a's "empty file ⇒ 200 + empty string; absent ⇒ 404".
+- **Fetch (githubapp):** `docsDirHint(configYAML)` does a fetch-scoped
+  one-field `yaml.Unmarshal` of `docs_dir` (trailing-`/` trimmed; default
+  `doczcfg.DefaultConfig().DocsDir`; the authoritative parse stays in ingest's
+  `loadConfig`, so a malformed config still fails there). `findBlobSHA` looks
+  up `docsDirHint(...)+"/"+doczcfg.WikiIndexName` in the already-listed
+  recursive tree (exact path, blob type) — **at most one extra blob request,
+  zero when absent**. `gopkg.in/yaml.v3` is a **direct** require (same dialect
+  docz uses — no drift; promoted via the require block, never a bare tidy).
+  `IsDoczFile` requires leading digits so `index.md` never collides with doc
+  ingest; the webhook `shouldIngest` already re-ingests on `docs_dir/` pushes,
+  so index refresh needed **no webhook change**.
+- **Serve (httpapi):** `getRepoIndex` = `resolveRepo` (existence hiding) →
+  `IndexSha.Valid` check → 404 `{"error":"index not found"}` or 200
+  `repoIndexDTO`. Contract-tested happy + 404 via the second bare fixture repo
+  `acme/bare` (OQ-2a; the fixture growth shifted the `list repos` count and
+  the search allowed-set assertions).
+- **Rollout:** natural refresh only (DESIGN OQ-4a) — pre-existing repos 404
+  until their next ingest; note in `deploy/README.md`. No size cap on the
+  cached body (capless changelog precedent, OQ-4a).
+- **Proof:** `TestE2ERepoIndexServeAndRemoval` (real Postgres) covers ingest →
+  serve → removal-at-HEAD → 404; store round-trip + migration up/down live in
+  the store integration tests.
 
 ## Renovate
 

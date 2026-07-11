@@ -43,6 +43,22 @@ func (h *Handler) getRepo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, toRepoDetail(&repo, types))
 }
 
+// getRepoIndex returns the cached docs_dir/index.md repo home (DESIGN-0003).
+// Presence keys off index_sha: an empty-but-present file stores a NULL body
+// with a valid sha, so it serves 200 with an empty index_md, while a repo
+// with no index.md at HEAD is a 404.
+func (h *Handler) getRepoIndex(w http.ResponseWriter, r *http.Request) {
+	repo, ok := h.resolveRepo(w, r)
+	if !ok {
+		return
+	}
+	if !repo.IndexSha.Valid {
+		writeError(w, http.StatusNotFound, "index not found")
+		return
+	}
+	writeJSON(w, toRepoIndex(&repo))
+}
+
 // listTypes returns a repo's doc types.
 func (h *Handler) listTypes(w http.ResponseWriter, r *http.Request) {
 	repo, ok := h.resolveRepo(w, r)
