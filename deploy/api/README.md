@@ -72,7 +72,9 @@ For **local development** the webhook URL can be an ngrok tunnel to your machine
 | Contents   | Read-only | Git refs/trees/blobs for `.docz.yaml`, docs, `CHANGELOG.md`, `index.md`; also gates the push/release events. |
 | Metadata   | Read-only | Mandatory for every GitHub App (repo lookup, default branch).                                                |
 
-Nothing else — no write access of any kind, no account permissions.
+Nothing else — no write access of any kind. Ingestion needs no account
+permissions; the one exception is **Email addresses: Read-only** if you reuse
+this app for site login (see below).
 
 ### Webhook events
 
