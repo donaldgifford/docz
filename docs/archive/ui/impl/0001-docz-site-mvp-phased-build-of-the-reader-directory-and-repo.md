@@ -374,12 +374,15 @@ full three-column portal.
       (shared RepoFrame extracted — nav + breadcrumbs + right rail —
       now used by home and type pages; demo fixtures resolve
       `{type}` by name/id_prefix/alias like the API and 404 unknowns)
-- [ ] Wire the reader into the three-column portal with the repo nav;
+- [x] Wire the reader into the three-column portal with the repo nav;
       collapse behavior for narrow screens
-- [ ] File-path breadcrumbs consistent across `/repos` → repo → type →
-      doc
-- [ ] Type-in-URL resolution: generate links from the canonical type name;
+- [x] File-path breadcrumbs consistent across `/repos` → repo → type →
+      doc (RepoBreadcrumbs inside RepoFrame; the reader's crumb moved
+      out of DocHeader into the frame)
+- [x] Type-in-URL resolution: generate links from the canonical type name;
       accept `id_prefix`/alias URLs (the API resolves them)
+      (lib/docTypes resolveDocType, mirrored in fixtures; alias test
+      covers /INV → Investigations)
 - [ ] Four-state coverage + component tests for repos grid, repo home, and
       type pages
 

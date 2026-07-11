@@ -161,6 +161,29 @@ describe("lifecycle rail positioning", () => {
   );
 });
 
+describe("portal sibling navigation", () => {
+  it("swaps documents through the repo nav without a reload", async () => {
+    mountAt(DOC_URL);
+    await findRenderedDesign0001();
+
+    // The repo nav frames the reader and lists sibling docs.
+    const navLink = await screen.findByRole("link", {
+      name: /IMPL-0001 · docz-site MVP/,
+    });
+    await userEvent.click(navLink);
+
+    expect(
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: /docz-site MVP: phased build/ },
+        { timeout: 10_000 },
+      ),
+    ).toBeInTheDocument();
+    // The previous doc is gone from the article; the nav still lists it.
+    expect(navLink).toHaveAttribute("aria-current", "page");
+  });
+});
+
 describe("ToC anchor navigation", () => {
   it("links every collected heading to a real anchor in the article", async () => {
     mountAt(DOC_URL);
