@@ -65,10 +65,19 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `findBy*`, not `getBy*`, for the initial assertion.
 - `src/api/__generated__/` — orval output; never hand-edit, never commit
 - Generated OpenAPI types ARE the data model; don't hand-roll DTO types
-- Markdown reader pipeline (Phase 1): remark-parse → remark-gfm →
-  remark-rehype (allowDangerousHtml) → rehype-raw → **rehype-sanitize** →
-  rehype-slug → @shikijs/rehype → React. Sanitize AFTER rehype-raw,
-  highlight AFTER sanitize. No `dangerouslySetInnerHTML`.
+- Markdown rendering lives in `src/markdown/` and ONLY there:
+  `preprocess.ts` (strip frontmatter + docz toc block) →
+  `processor.ts` `renderMarkdown()` (remark-parse → remark-gfm →
+  remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
+  with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
+  collector → Shiki core highlighter, tokyo-night, slim lazy grammar
+  set → hast-to-JSX). Sanitize AFTER rehype-raw, highlight AFTER
+  sanitize. No `dangerouslySetInnerHTML` anywhere. Never widen
+  `schema.ts` without extending the XSS suite.
+- Known false positive: typescript-eslint computes an error type for
+  the `processor.run`/`toJsxRuntime` pair in processor.ts while tsc and
+  the TS API are clean — narrowly eslint-disabled there with explicit
+  annotations. Don't blanket-disable the rule.
 
 ## Toolchain notes
 

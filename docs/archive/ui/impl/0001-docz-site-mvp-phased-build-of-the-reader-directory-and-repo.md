@@ -200,7 +200,7 @@ phase onward.
 - [x] `src/markdown/schema.ts`: rehype-sanitize schema — GitHub default
       extended with only the `id`/`class` attributes the slugger and Shiki
       need; unit tests pin the schema's shape
-- [ ] `src/markdown/processor.ts`: unified pipeline in the design's fixed
+- [x] `src/markdown/processor.ts`: unified pipeline in the design's fixed
       order — `remark-parse` + `remark-gfm` → `remark-rehype`
       (`allowDangerousHtml`) → `rehype-raw` → `rehype-sanitize` →
       `rehype-slug` + ToC collector (h2–h4 → `{depth, text, id}`) →
