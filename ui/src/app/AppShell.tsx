@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
+
+import { CommandPalette } from "@/components/command-palette";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
@@ -7,6 +10,7 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
 }
 
 export function AppShell() {
+  const [paletteOpen, setPaletteOpen] = useState(false);
   return (
     <>
       <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-[rgba(12,16,23,0.88)] px-5 backdrop-blur-[10px]">
@@ -70,6 +74,7 @@ export function AppShell() {
         </nav>
       </header>
       <Outlet />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </>
   );
 }
