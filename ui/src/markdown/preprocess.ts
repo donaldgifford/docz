@@ -17,8 +17,10 @@ const TOC_BLOCK_RE = /[ \t]*<!--toc:start-->[\s\S]*?<!--toc:end-->[ \t]*\r?\n?/g
 
 // The first ATX h1 when it's the document's opening content — the
 // reader header already renders the structured title, so keeping the
-// markdown h1 would print it twice.
-const LEADING_H1_RE = /^\s*#[ \t][^\n]*\r?\n?/;
+// markdown h1 would print it twice. Real docz output puts HTML comments
+// (markdownlint pragmas) between frontmatter and the h1; those are
+// skipped over and preserved.
+const LEADING_H1_RE = /^(\s*(?:<!--[\s\S]*?-->\s*)*)#[ \t][^\n]*\r?\n?/;
 
 export interface PreprocessOptions {
   stripLeadingH1?: boolean;
@@ -30,7 +32,7 @@ export function preprocessDoczMarkdown(
 ): string {
   let out = raw.replace(FRONTMATTER_RE, "").replace(TOC_BLOCK_RE, "");
   if (options.stripLeadingH1 === true) {
-    out = out.replace(LEADING_H1_RE, "");
+    out = out.replace(LEADING_H1_RE, "$1");
   }
   return out;
 }

@@ -239,7 +239,7 @@ phase onward.
 - [x] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —
       this repo's DESIGN-0001, docz-api docs) layered over orval's faker
       handlers, so rendering truth is exercised alongside shape coverage
-- [ ] Component tests: reader four-state matrix, metadata `""` omission,
+- [x] Component tests: reader four-state matrix, metadata `""` omission,
       lifecycle positioning, ToC anchor navigation
 
 #### Success Criteria

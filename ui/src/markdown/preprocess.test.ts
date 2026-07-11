@@ -75,12 +75,30 @@ describe("preprocessDoczMarkdown", () => {
     const raw = "---\nid: X\n---\n\n# DESIGN 0001: title\n\nBody.";
     expect(preprocessDoczMarkdown(raw)).toContain("# DESIGN 0001");
     expect(preprocessDoczMarkdown(raw, { stripLeadingH1: true })).toBe(
-      "\nBody.",
+      "\n\nBody.",
     );
   });
 
   it("does not strip an h1 that isn't the opening content", () => {
     const raw = "Intro paragraph.\n\n# Late Heading\n";
     expect(preprocessDoczMarkdown(raw, { stripLeadingH1: true })).toBe(raw);
+  });
+
+  it("strips the leading h1 past markdownlint pragma comments", () => {
+    const raw = [
+      "---",
+      "id: DESIGN-0001",
+      "---",
+      "<!-- markdownlint-disable-file MD025 MD041 -->",
+      "",
+      "# DESIGN 0001: real docz shape",
+      "",
+      "Body.",
+    ].join("\n");
+
+    const out = preprocessDoczMarkdown(raw, { stripLeadingH1: true });
+    expect(out).not.toContain("# DESIGN 0001");
+    expect(out).toContain("markdownlint-disable-file");
+    expect(out).toContain("Body.");
   });
 });
