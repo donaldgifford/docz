@@ -367,10 +367,13 @@ full three-column portal.
       pipeline with its h1 kept and a right-rail ToC; a 404 falls back
       to the generated home. useRenderedMarkdown generalized to
       useRenderedSource keyed on (id, hash, stripLeadingH1))
-- [ ] Type page `/:owner/:repo/:type`: synthesized README-style page —
+- [x] Type page `/:owner/:repo/:type`: synthesized README-style page —
       `plural_label`, blurb (curated for standard types, generic
       fallback), `docz create …` hint, doc table (ID, title, status
       badge, date, filename from `path`)
+      (shared RepoFrame extracted — nav + breadcrumbs + right rail —
+      now used by home and type pages; demo fixtures resolve
+      `{type}` by name/id_prefix/alias like the API and 404 unknowns)
 - [ ] Wire the reader into the three-column portal with the repo nav;
       collapse behavior for narrow screens
 - [ ] File-path breadcrumbs consistent across `/repos` → repo → type →

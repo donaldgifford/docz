@@ -18,6 +18,8 @@ import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
 import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
 import doczApiIndex from "./content/docz-api-index.md?raw";
 
+import { resolveDocType } from "@/lib/docTypes";
+
 import type {
   DocType,
   Document,
@@ -251,13 +253,20 @@ export const demoOrgHandlers = [
     return HttpResponse.json({ types });
   }),
 
+  // `{type}` resolves by canonical name, id_prefix, or alias, exactly
+  // like docz-api's path resolution; unknown types 404.
   http.get("*/api/v1/repos/:owner/:name/types/:type/docs", ({ params }) => {
     const key = repoKey(str(params.owner), str(params.name));
-    if (DEMO_TYPES[key] === undefined) {
+    const types = DEMO_TYPES[key];
+    if (types === undefined) {
       return undefined;
     }
+    const docType = resolveDocType(types, str(params.type));
+    if (docType === undefined) {
+      return HttpResponse.json({ error: "type not found" }, { status: 404 });
+    }
     const docs = DEMO_DOCS.filter(
-      (doc) => doc.repo === key && doc.type === str(params.type),
+      (doc) => doc.repo === key && doc.type === docType.name,
     ).map(summary);
     return HttpResponse.json({ docs });
   }),
@@ -266,13 +275,18 @@ export const demoOrgHandlers = [
     "*/api/v1/repos/:owner/:name/types/:type/docs/:docId",
     ({ params }) => {
       const key = repoKey(str(params.owner), str(params.name));
-      if (DEMO_TYPES[key] === undefined) {
+      const types = DEMO_TYPES[key];
+      if (types === undefined) {
         return undefined;
+      }
+      const docType = resolveDocType(types, str(params.type));
+      if (docType === undefined) {
+        return HttpResponse.json({ error: "type not found" }, { status: 404 });
       }
       const doc = DEMO_DOCS.find(
         (candidate) =>
           candidate.repo === key &&
-          candidate.type === str(params.type) &&
+          candidate.type === docType.name &&
           candidate.doc_id.toLowerCase() === str(params.docId).toLowerCase(),
       );
       if (doc === undefined) {
