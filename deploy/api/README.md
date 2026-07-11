@@ -109,15 +109,37 @@ After creating the app:
 For GitHub Enterprise, point `GITHUB_API_BASE` at your instance's API root;
 everything else is unchanged.
 
-### Not the same thing: the site-login OAuth app
+### Site login: reuse the GitHub App, or a separate OAuth app
 
-Site users log in via a plain **OAuth app** (or Okta/Keycloak), not via the
-GitHub App above. When `github` is in `AUTH_PROVIDERS`, create a separate OAuth
-app (_Settings → Developer settings → OAuth Apps_) with the authorization
-callback URL `<AUTH_REDIRECT_BASE>/auth/callback`, and set
-`GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET`. The service requests
-the `read:user` and `user:email` scopes and requires the account to have a
-**primary, verified email**; no scopes are configured on the app itself.
+Site login (`AUTH_PROVIDERS=github`) needs OAuth client credentials in
+`GITHUB_OAUTH_CLIENT_ID` / `GITHUB_OAUTH_CLIENT_SECRET`. Two ways to get them:
+
+**Reuse the GitHub App above** — every GitHub App supports the same OAuth web
+flow, so one app can serve both ingestion and login. **Recommended for local
+development** (one app to create and configure) and perfectly fine for a homelab
+deployment. Three settings on the existing app:
+
+1. Set the **Callback URL** (a separate field from the webhook URL) to
+   `<AUTH_REDIRECT_BASE>/auth/callback`. Leave "Request user authorization
+   during installation" unchecked — users just visit `/auth/login`.
+2. **Generate a client secret** → `GITHUB_OAUTH_CLIENT_SECRET`; the app's
+   **Client ID** (`Iv1.…`) → `GITHUB_OAUTH_CLIENT_ID`. The private key stays
+   ingest-only.
+3. Add the **account permission "Email addresses: Read-only"**. GitHub Apps
+   ignore OAuth scopes (permissions replace them), and without this the email
+   lookup 403s and login fails for any user whose profile email is private.
+   Existing installations must re-approve the permission change.
+
+Notes: user-token expiry is irrelevant (the service discards the GitHub token
+right after the exchange — its own Redis session governs login lifetime), and
+authorizing the app to log in is separate from installing it, so login access is
+not limited to accounts that installed the app.
+
+**Or a separate OAuth app** (_Settings → Developer settings → OAuth Apps_) with
+the authorization callback URL `<AUTH_REDIRECT_BASE>/auth/callback` — the
+cautious default for a production deployment, keeping the ingest and login
+credentials in separate blast radii. The service requests the `read:user` and
+`user:email` scopes; no scopes are configured on the app itself.
 
 ## Health and observability
 

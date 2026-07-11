@@ -89,14 +89,19 @@ curl localhost:8080/metrics        # Prometheus metrics (METRICS_ENABLED)
 ```
 
 Note that everything under `/api/v1` sits behind the session gate: you need a
-real auth provider configured (e.g. a GitHub OAuth app in
-`GITHUB_OAUTH_CLIENT_ID`/`_SECRET`) and a browser login via
-`/auth/login?provider=github` to exercise those routes. The probes, spec, and
-metrics endpoints above are public. Ingestion (webhooks) additionally needs a
-GitHub App (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`)
-— permissions, events, and setup steps are in
+real auth provider configured (`GITHUB_OAUTH_CLIENT_ID`/`_SECRET`) and a browser
+login via `/auth/login?provider=github` to exercise those routes. The probes,
+spec, and metrics endpoints above are public. Ingestion (webhooks) additionally
+needs a GitHub App (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,
+`GITHUB_WEBHOOK_SECRET`) — permissions, events, and setup steps are in
 [deploy/README.md](deploy/README.md#github-app-setup-ingestion); the `-onboard`
 flag is the manual fallback that skips webhooks.
+
+For local dev, **use one GitHub App for both**: the same app that delivers
+webhooks can be the OAuth login provider (callback URL + client secret + email
+permission — see
+[deploy/README.md](deploy/README.md#site-login-reuse-the-github-app-or-a-separate-oauth-app)),
+so you only ever create and configure a single dev app.
 
 When you are done:
 
