@@ -2,7 +2,8 @@
 # and composable. Underlying tooling (Bun, Vite, vitest, orval) is the
 # source of truth — recipes here just call into it.
 
-set shell := ["zsh", "-cu"]
+# bash, not zsh — CI runners don't ship zsh.
+set shell := ["bash", "-cu"]
 
 default:
     @just --list
