@@ -33,6 +33,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 
 - `vite.config.ts` — react + tailwind plugins, `@/` → `src/` alias, dev
   proxy (same-origin in prod; docz-api sends no CORS headers)
+- Routing: `src/app/router.tsx` (`createBrowserRouter`, library mode)
+  wraps everything in `src/app/AppShell.tsx` (topbar + `<Outlet/>`).
+  Route modules live in `src/routes/*` and export a named `Component`;
+  register new routes with `lazy: () => import("@/routes/<name>")` so
+  each stays its own chunk.
 - Fonts are self-hosted `@fontsource` imports in `src/main.tsx` (IBM
   Plex Sans/Mono, Source Serif 4) — never add a third-party font URL.
   New weights = new per-weight CSS import there.

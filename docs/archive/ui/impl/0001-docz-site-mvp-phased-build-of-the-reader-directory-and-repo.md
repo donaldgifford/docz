@@ -124,7 +124,7 @@ repo is a clean, green shell app.
       focus-visible style
 - [x] Wire fonts via self-hosted `@fontsource` packages (`ibm-plex-mono`,
       `ibm-plex-sans`, `source-serif-4`) — no third-party font requests
-- [ ] App shell: topbar (brand mark, search affordance, nav, avatar
+- [x] App shell: topbar (brand mark, search affordance, nav, avatar
       placeholder) + `createBrowserRouter` route table — `/`, `/repos`,
       `/:owner/:repo`, `/:owner/:repo/:type`, `/:owner/:repo/:type/:docId`,
       `*` — placeholder elements, route-level `lazy()`

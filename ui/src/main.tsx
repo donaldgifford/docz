@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router";
 
 // Self-hosted fonts (@fontsource) — the site must make no third-party
 // font requests. Weights track actual usage in the mockup/reader.
@@ -17,6 +18,8 @@ import "@fontsource/source-serif-4/700.css";
 
 import "@/theme/tokens.css";
 
+import { router } from "@/app/router";
+
 const rootElement = document.getElementById("root");
 if (rootElement === null) {
   throw new Error("index.html is missing the #root mount point");
@@ -24,8 +27,6 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <p className="p-4 font-mono text-fg-tertiary">
-      docz-site scaffold — app shell lands in a later Phase 0 task.
-    </p>
+    <RouterProvider router={router} />
   </StrictMode>,
 );
