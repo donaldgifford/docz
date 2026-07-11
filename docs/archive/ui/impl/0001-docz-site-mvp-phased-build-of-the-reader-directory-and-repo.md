@@ -235,7 +235,7 @@ phase onward.
       already-fetched `raw_md`; "json" endpoint link)
 - [x] Lifecycle rail: type `statuses` via `listTypes` (cached per repo),
       current status as the active stop, position-only
-- [ ] Memoize pipeline output per `(doc_id, content_hash)`
+- [x] Memoize pipeline output per `(doc_id, content_hash)`
 - [ ] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —
       this repo's DESIGN-0001, docz-api docs) layered over orval's faker
       handlers, so rendering truth is exercised alongside shape coverage
