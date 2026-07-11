@@ -105,7 +105,7 @@ func (c *Client) Fetch(ctx context.Context, owner, name string) (*ingest.RepoSna
 	// The repo home (docs_dir/index.md, DESIGN-0003) needs docs_dir before
 	// ingest parses the config, so a fetch-scoped hint parse targets the exact
 	// path in the already-listed tree — at most one extra blob request.
-	indexPath := docsDirHint(snap.ConfigYAML) + "/" + doczcfg.WikiIndexName
+	indexPath := path.Join(docsDirHint(snap.ConfigYAML), doczcfg.WikiIndexName)
 	if indexSHA := findBlobSHA(tree, indexPath); indexSHA != "" {
 		if snap.IndexMD, err = c.fetchBlob(ctx, owner, name, indexSHA); err != nil {
 			return nil, fmt.Errorf("fetch %s: %w", indexPath, err)
