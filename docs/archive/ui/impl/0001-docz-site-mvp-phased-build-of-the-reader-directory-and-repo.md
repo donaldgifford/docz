@@ -229,7 +229,7 @@ phase onward.
       `/auth/login?provider=github`
 - [x] Center column: file-path breadcrumb (from `path`), id line
       (`DESIGN / 0009`), title, status pill · author · updated
-- [ ] Right rail: "On this page" ToC (sticky wide / disclosure narrow),
+- [x] Right rail: "On this page" ToC (sticky wide / disclosure narrow),
       trimmed metadata card (omit `""` fields; "all fields · json →" link
       to the document endpoint), formats list ("md · source" view of the
       already-fetched `raw_md`; "json" endpoint link)

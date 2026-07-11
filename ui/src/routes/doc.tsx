@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { useGetDoc } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
+import { DocRailInfo, TocList, type DocFormat } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
@@ -119,6 +121,7 @@ export function Component() {
   const doc =
     docQuery.data?.status === 200 ? docQuery.data.data : undefined;
   const rendered = useRenderedMarkdown(doc);
+  const [format, setFormat] = useState<DocFormat>("html");
 
   if (docQuery.error instanceof SessionRequiredError) {
     return <SessionRequiredPanel />;
@@ -141,10 +144,43 @@ export function Component() {
     return <ArticleSkeleton />;
   }
 
+  const { content, toc } = rendered.data;
+
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <DocHeader doc={doc} />
-      <article className="doc-prose">{rendered.data.content}</article>
-    </main>
+    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_230px]">
+      <main className="min-w-0">
+        <DocHeader doc={doc} />
+
+        {/* Narrow viewports: ToC as a disclosure above the article. */}
+        <details className="mb-6 border border-border-hairline px-4 py-3 lg:hidden">
+          <summary className="cursor-pointer font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+            On this page
+          </summary>
+          <div className="pt-3">
+            <TocList toc={toc} />
+          </div>
+        </details>
+
+        {format === "html" ? (
+          <article className="doc-prose">{content}</article>
+        ) : (
+          <pre className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[12.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary">
+            {doc.raw_md ?? ""}
+          </pre>
+        )}
+      </main>
+
+      <aside className="hidden lg:block">
+        <div className="sticky top-[76px]">
+          <section className="mb-8">
+            <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+              On this page
+            </div>
+            <TocList toc={toc} />
+          </section>
+          <DocRailInfo doc={doc} format={format} onFormatChange={setFormat} />
+        </div>
+      </aside>
+    </div>
   );
 }
