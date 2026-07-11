@@ -1,9 +1,10 @@
 -- name: UpsertRepo :one
 INSERT INTO repos (
     installation_id, owner, name, default_branch, docs_dir, config_snapshot,
-    last_synced_sha, last_synced_at, changelog_md, changelog_sha, updated_at
+    last_synced_sha, last_synced_at, changelog_md, changelog_sha,
+    index_md, index_sha, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, now()
+    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, now()
 )
 ON CONFLICT (owner, name) DO UPDATE SET
     installation_id = EXCLUDED.installation_id,
@@ -14,6 +15,8 @@ ON CONFLICT (owner, name) DO UPDATE SET
     last_synced_at  = now(),
     changelog_md    = EXCLUDED.changelog_md,
     changelog_sha   = EXCLUDED.changelog_sha,
+    index_md        = EXCLUDED.index_md,
+    index_sha       = EXCLUDED.index_sha,
     updated_at      = now()
 RETURNING id;
 

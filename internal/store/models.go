@@ -59,6 +59,8 @@ type Repo struct {
 	ChangelogSha   pgtype.Text        `json:"changelog_sha"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	IndexMd        pgtype.Text        `json:"index_md"`
+	IndexSha       pgtype.Text        `json:"index_sha"`
 }
 
 type User struct {
