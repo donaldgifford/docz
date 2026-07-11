@@ -5,26 +5,47 @@ import { renderMarkdown, type RenderedMarkdown } from "@/markdown/processor";
 
 import type { Document } from "@/api/__generated__/docz-api.schemas";
 
+/** Anything renderable: a stable identity plus a content-address. */
+export interface RenderableSource {
+  /** Cache identity (doc_id, "repo-index:owner/name", …). */
+  id: string;
+  /** Content hash — the cache never reprocesses unchanged content. */
+  hash: string;
+  raw: string;
+}
+
 /**
- * Runs the sanitizing pipeline for a fetched document. Keyed on
- * `(doc_id, content_hash)` in the query cache, so revisiting a doc (or
+ * Runs the sanitizing pipeline for markdown from the API. Keyed on
+ * `(id, hash)` in the query cache, so revisiting a page (or
  * re-rendering the route) never reprocesses unchanged content —
  * `staleTime: Infinity` because a hash-addressed result can't go stale.
  */
-export function useRenderedMarkdown(doc: Document | undefined) {
-  const rawMd = doc?.raw_md;
+export function useRenderedSource(
+  source: RenderableSource | undefined,
+  options?: { stripLeadingH1?: boolean },
+) {
+  const stripLeadingH1 = options?.stripLeadingH1 ?? false;
   return useQuery<RenderedMarkdown>({
-    enabled: rawMd !== undefined,
-    queryKey: ["rendered-markdown", doc?.doc_id, doc?.content_hash],
+    enabled: source !== undefined,
+    queryKey: ["rendered-markdown", source?.id, source?.hash, stripLeadingH1],
     queryFn: () =>
       renderMarkdown(
-        // The reader header renders the structured title, so the
-        // markdown's own leading h1 would duplicate it.
-        preprocessDoczMarkdown(rawMd ?? "", { stripLeadingH1: true }),
+        preprocessDoczMarkdown(source?.raw ?? "", { stripLeadingH1 }),
       ),
     staleTime: Infinity,
     // ReactNode trees aren't serializable; keep them out of any future
     // persister and don't try structural sharing on them.
     structuralSharing: false,
   });
+}
+
+/** Reader variant: the header renders the structured title, so the
+ * markdown's own leading h1 would duplicate it. */
+export function useRenderedMarkdown(doc: Document | undefined) {
+  return useRenderedSource(
+    doc?.raw_md === undefined
+      ? undefined
+      : { id: doc.doc_id, hash: doc.content_hash, raw: doc.raw_md },
+    { stripLeadingH1: true },
+  );
 }

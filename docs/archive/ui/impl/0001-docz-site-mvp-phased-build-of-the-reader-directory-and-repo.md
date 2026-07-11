@@ -345,18 +345,28 @@ full three-column portal.
 
 #### Tasks
 
-- [ ] Repo-facts hook: per-repo totals and per-type doc counts from a
+- [x] Repo-facts hook: per-repo totals and per-type doc counts from a
       repo-filtered `searchDocs` facet query, cached per repo
-- [ ] `/repos` grid: one card per `listRepos` entry — name, default
+- [x] `/repos` grid: one card per `listRepos` entry — name, default
       branch, per-type counts, doc total, last-updated — linking to the
       repo home
-- [ ] Shared repo-nav component: identity header (letter mark, name,
+      (no last-updated exists in the contract — cards show docs_dir and
+      the short last-synced SHA instead; spec re-vendored to 1.1.0 first
+      since DESIGN-0003's getRepoIndex landed upstream)
+- [x] Shared repo-nav component: identity header (letter mark, name,
       `branch · docz.yaml`), Home item, per-type items with counts, docs
       nested beneath each type, active item highlighting
-- [ ] Repo home `/:owner/:repo` (Decision 8): generated client-side from
+      (highlighting falls out of NavLink matching — the type item stays
+      lit while one of its docs is open; counts share useRepoFacts)
+- [x] Repo home `/:owner/:repo` (Decision 8): generated client-side from
       `getRepo` + `listTypes` — type sections with counts and the
       mockup's "No index.md configured" note; frame ready to render
       `index.md` through the reader pipeline when the API serves it
+      (the API serves it now — DESIGN-0003's getRepoIndex shipped in
+      spec 1.1.0, re-vendored: a 200 renders index.md through the
+      pipeline with its h1 kept and a right-rail ToC; a 404 falls back
+      to the generated home. useRenderedMarkdown generalized to
+      useRenderedSource keyed on (id, hash, stripLeadingH1))
 - [ ] Type page `/:owner/:repo/:type`: synthesized README-style page —
       `plural_label`, blurb (curated for standard types, generic
       fallback), `docz create …` hint, doc table (ID, title, status
