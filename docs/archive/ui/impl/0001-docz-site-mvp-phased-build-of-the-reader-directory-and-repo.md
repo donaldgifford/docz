@@ -197,7 +197,7 @@ phase onward.
 
 - [x] `src/markdown/preprocess.ts`: strip the YAML frontmatter block and
       the `<!--toc:start-->…<!--toc:end-->` marker block from `raw_md`
-- [ ] `src/markdown/schema.ts`: rehype-sanitize schema — GitHub default
+- [x] `src/markdown/schema.ts`: rehype-sanitize schema — GitHub default
       extended with only the `id`/`class` attributes the slugger and Shiki
       need; unit tests pin the schema's shape
 - [ ] `src/markdown/processor.ts`: unified pipeline in the design's fixed
