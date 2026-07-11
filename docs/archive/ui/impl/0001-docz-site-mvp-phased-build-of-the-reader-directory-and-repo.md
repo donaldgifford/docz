@@ -135,8 +135,9 @@ repo is a clean, green shell app.
 - [x] New `orval.config.ts`: `client: react-query`, `httpClient: fetch`,
       custom mutator, `mock: true`, output `src/api/__generated__/`
       (gitignored, `clean: true`)
-- [ ] `scripts/gen-api-check.sh`: regenerate + `git diff --exit-code` on
-      the generated dir (PR gate)
+- [x] `scripts/gen-api-check.sh`: regenerate + diff on the generated dir
+      (PR gate; the dir is gitignored so the gate is snapshot →
+      regenerate → `diff -r`, not `git diff`)
 - [ ] Spec drift workflow (scheduled + on-PR): fetch docz-api main's
       `api/openapi.yaml` and compare `info.version` to the vendored copy —
       the same regenerate-and-diff pattern as the git-cliff CHANGELOG
