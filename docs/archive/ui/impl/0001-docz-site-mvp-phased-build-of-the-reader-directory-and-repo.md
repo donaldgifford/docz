@@ -177,8 +177,9 @@ repo is a clean, green shell app.
   nine SPA-facing spec operations (the vendored 1.0.0 spec also documents
   `authCallback` and `githubWebhook` — server-side surfaces the SPA never
   calls; generated code for them is inert)
-- `grep -ri "rfc-site"` across the repo (excluding `docs/input.md`) returns
-  nothing; no template leftovers remain at the root
+- `grep -ri "rfc-site"` across the repo returns nothing outside
+  `docs/input.md`, `mockup.html` demo copy, and the design/impl docs'
+  own history of the sweep; no template leftovers remain at the root
 - The Actions tab shows only intended workflows (ci, spec-drift, and any
   deliberately kept, reconfigured scanners); `dependabot.yml` is gone and
   Renovate covers the bun/npm stack
