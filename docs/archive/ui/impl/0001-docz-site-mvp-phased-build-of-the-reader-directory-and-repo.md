@@ -306,7 +306,7 @@ untrusted.
       (Tab steps the highlight/preview; pill sources come from a
       pill-free facet query so every repo/type stays offered; palette
       state is local — the page URL is untouched until Enter)
-- [ ] Topbar search affordance opens the palette
+- [x] Topbar search affordance opens the palette
 - [ ] Component tests: URL round-tripping (params ↔ UI state), facet count
       rendering, palette keyboard flow, snippet sanitization
 

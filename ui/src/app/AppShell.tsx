@@ -27,12 +27,14 @@ export function AppShell() {
           <span className="font-mono text-[13px] text-fg-muted">· reader</span>
         </Link>
 
-        {/* Search affordance — Phase 2 swaps this for the ⌘K palette
-            trigger; until then it routes to the directory (the search
-            view). Hidden on narrow viewports like the mockup. */}
-        <Link
-          to="/"
-          className="ml-4 hidden min-w-[260px] items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[12.5px] text-fg-tertiary min-[720px]:flex"
+        {/* Search affordance: opens the ⌘K palette. Hidden on narrow
+            viewports like the mockup. */}
+        <button
+          type="button"
+          onClick={() => {
+            setPaletteOpen(true);
+          }}
+          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[12.5px] text-fg-tertiary hover:border-border-strong min-[720px]:flex"
         >
           <svg
             aria-hidden
@@ -55,7 +57,7 @@ export function AppShell() {
               K
             </kbd>
           </span>
-        </Link>
+        </button>
 
         <nav className="ml-auto flex items-center gap-[1.4rem] font-mono text-[13px]">
           <NavLink to="/" end className={navLinkClass}>

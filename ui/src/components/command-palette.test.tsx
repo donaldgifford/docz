@@ -144,6 +144,17 @@ describe("command palette", () => {
     expect(router.state.location.search).toBe("");
   });
 
+  it("opens from the topbar search affordance", async () => {
+    const user = userEvent.setup();
+    mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.click(
+      screen.getByRole("button", { name: /Search docs, rfcs, authors/ }),
+    );
+    expect(screen.getByTestId("command-palette")).toBeInTheDocument();
+  });
+
   it("navigates to the reader on Enter and closes", async () => {
     const user = userEvent.setup();
     const router = mountAt("/repos");
