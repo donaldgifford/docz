@@ -339,23 +339,33 @@ Prove the whole slice through the real pipeline and record the work.
 
 ## Testing Plan
 
-- [ ] **Store integration** (testcontainers): index pair set / update / clear
+- [x] **Store integration** (testcontainers): index pair set / update / clear
       round-trip through `ReconcileRepo`; empty-body + valid-sha case.
-- [ ] **githubapp unit** (stub RoundTripper + fixtures): present / absent /
+      _(`TestReconcileRepoIndexPair`; migration up/down by
+      `TestMigrateUpDownRoundTrip`.)_
+- [x] **githubapp unit** (stub RoundTripper + fixtures): present / absent /
       custom `docs_dir` / default fallback; absent ⇒ no extra blob call.
-- [ ] **docsDirHint table test**: valid, empty, missing key, malformed YAML
-      (→ default, never an error).
-- [ ] **ingest unit**: snapshot pair lands on `RepoInput`.
-- [ ] **httpapi unit**: 200 body+sha, empty-file 200 + `""`, three 404
+      _(`TestFetchRepoIndex` + the absent assertions in
+      `TestFetchClassifiesAndDecodes` — the stub 404s unknown shas, so a
+      stray blob call would fail the fetch.)_
+- [x] **docsDirHint table test**: valid, empty, missing key, malformed YAML
+      (→ default, never an error). _(`TestDocsDirHint`, five cases including
+      trailing-slash trim.)_
+- [x] **ingest unit**: snapshot pair lands on `RepoInput`.
+      _(`TestRunMapsCustomTypeAndSkipsMissingFrontmatter`.)_
+- [x] **httpapi unit**: 200 body+sha, empty-file 200 + `""`, three 404
       flavors (no index, unknown repo, unauthorized repo).
-- [ ] **OpenAPI contract**: `getRepoIndex` request+response validated; 404
+      _(`TestGetRepoIndex` + `TestGetRepoIndexUnauthorizedIs404`.)_
+- [x] **OpenAPI contract**: `getRepoIndex` request+response validated; 404
       envelope case; spec self-validates at `1.1.0`; existing cases untouched
-      (additivity proof).
-- [ ] **e2e integration**: onboard serves the index; removal at HEAD flips to
-      404.
-- [ ] No new integration _dependencies_ — everything rides the existing
+      (additivity proof). _(`getRepoIndex` + `getRepoIndexMissing` cases;
+      only fixture seeds and count assertions shifted.)_
+- [x] **e2e integration**: onboard serves the index; removal at HEAD flips to
+      404. _(`TestE2ERepoIndexServeAndRemoval` against real Postgres.)_
+- [x] No new integration _dependencies_ — everything rides the existing
       Postgres testcontainers + stub-HTTP patterns (Meilisearch/Redis
-      untouched).
+      untouched). _(Confirmed: the only new module dependency is the yaml.v3
+      promotion, already indirect before.)_
 
 ## Dependencies
 
