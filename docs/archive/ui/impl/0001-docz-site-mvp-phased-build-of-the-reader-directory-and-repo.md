@@ -288,8 +288,12 @@ untrusted.
       (facet sources exclude their own dimension — separate limit-0
       facet queries — so every repo/type stays offered while one is
       selected; chips are single-select while the API takes one `type`)
-- [ ] "Load more" pagination via offset/limit against
+- [x] "Load more" pagination via offset/limit against
       `estimated_total_hits`
+      (URL `offset` means "rows 0..offset+PAGE_SIZE shown" and the query
+      fetches the whole window from 0 — a deep-linked URL renders the
+      same rows, keeping the URL the only source of truth; each click
+      pushes offset so back shrinks the window)
 - [ ] Directory four states: skeleton rows, contextual empty ("No
       documents yet — onboard a repo with the docz GitHub App" / "No
       matches — clear filters"), inline error + retry, 401 panel

@@ -1,11 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { act } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { routes } from "@/app/router";
+import { server } from "@/test/server";
+
+import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
 
 const SITE_DESIGN_TITLE = "docz-site: cross-repo docz reader and search UI";
 const SITE_IMPL_TITLE =
@@ -13,6 +17,35 @@ const SITE_IMPL_TITLE =
 const API_DESIGN_TITLE =
   "docz-api cross-repo docz registry and ingestion service";
 const API_CONTRACT_TITLE = "OpenAPI contract for docz-api and the docz-site";
+
+/** A search handler over `total` synthetic docs honoring offset/limit. */
+function syntheticSearchHandler(total: number) {
+  return http.get("*/api/v1/search", ({ request }) => {
+    const url = new URL(request.url);
+    const offset = Number.parseInt(url.searchParams.get("offset") ?? "0", 10);
+    const limit = Number.parseInt(url.searchParams.get("limit") ?? "20", 10);
+    const hits: SearchHit[] = Array.from({ length: total }, (_, i) => ({
+      repo: "acme/docs",
+      doc_id: `DOC-${String(i).padStart(4, "0")}`,
+      type: "guide",
+      title: `Synthetic doc ${String(i)}`,
+      status: "Draft",
+      author: "someone",
+      snippet: "",
+    })).slice(offset, offset + limit);
+    return HttpResponse.json({
+      query: url.searchParams.get("q") ?? "",
+      estimated_total_hits: total,
+      hits,
+      facets: {
+        repo: { "acme/docs": total },
+        type: { guide: total },
+        status: { Draft: total },
+        author: { someone: total },
+      },
+    });
+  });
+}
 
 function mountAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
@@ -194,6 +227,42 @@ describe("directory route", () => {
     expect(
       screen.getByRole("searchbox", { name: "Search documents" }),
     ).toHaveValue("");
+  });
+
+  it("load more grows the window through the URL offset", async () => {
+    server.use(syntheticSearchHandler(60));
+    const user = userEvent.setup();
+    const router = mountAt("/");
+
+    await screen.findByText("Synthetic doc 0");
+    expect(screen.getAllByRole("listitem")).toHaveLength(25);
+    expect(screen.getByTestId("results-count")).toHaveTextContent(
+      "showing 25 of 60",
+    );
+
+    await user.click(screen.getByRole("button", { name: /load more/ }));
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("?offset=25");
+    });
+    await screen.findByText("Synthetic doc 49");
+    expect(screen.getAllByRole("listitem")).toHaveLength(50);
+
+    await user.click(screen.getByRole("button", { name: /load more/ }));
+    await screen.findByText("Synthetic doc 59");
+    expect(screen.getAllByRole("listitem")).toHaveLength(60);
+    // Whole set shown — nothing left to load.
+    expect(
+      screen.queryByRole("button", { name: /load more/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the full window for a deep-linked offset", async () => {
+    server.use(syntheticSearchHandler(60));
+    mountAt("/?offset=25");
+
+    await screen.findByText("Synthetic doc 49");
+    expect(screen.getAllByRole("listitem")).toHaveLength(50);
+    expect(screen.getByText("Synthetic doc 0")).toBeInTheDocument();
   });
 
   it("shows skeleton rows before the first page resolves", async () => {

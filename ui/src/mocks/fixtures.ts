@@ -196,6 +196,15 @@ function str(value: Params[string]): string {
   return typeof value === "string" ? value : "";
 }
 
+function intParam(url: URL, key: string, fallback: number): number {
+  const raw = url.searchParams.get(key);
+  if (raw === null) {
+    return fallback;
+  }
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
 export const demoOrgHandlers = [
   http.get("*/api/v1/repos", () => HttpResponse.json({ repos: DEMO_REPOS })),
 
@@ -273,15 +282,21 @@ export const demoOrgHandlers = [
       return haystack.includes(q.toLowerCase());
     });
 
-    const hits: SearchHit[] = matches.map((doc) => ({
-      repo: doc.repo,
-      doc_id: doc.doc_id,
-      type: doc.type,
-      title: doc.title,
-      status: doc.status,
-      author: doc.author,
-      snippet: snippetFor(doc, q),
-    }));
+    // Facets and the estimated total cover the whole filtered set (as
+    // Meilisearch does); only `hits` is the offset/limit window.
+    const offset = intParam(url, "offset", 0);
+    const limit = intParam(url, "limit", 20);
+    const hits: SearchHit[] = matches
+      .slice(offset, offset + limit)
+      .map((doc) => ({
+        repo: doc.repo,
+        doc_id: doc.doc_id,
+        type: doc.type,
+        title: doc.title,
+        status: doc.status,
+        author: doc.author,
+        snippet: snippetFor(doc, q),
+      }));
 
     const facet = (key: (doc: Document) => string) =>
       Object.fromEntries(

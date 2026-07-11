@@ -165,11 +165,18 @@ export function Component() {
   const [searchParams, setSearchParams] = useSearchParams();
   const state = useMemo(() => parseSearchParams(searchParams), [searchParams]);
 
-  const searchQuery = useSearchDocs(toSearchDocsParams(state, PAGE_SIZE), {
-    // Keep the previous page on screen while a filter change refetches;
-    // the skeleton is for first paint only.
-    query: { placeholderData: keepPreviousData },
-  });
+  // URL `offset` means "rows 0..offset+PAGE_SIZE are shown": the query
+  // fetches the whole window from 0, so a shared or deep-linked URL
+  // renders exactly the same rows (the URL stays the only source of
+  // truth). "Load more" grows the window by pushing offset.
+  const searchQuery = useSearchDocs(
+    toSearchDocsParams({ ...state, offset: 0 }, state.offset + PAGE_SIZE),
+    {
+      // Keep the previous window on screen while a filter change
+      // refetches; the skeleton is for first paint only.
+      query: { placeholderData: keepPreviousData },
+    },
+  );
   const result =
     searchQuery.data?.status === 200 ? searchQuery.data.data : undefined;
 
@@ -283,11 +290,33 @@ export function Component() {
           No matches.
         </p>
       ) : (
-        <ul className="mt-4 mb-16 border-t border-border-hairline">
-          {result.hits.map((hit) => (
-            <HitRow key={`${hit.repo}/${hit.type}/${hit.doc_id}`} hit={hit} />
-          ))}
-        </ul>
+        <div className="mt-4 mb-16">
+          <ul className="border-t border-border-hairline">
+            {result.hits.map((hit) => (
+              <HitRow key={`${hit.repo}/${hit.type}/${hit.doc_id}`} hit={hit} />
+            ))}
+          </ul>
+          {result.hits.length < result.estimated_total_hits && (
+            <button
+              type="button"
+              disabled={searchQuery.isFetching}
+              onClick={() => {
+                // Pushed: back shrinks the window again.
+                setSearchParams(
+                  serializeSearchState({
+                    ...state,
+                    offset: state.offset + PAGE_SIZE,
+                  }),
+                );
+              }}
+              className="mx-auto mt-6 block border border-border-default px-5 py-[0.45rem] font-mono text-[12px] text-fg-secondary hover:border-border-strong hover:text-fg-primary disabled:opacity-50"
+            >
+              {searchQuery.isFetching
+                ? "loading…"
+                : `load more · ${String(result.estimated_total_hits - result.hits.length)} remaining`}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
