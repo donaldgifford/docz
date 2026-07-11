@@ -71,9 +71,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
   collector → Shiki core highlighter, tokyo-night, slim lazy grammar
-  set → hast-to-JSX). Sanitize AFTER rehype-raw, highlight AFTER
-  sanitize. No `dangerouslySetInnerHTML` anywhere. Never widen
-  `schema.ts` without extending the XSS suite.
+  set → xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw,
+  highlight AFTER sanitize. No `dangerouslySetInnerHTML` anywhere.
+  Never widen `schema.ts` without extending the XSS suite.
+- Xrefs (`src/markdown/xrefs.ts`): doc-id tokens linkify only when they
+  resolve in the caller-supplied map (UPPERCASED doc_id → href, built
+  by `useRepoDocIndex` from listDocs) — the map is the whitelist and
+  hrefs come from API data, never document text. Tokens inside
+  `a`/`code`/`pre` stay text; the reader drops the doc's own id.
+  `MarkdownAnchor` turns `data-xref` anchors into router Links (tests
+  need a router around rendered content). Render-cache keys carry an
+  fnv1a fingerprint of the sorted resolver ids, so bodies re-render at
+  most once when the doc index finishes loading.
 - Known false positive: typescript-eslint computes an error type for
   the `processor.run`/`toJsxRuntime` pair in processor.ts while tsc and
   the TS API are clean — narrowly eslint-disabled there with explicit

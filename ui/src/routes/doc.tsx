@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router";
 
 import { useGetDoc } from "@/api/__generated__/docz-api";
@@ -16,6 +16,7 @@ import {
   SessionRequiredPanel,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { useRenderedMarkdown } from "@/markdown/useRenderedMarkdown";
 
 import type { Document } from "@/api/__generated__/docz-api.schemas";
@@ -96,7 +97,21 @@ export function Component() {
 
   const docQuery = useGetDoc(owner, repo, type, docId);
   const doc = docQuery.data?.status === 200 ? docQuery.data.data : undefined;
-  const rendered = useRenderedMarkdown(doc);
+
+  // Sibling doc ids resolve to router links inside the body; the doc's
+  // own id is excluded (a self-link reads oddly). Until the index
+  // loads, the body renders unlinked and is linkified once, cached.
+  const docIndex = useRepoDocIndex(owner, repo);
+  const xrefs = useMemo(() => {
+    if (docIndex === undefined || doc === undefined) {
+      return undefined;
+    }
+    const withoutSelf = new Map(docIndex);
+    withoutSelf.delete(doc.doc_id.toUpperCase());
+    return withoutSelf;
+  }, [docIndex, doc]);
+
+  const rendered = useRenderedMarkdown(doc, xrefs);
   const [format, setFormat] = useState<DocFormat>("html");
 
   if (docQuery.error instanceof SessionRequiredError) {

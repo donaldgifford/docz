@@ -426,9 +426,19 @@ and demoable end-to-end.
       (rails/ToC collapses landed with RepoFrame in Phase 3; this task
       adds the full-screen palette below 640px and the "repo menu"
       details-drawer below 861px)
-- [ ] Xref linking: doc-id-shaped tokens (built from the repo's
+- [x] Xref linking: doc-id-shaped tokens (built from the repo's
       `id_prefix` set) in rendered bodies that match a sibling doc become
       router links
+      (`src/markdown/xrefs.ts` linkify pass runs after sanitize on the
+      hast; the resolver map — UPPERCASED doc_id → href, built by
+      `useRepoDocIndex` from listDocs per type — is the whitelist, so
+      only ids that exist in the repo link and hrefs come from API data,
+      never document text. Tokens inside `a`/`code`/`pre` are skipped;
+      the reader excludes the doc's own id. Rendered via a
+      `components: {a: MarkdownAnchor}` mapping so xref anchors become
+      router `<Link>`s; render cache keys include an fnv1a fingerprint
+      of the resolver ids. Landed in `src/markdown/` rather than the
+      file-map's `src/lib/xref.ts` — it is pipeline code)
 - [ ] Accessibility: axe checks in component tests (zero serious/critical
       on core views), keyboard paths (palette, chips, picker, ToC, repo
       nav), visible focus states, landmark/heading structure, badge color

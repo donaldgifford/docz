@@ -161,6 +161,33 @@ describe("lifecycle rail positioning", () => {
   );
 });
 
+describe("xref linking in the reader", () => {
+  it("links sibling doc ids mentioned in the body", async () => {
+    const base = DEMO_DOCS.find((doc) => doc.doc_id === "DESIGN-0001");
+    server.use(
+      http.get(DOC_ENDPOINT, () =>
+        HttpResponse.json({
+          ...base,
+          raw_md: "# T\n\nSee IMPL-0001 for the build plan.",
+          content_hash: "xref-test-hash",
+        }),
+      ),
+    );
+    mountAt(DOC_URL);
+
+    const xref = await screen.findByRole(
+      "link",
+      { name: "IMPL-0001" },
+      { timeout: 10_000 },
+    );
+    expect(xref).toHaveAttribute(
+      "href",
+      "/donaldgifford/docz-site/impl/IMPL-0001",
+    );
+    expect(xref).toHaveAttribute("data-xref");
+  });
+});
+
 describe("portal sibling navigation", () => {
   it("swaps documents through the repo nav without a reload", async () => {
     mountAt(DOC_URL);

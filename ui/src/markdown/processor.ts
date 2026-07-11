@@ -14,7 +14,9 @@ import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 
+import { MarkdownAnchor } from "@/markdown/markdown-anchor";
 import { sanitizeSchema } from "@/markdown/schema";
+import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
 
 import type { Root } from "hast";
 
@@ -98,7 +100,15 @@ function rehypeCollectToc(toc: TocEntry[]) {
   };
 }
 
-export async function renderMarkdown(raw: string): Promise<RenderedMarkdown> {
+export interface RenderOptions {
+  /** Sibling doc-id resolver; tokens that resolve become router links. */
+  xrefs?: XrefResolver;
+}
+
+export async function renderMarkdown(
+  raw: string,
+  options?: RenderOptions,
+): Promise<RenderedMarkdown> {
   const toc: TocEntry[] = [];
   const highlighter = await getHighlighter();
 
@@ -126,12 +136,22 @@ export async function renderMarkdown(raw: string): Promise<RenderedMarkdown> {
     );
 
   /* eslint-disable @typescript-eslint/no-unsafe-assignment --
-     typescript-eslint's checker computes an error type for this unified
-     chain while tsc and the raw TS compiler API both report zero
-     diagnostics for the file (verified against TS 5.9.3). The explicit
-     annotations below keep every downstream use fully typed. */
+     typescript-eslint's checker computes an error type in this
+     unified/hast chain (the flagged statement shifts as imports change)
+     while tsc and the raw TS compiler API both report zero diagnostics
+     for the file (verified against TS 5.9.3). The explicit annotations
+     keep every downstream use fully typed. */
   const hast: Root = await processor.run(processor.parse(raw));
-  const content: ReactNode = toJsxRuntime(hast, { Fragment, jsx, jsxs });
+  if (options?.xrefs !== undefined) {
+    // After sanitize (structure is trusted); hrefs come from API data.
+    linkifyDocIds(hast, options.xrefs);
+  }
+  const content: ReactNode = toJsxRuntime(hast, {
+    Fragment,
+    jsx,
+    jsxs,
+    components: { a: MarkdownAnchor },
+  });
   /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   return { content, toc };
 }

@@ -9,6 +9,7 @@ import {
   SessionRequiredPanel,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
 import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
 
@@ -94,6 +95,8 @@ export function Component() {
     indexQuery.data?.status === 200 ? indexQuery.data.data : undefined;
   const noIndex = indexQuery.error instanceof NotFoundError;
 
+  // Doc-id tokens in the index body link to their readers.
+  const docIndex = useRepoDocIndex(owner, repo);
   const rendered = useRenderedSource(
     index === undefined
       ? undefined
@@ -102,6 +105,7 @@ export function Component() {
           hash: index.index_sha,
           raw: index.index_md,
         },
+    docIndex === undefined ? undefined : { xrefs: docIndex },
   );
 
   if (

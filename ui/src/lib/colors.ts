@@ -23,8 +23,9 @@ const CURATED_TYPES: Readonly<Record<string, string | undefined>> = {
 const HASH_PALETTE_SIZE = 8;
 
 // FNV-1a — stable across sessions and platforms; the fallback color for
-// a custom type must never change between visits.
-function fnv1a(value: string): number {
+// a custom type must never change between visits. Also exported as a
+// general-purpose cheap fingerprint (e.g. xref cache keys).
+export function fnv1a(value: string): number {
   let hash = 0x811c9dc5;
   for (let i = 0; i < value.length; i++) {
     hash ^= value.charCodeAt(i);
