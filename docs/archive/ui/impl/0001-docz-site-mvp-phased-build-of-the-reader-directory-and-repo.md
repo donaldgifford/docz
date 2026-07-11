@@ -236,7 +236,7 @@ phase onward.
 - [x] Lifecycle rail: type `statuses` via `listTypes` (cached per repo),
       current status as the active stop, position-only
 - [x] Memoize pipeline output per `(doc_id, content_hash)`
-- [ ] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —
+- [x] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —
       this repo's DESIGN-0001, docz-api docs) layered over orval's faker
       handlers, so rendering truth is exercised alongside shape coverage
 - [ ] Component tests: reader four-state matrix, metadata `""` omission,
