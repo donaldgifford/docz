@@ -254,6 +254,14 @@ phase onward.
 - An unknown custom type and unknown status render with deterministic
   fallback/neutral colors (no hardcoded type list anywhere)
 
+> Phase 1 verification note (2026-07-11): criteria 2–4 are pinned by the
+> test suite (XSS gate, DESIGN-0001 fixture matrix, color fallbacks).
+> Criterion 1's "from a local docz-api" leg was verified by construction
+> only — no local docz-api stack was running; the app has no
+> fixture-specific rendering path (MSW serves the same wire contract the
+> generated client pins), so re-checking against a live API when one is
+> up is a formality, not a code change.
+
 ---
 
 ### Phase 2: Directory + command palette

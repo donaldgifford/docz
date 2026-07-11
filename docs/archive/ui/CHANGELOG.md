@@ -16,6 +16,16 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(api)* Orval config generating react-query client from vendored spec
 - *(ci)* Add gen-api-check.sh drift gate for the generated client
 - *(dev)* MSW-backed dev mode for just dev-msw
+- *(markdown)* Preprocess raw_md — strip frontmatter and docz toc block
+- *(markdown)* Sanitize schema — GitHub default with pinned code classes
+- *(markdown)* Unified sanitizing pipeline with ToC collection and Shiki
+- *(colors)* Type/status color system — curated map, FNV-1a fallback
+- *(components)* TypeBadge, StatusBadge, StatusPill per mockup styles
+- *(reader)* Doc route with four fetch states and pipeline rendering
+- *(reader)* Center column header and doc-prose styles
+- *(reader)* Right rail — ToC, trimmed metadata, formats list
+- *(reader)* Position-only lifecycle rail from listTypes statuses
+- *(mocks)* Curated demo-org fixtures layered over faker handlers
 
 ### Bug Fixes
 
@@ -26,10 +36,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Add inherited-workflow pruning and dependabot removal to phase 0
 - *(readme)* Rewrite quickstart for the docz-site stack
 - *(impl)* Clarify rfc-site sweep criterion to exclude self-references
+- *(impl)* Record Phase 1 verification note
 
 ### Testing
 
 - *(scaffold)* Vitest + Testing Library + MSW jsdom suite with smoke test
+- *(markdown)* XSS gate — 22 hostile payloads, benign suite, slug stability
+- *(reader)* Pin pipeline memoization per (doc_id, content_hash)
+- *(reader)* Four-state matrix, metadata omission, lifecycle, ToC anchors
 
 ### Miscellaneous Tasks
 
