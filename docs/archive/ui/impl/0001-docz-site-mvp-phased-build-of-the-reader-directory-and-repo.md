@@ -222,7 +222,7 @@ phase onward.
       concluded → green; rejected/cancelled/abandoned → red; superseded/
       deprecated/archived/paused → purple/grey; unknown → neutral); tests
       cover determinism and fallbacks
-- [ ] Type badge / status badge / status pill components per mockup styles
+- [x] Type badge / status badge / status pill components per mockup styles
 - [ ] Reader route `/:owner/:repo/:type/:docId`: `useGetDoc`, skeleton
       article, inline error + retry, neutral not-found panel ("Not found —
       or not visible to you"), bare 401 session-required panel linking
