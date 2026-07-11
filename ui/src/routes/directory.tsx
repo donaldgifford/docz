@@ -284,11 +284,31 @@ export function Component() {
       ) : result === undefined ? (
         <SkeletonRows />
       ) : result.hits.length === 0 ? (
-        // Interim placeholder — the contextual empty states land with the
-        // four-states task.
-        <p className="mt-8 mb-16 font-mono text-[13px] text-fg-tertiary">
-          No matches.
-        </p>
+        hasActiveFilters(state) ? (
+          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
+            <p className="font-mono text-[13px] text-fg-secondary">
+              No matches
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                applyFilters(EMPTY_SEARCH_STATE);
+              }}
+              className="mt-3 border border-border-strong px-4 py-1 font-mono text-[12px] text-fg-secondary hover:bg-bg-hover"
+            >
+              clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
+            <p className="font-mono text-[13px] text-fg-secondary">
+              No documents yet
+            </p>
+            <p className="mt-2 max-w-96 text-[13px] text-fg-tertiary">
+              Onboard a repo with the docz GitHub App to index its docs here.
+            </p>
+          </div>
+        )
       ) : (
         <div className="mt-4 mb-16">
           <ul className="border-t border-border-hairline">

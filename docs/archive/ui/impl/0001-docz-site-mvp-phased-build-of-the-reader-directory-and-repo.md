@@ -294,7 +294,7 @@ untrusted.
       fetches the whole window from 0 — a deep-linked URL renders the
       same rows, keeping the URL the only source of truth; each click
       pushes offset so back shrinks the window)
-- [ ] Directory four states: skeleton rows, contextual empty ("No
+- [x] Directory four states: skeleton rows, contextual empty ("No
       documents yet — onboard a repo with the docz GitHub App" / "No
       matches — clear filters"), inline error + retry, 401 panel
 - [ ] Snippet renderer: escape snippet text, re-insert only `<em>` match

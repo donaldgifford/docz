@@ -274,4 +274,59 @@ describe("directory route", () => {
     await screen.findByText(SITE_DESIGN_TITLE);
     expect(screen.queryByTestId("directory-skeleton")).not.toBeInTheDocument();
   });
+
+  it("shows the onboarding empty state for an empty registry", async () => {
+    server.use(syntheticSearchHandler(0));
+    mountAt("/");
+
+    expect(await screen.findByText("No documents yet")).toBeInTheDocument();
+    expect(screen.getByText(/docz GitHub App/)).toBeInTheDocument();
+    expect(screen.queryByText("No matches")).not.toBeInTheDocument();
+  });
+
+  it("shows the no-matches empty state with a working clear action", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/?q=zzz-no-such-term");
+
+    expect(await screen.findByText("No matches")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "clear filters" }));
+    await waitFor(() => {
+      expect(router.state.location.search).toBe("");
+    });
+    expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
+  });
+
+  it("renders an inline error whose retry recovers", async () => {
+    let failing = true;
+    server.use(
+      http.get("*/api/v1/search", () =>
+        failing
+          ? HttpResponse.json({ error: "search exploded" }, { status: 500 })
+          : undefined,
+      ),
+    );
+    const user = userEvent.setup();
+    mountAt("/");
+
+    expect(await screen.findByText("Something went wrong")).toBeInTheDocument();
+
+    failing = false;
+    await user.click(screen.getByRole("button", { name: "retry" }));
+    expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
+  });
+
+  it("renders the bare session panel on 401", async () => {
+    server.use(
+      http.get("*/api/v1/search", () =>
+        HttpResponse.json({ error: "session required" }, { status: 401 }),
+      ),
+    );
+    mountAt("/");
+
+    expect(await screen.findByText("Session required")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Sign in with GitHub" }),
+    ).toHaveAttribute("href", "/auth/login?provider=github");
+  });
 });
