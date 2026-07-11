@@ -105,30 +105,43 @@ yet.
 
 #### Tasks
 
-- [ ] Add the second goose migration
+- [x] Add the second goose migration
       (`internal/store/migrations/20260710000000_add_repo_index.sql`):
       `ALTER TABLE repos ADD COLUMN index_md TEXT, ADD COLUMN index_sha TEXT`
       (+ mirrored `-- +goose Down` drops), comments matching the
       `changelog_md`/`changelog_sha` style. Verify up **and** down against the
       compose Postgres (`-migrate`, then a manual `MigrateDown` check as
-      Phase 1 of IMPL-0001 did).
-- [ ] Add the two columns to `UpsertRepo` (`internal/store/queries/repos.sql`)
+      Phase 1 of IMPL-0001 did). _(done — migration added; up/down verified by
+      the new **`TestMigrateUpDownRoundTrip`** testcontainers test (own
+      container, up → down-to-zero → up) instead of a manual compose check —
+      hermetic and permanent regression coverage, strictly better than the
+      one-off verification.)_
+- [x] Add the two columns to `UpsertRepo` (`internal/store/queries/repos.sql`)
       — INSERT list + `DO UPDATE SET` — and run `just generate`;
       `just generate-check` clean. `store.Repo` picks the fields up via
-      `SELECT *` (no new read queries).
-- [ ] Grow `store.RepoInput` with `IndexMD` / `IndexSHA string` and map them
+      `SELECT *` (no new read queries). _(done — `$10`/`$11` params +
+      `EXCLUDED` updates; `Repo`/`UpsertRepoParams` regenerated with
+      `IndexMd`/`IndexSha`; `generate-check` clean.)_
+- [x] Grow `store.RepoInput` with `IndexMD` / `IndexSHA string` and map them
       in `reconcile.go` with `textOrNull`, beside the changelog pair.
       **Gotcha (by design):** `textOrNull("")` → NULL, so an empty-but-present
       `index.md` stores `index_md = NULL` with a **valid `index_sha`** —
       presence therefore keys off `index_sha`, and the DTO's `nullText`
       mapping returns `""` for the body, which is exactly DESIGN OQ-3a's
-      "empty file ⇒ 200 + empty string".
-- [ ] Extend the store integration tests (`//go:build integration`,
+      "empty file ⇒ 200 + empty string". _(done — fields added + mapped; the
+      presence-keys-off-`index_sha` gotcha is documented on `RepoInput`
+      itself.)_
+- [x] Extend the store integration tests (`//go:build integration`,
       testcontainers): a reconcile with the index pair persists both columns;
       a follow-up reconcile without them (file deleted at HEAD) nulls both; an
-      empty-body input with a sha keeps the sha valid.
-- [ ] `just test` / `just lint` / `just fmt` green; commit
-      (`feat(store): cache docs_dir index.md on the repo row`).
+      empty-body input with a sha keeps the sha valid. _(done —
+      `TestReconcileRepoIndexPair` covers set → empty-body-with-valid-sha →
+      cleared against a real Postgres.)_
+- [x] `just test` / `just lint` / `just fmt` green; commit
+      (`feat(store): cache docs_dir index.md on the repo row`). _(done —
+      unit suite, full `just test-integration` (all packages ok, 0 FAIL),
+      `just lint` 0 issues, `just fmt` no-op. Landed as four task commits:
+      migration, upsert+sqlc, RepoInput mapping, integration tests.)_
 
 #### Success Criteria
 
@@ -137,6 +150,12 @@ yet.
 - `ReconcileRepo` round-trips the index pair (set → update → clear) under the
   integration tests, including the empty-body/valid-sha case.
 - No API or ingest behavior change yet — all existing tests green untouched.
+
+**Status: COMPLETE ✅** — all criteria met. `TestMigrateUpDownRoundTrip`
+proves up → down-to-zero → up on a fresh container; `generate-check` is
+clean; `TestReconcileRepoIndexPair` round-trips set → empty-body (NULL body,
+valid sha) → cleared; the full unit + integration suites pass with zero
+changes to any existing test.
 
 ---
 
@@ -301,7 +320,7 @@ Prove the whole slice through the real pipeline and record the work.
       (additivity proof).
 - [ ] **e2e integration**: onboard serves the index; removal at HEAD flips to
       404.
-- [ ] No new integration *dependencies* — everything rides the existing
+- [ ] No new integration _dependencies_ — everything rides the existing
       Postgres testcontainers + stub-HTTP patterns (Meilisearch/Redis
       untouched).
 
@@ -336,7 +355,7 @@ recommendation, later letters alternatives, **Other** free-form. These are
   parse agrees with the authoritative parser on YAML dialect corner cases;
   zero new downloads; the promotion follows the repo's go.mod convention.
 - **b:** **`go.yaml.in/yaml/v3`** (also already indirect, via yamlfmt's
-  lineage). Equivalent mechanics, but it is *not* the library docz uses, so
+  lineage). Equivalent mechanics, but it is _not_ the library docz uses, so
   dialect drift between hint and authoritative parse becomes possible.
 - **c:** **No YAML lib** — a hand-rolled scan for a top-level `docs_dir:`
   line. Zero deps, but wrong on quoting/comments/anchors and embarrassing to
