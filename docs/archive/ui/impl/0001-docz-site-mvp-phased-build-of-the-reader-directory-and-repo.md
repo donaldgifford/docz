@@ -420,9 +420,12 @@ and demoable end-to-end.
 
 #### Tasks
 
-- [ ] Responsive passes at the mockup's breakpoints (~680/760/860 px):
+- [x] Responsive passes at the mockup's breakpoints (~680/760/860 px):
       rails collapse, ToC becomes a disclosure, palette goes full-screen
       on small viewports, repo nav becomes a drawer
+      (rails/ToC collapses landed with RepoFrame in Phase 3; this task
+      adds the full-screen palette below 640px and the "repo menu"
+      details-drawer below 861px)
 - [ ] Xref linking: doc-id-shaped tokens (built from the repo's
       `id_prefix` set) in rendered bodies that match a sibling doc become
       router links

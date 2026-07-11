@@ -166,10 +166,14 @@ describe("portal sibling navigation", () => {
     mountAt(DOC_URL);
     await findRenderedDesign0001();
 
-    // The repo nav frames the reader and lists sibling docs.
-    const navLink = await screen.findByRole("link", {
+    // The repo nav frames the reader and lists sibling docs (the nav
+    // renders twice — narrow drawer + desktop rail; either works).
+    const [navLink] = await screen.findAllByRole("link", {
       name: /IMPL-0001 · docz-site MVP/,
     });
+    if (navLink === undefined) {
+      throw new Error("sibling nav link not found");
+    }
     await userEvent.click(navLink);
 
     expect(

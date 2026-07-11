@@ -37,12 +37,12 @@ describe("repo home", () => {
     const tocLink = screen.getByRole("link", { name: "Start here" });
     expect(tocLink).toHaveAttribute("href", "#start-here");
 
-    // The shared repo nav frames the page.
+    // The shared repo nav frames the page (drawer + desktop copies).
     expect(
-      screen.getByRole("navigation", {
+      screen.getAllByRole("navigation", {
         name: "donaldgifford/docz-api navigation",
-      }),
-    ).toBeInTheDocument();
+      }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("falls back to the generated home when index.md is absent", async () => {

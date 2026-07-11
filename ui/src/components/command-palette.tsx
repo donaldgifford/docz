@@ -228,7 +228,7 @@ export function CommandPalette({
     <div
       data-testid="command-palette"
       role="presentation"
-      className="fixed inset-x-0 top-[52px] bottom-0 z-[120] flex items-start justify-center bg-[rgba(8,11,16,0.66)] px-4 pt-[7vh] backdrop-blur-[2px]"
+      className="fixed inset-x-0 top-[52px] bottom-0 z-[120] flex items-start justify-center bg-[rgba(8,11,16,0.66)] backdrop-blur-[2px] sm:px-4 sm:pt-[7vh]"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onOpenChange(false);
@@ -248,7 +248,8 @@ export function CommandPalette({
             moveActive(event.shiftKey ? -1 : 1);
           }
         }}
-        className="flex max-h-[76vh] w-[min(780px,96vw)] flex-col border border-border-strong bg-bg-raised shadow-[0_28px_90px_rgba(0,0,0,0.6)]"
+        // Full-screen below sm; the mockup's floating modal above it.
+        className="flex h-full w-full flex-col border-border-strong bg-bg-raised shadow-[0_28px_90px_rgba(0,0,0,0.6)] sm:h-auto sm:max-h-[76vh] sm:w-[min(780px,96vw)] sm:border"
       >
         <div className="flex items-center gap-3 border-b border-border-default px-4 py-[0.85rem]">
           <svg

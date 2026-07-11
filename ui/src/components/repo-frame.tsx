@@ -63,8 +63,19 @@ export function RepoFrame({
 }) {
   return (
     <div className="mx-auto grid max-w-[1360px] grid-cols-1 gap-y-8 px-5 py-7 min-[861px]:grid-cols-[250px_minmax(0,1fr)] min-[861px]:gap-x-10 min-[1181px]:grid-cols-[250px_minmax(0,1fr)_190px] min-[1181px]:gap-x-12">
-      <div className="border-b border-border-hairline pb-5 min-[861px]:sticky min-[861px]:top-[76px] min-[861px]:max-h-[calc(100vh-6rem)] min-[861px]:self-start min-[861px]:overflow-y-auto min-[861px]:border-b-0 min-[861px]:pb-0">
-        <RepoNav owner={owner} name={name} />
+      <div className="min-[861px]:sticky min-[861px]:top-[76px] min-[861px]:max-h-[calc(100vh-6rem)] min-[861px]:self-start min-[861px]:overflow-y-auto">
+        {/* Narrow viewports get the nav as a collapsed drawer. */}
+        <details className="border-b border-border-hairline pb-4 min-[861px]:hidden">
+          <summary className="cursor-pointer font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+            repo menu
+          </summary>
+          <div className="pt-4">
+            <RepoNav owner={owner} name={name} />
+          </div>
+        </details>
+        <div className="hidden min-[861px]:block">
+          <RepoNav owner={owner} name={name} />
+        </div>
       </div>
 
       <main className="min-w-0">
