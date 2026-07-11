@@ -16,6 +16,7 @@ import doczSiteDesign0001 from "../../docs/design/0001-docz-site-cross-repo-docz
 import doczSiteImpl0001 from "../../docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md?raw";
 import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
 import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
+import doczApiIndex from "./content/docz-api-index.md?raw";
 
 import type {
   DocType,
@@ -223,6 +224,23 @@ export const demoOrgHandlers = [
       types,
     };
     return HttpResponse.json(detail);
+  }),
+
+  // getRepoIndex (spec 1.1.0, DESIGN-0003): docz-api has a curated
+  // index.md; docz-site 404s to exercise the generated-home fallback.
+  http.get("*/api/v1/repos/:owner/:name/index", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    if (DEMO_TYPES[key] === undefined) {
+      return undefined;
+    }
+    if (key === "donaldgifford/docz-api") {
+      return HttpResponse.json({
+        repo: key,
+        index_md: doczApiIndex,
+        index_sha: "fixture-index-sha-docz-api",
+      });
+    }
+    return HttpResponse.json({ error: "index not found" }, { status: 404 });
   }),
 
   http.get("*/api/v1/repos/:owner/:name/types", ({ params }) => {
