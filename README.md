@@ -2,14 +2,17 @@
 
 A Go API for docz repos
 
+New to the repo? Start with [DEVELOPMENT.md](DEVELOPMENT.md) — toolchain
+setup, running the service locally, Docker/compose, tests, and conventions.
+
 ## Quickstart
 
 ```sh
 mise install                  # toolchain
 just                          # task menu
-just build                    # binary at bin/docz-api
-just test                     # race + coverage
-just run -- --help            # run via `go run`
+just build                    # binary at build/bin/docz-api
+just test                     # race detector
+just run                      # build + run the binary
 ```
 
 ## Release
@@ -35,7 +38,7 @@ Image is distroless + nonroot; entrypoint is `docz-api`.
 
 ## Layout
 
-```
+```text
 cmd/docz-api/    main package
 internal/               library code (private to this module)
 Dockerfile              multi-stage distroless build
