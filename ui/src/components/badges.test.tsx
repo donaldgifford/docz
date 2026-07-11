@@ -22,16 +22,16 @@ describe("StatusBadge", () => {
     render(<StatusBadge status="Accepted" />);
     expect(screen.getByText("Accepted")).toBeInTheDocument();
     expect(screen.getByTestId("status-dot")).toHaveAttribute("aria-hidden");
-    expect(
-      screen.getByText("Accepted").style.getPropertyValue("--c"),
-    ).toBe("var(--color-st-accepted)");
+    expect(screen.getByText("Accepted").style.getPropertyValue("--c")).toBe(
+      "var(--color-st-accepted)",
+    );
   });
 
   it("uses the neutral color for unknown statuses", () => {
     render(<StatusBadge status="Percolating" />);
-    expect(
-      screen.getByText("Percolating").style.getPropertyValue("--c"),
-    ).toBe("var(--color-fg-muted)");
+    expect(screen.getByText("Percolating").style.getPropertyValue("--c")).toBe(
+      "var(--color-fg-muted)",
+    );
   });
 });
 

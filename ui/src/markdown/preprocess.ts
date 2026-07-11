@@ -13,7 +13,8 @@ const FRONTMATTER_RE = /^---\r?\n[\s\S]*?\r?\n---[ \t]*\r?\n?/;
 
 // docz ToC markers, including everything between them. Global: docz
 // writes one block, but stray extras shouldn't survive either.
-const TOC_BLOCK_RE = /[ \t]*<!--toc:start-->[\s\S]*?<!--toc:end-->[ \t]*\r?\n?/g;
+const TOC_BLOCK_RE =
+  /[ \t]*<!--toc:start-->[\s\S]*?<!--toc:end-->[ \t]*\r?\n?/g;
 
 // The first ATX h1 when it's the document's opening content — the
 // reader header already renders the structured title, so keeping the

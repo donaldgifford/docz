@@ -22,9 +22,7 @@ describe("demo-org fixtures", () => {
     );
     if (response.status !== 200) throw new Error("expected 200");
     const doc = response.data;
-    expect(doc.title).toBe(
-      "docz-site: cross-repo docz reader and search UI",
-    );
+    expect(doc.title).toBe("docz-site: cross-repo docz reader and search UI");
     expect(doc.author).toBe("Donald Gifford");
     expect(doc.raw_md).toContain("<!--toc:start-->");
     expect(doc.raw_md).toContain("## ");

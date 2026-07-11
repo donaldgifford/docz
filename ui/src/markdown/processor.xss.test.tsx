@@ -52,10 +52,7 @@ describe("XSS payloads are neutralized", () => {
     ],
     ["javascript: raw anchor", '<a href="javascript:alert(1)">x</a>'],
     ["javascript: mixed case", '<a href="JaVaScRiPt:alert(1)">x</a>'],
-    [
-      "javascript: with whitespace",
-      '<a href=" \tjavascript:alert(1)">x</a>',
-    ],
+    ["javascript: with whitespace", '<a href=" \tjavascript:alert(1)">x</a>'],
     ["onclick handler", '<div onclick="alert(1)">content</div>'],
     [
       "onmouseover on a benign link",
@@ -73,10 +70,7 @@ describe("XSS payloads are neutralized", () => {
       "mathml xlink",
       '<math><mi xlink:href="javascript:alert(1)">x</mi></math>',
     ],
-    [
-      "data: markdown link",
-      "[x](data:text/html,<script>alert(1)</script>)",
-    ],
+    ["data: markdown link", "[x](data:text/html,<script>alert(1)</script>)"],
     [
       "data: image",
       '<img src="data:image/svg+xml;base64,PHN2Zy9vbmxvYWQ9YWxlcnQoMSk+">',

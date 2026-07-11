@@ -17,9 +17,7 @@ function SidebarHeading({ children }: { children: string }) {
 
 export function TocList({ toc }: { toc: TocEntry[] }) {
   if (toc.length === 0) {
-    return (
-      <p className="font-mono text-[11px] text-fg-muted">no sections</p>
-    );
+    return <p className="font-mono text-[11px] text-fg-muted">no sections</p>;
   }
   return (
     <ul>
@@ -42,7 +40,13 @@ export function TocList({ toc }: { toc: TocEntry[] }) {
   );
 }
 
-function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
+function MetaRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex justify-between gap-3 py-[5px] text-[12px]">
       <span className="whitespace-nowrap text-fg-tertiary">{label}</span>
@@ -157,9 +161,7 @@ export function DocRailInfo({
         <SidebarHeading>Metadata</SidebarHeading>
         {doc.status !== "" && (
           <MetaRow label="Status">
-            <span style={{ color: statusColor(doc.status) }}>
-              {doc.status}
-            </span>
+            <span style={{ color: statusColor(doc.status) }}>{doc.status}</span>
           </MetaRow>
         )}
         {doc.author !== "" && <MetaRow label="Author">{doc.author}</MetaRow>}

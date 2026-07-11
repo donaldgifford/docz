@@ -197,9 +197,7 @@ function str(value: Params[string]): string {
 }
 
 export const demoOrgHandlers = [
-  http.get("*/api/v1/repos", () =>
-    HttpResponse.json({ repos: DEMO_REPOS }),
-  ),
+  http.get("*/api/v1/repos", () => HttpResponse.json({ repos: DEMO_REPOS })),
 
   http.get("*/api/v1/repos/:owner/:name", ({ params }) => {
     const key = repoKey(str(params.owner), str(params.name));

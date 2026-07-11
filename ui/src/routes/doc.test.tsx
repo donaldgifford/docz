@@ -46,7 +46,9 @@ describe("reader four-state matrix", () => {
     expect(screen.getByText("DESIGN / 0001")).toBeInTheDocument();
     // breadcrumb current segment is the file name from `path`
     expect(
-      screen.getByText("0001-docz-site-cross-repo-docz-reader-and-search-ui.md"),
+      screen.getByText(
+        "0001-docz-site-cross-repo-docz-reader-and-search-ui.md",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -131,28 +133,32 @@ describe("metadata card omission", () => {
 
 describe("lifecycle rail positioning", () => {
   // The docz-api design doc is ~1200 lines; give the pipeline headroom.
-  it("marks stops done/current/pending around the doc status", { timeout: 20_000 }, async () => {
-    // docz-api DESIGN-0001 is Approved: Draft, In Review done; Approved
-    // current; Implemented, Abandoned pending.
-    mountAt("/donaldgifford/docz-api/design/DESIGN-0001");
-    await screen.findByRole(
-      "heading",
-      { level: 1, name: /docz-api cross-repo docz registry/ },
-      { timeout: 10_000 },
-    );
+  it(
+    "marks stops done/current/pending around the doc status",
+    { timeout: 20_000 },
+    async () => {
+      // docz-api DESIGN-0001 is Approved: Draft, In Review done; Approved
+      // current; Implemented, Abandoned pending.
+      mountAt("/donaldgifford/docz-api/design/DESIGN-0001");
+      await screen.findByRole(
+        "heading",
+        { level: 1, name: /docz-api cross-repo docz registry/ },
+        { timeout: 10_000 },
+      );
 
-    const rail = await screen.findByTestId("lifecycle-rail");
-    const states = [...rail.querySelectorAll("[data-lifecycle-state]")].map(
-      (el) => [el.textContent, el.getAttribute("data-lifecycle-state")],
-    );
-    expect(states).toEqual([
-      ["Draft", "done"],
-      ["In Review", "done"],
-      ["Approved", "current"],
-      ["Implemented", "pending"],
-      ["Abandoned", "pending"],
-    ]);
-  });
+      const rail = await screen.findByTestId("lifecycle-rail");
+      const states = [...rail.querySelectorAll("[data-lifecycle-state]")].map(
+        (el) => [el.textContent, el.getAttribute("data-lifecycle-state")],
+      );
+      expect(states).toEqual([
+        ["Draft", "done"],
+        ["In Review", "done"],
+        ["Approved", "current"],
+        ["Implemented", "pending"],
+        ["Abandoned", "pending"],
+      ]);
+    },
+  );
 });
 
 describe("ToC anchor navigation", () => {

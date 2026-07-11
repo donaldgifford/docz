@@ -70,7 +70,10 @@ function rehypeCollapseDoubleClobber() {
   return (tree: Root): void => {
     visit(tree, "element", (node) => {
       const id = node.properties.id;
-      if (typeof id === "string" && id.startsWith("user-content-user-content-")) {
+      if (
+        typeof id === "string" &&
+        id.startsWith("user-content-user-content-")
+      ) {
         node.properties.id = id.replace(/^(?:user-content-)+/, "user-content-");
       }
     });

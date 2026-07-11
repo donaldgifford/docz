@@ -81,9 +81,7 @@ function DocHeader({ doc }: { doc: Document }) {
           {doc.type}
         </Link>
         <span>/</span>
-        <span className="text-accent [overflow-wrap:anywhere]">
-          {fileName}
-        </span>
+        <span className="text-accent [overflow-wrap:anywhere]">{fileName}</span>
       </nav>
 
       {/* Id line: DESIGN / 0009, with the fading rule from the mockup */}
@@ -123,8 +121,7 @@ export function Component() {
   }
 
   const docQuery = useGetDoc(owner, repo, type, docId);
-  const doc =
-    docQuery.data?.status === 200 ? docQuery.data.data : undefined;
+  const doc = docQuery.data?.status === 200 ? docQuery.data.data : undefined;
   const rendered = useRenderedMarkdown(doc);
   const [format, setFormat] = useState<DocFormat>("html");
 

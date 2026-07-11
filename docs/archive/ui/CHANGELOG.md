@@ -30,6 +30,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Bug Fixes
 
 - *(ci)* Unbreak PR checks — bash shell, changelog, trufflehog pin
+- *(ci)* Format phase-1 files and redact fixture DSN example
 
 ### Documentation
 
