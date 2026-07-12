@@ -20,8 +20,13 @@ const TOC_BLOCK_RE =
 // reader header already renders the structured title, so keeping the
 // markdown h1 would print it twice. Real docz output puts HTML comments
 // (markdownlint pragmas) between frontmatter and the h1; those are
-// skipped over and preserved.
-const LEADING_H1_RE = /^(\s*(?:<!--[\s\S]*?-->\s*)*)#[ \t][^\n]*\r?\n?/;
+// skipped over and preserved. The comment body is `(?:[^-]|-(?!->))*`,
+// NOT a lazy [\s\S]*?: raw_md is untrusted, and a lazy body overlaps
+// the `-->` terminator, which backtracks exponentially on inputs like
+// "<!--" + "--><!--"×N (js/redos). This shape can't match the
+// terminator, so the first `-->` always ends the comment — linear.
+const LEADING_H1_RE =
+  /^(\s*(?:<!--(?:[^-]|-(?!->))*-->\s*)*)#[ \t][^\n]*\r?\n?/;
 
 export interface PreprocessOptions {
   stripLeadingH1?: boolean;

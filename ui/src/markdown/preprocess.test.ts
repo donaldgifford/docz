@@ -101,4 +101,23 @@ describe("preprocessDoczMarkdown", () => {
     expect(out).toContain("markdownlint-disable-file");
     expect(out).toContain("Body.");
   });
+
+  it("handles dashes inside and between leading comments", () => {
+    const raw = "<!-- a - b -- c --->\n<!----->\n# Title\nBody.";
+
+    const out = preprocessDoczMarkdown(raw, { stripLeadingH1: true });
+    expect(out).not.toContain("# Title");
+    expect(out).toContain("a - b -- c");
+    expect(out).toContain("Body.");
+  });
+
+  it("survives a comment-bomb without backtracking (js/redos)", () => {
+    // "<!--" + "--><!--"×N with no h1 made the old lazy comment body
+    // backtrack exponentially — this input would hang the suite if the
+    // regex regressed. raw_md is untrusted; linear or bust.
+    const raw = "<!--" + "--><!--".repeat(10_000);
+
+    const out = preprocessDoczMarkdown(raw, { stripLeadingH1: true });
+    expect(out).toBe(raw); // no h1 → nothing stripped
+  });
 });
