@@ -96,7 +96,7 @@ pipeline phases get reviewed.
 
 #### Tasks
 
-- [ ] Hide the topbar "Sign in" link when already on `/login`
+- [x] Hide the topbar "Sign in" link when already on `/login`
       (`SessionMenu` reads `useLocation`; render nothing — the page IS
       the affordance). Update `session-menu.test.tsx`.
 - [ ] Palette prefetch: when cmdk's active item changes (keyboard or

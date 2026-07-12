@@ -229,7 +229,7 @@ conventional commit per item, checking items off here as they land.
 - [ ] **Recent docs in the palette** — empty-query "recent" section
       fed from a small localStorage list of last-opened docs (UI
       preference only; respects the no-tokens storage rule).
-- [ ] **Hide the topbar "Sign in" link on `/login`** — redundant while
+- [x] **Hide the topbar "Sign in" link on `/login`** — redundant while
       already on the login page.
 - [ ] **README refresh** — cover Phase 5 auth (`VITE_AUTH_PROVIDERS`),
       `just local-up`/`local-down`, and the deploy compose story.
