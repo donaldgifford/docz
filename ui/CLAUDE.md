@@ -178,13 +178,16 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Per-task local gate is `just ci` semantics: test, lint, `tsc -b
   --force`, build, AND `bun run format:check` — formatting misses fail
   CI even when everything else is green.
-- Bundle budget: CI fails if the entry chunk tops 130 KB gz
-  (`scripts/bundle-budget.ts`, `just bundle-budget`, ~117 KB today).
-  Keep the markdown pipeline/Shiki behind lazy imports — an eager
-  import is exactly what the budget exists to catch. Doc links
-  prefetch getDoc on hover/focus via `usePrefetchDoc`
-  (`src/hooks/usePrefetchDoc.ts`) — new doc-link surfaces should wire
-  it up. One-off node scripts live in `scripts/*.ts` under
+- Bundle budget: CI fails if the eager JS tops 130 KB gz
+  (`scripts/bundle-budget.ts`, `just bundle-budget`, ~120 KB today).
+  "Eager" = the entry chunk PLUS every modulepreload'd chunk in
+  index.html — Rollup splits shared statics out of `index-*.js` as
+  the graph shifts, so measuring only the entry file would let an
+  eager import hide in a preloaded chunk. Keep the markdown
+  pipeline/Shiki behind lazy imports — an eager import is exactly
+  what the budget exists to catch. Doc links prefetch getDoc on
+  hover/focus via `usePrefetchDoc` (`src/hooks/usePrefetchDoc.ts`) —
+  new doc-link surfaces should wire it up. One-off node scripts live in `scripts/*.ts` under
   tsconfig.node.json (node types, typechecked + linted there).
 
 - TypeScript is pinned to the 5.9 series: typescript-eslint's parser
