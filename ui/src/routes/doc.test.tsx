@@ -193,8 +193,16 @@ describe("portal sibling navigation", () => {
     mountAt(DOC_URL);
     await findRenderedDesign0001();
 
-    // The repo nav frames the reader and lists sibling docs (the nav
-    // renders twice — narrow drawer + desktop rail; either works).
+    // The repo nav frames the reader; other types' drawers start
+    // closed, so peek into impl first (the nav renders twice — narrow
+    // drawer + desktop rail; either works).
+    const [implToggle] = await screen.findAllByRole("button", {
+      name: "impl documents",
+    });
+    if (implToggle === undefined) {
+      throw new Error("impl drawer toggle not found");
+    }
+    await userEvent.click(implToggle);
     const [navLink] = await screen.findAllByRole("link", {
       name: /IMPL-0001 · docz-site MVP/,
     });
