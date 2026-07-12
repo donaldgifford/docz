@@ -519,8 +519,14 @@ and demoable end-to-end.
       scaffold`); `git log --all -- charts/` shows it never reappeared.
       The deploy target is the compose stack above; a Helm chart stays
       out of scope until a k8s target actually exists)
-- [ ] Sweep TODO/FIXME; refresh README (dev, test, build, deploy
+- [x] Sweep TODO/FIXME; refresh README (dev, test, build, deploy
       sections)
+      (sweep: zero TODO/FIXME/XXX markers in src/, server/, scripts/,
+      e2e/ — nothing accrued during the build. README gained Test,
+      Build, and Deploy sections — unit vs e2e suites and what each
+      covers, bundle budget, docker build/run, the same-origin proxy
+      story, and a pointer to deploy/compose.yaml + docz-api's env
+      conventions — and the architecture list now names src/markdown/)
 
 #### Success Criteria
 
