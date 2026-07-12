@@ -373,6 +373,10 @@ demoted from always-on rail block.
 Numbered for review; **a** is my recommendation, later letters are
 alternatives. Answer with the letter (or write in "other").
 
+> **Answered 2026-07-12: all questions resolved as option a.** The
+> **a** options below are the decisions of record; phases implement
+> them as written.
+
 **OQ-1 — Mermaid SVG injection mechanism.** Mermaid returns an SVG
 string; putting it in the DOM conflicts with the repo rule "no
 `dangerouslySetInnerHTML` anywhere".
