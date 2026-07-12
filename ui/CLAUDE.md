@@ -144,6 +144,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   at 1181px/861px) plus RepoBreadcrumbs — home, type pages, AND the
   reader all mount inside it. Counts everywhere come from
   `useRepoFacts` (repo-filtered limit-0 facet query) so numbers agree.
+  RepoNav's per-type doc lists are collapsible drawers: the route's
+  `:type` auto-expands, the caret button peeks without navigating, and
+  listDocs only fires for open drawers. Facets omit zero-hit types —
+  a missing typeCounts key after facts load means 0, which also
+  disables the caret. The repo home is the ONLY surface rendering an
+  h1 inside `.doc-prose` (the reader strips body h1s) — its style
+  lives in tokens.css; don't remove it as "unused".
   URL `{type}` resolves by name/id_prefix/alias via
   `lib/docTypes.resolveDocType` (links always generated from the
   canonical name); fixtures mirror this and 404 unknown types.
