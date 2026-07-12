@@ -639,6 +639,22 @@ only.
 - No token or session id is ever readable by JS — cookie only; the only
   storage writes are UI preferences
 
+> Verified 2026-07-12: criterion 1 live against the real local stack
+> (docz-site:phase5-test container :8090 → docz-api :8080). Signed-out
+> deep link `/donaldgifford/docz-api/impl/IMPL-0002` bounced to
+> `/login` with the destination stashed; `/auth/login?provider=github`
+> 302s to GitHub with intact state (curl); a headless browser with the
+> session cookie set (as the callback does, via a 10-minute
+> Redis-minted session) landed on `/` and was restored to the exact
+> deep link with the stash cleared; the avatar showed the GitHub
+> login; Sign out landed on `/login` and docz-api destroyed the Redis
+> session (getSession 401, key gone). Zero page errors. The mocked
+> loop also runs in CI (e2e "login loop restores the stashed
+> destination"). Criterion 2 by audit: the only app-code storage
+> writes are `docz:auth:return-to` (validated same-origin path) and
+> `docz:auth:last-provider` (provider key) — never a token; the
+> session cookie stays httpOnly.
+
 ---
 
 ## File Changes

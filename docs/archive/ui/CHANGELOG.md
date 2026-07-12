@@ -46,6 +46,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(perf)* Bundle-size budget in CI and hover prefetch for doc links
 - *(e2e)* Playwright journeys and full-rule axe against an MSW preview build
 - *(deploy)* Multi-stage Dockerfile, Bun static server, same-origin compose stack
+- *(auth)* /login provider selection page
+- *(auth)* 401 redirects to /login with destination stash and restore
+- *(auth)* Session-backed avatar menu with logout
+- *(auth)* Remember last-used provider in localStorage
 
 ### Bug Fixes
 
@@ -63,6 +67,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(claude)* Record fixtures layout and phase-1 CI lessons
 - *(readme)* Add test, build, and deploy sections; close Phase 4 sweep
 - *(impl)* Record Phase 4 success-criteria verification
+- *(impl)* Verify Phase 5 acceptance criteria against the live stack
 
 ### Testing
 
@@ -72,6 +77,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(reader)* Four-state matrix, metadata omission, lifecycle, ToC anchors
 - *(phase-2)* Close out component-test coverage and verify criteria
 - *(phase-3)* Four-state coverage for repo pages and criteria verification
+- *(auth)* E2e login loop with a mocked provider callback
 
 ### Miscellaneous Tasks
 
