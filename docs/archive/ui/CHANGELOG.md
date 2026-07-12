@@ -40,11 +40,18 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(repos)* Repo home rendering index.md with generated fallback
 - *(repos)* Synthesized README-style type pages in a shared frame
 - *(reader)* Mount the reader inside the three-column portal
+- *(responsive)* Full-screen palette and repo-nav drawer on narrow viewports
+- *(xrefs)* Link sibling doc ids in rendered markdown bodies
+- *(a11y)* Axe sweep, badge contrast gate, and keyboard fixes
+- *(perf)* Bundle-size budget in CI and hover prefetch for doc links
+- *(e2e)* Playwright journeys and full-rule axe against an MSW preview build
+- *(deploy)* Multi-stage Dockerfile, Bun static server, same-origin compose stack
 
 ### Bug Fixes
 
 - *(ci)* Unbreak PR checks — bash shell, changelog, trufflehog pin
 - *(ci)* Format phase-1 files and redact fixture DSN example
+- *(api)* Tolerate JSON null where docz-api marshals empty Go slices
 
 ### Documentation
 
@@ -53,6 +60,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Clarify rfc-site sweep criterion to exclude self-references
 - *(impl)* Record Phase 1 verification note
 - *(claude)* Record fixtures layout and phase-1 CI lessons
+- *(readme)* Add test, build, and deploy sections; close Phase 4 sweep
+- *(impl)* Record Phase 4 success-criteria verification
 
 ### Testing
 

@@ -539,6 +539,21 @@ and demoable end-to-end.
 - CI enforces the full gate: lint, typecheck, unit/component (including
   the XSS suites), e2e, codegen drift, bundle budget
 
+> Verification (2026-07-12): e2e (8 tests incl. full-rule axe) green
+> locally and wired as a CI step; jsdom axe sweep + token contrast
+> tests green. Same-origin verified against the REAL local docz-api
+> stack: the built container proxied /api (401 unauthenticated, then
+> authenticated repos/search/doc reads), /openapi.yaml, and the OAuth
+> 302 with state intact; the operator completed the GitHub login in a
+> browser and a headless-browser pass with a live session rendered the
+> reader, repo home, and the directory ("showing 25 of 54" real docs)
+> with zero page errors. `docker compose config` validates the deploy
+> manifest. Live testing surfaced one real bug — Go nil slices arrive
+> as JSON null where the spec says array — fixed via `src/lib/wire.ts`
+> normalization + wire-shaped fixtures (upstream ask: marshal `[]` or
+> mark fields nullable). Keyboard paths covered by palette/picker/chips
+> tests (Enter-opens-first-hit, Escape-closes-picker, Tab preview).
+
 ---
 
 ### Phase 5: Auth UX (post-MVP)
