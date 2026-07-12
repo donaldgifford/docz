@@ -101,57 +101,70 @@ repo is a clean, green shell app.
 
 #### Tasks
 
-- [ ] Sweep template leftovers: delete `react-router.config.ts`, the stale
+- [x] Sweep template leftovers: delete `react-router.config.ts`, the stale
       `orval.config.ts`, `vite.config.ts`, `vitest.config.ts`,
       `eslint.config.js`, `charts/temp/`, `Dockerfile`,
       `docker-compose.yml`, `docker-bake.hcl`, `justfile.docker`, duplicate
       prettier config (`.prettierrc.json` vs `.prettierrc.yaml` — keep one),
       and `package.json` script references to missing files
       (`scripts/gen-api-check.sh`)
-- [ ] Remove superseded `docz-site-mockup3.html` (`mockup.html` is the
+- [x] Remove superseded `docz-site-mockup3.html` (`mockup.html` is the
       source of truth)
-- [ ] Rewrite `package.json`: name `docz-site`, accurate description,
+- [x] Rewrite `package.json`: name `docz-site`, accurate description,
       license aligned with the README (Apache-2.0), scripts for dev,
       dev:msw, build, preview, typecheck, lint, format, test, gen-api,
       gen-api:check
-- [ ] Scaffold Vite + React 19 + TS strict: new `vite.config.ts`
+- [x] Scaffold Vite + React 19 + TS strict: new `vite.config.ts`
       (`@vitejs/plugin-react`, `@tailwindcss/vite`, dev `server.proxy` for
       `/api`, `/auth`, `/openapi.yaml` → local docz-api), strict
       `tsconfig.json` with `@/` path alias, `index.html`, `src/main.tsx`
-- [ ] Port `mockup.html` `:root` tokens into Tailwind v4 `@theme`
+- [x] Port `mockup.html` `:root` tokens into Tailwind v4 `@theme`
       (`src/theme/tokens.css`): bg/fg/border scales, accent, `--st-*`
       status colors, `--t-*` type colors, font stacks, zero radius,
       focus-visible style
-- [ ] Wire fonts via self-hosted `@fontsource` packages (`ibm-plex-mono`,
+- [x] Wire fonts via self-hosted `@fontsource` packages (`ibm-plex-mono`,
       `ibm-plex-sans`, `source-serif-4`) — no third-party font requests
-- [ ] App shell: topbar (brand mark, search affordance, nav, avatar
+- [x] App shell: topbar (brand mark, search affordance, nav, avatar
       placeholder) + `createBrowserRouter` route table — `/`, `/repos`,
       `/:owner/:repo`, `/:owner/:repo/:type`, `/:owner/:repo/:type/:docId`,
       `*` — placeholder elements, route-level `lazy()`
-- [ ] TanStack Query provider with sane defaults; `src/api/fetcher.ts`
+- [x] TanStack Query provider with sane defaults; `src/api/fetcher.ts`
       mutator (same-origin base, JSON handling, error mapping: 401 →
       `SessionRequiredError`, 404 → `NotFoundError`, other → `ApiError`)
-- [ ] Vendor `api/openapi.yaml` from docz-api at `info.version` 1.0.0
-- [ ] New `orval.config.ts`: `client: react-query`, `httpClient: fetch`,
+- [x] Vendor `api/openapi.yaml` from docz-api at `info.version` 1.0.0
+- [x] New `orval.config.ts`: `client: react-query`, `httpClient: fetch`,
       custom mutator, `mock: true`, output `src/api/__generated__/`
       (gitignored, `clean: true`)
-- [ ] `scripts/gen-api-check.sh`: regenerate + `git diff --exit-code` on
-      the generated dir (PR gate)
-- [ ] Spec drift workflow (scheduled + on-PR): fetch docz-api main's
+- [x] `scripts/gen-api-check.sh`: regenerate + diff on the generated dir
+      (PR gate; the dir is gitignored so the gate is snapshot →
+      regenerate → `diff -r`, not `git diff`)
+- [x] Spec drift workflow (scheduled + on-PR): fetch docz-api main's
       `api/openapi.yaml` and compare `info.version` to the vendored copy —
       the same regenerate-and-diff pattern as the git-cliff CHANGELOG
       drift check; drift opens/updates a tracking issue, never fails PRs
-- [ ] Test scaffolding: Vitest + Testing Library + MSW
+      (implemented as a full-content diff with `info.version` reported,
+      since upstream has shipped spec changes without a version bump)
+- [x] Test scaffolding: Vitest + Testing Library + MSW
       (`src/test/setup.ts`, server from generated handlers) in jsdom; one
       smoke test (shell renders, a generated hook resolves against MSW)
-- [ ] Lint/format: ESLint (typescript-eslint, react-hooks, jsx-a11y) +
+- [x] Lint/format: ESLint (typescript-eslint, react-hooks, jsx-a11y) +
       Prettier; keep markdownlint/yamllint configs
-- [ ] Rewrite `mise.toml` (pin bun; drop unused tools) and `justfile`
+- [x] Rewrite `mise.toml` (pin bun; drop unused tools) and `justfile`
       (dev, dev-msw, gen-api, gen-api-check, lint, fmt, test, build,
       preview, ci)
-- [ ] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
+- [x] GitHub Actions `ci.yml`: bun setup → install → lint → typecheck →
       test → build → gen-api drift check
-- [ ] Rewrite `README.md` quickstart (mise install → bun install →
+- [x] Prune inherited `.github/` automation: the template ships ~10
+      workflows (codeql, security, trufflehog, changelog, release,
+      license-check, pr-labels, dependabot-severity-label, …) written for
+      the template's stack, and their *scheduled* triggers don't honor
+      `[skip ci]` — rewrite `ci.yml` (above), add the spec-drift workflow,
+      keep security scanners only where reconfigured for the TS/Bun stack,
+      delete the rest
+- [x] Remove `.github/dependabot.yml` — Renovate (`renovate.json5`) owns
+      dependency automation; audit its config for bun/npm coverage of the
+      new stack
+- [x] Rewrite `README.md` quickstart (mise install → bun install →
       just dev / just dev-msw)
 
 #### Success Criteria
@@ -161,9 +174,15 @@ repo is a clean, green shell app.
 - `just ci` (lint + typecheck + test + build + gen-api-check) passes
   locally and in GitHub Actions
 - The generated client compiles under strict TS and exposes hooks for all
-  nine spec operations
-- `grep -ri "rfc-site"` across the repo (excluding `docs/input.md`) returns
-  nothing; no template leftovers remain at the root
+  nine SPA-facing spec operations (the vendored 1.0.0 spec also documents
+  `authCallback` and `githubWebhook` — server-side surfaces the SPA never
+  calls; generated code for them is inert)
+- `grep -ri "rfc-site"` across the repo returns nothing outside
+  `docs/input.md`, `mockup.html` demo copy, and the design/impl docs'
+  own history of the sweep; no template leftovers remain at the root
+- The Actions tab shows only intended workflows (ci, spec-drift, and any
+  deliberately kept, reconfigured scanners); `dependabot.yml` is gone and
+  Renovate covers the bun/npm stack
 
 ---
 

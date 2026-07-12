@@ -1,33 +1,28 @@
-# mise — tool version + task management for rfc-site.
+# mise — tool version management for docz-site.
 #
 # Install:  https://mise.jdx.dev/getting-started.html
 # Activate: `mise install` (one-time per checkout) — or `mise trust` first
 #           if mise warns about an untrusted config.
 #
-# Versions here are the source of truth for local development. CI pins the
-# same versions in `.github/workflows/`; if you bump a version here, bump
-# it there too (and vice versa).
+# Versions here are the source of truth for local development and CI
+# (workflows run tools through jdx/mise-action).
 #
-# Stack reference: React 19 + RR7 + TanStack Query + orval, with
-# Bun as runtime + package manager and Vite as bundler.
+# Stack reference: Vite + React 19 + react-router (library mode) +
+# TanStack Query + orval, with Bun as runtime + package manager.
 
 [env]
 # Auto-load project-local environment variables from `.env.local` when
 # `cd`'ing into this directory. `.env.local` is gitignored — keep
-# secrets (e.g. `NPM_TOKEN` for the GitHub Packages registry) here,
-# never in `mise.toml`. See `.env.example` for the canonical list of
-# variables this project reads.
+# secrets there, never in `mise.toml` (this repo is public).
 _.file = ".env.local"
 
 [tools]
 # Bun is the runtime + package manager
 bun = "1.3.14"
-# Node kept for tool compat (some eslint plugins / vitest plugins still
-# expect node on PATH). Drop once everything is confirmed Bun-native.
+# Node kept for tool compat (some eslint/vitest plugins still expect
+# node on PATH). Drop once everything is confirmed Bun-native.
 node = "24.14.0"
 
-
-# Repo utilities
 # Formatters and linters
 # renovate: datasource=github-releases depName=DavidAnson/markdownlint-cli2
 markdownlint-cli2 = "0.18.1"
@@ -37,10 +32,6 @@ yamlfmt = "0.20.0"
 yamllint = "1.37.1"
 # renovate: datasource=npm depName=prettier
 prettier = "3.7.4"
-# renovate: datasource=github-releases depName=donaldgifford/makefmt
-"github:donaldgifford/makefmt" = "latest"
-# renovate: datasource=github-releases depName=mrtazz/checkmake
-checkmake = "latest"
 # renovate: datasource=github-releases depName=orhun/git-cliff
 git-cliff = "latest"
 # renovate: datasource=github-releases depName=rhysd/actionlint
@@ -48,24 +39,10 @@ actionlint = "latest"
 # renovate: datasource=github-releases depName=casey/just
 just = "latest"
 
-# tools
+# Repo utilities
 # renovate: datasource=github-releases depName=mikefarah/yq
 yq = "4.48.1"
 # renovate: datasource=github-releases depName=jqlang/jq
 jq = "latest"
 # renovate: datasource=github-releases depName=donaldgifford/docz
 "github:donaldgifford/docz" = "latest"
-
-# helm
-# renovate: datasource=github-releases depName=helm/helm
-helm = "3.19.0"
-# renovate: datasource=github-releases depName=helm/chart-testing
-helm-ct = "latest"
-# renovate: datasource=github-releases depName=databus23/helm-diff
-helm-diff = "latest"
-# renovate: datasource=github-releases depName=norwoodj/helm-docs
-helm-docs = "latest"
-# renovate: datasource=github-releases depName=sigstore/cosign
-cosign = "latest"
-# renovate: datasource=github-releases depName=prometheus/prometheus
-promtool = "latest"

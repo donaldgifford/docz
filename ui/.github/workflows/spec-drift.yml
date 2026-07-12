@@ -1,0 +1,89 @@
+# $schema=https://www.schemastore.org/github-action.json
+# Detects drift between the vendored api/openapi.yaml and docz-api
+# main's copy — the same regenerate-and-diff idea as the CHANGELOG
+# drift check, but informational: PRs get a warning annotation, and
+# scheduled/manual runs open or update a tracking issue. It NEVER
+# fails a PR. A full-content diff is used (with info.version reported)
+# because upstream has shipped spec changes without a version bump.
+name: OpenAPI Spec Drift
+on:
+  pull_request:
+  schedule:
+    # Mondays 06:00 UTC — after the weekly CodeQL run.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Fetch upstream spec from docz-api main
+        run: |
+          curl --fail --silent --show-error --location \
+            --retry 3 --retry-delay 5 \
+            https://raw.githubusercontent.com/donaldgifford/docz-api/main/api/openapi.yaml \
+            -o /tmp/upstream-openapi.yaml
+      - name: Compare vendored spec against upstream
+        id: compare
+        run: |
+          version_of() {
+            awk '/^info:/{f=1} f && /^  version:/{print $2; exit}' "$1"
+          }
+          vendored_version="$(version_of api/openapi.yaml)"
+          upstream_version="$(version_of /tmp/upstream-openapi.yaml)"
+          {
+            echo "vendored_version=${vendored_version}"
+            echo "upstream_version=${upstream_version}"
+          } >> "$GITHUB_OUTPUT"
+          if diff -q api/openapi.yaml /tmp/upstream-openapi.yaml > /dev/null; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "Vendored spec matches docz-api main (version ${vendored_version})."
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            echo "Vendored spec (version ${vendored_version}) differs from docz-api main (version ${upstream_version}):"
+            diff api/openapi.yaml /tmp/upstream-openapi.yaml || true
+          fi
+      - name: Warn on PR (never fails)
+        if: steps.compare.outputs.drift == 'true' && github.event_name == 'pull_request'
+        run: |
+          echo "::warning title=OpenAPI spec drift::Vendored api/openapi.yaml (info.version ${{ steps.compare.outputs.vendored_version }}) differs from docz-api main (info.version ${{ steps.compare.outputs.upstream_version }}). Re-vendor and run 'bun run gen-api' when ready — this check never fails PRs."
+      - name: Open or update tracking issue
+        if: steps.compare.outputs.drift == 'true' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VENDORED: ${{ steps.compare.outputs.vendored_version }}
+          UPSTREAM: ${{ steps.compare.outputs.upstream_version }}
+        run: |
+          gh label create spec-drift \
+            --color D93F0B \
+            --description "Vendored docz-api OpenAPI spec is behind upstream" \
+            --force
+          body="$(cat <<EOF
+          docz-api main's [api/openapi.yaml](https://github.com/donaldgifford/docz-api/blob/main/api/openapi.yaml) differs from the vendored copy.
+
+          - vendored info.version: \`${VENDORED}\`
+          - upstream info.version: \`${UPSTREAM}\`
+          - detected by: ${GITHUB_WORKFLOW} run on $(date -u +%Y-%m-%d)
+
+          To update: copy the upstream spec over \`api/openapi.yaml\`, run \`bun run gen-api\`, and fix any compile fallout.
+          EOF
+          )"
+          existing="$(gh issue list --label spec-drift --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+            echo "Updated tracking issue #$existing"
+          else
+            gh issue create \
+              --title "docz-api OpenAPI spec drift detected" \
+              --label spec-drift \
+              --body "$body"
+          fi

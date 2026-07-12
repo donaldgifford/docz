@@ -1,0 +1,112 @@
+/*
+ * Design tokens ported from mockup.html `:root` (the visual source of
+ * truth) into Tailwind v4 `@theme`. Token names keep the mockup's
+ * prefixes so mockup CSS can be cross-referenced 1:1 when porting
+ * sections into components — utilities read e.g. `bg-bg-raised`,
+ * `text-fg-tertiary`, `border-border-strong`, `text-t-rfc`.
+ */
+@import "tailwindcss";
+
+/* `static` so every token is emitted even before a utility references
+ * it — the type/status color module resolves tokens at runtime via
+ * var(), so the full set is a runtime contract, not dead CSS. */
+@theme static {
+  /* Font stacks — families self-hosted via @fontsource in main.tsx. */
+  --font-sans:
+    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: "Source Serif 4", Georgia, serif;
+
+  /* Background scale */
+  --color-bg-base: #0c1017;
+  --color-bg-raised: #121722;
+  --color-bg-elevated: #181e2b;
+  --color-bg-hover: #1e2635;
+  --color-bg-active: #252e40;
+
+  /* Border scale */
+  --color-border-hairline: #1b2230;
+  --color-border-default: #252e3f;
+  --color-border-strong: #34405a;
+
+  /* Foreground scale */
+  --color-fg-primary: #e8ebf0;
+  --color-fg-secondary: #afb6c2;
+  --color-fg-tertiary: #7a8396;
+  --color-fg-muted: #505867;
+
+  /* Accent */
+  --color-accent: #7dcfff;
+  --color-accent-dim: #3d7fb8;
+  --color-accent-bg: rgba(125, 207, 255, 0.1);
+  --color-accent-border: rgba(125, 207, 255, 0.3);
+
+  /* Status colors (case-insensitive status convention maps onto these —
+     see DESIGN-0001 "Type and status color system") */
+  --color-st-draft: #e0af68;
+  --color-st-proposed: #7aa2f7;
+  --color-st-active: #9ece6a;
+  --color-st-accepted: #9ece6a;
+  --color-st-adopted: #9ece6a;
+  --color-st-rejected: #f7768e;
+  --color-st-superseded: #bb9af7;
+  --color-st-deprecated: #565f89;
+
+  /* Curated doc-type colors. First seven are the mockup's; adr/design/
+     impl/investigation extend the same palette to cover the ten curated
+     types DESIGN-0001 names. Unknown types hash into a fallback palette
+     in the color module (Phase 2), not here. */
+  --color-t-rfc: #7aa2f7;
+  --color-t-adr: #e0af68;
+  --color-t-design: #2ac3de;
+  --color-t-impl: #ff9e64;
+  --color-t-investigation: #9d7cd8;
+  --color-t-mandate: #f7768e;
+  --color-t-guide: #9ece6a;
+  --color-t-principle: #7dcfff;
+  --color-t-policy: #bb9af7;
+  --color-t-framework: #73daca;
+  --color-t-working: #ff9e64;
+
+  /* Code blocks */
+  --color-code-bg: #161b28;
+
+  /* Sharp corners everywhere — wipe Tailwind's radius scale so no
+     rounded-* utility exists, then re-add the pill shape chips use. */
+  --radius-*: initial;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    background: var(--color-bg-base);
+    color: var(--color-fg-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-accent-bg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
