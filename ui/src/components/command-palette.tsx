@@ -6,6 +6,7 @@ import { useNavigate } from "react-router";
 import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { StatusBadge } from "@/components/badges";
 import { Snippet } from "@/components/snippet";
+import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 
 import type {
   SearchDocsParams,
@@ -194,6 +195,21 @@ export function CommandPalette({
     setActive(hitKey(firstHit));
   }
 
+  const activeHit = hits.find((hit) => hitKey(hit) === active) ?? hits[0];
+
+  // Warm the reader for the highlighted hit — the same treatment doc
+  // links get on hover/focus, so Enter paints without a skeleton.
+  const prefetchDoc = usePrefetchDoc();
+  useEffect(() => {
+    if (!open || activeHit === undefined) {
+      return;
+    }
+    const [owner, name] = activeHit.repo.split("/");
+    if (owner !== undefined && name !== undefined) {
+      prefetchDoc(owner, name, activeHit.type, activeHit.doc_id);
+    }
+  }, [open, activeHit, prefetchDoc]);
+
   const groups = useMemo(() => {
     const byRepo = new Map<string, SearchHit[]>();
     for (const hit of hits) {
@@ -207,8 +223,6 @@ export function CommandPalette({
   if (!open) {
     return null;
   }
-
-  const previewHit = hits.find((hit) => hitKey(hit) === active) ?? hits[0];
 
   const openDoc = (key: string) => {
     const hit = hits.find((candidate) => hitKey(candidate) === key);
@@ -382,7 +396,7 @@ export function CommandPalette({
             data-testid="palette-preview"
             className="hidden overflow-y-auto px-[1.1rem] py-4 sm:block"
           >
-            <PreviewPane hit={previewHit} />
+            <PreviewPane hit={activeHit} />
           </div>
         </div>
 

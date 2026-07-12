@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { routes } from "@/app/router";
+import { server } from "@/test/server";
 
 const SITE_DESIGN_TITLE = "docz-site: cross-repo docz reader and search UI";
 const SITE_IMPL_TITLE =
@@ -199,6 +201,35 @@ describe("command palette", () => {
       expect(router.state.location.pathname).toBe(
         "/donaldgifford/docz-api/design/DESIGN-0001",
       );
+    });
+  });
+
+  it("prefetches the highlighted hit's doc", async () => {
+    const docRequests: string[] = [];
+    server.use(
+      http.get(
+        "*/api/v1/repos/:owner/:name/types/:type/docs/:docId",
+        ({ params }) => {
+          docRequests.push(String(params.docId));
+          return undefined; // fall through to the fixture handler
+        },
+      ),
+    );
+    const user = userEvent.setup();
+    mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    await palette().findByText("donaldgifford/docz-site — 2 matches");
+
+    // The auto-highlighted first hit warms immediately…
+    await waitFor(() => {
+      expect(docRequests).toContain("DESIGN-0001");
+    });
+    // …and stepping the highlight warms the next hit.
+    await user.keyboard("{ArrowDown}");
+    await waitFor(() => {
+      expect(docRequests).toContain("IMPL-0001");
     });
   });
 

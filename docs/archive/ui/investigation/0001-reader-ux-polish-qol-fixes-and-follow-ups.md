@@ -221,7 +221,7 @@ conventional commit per item, checking items off here as they land.
       structure is ours, no schema surface) building
       `div.codeblock` + header; `MarkdownPre`'s region aria-label
       gains the language. Skips mermaid blocks._
-- [ ] **Palette prefetch** — wire `usePrefetchDoc` to cmdk's active
+- [x] **Palette prefetch** — wire `usePrefetchDoc` to cmdk's active
       item so palette → reader navigation is instant (nav/reader links
       already prefetch on hover/focus; the palette is the gap).
 - [ ] **Heading anchor copy** — hover affordance on reader headings to

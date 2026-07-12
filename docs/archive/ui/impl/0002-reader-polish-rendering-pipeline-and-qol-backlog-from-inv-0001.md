@@ -99,7 +99,7 @@ pipeline phases get reviewed.
 - [x] Hide the topbar "Sign in" link when already on `/login`
       (`SessionMenu` reads `useLocation`; render nothing — the page IS
       the affordance). Update `session-menu.test.tsx`.
-- [ ] Palette prefetch: when cmdk's active item changes (keyboard or
+- [x] Palette prefetch: when cmdk's active item changes (keyboard or
       pointer), call `usePrefetchDoc` for the highlighted hit —
       `command-palette.tsx` already resolves the active hit through
       the hits map. Test: highlight → getDoc request observed (mirror
