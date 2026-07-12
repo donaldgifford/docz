@@ -44,3 +44,39 @@ export function enabledProviders(): AuthProvider[] {
     import.meta.env.VITE_AUTH_PROVIDERS as string | undefined,
   );
 }
+
+/*
+ * Last-used provider — a localStorage UI preference (the only kind of
+ * thing allowed in JS-readable storage; never a token). The login page
+ * promotes it to the primary slot on the next visit.
+ */
+
+const LAST_PROVIDER_KEY = "docz:auth:last-provider";
+
+export function rememberProvider(key: string): void {
+  try {
+    localStorage.setItem(LAST_PROVIDER_KEY, key);
+  } catch {
+    // Storage disabled — the preference just doesn't stick.
+  }
+}
+
+export function lastUsedProvider(): string | null {
+  try {
+    return localStorage.getItem(LAST_PROVIDER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Moves the remembered provider to the front; no match, no change. */
+export function promoteLastUsed(
+  providers: AuthProvider[],
+  lastKey: string | null,
+): AuthProvider[] {
+  const match = providers.find((provider) => provider.key === lastKey);
+  if (match === undefined) {
+    return providers;
+  }
+  return [match, ...providers.filter((provider) => provider !== match)];
+}

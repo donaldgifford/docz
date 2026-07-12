@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { parseProviders } from "@/lib/authProviders";
+import {
+  lastUsedProvider,
+  parseProviders,
+  promoteLastUsed,
+  rememberProvider,
+} from "@/lib/authProviders";
 
 describe("parseProviders", () => {
   it("defaults to GitHub alone", () => {
@@ -34,5 +39,29 @@ describe("parseProviders", () => {
     expect(parseProviders("facebook,,")).toEqual([
       { key: "github", label: "GitHub" },
     ]);
+  });
+});
+
+describe("last-used provider", () => {
+  const three = parseProviders("github,okta,keycloak");
+
+  it("round-trips through localStorage", () => {
+    expect(lastUsedProvider()).toBeNull();
+    rememberProvider("okta");
+    expect(lastUsedProvider()).toBe("okta");
+  });
+
+  it("promotes the remembered provider to the primary slot", () => {
+    expect(promoteLastUsed(three, "keycloak").map((p) => p.key)).toEqual([
+      "keycloak",
+      "github",
+      "okta",
+    ]);
+  });
+
+  it("leaves the order alone when nothing (or garbage) is remembered", () => {
+    expect(promoteLastUsed(three, null)).toEqual(three);
+    // e.g. a provider that has since been disabled
+    expect(promoteLastUsed(three, "facebook")).toEqual(three);
   });
 });

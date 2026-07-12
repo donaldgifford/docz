@@ -606,7 +606,14 @@ only.
       (`donaldgifford` via github) + logout handler; open-menu state
       added to the axe sweep; logout test proves the cache flush by
       watching the topbar flip to Sign in.)_
-- [ ] Remember last-used provider in localStorage
+- [x] Remember last-used provider in localStorage
+      _(`rememberProvider`/`lastUsedProvider`/`promoteLastUsed` in
+      `authProviders.ts`, key `docz:auth:last-provider` — a pure UI
+      preference, the only kind of thing allowed in JS-readable
+      storage. The login anchors store the key onClick; the page
+      promotes the remembered provider to the primary slot with a
+      "· last used" hint. Unknown/disabled remembered keys leave the
+      order untouched.)_
 - [ ] Tests: 401 → redirect → destination restore; logout clears cache;
       e2e login loop with a mocked provider callback
 

@@ -1,15 +1,21 @@
-import { enabledProviders } from "@/lib/authProviders";
+import {
+  enabledProviders,
+  lastUsedProvider,
+  promoteLastUsed,
+  rememberProvider,
+} from "@/lib/authProviders";
 
 /*
  * Provider selection page (DESIGN-0001 auth flow, IMPL-0001 Phase 5).
  * The buttons are REAL anchors to docz-api's /auth/login — the flow is
  * a full document navigation through the same-origin proxy (302 to the
- * provider), never a router transition. GitHub renders primary; other
- * configured providers follow.
+ * provider), never a router transition. The last-used provider (a
+ * localStorage UI preference) takes the primary slot; GitHub otherwise.
  */
 
 export function Component() {
-  const providers = enabledProviders();
+  const lastUsed = lastUsedProvider();
+  const providers = promoteLastUsed(enabledProviders(), lastUsed);
 
   return (
     <main className="mx-auto flex max-w-[420px] flex-col px-5 pt-[14vh]">
@@ -30,6 +36,9 @@ export function Component() {
               <a
                 href={`/auth/login?provider=${encodeURIComponent(provider.key)}`}
                 data-testid={`login-${provider.key}`}
+                onClick={() => {
+                  rememberProvider(provider.key);
+                }}
                 className={`block border px-4 py-[0.55rem] text-center font-mono text-[13px] ${
                   index === 0
                     ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent hover:border-accent"
@@ -37,6 +46,9 @@ export function Component() {
                 }`}
               >
                 Continue with {provider.label}
+                {provider.key === lastUsed && (
+                  <span className="text-fg-muted"> · last used</span>
+                )}
               </a>
             </li>
           ))}
