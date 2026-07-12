@@ -5,6 +5,7 @@ import { http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
+import { createQueryClient } from "@/app/query-client";
 import { routes } from "@/app/router";
 import { server } from "@/test/server";
 
@@ -14,9 +15,9 @@ const SITE_IMPL_TITLE =
 const API_DESIGN_TITLE =
   "docz-api cross-repo docz registry and ingestion service";
 
-function mountAt(path: string) {
+function mountAt(path: string, queryClient?: QueryClient) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
-  const queryClient = new QueryClient({
+  queryClient ??= new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   render(
@@ -216,7 +217,9 @@ describe("command palette", () => {
       ),
     );
     const user = userEvent.setup();
-    mountAt("/repos");
+    // The app's real client defaults (30s staleTime) — the point is
+    // that the prefetch makes the reader mount a cache hit.
+    mountAt("/repos", createQueryClient());
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
@@ -231,6 +234,16 @@ describe("command palette", () => {
     await waitFor(() => {
       expect(docRequests).toContain("IMPL-0001");
     });
+
+    // Opening it renders from the prefetched cache — the reader
+    // mounts, paints, and getDoc never fires a second time.
+    await user.keyboard("{Enter}");
+    await screen.findByRole(
+      "heading",
+      { level: 1, name: /docz-site MVP: phased build/ },
+      { timeout: 10_000 },
+    );
+    expect(docRequests.filter((id) => id === "IMPL-0001")).toHaveLength(1);
   });
 
   it("navigates to the reader on Enter and closes", async () => {
