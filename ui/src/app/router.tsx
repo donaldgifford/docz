@@ -3,7 +3,7 @@ import { createBrowserRouter, type RouteObject } from "react-router";
 import { AppShell } from "@/app/AppShell";
 
 // Route table per DESIGN-0001 "IA and routes". Route modules load via
-// route-level lazy() and export a named `Component`; /login is post-MVP.
+// route-level lazy() and export a named `Component`.
 // Exported separately so tests can mount it in a memory router.
 export const routes: RouteObject[] = [
   {
@@ -14,6 +14,7 @@ export const routes: RouteObject[] = [
     HydrateFallback: () => null,
     children: [
       { index: true, lazy: () => import("@/routes/directory") },
+      { path: "login", lazy: () => import("@/routes/login") },
       { path: "repos", lazy: () => import("@/routes/repos") },
       { path: ":owner/:repo", lazy: () => import("@/routes/repo-home") },
       { path: ":owner/:repo/:type", lazy: () => import("@/routes/repo-type") },

@@ -100,6 +100,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   handlers in both `src/test/server.ts` and `src/mocks/browser.ts`.
   Fixture resolvers return `undefined` to fall through to faker for
   anything outside the demo org.
+- Auth UX (Phase 5): `/login` (`src/routes/login.tsx`) renders provider
+  buttons as REAL `<a href="/auth/login?provider=…">` anchors — the
+  OAuth 302 must reach the browser, so never convert them to router
+  Links. The enabled set comes from `VITE_AUTH_PROVIDERS`
+  (`src/lib/authProviders.ts`; build-time, comma-separated, default
+  `github`, unknown keys dropped, empty result falls back to GitHub).
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
 - Directory (`src/routes/directory.tsx`): the URL is the only source of

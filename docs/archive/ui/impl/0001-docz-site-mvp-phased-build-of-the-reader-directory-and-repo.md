@@ -564,8 +564,17 @@ only.
 
 #### Tasks
 
-- [ ] `/login` provider page: GitHub primary; Okta/Keycloak buttons shown
+- [x] `/login` provider page: GitHub primary; Okta/Keycloak buttons shown
       when enabled by config
+      _(`src/routes/login.tsx` + `src/lib/authProviders.ts`: providers are
+      REAL anchors to `/auth/login?provider=…` — full document navigation
+      so docz-api's 302 reaches the browser. Enabled set comes from
+      `VITE_AUTH_PROVIDERS` (comma-separated, build-time; default
+      `github`), filtered to the providers docz-api implements
+      (github/okta/keycloak) with a GitHub fallback so misconfig never
+      bricks the page. GitHub (index 0) styled primary. Route registered
+      lazy in `router.tsx`; unit tests in `authProviders.test.ts` +
+      `login.test.tsx`; view added to the axe sweep.)_
 - [ ] 401 handling upgraded from panel to redirect: stash the intended
       path in sessionStorage → `/login`; restore the destination on first
       authenticated load (the API callback always lands on `/`)

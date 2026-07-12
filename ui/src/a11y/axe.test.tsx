@@ -79,6 +79,16 @@ describe("axe: core views", () => {
     await expectNoAxeViolations();
   });
 
+  it("login page", { timeout: AXE_TIMEOUT }, async () => {
+    mountAt("/login");
+    await screen.findByRole(
+      "link",
+      { name: "Continue with GitHub" },
+      { timeout: 10_000 },
+    );
+    await expectNoAxeViolations();
+  });
+
   it("command palette open", { timeout: AXE_TIMEOUT }, async () => {
     mountAt("/");
     await screen.findByTestId("results-count", undefined, { timeout: 10_000 });
