@@ -146,6 +146,17 @@ conventional commit per item, checking items off here as they land.
 
 ### Follow-up backlog
 
+- [ ] **Reader metadata table in the doc header** — long documents
+      produce long right-rail ToCs, burying the metadata (and the
+      html/md/json format switch) below the fold of the rail. Adopt
+      the mockup's doc-portal treatment: a bordered key/value metadata
+      table directly under the title/status header (owner, repo · dir,
+      source path, git sha, created — whatever the Document DTO
+      carries; the mockup's relationship rows and tags stay gated on
+      the DESIGN-0001 API asks). Move the format switch into that
+      header area too. Lifecycle moves to a closed-by-default drawer
+      (same disclosure pattern as the nav's type drawers) instead of
+      always burning rail space.
 - [ ] **Palette prefetch** — wire `usePrefetchDoc` to cmdk's active
       item so palette → reader navigation is instant (nav/reader links
       already prefetch on hover/focus; the palette is the gap).
