@@ -575,9 +575,21 @@ only.
       bricks the page. GitHub (index 0) styled primary. Route registered
       lazy in `router.tsx`; unit tests in `authProviders.test.ts` +
       `login.test.tsx`; view added to the axe sweep.)_
-- [ ] 401 handling upgraded from panel to redirect: stash the intended
+- [x] 401 handling upgraded from panel to redirect: stash the intended
       path in sessionStorage → `/login`; restore the destination on first
       authenticated load (the API callback always lands on `/`)
+      _(`SessionRequiredPanel` became `SessionRequiredRedirect` in
+      `query-states.tsx` — same five call sites, new behavior: stash
+      `pathname+search` via `src/lib/authReturn.ts` then replace to
+      `/login`. The stash validates on both write and read (app paths
+      only — no absolute//protocol-relative URLs, never `/` or
+      `/login`), stores only a path, never a token. Restore:
+      `RestoreAfterLogin` in AppShell arms on `pathname === "/"` +
+      stash present, probes getSession, and only on 200 replaces `/`
+      with the stash; a 401 probe leaves the stash for the next login.
+      Tests: authReturn unit suite, restore integration suite, all five
+      route 401 tests now assert redirect + stash, e2e 401 journey
+      asserts the `/login` landing.)_
 - [ ] `getSession`-backed avatar menu (GitHub `login` or OIDC `email`);
       logout: `POST /api/v1/auth/logout`, clear the TanStack Query cache,
       return to `/login`

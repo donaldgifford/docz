@@ -88,7 +88,7 @@ describe("repos grid", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the bare session panel on 401", async () => {
+  it("redirects to /login on 401 and stashes the destination", async () => {
     server.use(
       http.get(REPOS_ENDPOINT, () =>
         HttpResponse.json({ error: "session required" }, { status: 401 }),
@@ -96,6 +96,9 @@ describe("repos grid", () => {
     );
     mountAt("/repos");
 
-    expect(await screen.findByText("Session required")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Continue with GitHub" }),
+    ).toBeInTheDocument();
+    expect(sessionStorage.getItem("docz:auth:return-to")).toBe("/repos");
   });
 });

@@ -1,27 +1,30 @@
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
+
+import { stashReturnTo } from "@/lib/authReturn";
+
 /*
  * Shared fetch-state panels (DESIGN-0001 "States" table). The reader,
  * directory, and repo pages all funnel their error handling through
  * these three, keyed off the typed errors from src/api/fetcher.ts.
  */
 
-/** Bare 401 panel — docz-api owns the whole login flow (post-MVP UX). */
-export function SessionRequiredPanel() {
-  return (
-    <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
-      <p className="font-mono text-[13px] text-fg-secondary">
-        Session required
-      </p>
-      <p className="mt-2 text-[13px] text-fg-tertiary">
-        <a
-          href="/auth/login?provider=github"
-          className="text-accent hover:underline"
-        >
-          Sign in with GitHub
-        </a>{" "}
-        to read documents.
-      </p>
-    </div>
-  );
+/**
+ * 401 → `/login`, stashing the intended destination so the OAuth round
+ * trip (which always lands back on "/") can restore it. Replaced the
+ * MVP-era "session required" panel — same call sites, Phase 5 behavior.
+ */
+export function SessionRequiredRedirect() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    stashReturnTo(location.pathname + location.search);
+    void navigate("/login", { replace: true });
+  }, [location.pathname, location.search, navigate]);
+
+  // Nothing to paint — the redirect commits on the next tick.
+  return null;
 }
 
 /** Neutral 404 — deliberately ambiguous; 404 also hides private repos. */

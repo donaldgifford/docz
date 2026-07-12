@@ -13,7 +13,7 @@ import {
 import {
   ErrorPanel,
   NotFoundPanel,
-  SessionRequiredPanel,
+  SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
@@ -115,7 +115,7 @@ export function Component() {
   const [format, setFormat] = useState<DocFormat>("html");
 
   if (docQuery.error instanceof SessionRequiredError) {
-    return <SessionRequiredPanel />;
+    return <SessionRequiredRedirect />;
   }
   if (docQuery.error instanceof NotFoundError) {
     return <NotFoundPanel />;

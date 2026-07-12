@@ -354,7 +354,7 @@ describe("directory route", () => {
     expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
   });
 
-  it("renders the bare session panel on 401", async () => {
+  it("redirects to /login on 401", async () => {
     server.use(
       http.get("*/api/v1/search", () =>
         HttpResponse.json({ error: "session required" }, { status: 401 }),
@@ -362,9 +362,11 @@ describe("directory route", () => {
     );
     mountAt("/");
 
-    expect(await screen.findByText("Session required")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Sign in with GitHub" }),
+      await screen.findByRole("link", { name: "Continue with GitHub" }),
     ).toHaveAttribute("href", "/auth/login?provider=github");
+    // "/" is the callback landing route, not a destination worth a
+    // round trip — nothing stashes.
+    expect(sessionStorage.getItem("docz:auth:return-to")).toBeNull();
   });
 });

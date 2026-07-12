@@ -7,7 +7,7 @@ import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
-  SessionRequiredPanel,
+  SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
@@ -139,7 +139,7 @@ export function Component() {
     repoQuery.error instanceof SessionRequiredError ||
     docsQuery.error instanceof SessionRequiredError
   ) {
-    return <SessionRequiredPanel />;
+    return <SessionRequiredRedirect />;
   }
   if (
     repoQuery.error instanceof NotFoundError ||

@@ -6,7 +6,7 @@ import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
 import { StatusBadge, TypeBadge } from "@/components/badges";
 import { RepoPicker, TypeChips } from "@/components/directory-controls";
-import { ErrorPanel, SessionRequiredPanel } from "@/components/query-states";
+import { ErrorPanel, SessionRequiredRedirect } from "@/components/query-states";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import {
   EMPTY_SEARCH_STATE,
@@ -228,7 +228,7 @@ export function Component() {
   };
 
   if (searchQuery.error instanceof SessionRequiredError) {
-    return <SessionRequiredPanel />;
+    return <SessionRequiredRedirect />;
   }
 
   return (

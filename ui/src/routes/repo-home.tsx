@@ -6,7 +6,7 @@ import { TocList } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
-  SessionRequiredPanel,
+  SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
@@ -113,7 +113,7 @@ export function Component() {
     repoQuery.error instanceof SessionRequiredError ||
     indexQuery.error instanceof SessionRequiredError
   ) {
-    return <SessionRequiredPanel />;
+    return <SessionRequiredRedirect />;
   }
   // The repo itself is missing (or hidden) — not just its index.md.
   if (repoQuery.error instanceof NotFoundError) {

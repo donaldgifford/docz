@@ -98,7 +98,7 @@ describe("repo type page", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the bare session panel on 401", async () => {
+  it("redirects to /login on 401 and stashes the destination", async () => {
     server.use(
       http.get("*/api/v1/repos/:owner/:name/types/:type/docs", () =>
         HttpResponse.json({ error: "session required" }, { status: 401 }),
@@ -106,6 +106,11 @@ describe("repo type page", () => {
     );
     mountAt("/donaldgifford/docz-site/design");
 
-    expect(await screen.findByText("Session required")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Continue with GitHub" }),
+    ).toBeInTheDocument();
+    expect(sessionStorage.getItem("docz:auth:return-to")).toBe(
+      "/donaldgifford/docz-site/design",
+    );
   });
 });

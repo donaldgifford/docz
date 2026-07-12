@@ -59,7 +59,7 @@ describe("reader four-state matrix", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the bare session panel on 401", async () => {
+  it("redirects to /login on 401 and stashes the destination", async () => {
     server.use(
       http.get(DOC_ENDPOINT, () =>
         HttpResponse.json({ error: "session required" }, { status: 401 }),
@@ -67,10 +67,10 @@ describe("reader four-state matrix", () => {
     );
     mountAt(DOC_URL);
 
-    expect(await screen.findByText("Session required")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Sign in with GitHub" }),
+      await screen.findByRole("link", { name: "Continue with GitHub" }),
     ).toHaveAttribute("href", "/auth/login?provider=github");
+    expect(sessionStorage.getItem("docz:auth:return-to")).toBe(DOC_URL);
   });
 
   it("renders an inline error with a working retry", async () => {

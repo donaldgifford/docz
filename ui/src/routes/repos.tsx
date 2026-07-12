@@ -2,7 +2,7 @@ import { Link } from "react-router";
 
 import { useListRepos } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
-import { ErrorPanel, SessionRequiredPanel } from "@/components/query-states";
+import { ErrorPanel, SessionRequiredRedirect } from "@/components/query-states";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
 import { arr } from "@/lib/wire";
 
@@ -84,7 +84,7 @@ export function Component() {
       : undefined;
 
   if (reposQuery.error instanceof SessionRequiredError) {
-    return <SessionRequiredPanel />;
+    return <SessionRequiredRedirect />;
   }
 
   return (

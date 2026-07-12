@@ -31,6 +31,10 @@ beforeAll(() => {
 afterEach(() => {
   server.resetHandlers();
   cleanup();
+  // jsdom storage persists across tests in a file; a leaked auth
+  // return-to stash would arm RestoreAfterLogin in unrelated tests.
+  sessionStorage.clear();
+  localStorage.clear();
 });
 
 afterAll(() => {

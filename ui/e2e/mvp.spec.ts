@@ -72,7 +72,7 @@ test("unknown doc renders the neutral 404 panel", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("401 renders the bare session panel", async ({ page }) => {
+test("401 redirects to the login page", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText(SITE_DESIGN_TITLE)).toBeVisible();
 
@@ -82,8 +82,8 @@ test("401 renders the bare session panel", async ({ page }) => {
   });
   await page.reload();
 
-  await expect(page.getByText("Session required")).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
   await expect(
-    page.getByRole("link", { name: "Sign in with GitHub" }),
+    page.getByRole("link", { name: "Continue with GitHub" }),
   ).toHaveAttribute("href", "/auth/login?provider=github");
 });

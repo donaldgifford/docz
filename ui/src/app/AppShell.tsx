@@ -1,12 +1,41 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
+import { useGetSession } from "@/api/__generated__/docz-api";
 import { CommandPalette } from "@/components/command-palette";
+import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
     ? "text-fg-primary"
     : "text-fg-tertiary hover:text-fg-primary";
+}
+
+/**
+ * The other half of SessionRequiredRedirect's stash: docz-api's OAuth
+ * callback always lands on "/", so when the shell finds a stashed
+ * destination there it probes getSession and, only once authenticated,
+ * replaces "/" with the stash. A signed-out visit leaves the stash
+ * alone (the probe 401s) — it restores on the next successful login.
+ */
+function RestoreAfterLogin() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const armed = location.pathname === "/" && peekReturnTo() !== null;
+  const session = useGetSession({ query: { enabled: armed } });
+  const authenticated = armed && session.data?.status === 200;
+
+  useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
+    const returnTo = takeReturnTo();
+    if (returnTo !== null) {
+      void navigate(returnTo, { replace: true });
+    }
+  }, [authenticated, navigate]);
+
+  return null;
 }
 
 export function AppShell() {
@@ -75,6 +104,7 @@ export function AppShell() {
           </span>
         </nav>
       </header>
+      <RestoreAfterLogin />
       <Outlet />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </>

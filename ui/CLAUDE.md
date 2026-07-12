@@ -106,6 +106,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   Links. The enabled set comes from `VITE_AUTH_PROVIDERS`
   (`src/lib/authProviders.ts`; build-time, comma-separated, default
   `github`, unknown keys dropped, empty result falls back to GitHub).
+  On 401, `SessionRequiredRedirect` (query-states.tsx) stashes
+  `pathname+search` via `src/lib/authReturn.ts` and replaces to
+  `/login`; `RestoreAfterLogin` (AppShell) probes getSession on "/"
+  when a stash exists and restores it only on 200 (the OAuth callback
+  always lands on "/"). The stash validates paths on BOTH write and
+  read — keep it that way (open-redirect guard), and never stash
+  anything but a same-origin path. Test setup clears session/local
+  storage after each test — a leaked stash arms RestoreAfterLogin in
+  unrelated tests.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
 - Directory (`src/routes/directory.tsx`): the URL is the only source of
