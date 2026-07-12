@@ -85,7 +85,7 @@ export function Component() {
   }
 
   return (
-    <div className="mx-auto max-w-[940px] px-5">
+    <main className="mx-auto max-w-[940px] px-5">
       <header className="pt-10 pb-6">
         <div className="font-mono text-[12.5px] tracking-[0.05em] text-accent">
           / docz <span className="text-fg-muted">/</span> repositories
@@ -132,6 +132,6 @@ export function Component() {
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }

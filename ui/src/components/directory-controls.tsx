@@ -45,6 +45,7 @@ export function RepoPicker({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -74,8 +75,24 @@ export function RepoPicker({
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    // Keyboard path: Escape dismisses the open dropdown and hands focus
+    // back to the trigger (pointer users get pointerdown-outside above).
+    // The div only catches Escape bubbling from the interactive children
+    // — the rule's documented event-delegation exception.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div
+      ref={rootRef}
+      className="relative"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          event.stopPropagation();
+          setOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="true"
         aria-expanded={open}

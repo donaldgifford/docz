@@ -236,6 +236,11 @@ export function CommandPalette({
       }}
     >
       <Command
+        // The panel is a modal dialog to assistive tech; cmdk's root
+        // carries no role of its own, so it takes the dialog semantics.
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search documents"
         label="Search documents"
         shouldFilter={false}
         value={active}

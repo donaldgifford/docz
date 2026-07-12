@@ -154,6 +154,17 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   (`set-state-in-effect`) — sync prop→state with the react.dev
   "adjust state during render" pattern (guarded `setState` in render
   body, see `SearchBox` in directory.tsx), not a `useEffect`.
+- Accessibility gate: `src/a11y/axe.test.tsx` runs axe-core over every
+  core view and tolerates zero serious/critical violations — new views
+  belong in that sweep. jsdom can't compute color-contrast, so badge
+  token contrast (st-/t-/hash- vs the three bg surfaces, 4.5:1) is
+  enforced mathematically in `src/theme/contrast.test.ts`; changing
+  `tokens.css` colors means keeping that test green. Every top-level
+  route needs exactly one `<main>` (RepoFrame provides it for
+  repo-scoped pages). vitest stubs CSS imports even with `?raw` — read
+  CSS source in tests via node:fs (per-file
+  `/// <reference types="node" />`; the app tsconfig stays
+  browser-only).
 
 ## Non-negotiables
 

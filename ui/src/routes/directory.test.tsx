@@ -214,6 +214,25 @@ describe("directory route", () => {
     expect(screen.getByText(API_DESIGN_TITLE)).toBeInTheDocument();
   });
 
+  it("closes the picker with Escape and restores trigger focus", async () => {
+    const user = userEvent.setup();
+    mountAt("/");
+    await screen.findByText(SITE_DESIGN_TITLE);
+
+    const trigger = screen.getByRole("button", { name: /repo:/ });
+    await user.click(trigger);
+    expect(
+      screen.getByRole("button", { name: /all repos/ }),
+    ).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(
+      screen.queryByRole("button", { name: /all repos/ }),
+    ).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("clear filters resets to the empty state", async () => {
     const user = userEvent.setup();
     const router = mountAt("/?type=impl&q=phased");

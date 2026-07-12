@@ -224,7 +224,7 @@ export function Component() {
   }
 
   return (
-    <div className="mx-auto max-w-[940px] px-5">
+    <main className="mx-auto max-w-[940px] px-5">
       <DirectoryHero repo={state.repo} />
       <SearchBox value={state.q} onCommit={commitQuery} />
 
@@ -338,6 +338,6 @@ export function Component() {
           )}
         </div>
       )}
-    </div>
+    </main>
   );
 }

@@ -439,10 +439,23 @@ and demoable end-to-end.
       router `<Link>`s; render cache keys include an fnv1a fingerprint
       of the resolver ids. Landed in `src/markdown/` rather than the
       file-map's `src/lib/xref.ts` — it is pipeline code)
-- [ ] Accessibility: axe checks in component tests (zero serious/critical
+- [x] Accessibility: axe checks in component tests (zero serious/critical
       on core views), keyboard paths (palette, chips, picker, ToC, repo
       nav), visible focus states, landmark/heading structure, badge color
       contrast
+      (`src/a11y/axe.test.tsx` sweeps directory, repos, repo home ×2,
+      type page, reader, and the open palette through axe-core with
+      zero serious/critical tolerated — color-contrast excluded since
+      jsdom can't compute it; instead `src/theme/contrast.test.ts`
+      checks every st-/t-/hash- badge token mathematically against all
+      three surfaces at WCAG AA 4.5:1, which forced `--color-st-deprecated`
+      #565f89 → #7a84ad. Fixes made for the sweep: palette panel now
+      carries `role="dialog"` + `aria-modal` + label; directory and
+      repos routes wrap in `<main>` (RepoFrame pages already had one);
+      RepoPicker gained Escape-to-close with focus restored to the
+      trigger. Focus-visible outline and landmark/nav labels already
+      existed. Full-rule axe incl. contrast runs in the e2e task's
+      browser)
 - [ ] Performance: verify route-level code-splitting and lazy Shiki
       grammars; add a CI bundle-size budget for the initial chunk;
       prefetch doc data on link hover

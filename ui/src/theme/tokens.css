@@ -50,7 +50,9 @@
   --color-st-adopted: #9ece6a;
   --color-st-rejected: #f7768e;
   --color-st-superseded: #bb9af7;
-  --color-st-deprecated: #565f89;
+  /* Lightened from the mockup's #565f89: badge text must hold 4.5:1 on
+     every surface (enforced by src/theme/contrast.test.ts). */
+  --color-st-deprecated: #7a84ad;
 
   /* Curated doc-type colors. First seven are the mockup's; adr/design/
      impl/investigation extend the same palette to cover the ten curated
