@@ -65,6 +65,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `findBy*`, not `getBy*`, for the initial assertion.
 - `src/api/__generated__/` — orval output; never hand-edit, never commit
 - Generated OpenAPI types ARE the data model; don't hand-roll DTO types
+- BUT the real docz-api marshals empty Go slices as JSON null while
+  the spec (and thus the generated types) say array — crashed the
+  reader in live testing. Normalize every wire array with `arr()` from
+  `src/lib/wire.ts` before iterating; several fixture types carry
+  `aliases: null` deliberately so the suites exercise the real shape.
+  Upstream ask: marshal `[]` or mark the fields nullable in the spec.
 - Markdown rendering lives in `src/markdown/` and ONLY there:
   `preprocess.ts` (strip frontmatter + docz toc block) →
   `processor.ts` `renderMarkdown()` (remark-parse → remark-gfm →

@@ -5,6 +5,7 @@ import {
   getListDocsQueryOptions,
   useGetRepo,
 } from "@/api/__generated__/docz-api";
+import { arr } from "@/lib/wire";
 
 import type { XrefResolver } from "@/markdown/xrefs";
 
@@ -23,7 +24,7 @@ export function useRepoDocIndex(
 ): XrefResolver | undefined {
   const repoQuery = useGetRepo(owner, name);
   const types =
-    repoQuery.data?.status === 200 ? repoQuery.data.data.types : undefined;
+    repoQuery.data?.status === 200 ? arr(repoQuery.data.data.types) : undefined;
 
   const docLists = useQueries({
     queries: (types ?? []).map((docType) => ({
@@ -45,7 +46,7 @@ export function useRepoDocIndex(
       if (query.data?.status !== 200 || typeName === undefined) {
         return;
       }
-      for (const doc of query.data.data.docs) {
+      for (const doc of arr(query.data.data.docs)) {
         resolver.set(
           doc.doc_id.toUpperCase(),
           `/${owner}/${name}/${typeName}/${doc.doc_id}`,

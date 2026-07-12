@@ -12,6 +12,7 @@ import {
 import { RepoFrame } from "@/components/repo-frame";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { resolveDocType, typeBlurb } from "@/lib/docTypes";
+import { arr } from "@/lib/wire";
 
 import type { DocType, Document } from "@/api/__generated__/docz-api.schemas";
 
@@ -39,7 +40,7 @@ function DocsTable({
 }: {
   repoId: string;
   docType: DocType;
-  docs: Document[];
+  docs: readonly Document[];
 }) {
   const prefetchDoc = usePrefetchDoc();
   return (
@@ -128,11 +129,11 @@ export function Component() {
   // The URL may carry an alias or id_prefix; resolve to the canonical
   // type for display (the API resolves its own paths the same way).
   const docType =
-    detail === undefined ? undefined : resolveDocType(detail.types, type);
+    detail === undefined ? undefined : resolveDocType(arr(detail.types), type);
 
   const docsQuery = useListDocs(owner, repo, type);
   const docs =
-    docsQuery.data?.status === 200 ? docsQuery.data.data.docs : undefined;
+    docsQuery.data?.status === 200 ? arr(docsQuery.data.data.docs) : undefined;
 
   if (
     repoQuery.error instanceof SessionRequiredError ||

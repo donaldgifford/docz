@@ -1,5 +1,6 @@
 import { getGetDocUrl, useListTypes } from "@/api/__generated__/docz-api";
 import { statusColor } from "@/lib/colors";
+import { arr } from "@/lib/wire";
 
 import type { Document } from "@/api/__generated__/docz-api.schemas";
 import type { TocEntry } from "@/markdown/processor";
@@ -88,14 +89,15 @@ export function LifecycleRail({
   });
   const types =
     typesQuery.data?.status === 200 ? typesQuery.data.data.types : undefined;
-  const docType = types?.find(
-    (t) => t.name === typeName || t.aliases.includes(typeName),
+  const docType = arr(types).find(
+    (t) => t.name === typeName || arr(t.aliases).includes(typeName),
   );
-  if (docType === undefined || docType.statuses.length === 0) {
+  const stages = arr(docType?.statuses);
+  if (docType === undefined || stages.length === 0) {
     return null;
   }
 
-  const current = docType.statuses.findIndex(
+  const current = stages.findIndex(
     (status) => status.toLowerCase() === currentStatus.toLowerCase(),
   );
 
@@ -103,7 +105,7 @@ export function LifecycleRail({
     <section className="mb-8" data-testid="lifecycle-rail">
       <SidebarHeading>Lifecycle</SidebarHeading>
       <div className="relative ml-1 border-l border-border-default pl-[1.1rem]">
-        {docType.statuses.map((stage, index) => {
+        {stages.map((stage, index) => {
           const state =
             current === -1
               ? "pending"

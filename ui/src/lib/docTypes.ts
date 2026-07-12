@@ -1,3 +1,5 @@
+import { arr } from "@/lib/wire";
+
 import type { DocType } from "@/api/__generated__/docz-api.schemas";
 
 /*
@@ -7,7 +9,7 @@ import type { DocType } from "@/api/__generated__/docz-api.schemas";
  * widens what we accept.
  */
 export function resolveDocType(
-  types: DocType[],
+  types: readonly DocType[],
   slug: string,
 ): DocType | undefined {
   const lower = slug.toLowerCase();
@@ -15,7 +17,7 @@ export function resolveDocType(
     (docType) =>
       docType.name.toLowerCase() === lower ||
       docType.id_prefix.toLowerCase() === lower ||
-      docType.aliases.some((alias) => alias.toLowerCase() === lower),
+      arr(docType.aliases).some((alias) => alias.toLowerCase() === lower),
   );
 }
 

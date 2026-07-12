@@ -83,6 +83,11 @@ const INVESTIGATION_STATUSES = [
 ];
 
 // Real type declarations from the repos' .docz.yaml files.
+//
+// docz-api marshals empty Go slices as JSON null even though the spec
+// says array (see src/lib/wire.ts) — some types here mirror that wire
+// shape so the suites exercise it; the cast is the spec's lie, not ours.
+const WIRE_NULL_ALIASES = null as unknown as string[];
 const DEMO_TYPES: Record<string, DocType[]> = {
   "donaldgifford/docz-site": [
     {
@@ -91,7 +96,7 @@ const DEMO_TYPES: Record<string, DocType[]> = {
       id_prefix: "DESIGN",
       plural_label: "Designs",
       statuses: DESIGN_STATUSES,
-      aliases: [],
+      aliases: WIRE_NULL_ALIASES,
     },
     {
       name: "impl",
@@ -117,7 +122,7 @@ const DEMO_TYPES: Record<string, DocType[]> = {
       id_prefix: "DESIGN",
       plural_label: "Designs",
       statuses: DESIGN_STATUSES,
-      aliases: [],
+      aliases: WIRE_NULL_ALIASES,
     },
     {
       name: "rfc",
@@ -125,7 +130,7 @@ const DEMO_TYPES: Record<string, DocType[]> = {
       id_prefix: "RFC",
       plural_label: "RFCs",
       statuses: ["Draft", "Proposed", "Accepted", "Rejected", "Superseded"],
-      aliases: [],
+      aliases: WIRE_NULL_ALIASES,
     },
   ],
 };

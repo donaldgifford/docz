@@ -3,6 +3,7 @@ import { NavLink } from "react-router";
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { arr } from "@/lib/wire";
 
 import type { DocType } from "@/api/__generated__/docz-api.schemas";
 
@@ -48,7 +49,7 @@ function NavTypeSection({
   });
   const prefetchDoc = usePrefetchDoc();
   const docs =
-    docsQuery.data?.status === 200 ? docsQuery.data.data.docs : undefined;
+    docsQuery.data?.status === 200 ? arr(docsQuery.data.data.docs) : undefined;
 
   return (
     <>
@@ -130,7 +131,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
         doc types
       </div>
 
-      {(detail?.types ?? []).map((docType) => (
+      {arr(detail?.types).map((docType) => (
         <NavTypeSection
           key={docType.name}
           owner={owner}

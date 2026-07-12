@@ -4,6 +4,7 @@ import { useListRepos } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
 import { ErrorPanel, SessionRequiredPanel } from "@/components/query-states";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { arr } from "@/lib/wire";
 
 import type { RepoSummary } from "@/api/__generated__/docz-api.schemas";
 
@@ -78,7 +79,9 @@ function CardSkeletons() {
 export function Component() {
   const reposQuery = useListRepos();
   const repos =
-    reposQuery.data?.status === 200 ? reposQuery.data.data.repos : undefined;
+    reposQuery.data?.status === 200
+      ? arr(reposQuery.data.data.repos)
+      : undefined;
 
   if (reposQuery.error instanceof SessionRequiredError) {
     return <SessionRequiredPanel />;

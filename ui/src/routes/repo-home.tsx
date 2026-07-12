@@ -11,6 +11,7 @@ import {
 import { RepoFrame } from "@/components/repo-frame";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { arr } from "@/lib/wire";
 import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
 
 import type { RepoDetail } from "@/api/__generated__/docz-api.schemas";
@@ -36,7 +37,7 @@ function GeneratedHome({ detail }: { detail: RepoDetail }) {
         configured in docz.yaml.
       </p>
 
-      {detail.types.map((docType) => {
+      {arr(detail.types).map((docType) => {
         const count = facts?.typeCounts[docType.name] ?? 0;
         return (
           <section
