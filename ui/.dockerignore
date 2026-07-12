@@ -3,6 +3,12 @@ node_modules
 
 # Build outputs
 dist
+dist-msw
+
+# Playwright
+test-results
+playwright-report
+e2e
 
 # Git
 .git

@@ -490,13 +490,35 @@ and demoable end-to-end.
       nothing — fixed with an adjust-during-render re-point to the
       first hit, regression-tested in jsdom. CI runs `just e2e` after
       the bundle budget)
-- [ ] Deploy artifact: multi-stage Dockerfile — `bun run build` → a small
+- [x] Deploy artifact: multi-stage Dockerfile — `bun run build` → a small
       `Bun.serve` static server (`server/serve.ts`: assets with cache
       headers, precompressed where it pays, SPA fallback to `index.html`,
       `/healthz`) on a slim Bun base; compose file routes `/api`, `/auth`,
       `/webhooks`, `/openapi.yaml` to docz-api behind one origin
-- [ ] Replace or remove `charts/temp` (real chart only when a deploy
+      (Dockerfile: oven/bun full → gen-api + build + gzip -9 of
+      js/css/svg/html/json → oven/bun slim runtime holding only dist/ +
+      server/serve.ts, USER bun, HEALTHCHECK against /healthz. serve.ts
+      serves /assets/ with `max-age=31536000, immutable`, index.html
+      `no-cache`, prefers .gz siblings when accepted (Vary:
+      Accept-Encoding), SPA-falls-back everything else, and proxies
+      /api, /auth, /webhooks, /openapi.yaml to DOCZ_API_URL with
+      `redirect: "manual"` so OAuth 302s reach the browser — the proxy
+      IS the same-origin routing, so deploy/compose.yaml publishes only
+      the site's :8080 and wires DOCZ_API_URL=http://docz-api:8080 over
+      the private network (api + postgres/redis/meilisearch mirror
+      docz-api's deploy manifest; its env store + PEM secret
+      conventions apply, gitignored via deploy/.gitignore). Verified:
+      image builds (275 MB), container smoke passes healthz/cache/gz/
+      SPA/proxy-502, `docker compose config` validates. server/ is its
+      own tsconfig project (types: ["bun"]) referenced from the root)
+- [x] Replace or remove `charts/temp` (real chart only when a deploy
       target exists)
+      (nothing to do by the time Phase 4 arrived: `charts/` came in
+      with the initial template import and was removed in the Phase 0
+      scaffold sweep (`chore(sweep): remove rfc-site template
+      scaffold`); `git log --all -- charts/` shows it never reappeared.
+      The deploy target is the compose stack above; a Helm chart stays
+      out of scope until a k8s target actually exists)
 - [ ] Sweep TODO/FIXME; refresh README (dev, test, build, deploy
       sections)
 
