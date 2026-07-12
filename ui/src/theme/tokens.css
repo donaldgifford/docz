@@ -113,6 +113,18 @@
   .doc-prose p {
     margin: 0 0 1.1rem;
   }
+  /* h1 appears only on the repo home (the reader strips body h1s and
+     renders its own header) — style it like the reader's doc title so
+     index.md-driven homes match. */
+  .doc-prose h1 {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin: 0 0 1.1rem;
+    color: var(--color-fg-primary);
+  }
   .doc-prose h2 {
     font-family: var(--font-serif);
     font-size: 1.5rem;
@@ -132,6 +144,7 @@
     margin: 1.9rem 0 0.6rem;
     color: var(--color-fg-primary);
   }
+  .doc-prose h1,
   .doc-prose h2,
   .doc-prose h3,
   .doc-prose h4 {
@@ -239,6 +252,18 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    /* Reserve the viewport scrollbar gutter so short pages (type
+       listing) and long pages (reader) don't shift a few px when the
+       scrollbar appears. */
+    scrollbar-gutter: stable;
+  }
+
+  /* Classic (non-overlay) scrollbars, thinned and recolored for inner
+     scroll regions like the repo nav rail — the default gutter reads
+     heavy against the dark surfaces. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {
