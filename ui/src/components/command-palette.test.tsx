@@ -184,6 +184,24 @@ describe("command palette", () => {
     expect(screen.getByTestId("command-palette")).toBeInTheDocument();
   });
 
+  it("opens the first hit on Enter without arrowing first", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    await palette().findByText("donaldgifford/docz-site — 2 matches");
+    await user.keyboard("ingestion service");
+    await palette().findByText("donaldgifford/docz-api — 1 match");
+
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(
+        "/donaldgifford/docz-api/design/DESIGN-0001",
+      );
+    });
+  });
+
   it("navigates to the reader on Enter and closes", async () => {
     const user = userEvent.setup();
     const router = mountAt("/repos");

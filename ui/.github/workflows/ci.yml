@@ -41,5 +41,9 @@ jobs:
         run: just build
       - name: Bundle size budget
         run: just bundle-budget
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+      - name: e2e
+        run: just e2e
       - name: Generated client drift check
         run: just gen-api-check

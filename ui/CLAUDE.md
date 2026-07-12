@@ -164,15 +164,26 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   body, see `SearchBox` in directory.tsx), not a `useEffect`.
 - Accessibility gate: `src/a11y/axe.test.tsx` runs axe-core over every
   core view and tolerates zero serious/critical violations — new views
-  belong in that sweep. jsdom can't compute color-contrast, so badge
-  token contrast (st-/t-/hash- vs the three bg surfaces, 4.5:1) is
-  enforced mathematically in `src/theme/contrast.test.ts`; changing
-  `tokens.css` colors means keeping that test green. Every top-level
-  route needs exactly one `<main>` (RepoFrame provides it for
-  repo-scoped pages). vitest stubs CSS imports even with `?raw` — read
-  CSS source in tests via node:fs (per-file
+  belong in that sweep. jsdom can't compute color-contrast, so text
+  token contrast (fg-/st-/t-/hash-/accent vs the three bg surfaces,
+  4.5:1) is enforced mathematically in `src/theme/contrast.test.ts`,
+  and full-rule axe (contrast included) runs in `e2e/a11y.spec.ts`;
+  changing `tokens.css` colors means keeping both green. Every
+  top-level route needs exactly one `<main>` (RepoFrame provides it
+  for repo-scoped pages). Doc-prose links stay underlined
+  (link-in-text-block). vitest stubs CSS imports even with `?raw` —
+  read CSS source in tests via node:fs (per-file
   `/// <reference types="node" />`; the app tsconfig stays
   browser-only).
+- e2e: `just e2e` = Playwright against an MSW-enabled preview build
+  (`build:msw` → dist-msw/, worker gated on VITE_API_MODE=msw; the
+  deployable dist/ never contains MSW). MSW answers requests in-page
+  before Playwright can intercept — drive error journeys through
+  sessionStorage flags read by browser-worker-only overrides in
+  src/mocks/browser.ts (`docz:e2e:force-401`). cmdk gotcha: with a
+  controlled `value`, cmdk never auto-selects, so keep the active key
+  pointed at a real item (adjust-during-render in command-palette.tsx)
+  or Enter does nothing.
 
 ## Non-negotiables
 

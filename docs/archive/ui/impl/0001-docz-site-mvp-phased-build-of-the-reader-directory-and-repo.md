@@ -470,10 +470,26 @@ and demoable end-to-end.
       getDoc (30s staleTime) on hover AND focus of directory rows,
       repo-nav doc links, and type-table id links — regression-tested
       with MSW pass-through counters)
-- [ ] Playwright e2e against a `vite preview` of an MSW-enabled build
+- [x] Playwright e2e against a `vite preview` of an MSW-enabled build
       (browser worker, same fixtures as unit tests): directory → filter →
       open doc; palette search → open doc; cold deep-link into the
       reader; 404 route; MVP 401 panel
+      (`build:msw` bakes VITE_API_MODE=msw into dist-msw/ — the
+      deployable dist/ stays MSW-free — and playwright.config.ts's
+      webServer previews it on :4173. All five journeys in
+      `e2e/mvp.spec.ts`; the 401 case flips a sessionStorage flag
+      (`docz:e2e:force-401`) read by a browser-worker-only override in
+      src/mocks/browser.ts, since MSW answers in-page before Playwright
+      could intercept. `e2e/a11y.spec.ts` adds FULL-rule axe — contrast
+      included — on directory/reader/repos/type, which forced
+      fg-tertiary #7a8396→#8a92a5 and fg-muted #505867→#7e8695 (both
+      now ≥4.5:1 on every surface, enforced with the badge tokens in
+      contrast.test.ts) plus always-underlined doc-prose links
+      (link-in-text-block). It also caught a real palette bug: cmdk's
+      controlled value never auto-selects, so Enter without ↑/↓ did
+      nothing — fixed with an adjust-during-render re-point to the
+      first hit, regression-tested in jsdom. CI runs `just e2e` after
+      the bundle budget)
 - [ ] Deploy artifact: multi-stage Dockerfile — `bun run build` → a small
       `Bun.serve` static server (`server/serve.ts`: assets with cache
       headers, precompressed where it pays, SPA fallback to `index.html`,

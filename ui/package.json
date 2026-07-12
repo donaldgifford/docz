@@ -9,7 +9,10 @@
     "dev": "vite",
     "dev:msw": "VITE_API_MODE=msw vite",
     "build": "tsc -b && vite build",
+    "build:msw": "VITE_API_MODE=msw vite build --outDir dist-msw",
     "preview": "vite preview",
+    "preview:msw": "vite preview --outDir dist-msw --port 4173 --strictPort",
+    "e2e": "playwright test",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -44,8 +47,10 @@
     "unist-util-visit-parents": "^6.0.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.5.0",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.3.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

@@ -64,9 +64,13 @@ build:
 bundle-budget:
     bun scripts/bundle-budget.ts
 
+# Playwright e2e against an MSW-enabled preview build (dist-msw/)
+e2e:
+    bun run e2e
+
 # Serve the production build locally
 preview:
     bun run preview
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api lint fmt-check typecheck test build bundle-budget gen-api-check
+ci: gen-api lint fmt-check typecheck test build bundle-budget e2e gen-api-check

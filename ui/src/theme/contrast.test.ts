@@ -14,14 +14,15 @@ const tokensCss = readFileSync(
 );
 
 /*
- * Badge color contrast (IMPL-0001 Phase 4): status/type/hash tokens
- * render as ~11px badge text on the app surfaces, so they must hold
- * WCAG AA for normal text (4.5:1) against every background they can
- * sit on. jsdom's axe can't compute contrast — this checks the token
- * source mathematically instead; real-browser axe runs in e2e.
+ * Text color contrast (IMPL-0001 Phase 4): every token that renders
+ * text — the fg scale, accent (links), and the st-/t-/hash- badge
+ * palettes (~11px badge text) — must hold WCAG AA for normal text
+ * (4.5:1) against every surface it can sit on. jsdom's axe can't
+ * compute contrast — this checks the token source mathematically
+ * instead; real-browser axe (full rules) runs in the e2e suite.
  */
 
-const BADGE_TOKEN = /^(st|t|hash)-/;
+const TEXT_TOKEN = /^(st|t|hash|fg)-|^accent$/;
 const SURFACES = ["bg-base", "bg-raised", "bg-elevated"] as const;
 const AA_NORMAL_TEXT = 4.5;
 
@@ -49,21 +50,19 @@ function contrastRatio(a: string, b: string): number {
   return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
 }
 
-describe("badge token contrast", () => {
+describe("text token contrast", () => {
   const tokens = parseTokens(tokensCss);
-  const badgeTokens = [...tokens.keys()].filter((name) =>
-    BADGE_TOKEN.test(name),
-  );
+  const textTokens = [...tokens.keys()].filter((name) => TEXT_TOKEN.test(name));
 
   it("finds the token families it means to check", () => {
     // Guard against a refactor renaming families and silently skipping.
-    expect(badgeTokens.length).toBeGreaterThanOrEqual(20);
+    expect(textTokens.length).toBeGreaterThanOrEqual(25);
     for (const surface of SURFACES) {
       expect(tokens.has(surface)).toBe(true);
     }
   });
 
-  it.each(badgeTokens)("--color-%s holds 4.5:1 on every surface", (name) => {
+  it.each(textTokens)("--color-%s holds 4.5:1 on every surface", (name) => {
     const hex = tokens.get(name);
     if (hex === undefined) {
       throw new Error(`token ${name} vanished mid-test`);

@@ -185,6 +185,15 @@ export function CommandPalette({
   const typePills = Object.keys(pillFacets?.type ?? {}).sort();
 
   const hits = useMemo(() => result?.hits ?? [], [result]);
+
+  // Keep the highlight on a real hit (adjust-during-render): cmdk's
+  // value is controlled, so it never auto-selects — without this,
+  // Enter before any ↑/↓/Tab would silently do nothing.
+  const firstHit = hits[0];
+  if (firstHit !== undefined && !hits.some((hit) => hitKey(hit) === active)) {
+    setActive(hitKey(firstHit));
+  }
+
   const groups = useMemo(() => {
     const byRepo = new Map<string, SearchHit[]>();
     for (const hit of hits) {

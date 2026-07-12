@@ -29,11 +29,14 @@
   --color-border-default: #252e3f;
   --color-border-strong: #34405a;
 
-  /* Foreground scale */
+  /* Foreground scale. tertiary/muted are lightened from the mockup's
+     #7a8396/#505867: both render real text, so they must hold WCAG AA
+     4.5:1 on every surface (enforced by src/theme/contrast.test.ts and
+     the e2e axe scans). The step between them stays visible. */
   --color-fg-primary: #e8ebf0;
   --color-fg-secondary: #afb6c2;
-  --color-fg-tertiary: #7a8396;
-  --color-fg-muted: #505867;
+  --color-fg-tertiary: #8a92a5;
+  --color-fg-muted: #7e8695;
 
   /* Accent */
   --color-accent: #7dcfff;
@@ -141,10 +144,14 @@
   }
   .doc-prose a {
     color: var(--color-accent);
-  }
-  .doc-prose a:hover {
+    /* Always underlined: links inside prose must be distinguishable
+       without color (axe link-in-text-block, serious). */
     text-decoration: underline;
     text-underline-offset: 3px;
+    text-decoration-color: var(--color-accent-border);
+  }
+  .doc-prose a:hover {
+    text-decoration-color: var(--color-accent);
   }
   .doc-prose code {
     font-family: var(--font-mono);
