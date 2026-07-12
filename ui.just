@@ -60,9 +60,13 @@ test-watch:
 build:
     bun run build
 
+# Entry-chunk size budget (requires a fresh `just build`)
+bundle-budget:
+    bun scripts/bundle-budget.ts
+
 # Serve the production build locally
 preview:
     bun run preview
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api lint fmt-check typecheck test build gen-api-check
+ci: gen-api lint fmt-check typecheck test build bundle-budget gen-api-check

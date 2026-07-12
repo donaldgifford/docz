@@ -10,6 +10,7 @@ import {
   SessionRequiredPanel,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { resolveDocType, typeBlurb } from "@/lib/docTypes";
 
 import type { DocType, Document } from "@/api/__generated__/docz-api.schemas";
@@ -40,6 +41,7 @@ function DocsTable({
   docType: DocType;
   docs: Document[];
 }) {
+  const prefetchDoc = usePrefetchDoc();
   return (
     <table className="w-full border-collapse text-[13px]">
       <thead>
@@ -55,34 +57,42 @@ function DocsTable({
         </tr>
       </thead>
       <tbody>
-        {docs.map((doc) => (
-          <tr key={doc.doc_id}>
-            <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top whitespace-nowrap">
-              <Link
-                to={`/${repoId}/${docType.name}/${doc.doc_id}`}
-                className="font-mono text-[12px] text-accent hover:underline"
-              >
-                {doc.doc_id}
-              </Link>
-            </td>
-            <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top text-fg-primary">
-              {doc.title}
-            </td>
-            <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top">
-              {doc.status === "" ? (
-                <span className="text-fg-muted">—</span>
-              ) : (
-                <StatusBadge status={doc.status} />
-              )}
-            </td>
-            <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top font-mono text-[11.5px] text-fg-tertiary">
-              {doc.created === "" ? "—" : doc.created}
-            </td>
-            <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top font-mono text-[11.5px] break-all text-fg-tertiary">
-              {doc.path.split("/").at(-1) ?? doc.path}
-            </td>
-          </tr>
-        ))}
+        {docs.map((doc) => {
+          const [tableOwner = "", tableRepo = ""] = repoId.split("/");
+          const prefetch = () => {
+            prefetchDoc(tableOwner, tableRepo, docType.name, doc.doc_id);
+          };
+          return (
+            <tr key={doc.doc_id}>
+              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top whitespace-nowrap">
+                <Link
+                  to={`/${repoId}/${docType.name}/${doc.doc_id}`}
+                  onMouseEnter={prefetch}
+                  onFocus={prefetch}
+                  className="font-mono text-[12px] text-accent hover:underline"
+                >
+                  {doc.doc_id}
+                </Link>
+              </td>
+              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top text-fg-primary">
+                {doc.title}
+              </td>
+              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top">
+                {doc.status === "" ? (
+                  <span className="text-fg-muted">—</span>
+                ) : (
+                  <StatusBadge status={doc.status} />
+                )}
+              </td>
+              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top font-mono text-[11.5px] text-fg-tertiary">
+                {doc.created === "" ? "—" : doc.created}
+              </td>
+              <td className="border-b border-border-hairline px-[0.7rem] py-2 align-top font-mono text-[11.5px] break-all text-fg-tertiary">
+                {doc.path.split("/").at(-1) ?? doc.path}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

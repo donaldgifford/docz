@@ -1,9 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { http } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { RepoNav } from "@/components/repo-nav";
+import { server } from "@/test/server";
 
 const SITE_DESIGN_TITLE = "docz-site: cross-repo docz reader and search UI";
 
@@ -52,6 +55,27 @@ describe("RepoNav", () => {
       "href",
       "/donaldgifford/docz-site/design/DESIGN-0001",
     );
+  });
+
+  it("prefetches a doc when its nav link is hovered", async () => {
+    let docRequests = 0;
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/types/:type/docs/:docId", () => {
+        docRequests += 1;
+        return undefined; // fall through to the fixture handler
+      }),
+    );
+    const user = userEvent.setup();
+    mountNavAt("/donaldgifford/docz-site");
+    const docLink = await screen.findByRole("link", {
+      name: `DESIGN-0001 · ${SITE_DESIGN_TITLE}`,
+    });
+
+    expect(docRequests).toBe(0);
+    await user.hover(docLink);
+    await waitFor(() => {
+      expect(docRequests).toBe(1);
+    });
   });
 
   it("marks the open doc and its type as active", async () => {

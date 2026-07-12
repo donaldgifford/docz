@@ -1,6 +1,7 @@
 import { NavLink } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
+import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
 
 import type { DocType } from "@/api/__generated__/docz-api.schemas";
@@ -45,6 +46,7 @@ function NavTypeSection({
   const docsQuery = useListDocs(owner, name, docType.name, {
     query: { staleTime: FIVE_MINUTES },
   });
+  const prefetchDoc = usePrefetchDoc();
   const docs =
     docsQuery.data?.status === 200 ? docsQuery.data.data.docs : undefined;
 
@@ -64,17 +66,24 @@ function NavTypeSection({
       </NavLink>
       {docs !== undefined && docs.length > 0 && (
         <div className="mt-px mb-1">
-          {docs.map((doc) => (
-            <NavLink
-              key={doc.doc_id}
-              to={`/${owner}/${name}/${docType.name}/${doc.doc_id}`}
-              end
-              title={doc.title}
-              className={docLinkClass}
-            >
-              {doc.doc_id} · {doc.title}
-            </NavLink>
-          ))}
+          {docs.map((doc) => {
+            const prefetch = () => {
+              prefetchDoc(owner, name, docType.name, doc.doc_id);
+            };
+            return (
+              <NavLink
+                key={doc.doc_id}
+                to={`/${owner}/${name}/${docType.name}/${doc.doc_id}`}
+                end
+                title={doc.title}
+                onMouseEnter={prefetch}
+                onFocus={prefetch}
+                className={docLinkClass}
+              >
+                {doc.doc_id} · {doc.title}
+              </NavLink>
+            );
+          })}
         </div>
       )}
     </>

@@ -7,6 +7,7 @@ import { SessionRequiredError } from "@/api/fetcher";
 import { StatusBadge, TypeBadge } from "@/components/badges";
 import { RepoPicker, TypeChips } from "@/components/directory-controls";
 import { ErrorPanel, SessionRequiredPanel } from "@/components/query-states";
+import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import {
   EMPTY_SEARCH_STATE,
   hasActiveFilters,
@@ -101,10 +102,17 @@ function SearchBox({
 
 function HitRow({ hit }: { hit: SearchHit }) {
   const repoName = hit.repo.split("/").at(-1) ?? hit.repo;
+  const prefetchDoc = usePrefetchDoc();
+  const [hitOwner = "", hitRepo = ""] = hit.repo.split("/");
+  const prefetch = () => {
+    prefetchDoc(hitOwner, hitRepo, hit.type, hit.doc_id);
+  };
   return (
     <li>
       <Link
         to={`/${hit.repo}/${hit.type}/${hit.doc_id}`}
+        onMouseEnter={prefetch}
+        onFocus={prefetch}
         className={`${ROW_GRID} transition-colors hover:bg-bg-raised`}
       >
         <TypeBadge type={hit.type} />

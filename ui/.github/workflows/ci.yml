@@ -39,5 +39,7 @@ jobs:
         run: just test
       - name: Build
         run: just build
+      - name: Bundle size budget
+        run: just bundle-budget
       - name: Generated client drift check
         run: just gen-api-check

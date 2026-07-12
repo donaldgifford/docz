@@ -456,9 +456,20 @@ and demoable end-to-end.
       trigger. Focus-visible outline and landmark/nav labels already
       existed. Full-rule axe incl. contrast runs in the e2e task's
       browser)
-- [ ] Performance: verify route-level code-splitting and lazy Shiki
+- [x] Performance: verify route-level code-splitting and lazy Shiki
       grammars; add a CI bundle-size budget for the initial chunk;
       prefetch doc data on link hover
+      (verified in the build graph: every route is its own chunk
+      (directory/repos/repo-home/repo-type/doc/not-found), each Shiki
+      grammar + theme is a separate lazy chunk, and the whole markdown
+      pipeline sits in the lazy useRenderedMarkdown chunk (~152 KB gz)
+      — the entry is ~117 KB gz. `scripts/bundle-budget.ts` (via
+      `just bundle-budget`, wired into ci.yml and `just ci`) fails the
+      build if the entry chunk exceeds 130 KB gz, which is what an
+      eager Shiki/markdown import would do. `usePrefetchDoc` prefetches
+      getDoc (30s staleTime) on hover AND focus of directory rows,
+      repo-nav doc links, and type-table id links — regression-tested
+      with MSW pass-through counters)
 - [ ] Playwright e2e against a `vite preview` of an MSW-enabled build
       (browser worker, same fixtures as unit tests): directory → filter →
       open doc; palette search → open doc; cold deep-link into the

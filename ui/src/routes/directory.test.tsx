@@ -82,6 +82,25 @@ describe("directory route", () => {
     ).toHaveAttribute("href", "/donaldgifford/docz-api/design/DESIGN-0002");
   });
 
+  it("prefetches the doc payload on row hover", async () => {
+    let docRequests = 0;
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/types/:type/docs/:docId", () => {
+        docRequests += 1;
+        return undefined; // fall through to the fixture handler
+      }),
+    );
+    const user = userEvent.setup();
+    mountAt("/");
+    const title = await screen.findByText(SITE_DESIGN_TITLE);
+
+    expect(docRequests).toBe(0);
+    await user.hover(title);
+    await waitFor(() => {
+      expect(docRequests).toBe(1);
+    });
+  });
+
   it("binds URL facet params to the query (?type=impl)", async () => {
     mountAt("/?type=impl");
 
