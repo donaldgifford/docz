@@ -24,7 +24,7 @@ describe("app smoke", () => {
 
     expect(await screen.findByText("docz")).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Directory" }),
+      await screen.findByRole("heading", { name: "Documentation" }),
     ).toBeInTheDocument();
   });
 

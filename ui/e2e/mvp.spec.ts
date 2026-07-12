@@ -1,0 +1,131 @@
+import { expect, test } from "@playwright/test";
+
+/*
+ * MVP journeys (IMPL-0001 Phase 4) against the MSW-enabled preview
+ * build — the same curated demo-org fixtures the unit tests use.
+ */
+
+const SITE_DESIGN_TITLE = "docz-site: cross-repo docz reader and search UI";
+const SITE_IMPL_TITLE =
+  "docz-site MVP: phased build of the reader, directory, and repo pages";
+const API_DESIGN_TITLE =
+  "docz-api cross-repo docz registry and ingestion service";
+
+test("directory → filter → open doc", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(SITE_DESIGN_TITLE)).toBeVisible();
+
+  // Filter by type chip: non-impl rows disappear.
+  await page.getByRole("button", { name: "impl", exact: true }).click();
+  await expect(page.getByText(SITE_DESIGN_TITLE)).toBeHidden();
+  await expect(page).toHaveURL(/\?type=impl/);
+
+  // Open the surviving row in the reader.
+  await page.getByText(SITE_IMPL_TITLE).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: SITE_IMPL_TITLE }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/donaldgifford\/docz-site\/impl\/IMPL-0001/);
+});
+
+test("palette search → open doc", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(SITE_DESIGN_TITLE)).toBeVisible();
+
+  await page.keyboard.press("/");
+  const dialog = page.getByRole("dialog", { name: "Search documents" });
+  await expect(dialog).toBeVisible();
+
+  await dialog
+    .getByPlaceholder("search docs, rfcs, authors…")
+    .fill("ingestion service");
+  // Wait for the FILTERED result set (the unfiltered list also contains
+  // the docz-api title, so waiting on the title alone races the query).
+  await expect(
+    dialog.getByText("donaldgifford/docz-api — 1 match"),
+  ).toBeVisible();
+  await page.keyboard.press("Enter");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: API_DESIGN_TITLE }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(
+    /\/donaldgifford\/docz-api\/design\/DESIGN-0001/,
+  );
+});
+
+test("cold deep-link into the reader", async ({ page }) => {
+  await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+  await expect(
+    page.getByRole("heading", { level: 1, name: SITE_DESIGN_TITLE }),
+  ).toBeVisible();
+  // Reader chrome came with it: breadcrumbs and the repo nav.
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toBeVisible();
+});
+
+test("unknown doc renders the neutral 404 panel", async ({ page }) => {
+  await page.goto("/donaldgifford/docz-site/design/DESIGN-9999");
+  await expect(
+    page.getByText("Not found — or not visible to you"),
+  ).toBeVisible();
+});
+
+test("401 redirects to the login page", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(SITE_DESIGN_TITLE)).toBeVisible();
+
+  // Flip the fixture override (see src/mocks/browser.ts) and reload.
+  await page.evaluate(() => {
+    sessionStorage.setItem("docz:e2e:force-401", "1");
+  });
+  await page.reload();
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.getByRole("link", { name: "Continue with GitHub" }),
+  ).toHaveAttribute("href", "/auth/login?provider=github");
+});
+
+test("login loop restores the stashed destination", async ({ page }) => {
+  // The provider hop is a real document navigation, which MSW's worker
+  // deliberately bypasses — so Playwright CAN intercept it (in-page
+  // fetches it can't; those are MSW's). One hop stands in for the
+  // whole provider round trip (Playwright doesn't re-route the
+  // browser-followed redirect, so a mocked 302 chain would escape to
+  // the preview proxy): the "callback" page signs in by clearing the
+  // force-401 flag, then lands on "/" exactly like docz-api's does.
+  await page.route("**/auth/login**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: `<!doctype html><title>signing in…</title><script>
+        sessionStorage.removeItem("docz:e2e:force-401");
+        location.replace("/");
+      </script>`,
+    }),
+  );
+
+  // Visit a deep link signed out…
+  await page.goto("/");
+  await expect(page.getByText(SITE_DESIGN_TITLE)).toBeVisible();
+  await page.evaluate(() => {
+    sessionStorage.setItem("docz:e2e:force-401", "1");
+  });
+  await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+
+  // …get bounced to /login…
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByRole("link", { name: "Continue with GitHub" }).click();
+
+  // …and land back on the stashed document, signed in.
+  await expect(page).toHaveURL(
+    /\/donaldgifford\/docz-site\/design\/DESIGN-0001$/,
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: SITE_DESIGN_TITLE }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Account: donaldgifford" }),
+  ).toBeVisible();
+});

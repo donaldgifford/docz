@@ -29,11 +29,14 @@
   --color-border-default: #252e3f;
   --color-border-strong: #34405a;
 
-  /* Foreground scale */
+  /* Foreground scale. tertiary/muted are lightened from the mockup's
+     #7a8396/#505867: both render real text, so they must hold WCAG AA
+     4.5:1 on every surface (enforced by src/theme/contrast.test.ts and
+     the e2e axe scans). The step between them stays visible. */
   --color-fg-primary: #e8ebf0;
   --color-fg-secondary: #afb6c2;
-  --color-fg-tertiary: #7a8396;
-  --color-fg-muted: #505867;
+  --color-fg-tertiary: #8a92a5;
+  --color-fg-muted: #7e8695;
 
   /* Accent */
   --color-accent: #7dcfff;
@@ -50,7 +53,9 @@
   --color-st-adopted: #9ece6a;
   --color-st-rejected: #f7768e;
   --color-st-superseded: #bb9af7;
-  --color-st-deprecated: #565f89;
+  /* Lightened from the mockup's #565f89: badge text must hold 4.5:1 on
+     every surface (enforced by src/theme/contrast.test.ts). */
+  --color-st-deprecated: #7a84ad;
 
   /* Curated doc-type colors. First seven are the mockup's; adr/design/
      impl/investigation extend the same palette to cover the ten curated
@@ -68,6 +73,17 @@
   --color-t-framework: #73daca;
   --color-t-working: #ff9e64;
 
+  /* Deterministic fallback palette for unknown doc types — indexed by
+     the hash in src/lib/colors.ts. Order matters; never reorder. */
+  --color-hash-0: #7aa2f7;
+  --color-hash-1: #9ece6a;
+  --color-hash-2: #e0af68;
+  --color-hash-3: #f7768e;
+  --color-hash-4: #bb9af7;
+  --color-hash-5: #73daca;
+  --color-hash-6: #ff9e64;
+  --color-hash-7: #2ac3de;
+
   /* Code blocks */
   --color-code-bg: #161b28;
 
@@ -78,6 +94,145 @@
 
   /* Motion */
   --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@layer components {
+  /* Reader prose, ported from mockup .doc-prose. Scoped descendant
+     selectors because the content is pipeline-rendered markdown we
+     can't annotate with utility classes. */
+  .doc-prose {
+    font-size: 15.5px;
+    line-height: 1.7;
+    color: var(--color-fg-secondary);
+  }
+  .doc-prose > p,
+  .doc-prose li {
+    font-family: var(--font-serif);
+    font-size: 16px;
+  }
+  .doc-prose p {
+    margin: 0 0 1.1rem;
+  }
+  .doc-prose h2 {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 2.6rem 0 0.9rem;
+    color: var(--color-fg-primary);
+  }
+  .doc-prose h2:first-child {
+    margin-top: 0;
+  }
+  .doc-prose h3,
+  .doc-prose h4 {
+    font-family: var(--font-sans);
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin: 1.9rem 0 0.6rem;
+    color: var(--color-fg-primary);
+  }
+  .doc-prose h2,
+  .doc-prose h3,
+  .doc-prose h4 {
+    /* Anchor targets land below the sticky topbar. */
+    scroll-margin-top: 80px;
+  }
+  .doc-prose strong {
+    color: var(--color-fg-primary);
+    font-weight: 600;
+  }
+  .doc-prose a {
+    color: var(--color-accent);
+    /* Always underlined: links inside prose must be distinguishable
+       without color (axe link-in-text-block, serious). */
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--color-accent-border);
+  }
+  .doc-prose a:hover {
+    text-decoration-color: var(--color-accent);
+  }
+  .doc-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    color: var(--color-accent);
+    background: var(--color-code-bg);
+    border: 1px solid var(--color-border-hairline);
+    padding: 1px 5px;
+  }
+  .doc-prose ul,
+  .doc-prose ol {
+    margin: 0 0 1.1rem 1.3rem;
+  }
+  .doc-prose ul {
+    list-style: disc;
+  }
+  .doc-prose ol {
+    list-style: decimal;
+  }
+  .doc-prose li {
+    margin-bottom: 0.4rem;
+  }
+  .doc-prose li::marker {
+    color: var(--color-fg-muted);
+  }
+  .doc-prose blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.4rem;
+    background: var(--color-bg-raised);
+    border: 1px solid var(--color-border-hairline);
+    color: var(--color-fg-secondary);
+    font-style: italic;
+    font-family: var(--font-serif);
+  }
+  .doc-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1.4rem;
+    font-size: 13px;
+  }
+  .doc-prose th,
+  .doc-prose td {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid var(--color-border-hairline);
+    vertical-align: top;
+  }
+  .doc-prose th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-fg-muted);
+    border-bottom: 1px solid var(--color-border-default);
+  }
+  .doc-prose pre {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    border: 1px solid var(--color-border-default);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.4rem;
+    /* Shiki inlines the theme background; the mockup's code-bg wins. */
+    background: var(--color-code-bg) !important;
+  }
+  .doc-prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+  .doc-prose img {
+    max-width: 100%;
+  }
+  .doc-prose hr {
+    border: none;
+    border-top: 1px solid var(--color-border-hairline);
+    margin: 2rem 0;
+  }
 }
 
 @layer base {

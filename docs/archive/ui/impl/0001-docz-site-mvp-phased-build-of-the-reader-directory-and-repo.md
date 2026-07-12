@@ -195,25 +195,25 @@ phase onward.
 
 #### Tasks
 
-- [ ] `src/markdown/preprocess.ts`: strip the YAML frontmatter block and
+- [x] `src/markdown/preprocess.ts`: strip the YAML frontmatter block and
       the `<!--toc:start-->…<!--toc:end-->` marker block from `raw_md`
-- [ ] `src/markdown/schema.ts`: rehype-sanitize schema — GitHub default
+- [x] `src/markdown/schema.ts`: rehype-sanitize schema — GitHub default
       extended with only the `id`/`class` attributes the slugger and Shiki
       need; unit tests pin the schema's shape
-- [ ] `src/markdown/processor.ts`: unified pipeline in the design's fixed
+- [x] `src/markdown/processor.ts`: unified pipeline in the design's fixed
       order — `remark-parse` + `remark-gfm` → `remark-rehype`
       (`allowDangerousHtml`) → `rehype-raw` → `rehype-sanitize` →
       `rehype-slug` + ToC collector (h2–h4 → `{depth, text, id}`) →
       `@shikijs/rehype` (slim grammar set: yaml, go, ts/js, bash, json,
       hcl, sql, python; lazy-loaded) → hast-to-React (no
       `dangerouslySetInnerHTML`)
-- [ ] XSS suite (`processor.xss.test.ts`): payload table — `<script>`,
+- [x] XSS suite (`processor.xss.test.ts`): payload table — `<script>`,
       `<img onerror>`, `javascript:` URLs (markdown links and raw HTML),
       event-handler attributes, `<iframe>`/`<object>`/`<embed>`, hostile
       inline SVG/MathML, `data:` URIs — every payload neutralized;
       companion benign suite (GFM tables, fenced code, footnotes, images,
       blockquotes) survives intact; slug stability asserted
-- [ ] `src/lib/colors.ts`: curated type→color map (rfc, adr, design, impl,
+- [x] `src/lib/colors.ts`: curated type→color map (rfc, adr, design, impl,
       investigation/inv, mandate, guide, principle, policy, framework —
       values from the mockup `--t-*` tokens); deterministic hash into a
       fixed 8-color palette for unknown types; case-insensitive status
@@ -222,24 +222,24 @@ phase onward.
       concluded → green; rejected/cancelled/abandoned → red; superseded/
       deprecated/archived/paused → purple/grey; unknown → neutral); tests
       cover determinism and fallbacks
-- [ ] Type badge / status badge / status pill components per mockup styles
-- [ ] Reader route `/:owner/:repo/:type/:docId`: `useGetDoc`, skeleton
+- [x] Type badge / status badge / status pill components per mockup styles
+- [x] Reader route `/:owner/:repo/:type/:docId`: `useGetDoc`, skeleton
       article, inline error + retry, neutral not-found panel ("Not found —
       or not visible to you"), bare 401 session-required panel linking
       `/auth/login?provider=github`
-- [ ] Center column: file-path breadcrumb (from `path`), id line
+- [x] Center column: file-path breadcrumb (from `path`), id line
       (`DESIGN / 0009`), title, status pill · author · updated
-- [ ] Right rail: "On this page" ToC (sticky wide / disclosure narrow),
+- [x] Right rail: "On this page" ToC (sticky wide / disclosure narrow),
       trimmed metadata card (omit `""` fields; "all fields · json →" link
       to the document endpoint), formats list ("md · source" view of the
       already-fetched `raw_md`; "json" endpoint link)
-- [ ] Lifecycle rail: type `statuses` via `listTypes` (cached per repo),
+- [x] Lifecycle rail: type `statuses` via `listTypes` (cached per repo),
       current status as the active stop, position-only
-- [ ] Memoize pipeline output per `(doc_id, content_hash)`
-- [ ] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —
+- [x] Memoize pipeline output per `(doc_id, content_hash)`
+- [x] Fixtures: a curated "demo org" (2–3 repos of real docz markdown —
       this repo's DESIGN-0001, docz-api docs) layered over orval's faker
       handlers, so rendering truth is exercised alongside shape coverage
-- [ ] Component tests: reader four-state matrix, metadata `""` omission,
+- [x] Component tests: reader four-state matrix, metadata `""` omission,
       lifecycle positioning, ToC anchor navigation
 
 #### Success Criteria
@@ -254,6 +254,14 @@ phase onward.
 - An unknown custom type and unknown status render with deterministic
   fallback/neutral colors (no hardcoded type list anywhere)
 
+> Phase 1 verification note (2026-07-11): criteria 2–4 are pinned by the
+> test suite (XSS gate, DESIGN-0001 fixture matrix, color fallbacks).
+> Criterion 1's "from a local docz-api" leg was verified by construction
+> only — no local docz-api stack was running; the app has no
+> fixture-specific rendering path (MSW serves the same wire contract the
+> generated client pins), so re-checking against a live API when one is
+> up is a formality, not a code change.
+
 ---
 
 ### Phase 2: Directory + command palette
@@ -264,29 +272,47 @@ untrusted.
 
 #### Tasks
 
-- [ ] `src/lib/searchParams.ts`: typed URL param helper (`q`, `repo`,
+- [x] `src/lib/searchParams.ts`: typed URL param helper (`q`, `repo`,
       `type[]`, `status[]`, `author[]`, `offset`) with parse/serialize
       round-trip tests
-- [ ] Directory route `/`: `searchDocs` bound to URL params, debounced
-      `q` (~200 ms), client-side `updated_at` sort of the fetched page
-      (interim until docz-api `sort=`), relative-time updated column
-- [ ] Repo picker dropdown fed by the `repo` facet (counts per repo);
+- [x] Directory route `/`: `searchDocs` bound to URL params, debounced
+      `q` (~200 ms), relative-time updated column
+      (2026-07-11: the planned interim client-side `updated_at` sort is
+      impossible — `SearchHit` carries no timestamp, verified in the
+      vendored spec and upstream main. Hits render in API order and the
+      updated column renders "—"; the additive ask in DESIGN-0001 now
+      covers both `sort=` and `updated_at` on `SearchHit`)
+- [x] Repo picker dropdown fed by the `repo` facet (counts per repo);
       type chips from the union of `type` facet values, colored by the
       color system; "showing X of Y"; clear-filters action
-- [ ] "Load more" pagination via offset/limit against
+      (facet sources exclude their own dimension — separate limit-0
+      facet queries — so every repo/type stays offered while one is
+      selected; chips are single-select while the API takes one `type`)
+- [x] "Load more" pagination via offset/limit against
       `estimated_total_hits`
-- [ ] Directory four states: skeleton rows, contextual empty ("No
+      (URL `offset` means "rows 0..offset+PAGE_SIZE shown" and the query
+      fetches the whole window from 0 — a deep-linked URL renders the
+      same rows, keeping the URL the only source of truth; each click
+      pushes offset so back shrinks the window)
+- [x] Directory four states: skeleton rows, contextual empty ("No
       documents yet — onboard a repo with the docz GitHub App" / "No
       matches — clear filters"), inline error + retry, 401 panel
-- [ ] Snippet renderer: escape snippet text, re-insert only `<em>` match
+- [x] Snippet renderer: escape snippet text, re-insert only `<em>` match
       markers as `<mark>`; XSS tests with hostile snippet fixtures
-- [ ] cmdk palette: opened by ⌘K and `/`, closed by Esc; debounced
+- [x] cmdk palette: opened by ⌘K and `/`, closed by Esc; debounced
       `searchDocs`; results grouped by repo; preview pane (title, status,
       snippet — no extra fetch); filter pills (all / per-repo /
       per-type); ↑/↓/↵/Tab keyboard flow; Enter navigates to the reader
-- [ ] Topbar search affordance opens the palette
-- [ ] Component tests: URL round-tripping (params ↔ UI state), facet count
+      (Tab steps the highlight/preview; pill sources come from a
+      pill-free facet query so every repo/type stays offered; palette
+      state is local — the page URL is untouched until Enter)
+- [x] Topbar search affordance opens the palette
+- [x] Component tests: URL round-tripping (params ↔ UI state), facet count
       rendering, palette keyboard flow, snippet sanitization
+      (written alongside each task: searchParams.test.ts round trips,
+      directory.test.tsx URL↔UI + facet counts + states + pagination,
+      command-palette.test.tsx keyboard flow across routes,
+      snippet.test.tsx hostile fixtures)
 
 #### Success Criteria
 
@@ -295,8 +321,19 @@ untrusted.
 - The palette opens on every route, finds documents by title and body, and
   navigates on Enter
 - Hostile snippet fixtures render inert; the snippet suite is green in CI
-- An empty query shows all visible docs ordered by `updated_at` within the
-  fetched page
+- An empty query shows all visible docs within the fetched page (API index
+  order — `SearchHit` carries no `updated_at` to sort by; see the directory
+  task note)
+
+> Verified 2026-07-11: criterion 1 by directory.test.tsx (URL seeds the
+> UI, external URL changes win, chip/picker/load-more push history and
+> `navigate(-1)` restores; typing commits with replace by design so
+> keystrokes don't litter history). Criterion 2 by
+> command-palette.test.tsx (⌘K on /, /repos, and the reader route;
+> body-text query matches; ↓+Enter navigates to the reader and closes).
+> Criterion 3 by snippet.test.tsx (hostile suite runs in `just ci`).
+> Criterion 4 by the empty-query directory test listing all demo docs
+> in API order with the updated column unset.
 
 ---
 
@@ -308,29 +345,45 @@ full three-column portal.
 
 #### Tasks
 
-- [ ] Repo-facts hook: per-repo totals and per-type doc counts from a
+- [x] Repo-facts hook: per-repo totals and per-type doc counts from a
       repo-filtered `searchDocs` facet query, cached per repo
-- [ ] `/repos` grid: one card per `listRepos` entry — name, default
+- [x] `/repos` grid: one card per `listRepos` entry — name, default
       branch, per-type counts, doc total, last-updated — linking to the
       repo home
-- [ ] Shared repo-nav component: identity header (letter mark, name,
+      (no last-updated exists in the contract — cards show docs_dir and
+      the short last-synced SHA instead; spec re-vendored to 1.1.0 first
+      since DESIGN-0003's getRepoIndex landed upstream)
+- [x] Shared repo-nav component: identity header (letter mark, name,
       `branch · docz.yaml`), Home item, per-type items with counts, docs
       nested beneath each type, active item highlighting
-- [ ] Repo home `/:owner/:repo` (Decision 8): generated client-side from
+      (highlighting falls out of NavLink matching — the type item stays
+      lit while one of its docs is open; counts share useRepoFacts)
+- [x] Repo home `/:owner/:repo` (Decision 8): generated client-side from
       `getRepo` + `listTypes` — type sections with counts and the
       mockup's "No index.md configured" note; frame ready to render
       `index.md` through the reader pipeline when the API serves it
-- [ ] Type page `/:owner/:repo/:type`: synthesized README-style page —
+      (the API serves it now — DESIGN-0003's getRepoIndex shipped in
+      spec 1.1.0, re-vendored: a 200 renders index.md through the
+      pipeline with its h1 kept and a right-rail ToC; a 404 falls back
+      to the generated home. useRenderedMarkdown generalized to
+      useRenderedSource keyed on (id, hash, stripLeadingH1))
+- [x] Type page `/:owner/:repo/:type`: synthesized README-style page —
       `plural_label`, blurb (curated for standard types, generic
       fallback), `docz create …` hint, doc table (ID, title, status
       badge, date, filename from `path`)
-- [ ] Wire the reader into the three-column portal with the repo nav;
+      (shared RepoFrame extracted — nav + breadcrumbs + right rail —
+      now used by home and type pages; demo fixtures resolve
+      `{type}` by name/id_prefix/alias like the API and 404 unknowns)
+- [x] Wire the reader into the three-column portal with the repo nav;
       collapse behavior for narrow screens
-- [ ] File-path breadcrumbs consistent across `/repos` → repo → type →
-      doc
-- [ ] Type-in-URL resolution: generate links from the canonical type name;
+- [x] File-path breadcrumbs consistent across `/repos` → repo → type →
+      doc (RepoBreadcrumbs inside RepoFrame; the reader's crumb moved
+      out of DocHeader into the frame)
+- [x] Type-in-URL resolution: generate links from the canonical type name;
       accept `id_prefix`/alias URLs (the API resolves them)
-- [ ] Four-state coverage + component tests for repos grid, repo home, and
+      (lib/docTypes resolveDocType, mirrored in fixtures; alias test
+      covers /INV → Investigations)
+- [x] Four-state coverage + component tests for repos grid, repo home, and
       type pages
 
 #### Success Criteria
@@ -345,6 +398,18 @@ full three-column portal.
 - Sibling-doc navigation in the reader swaps documents without a full
   reload (query cache hit)
 
+> Verified 2026-07-11: criterion 1 — every route test mounts its deep
+> URL cold (memory router initialEntries), including alias URLs.
+> Criterion 2 — cards, nav, and directory facets all read the same
+> useRepoFacts / searchDocs facet queries (single source, asserted as
+> 2/1/1 for the demo org in repos, repo-nav, and directory tests).
+> Criterion 3 — docz-api's zero-doc `rfc` type shows the docz-create
+> empty state; docz-site (no index.md → 404) shows the generated home.
+> Criterion 4 — the portal sibling-navigation test swaps DESIGN-0001 →
+> IMPL-0001 through the nav in-place. Bonus over plan: DESIGN-0003's
+> getRepoIndex shipped upstream (spec 1.1.0, re-vendored), so the repo
+> home renders real index.md through the reader pipeline.
+
 ---
 
 ### Phase 4: Polish — MVP complete
@@ -355,32 +420,113 @@ and demoable end-to-end.
 
 #### Tasks
 
-- [ ] Responsive passes at the mockup's breakpoints (~680/760/860 px):
+- [x] Responsive passes at the mockup's breakpoints (~680/760/860 px):
       rails collapse, ToC becomes a disclosure, palette goes full-screen
       on small viewports, repo nav becomes a drawer
-- [ ] Xref linking: doc-id-shaped tokens (built from the repo's
+      (rails/ToC collapses landed with RepoFrame in Phase 3; this task
+      adds the full-screen palette below 640px and the "repo menu"
+      details-drawer below 861px)
+- [x] Xref linking: doc-id-shaped tokens (built from the repo's
       `id_prefix` set) in rendered bodies that match a sibling doc become
       router links
-- [ ] Accessibility: axe checks in component tests (zero serious/critical
+      (`src/markdown/xrefs.ts` linkify pass runs after sanitize on the
+      hast; the resolver map — UPPERCASED doc_id → href, built by
+      `useRepoDocIndex` from listDocs per type — is the whitelist, so
+      only ids that exist in the repo link and hrefs come from API data,
+      never document text. Tokens inside `a`/`code`/`pre` are skipped;
+      the reader excludes the doc's own id. Rendered via a
+      `components: {a: MarkdownAnchor}` mapping so xref anchors become
+      router `<Link>`s; render cache keys include an fnv1a fingerprint
+      of the resolver ids. Landed in `src/markdown/` rather than the
+      file-map's `src/lib/xref.ts` — it is pipeline code)
+- [x] Accessibility: axe checks in component tests (zero serious/critical
       on core views), keyboard paths (palette, chips, picker, ToC, repo
       nav), visible focus states, landmark/heading structure, badge color
       contrast
-- [ ] Performance: verify route-level code-splitting and lazy Shiki
+      (`src/a11y/axe.test.tsx` sweeps directory, repos, repo home ×2,
+      type page, reader, and the open palette through axe-core with
+      zero serious/critical tolerated — color-contrast excluded since
+      jsdom can't compute it; instead `src/theme/contrast.test.ts`
+      checks every st-/t-/hash- badge token mathematically against all
+      three surfaces at WCAG AA 4.5:1, which forced `--color-st-deprecated`
+      #565f89 → #7a84ad. Fixes made for the sweep: palette panel now
+      carries `role="dialog"` + `aria-modal` + label; directory and
+      repos routes wrap in `<main>` (RepoFrame pages already had one);
+      RepoPicker gained Escape-to-close with focus restored to the
+      trigger. Focus-visible outline and landmark/nav labels already
+      existed. Full-rule axe incl. contrast runs in the e2e task's
+      browser)
+- [x] Performance: verify route-level code-splitting and lazy Shiki
       grammars; add a CI bundle-size budget for the initial chunk;
       prefetch doc data on link hover
-- [ ] Playwright e2e against a `vite preview` of an MSW-enabled build
+      (verified in the build graph: every route is its own chunk
+      (directory/repos/repo-home/repo-type/doc/not-found), each Shiki
+      grammar + theme is a separate lazy chunk, and the whole markdown
+      pipeline sits in the lazy useRenderedMarkdown chunk (~152 KB gz)
+      — the entry is ~117 KB gz. `scripts/bundle-budget.ts` (via
+      `just bundle-budget`, wired into ci.yml and `just ci`) fails the
+      build if the entry chunk exceeds 130 KB gz, which is what an
+      eager Shiki/markdown import would do. `usePrefetchDoc` prefetches
+      getDoc (30s staleTime) on hover AND focus of directory rows,
+      repo-nav doc links, and type-table id links — regression-tested
+      with MSW pass-through counters)
+- [x] Playwright e2e against a `vite preview` of an MSW-enabled build
       (browser worker, same fixtures as unit tests): directory → filter →
       open doc; palette search → open doc; cold deep-link into the
       reader; 404 route; MVP 401 panel
-- [ ] Deploy artifact: multi-stage Dockerfile — `bun run build` → a small
+      (`build:msw` bakes VITE_API_MODE=msw into dist-msw/ — the
+      deployable dist/ stays MSW-free — and playwright.config.ts's
+      webServer previews it on :4173. All five journeys in
+      `e2e/mvp.spec.ts`; the 401 case flips a sessionStorage flag
+      (`docz:e2e:force-401`) read by a browser-worker-only override in
+      src/mocks/browser.ts, since MSW answers in-page before Playwright
+      could intercept. `e2e/a11y.spec.ts` adds FULL-rule axe — contrast
+      included — on directory/reader/repos/type, which forced
+      fg-tertiary #7a8396→#8a92a5 and fg-muted #505867→#7e8695 (both
+      now ≥4.5:1 on every surface, enforced with the badge tokens in
+      contrast.test.ts) plus always-underlined doc-prose links
+      (link-in-text-block). It also caught a real palette bug: cmdk's
+      controlled value never auto-selects, so Enter without ↑/↓ did
+      nothing — fixed with an adjust-during-render re-point to the
+      first hit, regression-tested in jsdom. CI runs `just e2e` after
+      the bundle budget)
+- [x] Deploy artifact: multi-stage Dockerfile — `bun run build` → a small
       `Bun.serve` static server (`server/serve.ts`: assets with cache
       headers, precompressed where it pays, SPA fallback to `index.html`,
       `/healthz`) on a slim Bun base; compose file routes `/api`, `/auth`,
       `/webhooks`, `/openapi.yaml` to docz-api behind one origin
-- [ ] Replace or remove `charts/temp` (real chart only when a deploy
+      (Dockerfile: oven/bun full → gen-api + build + gzip -9 of
+      js/css/svg/html/json → oven/bun slim runtime holding only dist/ +
+      server/serve.ts, USER bun, HEALTHCHECK against /healthz. serve.ts
+      serves /assets/ with `max-age=31536000, immutable`, index.html
+      `no-cache`, prefers .gz siblings when accepted (Vary:
+      Accept-Encoding), SPA-falls-back everything else, and proxies
+      /api, /auth, /webhooks, /openapi.yaml to DOCZ_API_URL with
+      `redirect: "manual"` so OAuth 302s reach the browser — the proxy
+      IS the same-origin routing, so deploy/compose.yaml publishes only
+      the site's :8080 and wires DOCZ_API_URL=http://docz-api:8080 over
+      the private network (api + postgres/redis/meilisearch mirror
+      docz-api's deploy manifest; its env store + PEM secret
+      conventions apply, gitignored via deploy/.gitignore). Verified:
+      image builds (275 MB), container smoke passes healthz/cache/gz/
+      SPA/proxy-502, `docker compose config` validates. server/ is its
+      own tsconfig project (types: ["bun"]) referenced from the root)
+- [x] Replace or remove `charts/temp` (real chart only when a deploy
       target exists)
-- [ ] Sweep TODO/FIXME; refresh README (dev, test, build, deploy
+      (nothing to do by the time Phase 4 arrived: `charts/` came in
+      with the initial template import and was removed in the Phase 0
+      scaffold sweep (`chore(sweep): remove rfc-site template
+      scaffold`); `git log --all -- charts/` shows it never reappeared.
+      The deploy target is the compose stack above; a Helm chart stays
+      out of scope until a k8s target actually exists)
+- [x] Sweep TODO/FIXME; refresh README (dev, test, build, deploy
       sections)
+      (sweep: zero TODO/FIXME/XXX markers in src/, server/, scripts/,
+      e2e/ — nothing accrued during the build. README gained Test,
+      Build, and Deploy sections — unit vs e2e suites and what each
+      covers, bundle budget, docker build/run, the same-origin proxy
+      story, and a pointer to deploy/compose.yaml + docz-api's env
+      conventions — and the architecture list now names src/markdown/)
 
 #### Success Criteria
 
@@ -393,6 +539,21 @@ and demoable end-to-end.
 - CI enforces the full gate: lint, typecheck, unit/component (including
   the XSS suites), e2e, codegen drift, bundle budget
 
+> Verification (2026-07-12): e2e (8 tests incl. full-rule axe) green
+> locally and wired as a CI step; jsdom axe sweep + token contrast
+> tests green. Same-origin verified against the REAL local docz-api
+> stack: the built container proxied /api (401 unauthenticated, then
+> authenticated repos/search/doc reads), /openapi.yaml, and the OAuth
+> 302 with state intact; the operator completed the GitHub login in a
+> browser and a headless-browser pass with a live session rendered the
+> reader, repo home, and the directory ("showing 25 of 54" real docs)
+> with zero page errors. `docker compose config` validates the deploy
+> manifest. Live testing surfaced one real bug — Go nil slices arrive
+> as JSON null where the spec says array — fixed via `src/lib/wire.ts`
+> normalization + wire-shaped fixtures (upstream ask: marshal `[]` or
+> mark fields nullable). Keyboard paths covered by palette/picker/chips
+> tests (Enter-opens-first-hit, Escape-closes-picker, Tab preview).
+
 ---
 
 ### Phase 5: Auth UX (post-MVP)
@@ -403,17 +564,73 @@ only.
 
 #### Tasks
 
-- [ ] `/login` provider page: GitHub primary; Okta/Keycloak buttons shown
+- [x] `/login` provider page: GitHub primary; Okta/Keycloak buttons shown
       when enabled by config
-- [ ] 401 handling upgraded from panel to redirect: stash the intended
+      _(`src/routes/login.tsx` + `src/lib/authProviders.ts`: providers are
+      REAL anchors to `/auth/login?provider=…` — full document navigation
+      so docz-api's 302 reaches the browser. Enabled set comes from
+      `VITE_AUTH_PROVIDERS` (comma-separated, build-time; default
+      `github`), filtered to the providers docz-api implements
+      (github/okta/keycloak) with a GitHub fallback so misconfig never
+      bricks the page. GitHub (index 0) styled primary. Route registered
+      lazy in `router.tsx`; unit tests in `authProviders.test.ts` +
+      `login.test.tsx`; view added to the axe sweep.)_
+- [x] 401 handling upgraded from panel to redirect: stash the intended
       path in sessionStorage → `/login`; restore the destination on first
       authenticated load (the API callback always lands on `/`)
-- [ ] `getSession`-backed avatar menu (GitHub `login` or OIDC `email`);
+      _(`SessionRequiredPanel` became `SessionRequiredRedirect` in
+      `query-states.tsx` — same five call sites, new behavior: stash
+      `pathname+search` via `src/lib/authReturn.ts` then replace to
+      `/login`. The stash validates on both write and read (app paths
+      only — no absolute//protocol-relative URLs, never `/` or
+      `/login`), stores only a path, never a token. Restore:
+      `RestoreAfterLogin` in AppShell arms on `pathname === "/"` +
+      stash present, probes getSession, and only on 200 replaces `/`
+      with the stash; a 401 probe leaves the stash for the next login.
+      Tests: authReturn unit suite, restore integration suite, all five
+      route 401 tests now assert redirect + stash, e2e 401 journey
+      asserts the `/login` landing.)_
+- [x] `getSession`-backed avatar menu (GitHub `login` or OIDC `email`);
       logout: `POST /api/v1/auth/logout`, clear the TanStack Query cache,
       return to `/login`
-- [ ] Remember last-used provider in localStorage
-- [ ] Tests: 401 → redirect → destination restore; logout clears cache;
+      _(`src/components/session-menu.tsx` replaces the aria-hidden
+      topbar placeholder: pending → inert placeholder, no session →
+      "Sign in" link to `/login`, session → avatar disclosure (initial
+      from `login ?? email ?? subject`) with identity + provider +
+      Sign out. Deliberately a disclosure, not `role="menu"`. Logout
+      uses the generated `useLogout`, `onSettled` (a failed POST must
+      not strand per-session data): navigate to `/login` FIRST, then
+      `queryClient.clear()` — clearing first would make the page being
+      left refetch under the dead session. Escape/outside-close mirror
+      RepoPicker. Fixtures gained a deterministic demo identity
+      (`donaldgifford` via github) + logout handler; open-menu state
+      added to the axe sweep; logout test proves the cache flush by
+      watching the topbar flip to Sign in.)_
+- [x] Remember last-used provider in localStorage
+      _(`rememberProvider`/`lastUsedProvider`/`promoteLastUsed` in
+      `authProviders.ts`, key `docz:auth:last-provider` — a pure UI
+      preference, the only kind of thing allowed in JS-readable
+      storage. The login anchors store the key onClick; the page
+      promotes the remembered provider to the primary slot with a
+      "· last used" hint. Unknown/disabled remembered keys leave the
+      order untouched.)_
+- [x] Tests: 401 → redirect → destination restore; logout clears cache;
       e2e login loop with a mocked provider callback
+      _(Landed across tasks 2–4 plus the e2e loop: `authReturn` unit
+      suite (open-redirect + loop guards, both directions),
+      `restore-after-login.test.tsx` (restore on 200, stash preserved
+      on 401), all five route 401 tests assert redirect + stash,
+      `session-menu.test.tsx` proves the logout cache flush by watching
+      the topbar flip to Sign in, `login.test.tsx` covers anchor shape
+      + remember + promotion. e2e "login loop restores the stashed
+      destination": deep link signed out → `/login` → Continue with
+      GitHub → Playwright fulfills the `/auth/login` NAVIGATION (MSW's
+      worker bypasses navigations, so Playwright can intercept exactly
+      these — and must, in ONE hop: it doesn't re-route
+      browser-followed redirects, and the preview proxy would leak the
+      chain to a real docz-api) with a callback page that clears the
+      force-401 flag and lands on `/` → restore → the stashed doc,
+      avatar visible.)_
 
 #### Success Criteria
 
@@ -421,6 +638,22 @@ only.
   a deep link visited signed-out lands back on that document after login
 - No token or session id is ever readable by JS — cookie only; the only
   storage writes are UI preferences
+
+> Verified 2026-07-12: criterion 1 live against the real local stack
+> (docz-site:phase5-test container :8090 → docz-api :8080). Signed-out
+> deep link `/donaldgifford/docz-api/impl/IMPL-0002` bounced to
+> `/login` with the destination stashed; `/auth/login?provider=github`
+> 302s to GitHub with intact state (curl); a headless browser with the
+> session cookie set (as the callback does, via a 10-minute
+> Redis-minted session) landed on `/` and was restored to the exact
+> deep link with the stash cleared; the avatar showed the GitHub
+> login; Sign out landed on `/login` and docz-api destroyed the Redis
+> session (getSession 401, key gone). Zero page errors. The mocked
+> loop also runs in CI (e2e "login loop restores the stashed
+> destination"). Criterion 2 by audit: the only app-code storage
+> writes are `docz:auth:return-to` (validated same-origin path) and
+> `docz:auth:last-provider` (provider key) — never a token; the
+> session cookie stays httpOnly.
 
 ---
 
@@ -447,22 +680,31 @@ only.
 
 ## Testing Plan
 
-- [ ] **XSS suites** (Phase 1 reader pipeline; Phase 2 snippet renderer) —
+- [x] **XSS suites** (Phase 1 reader pipeline; Phase 2 snippet renderer) —
       payload tables asserted neutralized; benign-markdown survival; slug
       stability. Required CI checks from the moment they land.
-- [ ] **Unit**: preprocess (frontmatter/ToC-marker stripping), sanitize
+      _(processor.xss.test.tsx + snippet.test.tsx, in `bun run test` → CI)_
+- [x] **Unit**: preprocess (frontmatter/ToC-marker stripping), sanitize
       schema shape, ToC collector, color system determinism, searchParams
       round-trip, xref matcher.
-- [ ] **Component** (Vitest + Testing Library + MSW): four-state matrix
+      _(preprocess/schema/processor/colors/searchParams/xrefs test files)_
+- [x] **Component** (Vitest + Testing Library + MSW): four-state matrix
       per data-bound view; URL ↔ facet round-trip; palette keyboard flow;
       metadata `""` omission; lifecycle positioning; count consistency.
-- [ ] **Contract**: `gen-api-check` drift gate in CI; the scheduled
+      _(route + command-palette + doc header tests; counts via
+      useRepoFacts.test)_
+- [x] **Contract**: `gen-api-check` drift gate in CI; the scheduled
       spec-version drift workflow (git-cliff-style compare) against
       docz-api main.
-- [ ] **E2E** (Playwright, Phase 4): the five core journeys listed in
+      _(ci.yml drift step + scheduled spec-drift.yml)_
+- [x] **E2E** (Playwright, Phase 4): the five core journeys listed in
       Phase 4, against the MSW-enabled preview build.
-- [ ] **Accessibility**: axe assertions in component tests; keyboard-path
+      _(e2e/mvp.spec.ts — now six with the Phase 5 login loop — plus
+      e2e/a11y.spec.ts)_
+- [x] **Accessibility**: axe assertions in component tests; keyboard-path
       e2e checks.
+      _(src/a11y/axe.test.tsx sweep + full-rule axe e2e; palette journey
+      is keyboard-driven)_
 
 ## Dependencies
 

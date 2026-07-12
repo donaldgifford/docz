@@ -259,9 +259,13 @@ doc counts) and type chips.
 - Pagination: "load more" using offset/limit against
   `estimated_total_hits`.
 - Ordering caveat: `searchDocs` has no sort parameter, and empty-`q` results
-  come back in index order. Interim: client-side sort of the fetched page by
-  `updated_at`. The right fix is a small additive `sort=` param in docz-api
-  (minor spec bump); see the additive asks under API / Interface Changes.
+  come back in index order. The interim this design first proposed —
+  client-side sort of the fetched page by `updated_at` — turned out to be
+  impossible: `SearchHit` carries no `updated_at` (verified 2026-07-11 in
+  both the vendored spec and upstream main). v1 renders hits in API order
+  and the updated column as "—". The fix is additive in docz-api: a `sort=`
+  param plus `updated_at` on `SearchHit` (minor spec bump); see the additive
+  asks under API / Interface Changes.
 
 ### Repos and repo pages
 
@@ -475,7 +479,9 @@ spec:
 
 The mockup also implies a short list of **additive docz-api asks**, each
 with a graceful v1 degradation (none block the build): a `sort=` param on
-`searchDocs`; serving repo `index.md` / type `README.md` bodies; per-status
+`searchDocs` plus `updated_at` on `SearchHit` (without the field the
+directory's updated column has no data source — it renders "—" until the
+ask lands); serving repo `index.md` / type `README.md` bodies; per-status
 lifecycle dates; a cross-doc link graph (references + referenced-by);
 labels. Each becomes a docz-api proposal rather than silent scope creep
 here.

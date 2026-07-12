@@ -1,0 +1,4 @@
+# The env store and mounted secrets are filled from your secret manager
+# — never committed (same convention as docz-api/deploy).
+.env.production
+secrets/

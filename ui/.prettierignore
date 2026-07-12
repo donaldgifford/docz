@@ -1,7 +1,10 @@
 dist
+dist-msw
 build
 node_modules
 coverage
+test-results
+playwright-report
 bun.lock
 *.md
 

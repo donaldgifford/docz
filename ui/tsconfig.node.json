@@ -19,5 +19,12 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["vite.config.ts", "orval.config.ts", "vitest.config.ts"]
+  "include": [
+    "vite.config.ts",
+    "orval.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "scripts/*.ts",
+    "e2e/*.ts"
+  ]
 }

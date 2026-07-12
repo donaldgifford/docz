@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.0.0
+  version: 1.1.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -60,6 +60,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RepoDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/index:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: getRepoIndex
+      summary: The repository home document (docs_dir/index.md).
+      description: |
+        Serves the raw `docs_dir/index.md` cached at the last ingest — the
+        file docz's wiki renders as its landing page. A repository whose HEAD
+        has no `index.md` returns 404; an empty-but-present file returns 200
+        with an empty `index_md`.
+      responses:
+        "200":
+          description: The cached repository home.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepoIndex"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -404,8 +428,9 @@ components:
             type: string
     NotFound:
       description: |
-        Repository, type, or document not found. Also returned for repositories
-        outside the caller's allowed set, to hide their existence.
+        Repository, type, document, or repository index not found. Also
+        returned for repositories outside the caller's allowed set, to hide
+        their existence.
       content:
         application/json:
           schema:
@@ -467,6 +492,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DocType"
+    RepoIndex:
+      description: The cached repository home document (`docs_dir/index.md`).
+      type: object
+      additionalProperties: false
+      required: [repo, index_md, index_sha]
+      properties:
+        repo:
+          type: string
+          description: The "owner/name" identifier.
+          example: acme/platform
+        index_md:
+          type: string
+          description: |
+            Raw markdown of `docs_dir/index.md` at the last ingest. "" for an
+            empty-but-present file (absence is a 404, never an empty body).
+        index_sha:
+          type: string
+          description: Git blob SHA of the cached index.md; usable as a cache key.
+          example: 4f2d9c1
     DocType:
       description: A document type declared in the repo's `.docz.yaml`.
       type: object

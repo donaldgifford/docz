@@ -8,8 +8,11 @@ export default tseslint.config(
   {
     ignores: [
       "dist",
+      "dist-msw",
       "coverage",
       "node_modules",
+      "test-results",
+      "playwright-report",
       "src/api/__generated__",
       "public/mockServiceWorker.js",
     ],

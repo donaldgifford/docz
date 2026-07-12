@@ -12,7 +12,12 @@ Thumbs.db
 # Dependencies and build output
 node_modules/
 dist/
+dist-msw/
 coverage/
+
+# Playwright output
+test-results/
+playwright-report/
 
 # Generated TS client from api/openapi.yaml (bun run gen-api)
 src/api/__generated__/

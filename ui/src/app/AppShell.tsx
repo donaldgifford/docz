@@ -1,4 +1,10 @@
-import { Link, NavLink, Outlet } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+
+import { useGetSession } from "@/api/__generated__/docz-api";
+import { CommandPalette } from "@/components/command-palette";
+import { SessionMenu } from "@/components/session-menu";
+import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
@@ -6,7 +12,35 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
     : "text-fg-tertiary hover:text-fg-primary";
 }
 
+/**
+ * The other half of SessionRequiredRedirect's stash: docz-api's OAuth
+ * callback always lands on "/", so when the shell finds a stashed
+ * destination there it probes getSession and, only once authenticated,
+ * replaces "/" with the stash. A signed-out visit leaves the stash
+ * alone (the probe 401s) — it restores on the next successful login.
+ */
+function RestoreAfterLogin() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const armed = location.pathname === "/" && peekReturnTo() !== null;
+  const session = useGetSession({ query: { enabled: armed } });
+  const authenticated = armed && session.data?.status === 200;
+
+  useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
+    const returnTo = takeReturnTo();
+    if (returnTo !== null) {
+      void navigate(returnTo, { replace: true });
+    }
+  }, [authenticated, navigate]);
+
+  return null;
+}
+
 export function AppShell() {
+  const [paletteOpen, setPaletteOpen] = useState(false);
   return (
     <>
       <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-[rgba(12,16,23,0.88)] px-5 backdrop-blur-[10px]">
@@ -23,12 +57,14 @@ export function AppShell() {
           <span className="font-mono text-[13px] text-fg-muted">· reader</span>
         </Link>
 
-        {/* Search affordance — Phase 2 swaps this for the ⌘K palette
-            trigger; until then it routes to the directory (the search
-            view). Hidden on narrow viewports like the mockup. */}
-        <Link
-          to="/"
-          className="ml-4 hidden min-w-[260px] items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[12.5px] text-fg-tertiary min-[720px]:flex"
+        {/* Search affordance: opens the ⌘K palette. Hidden on narrow
+            viewports like the mockup. */}
+        <button
+          type="button"
+          onClick={() => {
+            setPaletteOpen(true);
+          }}
+          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[12.5px] text-fg-tertiary hover:border-border-strong min-[720px]:flex"
         >
           <svg
             aria-hidden
@@ -51,7 +87,7 @@ export function AppShell() {
               K
             </kbd>
           </span>
-        </Link>
+        </button>
 
         <nav className="ml-auto flex items-center gap-[1.4rem] font-mono text-[13px]">
           <NavLink to="/" end className={navLinkClass}>
@@ -60,16 +96,12 @@ export function AppShell() {
           <NavLink to="/repos" className={navLinkClass}>
             Repos
           </NavLink>
-          {/* Avatar placeholder — session/avatar wiring is Phase 5. */}
-          <span
-            aria-hidden
-            className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[11px] text-fg-secondary"
-          >
-            ·
-          </span>
+          <SessionMenu />
         </nav>
       </header>
+      <RestoreAfterLogin />
       <Outlet />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </>
   );
 }
