@@ -23,6 +23,7 @@ created: 2026-07-12
   - [Observation 1: the repo nav does not scale past a handful of docs](#observation-1-the-repo-nav-does-not-scale-past-a-handful-of-docs)
   - [Observation 2: the "goofy" repo-home title was not frontmatter](#observation-2-the-goofy-repo-home-title-was-not-frontmatter)
   - [Observation 3: the few-pixel layout shift is the viewport scrollbar](#observation-3-the-few-pixel-layout-shift-is-the-viewport-scrollbar)
+  - [Observation 4: rendering gaps on real RFC content](#observation-4-rendering-gaps-on-real-rfc-content)
   - [Also landed in this pass](#also-landed-in-this-pass)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
@@ -72,6 +73,7 @@ a 16–18-docs-per-type repo exercised layouts the fixtures never did.
 | docz-site | `main` post-IMPL-0001 (PR #7, `93e93b6`) + `chore/qol-tweaks` |
 | docz-api  | local compose stack (`docz-api-local`, :8080) |
 | Test repo | `donaldgifford/repo-guardian` — 43 docs (design 18, impl 16, investigation 7, rfc 2) |
+| Test repo | `donaldgifford/rfcs` — RFC-0002 (GitHub alerts), RFC-0006 (mermaid + go fences) |
 
 ## Findings
 
@@ -117,6 +119,25 @@ always-on scrollbars.
 `scrollbar-color` recolor classic scrollbars on inner scroll regions
 (the nav rail) so they read against the dark surfaces.
 
+### Observation 4: rendering gaps on real RFC content
+
+Browsing `donaldgifford/rfcs` (RFC-0002, RFC-0006) surfaced three
+pipeline gaps the demo fixtures never exercised:
+
+1. **GitHub alerts render as literal pull-quotes.** RFC-0002 uses
+   `> [!WARNING]` / `> [!CAUTION]`. The pipeline has no alert
+   handling, so they fall through as ordinary blockquotes — which the
+   theme styles as serif-italic *pull-quotes* (per the mockup), with
+   the raw `[!WARNING]` text as the first line. Doubly wrong: the
+   marker leaks, and a technical warning gets literary-quote styling.
+2. **Mermaid fences render as plain code.** RFC-0006 has a
+   ` ```mermaid ` fence; Shiki has no mermaid grammar and nothing
+   renders the diagram.
+3. **Code blocks have no chrome.** Fences render as bare `<pre>`.
+   Wanted: a header bar — uppercase language badge (accent) left,
+   filename right when the fence meta carries one (RFC-0006's
+   ` ```go ` fence has language only).
+
 ### Also landed in this pass
 
 - `chore(deploy)` `c5117f0` — `deploy/compose.local.yaml` +
@@ -157,6 +178,24 @@ conventional commit per item, checking items off here as they land.
       header area too. Lifecycle moves to a closed-by-default drawer
       (same disclosure pattern as the nav's type drawers) instead of
       always burning rail space.
+- [ ] **GitHub alert callouts** — transform `> [!NOTE|TIP|IMPORTANT|`
+      `WARNING|CAUTION]` blockquotes into styled callout boxes (kind
+      label + per-kind accent border/color); plain blockquotes keep
+      the pull-quote treatment. Must run AFTER rehype-sanitize (like
+      xrefs) emitting a fixed class vocabulary — the reader pipeline
+      is CI-gated XSS surface, so the hostile suite grows with it.
+- [ ] **Mermaid rendering** — render ` ```mermaid ` fences as
+      diagrams. Client-side mermaid in a LAZY chunk (the 130 KB gz
+      entry budget exists precisely to catch this landing eagerly),
+      loaded only when a rendered doc contains a mermaid fence;
+      `securityLevel: "strict"`; a11y naming for the emitted SVG;
+      code-block fallback on parse failure.
+- [ ] **Code block chrome** — header bar on fenced blocks: uppercase
+      language badge left, filename right when fence meta provides
+      one. A post-sanitize hast pass copies the code node's language
+      class + fence meta onto the `<pre>` as validated data attrs;
+      `MarkdownPre` renders the bar (and its region aria-label gets
+      the language for free).
 - [ ] **Palette prefetch** — wire `usePrefetchDoc` to cmdk's active
       item so palette → reader navigation is instant (nav/reader links
       already prefetch on hover/focus; the palette is the gap).
