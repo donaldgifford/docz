@@ -181,21 +181,46 @@ conventional commit per item, checking items off here as they land.
 - [ ] **GitHub alert callouts** — transform `> [!NOTE|TIP|IMPORTANT|`
       `WARNING|CAUTION]` blockquotes into styled callout boxes (kind
       label + per-kind accent border/color); plain blockquotes keep
-      the pull-quote treatment. Must run AFTER rehype-sanitize (like
-      xrefs) emitting a fixed class vocabulary — the reader pipeline
-      is CI-gated XSS surface, so the hostile suite grows with it.
+      the pull-quote treatment.
+      _Prior art: `rfc-site/src/portal/markdown/plugins/`
+      `github-alerts.ts` ports nearly verbatim (mdast plugin after
+      gfm, `hName`/`hProperties` → `div.admonition.kind` +
+      `span.adm-label`; IMPORTANT normalized to note). Because it runs
+      before OUR sanitizer, `schema.ts` widens narrowly —
+      value-restricted classNames on div/span only — and the XSS suite
+      grows with it. CSS ports from rfc-site `styles.css` §281–360
+      (adm-label, ::before icon slot, per-kind color-mix rows) onto
+      docz tokens._
 - [ ] **Mermaid rendering** — render ` ```mermaid ` fences as
-      diagrams. Client-side mermaid in a LAZY chunk (the 130 KB gz
-      entry budget exists precisely to catch this landing eagerly),
-      loaded only when a rendered doc contains a mermaid fence;
-      `securityLevel: "strict"`; a11y naming for the emitted SVG;
-      code-block fallback on parse failure.
+      diagrams, lazily (the 130 KB gz entry budget exists precisely to
+      catch mermaid's ~700 KB landing eagerly).
+      _Prior art: `mermaid-marker.ts` + `mermaid-hydrate.ts` in
+      rfc-site. Our sanitize-first pipeline makes the marker simpler
+      (runs post-sanitize, pre-Shiki: read `language-mermaid` class,
+      set `data-mermaid-source`, strip class — zero schema change),
+      and our hast-to-JSX render replaces their DOM-query hydration:
+      `MarkdownPre` routes marked blocks to a lazy `<MermaidBlock>`.
+      Carry their hard-won lessons: SVG cache keyed by source
+      (StrictMode double-render flash), MINIMAL documented
+      themeVariables set (extras break `mermaid.render` silently),
+      token-driven theme via getComputedStyle with fallbacks. Open
+      decision: injecting mermaid's SVG needs a documented, narrow
+      exception to the "no dangerouslySetInnerHTML" rule (try
+      `securityLevel: "strict"` first — rfc-site's "loose" note
+      conflates strict with sandbox) + mermaid-label payloads in the
+      XSS suite. Failure keeps the source text visible._
 - [ ] **Code block chrome** — header bar on fenced blocks: uppercase
       language badge left, filename right when fence meta provides
-      one. A post-sanitize hast pass copies the code node's language
-      class + fence meta onto the `<pre>` as validated data attrs;
-      `MarkdownPre` renders the bar (and its region aria-label gets
-      the language for free).
+      one.
+      _Prior art: `wrap-codeblock.ts` + the `pre()` half of rfc-site's
+      Shiki transformer + `capture-code-meta.ts`. Our order: a remark
+      capture pass surfaces fence meta as a validated `metastring`
+      property on `code` (the one schema addition); our Shiki stage
+      gains a transformer stamping `dataLanguage`/`dataCaption` on the
+      emitted pre; the wrapper runs post-Shiki (post-sanitize —
+      structure is ours, no schema surface) building
+      `div.codeblock` + header; `MarkdownPre`'s region aria-label
+      gains the language. Skips mermaid blocks._
 - [ ] **Palette prefetch** — wire `usePrefetchDoc` to cmdk's active
       item so palette → reader navigation is instant (nav/reader links
       already prefetch on hover/focus; the palette is the gap).
