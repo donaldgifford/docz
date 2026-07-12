@@ -52,6 +52,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ci)* Unbreak PR checks — bash shell, changelog, trufflehog pin
 - *(ci)* Format phase-1 files and redact fixture DSN example
 - *(api)* Tolerate JSON null where docz-api marshals empty Go slices
+- *(a11y)* Make scrollable code blocks keyboard-focusable named regions
 
 ### Documentation
 

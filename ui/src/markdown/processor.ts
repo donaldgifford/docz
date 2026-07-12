@@ -15,6 +15,7 @@ import { unified } from "unified";
 import { visit } from "unist-util-visit";
 
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
+import { MarkdownPre } from "@/markdown/markdown-pre";
 import { sanitizeSchema } from "@/markdown/schema";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
 
@@ -150,7 +151,7 @@ export async function renderMarkdown(
     Fragment,
     jsx,
     jsxs,
-    components: { a: MarkdownAnchor },
+    components: { a: MarkdownAnchor, pre: MarkdownPre },
   });
   /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   return { content, toc };

@@ -43,6 +43,17 @@ describe("renderMarkdown", () => {
     expect(pre?.querySelectorAll("span[style]").length).toBeGreaterThan(0);
   });
 
+  it("makes code blocks keyboard-scrollable named regions", async () => {
+    // axe scrollable-region-focusable: overflow depends on rendered
+    // font metrics, so every block gets the treatment up front.
+    const { container } = await renderToDom("```text\nwide code\n```");
+
+    const pre = container.querySelector("pre");
+    expect(pre?.getAttribute("tabindex")).toBe("0");
+    expect(pre?.getAttribute("role")).toBe("region");
+    expect(pre?.getAttribute("aria-label")).toBe("code block");
+  });
+
   it("falls back to plain text for unknown languages", async () => {
     const { container } = await renderToDom(
       "```klingon\nqaStaHvIS wa' ram\n```",

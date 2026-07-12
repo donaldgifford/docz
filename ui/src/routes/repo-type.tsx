@@ -201,9 +201,17 @@ export function Component() {
           </p>
 
           <h2 id="creating">Creating a new {docType.name}</h2>
-          <pre className="overflow-x-auto">
+          {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
+              scrollable region must be keyboard-reachable (see MarkdownPre) */}
+          <pre
+            role="region"
+            aria-label="code block"
+            tabIndex={0}
+            className="overflow-x-auto"
+          >
             <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
           </pre>
+          {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
 
           <GenMarker>begin docz auto-generated</GenMarker>
           <h2 id="all">All {docType.plural_label}</h2>

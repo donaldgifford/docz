@@ -204,9 +204,17 @@ export function Component() {
       {format === "html" ? (
         <article className="doc-prose">{content}</article>
       ) : (
-        <pre className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[12.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary">
+        /* eslint-disable jsx-a11y/no-noninteractive-tabindex --
+           scrollable region must be keyboard-reachable (see MarkdownPre) */
+        <pre
+          role="region"
+          aria-label="raw markdown"
+          tabIndex={0}
+          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[12.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary"
+        >
           {doc.raw_md ?? ""}
         </pre>
+        /* eslint-enable jsx-a11y/no-noninteractive-tabindex */
       )}
     </RepoFrame>
   );
