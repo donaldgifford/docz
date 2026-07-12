@@ -206,10 +206,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   deployable dist/ never contains MSW). MSW answers requests in-page
   before Playwright can intercept — drive error journeys through
   sessionStorage flags read by browser-worker-only overrides in
-  src/mocks/browser.ts (`docz:e2e:force-401`). cmdk gotcha: with a
-  controlled `value`, cmdk never auto-selects, so keep the active key
-  pointed at a real item (adjust-during-render in command-palette.tsx)
-  or Enter does nothing.
+  src/mocks/browser.ts (`docz:e2e:force-401`). The flip side: MSW's
+  worker BYPASSES document navigations, so those (e.g. the
+  `/auth/login` anchor hop) are mocked with Playwright `page.route` —
+  in ONE fulfill; Playwright doesn't re-route browser-followed
+  redirects and the preview proxy (preview.proxy defaults to
+  server.proxy) would leak a mocked 302 chain to a real docz-api.
+  cmdk gotcha: with a controlled `value`, cmdk never auto-selects, so
+  keep the active key pointed at a real item (adjust-during-render in
+  command-palette.tsx) or Enter does nothing.
 
 ## Non-negotiables
 

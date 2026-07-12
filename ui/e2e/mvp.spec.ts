@@ -87,3 +87,45 @@ test("401 redirects to the login page", async ({ page }) => {
     page.getByRole("link", { name: "Continue with GitHub" }),
   ).toHaveAttribute("href", "/auth/login?provider=github");
 });
+
+test("login loop restores the stashed destination", async ({ page }) => {
+  // The provider hop is a real document navigation, which MSW's worker
+  // deliberately bypasses — so Playwright CAN intercept it (in-page
+  // fetches it can't; those are MSW's). One hop stands in for the
+  // whole provider round trip (Playwright doesn't re-route the
+  // browser-followed redirect, so a mocked 302 chain would escape to
+  // the preview proxy): the "callback" page signs in by clearing the
+  // force-401 flag, then lands on "/" exactly like docz-api's does.
+  await page.route("**/auth/login**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: `<!doctype html><title>signing in…</title><script>
+        sessionStorage.removeItem("docz:e2e:force-401");
+        location.replace("/");
+      </script>`,
+    }),
+  );
+
+  // Visit a deep link signed out…
+  await page.goto("/");
+  await expect(page.getByText(SITE_DESIGN_TITLE)).toBeVisible();
+  await page.evaluate(() => {
+    sessionStorage.setItem("docz:e2e:force-401", "1");
+  });
+  await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
+
+  // …get bounced to /login…
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByRole("link", { name: "Continue with GitHub" }).click();
+
+  // …and land back on the stashed document, signed in.
+  await expect(page).toHaveURL(
+    /\/donaldgifford\/docz-site\/design\/DESIGN-0001$/,
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: SITE_DESIGN_TITLE }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Account: donaldgifford" }),
+  ).toBeVisible();
+});

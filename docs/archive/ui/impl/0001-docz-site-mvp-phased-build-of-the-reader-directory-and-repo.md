@@ -614,8 +614,23 @@ only.
       promotes the remembered provider to the primary slot with a
       "· last used" hint. Unknown/disabled remembered keys leave the
       order untouched.)_
-- [ ] Tests: 401 → redirect → destination restore; logout clears cache;
+- [x] Tests: 401 → redirect → destination restore; logout clears cache;
       e2e login loop with a mocked provider callback
+      _(Landed across tasks 2–4 plus the e2e loop: `authReturn` unit
+      suite (open-redirect + loop guards, both directions),
+      `restore-after-login.test.tsx` (restore on 200, stash preserved
+      on 401), all five route 401 tests assert redirect + stash,
+      `session-menu.test.tsx` proves the logout cache flush by watching
+      the topbar flip to Sign in, `login.test.tsx` covers anchor shape
+      + remember + promotion. e2e "login loop restores the stashed
+      destination": deep link signed out → `/login` → Continue with
+      GitHub → Playwright fulfills the `/auth/login` NAVIGATION (MSW's
+      worker bypasses navigations, so Playwright can intercept exactly
+      these — and must, in ONE hop: it doesn't re-route
+      browser-followed redirects, and the preview proxy would leak the
+      chain to a real docz-api) with a callback page that clears the
+      force-401 flag and lands on `/` → restore → the stashed doc,
+      avatar visible.)_
 
 #### Success Criteria
 
