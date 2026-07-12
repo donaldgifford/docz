@@ -68,6 +68,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(readme)* Add test, build, and deploy sections; close Phase 4 sweep
 - *(impl)* Record Phase 4 success-criteria verification
 - *(impl)* Verify Phase 5 acceptance criteria against the live stack
+- *(impl)* Check off the completed testing-plan items
 
 ### Testing
 

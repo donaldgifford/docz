@@ -680,22 +680,31 @@ only.
 
 ## Testing Plan
 
-- [ ] **XSS suites** (Phase 1 reader pipeline; Phase 2 snippet renderer) —
+- [x] **XSS suites** (Phase 1 reader pipeline; Phase 2 snippet renderer) —
       payload tables asserted neutralized; benign-markdown survival; slug
       stability. Required CI checks from the moment they land.
-- [ ] **Unit**: preprocess (frontmatter/ToC-marker stripping), sanitize
+      _(processor.xss.test.tsx + snippet.test.tsx, in `bun run test` → CI)_
+- [x] **Unit**: preprocess (frontmatter/ToC-marker stripping), sanitize
       schema shape, ToC collector, color system determinism, searchParams
       round-trip, xref matcher.
-- [ ] **Component** (Vitest + Testing Library + MSW): four-state matrix
+      _(preprocess/schema/processor/colors/searchParams/xrefs test files)_
+- [x] **Component** (Vitest + Testing Library + MSW): four-state matrix
       per data-bound view; URL ↔ facet round-trip; palette keyboard flow;
       metadata `""` omission; lifecycle positioning; count consistency.
-- [ ] **Contract**: `gen-api-check` drift gate in CI; the scheduled
+      _(route + command-palette + doc header tests; counts via
+      useRepoFacts.test)_
+- [x] **Contract**: `gen-api-check` drift gate in CI; the scheduled
       spec-version drift workflow (git-cliff-style compare) against
       docz-api main.
-- [ ] **E2E** (Playwright, Phase 4): the five core journeys listed in
+      _(ci.yml drift step + scheduled spec-drift.yml)_
+- [x] **E2E** (Playwright, Phase 4): the five core journeys listed in
       Phase 4, against the MSW-enabled preview build.
-- [ ] **Accessibility**: axe assertions in component tests; keyboard-path
+      _(e2e/mvp.spec.ts — now six with the Phase 5 login loop — plus
+      e2e/a11y.spec.ts)_
+- [x] **Accessibility**: axe assertions in component tests; keyboard-path
       e2e checks.
+      _(src/a11y/axe.test.tsx sweep + full-rule axe e2e; palette journey
+      is keyboard-driven)_
 
 ## Dependencies
 
