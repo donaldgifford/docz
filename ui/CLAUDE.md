@@ -28,6 +28,9 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - `bun run build` / `preview` / `test` / `lint` / `format:check`
 - `bun run gen-api` — orval regenerates `src/api/__generated__/` from
   the vendored `api/openapi.yaml` (generated dir is gitignored)
+- `just local-up` / `just local-down` — build + run the site container
+  (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
+  stack's network; re-run `local-up` after changes to rebuild/recreate
 
 ## Architecture
 

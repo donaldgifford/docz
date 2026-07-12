@@ -72,5 +72,18 @@ e2e:
 preview:
     bun run preview
 
+local_compose := "docker compose -f deploy/compose.local.yaml"
+
+# Build + start docz-site (:8090) against the running docz-api local stack
+local-up:
+    @docker network inspect docz-api-local_default >/dev/null 2>&1 || { echo "✗ docz-api local stack not running — run 'just local-up' in ../docz-api first"; exit 1; }
+    @{{ local_compose }} up -d --build --wait
+    @echo "✓ docz-site up at http://localhost:8090 (proxying to docz-api-local)"
+
+# Stop the local docz-site container
+local-down:
+    @{{ local_compose }} down
+    @echo "✓ docz-site stopped"
+
 # CI parity: everything the ci workflow runs, in order
 ci: gen-api lint fmt-check typecheck test build bundle-budget e2e gen-api-check
