@@ -89,6 +89,19 @@ describe("axe: core views", () => {
     await expectNoAxeViolations();
   });
 
+  it("session menu open", { timeout: AXE_TIMEOUT }, async () => {
+    mountAt("/repos");
+    await userEvent.click(
+      await screen.findByRole(
+        "button",
+        { name: "Account: donaldgifford" },
+        { timeout: 10_000 },
+      ),
+    );
+    await screen.findByRole("button", { name: "Sign out" });
+    await expectNoAxeViolations();
+  });
+
   it("command palette open", { timeout: AXE_TIMEOUT }, async () => {
     mountAt("/");
     await screen.findByTestId("results-count", undefined, { timeout: 10_000 });

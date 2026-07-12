@@ -114,7 +114,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   read — keep it that way (open-redirect guard), and never stash
   anything but a same-origin path. Test setup clears session/local
   storage after each test — a leaked stash arms RestoreAfterLogin in
-  unrelated tests.
+  unrelated tests. Topbar identity is `SessionMenu`
+  (`src/components/session-menu.tsx`): getSession-driven (fixtures
+  answer with a deterministic `donaldgifford` github identity), avatar
+  is a disclosure (not `role="menu"`), and logout runs `onSettled` —
+  navigate to `/login` BEFORE `queryClient.clear()`, or the page being
+  left refetches everything under the dead session.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
 - Directory (`src/routes/directory.tsx`): the URL is the only source of

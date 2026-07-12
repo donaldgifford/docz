@@ -590,9 +590,22 @@ only.
       Tests: authReturn unit suite, restore integration suite, all five
       route 401 tests now assert redirect + stash, e2e 401 journey
       asserts the `/login` landing.)_
-- [ ] `getSession`-backed avatar menu (GitHub `login` or OIDC `email`);
+- [x] `getSession`-backed avatar menu (GitHub `login` or OIDC `email`);
       logout: `POST /api/v1/auth/logout`, clear the TanStack Query cache,
       return to `/login`
+      _(`src/components/session-menu.tsx` replaces the aria-hidden
+      topbar placeholder: pending → inert placeholder, no session →
+      "Sign in" link to `/login`, session → avatar disclosure (initial
+      from `login ?? email ?? subject`) with identity + provider +
+      Sign out. Deliberately a disclosure, not `role="menu"`. Logout
+      uses the generated `useLogout`, `onSettled` (a failed POST must
+      not strand per-session data): navigate to `/login` FIRST, then
+      `queryClient.clear()` — clearing first would make the page being
+      left refetch under the dead session. Escape/outside-close mirror
+      RepoPicker. Fixtures gained a deterministic demo identity
+      (`donaldgifford` via github) + logout handler; open-menu state
+      added to the axe sweep; logout test proves the cache flush by
+      watching the topbar flip to Sign in.)_
 - [ ] Remember last-used provider in localStorage
 - [ ] Tests: 401 → redirect → destination restore; logout clears cache;
       e2e login loop with a mocked provider callback

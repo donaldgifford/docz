@@ -357,4 +357,19 @@ export const demoOrgHandlers = [
       },
     });
   }),
+
+  // Deterministic demo identity — the faker handler's random strings
+  // would make the topbar avatar/initial flicker between runs.
+  http.get("*/api/v1/auth/session", () =>
+    HttpResponse.json({
+      provider: "github",
+      subject: "1138",
+      login: "donaldgifford",
+      email: "donald@demo.docz",
+    }),
+  ),
+
+  http.post("*/api/v1/auth/logout", () =>
+    HttpResponse.json({ status: "signed out" }),
+  ),
 ];

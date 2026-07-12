@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { useGetSession } from "@/api/__generated__/docz-api";
 import { CommandPalette } from "@/components/command-palette";
+import { SessionMenu } from "@/components/session-menu";
 import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
@@ -95,13 +96,7 @@ export function AppShell() {
           <NavLink to="/repos" className={navLinkClass}>
             Repos
           </NavLink>
-          {/* Avatar placeholder — session/avatar wiring is Phase 5. */}
-          <span
-            aria-hidden
-            className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[11px] text-fg-secondary"
-          >
-            ·
-          </span>
+          <SessionMenu />
         </nav>
       </header>
       <RestoreAfterLogin />
