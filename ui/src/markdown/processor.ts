@@ -22,6 +22,7 @@ import { remarkCaptureCodeMeta } from "@/markdown/capture-code-meta";
 import { remarkGithubAlerts } from "@/markdown/github-alerts";
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
 import { MarkdownPre } from "@/markdown/markdown-pre";
+import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
 import { sanitizeSchema } from "@/markdown/schema";
 import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
@@ -154,6 +155,9 @@ export async function renderMarkdown(
     .use(rehypeCollapseDoubleClobber)
     .use(rehypeSlug)
     .use(() => rehypeCollectToc(toc))
+    // Before Shiki: strips language-mermaid so the highlighter never
+    // replaces (and unmarks) the pre.
+    .use(() => rehypeMermaidMarker())
     .use(() =>
       // HighlighterCore is HighlighterGeneric<never, never>; the plugin
       // asks for <any, any>. Same object, incompatible variance — adapt

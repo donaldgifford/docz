@@ -85,7 +85,17 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   set, chrome transformer stamping data-language/data-caption →
   wrap-codeblock (div.codeblock header chrome; skips mermaid) →
   xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw, highlight
-  AFTER sanitize. No `dangerouslySetInnerHTML` anywhere. Never widen
+  AFTER sanitize. Mermaid: `mermaid-marker` runs post-sanitize/
+  pre-Shiki (strips language-mermaid so Shiki can't replace the pre,
+  moves source onto `data-mermaid-source`), and MarkdownPre routes
+  marked pres to `MermaidBlock` (`src/markdown/mermaid-block.tsx`),
+  which lazy-imports mermaid (~700 KB, own chunk — e2e asserts it
+  never loads on diagram-free docs) and holds the ONE sanctioned
+  innerHTML in the codebase: mermaid.render() output under
+  `securityLevel: "strict"` AND `htmlLabels: false` — BOTH required
+  (strict alone still materializes purified `<img src>` elements in
+  foreignObject labels); render failure keeps the source visible.
+  No `dangerouslySetInnerHTML` anywhere. Never widen
   `schema.ts` without extending the XSS suite — its only non-default
   allowances are `language-*` classes + the charset-validated
   `metastring` on `code`, and value-RESTRICTED admonition classNames

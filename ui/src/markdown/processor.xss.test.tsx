@@ -5,10 +5,20 @@
  * maim real docz markdown. This suite gates CI; if a schema or
  * pipeline change breaks it, the change is wrong, not the test.
  */
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { _resetMermaidBlock } from "@/markdown/mermaid-block";
 import { renderMarkdown } from "@/markdown/processor";
+
+// Controllable mermaid mock: jsdom can't run the real renderer, so
+// these tests pin OUR handling of its output/failure; the real
+// strict-mode render is exercised in e2e.
+const mermaidMock = vi.hoisted(() => ({
+  initialize: vi.fn(),
+  render: vi.fn(),
+}));
+vi.mock("mermaid", () => ({ default: mermaidMock }));
 
 async function renderToDom(md: string): Promise<HTMLElement> {
   const { content } = await renderMarkdown(md);
@@ -17,12 +27,23 @@ async function renderToDom(md: string): Promise<HTMLElement> {
 }
 
 const FORBIDDEN_ELEMENTS =
-  "script, iframe, object, embed, svg, math, style, form, link, meta, base";
+  "script, iframe, object, embed, svg, foreignObject, math, style, form, link, meta, base";
 
 const URL_ATTRIBUTES = ["href", "src", "xlink:href", "action", "formaction"];
 
 function assertNeutralized(container: HTMLElement): void {
-  expect(container.querySelectorAll(FORBIDDEN_ELEMENTS)).toHaveLength(0);
+  const forbidden = [...container.querySelectorAll(FORBIDDEN_ELEMENTS)].filter(
+    // The mermaid figure's svg is the ONE sanctioned svg — generated
+    // by mermaid.render (strict mode), never document HTML. Anything
+    // nested inside it (script etc.) still matches the selector and
+    // still fails here.
+    (el) =>
+      !(
+        el.tagName.toLowerCase() === "svg" &&
+        el.closest(".mermaid-figure") !== null
+      ),
+  );
+  expect(forbidden).toHaveLength(0);
 
   for (const el of container.querySelectorAll("*")) {
     for (const attr of el.attributes) {
@@ -153,6 +174,48 @@ describe("admonition classes stay inert", () => {
     expect(div?.className).toBe("admonition caution");
     // No whitelisted token → the class list survives empty at most.
     expect(container.querySelector("span")?.className ?? "").toBe("");
+  });
+});
+
+describe("mermaid blocks stay inert", () => {
+  beforeEach(() => {
+    _resetMermaidBlock();
+    mermaidMock.render.mockReset();
+  });
+
+  it("keeps hostile mermaid source as text when rendering fails", async () => {
+    mermaidMock.render.mockRejectedValue(new Error("strict refused"));
+    const container = await renderToDom(
+      '```mermaid\nflowchart TD\n  A["<img src=x onerror=alert(1)>"] --> B\n```',
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector('[data-mermaid-fallback="failed"]'),
+      ).not.toBeNull();
+    });
+    assertNeutralized(container);
+    // The payload is fallback TEXT, not an element.
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toContain('A["<img src=x');
+  });
+
+  it("injects only mermaid's rendered SVG, nothing from the source", async () => {
+    // Strict-mode mermaid encodes label HTML; mimic that output shape.
+    mermaidMock.render.mockResolvedValue({
+      svg: "<svg><text>A: &lt;img src=x onerror=alert(1)&gt;</text></svg>",
+    });
+    const container = await renderToDom(
+      "```mermaid\nflowchart TD\n  A --> B\n```",
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector("figure.mermaid-figure svg"),
+      ).not.toBeNull();
+    });
+    assertNeutralized(container);
+    expect(container.querySelector("figure.mermaid-figure img")).toBeNull();
   });
 });
 

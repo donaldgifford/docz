@@ -207,27 +207,27 @@ token-driven theme via `getComputedStyle` with fallbacks.
 
 #### Tasks
 
-- [ ] Add `mermaid` dependency (pinned); confirm the chunk NEVER
+- [x] Add `mermaid` dependency (pinned); confirm the chunk NEVER
       lands in the entry: `bundle-budget` must not move.
-- [ ] `src/markdown/mermaid-marker.ts` (rehype, post-sanitize,
+- [x] `src/markdown/mermaid-marker.ts` (rehype, post-sanitize,
       pre-Shiki): `code.language-mermaid` → set `dataMermaidSource`
       on the `pre`, strip the language class (Shiki never sees it) —
       zero schema change, runs on trusted structure.
-- [ ] `src/markdown/mermaid-block.tsx`: `MarkdownPre` routes
+- [x] `src/markdown/mermaid-block.tsx`: `MarkdownPre` routes
       `data-mermaid-source` pres to `<MermaidBlock source=…>`; lazy
       `import("mermaid")` on first mount; module-scope SVG cache;
       injection mechanism per OQ-1; failure path keeps the source
       text visible as a code block.
-- [ ] Theme: `mermaidThemeFromTokens()` reading docz tokens
+- [x] Theme: `mermaidThemeFromTokens()` reading docz tokens
       (bg-raised/bg-elevated/border-strong/fg-primary/fg-tertiary)
       with hex fallbacks, minimal variable set only.
-- [ ] A11y: rendered diagram gets `role="img"` + an `aria-label`
+- [x] A11y: rendered diagram gets `role="img"` + an `aria-label`
       (first line of the source or fence caption); axe sweep grows a
       mermaid fixture.
-- [ ] XSS suite: hostile mermaid source (HTML/script in labels,
+- [x] XSS suite: hostile mermaid source (HTML/script in labels,
       `click` directives) — assert nothing executes and hostile
       labels render inert under the chosen securityLevel.
-- [ ] Tests: marker transform unit tests; MermaidBlock renders
+- [x] Tests: marker transform unit tests; MermaidBlock renders
       fallback in jsdom (mermaid needs real SVG measurement — mock
       the import); e2e: RFC-0006-shaped fixture renders an `<svg>` in
       the preview build.
@@ -388,6 +388,13 @@ string; putting it in the DOM conflicts with the repo rule "no
     carve-out. Rationale: the string comes from mermaid's renderer,
     not from document HTML; strict mode encodes user text; rfc-site's
     "strict doesn't work" note actually described `sandbox` mode.
+    _Implementation finding (2026-07-13): strict ALONE was not
+    enough — it DOMPurifies HTML labels but still materializes
+    purified elements (an `<img src>` tracking pixel) inside
+    foreignObject. Shipped as strict + `htmlLabels: false` (global
+    and flowchart), so labels render as SVG text and no element ever
+    comes from document text; e2e asserts img/foreignObject/script
+    counts stay zero on a hostile-label fixture._
   - **b:** `securityLevel: "sandbox"` — mermaid wraps the render in a
     sandboxed `<iframe srcdoc>`; strongest isolation, but styling/
     sizing inside the iframe fights the token theme and the a11y

@@ -191,7 +191,7 @@ conventional commit per item, checking items off here as they land.
       grows with it. CSS ports from rfc-site `styles.css` §281–360
       (adm-label, ::before icon slot, per-kind color-mix rows) onto
       docz tokens._
-- [ ] **Mermaid rendering** — render ` ```mermaid ` fences as
+- [x] **Mermaid rendering** — render ` ```mermaid ` fences as
       diagrams, lazily (the 130 KB gz entry budget exists precisely to
       catch mermaid's ~700 KB landing eagerly).
       _Prior art: `mermaid-marker.ts` + `mermaid-hydrate.ts` in

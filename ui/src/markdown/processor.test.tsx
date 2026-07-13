@@ -1,7 +1,16 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { renderMarkdown } from "@/markdown/processor";
+
+// mermaid can't render in jsdom (no SVG measurement); a rejecting mock
+// pins MermaidBlock to its fallback so routing stays deterministic.
+vi.mock("mermaid", () => ({
+  default: {
+    initialize: vi.fn(),
+    render: vi.fn(() => Promise.reject(new Error("jsdom"))),
+  },
+}));
 
 async function renderToDom(md: string) {
   const { content, toc } = await renderMarkdown(md);
@@ -90,6 +99,24 @@ describe("renderMarkdown", () => {
     expect(container.querySelector("pre")?.getAttribute("aria-label")).toBe(
       "code block",
     );
+  });
+
+  it("routes mermaid fences to MermaidBlock, not the codeblock chrome", async () => {
+    const { container } = await renderToDom(
+      "```mermaid fig 1\nflowchart TD\n  A --> B\n```",
+    );
+
+    // Settle on the (mocked-to-fail) fallback before asserting.
+    await waitFor(() => {
+      expect(
+        container.querySelector('[data-mermaid-fallback="failed"]'),
+      ).not.toBeNull();
+    });
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelector("pre.shiki")).toBeNull();
+    const fallback = container.querySelector("pre[data-mermaid-fallback]");
+    expect(fallback?.textContent).toContain("A --> B");
+    expect(fallback?.getAttribute("aria-label")).toBe("mermaid diagram source");
   });
 
   it("falls back to plain text for unknown languages", async () => {

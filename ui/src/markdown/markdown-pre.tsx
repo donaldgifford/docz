@@ -1,3 +1,5 @@
+import { MermaidBlock } from "@/markdown/mermaid-block";
+
 import type { ComponentPropsWithoutRef } from "react";
 
 /*
@@ -13,8 +15,19 @@ import type { ComponentPropsWithoutRef } from "react";
  */
 export function MarkdownPre({
   "data-language": lang,
+  "data-mermaid-source": mermaidSource,
+  "data-mermaid-caption": mermaidCaption,
   ...rest
-}: ComponentPropsWithoutRef<"pre"> & { "data-language"?: string }) {
+}: ComponentPropsWithoutRef<"pre"> & {
+  "data-language"?: string;
+  "data-mermaid-source"?: string;
+  "data-mermaid-caption"?: string;
+}) {
+  // Marked by rehypeMermaidMarker (post-sanitize — only real fences
+  // carry this); the block owns its own semantics and fallback.
+  if (typeof mermaidSource === "string" && mermaidSource.length > 0) {
+    return <MermaidBlock source={mermaidSource} caption={mermaidCaption} />;
+  }
   /* eslint-disable jsx-a11y/no-noninteractive-tabindex --
      tabIndex on a named region is the WAI pattern for scrollable code
      blocks; without it keyboard users can't scroll them. */
