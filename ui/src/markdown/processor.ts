@@ -9,14 +9,27 @@ import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { createHighlighterCore, type HighlighterCore } from "shiki/core";
+import {
+  createHighlighterCore,
+  type HighlighterCore,
+  type ShikiTransformer,
+} from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 
+import { remarkCaptureCodeMeta } from "@/markdown/capture-code-meta";
+import { remarkGithubAlerts } from "@/markdown/github-alerts";
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
+import {
+  MarkdownH2,
+  MarkdownH3,
+  MarkdownH4,
+} from "@/markdown/markdown-heading";
 import { MarkdownPre } from "@/markdown/markdown-pre";
+import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
 import { sanitizeSchema } from "@/markdown/schema";
+import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
 
 import type { Root } from "hast";
@@ -83,6 +96,29 @@ function rehypeCollapseDoubleClobber() {
   };
 }
 
+// Stamps the codeblock-chrome hooks onto the emitted <pre>:
+// data-language feeds the header badge and MarkdownPre's region label,
+// data-caption the header's filename slot. Both land post-sanitize
+// from pipeline-generated values — schema.ts strips the same
+// attributes out of document HTML, and the caption string was already
+// charset-validated by the schema's metastring pattern.
+const codeblockChromeTransformer: ShikiTransformer = {
+  name: "docz:codeblock-chrome",
+  pre(node) {
+    // this.options.lang is post-fallback: a fence outside the slim
+    // grammar set reads "text" here and stays bare (nothing useful
+    // to badge when we can't highlight it either).
+    const lang = this.options.lang;
+    if (lang !== "" && lang !== "text" && lang !== "plain" && lang !== "txt") {
+      node.properties.dataLanguage = lang;
+    }
+    const caption = this.options.meta?.__raw;
+    if (typeof caption === "string" && caption.length > 0) {
+      node.properties.dataCaption = caption;
+    }
+  },
+};
+
 const TOC_TAGS: Readonly<Record<string, 2 | 3 | 4 | undefined>> = {
   h2: 2,
   h3: 3,
@@ -116,12 +152,17 @@ export async function renderMarkdown(
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkGithubAlerts)
+    .use(remarkCaptureCodeMeta)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeCollapseDoubleClobber)
     .use(rehypeSlug)
     .use(() => rehypeCollectToc(toc))
+    // Before Shiki: strips language-mermaid so the highlighter never
+    // replaces (and unmarks) the pre.
+    .use(() => rehypeMermaidMarker())
     .use(() =>
       // HighlighterCore is HighlighterGeneric<never, never>; the plugin
       // asks for <any, any>. Same object, incompatible variance — adapt
@@ -132,9 +173,11 @@ export async function renderMarkdown(
           theme: "tokyo-night",
           // Languages outside the slim set fall back to plain text.
           fallbackLanguage: "text",
+          transformers: [codeblockChromeTransformer],
         },
       ),
-    );
+    )
+    .use(() => rehypeWrapCodeblocks());
 
   /* eslint-disable @typescript-eslint/no-unsafe-assignment --
      typescript-eslint's checker computes an error type in this
@@ -151,7 +194,14 @@ export async function renderMarkdown(
     Fragment,
     jsx,
     jsxs,
-    components: { a: MarkdownAnchor, pre: MarkdownPre },
+    components: {
+      a: MarkdownAnchor,
+      pre: MarkdownPre,
+      // ToC-collected headings get the copy-link affordance.
+      h2: MarkdownH2,
+      h3: MarkdownH3,
+      h4: MarkdownH4,
+    },
   });
   /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   return { content, toc };

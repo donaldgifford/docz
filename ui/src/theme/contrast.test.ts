@@ -80,3 +80,38 @@ describe("text token contrast", () => {
     }
   });
 });
+
+describe("admonition tint contrast", () => {
+  const tokens = parseTokens(tokensCss);
+  // Each alert kind renders its label in the mapped status color and
+  // its body in fg-secondary, both on the precomputed adm-*-bg tint
+  // (tokens.css keeps those as literal hex for exactly this check).
+  const KIND_TO_LABEL_TOKEN: Record<string, string> = {
+    note: "st-proposed",
+    tip: "st-accepted",
+    important: "st-superseded",
+    warning: "st-draft",
+    caution: "st-rejected",
+  };
+
+  it.each(Object.entries(KIND_TO_LABEL_TOKEN))(
+    "%s label and body text hold 4.5:1 on the tint",
+    (kind, labelToken) => {
+      const bg = tokens.get(`adm-${kind}-bg`);
+      if (bg === undefined) {
+        throw new Error(`--color-adm-${kind}-bg missing from tokens.css`);
+      }
+      for (const textToken of [labelToken, "fg-secondary"]) {
+        const hex = tokens.get(textToken);
+        if (hex === undefined) {
+          throw new Error(`--color-${textToken} missing from tokens.css`);
+        }
+        const ratio = contrastRatio(hex, bg);
+        expect(
+          ratio,
+          `--color-${textToken} (${hex}) vs --color-adm-${kind}-bg (${bg}) is ${ratio.toFixed(2)}:1`,
+        ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    },
+  );
+});

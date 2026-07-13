@@ -57,6 +57,17 @@
      every surface (enforced by src/theme/contrast.test.ts). */
   --color-st-deprecated: #7a84ad;
 
+  /* GitHub-alert admonition tints (IMPL-0002 Phase 3): the matching
+     st-* color mixed 12% into bg-base, PRECOMPUTED as hex so
+     contrast.test.ts can enforce label/body text on them
+     mathematically (it can't evaluate color-mix). Recompute when a
+     source color changes: round(base*(1-p) + kind*p) per channel. */
+  --color-adm-note-bg: #192232;
+  --color-adm-tip-bg: #1e2721;
+  --color-adm-important-bg: #212132;
+  --color-adm-warning-bg: #252321;
+  --color-adm-caution-bg: #281c25;
+
   /* Curated doc-type colors. First seven are the mockup's; adr/design/
      impl/investigation extend the same palette to cover the ten curated
      types DESIGN-0001 names. Unknown types hash into a fallback palette
@@ -113,6 +124,18 @@
   .doc-prose p {
     margin: 0 0 1.1rem;
   }
+  /* h1 appears only on the repo home (the reader strips body h1s and
+     renders its own header) — style it like the reader's doc title so
+     index.md-driven homes match. */
+  .doc-prose h1 {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin: 0 0 1.1rem;
+    color: var(--color-fg-primary);
+  }
   .doc-prose h2 {
     font-family: var(--font-serif);
     font-size: 1.5rem;
@@ -132,6 +155,7 @@
     margin: 1.9rem 0 0.6rem;
     color: var(--color-fg-primary);
   }
+  .doc-prose h1,
   .doc-prose h2,
   .doc-prose h3,
   .doc-prose h4 {
@@ -186,6 +210,110 @@
     font-style: italic;
     font-family: var(--font-serif);
   }
+  /* GitHub-alert admonitions (IMPL-0002 Phase 3). Divs, not
+     blockquotes — the pull-quote treatment above never cascades in.
+     Backgrounds are the precomputed adm-*-bg tints; labels use the
+     matching status color (both pairs enforced in contrast.test.ts). */
+  .doc-prose .admonition {
+    position: relative;
+    margin: 1.5rem 0;
+    padding: 0.9rem 1.25rem 0.9rem 3.4rem;
+    border: 1px solid var(--color-border-hairline);
+    line-height: 1.6;
+  }
+  .doc-prose .admonition::before {
+    position: absolute;
+    top: 0.85rem;
+    left: 1rem;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    color: var(--color-bg-base);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .doc-prose .admonition .adm-label {
+    display: inline-flex;
+    margin-right: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .doc-prose .admonition p {
+    display: inline;
+    margin: 0;
+    color: var(--color-fg-secondary);
+  }
+  .doc-prose .admonition p + p {
+    display: block;
+    margin-top: 0.6rem;
+  }
+  .doc-prose .admonition.note {
+    background: var(--color-adm-note-bg);
+    border-color: color-mix(in srgb, var(--color-st-proposed) 30%, transparent);
+  }
+  .doc-prose .admonition.note .adm-label {
+    color: var(--color-st-proposed);
+  }
+  .doc-prose .admonition.note::before {
+    content: "i";
+    background: var(--color-st-proposed);
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+  .doc-prose .admonition.tip {
+    background: var(--color-adm-tip-bg);
+    border-color: color-mix(in srgb, var(--color-st-accepted) 30%, transparent);
+  }
+  .doc-prose .admonition.tip .adm-label {
+    color: var(--color-st-accepted);
+  }
+  .doc-prose .admonition.tip::before {
+    content: "\2713";
+    background: var(--color-st-accepted);
+  }
+  .doc-prose .admonition.important {
+    background: var(--color-adm-important-bg);
+    border-color: color-mix(
+      in srgb,
+      var(--color-st-superseded) 30%,
+      transparent
+    );
+  }
+  .doc-prose .admonition.important .adm-label {
+    color: var(--color-st-superseded);
+  }
+  .doc-prose .admonition.important::before {
+    content: "\2726";
+    background: var(--color-st-superseded);
+  }
+  .doc-prose .admonition.warning {
+    background: var(--color-adm-warning-bg);
+    border-color: color-mix(in srgb, var(--color-st-draft) 30%, transparent);
+  }
+  .doc-prose .admonition.warning .adm-label {
+    color: var(--color-st-draft);
+  }
+  .doc-prose .admonition.warning::before {
+    content: "!";
+    background: var(--color-st-draft);
+  }
+  .doc-prose .admonition.caution {
+    background: var(--color-adm-caution-bg);
+    border-color: color-mix(in srgb, var(--color-st-rejected) 30%, transparent);
+  }
+  .doc-prose .admonition.caution .adm-label {
+    color: var(--color-st-rejected);
+  }
+  .doc-prose .admonition.caution::before {
+    content: "\2715";
+    background: var(--color-st-rejected);
+  }
   .doc-prose table {
     width: 100%;
     border-collapse: collapse;
@@ -225,8 +353,88 @@
     font-size: inherit;
     color: inherit;
   }
+  /* Codeblock chrome (IMPL-0002 Phase 2): language badge left,
+     optional fence-meta caption right. The header sits on bg-raised —
+     an enforced contrast surface for accent and fg-tertiary — so the
+     mathematical contrast gate covers both text colors. */
+  .doc-prose .codeblock {
+    margin: 1rem 0 1.4rem;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-code-bg);
+  }
+  .doc-prose .codeblock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 1.1rem;
+    background: var(--color-bg-raised);
+    border-bottom: 1px solid var(--color-border-hairline);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .doc-prose .codeblock-header .lang {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+  .doc-prose .codeblock-header .caption {
+    color: var(--color-fg-tertiary);
+    font-size: 11px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .doc-prose .codeblock pre {
+    margin: 0;
+    border: none;
+  }
+  /* Mermaid diagrams (IMPL-0002 Phase 4): rendered SVG in a quiet
+     framed figure; the pre-render/failure fallback is a plain code
+     block via MarkdownPre semantics. */
+  .doc-prose .mermaid-figure {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border: 1px solid var(--color-border-hairline);
+    background: var(--color-bg-raised);
+  }
+  .doc-prose .mermaid-figure svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+  }
+  .doc-prose .mermaid-figure figcaption {
+    margin-top: 0.6rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-fg-tertiary);
+  }
   .doc-prose img {
     max-width: 100%;
+  }
+  /* Heading anchor copy (IMPL-0002 Phase 6): revealed on heading
+     hover or its own keyboard focus; a button, not a link, so the
+     link-in-text-block underline rule stays untouched. */
+  .doc-prose .heading-anchor {
+    margin-left: 0.5rem;
+    color: var(--color-fg-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  .doc-prose :is(h2, h3, h4):hover .heading-anchor,
+  .doc-prose .heading-anchor:focus-visible {
+    opacity: 1;
+  }
+  .doc-prose .heading-anchor:hover {
+    color: var(--color-accent);
   }
   .doc-prose hr {
     border: none;
@@ -239,6 +447,18 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    /* Reserve the viewport scrollbar gutter so short pages (type
+       listing) and long pages (reader) don't shift a few px when the
+       scrollbar appears. */
+    scrollbar-gutter: stable;
+  }
+
+  /* Classic (non-overlay) scrollbars, thinned and recolored for inner
+     scroll regions like the repo nav rail — the default gutter reads
+     heavy against the dark surfaces. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {

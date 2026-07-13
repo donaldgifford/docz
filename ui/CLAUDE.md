@@ -28,6 +28,9 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - `bun run build` / `preview` / `test` / `lint` / `format:check`
 - `bun run gen-api` — orval regenerates `src/api/__generated__/` from
   the vendored `api/openapi.yaml` (generated dir is gitignored)
+- `just local-up` / `just local-down` — build + run the site container
+  (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
+  stack's network; re-run `local-up` after changes to rebuild/recreate
 
 ## Architecture
 
@@ -74,12 +77,36 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Markdown rendering lives in `src/markdown/` and ONLY there:
   `preprocess.ts` (strip frontmatter + docz toc block) →
   `processor.ts` `renderMarkdown()` (remark-parse → remark-gfm →
+  github-alerts (`> [!KIND]` blockquotes → div.admonition.kind, five
+  kinds) → capture-code-meta (fence meta → `metastring` property) →
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
   collector → Shiki core highlighter, tokyo-night, slim lazy grammar
-  set → xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw,
-  highlight AFTER sanitize. No `dangerouslySetInnerHTML` anywhere.
-  Never widen `schema.ts` without extending the XSS suite.
+  set, chrome transformer stamping data-language/data-caption →
+  wrap-codeblock (div.codeblock header chrome; skips mermaid) →
+  xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw, highlight
+  AFTER sanitize. Mermaid: `mermaid-marker` runs post-sanitize/
+  pre-Shiki (strips language-mermaid so Shiki can't replace the pre,
+  moves source onto `data-mermaid-source`), and MarkdownPre routes
+  marked pres to `MermaidBlock` (`src/markdown/mermaid-block.tsx`),
+  which lazy-imports mermaid (~700 KB, own chunk — e2e asserts it
+  never loads on diagram-free docs) and holds the ONE sanctioned
+  innerHTML in the codebase: mermaid.render() output under
+  `securityLevel: "strict"` AND `htmlLabels: false` — BOTH required
+  (strict alone still materializes purified `<img src>` elements in
+  foreignObject labels); render failure keeps the source visible.
+  h2–h4 map to `markdown-heading.tsx`, which appends the
+  hover/focus-revealed copy-link button (a labeled BUTTON, not a
+  link — the underline rule for prose links stays untouched).
+  No `dangerouslySetInnerHTML` anywhere. Never widen
+  `schema.ts` without extending the XSS suite — its only non-default
+  allowances are `language-*` classes + the charset-validated
+  `metastring` on `code`, and value-RESTRICTED admonition classNames
+  on div/span (forged markup gets the same inert styling at most);
+  data-* on `pre` dies in sanitize, which is exactly why the
+  post-Shiki chrome can trust it. Admonition tint backgrounds are
+  PRECOMPUTED hex tokens (`--color-adm-*-bg`) so contrast.test.ts can
+  enforce label/body pairs — don't swap them for color-mix.
 - Xrefs (`src/markdown/xrefs.ts`): doc-id tokens linkify only when they
   resolve in the caller-supplied map (UPPERCASED doc_id → href, built
   by `useRepoDocIndex` from listDocs) — the map is the whitelist and
@@ -122,6 +149,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   left refetches everything under the dead session.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
+  Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata is a
+  bordered table under the doc header (`doc-meta-table.tsx`, fields
+  ""-omitting, format switch html/md/json right-aligned above it) and
+  the lifecycle is a closed-by-default `<details>` owned by
+  `LifecycleRail` (renders nothing — shell included — for unknown
+  types). Gated mockup rows (relationships, tags) slot into the table
+  when the DESIGN-0001 API asks land.
 - Directory (`src/routes/directory.tsx`): the URL is the only source of
   filter truth — read via `parseSearchParams`, write via
   `serializeSearchState` (`src/lib/searchParams.ts`; its
@@ -141,6 +175,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   at 1181px/861px) plus RepoBreadcrumbs — home, type pages, AND the
   reader all mount inside it. Counts everywhere come from
   `useRepoFacts` (repo-filtered limit-0 facet query) so numbers agree.
+  RepoNav's per-type doc lists are collapsible drawers: the route's
+  `:type` auto-expands, the caret button peeks without navigating, and
+  listDocs only fires for open drawers. Facets omit zero-hit types —
+  a missing typeCounts key after facts load means 0, which also
+  disables the caret. The repo home is the ONLY surface rendering an
+  h1 inside `.doc-prose` (the reader strips body h1s) — its style
+  lives in tokens.css; don't remove it as "unused".
   URL `{type}` resolves by name/id_prefix/alias via
   `lib/docTypes.resolveDocType` (links always generated from the
   canonical name); fixtures mirror this and 404 unknown types.
@@ -150,8 +191,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   home fallback, not an error.
 - Palette (`src/components/command-palette.tsx`, mounted in AppShell):
   state is palette-local, never the URL. cmdk normalizes item values —
-  keys are lowercased and navigation resolves hits through the list for
-  original casing. Snippets render ONLY through
+  keys are lowercased and navigation resolves through a unified
+  `entries` list (recents get a `recent:` value prefix so the same doc
+  in the results below keeps its own key). The empty query leads with
+  recently-opened docs from `src/lib/recentDocs.ts` (localStorage
+  `docz:recent-docs`, cap 8, coordinates+title ONLY — never tokens;
+  reads are segment-validated and malformed payloads reset the store;
+  the reader records entries on successful load). The highlighted hit
+  prefetches getDoc. Snippets render ONLY through
   `src/components/snippet.tsx` (splits on literal <em> markers, emits
   <mark>, everything else stays text) — never parse snippet HTML.
   jsdom setup stubs scrollIntoView/ResizeObserver for cmdk.
@@ -168,13 +215,16 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Per-task local gate is `just ci` semantics: test, lint, `tsc -b
   --force`, build, AND `bun run format:check` — formatting misses fail
   CI even when everything else is green.
-- Bundle budget: CI fails if the entry chunk tops 130 KB gz
-  (`scripts/bundle-budget.ts`, `just bundle-budget`, ~117 KB today).
-  Keep the markdown pipeline/Shiki behind lazy imports — an eager
-  import is exactly what the budget exists to catch. Doc links
-  prefetch getDoc on hover/focus via `usePrefetchDoc`
-  (`src/hooks/usePrefetchDoc.ts`) — new doc-link surfaces should wire
-  it up. One-off node scripts live in `scripts/*.ts` under
+- Bundle budget: CI fails if the eager JS tops 130 KB gz
+  (`scripts/bundle-budget.ts`, `just bundle-budget`, ~120 KB today).
+  "Eager" = the entry chunk PLUS every modulepreload'd chunk in
+  index.html — Rollup splits shared statics out of `index-*.js` as
+  the graph shifts, so measuring only the entry file would let an
+  eager import hide in a preloaded chunk. Keep the markdown
+  pipeline/Shiki behind lazy imports — an eager import is exactly
+  what the budget exists to catch. Doc links prefetch getDoc on
+  hover/focus via `usePrefetchDoc` (`src/hooks/usePrefetchDoc.ts`) —
+  new doc-link surfaces should wire it up. One-off node scripts live in `scripts/*.ts` under
   tsconfig.node.json (node types, typechecked + linted there).
 
 - TypeScript is pinned to the 5.9 series: typescript-eslint's parser

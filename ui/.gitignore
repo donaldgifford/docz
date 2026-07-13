@@ -25,3 +25,7 @@ src/api/__generated__/
 # Local environment (secrets live here, never in mise.toml)
 .env.local
 .env.*.local
+
+# Claude Code session-local state (settings.json stays tracked)
+.claude/*.local.md
+.claude/settings.local.json

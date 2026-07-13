@@ -1,7 +1,16 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { renderMarkdown } from "@/markdown/processor";
+
+// mermaid can't render in jsdom (no SVG measurement); a rejecting mock
+// pins MermaidBlock to its fallback so routing stays deterministic.
+vi.mock("mermaid", () => ({
+  default: {
+    initialize: vi.fn(),
+    render: vi.fn(() => Promise.reject(new Error("jsdom"))),
+  },
+}));
 
 async function renderToDom(md: string) {
   const { content, toc } = await renderMarkdown(md);
@@ -54,6 +63,62 @@ describe("renderMarkdown", () => {
     expect(pre?.getAttribute("aria-label")).toBe("code block");
   });
 
+  it("wraps highlighted blocks in codeblock chrome with a caption", async () => {
+    const { container } = await renderToDom(
+      "```go internal/ingest/parse.go\nfunc main() {}\n```",
+    );
+
+    const block = container.querySelector(".codeblock");
+    expect(block).not.toBeNull();
+    const header = block?.querySelector(".codeblock-header");
+    expect(header?.querySelector(".lang")?.textContent).toBe("go");
+    expect(header?.querySelector(".caption")?.textContent).toBe(
+      "internal/ingest/parse.go",
+    );
+    const pre = block?.querySelector("pre.shiki");
+    expect(pre).not.toBeNull();
+    expect(pre?.getAttribute("aria-label")).toBe("go code block");
+  });
+
+  it("renders a lang-only header when the fence has no meta", async () => {
+    const { container } = await renderToDom("```yaml\nkey: value\n```");
+
+    expect(
+      container.querySelector(".codeblock-header .lang")?.textContent,
+    ).toBe("yaml");
+    expect(container.querySelector(".codeblock-header .caption")).toBeNull();
+  });
+
+  it("leaves plain and unknown-language fences bare", async () => {
+    const { container } = await renderToDom(
+      "```\nplain text\n```\n\n```klingon\nqapla\n```",
+    );
+
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelectorAll("pre")).toHaveLength(2);
+    expect(container.querySelector("pre")?.getAttribute("aria-label")).toBe(
+      "code block",
+    );
+  });
+
+  it("routes mermaid fences to MermaidBlock, not the codeblock chrome", async () => {
+    const { container } = await renderToDom(
+      "```mermaid fig 1\nflowchart TD\n  A --> B\n```",
+    );
+
+    // Settle on the (mocked-to-fail) fallback before asserting.
+    await waitFor(() => {
+      expect(
+        container.querySelector('[data-mermaid-fallback="failed"]'),
+      ).not.toBeNull();
+    });
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelector("pre.shiki")).toBeNull();
+    const fallback = container.querySelector("pre[data-mermaid-fallback]");
+    expect(fallback?.textContent).toContain("A --> B");
+    expect(fallback?.getAttribute("aria-label")).toBe("mermaid diagram source");
+  });
+
   it("falls back to plain text for unknown languages", async () => {
     const { container } = await renderToDom(
       "```klingon\nqaStaHvIS wa' ram\n```",
@@ -62,6 +127,63 @@ describe("renderMarkdown", () => {
     expect(container.querySelector("pre")?.textContent).toContain(
       "qaStaHvIS wa' ram",
     );
+  });
+
+  it.each([
+    ["NOTE", "note", "Note"],
+    ["TIP", "tip", "Tip"],
+    ["IMPORTANT", "important", "Important"],
+    ["WARNING", "warning", "Warning"],
+    ["CAUTION", "caution", "Caution"],
+  ])("renders [!%s] alerts as %s admonitions", async (marker, kind, label) => {
+    const { container } = await renderToDom(
+      `> [!${marker}]\n> Handle with care.`,
+    );
+
+    const box = container.querySelector(`div.admonition.${kind}`);
+    expect(box).not.toBeNull();
+    expect(box?.querySelector("span.adm-label")?.textContent).toBe(label);
+    expect(box?.textContent).toContain("Handle with care.");
+    expect(box?.textContent).not.toContain(`[!${marker}]`);
+    // The blockquote itself was rewritten, not nested.
+    expect(container.querySelector("blockquote")).toBeNull();
+  });
+
+  it("keeps multi-paragraph alert bodies with nested markdown", async () => {
+    const { container } = await renderToDom(
+      [
+        "> [!WARNING]",
+        "> First paragraph with **bold** and [a link](https://example.com).",
+        ">",
+        "> Second paragraph.",
+      ].join("\n"),
+    );
+
+    const box = container.querySelector("div.admonition.warning");
+    expect(box?.querySelectorAll("p")).toHaveLength(2);
+    expect(box?.querySelector("strong")?.textContent).toBe("bold");
+    expect(box?.querySelector("a")?.getAttribute("href")).toBe(
+      "https://example.com",
+    );
+  });
+
+  it("leaves plain blockquotes and mid-text markers alone", async () => {
+    const { container } = await renderToDom(
+      [
+        "> An ordinary pull quote.",
+        "",
+        "> Some text before [!NOTE] stays literal.",
+        "",
+        "```text",
+        "> [!CAUTION]",
+        "```",
+      ].join("\n"),
+    );
+
+    expect(container.querySelector(".admonition")).toBeNull();
+    expect(container.querySelectorAll("blockquote")).toHaveLength(2);
+    expect(container.textContent).toContain("[!NOTE]");
+    expect(container.querySelector("pre")?.textContent).toContain("[!CAUTION]");
   });
 
   it("renders GFM tables", async () => {

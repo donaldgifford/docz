@@ -1,15 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 
 import { useGetDoc } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
-import {
-  DocRailInfo,
-  LifecycleRail,
-  TocList,
-  type DocFormat,
-} from "@/components/doc-rail";
+import { DocMetaTable } from "@/components/doc-meta-table";
+import { LifecycleRail, TocList, type DocFormat } from "@/components/doc-rail";
 import {
   ErrorPanel,
   NotFoundPanel,
@@ -17,6 +13,7 @@ import {
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
+import { recordRecentDoc } from "@/lib/recentDocs";
 import { useRenderedMarkdown } from "@/markdown/useRenderedMarkdown";
 
 import type { Document } from "@/api/__generated__/docz-api.schemas";
@@ -114,6 +111,18 @@ export function Component() {
   const rendered = useRenderedMarkdown(doc, xrefs);
   const [format, setFormat] = useState<DocFormat>("html");
 
+  // Successful loads feed the palette's empty-query "recent" group.
+  useEffect(() => {
+    if (doc !== undefined) {
+      recordRecentDoc({
+        repo: doc.repo,
+        type: doc.type,
+        docId: doc.doc_id,
+        title: doc.title,
+      });
+    }
+  }, [doc]);
+
   if (docQuery.error instanceof SessionRequiredError) {
     return <SessionRequiredRedirect />;
   }
@@ -165,30 +174,27 @@ export function Component() {
         { label: fileName },
       ]}
       rail={
-        <>
-          <section className="mb-8">
-            <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
-              On this page
-            </div>
-            <TocList toc={toc} />
-          </section>
-          <DocRailInfo
-            doc={doc}
-            format={format}
-            onFormatChange={setFormat}
-            lifecycle={
-              <LifecycleRail
-                owner={owner}
-                name={repo}
-                typeName={doc.type}
-                currentStatus={doc.status}
-              />
-            }
-          />
-        </>
+        // ToC-first rail (IMPL-0002 Phase 5): metadata, formats, and
+        // lifecycle moved into the article header, so long documents
+        // keep their outline visible without burying anything.
+        <section className="mb-8">
+          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+            On this page
+          </div>
+          <TocList toc={toc} />
+        </section>
       }
     >
       <DocHeader doc={doc} />
+
+      <DocMetaTable doc={doc} format={format} onFormatChange={setFormat} />
+
+      <LifecycleRail
+        owner={owner}
+        name={repo}
+        typeName={doc.type}
+        currentStatus={doc.status}
+      />
 
       {/* Narrow viewports: ToC as a disclosure above the article
           (the right rail hides below the frame's 1181px breakpoint). */}

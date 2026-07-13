@@ -5,10 +5,20 @@
  * maim real docz markdown. This suite gates CI; if a schema or
  * pipeline change breaks it, the change is wrong, not the test.
  */
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { _resetMermaidBlock } from "@/markdown/mermaid-block";
 import { renderMarkdown } from "@/markdown/processor";
+
+// Controllable mermaid mock: jsdom can't run the real renderer, so
+// these tests pin OUR handling of its output/failure; the real
+// strict-mode render is exercised in e2e.
+const mermaidMock = vi.hoisted(() => ({
+  initialize: vi.fn(),
+  render: vi.fn(),
+}));
+vi.mock("mermaid", () => ({ default: mermaidMock }));
 
 async function renderToDom(md: string): Promise<HTMLElement> {
   const { content } = await renderMarkdown(md);
@@ -17,19 +27,38 @@ async function renderToDom(md: string): Promise<HTMLElement> {
 }
 
 const FORBIDDEN_ELEMENTS =
-  "script, iframe, object, embed, svg, math, style, form, link, meta, base";
+  "script, iframe, object, embed, svg, foreignObject, math, style, form, link, meta, base";
 
 const URL_ATTRIBUTES = ["href", "src", "xlink:href", "action", "formaction"];
 
 function assertNeutralized(container: HTMLElement): void {
-  expect(container.querySelectorAll(FORBIDDEN_ELEMENTS)).toHaveLength(0);
+  const forbidden = [...container.querySelectorAll(FORBIDDEN_ELEMENTS)].filter(
+    // The mermaid figure's svg is the ONE sanctioned svg — generated
+    // by mermaid.render (strict mode), never document HTML. Anything
+    // nested inside it (script etc.) still matches the selector and
+    // still fails here.
+    (el) =>
+      !(
+        el.tagName.toLowerCase() === "svg" &&
+        el.closest(".mermaid-figure") !== null
+      ),
+  );
+  expect(forbidden).toHaveLength(0);
 
   for (const el of container.querySelectorAll("*")) {
     for (const attr of el.attributes) {
       expect(attr.name, `${el.tagName} carries ${attr.name}`).not.toMatch(
         /^on/i,
       );
-      expect(attr.name).not.toBe("style");
+      if (attr.name === "style") {
+        // Shiki inlines token colors AFTER sanitize (trusted,
+        // generated); document-supplied style must never survive
+        // anywhere else.
+        expect(
+          el.closest("pre.shiki"),
+          `${el.tagName} carries style outside a Shiki block`,
+        ).not.toBeNull();
+      }
       if (URL_ATTRIBUTES.includes(attr.name)) {
         expect(
           attr.value.trim().toLowerCase(),
@@ -90,6 +119,103 @@ describe("XSS payloads are neutralized", () => {
     ],
   ])("neutralizes %s", async (_name, payload) => {
     assertNeutralized(await renderToDom(payload));
+  });
+});
+
+describe("code fence meta stays inert", () => {
+  it("drops captions whose meta fails the schema charset", async () => {
+    const container = await renderToDom(
+      '```go "><img src=x onerror=alert(1)>\nx := 1\n```',
+    );
+    assertNeutralized(container);
+    // The caption is gone; the highlighted block itself survives.
+    expect(container.querySelector(".codeblock-header .caption")).toBeNull();
+    expect(container.querySelector("pre.shiki")).not.toBeNull();
+  });
+
+  it("renders charset-passing meta as text, never markup", async () => {
+    const container = await renderToDom("```go onclick=alert(1)\nx := 1\n```");
+    assertNeutralized(container);
+    const caption = container.querySelector(".codeblock-header .caption");
+    expect(caption?.textContent).toBe("onclick=alert(1)");
+  });
+
+  it("gives forged raw-HTML pre attributes no chrome", async () => {
+    const container = await renderToDom(
+      '<pre data-language="go" data-caption="forged"><code>x</code></pre>',
+    );
+    assertNeutralized(container);
+    // sanitize strips data-* from document HTML, so the wrapper and
+    // the language-aware region label never fire for forged markup.
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelector("pre")?.getAttribute("aria-label")).toBe(
+      "code block",
+    );
+  });
+});
+
+describe("admonition classes stay inert", () => {
+  it("neutralizes payloads inside an alert body", async () => {
+    const container = await renderToDom(
+      '> [!WARNING]\n> <img src=x onerror=alert(1)> and <a href="javascript:alert(1)">x</a>',
+    );
+    assertNeutralized(container);
+    // The admonition itself still renders around the neutralized body.
+    expect(container.querySelector("div.admonition.warning")).not.toBeNull();
+  });
+
+  it("strips class tokens outside the admonition whitelist", async () => {
+    const container = await renderToDom(
+      '<div class="admonition caution topbar sr-only">forged</div>\n\n<span class="anything-else">x</span>',
+    );
+    assertNeutralized(container);
+    const div = container.querySelector("div");
+    // Whitelisted tokens survive as inert styling; the rest are gone.
+    expect(div?.className).toBe("admonition caution");
+    // No whitelisted token → the class list survives empty at most.
+    expect(container.querySelector("span")?.className ?? "").toBe("");
+  });
+});
+
+describe("mermaid blocks stay inert", () => {
+  beforeEach(() => {
+    _resetMermaidBlock();
+    mermaidMock.render.mockReset();
+  });
+
+  it("keeps hostile mermaid source as text when rendering fails", async () => {
+    mermaidMock.render.mockRejectedValue(new Error("strict refused"));
+    const container = await renderToDom(
+      '```mermaid\nflowchart TD\n  A["<img src=x onerror=alert(1)>"] --> B\n```',
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector('[data-mermaid-fallback="failed"]'),
+      ).not.toBeNull();
+    });
+    assertNeutralized(container);
+    // The payload is fallback TEXT, not an element.
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toContain('A["<img src=x');
+  });
+
+  it("injects only mermaid's rendered SVG, nothing from the source", async () => {
+    // Strict-mode mermaid encodes label HTML; mimic that output shape.
+    mermaidMock.render.mockResolvedValue({
+      svg: "<svg><text>A: &lt;img src=x onerror=alert(1)&gt;</text></svg>",
+    });
+    const container = await renderToDom(
+      "```mermaid\nflowchart TD\n  A --> B\n```",
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector("figure.mermaid-figure svg"),
+      ).not.toBeNull();
+    });
+    assertNeutralized(container);
+    expect(container.querySelector("figure.mermaid-figure img")).toBeNull();
   });
 });
 

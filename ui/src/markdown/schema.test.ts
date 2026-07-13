@@ -45,6 +45,39 @@ describe("sanitizeSchema", () => {
     expect(matcher.test("not-a-language")).toBe(false);
   });
 
+  it("keeps fence meta only within the caption charset", () => {
+    const codeAttrs = sanitizeSchema.attributes?.code ?? [];
+    const metastring = codeAttrs.find(
+      (attr) => Array.isArray(attr) && attr[0] === "metastring",
+    );
+    expect(Array.isArray(metastring)).toBe(true);
+    const matcher = (metastring as [string, RegExp])[1];
+    expect(matcher.test("internal/ingest/parse.go")).toBe(true);
+    expect(matcher.test("title=Example config (v2)")).toBe(true);
+    expect(matcher.test('"><img src=x onerror=alert(1)>')).toBe(false);
+    expect(matcher.test("x".repeat(200))).toBe(false);
+    expect(matcher.test("")).toBe(false);
+  });
+
+  it("restricts div/span classes to the admonition whitelist", () => {
+    const divClass = (sanitizeSchema.attributes?.div ?? []).find(
+      (attr) => Array.isArray(attr) && attr[0] === "className",
+    );
+    expect(divClass).toEqual([
+      "className",
+      "admonition",
+      "note",
+      "tip",
+      "important",
+      "warning",
+      "caution",
+    ]);
+    const spanClass = (sanitizeSchema.attributes?.span ?? []).find(
+      (attr) => Array.isArray(attr) && attr[0] === "className",
+    );
+    expect(spanClass).toEqual(["className", "adm-label"]);
+  });
+
   it("clobbers user-authored ids with the user-content prefix", () => {
     expect(sanitizeSchema.clobber).toContain("id");
     expect(sanitizeSchema.clobberPrefix).toBe("user-content-");

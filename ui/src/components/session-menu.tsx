@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import { useGetSession, useLogout } from "@/api/__generated__/docz-api";
 
@@ -18,6 +18,7 @@ export function SessionMenu() {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
 
   const sessionQuery = useGetSession();
@@ -59,6 +60,7 @@ export function SessionMenu() {
     return (
       <span
         aria-hidden
+        data-testid="session-pending"
         className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[11px] text-fg-secondary"
       >
         ·
@@ -69,6 +71,11 @@ export function SessionMenu() {
   const session =
     sessionQuery.data?.status === 200 ? sessionQuery.data.data : undefined;
   if (session === undefined) {
+    // On /login the page itself is the sign-in affordance — a topbar
+    // link pointing at the page you're already on is noise.
+    if (location.pathname === "/login") {
+      return null;
+    }
     return (
       <Link
         to="/login"

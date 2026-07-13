@@ -33,4 +33,5 @@ docz create impl "Your Implementation Title"
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | IMPL-0001 | docz-site MVP: phased build of the reader, directory, and repo pages | Draft | 2026-07-10 | Donald Gifford | [0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md](0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md) |
+| IMPL-0002 | Reader polish: rendering pipeline and QoL backlog from INV-0001 | Draft | 2026-07-12 | Donald Gifford | [0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md](0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md) |
 <!-- END DOCZ AUTO-GENERATED -->

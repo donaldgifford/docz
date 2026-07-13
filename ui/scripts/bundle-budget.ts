@@ -1,5 +1,5 @@
 /*
- * CI bundle-size budget (IMPL-0001 Phase 4): the entry chunk must stay
+ * CI bundle-size budget (IMPL-0001 Phase 4): the eager JS must stay
  * small enough that first paint never waits on the heavy lazy chunks.
  * The real regression this guards against is the markdown pipeline
  * (~150 KB gz) or a Shiki grammar leaking into the eager graph — that
@@ -7,8 +7,14 @@
  *
  *   bun scripts/bundle-budget.ts
  *
- * Budget rationale: the entry (react + router + query + generated
- * client + shell/palette) gzips to ~117 KB today; 130 KB allows normal
+ * Measured: the entry chunk PLUS every modulepreload'd chunk in
+ * index.html — Rollup splits shared statics (generated client, auth
+ * helpers) out of index-*.js as the graph shifts, and those load
+ * before first paint just the same. Measuring only the entry file
+ * would let an eager import hide in a preloaded chunk.
+ *
+ * Budget rationale: the eager set (react + router + query + generated
+ * client + shell/palette) gzips to ~123 KB today; 130 KB allows normal
  * growth while any eager-import regression fails loudly.
  */
 
@@ -28,7 +34,8 @@ function read(path: string): Buffer {
 
 const html = read("dist/index.html").toString("utf8");
 
-// The entry chunk is the module script Vite injects into index.html.
+// The entry chunk is the module script Vite injects into index.html;
+// its static import closure is exactly the modulepreload link set.
 const entryMatch = /<script type="module"[^>]*src="\/(assets\/[^"]+\.js)"/.exec(
   html,
 );
@@ -36,17 +43,27 @@ if (entryMatch?.[1] === undefined) {
   console.error("no module script found in dist/index.html");
   process.exit(1);
 }
-const entryPath = `dist/${entryMatch[1]}`;
-const gzipped = gzipSync(read(entryPath)).byteLength;
+const preloads = [
+  ...html.matchAll(/rel="modulepreload"[^>]*href="\/(assets\/[^"]+\.js)"/g),
+]
+  .map((match) => match[1])
+  .filter((path): path is string => path !== undefined);
 
 const kb = (bytes: number): string => `${(bytes / 1024).toFixed(1)} KB`;
-const verdict = gzipped <= BUDGET_GZIP_BYTES ? "OK" : "OVER BUDGET";
+let total = 0;
+for (const asset of [entryMatch[1], ...preloads]) {
+  const gzipped = gzipSync(read(`dist/${asset}`)).byteLength;
+  total += gzipped;
+  console.log(`  dist/${asset}: ${kb(gzipped)} gzipped`);
+}
+
+const verdict = total <= BUDGET_GZIP_BYTES ? "OK" : "OVER BUDGET";
 console.log(
-  `${entryPath}: ${kb(gzipped)} gzipped (budget ${kb(BUDGET_GZIP_BYTES)}) — ${verdict}`,
+  `eager total: ${kb(total)} gzipped (budget ${kb(BUDGET_GZIP_BYTES)}) — ${verdict}`,
 );
-if (gzipped > BUDGET_GZIP_BYTES) {
+if (total > BUDGET_GZIP_BYTES) {
   console.error(
-    "Entry chunk exceeds the budget. Check for eager imports of the " +
+    "Eager JS exceeds the budget. Check for eager imports of the " +
       "markdown pipeline, Shiki, or other lazy-only modules before " +
       "raising the number here.",
   );

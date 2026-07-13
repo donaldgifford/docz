@@ -13,6 +13,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
+| INV-0001 | Reader UX polish: QoL fixes and follow-ups | Open | 2026-07-12 | Donald Gifford | [0001-reader-ux-polish-qol-fixes-and-follow-ups.md](0001-reader-ux-polish-qol-fixes-and-follow-ups.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

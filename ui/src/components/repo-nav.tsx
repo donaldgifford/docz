@@ -1,8 +1,10 @@
-import { NavLink } from "react-router";
+import { useState } from "react";
+import { NavLink, useParams } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { resolveDocType } from "@/lib/docTypes";
 import { arr } from "@/lib/wire";
 
 import type { DocType } from "@/api/__generated__/docz-api.schemas";
@@ -10,17 +12,20 @@ import type { DocType } from "@/api/__generated__/docz-api.schemas";
 /*
  * Shared left-rail repo nav per the mockup's TechDocs-style repo view:
  * identity header (letter mark, name, branch · docz.yaml), Home, then
- * one item per configured doc type with its count and the type's docs
- * nested beneath. Counts come from useRepoFacts — the same source as
- * the repos grid and directory facets, so numbers agree everywhere.
- * Active states fall out of NavLink route matching: the type item stays
- * lit while one of its docs is open; doc links match exactly.
+ * one item per configured doc type with its count. Each type's docs
+ * live in a collapsible drawer — collapsed by default so a repo with
+ * dozens of docs doesn't turn the rail into one long scroll. The
+ * route's active type auto-expands (and manual toggles reset when the
+ * active type changes); the caret peeks into other types without
+ * navigating. Counts come from useRepoFacts — the same source as the
+ * repos grid and directory facets, so numbers agree everywhere.
+ * Active states fall out of NavLink route matching.
  */
 
 const FIVE_MINUTES = 5 * 60_000;
 
 function navItemClass({ isActive }: { isActive: boolean }): string {
-  return `flex justify-between gap-3 px-[0.45rem] py-[0.28rem] ${
+  return `flex min-w-0 flex-1 justify-between gap-3 px-[0.45rem] py-[0.28rem] ${
     isActive
       ? "bg-(--color-accent-bg) text-accent"
       : "text-fg-tertiary hover:bg-bg-raised hover:text-fg-primary"
@@ -38,14 +43,20 @@ function NavTypeSection({
   name,
   docType,
   count,
+  expanded,
+  onToggle,
 }: {
   owner: string;
   name: string;
   docType: DocType;
   count: number | undefined;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
+  // Docs are only fetched once the drawer opens — a collapsed rail
+  // costs one listDocs per repo view instead of one per type.
   const docsQuery = useListDocs(owner, name, docType.name, {
-    query: { staleTime: FIVE_MINUTES },
+    query: { staleTime: FIVE_MINUTES, enabled: expanded },
   });
   const prefetchDoc = usePrefetchDoc();
   const docs =
@@ -53,19 +64,29 @@ function NavTypeSection({
 
   return (
     <>
-      {/* Links use the canonical type name; the API also resolves
-          id_prefix/alias URLs. */}
-      <NavLink
-        to={`/${owner}/${name}/${docType.name}`}
-        end
-        className={navItemClass}
-      >
-        <span>{docType.name}</span>{" "}
-        <span className="text-[11px] text-fg-muted">
-          {count ?? docs?.length ?? ""}
-        </span>
-      </NavLink>
-      {docs !== undefined && docs.length > 0 && (
+      <div className="flex items-stretch">
+        {/* Links use the canonical type name; the API also resolves
+            id_prefix/alias URLs. */}
+        <NavLink
+          to={`/${owner}/${name}/${docType.name}`}
+          end
+          className={navItemClass}
+        >
+          <span className="truncate">{docType.name}</span>{" "}
+          <span className="text-[11px] text-fg-muted">{count ?? ""}</span>
+        </NavLink>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-label={`${docType.name} documents`}
+          disabled={count === 0}
+          onClick={onToggle}
+          className="w-6 flex-none cursor-pointer text-center text-[10px] text-fg-muted hover:bg-bg-raised hover:text-fg-primary disabled:cursor-default disabled:opacity-40"
+        >
+          <span aria-hidden>{expanded ? "▾" : "▸"}</span>
+        </button>
+      </div>
+      {expanded && docs !== undefined && docs.length > 0 && (
         <div className="mt-px mb-1">
           {docs.map((doc) => {
             const prefetch = () => {
@@ -97,6 +118,24 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
   const detail =
     repoQuery.data?.status === 200 ? repoQuery.data.data : undefined;
   const { facts } = useRepoFacts(repoId);
+
+  // The route's `:type` segment (possibly an alias) picks the type
+  // whose drawer follows navigation.
+  const params = useParams<{ type?: string }>();
+  const types = arr(detail?.types);
+  const activeTypeName =
+    params.type === undefined
+      ? undefined
+      : resolveDocType(types, params.type)?.name;
+
+  // Manual open/close overrides, reset whenever navigation moves to a
+  // different type (adjust-during-render, not an effect).
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+  const [prevActive, setPrevActive] = useState(activeTypeName);
+  if (prevActive !== activeTypeName) {
+    setPrevActive(activeTypeName);
+    setOverrides({});
+  }
 
   return (
     <nav
@@ -131,13 +170,29 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
         doc types
       </div>
 
-      {arr(detail?.types).map((docType) => (
+      {types.map((docType) => (
         <NavTypeSection
           key={docType.name}
           owner={owner}
           name={name}
           docType={docType}
-          count={facts?.typeCounts[docType.name]}
+          // Facets omit zero-hit types, so once facts have loaded a
+          // missing key IS a zero (drives count text and the disabled
+          // caret for empty drawers).
+          count={
+            facts === undefined
+              ? undefined
+              : (facts.typeCounts[docType.name] ?? 0)
+          }
+          expanded={overrides[docType.name] ?? docType.name === activeTypeName}
+          onToggle={() => {
+            setOverrides((prev) => ({
+              ...prev,
+              [docType.name]: !(
+                prev[docType.name] ?? docType.name === activeTypeName
+              ),
+            }));
+          }}
         />
       ))}
     </nav>

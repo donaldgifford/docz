@@ -1,20 +1,9 @@
-import { getGetDocUrl, useListTypes } from "@/api/__generated__/docz-api";
-import { statusColor } from "@/lib/colors";
+import { useListTypes } from "@/api/__generated__/docz-api";
 import { arr } from "@/lib/wire";
 
-import type { Document } from "@/api/__generated__/docz-api.schemas";
 import type { TocEntry } from "@/markdown/processor";
-import type { ReactNode } from "react";
 
 export type DocFormat = "html" | "md";
-
-function SidebarHeading({ children }: { children: string }) {
-  return (
-    <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
-      {children}
-    </div>
-  );
-}
 
 export function TocList({ toc }: { toc: TocEntry[] }) {
   if (toc.length === 0) {
@@ -41,23 +30,6 @@ export function TocList({ toc }: { toc: TocEntry[] }) {
   );
 }
 
-function MetaRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex justify-between gap-3 py-[5px] text-[12px]">
-      <span className="whitespace-nowrap text-fg-tertiary">{label}</span>
-      <span className="min-w-0 text-right break-words text-fg-primary">
-        {children}
-      </span>
-    </div>
-  );
-}
-
 const STOP_DOT: Record<"done" | "current" | "pending", string> = {
   done: "border-(--color-st-active) bg-(--color-st-active)",
   current:
@@ -70,7 +42,11 @@ const STOP_DOT: Record<"done" | "current" | "pending", string> = {
  * listTypes, cached per repo) with the doc's status as the active stop.
  * No dates — docz-api doesn't expose lifecycle timestamps yet
  * (DESIGN-0001 additive ask). Renders nothing when the type is unknown
- * or declares no statuses.
+ * or declares no statuses — including its disclosure shell, so an
+ * unknown type never leaves an empty box. Since IMPL-0002 Phase 5
+ * (OQ-4a) it is a closed-by-default disclosure under the reader's
+ * metadata table (the nav-drawer pattern), not an always-open rail
+ * block.
  */
 export function LifecycleRail({
   owner,
@@ -102,9 +78,17 @@ export function LifecycleRail({
   );
 
   return (
-    <section className="mb-8" data-testid="lifecycle-rail">
-      <SidebarHeading>Lifecycle</SidebarHeading>
-      <div className="relative ml-1 border-l border-border-default pl-[1.1rem]">
+    <details
+      className="mb-6 border border-border-hairline px-4 py-3"
+      data-testid="lifecycle-disclosure"
+    >
+      <summary className="cursor-pointer font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+        Lifecycle · {currentStatus === "" ? "unset" : currentStatus}
+      </summary>
+      <div
+        className="relative mt-4 ml-1 border-l border-border-default pl-[1.1rem]"
+        data-testid="lifecycle-rail"
+      >
         {stages.map((stage, index) => {
           const state =
             current === -1
@@ -132,99 +116,6 @@ export function LifecycleRail({
           );
         })}
       </div>
-    </section>
-  );
-}
-
-/**
- * Right-rail sections for the reader: "On this page" is rendered by the
- * route (sticky wide / disclosure narrow); this component carries the
- * trimmed metadata card and the formats list, with the lifecycle rail
- * slotted between them per the mockup's section order. Empty-string
- * fields are omitted — "" means unset in the docz-api contract.
- */
-export function DocRailInfo({
-  doc,
-  format,
-  onFormatChange,
-  lifecycle,
-}: {
-  doc: Document;
-  format: DocFormat;
-  onFormatChange: (format: DocFormat) => void;
-  lifecycle?: ReactNode;
-}) {
-  const [owner = "", name = ""] = doc.repo.split("/", 2);
-  const jsonUrl = getGetDocUrl(owner, name, doc.type, doc.doc_id);
-
-  return (
-    <>
-      <section className="mb-8">
-        <SidebarHeading>Metadata</SidebarHeading>
-        {doc.status !== "" && (
-          <MetaRow label="Status">
-            <span style={{ color: statusColor(doc.status) }}>{doc.status}</span>
-          </MetaRow>
-        )}
-        {doc.author !== "" && <MetaRow label="Author">{doc.author}</MetaRow>}
-        {doc.created !== "" && <MetaRow label="Created">{doc.created}</MetaRow>}
-        {doc.updated_at !== "" && (
-          <MetaRow label="Updated">{doc.updated_at.slice(0, 10)}</MetaRow>
-        )}
-        {doc.git_sha !== "" && (
-          <MetaRow label="Commit">
-            <span className="font-mono">{doc.git_sha.slice(0, 7)}</span>
-          </MetaRow>
-        )}
-        <div className="pt-2 text-[12px]">
-          <a
-            href={jsonUrl}
-            className="text-accent hover:underline [text-underline-offset:3px]"
-          >
-            all fields · json →
-          </a>
-        </div>
-      </section>
-
-      {lifecycle}
-
-      <section className="mb-8">
-        <SidebarHeading>Formats</SidebarHeading>
-        <div className="text-[12px]">
-          <button
-            type="button"
-            onClick={() => {
-              onFormatChange("html");
-            }}
-            className={`block w-full py-[3px] text-left ${
-              format === "html"
-                ? "text-fg-primary"
-                : "text-fg-tertiary hover:text-fg-primary"
-            }`}
-          >
-            <b className="font-medium text-accent">html</b> · read here
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onFormatChange("md");
-            }}
-            className={`block w-full py-[3px] text-left ${
-              format === "md"
-                ? "text-fg-primary"
-                : "text-fg-tertiary hover:text-fg-primary"
-            }`}
-          >
-            <b className="font-medium text-accent">md</b> · source
-          </button>
-          <a
-            href={jsonUrl}
-            className="block truncate py-[3px] text-fg-tertiary hover:text-fg-primary"
-          >
-            <b className="font-medium text-accent">json</b> · {jsonUrl}
-          </a>
-        </div>
-      </section>
-    </>
+    </details>
   );
 }

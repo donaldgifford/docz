@@ -17,6 +17,29 @@ export const sanitizeSchema: Schema = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    code: [["className", /^language-./]],
+    code: [
+      ["className", /^language-./],
+      // Fence meta → codeblock caption (IMPL-0002 Phase 2, OQ-6a):
+      // conservative charset + length cap. A failing value drops the
+      // caption; the code block itself always survives. The value is
+      // only ever rendered as text (span.caption / data-caption).
+      ["metastring", /^[\w ./#+:=@()-]{1,120}$/],
+    ],
+    // GitHub-alert admonitions (IMPL-0002 Phase 3): value-restricted
+    // classNames — the alerts plugin runs pre-sanitize on mdast, so
+    // these must survive, but document HTML can at most opt into the
+    // same inert styling. Any other class token is stripped.
+    div: [
+      [
+        "className",
+        "admonition",
+        "note",
+        "tip",
+        "important",
+        "warning",
+        "caution",
+      ],
+    ],
+    span: [["className", "adm-label"]],
   },
 };

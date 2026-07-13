@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -53,10 +53,16 @@ describe("session menu", () => {
       await screen.findByRole("link", { name: "Continue with GitHub" }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
-    // The cleared cache refetches the now-dead session — the topbar
-    // flips to the signed-out affordance, proving nothing fetched
-    // under the old session survived.
-    expect(await screen.findByTestId("topbar-sign-in")).toBeInTheDocument();
+    // The cleared cache refetches the now-dead session — the avatar
+    // disappears, proving nothing fetched under the old session
+    // survived. No "Sign in" link appears: on /login the page itself
+    // is the affordance.
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Account: donaldgifford" }),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
   });
 
   it("falls back to email for OIDC identities", async () => {
@@ -88,6 +94,25 @@ describe("session menu", () => {
       "href",
       "/login",
     );
+  });
+
+  it("hides the topbar Sign in on /login itself", async () => {
+    server.use(
+      http.get("*/api/v1/auth/session", () =>
+        HttpResponse.json({ error: "session required" }, { status: 401 }),
+      ),
+    );
+    mountAt("/login");
+
+    expect(
+      await screen.findByRole("link", { name: "Continue with GitHub" }),
+    ).toBeInTheDocument();
+    // Wait for getSession to settle (placeholder gone) — the signed-out
+    // branch renders nothing here instead of the redundant link.
+    await waitFor(() => {
+      expect(screen.queryByTestId("session-pending")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
   });
 
   it("closes on Escape and hands focus back to the trigger", async () => {
