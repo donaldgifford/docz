@@ -21,6 +21,11 @@ import { visit } from "unist-util-visit";
 import { remarkCaptureCodeMeta } from "@/markdown/capture-code-meta";
 import { remarkGithubAlerts } from "@/markdown/github-alerts";
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
+import {
+  MarkdownH2,
+  MarkdownH3,
+  MarkdownH4,
+} from "@/markdown/markdown-heading";
 import { MarkdownPre } from "@/markdown/markdown-pre";
 import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
 import { sanitizeSchema } from "@/markdown/schema";
@@ -189,7 +194,14 @@ export async function renderMarkdown(
     Fragment,
     jsx,
     jsxs,
-    components: { a: MarkdownAnchor, pre: MarkdownPre },
+    components: {
+      a: MarkdownAnchor,
+      pre: MarkdownPre,
+      // ToC-collected headings get the copy-link affordance.
+      h2: MarkdownH2,
+      h3: MarkdownH3,
+      h4: MarkdownH4,
+    },
   });
   /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   return { content, toc };

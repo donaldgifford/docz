@@ -224,9 +224,9 @@ conventional commit per item, checking items off here as they land.
 - [x] **Palette prefetch** — wire `usePrefetchDoc` to cmdk's active
       item so palette → reader navigation is instant (nav/reader links
       already prefetch on hover/focus; the palette is the gap).
-- [ ] **Heading anchor copy** — hover affordance on reader headings to
+- [x] **Heading anchor copy** — hover affordance on reader headings to
       copy the deep link (anchors already exist via rehype-slug).
-- [ ] **Recent docs in the palette** — empty-query "recent" section
+- [x] **Recent docs in the palette** — empty-query "recent" section
       fed from a small localStorage list of last-opened docs (UI
       preference only; respects the no-tokens storage rule).
 - [x] **Hide the topbar "Sign in" link on `/login`** — redundant while

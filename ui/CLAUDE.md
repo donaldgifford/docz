@@ -95,6 +95,9 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `securityLevel: "strict"` AND `htmlLabels: false` — BOTH required
   (strict alone still materializes purified `<img src>` elements in
   foreignObject labels); render failure keeps the source visible.
+  h2–h4 map to `markdown-heading.tsx`, which appends the
+  hover/focus-revealed copy-link button (a labeled BUTTON, not a
+  link — the underline rule for prose links stays untouched).
   No `dangerouslySetInnerHTML` anywhere. Never widen
   `schema.ts` without extending the XSS suite — its only non-default
   allowances are `language-*` classes + the charset-validated
@@ -188,8 +191,14 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   home fallback, not an error.
 - Palette (`src/components/command-palette.tsx`, mounted in AppShell):
   state is palette-local, never the URL. cmdk normalizes item values —
-  keys are lowercased and navigation resolves hits through the list for
-  original casing. Snippets render ONLY through
+  keys are lowercased and navigation resolves through a unified
+  `entries` list (recents get a `recent:` value prefix so the same doc
+  in the results below keeps its own key). The empty query leads with
+  recently-opened docs from `src/lib/recentDocs.ts` (localStorage
+  `docz:recent-docs`, cap 8, coordinates+title ONLY — never tokens;
+  reads are segment-validated and malformed payloads reset the store;
+  the reader records entries on successful load). The highlighted hit
+  prefetches getDoc. Snippets render ONLY through
   `src/components/snippet.tsx` (splits on literal <em> markers, emits
   <mark>, everything else stays text) — never parse snippet HTML.
   jsdom setup stubs scrollIntoView/ResizeObserver for cmdk.

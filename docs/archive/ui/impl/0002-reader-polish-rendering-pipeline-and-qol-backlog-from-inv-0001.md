@@ -279,16 +279,16 @@ demoted from always-on rail block.
 
 #### Tasks
 
-- [ ] `src/lib/recentDocs.ts`: localStorage-backed list per OQ-7
+- [x] `src/lib/recentDocs.ts`: localStorage-backed list per OQ-7
       (validated on read — malformed JSON or wrong shape resets);
       recorded on successful doc load in the reader route.
-- [ ] Palette empty-query state: "recent" group above the default
+- [x] Palette empty-query state: "recent" group above the default
       results, rendered through the existing hit components; entries
       prefetch like other items (Phase 1 plumbing).
-- [ ] Heading anchor copy per OQ-8 in the reader prose (h2–h4, the
+- [x] Heading anchor copy per OQ-8 in the reader prose (h2–h4, the
       ToC-collected set); clipboard write via `navigator.clipboard`
       with a fallback; announced for screen readers.
-- [ ] Tests: recents record/evict/validate; palette shows recents on
+- [x] Tests: recents record/evict/validate; palette shows recents on
       empty query only; anchor copy puts the absolute URL on the
       clipboard (jsdom clipboard stub) and announces.
 

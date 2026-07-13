@@ -417,6 +417,25 @@
   .doc-prose img {
     max-width: 100%;
   }
+  /* Heading anchor copy (IMPL-0002 Phase 6): revealed on heading
+     hover or its own keyboard focus; a button, not a link, so the
+     link-in-text-block underline rule stays untouched. */
+  .doc-prose .heading-anchor {
+    margin-left: 0.5rem;
+    color: var(--color-fg-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  .doc-prose :is(h2, h3, h4):hover .heading-anchor,
+  .doc-prose .heading-anchor:focus-visible {
+    opacity: 1;
+  }
+  .doc-prose .heading-anchor:hover {
+    color: var(--color-accent);
+  }
   .doc-prose hr {
     border: none;
     border-top: 1px solid var(--color-border-hairline);
