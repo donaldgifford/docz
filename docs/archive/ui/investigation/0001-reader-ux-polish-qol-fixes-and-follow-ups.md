@@ -1,7 +1,7 @@
 ---
 id: INV-0001
 title: "Reader UX polish: QoL fixes and follow-ups"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-07-12
 ---
@@ -9,7 +9,7 @@ created: 2026-07-12
 
 # INV 0001: Reader UX polish: QoL fixes and follow-ups
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-07-12
 
@@ -156,9 +156,16 @@ gate (276 unit tests, lint, `tsc -b`, build, bundle budget, 9 e2e).
 **Answer:** Yes — all three papercuts were real defects, and two of
 three root causes differed from the initial theory (missing `h1` rule
 rather than frontmatter; scrollbar gutter rather than page CSS). All
-three are fixed on `chore/qol-tweaks`. The remaining polish items are
-enumerated below; this investigation stays **Open** until that backlog
-is done or explicitly dropped.
+three are fixed on `chore/qol-tweaks`. The remaining polish items
+were enumerated below and tracked to completion through IMPL-0002.
+
+**Concluded 2026-07-13:** all nine backlog items landed on
+`chore/qol-tweaks` via IMPL-0002 phases 1–7 (codeblock chrome, alert
+admonitions, lazy mermaid with the strict+htmlLabels security
+finding, the reader metadata-table header, palette prefetch/recents,
+heading copy-links, the /login tweak, and the README refresh), each
+verified live against donaldgifford/rfcs and gated by the full local
+CI chain.
 
 ## Recommendation
 
@@ -231,7 +238,7 @@ conventional commit per item, checking items off here as they land.
       preference only; respects the no-tokens storage rule).
 - [x] **Hide the topbar "Sign in" link on `/login`** — redundant while
       already on the login page.
-- [ ] **README refresh** — cover Phase 5 auth (`VITE_AUTH_PROVIDERS`),
+- [x] **README refresh** — cover Phase 5 auth (`VITE_AUTH_PROVIDERS`),
       `just local-up`/`local-down`, and the deploy compose story.
 
 ## References

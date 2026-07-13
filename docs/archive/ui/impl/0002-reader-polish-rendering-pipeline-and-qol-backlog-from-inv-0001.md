@@ -307,15 +307,16 @@ demoted from always-on rail block.
 
 #### Tasks
 
-- [ ] README refresh: Phase-5 auth (`VITE_AUTH_PROVIDERS`), local
+- [x] README refresh: Phase-5 auth (`VITE_AUTH_PROVIDERS`), local
       loop (`just local-up`/`local-down`), deploy compose story, and
       the rendering features from this plan.
-- [ ] Check off the corresponding INV-0001 backlog boxes; flip
+- [x] Check off the corresponding INV-0001 backlog boxes; flip
       INV-0001 status to Concluded with a closing note.
-- [ ] CLAUDE.md: final guidance pass (markdown pipeline stages now
+- [x] CLAUDE.md: final guidance pass (markdown pipeline stages now
       include alerts/chrome/mermaid; schema.ts widening rules).
-- [ ] Changelog regen; stacked-or-single PR per the merge-order
-      lesson from IMPL-0001 (single branch preferred).
+- [x] Changelog regen; stacked-or-single PR per the merge-order
+      lesson from IMPL-0001 (single branch: `chore/qol-tweaks`; PR
+      opens on push).
 
 #### Success Criteria
 
@@ -349,16 +350,16 @@ demoted from always-on rail block.
 
 ## Testing Plan
 
-- [ ] XSS suite grows with EVERY schema widening in the same commit:
+- [x] XSS suite grows with EVERY schema widening in the same commit:
       metastring payloads (Phase 2), forged admonition markup
       (Phase 3), hostile mermaid source (Phase 4).
-- [ ] Processor unit tests per pipeline stage; live-shape fixtures
+- [x] Processor unit tests per pipeline stage; live-shape fixtures
       copied from RFC-0002/RFC-0006 content patterns.
-- [ ] Bundle budget asserted every phase; Phase 4 adds an explicit
+- [x] Bundle budget asserted every phase; Phase 4 adds an explicit
       "mermaid not in entry chunk" check.
-- [ ] axe sweep additions: codeblock header, admonitions, mermaid
+- [x] axe sweep additions: codeblock header, admonitions, mermaid
       figure, metadata table, anchor affordance.
-- [ ] e2e: rendering journey over a fixture doc containing alerts +
+- [x] e2e: rendering journey over a fixture doc containing alerts +
       code chrome + mermaid; reader metadata header visible on deep
       link.
 

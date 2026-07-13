@@ -50,6 +50,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(auth)* 401 redirects to /login with destination stash and restore
 - *(auth)* Session-backed avatar menu with logout
 - *(auth)* Remember last-used provider in localStorage
+- *(repo-nav)* Collapsible per-type doc drawers
+- *(session-menu)* Hide the topbar Sign in link on /login
+- *(palette)* Prefetch the highlighted hit's doc
+- *(markdown)* Codeblock chrome — language badge and fence-meta caption
+- *(markdown)* GitHub alert callouts as styled admonitions
+- *(markdown)* Render mermaid fences as lazy, token-themed diagrams
+- *(reader)* Metadata table header, ToC-first rail, lifecycle drawer
+- *(palette)* Lead the empty query with recently-opened docs
+- *(reader)* Copy-link affordance on section headings
 
 ### Bug Fixes
 
@@ -58,6 +67,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(api)* Tolerate JSON null where docz-api marshals empty Go slices
 - *(a11y)* Make scrollable code blocks keyboard-focusable named regions
 - *(markdown)* Eliminate exponential backtracking in leading-h1 regex
+- *(theme)* Style doc-prose h1 and stabilize the viewport gutter
+- *(bundle-budget)* Measure the eager import closure, not just index-*.js
 
 ### Documentation
 
@@ -70,6 +81,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Record Phase 4 success-criteria verification
 - *(impl)* Verify Phase 5 acceptance criteria against the live stack
 - *(impl)* Check off the completed testing-plan items
+- *(claude)* Note nav drawer + doc-prose h1 guidance
+- *(inv)* INV-0001 — reader UX polish, root causes and QoL backlog
+- *(inv)* Add reader metadata-header item to the QoL backlog
+- *(inv)* Record RFC rendering gaps — alerts, mermaid, code chrome
+- *(inv)* Map rfc-site prior art onto the rendering backlog
+- *(impl)* IMPL-0002 — phased plan for the INV-0001 reader-polish backlog
+- *(impl)* Record IMPL-0002 open-question answers (all a)
+- README refresh, changelog regen, INV-0001 concluded
 
 ### Testing
 
@@ -80,6 +99,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(phase-2)* Close out component-test coverage and verify criteria
 - *(phase-3)* Four-state coverage for repo pages and criteria verification
 - *(auth)* E2e login loop with a mocked provider callback
+- *(palette)* Prove the prefetched hit opens without a second getDoc
 
 ### Miscellaneous Tasks
 
@@ -93,4 +113,6 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(lint)* ESLint flat config + Prettier normalization
 - *(tooling)* Rewrite mise.toml and justfile for the docz-site stack
 - Add ci.yml running the just ci chain via mise
+- Untrack session-local Claude loop state
+- *(deploy)* Local compose + just targets for the site container
 
