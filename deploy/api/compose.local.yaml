@@ -1,0 +1,116 @@
+# Local ENVIRONMENT stack for docz-api: the service built from the working
+# tree, its three dependencies, and an ngrok webhook tunnel — everything a
+# full end-to-end test needs on one machine (`just local-up`).
+#
+# The three compose environments:
+#   - repo root compose.yaml   — dependencies only; the service runs on the
+#     HOST via `just run` (fast edit-compile loop).
+#   - THIS FILE                — the whole stack in containers, including the
+#     locally-built image and ngrok; for testing the containerized service
+#     end to end (webhooks, login, ingest) from your machine.
+#   - deploy/compose.yaml      — the production-shaped reference deployment.
+#
+# Config comes from deploy/.env.local (gitignored); copy .env.local.example
+# and fill in your dev GitHub App values. The App private key is mounted from
+# deploy/secrets/github-app.pem like the production stack.
+#
+# Ports published: 8080 (service; OAuth callback goes to localhost:8080) and
+# 4040 (ngrok inspection UI + tunnel API). These clash with `just run` and
+# `just dev-tunnel` — the host-run dev loop and this environment are
+# alternatives, not roommates.
+---
+name: docz-api-local
+
+services:
+  docz-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${DOCZ_API_VERSION:-dev}
+        COMMIT: ${DOCZ_API_COMMIT:-none}
+        DATE: ${DOCZ_API_DATE:-unknown}
+    image: docz-api:local
+    env_file:
+      - .env.local
+    # Networking is overridden so the service reaches its dependencies by
+    # their compose service names regardless of what the env file says.
+    environment:
+      DATABASE_URL: postgres://docz:${POSTGRES_PASSWORD:-secret}@postgres:5432/docz_api?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      MEILI_HOST: http://meilisearch:7700
+      HTTP_ADDR: ":8080"
+      GITHUB_APP_PRIVATE_KEY: /run/secrets/github_app_key
+    secrets:
+      - github_app_key
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: docz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: docz_api
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docz -d docz_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_API_KEY:-masterKey}
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Public webhook URL for the dev GitHub App. In-network here (unlike the
+  # root compose.yaml's tunnel, which targets the host), so it points straight
+  # at the service container. NGROK_AUTHTOKEN comes from deploy/.env.local;
+  # set NGROK_ARGS=--domain=<name>.ngrok-free.app for a stable URL.
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http http://docz-api:8080 --log stdout ${NGROK_ARGS:-}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4040:4040" # ngrok inspection UI + tunnel API
+    depends_on:
+      - docz-api
+
+secrets:
+  github_app_key:
+    file: ./secrets/github-app.pem
+
+volumes:
+  postgres-data: {}
+  redis-data: {}
+  meili-data: {}

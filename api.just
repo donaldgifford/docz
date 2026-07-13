@@ -57,6 +57,85 @@ run: build
 run-local: build
     @{{ bin_dir }}/{{ project_name }}
 
+# ─── Dev stack ──────────────────────────────────────────────────────
+
+# Start the local dependency stack (Postgres, Redis, Meilisearch) and wait for health
+[group('dev')]
+dev-up:
+    @docker compose up -d --wait
+    @echo "✓ Dev stack up (postgres :5432, redis :6379, meilisearch :7700)"
+
+# Stop the dev stack (tunnel included); volumes are kept (see dev-nuke)
+[group('dev')]
+dev-down:
+    @docker compose --profile tunnel down
+    @echo "✓ Dev stack stopped"
+
+# Stop the dev stack (tunnel included) and wipe its volumes
+[group('dev')]
+dev-nuke:
+    @docker compose --profile tunnel down -v
+    @echo "✓ Dev stack stopped, volumes wiped"
+
+# Show dev stack status and health
+[group('dev')]
+dev-ps:
+    @docker compose --profile tunnel ps
+
+# Follow dev stack logs
+[group('dev')]
+dev-logs:
+    @docker compose --profile tunnel logs -f
+
+# Expose host :8080 via ngrok for GitHub webhooks (needs NGROK_AUTHTOKEN in .env)
+[group('dev')]
+dev-tunnel:
+    @docker compose --profile tunnel up -d ngrok
+    @for i in 1 2 3 4 5 6 7 8 9 10; do \
+        url=$(curl -fsS localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty'); \
+        if [ -n "$url" ]; then echo "✓ Webhook URL: $url/webhooks/github"; exit 0; fi; \
+        sleep 1; \
+    done; \
+    echo "✗ Tunnel not up after 10s — check 'just dev-logs' and http://localhost:4040"; exit 1
+
+# ─── Local environment (full stack in containers) ─────────────────
+
+local_compose := "docker compose -f deploy/compose.local.yaml --env-file deploy/.env.local"
+
+# Build + start the full local env: service, deps, ngrok (needs deploy/.env.local)
+[group('local')]
+local-up:
+    @test -f deploy/.env.local || { echo "✗ deploy/.env.local missing — cp deploy/.env.local.example deploy/.env.local and fill it in"; exit 1; }
+    @{{ local_compose }} up -d --build --wait
+    @for i in 1 2 3 4 5 6 7 8 9 10; do \
+        url=$(curl -fsS localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty'); \
+        if [ -n "$url" ]; then echo "✓ Local env up — webhook URL: $url/webhooks/github"; exit 0; fi; \
+        sleep 1; \
+    done; \
+    echo "✓ Local env up — tunnel still starting, check http://localhost:4040"
+
+# Stop the local env; volumes are kept (see local-nuke)
+[group('local')]
+local-down:
+    @{{ local_compose }} down
+    @echo "✓ Local env stopped"
+
+# Stop the local env and wipe its volumes
+[group('local')]
+local-nuke:
+    @{{ local_compose }} down -v
+    @echo "✓ Local env stopped, volumes wiped"
+
+# Show local env status and health
+[group('local')]
+local-ps:
+    @{{ local_compose }} ps
+
+# Follow local env logs (all services)
+[group('local')]
+local-logs:
+    @{{ local_compose }} logs -f
+
 # ─── Test ───────────────────────────────────────────────────────────
 
 # Run all tests with the race detector

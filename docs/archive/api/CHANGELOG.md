@@ -8,6 +8,16 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(repo-index)* Check off the IMPL-0003 testing plan
+- Add DEVELOPMENT.md for new-developer onboarding
+- *(deploy)* Document the GitHub App requirements for ingestion
+- *(deploy)* Document reusing the GitHub App as the OAuth login provider
+- *(deploy)* Note the email-permission exception in the permissions section
+
+### Miscellaneous Tasks
+
+- *(just)* Add dev-stack recipes wrapping docker compose
+- *(dev)* Add an ngrok webhook tunnel for local GitHub App dev
+- *(dev)* Add a full local environment stack (just local-up)
 
 ## [0.4.0] - 2026-07-11
 

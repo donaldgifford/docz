@@ -4,10 +4,10 @@
 # needs so `just run` (or `go run ./cmd/docz-api`) can reach them on localhost.
 # Hermetic CI tests use testcontainers-go instead (IMPL-0001 OQ 7 / OQ 9).
 #
-# Usage:
-#   docker compose up -d       # start in the background
-#   docker compose ps          # check health
-#   docker compose down        # stop (add -v to also wipe the volumes)
+# Usage (just recipes wrap docker compose):
+#   just dev-up      # start in the background, wait for health
+#   just dev-ps      # check health
+#   just dev-down    # stop (dev-nuke to also wipe the volumes)
 #
 # The credentials below are DEV-ONLY defaults that mirror .env.example; never
 # reuse them in a real deployment.
@@ -59,6 +59,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Webhook tunnel for local dev against a real GitHub App (profile: tunnel).
+  # The service itself runs on the HOST (`just run`), so ngrok targets
+  # host.docker.internal:8080. Start with `just dev-tunnel`; requires
+  # NGROK_AUTHTOKEN in .env (compose interpolates it from there). For a stable
+  # URL across restarts, set NGROK_ARGS=--domain=<your-free-static-domain>.
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http http://host.docker.internal:8080 --log stdout ${NGROK_ARGS:-}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "4040:4040" # ngrok inspection UI + tunnel API
+    profiles:
+      - tunnel
 
 volumes:
   postgres-data: {}
