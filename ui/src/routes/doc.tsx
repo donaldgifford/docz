@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 
 import { useGetDoc } from "@/api/__generated__/docz-api";
@@ -13,6 +13,7 @@ import {
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
+import { recordRecentDoc } from "@/lib/recentDocs";
 import { useRenderedMarkdown } from "@/markdown/useRenderedMarkdown";
 
 import type { Document } from "@/api/__generated__/docz-api.schemas";
@@ -109,6 +110,18 @@ export function Component() {
 
   const rendered = useRenderedMarkdown(doc, xrefs);
   const [format, setFormat] = useState<DocFormat>("html");
+
+  // Successful loads feed the palette's empty-query "recent" group.
+  useEffect(() => {
+    if (doc !== undefined) {
+      recordRecentDoc({
+        repo: doc.repo,
+        type: doc.type,
+        docId: doc.doc_id,
+        title: doc.title,
+      });
+    }
+  }, [doc]);
 
   if (docQuery.error instanceof SessionRequiredError) {
     return <SessionRequiredRedirect />;

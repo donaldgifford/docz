@@ -7,6 +7,7 @@ import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { StatusBadge } from "@/components/badges";
 import { Snippet } from "@/components/snippet";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
+import { readRecentDocs } from "@/lib/recentDocs";
 
 import type {
   SearchDocsParams,
@@ -61,6 +62,12 @@ function isEditableTarget(target: EventTarget | null): boolean {
 function hitKey(hit: SearchHit): string {
   return `${hit.repo}/${hit.type}/${hit.doc_id}`.toLowerCase();
 }
+
+const GROUP_CLASS =
+  "[&_[cmdk-group-heading]]:px-[0.6rem] [&_[cmdk-group-heading]]:pt-[0.6rem] [&_[cmdk-group-heading]]:pb-[0.3rem] [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:tracking-[0.06em] [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group-heading]]:uppercase";
+
+const ITEM_CLASS =
+  "cursor-pointer border-l-2 border-l-transparent px-[0.6rem] py-2 data-[selected=true]:border-l-accent data-[selected=true]:bg-bg-elevated";
 
 function PillButton({
   label,
@@ -187,15 +194,47 @@ export function CommandPalette({
 
   const hits = useMemo(() => result?.hits ?? [], [result]);
 
-  // Keep the highlight on a real hit (adjust-during-render): cmdk's
+  // Empty-query state leads with recently-opened docs (IMPL-0002
+  // Phase 6, OQ-7a) — synthesized as snippet-less hits so navigation,
+  // preview, and prefetch reuse the same machinery. Values get a
+  // `recent:` prefix; the same doc also appearing in the results list
+  // below keeps its own key.
+  const recentHits = useMemo<SearchHit[]>(() => {
+    if (!open || debouncedQ !== "") {
+      return [];
+    }
+    return readRecentDocs().map((entry) => ({
+      repo: entry.repo,
+      doc_id: entry.docId,
+      type: entry.type,
+      title: entry.title,
+      status: "",
+      author: "",
+      snippet: "",
+    }));
+  }, [open, debouncedQ]);
+
+  const entries = useMemo(
+    () => [
+      ...recentHits.map((hit) => ({ value: `recent:${hitKey(hit)}`, hit })),
+      ...hits.map((hit) => ({ value: hitKey(hit), hit })),
+    ],
+    [recentHits, hits],
+  );
+
+  // Keep the highlight on a real entry (adjust-during-render): cmdk's
   // value is controlled, so it never auto-selects — without this,
   // Enter before any ↑/↓/Tab would silently do nothing.
-  const firstHit = hits[0];
-  if (firstHit !== undefined && !hits.some((hit) => hitKey(hit) === active)) {
-    setActive(hitKey(firstHit));
+  const firstEntry = entries[0];
+  if (
+    firstEntry !== undefined &&
+    !entries.some((entry) => entry.value === active)
+  ) {
+    setActive(firstEntry.value);
   }
 
-  const activeHit = hits.find((hit) => hitKey(hit) === active) ?? hits[0];
+  const activeHit =
+    entries.find((entry) => entry.value === active)?.hit ?? entries[0]?.hit;
 
   // Warm the reader for the highlighted hit — the same treatment doc
   // links get on hover/focus, so Enter paints without a skeleton.
@@ -225,7 +264,7 @@ export function CommandPalette({
   }
 
   const openDoc = (key: string) => {
-    const hit = hits.find((candidate) => hitKey(candidate) === key);
+    const hit = entries.find((entry) => entry.value === key)?.hit;
     if (hit === undefined) {
       return;
     }
@@ -234,7 +273,7 @@ export function CommandPalette({
   };
 
   const moveActive = (delta: number) => {
-    const keys = hits.map(hitKey);
+    const keys = entries.map((entry) => entry.value);
     if (keys.length === 0) {
       return;
     }
@@ -354,13 +393,35 @@ export function CommandPalette({
             <Command.Empty className="px-4 py-6 font-mono text-[12.5px] text-fg-tertiary">
               No results{debouncedQ === "" ? "" : ` for “${debouncedQ}”`}.
             </Command.Empty>
+            {recentHits.length > 0 && (
+              <Command.Group heading="recent" className={GROUP_CLASS}>
+                {recentHits.map((hit) => {
+                  const value = `recent:${hitKey(hit)}`;
+                  return (
+                    <Command.Item
+                      key={value}
+                      value={value}
+                      onSelect={openDoc}
+                      className={ITEM_CLASS}
+                    >
+                      <div className="mb-[2px] font-mono text-[11.5px] text-fg-tertiary">
+                        {hit.doc_id} · {hit.repo.split("/").at(-1) ?? hit.repo}
+                      </div>
+                      <div className="text-[13.5px] text-fg-primary">
+                        {hit.title}
+                      </div>
+                    </Command.Item>
+                  );
+                })}
+              </Command.Group>
+            )}
             {groups.map(([repo, groupHits]) => (
               <Command.Group
                 key={repo}
                 heading={`${repo} — ${String(groupHits.length)} ${
                   groupHits.length === 1 ? "match" : "matches"
                 }`}
-                className="[&_[cmdk-group-heading]]:px-[0.6rem] [&_[cmdk-group-heading]]:pt-[0.6rem] [&_[cmdk-group-heading]]:pb-[0.3rem] [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:tracking-[0.06em] [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group-heading]]:uppercase"
+                className={GROUP_CLASS}
               >
                 {groupHits.map((hit) => {
                   const key = hitKey(hit);
@@ -369,7 +430,7 @@ export function CommandPalette({
                       key={key}
                       value={key}
                       onSelect={openDoc}
-                      className="cursor-pointer border-l-2 border-l-transparent px-[0.6rem] py-2 data-[selected=true]:border-l-accent data-[selected=true]:bg-bg-elevated"
+                      className={ITEM_CLASS}
                     >
                       <div className="mb-[2px] flex items-center justify-between gap-2">
                         <span className="font-mono text-[11.5px] text-fg-tertiary">

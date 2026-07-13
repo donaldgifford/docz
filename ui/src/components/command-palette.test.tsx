@@ -246,6 +246,61 @@ describe("command palette", () => {
     expect(docRequests.filter((id) => id === "IMPL-0001")).toHaveLength(1);
   });
 
+  it("leads the empty query with recent docs and opens them", async () => {
+    localStorage.setItem(
+      "docz:recent-docs",
+      JSON.stringify([
+        {
+          repo: "donaldgifford/docz-api",
+          type: "design",
+          docId: "DESIGN-0002",
+          title: "OpenAPI contract for docz-api and the docz-site",
+        },
+      ]),
+    );
+    const user = userEvent.setup();
+    const router = mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    const dialog = palette();
+    expect(await dialog.findByText("recent")).toBeInTheDocument();
+
+    // The recent entry is the initial highlight — Enter opens it.
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(
+        "/donaldgifford/docz-api/design/DESIGN-0002",
+      );
+    });
+  });
+
+  it("hides the recent group once a query is typed", async () => {
+    localStorage.setItem(
+      "docz:recent-docs",
+      JSON.stringify([
+        {
+          repo: "donaldgifford/docz-site",
+          type: "impl",
+          docId: "IMPL-0001",
+          title: SITE_IMPL_TITLE,
+        },
+      ]),
+    );
+    const user = userEvent.setup();
+    mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    const dialog = palette();
+    expect(await dialog.findByText("recent")).toBeInTheDocument();
+
+    await user.keyboard("ingestion service");
+    await waitFor(() => {
+      expect(dialog.queryByText("recent")).not.toBeInTheDocument();
+    });
+  });
+
   it("navigates to the reader on Enter and closes", async () => {
     const user = userEvent.setup();
     const router = mountAt("/repos");
