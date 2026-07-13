@@ -17,6 +17,13 @@ export const sanitizeSchema: Schema = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    code: [["className", /^language-./]],
+    code: [
+      ["className", /^language-./],
+      // Fence meta → codeblock caption (IMPL-0002 Phase 2, OQ-6a):
+      // conservative charset + length cap. A failing value drops the
+      // caption; the code block itself always survives. The value is
+      // only ever rendered as text (span.caption / data-caption).
+      ["metastring", /^[\w ./#+:=@()-]{1,120}$/],
+    ],
   },
 };

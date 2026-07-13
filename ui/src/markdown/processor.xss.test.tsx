@@ -29,7 +29,15 @@ function assertNeutralized(container: HTMLElement): void {
       expect(attr.name, `${el.tagName} carries ${attr.name}`).not.toMatch(
         /^on/i,
       );
-      expect(attr.name).not.toBe("style");
+      if (attr.name === "style") {
+        // Shiki inlines token colors AFTER sanitize (trusted,
+        // generated); document-supplied style must never survive
+        // anywhere else.
+        expect(
+          el.closest("pre.shiki"),
+          `${el.tagName} carries style outside a Shiki block`,
+        ).not.toBeNull();
+      }
       if (URL_ATTRIBUTES.includes(attr.name)) {
         expect(
           attr.value.trim().toLowerCase(),
@@ -90,6 +98,38 @@ describe("XSS payloads are neutralized", () => {
     ],
   ])("neutralizes %s", async (_name, payload) => {
     assertNeutralized(await renderToDom(payload));
+  });
+});
+
+describe("code fence meta stays inert", () => {
+  it("drops captions whose meta fails the schema charset", async () => {
+    const container = await renderToDom(
+      '```go "><img src=x onerror=alert(1)>\nx := 1\n```',
+    );
+    assertNeutralized(container);
+    // The caption is gone; the highlighted block itself survives.
+    expect(container.querySelector(".codeblock-header .caption")).toBeNull();
+    expect(container.querySelector("pre.shiki")).not.toBeNull();
+  });
+
+  it("renders charset-passing meta as text, never markup", async () => {
+    const container = await renderToDom("```go onclick=alert(1)\nx := 1\n```");
+    assertNeutralized(container);
+    const caption = container.querySelector(".codeblock-header .caption");
+    expect(caption?.textContent).toBe("onclick=alert(1)");
+  });
+
+  it("gives forged raw-HTML pre attributes no chrome", async () => {
+    const container = await renderToDom(
+      '<pre data-language="go" data-caption="forged"><code>x</code></pre>',
+    );
+    assertNeutralized(container);
+    // sanitize strips data-* from document HTML, so the wrapper and
+    // the language-aware region label never fire for forged markup.
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelector("pre")?.getAttribute("aria-label")).toBe(
+      "code block",
+    );
   });
 });
 

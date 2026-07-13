@@ -77,12 +77,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Markdown rendering lives in `src/markdown/` and ONLY there:
   `preprocess.ts` (strip frontmatter + docz toc block) →
   `processor.ts` `renderMarkdown()` (remark-parse → remark-gfm →
+  capture-code-meta (fence meta → `metastring` property) →
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
   collector → Shiki core highlighter, tokyo-night, slim lazy grammar
-  set → xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw,
-  highlight AFTER sanitize. No `dangerouslySetInnerHTML` anywhere.
-  Never widen `schema.ts` without extending the XSS suite.
+  set, chrome transformer stamping data-language/data-caption →
+  wrap-codeblock (div.codeblock header chrome; skips mermaid) →
+  xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw, highlight
+  AFTER sanitize. No `dangerouslySetInnerHTML` anywhere. Never widen
+  `schema.ts` without extending the XSS suite — its only non-default
+  allowances are `language-*` classes and the charset-validated
+  `metastring` on `code`; data-* on `pre` dies in sanitize, which is
+  exactly why the post-Shiki chrome can trust it.
 - Xrefs (`src/markdown/xrefs.ts`): doc-id tokens linkify only when they
   resolve in the caller-supplied map (UPPERCASED doc_id → href, built
   by `useRepoDocIndex` from listDocs) — the map is the whitelist and

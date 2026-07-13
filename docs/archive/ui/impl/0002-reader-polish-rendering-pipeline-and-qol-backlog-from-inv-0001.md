@@ -125,27 +125,27 @@ means the wrapper itself needs no schema surface.
 
 #### Tasks
 
-- [ ] `src/markdown/capture-code-meta.ts` (remark): surface the fence
+- [x] `src/markdown/capture-code-meta.ts` (remark): surface the fence
       meta string as a `metastring` property on the `code` node so it
       survives sanitize as a real property (node `data` does not).
-- [ ] `schema.ts`: allow `metastring` on `code`, value-validated per
+- [x] `schema.ts`: allow `metastring` on `code`, value-validated per
       OQ-6. Extend the XSS suite with hostile meta payloads
       (`onclick=`, quotes, angle brackets) asserting they render as
       inert text or are dropped.
-- [ ] Shiki transformer in `processor.ts`: stamp `dataLanguage` (from
+- [x] Shiki transformer in `processor.ts`: stamp `dataLanguage` (from
       `this.options.lang`, skip `text`/`plain`) and `dataCaption`
       (from validated meta) onto the emitted `<pre>`.
-- [ ] `src/markdown/wrap-codeblock.ts` (rehype, post-Shiki): wrap
+- [x] `src/markdown/wrap-codeblock.ts` (rehype, post-Shiki): wrap
       `pre[data-language]` in `div.codeblock` with a
       `div.codeblock-header` (lang span + optional caption span);
       idempotent; skips mermaid-marked blocks (Phase 4 dependency
       noted in-code from day one).
-- [ ] `MarkdownPre`: region `aria-label` becomes
+- [x] `MarkdownPre`: region `aria-label` becomes
       `"<lang> code block"` when `data-language` is present.
-- [ ] `tokens.css`: `.codeblock` / `.codeblock-header` styles ported
+- [x] `tokens.css`: `.codeblock` / `.codeblock-header` styles ported
       from rfc-site `styles.css` §167–200 onto docz tokens (sharp
       corners — no radius).
-- [ ] Tests: processor test for header structure (lang only, lang +
+- [x] Tests: processor test for header structure (lang only, lang +
       caption, plain fence untouched); axe sweep still green (header
       is decorative text, the region label carries the language).
 

@@ -238,6 +238,45 @@
     font-size: inherit;
     color: inherit;
   }
+  /* Codeblock chrome (IMPL-0002 Phase 2): language badge left,
+     optional fence-meta caption right. The header sits on bg-raised —
+     an enforced contrast surface for accent and fg-tertiary — so the
+     mathematical contrast gate covers both text colors. */
+  .doc-prose .codeblock {
+    margin: 1rem 0 1.4rem;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-code-bg);
+  }
+  .doc-prose .codeblock-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 1.1rem;
+    background: var(--color-bg-raised);
+    border-bottom: 1px solid var(--color-border-hairline);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .doc-prose .codeblock-header .lang {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+  .doc-prose .codeblock-header .caption {
+    color: var(--color-fg-tertiary);
+    font-size: 11px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .doc-prose .codeblock pre {
+    margin: 0;
+    border: none;
+  }
   .doc-prose img {
     max-width: 100%;
   }

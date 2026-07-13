@@ -209,7 +209,7 @@ conventional commit per item, checking items off here as they land.
       `securityLevel: "strict"` first — rfc-site's "loose" note
       conflates strict with sandbox) + mermaid-label payloads in the
       XSS suite. Failure keeps the source text visible._
-- [ ] **Code block chrome** — header bar on fenced blocks: uppercase
+- [x] **Code block chrome** — header bar on fenced blocks: uppercase
       language badge left, filename right when fence meta provides
       one.
       _Prior art: `wrap-codeblock.ts` + the `pre()` half of rfc-site's

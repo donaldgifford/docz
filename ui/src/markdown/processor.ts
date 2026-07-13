@@ -9,14 +9,20 @@ import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { createHighlighterCore, type HighlighterCore } from "shiki/core";
+import {
+  createHighlighterCore,
+  type HighlighterCore,
+  type ShikiTransformer,
+} from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 
+import { remarkCaptureCodeMeta } from "@/markdown/capture-code-meta";
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
 import { MarkdownPre } from "@/markdown/markdown-pre";
 import { sanitizeSchema } from "@/markdown/schema";
+import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
 
 import type { Root } from "hast";
@@ -83,6 +89,29 @@ function rehypeCollapseDoubleClobber() {
   };
 }
 
+// Stamps the codeblock-chrome hooks onto the emitted <pre>:
+// data-language feeds the header badge and MarkdownPre's region label,
+// data-caption the header's filename slot. Both land post-sanitize
+// from pipeline-generated values — schema.ts strips the same
+// attributes out of document HTML, and the caption string was already
+// charset-validated by the schema's metastring pattern.
+const codeblockChromeTransformer: ShikiTransformer = {
+  name: "docz:codeblock-chrome",
+  pre(node) {
+    // this.options.lang is post-fallback: a fence outside the slim
+    // grammar set reads "text" here and stays bare (nothing useful
+    // to badge when we can't highlight it either).
+    const lang = this.options.lang;
+    if (lang !== "" && lang !== "text" && lang !== "plain" && lang !== "txt") {
+      node.properties.dataLanguage = lang;
+    }
+    const caption = this.options.meta?.__raw;
+    if (typeof caption === "string" && caption.length > 0) {
+      node.properties.dataCaption = caption;
+    }
+  },
+};
+
 const TOC_TAGS: Readonly<Record<string, 2 | 3 | 4 | undefined>> = {
   h2: 2,
   h3: 3,
@@ -116,6 +145,7 @@ export async function renderMarkdown(
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkCaptureCodeMeta)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeSanitize, sanitizeSchema)
@@ -132,9 +162,11 @@ export async function renderMarkdown(
           theme: "tokyo-night",
           // Languages outside the slim set fall back to plain text.
           fallbackLanguage: "text",
+          transformers: [codeblockChromeTransformer],
         },
       ),
-    );
+    )
+    .use(() => rehypeWrapCodeblocks());
 
   /* eslint-disable @typescript-eslint/no-unsafe-assignment --
      typescript-eslint's checker computes an error type in this

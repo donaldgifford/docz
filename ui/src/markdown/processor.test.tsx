@@ -54,6 +54,44 @@ describe("renderMarkdown", () => {
     expect(pre?.getAttribute("aria-label")).toBe("code block");
   });
 
+  it("wraps highlighted blocks in codeblock chrome with a caption", async () => {
+    const { container } = await renderToDom(
+      "```go internal/ingest/parse.go\nfunc main() {}\n```",
+    );
+
+    const block = container.querySelector(".codeblock");
+    expect(block).not.toBeNull();
+    const header = block?.querySelector(".codeblock-header");
+    expect(header?.querySelector(".lang")?.textContent).toBe("go");
+    expect(header?.querySelector(".caption")?.textContent).toBe(
+      "internal/ingest/parse.go",
+    );
+    const pre = block?.querySelector("pre.shiki");
+    expect(pre).not.toBeNull();
+    expect(pre?.getAttribute("aria-label")).toBe("go code block");
+  });
+
+  it("renders a lang-only header when the fence has no meta", async () => {
+    const { container } = await renderToDom("```yaml\nkey: value\n```");
+
+    expect(
+      container.querySelector(".codeblock-header .lang")?.textContent,
+    ).toBe("yaml");
+    expect(container.querySelector(".codeblock-header .caption")).toBeNull();
+  });
+
+  it("leaves plain and unknown-language fences bare", async () => {
+    const { container } = await renderToDom(
+      "```\nplain text\n```\n\n```klingon\nqapla\n```",
+    );
+
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelectorAll("pre")).toHaveLength(2);
+    expect(container.querySelector("pre")?.getAttribute("aria-label")).toBe(
+      "code block",
+    );
+  });
+
   it("falls back to plain text for unknown languages", async () => {
     const { container } = await renderToDom(
       "```klingon\nqaStaHvIS wa' ram\n```",
