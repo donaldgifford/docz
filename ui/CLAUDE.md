@@ -77,7 +77,8 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Markdown rendering lives in `src/markdown/` and ONLY there:
   `preprocess.ts` (strip frontmatter + docz toc block) →
   `processor.ts` `renderMarkdown()` (remark-parse → remark-gfm →
-  capture-code-meta (fence meta → `metastring` property) →
+  github-alerts (`> [!KIND]` blockquotes → div.admonition.kind, five
+  kinds) → capture-code-meta (fence meta → `metastring` property) →
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
   collector → Shiki core highlighter, tokyo-night, slim lazy grammar
@@ -86,9 +87,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw, highlight
   AFTER sanitize. No `dangerouslySetInnerHTML` anywhere. Never widen
   `schema.ts` without extending the XSS suite — its only non-default
-  allowances are `language-*` classes and the charset-validated
-  `metastring` on `code`; data-* on `pre` dies in sanitize, which is
-  exactly why the post-Shiki chrome can trust it.
+  allowances are `language-*` classes + the charset-validated
+  `metastring` on `code`, and value-RESTRICTED admonition classNames
+  on div/span (forged markup gets the same inert styling at most);
+  data-* on `pre` dies in sanitize, which is exactly why the
+  post-Shiki chrome can trust it. Admonition tint backgrounds are
+  PRECOMPUTED hex tokens (`--color-adm-*-bg`) so contrast.test.ts can
+  enforce label/body pairs — don't swap them for color-mix.
 - Xrefs (`src/markdown/xrefs.ts`): doc-id tokens linkify only when they
   resolve in the caller-supplied map (UPPERCASED doc_id → href, built
   by `useRepoDocIndex` from listDocs) — the map is the whitelist and

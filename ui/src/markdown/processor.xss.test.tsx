@@ -133,6 +133,29 @@ describe("code fence meta stays inert", () => {
   });
 });
 
+describe("admonition classes stay inert", () => {
+  it("neutralizes payloads inside an alert body", async () => {
+    const container = await renderToDom(
+      '> [!WARNING]\n> <img src=x onerror=alert(1)> and <a href="javascript:alert(1)">x</a>',
+    );
+    assertNeutralized(container);
+    // The admonition itself still renders around the neutralized body.
+    expect(container.querySelector("div.admonition.warning")).not.toBeNull();
+  });
+
+  it("strips class tokens outside the admonition whitelist", async () => {
+    const container = await renderToDom(
+      '<div class="admonition caution topbar sr-only">forged</div>\n\n<span class="anything-else">x</span>',
+    );
+    assertNeutralized(container);
+    const div = container.querySelector("div");
+    // Whitelisted tokens survive as inert styling; the rest are gone.
+    expect(div?.className).toBe("admonition caution");
+    // No whitelisted token → the class list survives empty at most.
+    expect(container.querySelector("span")?.className ?? "").toBe("");
+  });
+});
+
 describe("benign markdown survives sanitization", () => {
   it("keeps GFM tables", async () => {
     const container = await renderToDom(

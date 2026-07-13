@@ -167,21 +167,21 @@ Prior art: rfc-site `github-alerts.ts` ports nearly verbatim.
 
 #### Tasks
 
-- [ ] `src/markdown/github-alerts.ts` (remark, after gfm): blockquote
+- [x] `src/markdown/github-alerts.ts` (remark, after gfm): blockquote
       whose first text starts with the alert marker →
       `div.admonition.<kind>` via `hName`/`hProperties`, marker text
       stripped, `span.adm-label` prepended with the kind label. Kind
       set per OQ-2.
-- [ ] `schema.ts`: allow `div` + `span` with value-RESTRICTED
+- [x] `schema.ts`: allow `div` + `span` with value-RESTRICTED
       classNames (`admonition`, kind names, `adm-label`) — nothing
       else. XSS suite: raw-HTML forged `<div class="admonition">`
       stays inert styling; forged other classes are stripped;
       alert-marker text inside `code`/`pre` is untouched.
-- [ ] `tokens.css`: admonition styles ported from rfc-site
+- [x] `tokens.css`: admonition styles ported from rfc-site
       `styles.css` §281–360 onto docz tokens (per-kind `color-mix`
       rows against existing status tokens; contrast pairs added to
       `contrast.test.ts` if any new text/bg combination lands).
-- [ ] Tests: each kind renders label + class; multi-paragraph body;
+- [x] Tests: each kind renders label + class; multi-paragraph body;
       nested markdown inside the alert; non-alert blockquote keeps
       pull-quote rendering; marker mid-document (not first line) is
       NOT lifted.

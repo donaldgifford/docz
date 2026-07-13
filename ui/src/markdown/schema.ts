@@ -25,5 +25,21 @@ export const sanitizeSchema: Schema = {
       // only ever rendered as text (span.caption / data-caption).
       ["metastring", /^[\w ./#+:=@()-]{1,120}$/],
     ],
+    // GitHub-alert admonitions (IMPL-0002 Phase 3): value-restricted
+    // classNames — the alerts plugin runs pre-sanitize on mdast, so
+    // these must survive, but document HTML can at most opt into the
+    // same inert styling. Any other class token is stripped.
+    div: [
+      [
+        "className",
+        "admonition",
+        "note",
+        "tip",
+        "important",
+        "warning",
+        "caution",
+      ],
+    ],
+    span: [["className", "adm-label"]],
   },
 };

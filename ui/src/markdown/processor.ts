@@ -19,6 +19,7 @@ import { unified } from "unified";
 import { visit } from "unist-util-visit";
 
 import { remarkCaptureCodeMeta } from "@/markdown/capture-code-meta";
+import { remarkGithubAlerts } from "@/markdown/github-alerts";
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
 import { MarkdownPre } from "@/markdown/markdown-pre";
 import { sanitizeSchema } from "@/markdown/schema";
@@ -145,6 +146,7 @@ export async function renderMarkdown(
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkGithubAlerts)
     .use(remarkCaptureCodeMeta)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)

@@ -178,7 +178,7 @@ conventional commit per item, checking items off here as they land.
       header area too. Lifecycle moves to a closed-by-default drawer
       (same disclosure pattern as the nav's type drawers) instead of
       always burning rail space.
-- [ ] **GitHub alert callouts** — transform `> [!NOTE|TIP|IMPORTANT|`
+- [x] **GitHub alert callouts** — transform `> [!NOTE|TIP|IMPORTANT|`
       `WARNING|CAUTION]` blockquotes into styled callout boxes (kind
       label + per-kind accent border/color); plain blockquotes keep
       the pull-quote treatment.
