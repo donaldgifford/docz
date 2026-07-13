@@ -251,17 +251,17 @@ demoted from always-on rail block.
 
 #### Tasks
 
-- [ ] `src/components/doc-meta-table.tsx`: bordered two-column table
+- [x] `src/components/doc-meta-table.tsx`: bordered two-column table
       under the doc header — fields per OQ-3 (`""`-omitting like the
       current rail metadata); repo · dir and source path rows; xref
       styling for values that are links.
-- [ ] Move the format switch (html/md/json) into the header area per
+- [x] Move the format switch (html/md/json) into the header area per
       OQ-5; keep deep-linkable behavior identical.
-- [ ] Lifecycle per OQ-4 (default from the OQ answer); reuse the
+- [x] Lifecycle per OQ-4 (default from the OQ answer); reuse the
       disclosure pattern from the nav drawers if a drawer.
-- [ ] Slim the right rail to ToC-first; remove the now-duplicated
+- [x] Slim the right rail to ToC-first; remove the now-duplicated
       metadata block; keep the rail's 1181px collapse behavior.
-- [ ] Update `doc.test.tsx` (four-state matrix + metadata omission
+- [x] Update `doc.test.tsx` (four-state matrix + metadata omission
       tests move to the table), axe sweep (table semantics), and the
       e2e reader journey if selectors moved.
 

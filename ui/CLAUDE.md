@@ -146,6 +146,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   left refetches everything under the dead session.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
+  Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata is a
+  bordered table under the doc header (`doc-meta-table.tsx`, fields
+  ""-omitting, format switch html/md/json right-aligned above it) and
+  the lifecycle is a closed-by-default `<details>` owned by
+  `LifecycleRail` (renders nothing — shell included — for unknown
+  types). Gated mockup rows (relationships, tags) slot into the table
+  when the DESIGN-0001 API asks land.
 - Directory (`src/routes/directory.tsx`): the URL is the only source of
   filter truth — read via `parseSearchParams`, write via
   `serializeSearchState` (`src/lib/searchParams.ts`; its

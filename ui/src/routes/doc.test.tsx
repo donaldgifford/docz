@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -98,7 +98,7 @@ describe("reader four-state matrix", () => {
   });
 });
 
-describe("metadata card omission", () => {
+describe("metadata table omission", () => {
   it("omits empty-string fields and falls back in the header", async () => {
     const base = DEMO_DOCS.find((doc) => doc.doc_id === "DESIGN-0001");
     server.use(
@@ -117,24 +117,55 @@ describe("metadata card omission", () => {
 
     // header meta: no pill, author falls back
     expect(screen.getByText("unassigned")).toBeInTheDocument();
-    // rail metadata rows for ""-valued fields are gone entirely
-    expect(screen.queryByText("Status")).not.toBeInTheDocument();
-    expect(screen.queryByText("Author")).not.toBeInTheDocument();
+    // table rows for ""-valued fields are gone entirely
     expect(screen.queryByText("Created")).not.toBeInTheDocument();
     expect(screen.queryByText("Commit")).not.toBeInTheDocument();
-    // non-empty fields stay
-    expect(screen.getByText("Updated")).toBeInTheDocument();
-    expect(screen.getByText("all fields · json →")).toHaveAttribute(
+    // fields the DTO always carries stay
+    const table = within(
+      screen.getByRole("table", { name: "Document metadata" }),
+    );
+    expect(
+      table.getByRole("rowheader", { name: "Source" }),
+    ).toBeInTheDocument();
+    expect(
+      table.getByRole("link", { name: "donaldgifford/docz-site" }),
+    ).toHaveAttribute("href", "/donaldgifford/docz-site");
+    expect(screen.getByRole("link", { name: "json" })).toHaveAttribute(
       "href",
       "/api/v1/repos/donaldgifford/docz-site/types/design/docs/DESIGN-0001",
     );
   });
+
+  it("renders the populated table with the format switch", async () => {
+    mountAt(DOC_URL);
+    await findRenderedDesign0001();
+
+    expect(screen.getByRole("rowheader", { name: "Type" })).toBeInTheDocument();
+    expect(screen.getByText("design · DESIGN-0001")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "docs/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md",
+        { selector: "td *" },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("fixture-sha-design-0001".slice(0, 7)),
+    ).toBeInTheDocument();
+
+    const group = screen.getByRole("group", { name: "Document format" });
+    const html = within(group).getByRole("button", { name: "html" });
+    expect(html).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(within(group).getByRole("button", { name: "md" }));
+    expect(
+      screen.getByRole("region", { name: "raw markdown" }),
+    ).toBeInTheDocument();
+  });
 });
 
-describe("lifecycle rail positioning", () => {
+describe("lifecycle disclosure", () => {
   // The docz-api design doc is ~1200 lines; give the pipeline headroom.
   it(
-    "marks stops done/current/pending around the doc status",
+    "stays closed by default and marks stops around the doc status",
     { timeout: 20_000 },
     async () => {
       // docz-api DESIGN-0001 is Approved: Draft, In Review done; Approved
@@ -146,6 +177,8 @@ describe("lifecycle rail positioning", () => {
         { timeout: 10_000 },
       );
 
+      const disclosure = await screen.findByTestId("lifecycle-disclosure");
+      expect(disclosure).not.toHaveAttribute("open");
       const rail = await screen.findByTestId("lifecycle-rail");
       const states = [...rail.querySelectorAll("[data-lifecycle-state]")].map(
         (el) => [el.textContent, el.getAttribute("data-lifecycle-state")],

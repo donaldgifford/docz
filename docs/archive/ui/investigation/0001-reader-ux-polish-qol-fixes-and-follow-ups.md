@@ -167,7 +167,7 @@ conventional commit per item, checking items off here as they land.
 
 ### Follow-up backlog
 
-- [ ] **Reader metadata table in the doc header** — long documents
+- [x] **Reader metadata table in the doc header** — long documents
       produce long right-rail ToCs, burying the metadata (and the
       html/md/json format switch) below the fold of the rail. Adopt
       the mockup's doc-portal treatment: a bordered key/value metadata
