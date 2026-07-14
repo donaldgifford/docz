@@ -178,6 +178,55 @@ There is also the production-shaped reference deployment in
 `deploy/README.md` covers that layout, secrets handling, and
 health/observability endpoints in detail.
 
+### Local monitoring stack (`just monitor-up`)
+
+`deploy/compose.monitoring.yaml` runs the **observability backends only** — not
+the service or its data dependencies. Pair it with the app running either on the
+host (`just run`) or containerized (`just local-up`):
+
+```sh
+just monitor-up          # prometheus, grafana, jaeger, loki, otel-collector, alloy
+just monitor-auth-up     # + keycloak, for local OIDC login testing
+just monitor-logs        # follow all backend logs
+just monitor-down        # stop everything (keycloak included); volumes kept
+```
+
+What runs where:
+
+| Backend        | URL                      | Purpose                                           |
+| -------------- | ------------------------ | ------------------------------------------------- |
+| Grafana        | `http://localhost:3000`  | dashboards (anonymous admin; "docz-api overview") |
+| Prometheus     | `http://localhost:9090`  | scrapes the app's `/metrics` via the host gateway |
+| Jaeger         | `http://localhost:16686` | trace explorer                                    |
+| Loki           | `http://localhost:3100`  | log store (fed by alloy + otel-collector)         |
+| otel-collector | `http://localhost:4318`  | OTLP/HTTP ingest → jaeger (traces) + loki (logs)  |
+| Alloy          | `http://localhost:12345` | tails container stdout JSON logs → loki           |
+| Keycloak       | `http://localhost:8180`  | local OIDC IdP (`--profile auth` only)            |
+
+To send the app's telemetry into the stack, set two env vars (both are in
+`.env.example` under "Local monitoring stack"):
+
+```sh
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318   # host:port, NO scheme (WithEndpoint)
+LOG_FORMAT=json                              # so alloy can label trace_id/span_id
+```
+
+For the containerized app (`just local-up`), point the collector at the host
+gateway instead: `OTEL_EXPORTER_OTLP_ENDPOINT=host.docker.internal:4318` in
+`deploy/.env.local`. Prometheus already scrapes `host.docker.internal:8080`, so
+metrics work for both run modes. After a few requests, the Grafana overview
+dashboard shows request/latency/error/ingest panels and a traced request appears
+in Jaeger.
+
+**Keycloak login walkthrough** (`just monitor-auth-up`): the seeded realm
+`docz-api` ships one confidential client (`docz-api` / `dev-docz-api-secret`,
+redirect `http://localhost:8080/auth/callback`) and one verified user (`dev` /
+`dev-password`). Enable the keycloak block in `.env` (`AUTH_PROVIDERS` includes
+`keycloak`, `KEYCLOAK_ISSUER=http://localhost:8180/realms/docz-api`, matching
+client id/secret), start the app, then visit
+`http://localhost:8080/auth/login?provider=keycloak` and sign in as `dev` — the
+callback exchanges the code, upserts the user, and issues a session cookie.
+
 ## Test
 
 ```sh

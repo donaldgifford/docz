@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: servicemonitor
+templates:
+  - templates/servicemonitor.yaml
+tests:
+  - it: should not create servicemonitor by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create servicemonitor when enabled
+    set:
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: ServiceMonitor
+
+  - it: should not create servicemonitor when metrics are disabled
+    set:
+      serviceMonitor:
+        enabled: true
+      metrics:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should set scrape interval
+    set:
+      serviceMonitor:
+        enabled: true
+        interval: 15s
+    asserts:
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 15s
+
+  - it: should set additional labels
+    set:
+      serviceMonitor:
+        enabled: true
+        labels:
+          prometheus: kube-prometheus
+    asserts:
+      - equal:
+          path: metadata.labels.prometheus
+          value: kube-prometheus
+
+  - it: should scrape the http port at /metrics
+    set:
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.endpoints[0].port
+          value: http
+      - equal:
+          path: spec.endpoints[0].path
+          value: /metrics

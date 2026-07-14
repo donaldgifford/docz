@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: prometheusrule
+templates:
+  - templates/prometheusrule.yaml
+tests:
+  - it: should not create prometheusrule by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create prometheusrule when enabled
+    set:
+      prometheusRule:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: PrometheusRule
+      - equal:
+          path: spec.groups[0].name
+          value: docz-api.rules
+
+  - it: should include all five docz-api alerts
+    set:
+      prometheusRule:
+        enabled: true
+    asserts:
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPIDown
+          any: true
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPIHighErrorRate
+          any: true
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPISlowRequests
+          any: true
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPIIngestFailures
+          any: true
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPISlowIngest
+          any: true
+
+  - it: should mark DoczAPIDown critical
+    set:
+      prometheusRule:
+        enabled: true
+    asserts:
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPIDown
+            for: 5m
+            labels:
+              severity: critical
+          any: true
+
+  - it: should reference only docz-api metric namespaces
+    set:
+      prometheusRule:
+        enabled: true
+    asserts:
+      - matchRegex:
+          path: spec.groups[0].rules[1].expr
+          pattern: docz_api_http_requests_total
+      - matchRegex:
+          path: spec.groups[0].rules[3].expr
+          pattern: docz_api_ingest_jobs_total
+
+  - it: should set additional labels
+    set:
+      prometheusRule:
+        enabled: true
+        labels:
+          release: kube-prometheus-stack
+    asserts:
+      - equal:
+          path: metadata.labels.release
+          value: kube-prometheus-stack

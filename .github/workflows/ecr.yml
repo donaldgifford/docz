@@ -1,0 +1,337 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: Publish to ECR
+
+# Called from release.yml after bump-version. Also dispatchable for ad-hoc
+# republishes. Two jobs:
+#   image — push container image when `tag` is supplied
+#   chart — push Helm chart; idempotent via `helm pull` precheck
+#
+# Operator prep (one-time, outside this workflow):
+#   - IAM role with GitHub OIDC trust policy for repo:donaldgifford/docz-api:*
+#   - ECR repos: docz-api (image), docz-api (chart)
+#   - Repo secrets: ECR_AWS_ACCOUNT_ID, ECR_REGION, ECR_ROLE_ARN
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Image tag to publish (e.g. v1.8.2). Empty = skip image push.'
+        type: string
+        required: false
+        default: ''
+      dry_run:
+        description: 'Package but do not push.'
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to publish (e.g. v1.8.2). Leave empty to skip image push.'
+        type: string
+        required: false
+        default: ''
+      dry_run:
+        description: 'Package but do not push.'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  IMAGE_NAME: docz-api
+  CHART_NAME: docz-api
+  CHART_REPO: docz-api
+
+jobs:
+  # Fetches an ECR auth token via OIDC and exposes it (masked) to the
+  # downstream SLSA reusable workflows. Token is valid ~12h.
+  aws-auth:
+    name: AWS OIDC + ECR login
+    runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.registry.outputs.registry }}
+      ecr_password: ${{ steps.token.outputs.password }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ECR_ROLE_ARN }}
+          role-session-name: github-actions-docz-api-publish
+          aws-region: ${{ secrets.ECR_REGION }}
+
+      - name: Compute registry hostname
+        id: registry
+        run: |
+          echo "registry=${{ secrets.ECR_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.ECR_REGION }}.amazonaws.com" >> "$GITHUB_OUTPUT"
+
+      - name: Get ECR auth token
+        id: token
+        run: |
+          password=$(aws ecr get-login-password --region "${{ secrets.ECR_REGION }}")
+          echo "::add-mask::${password}"
+          echo "password=${password}" >> "$GITHUB_OUTPUT"
+
+  image:
+    name: Publish image
+    runs-on: ubuntu-latest
+    needs: aws-auth
+    if: inputs.tag != ''
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+      published: ${{ steps.digest.outputs.published }}
+      registry: ${{ needs.aws-auth.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ECR_ROLE_ARN }}
+          role-session-name: github-actions-docz-api-image
+          aws-region: ${{ secrets.ECR_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.aws-auth.outputs.registry }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }}
+            type=raw,value=latest
+
+      # bake reads VERSION/COMMIT_SHA/BUILD_DATE from same-named env vars and
+      # feeds them to the Dockerfile ARGs (-> -ldflags main.version/commit/date).
+      # metadata-action fixes tags/labels only, not the compiled-in version.
+      - name: Compute build metadata
+        run: |
+          {
+            echo "VERSION=${{ inputs.tag }}"
+            echo "COMMIT_SHA=${{ github.sha }}"
+            echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_ENV"
+
+      - name: Build and push image
+        id: bake
+        if: inputs.dry_run != true
+        uses: docker/bake-action@v7
+        with:
+          targets: release
+          source: .
+          files: |
+            docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file-tags }}
+            ${{ steps.meta.outputs.bake-file-labels }}
+          set: |-
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
+      - name: Capture image digest
+        id: digest
+        if: steps.bake.conclusion == 'success' && inputs.dry_run != true
+        # Metadata is passed via env, NOT interpolated into the script:
+        # the bake metadata JSON can contain quotes/parens that break
+        # shell syntax when inlined (broke the v1.8.2 release run).
+        env:
+          BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
+        run: |
+          digest=$(jq -r '.release."containerimage.digest"' <<< "${BAKE_METADATA}")
+          if [ -z "${digest}" ] || [ "${digest}" = "null" ]; then
+            echo "ERROR: failed to capture image digest from bake metadata"
+            exit 1
+          fi
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
+      - name: Sign image with cosign
+        if: steps.digest.outputs.published == 'true'
+        run: |
+          cosign sign --yes \
+            "${{ needs.aws-auth.outputs.registry }}/${IMAGE_NAME}@${{ steps.digest.outputs.digest }}"
+
+      - name: Write image summary
+        if: always()
+        run: |
+          {
+            echo "## ECR Image Publish"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Image | \`${{ needs.aws-auth.outputs.registry }}/${IMAGE_NAME}\` |"
+            echo "| Tag | \`${{ inputs.tag }}\` |"
+            echo "| Pushed | \`${{ steps.digest.outputs.published || 'false' }}\` |"
+            if [ -n "${{ steps.digest.outputs.digest }}" ]; then
+              echo "| Digest | \`${{ steps.digest.outputs.digest }}\` |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  image-slsa:
+    name: SLSA provenance (image)
+    needs: [aws-auth, image]
+    if: needs.image.outputs.published == 'true'
+    # packages: write — the generator's internal job declares it
+    # unconditionally ("upload attestations to ghcr.io"), even though
+    # this call publishes to ECR. Omitting it fails the ENTIRE calling
+    # run (release.yml) at startup via the nested-permissions ceiling.
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.aws-auth.outputs.registry }}/docz-api
+      digest: ${{ needs.image.outputs.digest }}
+      registry-username: AWS
+    secrets:
+      registry-password: ${{ needs.aws-auth.outputs.ecr_password }}
+
+  chart:
+    name: Publish chart
+    runs-on: ubuntu-latest
+    needs: aws-auth
+    outputs:
+      chart_version: ${{ steps.version.outputs.chart_version }}
+      digest: ${{ steps.push.outputs.digest }}
+      published: ${{ steps.push.outputs.published }}
+      registry: ${{ needs.aws-auth.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: azure/setup-helm@v5
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ECR_ROLE_ARN }}
+          role-session-name: github-actions-docz-api
+          aws-region: ${{ secrets.ECR_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - uses: orhun/git-cliff-action@v4
+        with:
+          config: charts/docz-api/cliff.toml
+          args: --include-path "charts/**" --output charts/docz-api/CHANGELOG.md
+        env:
+          OUTPUT: charts/docz-api/CHANGELOG.md
+
+      - name: Read chart version
+        id: version
+        run: |
+          chart_version=$(yq '.version' charts/docz-api/Chart.yaml)
+          echo "chart_version=${chart_version}" >> "$GITHUB_OUTPUT"
+          echo "Chart version: ${chart_version}"
+
+      - name: Check if version already published
+        id: idempotency
+        run: |
+          registry="${{ needs.aws-auth.outputs.registry }}"
+          if helm pull \
+              "oci://${registry}/${CHART_REPO}" \
+              --version "${{ steps.version.outputs.chart_version }}" \
+              --destination /tmp 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Chart ${{ steps.version.outputs.chart_version }} already published, skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Helm registry login
+        if: steps.idempotency.outputs.exists != 'true'
+        run: |
+          registry="${{ needs.aws-auth.outputs.registry }}"
+          aws ecr get-login-password --region "${{ secrets.ECR_REGION }}" | \
+            helm registry login "${registry}" \
+              --username AWS \
+              --password-stdin
+
+      - name: Package chart
+        if: steps.idempotency.outputs.exists != 'true'
+        run: helm package charts/docz-api
+
+      - name: Upload chart artifact (dispatch only)
+        if: |
+          steps.idempotency.outputs.exists != 'true' &&
+          github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chart-${{ steps.version.outputs.chart_version }}-ecr
+          path: ${{ env.CHART_NAME }}-${{ steps.version.outputs.chart_version }}.tgz
+          retention-days: 14
+
+      - name: Push chart
+        id: push
+        if: |
+          steps.idempotency.outputs.exists != 'true' &&
+          inputs.dry_run != true
+        run: |
+          registry="${{ needs.aws-auth.outputs.registry }}"
+          tgz="${CHART_NAME}-${{ steps.version.outputs.chart_version }}.tgz"
+          helm push "${tgz}" "oci://${registry}/${CHART_REPO}" 2>&1 | tee /tmp/push.log
+          digest=$(grep -oE 'sha256:[a-f0-9]{64}' /tmp/push.log | head -1)
+          if [ -z "${digest}" ]; then
+            echo "ERROR: failed to capture digest from helm push output"
+            exit 1
+          fi
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
+      - name: Sign chart with cosign
+        if: steps.push.outputs.published == 'true'
+        run: |
+          cosign sign --yes \
+            "${{ needs.aws-auth.outputs.registry }}/${CHART_REPO}@${{ steps.push.outputs.digest }}"
+
+      - name: Write chart summary
+        if: always()
+        run: |
+          {
+            echo "## ECR Chart Publish"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Chart | \`${CHART_NAME}\` |"
+            echo "| Version | \`${{ steps.version.outputs.chart_version }}\` |"
+            echo "| Already published | \`${{ steps.idempotency.outputs.exists }}\` |"
+            echo "| Pushed | \`${{ steps.push.outputs.published || 'false' }}\` |"
+            if [ -n "${{ steps.push.outputs.digest }}" ]; then
+              ver="${{ steps.version.outputs.chart_version }}"
+              uri="oci://${{ needs.aws-auth.outputs.registry }}/${CHART_REPO}:${ver}"
+              echo "| Digest | \`${{ steps.push.outputs.digest }}\` |"
+              echo "| OCI URL | \`${uri}\` |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  chart-slsa:
+    name: SLSA provenance (chart)
+    needs: [aws-auth, chart]
+    if: needs.chart.outputs.published == 'true'
+    # packages: write — same nested-ceiling requirement as image-slsa.
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.aws-auth.outputs.registry }}/docz-api
+      digest: ${{ needs.chart.outputs.digest }}
+      registry-username: AWS
+    secrets:
+      registry-password: ${{ needs.aws-auth.outputs.ecr_password }}

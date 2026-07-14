@@ -10,82 +10,87 @@
 // docker/metadata-action's bake-file outputs.
 
 variable "REGISTRY" {
-  default = "ghcr.io/donaldgifford/docz-api"
+  default = "ghcr.io"
 }
 
-variable "TAG" {
-  default = "dev"
+variable "IMAGE_NAME" {
+  default = "donaldgifford/docz-api"
 }
 
 variable "VERSION" {
-  default = "0.0.0-dev"
+  default = "dev"
 }
 
-group "default" {
-  targets = ["docz-api"]
+variable "COMMIT_SHA" {
+  default = ""
 }
 
-group "ci" {
-  targets = ["docz-api-ci"]
+variable "BUILD_DATE" {
+  default = ""
 }
 
-group "release" {
-  targets = ["docz-api-release"]
+function "tags" {
+  params = [version]
+  result = version == "dev" ? [
+    "${REGISTRY}/${IMAGE_NAME}:dev",
+    ] : [
+    "${REGISTRY}/${IMAGE_NAME}:${version}",
+    "${REGISTRY}/${IMAGE_NAME}:latest",
+  ]
 }
 
+// Base target with shared configuration.
 target "_common" {
-  context    = "."
   dockerfile = "Dockerfile"
+  context    = "."
+  // Build args feed the Dockerfile's VERSION/COMMIT/DATE ARGs, which the
+  // build injects via -ldflags into main.version/commit/date. The bake
+  // variables (VERSION/COMMIT_SHA/BUILD_DATE) are set by the publish
+  // workflows; without this block every image compiled in version=dev.
   args = {
     VERSION = "${VERSION}"
+    COMMIT  = "${COMMIT_SHA}"
+    DATE    = "${BUILD_DATE}"
   }
   labels = {
     "org.opencontainers.image.source"      = "https://github.com/donaldgifford/docz-api"
+    "org.opencontainers.image.revision"    = "${COMMIT_SHA}"
+    "org.opencontainers.image.created"     = "${BUILD_DATE}"
+    "org.opencontainers.image.version"     = "${VERSION}"
     "org.opencontainers.image.licenses"    = "Apache-2.0"
     "org.opencontainers.image.description" = "A Go API for docz repos"
   }
 }
 
-// Stub providing default `tags` for local `docker buildx bake`. CI
-// runs override this target via docker/metadata-action's
-// bake-file-tags output so the bake pushes the same semver-derived
-// image refs the metadata-action emits — which is what cosign then
-// signs in the next step. The release target inherits from this and
-// does NOT declare tags itself, so the override actually takes
-// effect (with HCL inheritance, a child's tags list replaces the
-// parent's, not extends it).
-target "docker-metadata-action" {
-  tags = [
-    "${REGISTRY}:${TAG}",
-    "${REGISTRY}:latest",
-  ]
-}
-
-target "docz-api" {
+// Local development build — single-arch, loads into Docker daemon.
+target "dev" {
   inherits = ["_common"]
-  tags     = ["${REGISTRY}:${TAG}"]
-  platforms = [
-    "linux/amd64",
-  ]
+  tags     = tags("dev")
+  output   = ["type=docker"]
 }
 
-// CI builds are linux/amd64 only — emulated arm64 builds via QEMU on
-// GitHub's ubuntu-latest runners take ~25 min and dominate PR feedback
-// time. Multi-arch coverage is restored in the release target, which
-// runs only on tag pushes.
-target "docz-api-ci" {
-  inherits  = ["_common"]
-  tags      = ["${REGISTRY}:${TAG}-ci"]
-  platforms = ["linux/amd64"]
+// CI validation build — multi-arch, no push.
+target "ci" {
+  inherits   = ["_common"]
+  tags       = tags(VERSION)
+  platforms  = ["linux/amd64", "linux/arm64"]
+  output     = ["type=cacheonly"]
+  cache-from = ["type=gha"]
+  cache-to   = ["type=gha,mode=max"]
 }
 
-target "docz-api-release" {
-  inherits = ["_common", "docker-metadata-action"]
-  // tags intentionally omitted — they come from docker-metadata-action
-  // (defaults for local bake; CI overrides via metadata-action).
-  platforms = [
-    "linux/amd64",
-    "linux/arm64",
-  ]
-  output = ["type=registry"]
+// Populated by docker/metadata-action in CI with computed tags and labels.
+// Default tags are used for local `make docker-push`; CI overrides via bake file merge.
+target "docker-metadata-action" {
+  tags = tags(VERSION)
+}
+
+// Release build — multi-arch, pushes to registry.
+// Tags are inherited from docker-metadata-action (overridden by metadata-action in CI).
+target "release" {
+  inherits   = ["_common", "docker-metadata-action"]
+  platforms  = ["linux/amd64", "linux/arm64"]
+  output     = ["type=registry"]
+  cache-from = ["type=gha"]
+  cache-to   = ["type=gha,mode=max"]
 }

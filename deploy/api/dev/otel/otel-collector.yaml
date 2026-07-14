@@ -1,0 +1,56 @@
+---
+# OpenTelemetry Collector config for local dev.
+#
+# Receives OTLP from docz-api (host-run binary) on 4317 (gRPC) + 4318 (HTTP).
+# Fans out:
+#   traces -> jaeger (OTLP on :4317, internal to compose network)
+#   logs   -> loki (native OTLP ingest on :3100)
+#
+# docz-api points at this collector via OTEL_EXPORTER_OTLP_ENDPOINT.
+# Metrics are pull-based: Prometheus scrapes docz-api's /metrics directly
+# (see prometheus/prometheus.yaml), so there is no metrics pipeline here.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+
+exporters:
+  # Jaeger ingests OTLP directly; no separate jaeger exporter needed.
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # Loki's native OTLP ingest endpoint (the standalone `loki` exporter was
+  # removed from collector-contrib). otlphttp appends /v1/logs to the endpoint.
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/jaeger]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]

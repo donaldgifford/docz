@@ -1,0 +1,227 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: backend deployment shapes
+templates:
+  - templates/deployment.yaml
+  - templates/store-postgres.yaml
+  - templates/store-postgres-secret.yaml
+  - templates/store-cnpg-cluster.yaml
+  - templates/store-cnpg-pooler.yaml
+  - templates/queue-valkey.yaml
+  - templates/queue-valkey-secret.yaml
+  - templates/search-meili.yaml
+  - templates/search-meili-secret.yaml
+set:
+  config:
+    authRedirectBase: "https://docz.example.com"
+  search:
+    meili:
+      masterKey: "meili-master"
+tests:
+  - it: default values render baked Postgres + Valkey + Meilisearch resources
+    asserts:
+      - equal:
+          path: kind
+          value: StatefulSet
+        template: templates/store-postgres.yaml
+        documentIndex: 0
+      - equal:
+          path: kind
+          value: Secret
+        template: templates/store-postgres-secret.yaml
+      - equal:
+          path: kind
+          value: StatefulSet
+        template: templates/queue-valkey.yaml
+        documentIndex: 0
+      - equal:
+          path: kind
+          value: Secret
+        template: templates/queue-valkey-secret.yaml
+      - equal:
+          path: kind
+          value: StatefulSet
+        template: templates/search-meili.yaml
+        documentIndex: 0
+      - equal:
+          path: kind
+          value: Secret
+        template: templates/search-meili-secret.yaml
+
+  - it: baked store renders the Postgres StatefulSet, Service, and Secret
+    asserts:
+      - equal:
+          path: kind
+          value: StatefulSet
+        template: templates/store-postgres.yaml
+        documentIndex: 0
+      - equal:
+          path: kind
+          value: Service
+        template: templates/store-postgres.yaml
+        documentIndex: 1
+      - equal:
+          path: kind
+          value: Secret
+        template: templates/store-postgres-secret.yaml
+
+  - it: baked store DATABASE_URL is sourced from the chart-rendered secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-postgres
+                key: DATABASE_URL
+        template: templates/deployment.yaml
+
+  - it: cnpg store renders the Cluster CR but no baked Postgres
+    set:
+      store.postgres.mode: cnpg
+    asserts:
+      - equal:
+          path: kind
+          value: Cluster
+        template: templates/store-cnpg-cluster.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/store-postgres.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/store-postgres-secret.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/store-cnpg-pooler.yaml
+
+  - it: cnpg store points DATABASE_URL at the <name>-app secret with key uri
+    set:
+      store.postgres.mode: cnpg
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-postgres-app
+                key: uri
+        template: templates/deployment.yaml
+
+  - it: cnpg pooler renders when enabled
+    set:
+      store.postgres.mode: cnpg
+      store.postgres.cnpg.pooler.enabled: true
+    asserts:
+      - equal:
+          path: kind
+          value: Pooler
+        template: templates/store-cnpg-pooler.yaml
+
+  - it: external store adds no baked Postgres and sources the operator secret
+    set:
+      store.postgres.mode: external
+      store.external.existingSecret: my-db-secret
+      store.external.secretKey: DATABASE_URL
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/store-postgres.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/store-postgres-secret.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: my-db-secret
+                key: DATABASE_URL
+        template: templates/deployment.yaml
+
+  - it: baked queue REDIS_URL is sourced from the chart-rendered secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-valkey
+                key: REDIS_URL
+        template: templates/deployment.yaml
+
+  - it: external queue adds no baked Valkey and sources the operator secret
+    set:
+      queue.valkey.mode: external
+      queue.external.existingSecret: my-redis-secret
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/queue-valkey.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/queue-valkey-secret.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: my-redis-secret
+                key: REDIS_URL
+        template: templates/deployment.yaml
+
+  - it: baked search MEILI_HOST targets the chart Service and secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_HOST
+            value: "http://RELEASE-NAME-docz-api-meilisearch:7700"
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-meilisearch
+                key: MEILI_API_KEY
+        template: templates/deployment.yaml
+
+  - it: external search adds no baked Meilisearch and uses the operator host/secret
+    set:
+      search.meili.mode: external
+      search.meili.host: "https://meili.example.com"
+      search.meili.external.existingSecret: my-meili-secret
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/search-meili.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/search-meili-secret.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_HOST
+            value: "https://meili.example.com"
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-meili-secret
+                key: MEILI_API_KEY
+        template: templates/deployment.yaml
+
+  - it: sets a 60s termination grace period for graceful drain
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+        template: templates/deployment.yaml

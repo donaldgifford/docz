@@ -136,6 +136,65 @@ local-ps:
 local-logs:
     @{{ local_compose }} logs -f
 
+# ─── Monitoring stack ───────────────────────────────────────────────
+
+monitor_compose := "docker compose -f deploy/compose.monitoring.yaml"
+
+# Start the local observability backends (prometheus/grafana/jaeger/loki/otel/alloy)
+[group('monitor')]
+monitor-up:
+    @{{ monitor_compose }} up -d --wait
+    @echo "✓ Monitoring stack up:"
+    @echo "    grafana     http://localhost:3000  (anonymous admin)"
+    @echo "    prometheus  http://localhost:9090"
+    @echo "    jaeger      http://localhost:16686"
+    @echo "    loki        http://localhost:3100"
+    @echo "    otel OTLP   http://localhost:4318  (set OTEL_EXPORTER_OTLP_ENDPOINT to this)"
+    @echo "    alloy       http://localhost:12345"
+
+# Start the monitoring stack with keycloak for local OIDC login testing
+[group('monitor')]
+monitor-auth-up:
+    @{{ monitor_compose }} --profile auth up -d --wait
+    @echo "✓ Monitoring stack up (+ keycloak):"
+    @echo "    grafana     http://localhost:3000  (anonymous admin)"
+    @echo "    prometheus  http://localhost:9090"
+    @echo "    jaeger      http://localhost:16686"
+    @echo "    keycloak    http://localhost:8180  (realm docz-api; user dev/dev-password)"
+
+# Stop the monitoring stack (keycloak included); volumes are kept
+[group('monitor')]
+monitor-down:
+    @{{ monitor_compose }} --profile auth down
+    @echo "✓ Monitoring stack stopped"
+
+# Follow monitoring stack logs (all services)
+[group('monitor')]
+monitor-logs:
+    @{{ monitor_compose }} --profile auth logs -f
+
+# ─── Helm ───────────────────────────────────────────────────────────
+
+# Lint the chart (ci-values supplies the required values with no defaults)
+[group('helm')]
+helm-lint:
+    @helm lint charts/docz-api -f charts/docz-api/ci/ci-values.yaml
+
+# Render the chart with the ci values (fast "does it template" check)
+[group('helm')]
+helm-template:
+    @helm template docz-api charts/docz-api -f charts/docz-api/ci/ci-values.yaml
+
+# Run the chart's helm-unittest suite (needs the helm-unittest plugin)
+[group('helm')]
+helm-unittest:
+    @helm unittest charts/docz-api
+
+# Regenerate the chart README from README.md.gotmpl + values.yaml
+[group('helm')]
+helm-docs:
+    @helm-docs --chart-search-root=charts
+
 # ─── Test ───────────────────────────────────────────────────────────
 
 # Run all tests with the race detector
@@ -189,6 +248,11 @@ lint-config:
 [group('lint')]
 lint-actions:
     @actionlint
+
+# Validate the Prometheus alert rules (contrib pack)
+[group('lint')]
+lint-alerts:
+    @promtool check rules contrib/prometheus/alerts.yaml
 
 # Lint the OpenAPI spec (vacuum ruleset) and verify its canonical formatting
 [group('lint')]

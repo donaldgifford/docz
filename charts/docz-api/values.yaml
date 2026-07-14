@@ -1,0 +1,381 @@
+---
+# yaml-language-server: $schema=values.schema.json
+
+# -- Number of replicas
+replicaCount: 1
+
+# -- Number of old ReplicaSets retained for rollback. Defaults to 3 to
+# keep the kubectl `get rs` view tidy; bump if you need more rollback
+# headroom. Kubernetes default is 10.
+revisionHistoryLimit: 3
+
+image:
+  # -- Container image repository
+  repository: ghcr.io/donaldgifford/docz-api
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag (default: chart appVersion)
+  tag: ""
+
+# -- Image pull secrets
+imagePullSecrets: []
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Create a ServiceAccount
+  create: true
+  # -- Annotations for the ServiceAccount
+  annotations: {}
+  # -- Override the ServiceAccount name
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+# -- Pod labels
+podLabels: {}
+
+# -- Pod security context. Defaults match the distroless `nonroot`
+# image (UID/GID 65532) and drop to a RuntimeDefault seccomp profile.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container security context. The image runs on a read-only rootfs;
+# nothing is written to disk except the optional mounted private key.
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port. Targets the container's single `http` port, which
+  # serves the API, probes, and /metrics.
+  port: 80
+
+# -- Container resource requests and limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+livenessProbe:
+  # @default -- See values.yaml
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 15
+
+readinessProbe:
+  # @default -- See values.yaml
+  httpGet:
+    path: /readyz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# -- docz-api application configuration (non-secret env vars). Empty
+# strings for the optional tuning knobs mean "emit nothing; let the
+# binary apply its own default".
+config:
+  # -- GitHub App ID (GITHUB_APP_ID)
+  appId: ""
+  # -- Container HTTP listen port (drives HTTP_ADDR and the Service
+  # targetPort). Everything — API, /healthz, /readyz, /metrics — is
+  # served here.
+  port: 8080
+  # -- Log level: debug, info, warn, error (LOG_LEVEL)
+  logLevel: "info"
+  # -- Log format: text or json (LOG_FORMAT)
+  logFormat: "json"
+  # -- Absolute base URL the OAuth/OIDC provider redirects back to;
+  # the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required.
+  authRedirectBase: ""
+  # -- Comma-separated login providers: github, okta, keycloak
+  # (AUTH_PROVIDERS).
+  authProviders: "github"
+  # -- GitHub OAuth client id for site login (GITHUB_OAUTH_CLIENT_ID).
+  # Required while `github` is in authProviders.
+  githubOAuthClientID: ""
+  # -- GitHub API base URL; override for GitHub Enterprise
+  # (GITHUB_API_BASE). Empty → api.github.com.
+  githubApiBase: ""
+  # -- Session lifetime as a Go duration (SESSION_TTL). Empty → 720h.
+  sessionTTL: ""
+  # -- Ingest debounce window as a Go duration (INGEST_DEBOUNCE).
+  # Empty → 5s.
+  ingestDebounce: ""
+
+# -- OpenTelemetry tracing. Traces export over OTLP/HTTP; leave the
+# endpoint empty to disable tracing (spans are created but not sent).
+otel:
+  # -- OTLP/HTTP collector endpoint, host:port or URL
+  # (OTEL_EXPORTER_OTLP_ENDPOINT). Empty → tracing off.
+  endpoint: ""
+  # -- Service name reported on spans (OTEL_SERVICE_NAME). Empty →
+  # docz-api.
+  serviceName: ""
+  # -- Trace sample rate 0.0–1.0 (OTEL_SAMPLE_RATE). Empty → 1.0.
+  sampleRate: ""
+
+# -- Prometheus metrics. The /metrics endpoint is served on the main
+# HTTP port; scrape it with the ServiceMonitor below.
+metrics:
+  # -- Expose /metrics (METRICS_ENABLED)
+  enabled: true
+
+# -- Application secrets. When `create` is true the chart renders a
+# Secret carrying every key below; when false, `existingSecret` must
+# name a Secret that already holds app-id, webhook-secret, private-key,
+# session-secret, and oauth-client-secret.
+secrets:
+  # -- Create secret resource (false = use existing secret)
+  create: true
+  # -- Name of existing secret (when create=false)
+  existingSecret: ""
+  # -- GitHub webhook HMAC secret (GITHUB_WEBHOOK_SECRET)
+  webhookSecret: ""
+  # -- GitHub App private key (PEM format, GITHUB_APP_PRIVATE_KEY)
+  privateKey: ""
+  # -- Mount the private key as a file (true) or pass it as an env var
+  # (false). Either way the binary accepts a path or a PEM body.
+  privateKeyAsFile: true
+  # -- Session signing secret (SESSION_SECRET)
+  sessionSecret: ""
+  # -- GitHub OAuth client secret for site login
+  # (GITHUB_OAUTH_CLIENT_SECRET)
+  oauthClientSecret: ""
+
+# -- Persistent state store (Postgres). See DESIGN-0012 §Backend modes.
+store:
+  # -- Backend implementation. Only "postgres" is supported.
+  backend: postgres
+  # -- Postgres-specific configuration. Ignored when backend != postgres.
+  postgres:
+    # -- Source of the Postgres deployment. One of:
+    # "baked"    — chart renders a single-pod Postgres Deployment;
+    # "cnpg"     — chart renders a CloudNativePG `Cluster` CR;
+    # "external" — operator provides DATABASE_URL via store.external.
+    mode: baked
+    # -- Connection cap for the pgx pool.
+    maxConns: 16
+    # -- Baked Postgres-only configuration.
+    baked:
+      # -- Pinned image. Bump intentionally.
+      image: postgres:18.4
+      # -- Persistent volume size.
+      storageSize: 10Gi
+      # -- StorageClass name. Empty → cluster default.
+      storageClassName: ""
+      # -- Resource requests/limits for the Postgres container.
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+    # -- CloudNativePG-only configuration.
+    cnpg:
+      # -- Number of CNPG instances.
+      instances: 1
+      # -- CNPG-managed Postgres image.
+      imageName: ghcr.io/cloudnative-pg/postgresql:18.4
+      # -- Storage block.
+      storage:
+        size: 10Gi
+        storageClass: ""
+      # -- Connection pooler (PgBouncer). Disabled by default.
+      pooler:
+        enabled: false
+        # -- Pooler type: `rw` (primary) or `ro` (read-only replicas).
+        type: rw
+        # -- Pooler replica count.
+        instances: 1
+        pgbouncer:
+          # -- PgBouncer pool mode: `session`, `transaction`, or `statement`.
+          poolMode: transaction
+          # -- PgBouncer `default_pool_size`.
+          defaultPoolSize: 25
+          # -- PgBouncer `max_client_conn`.
+          maxClientConnections: 100
+          # -- Extra `pgbouncer.ini` parameters (key-value pairs).
+          parameters: {}
+        monitoring:
+          # -- Render a `PodMonitor` for the pooler. Requires the Prometheus Operator CRD.
+          enablePodMonitor: false
+        # Cilium does not support TCPRoute (cilium/cilium#42016), so external
+        # connections use a LoadBalancer Service with BGP advertisement.
+        service:
+          # -- Enable an external LoadBalancer Service in front of the pooler.
+          enabled: false
+          # -- Service `type` (usually `LoadBalancer`).
+          type: LoadBalancer
+          # -- Extra Service annotations.
+          annotations: {}
+          # -- Service labels. Defaults wire Cilium BGP IP advertisement.
+          labels:
+            bgp.cilium.io/advertise-service: default
+            bgp.cilium.io/ip-pool: default
+  # -- External Postgres. Used only when store.postgres.mode=external.
+  external:
+    # -- Operator-supplied secret holding the DATABASE_URL DSN. Required
+    # when store.postgres.mode=external.
+    existingSecret: ""
+    # -- Key inside existingSecret holding the DSN. Default: DATABASE_URL.
+    secretKey: DATABASE_URL
+
+# -- Work queue + session store (Valkey, Redis-wire-compatible).
+queue:
+  # -- Backend implementation. Only "valkey" is supported.
+  backend: valkey
+  # -- Valkey-specific configuration. Ignored when backend != valkey.
+  valkey:
+    # -- Source of the Valkey deployment. One of:
+    # "baked"    — chart renders a single-pod Valkey Deployment;
+    # "external" — operator provides REDIS_URL via queue.external.
+    mode: baked
+    # -- Baked Valkey-only configuration.
+    baked:
+      # -- Pinned image. Bump intentionally.
+      image: valkey/valkey:9.1
+      # -- Persistent volume size.
+      storageSize: 1Gi
+      # -- StorageClass name. Empty → cluster default.
+      storageClassName: ""
+      # -- Generated AUTH password length (random alphanumeric).
+      authPasswordLength: 32
+  # -- External Valkey/Redis. Used only when queue.valkey.mode=external.
+  external:
+    # -- Operator-supplied secret holding the REDIS_URL DSN. Required
+    # when queue.valkey.mode=external.
+    existingSecret: ""
+    # -- Key inside existingSecret holding the DSN. Default: REDIS_URL.
+    secretKey: REDIS_URL
+
+# -- Full-text search (Meilisearch). The chart runs a baked single-pod
+# Meilisearch by default; point at an external instance with mode=external.
+search:
+  meili:
+    # -- Source of Meilisearch. One of "baked" or "external".
+    mode: baked
+    # -- Meilisearch master key. Required in baked mode; shared by the
+    # baked Meilisearch (MEILI_MASTER_KEY) and docz-api (MEILI_API_KEY).
+    masterKey: ""
+    # -- Pinned baked image. Bump intentionally.
+    image: getmeili/meilisearch:v1.12
+    # -- Persistent volume size (baked mode).
+    storage: 5Gi
+    # -- StorageClass name (baked mode). Empty → cluster default.
+    storageClassName: ""
+    # -- External Meilisearch base URL, http(s)://host:port. Required
+    # when mode=external.
+    host: ""
+    # -- External Meilisearch secret. Used only when mode=external.
+    external:
+      # -- Secret holding the API key. Required when mode=external.
+      existingSecret: ""
+      # -- Key inside existingSecret holding the API key.
+      secretKey: MEILI_API_KEY
+
+# -- Tailscale Funnel sidecar. Off by default; the chart does not
+# require tailscale — homelab infra fronts the service with it.
+tailscale:
+  # -- Enable Tailscale sidecar container
+  enabled: false
+  # -- Tailscale container image
+  image: ghcr.io/tailscale/tailscale:latest
+  # -- Tailscale hostname (becomes <hostname>.<tailnet>.ts.net)
+  hostname: docz-api
+  # -- Use userspace networking (no CAP_NET_ADMIN needed)
+  userspace: true
+  # -- Name of existing secret containing 'authkey'
+  authKeySecret: tailscale-auth
+  # -- Create RBAC for Tailscale state management
+  rbac:
+    create: true
+
+serviceMonitor:
+  # -- Create a Prometheus Operator ServiceMonitor scraping /metrics
+  enabled: false
+  # -- Scrape interval
+  interval: 30s
+  # -- Additional labels for ServiceMonitor
+  labels: {}
+
+# -- Prometheus PrometheusRule with starter alerts (docz-api RED +
+# ingest). Alert expressions are defined in the template.
+prometheusRule:
+  # -- Create PrometheusRule with starter alerts.
+  enabled: false
+  # -- Additional labels (e.g., to match Prometheus operator
+  # `ruleSelector`).
+  labels: {}
+
+# -- Horizontal Pod Autoscaler. Off by default.
+autoscaling:
+  # -- Enable a HorizontalPodAutoscaler
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 1
+  # -- Maximum replicas
+  maxReplicas: 3
+  # -- Target average CPU utilization (percent)
+  targetCPUUtilizationPercentage: 80
+  # -- Target average memory utilization (percent). Unset → no memory metric.
+  targetMemoryUtilizationPercentage: 0
+
+# -- Ingress (networking.k8s.io/v1). Off by default.
+ingress:
+  # -- Enable an Ingress
+  enabled: false
+  # -- IngressClass name
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+  # -- Ingress hosts. Each entry: {host, paths: [{path, pathType}]}.
+  hosts: []
+  # -- TLS blocks. Each entry: {secretName, hosts: []}.
+  tls: []
+
+# -- Gateway API HTTPRoute. Off by default.
+httpRoute:
+  # -- Enable an HTTPRoute
+  enabled: false
+  # -- HTTPRoute annotations
+  annotations: {}
+  # -- parentRefs (Gateways) this route attaches to.
+  parentRefs: []
+  # -- Hostnames matched by this route.
+  hostnames: []
+  # -- Route rules. Empty → the template renders a default rule to the
+  # service.
+  rules: []
+
+# -- Additional environment variables
+extraEnv: []
+# -- Additional volumes
+extraVolumes: []
+# -- Additional volume mounts
+extraVolumeMounts: []
+
+# -- Node selector
+nodeSelector: {}
+# -- Tolerations
+tolerations: []
+# -- Affinity rules
+affinity: {}

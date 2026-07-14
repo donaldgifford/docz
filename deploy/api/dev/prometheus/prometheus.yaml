@@ -1,0 +1,30 @@
+---
+# Prometheus scrape config for local dev.
+#
+# Targets:
+#   docz-api       -> host-run (or local-env) binary's /metrics on :8080
+#   otel-collector -> its own /metrics endpoint (self-scrape)
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 30s
+  external_labels:
+    env: dev
+    service: docz-api
+
+scrape_configs:
+  - job_name: docz-api
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - host.docker.internal:8080
+        labels:
+          instance: docz-api-dev
+
+  - job_name: otel-collector
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - otel-collector:8888
+        labels:
+          instance: otel-collector-dev

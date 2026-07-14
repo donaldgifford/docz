@@ -712,6 +712,223 @@ served at **`GET /api/v1/repos/{owner}/{name}/index`** as
   serve → removal-at-HEAD → 404; store round-trip + migration up/down live in
   the store integration tests.
 
+## Helm chart + publish pipeline (INV-0004 / IMPL-0004)
+
+The `charts/docz-api/` Helm chart, the container/chart publish workflows
+(`ghcr.yml`/`ecr.yml` called from `release.yml`), the local monitoring stack
+(`deploy/compose.monitoring.yaml` + `deploy/dev/`), and the operator assets
+(`contrib/`) are being adapted from a repo-guardian/rfc-api copy-paste per
+`docs/impl/0004-*.md` (the phased plan) — **IN PROGRESS**. Conventions
+established as the build progresses:
+
+- **Helm tooling is in `mise.toml`**: `helm` (4.2.2), `helm-ct`, `helm-diff`,
+  `helm-docs`, `cosign`, `promtool`. `just` recipes drive it — `just helm-lint`,
+  `just helm-template`, `just helm-unittest` (needs the `helm-unittest` plugin),
+  `just helm-docs`; `just lint-alerts` runs `promtool check rules` on the
+  contrib pack. Chart lint/template **must** pass `-f charts/docz-api/ci/ci-values.yaml`
+  because the required values (secrets, app id, redirect base) have no defaults.
+- **`docker-bake.hcl` `_common` sets `args = {VERSION, COMMIT, DATE}`** →
+  Dockerfile ARGs → `-ldflags`. The bake vars are `VERSION`/`COMMIT_SHA`/
+  `BUILD_DATE`; the publish workflows export them as env before the bake step,
+  else images compile in `version=dev`.
+
+### Phase progress
+
+- **Phase 1 — Repo plumbing quick fixes: COMPLETE ✅** — schema tags fixed
+  (root `compose.yaml` / `.codecov.yml` / `sqlc.yaml` modelines added, wrong
+  `ct.yaml` tag removed); bake build args restored; publish workflows compute
+  build metadata; orphan `deploy/.env.dev.example` removed; helm + `lint-alerts`
+  just recipes added.
+- **Phase 2 — Chart core made renderable: COMPLETE ✅** — the chart's own
+  surface (helpers, deployment, service, secret, NOTES, Chart.yaml, ci-values)
+  now renders + lints clean against the docz-api config. `just helm-template`
+  and `just helm-lint` both pass (Phase 2's only acceptance gate). Conventions:
+  - **All helpers are `docz-api.*`** (renamed from `repo-guardian.*`); the dead
+    `validateTemplatingVars`/`reservedEnvVars`/`templating.vars` machinery is
+    gone. Added `docz-api.meiliFullname` (used by the deployment now; the
+    Meilisearch resources land in Phase 3.3).
+  - **`deployment.yaml` env is the IMPL-0004 Reference table verbatim**:
+    `HTTP_ADDR` from `config.port`; app-secret refs for
+    `GITHUB_APP_ID`/`GITHUB_WEBHOOK_SECRET`/`SESSION_SECRET`/
+    `GITHUB_OAUTH_CLIENT_SECRET`; `GITHUB_APP_PRIVATE_KEY` as a mounted file at
+    `/etc/docz-api/private-key/private-key.pem` (when `secrets.privateKeyAsFile`)
+    else env-from-secret; `DATABASE_URL`/`REDIS_URL`/`MEILI_HOST`/`MEILI_API_KEY`
+    via the store/queue/search secret helpers; `AUTH_REDIRECT_BASE`
+    `required`-checked; plain-value optionals (`GITHUB_API_BASE`, `SESSION_TTL`,
+    `INGEST_DEBOUNCE`, `OTEL_*`) emitted only when non-empty via `with`. One
+    `http` containerPort (no metrics port); distroless `runAsUser: 65532`.
+  - **`secret.yaml` carries five keys** (app-id, webhook-secret, private-key,
+    session-secret, oauth-client-secret); `existingSecret` bypass must supply all
+    five. **`service.yaml` is one `http` port** (`service.port` → targetPort
+    `http`). **`Chart.yaml` `appVersion: "v0.4.0"`** (latest release tag; drives
+    the default image tag), chart `version: 0.1.0`.
+  - **`ci/ci-values.yaml`** is the render/lint fixture: busybox + `sleep 900`,
+    nulled probes, and a dummy for every `required` value — needed because the
+    chart has no defaults for secrets/app-id/redirect-base.
+  - **Deferred by design** (the whole-templates-dir grep criteria clear only when
+    these land): `STORE_DSN`→`DATABASE_URL` / `QUEUE_VALKEY_DSN`→`REDIS_URL`
+    secret-key renames + cnpg `repo-guardian` comment (Phase 3.1/3.2); the stale
+    repo-guardian **helm-unittest suite** (`tests/`) rewrite (Phase 4.3); the
+    `prometheusrule.yaml` `repo-guardian` alert text + `README.md.gotmpl` /
+    `just helm-docs` regen (Phase 4.4/4.5). So `just helm-unittest` and
+    `just helm-docs` are intentionally NOT green mid-Phase-2/3.
+- **Phase 3 — Backing services wired: COMPLETE ✅** — the three deployed deps
+  (Postgres, Valkey, Meilisearch) are now reachable by docz-api and render
+  across every backend mode. Conventions:
+  - **Store/queue DSN keys are the app's env names**: baked Postgres secret
+    emits `DATABASE_URL` (db + user `doczapi`, `postgres://…/doczapi?sslmode=
+    disable`); baked Valkey secret emits `REDIS_URL` (`redis://…/0`). The
+    `docz-api.storeSecretName/Key` + `queueSecretName/Key` helpers resolve
+    baked (chart secret) / cnpg (`<name>-app`, key `uri`) / external.
+  - **External-mode refs live under `store.external.*` / `queue.external.*`**
+    (`existingSecret` + `secretKey`, defaulting to `DATABASE_URL`/`REDIS_URL`),
+    siblings of `store.postgres` / `queue.valkey` — the `mode` field stays under
+    `store.postgres` / `queue.valkey`. Same shape for `search.meili.external.*`.
+  - **Meilisearch is a first-class baked dep** (`search-meili.yaml` +
+    `search-meili-secret.yaml`): StatefulSet `getmeili/meilisearch:v1.12` on a
+    headless `<fullname>-meilisearch:7700` Service, `/health` probes,
+    `/meili_data` PVC. Its master key is **operator-supplied**
+    (`search.meili.masterKey`, required in baked mode) — NOT auto-generated like
+    the pg/valkey passwords — because Meilisearch (`MEILI_MASTER_KEY`) and
+    docz-api (`MEILI_API_KEY`) must share the exact value; one secret key
+    `MEILI_API_KEY` feeds both. `docz-api.meiliHost/searchSecretName/
+    searchSecretKey` mirror the store/queue helpers.
+  - **The `search.meili.image` field** was added (not in the plan's values
+    block) for parity with `store.postgres.baked.image` / `queue.valkey.baked
+    .image` and Renovate.
+  - **Mode matrix renders clean**: default (all baked), all-external, and
+    `store.postgres.mode=cnpg` all `helm template` with exit 0. `ci-values.yaml`
+    gained `search.meili.masterKey: ci-dummy`. The `repoguardian`/`STORE_DSN`/
+    `QUEUE_VALKEY_DSN` grep is clean in `templates/`; residual hits live only in
+    the generated `README.md` (Phase 4.5) and `tests/` (Phase 4.3).
+- **Phase 4 — Chart observability, tests, docs: COMPLETE ✅** — monitoring
+  points at real metrics, the chart's behavior is frozen by a rewritten test
+  suite, and the docs are docz-api. **`charts/` is now completely free of
+  `repo-guardian`/`repo_guardian`** (both spellings, case-insensitive).
+  - **ServiceMonitor** scrapes port `http` at `/metrics`, gated on
+    `metrics.enabled AND serviceMonitor.enabled`. **PrometheusRule** is 5
+    docz-api RED alerts (`DoczAPIDown` critical, `DoczAPIHighErrorRate`,
+    `DoczAPISlowRequests`, `DoczAPIIngestFailures`, `DoczAPISlowIngest`) over
+    the four real metrics — `docz_api_http_requests_total`,
+    `docz_api_http_request_duration_seconds_bucket`,
+    `docz_api_ingest_jobs_total`, `docz_api_ingest_job_duration_seconds_bucket`
+    — plus `up`.
+  - **helm-unittest suite: 8 files / 58 tests, all green** (`just helm-unittest`).
+    Each starts with the `helm-testsuite` `$schema` modeline. helm-unittest
+    renders only the templates a suite lists, so each suite provides just its
+    own template's `required` values via a suite-level `set:` (the deployment
+    only needs `config.authRedirectBase`; the meili secret needs
+    `search.meili.masterKey`). Fullname under the default release is
+    `RELEASE-NAME-docz-api`.
+  - **deployment `volumeMounts` is guarded** (`{{- if or .privateKeyAsFile
+    .extraVolumeMounts }}`) so it's omitted, not emitted as `null`, when the
+    key is passed via env and there are no extra mounts.
+  - **`values.schema.json`** is a permissive guardrail (`additionalProperties:
+    true` everywhere): enums for the three backend `mode`s + `config.logLevel`
+    /`logFormat`, typed blocks for config/metrics/otel/secrets/store/queue/
+    search. Rejects `store.postgres.mode=memory` / `config.logLevel=trace` at
+    render time.
+  - **README** is generated from `README.md.gotmpl` via `just helm-docs`; the
+    committed `README.md` is regen-idempotent (`git diff --exit-code`). Chart
+    `CHANGELOG.md` + `cliff.toml` `[changelog].header` say docz-api. `ct lint
+    --config ct.yaml` passes locally.
+- **Phase 5 — CI + release consolidation: COMPLETE ✅** — one CI workflow, one
+  Release workflow; the `ci2.yml`/`release2.yml` scaffolding duplicates are
+  deleted; `just lint-actions` (actionlint) is clean.
+  - **`ci.yml`** folds in the `changes` (dorny/paths-filter) job + the four
+    path-gated jobs: `lint-alerts` (`just lint-alerts`), `docker-build`
+    (buildx/bake — PR pushes `:dev`, post-merge cache-only), `helm-unittest`
+    (plugin install + unittest), `helm-test` (ct lint + kind install). The
+    richer Go jobs (Lint incl. openapi, Test Go + Codecov, Security =
+    govulncheck + Trivy, Build + SBOM scan) + Label PR stay. All `make` →
+    `just`.
+  - **`release.yml`** appends the `publish-ghcr` + `publish-ecr` reusable-workflow
+    jobs (their nested-SLSA `actions: read`/`packages: write` permission
+    ceilings are load-bearing — omitting them fails the whole run at startup)
+    and adds top-level `id-token: write`. **No GPG signing** (OQ-4a): the GPG
+    import step + `GPG_FINGERPRINT` are dropped (secrets don't exist,
+    `.goreleaser.yml` has no signing config); goreleaser keeps producing
+    unsigned archives, while images/charts are cosign-signed + SLSA-attested by
+    the publish workflows. `pr-semver-bump` lives only in `release.yml`.
+  - **ECR publishing** is gated on the `ECR_PUBLISH_ENABLED` repo variable and
+    documented in `docs/operations/ecr-publish-setup.md` (OIDC role trust
+    `repo:donaldgifford/docz-api:*`, the `docz-api` ECR repo, the three
+    `ECR_*` secrets). `ecr.yml`/`ghcr.yml` keep `workflow_dispatch` + the
+    Phase-1.3 bake-metadata step.
+- **Phase 6 — Local monitoring stack: COMPLETE ✅** (6.1–6.9) —
+  `deploy/compose.monitoring.yaml` (`name: docz-api-monitoring`) runs the
+  observability backends only (prometheus/grafana/otel-collector/jaeger/loki/
+  alloy always-on; keycloak behind `--profile auth`), paired with the app run on
+  the host (`just run`) or in containers, pointed at
+  `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`. All bind mounts are
+  `./dev/…` relative to `deploy/`. Verify: `up -d --wait` → all six always-on
+  containers Healthy (rc=0).
+  - **GOTCHA — jaeger `all-in-one:latest` is a trap.** `latest` moved to the v2
+    line (v1 hit EOL 2025-12-31) which restructures the CLI/config, and the
+    non-root image user can't `mkdir` under a root-owned badger volume
+    (`/badger/key: permission denied`). Pin **`jaegertracing/all-in-one:1.76.0`**
+    + **`SPAN_STORAGE_TYPE: memory`** (dev backend — traces are inspected live,
+    not persisted; no volume needed). Dropped the `jaeger_data` volume.
+  - **GOTCHA — the `loki` exporter was removed from
+    `otel/opentelemetry-collector-contrib`.** Push logs via **`otlphttp`** to
+    Loki's native OTLP ingest: `endpoint: http://loki:3100/otlp` (otlphttp
+    appends `/v1/logs`). Loki 3.x accepts OTLP by default.
+  - **GOTCHA — `quay.io/keycloak/keycloak` has no floating major tag.** `:26`
+    404s (quay publishes only full version tags); pin a concrete patch
+    (`26.7.0`). Keycloak (`--profile auth`) imports `dev/keycloak/
+    docz-api-realm.json` on boot: realm `docz-api`, one **confidential** client
+    `docz-api` (secret `dev-docz-api-secret`, redirect
+    `http://localhost:8080/auth/callback`), dev user `dev`/`dev-password` with a
+    **verified** `dev@localhost` (docz-api's OIDCProvider drops unverified
+    emails). Issuer: `http://localhost:8180/realms/docz-api`. No healthcheck on
+    the keycloak service, so `--wait` doesn't gate on realm-import readiness —
+    poll the `.well-known/openid-configuration` endpoint.
+  - **otel-collector has NO metrics pipeline** — docz-api metrics are pull-based
+    (Prometheus scrapes `/metrics` directly per `dev/prometheus/prometheus.yaml`),
+    so the copied `prometheusremotewrite` exporter + metrics pipeline were deleted
+    (INV-0004 Obs. 5e). Only traces (→ jaeger) and logs (→ loki) pipelines remain.
+    App logs also flow via **alloy** (docker-stdout tail → `loki.write`), so LOG
+    output needs `LOG_FORMAT=json` for alloy's JSON stage to extract
+    `trace_id`/`span_id` labels.
+  - **verified end-to-end (6.9 close-out):** ran the built binary on `:8081`
+    against the stack with `OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4318`; after a
+    traffic burst, Prometheus's `docz-api` target is `health=up`,
+    `docz_api_http_requests_total{route,method,status}` increments (the exact
+    series the overview dashboard queries), and Jaeger shows `docz-api` traces
+    with span names = chi route templates (`GET /api/v1/*`, `GET /openapi.yaml`)
+    + `http.route`/`http.response.status_code` tags. Keycloak login is verified
+    structurally (realm imports, issuer + auth/token endpoints resolve, confidential
+    client + verified dev user seeded); the browser round-trip is a manual step.
+  - **NOTE — collector logs two benign deprecation warnings** (`otlp` →
+    `otlp_grpc`, `otlphttp` → `otlp_http` exporter-type aliases). Still functional
+    in collector-contrib v0.156; left as the canonical names. The always-on images
+    (collector/prometheus/grafana/loki/alloy) still float `:latest` — jaeger +
+    keycloak are pinned because `:latest`/`:26` broke (see gotchas above); a full
+    pin-all pass is a possible follow-up.
+- **Phase 7 — contrib/ rewrite: COMPLETE ✅** (7.1–7.4) — operator-facing assets
+  in docz-api vocabulary; **no Go changes** (the pack uses only the four existing
+  `docz_api_*` metrics).
+  - `contrib/prometheus/alerts.yaml` is the **same pack as the chart's
+    `prometheusrule.yaml`** in plain-Prometheus format: one `docz-api` group with
+    the five shared alerts (DoczAPIDown / HighErrorRate / SlowRequests /
+    IngestFailures / SlowIngest) **plus** a file-only `DoczAPINoScrapes`
+    (`absent(up{job="docz-api"})`, only meaningful with a static scrape config
+    owning the `job` label). `just lint-alerts` (`promtool check rules`) → 6 rules.
+  - `contrib/grafana/docz-api-dashboard.json` is **import-style** (`__inputs`
+    `DS_PROMETHEUS` + `__requires`, all panels `${DS_PROMETHEUS}`), Prometheus-only
+    (the Loki/Jaeger panels from the dev overview are dropped — operators may run
+    just metrics). uid/title/tags = `docz-api`.
+  - `contrib/README.md` documents the four metrics (verified against
+    `internal/telemetry/metrics.go`), the single-port `:8080/metrics` scrape
+    (+ `METRICS_ENABLED`, outside the auth gate), PromQL examples, dashboard
+    import, and the two alert-delivery paths.
+  - **IMPL-0004 is COMPLETE** — all 7 phases done; local acceptance gates all
+    green (`just ci`, helm-lint/unittest[58]/template, `ct lint`, actionlint,
+    monitoring live-smoke, cross-dir rfc/repo-guardian sweep, no-secrets). The
+    two out-of-band Testing-Plan items — the **remote** GH Actions run (needs a
+    branch push) and the **browser** keycloak login round-trip — are verified to
+    their runnable/server-side extent only.
+
 ## Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.

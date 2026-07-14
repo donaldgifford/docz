@@ -1,5 +1,5 @@
 ---
-# $schema=https://schemastore.org/https://www.schemastore.org/github-action.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: PR Label Check
 on:
   pull_request:

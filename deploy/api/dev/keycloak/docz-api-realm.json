@@ -1,0 +1,55 @@
+{
+  "realm": "docz-api",
+  "enabled": true,
+  "displayName": "docz-api (dev)",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "sslRequired": "none",
+  "defaultSignatureAlgorithm": "RS256",
+  "clients": [
+    {
+      "clientId": "docz-api",
+      "name": "docz-api (confidential OIDC client)",
+      "description": "Confidential OIDC client for docz-api's Authorization Code login flow (KEYCLOAK_CLIENT_ID/KEYCLOAK_CLIENT_SECRET)",
+      "enabled": true,
+      "bearerOnly": false,
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-docz-api-secret",
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:8080/auth/callback"],
+      "webOrigins": ["http://localhost:8080"],
+      "attributes": {
+        "access.token.lifespan": "300"
+      },
+      "defaultClientScopes": ["profile", "email"]
+    }
+  ],
+  "users": [
+    {
+      "username": "dev",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Dev",
+      "lastName": "User",
+      "email": "dev@localhost",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

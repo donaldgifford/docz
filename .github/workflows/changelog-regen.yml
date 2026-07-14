@@ -1,5 +1,5 @@
 ---
-# $schema=https://www.schemastore.org/github-action.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: Changelog Regen
 on:
   push:

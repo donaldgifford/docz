@@ -1,5 +1,5 @@
 ---
-# $schema=https://www.schemastore.org/dependabot-2.0.json
+# yaml-language-server: $schema=https://www.schemastore.org/dependabot-2.0.json
 # Security-updates-only mode. Renovate owns routine version bumps
 # (per the `# renovate:` annotations in mise.toml, docker-bake.hcl,
 # etc.); Dependabot's only job here is the GitHub Advisory feed —

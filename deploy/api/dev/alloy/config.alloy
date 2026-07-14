@@ -1,0 +1,72 @@
+// Grafana Alloy config for local dev.
+//
+// Tails compose container stdout/stderr via the Docker API, parses JSON
+// log lines (docz-api emits slog JSON with OTel logs semconv keys), and
+// pushes to Loki. Labels mirror the span/log correlation story from
+// DESIGN-0001 #Observability hooks so Loki queries can join to
+// Prometheus / Jaeger by service + trace_id.
+
+// Discover running containers through the mounted docker.sock.
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Relabel: promote useful compose metadata into Loki labels.
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // compose sets com.docker.compose.service on every container
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+
+  // container name without the leading `/`
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+// Stream logs from discovered containers.
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.containers.output
+  forward_to    = [loki.process.json.receiver]
+  relabel_rules = discovery.relabel.containers.rules
+}
+
+// Parse docz-api JSON lines; surface trace_id / span_id as labels so
+// Grafana's Loki -> Jaeger derived-field link works without a regex scan.
+loki.process "json" {
+  forward_to = [loki.write.loki.receiver]
+
+  stage.json {
+    expressions = {
+      level     = "level",
+      trace_id  = "trace_id",
+      span_id   = "span_id",
+      http_route = "\"http.route\"",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level    = "",
+      trace_id = "",
+    }
+  }
+}
+
+// Ship to the loki compose service.
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

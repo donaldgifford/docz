@@ -1,5 +1,5 @@
 ---
-# $schema=https://www.schemastore.org/github-action.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: Release
 
 on:
@@ -12,6 +12,7 @@ permissions:
   packages: write
   issues: read
   pull-requests: read
+  id-token: write
 
 jobs:
   bump-version:
@@ -58,12 +59,6 @@ jobs:
       - name: Install syft
         uses: anchore/sbom-action/download-syft@v0
 
-      - name: Import GPG key
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v7
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
@@ -71,4 +66,52 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+
+  # The two publish workflows run on every main push, NOT gated on the
+  # binary release. The internal `image` job is gated on `inputs.tag != ''`
+  # so it only fires on a real release; the internal `chart` job is
+  # idempotent (skips when the chart version is already published).
+  # This lets chart-only changes (PR with `dont-release` label) publish
+  # the chart even though no binary release happened.
+  publish-ghcr:
+    name: Publish to GHCR
+    needs: bump-version
+    uses: ./.github/workflows/ghcr.yml
+    # actions: read is required by the nested SLSA generator jobs inside
+    # ghcr.yml. Caller-job permissions are a hard ceiling for nested
+    # reusable workflows — omitting it fails the whole run at startup
+    # (zero jobs created) before anything executes.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      actions: read
+    with:
+      tag: ${{ needs.bump-version.outputs.tag }}
+      dry_run: false
+    secrets: inherit
+
+  publish-ecr:
+    name: Publish to ECR
+    needs: bump-version
+    # Disabled by default. Set repo variable ECR_PUBLISH_ENABLED=true
+    # (Settings → Secrets and variables → Actions → Variables) once the
+    # AWS-side prep in docs/operations/ecr-publish-setup.md is complete.
+    # ecr.yml remains directly invokable via workflow_dispatch for
+    # standalone testing regardless of this gate.
+    if: vars.ECR_PUBLISH_ENABLED == 'true'
+    uses: ./.github/workflows/ecr.yml
+    # actions: read + packages: write — same nested-SLSA requirement as
+    # publish-ghcr (the generator's internal job declares packages: write
+    # unconditionally, even for ECR publishes). The uses: graph is
+    # validated at startup even though this job is gated off by the
+    # if: condition.
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+      packages: write
+    with:
+      tag: ${{ needs.bump-version.outputs.tag }}
+      dry_run: false
+    secrets: inherit

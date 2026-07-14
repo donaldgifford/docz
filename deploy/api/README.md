@@ -12,6 +12,15 @@ service itself, use the repo-root `compose.yaml` (dependencies only) with
 - `compose.local.yaml` — the **local environment**: the same stack built from
   the working tree plus an ngrok webhook tunnel, driven by `just local-up`; see
   [DEVELOPMENT.md](../DEVELOPMENT.md#full-local-environment-just-local-up).
+- `compose.monitoring.yaml` — the **local observability stack** (prometheus,
+  grafana, jaeger, loki, otel-collector, alloy; keycloak behind
+  `--profile auth`), driven by `just monitor-up`. Backends only — pair it with
+  the app from `just run` or `just local-up`; see
+  [DEVELOPMENT.md](../DEVELOPMENT.md#local-monitoring-stack-just-monitor-up).
+- `dev/` — config mounted by `compose.monitoring.yaml`: `prometheus/`,
+  `grafana/provisioning/` (datasources + the docz-api overview dashboard),
+  `otel/otel-collector.yaml`, `alloy/config.alloy`, and `keycloak/` (the seeded
+  `docz-api` realm import).
 - `.env.production.example` — configuration template; copy to `.env.production`
   (gitignored) and fill in from your secret manager.
 - `.env.local.example` — the local environment's template; copy to `.env.local`

@@ -1,0 +1,169 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.description" . }}
+
+## What this deploys
+
+`docz-api` ingests [docz](https://github.com/donaldgifford/docz)-format
+documentation from GitHub repositories and serves a read + full-text-search
+API over it, driven by GitHub App webhooks and site login. Everything is
+served on a single HTTP port (`config.port`, default `8080`): the `/api/v1`
+surface, the `/webhooks/github` receiver, `/auth/*` login, and the
+operational `/healthz`, `/readyz`, `/metrics`, and `/openapi.yaml` endpoints.
+
+The chart renders the service `Deployment` plus its three backing
+dependencies, each of which can be baked (chart-managed), delegated to an
+operator, or pointed at an external instance:
+
+- **Postgres** — the persistent store (`store.postgres.mode`).
+- **Valkey** (Redis-wire-compatible) — the ingest work queue and session
+  store (`queue.valkey.mode`).
+- **Meilisearch** — the full-text search index (`search.meili.mode`).
+
+The image runs on a read-only rootfs as the distroless `nonroot` user
+(UID/GID 65532).
+
+## Installation
+
+The chart is published as an OCI artifact to two registries — pick whichever
+you prefer. Both are signed with cosign keyless and ship SLSA Level 3
+provenance attestations.
+
+**GHCR (public, anonymous pull):**
+
+```bash
+helm install docz-api \
+  oci://ghcr.io/donaldgifford/charts/docz-api \
+  --version {{ template "chart.version" . }} \
+  --namespace docz-api \
+  --create-namespace \
+  -f values.yaml
+```
+
+**ECR (private; requires AWS auth):**
+
+```bash
+aws ecr get-login-password --region <region> | \
+  helm registry login <account>.dkr.ecr.<region>.amazonaws.com \
+    --username AWS --password-stdin
+
+helm install docz-api \
+  oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
+  --version {{ template "chart.version" . }} \
+  --namespace docz-api \
+  --create-namespace \
+  -f values.yaml
+```
+
+## Prerequisites
+
+- Kubernetes 1.28+
+- Helm 3.14+ or 4.x (OCI support)
+- A registered [GitHub App](https://docs.github.com/en/apps/creating-github-apps) with:
+  - **Permissions:** Contents (Read), Metadata (Read)
+  - **Events:** `installation`, `installation_repositories`, `push`, `release`
+  - A generated **private key** (PEM) and **webhook secret**
+- An OAuth client (the GitHub App's own client id/secret, or a separate
+  OAuth app) for site login
+
+## Configuration
+
+Minimal `values.yaml` for the default all-baked shape:
+
+```yaml
+config:
+  appId: "YOUR_APP_ID"
+  authRedirectBase: "https://docz-api.example.com"
+  githubOAuthClientID: "YOUR_OAUTH_CLIENT_ID"
+
+secrets:
+  webhookSecret: "YOUR_WEBHOOK_SECRET"
+  sessionSecret: "A_RANDOM_32B_SECRET"
+  oauthClientSecret: "YOUR_OAUTH_CLIENT_SECRET"
+  privateKey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    YOUR_PRIVATE_KEY
+    -----END RSA PRIVATE KEY-----
+
+search:
+  meili:
+    masterKey: "A_RANDOM_MEILI_MASTER_KEY"  # required in baked mode
+```
+
+### Secrets contract
+
+When `secrets.create: true` (the default) the chart renders one `Secret`
+carrying five keys: `app-id`, `webhook-secret`, `private-key`,
+`session-secret`, and `oauth-client-secret`. The GitHub App private key is
+mounted as a file by default (`secrets.privateKeyAsFile: true`); set it to
+`false` to pass the key as an env var instead.
+
+To manage the secret out of band, set `secrets.create: false` and
+`secrets.existingSecret: <name>`. **That secret must carry all five keys**
+(`app-id`, `webhook-secret`, `private-key`, `session-secret`,
+`oauth-client-secret`).
+
+The backing-service DSNs (`DATABASE_URL`, `REDIS_URL`, `MEILI_API_KEY`) live
+in their own secrets, sourced per dependency mode (see below).
+
+## Choosing a deployment shape
+
+Each dependency is independent — mix and match to fit your cluster. The baked
+shape is the default and brings the StatefulSets up out of the box.
+
+| Dependency | `mode` | Renders |
+|------------|--------|---------|
+| **Postgres** (`store.postgres.mode`) | `baked` (default) | Single-pod Postgres `StatefulSet` + headless `Service` + `Secret` (auto-generated password, preserved across upgrades). |
+| | `cnpg` | A [CloudNativePG](https://cloudnative-pg.io/) `Cluster` CR (and optional `Pooler`); `DATABASE_URL` reads the CNPG `<name>-app` secret's `uri` key. Requires the operator. |
+| | `external` | Nothing — `DATABASE_URL` comes from `store.external.existingSecret`. |
+| **Valkey** (`queue.valkey.mode`) | `baked` (default) | Single-pod Valkey `StatefulSet` + `Service` + `Secret`. |
+| | `external` | Nothing — `REDIS_URL` comes from `queue.external.existingSecret`. |
+| **Meilisearch** (`search.meili.mode`) | `baked` (default) | Single-pod Meilisearch `StatefulSet` + headless `Service` + `Secret`. Requires `search.meili.masterKey`. |
+| | `external` | Nothing — `MEILI_HOST` = `search.meili.host`, `MEILI_API_KEY` from `search.meili.external.existingSecret`. |
+
+The baked shapes are sized for homelab / small dev clusters; for production,
+run Postgres via CNPG or a managed service and point Valkey/Meilisearch at
+managed instances.
+
+## Observability
+
+- Set `metrics.enabled: true` (default) to serve Prometheus metrics on
+  `/metrics`; enable `serviceMonitor.enabled: true` to have a Prometheus
+  Operator scrape the `http` port at `/metrics`.
+- Enable `prometheusRule.enabled: true` for the starter alert pack
+  (`DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
+  `DoczAPIIngestFailures`, `DoczAPISlowIngest`).
+- Set `otel.endpoint` to an OTLP/HTTP collector to export traces; leave it
+  empty to disable tracing.
+
+## Verifying the chart
+
+Every published version is signed with cosign (Sigstore keyless) via the
+workflow's OIDC identity, plus a SLSA Level 3 provenance attestation. Both
+can be verified offline against the public Sigstore transparency log.
+
+### Cosign signature
+
+```bash
+cosign verify \
+  --certificate-identity-regexp \
+    '^https://github.com/donaldgifford/docz-api/.+' \
+  --certificate-oidc-issuer \
+    'https://token.actions.githubusercontent.com' \
+  ghcr.io/donaldgifford/charts/docz-api:{{ template "chart.version" . }}
+```
+
+### SLSA provenance
+
+```bash
+cosign verify-attestation --type slsaprovenance \
+  --certificate-identity-regexp \
+    '^https://github.com/slsa-framework/slsa-github-generator/.+' \
+  --certificate-oidc-issuer \
+    'https://token.actions.githubusercontent.com' \
+  ghcr.io/donaldgifford/charts/docz-api:{{ template "chart.version" . }}
+```
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}

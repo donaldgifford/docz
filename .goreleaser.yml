@@ -1,5 +1,5 @@
 ---
-# $schema=https://goreleaser.com/static/schema.json
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # goreleaser config for docz-api
 # Triggered by .forgejo/workflows/release.yml or .github/workflows/release.yml on tag push.
 version: 2

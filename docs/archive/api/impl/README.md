@@ -35,4 +35,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0001 | docz-api service implementation | Draft | 2026-06-30 | Donald Gifford | [0001-docz-api-service-implementation.md](0001-docz-api-service-implementation.md) |
 | IMPL-0002 | OpenAPI contract for docz-api and the docz-site | Draft | 2026-07-08 | Donald Gifford | [0002-openapi-contract-for-docz-api-and-the-docz-site.md](0002-openapi-contract-for-docz-api-and-the-docz-site.md) |
 | IMPL-0003 | Repo index endpoint: serve docs_dir index.md as the repo home | Completed | 2026-07-10 | Donald Gifford | [0003-repo-index-endpoint-serve-docsdir-indexmd-as-the-repo-home.md](0003-repo-index-endpoint-serve-docsdir-indexmd-as-the-repo-home.md) |
+| IMPL-0004 | Adapt the helm chart, CI, and observability scaffolding | Completed | 2026-07-13 | Donald Gifford | [0004-adapt-the-helm-chart-ci-and-observability-scaffolding.md](0004-adapt-the-helm-chart-ci-and-observability-scaffolding.md) |
 <!-- END DOCZ AUTO-GENERATED -->

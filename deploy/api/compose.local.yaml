@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
 # Local ENVIRONMENT stack for docz-api: the service built from the working
 # tree, its three dependencies, and an ngrok webhook tunnel — everything a
 # full end-to-end test needs on one machine (`just local-up`).
@@ -102,7 +103,7 @@ services:
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
     ports:
-      - "4040:4040" # ngrok inspection UI + tunnel API
+      - "4040:4040"  # ngrok inspection UI + tunnel API
     depends_on:
       - docz-api
 

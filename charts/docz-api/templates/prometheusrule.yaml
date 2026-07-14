@@ -1,0 +1,66 @@
+{{- if .Values.prometheusRule.enabled -}}
+{{/*
+Starter alert pack for docz-api. Covers RED signals for the HTTP
+surface (availability, error rate, latency) and the async ingest
+pipeline (failures, slow jobs). Scoped to the labels block from
+values.yaml so an operator running multiple Prometheus instances can
+target a specific one with ruleSelector.
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "docz-api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz-api.labels" . | nindent 4 }}
+    {{- with .Values.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: docz-api.rules
+      rules:
+        - alert: DoczAPIDown
+          expr: up{job=~".*docz-api.*"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "docz-api is down"
+            description: "no docz-api target has been scrapeable for 5+ minutes."
+        - alert: DoczAPIHighErrorRate
+          expr: |
+            sum(rate(docz_api_http_requests_total{status=~"5.."}[5m]))
+              / sum(rate(docz_api_http_requests_total[5m]))
+              > 0.05
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "docz-api 5xx error rate elevated"
+            description: "{{ "{{" }} $value | humanizePercentage {{ "}}" }} of HTTP requests returned 5xx over the last 5 minutes."
+        - alert: DoczAPISlowRequests
+          expr: histogram_quantile(0.99, sum by (le) (rate(docz_api_http_request_duration_seconds_bucket[5m]))) > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "docz-api p99 request latency high"
+            description: "the 99th-percentile HTTP request latency has exceeded 2s for 10+ minutes."
+        - alert: DoczAPIIngestFailures
+          expr: sum by (reason) (increase(docz_api_ingest_jobs_total{status="failure"}[30m])) > 2
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "docz-api ingest jobs failing"
+            description: "more than 2 ingest jobs for reason {{ "{{" }} $labels.reason {{ "}}" }} failed in the last 30 minutes."
+        - alert: DoczAPISlowIngest
+          expr: histogram_quantile(0.99, sum by (le) (rate(docz_api_ingest_job_duration_seconds_bucket[30m]))) > 120
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "docz-api ingest jobs slow"
+            description: "the 99th-percentile ingest job duration has exceeded 120s for 15+ minutes."
+{{- end }}

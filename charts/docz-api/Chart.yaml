@@ -1,0 +1,11 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/chart.json
+apiVersion: v2
+name: docz-api
+description: Helm chart for docz-api
+type: application
+version: 0.1.0
+appVersion: "v0.4.0"
+home: https://github.com/donaldgifford/docz-api
+maintainers:
+  - name: donaldgifford

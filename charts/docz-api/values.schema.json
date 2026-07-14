@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "docz-api Helm chart values",
+  "description": "Guardrail schema for the docz-api chart. Enforces the enumerated backend modes and log settings at helm install/upgrade/template time so operators get schema errors at render time instead of a CrashLoopBackoff. Permissive elsewhere (additionalProperties) — it constrains the values that break the app when wrong, not the whole surface.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "appId": { "type": "string" },
+        "port": { "type": "integer" },
+        "logLevel": {
+          "description": "Log level.",
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"]
+        },
+        "logFormat": {
+          "description": "Log output format.",
+          "type": "string",
+          "enum": ["text", "json"]
+        },
+        "authRedirectBase": { "type": "string" },
+        "authProviders": { "type": "string" },
+        "githubOAuthClientID": { "type": "string" },
+        "githubApiBase": { "type": "string" },
+        "sessionTTL": { "type": "string" },
+        "ingestDebounce": { "type": "string" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "otel": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "endpoint": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "sampleRate": { "type": "string" }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "create": { "type": "boolean" },
+        "existingSecret": { "type": "string" },
+        "privateKeyAsFile": { "type": "boolean" }
+      }
+    },
+    "store": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "description": "Persistent state store backend. Only \"postgres\" is supported.",
+          "type": "string",
+          "enum": ["postgres"]
+        },
+        "postgres": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "description": "Source of the Postgres deployment.",
+              "type": "string",
+              "enum": ["baked", "cnpg", "external"]
+            }
+          }
+        }
+      }
+    },
+    "queue": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "description": "Work queue backend. Only \"valkey\" is supported.",
+          "type": "string",
+          "enum": ["valkey"]
+        },
+        "valkey": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "description": "Source of the Valkey deployment.",
+              "type": "string",
+              "enum": ["baked", "external"]
+            }
+          }
+        }
+      }
+    },
+    "search": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "meili": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "description": "Source of the Meilisearch deployment.",
+              "type": "string",
+              "enum": ["baked", "external"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

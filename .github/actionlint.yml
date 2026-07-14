@@ -1,5 +1,5 @@
 ---
-# $schema=https://schemastore.org/https://www.schemastore.org/actionlint.json
+# yaml-language-server: $schema=https://www.schemastore.org/actionlint.json
 # actionlint configuration
 # Reference: https://github.com/rhysd/actionlint/blob/main/docs/config.md
 #

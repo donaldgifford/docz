@@ -1,5 +1,5 @@
 ---
-# $schema=https://www.schemastore.org/golangci.jsonschema.json
+# yaml-language-server: $schema=https://json.schemastore.org/golangci-lint.json
 # golangci-lint configuration based on Uber's Go Style Guide
 # https://github.com/uber-go/guide/blob/master/style.md
 #
@@ -219,7 +219,7 @@ linters:
           - gosec
           - dupl
           - nilnil
-          - unparam # test helpers keep params that document intent even if fixed
+          - unparam  # test helpers keep params that document intent even if fixed
 
       # Main files often have init functions
       - path: ./main.go

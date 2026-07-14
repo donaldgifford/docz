@@ -1,0 +1,184 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: deployment-env
+templates:
+  - templates/deployment.yaml
+set:
+  config:
+    authRedirectBase: "https://docz.example.com"
+tests:
+  - it: emits the core plain-value env vars
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HTTP_ADDR
+            value: ":8080"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LOG_LEVEL
+            value: "info"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LOG_FORMAT
+            value: "json"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: METRICS_ENABLED
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AUTH_REDIRECT_BASE
+            value: "https://docz.example.com"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AUTH_PROVIDERS
+            value: "github"
+
+  - it: sources the app secrets with the right keys
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: app-id
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: webhook-secret
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: session-secret
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_OAUTH_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: oauth-client-secret
+
+  - it: sources the backing-service DSNs from the baked secrets
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-postgres
+                key: DATABASE_URL
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-valkey
+                key: REDIS_URL
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_HOST
+            value: "http://RELEASE-NAME-docz-api-meilisearch:7700"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api-meilisearch
+                key: MEILI_API_KEY
+
+  - it: omits the optional tuning env vars when unset
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_API_BASE
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SESSION_TTL
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: INGEST_DEBOUNCE
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+          any: true
+
+  - it: emits the optional tuning env vars when set
+    set:
+      config:
+        githubApiBase: "https://ghe.example.com/api/v3"
+        sessionTTL: "168h"
+        ingestDebounce: "10s"
+      otel:
+        endpoint: "otel-collector:4318"
+        serviceName: "docz-api"
+        sampleRate: "0.5"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_API_BASE
+            value: "https://ghe.example.com/api/v3"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SESSION_TTL
+            value: "168h"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: INGEST_DEBOUNCE
+            value: "10s"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "otel-collector:4318"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "docz-api"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SAMPLE_RATE
+            value: "0.5"
+
+  - it: passes extraEnv through
+    set:
+      extraEnv:
+        - name: CUSTOM_VAR
+          value: custom-value
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
+            value: custom-value

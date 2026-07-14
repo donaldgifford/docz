@@ -1,0 +1,122 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.json
+# Prometheus alerting rules for docz-api.
+#
+# This is the SAME alert pack as the Helm chart's PrometheusRule
+# (charts/docz-api/templates/prometheusrule.yaml), in two formats:
+#   - chart users get these via `prometheusRule.enabled=true`;
+#   - vanilla-Prometheus users add THIS file to `rule_files` directly.
+# Keep the five shared alerts (DoczAPIDown, DoczAPIHighErrorRate,
+# DoczAPISlowRequests, DoczAPIIngestFailures, DoczAPISlowIngest) in sync
+# between the two. DoczAPINoScrapes below is extra: it only makes sense for
+# a static scrape config that owns the `job` label, so it lives here, not in
+# the chart (where the ServiceMonitor sets the job).
+#
+# Usage:
+#   rule_files:
+#     - /etc/prometheus/rules/docz-api-alerts.yaml
+#
+#   Or, under the Prometheus Operator, paste the group into a PrometheusRule:
+#
+#   apiVersion: monitoring.coreos.com/v1
+#   kind: PrometheusRule
+#   metadata:
+#     name: docz-api
+#     labels:
+#       release: kube-prometheus-stack   # match your Prometheus selector
+#   spec:
+#     groups:
+#       <paste the group below here>
+#
+# Every expression uses only metrics docz-api actually emits: the four
+# docz_api_* series (see contrib/README.md) plus up / absent.
+
+groups:
+  - name: docz-api
+    rules:
+      # -------------------------------------------------------------------
+      # Availability
+      # -------------------------------------------------------------------
+
+      # No docz-api target has been scrapeable for 5+ minutes. The job-label
+      # regex tolerates the ServiceMonitor's generated job names.
+      - alert: DoczAPIDown
+        expr: up{job=~".*docz-api.*"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "docz-api is down"
+          description: "no docz-api target has been scrapeable for 5+ minutes."
+
+      # -------------------------------------------------------------------
+      # Error rate
+      # -------------------------------------------------------------------
+
+      # More than 5% of HTTP requests returned 5xx over the last 5 minutes.
+      - alert: DoczAPIHighErrorRate
+        expr: |
+          sum(rate(docz_api_http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(docz_api_http_requests_total[5m]))
+            > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "docz-api 5xx error rate elevated"
+          description: "{{ $value | humanizePercentage }} of HTTP requests returned 5xx over the last 5 minutes."
+
+      # -------------------------------------------------------------------
+      # Request latency
+      # -------------------------------------------------------------------
+
+      # p99 HTTP request latency above 2s for 10+ minutes.
+      - alert: DoczAPISlowRequests
+        expr: histogram_quantile(0.99, sum by (le) (rate(docz_api_http_request_duration_seconds_bucket[5m]))) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "docz-api p99 request latency high"
+          description: "the 99th-percentile HTTP request latency has exceeded 2s for 10+ minutes."
+
+      # -------------------------------------------------------------------
+      # Ingest pipeline
+      # -------------------------------------------------------------------
+
+      # More than 2 ingest jobs failed for a given reason in 30 minutes.
+      - alert: DoczAPIIngestFailures
+        expr: sum by (reason) (increase(docz_api_ingest_jobs_total{status="failure"}[30m])) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "docz-api ingest jobs failing"
+          description: "more than 2 ingest jobs for reason {{ $labels.reason }} failed in the last 30 minutes."
+
+      # p99 ingest job duration above 120s (GitHub-bound jobs are wide-tailed).
+      - alert: DoczAPISlowIngest
+        expr: histogram_quantile(0.99, sum by (le) (rate(docz_api_ingest_job_duration_seconds_bucket[30m]))) > 120
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "docz-api ingest jobs slow"
+          description: "the 99th-percentile ingest job duration has exceeded 120s for 15+ minutes."
+
+      # -------------------------------------------------------------------
+      # Scrape health (static-scrape deployments only)
+      # -------------------------------------------------------------------
+
+      # The docz-api target has vanished entirely (no series with this job
+      # label at all), which `up == 0` can't catch because it needs the
+      # series to exist. The `job` label MUST match your scrape config's
+      # job_name (the sample prometheus.yaml uses job_name: docz-api).
+      - alert: DoczAPINoScrapes
+        expr: absent(up{job="docz-api"}) == 1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "docz-api scrape target missing"
+          description: "no up{job=\"docz-api\"} series exists; Prometheus is not scraping docz-api at all. Check the scrape config and target discovery."

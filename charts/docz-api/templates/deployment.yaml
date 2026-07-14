@@ -1,0 +1,221 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "docz-api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz-api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "docz-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "docz-api.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "docz-api.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 60
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.config.port }}
+              name: http
+              protocol: TCP
+          env:
+            - name: HTTP_ADDR
+              value: ":{{ .Values.config.port }}"
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: app-id
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: webhook-secret
+            {{- if .Values.secrets.privateKeyAsFile }}
+            - name: GITHUB_APP_PRIVATE_KEY
+              value: /etc/docz-api/private-key/private-key.pem
+            {{- else }}
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: private-key
+            {{- end }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.storeSecretName" . }}
+                  key: {{ include "docz-api.storeSecretKey" . }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.queueSecretName" . }}
+                  key: {{ include "docz-api.queueSecretKey" . }}
+            - name: MEILI_HOST
+              value: {{ include "docz-api.meiliHost" . | quote }}
+            - name: MEILI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.searchSecretName" . }}
+                  key: {{ include "docz-api.searchSecretKey" . }}
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: session-secret
+            - name: AUTH_REDIRECT_BASE
+              value: {{ required "config.authRedirectBase is required" .Values.config.authRedirectBase | quote }}
+            - name: AUTH_PROVIDERS
+              value: {{ .Values.config.authProviders | quote }}
+            - name: GITHUB_OAUTH_CLIENT_ID
+              value: {{ .Values.config.githubOAuthClientID | quote }}
+            - name: GITHUB_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: oauth-client-secret
+            - name: LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: LOG_FORMAT
+              value: {{ .Values.config.logFormat | quote }}
+            - name: METRICS_ENABLED
+              value: {{ .Values.metrics.enabled | quote }}
+            {{- with .Values.config.githubApiBase }}
+            - name: GITHUB_API_BASE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.sessionTTL }}
+            - name: SESSION_TTL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.config.ingestDebounce }}
+            - name: INGEST_DEBOUNCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.otel.endpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.otel.serviceName }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.otel.sampleRate }}
+            - name: OTEL_SAMPLE_RATE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.secrets.privateKeyAsFile .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- if .Values.secrets.privateKeyAsFile }}
+            - name: github-private-key
+              mountPath: /etc/docz-api/private-key
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- if .Values.tailscale.enabled }}
+        - name: tailscale
+          image: {{ .Values.tailscale.image }}
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.tailscale.authKeySecret }}
+                  key: authkey
+            - name: TS_HOSTNAME
+              value: {{ .Values.tailscale.hostname | quote }}
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            - name: TS_USERSPACE
+              value: {{ .Values.tailscale.userspace | quote }}
+            - name: TS_SERVE_CONFIG
+              value: /config/serve-config.json
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
+            - name: tailscale-serve-config
+              mountPath: /config
+              readOnly: true
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+        {{- end }}
+      volumes:
+        {{- if .Values.secrets.privateKeyAsFile }}
+        - name: github-private-key
+          secret:
+            secretName: {{ include "docz-api.secretName" . }}
+            items:
+              - key: private-key
+                path: private-key.pem
+        {{- end }}
+        {{- if .Values.tailscale.enabled }}
+        - name: tailscale-state
+          emptyDir: {}
+        - name: tailscale-serve-config
+          configMap:
+            name: {{ include "docz-api.fullname" . }}-tailscale-serve-config
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
