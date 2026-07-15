@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: httproute
+templates:
+  - templates/httproute.yaml
+tests:
+  - it: should not create an httproute by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create an httproute with a default rule when enabled
+    set:
+      httpRoute:
+        enabled: true
+        parentRefs:
+          - name: gateway
+            namespace: gateway-system
+        hostnames:
+          - docz.example.com
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: HTTPRoute
+      - equal:
+          path: spec.parentRefs[0].name
+          value: gateway
+      - contains:
+          path: spec.hostnames
+          content: docz.example.com
+      - equal:
+          path: spec.rules[0].backendRefs[0].name
+          value: RELEASE-NAME-docz-site
+      - equal:
+          path: spec.rules[0].backendRefs[0].port
+          value: 80
+
+  - it: should honor explicit rules with matches
+    set:
+      httpRoute:
+        enabled: true
+        parentRefs:
+          - name: gateway
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+    asserts:
+      - equal:
+          path: spec.rules[0].matches[0].path.value
+          value: /
+      - equal:
+          path: spec.rules[0].backendRefs[0].name
+          value: RELEASE-NAME-docz-site

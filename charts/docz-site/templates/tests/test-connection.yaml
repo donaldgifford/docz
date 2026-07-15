@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "docz-site.fullname" . }}-test-connection"
+  labels:
+    {{- include "docz-site.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "docz-site.fullname" . }}:{{ .Values.service.port }}/healthz']
+  restartPolicy: Never
