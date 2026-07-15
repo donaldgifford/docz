@@ -59,6 +59,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(reader)* Metadata table header, ToC-first rail, lifecycle drawer
 - *(palette)* Lead the empty query with recently-opened docs
 - *(reader)* Copy-link affordance on section headings
+- *(chart)* Add docz-site Helm chart
 
 ### Bug Fixes
 
@@ -115,4 +116,5 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Add ci.yml running the just ci chain via mise
 - Untrack session-local Claude loop state
 - *(deploy)* Local compose + just targets for the site container
+- *(chart)* Lint/test the chart in CI and publish to GHCR
 
