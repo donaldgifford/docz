@@ -85,5 +85,23 @@ local-down:
     @{{ local_compose }} down
     @echo "✓ docz-site stopped"
 
+# ─── Helm chart ─────────────────────────────────────────────────────
+
+# Lint the chart (ci-values supplies the required values with no defaults)
+helm-lint:
+    @helm lint charts/docz-site -f charts/docz-site/ci/ci-values.yaml
+
+# Render the chart with the ci values (fast "does it template" check)
+helm-template:
+    @helm template docz-site charts/docz-site -f charts/docz-site/ci/ci-values.yaml
+
+# Run the chart's helm-unittest suite (needs the helm-unittest plugin)
+helm-unittest:
+    @helm unittest charts/docz-site
+
+# Regenerate the chart README from README.md.gotmpl + values.yaml
+helm-docs:
+    @helm-docs --chart-search-root=charts
+
 # CI parity: everything the ci workflow runs, in order
 ci: gen-api lint fmt-check typecheck test build bundle-budget e2e gen-api-check
