@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: ingress
+templates:
+  - templates/ingress.yaml
+tests:
+  - it: should not create an ingress by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create an ingress when enabled
+    set:
+      ingress:
+        enabled: true
+        className: nginx
+        hosts:
+          - host: docz.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: kind
+          value: Ingress
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+      - equal:
+          path: spec.rules[0].host
+          value: docz.example.com
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 80
+
+  - it: should render tls blocks when provided
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: docz.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: docz-tls
+            hosts:
+              - docz.example.com
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: docz-tls
+      - contains:
+          path: spec.tls[0].hosts
+          content: docz.example.com

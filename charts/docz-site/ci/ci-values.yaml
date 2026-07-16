@@ -1,0 +1,19 @@
+---
+# CI render/lint values. Overrides the container to a no-op busybox and
+# supplies a dummy for the one `required` value so `helm lint`/
+# `helm template`/`ct` pass without a real docz-api. NOT a deployable config.
+image:
+  repository: busybox
+  tag: latest
+
+command:
+  - sleep
+  - "900"
+
+config:
+  doczApiUrl: "http://docz-api:8080"
+
+livenessProbe: null
+readinessProbe: null
+
+resources: {}

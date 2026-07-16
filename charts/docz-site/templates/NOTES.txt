@@ -1,0 +1,34 @@
+docz-site {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}".
+
+The container serves the single-page app and, on the same origin, reverse-
+proxies /api, /auth, /webhooks and /openapi.yaml to docz-api at
+{{ .Values.config.doczApiUrl }} — so the browser and API share one origin
+and the httpOnly session cookie is first-party (no CORS).
+
+1. Port-forward the service to reach it locally:
+
+     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "docz-site.fullname" . }} 8080:{{ .Values.service.port }}
+
+2. Then browse:
+
+     Site:      http://localhost:8080/
+     Liveness:  http://localhost:8080/healthz
+{{- if .Values.ingress.enabled }}
+
+The site is exposed via Ingress at:
+{{- range .Values.ingress.hosts }}
+  {{- range .paths }}
+     http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if .Values.httpRoute.enabled }}
+
+The site is exposed via an HTTPRoute on hostnames:
+{{- range .Values.httpRoute.hostnames }}
+     {{ . }}
+{{- end }}
+{{- else }}
+
+To expose the site, front the {{ include "docz-site.fullname" . }} service
+(port {{ .Values.service.port }}) with an Ingress, HTTPRoute, or LoadBalancer.
+{{- end }}

@@ -1,0 +1,162 @@
+---
+# yaml-language-server: $schema=values.schema.json
+
+# -- Number of replicas
+replicaCount: 1
+
+# -- Number of old ReplicaSets retained for rollback. Defaults to 3 to
+# keep the kubectl `get rs` view tidy; bump if you need more rollback
+# headroom. Kubernetes default is 10.
+revisionHistoryLimit: 3
+
+image:
+  # -- Container image repository
+  repository: ghcr.io/donaldgifford/docz-site
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag (default: chart appVersion)
+  tag: ""
+
+# -- Image pull secrets
+imagePullSecrets: []
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Create a ServiceAccount
+  create: true
+  # -- Annotations for the ServiceAccount
+  annotations: {}
+  # -- Override the ServiceAccount name
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+# -- Pod labels
+podLabels: {}
+
+# -- Pod security context. Defaults match the `oven/bun` runtime image,
+# whose `bun` user is UID/GID 1000, and drop to a RuntimeDefault seccomp
+# profile.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container security context. The static server reads `dist/` and
+# proxies; it writes nothing to disk, so the rootfs is mounted read-only.
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port. Targets the container's single `http` port, which
+  # serves the SPA, /healthz, and the same-origin API proxy.
+  port: 80
+
+# -- Container resource requests and limits
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+livenessProbe:
+  # @default -- See values.yaml
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 15
+
+readinessProbe:
+  # @default -- See values.yaml
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# -- docz-site runtime configuration. The site is a static SPA served by
+# a small Bun process that also reverse-proxies the API surface, so the
+# browser and API share one origin (no CORS, first-party session cookie).
+#
+# NOTE: the enabled auth-provider set (VITE_AUTH_PROVIDERS) is baked into
+# the image at BUILD time, not configured here. Rebuild the image to
+# change it.
+config:
+  # -- Container HTTP listen port (drives the PORT env var and the
+  # Service targetPort). The SPA, /healthz, and the API proxy are all
+  # served here.
+  port: 8080
+  # -- Absolute base URL of the docz-api the site proxies to
+  # (DOCZ_API_URL). In-cluster this is the docz-api Service, e.g.
+  # http://docz-api:8080. Required — without it the API proxy returns
+  # 502.
+  doczApiUrl: ""
+
+# -- Horizontal Pod Autoscaler. Off by default.
+autoscaling:
+  # -- Enable a HorizontalPodAutoscaler
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 1
+  # -- Maximum replicas
+  maxReplicas: 3
+  # -- Target average CPU utilization (percent)
+  targetCPUUtilizationPercentage: 80
+  # -- Target average memory utilization (percent). Unset → no memory metric.
+  targetMemoryUtilizationPercentage: 0
+
+# -- Ingress (networking.k8s.io/v1). Off by default.
+ingress:
+  # -- Enable an Ingress
+  enabled: false
+  # -- IngressClass name
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+  # -- Ingress hosts. Each entry: {host, paths: [{path, pathType}]}.
+  hosts: []
+  # -- TLS blocks. Each entry: {secretName, hosts: []}.
+  tls: []
+
+# -- Gateway API HTTPRoute. Off by default.
+httpRoute:
+  # -- Enable an HTTPRoute
+  enabled: false
+  # -- HTTPRoute annotations
+  annotations: {}
+  # -- parentRefs (Gateways) this route attaches to.
+  parentRefs: []
+  # -- Hostnames matched by this route.
+  hostnames: []
+  # -- Route rules. Empty → the template renders a default rule to the
+  # service.
+  rules: []
+
+# -- Additional environment variables
+extraEnv: []
+# -- Additional volumes
+extraVolumes: []
+# -- Additional volume mounts
+extraVolumeMounts: []
+
+# -- Node selector
+nodeSelector: {}
+# -- Tolerations
+tolerations: []
+# -- Affinity rules
+affinity: {}

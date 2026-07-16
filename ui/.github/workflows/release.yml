@@ -1,0 +1,65 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+  id-token: write
+
+jobs:
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.bump.outputs.version }}
+      skipped: ${{ steps.bump.outputs.skipped }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: jefflinse/pr-semver-bump@v1.7.4
+        id: bump
+        name: Bump and Tag Version
+        with:
+          mode: bump
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          require-release-notes: false
+          major-label: major
+          minor-label: minor
+          patch-label: patch
+          noop-labels: "dont-release"
+          release-notes-prefix: "### RELEASE NOTES"
+          with-v: true
+
+  # The publish workflow runs on every main push, NOT gated on a version
+  # bump. Its internal `image` job is gated on `inputs.tag != ''` so the
+  # container image only publishes on a real release; its internal `chart`
+  # job is idempotent (skips when the chart version is already published).
+  # This lets chart-only changes (a PR labelled `dont-release`) publish the
+  # chart even though no image release happened.
+  publish-ghcr:
+    name: Publish to GHCR
+    needs: bump-version
+    uses: ./.github/workflows/ghcr.yml
+    # actions: read is required by the nested SLSA generator jobs inside
+    # ghcr.yml. Caller-job permissions are a hard ceiling for nested
+    # reusable workflows — omitting it fails the whole run at startup
+    # (zero jobs created) before anything executes.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      actions: read
+    with:
+      tag: ${{ needs.bump-version.outputs.tag }}
+      dry_run: false
+    secrets: inherit

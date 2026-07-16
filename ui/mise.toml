@@ -46,3 +46,13 @@ yq = "4.48.1"
 jq = "latest"
 # renovate: datasource=github-releases depName=donaldgifford/docz
 "github:donaldgifford/docz" = "latest"
+
+# Helm chart tooling (chart lives in charts/docz-site)
+# renovate: datasource=github-releases depName=helm/helm
+helm = "4.2.2"
+# renovate: datasource=github-releases depName=helm/chart-testing
+helm-ct = "latest"
+# renovate: datasource=github-releases depName=norwoodj/helm-docs
+helm-docs = "latest"
+# renovate: datasource=github-releases depName=sigstore/cosign
+cosign = "latest"

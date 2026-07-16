@@ -1,0 +1,166 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: deployment
+templates:
+  - templates/deployment.yaml
+set:
+  config:
+    doczApiUrl: "http://docz-api:8080"
+tests:
+  - it: should set replica count
+    set:
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should default revisionHistoryLimit to 3
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 3
+
+  - it: should override revisionHistoryLimit from values
+    set:
+      revisionHistoryLimit: 10
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 10
+
+  - it: should use default image tag from appVersion
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/donaldgifford/docz-site:v0.1.0"
+
+  - it: should use custom image tag when set
+    set:
+      image:
+        tag: "v1.0.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/donaldgifford/docz-site:v1.0.0"
+
+  - it: should expose a single http container port from config.port
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].ports
+          count: 1
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8080
+            name: http
+            protocol: TCP
+
+  - it: should probe /healthz for both liveness and readiness
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /healthz
+
+  - it: should set the PORT and DOCZ_API_URL env vars
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PORT
+            value: "8080"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_API_URL
+            value: "http://docz-api:8080"
+
+  - it: should fail render when doczApiUrl is unset
+    set:
+      config:
+        doczApiUrl: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: "config.doczApiUrl is required"
+
+  - it: should run as the oven/bun non-root uid 1000
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1000
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 1000
+
+  - it: should harden the container security context
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: should append extra env vars
+    set:
+      extraEnv:
+        - name: EXTRA
+          value: "value"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: EXTRA
+            value: "value"
+
+  - it: should set resource requests and limits
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 25m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 128Mi
+
+  - it: should support extraVolumes and extraVolumeMounts
+    set:
+      extraVolumes:
+        - name: extra-vol
+          emptyDir: {}
+      extraVolumeMounts:
+        - name: extra-vol
+          mountPath: /extra
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: extra-vol
+            emptyDir: {}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra-vol
+            mountPath: /extra
+
+  - it: should not render a volumes block without extraVolumes
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+
+  - it: should support nodeSelector
+    set:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            kubernetes.io/arch: amd64
