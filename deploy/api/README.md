@@ -158,6 +158,47 @@ cautious default for a production deployment, keeping the ingest and login
 credentials in separate blast radii. The service requests the `read:user` and
 `user:email` scopes; no scopes are configured on the app itself.
 
+### Enabling Okta (OIDC)
+
+Okta is a first-class login provider alongside GitHub. Add `okta` to
+`AUTH_PROVIDERS` and set the three `OKTA_*` variables:
+
+```sh
+AUTH_PROVIDERS=github,okta            # or just okta
+OKTA_ISSUER=https://acme.okta.com/oauth2/default
+OKTA_CLIENT_ID=...
+OKTA_CLIENT_SECRET=...
+```
+
+The service performs OIDC discovery against `OKTA_ISSUER` **at startup** (a bad
+issuer fails the boot, not the first login), then runs the standard
+authorization-code flow and verifies the returned `id_token` (signature via the
+issuer's JWKS, audience, issuer, expiry). Okta and Keycloak share this exact
+code path — Keycloak is enabled the same way with `KEYCLOAK_*` variables. Three
+Okta-specific things to get right:
+
+1. **Match the issuer form exactly.** Okta exposes two: the org authorization
+   server (`https://acme.okta.com`) and a custom/default one
+   (`https://acme.okta.com/oauth2/default`). `OKTA_ISSUER` must be the value
+   Okta's own discovery document reports for that app — a mismatch fails
+   `id_token` verification with an issuer error. When in doubt, open
+   `<issuer>/.well-known/openid-configuration` and copy the `issuer` field
+   verbatim.
+2. **Groups need a claim mapping.** The service requests the `groups` scope and
+   reads a `groups` claim, but Okta does **not** emit one by default — add a
+   groups claim to the authorization server (Security → API → Authorization
+   Servers → your server → Claims) if you want `Identity.Groups` populated.
+   Authorization is currently a pass-through seam, so an empty `groups` is
+   harmless today; this only matters once group-based access lands.
+3. **Register the redirect URI.** The Okta app's **Sign-in redirect URIs** must
+   include `<AUTH_REDIRECT_BASE>/auth/callback` (same value the GitHub flow
+   uses). Also confirm the user's email is **verified** in Okta — the service
+   drops an email the issuer marks `email_verified:false`.
+
+For local development you usually run **Keycloak** instead of a hosted Okta
+tenant (same OIDC code path); see
+[DEVELOPMENT.md](../DEVELOPMENT.md#local-monitoring-stack-just-monitor-up).
+
 ## Health and observability
 
 - **Liveness:** `GET /healthz` — process is up.
