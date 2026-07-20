@@ -16,7 +16,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(deploy)* Document the GitHub App requirements for ingestion
 - *(deploy)* Document reusing the GitHub App as the OAuth login provider
 - *(deploy)* Note the email-permission exception in the permissions section
-- *(deploy)* Add an "Enabling Okta (OIDC)" section
+- *(deploy)* Add an "Enabling Okta (OIDC)" section ([#8](https://github.com/donaldgifford/docz-api/issues/8))
 
 ### Miscellaneous Tasks
 
