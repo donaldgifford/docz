@@ -793,6 +793,18 @@ established as the build progresses:
     docz-api (`MEILI_API_KEY`) must share the exact value; one secret key
     `MEILI_API_KEY` feeds both. `docz-api.meiliHost/searchSecretName/
     searchSecretKey` mirror the store/queue helpers.
+    - **Baked-mode `existingSecret` escape hatch** (post-IMPL-0004): set
+      `search.meili.existingSecret` (+ `existingSecretKey`, default
+      `MEILI_API_KEY`) to source the master key from a pre-existing Secret
+      instead of the plaintext `search.meili.masterKey` — the chart then renders
+      **no** `search-meili-secret.yaml`, and both `searchSecretName`/`Key`
+      helpers (so the baked StatefulSet's `MEILI_MASTER_KEY` **and** docz-api's
+      `MEILI_API_KEY`) point at that Secret. `masterKey` is required only when
+      baked AND `existingSecret` is unset. This is baked-only and distinct from
+      `search.meili.external.existingSecret` (which switches to an external
+      Meili). The baked pg/valkey passwords are deliberately **not** given this
+      hatch — they're chart-generated + `lookup`-preserved, and an existing
+      secret there is the signal to use `mode=external`.
   - **The `search.meili.image` field** was added (not in the plan's values
     block) for parity with `store.postgres.baked.image` / `queue.valkey.baked
     .image` and Renovate.

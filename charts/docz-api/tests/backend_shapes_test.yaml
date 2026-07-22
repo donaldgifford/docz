@@ -191,6 +191,39 @@ tests:
                 key: MEILI_API_KEY
         template: templates/deployment.yaml
 
+  - it: baked search with existingSecret renders no Secret and sources it everywhere
+    set:
+      search.meili.existingSecret: my-meili-secret
+      search.meili.existingSecretKey: master-key
+    asserts:
+      - equal:
+          path: kind
+          value: StatefulSet
+        template: templates/search-meili.yaml
+        documentIndex: 0
+      - hasDocuments:
+          count: 0
+        template: templates/search-meili-secret.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_MASTER_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-meili-secret
+                key: master-key
+        template: templates/search-meili.yaml
+        documentIndex: 0
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-meili-secret
+                key: master-key
+        template: templates/deployment.yaml
+
   - it: external search adds no baked Meilisearch and uses the operator host/secret
     set:
       search.meili.mode: external

@@ -243,13 +243,15 @@ cosign verify-attestation --type slsaprovenance \
 | replicaCount | int | `1` | Number of replicas |
 | resources | object | `{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}` | Container resource requests and limits |
 | revisionHistoryLimit | int | `3` | Number of old ReplicaSets retained for rollback. Defaults to 3 to keep the kubectl `get rs` view tidy; bump if you need more rollback headroom. Kubernetes default is 10. |
-| search | object | `{"meili":{"external":{"existingSecret":"","secretKey":"MEILI_API_KEY"},"host":"","image":"getmeili/meilisearch:v1.12","masterKey":"","mode":"baked","storage":"5Gi","storageClassName":""}}` | Full-text search (Meilisearch). The chart runs a baked single-pod Meilisearch by default; point at an external instance with mode=external. |
+| search | object | `{"meili":{"existingSecret":"","existingSecretKey":"MEILI_API_KEY","external":{"existingSecret":"","secretKey":"MEILI_API_KEY"},"host":"","image":"getmeili/meilisearch:v1.12","masterKey":"","mode":"baked","storage":"5Gi","storageClassName":""}}` | Full-text search (Meilisearch). The chart runs a baked single-pod Meilisearch by default; point at an external instance with mode=external. |
+| search.meili.existingSecret | string | `""` | Existing Secret holding the baked Meilisearch master key. When set, the chart renders no Secret of its own and both baked Meilisearch and docz-api read the key from here — no plaintext masterKey in values. Ignored when mode=external (use search.meili.external instead). |
+| search.meili.existingSecretKey | string | `"MEILI_API_KEY"` | Key inside existingSecret holding the master key. |
 | search.meili.external | object | `{"existingSecret":"","secretKey":"MEILI_API_KEY"}` | External Meilisearch secret. Used only when mode=external. |
 | search.meili.external.existingSecret | string | `""` | Secret holding the API key. Required when mode=external. |
 | search.meili.external.secretKey | string | `"MEILI_API_KEY"` | Key inside existingSecret holding the API key. |
 | search.meili.host | string | `""` | External Meilisearch base URL, http(s)://host:port. Required when mode=external. |
 | search.meili.image | string | `"getmeili/meilisearch:v1.12"` | Pinned baked image. Bump intentionally. |
-| search.meili.masterKey | string | `""` | Meilisearch master key. Required in baked mode; shared by the baked Meilisearch (MEILI_MASTER_KEY) and docz-api (MEILI_API_KEY). |
+| search.meili.masterKey | string | `""` | Meilisearch master key (baked mode). Required unless existingSecret is set; shared by the baked Meilisearch (MEILI_MASTER_KEY) and docz-api (MEILI_API_KEY). Prefer existingSecret over an inline value to avoid a plaintext secret. |
 | search.meili.mode | string | `"baked"` | Source of Meilisearch. One of "baked" or "external". |
 | search.meili.storage | string | `"5Gi"` | Persistent volume size (baked mode). |
 | search.meili.storageClassName | string | `""` | StorageClass name (baked mode). Empty → cluster default. |

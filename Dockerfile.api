@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # Multi-stage build: small distroless image, cached module + build layers.
 
-FROM golang:1.26.4 AS build
+FROM golang:1.26.5 AS build
 WORKDIR /src
 COPY go.* ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download

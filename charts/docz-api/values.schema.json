@@ -110,7 +110,10 @@
               "description": "Source of the Meilisearch deployment.",
               "type": "string",
               "enum": ["baked", "external"]
-            }
+            },
+            "masterKey": { "type": "string" },
+            "existingSecret": { "type": "string" },
+            "existingSecretKey": { "type": "string" }
           }
         }
       }

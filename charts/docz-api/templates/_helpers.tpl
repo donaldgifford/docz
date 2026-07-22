@@ -165,23 +165,32 @@ Service; external mode uses the operator-supplied host URL (required).
 {{- end -}}
 
 {{/*
-Secret name holding MEILI_API_KEY. Baked mode uses the chart-rendered
-Secret (meiliFullname); external mode uses the operator's existingSecret.
+Secret name holding the Meilisearch key. Three cases:
+  - `external`:            operator's search.meili.external.existingSecret.
+  - `baked` + existingSecret: operator's search.meili.existingSecret
+    (baked Meilisearch and docz-api share it; no chart Secret rendered).
+  - `baked` (default):     chart-rendered Secret (meiliFullname).
 */}}
 {{- define "docz-api.searchSecretName" -}}
 {{- if eq .Values.search.meili.mode "external" -}}
 {{- required "search.meili.external.existingSecret is required when search.meili.mode=external" .Values.search.meili.external.existingSecret -}}
+{{- else if .Values.search.meili.existingSecret -}}
+{{- .Values.search.meili.existingSecret -}}
 {{- else -}}
 {{- include "docz-api.meiliFullname" . -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
-Secret key holding MEILI_API_KEY.
+Secret key holding the Meilisearch key. external honours
+external.secretKey; baked+existingSecret honours existingSecretKey; the
+chart-rendered baked Secret uses MEILI_API_KEY.
 */}}
 {{- define "docz-api.searchSecretKey" -}}
 {{- if eq .Values.search.meili.mode "external" -}}
 {{- .Values.search.meili.external.secretKey | default "MEILI_API_KEY" -}}
+{{- else if .Values.search.meili.existingSecret -}}
+{{- .Values.search.meili.existingSecretKey | default "MEILI_API_KEY" -}}
 {{- else -}}
 MEILI_API_KEY
 {{- end -}}

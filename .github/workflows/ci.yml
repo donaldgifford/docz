@@ -133,10 +133,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # cache: false — govulncheck-action does its own setup-go with module
+      # caching; letting this step also cache $GOMODCACHE makes the action's
+      # tar restore collide with the already-populated cache ("Cannot open:
+      # File exists"), failing the job before any scan runs.
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Run govulncheck
         uses: donaldgifford/govulncheck-action@v1

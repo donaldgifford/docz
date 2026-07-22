@@ -273,9 +273,19 @@ search:
   meili:
     # -- Source of Meilisearch. One of "baked" or "external".
     mode: baked
-    # -- Meilisearch master key. Required in baked mode; shared by the
-    # baked Meilisearch (MEILI_MASTER_KEY) and docz-api (MEILI_API_KEY).
+    # -- Meilisearch master key (baked mode). Required unless
+    # existingSecret is set; shared by the baked Meilisearch
+    # (MEILI_MASTER_KEY) and docz-api (MEILI_API_KEY). Prefer
+    # existingSecret over an inline value to avoid a plaintext secret.
     masterKey: ""
+    # -- Existing Secret holding the baked Meilisearch master key. When
+    # set, the chart renders no Secret of its own and both baked
+    # Meilisearch and docz-api read the key from here — no plaintext
+    # masterKey in values. Ignored when mode=external (use
+    # search.meili.external instead).
+    existingSecret: ""
+    # -- Key inside existingSecret holding the master key.
+    existingSecretKey: MEILI_API_KEY
     # -- Pinned baked image. Bump intentionally.
     image: getmeili/meilisearch:v1.12
     # -- Persistent volume size (baked mode).

@@ -34,8 +34,8 @@ spec:
             - name: MEILI_MASTER_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "docz-api.meiliFullname" . }}
-                  key: MEILI_API_KEY
+                  name: {{ include "docz-api.searchSecretName" . }}
+                  key: {{ include "docz-api.searchSecretKey" . }}
             - name: MEILI_ENV
               value: production
             - name: MEILI_NO_ANALYTICS

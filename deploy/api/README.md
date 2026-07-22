@@ -80,6 +80,17 @@ For **local development** the webhook URL can be an ngrok tunnel to your machine
 — `just dev-tunnel` prints it; see
 [DEVELOPMENT.md](../DEVELOPMENT.md#receiving-github-webhooks-locally-ngrok).
 
+For a **Kubernetes / homelab** deployment, expose docz-api behind its **own**
+Tailscale Funnel node. The Helm chart ships a Tailscale sidecar
+(`tailscale.enabled=true`) that joins the tailnet as a separate node, so
+docz-api gets its **own** MagicDNS hostname (`tailscale.hostname`, default
+`docz-api`) and its webhook lives at
+`https://docz-api.<tailnet>.ts.net/webhooks/github`. Each app runs its own
+sidecar and therefore its own Funnel hostname, so the shared `/webhooks/github`
+path never collides with a sibling service — there is no need to override the
+path. Enable Funnel for the node's tag in your tailnet ACLs and supply a
+Tailscale auth key via `tailscale.authKeySecret`.
+
 ### Repository permissions
 
 | Permission | Access    | Why                                                                                                          |
