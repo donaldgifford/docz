@@ -59,12 +59,20 @@ config:
 are passed through, not followed server-side). Point it at the in-cluster
 docz-api `Service` so the two share an origin.
 
-### Auth providers are baked at build time
+### Login providers
 
-The set of login providers shown on `/login` comes from
-`VITE_AUTH_PROVIDERS`, which is compiled into the static bundle at **image
-build time** — it is not a runtime value and cannot be set from this chart.
-To change the provider set, rebuild the image.
+`config.authProviders` (comma-separated: `github`, `okta`, `keycloak`)
+chooses the login buttons shown on `/login`. The server injects it into the
+SPA at runtime (whitelist-validated), so one image serves any combo — no
+rebuild. It must match docz-api's own `AUTH_PROVIDERS`, and docz-api owns
+the actual OAuth/OIDC exchange plus the GitHub App ingest ("machine
+identity"), which is independent of the login provider. Empty or unknown
+values fall back to `github`.
+
+```yaml
+config:
+  authProviders: "keycloak,github" # Keycloak login; GitHub App ingest is docz-api's
+```
 
 ## Exposure
 

@@ -10,7 +10,8 @@
       "additionalProperties": true,
       "properties": {
         "port": { "type": "integer" },
-        "doczApiUrl": { "type": "string" }
+        "doczApiUrl": { "type": "string" },
+        "authProviders": { "type": "string" }
       }
     },
     "service": {

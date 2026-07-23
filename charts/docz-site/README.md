@@ -28,7 +28,7 @@ The chart is published as an OCI artifact to GHCR:
 ```bash
 helm install docz-site \
   oci://ghcr.io/donaldgifford/charts/docz-site \
-  --version 0.1.1 \
+  --version 0.1.2 \
   --namespace docz-site \
   --create-namespace \
   --set config.doczApiUrl=http://docz-api:8080
@@ -59,12 +59,20 @@ config:
 are passed through, not followed server-side). Point it at the in-cluster
 docz-api `Service` so the two share an origin.
 
-### Auth providers are baked at build time
+### Login providers
 
-The set of login providers shown on `/login` comes from
-`VITE_AUTH_PROVIDERS`, which is compiled into the static bundle at **image
-build time** — it is not a runtime value and cannot be set from this chart.
-To change the provider set, rebuild the image.
+`config.authProviders` (comma-separated: `github`, `okta`, `keycloak`)
+chooses the login buttons shown on `/login`. The server injects it into the
+SPA at runtime (whitelist-validated), so one image serves any combo — no
+rebuild. It must match docz-api's own `AUTH_PROVIDERS`, and docz-api owns
+the actual OAuth/OIDC exchange plus the GitHub App ingest ("machine
+identity"), which is independent of the login provider. Empty or unknown
+values fall back to `github`.
+
+```yaml
+config:
+  authProviders: "keycloak,github" # Keycloak login; GitHub App ingest is docz-api's
+```
 
 ## Exposure
 
@@ -93,7 +101,8 @@ memory metric). The SPA server is stateless, so horizontal scaling is safe.
 | autoscaling.minReplicas | int | `1` | Minimum replicas |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target average CPU utilization (percent) |
 | autoscaling.targetMemoryUtilizationPercentage | int | `0` | Target average memory utilization (percent). Unset → no memory metric. |
-| config | object | `{"doczApiUrl":"","port":8080}` | docz-site runtime configuration. The site is a static SPA served by a small Bun process that also reverse-proxies the API surface, so the browser and API share one origin (no CORS, first-party session cookie).  NOTE: the enabled auth-provider set (VITE_AUTH_PROVIDERS) is baked into the image at BUILD time, not configured here. Rebuild the image to change it. |
+| config | object | `{"authProviders":"github","doczApiUrl":"","port":8080}` | docz-site runtime configuration. The site is a static SPA served by a small Bun process that also reverse-proxies the API surface, so the browser and API share one origin (no CORS, first-party session cookie). |
+| config.authProviders | string | `"github"` | Comma-separated login providers to show on /login (DOCZ_AUTH_PROVIDERS): github, okta, keycloak. The server injects this into the SPA at runtime (whitelist-validated), so one image serves any combo — no rebuild. Must match docz-api's own AUTH_PROVIDERS. Empty/unknown → github. The GitHub App ingest ("machine identity") is docz-api's and is independent of this. |
 | config.doczApiUrl | string | `""` | Absolute base URL of the docz-api the site proxies to (DOCZ_API_URL). In-cluster this is the docz-api Service, e.g. http://docz-api:8080. Required — without it the API proxy returns 502. |
 | config.port | int | `8080` | Container HTTP listen port (drives the PORT env var and the Service targetPort). The SPA, /healthz, and the API proxy are all served here. |
 | extraEnv | list | `[]` | Additional environment variables |

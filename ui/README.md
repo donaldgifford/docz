@@ -48,11 +48,15 @@ container.
 
 Authentication is docz-api's: the site never sees a token, only the
 httpOnly `docz_session` cookie. `/login` renders one button per
-enabled OAuth provider; the set comes from `VITE_AUTH_PROVIDERS`
-(build-time, comma-separated — e.g. `github,google,okta` — defaulting
-to `github`). On a 401 the app stashes the intended destination,
-sends you to `/login`, and restores the deep link after the OAuth
-callback lands.
+enabled provider (`github`, `okta`, `keycloak`). In a container the set
+is chosen at runtime via `DOCZ_AUTH_PROVIDERS` (comma-separated; the
+server injects it into the page, so one image serves any combo — the
+Helm chart's `config.authProviders`), falling back to the build-time
+`VITE_AUTH_PROVIDERS`, then `github`. It must match docz-api's own
+`AUTH_PROVIDERS`; docz-api owns the OAuth/OIDC exchange and the GitHub
+App ingest, which is independent of the login provider. On a 401 the app
+stashes the intended destination, sends you to `/login`, and restores
+the deep link after the OAuth callback lands.
 
 ## Test
 

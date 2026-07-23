@@ -4,12 +4,12 @@ apiVersion: v2
 name: docz-site
 description: Helm chart for docz-site
 type: application
-version: 0.1.1
+version: 0.1.2
 # No "v" prefix: appVersion is the default image tag (image.tag ||
 # .Chart.AppVersion), and the published image tag is bare semver
 # (docker/metadata-action strips the "v"). They must match or a
 # defaults-only `helm install` hits ImagePullBackOff.
-appVersion: "0.1.1"
+appVersion: "0.1.2"
 home: https://github.com/donaldgifford/docz-site
 maintainers:
   - name: donaldgifford

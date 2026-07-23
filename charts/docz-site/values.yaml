@@ -92,10 +92,6 @@ readinessProbe:
 # -- docz-site runtime configuration. The site is a static SPA served by
 # a small Bun process that also reverse-proxies the API surface, so the
 # browser and API share one origin (no CORS, first-party session cookie).
-#
-# NOTE: the enabled auth-provider set (VITE_AUTH_PROVIDERS) is baked into
-# the image at BUILD time, not configured here. Rebuild the image to
-# change it.
 config:
   # -- Container HTTP listen port (drives the PORT env var and the
   # Service targetPort). The SPA, /healthz, and the API proxy are all
@@ -106,6 +102,13 @@ config:
   # http://docz-api:8080. Required — without it the API proxy returns
   # 502.
   doczApiUrl: ""
+  # -- Comma-separated login providers to show on /login
+  # (DOCZ_AUTH_PROVIDERS): github, okta, keycloak. The server injects
+  # this into the SPA at runtime (whitelist-validated), so one image
+  # serves any combo — no rebuild. Must match docz-api's own
+  # AUTH_PROVIDERS. Empty/unknown → github. The GitHub App ingest
+  # ("machine identity") is docz-api's and is independent of this.
+  authProviders: "github"
 
 # -- Horizontal Pod Autoscaler. Off by default.
 autoscaling:

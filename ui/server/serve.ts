@@ -22,6 +22,58 @@ const DOCZ_API_URL = process.env.DOCZ_API_URL;
 const PROXY_PREFIXES = ["/api/", "/auth/", "/webhooks/"];
 const PROXY_EXACT = new Set(["/api", "/auth", "/webhooks", "/openapi.yaml"]);
 
+// Runtime login-provider config. The set of login buttons the SPA
+// renders is chosen per-DEPLOYMENT (DOCZ_AUTH_PROVIDERS), not baked at
+// build time — so one signed image serves any provider combo. We inject
+// it into index.html as window.__DOCZ_CONFIG__; src/lib/authProviders.ts
+// reads that at runtime (falling back to the build-time
+// VITE_AUTH_PROVIDERS, then GitHub).
+//
+// SECURITY: the only values that ever reach the injected <script> come
+// from this closed whitelist — never raw env text — so there is no HTML/
+// JS injection surface. docz-api's /auth/login rejects anything else.
+const KNOWN_AUTH_PROVIDERS = new Set(["github", "okta", "keycloak"]);
+
+/** Whitelist-validate DOCZ_AUTH_PROVIDERS; empty/garbage → ["github"]. */
+export function resolveAuthProviders(raw: string | undefined): string[] {
+  const keys = [
+    ...new Set(
+      (raw ?? "")
+        .split(",")
+        .map((key) => key.trim().toLowerCase())
+        .filter((key) => KNOWN_AUTH_PROVIDERS.has(key)),
+    ),
+  ];
+  return keys.length > 0 ? keys : ["github"];
+}
+
+/** The inline <script> that publishes the runtime config to the SPA. */
+export function runtimeConfigScript(providers: string[]): string {
+  const json = JSON.stringify({ authProviders: providers });
+  return `<script>window.__DOCZ_CONFIG__=${json};</script>`;
+}
+
+/**
+ * Insert the config script before the app's entry <script> (falling back
+ * to </head>) so window.__DOCZ_CONFIG__ is set first — textually ahead of
+ * the bundle, not merely relying on module-defer semantics.
+ */
+export function injectRuntimeConfig(html: string, script: string): string {
+  const marker = html.includes("<script")
+    ? "<script"
+    : html.includes("</head>")
+      ? "</head>"
+      : null;
+  if (marker === null) {
+    // No <head>/<script> (unexpected for a Vite build) — prepend.
+    return `${script}${html}`;
+  }
+  return html.replace(marker, `${script}\n    ${marker}`);
+}
+
+const AUTH_PROVIDERS = resolveAuthProviders(process.env.DOCZ_AUTH_PROVIDERS);
+const CONFIG_SCRIPT = runtimeConfigScript(AUTH_PROVIDERS);
+
 // Text-ish assets get a build-time .gz sibling (see Dockerfile); fonts
 // and images are already compressed.
 const IMMUTABLE_PREFIX = "/assets/";
@@ -103,52 +155,68 @@ async function serveFile(
   return new Response(file, { headers });
 }
 
-async function serveIndex(req: Request): Promise<Response> {
-  const index = await serveFile(
-    req,
-    `${DIST}/index.html`,
-    // The HTML references hashed assets — always revalidate it.
-    "no-cache",
-  );
-  return index ?? new Response("dist/index.html missing", { status: 500 });
+async function serveIndex(): Promise<Response> {
+  const file = Bun.file(`${DIST}/index.html`);
+  if (!(await file.exists())) {
+    return new Response("dist/index.html missing", { status: 500 });
+  }
+  // Inject runtime config, so index.html is served fresh (not the static
+  // .gz sibling) and always revalidated — it references hashed assets.
+  const html = injectRuntimeConfig(await file.text(), CONFIG_SCRIPT);
+  return new Response(html, {
+    headers: {
+      "cache-control": "no-cache",
+      "content-type": "text/html; charset=utf-8",
+    },
+  });
 }
 
-const server = Bun.serve({
-  port: PORT,
-  async fetch(req) {
-    const url = new URL(req.url);
-    const { pathname } = url;
+function startServer() {
+  return Bun.serve({
+    port: PORT,
+    fetch: handleRequest,
+  });
+}
 
-    if (pathname === "/healthz") {
-      return new Response("ok", {
-        headers: { "cache-control": "no-store" },
-      });
-    }
-    if (isProxied(pathname)) {
-      return proxy(req, url);
-    }
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      return new Response("method not allowed", { status: 405 });
-    }
+async function handleRequest(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const { pathname } = url;
 
-    if (pathname !== "/") {
-      const filePath = safeDistPath(pathname);
-      if (filePath === null) {
-        return new Response("bad request", { status: 400 });
-      }
-      const file = await serveFile(req, filePath, cacheControl(pathname));
-      if (file !== null) {
-        return file;
-      }
-    }
-    // SPA fallback: the router owns every other path.
-    return serveIndex(req);
-  },
-});
+  if (pathname === "/healthz") {
+    return new Response("ok", {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+  if (isProxied(pathname)) {
+    return proxy(req, url);
+  }
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    return new Response("method not allowed", { status: 405 });
+  }
 
-console.log(
-  `docz-site serving ${DIST}/ on :${String(server.port)}` +
-    (DOCZ_API_URL === undefined
-      ? " (no DOCZ_API_URL — API proxy disabled)"
-      : ` (proxying to ${DOCZ_API_URL})`),
-);
+  if (pathname !== "/") {
+    const filePath = safeDistPath(pathname);
+    if (filePath === null) {
+      return new Response("bad request", { status: 400 });
+    }
+    const file = await serveFile(req, filePath, cacheControl(pathname));
+    if (file !== null) {
+      return file;
+    }
+  }
+  // SPA fallback: the router owns every other path.
+  return serveIndex();
+}
+
+// Guard startup so tests can import the pure helpers above without
+// binding a port (import.meta.main is true only for the entrypoint).
+if (import.meta.main) {
+  const server = startServer();
+  console.log(
+    `docz-site serving ${DIST}/ on :${String(server.port)} ` +
+      `(auth: ${AUTH_PROVIDERS.join(",")})` +
+      (DOCZ_API_URL === undefined
+        ? " (no DOCZ_API_URL — API proxy disabled)"
+        : ` (proxying to ${DOCZ_API_URL})`),
+  );
+}

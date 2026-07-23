@@ -130,9 +130,19 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - Auth UX (Phase 5): `/login` (`src/routes/login.tsx`) renders provider
   buttons as REAL `<a href="/auth/login?provider=…">` anchors — the
   OAuth 302 must reach the browser, so never convert them to router
-  Links. The enabled set comes from `VITE_AUTH_PROVIDERS`
-  (`src/lib/authProviders.ts`; build-time, comma-separated, default
-  `github`, unknown keys dropped, empty result falls back to GitHub).
+  Links. The enabled set (`src/lib/authProviders.ts`; comma-separated,
+  keys `github`/`okta`/`keycloak`, unknown dropped, empty falls back to
+  GitHub) resolves at RUNTIME from `window.__DOCZ_CONFIG__.authProviders`
+  — injected into index.html by the prod server (`server/serve.ts` reads
+  `DOCZ_AUTH_PROVIDERS`, whitelist-validated so the inline `<script>`
+  never carries raw env; chart value `config.authProviders`) — falling
+  back to the build-time `VITE_AUTH_PROVIDERS`, then GitHub. So one image
+  serves any provider combo per deployment; no rebuild. docz-api owns the
+  actual OAuth/OIDC exchange AND the GitHub App ingest ("machine
+  identity"), which is independent of the login provider. `server/` is
+  Bun-only (outside the vitest `src/` graph) — its `serve.test.ts` runs
+  under `bun test server/` (`just test-server`, in the CI chain); guard
+  new top-level side effects with `import.meta.main`.
   On 401, `SessionRequiredRedirect` (query-states.tsx) stashes
   `pathname+search` via `src/lib/authReturn.ts` and replaces to
   `/login`; `RestoreAfterLogin` (AppShell) probes getSession on "/"

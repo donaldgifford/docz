@@ -39,9 +39,30 @@ export function parseProviders(raw: string | undefined): AuthProvider[] {
   return known.length > 0 ? known : [{ key: "github", label: "GitHub" }];
 }
 
+/*
+ * Runtime config injected into index.html by the production server
+ * (server/serve.ts reads DOCZ_AUTH_PROVIDERS). This is how a Helm
+ * deployment picks providers without rebuilding the image; it takes
+ * precedence over the build-time VITE_AUTH_PROVIDERS default.
+ */
+declare global {
+  interface Window {
+    __DOCZ_CONFIG__?: { authProviders?: string[] };
+  }
+}
+
+function runtimeProviders(): string | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  const list = window.__DOCZ_CONFIG__?.authProviders;
+  return Array.isArray(list) && list.length > 0 ? list.join(",") : undefined;
+}
+
 export function enabledProviders(): AuthProvider[] {
   return parseProviders(
-    import.meta.env.VITE_AUTH_PROVIDERS as string | undefined,
+    runtimeProviders() ??
+      (import.meta.env.VITE_AUTH_PROVIDERS as string | undefined),
   );
 }
 

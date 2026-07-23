@@ -52,6 +52,11 @@ typecheck:
 test:
     bun run test
 
+# Bun test for the production server (server/serve.ts is Bun-only, outside
+# the vitest src/ graph)
+test-server:
+    bun test server/
+
 # Vitest watch
 test-watch:
     bun run test:watch
@@ -104,4 +109,4 @@ helm-docs:
     @helm-docs --chart-search-root=charts
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api lint fmt-check typecheck test build bundle-budget e2e gen-api-check
+ci: gen-api lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check

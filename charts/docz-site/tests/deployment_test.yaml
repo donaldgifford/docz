@@ -32,7 +32,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-site:0.1.1"
+          value: "ghcr.io/donaldgifford/docz-site:0.1.2"
 
   - it: should use custom image tag when set
     set:
@@ -76,6 +76,25 @@ tests:
           content:
             name: DOCZ_API_URL
             value: "http://docz-api:8080"
+
+  - it: should default DOCZ_AUTH_PROVIDERS to github and honor overrides
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+            value: "github"
+
+  - it: should set DOCZ_AUTH_PROVIDERS from config.authProviders
+    set:
+      config:
+        authProviders: "keycloak,github"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+            value: "keycloak,github"
 
   - it: should fail render when doczApiUrl is unset
     set:

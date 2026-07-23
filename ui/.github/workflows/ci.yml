@@ -37,6 +37,8 @@ jobs:
         run: just typecheck
       - name: Test
         run: just test
+      - name: Test server
+        run: just test-server
       - name: Build
         run: just build
       - name: Bundle size budget

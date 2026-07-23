@@ -50,6 +50,8 @@ spec:
               value: {{ .Values.config.port | quote }}
             - name: DOCZ_API_URL
               value: {{ required "config.doczApiUrl is required" .Values.config.doczApiUrl | quote }}
+            - name: DOCZ_AUTH_PROVIDERS
+              value: {{ .Values.config.authProviders | quote }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  enabledProviders,
   lastUsedProvider,
   parseProviders,
   promoteLastUsed,
@@ -39,6 +40,38 @@ describe("parseProviders", () => {
     expect(parseProviders("facebook,,")).toEqual([
       { key: "github", label: "GitHub" },
     ]);
+  });
+});
+
+describe("enabledProviders — runtime config precedence", () => {
+  afterEach(() => {
+    delete window.__DOCZ_CONFIG__;
+    vi.unstubAllEnvs();
+  });
+
+  it("prefers the injected runtime config over the build-time env", () => {
+    vi.stubEnv("VITE_AUTH_PROVIDERS", "github");
+    window.__DOCZ_CONFIG__ = { authProviders: ["keycloak", "github"] };
+    expect(enabledProviders().map((p) => p.key)).toEqual([
+      "keycloak",
+      "github",
+    ]);
+  });
+
+  it("falls back to the build-time env when no runtime config is present", () => {
+    vi.stubEnv("VITE_AUTH_PROVIDERS", "okta");
+    expect(enabledProviders().map((p) => p.key)).toEqual(["okta"]);
+  });
+
+  it("ignores an empty runtime list and falls back", () => {
+    vi.stubEnv("VITE_AUTH_PROVIDERS", "okta");
+    window.__DOCZ_CONFIG__ = { authProviders: [] };
+    expect(enabledProviders().map((p) => p.key)).toEqual(["okta"]);
+  });
+
+  it("still whitelists a hostile runtime list down to GitHub", () => {
+    window.__DOCZ_CONFIG__ = { authProviders: ["facebook", "google"] };
+    expect(enabledProviders()).toEqual([{ key: "github", label: "GitHub" }]);
   });
 });
 
