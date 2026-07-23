@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Bug Fixes
 
-- *(ci)* Drop stale goreleaser GPG signing of archives
+- *(ci)* Drop stale goreleaser GPG signing of archives ([#10](https://github.com/donaldgifford/docz-api/issues/10))
 
 ## [0.4.1] - 2026-07-22
 
