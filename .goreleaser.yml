@@ -44,16 +44,10 @@ sboms:
 checksum:
   name_template: 'checksums.txt'
 
-signs:
-  - artifacts: checksum
-    args:
-      - "--batch"
-      - "--local-user"
-      - '{{ .Env.GPG_FINGERPRINT }}'
-      - "--output"
-      - "${signature}"
-      - "--detach-sign"
-      - "${artifact}"
+# Archives are intentionally unsigned: release.yml provides no GPG key, so a
+# `signs` block referencing {{ .Env.GPG_FINGERPRINT }} fails every release.
+# Supply-chain trust lives on the container image and Helm chart, which the
+# publish workflows cosign-sign and SLSA-attest.
 
 changelog:
   use: github
