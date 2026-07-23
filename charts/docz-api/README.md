@@ -34,7 +34,7 @@ provenance attestations.
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -150,7 +150,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.2.0
+  ghcr.io/donaldgifford/charts/docz-api:0.2.1
 ```
 
 ### SLSA provenance
@@ -161,7 +161,7 @@ cosign verify-attestation --type slsaprovenance \
     '^https://github.com/slsa-framework/slsa-github-generator/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.2.0
+  ghcr.io/donaldgifford/charts/docz-api:0.2.1
 ```
 
 ## Values
@@ -224,17 +224,19 @@ cosign verify-attestation --type slsaprovenance \
 | prometheusRule | object | `{"enabled":false,"labels":{}}` | Prometheus PrometheusRule with starter alerts (docz-api RED + ingest). Alert expressions are defined in the template. |
 | prometheusRule.enabled | bool | `false` | Create PrometheusRule with starter alerts. |
 | prometheusRule.labels | object | `{}` | Additional labels (e.g., to match Prometheus operator `ruleSelector`). |
-| queue | object | `{"backend":"valkey","external":{"existingSecret":"","secretKey":"REDIS_URL"},"valkey":{"baked":{"authPasswordLength":32,"image":"valkey/valkey:9.1","storageClassName":"","storageSize":"1Gi"},"mode":"baked"}}` | Work queue + session store (Valkey, Redis-wire-compatible). |
+| queue | object | `{"backend":"valkey","external":{"existingSecret":"","secretKey":"REDIS_URL"},"valkey":{"baked":{"authPasswordLength":32,"image":"valkey/valkey:9.1","storageClassName":"","storageSize":"1Gi"},"existingSecret":"","existingSecretKey":"VALKEY_PASSWORD","mode":"baked"}}` | Work queue + session store (Valkey, Redis-wire-compatible). |
 | queue.backend | string | `"valkey"` | Backend implementation. Only "valkey" is supported. |
 | queue.external | object | `{"existingSecret":"","secretKey":"REDIS_URL"}` | External Valkey/Redis. Used only when queue.valkey.mode=external. |
 | queue.external.existingSecret | string | `""` | Operator-supplied secret holding the REDIS_URL DSN. Required when queue.valkey.mode=external. |
 | queue.external.secretKey | string | `"REDIS_URL"` | Key inside existingSecret holding the DSN. Default: REDIS_URL. |
-| queue.valkey | object | `{"baked":{"authPasswordLength":32,"image":"valkey/valkey:9.1","storageClassName":"","storageSize":"1Gi"},"mode":"baked"}` | Valkey-specific configuration. Ignored when backend != valkey. |
+| queue.valkey | object | `{"baked":{"authPasswordLength":32,"image":"valkey/valkey:9.1","storageClassName":"","storageSize":"1Gi"},"existingSecret":"","existingSecretKey":"VALKEY_PASSWORD","mode":"baked"}` | Valkey-specific configuration. Ignored when backend != valkey. |
 | queue.valkey.baked | object | `{"authPasswordLength":32,"image":"valkey/valkey:9.1","storageClassName":"","storageSize":"1Gi"}` | Baked Valkey-only configuration. |
-| queue.valkey.baked.authPasswordLength | int | `32` | Generated AUTH password length (random alphanumeric). |
+| queue.valkey.baked.authPasswordLength | int | `32` | Generated AUTH password length (random alphanumeric). Only used when existingSecret is unset. |
 | queue.valkey.baked.image | string | `"valkey/valkey:9.1"` | Pinned image. Bump intentionally. |
 | queue.valkey.baked.storageClassName | string | `""` | StorageClass name. Empty → cluster default. |
 | queue.valkey.baked.storageSize | string | `"1Gi"` | Persistent volume size. |
+| queue.valkey.existingSecret | string | `""` | Existing Secret holding the baked Valkey password. RECOMMENDED under GitOps: the self-generated password above relies on Helm `lookup`, which Argo CD / `helm template` cannot run, so it changes on every render and the running server drifts from its clients (asynq: WRONGPASS). Point this at a stable Secret (e.g. 1Password) and the chart renders no Valkey Secret of its own — the baked Valkey uses the value as `requirepass` and docz-api builds REDIS_URL from it (injected via the container's VALKEY_PASSWORD env, so no plaintext DSN is stored). Ignored when mode=external (use queue.external instead). |
+| queue.valkey.existingSecretKey | string | `"VALKEY_PASSWORD"` | Key inside existingSecret holding the raw password. It is interpolated into the redis:// DSN, so keep it URL-safe / alphanumeric (e.g. `openssl rand -hex 32`). |
 | queue.valkey.mode | string | `"baked"` | Source of the Valkey deployment. One of: "baked"    — chart renders a single-pod Valkey Deployment; "external" — operator provides REDIS_URL via queue.external. |
 | readinessProbe.httpGet.path | string | `"/readyz"` |  |
 | readinessProbe.httpGet.port | string | `"http"` |  |

@@ -73,11 +73,30 @@ spec:
                 secretKeyRef:
                   name: {{ include "docz-api.storeSecretName" . }}
                   key: {{ include "docz-api.storeSecretKey" . }}
+            {{- if eq .Values.queue.valkey.mode "external" }}
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "docz-api.queueSecretName" . }}
                   key: {{ include "docz-api.queueSecretKey" . }}
+            {{- else if .Values.queue.valkey.existingSecret }}
+            # baked Valkey with an external password Secret: inject the raw
+            # password, then build the DSN from it via $(VAR) interpolation
+            # (VALKEY_PASSWORD must precede REDIS_URL for expansion).
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.valkeyPasswordSecretName" . }}
+                  key: {{ include "docz-api.valkeyPasswordSecretKey" . }}
+            - name: REDIS_URL
+              value: {{ include "docz-api.valkeyBakedDsn" . | quote }}
+            {{- else }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.queueSecretName" . }}
+                  key: {{ include "docz-api.queueSecretKey" . }}
+            {{- end }}
             - name: MEILI_HOST
               value: {{ include "docz-api.meiliHost" . | quote }}
             - name: MEILI_API_KEY

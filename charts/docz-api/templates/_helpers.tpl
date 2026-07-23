@@ -153,6 +153,37 @@ REDIS_URL
 {{- end -}}
 
 {{/*
+Secret name holding the baked Valkey password (the server's `requirepass`
+and the basis for docz-api's REDIS_URL). Honours
+queue.valkey.existingSecret; otherwise the chart-rendered Secret.
+*/}}
+{{- define "docz-api.valkeyPasswordSecretName" -}}
+{{- if .Values.queue.valkey.existingSecret -}}
+{{- .Values.queue.valkey.existingSecret -}}
+{{- else -}}
+{{- include "docz-api.valkeyFullname" . -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Secret key holding the baked Valkey password. Honours existingSecretKey
+when an existingSecret is set; the chart-rendered Secret uses VALKEY_PASSWORD.
+*/}}
+{{- define "docz-api.valkeyPasswordSecretKey" -}}
+{{- .Values.queue.valkey.existingSecretKey | default "VALKEY_PASSWORD" -}}
+{{- end -}}
+
+{{/*
+REDIS_URL for docz-api in baked mode. The password is injected at runtime
+via the container's VALKEY_PASSWORD env (Kubernetes $(VAR) interpolation),
+so no plaintext DSN is stored — the chart never needs to read the password
+value, which `helm template` couldn't do for an existingSecret anyway.
+*/}}
+{{- define "docz-api.valkeyBakedDsn" -}}
+{{- printf "redis://:$(VALKEY_PASSWORD)@%s.%s.svc.cluster.local:6379/0" (include "docz-api.valkeyFullname" .) .Release.Namespace -}}
+{{- end -}}
+
+{{/*
 MEILI_HOST value. Baked mode targets the chart-rendered headless
 Service; external mode uses the operator-supplied host URL (required).
 */}}

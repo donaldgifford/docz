@@ -257,8 +257,23 @@ queue:
       storageSize: 1Gi
       # -- StorageClass name. Empty → cluster default.
       storageClassName: ""
-      # -- Generated AUTH password length (random alphanumeric).
+      # -- Generated AUTH password length (random alphanumeric). Only used
+      # when existingSecret is unset.
       authPasswordLength: 32
+    # -- Existing Secret holding the baked Valkey password. RECOMMENDED
+    # under GitOps: the self-generated password above relies on Helm
+    # `lookup`, which Argo CD / `helm template` cannot run, so it changes
+    # on every render and the running server drifts from its clients
+    # (asynq: WRONGPASS). Point this at a stable Secret (e.g. 1Password)
+    # and the chart renders no Valkey Secret of its own — the baked Valkey
+    # uses the value as `requirepass` and docz-api builds REDIS_URL from it
+    # (injected via the container's VALKEY_PASSWORD env, so no plaintext DSN
+    # is stored). Ignored when mode=external (use queue.external instead).
+    existingSecret: ""
+    # -- Key inside existingSecret holding the raw password. It is
+    # interpolated into the redis:// DSN, so keep it URL-safe / alphanumeric
+    # (e.g. `openssl rand -hex 32`).
+    existingSecretKey: VALKEY_PASSWORD
   # -- External Valkey/Redis. Used only when queue.valkey.mode=external.
   external:
     # -- Operator-supplied secret holding the REDIS_URL DSN. Required

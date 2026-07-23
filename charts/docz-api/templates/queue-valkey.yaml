@@ -37,8 +37,8 @@ spec:
             - name: VALKEY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "docz-api.valkeyFullname" . }}
-                  key: VALKEY_PASSWORD
+                  name: {{ include "docz-api.valkeyPasswordSecretName" . }}
+                  key: {{ include "docz-api.valkeyPasswordSecretKey" . }}
           ports:
             - containerPort: 6379
               name: valkey
