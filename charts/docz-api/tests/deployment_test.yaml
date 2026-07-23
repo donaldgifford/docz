@@ -32,7 +32,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-api:v0.4.0"
+          value: "ghcr.io/donaldgifford/docz-api:v0.4.2"
 
   - it: should use custom image tag when set
     set:

@@ -9,6 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(ci)* Drop stale goreleaser GPG signing of archives ([#10](https://github.com/donaldgifford/docz-api/issues/10))
 
+### Miscellaneous Tasks
+
+- *(release)* Bump chart to 0.2.0 and appVersion to v0.4.2
+
 ## [0.4.1] - 2026-07-22
 
 ### Features
