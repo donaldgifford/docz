@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Bug Fixes
 
-- *(chart)* Scope the main Service selector to the API pods
+- *(chart)* Scope the main Service selector to the API pods (0.2.2) ([#12](https://github.com/donaldgifford/docz-api/issues/12))
 
 ### Miscellaneous Tasks
 
