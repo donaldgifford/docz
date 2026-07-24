@@ -14,3 +14,8 @@ spec:
       name: http
   selector:
     {{- include "docz-api.selectorLabels" . | nindent 4 }}
+    # Scope to the API pods only. The baked backing-service pods (postgres,
+    # valkey, meilisearch) carry the same name/instance selector labels and
+    # also expose an `http`-named port, so without this component the Service
+    # would enroll them as endpoints and round-robin traffic into 404s.
+    app.kubernetes.io/component: server

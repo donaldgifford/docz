@@ -45,3 +45,12 @@ tests:
           content:
             app.kubernetes.io/name: docz-api
             app.kubernetes.io/instance: RELEASE-NAME
+
+  - it: should scope the selector to the API pods with component=server
+    # Regression guard: without component=server the selector also matches the
+    # baked postgres/valkey/meilisearch pods (same name/instance labels + an
+    # http-named port), enrolling them as endpoints and 404-ing ~half of traffic.
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: server

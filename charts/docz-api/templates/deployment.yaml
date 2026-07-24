@@ -19,6 +19,11 @@ spec:
       {{- end }}
       labels:
         {{- include "docz-api.labels" . | nindent 8 }}
+        # Distinguishes the API pods from the baked backing-service pods, which
+        # share the same name/instance labels. The main Service selects on this
+        # so it only targets the API. Not added to spec.selector.matchLabels
+        # (immutable) to keep `helm upgrade` from 0.2.1 working.
+        app.kubernetes.io/component: server
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

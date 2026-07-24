@@ -762,6 +762,15 @@ established as the build progresses:
     five. **`service.yaml` is one `http` port** (`service.port` → targetPort
     `http`). **`Chart.yaml` `appVersion: "v0.4.0"`** (latest release tag; drives
     the default image tag), chart `version: 0.1.0`.
+    - **GOTCHA — the main Service must scope on `app.kubernetes.io/component:
+      server`** (chart ≥ 0.2.2). The baked postgres/valkey/meilisearch pods
+      carry the **same** `docz-api.selectorLabels` (name+instance) AND expose an
+      `http`-named port, so a Service selecting on selectorLabels alone enrolls
+      them as endpoints → ~half of API traffic round-robins to meilisearch:7700
+      → intermittent 404s. Fix: `component: server` on the API pod template
+      **and** the Service selector. Deliberately **NOT** in the Deployment's
+      `spec.selector.matchLabels` (immutable — would break `helm upgrade` from
+      0.2.1). Regression-guarded in `service_test.yaml`/`deployment_test.yaml`.
   - **`ci/ci-values.yaml`** is the render/lint fixture: busybox + `sleep 900`,
     nulled probes, and a dummy for every `required` value — needed because the
     chart has no defaults for secrets/app-id/redirect-base.

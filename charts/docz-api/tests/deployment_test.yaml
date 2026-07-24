@@ -28,6 +28,17 @@ tests:
           path: spec.revisionHistoryLimit
           value: 10
 
+  - it: should stamp component=server on the pod template
+    # Pairs with the Service selector so the main Service targets only the API
+    # pods, not the baked backing-service pods (which share name/instance labels).
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: server
+      # Kept out of the immutable selector so upgrades from 0.2.1 don't break.
+      - notExists:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+
   - it: should use default image tag from appVersion
     asserts:
       - equal:

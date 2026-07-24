@@ -4,7 +4,7 @@ apiVersion: v2
 name: docz-api
 description: Helm chart for docz-api
 type: application
-version: 0.2.1
+version: 0.2.2
 appVersion: "v0.4.2"
 home: https://github.com/donaldgifford/docz-api
 maintainers:
