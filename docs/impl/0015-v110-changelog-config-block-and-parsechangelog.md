@@ -223,7 +223,7 @@ outside the module before it freezes.
 
 #### Tasks
 
-- [ ] Update `CLAUDE.md` (config + document architecture bullets gain the
+- [x] Update `CLAUDE.md` (config + document architecture bullets gain the
       changelog block/parser) and `DEVELOPMENT.md` (package responsibility
       sections); historical `docs/*` records stay untouched.
 - [ ] Write the PR's `### RELEASE NOTES`: the additive `v1.1.0` surface
