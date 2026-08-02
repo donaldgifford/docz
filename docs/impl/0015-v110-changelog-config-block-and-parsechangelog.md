@@ -96,7 +96,7 @@ semantics, and enabled-only validation.
       template with `DefaultConfig()` and parses it back, so a new default
       field with no template line fails immediately — the template edit is
       part of adding the field, not a later polish step.
-- [ ] Add the post-decode normalization step in `Load` (runs after
+- [x] Add the post-decode normalization step in `Load` (runs after
       `decodeSettings`, beside the `fillTypeFieldDefaults` call): backfill an
       explicitly empty `file: ""` to the default, and normalize a leading
       `./` — `Load` mutates, `Validate` only judges. Note in a comment why

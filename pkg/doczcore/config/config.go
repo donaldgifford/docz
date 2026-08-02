@@ -209,8 +209,38 @@ func Load(configFile, repoRoot string) (Config, error) {
 
 	applyTypesReplaceOnPresence(&cfg, repoConfigPath)
 	fillTypeFieldDefaults(&cfg)
+	normalizeChangelog(&cfg)
 
 	return cfg, nil
+}
+
+// normalizeChangelog resolves ChangelogConfig.File to a canonical form:
+// an explicitly empty value falls back to the default, and a leading
+// "./" is stripped so "./CHANGELOG.md" and "CHANGELOG.md" are the same
+// path to every consumer (DESIGN-0010).
+//
+// This is deliberately new machinery rather than a reuse of
+// fillTypeFieldDefaults: that helper exists only because `Types` is a
+// map whose values the decoder allocates fresh per key. Changelog is a
+// plain struct field decoded in place over DefaultConfig(), so an
+// omitted `file:` already inherits the default for free — only an
+// explicit `file: ""` needs backfilling. Load normalizes; Validate only
+// judges.
+func normalizeChangelog(cfg *Config) {
+	file := strings.TrimSpace(cfg.Changelog.File)
+
+	// Strip repeated "./" prefixes ("././CHANGELOG.md") — filepath.Clean
+	// would also rewrite separators and resolve "..", which Validate must
+	// still be able to see and reject.
+	for strings.HasPrefix(file, "./") {
+		file = file[len("./"):]
+	}
+
+	if file == "" {
+		file = DefaultChangelogFile
+	}
+
+	cfg.Changelog.File = file
 }
 
 // TypeDir returns the full path to a type's directory relative to the repo
@@ -528,6 +558,7 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 
 	applyTypesReplaceOnPresence(&cfg, path)
 	fillTypeFieldDefaults(&cfg)
+	normalizeChangelog(&cfg)
 
 	return cfg, nil
 }
