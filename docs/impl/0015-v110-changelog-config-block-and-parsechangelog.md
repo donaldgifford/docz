@@ -133,22 +133,22 @@ The parser in `pkg/doczcore/document` (Decision 1), next to
 
 #### Tasks
 
-- [ ] Add `changelog.go`: `Changelog{Preamble, Versions}`,
+- [x] Add `changelog.go`: `Changelog{Preamble, Versions}`,
       `ChangelogVersion{Version, Unreleased, Date, Groups}`,
       `ChangelogGroup{Title, Items}`, `ErrNoVersions`, and
       `ParseChangelog(raw []byte) (*Changelog, error)` — the DESIGN-0010
       signature as handed off (Decision 3; deliberate asymmetry with
       `ParseFrontmatter`'s value return, noted in the doc comment).
-- [ ] Version-heading recognition: line matching `## [<ver>]` or
+- [x] Version-heading recognition: line matching `## [<ver>]` or
       `## [<ver>] - <date>`; normalization strips the brackets and a single
       leading lowercase `v` ("0.4.2"); `unreleased` matched
       case-insensitively sets `Unreleased: true` and leaves `Date` empty;
       `Date` is the raw `YYYY-MM-DD` text, unvalidated (Decision 2).
-- [ ] Fence-aware line walk (Decision 4): an internal helper mirroring the
+- [x] Fence-aware line walk (Decision 4): an internal helper mirroring the
       module's fence rule (trimmed-line ` ``` ` toggle; tildes do not toggle)
       — duplicated locally with a comment naming the docparse rule it
       mirrors, **not** a new export or a docparse import.
-- [ ] Preamble + grouping rules: `Preamble` is everything before the first
+- [x] Preamble + grouping rules: `Preamble` is everything before the first
       version-heading line, byte-verbatim (Decision 3 — including the
       no-blank-line-before-first-version shape the real fleet fixture has);
       `###` opens a group; content inside a version before any `###` goes to
@@ -157,7 +157,7 @@ The parser in `pkg/doczcore/document` (Decision 1), next to
       sub-bullets, their `-` markers kept) folds into that item verbatim
       (Decision 8); duplicate version headings emit separate entries in
       document order (Decision 9, stated in the doc comment).
-- [ ] Fixtures + golden fact tests under
+- [x] Fixtures + golden fact tests under
       `pkg/doczcore/document/testdata/changelog/` (repo `-update`
       convention): the fleet-standard fixture — a verbatim snapshot of
       docz-api's real `CHANGELOG.md`, trimmed to a few versions
@@ -167,10 +167,10 @@ The parser in `pkg/doczcore/document` (Decision 1), next to
       unreleased-only, version with no groups, bullets before any group
       heading, multi-line bullet continuation, nested sub-bullets, duplicate
       versions, fenced `## [1.0.0]` decoy.
-- [ ] `FuzzParseChangelog` fuzz test pinning the never-panic contract
+- [x] `FuzzParseChangelog` fuzz test pinning the never-panic contract
       (Decision: "never panic on arbitrary input" is a contract line, so it
       gets an executable check, not just review).
-- [ ] Doc comments: the best-effort/never-panic contract, duplicate-version
+- [x] Doc comments: the best-effort/never-panic contract, duplicate-version
       emission, and the `ErrNoVersions`-mirrors-`ErrNoFrontmatter` skip-vs-fail
       guidance; `make fmt` + `make lint` green.
 

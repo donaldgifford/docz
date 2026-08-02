@@ -1,0 +1,6 @@
+preamble="# Changelog\n\nAll notable changes to this chart are documented here.\n\n"
+version="0.2.2" unreleased=false date="2026-07-23"
+  group="Bug Fixes"
+    item="*(chart)* Scope the main Service selector to the API pods ([#12](https://github.com/donaldgifford/docz-api/issues/12))"
+  group="Miscellaneous Tasks"
+    item="*(chart)* Bump appVersion to 0.4.2"

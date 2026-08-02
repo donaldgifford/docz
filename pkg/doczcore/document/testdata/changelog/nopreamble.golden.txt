@@ -1,0 +1,4 @@
+preamble=""
+version="unreleased" unreleased=true date=""
+  group="Features"
+    item="opens at byte zero, empty preamble"
