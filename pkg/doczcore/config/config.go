@@ -90,14 +90,36 @@ type TOCConfig struct {
 	MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
 }
 
+// ChangelogConfig maps the changelog: block of .docz.yaml, which opts a
+// repo into changelog awareness (DESIGN-0010). docz itself only locates
+// the file and parses it (document.ParseChangelog) — generation belongs
+// to git-cliff, and serving belongs to docz-api.
+//
+// The block carries yaml tags only: the mapstructure tags on its sibling
+// blocks are vestigial, left from the viper era that ended in IMPL-0014
+// Phase 1, and are not worth propagating to new code.
+type ChangelogConfig struct {
+	// Enabled opts the repo into changelog mapping. Default false, so
+	// the block is dormant — and its File is left unvalidated — until a
+	// repo turns it on.
+	Enabled bool `yaml:"enabled"`
+
+	// File is the changelog path relative to the repo root. Subpaths are
+	// allowed for per-chart changelogs (charts/<name>/CHANGELOG.md).
+	// Default "CHANGELOG.md"; an empty value resolves back to that
+	// default at load time.
+	File string `yaml:"file"`
+}
+
 // Config is the top-level configuration for docz.
 type Config struct {
-	DocsDir string                `mapstructure:"docs_dir" yaml:"docs_dir"`
-	Types   map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
-	Index   IndexConfig           `mapstructure:"index"    yaml:"index"`
-	Author  AuthorConfig          `mapstructure:"author"   yaml:"author"`
-	Wiki    WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
-	TOC     TOCConfig             `mapstructure:"toc"      yaml:"toc"`
+	DocsDir   string                `mapstructure:"docs_dir" yaml:"docs_dir"`
+	Types     map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
+	Index     IndexConfig           `mapstructure:"index"    yaml:"index"`
+	Author    AuthorConfig          `mapstructure:"author"   yaml:"author"`
+	Wiki      WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
+	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"`
+	Changelog ChangelogConfig       `                        yaml:"changelog"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -124,6 +146,10 @@ func DefaultConfig() Config {
 		TOC: TOCConfig{
 			Enabled:     true,
 			MinHeadings: defaultMinHeadings,
+		},
+		Changelog: ChangelogConfig{
+			Enabled: false,
+			File:    DefaultChangelogFile,
 		},
 	}
 }

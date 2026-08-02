@@ -15,6 +15,10 @@ const (
 	WikiIndexName  = "index.md"
 	MkDocsFileName = "mkdocs.yml"
 	TemplatesDir   = "templates"
+
+	// DefaultChangelogFile is the repo-relative path ChangelogConfig.File
+	// falls back to when the changelog block omits it (DESIGN-0010).
+	DefaultChangelogFile = "CHANGELOG.md"
 )
 
 // defaultMinHeadings is the default minimum heading count required before a

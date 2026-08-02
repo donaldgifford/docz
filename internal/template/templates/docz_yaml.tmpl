@@ -78,3 +78,10 @@ wiki:
 toc:
   enabled: {{ .TOC.Enabled }}
   min_headings: {{ .TOC.MinHeadings }}
+
+# Changelog awareness. Off by default; enable it so tools that read this
+# config (docz-api, docz-site) know where your changelog lives. docz does
+# not generate changelogs — git-cliff does.
+changelog:
+  enabled: {{ .Changelog.Enabled }}
+  file: {{ .Changelog.File }}

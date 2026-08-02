@@ -85,9 +85,17 @@ semantics, and enabled-only validation.
 
 #### Tasks
 
-- [ ] Add `ChangelogConfig{Enabled bool, File string}` (yaml tags
+- [x] Add `ChangelogConfig{Enabled bool, File string}` (yaml tags
       `enabled`/`file`), `Config.Changelog` with yaml tag `changelog`, and the
-      `DefaultConfig()` entry `{Enabled: false, File: "CHANGELOG.md"}`.
+      `DefaultConfig()` entry `{Enabled: false, File: DefaultChangelogFile}`.
+- [x] Add the `changelog:` block (`enabled: false`, default `file`, one-line
+      comment) to `internal/template/templates/docz_yaml.tmpl`, rendered from
+      `DefaultConfig()` like the `wiki:`/`toc:` blocks (Decision 6). **Moved
+      here from Phase 3 during implementation:** the pre-existing
+      `TestDoczYAMLTemplate_RoundTripsToDefaultConfig` guard renders the
+      template with `DefaultConfig()` and parses it back, so a new default
+      field with no template line fails immediately — the template edit is
+      part of adding the field, not a later polish step.
 - [ ] Add the post-decode normalization step in `Load` (runs after
       `decodeSettings`, beside the `fillTypeFieldDefaults` call): backfill an
       explicitly empty `file: ""` to the default, and normalize a leading
@@ -184,10 +192,6 @@ outside the module before it freezes.
 
 #### Tasks
 
-- [ ] Add the `changelog:` block (`enabled: false`, default `file`, one-line
-      comment) to `internal/template/templates/docz_yaml.tmpl`, rendered from
-      `DefaultConfig()` like the `wiki:`/`toc:` blocks; regenerate the init
-      golden fixtures (`-update`) and eyeball the diff.
 - [ ] cmd/ test: `docz config` output includes the resolved `changelog:`
       block (and honors a repo override), following the existing serial
       Runner test pattern.
