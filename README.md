@@ -17,6 +17,7 @@ README index tables up to date.
 - **Multiple output formats:** `list` supports table, JSON, and CSV
 - **Table of contents:** automatic ToC generation in documents using `<!--toc:start-->` / `<!--toc:end-->` markers
 - **MkDocs/TechDocs integration:** `wiki` commands generate and maintain `mkdocs.yml` for Backstage TechDocs
+- **Changelog awareness:** opt-in `changelog:` config block plus a parser for git-cliff / Keep a Changelog files
 
 ## Getting Started
 
@@ -383,9 +384,26 @@ wiki:
 toc:
   enabled: true            # generate ToC during docz update
   min_headings: 3          # minimum headings to generate a ToC
+
+changelog:
+  enabled: false           # opt in so tools reading this config find your changelog
+  file: CHANGELOG.md       # repo-relative; subpaths work (charts/api/CHANGELOG.md)
 ```
 
 Run `docz config` to see the fully resolved configuration.
+
+### Changelog
+
+The `changelog:` block tells tools that read a docz repo — such as a
+documentation API or site — where the repo's changelog lives. It is **off by
+default** and changes nothing about how the CLI behaves; docz does not
+generate changelogs (git-cliff does), it only locates and parses them.
+
+When enabled, `file` must be a clean repo-relative path: absolute paths, `..`
+traversal, and trailing slashes are rejected at load time. A disabled block is
+never validated, so you can add it before you are ready to turn it on. The
+matching parser is `doczcore/document.ParseChangelog`, described in
+[Using docz as a Go Library](#using-docz-as-a-go-library).
 
 ## Template System
 
@@ -576,7 +594,7 @@ go get github.com/donaldgifford/docz@latest
 | Package | What it provides |
 |---------|------------------|
 | `pkg/doczcore/config` | `.docz.yaml` loading, validation, type resolution (`Load`, `Validate`, `EnabledTypes`) |
-| `pkg/doczcore/document` | Frontmatter parsing and directory scanning (`ParseFrontmatter`, `ScanDocuments`) |
+| `pkg/doczcore/document` | Frontmatter parsing, directory scanning, and changelog parsing (`ParseFrontmatter`, `ScanDocuments`, `ParseChangelog`) |
 | `pkg/doczcore/docparse` | Markdown facts: headings with GitHub anchor slugs, checkbox task items, 1-based line numbers (`Headings`, `TaskItems`) |
 | `pkg/doczcore/docwrite` | The write side: `Create` from templates, byte-preserving `SetStatus`, checkbox `CheckTask` |
 | `pkg/doczcore/toc` | ToC generation and marker splicing over `docparse` facts (`UpdateToC`, `UpdateFiles`) |

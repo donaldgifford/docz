@@ -198,15 +198,15 @@ outside the module before it freezes.
 
 #### Tasks
 
-- [ ] cmd/ test: `docz config` output includes the resolved `changelog:`
+- [x] cmd/ test: `docz config` output includes the resolved `changelog:`
       block (and honors a repo override), following the existing serial
       Runner test pattern.
-- [ ] Extend `test/consumer/`: decode a `.docz.yaml` carrying the block
+- [x] Extend `test/consumer/`: decode a `.docz.yaml` carrying the block
       (defaults + partial-block backfill assertions) and run `ParseChangelog`
       over fixture bytes, asserting version identity/order, group titles,
       item counts, preamble, and the `ErrNoVersions` sentinel — the R6
       contract shape docz-api will pin, proven from an external module first.
-- [ ] README: add the `changelog:` block to the Configuration section and a
+- [x] README: add the `changelog:` block to the Configuration section and a
       `ParseChangelog` mention to the "Using docz as a Go Library" table's
       `document` row.
 
