@@ -39,6 +39,7 @@ created: 2026-08-02
   - [2. Source of the fleet-standard fixture?](#2-source-of-the-fleet-standard-fixture)
   - [3. ParseChangelog return shape?](#3-parsechangelog-return-shape)
 - [Decisions](#decisions)
+- [Notes for review](#notes-for-review)
 - [References](#references)
 <!--toc:end-->
 
@@ -173,6 +174,11 @@ The parser in `pkg/doczcore/document` (Decision 1), next to
 - [x] Doc comments: the best-effort/never-panic contract, duplicate-version
       emission, and the `ErrNoVersions`-mirrors-`ErrNoFrontmatter` skip-vs-fail
       guidance; `make fmt` + `make lint` green.
+
+- [x] Amend the `document` package doc comment — adding a changelog
+      parser makes "frontmatter parsing and document scanning" wrong.
+      (Not in the original plan; surfaced by the Phase 2 architecture
+      review.)
 
 #### Success Criteria
 
@@ -344,6 +350,17 @@ All three open questions resolved **(a)** on 2026-08-02.
 | 1   | PR / release strategy    | One `minor` PR from `feat/docz-changelog-support` (design + IMPL + implementation) → `v1.1.0`; post-tag `dont-release` status flip |
 | 2   | Fleet fixture source     | Verbatim snapshot of docz-api's real `CHANGELOG.md` (git-cliff quirks included), frozen in testdata                                |
 | 3   | `ParseChangelog` return  | `(*Changelog, error)` as handed off — nil on error; the R6 contract signature docz-api encodes                                     |
+
+## Notes for review
+
+- **`ChangelogGroup.Items []string` was kept as designed.** The Phase 2
+  architecture review flagged that a `[]ChangelogItem` struct would be
+  the safer frozen shape: if docz-api later wants the `*(scope)*`
+  marker or PR number as *data*, `[]string` forces it to re-parse.
+  `Items []string` is specced in DESIGN-0010's Detailed Design (though
+  not in its Decisions table) and is the signature docz-api's contract
+  work is written against, so it ships as-is. Changing it later is a
+  major bump — worth a conscious yes/no before the `v1.1.0` tag.
 
 ## References
 

@@ -1,9 +1,13 @@
-// Package document provides docz frontmatter parsing and document scanning.
+// Package document is the read side of the docz core: it turns the files
+// a docz repo holds into values.
 //
-// It is the read side of the docz core: parsing already-fetched bytes
-// (ParseFrontmatter), reading and scanning files on disk (LoadFrontmatter,
-// ScanDocuments), and the docz filename convention (IsDoczFile). The
-// write side — creating documents and mutating frontmatter status in
+// That covers docz documents themselves — parsing already-fetched bytes
+// (ParseFrontmatter), reading and scanning files on disk
+// (LoadFrontmatter, ScanDocuments), and the docz filename convention
+// (IsDoczFile) — and the repo's changelog, which docz locates via
+// config.ChangelogConfig and parses with ParseChangelog (DESIGN-0010).
+//
+// The write side — creating documents and mutating frontmatter status in
 // place — lives in the sibling docwrite package (DESIGN-0007, revised by
 // ADR-0001).
 package document
