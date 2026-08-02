@@ -419,7 +419,44 @@ func (c *Config) Validate() ([]string, error) {
 		return warnings, err
 	}
 
+	if err := c.validateChangelog(); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
+}
+
+// validateChangelog rejects a changelog file path that consumers could
+// not safely fetch out of a git tree: it must be a clean relative path,
+// so absolute paths, ".." traversal, and trailing separators are errors
+// (DESIGN-0010 Decision 5).
+//
+// The check runs only for an enabled block (Decision 7). A repo may
+// carry a dormant changelog: block — while rolling the feature out, or
+// mid-edit — and a disabled block must never fail config load; the path
+// is judged at the moment it starts being used.
+func (c *Config) validateChangelog() error {
+	if !c.Changelog.Enabled {
+		return nil
+	}
+
+	file := c.Changelog.File
+	switch {
+	case file == "":
+		// Unreachable via Load (normalizeChangelog backfills the
+		// default), but reachable for a hand-built Config.
+		return errors.New("changelog.file must not be empty when changelog is enabled")
+	case filepath.IsAbs(file), strings.HasPrefix(file, "/"):
+		return fmt.Errorf("changelog.file %q must be relative to the repo root", file)
+	case strings.HasSuffix(file, "/"):
+		return fmt.Errorf("changelog.file %q must be a file path, not a directory", file)
+	}
+
+	if slices.Contains(strings.Split(filepath.ToSlash(file), "/"), "..") {
+		return fmt.Errorf("changelog.file %q must not traverse outside the repo root", file)
+	}
+
+	return nil
 }
 
 // validateResolution rejects configs where two enabled types could resolve

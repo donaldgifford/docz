@@ -102,11 +102,11 @@ semantics, and enabled-only validation.
       `./` — `Load` mutates, `Validate` only judges. Note in a comment why
       this is new code: no existing top-level block backfills empty values
       (`fillTypeFieldDefaults` exists only for the `Types` map case).
-- [ ] Add `validateChangelog` to `Config.Validate()`: **only when
+- [x] Add `validateChangelog` to `Config.Validate()`: **only when
       `Enabled: true`** (Decision 7 — a dormant block never fails load),
       hard-error on absolute paths, `..` traversal, and trailing `/`
       (Decision 5). Error wording follows the existing `Validate()` style.
-- [ ] Config test table: absent block (defaults), partial block
+- [x] Config test table: absent block (defaults), partial block
       (`enabled` only → `File` keeps default), explicit `file: ""`
       (backfilled), full block, leading `./` normalized, each invalid shape
       rejected **only when enabled** (same values accepted while disabled),
@@ -114,7 +114,7 @@ semantics, and enabled-only validation.
       to pin that a pre-existing `changelog:` block that older configs carried
       dormant now decodes instead of being ignored (the INV-0005 F2 rollout
       handshake).
-- [ ] Field/doc comments on the new symbols; `make fmt` + `make lint` green.
+- [x] Field/doc comments on the new symbols; `make fmt` + `make lint` green.
 
 #### Success Criteria
 
