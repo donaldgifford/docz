@@ -455,9 +455,13 @@ func TestParseChangelog_DoesNotRetainSource(t *testing.T) {
 // this needs. The smallest of several runs is used because interference
 // can only ever add.
 func TestParseChangelog_PreambleDoesNotRetainSource(t *testing.T) {
+	// Sized for the race detector, which makes bulk allocation and GC
+	// roughly 25x more expensive: a 4 MB document still separates the two
+	// outcomes by three orders of magnitude (aliased retains all 4 MB,
+	// cloned retains a few dozen bytes) without costing CI 20 seconds.
 	const (
-		docSize   = 16 << 20
-		threshold = 4 << 20
+		docSize   = 4 << 20
+		threshold = 1 << 20
 	)
 
 	heapAfterGC := func() uint64 {
@@ -489,10 +493,8 @@ func TestParseChangelog_PreambleDoesNotRetainSource(t *testing.T) {
 	}
 
 	best := measure()
-	for range 2 {
-		if got := measure(); got < best {
-			best = got
-		}
+	if got := measure(); got < best {
+		best = got
 	}
 
 	if best > threshold {
