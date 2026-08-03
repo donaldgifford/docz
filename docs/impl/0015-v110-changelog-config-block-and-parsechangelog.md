@@ -378,7 +378,24 @@ All three open questions resolved **(a)** on 2026-08-02.
     | Many versions | 11.0 → 97.6 ms | ~2.1x | 98 ms |
 
     All three are linear (~2x per doubling); the regressed shape improved
-    roughly 790x. No other super-linear path was found.
+    roughly 790x. A deeper profiling pass (9 doublings to 32 MB, 11 input
+    shapes) found no other super-linear path and confirmed flat ns/byte
+    throughout. The three package-level regexes cost ~66% of parse time
+    and a hand-rolled scanner would be ~4x faster, but 1 MB already
+    parses in 3.2 ms — **not worth duplicating a frozen, fuzz-pinned
+    grammar in ~60 lines of byte scanning.** Deliberately not done.
+  - **`ParseChangelog` retained the whole document** — found by the same
+    profiling pass, and the reason the `strings.Clone` on `Preamble`
+    above freed nothing on its own. `Version`/`Date`/`Title` were regexp
+    submatches (subslices of the input), and `return &p.out` was an
+    interior pointer that forced the parser struct to escape, keeping
+    both the source and the item buffer reachable. Either fix alone
+    changes nothing; both together took an 8.39 MB document from
+    8,397,072 bytes retained to **112 bytes** when the caller keeps only
+    a group title and one item. Costs 1–6% parse time. Pinned by
+    `TestParseChangelog_DoesNotRetainSource`, which compares parsed-value
+    pointer gaps against source-offset gaps and was verified to fail on
+    each field when the clones are reverted.
   - `validateChangelog` judged paths with the **host's** semantics, so
     `..\..\etc\passwd` passed on Linux/macOS and failed only on Windows.
     A config is validated on a CI runner for a path another machine
