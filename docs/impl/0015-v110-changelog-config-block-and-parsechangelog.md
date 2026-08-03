@@ -380,6 +380,16 @@ All three open questions resolved **(a)** on 2026-08-02.
   freeze — that is the reason they are in this release rather than a
   follow-up.
 
+- **Additive-only verified against the tag, not asserted.** The Phase 4
+  criterion "no breaking change to any existing v1.0.0 symbol" was checked
+  by diffing `go doc -all` over all five `pkg/doczcore` packages between
+  `v1.0.0` and this branch. Every removal in the raw diff was either tag
+  whitespace that `golines` re-aligned when `Changelog` became the longest
+  field name in `Config` (gone once whitespace is normalized) or the
+  `document` package doc comment, which this release intentionally
+  rewrote. No exported symbol, signature, or struct field was removed or
+  changed; the diff is 22 added declarations and nothing else.
+
 - **Consumers must URL-escape path segments.** `changelog.file` is
   validated as a *git path*, and `?`/`#` are legal in one. docz
   deliberately does not reject them; docz-api must escape the segments
