@@ -90,14 +90,36 @@ type TOCConfig struct {
 	MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
 }
 
+// ChangelogConfig maps the changelog: block of .docz.yaml, which opts a
+// repo into changelog awareness (DESIGN-0010). docz itself only locates
+// the file and parses it (document.ParseChangelog) — generation belongs
+// to git-cliff, and serving belongs to docz-api.
+//
+// The block carries yaml tags only: the mapstructure tags on its sibling
+// blocks are vestigial, left from the viper era that ended in IMPL-0014
+// Phase 1, and are not worth propagating to new code.
+type ChangelogConfig struct {
+	// Enabled opts the repo into changelog mapping. Default false, so
+	// the block is dormant — and its File is left unvalidated — until a
+	// repo turns it on.
+	Enabled bool `yaml:"enabled"`
+
+	// File is the changelog path relative to the repo root. Subpaths are
+	// allowed for per-chart changelogs (charts/<name>/CHANGELOG.md).
+	// Default "CHANGELOG.md"; an empty value resolves back to that
+	// default at load time.
+	File string `yaml:"file"`
+}
+
 // Config is the top-level configuration for docz.
 type Config struct {
-	DocsDir string                `mapstructure:"docs_dir" yaml:"docs_dir"`
-	Types   map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
-	Index   IndexConfig           `mapstructure:"index"    yaml:"index"`
-	Author  AuthorConfig          `mapstructure:"author"   yaml:"author"`
-	Wiki    WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
-	TOC     TOCConfig             `mapstructure:"toc"      yaml:"toc"`
+	DocsDir   string                `mapstructure:"docs_dir" yaml:"docs_dir"`
+	Types     map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
+	Index     IndexConfig           `mapstructure:"index"    yaml:"index"`
+	Author    AuthorConfig          `mapstructure:"author"   yaml:"author"`
+	Wiki      WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
+	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"`
+	Changelog ChangelogConfig       `                        yaml:"changelog"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -124,6 +146,10 @@ func DefaultConfig() Config {
 		TOC: TOCConfig{
 			Enabled:     true,
 			MinHeadings: defaultMinHeadings,
+		},
+		Changelog: ChangelogConfig{
+			Enabled: false,
+			File:    DefaultChangelogFile,
 		},
 	}
 }
@@ -183,8 +209,38 @@ func Load(configFile, repoRoot string) (Config, error) {
 
 	applyTypesReplaceOnPresence(&cfg, repoConfigPath)
 	fillTypeFieldDefaults(&cfg)
+	normalizeChangelog(&cfg)
 
 	return cfg, nil
+}
+
+// normalizeChangelog resolves ChangelogConfig.File to a canonical form:
+// an explicitly empty value falls back to the default, and a leading
+// "./" is stripped so "./CHANGELOG.md" and "CHANGELOG.md" are the same
+// path to every consumer (DESIGN-0010).
+//
+// This is deliberately new machinery rather than a reuse of
+// fillTypeFieldDefaults: that helper exists only because `Types` is a
+// map whose values the decoder allocates fresh per key. Changelog is a
+// plain struct field decoded in place over DefaultConfig(), so an
+// omitted `file:` already inherits the default for free — only an
+// explicit `file: ""` needs backfilling. Load normalizes; Validate only
+// judges.
+func normalizeChangelog(cfg *Config) {
+	file := strings.TrimSpace(cfg.Changelog.File)
+
+	// Strip repeated "./" prefixes ("././CHANGELOG.md") — filepath.Clean
+	// would also rewrite separators and resolve "..", which Validate must
+	// still be able to see and reject.
+	for strings.HasPrefix(file, "./") {
+		file = file[len("./"):]
+	}
+
+	if file == "" {
+		file = DefaultChangelogFile
+	}
+
+	cfg.Changelog.File = file
 }
 
 // TypeDir returns the full path to a type's directory relative to the repo
@@ -363,7 +419,98 @@ func (c *Config) Validate() ([]string, error) {
 		return warnings, err
 	}
 
+	if err := c.validateChangelog(); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
+}
+
+// ErrInvalidChangelogFile is the sentinel wrapped by every
+// changelog.file validation failure, so a consumer can tell a bad
+// changelog path from any other config problem without matching on
+// error text. Match it with errors.Is; the message carries the detail.
+//
+// Its text names the offending key so the wrapped message does not have
+// to repeat it: the rendered chain reads
+// `invalid changelog.file: "…" must not traverse outside the repo root`.
+var ErrInvalidChangelogFile = errors.New("invalid changelog.file")
+
+// validateChangelog rejects a changelog file path that consumers could
+// not safely fetch out of a git tree (DESIGN-0010 Decision 5). The path
+// must be relative to the repo root and already canonical, which rules
+// out absolute paths, ".." traversal, "." and empty segments, trailing
+// separators, and a leading "~" that a shell would expand.
+//
+// Every rule is applied with docz's own semantics rather than the host
+// OS's: this config is typically validated on a Linux runner for a path
+// some other machine resolves, so filepath's platform-dependent view
+// would make the verdict depend on who happened to run the check.
+//
+// The check runs only for an enabled block (Decision 7). A repo may
+// carry a dormant changelog: block — while rolling the feature out, or
+// mid-edit — and a disabled block must never fail config load; the path
+// is judged at the moment it starts being used.
+func (c *Config) validateChangelog() error {
+	if !c.Changelog.Enabled {
+		return nil
+	}
+
+	file := c.Changelog.File
+	reject := func(format string, args ...any) error {
+		return fmt.Errorf("%w: %s", ErrInvalidChangelogFile, fmt.Sprintf(format, args...))
+	}
+
+	switch {
+	case file == "":
+		// Unreachable via Load (normalizeChangelog backfills the
+		// default), but reachable for a hand-built Config.
+		return reject("must not be empty when changelog is enabled")
+	case strings.ContainsFunc(file, func(r rune) bool { return r < 0x20 || r == 0x7f }):
+		return reject("%q must not contain control characters", file)
+	case strings.ContainsRune(file, '\\'):
+		// Backslash is a path separator on Windows and a legal filename
+		// character elsewhere, so a lone ".." check cannot judge it
+		// portably. Repo-relative paths are slash-separated (that is how
+		// git names them); requiring it keeps the traversal check below
+		// meaningful on every host.
+		return reject("%q must use forward slashes to separate directories", file)
+	case filepath.IsAbs(file), strings.HasPrefix(file, "/"), hasVolumeName(file):
+		return reject("%q must be relative to the repo root", file)
+	case strings.HasPrefix(file, "~"):
+		// Never expanded by docz, and a consumer that hands the path to a
+		// shell would resolve it outside the repo entirely.
+		return reject("%q must not start with %q", file, "~")
+	case strings.HasSuffix(file, "/"):
+		return reject("%q must be a file path, not a directory", file)
+	}
+
+	// Segments are split on "/" rather than handed to path.Clean so the
+	// rejection can name what is wrong. Traversal is its own message
+	// because it is the one a misconfigured repo actually hits.
+	segments := strings.Split(file, "/")
+	switch {
+	case slices.Contains(segments, ".."):
+		return reject("%q must not traverse outside the repo root", file)
+	case slices.Contains(segments, "."), slices.Contains(segments, ""):
+		return reject(
+			"changelog.file %q must be a clean path: no %q or empty segments", file, ".")
+	}
+
+	return nil
+}
+
+// hasVolumeName reports whether p starts with a Windows drive letter such
+// as "C:". filepath.VolumeName only recognizes one when the binary itself
+// runs on Windows, and this config is routinely validated on a Linux
+// runner for a path a consumer may resolve anywhere — the verdict must
+// not depend on the validating host.
+func hasVolumeName(p string) bool {
+	if len(p) < 2 || p[1] != ':' {
+		return false
+	}
+	c := p[0]
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 // validateResolution rejects configs where two enabled types could resolve
@@ -502,6 +649,7 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 
 	applyTypesReplaceOnPresence(&cfg, path)
 	fillTypeFieldDefaults(&cfg)
+	normalizeChangelog(&cfg)
 
 	return cfg, nil
 }

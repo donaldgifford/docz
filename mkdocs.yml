@@ -14,6 +14,7 @@ nav:
         - 'DESIGN-0007: docz changes to support docz-api and docz-site': design/0007-docz-changes-to-support-docz-api-and-docz-site.md
         - 'DESIGN-0008: docz-api: cross-repo docz registry and ingestion service': design/0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md
         - 'DESIGN-0009: docz-site: cross-repo docz viewer and search UI': design/0009-docz-site-cross-repo-docz-viewer-and-search-ui.md
+        - 'DESIGN-0010: Changelog config block and ParseChangelog': design/0010-changelog-config-block-and-parsechangelog.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -29,6 +30,7 @@ nav:
         - 'IMPL-0012: Custom Document Type Support': impl/0012-custom-document-type-support.md
         - 'IMPL-0013: Promote parsing core to pkg/doczcore': impl/0013-promote-parsing-core-to-pkgdoczcore.md
         - 'IMPL-0014: v1.0.0: the five-package pkg/doczcore public core': impl/0014-v100-the-five-package-pkgdoczcore-public-core.md
+        - 'IMPL-0015: v1.1.0 — changelog config block and ParseChangelog': impl/0015-v110-changelog-config-block-and-parsechangelog.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
