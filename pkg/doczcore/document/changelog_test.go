@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -440,6 +441,64 @@ func TestParseChangelog_DoesNotRetainSource(t *testing.T) {
 	if secondOffset < 1<<20 {
 		t.Fatalf("fixture is only %d bytes; the gap must be large enough to be "+
 			"unmistakable", secondOffset)
+	}
+}
+
+// TestParseChangelog_PreambleDoesNotRetainSource covers the one string
+// field the pointer-gap test above cannot reach. Preamble is a slice of
+// the parsed source unless it is cloned, and there is no second aliased
+// field to measure it against — so this one weighs the heap directly.
+//
+// Deliberately NOT parallel, unlike the rest of this package: it reads
+// process-wide heap statistics, and Go runs non-parallel top-level tests
+// while every parallel one is paused, which is exactly the isolation
+// this needs. The smallest of several runs is used because interference
+// can only ever add.
+func TestParseChangelog_PreambleDoesNotRetainSource(t *testing.T) {
+	const (
+		docSize   = 16 << 20
+		threshold = 4 << 20
+	)
+
+	heapAfterGC := func() uint64 {
+		runtime.GC()
+		runtime.GC()
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		return m.HeapAlloc
+	}
+
+	measure := func() int64 {
+		base := heapAfterGC()
+		var preamble string
+		func() {
+			var sb strings.Builder
+			sb.WriteString("# Changelog\n\nIntro prose.\n\n")
+			for sb.Len() < docSize {
+				sb.WriteString("## [1.0.0] - 2026-01-01\n\n### G\n\n- an item\n\n")
+			}
+			cl, err := document.ParseChangelog([]byte(sb.String()))
+			if err != nil {
+				t.Fatalf("ParseChangelog() = %v, want nil", err)
+			}
+			preamble = cl.Preamble
+		}()
+		retained := int64(heapAfterGC()) - int64(base)
+		runtime.KeepAlive(preamble)
+		return retained
+	}
+
+	best := measure()
+	for range 2 {
+		if got := measure(); got < best {
+			best = got
+		}
+	}
+
+	if best > threshold {
+		t.Errorf("keeping only Preamble retained %d bytes of a %d-byte document "+
+			"(limit %d): Preamble still slices the source instead of cloning it",
+			best, docSize, threshold)
 	}
 }
 
