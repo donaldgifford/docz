@@ -226,7 +226,7 @@ outside the module before it freezes.
 - [x] Update `CLAUDE.md` (config + document architecture bullets gain the
       changelog block/parser) and `DEVELOPMENT.md` (package responsibility
       sections); historical `docs/*` records stay untouched.
-- [ ] Write the PR's `### RELEASE NOTES`: the additive `v1.1.0` surface
+- [x] Write the PR's `### RELEASE NOTES`: the additive `v1.1.0` surface
       (config block dormant by default; `ParseChangelog` best-effort parser),
       the rollout note (older docz versions ignore the block; v1.1.0 begins
       validating it **only when enabled**), and the docz-api R6 pin pointer.
@@ -268,13 +268,13 @@ outside the module before it freezes.
 
 ## Testing Plan
 
-- [ ] Config table + parity pins (Phase 1) — merge, backfill, enabled-only
+- [x] Config table + parity pins (Phase 1) — merge, backfill, enabled-only
       validation, rollout tolerance.
-- [ ] Parser goldens over fleet/chart/edge fixtures + fuzz never-panic
+- [x] Parser goldens over fleet/chart/edge fixtures + fuzz never-panic
       (Phase 2).
-- [ ] cmd/ `docz config`/`docz init` output pins (Phase 3).
-- [ ] Consumer-module external proof of the full new surface (Phase 3).
-- [ ] `make ci` gates every phase; zero churn outside intended goldens.
+- [x] cmd/ `docz config`/`docz init` output pins (Phase 3).
+- [x] Consumer-module external proof of the full new surface (Phase 3).
+- [x] `make ci` gates every phase; zero churn outside intended goldens.
 
 ## Dependencies
 
@@ -361,6 +361,30 @@ All three open questions resolved **(a)** on 2026-08-02.
   not in its Decisions table) and is the signature docz-api's contract
   work is written against, so it ships as-is. Changing it later is a
   major bump — worth a conscious yes/no before the `v1.1.0` tag.
+
+- **Pre-tag hardening round (2026-08-02).** A security/correctness review
+  of the finished surface found two defects that would otherwise have
+  been frozen into `v1.1.0`, both fixed in `1b98d84`:
+  - `ParseChangelog` was **quadratic** in the size of a single item
+    (continuation lines concatenated onto a string): 6.4 MB took 12.7s.
+    Now a byte-slice accumulator — 8.6 MB parses in 0.03s, pinned by
+    `TestParseChangelog_LongItemIsLinear`.
+  - `validateChangelog` judged paths with the **host's** semantics, so
+    `..\..\etc\passwd` passed on Linux/macOS and failed only on Windows.
+    A config is validated on a CI runner for a path another machine
+    resolves, so the rules are now docz's own.
+
+  The same round also added the `ErrInvalidChangelogFile` sentinel and a
+  canonical-path rule (rejecting `~`, control characters, and `.`/empty
+  segments). Both are cheap now and **breaking to retrofit** after the
+  freeze — that is the reason they are in this release rather than a
+  follow-up.
+
+- **Consumers must URL-escape path segments.** `changelog.file` is
+  validated as a *git path*, and `?`/`#` are legal in one. docz
+  deliberately does not reject them; docz-api must escape the segments
+  when it splices the path into a contents URL rather than relying on
+  docz's validator to have made it URL-safe.
 
 ## References
 
