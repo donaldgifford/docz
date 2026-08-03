@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
@@ -68,11 +70,11 @@ func TestParseChangelog_Golden(t *testing.T) {
 
 			want, err := os.ReadFile(goldenPath)
 			if err != nil {
-				t.Fatalf("reading golden %s: %v\nRun with -update-changelog to create it",
+				t.Fatalf("reading golden %s: %v\nRun with -update to create it",
 					goldenPath, err)
 			}
 			if got != string(want) {
-				t.Errorf("parsed facts differ from golden %s\nGot:\n%s\nRun with -update-changelog to update",
+				t.Errorf("parsed facts differ from golden %s\nGot:\n%s\nRun with -update to update",
 					goldenPath, got)
 			}
 		})
@@ -251,9 +253,18 @@ func TestParseChangelog_PreambleBoundary(t *testing.T) {
 	}
 }
 
+// TestParseChangelog_CRLF pins the documented promise that CRLF input
+// yields the same field values as its LF twin. Every line shape that can
+// reach an item is represented: the bullet itself, wrapped prose, a
+// nested sub-bullet, and a fenced block — a continuation line is
+// appended to the item raw, so each is a place a stray \r can survive
+// into the frozen output. (Preamble is exempt: it is byte-verbatim by
+// contract, so it keeps the carriage returns the input had.)
 func TestParseChangelog_CRLF(t *testing.T) {
 	t.Parallel()
-	lf := "# T\n\n## [1.0.0] - 2026-01-01\n\n### Bug Fixes\n\n- one fix\n"
+	lf := "# T\n\n## [1.0.0] - 2026-01-01\n\n### Bug Fixes\n\n" +
+		"- one fix\n  wrapped prose\n  - nested sub-bullet\n\n  ```\n  code line\n  ```\n" +
+		"- second fix\n\n## [0.9.0] - 2025-12-01\n\n- loose bullet\n"
 	crlf := strings.ReplaceAll(lf, "\n", "\r\n")
 
 	lfCL, err := document.ParseChangelog([]byte(lf))
@@ -265,16 +276,71 @@ func TestParseChangelog_CRLF(t *testing.T) {
 		t.Fatalf("CRLF parse = %v", err)
 	}
 
-	if len(crlfCL.Versions) != len(lfCL.Versions) {
-		t.Fatalf("CRLF version count = %d, want %d",
-			len(crlfCL.Versions), len(lfCL.Versions))
+	if !reflect.DeepEqual(crlfCL.Versions, lfCL.Versions) {
+		t.Errorf("CRLF and LF parses differ.\nCRLF:\n%s\nLF:\n%s",
+			renderChangelog(crlfCL), renderChangelog(lfCL))
 	}
-	got, want := crlfCL.Versions[0], lfCL.Versions[0]
-	if got.Version != want.Version || got.Date != want.Date {
-		t.Errorf("CRLF version = %+v, want the LF values %+v", got, want)
+	// Scan the versions only — Preamble is byte-verbatim, so it keeps the
+	// carriage returns the input had.
+	rendered := renderChangelog(&document.Changelog{Versions: crlfCL.Versions})
+	if strings.Contains(rendered, `\r`) {
+		t.Errorf("a carriage return survived into the parsed values:\n%s", rendered)
 	}
-	if len(got.Groups) != 1 || got.Groups[0].Title != "Bug Fixes" {
-		t.Errorf("CRLF groups = %+v, want one %q group", got.Groups, "Bug Fixes")
+}
+
+// TestParseChangelog_InVersionContent pins what the empty-title group
+// does and does not hold. Bullets before the first "###" are kept there
+// (DESIGN-0010: the parser must not lose them); column-0 prose in the
+// same position is discarded like column-0 prose anywhere else, so a
+// release note can never be mistaken for a commit item.
+func TestParseChangelog_InVersionContent(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		body       string
+		wantGroups []string // titles, in order
+		wantItems  []string // items of the first group
+	}{
+		{
+			name:       "bullets before any heading",
+			body:       "- loose bullet\n\n### Features\n\n- a\n",
+			wantGroups: []string{"", "Features"},
+			wantItems:  []string{"loose bullet"},
+		},
+		{
+			name:       "prose before any heading is dropped",
+			body:       "Important release note prose.\n\n### Features\n\n- a\n",
+			wantGroups: []string{"Features"},
+			wantItems:  []string{"a"},
+		},
+		{
+			name:       "prose between bullets is dropped",
+			body:       "### Features\n\n- a\n\nloose prose\n\n- b\n",
+			wantGroups: []string{"Features"},
+			wantItems:  []string{"a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cl, err := document.ParseChangelog(
+				[]byte("## [1.0.0] - 2026-01-01\n\n" + tt.body))
+			if err != nil {
+				t.Fatalf("ParseChangelog() = %v, want nil", err)
+			}
+
+			var titles []string
+			for _, g := range cl.Versions[0].Groups {
+				titles = append(titles, g.Title)
+			}
+			if !reflect.DeepEqual(titles, tt.wantGroups) {
+				t.Fatalf("group titles = %q, want %q", titles, tt.wantGroups)
+			}
+			if got := cl.Versions[0].Groups[0].Items; !reflect.DeepEqual(got, tt.wantItems) {
+				t.Errorf("first group items = %q, want %q", got, tt.wantItems)
+			}
+		})
 	}
 }
 
@@ -306,4 +372,53 @@ func FuzzParseChangelog(f *testing.F) {
 			t.Fatal("Preamble is not a prefix of the input")
 		}
 	})
+}
+
+// TestParseChangelog_LongItemIsLinear pins that one very long item does
+// not cost quadratic time. Appending each continuation line to a string
+// copies the whole item every line, so a single multi-megabyte item took
+// tens of seconds — a real hazard for a parser that runs over whatever
+// CHANGELOG.md a repo happens to hold. The accumulator is a Builder now.
+//
+// The budget is deliberately loose: the linear parse is milliseconds, so
+// even a heavily loaded runner stays orders of magnitude under it, while
+// the quadratic version blew past it by more than 2x.
+func TestParseChangelog_LongItemIsLinear(t *testing.T) {
+	t.Parallel()
+
+	const (
+		lines  = 200_000
+		budget = 10 * time.Second
+	)
+
+	var sb strings.Builder
+	sb.WriteString("## [1.0.0] - 2026-01-01\n\n### Bug Fixes\n\n- the one item\n")
+	for range lines {
+		sb.WriteString("  a continuation line belonging to that item\n")
+	}
+	content := []byte(sb.String())
+
+	start := time.Now()
+	cl, err := document.ParseChangelog(content)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("ParseChangelog() = %v, want nil", err)
+	}
+	if elapsed > budget {
+		t.Errorf("parsing %d bytes took %v, over the %v budget: the item "+
+			"accumulator is likely copying per line again", len(content), elapsed, budget)
+	}
+
+	// The fix must not have changed what is parsed.
+	items := cl.Versions[0].Groups[0].Items
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if got := strings.Count(items[0], "\n"); got != lines {
+		t.Errorf("item holds %d newlines, want %d: continuation lines were dropped", got, lines)
+	}
+	if !strings.HasPrefix(items[0], "the one item\n") {
+		t.Errorf("item text starts %q, want the bullet body first", items[0][:min(40, len(items[0]))])
+	}
 }

@@ -58,8 +58,10 @@ type ChangelogVersion struct {
 // git-cliff commit group such as "Bug Fixes".
 type ChangelogGroup struct {
 	// Title is the heading text verbatim, inline markdown included.
-	// Content that appears inside a version before any group heading is
-	// collected into a group with an empty Title.
+	// Bullet items that appear inside a version before any group heading
+	// are collected into a group with an empty Title. Only bullets are —
+	// column-0 prose in that position is discarded like any other, so an
+	// empty-Title group never holds loose text (see Changelog).
 	Title string
 
 	// Items holds one entry per top-level bullet, in document order.
@@ -135,7 +137,13 @@ type changelogParser struct {
 	versionOpen bool
 	group       ChangelogGroup
 
-	item      string
+	// item accumulates the open item's text. It is a byte slice rather
+	// than a string because a bullet's continuation is appended line by
+	// line: concatenating would copy the whole item every line, making a
+	// single long item quadratic in its size. (A strings.Builder would
+	// also fix that, but it panics if the struct holding it is ever
+	// copied, and ParseChangelog promises never to panic.)
+	item      []byte
 	itemOpen  bool
 	itemBlank int // blank lines buffered after the open item
 }
@@ -175,7 +183,10 @@ func (p *changelogParser) classify(line string, lineOff int) {
 
 	if v, ok := parseChangelogVersion(trimmed); ok {
 		if !p.started {
-			p.out.Preamble = p.src[:lineOff]
+			// Clone rather than slice: a slice of p.src would pin the
+			// whole document in memory for the lifetime of the returned
+			// Changelog, and consumers cache these per repo.
+			p.out.Preamble = strings.Clone(p.src[:lineOff])
 			p.started = true
 		}
 		p.flushVersion()
@@ -198,7 +209,7 @@ func (p *changelogParser) classify(line string, lineOff int) {
 
 	if body, ok := parseChangelogBullet(trimmed); ok {
 		p.flushItem()
-		p.item = body
+		p.item = append(p.item, body...)
 		p.itemOpen = true
 		return
 	}
@@ -213,11 +224,13 @@ func (p *changelogParser) classify(line string, lineOff int) {
 // for commit content. Blank lines are buffered rather than appended, so
 // a trailing blank never lands in the item but a blank line between two
 // indented blocks does not end it. Indentation is kept verbatim (see
-// ChangelogGroup.Items).
+// ChangelogGroup.Items), but a trailing carriage return is not: a CRLF
+// document must yield the same item text as its LF twin.
 func (p *changelogParser) appendContinuation(line string) {
 	if !p.itemOpen {
 		return
 	}
+	line = strings.TrimSuffix(line, "\r")
 	if strings.TrimSpace(line) == "" {
 		p.itemBlank++
 		return
@@ -226,7 +239,10 @@ func (p *changelogParser) appendContinuation(line string) {
 		p.flushItem()
 		return
 	}
-	p.item += strings.Repeat("\n", p.itemBlank+1) + line
+	for range p.itemBlank + 1 {
+		p.item = append(p.item, '\n')
+	}
+	p.item = append(p.item, line...)
 	p.itemBlank = 0
 }
 
@@ -234,8 +250,10 @@ func (p *changelogParser) flushItem() {
 	if !p.itemOpen {
 		return
 	}
-	p.group.Items = append(p.group.Items, p.item)
-	p.item = ""
+	// string() copies, so the buffer's capacity is safe to reuse for the
+	// next item.
+	p.group.Items = append(p.group.Items, string(p.item))
+	p.item = p.item[:0]
 	p.itemOpen = false
 	p.itemBlank = 0
 }
@@ -251,10 +269,12 @@ func (p *changelogParser) flushGroup() {
 
 func (p *changelogParser) flushVersion() {
 	p.flushGroup()
-	if !p.versionOpen {
-		return
+	if p.versionOpen {
+		p.out.Versions = append(p.out.Versions, p.version)
 	}
-	p.out.Versions = append(p.out.Versions, p.version)
+	// Reset unconditionally: flushGroup above may have appended to
+	// p.version.Groups, and on the no-open-version path that group would
+	// otherwise leak into whichever version opens next.
 	p.version = ChangelogVersion{}
 	p.versionOpen = false
 }

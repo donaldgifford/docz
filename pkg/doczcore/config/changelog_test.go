@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -144,6 +145,49 @@ func TestValidate_ChangelogFile(t *testing.T) {
 		{name: "interior traversal", file: "charts/../../x.md", wantErr: "must not traverse"},
 		{name: "trailing slash", file: "charts/", wantErr: "must be a file path"},
 		{name: "empty", file: "", wantErr: "must not be empty"},
+
+		// The verdict must not depend on the host doing the validating:
+		// these are all judged by docz's own rules, not by whichever
+		// path semantics the runner's OS happens to have.
+		{
+			name:    "backslash traversal",
+			file:    `..\..\etc\passwd`,
+			wantErr: "must use forward slashes",
+		},
+		{
+			name:    "backslash subpath",
+			file:    `charts\foo\CHANGELOG.md`,
+			wantErr: "must use forward slashes",
+		},
+		{
+			name:    "windows drive absolute",
+			file:    "C:/Windows/CHANGELOG.md",
+			wantErr: "must be relative",
+		},
+		{
+			name:    "windows drive lowercase",
+			file:    "c:/x.md",
+			wantErr: "must be relative",
+		},
+		{name: "nul byte", file: "CHANGE\x00LOG.md", wantErr: "control characters"},
+		{name: "newline", file: "CHANGELOG.md\n", wantErr: "control characters"},
+
+		// A path a consumer might hand to a shell, or splice into a URL
+		// or a filesystem join without canonicalizing it first.
+		{name: "tilde home", file: "~/.ssh/id_rsa", wantErr: `must not start with "~"`},
+		{name: "tilde user", file: "~root/x.md", wantErr: `must not start with "~"`},
+		{name: "dot segment", file: "a/./b/CHANGELOG.md", wantErr: "must be a clean path"},
+		{name: "empty segment", file: "a//b/CHANGELOG.md", wantErr: "must be a clean path"},
+		{name: "leading dot slash", file: "./CHANGELOG.md", wantErr: "must be a clean path"},
+
+		// Near-misses that must stay valid: a drive letter needs the
+		// colon, "..." is an ordinary name, and a dotfile is not
+		// traversal.
+		{name: "triple dot segment", file: ".../CHANGELOG.md"},
+		{name: "dot prefixed name", file: ".changelog/CHANGELOG.md"},
+		{name: "colon later in path", file: "charts/a:b/CHANGELOG.md"},
+		{name: "single letter dir", file: "c/x.md"},
+		{name: "tilde later in path", file: "charts/~foo/CHANGELOG.md"},
 	}
 
 	for _, tt := range tests {
@@ -162,6 +206,14 @@ func TestValidate_ChangelogFile(t *testing.T) {
 					tt.wantErr, tt.file)
 			case tt.wantErr != "" && err != nil && !strings.Contains(err.Error(), tt.wantErr):
 				t.Errorf("Validate() = %v, want error containing %q", err, tt.wantErr)
+			}
+
+			// Every rejection wraps the sentinel, so a consumer can tell
+			// "this repo's changelog path is bad" from any other config
+			// failure without matching on the message.
+			if tt.wantErr != "" && err != nil &&
+				!errors.Is(err, config.ErrInvalidChangelogFile) {
+				t.Errorf("Validate() = %v, want it to wrap ErrInvalidChangelogFile", err)
 			}
 
 			// Decision 7: the identical value is fine while dormant.

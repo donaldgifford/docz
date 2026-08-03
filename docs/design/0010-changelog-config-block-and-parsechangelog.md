@@ -214,9 +214,12 @@ Parsing rules:
   editorializes; docz-api's contract pins uniqueness on the fleet shape and
   its join logic treats the first occurrence as canonical. Stated in the
   parser's doc comment.
-- Content inside a version but before any `###` heading is collected into a
+- Bullet items inside a version but before any `###` heading are collected into a
   group with `Title: ""` (does not occur in the fleet shape, but the parser must
-  not lose it).
+  not lose them). "Content" here means bullets specifically: column-0 prose in
+  that position is discarded exactly like column-0 prose between bullets, so an
+  empty-`Title` group never holds loose text. Anything else would make a release
+  note indistinguishable from a commit item in `Items`.
 - **Never panic on arbitrary input**; error only via `ErrNoVersions` (wrapped).
   Non-conforming markdown parses best-effort.
 - **Stable version identity is the load-bearing contract**: the bare semver
