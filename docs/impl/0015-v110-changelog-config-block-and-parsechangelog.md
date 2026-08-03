@@ -1,7 +1,7 @@
 ---
 id: IMPL-0015
 title: "v1.1.0 — changelog config block and ParseChangelog"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-08-02
 ---
@@ -9,7 +9,7 @@ created: 2026-08-02
 
 # IMPL 0015: v1.1.0 — changelog config block and ParseChangelog
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-08-02
 
@@ -40,6 +40,7 @@ created: 2026-08-02
   - [3. ParseChangelog return shape?](#3-parsechangelog-return-shape)
 - [Decisions](#decisions)
 - [Notes for review](#notes-for-review)
+- [Outcome](#outcome)
 - [References](#references)
 <!--toc:end-->
 
@@ -234,7 +235,7 @@ outside the module before it freezes.
       the design doc, this IMPL, and all four phases, labeled **`minor`**
       (Decision 1); on merge, `pr-semver-bump` + goreleaser cut `v1.1.0`
       (merge to `main` is human-gated).
-- [ ] Post-tag: scratch-module `go get github.com/donaldgifford/docz@v1.1.0`
+- [x] Post-tag: scratch-module `go get github.com/donaldgifford/docz@v1.1.0`
       exercising `Config.Changelog` + `ParseChangelog`; flip DESIGN-0010 →
       Implemented and this IMPL → Completed (`dont-release` PR, the #67/#68
       pattern); notify docz-api that the pin bump + contract clause R6 are
@@ -427,6 +428,26 @@ All three open questions resolved **(a)** on 2026-08-02.
   deliberately does not reject them; docz-api must escape the segments
   when it splices the path into a contents URL rather than relying on
   docz's validator to have made it URL-safe.
+
+## Outcome
+
+**`v1.1.0` shipped 2026-08-03.** PR #78 (`minor`) merged to `main` →
+`pr-semver-bump` + goreleaser tagged and published the release (previous
+tag `v1.0.0`).
+
+Post-tag verification, run against the published tag rather than a local
+`replace`: a scratch module resolved `go get
+github.com/donaldgifford/docz@v1.1.0` from the proxy and exercised the
+whole R6 surface — `config.Load` decoding an enabled block and
+normalizing `./CHANGELOG.md` to `CHANGELOG.md`, `Validate` rejecting
+`../../etc/passwd` matchable via `errors.Is(err,
+config.ErrInvalidChangelogFile)`, `config.DefaultChangelogFile`, and
+`document.ParseChangelog` returning both versions with the unreleased
+section flagged, a wrapped continuation folded into its item, and
+`ErrNoVersions` with a nil result on a version-less document.
+
+DESIGN-0010 → Implemented, IMPL-0015 → Completed. docz-api's pin bump and
+contract clause R6 are unblocked.
 
 ## References
 

@@ -45,5 +45,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0012 | Custom Document Type Support | Completed | 2026-06-18 | Donald Gifford | [0012-custom-document-type-support.md](0012-custom-document-type-support.md) |
 | IMPL-0013 | Promote parsing core to pkg/doczcore | Completed | 2026-06-30 | Donald Gifford | [0013-promote-parsing-core-to-pkgdoczcore.md](0013-promote-parsing-core-to-pkgdoczcore.md) |
 | IMPL-0014 | v1.0.0: the five-package pkg/doczcore public core | Completed | 2026-07-03 | Donald Gifford | [0014-v100-the-five-package-pkgdoczcore-public-core.md](0014-v100-the-five-package-pkgdoczcore-public-core.md) |
-| IMPL-0015 | v1.1.0 — changelog config block and ParseChangelog | Draft | 2026-08-02 | Donald Gifford | [0015-v110-changelog-config-block-and-parsechangelog.md](0015-v110-changelog-config-block-and-parsechangelog.md) |
+| IMPL-0015 | v1.1.0 — changelog config block and ParseChangelog | Completed | 2026-08-02 | Donald Gifford | [0015-v110-changelog-config-block-and-parsechangelog.md](0015-v110-changelog-config-block-and-parsechangelog.md) |
 <!-- END DOCZ AUTO-GENERATED -->
