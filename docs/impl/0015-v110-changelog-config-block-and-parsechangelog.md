@@ -367,8 +367,18 @@ All three open questions resolved **(a)** on 2026-08-02.
   been frozen into `v1.1.0`, both fixed in `1b98d84`:
   - `ParseChangelog` was **quadratic** in the size of a single item
     (continuation lines concatenated onto a string): 6.4 MB took 12.7s.
-    Now a byte-slice accumulator — 8.6 MB parses in 0.03s, pinned by
-    `TestParseChangelog_LongItemIsLinear`.
+    Now a byte-slice accumulator, pinned by
+    `TestParseChangelog_LongItemIsLinear`. Measured after the fix, three
+    input shapes across four doublings, time per doubling:
+
+    | Shape | 0.8–6.4 MB | Ratio per doubling | At 6.4 MB |
+    |---|---|---|---|
+    | One long item (the regressed shape) | 3.2 → 16.1 ms | 1.6–1.8x | 16 ms |
+    | Many small items | 2.6 → 21.9 ms | ~2.0x | 22 ms |
+    | Many versions | 11.0 → 97.6 ms | ~2.1x | 98 ms |
+
+    All three are linear (~2x per doubling); the regressed shape improved
+    roughly 790x. No other super-linear path was found.
   - `validateChangelog` judged paths with the **host's** semantics, so
     `..\..\etc\passwd` passed on Linux/macOS and failed only on Windows.
     A config is validated on a CI runner for a path another machine
