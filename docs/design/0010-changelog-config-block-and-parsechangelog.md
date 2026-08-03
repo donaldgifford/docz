@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0010
 title: "Changelog config block and ParseChangelog"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-08-02
 ---
@@ -9,7 +9,7 @@ created: 2026-08-02
 
 # DESIGN 0010: Changelog config block and ParseChangelog
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-08-02
 
