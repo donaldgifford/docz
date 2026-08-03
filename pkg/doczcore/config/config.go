@@ -430,7 +430,11 @@ func (c *Config) Validate() ([]string, error) {
 // changelog.file validation failure, so a consumer can tell a bad
 // changelog path from any other config problem without matching on
 // error text. Match it with errors.Is; the message carries the detail.
-var ErrInvalidChangelogFile = errors.New("invalid changelog file path")
+//
+// Its text names the offending key so the wrapped message does not have
+// to repeat it: the rendered chain reads
+// `invalid changelog.file: "…" must not traverse outside the repo root`.
+var ErrInvalidChangelogFile = errors.New("invalid changelog.file")
 
 // validateChangelog rejects a changelog file path that consumers could
 // not safely fetch out of a git tree (DESIGN-0010 Decision 5). The path
@@ -461,24 +465,24 @@ func (c *Config) validateChangelog() error {
 	case file == "":
 		// Unreachable via Load (normalizeChangelog backfills the
 		// default), but reachable for a hand-built Config.
-		return reject("changelog.file must not be empty when changelog is enabled")
+		return reject("must not be empty when changelog is enabled")
 	case strings.ContainsFunc(file, func(r rune) bool { return r < 0x20 || r == 0x7f }):
-		return reject("changelog.file %q must not contain control characters", file)
+		return reject("%q must not contain control characters", file)
 	case strings.ContainsRune(file, '\\'):
 		// Backslash is a path separator on Windows and a legal filename
 		// character elsewhere, so a lone ".." check cannot judge it
 		// portably. Repo-relative paths are slash-separated (that is how
 		// git names them); requiring it keeps the traversal check below
 		// meaningful on every host.
-		return reject("changelog.file %q must use forward slashes to separate directories", file)
+		return reject("%q must use forward slashes to separate directories", file)
 	case filepath.IsAbs(file), strings.HasPrefix(file, "/"), hasVolumeName(file):
-		return reject("changelog.file %q must be relative to the repo root", file)
+		return reject("%q must be relative to the repo root", file)
 	case strings.HasPrefix(file, "~"):
 		// Never expanded by docz, and a consumer that hands the path to a
 		// shell would resolve it outside the repo entirely.
-		return reject("changelog.file %q must not start with %q", file, "~")
+		return reject("%q must not start with %q", file, "~")
 	case strings.HasSuffix(file, "/"):
-		return reject("changelog.file %q must be a file path, not a directory", file)
+		return reject("%q must be a file path, not a directory", file)
 	}
 
 	// Segments are split on "/" rather than handed to path.Clean so the
@@ -487,7 +491,7 @@ func (c *Config) validateChangelog() error {
 	segments := strings.Split(file, "/")
 	switch {
 	case slices.Contains(segments, ".."):
-		return reject("changelog.file %q must not traverse outside the repo root", file)
+		return reject("%q must not traverse outside the repo root", file)
 	case slices.Contains(segments, "."), slices.Contains(segments, ""):
 		return reject(
 			"changelog.file %q must be a clean path: no %q or empty segments", file, ".")
