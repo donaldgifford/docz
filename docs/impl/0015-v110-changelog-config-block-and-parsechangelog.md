@@ -230,7 +230,7 @@ outside the module before it freezes.
       (config block dormant by default; `ParseChangelog` best-effort parser),
       the rollout note (older docz versions ignore the block; v1.1.0 begins
       validating it **only when enabled**), and the docz-api R6 pin pointer.
-- [ ] Open **one** release PR from `feat/docz-changelog-support` carrying
+- [x] Open **one** release PR from `feat/docz-changelog-support` carrying
       the design doc, this IMPL, and all four phases, labeled **`minor`**
       (Decision 1); on merge, `pr-semver-bump` + goreleaser cut `v1.1.0`
       (merge to `main` is human-gated).
