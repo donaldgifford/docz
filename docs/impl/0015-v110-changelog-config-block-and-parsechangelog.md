@@ -392,10 +392,15 @@ All three open questions resolved **(a)** on 2026-08-02.
     both the source and the item buffer reachable. Either fix alone
     changes nothing; both together took an 8.39 MB document from
     8,397,072 bytes retained to **112 bytes** when the caller keeps only
-    a group title and one item. Costs 1–6% parse time. Pinned by
+    a group title and one item. Costs 1–6% parse time. Every string on
+    the returned types is now covered: `Items` were already copies;
+    `Version`/`Date`/`Title` are pinned by
     `TestParseChangelog_DoesNotRetainSource`, which compares parsed-value
-    pointer gaps against source-offset gaps and was verified to fail on
-    each field when the clones are reverted.
+    pointer gaps against source-offset gaps; and `Preamble` — which has
+    no second aliased field to compare against — is pinned by
+    `TestParseChangelog_PreambleDoesNotRetainSource`, which weighs the
+    heap directly. Both were verified to fail when their clones are
+    reverted.
   - `validateChangelog` judged paths with the **host's** semantics, so
     `..\..\etc\passwd` passed on Linux/macOS and failed only on Windows.
     A config is validated on a CI runner for a path another machine
