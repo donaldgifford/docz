@@ -120,7 +120,11 @@ func ParseChangelog(content []byte) (*Changelog, error) {
 	if len(p.out.Versions) == 0 {
 		return nil, ErrNoVersions
 	}
-	return &p.out, nil
+	// Copy out rather than returning &p.out: an interior pointer into the
+	// parser keeps the whole changelogParser alive, and with it the
+	// stringified source and the item buffer grown to the largest item.
+	out := p.out
+	return &out, nil
 }
 
 // changelogParser walks the document once, accumulating the open item,
@@ -295,9 +299,12 @@ func parseChangelogVersion(line string) (ChangelogVersion, bool) {
 		return ChangelogVersion{Version: "unreleased", Unreleased: true}, true
 	}
 
+	// Clone both: a regexp submatch is a subslice of the source, and
+	// trimming preserves that aliasing, so an un-cloned 5-byte Version
+	// would pin the entire document. See ParseChangelog's copy-out.
 	return ChangelogVersion{
-		Version: trimVersionPrefix(inner),
-		Date:    trimDateSeparator(m[2]),
+		Version: strings.Clone(trimVersionPrefix(inner)),
+		Date:    strings.Clone(trimDateSeparator(m[2])),
 	}, true
 }
 
@@ -334,7 +341,9 @@ func parseChangelogGroup(line string) (string, bool) {
 	if m == nil {
 		return "", false
 	}
-	return strings.TrimSpace(m[1]), true
+	// Cloned for the same reason as Version/Date: the submatch aliases the
+	// source document.
+	return strings.Clone(strings.TrimSpace(m[1])), true
 }
 
 // parseChangelogBullet recognizes a top-level bullet and returns the item

@@ -1,6 +1,7 @@
 package document_test
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
@@ -372,6 +374,73 @@ func FuzzParseChangelog(f *testing.F) {
 			t.Fatal("Preamble is not a prefix of the input")
 		}
 	})
+}
+
+// TestParseChangelog_DoesNotRetainSource pins that the returned values
+// are copies rather than windows onto the parsed document. A regexp
+// submatch is a subslice of its input and trimming preserves that, so an
+// un-cloned 5-byte Version would keep the whole changelog alive —
+// consumers cache these per repo, so holding one group title used to
+// retain megabytes.
+//
+// The check is exact rather than statistical: if a field still aliases
+// the source, the distance between two fields' string data equals the
+// distance between their byte offsets in that source. Independent
+// allocations do not reproduce that relationship.
+func TestParseChangelog_DoesNotRetainSource(t *testing.T) {
+	t.Parallel()
+
+	const filler = "- *(scope)* a commit subject line of some length\n"
+	var sb strings.Builder
+	sb.WriteString("## [1.0.0] - 2026-01-01\n\n### First Group\n\n")
+	for sb.Len() < 1<<20 {
+		sb.WriteString(filler)
+	}
+	secondOffset := sb.Len()
+	sb.WriteString("\n## [2.0.0] - 2026-02-02\n\n### Second Group\n\n- b\n")
+	content := []byte(sb.String())
+
+	cl, err := document.ParseChangelog(content)
+	if err != nil {
+		t.Fatalf("ParseChangelog() = %v, want nil", err)
+	}
+	if len(cl.Versions) != 2 {
+		t.Fatalf("got %d versions, want 2", len(cl.Versions))
+	}
+
+	// For each field, compare the gap between the two parsed values with
+	// the gap between the same two substrings in the source. Equality
+	// means both values are windows onto one buffer; the allocator does
+	// not reproduce a specific offset by chance.
+	fields := []struct {
+		name                string
+		first, second       string
+		firstSrc, secondSrc string
+	}{
+		{"Version", cl.Versions[0].Version, cl.Versions[1].Version, "1.0.0", "2.0.0"},
+		{"Date", cl.Versions[0].Date, cl.Versions[1].Date, "2026-01-01", "2026-02-02"},
+		{
+			"group Title",
+			cl.Versions[0].Groups[0].Title, cl.Versions[1].Groups[0].Title,
+			"First Group", "Second Group",
+		},
+	}
+	for _, f := range fields {
+		srcGap := bytes.Index(content, []byte(f.secondSrc)) -
+			bytes.Index(content, []byte(f.firstSrc))
+		ptrGap := int(uintptr(unsafe.Pointer(unsafe.StringData(f.second)))) -
+			int(uintptr(unsafe.Pointer(unsafe.StringData(f.first))))
+		if ptrGap == srcGap {
+			t.Errorf("%s values sit exactly %d bytes apart, matching their offsets in "+
+				"the source: they alias it, so the whole document is retained",
+				f.name, srcGap)
+		}
+	}
+
+	if secondOffset < 1<<20 {
+		t.Fatalf("fixture is only %d bytes; the gap must be large enough to be "+
+			"unmistakable", secondOffset)
+	}
 }
 
 // TestParseChangelog_LongItemIsLinear pins that one very long item does
