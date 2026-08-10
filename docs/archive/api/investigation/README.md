@@ -17,6 +17,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0002 | Auto-generate an OpenAPI contract for the docz-site | Open | 2026-07-07 | Donald Gifford | [0002-auto-generate-an-openapi-contract-for-the-docz-site.md](0002-auto-generate-an-openapi-contract-for-the-docz-site.md) |
 | INV-0003 | docz-site deferred features and the docz-api surface to unblock them | Open | 2026-07-10 | Donald Gifford | [0003-docz-site-deferred-features-and-the-docz-api-surface-to-unblock.md](0003-docz-site-deferred-features-and-the-docz-api-surface-to-unblock.md) |
 | INV-0004 | Helm chart and CI scaffolding audit | Concluded | 2026-07-13 | Donald Gifford | [0004-helm-chart-and-ci-scaffolding-audit.md](0004-helm-chart-and-ci-scaffolding-audit.md) |
+| INV-0005 | Changelog as a first-class docz artifact | Concluded | 2026-08-02 | Donald Gifford | [0005-changelog-as-a-first-class-docz-artifact.md](0005-changelog-as-a-first-class-docz-artifact.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

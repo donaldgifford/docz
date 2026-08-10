@@ -115,6 +115,7 @@ func (s *Service) Run(
 			LastSyncedSHA:  snap.HeadSHA,
 			ChangelogMD:    string(snap.ChangelogMD),
 			ChangelogSHA:   snap.ChangelogSHA,
+			ChangelogFile:  changelogFile(&cfg),
 			IndexMD:        string(snap.IndexMD),
 			IndexSHA:       snap.IndexSHA,
 		},
@@ -223,6 +224,20 @@ func (s *Service) syncIndex(
 		return fmt.Errorf("index documents: %w", err)
 	}
 	return nil
+}
+
+// changelogFile returns the repo-relative changelog path the config opts into,
+// or "" when the changelog: block is disabled or absent. The empty string is
+// what makes the reconcile null the whole changelog triple, so a repo that
+// turns the block off stops serving a changelog on its next ingest.
+//
+// cfg is the authoritative post-Load config (normalized and validated), not
+// githubapp's fetch-scoped hint.
+func changelogFile(cfg *doczcfg.Config) string {
+	if !cfg.Changelog.Enabled {
+		return ""
+	}
+	return cfg.Changelog.File
 }
 
 // buildDocTypes maps every enabled type in the config to a store.DocTypeInput.

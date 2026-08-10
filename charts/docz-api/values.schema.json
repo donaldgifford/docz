@@ -24,6 +24,10 @@
         "authRedirectBase": { "type": "string" },
         "authProviders": { "type": "string" },
         "githubOAuthClientID": { "type": "string" },
+        "oktaIssuer": { "type": "string" },
+        "oktaClientID": { "type": "string" },
+        "keycloakIssuer": { "type": "string" },
+        "keycloakClientID": { "type": "string" },
         "githubApiBase": { "type": "string" },
         "sessionTTL": { "type": "string" },
         "ingestDebounce": { "type": "string" }
@@ -51,7 +55,10 @@
       "properties": {
         "create": { "type": "boolean" },
         "existingSecret": { "type": "string" },
-        "privateKeyAsFile": { "type": "boolean" }
+        "privateKeyAsFile": { "type": "boolean" },
+        "oauthClientSecret": { "type": "string" },
+        "oktaClientSecret": { "type": "string" },
+        "keycloakClientSecret": { "type": "string" }
       }
     },
     "store": {

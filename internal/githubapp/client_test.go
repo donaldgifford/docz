@@ -94,8 +94,11 @@ func TestFetchClassifiesAndDecodes(t *testing.T) {
 	if string(snap.ConfigYAML) != cfgYAML {
 		t.Errorf("ConfigYAML = %q, want the decoded .docz.yaml", snap.ConfigYAML)
 	}
-	if string(snap.ChangelogMD) != changelo || snap.ChangelogSHA != "clsha" {
-		t.Errorf("changelog = %q / %q, want decoded / clsha", snap.ChangelogMD, snap.ChangelogSHA)
+	// The config has no changelog: block, so the changelog is NOT fetched even
+	// though CHANGELOG.md sits in the tree — it is opt-in (IMPL-0005).
+	if snap.ChangelogMD != nil || snap.ChangelogSHA != "" {
+		t.Errorf("changelog = %q / %q, want absent (block not enabled)",
+			snap.ChangelogMD, snap.ChangelogSHA)
 	}
 	// No docs/index.md in the tree: the index pair stays zero with no extra
 	// blob request (an unknown-sha fetch would 404 against the stub).
@@ -172,6 +175,98 @@ func TestFetchRepoIndex(t *testing.T) {
 			if string(snap.IndexMD) != tt.wantMD || snap.IndexSHA != tt.wantSHA {
 				t.Errorf("index = %q / %q, want %q / %q",
 					snap.IndexMD, snap.IndexSHA, tt.wantMD, tt.wantSHA)
+			}
+		})
+	}
+}
+
+func TestFetchRepoChangelog(t *testing.T) {
+	const changelogBody = "# Changelog\n\n## [1.0.0] - 2026-01-01\n"
+	// Every case lists the changelog blob in the tree but only supplies its
+	// content when a fetch is expected: the stub 404s on an unknown sha, so a
+	// case that wants "no request" fails loudly if one is made.
+	const tree = `{"sha":"headsha","truncated":false,"tree":[
+		{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+		{"path":"CHANGELOG.md","type":"blob","sha":"rootsha"},
+		{"path":"charts/acme/CHANGELOG.md","type":"blob","sha":"chartsha"}
+	]}`
+	tests := []struct {
+		name    string
+		cfgYAML string
+		blobs   map[string]string
+		wantMD  string
+		wantSHA string
+	}{
+		{
+			name:    "enabled with the default root file",
+			cfgYAML: "changelog:\n  enabled: true\n",
+			blobs:   map[string]string{"rootsha": b64(changelogBody)},
+			wantMD:  changelogBody,
+			wantSHA: "rootsha",
+		},
+		{
+			name:    "enabled with a chart subpath",
+			cfgYAML: "changelog:\n  enabled: true\n  file: charts/acme/CHANGELOG.md\n",
+			blobs:   map[string]string{"chartsha": b64(changelogBody)},
+			wantMD:  changelogBody,
+			wantSHA: "chartsha",
+		},
+		{
+			name:    "explicitly disabled fetches nothing",
+			cfgYAML: "changelog:\n  enabled: false\n  file: CHANGELOG.md\n",
+		},
+		{
+			name:    "absent block fetches nothing",
+			cfgYAML: "types:\n  rfc:\n    enabled: true\n",
+		},
+		{
+			name:    "enabled but the configured file is absent at HEAD",
+			cfgYAML: "changelog:\n  enabled: true\n  file: docs/RELEASES.md\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blobs := map[string]string{"cfgsha": b64(tt.cfgYAML)}
+			maps.Copy(blobs, tt.blobs)
+			gh, err := github.NewClient(github.WithTransport(stubTransport{tree: tree, blobs: blobs}))
+			if err != nil {
+				t.Fatalf("NewClient: %v", err)
+			}
+			c := &Client{gh: gh}
+
+			snap, err := c.Fetch(t.Context(), "acme", "platform")
+			if err != nil {
+				t.Fatalf("Fetch: %v", err)
+			}
+			if string(snap.ChangelogMD) != tt.wantMD || snap.ChangelogSHA != tt.wantSHA {
+				t.Errorf("changelog = %q / %q, want %q / %q",
+					snap.ChangelogMD, snap.ChangelogSHA, tt.wantMD, tt.wantSHA)
+			}
+		})
+	}
+}
+
+func TestChangelogHint(t *testing.T) {
+	tests := []struct {
+		name        string
+		yaml        string
+		wantEnabled bool
+		wantFile    string
+	}{
+		{"absent block is dormant", "docs_dir: docs\n", false, "CHANGELOG.md"},
+		{"enabled without a file uses the docz default", "changelog:\n  enabled: true\n", true, "CHANGELOG.md"},
+		{"explicit file honored", "changelog:\n  enabled: true\n  file: charts/x/CHANGELOG.md\n", true, "charts/x/CHANGELOG.md"},
+		{"empty file falls back to the default", "changelog:\n  enabled: true\n  file: \"\"\n", true, "CHANGELOG.md"},
+		{"leading dot-slash normalized", "changelog:\n  enabled: true\n  file: ./CHANGELOG.md\n", true, "CHANGELOG.md"},
+		{"file without enabled stays dormant", "changelog:\n  file: docs/CL.md\n", false, "docs/CL.md"},
+		{"malformed yaml falls back to the docz defaults", "\t: not yaml", false, "CHANGELOG.md"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enabled, file := changelogHint([]byte(tt.yaml))
+			if enabled != tt.wantEnabled || file != tt.wantFile {
+				t.Errorf("changelogHint(%q) = (%v, %q), want (%v, %q)",
+					tt.yaml, enabled, file, tt.wantEnabled, tt.wantFile)
 			}
 		})
 	}

@@ -67,7 +67,8 @@ func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID strin
 func validText(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
 
 // seededStore returns a fakeStore with a full repo (custom type, doc, cached
-// index.md) plus a bare repo with no index, for the 404 flavors (OQ-2a).
+// index.md and changelog) plus a bare repo with neither, for the 404 flavors
+// (OQ-2a).
 func seededStore() *fakeStore {
 	return &fakeStore{
 		repos: []store.Repo{
@@ -75,6 +76,9 @@ func seededStore() *fakeStore {
 				ID: 1, Owner: "acme", Name: "platform", DefaultBranch: "main", DocsDir: "docs",
 				ConfigSnapshot: json.RawMessage(`{"docs_dir":"docs"}`), LastSyncedSha: validText("headsha"),
 				IndexMd: validText("# Platform\n"), IndexSha: validText("idxsha"),
+				ChangelogMd:   validText("# Changelog\n\n## [1.0.0] - 2026-01-01\n"),
+				ChangelogSha:  validText("clsha"),
+				ChangelogFile: validText("CHANGELOG.md"),
 			},
 			{
 				ID: 2, Owner: "acme", Name: "bare", DefaultBranch: "main", DocsDir: "docs",
@@ -259,6 +263,74 @@ func TestGetRepoIndex(t *testing.T) {
 			t.Errorf("status = %d, want 404", rec.Code)
 		}
 	})
+}
+
+func TestGetRepoChangelog(t *testing.T) {
+	st := seededStore()
+	// An empty-but-present changelog persists as a NULL body with a valid sha
+	// (the textOrNull gotcha), which must serve as 200 with an empty string.
+	st.repos = append(st.repos, store.Repo{
+		ID: 4, Owner: "acme", Name: "emptycl", DefaultBranch: "main", DocsDir: "docs",
+		ConfigSnapshot: json.RawMessage(`{"docs_dir":"docs"}`), ChangelogSha: validText("emptyclsha"),
+	})
+	srv := testServer(st, authorize.NewAllReposAuthorizer(st))
+
+	t.Run("present changelog serves body and sha", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/platform/changelog")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var body repoChangelogDTO
+		mustDecode(t, rec, &body)
+		if body.Repo != "acme/platform" || body.ChangelogSHA != "clsha" {
+			t.Errorf("changelog = %+v, want the cached body and sha", body)
+		}
+		if body.ChangelogMD != "# Changelog\n\n## [1.0.0] - 2026-01-01\n" {
+			t.Errorf("ChangelogMD = %q, want the cached raw markdown", body.ChangelogMD)
+		}
+	})
+
+	t.Run("empty changelog file is 200 with empty body", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/emptycl/changelog")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var body repoChangelogDTO
+		mustDecode(t, rec, &body)
+		if body.ChangelogMD != "" || body.ChangelogSHA != "emptyclsha" {
+			t.Errorf("changelog = %+v, want empty body with a valid sha", body)
+		}
+	})
+
+	t.Run("repo without a changelog is 404", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/bare/changelog")
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want 404", rec.Code)
+		}
+		var body struct {
+			Error string `json:"error"`
+		}
+		mustDecode(t, rec, &body)
+		if body.Error != "changelog not found" {
+			t.Errorf("error = %q, want 'changelog not found'", body.Error)
+		}
+	})
+
+	t.Run("unknown repo is 404", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/missing/changelog")
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404", rec.Code)
+		}
+	})
+}
+
+func TestGetRepoChangelogUnauthorizedIs404(t *testing.T) {
+	srv := testServer(seededStore(), fixedAuthorizer{allowed: authorize.AllowedRepos{999}})
+
+	rec := doGet(t, srv, "/api/v1/repos/acme/platform/changelog")
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404 (existence hidden)", rec.Code)
+	}
 }
 
 func TestGetRepoIndexUnauthorizedIs404(t *testing.T) {

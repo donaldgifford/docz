@@ -41,6 +41,7 @@ func (s *Store) ReconcileRepo(ctx context.Context, in *ReconcileInput) (res Reco
 		LastSyncedSha:  textOrNull(in.Repo.LastSyncedSHA),
 		ChangelogMd:    textOrNull(in.Repo.ChangelogMD),
 		ChangelogSha:   textOrNull(in.Repo.ChangelogSHA),
+		ChangelogFile:  textOrNull(in.Repo.ChangelogFile),
 		IndexMd:        textOrNull(in.Repo.IndexMD),
 		IndexSha:       textOrNull(in.Repo.IndexSHA),
 	})

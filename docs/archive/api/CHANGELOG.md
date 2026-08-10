@@ -5,13 +5,37 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(doczcontract)* Pin docz v1.1.0 + freeze changelog surface (R6)
+- *(store)* Persist the resolved changelog path on the repo row
+- *(ingest)* Config-driven changelog fetch + webhook trigger
+- *(httpapi)* Serve the repo changelog (spec 1.2.0)
+- *(chart)* Gate login-provider env + secret keys per provider
+
 ### Bug Fixes
 
 - *(chart)* Scope the main Service selector to the API pods (0.2.2) ([#12](https://github.com/donaldgifford/docz-api/issues/12))
+- *(deps)* Bump opentelemetry to v1.44.0 for GO-2026-5158
+- *(deps)* Bump kin-openapi to v0.144.0 for GHSA-r277-6w6q-xmqw
+
+### Documentation
+
+- *(inv)* INV-0005 changelog as a first-class docz artifact
+- *(inv)* Record INV-0005 review decisions (parser in docz, OQ-2=a)
+- *(inv)* Conclude INV-0005 (all OQs=a) + portable docz design handoff
+- *(inv)* Verify docz v1.1.0 ships the changelog surface (F6)
+- *(impl)* IMPL-0005 plan for the changelog endpoint
+- *(impl)* IMPL-0005 OQs answered (all a) — In Progress
+
+### Testing
+
+- *(e2e)* Prove the changelog endpoint end to end; close IMPL-0005
 
 ### Miscellaneous Tasks
 
 - Fix for external valkey secret
+- *(mise)* Bump docz CLI to v1.1.0
 
 ## [0.4.2] - 2026-07-23
 

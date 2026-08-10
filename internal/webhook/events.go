@@ -92,7 +92,7 @@ func (h *Handler) handlePush(ctx context.Context, ev *github.PushEvent) error {
 		return fmt.Errorf("get repo %s/%s: %w", owner, name, err)
 	}
 
-	if !shouldIngest(ev, repo.DocsDir) {
+	if !shouldIngest(ev, repo.DocsDir, repo.ChangelogFile.String) {
 		slog.Debug("push not relevant to docz; skipping", "repo", owner+"/"+name, "ref", ev.GetRef())
 		return nil
 	}
@@ -207,7 +207,12 @@ func logRelease(ev *github.ReleaseEvent) {
 // changed-path set is the union of added/modified/removed across every commit in
 // the push, not just the head commit (which would miss files from intermediate
 // commits in a multi-commit or force push).
-func shouldIngest(ev *github.PushEvent, docsDir string) bool {
+//
+// changelogFile is the repo's resolved changelog path ("" when the repo has not
+// enabled the changelog: block). It is matched explicitly because that file
+// lives outside docsDir — a release's changelog-sync push touches nothing else,
+// so without this the served changelog would lag its own release.
+func shouldIngest(ev *github.PushEvent, docsDir, changelogFile string) bool {
 	if ev.GetRef() != "refs/heads/"+ev.GetRepo().GetDefaultBranch() {
 		return false
 	}
@@ -218,6 +223,9 @@ func shouldIngest(ev *github.PushEvent, docsDir string) bool {
 		for _, set := range [][]string{c.Added, c.Modified, c.Removed} {
 			for _, p := range set {
 				if p == doczConfigFile || strings.HasPrefix(p, prefix) {
+					return true
+				}
+				if changelogFile != "" && p == changelogFile {
 					return true
 				}
 			}

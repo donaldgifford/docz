@@ -1,17 +1,18 @@
 # docz-api OpenAPI contract
 
-`openapi.yaml` is the **hand-authored, machine-readable contract** for docz-api's
-HTTP surface (OpenAPI 3.1). It is the single source of truth for the wire shapes
-docz-api ships, and it is the artifact the **docz-site** vendors to generate a
-typed client.
+`openapi.yaml` is the **hand-authored, machine-readable contract** for
+docz-api's HTTP surface (OpenAPI 3.1). It is the single source of truth for the
+wire shapes docz-api ships, and it is the artifact the **docz-site** vendors to
+generate a typed client.
 
 ## What is here
 
 - **`openapi.yaml`** — the OAS 3.1 contract: the `/api/v1` read + search routes,
-  the site auth endpoints (`/api/v1/auth/*`, public `/auth/login` + `/auth/callback`),
-  and the GitHub webhook receiver (`/webhooks/github`).
-- **`spec.go`** — a one-line `//go:embed openapi.yaml` exposing `var Spec []byte`,
-  so the runtime server and the contract test consume the exact same bytes.
+  the site auth endpoints (`/api/v1/auth/*`, public `/auth/login` +
+  `/auth/callback`), and the GitHub webhook receiver (`/webhooks/github`).
+- **`spec.go`** — a one-line `//go:embed openapi.yaml` exposing
+  `var Spec []byte`, so the runtime server and the contract test consume the
+  exact same bytes.
 - **`vacuum-ruleset.yaml`** — the linter ruleset used by `just lint-openapi`.
 
 ## How it stays honest
@@ -19,10 +20,11 @@ typed client.
 An in-process `kin-openapi` contract test
 (`internal/httpapi/openapi_contract_test.go`) loads this file, drives the real
 chi handler stack in-memory, and validates every request and response against it
-on every `go test ./...` / CI run. Response schemas are `additionalProperties:
-false`, so any added, renamed, or retyped wire field fails the contract test —
-code and spec cannot silently drift. `just lint-openapi` additionally runs
-`vacuum` (100/100) and `yamlfmt` so the file stays standards-clean and canonical.
+on every `go test ./...` / CI run. Response schemas are
+`additionalProperties: false`, so any added, renamed, or retyped wire field
+fails the contract test — code and spec cannot silently drift.
+`just lint-openapi` additionally runs `vacuum` (100/100) and `yamlfmt` so the
+file stays standards-clean and canonical.
 
 ## Versioning
 
@@ -37,6 +39,12 @@ release version). Bump it by hand on any change to a specced wire shape:
 
 The version is the signal consumers pin against, so a wire change without a bump
 is a contract bug.
+
+Current: **`1.2.0`** — `getRepoChangelog`
+(`GET /api/v1/repos/{owner}/{name}/changelog`) serves a repository's cached
+changelog. It is opt-in per repository via the `.docz.yaml` `changelog:` block,
+so a repository that has not enabled it returns 404 (IMPL-0005). `1.1.0` added
+`getRepoIndex`.
 
 ## Consuming it (the docz-site)
 

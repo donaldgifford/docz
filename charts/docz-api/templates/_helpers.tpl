@@ -226,3 +226,19 @@ chart-rendered baked Secret uses MEILI_API_KEY.
 MEILI_API_KEY
 {{- end -}}
 {{- end -}}
+
+{{/*
+Normalized login-provider list from config.authProviders (comma-separated,
+whitespace stripped, empties dropped) as a JSON array. Consume with
+`fromJsonArray`:
+
+  {{- $providers := include "docz-api.authProviders" . | fromJsonArray }}
+  {{- if has "okta" $providers }}
+
+Each enabled provider gates its own env block in the Deployment and its own
+client-secret key in the Secret, so a github-only install carries no OKTA_*
+env and no okta-client-secret key.
+*/}}
+{{- define "docz-api.authProviders" -}}
+{{- splitList "," (.Values.config.authProviders | default "" | replace " " "") | compact | toJson -}}
+{{- end -}}

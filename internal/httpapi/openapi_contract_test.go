@@ -317,6 +317,8 @@ func TestOpenAPIContract(t *testing.T) {
 		{name: "getRepo", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform"},
 		{name: "getRepoIndex", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/index"},
 		{name: "getRepoIndexMissing", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/index"},
+		{name: "getRepoChangelog", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/changelog"},
+		{name: "getRepoChangelogMissing", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/changelog"},
 		{name: "listTypes", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types"},
 		{name: "listDocs", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/frameworks/docs"},
 		{name: "getDoc", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001"},

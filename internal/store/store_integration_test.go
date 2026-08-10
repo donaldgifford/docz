@@ -209,6 +209,72 @@ func TestMigrateUpDownRoundTrip(t *testing.T) {
 	}
 }
 
+// TestReconcileRepoChangelogTriple covers the changelog_md/changelog_sha/
+// changelog_file lifecycle (IMPL-0005): set when the .docz.yaml changelog:
+// block is enabled, kept-with-NULL-body for an empty-but-present file, and all
+// three cleared when the block is disabled or absent at HEAD — the changelog is
+// opt-in desired state, not a sticky cache.
+func TestReconcileRepoChangelogTriple(t *testing.T) {
+	ctx := t.Context()
+	seedInstallation(t, 401)
+
+	repoInput := func(md, sha, file string) *ReconcileInput {
+		return &ReconcileInput{
+			Repo: RepoInput{
+				InstallationID: 401, Owner: "acme", Name: "changelog", DefaultBranch: "main",
+				DocsDir: "docs", ConfigSnapshot: json.RawMessage(`{}`),
+				ChangelogMD: md, ChangelogSHA: sha, ChangelogFile: file,
+			},
+		}
+	}
+	fetch := func() Repo {
+		t.Helper()
+		repo, err := testStore.q.GetRepoByOwnerName(ctx, GetRepoByOwnerNameParams{Owner: "acme", Name: "changelog"})
+		if err != nil {
+			t.Fatalf("GetRepoByOwnerName: %v", err)
+		}
+		return repo
+	}
+
+	// Enabled with a subpath (the per-chart convention): all three persist.
+	const chartPath = "charts/acme/CHANGELOG.md"
+	if _, err := testStore.ReconcileRepo(ctx, repoInput("# Changelog\n", "clsha-1", chartPath)); err != nil {
+		t.Fatalf("reconcile with changelog: %v", err)
+	}
+	repo := fetch()
+	if repo.ChangelogMd.String != "# Changelog\n" || repo.ChangelogSha.String != "clsha-1" {
+		t.Errorf("changelog pair = (%q, %q), want the seeded values",
+			repo.ChangelogMd.String, repo.ChangelogSha.String)
+	}
+	if repo.ChangelogFile.String != chartPath {
+		t.Errorf("ChangelogFile = %q, want %q", repo.ChangelogFile.String, chartPath)
+	}
+
+	// Empty-but-present: body NULL (textOrNull), sha stays valid — the
+	// presence signal the API keys off — and the path survives.
+	if _, err := testStore.ReconcileRepo(ctx, repoInput("", "clsha-2", chartPath)); err != nil {
+		t.Fatalf("reconcile with empty changelog: %v", err)
+	}
+	repo = fetch()
+	if repo.ChangelogMd.Valid {
+		t.Error("ChangelogMd.Valid = true for empty body, want NULL")
+	}
+	if repo.ChangelogSha.String != "clsha-2" || repo.ChangelogFile.String != chartPath {
+		t.Errorf("sha/file = (%q, %q), want (clsha-2, %q)",
+			repo.ChangelogSha.String, repo.ChangelogFile.String, chartPath)
+	}
+
+	// Block disabled (or removed) at HEAD: all three cleared.
+	if _, err := testStore.ReconcileRepo(ctx, repoInput("", "", "")); err != nil {
+		t.Fatalf("reconcile without changelog: %v", err)
+	}
+	repo = fetch()
+	if repo.ChangelogMd.Valid || repo.ChangelogSha.Valid || repo.ChangelogFile.Valid {
+		t.Errorf("changelog triple not cleared: md=%v sha=%v file=%v",
+			repo.ChangelogMd.Valid, repo.ChangelogSha.Valid, repo.ChangelogFile.Valid)
+	}
+}
+
 // TestReconcileRepoIndexPair covers the index_md/index_sha lifecycle: set on
 // first reconcile, kept-with-NULL-body for an empty-but-present index.md, and
 // cleared when the file is absent at HEAD (DESIGN-0003).

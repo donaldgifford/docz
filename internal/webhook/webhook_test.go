@@ -462,22 +462,45 @@ func TestShouldIngest(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		event   *github.PushEvent
-		docsDir string
-		want    bool
+		name      string
+		event     *github.PushEvent
+		docsDir   string
+		changelog string
+		want      bool
 	}{
-		{"docs change on default branch", push("refs/heads/main", "main", "docs/rfc/RFC-1.md"), "docs", true},
-		{"config change on default branch", push("refs/heads/main", "main", ".docz.yaml"), "docs", true},
-		{"non-default branch", push("refs/heads/topic", "main", "docs/rfc/RFC-1.md"), "docs", false},
-		{"irrelevant path", push("refs/heads/main", "main", "src/main.go"), "docs", false},
-		{"docs_dir prefix is exact", push("refs/heads/main", "main", "documentation/x.md"), "docs", false},
-		{"no commits", push("refs/heads/main", "main"), "docs", false},
+		{"docs change on default branch", push("refs/heads/main", "main", "docs/rfc/RFC-1.md"), "docs", "", true},
+		{"config change on default branch", push("refs/heads/main", "main", ".docz.yaml"), "docs", "", true},
+		{"non-default branch", push("refs/heads/topic", "main", "docs/rfc/RFC-1.md"), "docs", "", false},
+		{"irrelevant path", push("refs/heads/main", "main", "src/main.go"), "docs", "", false},
+		{"docs_dir prefix is exact", push("refs/heads/main", "main", "documentation/x.md"), "docs", "", false},
+		{"no commits", push("refs/heads/main", "main"), "docs", "", false},
+		// The changelog lives outside docs_dir, so it only matches when the
+		// repo has opted in and the path matches exactly.
+		{
+			"configured changelog change",
+			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", "CHANGELOG.md", true,
+		},
+		{
+			"configured chart changelog change",
+			push("refs/heads/main", "main", "charts/acme/CHANGELOG.md"), "docs", "charts/acme/CHANGELOG.md", true,
+		},
+		{
+			"changelog change without an opted-in repo",
+			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", "", false,
+		},
+		{
+			"a different changelog than the configured one",
+			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", "charts/acme/CHANGELOG.md", false,
+		},
+		{
+			"changelog change on a non-default branch",
+			push("refs/heads/topic", "main", "CHANGELOG.md"), "docs", "CHANGELOG.md", false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := shouldIngest(tc.event, tc.docsDir); got != tc.want {
+			if got := shouldIngest(tc.event, tc.docsDir, tc.changelog); got != tc.want {
 				t.Errorf("shouldIngest() = %v, want %v", got, tc.want)
 			}
 		})

@@ -5,6 +5,7 @@ templates:
 set:
   config:
     authRedirectBase: "https://docz.example.com"
+    githubOAuthClientID: "gh-client-id"
 tests:
   - it: emits the core plain-value env vars
     asserts:
@@ -182,3 +183,150 @@ tests:
           content:
             name: CUSTOM_VAR
             value: custom-value
+
+  - it: omits every OIDC provider env when only github is enabled
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OKTA_ISSUER
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: KEYCLOAK_ISSUER
+
+  - it: emits the Okta trio when okta is in authProviders
+    set:
+      config:
+        authProviders: "github,okta"
+        oktaIssuer: "https://acme.okta.com/oauth2/default"
+        oktaClientID: "0oaEXAMPLE"
+      secrets:
+        oktaClientSecret: "okta-secret"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OKTA_ISSUER
+            value: "https://acme.okta.com/oauth2/default"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OKTA_CLIENT_ID
+            value: "0oaEXAMPLE"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OKTA_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: okta-client-secret
+
+  - it: emits the Keycloak trio when keycloak is in authProviders
+    set:
+      config:
+        authProviders: "keycloak"
+        keycloakIssuer: "https://kc.example.com/realms/docz-api"
+        keycloakClientID: "docz-api"
+      secrets:
+        keycloakClientSecret: "kc-secret"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KEYCLOAK_ISSUER
+            value: "https://kc.example.com/realms/docz-api"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KEYCLOAK_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: keycloak-client-secret
+
+  - it: drops the GitHub OAuth env when github is not a provider
+    set:
+      config:
+        authProviders: "okta"
+        oktaIssuer: "https://acme.okta.com/oauth2/default"
+        oktaClientID: "0oaEXAMPLE"
+      secrets:
+        oktaClientSecret: "okta-secret"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: GITHUB_OAUTH_CLIENT_ID
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: GITHUB_OAUTH_CLIENT_SECRET
+
+  - it: tolerates whitespace around the provider list
+    set:
+      config:
+        authProviders: "github, okta"
+        oktaIssuer: "https://acme.okta.com/oauth2/default"
+        oktaClientID: "0oaEXAMPLE"
+      secrets:
+        oktaClientSecret: "okta-secret"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OKTA_CLIENT_ID
+            value: "0oaEXAMPLE"
+
+  - it: points every provider secret at an existingSecret when create=false
+    set:
+      config:
+        authProviders: "github,okta,keycloak"
+        oktaIssuer: "https://acme.okta.com/oauth2/default"
+        oktaClientID: "0oaEXAMPLE"
+        keycloakIssuer: "https://kc.example.com/realms/docz-api"
+        keycloakClientID: "docz-api"
+      secrets:
+        create: false
+        existingSecret: "docz-api-external"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_OAUTH_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: docz-api-external
+                key: oauth-client-secret
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OKTA_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: docz-api-external
+                key: okta-client-secret
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KEYCLOAK_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: docz-api-external
+                key: keycloak-client-secret
+
+  - it: fails the render when an enabled provider is missing its issuer
+    set:
+      config:
+        authProviders: "github,okta"
+        oktaClientID: "0oaEXAMPLE"
+      secrets:
+        oktaClientSecret: "okta-secret"
+    asserts:
+      - failedTemplate:
+          errorMessage: config.oktaIssuer is required when okta is in config.authProviders

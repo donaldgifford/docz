@@ -34,7 +34,7 @@ provenance attestations.
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.2.2 \
+  --version 0.3.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.2.2 \
+  --version 0.3.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -63,8 +63,9 @@ helm install docz-api \
   - **Permissions:** Contents (Read), Metadata (Read)
   - **Events:** `installation`, `installation_repositories`, `push`, `release`
   - A generated **private key** (PEM) and **webhook secret**
-- An OAuth client (the GitHub App's own client id/secret, or a separate
-  OAuth app) for site login
+- A login provider for site auth: an OAuth client (the GitHub App's own
+  client id/secret, or a separate OAuth app), and/or an Okta/Keycloak OIDC
+  **confidential** client — see [Login providers](#login-providers)
 
 ## Configuration
 
@@ -90,18 +91,54 @@ search:
     masterKey: "A_RANDOM_MEILI_MASTER_KEY"  # required in baked mode
 ```
 
+### Login providers
+
+`config.authProviders` is a comma-separated list of `github`, `okta`, and
+`keycloak`. Each enabled provider contributes its own env and `Secret` key;
+a disabled provider contributes nothing, so a github-only install carries no
+`OKTA_*` env and no `okta-client-secret` key.
+
+| Provider | Values | Secret key |
+|----------|--------|------------|
+| `github` | `config.githubOAuthClientID` | `oauth-client-secret` |
+| `okta` | `config.oktaIssuer`, `config.oktaClientID` | `okta-client-secret` |
+| `keycloak` | `config.keycloakIssuer`, `config.keycloakClientID` | `keycloak-client-secret` |
+
+An enabled provider's values are `required` at render time, so a missing
+issuer or client id fails `helm install` rather than crash-looping the pod.
+
+Okta and Keycloak share one OIDC code path. The app must be a **confidential
+client** — in Okta, *OIDC - OpenID Connect → Web Application* with the
+authorization-code grant; an SPA or Native app has no client secret and
+cannot complete the exchange. Register `<config.authRedirectBase>/auth/callback`
+as the sign-in redirect URI, and copy the issuer verbatim from the provider's
+own `.well-known/openid-configuration` (discovery runs at startup, so a wrong
+issuer fails the boot).
+
 ### Secrets contract
 
-When `secrets.create: true` (the default) the chart renders one `Secret`
-carrying five keys: `app-id`, `webhook-secret`, `private-key`,
-`session-secret`, and `oauth-client-secret`. The GitHub App private key is
-mounted as a file by default (`secrets.privateKeyAsFile: true`); set it to
-`false` to pass the key as an env var instead.
+When `secrets.create: true` (the default) the chart renders one `Secret` from
+the plaintext values in `secrets.*`.
 
-To manage the secret out of band, set `secrets.create: false` and
-`secrets.existingSecret: <name>`. **That secret must carry all five keys**
-(`app-id`, `webhook-secret`, `private-key`, `session-secret`,
-`oauth-client-secret`).
+To manage it with a secret manager instead — 1Password Operator, External
+Secrets, sealed-secrets, or a plain `kubectl create secret` — set
+`secrets.create: false` and `secrets.existingSecret: <name>`. The chart
+references that `Secret` by key only, so how it gets populated is entirely up
+to you. It must carry:
+
+| Key | Required |
+|-----|----------|
+| `app-id` | always |
+| `webhook-secret` | always |
+| `session-secret` | always |
+| `private-key` | always (the GitHub App PEM) |
+| `oauth-client-secret` | when `github` is in `config.authProviders` |
+| `okta-client-secret` | when `okta` is in `config.authProviders` |
+| `keycloak-client-secret` | when `keycloak` is in `config.authProviders` |
+
+The GitHub App private key is mounted as a file by default
+(`secrets.privateKeyAsFile: true`); set it to `false` to pass the key as an
+env var instead. Either way the binary accepts a path or a PEM body.
 
 The backing-service DSNs (`DATABASE_URL`, `REDIS_URL`, `MEILI_API_KEY`) live
 in their own secrets, sourced per dependency mode (see below).
@@ -150,7 +187,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.2.2
+  ghcr.io/donaldgifford/charts/docz-api:0.3.0
 ```
 
 ### SLSA provenance
@@ -161,7 +198,7 @@ cosign verify-attestation --type slsaprovenance \
     '^https://github.com/slsa-framework/slsa-github-generator/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.2.2
+  ghcr.io/donaldgifford/charts/docz-api:0.3.0
 ```
 
 ## Values
@@ -175,15 +212,19 @@ cosign verify-attestation --type slsaprovenance \
 | autoscaling.minReplicas | int | `1` | Minimum replicas |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target average CPU utilization (percent) |
 | autoscaling.targetMemoryUtilizationPercentage | int | `0` | Target average memory utilization (percent). Unset → no memory metric. |
-| config | object | `{"appId":"","authProviders":"github","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","logFormat":"json","logLevel":"info","port":8080,"sessionTTL":""}` | docz-api application configuration (non-secret env vars). Empty strings for the optional tuning knobs mean "emit nothing; let the binary apply its own default". |
+| config | object | `{"appId":"","authProviders":"github","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","keycloakClientID":"","keycloakIssuer":"","logFormat":"json","logLevel":"info","oktaClientID":"","oktaIssuer":"","port":8080,"sessionTTL":""}` | docz-api application configuration (non-secret env vars). Empty strings for the optional tuning knobs mean "emit nothing; let the binary apply its own default". |
 | config.appId | string | `""` | GitHub App ID (GITHUB_APP_ID) |
 | config.authProviders | string | `"github"` | Comma-separated login providers: github, okta, keycloak (AUTH_PROVIDERS). |
 | config.authRedirectBase | string | `""` | Absolute base URL the OAuth/OIDC provider redirects back to; the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required. |
 | config.githubApiBase | string | `""` | GitHub API base URL; override for GitHub Enterprise (GITHUB_API_BASE). Empty → api.github.com. |
 | config.githubOAuthClientID | string | `""` | GitHub OAuth client id for site login (GITHUB_OAUTH_CLIENT_ID). Required while `github` is in authProviders. |
 | config.ingestDebounce | string | `""` | Ingest debounce window as a Go duration (INGEST_DEBOUNCE). Empty → 5s. |
+| config.keycloakClientID | string | `""` | Keycloak client id (KEYCLOAK_CLIENT_ID). The client must be confidential (client authentication on). Required while `keycloak` is in authProviders. |
+| config.keycloakIssuer | string | `""` | Keycloak OIDC issuer, e.g. `https://kc.example.com/realms/docz-api` (KEYCLOAK_ISSUER). Required while `keycloak` is in authProviders. |
 | config.logFormat | string | `"json"` | Log format: text or json (LOG_FORMAT) |
 | config.logLevel | string | `"info"` | Log level: debug, info, warn, error (LOG_LEVEL) |
+| config.oktaClientID | string | `""` | Okta client id (OKTA_CLIENT_ID). The Okta app must be an OIDC **Web Application** (confidential client, authorization-code flow) — an SPA or Native app has no client secret and cannot complete the exchange. Required while `okta` is in authProviders. |
+| config.oktaIssuer | string | `""` | Okta OIDC issuer, copied verbatim from the issuer's own `.well-known/openid-configuration` (OKTA_ISSUER). Discovery runs at startup, so a wrong value fails the boot. Required while `okta` is in authProviders. e.g. `https://acme.okta.com/oauth2/default` |
 | config.port | int | `8080` | Container HTTP listen port (drives HTTP_ADDR and the Service targetPort). Everything — API, /healthz, /readyz, /metrics — is served here. |
 | config.sessionTTL | string | `""` | Session lifetime as a Go duration (SESSION_TTL). Empty → 720h. |
 | extraEnv | list | `[]` | Additional environment variables |
@@ -257,10 +298,12 @@ cosign verify-attestation --type slsaprovenance \
 | search.meili.mode | string | `"baked"` | Source of Meilisearch. One of "baked" or "external". |
 | search.meili.storage | string | `"5Gi"` | Persistent volume size (baked mode). |
 | search.meili.storageClassName | string | `""` | StorageClass name (baked mode). Empty → cluster default. |
-| secrets | object | `{"create":true,"existingSecret":"","oauthClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""}` | Application secrets. When `create` is true the chart renders a Secret carrying every key below; when false, `existingSecret` must name a Secret that already holds app-id, webhook-secret, private-key, session-secret, and oauth-client-secret. |
+| secrets | object | `{"create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""}` | Application secrets. When `create` is true the chart renders a Secret from the plaintext values below. When `create` is false, `existingSecret` names a Secret you supply by any means (1Password Operator, External Secrets, sealed-secrets, `kubectl create secret`, ...) — the chart only references it by key, so the provider is entirely your choice.  The referenced Secret must carry these keys:    app-id                  always   webhook-secret          always   session-secret          always   private-key             when secrets.privateKeyAsFile is true, or the                           GitHub App key is not supplied out-of-band   oauth-client-secret     when `github`   is in config.authProviders   okta-client-secret      when `okta`     is in config.authProviders   keycloak-client-secret  when `keycloak` is in config.authProviders  Only the enabled providers' keys are referenced, so a github-only install needs no okta-client-secret. |
 | secrets.create | bool | `true` | Create secret resource (false = use existing secret) |
-| secrets.existingSecret | string | `""` | Name of existing secret (when create=false) |
-| secrets.oauthClientSecret | string | `""` | GitHub OAuth client secret for site login (GITHUB_OAUTH_CLIENT_SECRET) |
+| secrets.existingSecret | string | `""` | Name of an existing Secret holding the keys listed above (when create=false). Populate it with whatever secret manager you run. |
+| secrets.keycloakClientSecret | string | `""` | Keycloak client secret (KEYCLOAK_CLIENT_SECRET). Required while `keycloak` is in config.authProviders and create=true. Secret key: keycloak-client-secret. |
+| secrets.oauthClientSecret | string | `""` | GitHub OAuth client secret for site login (GITHUB_OAUTH_CLIENT_SECRET). Required while `github` is in config.authProviders and create=true. Secret key: oauth-client-secret. |
+| secrets.oktaClientSecret | string | `""` | Okta client secret (OKTA_CLIENT_SECRET). Required while `okta` is in config.authProviders and create=true. Secret key: okta-client-secret. |
 | secrets.privateKey | string | `""` | GitHub App private key (PEM format, GITHUB_APP_PRIVATE_KEY) |
 | secrets.privateKeyAsFile | bool | `true` | Mount the private key as a file (true) or pass it as an env var (false). Either way the binary accepts a path or a PEM body. |
 | secrets.sessionSecret | string | `""` | Session signing secret (SESSION_SECRET) |

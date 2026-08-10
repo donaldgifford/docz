@@ -160,6 +160,11 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 	if repo.ChangelogMD != "# Changelog\n" || repo.ChangelogSHA != "cl-sha" {
 		t.Errorf("changelog = %q / %q, want cached raw", repo.ChangelogMD, repo.ChangelogSHA)
 	}
+	// The fixture config has no changelog: block, so the resolved path is
+	// empty and the reconcile will null the whole triple.
+	if repo.ChangelogFile != "" {
+		t.Errorf("ChangelogFile = %q, want empty (block not enabled)", repo.ChangelogFile)
+	}
 	if repo.IndexMD != "# Home\n" || repo.IndexSHA != "idx-sha" {
 		t.Errorf("index = %q / %q, want cached raw", repo.IndexMD, repo.IndexSHA)
 	}
@@ -185,6 +190,43 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 	}
 	if res.DocsUpserted != 1 || res.TypesUpserted != 1 {
 		t.Errorf("result = %+v, want 1 doc / 1 type", res)
+	}
+}
+
+// TestRunMapsChangelogFile pins the opt-in rule: only an enabled changelog:
+// block yields a resolved path on the repo row, and the value is the
+// normalized one from the authoritative config (IMPL-0005).
+func TestRunMapsChangelogFile(t *testing.T) {
+	tests := []struct {
+		name  string
+		block string
+		want  string
+	}{
+		{"absent block", "", ""},
+		{"disabled block", "changelog:\n  enabled: false\n", ""},
+		{"enabled with the default file", "changelog:\n  enabled: true\n", "CHANGELOG.md"},
+		{"enabled with a chart subpath", "changelog:\n  enabled: true\n  file: charts/acme/CHANGELOG.md\n", "charts/acme/CHANGELOG.md"},
+		{"enabled with a dot-slash path normalized", "changelog:\n  enabled: true\n  file: ./CHANGELOG.md\n", "CHANGELOG.md"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+
+			snap := &RepoSnapshot{
+				HeadSHA:       "head-sha",
+				DefaultBranch: "main",
+				ConfigYAML:    []byte(fixtureConfig + tt.block),
+			}
+			rec := &captureReconciler{}
+			svc := NewService(rec, fakeFetcher{snap: snap}, nil)
+
+			if _, err := svc.Run(t.Context(), 42, "acme", "platform"); err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			if got := rec.in.Repo.ChangelogFile; got != tt.want {
+				t.Errorf("ChangelogFile = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

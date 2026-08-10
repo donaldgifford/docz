@@ -59,6 +59,20 @@ func (h *Handler) getRepoIndex(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, toRepoIndex(&repo))
 }
 
+// getRepoChangelog returns a repo's cached changelog. A repo that has not
+// enabled the .docz.yaml changelog: block has no cached sha and 404s.
+func (h *Handler) getRepoChangelog(w http.ResponseWriter, r *http.Request) {
+	repo, ok := h.resolveRepo(w, r)
+	if !ok {
+		return
+	}
+	if !repo.ChangelogSha.Valid {
+		writeError(w, http.StatusNotFound, "changelog not found")
+		return
+	}
+	writeJSON(w, toRepoChangelog(&repo))
+}
+
 // listTypes returns a repo's doc types.
 func (h *Handler) listTypes(w http.ResponseWriter, r *http.Request) {
 	repo, ok := h.resolveRepo(w, r)

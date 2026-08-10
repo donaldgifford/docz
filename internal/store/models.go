@@ -61,6 +61,7 @@ type Repo struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	IndexMd        pgtype.Text        `json:"index_md"`
 	IndexSha       pgtype.Text        `json:"index_sha"`
+	ChangelogFile  pgtype.Text        `json:"changelog_file"`
 }
 
 type User struct {

@@ -132,9 +132,10 @@ progresses:
 - **Build/lint/test entry points are `just`** — `just build`, `just test`,
   `just lint`, `just fmt`. There is no `Makefile`; any "`make lint`/`make fmt`"
   instruction maps to the corresponding `just` recipe.
-- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.0.0`
-  (a plain `require`, no `replace`; bumped from `v0.5.0` — see INV-0001, the
-  contract-guarded surface was unchanged). As of `v1.0.0` docz **no longer pulls
+- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.1.0`
+  (a plain `require`, no `replace`; bumped from `v1.0.0` for the changelog
+  surface — `ChangelogConfig` + `ParseChangelog`, guarded by contract clause
+  R6 per IMPL-0005; the v0.5.0→v1.0.0 bump was INV-0001). As of `v1.0.0` docz **no longer pulls
   `spf13/viper` transitively** (it moved `config.Load` to `yaml.v3`); `viper`
   (`v1.21.0`) is now a **standalone direct dep** used only by `internal/config`,
   so DESIGN-0001 Decision 2's "reuse viper from docz" rationale no longer holds.
@@ -712,6 +713,55 @@ served at **`GET /api/v1/repos/{owner}/{name}/index`** as
   serve → removal-at-HEAD → 404; store round-trip + migration up/down live in
   the store integration tests.
 
+## Changelog endpoint (INV-0005 / IMPL-0005)
+
+The repo changelog became **opt-in and served**: `.docz.yaml`'s `changelog:`
+block (docz **v1.1.0**, upstream DESIGN-0010) drives the fetch, and the cached
+raw markdown is served at **`GET /api/v1/repos/{owner}/{name}/changelog`**
+(spec `1.2.0`, additive). Built per `docs/investigation/0005-*.md` (Concluded,
+all OQs `a`) and `docs/impl/0005-*.md` — **all five phases COMPLETE ✅**. It
+deliberately mirrors the `index.md` slice (DESIGN-0003 / IMPL-0003); only the
+deltas are noted here.
+
+- **docz pin is `v1.1.0`** and `internal/doczcontract` gained **clause R6**
+  (`internal/doczcontract/changelog_test.go` + the frozen
+  `testdata/changelog_fleet.md`): `ChangelogConfig` defaults/partial-merge/
+  `./`-normalization, **enabled-only validation** (a dormant block with a bad
+  path must NOT fail `Validate`), unknown-sibling-key tolerance, and
+  `ParseChangelog`'s parse shape + `ErrNoVersions`. `ParseChangelog` has **no
+  runtime caller** — it is pinned now so feature 2 (per-doc backlinks) starts
+  on a frozen surface.
+- **Opt-in is desired state, not a cache.** A disabled or absent block means
+  ingest maps an empty `ChangelogFile`/`MD`/`SHA`, so the reconcile **nulls all
+  three columns** and the endpoint 404s. Pre-config-era cached changelogs are
+  cleared on the next ingest of a repo that never opts in (nothing served them,
+  so nothing regresses).
+- **`repos.changelog_file`** (migration `20260803000000_add_repo_changelog_file`)
+  stores the resolved path. **Why a column and not a re-parse:** the changelog
+  lives **outside `docs_dir`**, so `shouldIngest`'s prefix check would never
+  match it and a release's changelog-sync push (which touches nothing else)
+  would leave the served copy a release behind. `handlePush` already holds the
+  full repo row, so the webhook match is one exact-path comparison.
+  Deliberately one plain column — the shape is expected to generalize to other
+  API-consumed files later, so no bespoke abstraction was introduced.
+- **`changelogHint`** (`internal/githubapp`) is the `docsDirHint` twin:
+  fetch-scoped one-field unmarshal, docz defaults on malformed yaml, `./`
+  trimmed. `classifyTree` **no longer recognizes** `CHANGELOG.md` at all —
+  the path is resolved by `findBlobSHA` like `index.md`, so a repo that never
+  opts in costs **zero** extra requests. Subpaths
+  (`charts/<name>/CHANGELOG.md`) work by construction.
+- **`ingest.changelogFile(cfg)`** maps the **authoritative** post-`Load` value
+  (normalized + validated), never the hint. An invalid `changelog.file` on an
+  enabled block fails `Validate` → fails the whole ingest, like any other
+  malformed `.docz.yaml` (IMPL OQ-2a — one error path, no partial-ingest mode).
+- **Serve:** `getRepoChangelog` gates on `ChangelogSha.Valid`, so an
+  empty-but-present file is 200 with `""` and absence is 404 — the same
+  `textOrNull` presence-keys-off-the-sha gotcha as the index pair.
+- **Proof:** `TestE2ERepoChangelogServeAndDisable` (real Postgres) covers
+  ingest → serve → disable-at-HEAD → 404; `TestReconcileRepoChangelogTriple`
+  round-trips the columns; `TestFetchRepoChangelog` proves the no-fetch cases
+  by **withholding the blob** (the stub 404s on an unfetched sha).
+
 ## Helm chart + publish pipeline (INV-0004 / IMPL-0004)
 
 The `charts/docz-api/` Helm chart, the container/chart publish workflows
@@ -759,9 +809,30 @@ established as the build progresses:
     `http` containerPort (no metrics port); distroless `runAsUser: 65532`.
   - **`secret.yaml` carries five keys** (app-id, webhook-secret, private-key,
     session-secret, oauth-client-secret); `existingSecret` bypass must supply all
-    five. **`service.yaml` is one `http` port** (`service.port` → targetPort
-    `http`). **`Chart.yaml` `appVersion: "v0.4.0"`** (latest release tag; drives
-    the default image tag), chart `version: 0.1.0`.
+    five. (Superseded in chart 0.3.0 — the provider client-secret keys are now
+    conditional; see the login-provider bullet below.) **`service.yaml` is one
+    `http` port** (`service.port` → targetPort `http`). **`Chart.yaml`
+    `appVersion: "v0.4.0"`** (latest release tag; drives the default image tag),
+    chart `version: 0.1.0`.
+    - **Login providers are gated per-provider** (chart ≥ 0.3.0).
+      `config.authProviders` is parsed once by the **`docz-api.authProviders`**
+      helper (comma-split, whitespace-stripped, `compact`, `toJson`) and consumed
+      as `include "docz-api.authProviders" . | fromJsonArray` → `has "okta" $providers`.
+      Each enabled provider gates **both** its Deployment env block
+      (`GITHUB_OAUTH_*` / `OKTA_*` / `KEYCLOAK_*`) **and** its Secret key
+      (`oauth-client-secret` / `okta-client-secret` / `keycloak-client-secret`),
+      so a github-only install renders neither `OKTA_*` env nor an okta key —
+      and an okta-only install no longer demands a dummy GitHub OAuth secret.
+      Issuer/client-id are plain `config.*` values (non-secret, mirroring
+      `githubOAuthClientID`); only the client secret is a Secret key. Every
+      enabled provider's fields are `required` at **render** time (house style,
+      like `authRedirectBase`), so a missing issuer fails `helm install` instead
+      of crash-looping — which is why the three deployment-rendering
+      helm-unittest suites must set `config.githubOAuthClientID` at suite level.
+      **`secrets.existingSecret` is the secret-manager seam** (1Password
+      Operator / External Secrets / sealed-secrets): the chart references the
+      Secret by key only, so there is deliberately **no ESO/ExternalSecret
+      template** in the chart.
     - **GOTCHA — the main Service must scope on `app.kubernetes.io/component:
       server`** (chart ≥ 0.2.2). The baked postgres/valkey/meilisearch pods
       carry the **same** `docz-api.selectorLabels` (name+instance) AND expose an

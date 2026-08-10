@@ -44,6 +44,12 @@ type repoIndexDTO struct {
 	IndexSHA string `json:"index_sha"`
 }
 
+type repoChangelogDTO struct {
+	Repo         string `json:"repo"`
+	ChangelogMD  string `json:"changelog_md"`
+	ChangelogSHA string `json:"changelog_sha"`
+}
+
 type documentDTO struct {
 	Repo        string `json:"repo"`
 	DocID       string `json:"doc_id"`
@@ -106,6 +112,17 @@ func toRepoIndex(r *store.Repo) repoIndexDTO {
 		Repo:     repoLabel(r),
 		IndexMD:  nullText(r.IndexMd),
 		IndexSHA: nullText(r.IndexSha),
+	}
+}
+
+// toRepoChangelog maps the cached changelog (IMPL-0005) on the same terms as
+// toRepoIndex: an empty-but-present file is a NULL body with a valid sha, so
+// nullText yields "" and callers gate existence on ChangelogSha.Valid.
+func toRepoChangelog(r *store.Repo) repoChangelogDTO {
+	return repoChangelogDTO{
+		Repo:         repoLabel(r),
+		ChangelogMD:  nullText(r.ChangelogMd),
+		ChangelogSHA: nullText(r.ChangelogSha),
 	}
 }
 

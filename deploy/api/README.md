@@ -106,8 +106,9 @@ this app for site login (see below).
 
 Subscribe to:
 
-- **Push** — a push to the repo's default branch that touches `.docz.yaml` or
-  anything under `docs_dir/` triggers a full re-ingest (debounced; content-hash
+- **Push** — a push to the repo's default branch that touches `.docz.yaml`,
+  anything under `docs_dir/`, or the repo's configured changelog file (when the
+  `changelog:` block is enabled) triggers a full re-ingest (debounced; content-hash
   gated, so unchanged docs are no-ops). Pushes to other branches or unrelated
   paths are ignored.
 - **Release** — received and logged only today; reserved for the future versions
@@ -171,8 +172,14 @@ credentials in separate blast radii. The service requests the `read:user` and
 
 ### Enabling Okta (OIDC)
 
-Okta is a first-class login provider alongside GitHub. Add `okta` to
-`AUTH_PROVIDERS` and set the three `OKTA_*` variables:
+Okta is a first-class login provider alongside GitHub. In Okta, create the app
+as **Applications → Create App Integration → OIDC - OpenID Connect → Web
+Application**, grant type _Authorization Code_. It must be that type: the
+service holds a client secret and exchanges the code server-side, so it is a
+**confidential client**. A Single-Page Application or Native app is a public
+client with no secret and cannot complete the exchange.
+
+Then add `okta` to `AUTH_PROVIDERS` and set the three `OKTA_*` variables:
 
 ```sh
 AUTH_PROVIDERS=github,okta            # or just okta
@@ -206,6 +213,14 @@ Okta-specific things to get right:
    uses). Also confirm the user's email is **verified** in Okta — the service
    drops an email the issuer marks `email_verified:false`.
 
+On Kubernetes the Helm chart wires the same variables from
+`config.authProviders`, `config.oktaIssuer`, `config.oktaClientID` and
+`secrets.oktaClientSecret` (Secret key `okta-client-secret`); only the enabled
+providers' env and Secret keys are rendered. To source the client secret from a
+secret manager, set `secrets.create=false` and point `secrets.existingSecret` at
+a Secret you populate however you like — see
+[the chart README](../charts/docz-api/README.md).
+
 For local development you usually run **Keycloak** instead of a hosted Okta
 tenant (same OIDC code path); see
 [DEVELOPMENT.md](../DEVELOPMENT.md#local-monitoring-stack-just-monitor-up).
@@ -234,6 +249,18 @@ tenant (same OIDC code path); see
   (or `.docz.yaml`) re-ingests them — or run a manual
   `docz-api -onboard owner/name@installationID` per repo. No migration or
   backfill job is required; the docz-site's metadata fallback covers the gap.
+- **Changelog opt-in (IMPL-0005):** the
+  `/api/v1/repos/{owner}/{name}/changelog` endpoint serves the changelog cached
+  at each repo's **last ingest**, and it is opt-in per repo — the repo's
+  `.docz.yaml` must enable the `changelog:` block (`file` defaults to
+  `CHANGELOG.md`; a subpath such as `charts/<name>/CHANGELOG.md` is supported).
+  Repos that never enable it return 404, and any changelog cached before this
+  feature shipped is **cleared** on their next ingest, since the block is
+  desired state rather than a sticky cache. Nothing served that data before, so
+  no consumer regresses. Opting in takes effect on the next re-ingest: a
+  default-branch push touching `.docz.yaml`, `docs_dir/`, or the configured
+  changelog file, or a manual
+  `docz-api -onboard owner/name@installationID`.
 - The images pin major/minor tags (`postgres:17-alpine`, `redis:7.4-alpine`,
   `getmeili/meilisearch:v1.12`); Renovate PRs updates.
 - For Kubernetes, translate this to a Deployment (service) plus StatefulSets or

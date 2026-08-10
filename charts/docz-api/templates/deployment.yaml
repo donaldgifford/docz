@@ -118,13 +118,38 @@ spec:
               value: {{ required "config.authRedirectBase is required" .Values.config.authRedirectBase | quote }}
             - name: AUTH_PROVIDERS
               value: {{ .Values.config.authProviders | quote }}
+            {{- $providers := include "docz-api.authProviders" . | fromJsonArray }}
+            {{- if has "github" $providers }}
             - name: GITHUB_OAUTH_CLIENT_ID
-              value: {{ .Values.config.githubOAuthClientID | quote }}
+              value: {{ required "config.githubOAuthClientID is required when github is in config.authProviders" .Values.config.githubOAuthClientID | quote }}
             - name: GITHUB_OAUTH_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "docz-api.secretName" . }}
                   key: oauth-client-secret
+            {{- end }}
+            {{- if has "okta" $providers }}
+            - name: OKTA_ISSUER
+              value: {{ required "config.oktaIssuer is required when okta is in config.authProviders" .Values.config.oktaIssuer | quote }}
+            - name: OKTA_CLIENT_ID
+              value: {{ required "config.oktaClientID is required when okta is in config.authProviders" .Values.config.oktaClientID | quote }}
+            - name: OKTA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: okta-client-secret
+            {{- end }}
+            {{- if has "keycloak" $providers }}
+            - name: KEYCLOAK_ISSUER
+              value: {{ required "config.keycloakIssuer is required when keycloak is in config.authProviders" .Values.config.keycloakIssuer | quote }}
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ required "config.keycloakClientID is required when keycloak is in config.authProviders" .Values.config.keycloakClientID | quote }}
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz-api.secretName" . }}
+                  key: keycloak-client-secret
+            {{- end }}
             - name: LOG_LEVEL
               value: {{ .Values.config.logLevel | quote }}
             - name: LOG_FORMAT

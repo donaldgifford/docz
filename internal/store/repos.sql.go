@@ -31,7 +31,7 @@ func (q *Queries) DeleteRepoByOwnerName(ctx context.Context, arg DeleteRepoByOwn
 }
 
 const getRepoByOwnerName = `-- name: GetRepoByOwnerName :one
-SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha FROM repos WHERE owner = $1 AND name = $2
+SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file FROM repos WHERE owner = $1 AND name = $2
 `
 
 type GetRepoByOwnerNameParams struct {
@@ -58,6 +58,7 @@ func (q *Queries) GetRepoByOwnerName(ctx context.Context, arg GetRepoByOwnerName
 		&i.UpdatedAt,
 		&i.IndexMd,
 		&i.IndexSha,
+		&i.ChangelogFile,
 	)
 	return i, err
 }
@@ -89,7 +90,7 @@ func (q *Queries) ListRepoIDsByInstallation(ctx context.Context, installationID 
 }
 
 const listRepos = `-- name: ListRepos :many
-SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha FROM repos ORDER BY owner, name
+SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file FROM repos ORDER BY owner, name
 `
 
 func (q *Queries) ListRepos(ctx context.Context) ([]Repo, error) {
@@ -117,6 +118,7 @@ func (q *Queries) ListRepos(ctx context.Context) ([]Repo, error) {
 			&i.UpdatedAt,
 			&i.IndexMd,
 			&i.IndexSha,
+			&i.ChangelogFile,
 		); err != nil {
 			return nil, err
 		}
@@ -132,9 +134,9 @@ const upsertRepo = `-- name: UpsertRepo :one
 INSERT INTO repos (
     installation_id, owner, name, default_branch, docs_dir, config_snapshot,
     last_synced_sha, last_synced_at, changelog_md, changelog_sha,
-    index_md, index_sha, updated_at
+    changelog_file, index_md, index_sha, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, now()
+    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, $12, now()
 )
 ON CONFLICT (owner, name) DO UPDATE SET
     installation_id = EXCLUDED.installation_id,
@@ -145,6 +147,7 @@ ON CONFLICT (owner, name) DO UPDATE SET
     last_synced_at  = now(),
     changelog_md    = EXCLUDED.changelog_md,
     changelog_sha   = EXCLUDED.changelog_sha,
+    changelog_file  = EXCLUDED.changelog_file,
     index_md        = EXCLUDED.index_md,
     index_sha       = EXCLUDED.index_sha,
     updated_at      = now()
@@ -161,6 +164,7 @@ type UpsertRepoParams struct {
 	LastSyncedSha  pgtype.Text     `json:"last_synced_sha"`
 	ChangelogMd    pgtype.Text     `json:"changelog_md"`
 	ChangelogSha   pgtype.Text     `json:"changelog_sha"`
+	ChangelogFile  pgtype.Text     `json:"changelog_file"`
 	IndexMd        pgtype.Text     `json:"index_md"`
 	IndexSha       pgtype.Text     `json:"index_sha"`
 }
@@ -176,6 +180,7 @@ func (q *Queries) UpsertRepo(ctx context.Context, arg UpsertRepoParams) (int64, 
 		arg.LastSyncedSha,
 		arg.ChangelogMd,
 		arg.ChangelogSha,
+		arg.ChangelogFile,
 		arg.IndexMd,
 		arg.IndexSha,
 	)

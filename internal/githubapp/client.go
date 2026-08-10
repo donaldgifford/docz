@@ -28,7 +28,6 @@ import (
 const (
 	defaultAPIBase = "https://api.github.com"
 	doczConfigFile = ".docz.yaml"
-	changelogFile  = "CHANGELOG.md"
 )
 
 // Client fetches repo docz content from GitHub as one App installation. It
@@ -63,9 +62,10 @@ func NewClient(appID int64, pemKey []byte, apiBase string, installationID int64)
 }
 
 // Fetch resolves the default-branch HEAD, pulls the recursive tree, and fetches
-// .docz.yaml, an optional root CHANGELOG.md, and every doc blob matching the
-// docz filename convention. Precise per-type filtering is left to ingest, which
-// has the parsed config; githubapp only applies the convention filter.
+// .docz.yaml, the configured changelog and repo-home files when present, and
+// every doc blob matching the docz filename convention. Precise per-type
+// filtering is left to ingest, which has the parsed config; githubapp only
+// applies the convention filter.
 func (c *Client) Fetch(ctx context.Context, owner, name string) (*ingest.RepoSnapshot, error) {
 	repo, _, err := c.gh.Repositories.Get(ctx, owner, name)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c *Client) Fetch(ctx context.Context, owner, name string) (*ingest.RepoSna
 		return nil, fmt.Errorf("tree for %s/%s at %s is truncated; shallow-clone path not implemented", owner, name, headSHA)
 	}
 
-	configSHA, changelogSHA, docEntries := classifyTree(tree)
+	configSHA, docEntries := classifyTree(tree)
 	if configSHA == "" {
 		return nil, fmt.Errorf("%s/%s has no %s at HEAD", owner, name, doczConfigFile)
 	}
@@ -96,11 +96,16 @@ func (c *Client) Fetch(ctx context.Context, owner, name string) (*ingest.RepoSna
 	if snap.ConfigYAML, err = c.fetchBlob(ctx, owner, name, configSHA); err != nil {
 		return nil, fmt.Errorf("fetch %s: %w", doczConfigFile, err)
 	}
-	if changelogSHA != "" {
-		if snap.ChangelogMD, err = c.fetchBlob(ctx, owner, name, changelogSHA); err != nil {
-			return nil, fmt.Errorf("fetch %s: %w", changelogFile, err)
+	// The changelog is opt-in (IMPL-0005): only a repo whose .docz.yaml enables
+	// the changelog: block gets its file fetched, so a repo that never opts in
+	// costs zero extra requests and serves no changelog.
+	if enabled, clPath := changelogHint(snap.ConfigYAML); enabled {
+		if clSHA := findBlobSHA(tree, clPath); clSHA != "" {
+			if snap.ChangelogMD, err = c.fetchBlob(ctx, owner, name, clSHA); err != nil {
+				return nil, fmt.Errorf("fetch %s: %w", clPath, err)
+			}
+			snap.ChangelogSHA = clSHA
 		}
-		snap.ChangelogSHA = changelogSHA
 	}
 	// The repo home (docs_dir/index.md, DESIGN-0003) needs docs_dir before
 	// ingest parses the config, so a fetch-scoped hint parse targets the exact
@@ -133,6 +138,31 @@ func docsDirHint(configYAML []byte) string {
 	return doczcfg.DefaultConfig().DocsDir
 }
 
+// changelogHint extracts the changelog: block from raw .docz.yaml bytes for
+// path targeting only, on the same terms as docsDirHint: the authoritative
+// parse, normalization, and validation stay in ingest's loadConfig, so a
+// malformed config yields the docz defaults here and still fails ingest there.
+// A dormant or absent block reports enabled=false, which is what keeps the
+// fetch opt-in.
+func changelogHint(configYAML []byte) (enabled bool, file string) {
+	def := doczcfg.DefaultConfig().Changelog
+
+	var cfg struct {
+		Changelog struct {
+			Enabled bool   `yaml:"enabled"`
+			File    string `yaml:"file"`
+		} `yaml:"changelog"`
+	}
+	if err := yaml.Unmarshal(configYAML, &cfg); err != nil {
+		return def.Enabled, def.File
+	}
+	file = strings.TrimPrefix(strings.TrimSpace(cfg.Changelog.File), "./")
+	if file == "" {
+		file = def.File
+	}
+	return cfg.Changelog.Enabled, file
+}
+
 // findBlobSHA returns the sha of the blob at exactly path p in tree, or ""
 // when no such blob exists.
 func findBlobSHA(tree *github.Tree, p string) string {
@@ -144,10 +174,11 @@ func findBlobSHA(tree *github.Tree, p string) string {
 	return ""
 }
 
-// classifyTree splits a recursive tree into the .docz.yaml sha, the root
-// CHANGELOG.md sha (empty if absent), and the doc blobs matching the docz
-// filename convention.
-func classifyTree(tree *github.Tree) (configSHA, changelogSHA string, docs []*github.TreeEntry) {
+// classifyTree splits a recursive tree into the .docz.yaml sha and the doc
+// blobs matching the docz filename convention. The changelog and repo-home
+// files are config-driven, so they are resolved by exact path against the same
+// tree rather than recognized here.
+func classifyTree(tree *github.Tree) (configSHA string, docs []*github.TreeEntry) {
 	for _, e := range tree.Entries {
 		if e.GetType() != "blob" {
 			continue
@@ -155,13 +186,11 @@ func classifyTree(tree *github.Tree) (configSHA, changelogSHA string, docs []*gi
 		switch p := e.GetPath(); {
 		case p == doczConfigFile:
 			configSHA = e.GetSHA()
-		case p == changelogFile:
-			changelogSHA = e.GetSHA()
 		case doczdoc.IsDoczFile(path.Base(p)):
 			docs = append(docs, e)
 		}
 	}
-	return configSHA, changelogSHA, docs
+	return configSHA, docs
 }
 
 // fetchDocBlobs fetches every doc blob, preserving repo-relative paths.

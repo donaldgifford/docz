@@ -5,6 +5,7 @@ templates:
 set:
   config:
     authRedirectBase: "https://docz.example.com"
+    githubOAuthClientID: "gh-client-id"
 tests:
   - it: should set replica count
     set:

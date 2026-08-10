@@ -9,6 +9,10 @@ index:
   auto_update: true  # update README after docz create
   preserve_header: true
 
+changelog:
+  enabled: true  # enable changelog mapping of docz files.
+  file: CHANGELOG.md  # name of the changelog file. Defaults to CHANGELOG.md
+
 types:
   rfc:
     enabled: true

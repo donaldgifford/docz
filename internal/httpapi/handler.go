@@ -68,6 +68,7 @@ func (h *Handler) Mount(r chi.Router, gate func(http.Handler) http.Handler, extr
 		r.Route("/repos/{owner}/{name}", func(r chi.Router) {
 			r.Get("/", h.getRepo)
 			r.Get("/index", h.getRepoIndex)
+			r.Get("/changelog", h.getRepoChangelog)
 			r.Get("/types", h.listTypes)
 			r.Get("/types/{type}/docs", h.listDocs)
 			r.Get("/types/{type}/docs/{doc_id}", h.getDoc)

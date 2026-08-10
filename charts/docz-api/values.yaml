@@ -111,6 +111,24 @@ config:
   # -- GitHub OAuth client id for site login (GITHUB_OAUTH_CLIENT_ID).
   # Required while `github` is in authProviders.
   githubOAuthClientID: ""
+  # -- Okta OIDC issuer, copied verbatim from the issuer's own
+  # `.well-known/openid-configuration` (OKTA_ISSUER). Discovery runs at
+  # startup, so a wrong value fails the boot. Required while `okta` is in
+  # authProviders. e.g. `https://acme.okta.com/oauth2/default`
+  oktaIssuer: ""
+  # -- Okta client id (OKTA_CLIENT_ID). The Okta app must be an OIDC **Web
+  # Application** (confidential client, authorization-code flow) — an SPA or
+  # Native app has no client secret and cannot complete the exchange.
+  # Required while `okta` is in authProviders.
+  oktaClientID: ""
+  # -- Keycloak OIDC issuer, e.g.
+  # `https://kc.example.com/realms/docz-api` (KEYCLOAK_ISSUER). Required
+  # while `keycloak` is in authProviders.
+  keycloakIssuer: ""
+  # -- Keycloak client id (KEYCLOAK_CLIENT_ID). The client must be
+  # confidential (client authentication on). Required while `keycloak` is
+  # in authProviders.
+  keycloakClientID: ""
   # -- GitHub API base URL; override for GitHub Enterprise
   # (GITHUB_API_BASE). Empty → api.github.com.
   githubApiBase: ""
@@ -138,14 +156,30 @@ metrics:
   # -- Expose /metrics (METRICS_ENABLED)
   enabled: true
 
-# -- Application secrets. When `create` is true the chart renders a
-# Secret carrying every key below; when false, `existingSecret` must
-# name a Secret that already holds app-id, webhook-secret, private-key,
-# session-secret, and oauth-client-secret.
+# -- Application secrets. When `create` is true the chart renders a Secret
+# from the plaintext values below. When `create` is false, `existingSecret`
+# names a Secret you supply by any means (1Password Operator,
+# External Secrets, sealed-secrets, `kubectl create secret`, ...) — the
+# chart only references it by key, so the provider is entirely your choice.
+#
+# The referenced Secret must carry these keys:
+#
+#   app-id                  always
+#   webhook-secret          always
+#   session-secret          always
+#   private-key             when secrets.privateKeyAsFile is true, or the
+#                           GitHub App key is not supplied out-of-band
+#   oauth-client-secret     when `github`   is in config.authProviders
+#   okta-client-secret      when `okta`     is in config.authProviders
+#   keycloak-client-secret  when `keycloak` is in config.authProviders
+#
+# Only the enabled providers' keys are referenced, so a github-only
+# install needs no okta-client-secret.
 secrets:
   # -- Create secret resource (false = use existing secret)
   create: true
-  # -- Name of existing secret (when create=false)
+  # -- Name of an existing Secret holding the keys listed above (when
+  # create=false). Populate it with whatever secret manager you run.
   existingSecret: ""
   # -- GitHub webhook HMAC secret (GITHUB_WEBHOOK_SECRET)
   webhookSecret: ""
@@ -157,8 +191,17 @@ secrets:
   # -- Session signing secret (SESSION_SECRET)
   sessionSecret: ""
   # -- GitHub OAuth client secret for site login
-  # (GITHUB_OAUTH_CLIENT_SECRET)
+  # (GITHUB_OAUTH_CLIENT_SECRET). Required while `github` is in
+  # config.authProviders and create=true. Secret key: oauth-client-secret.
   oauthClientSecret: ""
+  # -- Okta client secret (OKTA_CLIENT_SECRET). Required while `okta` is
+  # in config.authProviders and create=true. Secret key:
+  # okta-client-secret.
+  oktaClientSecret: ""
+  # -- Keycloak client secret (KEYCLOAK_CLIENT_SECRET). Required while
+  # `keycloak` is in config.authProviders and create=true. Secret key:
+  # keycloak-client-secret.
+  keycloakClientSecret: ""
 
 # -- Persistent state store (Postgres). See DESIGN-0012 §Backend modes.
 store:

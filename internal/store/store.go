@@ -139,6 +139,12 @@ type (
 	// both empty means the file was absent at HEAD. An empty-but-present file
 	// arrives as IndexMD "" with a non-empty IndexSHA — textOrNull maps the
 	// body to NULL, so presence is keyed off index_sha, not index_md.
+	//
+	// The changelog triple behaves the same way, with one addition:
+	// ChangelogFile carries the path resolved from the .docz.yaml changelog:
+	// block (IMPL-0005). A disabled or absent block leaves all three empty, so
+	// the reconcile nulls all three columns — the changelog is opt-in desired
+	// state, not a sticky cache.
 	RepoInput struct {
 		InstallationID int64
 		Owner          string
@@ -149,6 +155,7 @@ type (
 		LastSyncedSHA  string
 		ChangelogMD    string
 		ChangelogSHA   string
+		ChangelogFile  string
 		IndexMD        string
 		IndexSHA       string
 	}
