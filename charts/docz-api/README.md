@@ -34,7 +34,7 @@ provenance attestations.
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.3.0 \
+  --version 0.3.1 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.3.0 \
+  --version 0.3.1 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -187,7 +187,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.3.0
+  ghcr.io/donaldgifford/charts/docz-api:0.3.1
 ```
 
 ### SLSA provenance
@@ -198,7 +198,7 @@ cosign verify-attestation --type slsaprovenance \
     '^https://github.com/slsa-framework/slsa-github-generator/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.3.0
+  ghcr.io/donaldgifford/charts/docz-api:0.3.1
 ```
 
 ## Values
