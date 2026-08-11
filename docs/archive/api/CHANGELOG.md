@@ -3,18 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.5.1] - 2026-08-11
 
 ### Features
 
-- *(ci)* Replace slsa-github-generator with GitHub build attestations
-
-### Documentation
-
-- *(inv)* INV-0006 cosign v3 vs our SLSA provenance attestations
-- *(inv)* INV-0006 — pinning cannot fix it (F7, F8)
-- *(inv)* INV-0006 — correct the analysis (F9, F10)
-- *(inv)* INV-0006 — reframe OQ-1 as "get everything onto current cosign"
+- *(ci)* Replace slsa-github-generator with GitHub build attestations (INV-0006) ([#16](https://github.com/donaldgifford/docz-api/issues/16))
 
 ### Miscellaneous Tasks
 
