@@ -103,7 +103,7 @@ it.
 
 #### Tasks
 
-- [ ] Extract the repo-relative path rules out of `validateChangelog` into an
+- [x] Extract the repo-relative path rules out of `validateChangelog` into an
       unexported `validateRepoRelativePath(field, value string, allowDir bool)
       error` (Decisions 1 + 2). It returns a **bare** error the caller wraps
       with its own sentinel, so `errors.Is(err, ErrInvalidChangelogFile)`
@@ -113,12 +113,12 @@ it.
       leading `~`, trailing `/`, `..` segment, `.` or empty segment — and
       returns a bare error whose message names `field`. Each caller wraps it
       with its own sentinel.
-- [ ] Rewire `validateChangelog` onto the helper, wrapping with
+- [x] Rewire `validateChangelog` onto the helper, wrapping with
       `ErrInvalidChangelogFile`. **Behavior must not change**, with one
       deliberate exception: the current `.`/empty-segment branch stutters —
       `ErrInvalidChangelogFile` already renders "invalid changelog.file" and
       the message repeats it. Fix the wording as part of the move.
-- [ ] Confirm `hasVolumeName` moves with the helper and keeps its comment about
+- [x] Confirm `hasVolumeName` moves with the helper and keeps its comment about
       not depending on the validating host. That reasoning *is* the function
       and is easy to lose in a move.
 - [ ] Add `APIConfig{Enabled bool, LandingPage string, Exclude []string,
