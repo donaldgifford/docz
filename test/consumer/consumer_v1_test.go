@@ -159,7 +159,7 @@ func TestExternalConsumerCreatesFromEmbeddedTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading created doc: %v", err)
 	}
-	for _, want := range []string{"id: RFC-0001", "# RFC 0001: Consumer Proof", toc.BeginMarker} {
+	for _, want := range []string{"id: RFC-0001", "# RFC-0001: Consumer Proof", toc.BeginMarker} {
 		if !strings.Contains(string(body), want) {
 			t.Errorf("created doc missing %q", want)
 		}

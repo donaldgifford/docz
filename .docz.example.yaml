@@ -1,0 +1,123 @@
+---
+docs_dir: docs
+
+types:
+  rfc:
+    enabled: true
+    dir: rfc
+    template: ""
+    id_prefix: "RFC"
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+    status_field: "status"
+
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: "ADR"
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: "status"
+
+  design:
+    enabled: true
+    dir: design
+    template: ""
+    id_prefix: "DESIGN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Review
+      - Approved
+      - Implemented
+      - Abandoned
+    status_field: "status"
+
+  impl:
+    enabled: true
+    dir: impl
+    template: ""
+    id_prefix: "IMPL"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Paused
+      - Cancelled
+    status_field: "status"
+
+  plan:
+    enabled: false # PLAN ships disabled; set true to use it
+    dir: plan
+    template: ""
+    id_prefix: "PLAN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Cancelled
+    status_field: "status"
+
+  investigation:
+    enabled: true
+    dir: investigation
+    template: ""
+    id_prefix: "INV"
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+    status_field: "status"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: true
+  default: ""
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  exclude:
+    - templates
+    - examples
+
+# PROPOSED — not yet implemented. See DESIGN-0011; ships in docz v1.2.0.
+# docz ignores unknown keys, so this block is inert until then.
+api:
+  enabled: true
+
+  # The repo's landing page on docz-site.
+  # Optional; defaults to <docs_dir>/index.md.
+  landing_page: "docs/index.md"
+
+  # Path prefixes under docs_dir that are never published.
+  # docs_dir/templates/ is always excluded and need not be listed.
+  exclude: []
+
+  # Markdown OUTSIDE docs_dir. Every .md under docs_dir is already consumed:
+  #   docs/index.md            -> <site>/<owner>/<repo>
+  #   docs/impl/README.md      -> <site>/<owner>/<repo>/impl
+  #   docs/impl/0015-foo.md    -> <site>/<owner>/<repo>/impl/IMPL-0015
+  #   docs/examples/README.md  -> <site>/<owner>/<repo>/examples
+  # so only repo-root files need listing here:
+  additional_docs:
+    - "CONTRIBUTING.md"
+    - "DEVELOPMENT.md"

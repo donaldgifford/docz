@@ -42,4 +42,5 @@ docz create design "Your Design Title"
 | DESIGN-0008 | docz-api: cross-repo docz registry and ingestion service | Approved | 2026-06-23 | Donald Gifford | [0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md](0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md) |
 | DESIGN-0009 | docz-site: cross-repo docz viewer and search UI | Draft | 2026-06-23 | Donald Gifford | [0009-docz-site-cross-repo-docz-viewer-and-search-ui.md](0009-docz-site-cross-repo-docz-viewer-and-search-ui.md) |
 | DESIGN-0010 | Changelog config block and ParseChangelog | Implemented | 2026-08-02 | Donald Gifford | [0010-changelog-config-block-and-parsechangelog.md](0010-changelog-config-block-and-parsechangelog.md) |
+| DESIGN-0011 | api config block: index page and additional_docs for docz-api and docz-site | Draft | 2026-08-10 | Donald Gifford | [0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md](0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md) |
 <!-- END DOCZ AUTO-GENERATED -->
