@@ -3,27 +3,15 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.2.0] - 2026-08-11
 
 ### Features
 
-- *(api)* Re-vendor docz-api spec 1.2.0 with getRepoChangelog
-- *(mocks)* Changelog fixtures for the demo org
-- *(changelog)* Repo changelog route with home-pattern states
-- *(changelog)* RepoNav row under Home, snapshot-gated with prefetch
-
-### Bug Fixes
-
-- *(changelog)* Backtick raw tag tokens in commit subjects
+- *(changelog)* Repo changelog page (IMPL-0003 Phase 1) ([#13](`https://github.com/donaldgifford/docz-site`/issues/13))
 
 ### Documentation
 
 - INV-0002–0005, DESIGN-0002, and IMPL-0003 ([#12](`https://github.com/donaldgifford/docz-site`/issues/12))
-- *(impl)* Check off IMPL-0003 Phase 1; CLAUDE.md changelog guidance
-
-### Testing
-
-- *(changelog)* Page states, row gating, prefetch, axe sweep
 
 ## [0.1.2] - 2026-07-23
 
