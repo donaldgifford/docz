@@ -139,7 +139,7 @@ it.
       with `DefaultConfig()` and parses it back, so a new default field with no
       template line fails immediately — this is part of adding the field, as
       IMPL-0015 Phase 1 discovered.
-- [ ] Add `normalizeAPI(cfg *Config)` and call it in `Load` immediately after
+- [x] Add `normalizeAPI(cfg *Config)` and call it in `Load` immediately after
       `normalizeChangelog` at **both** call sites (`config.go:216` and `:659`).
       It strips repeated leading `./` from `LandingPage` and every `Exclude` /
       `AdditionalDocs` entry, and backfills `LandingPage` to

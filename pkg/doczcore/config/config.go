@@ -281,6 +281,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 	applyTypesReplaceOnPresence(&cfg, repoConfigPath)
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
+	normalizeAPI(&cfg)
 
 	return cfg, nil
 }
@@ -298,15 +299,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 // explicit `file: ""` needs backfilling. Load normalizes; Validate only
 // judges.
 func normalizeChangelog(cfg *Config) {
-	file := strings.TrimSpace(cfg.Changelog.File)
-
-	// Strip repeated "./" prefixes ("././CHANGELOG.md") — filepath.Clean
-	// would also rewrite separators and resolve "..", which Validate must
-	// still be able to see and reject.
-	for strings.HasPrefix(file, "./") {
-		file = file[len("./"):]
-	}
-
+	file := normalizeRepoPath(cfg.Changelog.File)
 	if file == "" {
 		file = DefaultChangelogFile
 	}
@@ -680,6 +673,7 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 	applyTypesReplaceOnPresence(&cfg, path)
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
+	normalizeAPI(&cfg)
 
 	return cfg, nil
 }

@@ -22,6 +22,28 @@ import (
 	"unicode"
 )
 
+// normalizeRepoPath settles the spellings of a repo-relative path that
+// mean the same file, so two configs that differ only cosmetically produce
+// the same value: surrounding whitespace goes, and every leading "./" is
+// stripped ("././docs/x.md" → "docs/x.md").
+//
+// It deliberately stops there. path.Clean would also resolve the ".." that
+// validateRepoRelativePath must still be able to see and reject, turning a
+// traversal attempt into a path that validates clean. Normalizing is not
+// sanitizing: every value that passes through here is still judged.
+//
+// An empty result is left empty. Whether that is a mistake or a cue to
+// backfill a default belongs to the caller, which is the only one that
+// knows what the default is.
+func normalizeRepoPath(value string) string {
+	value = strings.TrimSpace(value)
+	for strings.HasPrefix(value, "./") {
+		value = value[len("./"):]
+	}
+
+	return value
+}
+
 // validateRepoRelativeFile checks a value that names a file, so a trailing
 // "/" is a mistake. See validateRepoRelativePath for the rules.
 func validateRepoRelativeFile(field, value string) error {
