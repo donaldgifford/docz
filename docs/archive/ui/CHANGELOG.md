@@ -3,24 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.4.0] - 2026-08-11
 
 ### Features
 
-- *(server)* ResolveNavLinks runtime pins into __DOCZ_CONFIG__.nav
-- *(lib)* NavLinks runtime read with build-time fallback
-- *(shell)* Render deployment nav pins in the topbar
-- *(chart)* Config.navLinks rendered into DOCZ_NAV_LINKS
-- *(theme)* Curate the docs type (DESIGN-0002 OQ-6b)
-
-### Documentation
-
-- Record nav-pin guidance; IMPL-0003 Completed, DESIGN-0002 Implemented
-
-### Testing
-
-- *(server)* Parse/cap/drop and no-breakout cases for nav links
-- *(e2e)* Nav pin journey against the baked VITE_NAV_LINKS
+- *(shell)* Deployment nav pins and docs-type curation (IMPL-0003 Phase 3) ([#15](https://github.com/donaldgifford/docz-site/issues/15))
 
 ## [0.3.0] - 2026-08-11
 
