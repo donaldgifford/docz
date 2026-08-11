@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Documentation
+
+- *(inv)* Add INV-0002 evaluating Effect migration and consolidation
+- *(inv)* Add INV-0003 on curated nav tabs and team docs
+- *(inv)* Add INV-0004 on resolving relative doc links
+- *(inv)* Add INV-0005 on rendering the repo changelog
+- *(inv)* Conclude INV-0005 with all open questions resolved to (a)
+- *(design)* Add DESIGN-0002 consolidating INV-0003/0004/0005
+- *(design)* Approve DESIGN-0002 and scaffold IMPL-0003
+- *(impl)* Add open questions to IMPL-0003 for review
+- *(impl)* Record IMPL-0003 decisions (1a 2a 3a 4b)
+
 ## [0.1.2] - 2026-07-23
 
 ### Features
