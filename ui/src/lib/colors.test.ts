@@ -15,6 +15,7 @@ describe("typeColor", () => {
     ["principle", "var(--color-t-principle)"],
     ["policy", "var(--color-t-policy)"],
     ["framework", "var(--color-t-framework)"],
+    ["docs", "var(--color-t-docs)"],
   ])("maps curated type %s", (type, expected) => {
     expect(typeColor(type)).toBe(expected);
   });

@@ -170,6 +170,20 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   is a disclosure (not `role="menu"`), and logout runs `onSettled` —
   navigate to `/login` BEFORE `queryClient.clear()`, or the page being
   left refetches everything under the dead session.
+- Nav pins (DESIGN-0002): `DOCZ_NAV_LINKS` (JSON `[{label, href}]`)
+  resolves in `server/serve.ts` — label `/^[\w .&+-]{1,24}$/`, hrefs
+  same-origin app paths in printable ASCII with NO HTML-significant
+  chars (stricter than authReturn: a href must never terminate the
+  inline `<script>`, which also escapes `</`), cap 6, invalid entries
+  dropped — into `__DOCZ_CONFIG__.nav`. `src/lib/navLinks.ts`
+  re-validates (both-ends rule); an injected array is authoritative
+  even when it validates empty, then `VITE_NAV_LINKS`, then no pins.
+  AppShell renders pins between Repos and SessionMenu (one nav row =
+  small-viewport parity). `build:msw` bakes an RFCs pin so e2e and
+  dev-msw exercise the surface; the deployable build stays pin-free.
+  Chart value `config.navLinks` (toJson; env omitted when empty).
+  `docs` is a curated type: `--color-t-docs` (contrast-checked) +
+  CURATED_TYPES + blurb — type colors are never runtime-configurable.
 - Reader lives in `src/routes/doc.tsx` + `src/components/doc-rail.tsx`
   + `src/components/query-states.tsx` (shared 401/404/error panels).
   Since IMPL-0002 Phase 5 the right rail is ToC-ONLY: metadata is a

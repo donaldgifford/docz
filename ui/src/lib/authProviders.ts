@@ -47,7 +47,8 @@ export function parseProviders(raw: string | undefined): AuthProvider[] {
  */
 declare global {
   interface Window {
-    __DOCZ_CONFIG__?: { authProviders?: string[] };
+    // nav is deliberately unknown: navLinks.ts re-validates the shape.
+    __DOCZ_CONFIG__?: { authProviders?: string[]; nav?: unknown };
   }
 }
 

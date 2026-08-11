@@ -5,6 +5,7 @@ import { useGetSession } from "@/api/__generated__/docz-api";
 import { CommandPalette } from "@/components/command-palette";
 import { SessionMenu } from "@/components/session-menu";
 import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
+import { enabledNavLinks } from "@/lib/navLinks";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
@@ -41,6 +42,10 @@ function RestoreAfterLogin() {
 
 export function AppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Deployment-chosen pins (DESIGN-0002 Component 1) — validated by
+  // navLinks.ts, so every href is a same-origin app path. Read per
+  // render (cheap, ≤6 entries) so tests can vary the injected config.
+  const pins = enabledNavLinks();
   return (
     <>
       <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-[rgba(12,16,23,0.88)] px-5 backdrop-blur-[10px]">
@@ -96,6 +101,15 @@ export function AppShell() {
           <NavLink to="/repos" className={navLinkClass}>
             Repos
           </NavLink>
+          {pins.map((pin) => (
+            <NavLink
+              key={`${pin.label}|${pin.href}`}
+              to={pin.href}
+              className={navLinkClass}
+            >
+              {pin.label}
+            </NavLink>
+          ))}
           <SessionMenu />
         </nav>
       </header>

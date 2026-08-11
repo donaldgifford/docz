@@ -109,6 +109,13 @@ config:
   # AUTH_PROVIDERS. Empty/unknown → github. The GitHub App ingest
   # ("machine identity") is docz-api's and is independent of this.
   authProviders: "github"
+  # -- Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}`
+  # links rendered between Repos and the session menu. Injected into
+  # the SPA at runtime as JSON, whitelist-validated by the server
+  # (short label charset, same-origin app-path hrefs, cap 6); invalid
+  # entries degrade to fewer/no pins, never a broken page. Empty →
+  # no pins and the env var is omitted.
+  navLinks: []
 
 # -- Horizontal Pod Autoscaler. Off by default.
 autoscaling:

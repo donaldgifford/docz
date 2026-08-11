@@ -1,7 +1,7 @@
 ---
 id: IMPL-0003
 title: "Nav pins, changelog page, and doc link resolution"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-08-11
 ---
@@ -9,7 +9,7 @@ created: 2026-08-11
 
 # IMPL 0003: Nav pins, changelog page, and doc link resolution
 
-**Status:** In Progress
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-08-11
 
@@ -172,29 +172,29 @@ fallback) and the OQ-6b pre-styling.
 
 #### Tasks
 
-- [ ] `server/serve.ts`: `resolveNavLinks` — parse the JSON array,
+- [x] `server/serve.ts`: `resolveNavLinks` — parse the JSON array,
       validate label (`/^[\w .&+-]{1,24}$/`) and href (authReturn
       rule: leading `/`, not `//`, no whitespace/control, ≤ 200),
       cap at 6, drop invalid entries/payloads; inject as
       `__DOCZ_CONFIG__.nav`
-- [ ] `server/serve.test.ts`: parse/cap/drop cases + no-breakout
+- [x] `server/serve.test.ts`: parse/cap/drop cases + no-breakout
       assertions for hostile `DOCZ_NAV_LINKS`
-- [ ] `src/lib/navLinks.ts`: runtime read with the same validation,
+- [x] `src/lib/navLinks.ts`: runtime read with the same validation,
       `VITE_NAV_LINKS` fallback, else `[]`; unit tests for
       precedence and hostile input
-- [ ] AppShell: pins as `NavLink`s between Repos and `SessionMenu`;
+- [x] AppShell: pins as `NavLink`s between Repos and `SessionMenu`;
       small-viewport parity; AppShell axe sweep still green
-- [ ] e2e: pins render + navigate in the MSW build via
+- [x] e2e: pins render + navigate in the MSW build via
       `VITE_NAV_LINKS` (2a)
-- [ ] Helm chart: `config.navLinks` (list of `{label, href}`) →
+- [x] Helm chart: `config.navLinks` (list of `{label, href}`) →
       `DOCZ_NAV_LINKS` env via `toJson`; `values.schema.json`;
       helm-unittest default + override; appVersion + chart patch
       bump with image-tag assert (OQ-2a); README.md.gotmpl +
       helm-docs
-- [ ] `docs` type curation (6b): `CURATED_TYPES` entry,
+- [x] `docs` type curation (6b): `CURATED_TYPES` entry,
       `--color-t-docs` token passing `contrast.test.ts`, blurb in
       `docTypes.ts`
-- [ ] Update CLAUDE.md + root README (nav pins, env, chart value);
+- [x] Update CLAUDE.md + root README (nav pins, env, chart value);
       check off this phase; mark this IMPL Completed and DESIGN-0002
       Implemented
 

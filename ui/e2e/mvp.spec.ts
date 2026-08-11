@@ -129,3 +129,17 @@ test("login loop restores the stashed destination", async ({ page }) => {
     page.getByRole("button", { name: "Account: donaldgifford" }),
   ).toBeVisible();
 });
+
+test("nav pins render from the baked config and navigate", async ({ page }) => {
+  // The MSW build bakes VITE_NAV_LINKS (DESIGN-0002 OQ-2a) — the same
+  // list a deployment would inject at runtime via DOCZ_NAV_LINKS.
+  await page.goto("/repos");
+  const pin = page.getByRole("link", { name: "RFCs" });
+  await expect(pin).toBeVisible();
+
+  await pin.click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "RFCs" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/donaldgifford\/docz-api\/rfc$/);
+});

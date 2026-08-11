@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0002
 title: "Nav pins, changelog page, and doc link resolution"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-08-10
 ---
@@ -9,7 +9,7 @@ created: 2026-08-10
 
 # DESIGN 0002: Nav pins, changelog page, and doc link resolution
 
-**Status:** Approved
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-08-10
 

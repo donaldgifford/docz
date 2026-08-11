@@ -58,6 +58,15 @@ App ingest, which is independent of the login provider. On a 401 the app
 stashes the intended destination, sends you to `/login`, and restores
 the deep link after the OAuth callback lands.
 
+## Nav pins
+
+`DOCZ_NAV_LINKS` pins up to six deployment-chosen links into the topbar
+(the Helm chart's `config.navLinks`): a JSON array of `{label, href}`,
+whitelist-validated on both ends — short label charset, same-origin
+app-path hrefs — so invalid entries degrade to fewer or no pins, never
+a broken page. Runtime config wins; the build-time `VITE_NAV_LINKS`
+(same JSON) is the dev/e2e fallback; unset means no pins.
+
 ## Test
 
 ```sh

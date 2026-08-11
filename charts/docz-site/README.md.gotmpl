@@ -74,6 +74,24 @@ config:
   authProviders: "keycloak,github" # Keycloak login; GitHub App ingest is docz-api's
 ```
 
+### Nav pins
+
+`config.navLinks` pins up to six deployment-chosen links into the site
+topbar (between Repos and the session menu). The list renders into
+`DOCZ_NAV_LINKS` as JSON and the server whitelist-validates every entry
+(short label charset, same-origin app-path hrefs); invalid entries
+degrade to fewer or no pins — never a broken page. Leave it empty for a
+pin-free topbar.
+
+```yaml
+config:
+  navLinks:
+    - label: "RFCs"
+      href: "/donaldgifford/rfcs"
+    - label: "Team Docs"
+      href: "/donaldgifford/docs/docs"
+```
+
 ## Exposure
 
 The site is a `ClusterIP` Service by default. Front it with one of:

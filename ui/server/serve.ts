@@ -47,9 +47,91 @@ export function resolveAuthProviders(raw: string | undefined): string[] {
   return keys.length > 0 ? keys : ["github"];
 }
 
+// Runtime nav pins (DESIGN-0002 Component 1): DOCZ_NAV_LINKS is a JSON
+// array of {label, href}, chosen per-deployment like the auth
+// providers. Validation here is what stands between env text and the
+// inline <script>, so it's a whitelist: tight label charset, app-path
+// hrefs in printable ASCII with no HTML-significant characters, hard
+// cap. Invalid entries (or an invalid payload) drop silently — bad
+// config degrades to fewer pins, never a broken page.
+export interface NavLink {
+  label: string;
+  href: string;
+}
+
+const NAV_LINK_CAP = 6;
+const NAV_LABEL = /^[\w .&+-]{1,24}$/;
+const NAV_HREF_MAX = 200;
+
+/**
+ * Same-origin app paths only — the authReturn.ts stash rule (leading
+ * "/", never "//") plus: printable ASCII, no whitespace/control, none
+ * of <>"'`\ — so a href can never terminate the inline script or
+ * smuggle markup.
+ */
+function isValidNavHref(href: string): boolean {
+  if (
+    href.length > NAV_HREF_MAX ||
+    !href.startsWith("/") ||
+    href.startsWith("//")
+  ) {
+    return false;
+  }
+  for (const char of href) {
+    const code = char.codePointAt(0) ?? 0;
+    if (code <= 0x20 || code >= 0x7f || "<>\"'`\\".includes(char)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Parse + validate DOCZ_NAV_LINKS; anything invalid → fewer/no pins. */
+export function resolveNavLinks(raw: string | undefined): NavLink[] {
+  if (raw === undefined || raw.trim() === "") {
+    return [];
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  const links: NavLink[] = [];
+  for (const entry of parsed) {
+    if (links.length === NAV_LINK_CAP) {
+      break;
+    }
+    if (typeof entry !== "object" || entry === null) {
+      continue;
+    }
+    const { label, href } = entry as Record<string, unknown>;
+    if (typeof label !== "string" || typeof href !== "string") {
+      continue;
+    }
+    if (!NAV_LABEL.test(label) || !isValidNavHref(href)) {
+      continue;
+    }
+    links.push({ label, href });
+  }
+  return links;
+}
+
 /** The inline <script> that publishes the runtime config to the SPA. */
-export function runtimeConfigScript(providers: string[]): string {
-  const json = JSON.stringify({ authProviders: providers });
+export function runtimeConfigScript(
+  providers: string[],
+  nav: NavLink[],
+): string {
+  // Validation already forbids "</" anywhere, but escape it anyway
+  // (JSON-legal) so the script can't be terminated even if a rule
+  // ever loosens.
+  const json = JSON.stringify({ authProviders: providers, nav }).replaceAll(
+    "</",
+    "<\\/",
+  );
   return `<script>window.__DOCZ_CONFIG__=${json};</script>`;
 }
 
@@ -72,7 +154,8 @@ export function injectRuntimeConfig(html: string, script: string): string {
 }
 
 const AUTH_PROVIDERS = resolveAuthProviders(process.env.DOCZ_AUTH_PROVIDERS);
-const CONFIG_SCRIPT = runtimeConfigScript(AUTH_PROVIDERS);
+const NAV_LINKS = resolveNavLinks(process.env.DOCZ_NAV_LINKS);
+const CONFIG_SCRIPT = runtimeConfigScript(AUTH_PROVIDERS, NAV_LINKS);
 
 // Text-ish assets get a build-time .gz sibling (see Dockerfile); fonts
 // and images are already compressed.

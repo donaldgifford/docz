@@ -28,7 +28,7 @@ The chart is published as an OCI artifact to GHCR:
 ```bash
 helm install docz-site \
   oci://ghcr.io/donaldgifford/charts/docz-site \
-  --version 0.1.4 \
+  --version 0.1.5 \
   --namespace docz-site \
   --create-namespace \
   --set config.doczApiUrl=http://docz-api:8080
@@ -74,6 +74,24 @@ config:
   authProviders: "keycloak,github" # Keycloak login; GitHub App ingest is docz-api's
 ```
 
+### Nav pins
+
+`config.navLinks` pins up to six deployment-chosen links into the site
+topbar (between Repos and the session menu). The list renders into
+`DOCZ_NAV_LINKS` as JSON and the server whitelist-validates every entry
+(short label charset, same-origin app-path hrefs); invalid entries
+degrade to fewer or no pins — never a broken page. Leave it empty for a
+pin-free topbar.
+
+```yaml
+config:
+  navLinks:
+    - label: "RFCs"
+      href: "/donaldgifford/rfcs"
+    - label: "Team Docs"
+      href: "/donaldgifford/docs/docs"
+```
+
 ## Exposure
 
 The site is a `ClusterIP` Service by default. Front it with one of:
@@ -101,9 +119,10 @@ memory metric). The SPA server is stateless, so horizontal scaling is safe.
 | autoscaling.minReplicas | int | `1` | Minimum replicas |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target average CPU utilization (percent) |
 | autoscaling.targetMemoryUtilizationPercentage | int | `0` | Target average memory utilization (percent). Unset → no memory metric. |
-| config | object | `{"authProviders":"github","doczApiUrl":"","port":8080}` | docz-site runtime configuration. The site is a static SPA served by a small Bun process that also reverse-proxies the API surface, so the browser and API share one origin (no CORS, first-party session cookie). |
+| config | object | `{"authProviders":"github","doczApiUrl":"","navLinks":[],"port":8080}` | docz-site runtime configuration. The site is a static SPA served by a small Bun process that also reverse-proxies the API surface, so the browser and API share one origin (no CORS, first-party session cookie). |
 | config.authProviders | string | `"github"` | Comma-separated login providers to show on /login (DOCZ_AUTH_PROVIDERS): github, okta, keycloak. The server injects this into the SPA at runtime (whitelist-validated), so one image serves any combo — no rebuild. Must match docz-api's own AUTH_PROVIDERS. Empty/unknown → github. The GitHub App ingest ("machine identity") is docz-api's and is independent of this. |
 | config.doczApiUrl | string | `""` | Absolute base URL of the docz-api the site proxies to (DOCZ_API_URL). In-cluster this is the docz-api Service, e.g. http://docz-api:8080. Required — without it the API proxy returns 502. |
+| config.navLinks | list | `[]` | Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}` links rendered between Repos and the session menu. Injected into the SPA at runtime as JSON, whitelist-validated by the server (short label charset, same-origin app-path hrefs, cap 6); invalid entries degrade to fewer/no pins, never a broken page. Empty → no pins and the env var is omitted. |
 | config.port | int | `8080` | Container HTTP listen port (drives the PORT env var and the Service targetPort). The SPA, /healthz, and the API proxy are all served here. |
 | extraEnv | list | `[]` | Additional environment variables |
 | extraVolumeMounts | list | `[]` | Additional volume mounts |

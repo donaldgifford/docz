@@ -43,6 +43,7 @@ const TYPE_BLURBS: Record<string, string> = {
     "Bindings that apply a framework to a scope, with the rationale for why.",
   framework:
     "Control sets, generated from fwsync HCL and mapped to external standards.",
+  docs: "Plain documentation pages — narrative content with no decision lifecycle.",
 };
 
 export function typeBlurb(docType: DocType): string {

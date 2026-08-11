@@ -52,6 +52,10 @@ spec:
               value: {{ required "config.doczApiUrl is required" .Values.config.doczApiUrl | quote }}
             - name: DOCZ_AUTH_PROVIDERS
               value: {{ .Values.config.authProviders | quote }}
+            {{- with .Values.config.navLinks }}
+            - name: DOCZ_NAV_LINKS
+              value: {{ toJson . | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

@@ -83,6 +83,10 @@
   --color-t-policy: #bb9af7;
   --color-t-framework: #73daca;
   --color-t-working: #ff9e64;
+  /* DESIGN-0002 OQ-6b: the plain-documentation type (DOCS-XXXX from
+     INV-0003), pre-curated so its badge never falls into the hash
+     palette. Colors are never runtime-configurable (DESIGN-0001). */
+  --color-t-docs: #c0caf5;
 
   /* Deterministic fallback palette for unknown doc types — indexed by
      the hash in src/lib/colors.ts. Order matters; never reorder. */

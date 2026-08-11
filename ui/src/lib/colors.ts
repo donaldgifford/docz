@@ -18,6 +18,7 @@ const CURATED_TYPES: Readonly<Record<string, string | undefined>> = {
   principle: "principle",
   policy: "policy",
   framework: "framework",
+  docs: "docs",
 };
 
 const HASH_PALETTE_SIZE = 8;

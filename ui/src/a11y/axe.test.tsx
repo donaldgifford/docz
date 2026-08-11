@@ -46,6 +46,19 @@ describe("axe: core views", () => {
     await expectNoAxeViolations();
   });
 
+  it("topbar with nav pins", { timeout: AXE_TIMEOUT }, async () => {
+    window.__DOCZ_CONFIG__ = {
+      nav: [{ label: "RFCs", href: "/donaldgifford/docz-api/rfc" }],
+    };
+    try {
+      mountAt("/repos");
+      await screen.findByRole("link", { name: "RFCs" }, { timeout: 10_000 });
+      await expectNoAxeViolations();
+    } finally {
+      delete window.__DOCZ_CONFIG__;
+    }
+  });
+
   it("repo home with an index.md", { timeout: AXE_TIMEOUT }, async () => {
     mountAt("/donaldgifford/docz-api");
     await screen.findByRole(

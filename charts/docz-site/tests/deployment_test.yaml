@@ -32,7 +32,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-site:0.3.0"
+          value: "ghcr.io/donaldgifford/docz-site:0.4.0"
 
   - it: should use custom image tag when set
     set:
@@ -95,6 +95,29 @@ tests:
           content:
             name: DOCZ_AUTH_PROVIDERS
             value: "keycloak,github"
+
+  - it: should omit DOCZ_NAV_LINKS by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_NAV_LINKS
+          any: true
+
+  - it: should render config.navLinks into DOCZ_NAV_LINKS as JSON
+    set:
+      config:
+        navLinks:
+          - label: "RFCs"
+            href: "/donaldgifford/rfcs"
+          - label: "Team Docs"
+            href: "/donaldgifford/docs/docs"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_NAV_LINKS
+            value: '[{"href":"/donaldgifford/rfcs","label":"RFCs"},{"href":"/donaldgifford/docs/docs","label":"Team Docs"}]'
 
   - it: should fail render when doczApiUrl is unset
     set:

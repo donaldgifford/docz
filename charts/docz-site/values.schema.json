@@ -11,7 +11,19 @@
       "properties": {
         "port": { "type": "integer" },
         "doczApiUrl": { "type": "string" },
-        "authProviders": { "type": "string" }
+        "authProviders": { "type": "string" },
+        "navLinks": {
+          "description": "Topbar nav pins rendered into DOCZ_NAV_LINKS as JSON.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "href"],
+            "properties": {
+              "label": { "type": "string" },
+              "href": { "type": "string" }
+            }
+          }
+        }
       }
     },
     "service": {
