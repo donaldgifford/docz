@@ -5,16 +5,17 @@ status: Proposed
 author: Test Author
 created: 2026-02-22
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# 0001. Test Document
+# ADR-0001: Test Document
 
 <!--toc:start-->
 <!--toc:end-->
 
-## Status
+## Summary
 
-Proposed
+<!-- Brief 2-3 sentence summary of the proposal -->
 
 ## Context
 
@@ -23,6 +24,10 @@ Proposed
 ## Decision
 
 <!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
 
 ## Consequences
 

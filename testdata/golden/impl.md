@@ -5,13 +5,10 @@ status: Draft
 author: Test Author
 created: 2026-02-22
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# IMPL 0001: Test Document
-
-**Status:** Draft
-**Author:** Test Author
-**Date:** 2026-02-22
+# IMPL-0001: Test Document
 
 <!--toc:start-->
 <!--toc:end-->
@@ -98,7 +95,7 @@ are checked off and its success criteria are met.
 <!-- Key files that will be created or modified -->
 
 | File | Action | Description |
-|------|--------|-------------|
+| ---- | ------ | ----------- |
 |      | Create |             |
 |      | Modify |             |
 

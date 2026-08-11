@@ -125,6 +125,10 @@ type Config struct {
 // DefaultConfig returns the built-in default configuration. The per-type
 // metadata (Types and Wiki.NavTitles) is sourced from the DocType
 // registry in doctype.go so adding a new doc type is a single-file edit.
+//
+// Every built-in type is present in Types, but not every one is enabled:
+// "plan" ships with Enabled false. Callers that want the effective set
+// should use Config.EnabledTypes rather than ranging over Types.
 func DefaultConfig() Config {
 	return Config{
 		DocsDir: "docs",
@@ -332,6 +336,9 @@ func (c *Config) resolveType(name string) (string, bool) {
 // types get a stable sort, since Go map iteration is unordered (IMPL-0012
 // Phase 4, Decision 1). Including custom types here is what lets no-argument
 // commands (docz update / init / list / wiki) scaffold and iterate them.
+//
+// Note this is narrower than DocTypeNames: a built-in may ship disabled
+// ("plan" does), so the default result is a subset of the registry.
 func (c *Config) EnabledTypes() []string {
 	enabled := make([]string, 0, len(c.Types))
 	builtin := make(map[string]bool, len(DocTypeNames()))

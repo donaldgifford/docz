@@ -5,13 +5,10 @@ status: Draft
 author: Test Author
 created: 2026-02-22
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# RFC 0001: Test Document
-
-**Status:** Draft
-**Author:** Test Author
-**Date:** 2026-02-22
+# RFC-0001: Test Document
 
 <!--toc:start-->
 <!--toc:end-->
@@ -22,32 +19,24 @@ created: 2026-02-22
 
 ## Problem Statement
 
-<!-- What problem does this RFC address? Include evidence and impact. -->
+<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
 
 ## Proposed Solution
 
 <!-- High-level description of the proposed approach -->
 
-## Design
-
-<!-- Detailed design including architecture, data flow, APIs, etc. -->
-
 ## Alternatives Considered
 
 <!-- What other approaches were evaluated and why were they rejected? -->
 
-## Implementation Phases
-
-<!-- Break the implementation into phases/milestones -->
-
-### Phase 1: ...
-
-### Phase 2: ...
-
 ## Risks and Mitigations
 
 | Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
+| ---- | ------ | ---------- | ---------- |
 |      |        |            |            |
 
 ## Success Criteria

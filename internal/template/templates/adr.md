@@ -5,16 +5,17 @@ status: {{ .Status }}
 author: {{ .Author }}
 created: {{ .Date }}
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# {{ .Number }}. {{ .Title }}
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
 
 <!--toc:start-->
 <!--toc:end-->
 
-## Status
+## Summary
 
-{{ .Status }}
+<!-- Brief 2-3 sentence summary of the proposal -->
 
 ## Context
 
@@ -23,6 +24,10 @@ created: {{ .Date }}
 ## Decision
 
 <!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
 
 ## Consequences
 

@@ -5,13 +5,10 @@ status: Draft
 author: Test Author
 created: 2026-02-22
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# DESIGN 0001: Test Document
-
-**Status:** Draft
-**Author:** Test Author
-**Date:** 2026-02-22
+# DESIGN-0001: Test Document
 
 <!--toc:start-->
 <!--toc:end-->

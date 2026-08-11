@@ -7,7 +7,7 @@ README index tables up to date.
 
 ## Features
 
-- **Six built-in document types:** RFC, ADR, DESIGN, IMPL, PLAN, INV
+- **Six built-in document types:** RFC, ADR, DESIGN, IMPL, PLAN, INV (PLAN ships disabled — enable it in `.docz.yaml`)
 - **Custom document types:** define your own types in `.docz.yaml` — own prefix, statuses, aliases, and templates — invoked by name, alias, or `id_prefix`
 - **Auto-incremented IDs:** documents are numbered sequentially within their type directory
 - **YAML frontmatter:** every document carries structured metadata (id, title, status, author, created)
@@ -47,11 +47,11 @@ This creates:
 - `docs/adr/README.md`
 - `docs/design/README.md`
 - `docs/impl/README.md`
-- `docs/plan/README.md`
 - `docs/investigation/README.md`
 
 Types with `enabled: false` in `.docz.yaml` are skipped — no directory or
-README is created for them.
+README is created for them. **PLAN is disabled by default**, which is why
+`docs/plan/` is absent above; set `types.plan.enabled: true` to scaffold it.
 
 ### Create your first document
 
@@ -197,6 +197,9 @@ Mid-level planning documents that sit between an RFC (what and why) and an IMPL
 (step-by-step execution). Use a plan to work out the approach and component
 breakdown before writing detailed tasks.
 
+**Disabled by default** — most repos fill this slot with a DESIGN plus an IMPL.
+Set `types.plan.enabled: true` in `.docz.yaml` to turn it on.
+
 ```
 docs/plan/
 └── 0001-telemetry-pipeline-approach.md
@@ -337,7 +340,7 @@ types:
       - Paused
       - Cancelled
   plan:
-    enabled: true
+    enabled: false # PLAN ships disabled; set true to use it
     dir: plan
     id_prefix: PLAN
     id_width: 4
