@@ -111,6 +111,65 @@ type ChangelogConfig struct {
 	File string `yaml:"file"`
 }
 
+// APIConfig declares what docz-api ingests and docz-site renders for
+// this repo beyond the docz documents under the type directories
+// (DESIGN-0011).
+//
+// The block is inert to the docz CLI: no command reads it. It exists to
+// be a validated, semver-governed declaration that consumers read, which
+// is why the paths here are checked as strictly as changelog.file — a
+// consumer fetches them straight out of a git tree.
+//
+// The governing rule the fields encode: the URL path mirrors the
+// docs_dir path. Every .md under docs_dir is consumable, a directory's
+// README.md is that directory's page, and AdditionalDocs is the escape
+// hatch for markdown that convention places outside docs_dir entirely.
+//
+// There is deliberately no nested index struct. Naming a landing page is
+// enabling it, so a separate boolean would be redundant, and a nested
+// api.index would collide with the top-level index: block that governs
+// README table generation (Decision 2).
+type APIConfig struct {
+	// Enabled opts the repo into the api surface. Default false, so the
+	// block is dormant — and its paths left unvalidated — until a repo
+	// turns it on.
+	//
+	// This gates the *additional* surface only. A disabled or absent
+	// block means a consumer ingests exactly what it does today: docz
+	// documents under the type directories. It is not a switch for
+	// ingesting the repo at all (Decision 4), because every existing
+	// repo has no api: block and none of them should go dark.
+	Enabled bool `yaml:"enabled"`
+
+	// LandingPage is the repo's landing page, relative to the repo root.
+	// Empty resolves to <docs_dir>/index.md at load time, so it tracks a
+	// non-default docs_dir (Decision 3). Consumers address it as the repo
+	// root rather than at its own path.
+	LandingPage string `yaml:"landing_page"`
+
+	// Exclude lists path prefixes under docs_dir that are never
+	// published. Entries name directories, so a trailing "/" is
+	// accepted and means the same thing without it.
+	//
+	// <docs_dir>/templates/ is always excluded regardless of this list —
+	// it holds docz's own template overrides, which are machinery rather
+	// than documents. Keeping that implicit is what lets this default to
+	// empty, so a repo that sets Exclude does not silently lose the
+	// protection (the footgun WikiConfig.Exclude has, where setting the
+	// key replaces the default list wholesale).
+	Exclude []string `yaml:"exclude"`
+
+	// AdditionalDocs lists markdown OUTSIDE docs_dir, relative to the
+	// repo root — CONTRIBUTING.md, DEVELOPMENT.md. Anything under
+	// docs_dir is already consumed, so an entry there is a validation
+	// error rather than a second record for one file.
+	//
+	// Bare strings rather than objects (Decision 1): the title comes
+	// from the document's H1 via docparse.Title, and there is no
+	// per-entry metadata worth the schema.
+	AdditionalDocs []string `yaml:"additional_docs"`
+}
+
 // Config is the top-level configuration for docz.
 type Config struct {
 	DocsDir   string                `mapstructure:"docs_dir" yaml:"docs_dir"`
@@ -120,6 +179,7 @@ type Config struct {
 	Wiki      WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
 	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"`
 	Changelog ChangelogConfig       `                        yaml:"changelog"`
+	API       APIConfig             `                        yaml:"api"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -154,6 +214,13 @@ func DefaultConfig() Config {
 		Changelog: ChangelogConfig{
 			Enabled: false,
 			File:    DefaultChangelogFile,
+		},
+		// Dormant, and deliberately zero-valued beyond that: LandingPage
+		// is backfilled at load time so it can follow a non-default
+		// docs_dir, and both slices stay nil so an empty list in a
+		// config is distinguishable from an absent key.
+		API: APIConfig{
+			Enabled: false,
 		},
 	}
 }
@@ -446,11 +513,8 @@ var ErrInvalidChangelogFile = errors.New("invalid changelog.file")
 // validateChangelog rejects a changelog file path that consumers could
 // not safely fetch out of a git tree (DESIGN-0010 Decision 5). The rules
 // live in validateRepoRelativePath, shared with the api block so there is
-// one hardening history rather than two that drift.
-//
-// field is "" because ErrInvalidChangelogFile already names the key: the
-// rendered chain reads `invalid changelog.file: "…" must not traverse
-// outside the repo root`.
+// one hardening history rather than two that drift; see
+// ErrInvalidChangelogFile for the shape of the rendered message.
 //
 // The check runs only for an enabled block (Decision 7). A repo may
 // carry a dormant changelog: block — while rolling the feature out, or
@@ -470,7 +534,9 @@ func (c *Config) validateChangelog() error {
 			ErrInvalidChangelogFile)
 	}
 
-	if err := validateRepoRelativePath("", c.Changelog.File, false); err != nil {
+	// field is "" because ErrInvalidChangelogFile already names the key;
+	// passing it would make the rendered chain stutter.
+	if err := validateRepoRelativeFile("", c.Changelog.File); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidChangelogFile, err)
 	}
 

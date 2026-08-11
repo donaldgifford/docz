@@ -98,13 +98,42 @@ func TestValidateRepoRelativePath(t *testing.T) {
 			allowDir: true,
 			wantErr:  "must be relative",
 		},
+
+		// Win32 strips trailing spaces from each path component, so a
+		// segment ending in a space is traversal the ".." check cannot
+		// see: ".. " resolves as "..". Found by security review; the old
+		// inline validateChangelog rules had the same hole.
+		{name: "space padded dotdot", value: ".. /x.md", wantErr: "ending in a space"},
+		{name: "space padded dot", value: "a/. /b.md", wantErr: "ending in a space"},
+		{
+			name:     "space padded dotdot as dir",
+			value:    ".. /",
+			allowDir: true,
+			wantErr:  "ending in a space",
+		},
+		{name: "space padded name", value: "docs /x.md", wantErr: "ending in a space"},
+		{name: "trailing space on file", value: "x.md ", wantErr: "ending in a space"},
+		// A space inside a component is an ordinary filename.
+		{name: "interior space", value: "docs/release notes.md"},
+
+		// Zero-width and bidi-override runes render as one path and
+		// address another; C1 is unreachable in a real filename.
+		{name: "rtl override", value: "\u202e../etc/passwd", wantErr: "control characters"},
+		{name: "zero width space", value: "docs/\u200bx.md", wantErr: "control characters"},
+		{name: "bom", value: "\ufeffx.md", wantErr: "control characters"},
+		{name: "c1 control", value: "x\u0085.md", wantErr: "control characters"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateRepoRelativePath("", tt.value, tt.allowDir)
+			var err error
+			if tt.allowDir {
+				err = validateRepoRelativeDir("", tt.value)
+			} else {
+				err = validateRepoRelativeFile("", tt.value)
+			}
 			switch {
 			case tt.wantErr == "" && err != nil:
 				t.Errorf("validateRepoRelativePath(%q, allowDir=%t) = %v, want nil",

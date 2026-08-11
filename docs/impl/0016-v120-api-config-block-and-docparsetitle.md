@@ -121,15 +121,15 @@ it.
 - [x] Confirm `hasVolumeName` moves with the helper and keeps its comment about
       not depending on the validating host. That reasoning *is* the function
       and is easy to lose in a move.
-- [ ] Add `APIConfig{Enabled bool, LandingPage string, Exclude []string,
+- [x] Add `APIConfig{Enabled bool, LandingPage string, Exclude []string,
       AdditionalDocs []string}` with yaml tags only (`enabled`,
       `landing_page`, `exclude`, `additional_docs`), and `Config.API` with yaml
       tag `api`. No `mapstructure` tags — vestigial post-viper, per
       IMPL-0015's `ChangelogConfig` precedent.
-- [ ] Add the `DefaultConfig()` entry: `{Enabled: false, LandingPage: "",
+- [x] Add the `DefaultConfig()` entry: `{Enabled: false, LandingPage: "",
       Exclude: nil, AdditionalDocs: nil}`. Dormant, and `DefaultConfig()` stays
       the sole source of defaults.
-- [ ] Add the `api:` block to `internal/template/templates/docz_yaml.tmpl`,
+- [x] Add the `api:` block to `internal/template/templates/docz_yaml.tmpl`,
       rendered from `DefaultConfig()` beside the `changelog:` block, with
       comments covering what it does **and** the blast-radius caution
       (enabling publishes every `.md` under `docs_dir`). Empty `exclude` /

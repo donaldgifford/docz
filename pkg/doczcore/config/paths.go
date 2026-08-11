@@ -15,12 +15,45 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
+	"unicode"
 )
+
+// validateRepoRelativeFile checks a value that names a file, so a trailing
+// "/" is a mistake. See validateRepoRelativePath for the rules.
+func validateRepoRelativeFile(field, value string) error {
+	return validateRepoRelativePath(field, value, false)
+}
+
+// validateRepoRelativeDir checks a value that names a directory prefix, so
+// a single trailing "/" is accepted and means the same thing without it.
+// See validateRepoRelativePath for the rules.
+func validateRepoRelativeDir(field, value string) error {
+	return validateRepoRelativePath(field, value, true)
+}
+
+// forbiddenPathRune reports whether r must never appear in a
+// repo-relative path.
+//
+// Beyond C0 and DEL, this covers C1 (0x80–0x9f) and the Unicode format
+// category, which is where the zero-width and bidirectional-override
+// characters live. None of them can be typed into a real filename on
+// purpose, and U+202E in particular reorders how the rest of a path
+// renders — a path that displays as one thing in docz-site's UI while
+// addressing another.
+func forbiddenPathRune(r rune) bool {
+	switch {
+	case r < 0x20, r == 0x7f:
+		return true
+	case r >= 0x80 && r <= 0x9f:
+		return true
+	default:
+		return unicode.Is(unicode.Cf, r)
+	}
+}
 
 // validateRepoRelativePath applies docz's rules for a path that a consumer
 // fetches out of a git tree: it must be relative to the repo root and
@@ -42,38 +75,57 @@ import (
 //
 // allowDir keeps a trailing "/" legal. Pass true for a value that names a
 // directory prefix rather than a file: api.exclude entries, where
-// "templates" and "templates/" must mean the same thing.
+// "templates" and "templates/" must mean the same thing. Most callers
+// want validateRepoRelativeFile or validateRepoRelativeDir instead, which
+// name the choice at the call site.
+//
+// The value is judged as the raw bytes git stores. It is deliberately not
+// URL-decoded first, so "%2e%2e/x" is an ordinary directory name here and
+// not traversal — a consumer that decodes a config-sourced path before
+// resolving it has voided this check and must re-validate afterwards.
 func validateRepoRelativePath(field, value string, allowDir bool) error {
-	reject := func(format string, args ...any) error {
-		msg := fmt.Sprintf(format, args...)
-		if field == "" {
-			return errors.New(msg)
-		}
-		return fmt.Errorf("%s %s", field, msg)
+	err := checkPathShape(value, allowDir)
+	if err == nil || field == "" {
+		return err
 	}
+	return fmt.Errorf("%s %w", field, err)
+}
 
+// checkPathShape holds the rules that judge the value as a whole. Split
+// from the per-segment rules in checkPathSegments only to keep each
+// function's branch count under the linter's ceiling; read the two as one
+// ordered list, because which rule fires first is what the caller's
+// message says.
+func checkPathShape(value string, allowDir bool) error {
 	switch {
 	case value == "":
-		return reject("must not be empty")
-	case strings.ContainsFunc(value, func(r rune) bool { return r < 0x20 || r == 0x7f }):
-		return reject("%q must not contain control characters", value)
+		return fmt.Errorf("must not be empty")
+	case strings.ContainsFunc(value, forbiddenPathRune):
+		return fmt.Errorf("%q must not contain control characters", value)
 	case strings.ContainsRune(value, '\\'):
 		// Backslash is a path separator on Windows and a legal filename
 		// character elsewhere, so a lone ".." check cannot judge it
 		// portably. Repo-relative paths are slash-separated (that is how
 		// git names them); requiring it keeps the traversal check below
 		// meaningful on every host.
-		return reject("%q must use forward slashes to separate directories", value)
+		return fmt.Errorf("%q must use forward slashes to separate directories", value)
 	case filepath.IsAbs(value), strings.HasPrefix(value, "/"), hasVolumeName(value):
-		return reject("%q must be relative to the repo root", value)
+		return fmt.Errorf("%q must be relative to the repo root", value)
 	case strings.HasPrefix(value, "~"):
 		// Never expanded by docz, and a consumer that hands the path to a
 		// shell would resolve it outside the repo entirely.
-		return reject("%q must not start with %q", value, "~")
+		return fmt.Errorf("%q must not start with %q", value, "~")
 	case !allowDir && strings.HasSuffix(value, "/"):
-		return reject("%q must be a file path, not a directory", value)
+		return fmt.Errorf("%q must be a file path, not a directory", value)
 	}
 
+	return checkPathSegments(value, allowDir)
+}
+
+// checkPathSegments holds the rules that judge the value one "/"-separated
+// component at a time. See checkPathShape for why this is a separate
+// function.
+func checkPathSegments(value string, allowDir bool) error {
 	// Segments are split on "/" rather than handed to path.Clean so the
 	// rejection can name what is wrong. Traversal is its own message
 	// because it is the one a misconfigured repo actually hits.
@@ -88,9 +140,20 @@ func validateRepoRelativePath(field, value string, allowDir bool) error {
 
 	switch {
 	case slices.Contains(segments, ".."):
-		return reject("%q must not traverse outside the repo root", value)
+		return fmt.Errorf("%q must not traverse outside the repo root", value)
 	case slices.Contains(segments, "."), slices.Contains(segments, ""):
-		return reject("%q must be a clean path: no %q or empty segments", value, ".")
+		return fmt.Errorf("%q must be a clean path: no %q or empty segments", value, ".")
+	}
+
+	// Win32 strips trailing spaces from every path component, so ".. "
+	// resolves as ".." on a consumer that uses the Windows API — traversal
+	// the segment checks above cannot see, because the segment is not
+	// literally "..". Checked last so it never changes which rule fires
+	// for a path the other rules already reject.
+	for _, seg := range segments {
+		if strings.TrimRight(seg, " ") != seg {
+			return fmt.Errorf("%q must not have a path component ending in a space", value)
+		}
 	}
 
 	return nil
