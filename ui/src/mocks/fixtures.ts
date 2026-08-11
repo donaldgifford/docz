@@ -18,6 +18,7 @@ import doczSiteImpl0001 from "../../docs/impl/0001-docz-site-mvp-phased-build-of
 import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
 import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
 import doczApiIndex from "./content/docz-api-index.md?raw";
+import doczApiRfc0001 from "./content/docz-api-rfc-0001.md?raw";
 
 import { resolveDocType } from "@/lib/docTypes";
 
@@ -164,6 +165,15 @@ export const DEMO_DOCS: Document[] = [
     path: "docs/design/0002-openapi-contract-for-docz-api-and-the-docz-site.md",
     raw: doczApiDesign0002,
     updatedAt: "2026-07-06T15:30:00Z",
+  }),
+  // A References footer of GitHub-style relative links — the demo
+  // content for relative-link resolution (DESIGN-0002 Component 2).
+  makeDoc({
+    repo: "donaldgifford/docz-api",
+    type: "rfc",
+    path: "docs/rfc/0001-relative-doc-links-resolve-in-rendered-bodies.md",
+    raw: doczApiRfc0001,
+    updatedAt: "2026-08-02T10:00:00Z",
   }),
 ];
 

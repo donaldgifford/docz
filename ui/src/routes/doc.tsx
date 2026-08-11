@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router";
+import { Navigate, useLocation, useParams } from "react-router";
 
-import { useGetDoc } from "@/api/__generated__/docz-api";
+import { useGetDoc, useGetRepo } from "@/api/__generated__/docz-api";
 import { NotFoundError, SessionRequiredError } from "@/api/fetcher";
 import { StatusPill } from "@/components/badges";
 import { DocMetaTable } from "@/components/doc-meta-table";
@@ -39,6 +39,63 @@ function ArticleSkeleton() {
       </div>
     </div>
   );
+}
+
+const MD_FILENAME = /\.md$/i;
+
+/**
+ * Filename-URL repair (DESIGN-0002 Component 2, from INV-0004): a URL
+ * whose `:docId` is a markdown filename — pasted from GitHub, or from
+ * a doc rendered before relative-link resolution existed — redirects
+ * to the canonical route when exactly one doc's `path` basename
+ * matches, fragment preserved. Zero or several matches keep the
+ * honest not-found panel.
+ */
+function FilenameFallback({
+  owner,
+  repo,
+  type,
+  docId,
+}: {
+  owner: string;
+  repo: string;
+  type: string;
+  docId: string;
+}) {
+  const docIndex = useRepoDocIndex(owner, repo);
+  const repoQuery = useGetRepo(owner, repo);
+  const { hash } = useLocation();
+
+  if (docIndex === undefined) {
+    // The index needs getRepo + listDocs; a repo that itself fails can
+    // never produce one, so don't hold the skeleton for it.
+    if (repoQuery.isError) {
+      return <NotFoundPanel />;
+    }
+    const repoId = `${owner}/${repo}`;
+    return (
+      <RepoFrame
+        owner={owner}
+        name={repo}
+        crumbs={[
+          { label: repoId, to: `/${repoId}` },
+          { label: type, to: `/${repoId}/${type}` },
+          { label: docId },
+        ]}
+      >
+        <ArticleSkeleton />
+      </RepoFrame>
+    );
+  }
+
+  const matches = [...docIndex.byPath.entries()].filter(
+    ([path]) => path.split("/").at(-1) === docId,
+  );
+  const only = matches.length === 1 ? matches[0] : undefined;
+  if (only === undefined) {
+    return <NotFoundPanel />;
+  }
+  return <Navigate to={only[1] + hash} replace />;
 }
 
 /** "DESIGN-0009" → ["DESIGN", "0009"]; null when there's no separator. */
@@ -99,16 +156,16 @@ export function Component() {
   // own id is excluded (a self-link reads oddly). Until the index
   // loads, the body renders unlinked and is linkified once, cached.
   const docIndex = useRepoDocIndex(owner, repo);
-  const xrefs = useMemo(() => {
+  const links = useMemo(() => {
     if (docIndex === undefined || doc === undefined) {
       return undefined;
     }
-    const withoutSelf = new Map(docIndex);
+    const withoutSelf = new Map(docIndex.byId);
     withoutSelf.delete(doc.doc_id.toUpperCase());
-    return withoutSelf;
+    return { xrefs: withoutSelf, paths: docIndex.byPath };
   }, [docIndex, doc]);
 
-  const rendered = useRenderedMarkdown(doc, xrefs);
+  const rendered = useRenderedMarkdown(doc, links);
   const [format, setFormat] = useState<DocFormat>("html");
 
   // Successful loads feed the palette's empty-query "recent" group.
@@ -127,6 +184,11 @@ export function Component() {
     return <SessionRequiredRedirect />;
   }
   if (docQuery.error instanceof NotFoundError) {
+    if (MD_FILENAME.test(docId)) {
+      return (
+        <FilenameFallback owner={owner} repo={repo} type={type} docId={docId} />
+      );
+    }
     return <NotFoundPanel />;
   }
   if (docQuery.isError || rendered.isError) {

@@ -3,21 +3,47 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Features
+
+- *(reader)* Widen useRepoDocIndex to byId/byPath doc index
+- *(markdown)* Relative doc-link transform, map-as-whitelist
+- *(markdown)* Thread base path + path map through the pipeline
+- *(reader)* Redirect shared filename URLs to the canonical doc
+
+### Bug Fixes
+
+- *(changelog)* Stop backticking git-cliff's https://github.com/donaldgifford/docz-site placeholder
+
+### Documentation
+
+- Record relative-link resolver guidance, check off Phase 2
+
+### Testing
+
+- *(mocks)* RFC-0001 fixture with a relative References footer
+- *(markdown)* XSS gate covers relative-link resolution
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump appVersion to 0.3.0, chart 0.1.4
+
 ## [0.2.0] - 2026-08-11
 
 ### Features
 
-- *(changelog)* Repo changelog page (IMPL-0003 Phase 1) ([#13](`https://github.com/donaldgifford/docz-site`/issues/13))
+- *(changelog)* Repo changelog page (IMPL-0003 Phase 1) ([#13](https://github.com/donaldgifford/docz-site/issues/13))
 
 ### Documentation
 
-- INV-0002–0005, DESIGN-0002, and IMPL-0003 ([#12](`https://github.com/donaldgifford/docz-site`/issues/12))
+- INV-0002–0005, DESIGN-0002, and IMPL-0003 ([#12](https://github.com/donaldgifford/docz-site/issues/12))
 
 ## [0.1.2] - 2026-07-23
 
 ### Features
 
-- *(auth)* Runtime-configurable login providers via DOCZ_AUTH_PROVIDERS ([#11](`https://github.com/donaldgifford/docz-site`/issues/11))
+- *(auth)* Runtime-configurable login providers via DOCZ_AUTH_PROVIDERS ([#11](https://github.com/donaldgifford/docz-site/issues/11))
 
 ## [0.1.1] - 2026-07-16
 

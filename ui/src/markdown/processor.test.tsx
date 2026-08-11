@@ -1,4 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderMarkdown } from "@/markdown/processor";
@@ -214,5 +215,28 @@ describe("renderMarkdown", () => {
     expect(ref).not.toBeNull();
     const target = ref?.getAttribute("href")?.slice(1) ?? "";
     expect(container.querySelector(`[id="${target}"]`)).not.toBeNull();
+  });
+
+  it("resolves relative doc links through the links option", async () => {
+    // The full shape matrix lives in relative-links.test.ts; this pins
+    // the pipeline threading: markdown in, router Link out.
+    const { content } = await renderMarkdown(
+      "See [ADR-0013](../adr/0013-scoped-test-ids.md#context).",
+      {
+        links: {
+          base: "docs/rfc/RFC-0001-first.md",
+          byPath: new Map([
+            ["docs/adr/0013-scoped-test-ids.md", "/acme/mods/adr/ADR-0013"],
+          ]),
+        },
+      },
+    );
+    const { container } = render(<MemoryRouter>{content}</MemoryRouter>);
+
+    const anchor = container.querySelector("a[data-xref]");
+    expect(anchor?.getAttribute("href")).toBe(
+      "/acme/mods/adr/ADR-0013#context",
+    );
+    expect(anchor?.textContent).toBe("ADR-0013");
   });
 });

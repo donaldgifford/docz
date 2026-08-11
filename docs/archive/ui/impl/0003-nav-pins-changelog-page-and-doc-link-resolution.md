@@ -129,31 +129,31 @@ filename URLs redirect.
 
 #### Tasks
 
-- [ ] Widen `useRepoDocIndex` to return `{ byId, byPath }` from the
+- [x] Widen `useRepoDocIndex` to return `{ byId, byPath }` from the
       already-fetched queries; extend the fnv1a render-cache
       fingerprint over both key sets; update existing call sites
-- [ ] New `src/markdown/relative-links.ts` post-sanitize transform:
+- [x] New `src/markdown/relative-links.ts` post-sanitize transform:
       skip absolute/`//`/root/`#`-only hrefs; posix-resolve against
       the base directory; exact normalized-path lookup (3a); on hit
       rewrite href from the map + `dataXref`, preserving `#fragment`;
       on miss leave the anchor untouched
-- [ ] Thread the `base` parameter through
+- [x] Thread the `base` parameter through
       `renderMarkdown`/`useRenderedSource`: reader = doc `path`,
       repo home = `docs_dir`/index.md, changelog = configured file's
       directory
-- [ ] Doc-route filename fallback: on `NotFoundError` with a
+- [x] Doc-route filename fallback: on `NotFoundError` with a
       `/\.md$/i` `:docId`, redirect (`replace`, hash preserved) when
       exactly one doc's `path` basename matches; ambiguous/none →
       existing panel
-- [ ] Unit fixtures: `../type/file.md`, bare `file.md`,
+- [x] Unit fixtures: `../type/file.md`, bare `file.md`,
       `./file.md`, fragments, misses, traversal (`../../..`),
       percent-encoded traversal; a demo-org fixture doc with a
       relative References footer rendered end-to-end
-- [ ] XSS suite: hostile relative hrefs never resolve to emitted
+- [x] XSS suite: hostile relative hrefs never resolve to emitted
       links; no `schema.ts` changes
-- [ ] Chart bump per OQ-2a: appVersion to the incoming bare semver,
+- [x] Chart bump per OQ-2a: appVersion to the incoming bare semver,
       chart version patch, image-tag unittest assert updated
-- [ ] Update CLAUDE.md (resolver, base-path parameter, fallback) and
+- [x] Update CLAUDE.md (resolver, base-path parameter, fallback) and
       check off this phase
 
 #### Success Criteria

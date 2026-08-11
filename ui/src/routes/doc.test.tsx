@@ -256,6 +256,105 @@ describe("portal sibling navigation", () => {
   });
 });
 
+describe("relative link resolution in the reader", () => {
+  it("resolves the RFC-0001 References footer end-to-end", async () => {
+    mountAt("/donaldgifford/docz-api/rfc/RFC-0001");
+    await screen.findByRole(
+      "heading",
+      { level: 1, name: /Relative doc links resolve/ },
+      { timeout: 10_000 },
+    );
+
+    // ../design/….md#goals → the sibling design doc's canonical route,
+    // fragment kept, upgraded to a router link (linkified pass lands
+    // once the repo doc index resolves).
+    const resolved = await screen.findByRole(
+      "link",
+      { name: "docz-api registry design" },
+      { timeout: 10_000 },
+    );
+    await waitFor(() => {
+      expect(resolved).toHaveAttribute(
+        "href",
+        "/donaldgifford/docz-api/design/DESIGN-0001#goals",
+      );
+    });
+    expect(resolved).toHaveAttribute("data-xref");
+    expect(
+      screen.getByRole("link", { name: "OpenAPI contract design" }),
+    ).toHaveAttribute("href", "/donaldgifford/docz-api/design/DESIGN-0002");
+
+    // A file docz never ingested and an absolute URL stay as written.
+    expect(
+      screen.getByRole("link", { name: "an ADR docz-api never ingested" }),
+    ).toHaveAttribute("href", "../adr/0001-not-ingested.md");
+    expect(
+      screen.getByRole("link", { name: "the vendored spec on GitHub" }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/donaldgifford/docz-api/blob/main/api/openapi.yaml",
+    );
+  });
+});
+
+describe("filename URL fallback", () => {
+  function mountRouterAt(path: string) {
+    const router = createMemoryRouter(routes, { initialEntries: [path] });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    return router;
+  }
+
+  it("redirects a unique .md basename to the canonical route, hash kept", async () => {
+    const router = mountRouterAt(
+      "/donaldgifford/docz-site/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md#decision-log",
+    );
+
+    await findRenderedDesign0001();
+    expect(router.state.location.pathname).toBe(
+      "/donaldgifford/docz-site/design/DESIGN-0001",
+    );
+    expect(router.state.location.hash).toBe("#decision-log");
+  });
+
+  it("keeps the not-found panel when no basename matches", async () => {
+    mountRouterAt("/donaldgifford/docz-site/design/9999-nope.md");
+    expect(
+      await screen.findByText("Not found — or not visible to you"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the not-found panel when the basename is ambiguous", async () => {
+    // Every type serves a doc whose path ends in the same filename, so
+    // the shared-basename URL identifies more than one doc.
+    const base = DEMO_DOCS.find((doc) => doc.doc_id === "DESIGN-0001");
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/types/:type/docs", ({ params }) =>
+        HttpResponse.json({
+          docs: [
+            {
+              ...base,
+              doc_id: `${String(params.type).toUpperCase()}-0001`,
+              path: `docs/${String(params.type)}/0001-shared.md`,
+            },
+          ],
+        }),
+      ),
+    );
+    mountRouterAt("/donaldgifford/docz-site/design/0001-shared.md");
+
+    expect(
+      await screen.findByText("Not found — or not visible to you"),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("ToC anchor navigation", () => {
   it("links every collected heading to a real anchor in the article", async () => {
     mountAt(DOC_URL);

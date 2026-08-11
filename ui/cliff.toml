@@ -56,8 +56,11 @@ commit_preprocessors = [
   # Raw tag-looking tokens in commit subjects (e.g. a commit about the
   # literal string "<em>") become code spans — otherwise rehype-raw in
   # the docz-site changelog page treats them as REAL unclosed HTML and
-  # mangles the surrounding list structure (axe: ul > em).
-  { pattern = '(^|[^`])<(/?[a-zA-Z][a-zA-Z0-9-]*)>($|[^`])', replace = "${1}`<${2}>`${3}" },
+  # mangles the surrounding list structure (axe: ul > em). Lowercase
+  # only: HTML tags are, and the uppercase <REPO> placeholder the
+  # issue-link rule above just emitted must stay bare for the
+  # postprocessor to resolve.
+  { pattern = '(^|[^`])<(/?[a-z][a-z0-9-]*)>($|[^`])', replace = "${1}`<${2}>`${3}" },
 ]
 
 commit_parsers = [

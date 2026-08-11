@@ -96,7 +96,9 @@ export function Component() {
     indexQuery.data?.status === 200 ? indexQuery.data.data : undefined;
   const noIndex = indexQuery.error instanceof NotFoundError;
 
-  // Doc-id tokens in the index body link to their readers.
+  // Doc-id tokens and relative links in the index body resolve to
+  // their readers. docIndex is derived from the same getRepo response
+  // as detail, so both are present together.
   const docIndex = useRepoDocIndex(owner, repo);
   const rendered = useRenderedSource(
     index === undefined
@@ -106,7 +108,14 @@ export function Component() {
           hash: index.index_sha,
           raw: index.index_md,
         },
-    docIndex === undefined ? undefined : { xrefs: docIndex },
+    docIndex === undefined || detail === undefined
+      ? undefined
+      : {
+          xrefs: docIndex.byId,
+          paths: docIndex.byPath,
+          base:
+            detail.docs_dir === "" ? "index.md" : `${detail.docs_dir}/index.md`,
+        },
   );
 
   if (

@@ -108,14 +108,27 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   PRECOMPUTED hex tokens (`--color-adm-*-bg`) so contrast.test.ts can
   enforce label/body pairs — don't swap them for color-mix.
 - Xrefs (`src/markdown/xrefs.ts`): doc-id tokens linkify only when they
-  resolve in the caller-supplied map (UPPERCASED doc_id → href, built
-  by `useRepoDocIndex` from listDocs) — the map is the whitelist and
-  hrefs come from API data, never document text. Tokens inside
-  `a`/`code`/`pre` stay text; the reader drops the doc's own id.
-  `MarkdownAnchor` turns `data-xref` anchors into router Links (tests
-  need a router around rendered content). Render-cache keys carry an
-  fnv1a fingerprint of the sorted resolver ids, so bodies re-render at
-  most once when the doc index finishes loading.
+  resolve in the caller-supplied map (UPPERCASED doc_id → href; the
+  `byId` half of `useRepoDocIndex`'s `{byId, byPath}`) — the map is
+  the whitelist and hrefs come from API data, never document text.
+  Tokens inside `a`/`code`/`pre` stay text; the reader drops the doc's
+  own id. `MarkdownAnchor` turns `data-xref` anchors into router Links
+  (tests need a router around rendered content). Render-cache keys
+  carry an fnv1a fingerprint over BOTH sorted key sets plus the base
+  path, so bodies re-render at most once when the doc index loads.
+- Relative doc links (`src/markdown/relative-links.ts`, post-sanitize
+  beside xrefs): author-written relative hrefs posix-resolve against
+  the source's own repo path — the `base` render option: reader = doc
+  `path`, repo home = `docs_dir`/index.md, changelog = the configured
+  file (repo root by default) — then rewrite ONLY on an exact `byPath`
+  hit (fragment reattached, `dataXref` set). Absolute/`//`/root/`#`
+  hrefs and misses stay byte-identical; traversal past the repo root
+  fails closed (so does bad percent-encoding). Resolution needs both
+  `paths` AND `base` passed to `useRenderedSource`. The reader also
+  repairs pasted filename URLs: a 404 whose `:docId` ends `.md`
+  redirects (replace, hash kept) when exactly one doc's path basename
+  matches — ambiguity keeps the panel. The XSS suite has a
+  resolver-active section; extend it when touching the transform.
 - Known false positive: typescript-eslint computes an error type for
   the `processor.run`/`toJsxRuntime` pair in processor.ts while tsc and
   the TS API are clean — narrowly eslint-disabled there with explicit

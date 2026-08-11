@@ -28,6 +28,10 @@ import {
 } from "@/markdown/markdown-heading";
 import { MarkdownPre } from "@/markdown/markdown-pre";
 import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
+import {
+  resolveRelativeLinks,
+  type RelativeLinkContext,
+} from "@/markdown/relative-links";
 import { sanitizeSchema } from "@/markdown/schema";
 import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
@@ -140,6 +144,8 @@ function rehypeCollectToc(toc: TocEntry[]) {
 export interface RenderOptions {
   /** Sibling doc-id resolver; tokens that resolve become router links. */
   xrefs?: XrefResolver;
+  /** Relative-href resolution: the source's own repo path + path map. */
+  links?: RelativeLinkContext;
 }
 
 export async function renderMarkdown(
@@ -186,9 +192,13 @@ export async function renderMarkdown(
      for the file (verified against TS 5.9.3). The explicit annotations
      keep every downstream use fully typed. */
   const hast: Root = await processor.run(processor.parse(raw));
+  // Both run after sanitize (structure is trusted); emitted hrefs come
+  // from API data, never document text.
   if (options?.xrefs !== undefined) {
-    // After sanitize (structure is trusted); hrefs come from API data.
     linkifyDocIds(hast, options.xrefs);
+  }
+  if (options?.links !== undefined) {
+    resolveRelativeLinks(hast, options.links);
   }
   const content: ReactNode = toJsxRuntime(hast, {
     Fragment,

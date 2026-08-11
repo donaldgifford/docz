@@ -107,7 +107,9 @@ export function Component() {
     changelogQuery.data?.status === 200 ? changelogQuery.data.data : undefined;
   const noChangelog = changelogQuery.error instanceof NotFoundError;
 
-  // Doc-id tokens in the changelog body link to their readers.
+  // Doc-id tokens and relative links in the changelog body resolve to
+  // their readers; relative hrefs resolve against the configured
+  // file's own directory (repo root for the default CHANGELOG.md).
   const docIndex = useRepoDocIndex(owner, repo);
   // Cached per (repo, changelog_sha) — the reader's (doc_id,
   // content_hash) memoization, with the blob SHA as the hash.
@@ -119,7 +121,13 @@ export function Component() {
           hash: changelog.changelog_sha,
           raw: changelog.changelog_md,
         },
-    docIndex === undefined ? undefined : { xrefs: docIndex },
+    docIndex === undefined
+      ? undefined
+      : {
+          xrefs: docIndex.byId,
+          paths: docIndex.byPath,
+          base: cfg?.file ?? "CHANGELOG.md",
+        },
   );
 
   if (

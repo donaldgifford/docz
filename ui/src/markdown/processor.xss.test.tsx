@@ -6,6 +6,7 @@
  * pipeline change breaks it, the change is wrong, not the test.
  */
 import { render, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { _resetMermaidBlock } from "@/markdown/mermaid-block";
@@ -216,6 +217,64 @@ describe("mermaid blocks stay inert", () => {
     });
     assertNeutralized(container);
     expect(container.querySelector("figure.mermaid-figure img")).toBeNull();
+  });
+});
+
+describe("relative link resolution stays inert", () => {
+  // The resolver active, as in the reader: hostile hrefs must come out
+  // either untouched (miss) or as the map's API-built route — never as
+  // an attacker-chosen target.
+  const BY_PATH = new Map([
+    ["docs/adr/0013-scoped-test-ids.md", "/acme/mods/adr/ADR-0013"],
+  ]);
+  const LINKS = { base: "docs/rfc/RFC-0001.md", byPath: BY_PATH };
+
+  async function renderWithLinks(md: string): Promise<HTMLElement> {
+    const { content } = await renderMarkdown(md, { links: LINKS });
+    const { container } = render(<>{content}</>);
+    return container;
+  }
+
+  it.each([
+    ["traversal past the repo root", "[x](../../../../etc/passwd)"],
+    ["percent-encoded traversal", "[x](%2e%2e/%2e%2e/%2e%2e/etc/passwd)"],
+    ["encoded-slash traversal", "[x](..%2F..%2F..%2Fetc%2Fpasswd)"],
+    ["root-absolute path", "[x](/docs/adr/0013-scoped-test-ids.md)"],
+    ["protocol-relative URL", "[x](//evil.example/docs.md)"],
+    ["scheme smuggled as a path", "[x](javascript:alert(1))"],
+  ])("never resolves %s", async (_name, payload) => {
+    const container = await renderWithLinks(payload);
+    assertNeutralized(container);
+    // Whatever survived sanitize, the resolver added nothing: no
+    // data-xref, so no router Link and no app route was emitted.
+    expect(container.querySelector("a[data-xref]")).toBeNull();
+  });
+
+  it("emits only the map's href on a hit, fragment inert", async () => {
+    // A hit becomes a router Link (data-xref) — give it a router.
+    const { content } = await renderMarkdown(
+      '[x](../adr/0013-scoped-test-ids.md#"><script>alert(1)</script>)',
+      { links: LINKS },
+    );
+    const { container } = render(<MemoryRouter>{content}</MemoryRouter>);
+    assertNeutralized(container);
+    // The map's route prefix survives verbatim; the router Link
+    // percent-encodes the hostile fragment on top of attribute escaping.
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "/acme/mods/adr/ADR-0013#%22%3E%3Cscript%3Ealert(1)%3C/script%3E",
+    );
+    expect(container.querySelector("script")).toBeNull();
+  });
+
+  it("resolves nothing when the index is empty", async () => {
+    const { content } = await renderMarkdown(
+      "[x](../adr/0013-scoped-test-ids.md)",
+      { links: { base: "docs/rfc/RFC-0001.md", byPath: new Map() } },
+    );
+    const { container } = render(<>{content}</>);
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "../adr/0013-scoped-test-ids.md",
+    );
   });
 });
 

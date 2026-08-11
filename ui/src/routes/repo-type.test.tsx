@@ -61,6 +61,12 @@ describe("repo type page", () => {
   });
 
   it("shows the docz-create empty state for a type with zero docs", async () => {
+    // The fixtures serve RFC-0001 — force the zero-doc shape here.
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/types/rfc/docs", () =>
+        HttpResponse.json({ docs: [] }),
+      ),
+    );
     mountAt("/donaldgifford/docz-api/rfc");
 
     expect(

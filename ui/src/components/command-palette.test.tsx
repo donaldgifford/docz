@@ -78,7 +78,7 @@ describe("command palette", () => {
       await dialog.findByText("donaldgifford/docz-site — 2 matches"),
     ).toBeInTheDocument();
     expect(
-      dialog.getByText("donaldgifford/docz-api — 2 matches"),
+      dialog.getByText("donaldgifford/docz-api — 3 matches"),
     ).toBeInTheDocument();
 
     // The first hit is highlighted and previewed from hit data alone.
@@ -131,7 +131,7 @@ describe("command palette", () => {
       ).not.toBeInTheDocument();
     });
     expect(
-      dialog.getByText("donaldgifford/docz-api — 2 matches"),
+      dialog.getByText("donaldgifford/docz-api — 3 matches"),
     ).toBeInTheDocument();
 
     // Type pill replaces the repo pill.
