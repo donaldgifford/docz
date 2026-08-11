@@ -2,8 +2,10 @@ import { useState } from "react";
 import { NavLink, useParams } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
+import { usePrefetchChangelog } from "@/hooks/usePrefetchChangelog";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { changelogBasename, changelogConfig } from "@/lib/changelogConfig";
 import { resolveDocType } from "@/lib/docTypes";
 import { arr } from "@/lib/wire";
 
@@ -119,6 +121,14 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
     repoQuery.data?.status === 200 ? repoQuery.data.data : undefined;
   const { facts } = useRepoFacts(repoId);
 
+  // Changelog row (DESIGN-0002 Component 3): gated on the repo's own
+  // config_snapshot — data this query already carries, zero probes.
+  const changelogCfg = changelogConfig(detail?.config_snapshot);
+  const prefetchChangelogFor = usePrefetchChangelog();
+  const prefetchChangelog = (): void => {
+    prefetchChangelogFor(owner, name);
+  };
+
   // The route's `:type` segment (possibly an alias) picks the type
   // whose drawer follows navigation.
   const params = useParams<{ type?: string }>();
@@ -165,6 +175,28 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
         <span>Home</span>{" "}
         <span className="text-[11px] text-fg-muted">index.md</span>
       </NavLink>
+
+      {changelogCfg !== undefined && (
+        <NavLink
+          to={`/${repoId}/changelog`}
+          end
+          className={navItemClass}
+          // Full subpath as the tooltip only when the hint truncates
+          // it (chart-style charts/<name>/CHANGELOG.md configs).
+          title={
+            changelogCfg.file === changelogBasename(changelogCfg.file)
+              ? undefined
+              : changelogCfg.file
+          }
+          onMouseEnter={prefetchChangelog}
+          onFocus={prefetchChangelog}
+        >
+          <span>Changelog</span>{" "}
+          <span className="text-[11px] text-fg-muted">
+            {changelogBasename(changelogCfg.file)}
+          </span>
+        </NavLink>
+      )}
 
       <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[10px] tracking-[0.14em] text-fg-muted uppercase">
         doc types

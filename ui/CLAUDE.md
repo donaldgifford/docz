@@ -199,6 +199,22 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `useRenderedSource` with its h1 KEPT; the reader strips the h1 via
   the `useRenderedMarkdown` wrapper. 404 from getRepoIndex = generated
   home fallback, not an error.
+- Repo changelog (spec 1.2.0, IMPL-0003 Phase 1):
+  `/:owner/:repo/changelog` is a RESERVED static segment — it outranks
+  `:type`, so a doc type literally named "changelog" is reachable only
+  via its id_prefix/alias URL. The RepoNav row under Home gates on
+  `changelogConfig()` (`src/lib/changelogConfig.ts`) reading getRepo's
+  UNTYPED `config_snapshot` defensively — any wrong shape means "no
+  row", zero extra requests — and hover/focus-prefetches
+  getRepoChangelog. The page copies repo home: h1 KEPT, TocList rail,
+  render memoized per (repo, changelog_sha). A changelog 404 is NEVER
+  an error (quiet panel says config-disabled vs file-absent-at-HEAD;
+  wait for repo detail before choosing the copy); `changelog_md: ""`
+  gets an explicit empty state. The demo fixture is this repo's real
+  CHANGELOG.md via `?raw` — which is why cliff.toml's
+  commit_preprocessors backtick tag-shaped tokens in subjects: a raw
+  `<em>` in a commit subject once reached the rendered page and
+  rehype-raw mangled the list structure (axe caught it).
 - Palette (`src/components/command-palette.tsx`, mounted in AppShell):
   state is palette-local, never the URL. cmdk normalizes item values —
   keys are lowercased and navigation resolves through a unified

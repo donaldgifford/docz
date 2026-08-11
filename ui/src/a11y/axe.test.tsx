@@ -63,6 +63,16 @@ describe("axe: core views", () => {
     await expectNoAxeViolations();
   });
 
+  it("repo changelog", { timeout: AXE_TIMEOUT }, async () => {
+    mountAt("/donaldgifford/docz-site/changelog");
+    await screen.findByRole(
+      "heading",
+      { level: 1, name: "Changelog" },
+      { timeout: 10_000 },
+    );
+    await expectNoAxeViolations();
+  });
+
   it("type listing page", { timeout: AXE_TIMEOUT }, async () => {
     mountAt("/donaldgifford/docz-site/design");
     await screen.findByRole("table", undefined, { timeout: 10_000 });

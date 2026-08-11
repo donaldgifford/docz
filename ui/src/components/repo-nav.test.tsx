@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http } from "msw";
+import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
@@ -140,5 +140,86 @@ describe("RepoNav", () => {
     expect(screen.getByRole("link", { name: /Home/ })).not.toHaveAttribute(
       "aria-current",
     );
+  });
+});
+
+describe("RepoNav changelog row", () => {
+  function repoWithSnapshot(snapshot: Record<string, unknown>) {
+    return http.get("*/api/v1/repos/:owner/:name", () =>
+      HttpResponse.json({
+        repo: "donaldgifford/docz-site",
+        default_branch: "main",
+        docs_dir: "docs",
+        last_synced_sha: "fixture-head-docz-site",
+        config_snapshot: snapshot,
+        types: [],
+      }),
+    );
+  }
+
+  it("renders under Home when the snapshot enables the changelog block", async () => {
+    mountNavAt("/donaldgifford/docz-site");
+
+    const row = await screen.findByRole("link", { name: /Changelog/ });
+    expect(row).toHaveAttribute("href", "/donaldgifford/docz-site/changelog");
+    // Fixture file is a bare basename — hint only, no tooltip.
+    expect(row).toHaveTextContent("CHANGELOG.md");
+    expect(row).not.toHaveAttribute("title");
+  });
+
+  it("shows the basename hint with the full subpath as tooltip", async () => {
+    server.use(
+      repoWithSnapshot({
+        changelog: { enabled: true, file: "charts/docz-site/CHANGELOG.md" },
+      }),
+    );
+    mountNavAt("/donaldgifford/docz-site");
+
+    const row = await screen.findByRole("link", { name: /Changelog/ });
+    expect(row).toHaveTextContent("CHANGELOG.md");
+    expect(row).toHaveAttribute("title", "charts/docz-site/CHANGELOG.md");
+  });
+
+  it("stays hidden without an enabled changelog block", async () => {
+    server.use(repoWithSnapshot({ docs_dir: "docs" }));
+    mountNavAt("/donaldgifford/docz-site");
+
+    await screen.findByText("main · docz.yaml");
+    expect(
+      screen.queryByRole("link", { name: /Changelog/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reads a malformed changelog block as hidden", async () => {
+    server.use(repoWithSnapshot({ changelog: { enabled: "true" } }));
+    mountNavAt("/donaldgifford/docz-site");
+
+    await screen.findByText("main · docz.yaml");
+    expect(
+      screen.queryByRole("link", { name: /Changelog/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("prefetches the changelog on row hover", async () => {
+    const user = userEvent.setup();
+    let changelogRequests = 0;
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/changelog", () => {
+        changelogRequests += 1;
+        return HttpResponse.json({
+          repo: "donaldgifford/docz-site",
+          changelog_md: "# Changelog",
+          changelog_sha: "fixture-sha",
+        });
+      }),
+    );
+    mountNavAt("/donaldgifford/docz-site");
+
+    const row = await screen.findByRole("link", { name: /Changelog/ });
+    expect(changelogRequests).toBe(0);
+    await user.hover(row);
+    await waitFor(() => {
+      expect(changelogRequests).toBe(1);
+    });
   });
 });

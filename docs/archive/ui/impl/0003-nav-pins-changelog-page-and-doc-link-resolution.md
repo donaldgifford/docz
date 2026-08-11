@@ -1,7 +1,7 @@
 ---
 id: IMPL-0003
 title: "Nav pins, changelog page, and doc link resolution"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-08-11
 ---
@@ -9,7 +9,7 @@ created: 2026-08-11
 
 # IMPL 0003: Nav pins, changelog page, and doc link resolution
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-08-11
 
@@ -84,32 +84,32 @@ The "cached repo file as page" pattern (repo home) applied to
 
 #### Tasks
 
-- [ ] Re-vendor `api/openapi.yaml` at 1.2.0 from docz-api; run
+- [x] Re-vendor `api/openapi.yaml` at 1.2.0 from docz-api; run
       `just gen-api`; confirm `gen-api-check` is clean
-- [ ] MSW fixtures: demo-org docz-site repo serves its real
+- [x] MSW fixtures: demo-org docz-site repo serves its real
       `CHANGELOG.md` via `?raw`; one fixture repo returns
       `changelog_md: ""`; all other repos fall through to the 404
       handler
-- [ ] Route module `src/routes/repo-changelog.tsx` registered as
+- [x] Route module `src/routes/repo-changelog.tsx` registered as
       `:owner/:repo/changelog` (static segment above `:type`); lazy
       chunk
-- [ ] Page states per DESIGN-0002 Component 3: shared 401 redirect,
+- [x] Page states per DESIGN-0002 Component 3: shared 401 redirect,
       repo 404 panel, quiet "no changelog" panel, empty state for
       `""`, rendered content with h1 kept (`useRenderedSource`),
       `RepoFrame` crumbs `home · changelog`, `TocList` rail
-- [ ] Render memoized per `(repo, changelog_sha)`; xref resolver
+- [x] Render memoized per `(repo, changelog_sha)`; xref resolver
       passed so doc-id mentions linkify
-- [ ] RepoNav row under Home: gate on defensive
+- [x] RepoNav row under Home: gate on defensive
       `config_snapshot.changelog.enabled === true` read from the
       existing `useGetRepo` data; hint = basename of the configured
       file with full subpath as `title` when it differs; hover/focus
       prefetch of `getRepoChangelog`
-- [ ] Unit tests: row gating (enabled / disabled / absent block /
+- [x] Unit tests: row gating (enabled / disabled / absent block /
       malformed snapshot), page states (404 / empty / content), memo
       keying; changelog view added to the axe sweep
-- [ ] Chart bump per OQ-2a: appVersion to the incoming bare semver,
+- [x] Chart bump per OQ-2a: appVersion to the incoming bare semver,
       chart version patch, image-tag unittest assert updated
-- [ ] Update CLAUDE.md (reserved `changelog` segment, snapshot-gated
+- [x] Update CLAUDE.md (reserved `changelog` segment, snapshot-gated
       row) and check off this phase
 
 #### Success Criteria

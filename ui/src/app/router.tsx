@@ -17,6 +17,14 @@ export const routes: RouteObject[] = [
       { path: "login", lazy: () => import("@/routes/login") },
       { path: "repos", lazy: () => import("@/routes/repos") },
       { path: ":owner/:repo", lazy: () => import("@/routes/repo-home") },
+      // Static segment — outranks `:type` in route ranking, so
+      // `changelog` is a reserved word: a doc type literally named
+      // "changelog" stays reachable via its id_prefix/alias URL
+      // (DESIGN-0002, INV-0005 OQ-2a).
+      {
+        path: ":owner/:repo/changelog",
+        lazy: () => import("@/routes/repo-changelog"),
+      },
       { path: ":owner/:repo/:type", lazy: () => import("@/routes/repo-type") },
       {
         path: ":owner/:repo/:type/:docId",

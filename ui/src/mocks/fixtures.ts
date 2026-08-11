@@ -12,6 +12,7 @@
  */
 import { http, HttpResponse } from "msw";
 
+import doczSiteChangelog from "../../CHANGELOG.md?raw";
 import doczSiteDesign0001 from "../../docs/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md?raw";
 import doczSiteImpl0001 from "../../docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md?raw";
 import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
@@ -227,10 +228,40 @@ export const demoOrgHandlers = [
       default_branch: "main",
       docs_dir: "docs",
       last_synced_sha: `fixture-head-${str(params.name)}`,
-      config_snapshot: { docs_dir: "docs" },
+      // Both demo repos opt into the changelog: block (spec 1.2.0) so
+      // the RepoNav row's config_snapshot gate is exercised; faker
+      // repos get random snapshots without it, keeping the row hidden.
+      config_snapshot: {
+        docs_dir: "docs",
+        changelog: { enabled: true, file: "CHANGELOG.md" },
+      },
       types,
     };
     return HttpResponse.json(detail);
+  }),
+
+  // getRepoChangelog (spec 1.2.0): docz-site serves its real
+  // CHANGELOG.md (?raw — always current); docz-api exercises the
+  // empty-but-present "" shape. Everything else 404s DETERMINISTICALLY
+  // — never fall through to faker, which would fabricate changelogs
+  // for repos whose snapshot never opted in.
+  http.get("*/api/v1/repos/:owner/:name/changelog", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    if (key === "donaldgifford/docz-site") {
+      return HttpResponse.json({
+        repo: key,
+        changelog_md: doczSiteChangelog,
+        changelog_sha: "fixture-changelog-sha-docz-site",
+      });
+    }
+    if (key === "donaldgifford/docz-api") {
+      return HttpResponse.json({
+        repo: key,
+        changelog_md: "",
+        changelog_sha: "fixture-changelog-sha-docz-api",
+      });
+    }
+    return HttpResponse.json({ error: "changelog not found" }, { status: 404 });
   }),
 
   // getRepoIndex (spec 1.1.0, DESIGN-0003): docz-api has a curated

@@ -53,6 +53,11 @@ use_branch_tags = false
 
 commit_preprocessors = [
   { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))" },
+  # Raw tag-looking tokens in commit subjects (e.g. a commit about the
+  # literal string "<em>") become code spans — otherwise rehype-raw in
+  # the docz-site changelog page treats them as REAL unclosed HTML and
+  # mangles the surrounding list structure (axe: ul > em).
+  { pattern = '(^|[^`])<(/?[a-zA-Z][a-zA-Z0-9-]*)>($|[^`])', replace = "${1}`<${2}>`${3}" },
 ]
 
 commit_parsers = [
