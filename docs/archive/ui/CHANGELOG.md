@@ -3,31 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.3.0] - 2026-08-11
 
 ### Features
 
-- *(reader)* Widen useRepoDocIndex to byId/byPath doc index
-- *(markdown)* Relative doc-link transform, map-as-whitelist
-- *(markdown)* Thread base path + path map through the pipeline
-- *(reader)* Redirect shared filename URLs to the canonical doc
-
-### Bug Fixes
-
-- *(changelog)* Stop backticking git-cliff's https://github.com/donaldgifford/docz-site placeholder
-
-### Documentation
-
-- Record relative-link resolver guidance, check off Phase 2
-
-### Testing
-
-- *(mocks)* RFC-0001 fixture with a relative References footer
-- *(markdown)* XSS gate covers relative-link resolution
-
-### Miscellaneous Tasks
-
-- *(chart)* Bump appVersion to 0.3.0, chart 0.1.4
+- *(reader)* Relative doc links resolve in rendered bodies (IMPL-0003 Phase 2) ([#14](https://github.com/donaldgifford/docz-site/issues/14))
 
 ## [0.2.0] - 2026-08-11
 
