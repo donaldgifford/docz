@@ -36,6 +36,8 @@ permissions:
   contents: read
   packages: write
   id-token: write
+  # attestations: write — required by actions/attest-build-provenance.
+  attestations: write
 
 env:
   REGISTRY: ghcr.io
@@ -52,7 +54,7 @@ jobs:
       # digest/published are written by the Capture-image-digest step
       # (id: digest), NOT the bake step — bake only outputs metadata.
       # Referencing the wrong step id left these empty and silently
-      # skipped image-slsa on every publish (ecr.yml had it right).
+      # skipped provenance on every publish (ecr.yml had it right).
       digest: ${{ steps.digest.outputs.digest }}
       published: ${{ steps.digest.outputs.published }}
     steps:
@@ -131,6 +133,17 @@ jobs:
           cosign sign --yes \
             "${REGISTRY}/${IMAGE_REPO}@${{ steps.digest.outputs.digest }}"
 
+      # Build provenance via GitHub's native attestation (INV-0006). Runs in
+      # this job, not a nested reusable workflow, so it shares the digest and
+      # the registry login already established above.
+      - name: Attest image build provenance
+        if: steps.digest.outputs.published == 'true'
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true
+
       - name: Write image summary
         if: always()
         run: |
@@ -146,23 +159,6 @@ jobs:
               echo "| Digest | \`${{ steps.digest.outputs.digest }}\` |"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-
-  image-slsa:
-    name: SLSA provenance (image)
-    needs: image
-    if: needs.image.outputs.published == 'true'
-    permissions:
-      id-token: write
-      packages: write
-      contents: read
-      actions: read
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
-    with:
-      image: ghcr.io/donaldgifford/docz-api
-      digest: ${{ needs.image.outputs.digest }}
-      registry-username: ${{ github.actor }}
-    secrets:
-      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   chart:
     name: Publish chart
@@ -257,6 +253,17 @@ jobs:
           cosign sign --yes \
             "${REGISTRY}/${CHART_NAMESPACE}/${CHART_NAME}@${{ steps.push.outputs.digest }}"
 
+      # Build provenance via GitHub's native attestation (INV-0006). Runs in
+      # this job, not a nested reusable workflow, so it shares the digest and
+      # the registry login already established above.
+      - name: Attest chart build provenance
+        if: steps.push.outputs.published == 'true'
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.CHART_NAMESPACE }}/${{ env.CHART_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
       - name: Write chart summary
         if: always()
         run: |
@@ -277,19 +284,3 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  chart-slsa:
-    name: SLSA provenance (chart)
-    needs: chart
-    if: needs.chart.outputs.published == 'true'
-    permissions:
-      id-token: write
-      packages: write
-      contents: read
-      actions: read
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
-    with:
-      image: ghcr.io/donaldgifford/charts/docz-api
-      digest: ${{ needs.chart.outputs.digest }}
-      registry-username: ${{ github.actor }}
-    secrets:
-      registry-password: ${{ secrets.GITHUB_TOKEN }}

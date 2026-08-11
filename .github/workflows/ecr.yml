@@ -40,6 +40,8 @@ on:
 permissions:
   contents: read
   id-token: write
+  # attestations: write — required by actions/attest-build-provenance.
+  attestations: write
 
 env:
   IMAGE_NAME: docz-api
@@ -161,6 +163,17 @@ jobs:
           cosign sign --yes \
             "${{ needs.aws-auth.outputs.registry }}/${IMAGE_NAME}@${{ steps.digest.outputs.digest }}"
 
+      # Build provenance via GitHub's native attestation (INV-0006). In-job so
+      # it reuses the amazon-ecr-login credentials already in the Docker
+      # credential chain.
+      - name: Attest image build provenance
+        if: steps.digest.outputs.published == 'true'
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-name: ${{ needs.aws-auth.outputs.registry }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true
+
       - name: Write image summary
         if: always()
         run: |
@@ -176,27 +189,6 @@ jobs:
               echo "| Digest | \`${{ steps.digest.outputs.digest }}\` |"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-
-  image-slsa:
-    name: SLSA provenance (image)
-    needs: [aws-auth, image]
-    if: needs.image.outputs.published == 'true'
-    # packages: write — the generator's internal job declares it
-    # unconditionally ("upload attestations to ghcr.io"), even though
-    # this call publishes to ECR. Omitting it fails the ENTIRE calling
-    # run (release.yml) at startup via the nested-permissions ceiling.
-    permissions:
-      id-token: write
-      contents: read
-      actions: read
-      packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
-    with:
-      image: ${{ needs.aws-auth.outputs.registry }}/docz-api
-      digest: ${{ needs.image.outputs.digest }}
-      registry-username: AWS
-    secrets:
-      registry-password: ${{ needs.aws-auth.outputs.ecr_password }}
 
   chart:
     name: Publish chart
@@ -298,6 +290,17 @@ jobs:
           cosign sign --yes \
             "${{ needs.aws-auth.outputs.registry }}/${CHART_REPO}@${{ steps.push.outputs.digest }}"
 
+      # Build provenance via GitHub's native attestation (INV-0006). Also fixes
+      # a latent bug in the removed chart-slsa job, which attested the *image*
+      # name against the chart digest.
+      - name: Attest chart build provenance
+        if: steps.push.outputs.published == 'true'
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-name: ${{ needs.aws-auth.outputs.registry }}/${{ env.CHART_REPO }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
       - name: Write chart summary
         if: always()
         run: |
@@ -318,20 +321,3 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  chart-slsa:
-    name: SLSA provenance (chart)
-    needs: [aws-auth, chart]
-    if: needs.chart.outputs.published == 'true'
-    # packages: write — same nested-ceiling requirement as image-slsa.
-    permissions:
-      id-token: write
-      contents: read
-      actions: read
-      packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
-    with:
-      image: ${{ needs.aws-auth.outputs.registry }}/docz-api
-      digest: ${{ needs.chart.outputs.digest }}
-      registry-username: AWS
-    secrets:
-      registry-password: ${{ needs.aws-auth.outputs.ecr_password }}

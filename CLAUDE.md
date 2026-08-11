@@ -935,13 +935,28 @@ established as the build progresses:
     govulncheck + Trivy, Build + SBOM scan) + Label PR stay. All `make` →
     `just`.
   - **`release.yml`** appends the `publish-ghcr` + `publish-ecr` reusable-workflow
-    jobs (their nested-SLSA `actions: read`/`packages: write` permission
-    ceilings are load-bearing — omitting them fails the whole run at startup)
-    and adds top-level `id-token: write`. **No GPG signing** (OQ-4a): the GPG
-    import step + `GPG_FINGERPRINT` are dropped (secrets don't exist,
-    `.goreleaser.yml` has no signing config); goreleaser keeps producing
-    unsigned archives, while images/charts are cosign-signed + SLSA-attested by
-    the publish workflows. `pr-semver-bump` lives only in `release.yml`.
+    jobs. **Caller-job permissions are a hard ceiling for a called reusable
+    workflow** — omitting one the callee needs fails the whole run at startup
+    (zero jobs created), so `attestations: write` must be granted there as well
+    as in `ghcr.yml`/`ecr.yml`. Top-level `id-token: write`. **No GPG signing**
+    (OQ-4a): the GPG import step + `GPG_FINGERPRINT` are dropped (secrets don't
+    exist, `.goreleaser.yml` has no signing config); goreleaser keeps producing
+    unsigned archives, while images/charts are cosign-signed + provenance-
+    attested by the publish workflows. `pr-semver-bump` lives only in
+    `release.yml`.
+  - **Build provenance is `actions/attest-build-provenance`** (INV-0006), run
+    as a step **inside** the `image`/`chart` jobs so it shares their digest and
+    registry login — not a nested reusable workflow. It replaced
+    `slsa-github-generator`, which hardcodes cosign **v2.2.3** (no input to
+    override, unchanged on `main`) and therefore wrote provenance in cosign's
+    legacy `.att` attachment while our own v3 `cosign sign` wrote the
+    referrers-fallback `sha256-<digest>` attachment. The result was that **no
+    single cosign major could verify both** — v3 couldn't read the provenance,
+    v2 couldn't read the signature. GHCR serves no OCI referrers API, so the
+    fallback-tag scheme is what's in play. Trade accepted knowingly: GitHub
+    attestations are SLSA v1 **Build L2**, not the generator's L3 claim; docs
+    say L2. Artifacts published before chart 0.3.2 / image v0.5.1 keep the old
+    split and need `cosign v2.x` (or `gh attestation verify`).
   - **ECR publishing** is gated on the `ECR_PUBLISH_ENABLED` repo variable and
     documented in `docs/operations/ecr-publish-setup.md` (OIDC role trust
     `repo:donaldgifford/docz-api:*`, the `docz-api` ECR repo, the three

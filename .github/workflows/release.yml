@@ -77,15 +77,16 @@ jobs:
     name: Publish to GHCR
     needs: bump-version
     uses: ./.github/workflows/ghcr.yml
-    # actions: read is required by the nested SLSA generator jobs inside
-    # ghcr.yml. Caller-job permissions are a hard ceiling for nested
-    # reusable workflows — omitting it fails the whole run at startup
-    # (zero jobs created) before anything executes.
+    # attestations: write is required by actions/attest-build-provenance
+    # inside ghcr.yml. Caller-job permissions are a hard ceiling for called
+    # reusable workflows — omitting a permission the callee needs fails the
+    # whole run at startup (zero jobs created) before anything executes.
+    # (actions: read was dropped with the nested SLSA generator jobs, INV-0006.)
     permissions:
       contents: read
       packages: write
       id-token: write
-      actions: read
+      attestations: write
     with:
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
@@ -101,15 +102,14 @@ jobs:
     # standalone testing regardless of this gate.
     if: vars.ECR_PUBLISH_ENABLED == 'true'
     uses: ./.github/workflows/ecr.yml
-    # actions: read + packages: write — same nested-SLSA requirement as
-    # publish-ghcr (the generator's internal job declares packages: write
-    # unconditionally, even for ECR publishes). The uses: graph is
-    # validated at startup even though this job is gated off by the
-    # if: condition.
+    # attestations: write — same requirement as publish-ghcr. The uses:
+    # graph is validated at startup even though this job is gated off by
+    # the if: condition. packages: write is retained: ecr.yml is a public
+    # reusable workflow surface and the ceiling costs nothing here.
     permissions:
       contents: read
       id-token: write
-      actions: read
+      attestations: write
       packages: write
     with:
       tag: ${{ needs.bump-version.outputs.tag }}
