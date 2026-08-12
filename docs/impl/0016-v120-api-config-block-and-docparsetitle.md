@@ -23,6 +23,7 @@ created: 2026-08-11
   - [Phase 2: docparse.Title](#phase-2-docparsetitle)
     - [Tasks](#tasks-1)
     - [Success Criteria](#success-criteria-1)
+    - [Phase 2 record](#phase-2-record)
   - [Phase 3: consumer proof + living docs](#phase-3-consumer-proof--living-docs)
     - [Tasks](#tasks-2)
     - [Success Criteria](#success-criteria-2)
@@ -232,42 +233,43 @@ INV-0007 F2 found.
 
 #### Tasks
 
-- [ ] Add `Title(content []byte) string` to `pkg/doczcore/docparse` — new file
+- [x] Add `Title(content []byte) string` to `pkg/doczcore/docparse` — new file
       `title.go`, beside `headings.go`. Returns the first H1's text with inline
       markdown stripped, or `""` when there is none. No error return: `""` is a
       normal outcome and the consumer supplies the fallback (INV-0007
       Decision 1 amendment).
-- [ ] Reuse the package's existing primitives rather than re-deriving them:
+- [x] Reuse the package's existing primitives rather than re-deriving them:
       `isFenceToggle` for fence awareness, `stripInlineMarkdown` for the text.
       A fenced `# not a title` must not match.
-- [ ] Support setext H1 — a non-blank line followed by a line of only `=`
+- [x] Support setext H1 — a non-blank line followed by a line of only `=`
       (Decision 4). `Title` reads markdown docz did not write, where setext is
       common; a `CONTRIBUTING.md` with a setext title must not fall back to the
       filename. **`Headings` is not touched** — this rule lives in `Title`
       alone. Needs an explicit test and a doc-comment sentence.
-- [ ] Skip a leading YAML frontmatter block, **only when it starts at byte
-      0** (Decision 5), so a `---` horizontal rule mid-document is never
-      mistaken for a frontmatter opener. This preserves `wiki.firstH1`'s
-      behavior exactly, which is what makes Decision 3's collapse safe.
-- [ ] Verify `Headings` is byte-for-byte unchanged — its H1 exclusion is frozen
+- [x] Skip a leading YAML frontmatter block, **only when the document opens
+      with one** (Decision 5), so a `---` horizontal rule mid-document is never
+      mistaken for a frontmatter opener. *Correction: this task claimed the
+      rule "preserves `wiki.firstH1`'s behavior exactly". It does not, and the
+      difference is the point — see the Phase 2 record.*
+- [x] Verify `Headings` is byte-for-byte unchanged — its H1 exclusion is frozen
       behavior and `toc` plus consumer ToCs depend on it. The existing golden
       fixtures are the proof; they must not move.
-- [ ] Extend `renderFacts` in `docparse/golden_test.go` with a `# title` line
+- [x] Extend `renderFacts` in `docparse/golden_test.go` with a `# title` line
       so `impl_plan.md` and `messy.md` cover `Title` too, regenerate with
       `-update`, and **read the diff** rather than trusting it.
-- [ ] Add a dedicated fixture for the cases those two do not reach: no H1; H1
+- [x] Add a dedicated fixture for the cases those two do not reach: no H1; H1
       inside a fence; multiple H1s (first wins); H1 not on line 1; H1 with
       inline markdown; H1 after frontmatter; setext; empty input.
-- [ ] Collapse `internal/wiki.firstH1` onto `docparse.Title` (Decision 3)
+- [x] Collapse `internal/wiki.firstH1` onto `docparse.Title` (Decision 3)
       so there is one H1 definition module-wide — the rule
       `docwrite.CheckTask`→`docparse.TaskItems` already follows. Note the
       behavior delta: `firstH1` is not fence-aware and does not strip inline
       markdown, so `# **Bold** Title` currently yields `**Bold** Title` in the
       MkDocs nav and would become `Bold Title`.
-- [ ] Update `internal/wiki` tests for the delta and regenerate the wiki
+- [x] Update `internal/wiki` tests for the delta and regenerate the wiki
       goldens if nav titles move. Read that diff carefully — it is the only
       user-visible behavior change in this release.
-- [ ] Update `doc.go` to list `Title` beside `Headings` and `TaskItems`,
+- [x] Update `doc.go` to list `Title` beside `Headings` and `TaskItems`,
       keeping the facts-not-interpretation framing.
 
 #### Success Criteria
@@ -281,6 +283,51 @@ INV-0007 F2 found.
 - `go doc pkg/doczcore/docparse` shows `Title` with a contract stating the `""`
   case, the fence rule, the setext decision, and the frontmatter decision.
 - `make ci` green.
+
+#### Phase 2 record
+
+Architecture review of `Title` before the signature freezes found four cases
+where it returned the wrong string. All four are inputs a repo docz does not
+control can produce, and all are fixed:
+
+1. **An indented `---` inside a YAML block scalar closed the frontmatter
+   block**, so the rest of the frontmatter was scanned as body and the title
+   became whatever string a key held —
+   `notes: |\n  ---\n  # Injected` yielded `Injected`. This is the exact
+   scenario Decision 5 exists to prevent. Both delimiters now have to sit at
+   column 0, matching `document.ParseFrontmatter`.
+2. **A leading blank line defeated the skip entirely.** `ParseFrontmatter`
+   trims leading newlines before looking for its delimiter and `Title` did not,
+   so `internal/wiki` could call one, fall through to the other, and get a YAML
+   line as the nav title. `Title` now trims the same way.
+3. **A document opening with a thematic break lost its title**:
+   `---\n\n# Title\n\n---` read everything between the rules as frontmatter. An
+   opener followed by a blank line is now a rule, since real frontmatter opens
+   with a key.
+4. **The setext branch accepted any line at all**, so `- alpha`, `> quoted`,
+   `<div>`, `| a | b |`, and `***` all became titles when underlined with `=`.
+   It is the only branch that can return arbitrary line content — the ATX
+   branch at least guarantees the line looked like a heading — so it now
+   requires a paragraph.
+
+Two further notes, documented rather than changed:
+
+- **Decision 5's claim that the byte-0 rule "preserves `wiki.firstH1`'s
+  behavior exactly" was wrong.** `firstH1` toggled on every `---`, so a
+  mid-document rule hid every heading after it until the next rule; and it was
+  neither fence-aware nor markdown-stripping. The collapse is an improvement in
+  four distinct ways, not a lateral move. `TestDocTitle_H1Delegation` pins each
+  delta.
+- **`Title` is the only fact in the package with no `Line`**, which makes the
+  "never reports the same line as `Headings`" invariant unprovable from outside
+  the package. The signature is the one INV-0007 Decision 1 and DESIGN-0011
+  fixed, so it ships as specified; `TestTitleAndHeadingsDoNotOverlap` proves the
+  invariant against the raw fixture bytes instead. Worth revisiting only if a
+  consumer turns up wanting to anchor or rewrite a title — the package is
+  additive-only, so a line-carrying variant stays available.
+
+`FuzzTitle` was added alongside, matching `document.FuzzParseChangelog`: 24.8M
+executions, no panic and no result that was multi-line or untrimmed.
 
 ---
 
