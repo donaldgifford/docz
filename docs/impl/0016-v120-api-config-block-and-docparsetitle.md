@@ -394,7 +394,7 @@ the repo's own documentation tell the truth.
 
 #### Tasks
 
-- [ ] Open the release PR with the `minor` label. `pr-semver-bump` +
+- [x] Open the release PR with the `minor` label. `pr-semver-bump` +
       goreleaser cut and publish `v1.2.0`.
 - [ ] Verify the published module from a scratch module outside this repo:
       `go get github.com/donaldgifford/docz@v1.2.0`, then exercise the full R10
