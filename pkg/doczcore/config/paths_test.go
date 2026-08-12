@@ -37,7 +37,6 @@ func TestValidateRepoRelativePath(t *testing.T) {
 		{name: "plain file", value: "CHANGELOG.md"},
 		{name: "nested file", value: "docs/examples/README.md"},
 		{name: "dot prefixed name", value: ".changelog/CHANGELOG.md"},
-		{name: "triple dot segment", value: ".../CHANGELOG.md"},
 		{name: "colon later in path", value: "charts/a:b/CHANGELOG.md"},
 		{name: "tilde later in path", value: "charts/~foo/CHANGELOG.md"},
 		{name: "single letter dir", value: "c/x.md"},
@@ -99,22 +98,32 @@ func TestValidateRepoRelativePath(t *testing.T) {
 			wantErr:  "must be relative",
 		},
 
-		// Win32 strips trailing spaces from each path component, so a
-		// segment ending in a space is traversal the ".." check cannot
-		// see: ".. " resolves as "..". Found by security review; the old
-		// inline validateChangelog rules had the same hole.
-		{name: "space padded dotdot", value: ".. /x.md", wantErr: "ending in a space"},
-		{name: "space padded dot", value: "a/. /b.md", wantErr: "ending in a space"},
+		// Win32 strips trailing spaces and periods from each path
+		// component, so such a segment is traversal the ".." check cannot
+		// see: ".. " and "..." both resolve as "..". Found by security
+		// review; the old inline validateChangelog rules had the same hole.
+		{name: "space padded dotdot", value: ".. /x.md", wantErr: "space or period"},
+		{name: "space padded dot", value: "a/. /b.md", wantErr: "space or period"},
 		{
 			name:     "space padded dotdot as dir",
 			value:    ".. /",
 			allowDir: true,
-			wantErr:  "ending in a space",
+			wantErr:  "space or period",
 		},
-		{name: "space padded name", value: "docs /x.md", wantErr: "ending in a space"},
-		{name: "trailing space on file", value: "x.md ", wantErr: "ending in a space"},
-		// A space inside a component is an ordinary filename.
+		{name: "space padded name", value: "docs /x.md", wantErr: "space or period"},
+		{name: "trailing space on file", value: "x.md ", wantErr: "space or period"},
+		{name: "triple dot segment", value: ".../x.md", wantErr: "space or period"},
+		{name: "trailing period on name", value: "docs./x.md", wantErr: "space or period"},
+		{name: "trailing period on file", value: "README.md.", wantErr: "space or period"},
+		{
+			name:     "trailing period as dir",
+			value:    "templates./",
+			allowDir: true,
+			wantErr:  "space or period",
+		},
+		// A space or period inside a component is an ordinary filename.
 		{name: "interior space", value: "docs/release notes.md"},
+		{name: "interior period", value: "docs/v1.2.0/notes.md"},
 
 		// Zero-width and bidi-override runes render as one path and
 		// address another; C1 is unreachable in a real filename.

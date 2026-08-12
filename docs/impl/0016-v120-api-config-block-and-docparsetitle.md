@@ -19,6 +19,7 @@ created: 2026-08-11
   - [Phase 1: shared path validator + api: config block](#phase-1-shared-path-validator--api-config-block)
     - [Tasks](#tasks)
     - [Success Criteria](#success-criteria)
+    - [Phase 1 record](#phase-1-record)
   - [Phase 2: docparse.Title](#phase-2-docparsetitle)
     - [Tasks](#tasks-1)
     - [Success Criteria](#success-criteria-1)
@@ -40,6 +41,7 @@ created: 2026-08-11
   - [6. Where does the consumer proof for the new surface live?](#6-where-does-the-consumer-proof-for-the-new-surface-live)
   - [7. PR and release strategy for this branch?](#7-pr-and-release-strategy-for-this-branch)
   - [8. Should Phase 2 extend the existing fixtures or add a new one?](#8-should-phase-2-extend-the-existing-fixtures-or-add-a-new-one)
+  - [9. Should docs_dir itself be path-validated? (raised in Phase 1)](#9-should-docsdir-itself-be-path-validated-raised-in-phase-1)
 - [Decisions](#decisions)
   - [Note: Decisions 1 and 2 interact](#note-decisions-1-and-2-interact)
 - [References](#references)
@@ -146,19 +148,19 @@ it.
       `<DocsDir>/index.md` when empty **and** `Enabled` is true. Never
       `filepath.Clean` — `..` must survive for `Validate` to reject; mirror the
       comment `normalizeChangelog` already carries.
-- [ ] Add `ErrInvalidAPIPath` and `validateAPI()`, called from `Validate()`.
+- [x] Add `ErrInvalidAPIPath` and `validateAPI()`, called from `Validate()`.
       Returns immediately unless `api.Enabled` — the dormancy guarantee. When
       enabled, run `LandingPage` and every `Exclude` / `AdditionalDocs` entry
       through the shared helper, then apply the block-specific rules: duplicate
       `AdditionalDocs` entry; `AdditionalDocs` entry under `DocsDir`;
       `AdditionalDocs` entry whose first path segment matches an **enabled**
       type's `Dir` or canonical name.
-- [ ] Pass `allowDir: true` for `Exclude` entries (Decision 1): they are
+- [x] Pass `allowDir: true` for `Exclude` entries (Decision 1): they are
       `docs_dir`-relative directory prefixes, so `templates` and `templates/`
       must mean the same thing. Every other rule — traversal, absolute, volume
       name, `~`, backslash, control characters, `.`/empty segments — applies
       unchanged. `LandingPage` and `AdditionalDocs` pass `false`.
-- [ ] Config test table per DESIGN-0011's Testing Strategy: decode (full /
+- [x] Config test table per DESIGN-0011's Testing Strategy: decode (full /
       partial / absent / `enabled` alone); defaults; normalization (`./`
       stripping on all three fields, backfill under a non-default `docs_dir`,
       **no** backfill when disabled, `..` survives); validation enabled (every
@@ -166,10 +168,10 @@ it.
       validation disabled (**every** rejection class passes — the same table,
       inverted); first-segment collision allowed for a *disabled* type; merge
       semantics where `exclude`/`additional_docs` replace rather than append.
-- [ ] Add a `parity_baseline_test.go` case pinning that a config carrying a
+- [x] Add a `parity_baseline_test.go` case pinning that a config carrying a
       dormant `api:` block now decodes rather than being ignored — the same
       rollout handshake IMPL-0015 added for `changelog:`.
-- [ ] Godoc on every new exported symbol; `golangci-lint fmt ./...` +
+- [x] Godoc on every new exported symbol; `golangci-lint fmt ./...` +
       `make lint` green.
 
 #### Success Criteria
@@ -182,6 +184,44 @@ it.
 - Unknown-key leniency and case-sensitivity pins still green.
 - `docz config` prints the resolved `api:` block with no `cmd/` change.
 - `make ci` green.
+
+#### Phase 1 record
+
+Security review of `validateAPI` surfaced five rules the plan did not
+anticipate, all of them in the "validates clean, resolves to something else on
+a real consumer" class. Fixed in Phase 1 rather than deferred, because each one
+is a hole in the feature being shipped:
+
+1. **The reserved-segment check used a smaller token set than the resolver it
+   models.** It claimed only canonical names and dirs, so `inv/notes.md` and
+   `implementation/x.md` shadowed a type route and validated clean. The token
+   union is now extracted as `Config.resolutionTokens()` — name, per-type alias,
+   registry alias, `id_prefix` — and shared with `validateResolution`, so there
+   is one definition of "what a user could type to mean this type".
+2. **A percent-encoded separator evaded the same check.** Git stores a file
+   literally named `rfc%2Fnotes.md`, and a router that decodes before matching
+   sees two segments. The decoded spelling is checked too.
+3. **`landing_page` sat outside the deny-list.** `landing_page:
+   docs/private/home.md` with `exclude: [private]` validated, as did a landing
+   page under `docs_dir/templates/`. Both are configs that contradict
+   themselves — the consumer withholds the file and the front page 404s. Now
+   rejected, along with a landing page an `additional_docs` entry also names.
+4. **The `docs_dir` overlap and duplicate checks were exact byte compares.**
+   `DOCS/secret.md` and `[README.md, readme.md]` both passed while naming the
+   same file on any case-insensitive consumer. Both fold case now, and
+   `docs_dir` is `path.Clean`ed for the comparison so `docs/.`, `docs//`, and
+   `docs/sub/..` behave as the `docs` a consumer resolves them to.
+5. **Win32 trims trailing periods as well as trailing spaces.** The shared
+   validator already rejected `.. ` as invisible traversal; it now rejects
+   `...`, `docs.`, and `README.md.` for the same reason. This narrows a rule
+   that shipped in v1.1.0: `.../CHANGELOG.md` was an accepted `changelog.file`
+   and is now rejected. Deliberate — the changelog test case moved from the
+   accepted column to the rejected one.
+
+Deferred, and Open Question 9 asks for a call on it: **`docs_dir` itself is
+never path-validated.** `docs_dir: ../../etc` and `docs_dir: /etc` both load
+clean today, and `cmd/root.go` joins the value for local writes. That predates
+this feature and touches every existing repo, so it is not a Phase 1 change.
 
 ---
 
@@ -507,9 +547,43 @@ docz-generated documents.
   stuffing fenced-H1 and setext oddities into fixtures meant to read like real
   documents.
 
+### 9. Should `docs_dir` itself be path-validated? (raised in Phase 1)
+
+Security review of `validateAPI` found that `Validate()` checks only
+`docs_dir != ""`. Confirmed to load clean today: `docs_dir: ../../etc`,
+`docs_dir: /etc`, `docs_dir: ..\..\etc`, and `docs_dir: "docs‮"` — with no
+`api:` block needed, so this is every repo. It matters twice over:
+`Config.TypeDir()` returns `filepath.Join(docs_dir, dir)`, which is the path a
+consumer feeds a git-tree lookup; and `cmd/root.go` joins it against the repo
+root, so `docz init` on a hostile clone writes `README.md` files at
+`<root>/../../etc/rfc/`. Phase 1 hardened the api rules to tolerate an unclean
+`docs_dir` (`path.Clean` for the overlap comparison), but that is containment,
+not a fix.
+
+- **a. (Recommendation) Validate `docs_dir` unconditionally in `Validate()`,
+  via `validateRepoRelativeDir`, and normalize it in `Load`.** Same helper,
+  same rules, one more caller. It is the only remaining unvalidated
+  repo-relative path in the config, and it is the one with the widest blast
+  radius. Ships in this release so the api rules can stop compensating for it.
+  Cost: a repo using `docs_dir: ../shared-docs` (a monorepo pattern that
+  currently works) breaks on upgrade, which makes `v1.2.0` not purely additive
+  for configs even though the API surface is.
+- **b. Same rules, but as a warning rather than an error.** `Validate()`
+  already returns `[]string` warnings for non-built-in types. Nothing breaks on
+  upgrade and the problem becomes visible — but nothing is actually prevented,
+  and `docz init` still writes outside the repo.
+- **c. Validate it only when `api.enabled` is true.** Consistent with the
+  dormancy guarantee and enough for the docz-api threat model. Leaves the
+  `cmd/root.go` local-write path unguarded for everyone else, which is the half
+  that runs on a developer's machine.
+- **d. Defer to its own doc.** It is a pre-existing hole, not one this feature
+  opened, and a breaking config change deserves its own DESIGN + a deprecation
+  window. Cost: the hole stays open through `v1.2.0`.
+
 ## Decisions
 
-All eight open questions resolved **(a)** on 2026-08-11.
+All eight open questions resolved **(a)** on 2026-08-11. Question 9 was raised
+during Phase 1 and is **open**.
 
 | # | Question | Resolution |
 | - | -------- | ---------- |

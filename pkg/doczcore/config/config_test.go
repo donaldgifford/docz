@@ -705,3 +705,49 @@ func TestValidate_ValidCustomConfigPasses(t *testing.T) {
 		t.Errorf("expected the non-built-in type warning for 'frameworks', got %v", warnings)
 	}
 }
+
+// TestMergeMaps_APIBlock pins how the global and repo configs combine for
+// the api block: the block itself deep-merges key by key, so a repo that
+// names one field keeps the global's siblings, but a list value is
+// replaced wholesale rather than appended to. That is the same rule every
+// other list-valued key follows, and it is what makes a repo able to
+// *shrink* an inherited exclude list.
+//
+// Exercised through mergeMaps + decodeSettings rather than Load, because
+// Load reads the global config from the user's home directory.
+func TestMergeMaps_APIBlock(t *testing.T) {
+	t.Parallel()
+
+	global := map[string]any{"api": map[string]any{
+		"enabled":         true,
+		"landing_page":    "docs/global.md",
+		"exclude":         []any{"global-only", "shared"},
+		"additional_docs": []any{"GLOBAL.md"},
+	}}
+	repo := map[string]any{"api": map[string]any{
+		"exclude": []any{"repo-only"},
+	}}
+
+	settings := mergeMaps(mergeMaps(nil, global), repo)
+	cfg := DefaultConfig()
+	if err := decodeSettings(settings, &cfg); err != nil {
+		t.Fatalf("decodeSettings() = %v, want nil", err)
+	}
+	normalizeAPI(&cfg)
+
+	if !cfg.API.Enabled {
+		t.Error("API.Enabled = false, want true inherited from the global config")
+	}
+	if want := "docs/global.md"; cfg.API.LandingPage != want {
+		t.Errorf("API.LandingPage = %q, want %q inherited from the global config",
+			cfg.API.LandingPage, want)
+	}
+	if want := []string{"repo-only"}; !reflect.DeepEqual(cfg.API.Exclude, want) {
+		t.Errorf("API.Exclude = %q, want %q — the repo list replaces the global one",
+			cfg.API.Exclude, want)
+	}
+	if want := []string{"GLOBAL.md"}; !reflect.DeepEqual(cfg.API.AdditionalDocs, want) {
+		t.Errorf("API.AdditionalDocs = %q, want %q — an unnamed sibling survives",
+			cfg.API.AdditionalDocs, want)
+	}
+}

@@ -490,6 +490,10 @@ func (c *Config) Validate() ([]string, error) {
 		return warnings, err
 	}
 
+	if err := c.validateAPI(); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
 }
 
@@ -560,24 +564,52 @@ func (c *Config) validateResolution() error {
 		return nil
 	}
 
+	for _, rt := range c.resolutionTokens() {
+		if err := claim(rt.token, rt.owner, rt.kind); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// resolutionToken is one string a user could type to mean a type: the
+// token itself, the type that owns it, and a word naming where it came
+// from, for error messages.
+type resolutionToken struct {
+	token string
+	owner string
+	kind  string
+}
+
+// resolutionTokens returns every token an enabled type resolves from, in
+// a stable order.
+//
+// This is the single definition of "what a user could type to mean this
+// type", and it must stay in step with resolveType's tiers. Two callers
+// need it and they need the same answer: validateResolution rejects a
+// token two types both claim, and validateAPI rejects an additional_docs
+// entry whose first path segment is one of these — a route that would be
+// indistinguishable from /:owner/:repo/:type/:docId. A second, smaller
+// copy of the union in either caller is a hole, not a duplication.
+//
+// Tokens come back verbatim; a caller that compares them folds case
+// itself, as resolveType does.
+func (c *Config) resolutionTokens() []resolutionToken {
 	enabledList := c.EnabledTypes()
 	enabled := make(map[string]bool, len(enabledList))
 	for _, name := range enabledList {
 		enabled[name] = true
 	}
 
+	tokens := make([]resolutionToken, 0, len(enabledList)*3)
 	for _, name := range enabledList {
-		if err := claim(name, name, "name"); err != nil {
-			return err
-		}
+		tokens = append(tokens, resolutionToken{name, name, "name"})
 		for _, alias := range c.Types[name].Aliases {
-			if err := claim(alias, name, "alias"); err != nil {
-				return err
-			}
+			tokens = append(tokens, resolutionToken{alias, name, "alias"})
 		}
-		if err := claim(c.Types[name].IDPrefix, name, "id_prefix"); err != nil {
-			return err
-		}
+		tokens = append(tokens,
+			resolutionToken{c.Types[name].IDPrefix, name, "id_prefix"})
 	}
 
 	// Built-in registry aliases (e.g. "inv", "implementation") for enabled
@@ -588,13 +620,12 @@ func (c *Config) validateResolution() error {
 			continue
 		}
 		for _, alias := range dt.Aliases {
-			if err := claim(alias, dt.Name, "registry alias"); err != nil {
-				return err
-			}
+			tokens = append(tokens,
+				resolutionToken{alias, dt.Name, "registry alias"})
 		}
 	}
 
-	return nil
+	return tokens
 }
 
 // readConfigMap reads a YAML config file into a raw settings map. A missing

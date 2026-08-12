@@ -167,14 +167,18 @@ func checkPathSegments(value string, allowDir bool) error {
 		return fmt.Errorf("%q must be a clean path: no %q or empty segments", value, ".")
 	}
 
-	// Win32 strips trailing spaces from every path component, so ".. "
-	// resolves as ".." on a consumer that uses the Windows API — traversal
-	// the segment checks above cannot see, because the segment is not
-	// literally "..". Checked last so it never changes which rule fires
-	// for a path the other rules already reject.
+	// Win32 strips trailing spaces *and periods* from every path component,
+	// so ".. " and "..." both resolve as ".." on a consumer that uses the
+	// Windows API — traversal the segment checks above cannot see, because
+	// the segment is not literally "..". The same trimming makes "docs."
+	// name "docs", which is how a caller's own prefix rules get evaded.
+	//
+	// Checked last so it never changes which rule fires for a path the
+	// other rules already reject.
 	for _, seg := range segments {
-		if strings.TrimRight(seg, " ") != seg {
-			return fmt.Errorf("%q must not have a path component ending in a space", value)
+		if strings.TrimRight(seg, " .") != seg {
+			return fmt.Errorf(
+				"%q must not have a path component ending in a space or period", value)
 		}
 	}
 
