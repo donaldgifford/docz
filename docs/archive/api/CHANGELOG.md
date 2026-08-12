@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Bug Fixes
 
-- *(chart)* Make the Tailscale sidecar restricted-compliant and stateful
+- *(chart)* Make the Tailscale sidecar restricted-compliant and stateful ([#17](https://github.com/donaldgifford/docz-api/issues/17))
 
 ## [0.5.1] - 2026-08-11
 
