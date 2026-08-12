@@ -405,7 +405,7 @@ the repo's own documentation tell the truth.
 - [ ] Post-tag `dont-release` PR flipping DESIGN-0011 → Implemented and
       IMPL-0016 → Completed (Decision 7 — the `#67`/`#68`/`#79` pattern, since
       the release PR's own merge is what cuts the tag).
-- [ ] Note in the release body that this is the release docz-api pins for R10,
+- [x] Note in the release body that this is the release docz-api pins for R10,
       and that `v1.1.1` already changed `DefaultConfig()`/`EnabledTypes()` for
       the PLAN default — two consecutive releases touching defaults deserves one
       sentence so anyone bumping from `v1.1.0` sees both.
@@ -426,12 +426,18 @@ module, the release-body note, and the post-tag status flips — cannot run
 before it.
 
 Done: PR [#84](https://github.com/donaldgifford/docz/pull/84) is open with the
-`minor` label and green. The half of the release-body task that does not need a
-tag is done in the PR body, so whoever merges sees it: this is the release
-docz-api pins for R10, and a repo bumping from `v1.1.0` crosses **two**
-default-changing releases, since `v1.1.1` already flipped PLAN to
-`enabled: false`. Fold that into the generated release notes once the tag
-exists, and the task is complete.
+`minor` label and green, and the release body is written.
+
+That last task turned out **not** to need the tag, contrary to how this record
+first described it. `pr-semver-bump` is configured with
+`release-notes-prefix: "### RELEASE NOTES"`, so the published release body is
+authored in the PR description under that exact heading and is extracted at
+merge — the same way `v1.1.0`'s notes were written in PR #78. The first draft
+of this section used `## For the release notes`, which the action does not
+match, so the note would have been silently dropped from the release. Fixed:
+#84 now carries a `### RELEASE NOTES` section covering the new symbols in both
+packages, the `changelog.file` behavior change, the `v1.1.1` PLAN default a
+repo bumping from `v1.1.0` also crosses, and the R10 pin.
 
 Also outstanding before merge: **Open Question 9** (`docs_dir` is not itself
 path-validated) needs a decision.
