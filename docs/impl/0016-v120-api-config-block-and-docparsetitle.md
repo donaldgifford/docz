@@ -31,6 +31,7 @@ created: 2026-08-11
   - [Phase 4: the v1.2.0 release](#phase-4-the-v120-release)
     - [Tasks](#tasks-3)
     - [Success Criteria](#success-criteria-3)
+    - [Phase 4 status](#phase-4-status)
 - [File Changes](#file-changes)
 - [Testing Plan](#testing-plan)
 - [Dependencies](#dependencies)
@@ -416,6 +417,25 @@ the repo's own documentation tell the truth.
   a local `replace`.
 - DESIGN-0011 Implemented, IMPL-0016 Completed.
 
+#### Phase 4 status
+
+**Blocked on the merge, which is a release decision rather than an
+implementation step.** Merging the release PR is what cuts the tag, so the
+three remaining tasks — the scratch-module exercise against the published
+module, the release-body note, and the post-tag status flips — cannot run
+before it.
+
+Done: PR [#84](https://github.com/donaldgifford/docz/pull/84) is open with the
+`minor` label and green. The half of the release-body task that does not need a
+tag is done in the PR body, so whoever merges sees it: this is the release
+docz-api pins for R10, and a repo bumping from `v1.1.0` crosses **two**
+default-changing releases, since `v1.1.1` already flipped PLAN to
+`enabled: false`. Fold that into the generated release notes once the tag
+exists, and the task is complete.
+
+Also outstanding before merge: **Open Question 9** (`docs_dir` is not itself
+path-validated) needs a decision.
+
 ## File Changes
 
 | File | Action | Description |
@@ -438,16 +458,31 @@ the repo's own documentation tell the truth.
 
 ## Testing Plan
 
-- [ ] Config: decode / defaults / normalize / validate-enabled /
-      validate-disabled tables, all `errors.Is`-asserted
-- [ ] Config: merge semantics for the two slice fields
-- [ ] Parity: dormant-block decode pin; unknown-key leniency unchanged
-- [ ] `docparse.Title`: eight-case table + golden fixtures
-- [ ] `docparse.Headings`: golden fixtures **unchanged** (the freeze proof)
-- [ ] `internal/wiki`: nav titles after the `firstH1` collapse
-- [ ] `test/consumer`: R10 surface via public import paths
+- [x] Config: decode / defaults / normalize / validate-enabled /
+      validate-disabled tables, all `errors.Is`-asserted —
+      `TestLoad_APIBlockNormalization` and `TestValidate_API`, the latter
+      asserting the dormant inversion against the identical value in the same
+      subtest
+- [x] Config: merge semantics for the two slice fields — `TestMergeMaps_APIBlock`
+      pins that the block deep-merges key by key while a list value is replaced
+      wholesale. In-package, through `mergeMaps` + `decodeSettings` rather than
+      `Load`, which reads the global config from the user's home directory
+- [x] Parity: dormant-block decode pin (`TestLoad_DormantAPIBlockNowDecodes`);
+      unknown-key leniency unchanged (`TestLoad_UnknownKeysIgnored`, plus the
+      unknown-sibling case in the api table)
+- [x] `docparse.Title`: table + golden fixtures. The table outgrew eight cases —
+      the frontmatter and setext rules each needed several once review found
+      what they got wrong — and `title_edges.md` carries the cases a single
+      document *can* hold at once
+- [x] `docparse.Headings`: golden fixtures **unchanged** (the freeze proof) —
+      the regenerated diff adds a `# title` section and touches nothing else
+- [x] `internal/wiki`: nav titles after the `firstH1` collapse —
+      `TestDocTitle_H1Delegation` pins the old table plus each behavior delta;
+      no wiki golden moved
+- [x] `test/consumer`: R10 surface via public import paths — and verified red
+      when `Config.API` is renamed, since this module sits outside root `./...`
 - [ ] Scratch module against the published `v1.2.0`
-- [ ] `make ci` green at the end of every phase
+- [x] `make ci` green at the end of every phase
 
 ## Dependencies
 
