@@ -99,3 +99,7 @@ wiki:
 toc:
   enabled: true # generate ToC during docz update
   min_headings: 3 # minimum headings to generate a ToC
+
+changelog:
+  enabled: true # opt in so tools reading this config find your changelog
+  file: CHANGELOG.md # repo-relative; subpaths work (charts/api/CHANGELOG.md)
