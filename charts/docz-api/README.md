@@ -34,7 +34,7 @@ provenance attestations (GitHub artifact attestations, Build L2).
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.3.2 \
+  --version 0.4.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.3.2 \
+  --version 0.4.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -196,7 +196,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.3.2
+  ghcr.io/donaldgifford/charts/docz-api:0.4.0
 ```
 
 ### Build provenance
@@ -206,7 +206,7 @@ it came from this repository:
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz-api:0.3.2 \
+  oci://ghcr.io/donaldgifford/charts/docz-api:0.4.0 \
   --owner donaldgifford
 ```
 
@@ -219,7 +219,7 @@ cosign verify-attestation \
     '^https://github.com/donaldgifford/docz-api/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.3.2
+  ghcr.io/donaldgifford/charts/docz-api:0.4.0
 ```
 
 ## Values
@@ -367,12 +367,15 @@ cosign verify-attestation \
 | store.postgres.cnpg.storage | object | `{"size":"10Gi","storageClass":""}` | Storage block. |
 | store.postgres.maxConns | int | `16` | Connection cap for the pgx pool. |
 | store.postgres.mode | string | `"baked"` | Source of the Postgres deployment. One of: "baked"    — chart renders a single-pod Postgres Deployment; "cnpg"     — chart renders a CloudNativePG `Cluster` CR; "external" — operator provides DATABASE_URL via store.external. |
-| tailscale | object | `{"authKeySecret":"tailscale-auth","enabled":false,"hostname":"docz-api","image":"ghcr.io/tailscale/tailscale:latest","rbac":{"create":true},"userspace":true}` | Tailscale Funnel sidecar. Off by default; the chart does not require tailscale — homelab infra fronts the service with it. |
+| tailscale | object | `{"authKeySecret":"tailscale-auth","enabled":false,"hostname":"docz-api","image":"ghcr.io/tailscale/tailscale:v1.102.2","persistState":true,"rbac":{"create":true},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"runAsGroup":1000,"runAsUser":1000},"stateSecret":"","userspace":true}` | Tailscale Funnel sidecar. Off by default; the chart does not require tailscale — homelab infra fronts the service with it. |
 | tailscale.authKeySecret | string | `"tailscale-auth"` | Name of existing secret containing 'authkey' |
 | tailscale.enabled | bool | `false` | Enable Tailscale sidecar container |
 | tailscale.hostname | string | `"docz-api"` | Tailscale hostname (becomes <hostname>.<tailnet>.ts.net) |
-| tailscale.image | string | `"ghcr.io/tailscale/tailscale:latest"` | Tailscale container image |
-| tailscale.rbac | object | `{"create":true}` | Create RBAC for Tailscale state management |
+| tailscale.image | string | `"ghcr.io/tailscale/tailscale:v1.102.2"` | Tailscale container image renovate: datasource=github-releases depName=tailscale/tailscale |
+| tailscale.persistState | bool | `true` | Persist tailscaled state in a Kubernetes Secret (TS_KUBE_SECRET) so a restarting pod re-attaches as the SAME tailnet node. With ephemeral state the node key is regenerated on each restart, the old node keeps the hostname, the new one becomes `<hostname>-1`, and the Funnel DNS record is left pointing at a dead node — every request then fails with a TLS EOF. Set false to fall back to the old emptyDir behaviour. Requires `rbac.create` (or an equivalent Role) so the sidecar may create and update that Secret. |
+| tailscale.rbac | object | `{"create":true}` | Create RBAC allowing the sidecar to manage its state Secret |
+| tailscale.securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"runAsGroup":1000,"runAsUser":1000}` | Security context for the sidecar. The defaults satisfy the `restricted` Pod Security Standard; userspace networking needs no capabilities, so all are dropped. Overriding this replaces it wholesale — keep `allowPrivilegeEscalation: false` and the capability drop or admission will reject the pod in a `restricted` namespace. |
+| tailscale.stateSecret | string | `""` | Name of the state Secret. Empty → `<fullname>-tailscale-state`. The sidecar creates it on first run via the Role in `rbac.create`. |
 | tailscale.userspace | bool | `true` | Use userspace networking (no CAP_NET_ADMIN needed) |
 | tolerations | list | `[]` | Tolerations |
 

@@ -242,3 +242,12 @@ env and no okta-client-secret key.
 {{- define "docz-api.authProviders" -}}
 {{- splitList "," (.Values.config.authProviders | default "" | replace " " "") | compact | toJson -}}
 {{- end -}}
+
+{{/*
+Name of the Secret holding tailscaled's node state (TS_KUBE_SECRET).
+Defaults to <fullname>-tailscale-state; the sidecar creates it itself on
+first run using the Role in tailscale-rbac.yaml.
+*/}}
+{{- define "docz-api.tailscaleStateSecret" -}}
+{{- default (printf "%s-tailscale-state" (include "docz-api.fullname" .)) .Values.tailscale.stateSecret -}}
+{{- end -}}

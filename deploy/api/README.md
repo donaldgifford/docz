@@ -91,6 +91,28 @@ path never collides with a sibling service — there is no need to override the
 path. Enable Funnel for the node's tag in your tailnet ACLs and supply a
 Tailscale auth key via `tailscale.authKeySecret`.
 
+Three things that produce a **TLS EOF** on every webhook delivery if missed:
+
+1. **Funnel must be permitted in the tailnet policy** — a `nodeAttrs` entry
+   granting the `funnel` attribute to the node's tag, and HTTPS certificates
+   enabled for the tailnet (the serve config resolves `${TS_CERT_DOMAIN}`).
+   Without it tailscaled refuses to serve and the public ingress drops
+   connections.
+2. **Node state must persist.** `tailscale.persistState` (default `true`,
+   chart ≥ 0.4.0) stores tailscaled's node key in a Secret via
+   `TS_KUBE_SECRET`. With ephemeral state the key is regenerated on every
+   restart, the old node keeps the `docz-api` hostname, the new one becomes
+   `docz-api-1`, and the Funnel DNS record is left pointing at a dead node.
+   Requires `tailscale.rbac.create` (the default).
+3. **The namespace's Pod Security level.** The sidecar satisfies `restricted`
+   as of chart 0.4.0; earlier charts set no `allowPrivilegeEscalation` or
+   capability drop, so a `restricted`-enforcing namespace rejected the pod
+   outright — which looks like a Funnel outage, because nothing is running.
+
+Diagnose with `tailscale status` / `tailscale funnel status` in the sidecar: a
+node named `docz-api-1` (or higher) is the state problem, an empty funnel
+status is the ACL one.
+
 ### Repository permissions
 
 | Permission | Access    | Why                                                                                                          |

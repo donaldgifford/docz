@@ -366,14 +366,39 @@ tailscale:
   # -- Enable Tailscale sidecar container
   enabled: false
   # -- Tailscale container image
-  image: ghcr.io/tailscale/tailscale:latest
+  # renovate: datasource=github-releases depName=tailscale/tailscale
+  image: ghcr.io/tailscale/tailscale:v1.102.2
   # -- Tailscale hostname (becomes <hostname>.<tailnet>.ts.net)
   hostname: docz-api
   # -- Use userspace networking (no CAP_NET_ADMIN needed)
   userspace: true
   # -- Name of existing secret containing 'authkey'
   authKeySecret: tailscale-auth
-  # -- Create RBAC for Tailscale state management
+  # -- Persist tailscaled state in a Kubernetes Secret (TS_KUBE_SECRET) so a
+  # restarting pod re-attaches as the SAME tailnet node. With ephemeral
+  # state the node key is regenerated on each restart, the old node keeps
+  # the hostname, the new one becomes `<hostname>-1`, and the Funnel DNS
+  # record is left pointing at a dead node — every request then fails with a
+  # TLS EOF. Set false to fall back to the old emptyDir behaviour.
+  # Requires `rbac.create` (or an equivalent Role) so the sidecar may
+  # create and update that Secret.
+  persistState: true
+  # -- Name of the state Secret. Empty → `<fullname>-tailscale-state`. The
+  # sidecar creates it on first run via the Role in `rbac.create`.
+  stateSecret: ""
+  # -- Security context for the sidecar. The defaults satisfy the
+  # `restricted` Pod Security Standard; userspace networking needs no
+  # capabilities, so all are dropped. Overriding this replaces it wholesale
+  # — keep `allowPrivilegeEscalation: false` and the capability drop or
+  # admission will reject the pod in a `restricted` namespace.
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  # -- Create RBAC allowing the sidecar to manage its state Secret
   rbac:
     create: true
 

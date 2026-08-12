@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: tailscale sidecar
+templates:
+  - templates/deployment.yaml
+set:
+  config:
+    authRedirectBase: "https://docz.example.com"
+    githubOAuthClientID: "gh-client-id"
+  tailscale:
+    enabled: true
+tests:
+  - it: omits the sidecar entirely when disabled
+    set:
+      tailscale:
+        enabled: false
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+
+  - it: satisfies the restricted Pod Security Standard
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[1].securityContext.capabilities.drop
+          value: ["ALL"]
+      - equal:
+          path: spec.template.spec.containers[1].securityContext.runAsUser
+          value: 1000
+
+  - it: persists node state in a Secret by default
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: TS_KUBE_SECRET
+            value: RELEASE-NAME-docz-api-tailscale-state
+      - notContains:
+          path: spec.template.spec.containers[1].env
+          any: true
+          content:
+            name: TS_STATE_DIR
+
+  - it: honours an explicit state secret name
+    set:
+      tailscale:
+        stateSecret: my-ts-state
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: TS_KUBE_SECRET
+            value: my-ts-state
+
+  - it: falls back to an emptyDir when persistState is false
+    set:
+      tailscale:
+        persistState: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: TS_STATE_DIR
+            value: /var/lib/tailscale
+      - notContains:
+          path: spec.template.spec.containers[1].env
+          any: true
+          content:
+            name: TS_KUBE_SECRET
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: tailscale-state
+            emptyDir: {}
+
+  - it: pins the sidecar image to a release, not latest
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[1].image
+          pattern: ^ghcr\.io/tailscale/tailscale:v[0-9]+\.[0-9]+\.[0-9]+$

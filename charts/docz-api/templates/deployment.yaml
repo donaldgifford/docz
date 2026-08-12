@@ -221,21 +221,34 @@ spec:
                   key: authkey
             - name: TS_HOSTNAME
               value: {{ .Values.tailscale.hostname | quote }}
+            {{- if .Values.tailscale.persistState }}
+            # State lives in a Secret so a restarting pod re-attaches as the
+            # SAME tailnet node. With ephemeral state the node key is
+            # regenerated on every restart, the old node keeps the hostname,
+            # and the new one becomes <hostname>-1 — leaving the Funnel DNS
+            # record pointing at a dead node (TLS EOF on every request).
+            - name: TS_KUBE_SECRET
+              value: {{ include "docz-api.tailscaleStateSecret" . | quote }}
+            {{- else }}
             - name: TS_STATE_DIR
               value: /var/lib/tailscale
+            {{- end }}
             - name: TS_USERSPACE
               value: {{ .Values.tailscale.userspace | quote }}
             - name: TS_SERVE_CONFIG
               value: /config/serve-config.json
           volumeMounts:
+            {{- if not .Values.tailscale.persistState }}
             - name: tailscale-state
               mountPath: /var/lib/tailscale
+            {{- end }}
             - name: tailscale-serve-config
               mountPath: /config
               readOnly: true
+          {{- with .Values.tailscale.securityContext }}
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
         {{- end }}
       volumes:
         {{- if .Values.secrets.privateKeyAsFile }}
@@ -247,8 +260,10 @@ spec:
                 path: private-key.pem
         {{- end }}
         {{- if .Values.tailscale.enabled }}
+        {{- if not .Values.tailscale.persistState }}
         - name: tailscale-state
           emptyDir: {}
+        {{- end }}
         - name: tailscale-serve-config
           configMap:
             name: {{ include "docz-api.fullname" . }}-tailscale-serve-config

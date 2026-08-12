@@ -149,7 +149,7 @@ tests:
           value: tailscale
       - equal:
           path: spec.template.spec.containers[1].image
-          value: "ghcr.io/tailscale/tailscale:latest"
+          value: "ghcr.io/tailscale/tailscale:v1.102.2"
 
   - it: should not inject the Tailscale sidecar when disabled
     asserts:
