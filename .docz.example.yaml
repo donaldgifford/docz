@@ -99,8 +99,12 @@ wiki:
     - templates
     - examples
 
-# PROPOSED — not yet implemented. See DESIGN-0011; ships in docz v1.2.0.
-# docz ignores unknown keys, so this block is inert until then.
+# What docz-api ingests and docz-site renders for this repo, beyond the docz
+# documents under the type directories. See DESIGN-0011; shipped in docz v1.2.0.
+#
+# CAUTION: enabling this publishes every .md under docs_dir, not just docz
+# documents. Check what is in there first, and use exclude for the rest.
+# No docz command reads this block — it is a declaration for consumers.
 api:
   enabled: true
 

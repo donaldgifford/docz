@@ -27,6 +27,7 @@ created: 2026-08-11
   - [Phase 3: consumer proof + living docs](#phase-3-consumer-proof--living-docs)
     - [Tasks](#tasks-2)
     - [Success Criteria](#success-criteria-2)
+    - [Phase 3 record](#phase-3-record)
   - [Phase 4: the v1.2.0 release](#phase-4-the-v120-release)
     - [Tasks](#tasks-3)
     - [Success Criteria](#success-criteria-3)
@@ -338,28 +339,28 @@ the repo's own documentation tell the truth.
 
 #### Tasks
 
-- [ ] Add `test/consumer/consumer_v12_test.go` (Decision 6 — one file per
+- [x] Add `test/consumer/consumer_v12_test.go` (Decision 6 — one file per
       release, the existing precedent) reading `cfg.API` fields by their public paths and call `docparse.Title`. Mirror
       the R10 clause literally: decode a block, prove `./` normalization, prove
       a traversal rejection via `errors.Is(err, config.ErrInvalidAPIPath)`,
       prove a dormant block does **not** reject, and prove `Title` returns `""`
       for a frontmatter-only document.
-- [ ] Note in the phase record that `make test-consumer` is what catches a
+- [x] Note in the phase record that `make test-consumer` is what catches a
       regression here — `test/consumer/` is a separate module outside root
       `./...`, so `go test ./...` passes while it is broken. This exact trap
       bit during the PR that preceded this branch.
-- [ ] Update `.docz.example.yaml`: drop the "PROPOSED — not yet implemented"
+- [x] Update `.docz.example.yaml`: drop the "PROPOSED — not yet implemented"
       header from the `api:` block now that it is real.
-- [ ] README: document the `api:` block — fields, the dormancy guarantee, the
+- [x] README: document the `api:` block — fields, the dormancy guarantee, the
       `docs_dir`-mirrors-URL rule, and the blast-radius caution about enabling
       it. Add `docparse.Title` wherever the public packages are summarized.
-- [ ] Update `CLAUDE.md`'s `pkg/doczcore/config` and `pkg/doczcore/docparse`
+- [x] Update `CLAUDE.md`'s `pkg/doczcore/config` and `pkg/doczcore/docparse`
       paragraphs — that file is the architecture map and is load-bearing for
       future work.
-- [ ] Record **R10** in DESIGN-0008's requirements list (R1–R9 today), in the
+- [x] Record **R10** in DESIGN-0008's requirements list (R1–R9 today), in the
       same form as its siblings, so docz-api has an explicit acceptance
       criterion rather than an inference (INV-0007 Recommendation 5).
-- [ ] Godoc sweep: read `go doc -all` over `config` and `docparse` as a
+- [x] Godoc sweep: read `go doc -all` over `config` and `docparse` as a
       consumer would.
 
 #### Success Criteria
@@ -371,6 +372,21 @@ the repo's own documentation tell the truth.
 - README, `CLAUDE.md`, `.docz.example.yaml`, and DESIGN-0008 all describe the
   same block.
 - `make ci` green.
+
+#### Phase 3 record
+
+- **`make test-consumer` is what catches a regression here.** `test/consumer/`
+  is a separate module with its own `go.mod`, so it sits outside root `./...`
+  and `go test ./...` stays green while it is broken. That trap bit during the
+  patch PR that preceded this branch, when a template change broke the consumer
+  proof and only `make ci` noticed. Verified live this time: renaming
+  `Config.API` turns `make test-consumer` red with a build failure, and
+  restoring it turns it green.
+- **The godoc sweep diffed `go doc -all` over all five public packages against
+  `v1.1.1`.** No exported symbol was removed or changed in any of them; the
+  only non-additive line in the whole diff is the reflowed first sentence of
+  `docparse`'s package comment. `config` gains `APIConfig` and
+  `ErrInvalidAPIPath`, `docparse` gains `Title`, and nothing else moves.
 
 ---
 

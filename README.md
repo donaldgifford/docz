@@ -18,6 +18,7 @@ README index tables up to date.
 - **Table of contents:** automatic ToC generation in documents using `<!--toc:start-->` / `<!--toc:end-->` markers
 - **MkDocs/TechDocs integration:** `wiki` commands generate and maintain `mkdocs.yml` for Backstage TechDocs
 - **Changelog awareness:** opt-in `changelog:` config block plus a parser for git-cliff / Keep a Changelog files
+- **Publishing declaration:** opt-in `api:` config block naming the repo's landing page, exclusions, and markdown outside `docs_dir`, for tools that render a docz repo
 
 ## Getting Started
 
@@ -391,6 +392,12 @@ toc:
 changelog:
   enabled: false           # opt in so tools reading this config find your changelog
   file: CHANGELOG.md       # repo-relative; subpaths work (charts/api/CHANGELOG.md)
+
+api:
+  enabled: false           # opt in to publish this repo's docs beyond docz documents
+  landing_page: ""         # defaults to <docs_dir>/index.md
+  exclude: []              # path prefixes under docs_dir that are never published
+  additional_docs: []      # markdown OUTSIDE docs_dir, e.g. CONTRIBUTING.md
 ```
 
 Run `docz config` to see the fully resolved configuration.
@@ -407,6 +414,52 @@ traversal, and trailing slashes are rejected at load time. A disabled block is
 never validated, so you can add it before you are ready to turn it on. The
 matching parser is `doczcore/document.ParseChangelog`, described in
 [Using docz as a Go Library](#using-docz-as-a-go-library).
+
+### API
+
+The `api:` block declares what a documentation API or site should publish for
+this repo beyond the docz documents themselves. Like `changelog:`, it is **off
+by default**, and no docz command reads it — `docz config` prints it and that
+is all. It exists so consumers have one validated, versioned place to look
+instead of guessing at a repo's layout.
+
+The governing rule is that **the URL path mirrors the `docs_dir` path**:
+
+| File | Published as |
+| ---- | ------------ |
+| `docs/index.md` | the repo root |
+| `docs/impl/README.md` | `/<owner>/<repo>/impl` |
+| `docs/impl/0015-foo.md` | `/<owner>/<repo>/impl/IMPL-0015` |
+| `docs/examples/example1.md` | `/<owner>/<repo>/examples/example1.md` |
+
+A directory's `index.md` or `README.md` is that directory's page, which is why
+the index tables `docz update` generates *are* the type pages. Everything else
+under `docs_dir` is addressed at its `docs_dir`-relative path, so nothing needs
+listing.
+
+The four fields:
+
+- **`enabled`** — off by default. A disabled block is never validated, so you
+  can commit it before your tooling is ready.
+- **`landing_page`** — the repo's front page, repo-relative. Empty resolves to
+  `<docs_dir>/index.md`.
+- **`exclude`** — path prefixes under `docs_dir` that are never published.
+  `<docs_dir>/templates/` is always excluded and need not be listed.
+- **`additional_docs`** — markdown *outside* `docs_dir`, such as
+  `CONTRIBUTING.md`, each published at its repo-relative path. An entry inside
+  `docs_dir` is an error: it is already consumed.
+
+> **Enabling this publishes every `.md` under `docs_dir`**, not just docz
+> documents. Look at what is in there first, and use `exclude` for the rest.
+
+When enabled, every path is validated as strictly as `changelog.file`:
+absolute paths, `..` traversal, backslashes, and control characters are
+rejected at load time, and so is an `additional_docs` entry whose first path
+segment would collide with a document type's route. Failures wrap
+`config.ErrInvalidAPIPath`.
+
+Files listed in `additional_docs` have no frontmatter to take a title from, so
+consumers derive one from the document's H1 via `doczcore/docparse.Title`.
 
 ## Template System
 
@@ -596,9 +649,9 @@ go get github.com/donaldgifford/docz@latest
 
 | Package | What it provides |
 |---------|------------------|
-| `pkg/doczcore/config` | `.docz.yaml` loading, validation, type resolution (`Load`, `Validate`, `EnabledTypes`) |
+| `pkg/doczcore/config` | `.docz.yaml` loading, validation, type resolution, and the `changelog:` / `api:` declarations (`Load`, `Validate`, `EnabledTypes`) |
 | `pkg/doczcore/document` | Frontmatter parsing, directory scanning, and changelog parsing (`ParseFrontmatter`, `ScanDocuments`, `ParseChangelog`) |
-| `pkg/doczcore/docparse` | Markdown facts: headings with GitHub anchor slugs, checkbox task items, 1-based line numbers (`Headings`, `TaskItems`) |
+| `pkg/doczcore/docparse` | Markdown facts: headings with GitHub anchor slugs, checkbox task items, 1-based line numbers, and the document title (`Headings`, `TaskItems`, `Title`) |
 | `pkg/doczcore/docwrite` | The write side: `Create` from templates, byte-preserving `SetStatus`, checkbox `CheckTask` |
 | `pkg/doczcore/toc` | ToC generation and marker splicing over `docparse` facts (`UpdateToC`, `UpdateFiles`) |
 
