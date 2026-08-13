@@ -2,7 +2,7 @@
 
 # Go
 # renovate: datasource=github-tags depName=golang/go
-go = "1.26.4"
+go = "1.26.6"
 # renovate: datasource=github-releases depName=segmentio/golines
 golines = "latest"
 # renovate: datasource=go depName=github.com/spf13/cobra-cli
@@ -20,13 +20,13 @@ golines = "latest"
 # Repo utilities
 # Formatters and linters
 # renovate: datasource=github-releases depName=DavidAnson/markdownlint-cli2
-markdownlint-cli2 = "0.18.1"
+markdownlint-cli2 = "0.23.2"
 # renovate: datasource=github-releases depName=google/yamlfmt
-yamlfmt = "0.20.0"
+yamlfmt = "0.21.0"
 # renovate: datasource=github-tags depName=adrienverge/yamllint
-yamllint = "1.37.1"
+yamllint = "1.38.0"
 # renovate: datasource=npm depName=prettier
-prettier = "3.7.4"
+prettier = "3.9.6"
 # renovate: datasource=github-releases depName=donaldgifford/makefmt
 "github:donaldgifford/makefmt" = "latest"
 # renovate: datasource=github-releases depName=mrtazz/checkmake
@@ -34,7 +34,7 @@ checkmake = "latest"
 
 # tools
 # renovate: datasource=github-releases depName=mikefarah/yq
-yq = "4.48.1"
+yq = "4.53.3"
 # renovate: datasource=github-releases depName=jqlang/jq
 jq = "latest"
 # renovate: datasource=github-releases depName=donaldgifford/docz
