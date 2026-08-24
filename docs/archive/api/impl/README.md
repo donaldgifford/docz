@@ -37,4 +37,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0003 | Repo index endpoint: serve docs_dir index.md as the repo home | Completed | 2026-07-10 | Donald Gifford | [0003-repo-index-endpoint-serve-docsdir-indexmd-as-the-repo-home.md](0003-repo-index-endpoint-serve-docsdir-indexmd-as-the-repo-home.md) |
 | IMPL-0004 | Adapt the helm chart, CI, and observability scaffolding | Completed | 2026-07-13 | Donald Gifford | [0004-adapt-the-helm-chart-ci-and-observability-scaffolding.md](0004-adapt-the-helm-chart-ci-and-observability-scaffolding.md) |
 | IMPL-0005 | Changelog endpoint: pin docz v1.1.0, config-driven fetch, raw serve | Completed | 2026-08-03 | Donald Gifford | [0005-changelog-endpoint-pin-docz-v110-config-driven-fetch-raw-serve.md](0005-changelog-endpoint-pin-docz-v110-config-driven-fetch-raw-serve.md) |
+| IMPL-0006 | Error observability: log every failure, self-heal the queue, optional no-auth mode | Draft | 2026-08-22 | Donald Gifford | [0006-error-observability-log-every-failure-self-heal-the-queue.md](0006-error-observability-log-every-failure-self-heal-the-queue.md) |
 <!-- END DOCZ AUTO-GENERATED -->

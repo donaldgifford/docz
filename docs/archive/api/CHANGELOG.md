@@ -9,6 +9,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(chart)* Make the Tailscale sidecar restricted-compliant and stateful ([#17](https://github.com/donaldgifford/docz-api/issues/17))
 
+### Documentation
+
+- *(inv)* INV-0007 — ingest failures are silent and block re-ingestion
+- *(inv)* Extend INV-0007 with no-auth mode feasibility and silent-sink audit
+- *(inv)* Record OQ-1 field evidence — start lines can't discriminate failure stage
+- *(impl)* IMPL-0006 — error observability plan from INV-0007
+- *(impl)* Fix IMPL-0006 emphasis style and Phase 5 TOC anchor
+- *(impl)* Record IMPL-0006 OQ answers — all a, probe-semantics note on OQ-1
+
 ## [0.5.1] - 2026-08-11
 
 ### Features

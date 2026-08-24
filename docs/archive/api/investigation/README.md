@@ -19,6 +19,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0004 | Helm chart and CI scaffolding audit | Concluded | 2026-07-13 | Donald Gifford | [0004-helm-chart-and-ci-scaffolding-audit.md](0004-helm-chart-and-ci-scaffolding-audit.md) |
 | INV-0005 | Changelog as a first-class docz artifact | Concluded | 2026-08-02 | Donald Gifford | [0005-changelog-as-a-first-class-docz-artifact.md](0005-changelog-as-a-first-class-docz-artifact.md) |
 | INV-0006 | cosign v3 cannot verify our SLSA provenance attestations | Concluded | 2026-08-10 | Donald Gifford | [0006-cosign-v3-cannot-verify-our-slsa-provenance-attestations.md](0006-cosign-v3-cannot-verify-our-slsa-provenance-attestations.md) |
+| INV-0007 | Ingest failures are silent and block re-ingestion | Concluded | 2026-08-21 | Donald Gifford | [0007-ingest-failures-are-silent-and-block-re-ingestion.md](0007-ingest-failures-are-silent-and-block-re-ingestion.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
