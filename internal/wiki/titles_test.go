@@ -180,30 +180,75 @@ func TestFilenameTitle(t *testing.T) {
 	}
 }
 
-func TestFirstH1(t *testing.T) {
+// TestDocTitle_H1Delegation pins DocTitle's H1 fallback now that the
+// scan is docparse.Title rather than a second implementation local to
+// this package (IMPL-0016 Phase 2, Decision 3). The first three cases
+// are what the old firstH1 table covered; the rest are the delta —
+// behavior the local scanner did not have, and the reason collapsing
+// them is an improvement rather than a lateral move.
+func TestDocTitle_H1Delegation(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name    string
 		content string
 		want    string
 	}{
-		{"simple heading", "# Hello World\n", "Hello World"},
-		{"heading after frontmatter", "---\ntitle: test\n---\n# Real Heading\n", "Real Heading"},
-		{"no heading", "Just text\n", ""},
-		{"h2 only", "## Not H1\n", ""},
-		{"heading with extra spaces", "#  Spaced  Title \n", "Spaced  Title"},
-		// Sanity-check the bytes.NewReader swap: bufio.Scanner strips trailing
-		// \r on CRLF lines, so the H1 should still parse cleanly. Full CRLF
-		// handling for non-heading lines is deferred to IMPL-0006.
-		{"crlf heading", "# CRLF Heading\r\n", "CRLF Heading"},
+		{name: "simple heading", content: "# Hello World\n", want: "Hello World"},
+		{
+			name:    "heading after frontmatter",
+			content: "---\ntitle: test\n---\n# Real Heading\n",
+			want:    "Real Heading",
+		},
+		{name: "h2 only falls back to the filename", content: "## Not H1\n", want: "Nav Doc"},
+		{
+			name:    "heading with extra spaces",
+			content: "#  Spaced  Title \n",
+			want:    "Spaced  Title",
+		},
+		{name: "crlf heading", content: "# CRLF Heading\r\n", want: "CRLF Heading"},
+
+		// The delta. firstH1 was not fence-aware and did not strip inline
+		// markdown, so these two produced "# Not A Title"'s neighbor and a
+		// nav entry with literal asterisks in it.
+		{
+			name:    "inline markdown is stripped",
+			content: "# **Bold** Title\n",
+			want:    "Bold Title",
+		},
+		{
+			name:    "heading inside a fence is skipped",
+			content: "```md\n# Not A Title\n```\n\n# Real Title\n",
+			want:    "Real Title",
+		},
+		{
+			// firstH1 toggled on every "---", so a mid-document rule put it
+			// into frontmatter mode and hid the heading that followed.
+			name:    "heading after a horizontal rule is found",
+			content: "Intro.\n\n---\n\n# Real Title\n",
+			want:    "Real Title",
+		},
+		{
+			name:    "setext heading is found",
+			content: "Setext Title\n============\n",
+			want:    "Setext Title",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := firstH1([]byte(tt.content))
+			path := filepath.Join(t.TempDir(), "nav-doc.md")
+			if err := os.WriteFile(path, []byte(tt.content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := DocTitle(path)
+			if err != nil {
+				t.Fatalf("DocTitle() error: %v", err)
+			}
 			if got != tt.want {
-				t.Errorf("firstH1() = %q, want %q", got, tt.want)
+				t.Errorf("DocTitle() = %q, want %q", got, tt.want)
 			}
 		})
 	}

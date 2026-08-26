@@ -625,9 +625,54 @@ goals; it just states them from docz-api's side.
   flagged so that if docz later standardizes a changelog location/format (or
   grows a `docz changelog` concept), docz-api is a known downstream consumer.
 
+- **R10 — The `api:` config block and `docparse.Title` (docz `v1.2.0`).**
+  R9's forward-looking note is now more than answered: docz `v1.1.0` shipped
+  the `changelog:` block plus `document.ParseChangelog`, and `v1.2.0` ships the
+  declaration for everything *else* a repo wants published (DESIGN-0011 /
+  IMPL-0016). docz-api reads:
+
+  | Package             | Symbols docz-api imports                                                                                                    |
+  | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+  | `doczcore/config`   | `Config.API` of type `APIConfig` (fields `Enabled`, `LandingPage`, `Exclude`, `AdditionalDocs`); sentinel `ErrInvalidAPIPath` |
+  | `doczcore/docparse` | `Title(content []byte) string`                                                                                              |
+
+  The contract docz-api may rely on:
+
+  a. **Dormancy.** A block with `enabled: false`, or no block at all, never
+  fails `Load` or `Validate`, whatever paths it holds. A repo can commit the
+  block before docz-api understands it.
+
+  b. **Normalization at load.** `LandingPage` is backfilled to
+  `<docs_dir>/index.md` when empty and enabled; leading `./` is stripped from
+  all three fields; a trailing `/` is stripped from each `Exclude` entry. Every
+  value arrives in one spelling, so a prefix match against the deny-list does
+  not have to canonicalize first.
+
+  c. **Validation when enabled.** Every path is repo-relative, clean, and
+  slash-separated: no absolute paths, no `..`, no volume names, no backslashes,
+  no control characters, no leading `~`, no segment ending in a space or
+  period. `AdditionalDocs` entries are additionally unique (case-insensitively),
+  lie outside `docs_dir`, do not duplicate `LandingPage`, and do not begin with
+  a path segment an enabled type resolves from. All failures wrap
+  `ErrInvalidAPIPath`.
+
+  d. **Validation is path-shape only.** docz never checks that a file exists —
+  it cannot, validating a config fetched from a git tree. Consumers skip
+  missing files and report them.
+
+  e. **`Title` is total.** It returns the first H1's text with inline markdown
+  stripped, or `""`. `""` is a normal outcome, not an error: docz-api falls
+  back to the filename, as it already does elsewhere.
+
+  The consumption rule those fields describe — markdown only, a directory's
+  index file is that directory's page, type directories reserved for docz
+  documents, everything else path-addressed at its `docs_dir`-relative path,
+  `<docs_dir>/templates/` always excluded — is specified in DESIGN-0011 and is
+  docz-api's to implement. docz declares; it does not fetch, walk, or route.
+
 When R1–R7 are met and the tag is cut, docz-api drops its `replace` directive
 and pins the published version; nothing else in the docz repo is required for
-docz-api to build and run.
+docz-api to build and run. R10 raises that pin to `v1.2.0`.
 
 ## API / Interface Changes
 

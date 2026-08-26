@@ -85,3 +85,29 @@ toc:
 changelog:
   enabled: {{ .Changelog.Enabled }}
   file: {{ .Changelog.File }}
+
+# docz-api / docz-site surface. Off by default. Enabling it publishes
+# every .md under docs_dir, so add exclude entries for anything that
+# should stay private. <docs_dir>/templates/ is always excluded.
+#
+# The URL path mirrors the docs_dir path: docs/index.md is the repo root,
+# a directory's README.md is that directory's page, and docz documents
+# keep their id-addressed route.
+api:
+  enabled: {{ .API.Enabled }}
+  # Optional; defaults to <docs_dir>/index.md.
+  landing_page:{{ with .API.LandingPage }} {{ . }}{{ end }}
+  # Path prefixes under docs_dir that are never published, e.g.
+  #   exclude:
+  #     - scratch
+  exclude:
+{{- range .API.Exclude }}
+    - {{ . }}
+{{- end }}
+  # Markdown outside docs_dir; anything inside it is already consumed, e.g.
+  #   additional_docs:
+  #     - CONTRIBUTING.md
+  additional_docs:
+{{- range .API.AdditionalDocs }}
+    - {{ . }}
+{{- end }}

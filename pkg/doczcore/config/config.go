@@ -111,6 +111,65 @@ type ChangelogConfig struct {
 	File string `yaml:"file"`
 }
 
+// APIConfig declares what docz-api ingests and docz-site renders for
+// this repo beyond the docz documents under the type directories
+// (DESIGN-0011).
+//
+// The block is inert to the docz CLI: no command reads it. It exists to
+// be a validated, semver-governed declaration that consumers read, which
+// is why the paths here are checked as strictly as changelog.file — a
+// consumer fetches them straight out of a git tree.
+//
+// The governing rule the fields encode: the URL path mirrors the
+// docs_dir path. Every .md under docs_dir is consumable, a directory's
+// README.md is that directory's page, and AdditionalDocs is the escape
+// hatch for markdown that convention places outside docs_dir entirely.
+//
+// There is deliberately no nested index struct. Naming a landing page is
+// enabling it, so a separate boolean would be redundant, and a nested
+// api.index would collide with the top-level index: block that governs
+// README table generation (Decision 2).
+type APIConfig struct {
+	// Enabled opts the repo into the api surface. Default false, so the
+	// block is dormant — and its paths left unvalidated — until a repo
+	// turns it on.
+	//
+	// This gates the *additional* surface only. A disabled or absent
+	// block means a consumer ingests exactly what it does today: docz
+	// documents under the type directories. It is not a switch for
+	// ingesting the repo at all (Decision 4), because every existing
+	// repo has no api: block and none of them should go dark.
+	Enabled bool `yaml:"enabled"`
+
+	// LandingPage is the repo's landing page, relative to the repo root.
+	// Empty resolves to <docs_dir>/index.md at load time, so it tracks a
+	// non-default docs_dir (Decision 3). Consumers address it as the repo
+	// root rather than at its own path.
+	LandingPage string `yaml:"landing_page"`
+
+	// Exclude lists path prefixes under docs_dir that are never
+	// published. Entries name directories, so a trailing "/" is
+	// accepted and means the same thing without it.
+	//
+	// <docs_dir>/templates/ is always excluded regardless of this list —
+	// it holds docz's own template overrides, which are machinery rather
+	// than documents. Keeping that implicit is what lets this default to
+	// empty, so a repo that sets Exclude does not silently lose the
+	// protection (the footgun WikiConfig.Exclude has, where setting the
+	// key replaces the default list wholesale).
+	Exclude []string `yaml:"exclude"`
+
+	// AdditionalDocs lists markdown OUTSIDE docs_dir, relative to the
+	// repo root — CONTRIBUTING.md, DEVELOPMENT.md. Anything under
+	// docs_dir is already consumed, so an entry there is a validation
+	// error rather than a second record for one file.
+	//
+	// Bare strings rather than objects (Decision 1): the title comes
+	// from the document's H1 via docparse.Title, and there is no
+	// per-entry metadata worth the schema.
+	AdditionalDocs []string `yaml:"additional_docs"`
+}
+
 // Config is the top-level configuration for docz.
 type Config struct {
 	DocsDir   string                `mapstructure:"docs_dir" yaml:"docs_dir"`
@@ -120,6 +179,7 @@ type Config struct {
 	Wiki      WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
 	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"`
 	Changelog ChangelogConfig       `                        yaml:"changelog"`
+	API       APIConfig             `                        yaml:"api"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -154,6 +214,13 @@ func DefaultConfig() Config {
 		Changelog: ChangelogConfig{
 			Enabled: false,
 			File:    DefaultChangelogFile,
+		},
+		// Dormant, and deliberately zero-valued beyond that: LandingPage
+		// is backfilled at load time so it can follow a non-default
+		// docs_dir, and both slices stay nil so an empty list in a
+		// config is distinguishable from an absent key.
+		API: APIConfig{
+			Enabled: false,
 		},
 	}
 }
@@ -214,6 +281,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 	applyTypesReplaceOnPresence(&cfg, repoConfigPath)
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
+	normalizeAPI(&cfg)
 
 	return cfg, nil
 }
@@ -231,15 +299,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 // explicit `file: ""` needs backfilling. Load normalizes; Validate only
 // judges.
 func normalizeChangelog(cfg *Config) {
-	file := strings.TrimSpace(cfg.Changelog.File)
-
-	// Strip repeated "./" prefixes ("././CHANGELOG.md") — filepath.Clean
-	// would also rewrite separators and resolve "..", which Validate must
-	// still be able to see and reject.
-	for strings.HasPrefix(file, "./") {
-		file = file[len("./"):]
-	}
-
+	file := normalizeRepoPath(cfg.Changelog.File)
 	if file == "" {
 		file = DefaultChangelogFile
 	}
@@ -430,6 +490,10 @@ func (c *Config) Validate() ([]string, error) {
 		return warnings, err
 	}
 
+	if err := c.validateAPI(); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
 }
 
@@ -444,15 +508,10 @@ func (c *Config) Validate() ([]string, error) {
 var ErrInvalidChangelogFile = errors.New("invalid changelog.file")
 
 // validateChangelog rejects a changelog file path that consumers could
-// not safely fetch out of a git tree (DESIGN-0010 Decision 5). The path
-// must be relative to the repo root and already canonical, which rules
-// out absolute paths, ".." traversal, "." and empty segments, trailing
-// separators, and a leading "~" that a shell would expand.
-//
-// Every rule is applied with docz's own semantics rather than the host
-// OS's: this config is typically validated on a Linux runner for a path
-// some other machine resolves, so filepath's platform-dependent view
-// would make the verdict depend on who happened to run the check.
+// not safely fetch out of a git tree (DESIGN-0010 Decision 5). The rules
+// live in validateRepoRelativePath, shared with the api block so there is
+// one hardening history rather than two that drift; see
+// ErrInvalidChangelogFile for the shape of the rendered message.
 //
 // The check runs only for an enabled block (Decision 7). A repo may
 // carry a dormant changelog: block — while rolling the feature out, or
@@ -463,61 +522,22 @@ func (c *Config) validateChangelog() error {
 		return nil
 	}
 
-	file := c.Changelog.File
-	reject := func(format string, args ...any) error {
-		return fmt.Errorf("%w: %s", ErrInvalidChangelogFile, fmt.Sprintf(format, args...))
-	}
-
-	switch {
-	case file == "":
+	if c.Changelog.File == "" {
 		// Unreachable via Load (normalizeChangelog backfills the
-		// default), but reachable for a hand-built Config.
-		return reject("must not be empty when changelog is enabled")
-	case strings.ContainsFunc(file, func(r rune) bool { return r < 0x20 || r == 0x7f }):
-		return reject("%q must not contain control characters", file)
-	case strings.ContainsRune(file, '\\'):
-		// Backslash is a path separator on Windows and a legal filename
-		// character elsewhere, so a lone ".." check cannot judge it
-		// portably. Repo-relative paths are slash-separated (that is how
-		// git names them); requiring it keeps the traversal check below
-		// meaningful on every host.
-		return reject("%q must use forward slashes to separate directories", file)
-	case filepath.IsAbs(file), strings.HasPrefix(file, "/"), hasVolumeName(file):
-		return reject("%q must be relative to the repo root", file)
-	case strings.HasPrefix(file, "~"):
-		// Never expanded by docz, and a consumer that hands the path to a
-		// shell would resolve it outside the repo entirely.
-		return reject("%q must not start with %q", file, "~")
-	case strings.HasSuffix(file, "/"):
-		return reject("%q must be a file path, not a directory", file)
+		// default), but reachable for a hand-built Config. Checked here
+		// rather than left to the shared helper so the message can say
+		// what makes an empty value wrong in this block.
+		return fmt.Errorf("%w: must not be empty when changelog is enabled",
+			ErrInvalidChangelogFile)
 	}
 
-	// Segments are split on "/" rather than handed to path.Clean so the
-	// rejection can name what is wrong. Traversal is its own message
-	// because it is the one a misconfigured repo actually hits.
-	segments := strings.Split(file, "/")
-	switch {
-	case slices.Contains(segments, ".."):
-		return reject("%q must not traverse outside the repo root", file)
-	case slices.Contains(segments, "."), slices.Contains(segments, ""):
-		return reject(
-			"changelog.file %q must be a clean path: no %q or empty segments", file, ".")
+	// field is "" because ErrInvalidChangelogFile already names the key;
+	// passing it would make the rendered chain stutter.
+	if err := validateRepoRelativeFile("", c.Changelog.File); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidChangelogFile, err)
 	}
 
 	return nil
-}
-
-// hasVolumeName reports whether p starts with a Windows drive letter such
-// as "C:". filepath.VolumeName only recognizes one when the binary itself
-// runs on Windows, and this config is routinely validated on a Linux
-// runner for a path a consumer may resolve anywhere — the verdict must
-// not depend on the validating host.
-func hasVolumeName(p string) bool {
-	if len(p) < 2 || p[1] != ':' {
-		return false
-	}
-	c := p[0]
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 // validateResolution rejects configs where two enabled types could resolve
@@ -544,24 +564,52 @@ func (c *Config) validateResolution() error {
 		return nil
 	}
 
+	for _, rt := range c.resolutionTokens() {
+		if err := claim(rt.token, rt.owner, rt.kind); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// resolutionToken is one string a user could type to mean a type: the
+// token itself, the type that owns it, and a word naming where it came
+// from, for error messages.
+type resolutionToken struct {
+	token string
+	owner string
+	kind  string
+}
+
+// resolutionTokens returns every token an enabled type resolves from, in
+// a stable order.
+//
+// This is the single definition of "what a user could type to mean this
+// type", and it must stay in step with resolveType's tiers. Two callers
+// need it and they need the same answer: validateResolution rejects a
+// token two types both claim, and validateAPI rejects an additional_docs
+// entry whose first path segment is one of these — a route that would be
+// indistinguishable from /:owner/:repo/:type/:docId. A second, smaller
+// copy of the union in either caller is a hole, not a duplication.
+//
+// Tokens come back verbatim; a caller that compares them folds case
+// itself, as resolveType does.
+func (c *Config) resolutionTokens() []resolutionToken {
 	enabledList := c.EnabledTypes()
 	enabled := make(map[string]bool, len(enabledList))
 	for _, name := range enabledList {
 		enabled[name] = true
 	}
 
+	tokens := make([]resolutionToken, 0, len(enabledList)*3)
 	for _, name := range enabledList {
-		if err := claim(name, name, "name"); err != nil {
-			return err
-		}
+		tokens = append(tokens, resolutionToken{name, name, "name"})
 		for _, alias := range c.Types[name].Aliases {
-			if err := claim(alias, name, "alias"); err != nil {
-				return err
-			}
+			tokens = append(tokens, resolutionToken{alias, name, "alias"})
 		}
-		if err := claim(c.Types[name].IDPrefix, name, "id_prefix"); err != nil {
-			return err
-		}
+		tokens = append(tokens,
+			resolutionToken{c.Types[name].IDPrefix, name, "id_prefix"})
 	}
 
 	// Built-in registry aliases (e.g. "inv", "implementation") for enabled
@@ -572,13 +620,12 @@ func (c *Config) validateResolution() error {
 			continue
 		}
 		for _, alias := range dt.Aliases {
-			if err := claim(alias, dt.Name, "registry alias"); err != nil {
-				return err
-			}
+			tokens = append(tokens,
+				resolutionToken{alias, dt.Name, "registry alias"})
 		}
 	}
 
-	return nil
+	return tokens
 }
 
 // readConfigMap reads a YAML config file into a raw settings map. A missing
@@ -657,6 +704,7 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 	applyTypesReplaceOnPresence(&cfg, path)
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
+	normalizeAPI(&cfg)
 
 	return cfg, nil
 }
