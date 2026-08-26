@@ -16,7 +16,14 @@ const oidcDiscoveryTimeout = 15 * time.Second
 // buildAuthProviders constructs the enabled auth providers from config. GitHub
 // needs no discovery; the OIDC providers (okta/keycloak) discover against their
 // issuer using ctx, so a bad issuer surfaces here at startup.
+//
+// Under AUTH_PROVIDERS=none it returns no providers: nothing is discovered and
+// no redirect URL is built, which is what lets none-mode boot with no login
+// configuration whatsoever.
 func buildAuthProviders(ctx context.Context, cfg *config.Config) ([]auth.Provider, error) {
+	if cfg.AuthDisabled() {
+		return nil, nil
+	}
 	redirectURL := cfg.Auth.RedirectBase + "/auth/callback"
 	var providers []auth.Provider
 

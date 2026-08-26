@@ -2,6 +2,9 @@ package session
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,5 +82,121 @@ func TestFromContextAbsent(t *testing.T) {
 	t.Parallel()
 	if _, ok := FromContext(context.Background()); ok {
 		t.Error("FromContext on a bare context returned ok = true, want false")
+	}
+}
+
+// recordingHandler captures slog records so the tests can assert on what an
+// operator would see, not just on the status code.
+type recordingHandler struct {
+	records []slog.Record
+}
+
+func (*recordingHandler) Enabled(context.Context, slog.Level) bool { return true }
+
+//nolint:gocritic // hugeParam: signature mandated by slog.Handler.
+func (h *recordingHandler) Handle(_ context.Context, rec slog.Record) error {
+	h.records = append(h.records, rec)
+	return nil
+}
+
+func (h *recordingHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h *recordingHandler) WithGroup(string) slog.Handler      { return h }
+
+func (h *recordingHandler) countAtLevel(level slog.Level) int {
+	n := 0
+	for i := range h.records {
+		if h.records[i].Level == level {
+			n++
+		}
+	}
+	return n
+}
+
+// captureSlog installs a recording handler as the default for the test.
+func captureSlog(t *testing.T) *recordingHandler {
+	t.Helper()
+	h := &recordingHandler{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(h))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	return h
+}
+
+// A session backend that cannot answer is an outage, not a verdict on the
+// caller: it must be logged and reported as 503, so clients do not treat a
+// Redis blip as a logout (INV-0007 F7.2).
+func TestMiddlewareInfraErrorLogsAnd503s(t *testing.T) {
+	rec := captureSlog(t)
+	store := &fakeLookuper{id: "good-id", err: errors.New("redis: connection refused")}
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/repos", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: "any"})
+	w := httptest.NewRecorder()
+
+	Middleware(store)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("next handler ran despite a session backend failure")
+	})).ServeHTTP(w, req)
+
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusServiceUnavailable)
+	}
+	if got := rec.countAtLevel(slog.LevelError); got != 1 {
+		t.Errorf("error records = %d, want 1", got)
+	}
+}
+
+// An absent or expired session is ordinary churn: it must stay a quiet 401 so
+// normal logged-out traffic does not fill the logs with errors.
+func TestMiddlewareMissingSessionStaysQuiet401(t *testing.T) {
+	rec := captureSlog(t)
+	store := &fakeLookuper{id: "good-id"}
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/repos", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: "stale"})
+	w := httptest.NewRecorder()
+
+	Middleware(store)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("next handler ran without a valid session")
+	})).ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+	if got := rec.countAtLevel(slog.LevelError); got != 0 {
+		t.Errorf("error records = %d, want 0 for an ordinary missing session", got)
+	}
+}
+
+// A stored session that will not decode is per-cookie poison, not an outage:
+// the backend answered fine. It must stay a 401 so the holder can log in again
+// — /api/v1/auth/logout sits behind this same gate, so a 503 here would be a
+// dead end with no way out, and docz-site only offers login on a 401.
+func TestMiddlewareCorruptSessionIs401AndLogged(t *testing.T) {
+	rec := captureSlog(t)
+	store := &fakeLookuper{
+		id: "good-id",
+		// Built exactly as Store.Lookup builds it — a double %w wrapping both
+		// the sentinel and the underlying decode error — so this pins the real
+		// error shape, not a simplified stand-in.
+		err: fmt.Errorf("%w: %w", ErrSessionCorrupt, errors.New("unexpected end of JSON input")),
+	}
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/repos", http.NoBody)
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: "poisoned"})
+	w := httptest.NewRecorder()
+
+	Middleware(store)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("next handler ran with an undecodable session")
+	})).ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d so the holder can log in again",
+			w.Code, http.StatusUnauthorized)
+	}
+	if got := rec.countAtLevel(slog.LevelWarn); got != 1 {
+		t.Errorf("warn records = %d, want 1", got)
+	}
+	if got := rec.countAtLevel(slog.LevelError); got != 0 {
+		t.Errorf("error records = %d, want 0 (this is not an outage)", got)
 	}
 }

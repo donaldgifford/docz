@@ -14,7 +14,10 @@ var ErrInvalidConfig = errors.New("invalid config")
 // Recognized enum values for validated fields. Unexported globals carry the
 // `_` prefix (Uber style) so their package scope is visible at every use.
 var (
-	_validProviders  = []string{"github", "okta", "keycloak"}
+	// ProviderNone is listed for the operator-facing error message only: the
+	// none case returns before the provider loop, so it never reaches the
+	// unknown-provider branch.
+	_validProviders  = []string{"github", "okta", "keycloak", ProviderNone}
 	_validLogLevels  = []string{"debug", "info", "warn", "error"}
 	_validLogFormats = []string{"text", "json"}
 )
@@ -32,7 +35,12 @@ func validate(c *Config) error {
 	requireNonZero(&errs, "GITHUB_APP_ID", c.GitHub.AppID)
 	requireNonEmpty(&errs, "GITHUB_APP_PRIVATE_KEY", c.GitHub.PrivateKey.Reveal())
 	requireNonEmpty(&errs, "GITHUB_WEBHOOK_SECRET", c.GitHub.WebhookSecret.Reveal())
-	requireNonEmpty(&errs, "SESSION_SECRET", c.Session.Secret.Reveal())
+	// The session secret signs OAuth state and keys the session store; under
+	// none-mode neither exists, so demanding it would defeat the point of a
+	// first-setup shape that needs no login configuration at all.
+	if !c.AuthDisabled() {
+		requireNonEmpty(&errs, "SESSION_SECRET", c.Session.Secret.Reveal())
+	}
 
 	validateAuth(&errs, &c.Auth)
 	validateEnum(&errs, "LOG_LEVEL", c.Log.Level, _validLogLevels)
@@ -48,6 +56,16 @@ func validate(c *Config) error {
 func validateAuth(errs *[]string, a *AuthConfig) {
 	if len(a.Providers) == 0 {
 		*errs = append(*errs, "AUTH_PROVIDERS: at least one provider is required")
+		return
+	}
+	if slices.Contains(a.Providers, ProviderNone) {
+		// "none" disables login entirely, so combining it with a real provider
+		// describes two incompatible shapes at once. Rejecting the combination
+		// keeps the mode unambiguous: either the read API is open, or it is not.
+		if len(a.Providers) > 1 {
+			*errs = append(*errs, fmt.Sprintf(
+				"AUTH_PROVIDERS: %q must be the only entry when present", ProviderNone))
+		}
 		return
 	}
 	// Every enabled provider builds its redirect URL from this base, so it is

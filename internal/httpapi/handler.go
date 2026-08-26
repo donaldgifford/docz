@@ -110,7 +110,9 @@ func (h *Handler) resolveRepo(w http.ResponseWriter, r *http.Request) (store.Rep
 func writeJSON(w http.ResponseWriter, v any) {
 	body, err := json.Marshal(v)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "encoding response")
+		// Every /api/v1 response funnels through here, so a DTO that will not
+		// marshal must not become an opaque 500 with no trace (INV-0007 F7.4).
+		serverError(w, "encode response", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

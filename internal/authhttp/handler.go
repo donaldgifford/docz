@@ -88,7 +88,7 @@ type sessionDTO struct {
 func writeJSON(w http.ResponseWriter, v any) {
 	body, err := json.Marshal(v)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "encoding response")
+		serverError(w, "encode response", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -103,6 +103,9 @@ func writeJSON(w http.ResponseWriter, v any) {
 func writeError(w http.ResponseWriter, status int, msg string) {
 	body, err := json.Marshal(map[string]string{"error": msg})
 	if err != nil {
+		// Unreachable in practice (a string map always marshals), but this path
+		// also replaces the caller's status with 500, so it must not be silent.
+		slog.Error("authhttp error envelope failed to marshal", "msg", msg, "err", err)
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}

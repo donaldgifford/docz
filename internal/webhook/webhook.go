@@ -93,6 +93,14 @@ func New(secret []byte, st webhookStore, enq enqueuer, purger indexPurger) *Hand
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBodyBytes))
 	if err != nil {
+		// Distinguishes a payload over maxBodyBytes from a client that hung up;
+		// either way GitHub sees a 400 and drops the delivery, so the reason has
+		// to be recorded here (INV-0007 F7.3). The body is unverified at this
+		// point, so only the headers are logged.
+		slog.WarnContext(r.Context(), "reading webhook body failed",
+			"delivery", r.Header.Get("X-GitHub-Delivery"),
+			"event", r.Header.Get("X-GitHub-Event"),
+			"err", err)
 		writeStatus(w, http.StatusBadRequest, "read body")
 		return
 	}
@@ -123,6 +131,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	payload, err := github.ParseWebHook(event, body)
 	if err != nil {
+		// The HMAC already passed, so this payload provably came from GitHub: a
+		// parse failure means go-github schema drift or an event type we are
+		// subscribed to but cannot decode. Both are actionable, and neither is
+		// the sender's fault (INV-0007 F7.3).
+		slog.ErrorContext(r.Context(), "parsing verified webhook payload failed",
+			"delivery", r.Header.Get("X-GitHub-Delivery"), "event", event, "err", err)
 		writeStatus(w, http.StatusBadRequest, "parse payload")
 		return
 	}

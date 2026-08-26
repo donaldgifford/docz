@@ -160,6 +160,62 @@ func TestLoadAuthProviderEnabled(t *testing.T) {
 	}
 }
 
+// none-mode is the first-setup shape: it must boot with no session secret, no
+// redirect base, and no provider credentials at all, so an operator can prove
+// GitHub App ingestion works before configuring a login provider.
+func TestLoadAuthProvidersNoneDropsLoginRequirements(t *testing.T) {
+	env := validEnv()
+	env["AUTH_PROVIDERS"] = "none"
+	for _, k := range []string{
+		"SESSION_SECRET", "AUTH_REDIRECT_BASE",
+		"GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET",
+	} {
+		env[k] = ""
+	}
+
+	cfg, err := load(t, env)
+	if err != nil {
+		t.Fatalf("Load: unexpected error: %v", err)
+	}
+	if !cfg.AuthDisabled() {
+		t.Errorf("AuthDisabled() = false, want true for providers %v", cfg.Auth.Providers)
+	}
+	if cfg.AuthEnabled("github") {
+		t.Error("AuthEnabled(github) = true under none-mode")
+	}
+}
+
+// "none" alongside a real provider describes two incompatible shapes, so it is
+// a config error rather than a silent precedence rule.
+func TestLoadAuthProvidersNoneMustBeAlone(t *testing.T) {
+	env := validEnv()
+	env["AUTH_PROVIDERS"] = "none,github"
+
+	_, err := load(t, env)
+	if !errors.Is(err, config.ErrInvalidConfig) {
+		t.Fatalf("Load error = %v, want ErrInvalidConfig", err)
+	}
+	if !strings.Contains(err.Error(), "must be the only entry") {
+		t.Errorf("error %q does not explain the none-plus-provider conflict", err)
+	}
+}
+
+// The GitHub App credentials are what none-mode exists to exercise, so they
+// stay required.
+func TestLoadAuthProvidersNoneStillRequiresGitHubApp(t *testing.T) {
+	env := validEnv()
+	env["AUTH_PROVIDERS"] = "none"
+	env["GITHUB_APP_PRIVATE_KEY"] = ""
+
+	_, err := load(t, env)
+	if !errors.Is(err, config.ErrInvalidConfig) {
+		t.Fatalf("Load error = %v, want ErrInvalidConfig", err)
+	}
+	if !strings.Contains(err.Error(), "GITHUB_APP_PRIVATE_KEY") {
+		t.Errorf("error %q does not mention GITHUB_APP_PRIVATE_KEY", err)
+	}
+}
+
 func TestLoadInvalidValues(t *testing.T) {
 	tests := []struct {
 		name    string

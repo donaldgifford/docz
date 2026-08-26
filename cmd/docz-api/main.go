@@ -28,6 +28,7 @@ import (
 	"github.com/donaldgifford/docz-api/internal/authhttp"
 	"github.com/donaldgifford/docz-api/internal/authorize"
 	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz-api/internal/githubapp"
 	"github.com/donaldgifford/docz-api/internal/httpapi"
 	"github.com/donaldgifford/docz-api/internal/queue"
 	"github.com/donaldgifford/docz-api/internal/search"
@@ -119,6 +120,14 @@ func run() error {
 		return nil
 	}
 
+	// Prove the App credentials before anything depends on them. They are
+	// otherwise first exercised inside a worker job, where a bad key looked like
+	// an unexplained ingest failure (INV-0007 F5). Skipped for -migrate, which
+	// never talks to GitHub.
+	if err := checkGitHubCredentials(context.Background(), cfg.GitHub); err != nil {
+		return err
+	}
+
 	// Runtime connection pool (separate from the migration connection). Owned
 	// here for the process lifetime; closed on shutdown.
 	pool, err := store.NewPool(context.Background(), cfg.Store.DatabaseURL)
@@ -191,6 +200,11 @@ func runServer(
 		return fmt.Errorf("starting queue worker: %w", serr)
 	}
 
+	if cfg.AuthDisabled() {
+		slog.Warn("auth disabled (AUTH_PROVIDERS=none): the read API is open, " +
+			"every request is served as the anonymous identity")
+	}
+
 	slog.Info("starting docz-api",
 		"version", version,
 		"commit", commit,
@@ -215,15 +229,19 @@ func runServer(
 	// resolves behind a real identity.
 	authorizer := authorize.NewAllReposAuthorizer(st)
 	gate := func(next http.Handler) http.Handler {
-		return session.Middleware(sessionStore)(authorize.Middleware(authorizer)(next))
+		return authn(cfg, sessionStore)(authorize.Middleware(authorizer)(next))
 	}
 	authHandler := authhttp.New(
 		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
 	)
 	// The read/search API plus the two session-gated auth endpoints share the gate.
 	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, gate, authHandler.MountAPI)
-	// /auth/login and /auth/callback are public (state is their CSRF guard).
-	authHandler.MountPublic(router)
+	if !cfg.AuthDisabled() {
+		// /auth/login and /auth/callback are public (state is their CSRF guard).
+		// Under none-mode there is no provider to redirect to, so the routes are
+		// left unmounted and 404 — the absent-route precedent from search.
+		authHandler.MountPublic(router)
+	}
 
 	// The GitHub webhook receiver sits outside /api/v1 and the auth gate: it is
 	// authenticated by its HMAC signature, not a session. It inherits the
@@ -486,4 +504,47 @@ func shutdownTelemetry(shutdown func(context.Context) error) {
 	if err := shutdown(ctx); err != nil {
 		slog.Warn("telemetry shutdown", "err", err)
 	}
+}
+
+// githubCheckTimeout bounds the startup App-credential check. It matches the
+// OIDC discovery budget: both are one startup round trip to an identity
+// provider, and neither should stall a deploy for long.
+const githubCheckTimeout = 15 * time.Second
+
+// checkGitHubCredentials authenticates as the App at startup so a bad app id or
+// private key fails the deploy loudly instead of surfacing later as an ingest
+// that cannot succeed (INV-0007 F5).
+//
+// Only a rejection by GitHub is fatal. Being unable to reach GitHub is
+// transient and logged as a warning: the read API serves fine from Postgres and
+// Meilisearch while GitHub is unavailable, so a GitHub outage during a pod
+// restart must not turn into a crash loop.
+func checkGitHubCredentials(ctx context.Context, cfg config.GitHubConfig) error {
+	ctx, cancel := context.WithTimeout(ctx, githubCheckTimeout)
+	defer cancel()
+
+	app, err := githubapp.SelfCheck(ctx, cfg.AppID, []byte(cfg.PrivateKey.Reveal()), cfg.APIBase)
+	switch {
+	case err == nil:
+		slog.Info("github app authenticated",
+			"app_id", app.ID, "app_slug", app.Slug, "app_name", app.Name)
+		return nil
+	case errors.Is(err, githubapp.ErrCredentialsRejected):
+		return fmt.Errorf("checking github app credentials: %w", err)
+	default:
+		slog.Warn("could not verify github app credentials at startup; continuing",
+			"err", err)
+		return nil
+	}
+}
+
+// authn returns the authentication middleware for the /api/v1 gate: the real
+// session check normally, or the anonymous injector under AUTH_PROVIDERS=none.
+// Both inject a session.Session, so everything downstream — authorize, the
+// handlers, /api/v1/auth/session — is identical in either mode.
+func authn(cfg *config.Config, sessionStore *session.Store) func(http.Handler) http.Handler {
+	if cfg.AuthDisabled() {
+		return session.AnonymousMiddleware()
+	}
+	return session.Middleware(sessionStore)
 }

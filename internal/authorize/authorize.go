@@ -10,6 +10,7 @@ package authorize
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"slices"
 )
@@ -49,6 +50,12 @@ func Middleware(a Authorizer) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			allowed, err := a.Allowed(r.Context(), r)
 			if err != nil {
+				// The production authorizer reads the repo list from Postgres, so
+				// this is where a database outage on the hot /api/v1 path lands.
+				// Without this line the wrapped error chain died here and the
+				// outage showed only as unexplained 500s (INV-0007 F7.1).
+				slog.ErrorContext(r.Context(), "authorization failed",
+					"err", err, "path", r.URL.Path)
 				http.Error(w, `{"error":"authorization failed"}`, http.StatusInternalServerError)
 				return
 			}

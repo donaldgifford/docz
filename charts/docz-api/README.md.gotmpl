@@ -107,6 +107,41 @@ a disabled provider contributes nothing, so a github-only install carries no
 An enabled provider's values are `required` at render time, so a missing
 issuer or client id fails `helm install` rather than crash-looping the pod.
 
+#### First setup without login (`authProviders: "none"`)
+
+A first deploy has to get two independent credential sets right at once — the
+GitHub App and a login provider — and a failure in either looks the same from
+the outside. Setting `config.authProviders: "none"` removes the second set so
+you can prove ingestion works on its own:
+
+```yaml
+config:
+  appId: "YOUR_APP_ID"
+  authProviders: "none"
+
+secrets:
+  webhookSecret: "YOUR_WEBHOOK_SECRET"
+  privateKey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    YOUR_PRIVATE_KEY
+    -----END RSA PRIVATE KEY-----
+
+search:
+  meili:
+    masterKey: "A_RANDOM_MEILI_MASTER_KEY"
+```
+
+No redirect base, no session secret, no provider credentials — the chart
+renders none of those env vars or Secret keys. `"none"` must be the only
+entry; pairing it with a real provider is a config error.
+
+**This leaves the read API open to anyone who can reach the Service.** Every
+request is served as a synthetic anonymous identity, `/auth/login` and
+`/auth/callback` are not mounted, and the service logs a warning at startup.
+Do not expose a none-mode install on a public endpoint. To switch to real
+login, set `authProviders` to your provider(s), supply their values and
+secrets, and redeploy — nothing else changes.
+
 Okta and Keycloak share one OIDC code path. The app must be a **confidential
 client** — in Okta, *OIDC - OpenID Connect → Web Application* with the
 authorization-code grant; an SPA or Native app has no client secret and
@@ -164,6 +199,19 @@ managed instances.
 
 ## Observability
 
+- **Probes:** `/healthz` is liveness — the process is up, checking nothing
+  downstream, since failing it restarts the pod and a restart cannot fix a
+  failed dependency. `/readyz` is readiness — Postgres, Redis and Meilisearch
+  are reachable, 503 naming the offender, which removes the pod from Service
+  endpoints without restarting it. The chart wires both by default.
+- **GitHub App credentials are checked at startup, not by a probe.** The
+  service authenticates as the App at boot and logs its identity. Only a 401
+  (bad app id, or a key GitHub will not accept) or an unparseable private key
+  fails the deploy. A 403 from a suspended App, a rate limit, and GitHub being
+  unreachable all warn and let the pod start — a transient GitHub problem must
+  never crash-loop a pod whose credentials are fine, and it only affects ingest,
+  which logs its own cause per job. GitHub is not a serving dependency, so it
+  must never gate readiness.
 - Set `metrics.enabled: true` (default) to serve Prometheus metrics on
   `/metrics`; enable `serviceMonitor.enabled: true` to have a Prometheus
   Operator scrape the `http` port at `/metrics`.

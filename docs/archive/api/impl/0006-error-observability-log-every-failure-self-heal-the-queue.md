@@ -1,7 +1,7 @@
 ---
 id: IMPL-0006
 title: "Error observability: log every failure, self-heal the queue, optional no-auth mode"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-08-22
 ---
@@ -94,23 +94,23 @@ slog, and asynq's internal errors stop bypassing the structured pipeline.
 
 #### Tasks
 
-- [ ] Add an slog-backed `asynq.Logger` adapter in `internal/queue`
+- [x] Add an slog-backed `asynq.Logger` adapter in `internal/queue`
       (five methods, `Debug`…`Fatal`; map `Fatal` → `slog.Error` since slog
       has no fatal level and asynq only calls it during startup config
       validation). Set `Logger` + `LogLevel` (map from `LOG_LEVEL`) in the
       `asynq.Config` at `worker.go:54-59`.
-- [ ] Add `ErrorHandler: asynq.ErrorHandlerFunc(...)` in the same `Config`
+- [x] Add `ErrorHandler: asynq.ErrorHandlerFunc(...)` in the same `Config`
       block: `slog.Error("ingest job failed", "task_id", …, "type",
       task.Type(), "err", err)` — unmarshal the payload for `repo`/`reason`
       attrs when it parses (best-effort; never fail the handler on a
       malformed payload).
-- [ ] Rewrite the false comment at `worker.go:106-107` to state the real
+- [x] Rewrite the false comment at `worker.go:106-107` to state the real
       contract: the returned error reaches asynq, which hands it to **our**
       `ErrorHandler` (F1: asynq itself never logs it).
-- [ ] Raise the coalesce log at `client.go:95` from Debug to Info and extend
+- [x] Raise the coalesce log at `client.go:95` from Debug to Info and extend
       its message to name the active-window caveat (`client.go:70-73`), so
       the one place a push can vanish is visible at default log level.
-- [ ] Unit tests: capture slog output (swap `slog.SetDefault` handler for a
+- [x] Unit tests: capture slog output (swap `slog.SetDefault` handler for a
       recording one) — a failing fake ingestor produces an ErrorHandler line
       per attempt carrying repo + error; the Logger adapter routes asynq
       levels to slog levels.
@@ -126,15 +126,33 @@ slog, and asynq's internal errors stop bypassing the structured pipeline.
   mid-test and scanning stderr.
 - `just ci` green.
 
+**Phase 1 complete (2026-08-24).** All five tasks done; `just ci` green;
+`golangci-lint --build-tags=integration` clean. Two criteria were met by a
+different proof than written, deliberately:
+
+- **"N lines for N attempts"** is proven for the **first** attempt only
+  (`TestFailedIngestLogsTheError`). asynq's default retry backoff is tens of
+  seconds per step, so asserting all five would make the test run for
+  minutes. The hook is per-attempt by construction (asynq calls
+  `ErrorHandler` from `handleFailedMessage`, on every failure including the
+  last), so one real attempt through real Redis proves the wiring; the
+  multi-attempt lifecycle is covered end-to-end by the Phase 6 drill.
+- **JSON purity** is proven structurally rather than by scanning stderr:
+  `TestAsynqInternalErrorsReachSlog` points a worker at an unreachable Redis
+  and asserts `component=asynq` records arrive through slog. Setting
+  `Config.Logger` means asynq has no path to stderr at all, so this asserts
+  the cause rather than the symptom — and it avoids stopping the container
+  `TestMain` shares with every other case in the package.
+
 ### Phase 2: Queue self-heal — un-swallow the archived-task conflict
 
 Kills F4: retry exhaustion must never silently eat future triggers.
 
 #### Tasks
 
-- [ ] Add an `*asynq.Inspector` to `queue.Client` (same parsed redis opts;
+- [x] Add an `*asynq.Inspector` to `queue.Client` (same parsed redis opts;
       close it in `Client.Close` via the existing `errors.Join`).
-- [ ] On `ErrTaskIDConflict`/`ErrDuplicateTask` in `EnqueueIngest`: call
+- [x] On `ErrTaskIDConflict`/`ErrDuplicateTask` in `EnqueueIngest`: call
       `Inspector.GetTaskInfo(queueName, taskID)`. State
       pending/scheduled/retry → today's coalesce (now Info, Phase 1). State
       **archived** → `DeleteTask` + re-enqueue once (single retry, no loop);
@@ -143,9 +161,9 @@ Kills F4: retry exhaustion must never silently eat future triggers.
       defers the mechanical fix). `GetTaskInfo` error → log Warn, treat as
       coalesced (fail open: never turn a webhook 202 into a 500 over an
       inspection).
-- [ ] Unit test the state-dispatch with a fake inspector seam (consumer-side
+- [x] Unit test the state-dispatch with a fake inspector seam (consumer-side
       interface, matching house style).
-- [ ] Integration test (`queue_integration_test.go`, real Redis): drive a
+- [x] Integration test (`queue_integration_test.go`, real Redis): drive a
       task to archived via a failing fake ingestor, then enqueue the same
       repo → assert the archived task is deleted, a fresh task runs, and
       the success path completes. Assert the pending-state coalesce still
@@ -159,28 +177,49 @@ Kills F4: retry exhaustion must never silently eat future triggers.
 - No behavior change for the healthy coalesce path (existing debounce/burst
   integration tests unchanged and green).
 
+**Phase 2 complete (2026-08-24).** All four tasks done; unit + integration
+suites and `golangci-lint --build-tags=integration` green.
+
+**Scope grew during implementation.** Probing the conflict path turned up a
+second, worse instance of the same trap, now recorded as INV-0007 **F4b**:
+`Retention(24h)` made asynq keep the task key after every *successful* run
+(`markAsComplete` HSETs the key; the no-retention path DELs it), so the
+completed state held the repo's id for 24 hours and every push in that
+window was silently dropped — **one ingest per repo per day, on the happy
+path**. `TestReingestAfterSuccessfulRun` fails against the pre-fix code.
+
+The fix therefore covers both terminal states rather than archived alone,
+and drops `Retention` so a success frees the id immediately; the inspector
+path still clears ids left behind by earlier deployments. The decision is a
+pure `classifyConflict` function so the state table is unit-tested directly
+rather than through a re-implementation.
+
+`TestReingestAfterArchivedRun` archives the task via the inspector instead
+of waiting out five retries of asynq's default backoff, which would take
+minutes.
+
 ### Phase 3: Boot-time GitHub App credential self-check
 
 F5's fix: bad App credentials fail the deploy, not the fifth silent retry.
 
 #### Tasks
 
-- [ ] Add `githubapp.SelfCheck(ctx, appID, pemKey, apiBase) (slug string,
+- [x] Add `githubapp.SelfCheck(ctx, appID, pemKey, apiBase) (slug string,
       err error)`: `ghinstallation.NewAppsTransport` (app JWT, not an
       installation transport) → go-github `Apps.Get(ctx, "")` → return the
       app slug. Honor `apiBase` exactly as `NewClient` does.
-- [ ] Wire into `run()` after config load, bounded by a short context
+- [x] Wire into `run()` after config load, bounded by a short context
       (reuse the `oidcDiscoveryTimeout` precedent): log
       `"github app authenticated" slug=…` on success; on failure apply the
       OQ-1 decision (recommendation: fail boot on credential rejection,
       warn-and-continue on transport errors, discriminated via
       `*github.ErrorResponse` status).
-- [ ] Skip the check in `-migrate` mode (no GitHub involvement); run it for
+- [x] Skip the check in `-migrate` mode (no GitHub involvement); run it for
       serve and `-onboard`.
-- [ ] Unit tests with a stub `http.RoundTripper` (house pattern from
+- [x] Unit tests with a stub `http.RoundTripper` (house pattern from
       `githubapp`): 200 → slug; 401 → credential-shaped error; connection
       refused → transport-shaped error.
-- [ ] Document the health-check trio in `deploy/README.md` (and the chart
+- [x] Document the health-check trio in `deploy/README.md` (and the chart
       README's probes note): `/healthz` = liveness ("pod is up", bare
       200); `/readyz` = readiness ("dependencies connected, can accept
       traffic" — postgres/meili/redis, 503 names the offender); the boot
@@ -197,36 +236,48 @@ F5's fix: bad App credentials fail the deploy, not the fifth silent retry.
 - GitHub being temporarily unreachable does not crash-loop an otherwise
   healthy API (transport errors warn only).
 
+**Phase 3 complete (2026-08-24).** All five tasks done; `just lint` and the
+full unit suite green.
+
+Implementation note beyond the plan: a malformed PEM fails inside
+`ghinstallation.NewAppsTransport` — before any HTTP request — so that path is
+classified as `ErrCredentialsRejected` too. It is the single most likely
+credential fault when moving between secret stores, and checking only the
+API response would have missed it entirely. Rate limiting is excluded from
+the rejection class explicitly (`*github.RateLimitError` /
+`*github.AbuseRateLimitError` arrive as 4xx but are transient), so throttling
+can never be mistaken for a bad key and crash-loop a deploy.
+
 ### Phase 4: The four mute HTTP sinks
 
 F7's fix: every wrapped error chain now terminates in a logging sink.
 
 #### Tasks
 
-- [ ] `internal/authorize/authorize.go:52` — `slog.Error("authorize failed",
+- [x] `internal/authorize/authorize.go:52` — `slog.Error("authorize failed",
       "err", err)` before the 500. (The chain carries the store context;
       nothing else needed.)
-- [ ] `internal/session/middleware.go:33-35` — discriminate:
+- [x] `internal/session/middleware.go:33-35` — discriminate:
       `errors.Is(err, ErrSessionNotFound)` → 401 quietly (expected churn);
       anything else (Redis down, corrupt JSON) → `slog.Error` + the OQ-2
       status decision (recommendation: 503 with the standard error
       envelope, because "session backend down" is not "logged out").
-- [ ] `internal/webhook/webhook.go:96` — log Warn on body-read failure
+- [x] `internal/webhook/webhook.go:96` — log Warn on body-read failure
       (names the `MaxBytesReader` cap case); `:126` — log Error on
       `ParseWebHook` failure with the event header (post-HMAC ⇒ provably
       GitHub ⇒ schema drift or unsubscribed event).
-- [ ] `internal/httpapi/handler.go:112-113` and
+- [x] `internal/httpapi/handler.go:112-113` and
       `internal/authhttp/handler.go:90-91` — route marshal failures through
       the existing `serverError` helpers (which log) instead of the silent
       `writeError`/inline 500. Leave the error-envelope-marshal fallback
       (`authhttp:105`) as-is but add a `slog.Error` (practically
       unreachable; one line buys completeness).
-- [ ] Unit tests per sink with a recording slog handler: erroring fake
+- [x] Unit tests per sink with a recording slog handler: erroring fake
       authorizer / lookuper / marshal-poisoned DTO (`json.RawMessage` with
       invalid bytes) each produce exactly one error record; the
       session-middleware test pins 401-stays-quiet for
       `ErrSessionNotFound`.
-- [ ] Contract test still green; if OQ-2a (503) is chosen, confirm the spec
+- [x] Contract test still green; if OQ-2a (503) is chosen, confirm the spec
       needs no change (the contract test exercises defined scenarios only;
       5xx paths are not specced per-op today).
 
@@ -240,6 +291,28 @@ F7's fix: every wrapped error chain now terminates in a logging sink.
 - 401 behavior for genuinely missing/expired sessions is byte-identical
   (contract test unchanged on that path).
 
+**Phase 4 complete (2026-08-24).** All six tasks done; `just lint` (0 issues)
+and the full unit suite — including the OpenAPI contract test — green.
+
+Implementation notes beyond the plan:
+
+- The session-gate outage status is a new **503 `{"error":"session
+  unavailable"}`** (OQ-2a), written by a dedicated `writeSessionUnavailable`
+  helper alongside the existing 401 one. The distinction matters downstream:
+  docz-site drives its login UI off 401, so answering 401 during a Redis blip
+  would bounce every signed-in user to the login screen for the duration of
+  the outage. The 401 path for a genuinely absent session is byte-identical.
+- The webhook body-read sink logs at **Warn with headers only** — that
+  failure happens *before* HMAC verification, so the payload is unverified
+  and must not be logged. The `ParseWebHook` sink logs at Error and says so
+  in its comment, because HMAC has already passed there: the payload
+  provably came from GitHub, making it schema drift rather than a bad caller.
+- The `writeJSON` marshal sinks in `httpapi` and `authhttp` now route through
+  each package's existing `serverError` helper rather than a new one, so the
+  response envelope and the log line stay in one place per package.
+- No spec change was needed: the contract test exercises defined scenarios
+  only, and 5xx paths are not specced per-op today.
+
 ### Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode
 
 F6: one knob to run the read surface open, so first setup fights only the
@@ -247,13 +320,13 @@ GitHub App credentials. Loud opt-in, documented as such.
 
 #### Tasks
 
-- [ ] `internal/config`: accept the literal `none` in `AUTH_PROVIDERS`
+- [x] `internal/config`: accept the literal `none` in `AUTH_PROVIDERS`
       (OQ-3 spelling). `validate.go`: under `none` (which must be the
       *only* entry — `none,okta` is a config error), skip provider
       credential checks, `AUTH_REDIRECT_BASE`, and `SESSION_SECRET`
       requirements. Add an `AuthDisabled()` helper alongside
       `AuthEnabled`.
-- [ ] `cmd/docz-api`: when disabled, `buildAuthProviders` returns an empty
+- [x] `cmd/docz-api`: when disabled, `buildAuthProviders` returns an empty
       registry; `runServer` swaps `session.Middleware` for an
       anonymous-identity injector (synthetic `session.Session` with
       provider `none`, subject `anonymous`, injected via the same ctx key
@@ -262,21 +335,21 @@ GitHub App credentials. Loud opt-in, documented as such.
       `/auth/login`/`/auth/callback` routes — 404, the absent-route
       precedent from search; OQ-4). Log one startup Warn:
       `"auth disabled (AUTH_PROVIDERS=none): the read API is open"`.
-- [ ] Session store: still constructed (Redis is required anyway for the
+- [x] Session store: still constructed (Redis is required anyway for the
       queue) but the cookie path is never exercised; logout becomes a no-op
       revoke on the synthetic id — verify it 200s harmlessly rather than
       500s.
-- [ ] Chart: gate the `required` on `config.authRedirectBase` (and the
+- [x] Chart: gate the `required` on `config.authRedirectBase` (and the
       session-secret Secret key) off `has "none" $providers`; extend the
       `docz-api.authProviders` helper docs; `values.yaml` comment block +
       README.md.gotmpl section documenting the exposure caveat;
       helm-unittest cases (none-mode renders no provider env, no
       oauth/okta/keycloak Secret keys, no authRedirectBase requirement).
-- [ ] Contract test: a none-mode handler variant asserting `/api/v1` reads
+- [x] Contract test: a none-mode handler variant asserting `/api/v1` reads
       succeed with no cookie and `/api/v1/auth/session` returns the
       synthetic identity (spec shape unchanged — `sessionDTO` already fits;
       no spec version bump expected, confirm during implementation).
-- [ ] Docs: `deploy/README.md` first-setup section rewritten to lead with
+- [x] Docs: `deploy/README.md` first-setup section rewritten to lead with
       none-mode ("get ingest working first, add login after"), plus the
       revert path (set real providers, redeploy).
 
@@ -294,6 +367,42 @@ GitHub App credentials. Loud opt-in, documented as such.
   panel (manual smoke; the SPA's login UI is 401-driven and none-mode
   never 401s).
 
+**Phase 5 complete (2026-08-25).** All six tasks done; `just lint` (0 issues),
+the full unit suite, `just helm-lint` / `helm-template` / `helm-unittest`
+(80 tests) and `just lint-openapi` (100/100) all green. Chart bumped to
+**0.5.0**, spec to **1.2.1** (editorial — see below).
+
+The one success criterion that cannot be proven here is the docz-site smoke
+("no login panel against a none-mode API") — it needs a browser against a
+running pair. It is carried into Phase 6's live verification rather than
+claimed.
+
+Implementation notes beyond the plan:
+
+- `AuthDisabled()` requires `none` to be the **only** entry; `none,github` is
+  a config error naming the conflict, not a silent precedence rule. Two
+  incompatible shapes cannot both be described at once, and guessing which
+  one the operator meant is exactly the kind of ambiguity that produces a
+  "why is my API open?" incident.
+- `session.AnonymousMiddleware` lives in `internal/session` because the
+  context key is unexported there — which is the point: the synthetic session
+  goes in through the *same* key as a real one, so `authorize`, every handler,
+  and `/api/v1/auth/session` need no no-auth branch. The anonymous identity is
+  `provider "none" / subject "anonymous"`, and its session id is never in
+  Redis, so logout is a harmless no-op delete of an absent key (verified, not
+  assumed).
+- **The spec gained an editorial note** (`1.2.1`) rather than staying silent.
+  A generated client works against either mode — only the auth requirement
+  changes, never a request or response shape — and saying so in the
+  `sessionCookie` description is what makes that safe to rely on. No version
+  bump beyond patch: nothing about the wire contract changed.
+- The chart gates on a new `docz-api.authDisabled` helper so both the
+  Deployment env and the Secret key list stay in one decision. Every surface
+  that documents none-mode (values.yaml, chart README, `deploy/README.md`,
+  `.env.production.example`) also states the exposure — an open read API is
+  the whole trade, and it should not be discoverable only by reading
+  templates.
+
 ### Phase 6: Deliberate-failure verification, deploy, close-out
 
 INV-0007's origin story, rerun against the fixed binary — the phase that
@@ -302,23 +411,32 @@ assuming it.
 
 #### Tasks
 
-- [ ] Local deliberate-failure drill (compose stack): onboard a repo whose
+- [x] Local deliberate-failure drill (compose stack): onboard a repo whose
       fetch **must** fail (no `.docz.yaml`), watch `just run` logs only:
       confirm N per-attempt error lines with the real cause, the terminal
       archive WARN, and — after "fixing" the repo — a next trigger that
       self-heals through the Phase 2 path. **No Redis inspection allowed**;
       if any step needs it, that's a Phase 1/2 bug to fix before shipping.
-- [ ] Repeat the drill with `LOG_FORMAT=json` piped through `jq -e` to
+- [x] Repeat the drill with `LOG_FORMAT=json` piped through `jq -e` to
       prove every queue-subsystem line parses (Phase 1's second criterion,
       end to end).
-- [ ] Release: minor version bump (new env mode + logging surface), chart
+- [x] Release: minor version bump (new env mode + logging surface), chart
       version bump for the Phase 5 template changes; `pr-semver` label
       `minor`.
-- [ ] EKS redeploy of the new image + chart; re-trigger the INV-0007
-      failing repo; **close INV-0007 OQ-1 from the logs** — record the
-      actual root cause in INV-0007 (edit the OQ, note "answered via the
-      Phase 6 deploy").
-- [ ] Close-out: mark INV-0007 recommendations 1–6 as implemented in the
+- [ ] **deferred - blocked, no cluster available** — redeploy the new image +
+      chart; re-trigger the INV-0007 failing repo; **close INV-0007 OQ-1 from
+      the logs** — record the actual root cause in INV-0007 (edit the OQ, note
+      "answered via the Phase 6 deploy"). Confirmed blocked on 2026-08-26, not
+      assumed: no reachable cluster context (only the unreachable homelab
+      ones) and no AWS credentials, and the operator confirmed there is no
+      cluster to use at present. INV-0007's runbook path — reading the archived
+      task straight out of Valkey — needs the same access, so OQ-1 cannot be
+      answered by any route until a cluster exists. Nothing in the branch
+      depends on this; it is the last verification step, not a prerequisite.
+- [x] Downstream: file the docz-site configuration issue for the auth/no-auth
+      surface — donaldgifford/docz-site#17 (none-mode login UI, the new 503
+      versus 401 split, re-vendoring the spec at `1.2.1`).
+- [x] Close-out: mark INV-0007 recommendations 1–6 as implemented in the
       INV; update CLAUDE.md (new conventions: asynq Logger/ErrorHandler
       contract, SelfCheck at boot, none-mode); `docz update`.
 
@@ -332,10 +450,118 @@ assuming it.
 - CI green, release published, EKS running the new version with the
   failing repo ingested (or its genuine blocker named in the logs).
 
+**Phase 6 complete except the EKS redeploy (2026-08-25).** Everything that
+can be proven without cluster access is proven; the one remaining task is
+marked `deferred - human required` above.
+
+**The drill (both tasks 1 and 2, run as one `LOG_FORMAT=json` session).**
+Local compose stack (real Postgres/Redis/Meilisearch) plus the real
+`donaldgifford-docz-api` GitHub App. `-onboard
+donaldgifford/no-such-docz-repo@145915803` forced a permanent fetch failure.
+Reading **only** `/tmp/drill.log` — Valkey was never opened — the full
+lifecycle was reconstructed:
+
+- boot: `github app authenticated app_slug=donaldgifford-docz-api` (fix 2)
+- 6 x `ingest job attempt failed` at ERROR, `retried` 0→5, each naming the
+  real cause: `GET https://api.github.com/repos/donaldgifford/no-such-docz-repo:
+  404 Not Found` (fix 1)
+- `WARN Retry exhausted for task id=ingest:donaldgifford/no-such-docz-repo`
+  with `component=asynq` — the operator's original production line, now
+  preceded by six lines that say *why* (fix 5)
+- next trigger: `cleared a finished ingest task and re-enqueued
+  cleared_state=archived` — the swallow is gone (fix 3)
+- a healthy repo ingests: `ingest job complete docs_upserted=16`
+- a 5-trigger burst: `ingest job enqueued` once, four
+  `ingest job coalesced into an existing task` at **Info** carrying the live
+  `state` (`active` / `scheduled`) (fix 5 / F7.6)
+
+`jq -e . /tmp/drill.log` succeeded on all 33 lines, so every queue-subsystem
+line — including asynq's own internals — parses as structured JSON.
+
+**Post-phase review (2026-08-25).** Two independent reviewers went over the
+whole branch diff. They found five real defects, all now fixed with regression
+tests; both reviewers independently found the first one, which is why it is
+listed first:
+
+1. **The chart's `authDisabled` helper used `has "none"`** (membership) where
+   the binary requires `none` to be the *only* entry. `authProviders:
+   "none,github"` therefore rendered a manifest that dropped `SESSION_SECRET`
+   and `AUTH_REDIRECT_BASE` while still emitting `GITHUB_OAUTH_*` — it
+   installed cleanly and then crash-looped on the binary's own validation. The
+   helper now `fail`s at render time with the same message, which is the house
+   rule (catch it at `helm install`, not in CrashLoopBackOff).
+2. **`isCredentialRejection` classified any 4xx as permanent.** go-github only
+   produces a typed `*RateLimitError` when the response carries the matching
+   headers, so a throttled response from a proxy, CDN, or GHES front end
+   arrived as a plain `*ErrorResponse` and failed startup — precisely the
+   crash-loop the boot check is supposed to prevent. A first attempt excluded
+   `408`/`429` by status code; **a third review pass found that incomplete**,
+   because GitHub documents `403` as a primary rate-limit status too, so a bare
+   `403` still crash-looped. The permanent set is now **401 only**: `GET /app`
+   authenticates the App with a JWT and needs no permissions, so a bad key is
+   the only thing 401 can mean there. The two misclassifications are not
+   symmetric — calling a transient failure permanent takes down the read API
+   for an ingest-only problem, while calling a permanent one transient costs a
+   single startup warning now that every ingest attempt logs its own cause.
+3. **`DeleteTask` returning `ErrTaskNotFound` aborted the clear-and-retry.**
+   Two pushes seconds apart both classify `clearAndRetry`; the loser found the
+   task already gone and answered 500. Because `RecordDelivery` had already
+   recorded the delivery id, GitHub's redelivery was deduped to a no-op rather
+   than retrying. "Already gone" is the state this path wants, so it now falls
+   through to the re-enqueue.
+4. **An undecodable session was a 503 dead end.** `Lookup` wraps a JSON decode
+   failure, which the gate treated as an outage — but `/api/v1/auth/logout`
+   sits behind that same gate, and docz-site only offers login on a 401, so the
+   holder could never recover. A new `ErrSessionCorrupt` sentinel keeps that
+   case on the 401 path (logged at Warn); only a backend that cannot answer
+   gets the 503.
+5. **`resolveTaskIDConflict` dereferenced a nil `TaskInfo`** that
+   `classifyConflict` explicitly accepts. Unreachable through the real
+   `*asynq.Inspector`, but the seam exists to be swapped, and the test suite
+   pins `(nil, nil)` as supported.
+
+A third pass adversarially verified those five fixes rather than trusting
+them. It confirmed four sound (checking asynq's actual `ErrTaskNotFound`
+sentinel, Go's double-`%w` behavior, every legitimate chart provider
+combination, and that no nil path remained) and found fix 2 incomplete, which
+is folded into item 2 above. It also caught that the corrupt-session test
+built its error with a single `%w` while production uses two — a test weaker
+than the code it guards, now pinned to the real shape.
+
+Each of the four fixes with a new test was then proven by reverting the
+production change and confirming the test actually fails — a test that passes
+against the broken code proves nothing. All four failed as intended. That
+exercise found one more gap worth recording: the corrupt-session fix has two
+halves, and reverting the **producer** half alone (`Store.Lookup` no longer
+labelling the error) left the whole `internal/session` package green, because
+the middleware test injects the sentinel itself through a fake. A refactor of
+`Lookup`'s error wrapping would therefore have pushed corrupt sessions back
+onto the 503 dead end with a fully passing suite.
+`TestLookupCorruptValueIsLabelled` (integration, real Redis: seed a non-JSON
+value, assert `ErrSessionCorrupt` and *not* `ErrSessionNotFound`) closes it,
+and was itself verified by the same revert drill.
+
+**Integration suites.** `just test-integration` (the `//go:build integration`
+tests, which CI does not run) is green across all 16 packages, including the
+testcontainers-backed `queue` (real Redis — debounce, drain, and the new
+archived-task self-heal), `store`, `search`, and `e2e` suites.
+
+**Release.** Chart `0.5.0` (Phase 5 template changes) and OpenAPI `1.2.1`
+(editorial). The binary version comes from the release tag, so the `minor`
+bump is the tag itself plus the `minor` semver label on the PR — both are
+release-time actions, not repo edits.
+
+**What the EKS step is still for.** INV-0007 OQ-1 (the actual root cause of
+the triggering production failure) is the one question that cannot be
+answered locally: it needs the fixed binary running in the cluster and one
+re-trigger of the failing repo. With fix 1 in place the cause now appears
+directly in `kubectl logs`. The same deploy covers the docz-site none-mode
+smoke carried over from Phase 5.
+
 ## File Changes
 
 | File | Change |
-|------|--------|
+| ---- | ------ |
 | `internal/queue/worker.go` | `Logger`/`LogLevel`/`ErrorHandler` in Config; comment fix |
 | `internal/queue/logger.go` (new) | slog-backed `asynq.Logger` adapter |
 | `internal/queue/client.go` | Inspector; conflict state-dispatch; coalesce log Info |

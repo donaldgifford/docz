@@ -127,3 +127,31 @@ func TestSessionExpires(t *testing.T) {
 		t.Errorf("Lookup after TTL = %v, want ErrSessionNotFound", lerr)
 	}
 }
+
+// The middleware's 401-not-503 handling for a poisoned session is only correct
+// if Lookup actually labels the case, and that half had no test: reverting this
+// wrapping alone left the whole package green. A refactor of Lookup's error
+// handling would silently push corrupt sessions back onto the 503 path — the
+// exact dead end (logout sits behind the same gate) that ErrSessionCorrupt
+// exists to prevent.
+func TestLookupCorruptValueIsLabelled(t *testing.T) {
+	store := newStore(t, time.Hour)
+	ctx := t.Context()
+
+	const id = "poisoned-session-id"
+	// A value that exists but is not the JSON Lookup expects — what a
+	// non-backward-compatible change to sessionData looks like mid-rollout.
+	if err := store.redis.Set(ctx, keyPrefix+id, "{not-json", time.Hour).Err(); err != nil {
+		t.Fatalf("seed corrupt session: %v", err)
+	}
+
+	_, err := store.Lookup(ctx, id)
+	if !errors.Is(err, ErrSessionCorrupt) {
+		t.Errorf("Lookup = %v, want it to wrap ErrSessionCorrupt", err)
+	}
+	// Must NOT be mistaken for absence: that would make it a silent 401 with no
+	// log line, hiding a rollout that broke every stored session.
+	if errors.Is(err, ErrSessionNotFound) {
+		t.Errorf("Lookup = %v, want it distinguished from an absent session", err)
+	}
+}

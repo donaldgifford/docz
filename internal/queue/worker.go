@@ -51,11 +51,18 @@ func NewWorker(redisURL string, concurrency int, ing Ingestor) (*Worker, error) 
 	if err != nil {
 		return nil, fmt.Errorf("parse redis url for worker: %w", err)
 	}
+	// Logger/LogLevel route asynq's own diagnostics into slog, and ErrorHandler
+	// reports failed attempts: asynq drops a handler's returned error unless this
+	// hook is set (INV-0007 F1). Both read the configured default slog logger,
+	// which main() installs before building the worker.
 	srv := asynq.NewServer(opt, asynq.Config{
 		Concurrency:              concurrency,
 		Queues:                   map[string]int{queueName: 1},
 		IsFailure:                isFailure,
 		DelayedTaskCheckInterval: delayedTaskCheckInterval,
+		Logger:                   newAsynqLogger(nil),
+		LogLevel:                 asynqLogLevel(nil),
+		ErrorHandler:             asynq.ErrorHandlerFunc(logIngestFailure),
 	})
 	return &Worker{srv: srv, ingestor: ing}, nil
 }
@@ -103,8 +110,10 @@ func (w *Worker) handleIngest(ctx context.Context, task *asynq.Task) error {
 	start := time.Now()
 	res, err := w.ingestor.Run(ctx, job.InstallationID, job.Owner, job.Name)
 	if err != nil {
-		// The span, the failure metric, and the returned error (which asynq logs
-		// with the repo-labeled context) carry the signal; don't also log here.
+		// The returned error reaches asynq, which hands it to the ErrorHandler
+		// registered in NewWorker (logIngestFailure) — asynq itself never logs it
+		// (INV-0007 F1). That hook owns the log line for every attempt, so this
+		// site records the span and metric only, and does not log twice.
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		telemetry.ObserveIngest(job.Reason, "failure", time.Since(start))

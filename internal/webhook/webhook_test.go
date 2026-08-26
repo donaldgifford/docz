@@ -7,6 +7,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -531,5 +533,79 @@ func TestOwnerName(t *testing.T) {
 					tc.full, owner, name, ok, tc.wantOwner, tc.wantName, tc.wantOK)
 			}
 		})
+	}
+}
+
+// webhookLogCounter counts records by level.
+type webhookLogCounter struct{ byLevel map[slog.Level]int }
+
+func newWebhookLogCounter() *webhookLogCounter {
+	return &webhookLogCounter{byLevel: map[slog.Level]int{}}
+}
+
+func (*webhookLogCounter) Enabled(context.Context, slog.Level) bool { return true }
+
+//nolint:gocritic // hugeParam: signature mandated by slog.Handler.
+func (c *webhookLogCounter) Handle(_ context.Context, rec slog.Record) error {
+	c.byLevel[rec.Level]++
+	return nil
+}
+
+func (c *webhookLogCounter) WithAttrs([]slog.Attr) slog.Handler { return c }
+func (c *webhookLogCounter) WithGroup(string) slog.Handler      { return c }
+
+// A payload that fails to parse has ALREADY passed HMAC verification, so it
+// provably came from GitHub: the cause is schema drift or an event we cannot
+// decode, and it must not be discarded silently (INV-0007 F7.3).
+func TestServeHTTPLogsUnparseableVerifiedPayload(t *testing.T) {
+	counter := newWebhookLogCounter()
+	prev := slog.Default()
+	slog.SetDefault(slog.New(counter))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	body := []byte(`{"ref": not-valid-json`)
+	h := New(testSecret, newFakeStore(), &fakeEnqueuer{}, &fakePurger{})
+	req := newRequest("push", "d-parse", body, signBody(t, testSecret, body))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rr.Code)
+	}
+	if got := counter.byLevel[slog.LevelError]; got != 1 {
+		t.Errorf("error records = %d, want 1", got)
+	}
+}
+
+// failingBody reports a transport-level read failure, the shape a client that
+// hangs up mid-upload takes on the server side.
+type failingBody struct{}
+
+func (failingBody) Read([]byte) (int, error) { return 0, errors.New("connection reset") }
+func (failingBody) Close() error             { return nil }
+
+// A body that will not read is the one failure that precedes HMAC verification,
+// so it cannot log the payload — but it must still say why the delivery was
+// dropped, since GitHub only records the 400 (INV-0007 F7.3).
+func TestServeHTTPLogsBodyReadFailure(t *testing.T) {
+	counter := newWebhookLogCounter()
+	prev := slog.Default()
+	slog.SetDefault(slog.New(counter))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	h := New(testSecret, newFakeStore(), &fakeEnqueuer{}, &fakePurger{})
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/webhooks/github", failingBody{})
+	req.Header.Set("X-GitHub-Event", "push")
+	req.Header.Set("X-GitHub-Delivery", "d-readfail")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rr.Code)
+	}
+	if got := counter.byLevel[slog.LevelWarn]; got != 1 {
+		t.Errorf("warn records = %d, want 1", got)
 	}
 }

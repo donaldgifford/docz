@@ -58,6 +58,10 @@ type MeiliConfig struct {
 	APIKey Secret // MEILI_API_KEY — required.
 }
 
+// ProviderNone is the AUTH_PROVIDERS value that disables site login entirely.
+// It must be the only entry when present; see AuthDisabled.
+const ProviderNone = "none"
+
 // AuthConfig holds site-user authentication configuration. Providers lists the
 // enabled login providers; a provider's credentials are required only when it
 // is enabled. RedirectBase is the public origin used to build each provider's
@@ -210,6 +214,20 @@ func Load() (Config, error) {
 // hold an addressable Config from Load, so cfg.AuthEnabled(...) works directly.
 func (c *Config) AuthEnabled(provider string) bool {
 	return slices.Contains(c.Auth.Providers, provider)
+}
+
+// AuthDisabled reports whether site login is turned off entirely
+// (AUTH_PROVIDERS=none). Under it the read API serves every request as a
+// synthetic anonymous identity and no login routes are mounted, so the
+// credential, redirect-base, and session-secret requirements are all skipped.
+//
+// This is the first-setup shape: it lets an operator prove GitHub App
+// ingestion works before fighting a login provider. It is deliberately loud —
+// startup warns, and the chart documents the exposure.
+//
+// The receiver is a pointer for the same reason as AuthEnabled.
+func (c *Config) AuthDisabled() bool {
+	return len(c.Auth.Providers) == 1 && c.Auth.Providers[0] == ProviderNone
 }
 
 // resolvePrivateKey returns the PEM body for the GitHub App private key. A

@@ -109,6 +109,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "docz-api.searchSecretName" . }}
                   key: {{ include "docz-api.searchSecretKey" . }}
+            {{- if not (include "docz-api.authDisabled" .) }}
             - name: SESSION_SECRET
               valueFrom:
                 secretKeyRef:
@@ -116,6 +117,7 @@ spec:
                   key: session-secret
             - name: AUTH_REDIRECT_BASE
               value: {{ required "config.authRedirectBase is required" .Values.config.authRedirectBase | quote }}
+            {{- end }}
             - name: AUTH_PROVIDERS
               value: {{ .Values.config.authProviders | quote }}
             {{- $providers := include "docz-api.authProviders" . | fromJsonArray }}

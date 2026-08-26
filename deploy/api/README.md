@@ -41,6 +41,37 @@ docker compose ps
 The service applies database migrations automatically on startup, so there is no
 separate migration step.
 
+## First setup: get ingest working before login
+
+A first deploy has to get two independent credential sets right at once — the
+GitHub App and a login provider — and a failure in either looks identical from
+the outside: no docs. Start with login turned off so the only thing that can be
+wrong is the GitHub App.
+
+Set `AUTH_PROVIDERS=none` in `.env.production` and leave `SESSION_SECRET`,
+`AUTH_REDIRECT_BASE`, and every `*_CLIENT_ID`/`*_CLIENT_SECRET` unset. The
+service boots, logs a warning that auth is disabled, serves every request as a
+synthetic anonymous identity, and mounts no `/auth/login` or `/auth/callback`
+route. `"none"` must be the only entry — pairing it with a real provider is a
+config error, not a precedence rule.
+
+Now verify ingestion end to end:
+
+```sh
+docker compose logs -f docz-api        # expect one "github app authenticated" line
+curl -s localhost:8080/readyz          # postgres, redis, meilisearch all ok
+curl -s localhost:8080/api/v1/repos    # your onboarded repos, no cookie needed
+```
+
+**This leaves the read API open to anyone who can reach it.** Use it on a
+private network or a local stack, never on a public endpoint.
+
+When ingestion is proven, add login: set `AUTH_PROVIDERS` to your provider(s),
+fill in `SESSION_SECRET`, `AUTH_REDIRECT_BASE`, and that provider's credentials
+per the sections below, and redeploy. Nothing else changes — the API surface,
+routes, and response shapes are identical in both modes, so a docz-site pointed
+at a none-mode API keeps working unmodified once login is on.
+
 ## Configuration and secrets
 
 All configuration is read from the environment. `compose.yaml` loads
@@ -249,11 +280,32 @@ tenant (same OIDC code path); see
 
 ## Health and observability
 
-- **Liveness:** `GET /healthz` — process is up.
-- **Readiness:** `GET /readyz` — Postgres, Redis, and Meilisearch are all
-  reachable (503 with a per-dependency body otherwise). Point your
-  orchestrator's probes here; the distroless image has no shell, so there is no
-  in-container healthcheck for the service.
+Three separate mechanisms answer three different questions. Keeping them
+distinct is deliberate — conflating them makes an outage in one dependency
+either restart healthy pods or silently do nothing.
+
+- **Liveness:** `GET /healthz` — _the process is up_. A bare 200 that checks
+  nothing downstream, because failing it makes the kubelet **restart the pod**,
+  and restarting docz-api cannot fix a database that is down. Never add
+  dependency checks here.
+- **Readiness:** `GET /readyz` — _dependencies are connected and this pod can
+  accept traffic_. Checks Postgres, Redis, and Meilisearch, returning 503 with a
+  per-dependency body naming the offender. Failing it removes the pod from
+  Service endpoints but leaves it running. Point your orchestrator's probes at
+  both; the distroless image has no shell, so there is no in-container
+  healthcheck for the service.
+- **Startup credential check:** at boot the service authenticates as the GitHub
+  App (`GET /app`) and logs the app id, slug and name. This is deliberately in
+  **neither** probe. GitHub is not a serving dependency — the read API answers
+  from Postgres and Meilisearch while GitHub is unreachable — so it must not
+  gate readiness. Startup fails only on a **401** (a bad app id or a key GitHub
+  will not accept) or a private key that will not parse at all — between them
+  the realistic bad-credential cases. Everything else, including a 403 from a
+  _suspended_ App, a rate limit, or GitHub simply being unreachable, logs a
+  warning and startup continues. That asymmetry is deliberate: a false
+  "permanent" would crash-loop the pod and take the read API down for a problem
+  that only affects ingest, whereas a missed one costs a single warning and then
+  shows up in the per-job ingest error logs.
 - **Metrics:** `GET /metrics` — Prometheus exposition (disable with
   `METRICS_ENABLED=false`). Scrape it on the internal network; it is not behind
   the auth gate.

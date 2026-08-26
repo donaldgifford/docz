@@ -103,10 +103,17 @@ config:
   # -- Log format: text or json (LOG_FORMAT)
   logFormat: "json"
   # -- Absolute base URL the OAuth/OIDC provider redirects back to;
-  # the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required.
+  # the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required
+  # unless authProviders is "none".
   authRedirectBase: ""
   # -- Comma-separated login providers: github, okta, keycloak
-  # (AUTH_PROVIDERS).
+  # (AUTH_PROVIDERS). The special value "none" — which must be the only
+  # entry — disables site login entirely: every request is served as an
+  # anonymous identity and no login routes are mounted, so no redirect
+  # base, session secret, or provider credentials are needed. It is the
+  # first-setup shape (prove GitHub App ingestion works before wiring a
+  # login provider) and it leaves the read API open to anyone who can
+  # reach the Service, so do not ship it on a public endpoint.
   authProviders: "github"
   # -- GitHub OAuth client id for site login (GITHUB_OAUTH_CLIENT_ID).
   # Required while `github` is in authProviders.
@@ -166,7 +173,7 @@ metrics:
 #
 #   app-id                  always
 #   webhook-secret          always
-#   session-secret          always
+#   session-secret          unless config.authProviders is "none"
 #   private-key             when secrets.privateKeyAsFile is true, or the
 #                           GitHub App key is not supplied out-of-band
 #   oauth-client-secret     when `github`   is in config.authProviders
@@ -174,7 +181,8 @@ metrics:
 #   keycloak-client-secret  when `keycloak` is in config.authProviders
 #
 # Only the enabled providers' keys are referenced, so a github-only
-# install needs no okta-client-secret.
+# install needs no okta-client-secret, and a "none" install needs no
+# login keys at all.
 secrets:
   # -- Create secret resource (false = use existing secret)
   create: true
@@ -188,7 +196,8 @@ secrets:
   # -- Mount the private key as a file (true) or pass it as an env var
   # (false). Either way the binary accepts a path or a PEM body.
   privateKeyAsFile: true
-  # -- Session signing secret (SESSION_SECRET)
+  # -- Session signing secret (SESSION_SECRET). Required unless
+  # config.authProviders is "none".
   sessionSecret: ""
   # -- GitHub OAuth client secret for site login
   # (GITHUB_OAUTH_CLIENT_SECRET). Required while `github` is in

@@ -3,6 +3,7 @@ package authorize
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -85,5 +86,45 @@ func TestMiddlewareAuthorizerErrorIs500(t *testing.T) {
 	}
 	if called {
 		t.Error("next handler was called despite an authorizer error")
+	}
+}
+
+// logCounter counts records at each level so a test can assert an outage was
+// actually reported.
+type logCounter struct {
+	errors int
+}
+
+func (*logCounter) Enabled(context.Context, slog.Level) bool { return true }
+
+//nolint:gocritic // hugeParam: signature mandated by slog.Handler.
+func (c *logCounter) Handle(_ context.Context, rec slog.Record) error {
+	if rec.Level == slog.LevelError {
+		c.errors++
+	}
+	return nil
+}
+
+func (c *logCounter) WithAttrs([]slog.Attr) slog.Handler { return c }
+func (c *logCounter) WithGroup(string) slog.Handler      { return c }
+
+// The production authorizer reads repos from Postgres, so this middleware is
+// where a database outage on the hot /api/v1 path surfaces. It must leave a
+// record: before this, the wrapped error chain died here and the outage showed
+// only as unexplained 500s (INV-0007 F7.1).
+func TestMiddlewareLogsAuthorizerError(t *testing.T) {
+	counter := &logCounter{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(counter))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	mw := Middleware(NewAllReposAuthorizer(stubLister{err: errors.New("db down")}))
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/v1/repos", http.NoBody)
+	rec := httptest.NewRecorder()
+
+	mw(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(rec, req)
+
+	if counter.errors != 1 {
+		t.Errorf("error records = %d, want 1", counter.errors)
 	}
 }

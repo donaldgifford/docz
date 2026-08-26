@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -167,15 +168,24 @@ func loadContractSpec(t *testing.T) routers.Router {
 // behind the session+authorize gate, the public auth redirects on the root
 // router, and the HMAC webhook receiver outside the gate. Validation therefore
 // runs against the production handlers and their real middleware.
-func buildContractHandler() http.Handler {
+func buildContractHandler() http.Handler { return contractHandler(false) }
+
+// contractHandler builds the surface in either auth mode. authDisabled mirrors
+// runServer under AUTH_PROVIDERS=none: the anonymous injector replaces the
+// session middleware, and the public login routes are left unmounted.
+func contractHandler(authDisabled bool) http.Handler {
 	st := seededStore()
 	sessions := fakeSessions{}
 
 	r := chi.NewRouter()
 	// The /api/v1 gate: session authn composed over the authorize seam, matching
 	// runServer. A fixed cookie resolves to a fixed identity via fakeSessions.
+	authn := session.Middleware(sessions)
+	if authDisabled {
+		authn = session.AnonymousMiddleware()
+	}
 	gate := func(next http.Handler) http.Handler {
-		return session.Middleware(sessions)(authorize.Middleware(authorize.NewAllReposAuthorizer(st))(next))
+		return authn(authorize.Middleware(authorize.NewAllReposAuthorizer(st))(next))
 	}
 	authHandler := authhttp.New(
 		auth.NewRegistry([]auth.Provider{stubProvider{}}),
@@ -183,8 +193,10 @@ func buildContractHandler() http.Handler {
 	)
 	// Read/search routes plus the gated /auth/session + /auth/logout share the gate.
 	NewHandlerWithSearch(st, contractSearcher{}).Mount(r, gate, authHandler.MountAPI)
-	// Public auth routes (the signed state is their CSRF guard, not a session).
-	authHandler.MountPublic(r)
+	if !authDisabled {
+		// Public auth routes (the signed state is their CSRF guard, not a session).
+		authHandler.MountPublic(r)
+	}
 	// The webhook receiver sits outside the gate — its HMAC signature is the auth.
 	wh := webhook.New([]byte(contractWebhookSecret), fakeWebhookStore{}, fakeEnqueuer{}, nil)
 	r.Post("/webhooks/github", wh.ServeHTTP)
@@ -341,5 +353,77 @@ func TestOpenAPIContract(t *testing.T) {
 			}
 			validateRoundTrip(t, router, h, r)
 		})
+	}
+}
+
+// none-mode (AUTH_PROVIDERS=none) must serve the same wire contract with no
+// cookie at all: same schemas, same status codes, no spec change. That is what
+// makes it usable as a first-setup shape — the docz-site talks to it unmodified.
+func TestOpenAPIContractNoAuthMode(t *testing.T) {
+	router := loadContractSpec(t)
+	h := contractHandler(true)
+
+	cases := []struct {
+		name   string
+		method string
+		target string
+	}{
+		{"listRepos", http.MethodGet, "http://localhost/api/v1/repos"},
+		{"getRepo", http.MethodGet, "http://localhost/api/v1/repos/acme/platform"},
+		{"getDoc", http.MethodGet, "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001"},
+		{"searchDocs", http.MethodGet, "http://localhost/api/v1/search?q=intro"},
+		{"getSession", http.MethodGet, "http://localhost/api/v1/auth/session"},
+		{"logout", http.MethodPost, "http://localhost/api/v1/auth/logout"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Deliberately no session cookie: none-mode must never 401.
+			req := httptest.NewRequestWithContext(t.Context(), tc.method, tc.target, http.NoBody)
+			validateRoundTrip(t, router, h, req)
+		})
+	}
+}
+
+// The synthetic identity is what /api/v1/auth/session reports under none-mode.
+// The docz-site drives its login UI off a 401 here, so a 200 with a recognizable
+// anonymous provider is what keeps the login panel from appearing at all.
+func TestNoAuthModeReportsAnonymousIdentity(t *testing.T) {
+	h := contractHandler(true)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet,
+		"http://localhost/api/v1/auth/session", http.NoBody)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 with no cookie under none-mode", rr.Code)
+	}
+	var got struct {
+		Provider string `json:"provider"`
+		Subject  string `json:"subject"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode session body %q: %v", rr.Body.String(), err)
+	}
+	if got.Provider != session.AnonymousProvider || got.Subject != session.AnonymousSubject {
+		t.Errorf("identity = %+v, want provider %q subject %q",
+			got, session.AnonymousProvider, session.AnonymousSubject)
+	}
+}
+
+// With no provider to redirect to, the login route is absent rather than
+// mounted-and-erroring — the same absent-route precedent as search with no
+// searcher configured.
+func TestNoAuthModeOmitsLoginRoutes(t *testing.T) {
+	h := contractHandler(true)
+	for _, target := range []string{
+		"http://localhost/auth/login?provider=github",
+		"http://localhost/auth/callback?code=x&state=y",
+	} {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, target, http.NoBody)
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("%s: status = %d, want 404", target, rr.Code)
+		}
 	}
 }

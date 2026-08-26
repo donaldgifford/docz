@@ -34,6 +34,14 @@ const (
 // expired.
 var ErrSessionNotFound = errors.New("session not found")
 
+// ErrSessionCorrupt is returned by Lookup when the stored value exists but will
+// not decode. It is deliberately distinct from an infrastructure failure: the
+// backend answered fine, this one cookie is unusable. The realistic cause is a
+// non-backward-compatible change to sessionData across a rolling deploy, and
+// the only recovery is for the holder to log in again — so the gate must treat
+// it as "not authenticated", not as "the backend is down".
+var ErrSessionCorrupt = errors.New("session could not be decoded")
+
 // Session is a resolved session: its id plus the authenticated identity.
 type Session struct {
 	ID       string
@@ -97,8 +105,10 @@ func (s *Store) Issue(ctx context.Context, identity *auth.Identity) (string, err
 	return sessionID, nil
 }
 
-// Lookup returns the Session for sessionID, or ErrSessionNotFound when it is
-// absent or expired (Redis has already dropped an expired key).
+// Lookup returns the Session for sessionID. It returns ErrSessionNotFound when
+// the id is absent or expired (Redis has already dropped an expired key), and
+// ErrSessionCorrupt when the stored value exists but will not decode. Any other
+// error is an infrastructure failure.
 func (s *Store) Lookup(ctx context.Context, sessionID string) (Session, error) {
 	raw, err := s.redis.Get(ctx, keyPrefix+sessionID).Result()
 	if errors.Is(err, redis.Nil) {
@@ -109,7 +119,7 @@ func (s *Store) Lookup(ctx context.Context, sessionID string) (Session, error) {
 	}
 	var data sessionData
 	if uerr := json.Unmarshal([]byte(raw), &data); uerr != nil {
-		return Session{}, fmt.Errorf("decode session: %w", uerr)
+		return Session{}, fmt.Errorf("%w: %w", ErrSessionCorrupt, uerr)
 	}
 	return Session{
 		ID: sessionID,

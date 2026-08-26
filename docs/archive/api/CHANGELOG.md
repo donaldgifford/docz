@@ -5,13 +5,44 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(queue)* Route asynq diagnostics and failed attempts into slog
+- *(githubapp)* Verify App credentials at startup
+- *(config)* Accept AUTH_PROVIDERS=none for a login-free first setup
+- *(auth)* Serve an anonymous identity under AUTH_PROVIDERS=none
+- *(chart)* Support authProviders "none" for a login-free first setup
+
 ### Bug Fixes
 
 - *(chart)* Make the Tailscale sidecar restricted-compliant and stateful ([#17](https://github.com/donaldgifford/docz-api/issues/17))
+- *(queue)* Stop finished tasks from swallowing later ingest triggers
+- *(observability)* Log every HTTP error sink (IMPL-0006 Phase 4)
+- Five defects found reviewing the IMPL-0006 branch
+- *(githubapp)* Only a 401 counts as a rejected App credential
+
+### Refactor
+
+- *(queue)* Drop a dead nil check from the conflict dispatch
 
 ### Documentation
 
 - *(inv)* INV-0007 — ingest failures are silent and block re-ingestion ([#18](https://github.com/donaldgifford/docz-api/issues/18))
+- *(impl)* Mark IMPL-0006 Phase 1 complete
+- *(inv)* Record F4b — successful ingests also swallowed later triggers
+- *(impl)* Mark IMPL-0006 Phase 2 complete, record the F4b scope growth
+- *(impl)* Mark IMPL-0006 Phase 3 complete
+- *(deploy)* Lead first setup with AUTH_PROVIDERS=none
+- *(impl)* Mark IMPL-0006 Phase 5 complete
+- Close out IMPL-0006 and record the INV-0007 verification drill
+- Correct the credential and session rules after the review fixes
+- *(impl)* Record the final task as blocked on cluster availability
+- *(impl)* Link the downstream docz-site configuration issue
+
+### Testing
+
+- *(queue)* Prove failure logging against real Redis
+- *(session)* Prove Lookup labels a corrupt session, not just that the gate handles one
 
 ## [0.5.1] - 2026-08-11
 

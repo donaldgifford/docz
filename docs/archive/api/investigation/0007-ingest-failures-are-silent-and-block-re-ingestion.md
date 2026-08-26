@@ -24,11 +24,13 @@ created: 2026-08-21
   - [F2 — Our worker's no-log-here comment codifies a false assumption](#f2--our-workers-no-log-here-comment-codifies-a-false-assumption)
   - [F3 — The error text lives only in Redis, on the task record](#f3--the-error-text-lives-only-in-redis-on-the-task-record)
   - [F4 — An exhausted task silently swallows every future ingest for that repo](#f4--an-exhausted-task-silently-swallows-every-future-ingest-for-that-repo)
+  - [F4b — The same swallow fires after every SUCCESSFUL ingest (found in IMPL-0006)](#f4b--the-same-swallow-fires-after-every-successful-ingest-found-in-impl-0006)
   - [F5 — Nothing validates GitHub App credentials before first use](#f5--nothing-validates-github-app-credentials-before-first-use)
   - [F6 — A no-auth mode is feasible: login auth and App auth are independent](#f6--a-no-auth-mode-is-feasible-login-auth-and-app-auth-are-independent)
   - [F7 — The silent-sink pattern recurs at four more operational choke points](#f7--the-silent-sink-pattern-recurs-at-four-more-operational-choke-points)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
+  - [Status: implemented (2026-08-25)](#status-implemented-2026-08-25)
 - [Recovery runbook (as-is, no code changes)](#recovery-runbook-as-is-no-code-changes)
 - [Open questions](#open-questions)
 - [References](#references)
@@ -90,7 +92,7 @@ with the error-handling conventions (F7 — full sweep of `internal/` +
 ## Environment
 
 | Component | Version / Value |
-|-----------|----------------|
+| --------- | --------------- |
 | asynq | `v0.26.0` (read from the module cache) |
 | queue name / task type / task id | `ingest` / `ingest:repo` / `ingest:<owner>/<name>` |
 | enqueue options | `TaskID` + `ProcessIn(debounce)` + `MaxRetry(5)` + `Retention(24h)` |
@@ -173,6 +175,36 @@ task. Nothing logs that the swallow happened.
 Coalesce-as-success is the right semantics against a *pending/scheduled*
 task (the pending job will cover the trigger). It is the wrong semantics
 against a *dead* one (nothing will).
+
+### F4b — The same swallow fires after every SUCCESSFUL ingest (found in IMPL-0006)
+
+F4 understates the blast radius. While implementing the fix (IMPL-0006
+Phase 2) the *completed* state turned out to hit the identical trap, and it
+fires on the happy path rather than after a failure:
+
+- `EnqueueIngest` set **`Retention(24h)`**, so a successful run takes asynq's
+  `markAsComplete` path, which does `HSET … "state" "completed"` and **keeps
+  the task key** (`internal/rdb/rdb.go:392`). Without retention the
+  `markAsDone` path `DEL`s it (`rdb.go:292`).
+- The enqueue uniqueness check is the same bare `EXISTS` (F4.2), so for the
+  full 24-hour retention window the repo's task id is taken by its own last
+  successful run.
+- Conflict was mapped to success, so **every push for that repo in the next
+  24 hours was silently discarded**. Effectively: *one ingest per repo per
+  day*, with no error anywhere — the drop was logged at Debug (F7.6).
+
+Proven by `TestReingestAfterSuccessfulRun` (real Redis), which fails against
+the pre-fix code: the second trigger never reaches the ingestor.
+
+This is a strictly better explanation of the reported symptom than any OQ-1
+suspect — it needs no credential problem, no egress problem, and no missing
+`.docz.yaml`. It also explains why the first onboard of a repo worked and
+later pushes appeared to do nothing.
+
+**Fixed** in IMPL-0006 Phase 2: conflicts are inspected rather than assumed
+(`classifyConflict`), terminal states are cleared and the trigger
+re-enqueued, and `Retention` is dropped so a success frees the id
+immediately.
 
 ### F5 — Nothing validates GitHub App credentials before first use
 
@@ -329,6 +361,26 @@ Code fixes, in value order — all small:
    chart's `authRedirectBase` `required`, and document it as a loud opt-in
    for internal/first-boot deployments.
 
+### Status: implemented (2026-08-25)
+
+All six recommendations landed in IMPL-0006 (branch `feat/impl-0006`) and
+were verified live against the local compose stack, **reading only structured
+logs** — Valkey was never opened:
+
+| # | Fix | Live evidence |
+| - | --- | ------------- |
+| 1 | `ErrorHandler` + comment fix | 6 x `ingest job attempt failed` naming the real cause (`404 Not Found` on the repo fetch), with `retried` 0 through 5 |
+| 2 | Boot App-auth self-check | `github app authenticated app_slug=donaldgifford-docz-api` at every start |
+| 3 | Un-swallow the finished task | `cleared a finished ingest task and re-enqueued cleared_state=archived` on the next trigger after exhaustion |
+| 4 | The four mute HTTP sinks | unit-tested; each sink emits exactly one record at its intended level |
+| 5 | `asynq.Config.Logger` + Info coalesce | `Retry exhausted ...` arrives as WARN with `component=asynq`; `ingest job coalesced into an existing task state=active` / `=scheduled` |
+| 6 | `AUTH_PROVIDERS=none` | contract test serves `/api/v1` with no cookie; chart renders no login env or Secret keys |
+
+The drill reproduced the reported production symptom exactly — the same
+`Retry exhausted` WARN the operator saw — except that it is now preceded by
+six ERROR lines naming the cause, and the next trigger self-heals instead of
+being swallowed. Every one of the 33 log lines parsed under `jq -e`.
+
 ## Recovery runbook (as-is, no code changes)
 
 1. Read the stored error: `asynq task ls --queue=ingest --state=archived`
@@ -355,21 +407,40 @@ Code fixes, in value order — all small:
   but logs alone can neither confirm nor refute *any* suspect — OQ-1 in
   miniature. The archived task's stored error remains the only path to
   the answer until fix 1 lands.
+  **Superseded in practice (2026-08-24):** IMPL-0006 Phase 2 found F4b — a
+  successful ingest blocked that repo's triggers for 24 hours — which
+  explains the reported symptom without any credential, egress, or config
+  fault. The archived task's stored error should still be read to confirm,
+  but the leading hypothesis is now F4b rather than any original suspect.
+  **Still open (2026-08-25):** answering it needs the fixed binary running in
+  EKS and one re-trigger of the failing repo — with fix 1 in place the cause
+  now appears in `kubectl logs` directly. IMPL-0006 Phase 6 carries that step;
+  it is the one part of this investigation that cannot be closed locally.
 - **OQ-2** — should the boot self-check fail startup or warn-only?
   Fail-fast matches the OIDC-discovery precedent (a bad issuer fails the
   boot); warn-only keeps the read API serving when only ingest is broken.
+  **Answered (IMPL-0006 OQ-1a):** fail startup, but only on a rejection GitHub
+  actually issued — an unreachable GitHub warns and continues, so an outage
+  during a restart cannot crash-loop an otherwise healthy API.
 - **OQ-3** — fix 3's mechanism: enqueue-side `GetTaskInfo`+delete, vs a
   worker-side `DeleteTask` after archiving, vs shortening the archive TTL.
   Enqueue-side is the least magical and keeps the decision at the choke
   point that owns the TaskID scheme.
+  **Answered:** enqueue-side `GetTaskInfo` + `DeleteTask`, as reasoned here.
 - **OQ-4** — spelling of the no-auth switch: `AUTH_PROVIDERS=none` (one
   knob, reads naturally in the existing enum) vs a separate
   `AUTH_DISABLED=true`. Also: should `/auth/login` 404 or 503 in that
   mode? `none`-in-the-existing-knob is the leading option.
+  **Answered:** `AUTH_PROVIDERS=none`, and `/auth/login` is simply not mounted
+  (404), matching the absent-route precedent from search.
 - **OQ-5** — the active-window drop (`client.go:70-73`): does it get a
   real fix (track a dirty flag / re-enqueue after run completion) or just
   the louder log from fix 5? A push landing mid-ingest is rare but is a
   genuine lost-trigger path independent of F4.
+  **Partly addressed:** IMPL-0006 shipped the louder log — a mid-ingest
+  coalesce now logs at Info with `state=active`, so the drop is at least
+  visible. The real fix (dirty flag / re-enqueue on completion) is still open
+  and is deliberately out of IMPL-0006's scope.
 
 ## References
 

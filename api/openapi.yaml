@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.2.0
+  version: 1.2.1
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -405,6 +405,12 @@ components:
         Opaque Redis-backed session id set by the auth flow. Sent as the
         `docz_session` cookie; required on every `/api/v1` operation unless the
         operation overrides `security` (public routes use `security: []`).
+
+        A server started with `AUTH_PROVIDERS=none` (the login-free first-setup
+        mode) accepts every request without a cookie and serves it as an
+        anonymous identity, and does not mount `/auth/login` or
+        `/auth/callback`. Request and response shapes are unchanged, so a client
+        generated from this spec works against either mode.
   parameters:
     Owner:
       name: owner

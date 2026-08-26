@@ -330,3 +330,63 @@ tests:
     asserts:
       - failedTemplate:
           errorMessage: config.oktaIssuer is required when okta is in config.authProviders
+
+  - it: drops the session secret and redirect base under none-mode
+    set:
+      config:
+        authProviders: "none"
+        authRedirectBase: ""
+        githubOAuthClientID: ""
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AUTH_PROVIDERS
+            value: "none"
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: AUTH_REDIRECT_BASE
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: SESSION_SECRET
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: GITHUB_OAUTH_CLIENT_ID
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OKTA_ISSUER
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: KEYCLOAK_ISSUER
+      # none-mode is precisely the shape where the GitHub App credentials are
+      # the only ones that matter, so they must still be wired.
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GITHUB_APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: app-id
+
+  - it: fails the render when none is combined with a real provider
+    set:
+      config:
+        authProviders: "none,github"
+    asserts:
+      # Without this the chart would drop SESSION_SECRET and AUTH_REDIRECT_BASE
+      # while still rendering GITHUB_OAUTH_*, installing cleanly and then
+      # crash-looping on the binary's own validation.
+      - failedTemplate:
+          errorMessage: 'config.authProviders: "none" must be the only entry when present'
+

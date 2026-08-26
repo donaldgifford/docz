@@ -34,7 +34,7 @@ provenance attestations (GitHub artifact attestations, Build L2).
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.4.0 \
+  --version 0.5.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.4.0 \
+  --version 0.5.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -106,6 +106,41 @@ a disabled provider contributes nothing, so a github-only install carries no
 
 An enabled provider's values are `required` at render time, so a missing
 issuer or client id fails `helm install` rather than crash-looping the pod.
+
+#### First setup without login (`authProviders: "none"`)
+
+A first deploy has to get two independent credential sets right at once — the
+GitHub App and a login provider — and a failure in either looks the same from
+the outside. Setting `config.authProviders: "none"` removes the second set so
+you can prove ingestion works on its own:
+
+```yaml
+config:
+  appId: "YOUR_APP_ID"
+  authProviders: "none"
+
+secrets:
+  webhookSecret: "YOUR_WEBHOOK_SECRET"
+  privateKey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    YOUR_PRIVATE_KEY
+    -----END RSA PRIVATE KEY-----
+
+search:
+  meili:
+    masterKey: "A_RANDOM_MEILI_MASTER_KEY"
+```
+
+No redirect base, no session secret, no provider credentials — the chart
+renders none of those env vars or Secret keys. `"none"` must be the only
+entry; pairing it with a real provider is a config error.
+
+**This leaves the read API open to anyone who can reach the Service.** Every
+request is served as a synthetic anonymous identity, `/auth/login` and
+`/auth/callback` are not mounted, and the service logs a warning at startup.
+Do not expose a none-mode install on a public endpoint. To switch to real
+login, set `authProviders` to your provider(s), supply their values and
+secrets, and redeploy — nothing else changes.
 
 Okta and Keycloak share one OIDC code path. The app must be a **confidential
 client** — in Okta, *OIDC - OpenID Connect → Web Application* with the
@@ -164,6 +199,19 @@ managed instances.
 
 ## Observability
 
+- **Probes:** `/healthz` is liveness — the process is up, checking nothing
+  downstream, since failing it restarts the pod and a restart cannot fix a
+  failed dependency. `/readyz` is readiness — Postgres, Redis and Meilisearch
+  are reachable, 503 naming the offender, which removes the pod from Service
+  endpoints without restarting it. The chart wires both by default.
+- **GitHub App credentials are checked at startup, not by a probe.** The
+  service authenticates as the App at boot and logs its identity. Only a 401
+  (bad app id, or a key GitHub will not accept) or an unparseable private key
+  fails the deploy. A 403 from a suspended App, a rate limit, and GitHub being
+  unreachable all warn and let the pod start — a transient GitHub problem must
+  never crash-loop a pod whose credentials are fine, and it only affects ingest,
+  which logs its own cause per job. GitHub is not a serving dependency, so it
+  must never gate readiness.
 - Set `metrics.enabled: true` (default) to serve Prometheus metrics on
   `/metrics`; enable `serviceMonitor.enabled: true` to have a Prometheus
   Operator scrape the `http` port at `/metrics`.
@@ -196,7 +244,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.4.0
+  ghcr.io/donaldgifford/charts/docz-api:0.5.0
 ```
 
 ### Build provenance
@@ -206,7 +254,7 @@ it came from this repository:
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz-api:0.4.0 \
+  oci://ghcr.io/donaldgifford/charts/docz-api:0.5.0 \
   --owner donaldgifford
 ```
 
@@ -219,7 +267,7 @@ cosign verify-attestation \
     '^https://github.com/donaldgifford/docz-api/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.4.0
+  ghcr.io/donaldgifford/charts/docz-api:0.5.0
 ```
 
 ## Values
@@ -235,8 +283,8 @@ cosign verify-attestation \
 | autoscaling.targetMemoryUtilizationPercentage | int | `0` | Target average memory utilization (percent). Unset → no memory metric. |
 | config | object | `{"appId":"","authProviders":"github","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","keycloakClientID":"","keycloakIssuer":"","logFormat":"json","logLevel":"info","oktaClientID":"","oktaIssuer":"","port":8080,"sessionTTL":""}` | docz-api application configuration (non-secret env vars). Empty strings for the optional tuning knobs mean "emit nothing; let the binary apply its own default". |
 | config.appId | string | `""` | GitHub App ID (GITHUB_APP_ID) |
-| config.authProviders | string | `"github"` | Comma-separated login providers: github, okta, keycloak (AUTH_PROVIDERS). |
-| config.authRedirectBase | string | `""` | Absolute base URL the OAuth/OIDC provider redirects back to; the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required. |
+| config.authProviders | string | `"github"` | Comma-separated login providers: github, okta, keycloak (AUTH_PROVIDERS). The special value "none" — which must be the only entry — disables site login entirely: every request is served as an anonymous identity and no login routes are mounted, so no redirect base, session secret, or provider credentials are needed. It is the first-setup shape (prove GitHub App ingestion works before wiring a login provider) and it leaves the read API open to anyone who can reach the Service, so do not ship it on a public endpoint. |
+| config.authRedirectBase | string | `""` | Absolute base URL the OAuth/OIDC provider redirects back to; the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required unless authProviders is "none". |
 | config.githubApiBase | string | `""` | GitHub API base URL; override for GitHub Enterprise (GITHUB_API_BASE). Empty → api.github.com. |
 | config.githubOAuthClientID | string | `""` | GitHub OAuth client id for site login (GITHUB_OAUTH_CLIENT_ID). Required while `github` is in authProviders. |
 | config.ingestDebounce | string | `""` | Ingest debounce window as a Go duration (INGEST_DEBOUNCE). Empty → 5s. |
@@ -319,7 +367,7 @@ cosign verify-attestation \
 | search.meili.mode | string | `"baked"` | Source of Meilisearch. One of "baked" or "external". |
 | search.meili.storage | string | `"5Gi"` | Persistent volume size (baked mode). |
 | search.meili.storageClassName | string | `""` | StorageClass name (baked mode). Empty → cluster default. |
-| secrets | object | `{"create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""}` | Application secrets. When `create` is true the chart renders a Secret from the plaintext values below. When `create` is false, `existingSecret` names a Secret you supply by any means (1Password Operator, External Secrets, sealed-secrets, `kubectl create secret`, ...) — the chart only references it by key, so the provider is entirely your choice.  The referenced Secret must carry these keys:    app-id                  always   webhook-secret          always   session-secret          always   private-key             when secrets.privateKeyAsFile is true, or the                           GitHub App key is not supplied out-of-band   oauth-client-secret     when `github`   is in config.authProviders   okta-client-secret      when `okta`     is in config.authProviders   keycloak-client-secret  when `keycloak` is in config.authProviders  Only the enabled providers' keys are referenced, so a github-only install needs no okta-client-secret. |
+| secrets | object | `{"create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""}` | Application secrets. When `create` is true the chart renders a Secret from the plaintext values below. When `create` is false, `existingSecret` names a Secret you supply by any means (1Password Operator, External Secrets, sealed-secrets, `kubectl create secret`, ...) — the chart only references it by key, so the provider is entirely your choice.  The referenced Secret must carry these keys:    app-id                  always   webhook-secret          always   session-secret          unless config.authProviders is "none"   private-key             when secrets.privateKeyAsFile is true, or the                           GitHub App key is not supplied out-of-band   oauth-client-secret     when `github`   is in config.authProviders   okta-client-secret      when `okta`     is in config.authProviders   keycloak-client-secret  when `keycloak` is in config.authProviders  Only the enabled providers' keys are referenced, so a github-only install needs no okta-client-secret, and a "none" install needs no login keys at all. |
 | secrets.create | bool | `true` | Create secret resource (false = use existing secret) |
 | secrets.existingSecret | string | `""` | Name of an existing Secret holding the keys listed above (when create=false). Populate it with whatever secret manager you run. |
 | secrets.keycloakClientSecret | string | `""` | Keycloak client secret (KEYCLOAK_CLIENT_SECRET). Required while `keycloak` is in config.authProviders and create=true. Secret key: keycloak-client-secret. |
@@ -327,7 +375,7 @@ cosign verify-attestation \
 | secrets.oktaClientSecret | string | `""` | Okta client secret (OKTA_CLIENT_SECRET). Required while `okta` is in config.authProviders and create=true. Secret key: okta-client-secret. |
 | secrets.privateKey | string | `""` | GitHub App private key (PEM format, GITHUB_APP_PRIVATE_KEY) |
 | secrets.privateKeyAsFile | bool | `true` | Mount the private key as a file (true) or pass it as an env var (false). Either way the binary accepts a path or a PEM body. |
-| secrets.sessionSecret | string | `""` | Session signing secret (SESSION_SECRET) |
+| secrets.sessionSecret | string | `""` | Session signing secret (SESSION_SECRET). Required unless config.authProviders is "none". |
 | secrets.webhookSecret | string | `""` | GitHub webhook HMAC secret (GITHUB_WEBHOOK_SECRET) |
 | securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}` | Container security context. The image runs on a read-only rootfs; nothing is written to disk except the optional mounted private key. |
 | service.port | int | `80` | Service port. Targets the container's single `http` port, which serves the API, probes, and /metrics. |
