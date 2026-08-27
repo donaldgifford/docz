@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Bug Fixes
 
-- *(chart)* Pin appVersion to the published image tag, not the git tag
+- *(chart)* Pin appVersion to the published image tag, not the git tag ([#20](https://github.com/donaldgifford/docz-api/issues/20))
 
 ## [0.6.0] - 2026-08-26
 
