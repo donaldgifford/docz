@@ -44,7 +44,18 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-api:v0.5.1"
+          value: "ghcr.io/donaldgifford/docz-api:0.6.0"
+
+  # The default tag must be pullable, and the release workflow publishes bare
+  # semver (metadata-action's {{version}} strips the "v" from the git tag). An
+  # appVersion of "v0.5.1" rendered ghcr.io/donaldgifford/docz-api:v0.5.1, which
+  # 404s — every default install failed on ImagePullBackOff. Assert the shape,
+  # not just the value, so bumping appVersion cannot silently reintroduce it.
+  - it: should default to a bare-semver tag, never v-prefixed
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: '^ghcr\.io/donaldgifford/docz-api:\d+\.\d+\.\d+$'
 
   - it: should use custom image tag when set
     set:

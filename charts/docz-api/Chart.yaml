@@ -4,8 +4,12 @@ apiVersion: v2
 name: docz-api
 description: Helm chart for docz-api
 type: application
-version: 0.5.0
-appVersion: "v0.5.1"
+version: 0.5.1
+# The tag the release workflow actually pushes, NOT the git tag. metadata-action
+# uses `type=semver,pattern={{version}}`, which strips the leading "v" — so the
+# published image is `:0.6.0` and a `v`-prefixed appVersion renders a default
+# image ref that does not exist. Guarded by deployment_test.yaml.
+appVersion: "0.6.0"
 home: https://github.com/donaldgifford/docz-api
 maintainers:
   - name: donaldgifford

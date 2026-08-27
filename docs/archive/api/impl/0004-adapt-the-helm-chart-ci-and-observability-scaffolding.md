@@ -180,6 +180,16 @@ docz-api reads `REDIS_URL`.
   `v0.4.0`) and bump it by hand in the same PR as a chart-version bump when the
   chart should track a newer app.** Simple, explicit, matches how the OpenAPI
   spec version is managed.
+  - **Correction (post-v0.6.0):** "the release tag" is the wrong string.
+    `appVersion` is the default **image tag**, and the publish workflow's
+    `type=semver,pattern={{version}}` strips the leading `v` — so the git tag
+    `v0.6.0` publishes `ghcr.io/donaldgifford/docz-api:0.6.0`. Charts 0.3.2–0.5.0
+    shipped a `v`-prefixed `appVersion` and their default image ref 404s
+    (ImagePullBackOff on any install that does not set `image.tag`). It went
+    unnoticed because `ci/ci-values.yaml` overrides the image to busybox, so
+    neither `helm template` nor `ct lint` ever resolves the real ref, and the
+    unittest pinned the broken string as its expectation. Pin **bare semver**
+    (`0.6.0`); `deployment_test.yaml` now asserts the shape as well as the value.
 - b. Automate: have the release workflow rewrite `appVersion` on each app
   release. Couples chart releases to app releases and creates bot commits;
   revisit if manual bumping proves annoying.

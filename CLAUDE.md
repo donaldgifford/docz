@@ -812,8 +812,13 @@ established as the build progresses:
     five. (Superseded in chart 0.3.0 — the provider client-secret keys are now
     conditional; see the login-provider bullet below.) **`service.yaml` is one
     `http` port** (`service.port` → targetPort `http`). **`Chart.yaml`
-    `appVersion: "v0.4.0"`** (latest release tag; drives the default image tag),
-    chart `version: 0.1.0`.
+    `appVersion` is the published **image** tag — bare semver, never
+    `v`-prefixed** (it drives the default image ref, and the publish workflow's
+    `type=semver,pattern={{version}}` strips the `v` from the git tag, so
+    `v0.6.0` ships as `:0.6.0`). Charts 0.3.2–0.5.0 pinned `v`-prefixed
+    appVersions and their default image ref 404s; `ci-values.yaml` swaps in
+    busybox, so only `deployment_test.yaml`'s bare-semver assertion catches it.
+    Chart `version: 0.1.0` at scaffold.
     - **Login providers are gated per-provider** (chart ≥ 0.3.0).
       `config.authProviders` is parsed once by the **`docz-api.authProviders`**
       helper (comma-split, whitespace-stripped, `compact`, `toJson`) and consumed
