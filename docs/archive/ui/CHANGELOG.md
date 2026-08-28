@@ -3,40 +3,15 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.5.0] - 2026-08-28
 
 ### Features
 
-- *(api)* SessionUnavailableError for the session gate's 503
-- *(lib)* SessionState + classifySession
-- *(shell)* SessionMenu renders by session classification
-- *(shell)* Session query self-heals from outages with an error-gated re-poll
-- *(auth)* /login renders an auth-disabled panel in none-mode
+- No-auth (none) mode and session-unavailable 503 handling ([#20](https://github.com/donaldgifford/docz-site/issues/20))
 
 ### Documentation
 
 - DESIGN-0003 + IMPL-0004 — no-auth mode and session-unavailable handling ([#19](https://github.com/donaldgifford/docz-site/issues/19))
-- None-mode and session-classification guidance
-- *(impl)* Check off IMPL-0004 Phase 3 task 3
-- *(impl)* IMPL-0004 Completed, DESIGN-0003 Implemented
-
-### Styling
-
-- Prettier over the Phase 2 test additions
-
-### Testing
-
-- *(api)* Pin toApiError's 401/404/503 mappings
-- *(lib)* ClassifySession classification table
-- *(shell)* SessionMenu none-mode, 503, and recovery cases
-- *(auth)* /login none-mode panel and unavailable-probe cases
-- *(reader)* Pin the 503-never-logout invariant at the doc route
-- *(a11y)* Axe entry for the none-mode /login panel
-
-### Miscellaneous Tasks
-
-- *(api)* Re-vendor openapi.yaml at 1.2.1 (sessionCookie none-mode note)
-- *(chart)* Bump appVersion to 0.5.0, chart to 0.1.6
 
 ## [0.4.0] - 2026-08-11
 
