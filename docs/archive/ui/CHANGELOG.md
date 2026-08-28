@@ -7,10 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
-- *(design)* DESIGN-0003 — no-auth mode and session-unavailable 503
-- *(design)* DESIGN-0003 approved — decisions 1a 2a 3a 4a 5a 6a
-- *(impl)* IMPL-0004 — no-auth mode and session-unavailable handling
-- *(impl)* IMPL-0004 open questions decided — 1a 2a 3a 4a
+- DESIGN-0003 + IMPL-0004 — no-auth mode and session-unavailable handling ([#19](https://github.com/donaldgifford/docz-site/issues/19))
 
 ## [0.4.0] - 2026-08-11
 
