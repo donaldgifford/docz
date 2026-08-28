@@ -54,8 +54,10 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   files). New config files at the repo root go in `tsconfig.node.json`'s
   `include`.
 - `src/api/fetcher.ts` — the orval fetch mutator and the typed errors
-  (`SessionRequiredError` 401, `NotFoundError` 404, `ApiError` rest).
-  Match on these classes in UI code; never `fetch` the API directly.
+  (`SessionRequiredError` 401, `NotFoundError` 404,
+  `SessionUnavailableError` 503 — transient, NEVER a logout —
+  `ApiError` rest). Match on these classes in UI code; never `fetch`
+  the API directly.
   Success returns orval's `{ data, status, headers }` envelope —
   narrow on `status === 200` before touching `.data`. Query defaults
   live in `src/app/query-client.ts` (no retry on 401/404).
@@ -170,6 +172,19 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   is a disclosure (not `role="menu"`), and logout runs `onSettled` —
   navigate to `/login` BEFORE `queryClient.clear()`, or the page being
   left refetches everything under the dead session.
+- Session classification (DESIGN-0003): auth chrome renders from
+  `classifySession` (`src/lib/session.ts`) — pending / signed-in /
+  anonymous (`provider === "none"`, docz-api's AUTH_PROVIDERS=none) /
+  signed-out / unavailable. "Sign in" is reachable ONLY from
+  signed-out, which only a real 401 produces; 503 and every other
+  failure are `unavailable` → SessionMenu keeps an inert placeholder
+  (`session-unavailable` testid, visually identical to pending) and
+  the session query re-polls ~30 s via an error-gated
+  `refetchInterval` (it never unmounts and focus-refetch is off — a
+  healthy query must never poll). `anonymous` renders NO auth chrome
+  anywhere and `/login` swaps to the auth-disabled panel (buttons
+  render immediately; swap only on confirmed anonymous). None-mode is
+  detected from the session response alone — no config, no storage.
 - Nav pins (DESIGN-0002): `DOCZ_NAV_LINKS` (JSON `[{label, href}]`)
   resolves in `server/serve.ts` — label `/^[\w .&+-]{1,24}$/`, hrefs
   same-origin app paths in printable ASCII with NO HTML-significant

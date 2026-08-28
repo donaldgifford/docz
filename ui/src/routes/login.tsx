@@ -1,9 +1,14 @@
+import type { ReactNode } from "react";
+import { Link } from "react-router";
+
+import { useGetSession } from "@/api/__generated__/docz-api";
 import {
   enabledProviders,
   lastUsedProvider,
   promoteLastUsed,
   rememberProvider,
 } from "@/lib/authProviders";
+import { classifySession } from "@/lib/session";
 
 /*
  * Provider selection page (DESIGN-0001 auth flow, IMPL-0001 Phase 5).
@@ -11,49 +16,90 @@ import {
  * a full document navigation through the same-origin proxy (302 to the
  * provider), never a router transition. The last-used provider (a
  * localStorage UI preference) takes the primary slot; GitHub otherwise.
+ *
+ * None-mode (DESIGN-0003): when the shared session query classifies as
+ * `anonymous` (provider "none"), the buttons give way to a quiet
+ * auth-disabled panel — those /auth routes aren't mounted upstream.
+ * Every other state, a still-pending probe included, renders the
+ * buttons unchanged (OQ-3a: zero added latency for normal
+ * deployments; a none-mode cold visit at worst flashes buttons that
+ * 404 exactly as they do today).
  */
 
-export function Component() {
-  const lastUsed = lastUsedProvider();
-  const providers = promoteLastUsed(enabledProviders(), lastUsed);
-
+function LoginCard({ children }: { children: ReactNode }) {
   return (
     <main className="mx-auto flex max-w-[420px] flex-col px-5 pt-[14vh]">
       <div className="border border-border-default bg-bg-raised px-8 py-8">
         <div className="mb-1 font-mono text-[12.5px] tracking-[0.05em] text-accent">
           / docz <span className="text-fg-muted">/</span> sign in
         </div>
-        <h1 className="mb-2 text-[22px] font-semibold tracking-[-0.01em] text-fg-primary">
-          Sign in
-        </h1>
-        <p className="mb-6 text-[13px] text-fg-tertiary">
-          Authentication is handled by docz-api — no tokens ever reach this app.
-        </p>
-
-        <ul className="flex flex-col gap-2">
-          {providers.map((provider, index) => (
-            <li key={provider.key}>
-              <a
-                href={`/auth/login?provider=${encodeURIComponent(provider.key)}`}
-                data-testid={`login-${provider.key}`}
-                onClick={() => {
-                  rememberProvider(provider.key);
-                }}
-                className={`block border px-4 py-[0.55rem] text-center font-mono text-[13px] ${
-                  index === 0
-                    ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent hover:border-accent"
-                    : "border-border-default text-fg-secondary hover:border-border-strong hover:text-fg-primary"
-                }`}
-              >
-                Continue with {provider.label}
-                {provider.key === lastUsed && (
-                  <span className="text-fg-muted"> · last used</span>
-                )}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {children}
       </div>
     </main>
+  );
+}
+
+export function Component() {
+  const sessionQuery = useGetSession();
+  const state = classifySession(sessionQuery);
+  const lastUsed = lastUsedProvider();
+  const providers = promoteLastUsed(enabledProviders(), lastUsed);
+
+  if (state.kind === "anonymous") {
+    return (
+      <LoginCard>
+        <h1
+          data-testid="login-auth-disabled"
+          className="mb-2 text-[22px] font-semibold tracking-[-0.01em] text-fg-primary"
+        >
+          Authentication is disabled
+        </h1>
+        <p className="mb-6 text-[13px] text-fg-tertiary">
+          This deployment runs without sign-in — everything here is readable
+          without an account.
+        </p>
+        <Link
+          to="/"
+          className="block border border-border-default px-4 py-[0.55rem] text-center font-mono text-[13px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
+        >
+          Browse the docs
+        </Link>
+      </LoginCard>
+    );
+  }
+
+  return (
+    <LoginCard>
+      <h1 className="mb-2 text-[22px] font-semibold tracking-[-0.01em] text-fg-primary">
+        Sign in
+      </h1>
+      <p className="mb-6 text-[13px] text-fg-tertiary">
+        Authentication is handled by docz-api — no tokens ever reach this app.
+      </p>
+
+      <ul className="flex flex-col gap-2">
+        {providers.map((provider, index) => (
+          <li key={provider.key}>
+            <a
+              href={`/auth/login?provider=${encodeURIComponent(provider.key)}`}
+              data-testid={`login-${provider.key}`}
+              onClick={() => {
+                rememberProvider(provider.key);
+              }}
+              className={`block border px-4 py-[0.55rem] text-center font-mono text-[13px] ${
+                index === 0
+                  ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent hover:border-accent"
+                  : "border-border-default text-fg-secondary hover:border-border-strong hover:text-fg-primary"
+              }`}
+            >
+              Continue with {provider.label}
+              {provider.key === lastUsed && (
+                <span className="text-fg-muted"> · last used</span>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </LoginCard>
   );
 }

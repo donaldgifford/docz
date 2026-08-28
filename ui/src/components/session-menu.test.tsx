@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { routes } from "@/app/router";
 import { server } from "@/test/server";
@@ -20,6 +20,10 @@ function mountAt(path: string) {
   );
   return router;
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("session menu", () => {
   it("shows the GitHub login and signs out through /login", async () => {
@@ -113,6 +117,77 @@ describe("session menu", () => {
       expect(screen.queryByTestId("session-pending")).not.toBeInTheDocument();
     });
     expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
+  });
+
+  it("renders no auth chrome at all in none-mode", async () => {
+    server.use(
+      http.get("*/api/v1/auth/session", () =>
+        HttpResponse.json({
+          provider: "none",
+          subject: "anonymous",
+          login: "anonymous",
+        }),
+      ),
+    );
+    mountAt("/repos");
+
+    // Wait for the probe to settle, then assert the anonymous branch
+    // rendered nothing: no avatar, no Sign in, no Sign out anywhere.
+    await waitFor(() => {
+      expect(screen.queryByTestId("session-pending")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-unavailable")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Account:/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+  });
+
+  it("shows the inert placeholder — not Sign in — on a 503", async () => {
+    server.use(
+      http.get("*/api/v1/auth/session", () =>
+        HttpResponse.json({ error: "session unavailable" }, { status: 503 }),
+      ),
+    );
+    mountAt("/repos");
+
+    expect(await screen.findByTestId("session-unavailable")).toBeVisible();
+    // The 503-never-logout invariant: the unknown state must not offer
+    // the login link.
+    expect(screen.queryByTestId("topbar-sign-in")).not.toBeInTheDocument();
+  });
+
+  it("recovers from a 503 to the avatar once the backend does", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let healthy = false;
+    server.use(
+      http.get("*/api/v1/auth/session", () =>
+        healthy
+          ? HttpResponse.json({
+              provider: "github",
+              subject: "1138",
+              login: "donaldgifford",
+            })
+          : HttpResponse.json(
+              { error: "session unavailable" },
+              { status: 503 },
+            ),
+      ),
+    );
+    mountAt("/repos");
+
+    expect(await screen.findByTestId("session-unavailable")).toBeVisible();
+
+    // Backend comes back; the error-gated re-poll (30 s) picks it up
+    // without a reload or remount.
+    healthy = true;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(31_000);
+    });
+    expect(
+      await screen.findByRole("button", { name: "Account: donaldgifford" }),
+    ).toBeInTheDocument();
   });
 
   it("closes on Escape and hands focus back to the trigger", async () => {

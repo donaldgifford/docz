@@ -96,6 +96,35 @@ describe("reader four-state matrix", () => {
     await userEvent.click(screen.getByRole("button", { name: "retry" }));
     await findRenderedDesign0001();
   });
+
+  it("treats a 503 as a retryable outage, never a logout", async () => {
+    // The session gate's 503 (SessionUnavailableError) means the
+    // backend is unreachable — state unknown. The route must show the
+    // inline error panel and must NOT stash-and-redirect to /login.
+    let calls = 0;
+    server.use(
+      http.get(DOC_ENDPOINT, () => {
+        calls += 1;
+        if (calls === 1) {
+          return HttpResponse.json(
+            { error: "session unavailable" },
+            { status: 503 },
+          );
+        }
+        return undefined; // fall through to the fixture handler
+      }),
+    );
+    mountAt(DOC_URL);
+
+    expect(await screen.findByText("session unavailable")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Continue with GitHub" }),
+    ).not.toBeInTheDocument();
+    expect(sessionStorage.getItem("docz:auth:return-to")).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "retry" }));
+    await findRenderedDesign0001();
+  });
 });
 
 describe("metadata table omission", () => {

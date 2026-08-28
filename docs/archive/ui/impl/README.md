@@ -35,5 +35,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0001 | docz-site MVP: phased build of the reader, directory, and repo pages | Draft | 2026-07-10 | Donald Gifford | [0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md](0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md) |
 | IMPL-0002 | Reader polish: rendering pipeline and QoL backlog from INV-0001 | Draft | 2026-07-12 | Donald Gifford | [0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md](0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md) |
 | IMPL-0003 | Nav pins, changelog page, and doc link resolution | Completed | 2026-08-11 | Donald Gifford | [0003-nav-pins-changelog-page-and-doc-link-resolution.md](0003-nav-pins-changelog-page-and-doc-link-resolution.md) |
-| IMPL-0004 | No-auth mode and session-unavailable handling | Draft | 2026-08-27 | Donald Gifford | [0004-no-auth-mode-and-session-unavailable-handling.md](0004-no-auth-mode-and-session-unavailable-handling.md) |
+| IMPL-0004 | No-auth mode and session-unavailable handling | Completed | 2026-08-27 | Donald Gifford | [0004-no-auth-mode-and-session-unavailable-handling.md](0004-no-auth-mode-and-session-unavailable-handling.md) |
 <!-- END DOCZ AUTO-GENERATED -->

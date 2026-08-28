@@ -1,7 +1,7 @@
 ---
 id: IMPL-0004
 title: "No-auth mode and session-unavailable handling"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-08-27
 ---
@@ -10,7 +10,7 @@ created: 2026-08-27
 
 # IMPL-0004: No-auth mode and session-unavailable handling
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-08-27
 
@@ -97,22 +97,22 @@ surfaces will consume.
 
 #### Tasks
 
-- [ ] Re-vendor `api/openapi.yaml` at `1.2.1` from docz-api main and
+- [x] Re-vendor `api/openapi.yaml` at `1.2.1` from docz-api main and
       run `bun run gen-api`; confirm the diff is the `sessionCookie`
       description note only and `gen-api-check` is current
-- [ ] `src/api/fetcher.ts`: add `SessionUnavailableError extends
+- [x] `src/api/fetcher.ts`: add `SessionUnavailableError extends
       ApiError` (status 503, name set, doc comment "transient, NEVER
       a logout"); wire the `case 503:` into `toApiError`
-- [ ] Fetcher tests: 503 with the `{"error":"session unavailable"}`
+- [x] Fetcher tests: 503 with the `{"error":"session unavailable"}`
       envelope → `SessionUnavailableError` carrying the envelope
       message; 503 with a non-JSON body → same class, status-line
       message; existing 401/404 mappings pinned unchanged
-- [ ] New `src/lib/session.ts`: `SessionState` discriminated union +
+- [x] New `src/lib/session.ts`: `SessionState` discriminated union +
       `classifySession(query)` per the design's rules — `pending`;
       200 + `provider === "none"` → `anonymous`; 200 otherwise →
       `signed-in`; `SessionRequiredError` → `signed-out`; any other
       error → `unavailable`
-- [ ] `src/lib/session.test.ts`: the full classification table —
+- [x] `src/lib/session.test.ts`: the full classification table —
       pending, github identity, `provider:"none"`, 401, 503, generic
       network error — one assertion per row
 
@@ -134,35 +134,35 @@ route surface.
 
 #### Tasks
 
-- [ ] `SessionMenu` renders by `classifySession`: `pending` →
+- [x] `SessionMenu` renders by `classifySession`: `pending` →
       existing placeholder; `signed-in` → existing avatar disclosure;
       `signed-out` → existing "Sign in" link (still suppressed on
       `/login`); `anonymous` → `null`; `unavailable` → the inert
       placeholder — "Sign in" is unreachable for any non-401 failure
-- [ ] Session-query recovery from `unavailable` (OQ-2a): a
+- [x] Session-query recovery from `unavailable` (OQ-2a): a
       `refetchInterval` callback returning ~30 s only while the query
       is errored (`false` otherwise), so the topbar self-heals after
       a backend blip without a reload (SessionMenu never unmounts and
       `refetchOnWindowFocus` is off, so nothing else re-triggers it);
       the `unavailable` placeholder is visually identical to
       `pending` with a distinct `data-testid` only (OQ-4a)
-- [ ] `src/routes/login.tsx`: consume the shared session
+- [x] `src/routes/login.tsx`: consume the shared session
       classification; `anonymous` → the auth-disabled panel (same
       card chrome, copy per the design, link home, zero
       `/auth/login` anchors); every other state — including a still-
       pending probe — renders the provider buttons unchanged (OQ-3a:
       buttons immediately, swap only on confirmed anonymous)
-- [ ] `SessionMenu` tests (MSW per-test overrides; fixture default
+- [x] `SessionMenu` tests (MSW per-test overrides; fixture default
       identity stays `donaldgifford`): none-mode → no avatar, no
       Sign in, no Sign out anywhere; 503 → placeholder and
       explicitly NOT the Sign in link; 401 → Sign in unchanged;
       recovery — 503 then 200 renders the avatar
-- [ ] `/login` tests: none-mode panel with no `/auth/login` anchors;
+- [x] `/login` tests: none-mode panel with no `/auth/login` anchors;
       normal-mode buttons unchanged
-- [ ] Route-surface pin: a doc route answering 503 renders
+- [x] Route-surface pin: a doc route answering 503 renders
       `ErrorPanel` with a working retry and never navigates to
       `/login` (asserted against `SessionUnavailableError`)
-- [ ] Axe sweep: none-mode `/login` panel entry added
+- [x] Axe sweep: none-mode `/login` panel entry added
 
 #### Success Criteria
 
@@ -181,19 +181,20 @@ route surface.
 
 #### Tasks
 
-- [ ] Update CLAUDE.md (session classification, none-mode chrome,
+- [x] Update CLAUDE.md (session classification, none-mode chrome,
       `SessionUnavailableError`, the 401-only Sign in rule) and the
       root README's Auth section (none-mode paragraph: what the site
       shows, that detection is automatic)
-- [ ] Chart bump per the IMPL-0003 OQ-2a convention: appVersion
+- [x] Chart bump per the IMPL-0003 OQ-2a convention: appVersion
       `0.4.0` → `0.5.0` (label `minor`, design OQ-6a), chart version
       `0.1.5` → `0.1.6`, deployment unittest image-tag assert updated,
       helm-docs regenerated
-- [ ] Full local gate + changelog sync (`git fetch --tags`, regen,
+- [x] Full local gate + changelog sync (`git fetch --tags`, regen,
       cliff-skipped `chore(changelog):` commit)
-- [ ] PR `feat/none-auth-mode` labeled `minor`; merge on green; sync
+- [x] PR `feat/none-auth-mode` labeled `minor`; merge on green; sync
       main
-- [ ] Mark this IMPL Completed and DESIGN-0003 Implemented; close
+      ([#20](https://github.com/donaldgifford/docz-site/pull/20))
+- [x] Mark this IMPL Completed and DESIGN-0003 Implemented; close
       issue #17 (the merge commit references it)
 
 #### Success Criteria
@@ -236,12 +237,12 @@ route surface.
 
 ## Testing Plan
 
-- [ ] Unit: fetcher 503 mapping; `classifySession` table; SessionMenu
+- [x] Unit: fetcher 503 mapping; `classifySession` table; SessionMenu
       per-state rendering incl. recovery; login none-mode panel
-- [ ] Integration (route-level, MSW): 503 doc route → `ErrorPanel`,
+- [x] Integration (route-level, MSW): 503 doc route → `ErrorPanel`,
       no login navigation
-- [ ] Axe: none-mode login panel; existing sweep stays green
-- [ ] No e2e additions (design OQ-5a)
+- [x] Axe: none-mode login panel; existing sweep stays green
+- [x] No e2e additions (design OQ-5a)
 
 ## Dependencies
 

@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, it } from "vitest";
 
 import { routes } from "@/app/router";
 import { expectNoAxeViolations } from "@/test/axe";
+import { server } from "@/test/server";
 
 /*
  * Phase 4 accessibility sweep: every core view mounts against the MSW
@@ -109,6 +111,23 @@ describe("axe: core views", () => {
       { name: "Continue with GitHub" },
       { timeout: 10_000 },
     );
+    await expectNoAxeViolations();
+  });
+
+  it("login page, none-mode panel", { timeout: AXE_TIMEOUT }, async () => {
+    server.use(
+      http.get("*/api/v1/auth/session", () =>
+        HttpResponse.json({
+          provider: "none",
+          subject: "anonymous",
+          login: "anonymous",
+        }),
+      ),
+    );
+    mountAt("/login");
+    await screen.findByTestId("login-auth-disabled", undefined, {
+      timeout: 10_000,
+    });
     await expectNoAxeViolations();
   });
 

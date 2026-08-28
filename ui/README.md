@@ -58,6 +58,16 @@ App ingest, which is independent of the login provider. On a 401 the app
 stashes the intended destination, sends you to `/login`, and restores
 the deep link after the OAuth callback lands.
 
+When docz-api runs with `AUTH_PROVIDERS=none` (its login-free
+first-setup mode), the site detects it automatically from the session
+response (`provider: "none"`) — no site-side configuration. The topbar
+shows no sign-in or account chrome at all, and `/login` explains that
+authentication is disabled instead of offering provider buttons. A
+`503` from the session gate (backend unreachable) is treated as a
+transient outage, never a logout: the topbar keeps its inert
+placeholder and re-probes every ~30 s until the backend recovers,
+while data routes show their normal retryable error panel.
+
 ## Nav pins
 
 `DOCZ_NAV_LINKS` pins up to six deployment-chosen links into the topbar

@@ -38,6 +38,19 @@ export class NotFoundError extends ApiError {
   }
 }
 
+/**
+ * 503 — the session gate couldn't reach its backend (docz-api spec
+ * 1.2.1). Transient and NEVER a logout: the session state is unknown,
+ * not absent, so nothing may redirect to /login or clear auth chrome
+ * on this error.
+ */
+export class SessionUnavailableError extends ApiError {
+  constructor(message: string, url: string) {
+    super(message, 503, url);
+    this.name = "SessionUnavailableError";
+  }
+}
+
 function isErrorEnvelope(value: unknown): value is ErrorEnvelope {
   return (
     typeof value === "object" &&
@@ -63,6 +76,8 @@ async function toApiError(response: Response, url: string): Promise<ApiError> {
       return new SessionRequiredError(message, url);
     case 404:
       return new NotFoundError(message, url);
+    case 503:
+      return new SessionUnavailableError(message, url);
     default:
       return new ApiError(message, response.status, url);
   }

@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0003
 title: "Support docz-api's no-auth mode and the session-unavailable 503"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-08-27
 ---
@@ -10,7 +10,7 @@ created: 2026-08-27
 
 # DESIGN-0003: Support docz-api's no-auth mode and the session-unavailable 503
 
-**Status:** Approved
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-08-27
 
