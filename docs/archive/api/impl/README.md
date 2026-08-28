@@ -38,4 +38,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0004 | Adapt the helm chart, CI, and observability scaffolding | Completed | 2026-07-13 | Donald Gifford | [0004-adapt-the-helm-chart-ci-and-observability-scaffolding.md](0004-adapt-the-helm-chart-ci-and-observability-scaffolding.md) |
 | IMPL-0005 | Changelog endpoint: pin docz v1.1.0, config-driven fetch, raw serve | Completed | 2026-08-03 | Donald Gifford | [0005-changelog-endpoint-pin-docz-v110-config-driven-fetch-raw-serve.md](0005-changelog-endpoint-pin-docz-v110-config-driven-fetch-raw-serve.md) |
 | IMPL-0006 | Error observability: log every failure, self-heal the queue, optional no-auth mode | In Progress | 2026-08-22 | Donald Gifford | [0006-error-observability-log-every-failure-self-heal-the-queue.md](0006-error-observability-log-every-failure-self-heal-the-queue.md) |
+| IMPL-0007 | Consume the docz v1.2.0 api block: pages, landing page, and additional docs | Draft | 2026-08-28 | Donald Gifford | [0007-consume-the-docz-v120-api-block-pages-landing-page-and.md](0007-consume-the-docz-v120-api-block-pages-landing-page-and.md) |
 <!-- END DOCZ AUTO-GENERATED -->

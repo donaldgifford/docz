@@ -9,6 +9,16 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(chart)* Pin appVersion to the published image tag, not the git tag ([#20](https://github.com/donaldgifford/docz-api/issues/20))
 
+### Documentation
+
+- *(inv)* INV-0008 — adopt the docz v1.2.0 api block
+- *(inv)* Record INV-0003 F5 supersession by INV-0008
+- *(inv)* Restructure INV-0008 open questions with lettered options
+- *(inv)* Conclude INV-0008 — all OQs answered (1a 2a 3a 4a 5a-amended 6a)
+- *(design)* DESIGN-0004 — consume the docz v1.2.0 api block
+- *(impl)* IMPL-0007 — phased plan for the docz v1.2.0 api block; DESIGN-0004 approved
+- *(impl)* Record IMPL-0007 OQ-1a — ship as two PRs (pages at 1.3.0, search at 1.4.0)
+
 ## [0.6.0] - 2026-08-26
 
 ### Features

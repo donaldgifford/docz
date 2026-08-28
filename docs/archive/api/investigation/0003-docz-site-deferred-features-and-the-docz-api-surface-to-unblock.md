@@ -268,6 +268,11 @@ until the pin bumps.
   type) — which F1's option-c analysis shows is worth protecting. Recommend an
   explicit **non-goal** until a concrete need exists; if it comes, it is its
   own design (likely a separate `repo_files` surface, not `documents`).
+  - **Superseded (2026-08-27):** the concrete need arrived — docz `v1.2.0`
+    shipped the `api:` config block (docz DESIGN-0011 / contract clause R10),
+    and INV-0008 picks this cluster up, confirming both predictions here: it
+    is its own design, and it is a separate `(repo_id, path)`-keyed surface,
+    not `documents`. F2/F3/F4 remain open and are untouched by `v1.2.0`.
 - **MCP page / API reference:** docz-mcp is its own deliverable. docz-api's
   contribution already shipped — the served `/openapi.yaml` (DESIGN-0002) is
   exactly the artifact an MCP server or API-reference page consumes. Nothing
