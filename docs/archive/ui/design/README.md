@@ -33,5 +33,6 @@ docz create design "Your Design Title"
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | DESIGN-0001 | docz-site: cross-repo docz reader and search UI | Draft | 2026-07-09 | Donald Gifford | [0001-docz-site-cross-repo-docz-reader-and-search-ui.md](0001-docz-site-cross-repo-docz-reader-and-search-ui.md) |
-| DESIGN-0002 | Nav pins, changelog page, and doc link resolution | Approved | 2026-08-10 | Donald Gifford | [0002-nav-pins-changelog-page-and-doc-link-resolution.md](0002-nav-pins-changelog-page-and-doc-link-resolution.md) |
+| DESIGN-0002 | Nav pins, changelog page, and doc link resolution | Implemented | 2026-08-10 | Donald Gifford | [0002-nav-pins-changelog-page-and-doc-link-resolution.md](0002-nav-pins-changelog-page-and-doc-link-resolution.md) |
+| DESIGN-0003 | Support docz-api's no-auth mode and the session-unavailable 503 | Approved | 2026-08-27 | Donald Gifford | [0003-support-docz-apis-no-auth-mode-and-the-session-unavailable-503.md](0003-support-docz-apis-no-auth-mode-and-the-session-unavailable-503.md) |
 <!-- END DOCZ AUTO-GENERATED -->
