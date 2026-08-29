@@ -104,17 +104,24 @@ narrowing), so the existing suite doubles as the regression gate.
 
 #### Tasks
 
-- [ ] Run the PLAN-flip fleet check (DESIGN-0004's SQL) against the
+- [x] Run the PLAN-flip fleet check (DESIGN-0004's SQL) against the
       deployed database; for each hit, commit `types.plan.enabled: true`
       upstream in that repo or record the accepted deletion **here**. This
       gates the *deploy* of the bump, not the merge.
-- [ ] Bump the pin: `go get github.com/donaldgifford/docz@v1.2.0` (**never**
+      **Outcome (2026-08-28): clean — zero hits.** No deployment (and no
+      database) exists right now, so the deletion risk is vacuous; the
+      check was run config-side instead: all 21 fleet manifests (20 repos
+      from a `.docz.yaml` code search + the docz repo itself) carry an
+      explicit `types:` block at HEAD, so no repo relies on the
+      default-enabled PLAN type at all. Re-run the SQL form only if a
+      pre-bump Postgres volume is ever restored.
+- [x] Bump the pin: `go get github.com/donaldgifford/docz@v1.2.0` (**never**
       a bare `go mod tidy`), `go mod edit -fmt`; confirm no import-path
       changes and no new transitive requirements.
-- [ ] R1–R6 green unchanged — the changelog trailing-period narrowing must
+- [x] R1–R6 green unchanged — the changelog trailing-period narrowing must
       not touch any pinned case (INV-0008 Observation 3 says it doesn't;
       prove it).
-- [ ] Add `internal/doczcontract/api_test.go` (R10, the R6 mold: own file,
+- [x] Add `internal/doczcontract/api_test.go` (R10, the R6 mold: own file,
       doc-comment header, temp-dir + `HOME`-override loader): dormancy
       (absent block zero values; disabled block with hostile paths loads +
       validates clean), normalization (`./` strip, trailing-`/` collapse,
@@ -124,9 +131,9 @@ narrowing), so the existing suite doubles as the regression gate.
       segment → all `errors.Is(err, doczcfg.ErrInvalidAPIPath)`), and
       `docparse.Title` (ATX + inline strip, setext, frontmatter skipped,
       frontmatter `title:` ignored → `""`, prose-only → `""`).
-- [ ] Update `internal/doczcontract/doc.go` (R1–R6 → R1–R6+R10) and the
+- [x] Update `internal/doczcontract/doc.go` (R1–R6 → R1–R6+R10) and the
       CLAUDE.md docz-pin note (`v1.1.0` → `v1.2.0`).
-- [ ] `just test` / `just lint` / `just fmt` green; commit
+- [x] `just test` / `just lint` / `just fmt` green; commit
       (`feat(doczcontract): pin docz v1.2.0 + freeze the api surface (R10)`).
 
 #### Success Criteria
@@ -139,6 +146,14 @@ narrowing), so the existing suite doubles as the regression gate.
 - The fleet-check outcome is recorded here before the release containing
   the bump deploys.
 
+**Status: COMPLETE ✅** (2026-08-28) — pin bumped `v1.1.0 → v1.2.0`
+(one-line `go.mod` change, two `go.sum` lines, no new transitive deps);
+R1–R6 green unchanged on the new pin; `api_test.go` freezes R10
+(defaults/dormancy/normalization/enabled-validation/`Title`, all five
+groups) with the revert drill proven (flipped the docs_dir-tracking
+backfill case → loud failure → restored green); `docparse` joins the
+alias convention as `doczparse`. Fleet check: clean, recorded above.
+
 ### Phase 2: Persistence — the pages table and the api columns
 
 The second record type lands in Postgres with the same reconcile
@@ -146,28 +161,28 @@ discipline documents have; nothing reads it yet.
 
 #### Tasks
 
-- [ ] Migration `repo_pages` (DESIGN-0004 Data Model verbatim: id / repo
+- [x] Migration `repo_pages` (DESIGN-0004 Data Model verbatim: id / repo
       FK CASCADE / path / repo path / title / git sha / content hash /
       raw md / updated at, `UNIQUE (repo_id, path)`, repo index) +
       `repos.api_landing_page` TEXT NULL + `repos.api_additional_docs`
       JSONB NULL; verified up/down.
-- [ ] sqlc queries: `UpsertRepoPage`, `DeleteRepoPage`,
+- [x] sqlc queries: `UpsertRepoPage`, `DeleteRepoPage`,
       `ListRepoPageHashes` (path + content hash, the gate read),
       `ListRepoPages` (no raw md), `GetRepoPageByPath` (with raw md);
       `just generate` / `generate-check` clean.
-- [ ] `PageInput{Path, RepoPath, Title, GitSHA, ContentHash, RawMD}`;
+- [x] `PageInput{Path, RepoPath, Title, GitSHA, ContentHash, RawMD}`;
       `ReconcileInput.Pages`; `RepoInput` gains `APILandingPage string` +
       `APIAdditionalDocs []string` (empty ⇒ NULL — desired state);
       `UpsertRepo` writes both columns.
-- [ ] `reconcileRepoPages` inside the existing transaction, mirroring
+- [x] `reconcileRepoPages` inside the existing transaction, mirroring
       `reconcileDocuments`: hash-map read, content-hash gate, upsert
       changed, delete absent; `ReconcileResult` gains
       `PagesUpserted/PagesDeleted/PagesUnchanged` +
       `UpsertedPagePaths/DeletedPagePaths`.
-- [ ] Store integration tests (`//go:build integration`): round-trip, gate
+- [x] Store integration tests (`//go:build integration`): round-trip, gate
       no-op on unchanged hash, delete-absent, disable-at-HEAD (empty
       inputs) wipes rows and nulls both columns; migration up/down.
-- [ ] `just test` / `just lint` / `just fmt` green; commit.
+- [x] `just test` / `just lint` / `just fmt` green; commit.
 
 #### Success Criteria
 
@@ -175,6 +190,15 @@ discipline documents have; nothing reads it yet.
   input reports all-unchanged and writes nothing; removing a page deletes
   its row; empty pages + empty api fields leave the repo exactly as a
   never-opted-in repo.
+
+**Status: COMPLETE ✅** (2026-08-28) — migration
+`20260828000000_add_repo_pages.sql` (up/down proven by
+`TestMigrateUpDownRoundTrip`); the five pages queries generated
+(`generate-check` clean; a second sqlc jsonb override keeps nullable
+JSONB as `json.RawMessage`); `reconcileRepoPages` runs third in the one
+transaction; `TestReconcileRepoPages` (real Postgres) proves every
+success criterion including disable-at-HEAD wiping rows and nulling both
+api columns.
 
 ### Phase 3: Fetch and ingest — the hint, the widened filter, the classifier
 
@@ -184,17 +208,17 @@ today.
 
 #### Tasks
 
-- [ ] `internal/githubapp` `apiHint(configYAML)` (third hint beside
+- [x] `internal/githubapp` `apiHint(configYAML)` (third hint beside
       `docsDirHint`/`changelogHint`): enabled / landing page / exclude /
       additional docs, docz defaults on malformed yaml, `./` +
       trailing-`/` trimmed; unit table mirroring `TestChangelogHint`.
-- [ ] `classifyTree`: when the hint is enabled, keep every `.md` under the
+- [x] `classifyTree`: when the hint is enabled, keep every `.md` under the
       docs dir (exclusion pruning stays in ingest); landing-page
       `findBlobSHA` at the hint's path (fallback `docs_dir/index.md`);
       per-entry `additional_docs` `findBlobSHA` (absent ⇒ zero requests).
       When dormant: today's keep-set, provably (withheld-blob stub tests —
       the `TestFetchRepoChangelog` technique).
-- [ ] `internal/ingest`: `buildPages(cfg, blobs)` implementing the six
+- [x] `internal/ingest`: `buildPages(cfg, blobs)` implementing the six
       classifier rules (DESIGN-0004): landing-page skip, over-fetch guard,
       templates/exclude pruning, type-dir discrimination (README kept as
       the directory page; `IsDoczFile` + frontmatter → document; stray →
@@ -202,17 +226,17 @@ today.
       serves; loser path-addressed), additional-docs mapping. Collision
       rule (design OQ-1a): the docs-dir page wins deterministically; the
       additional doc is skipped with a Warn naming both files.
-- [ ] Title mapping: `docparse.Title(content)`; fallback title-cased
+- [x] Title mapping: `docparse.Title(content)`; fallback title-cased
       basename for file pages, directory name for directory pages (new
       small helper + tests).
-- [ ] `Service.Run` wires pages into `ReconcileInput` and the api fields
+- [x] `Service.Run` wires pages into `ReconcileInput` and the api fields
       into `RepoInput` from the **post-Load** config; an invalid enabled
       block still fails the whole ingest via the existing `Validate` path
       (no new error path).
-- [ ] Unit tests: the classifier table (every rule above gets a row — the
+- [x] Unit tests: the classifier table (every rule above gets a row — the
       type-dir README kept is its own named case), hint tables, dormant
       byte-for-byte fetch.
-- [ ] `just test` / `just lint` / `just fmt` green; commit.
+- [x] `just test` / `just lint` / `just fmt` green; commit.
 
 #### Success Criteria
 
@@ -224,29 +248,41 @@ today.
 - The collision case is deterministic and Warn-logged; the type-dir
   README survives.
 
+**Status: COMPLETE ✅** (2026-08-28) — `apiHint` + `landingPath` +
+`fetchAdditionalDocs` in githubapp with the widened `classifyTree`
+(dormant keep-set byte-for-byte, proven by withheld-blob stubs — which
+caught an ungated dormant additional_docs fetch during development);
+`internal/ingest/pages.go` holds the `pageClassifier` (six rules,
+README-claim precomputation so an excluded README yields to a lone
+index) + `fallbackTitle` + `apiFields`; `Service.Run` wires
+`Pages`/`APILandingPage`/`APIAdditionalDocs`; `TestBuildPagesClassifier`
+drives every rule through one widened blob set and
+`TestRunMapsAPIBlock` proves the wiring + the invalid-enabled-block
+failure through the existing Validate path.
+
 ### Phase 4: Serve — the pages endpoints and spec 1.3.0
 
 #### Tasks
 
-- [ ] `httpapi.storeReader` gains `ListRepoPages` + `GetRepoPageByPath`;
+- [x] `httpapi.storeReader` gains `ListRepoPages` + `GetRepoPageByPath`;
       DTOs `pageSummaryDTO{path, title, git_sha}` /
       `pageDTO{repo, path, title, raw_md, git_sha}` (never expose sqlc
       types).
-- [ ] `GET /api/v1/repos/{owner}/{name}/pages` — `{"pages":[…]}` ordered
+- [x] `GET /api/v1/repos/{owner}/{name}/pages` — `{"pages":[…]}` ordered
       by path; empty set (including never-opted-in) ⇒ `200 {"pages":[]}`.
-- [ ] `GET /api/v1/repos/{owner}/{name}/pages/*` — chi wildcard; decoded
+- [x] `GET /api/v1/repos/{owner}/{name}/pages/*` — chi wildcard; decoded
       path re-validated before lookup (non-empty, no `..`/`.` segments, no
       leading `/`, no `\`, no control bytes) ⇒ reject as 404; exact-byte
       lookup; miss ⇒ 404 `{"error":"page not found"}`.
-- [ ] Spec `1.3.0`: the two ops + `PageList`/`PageSummary`/`Page` schemas,
+- [x] Spec `1.3.0`: the two ops + `PageList`/`PageSummary`/`Page` schemas,
       `additionalProperties: false`; `{path}` documented as a
       slash-containing repo path (percent-encoded as one segment by
       clients); `getRepoIndex` description notes the configurable landing
       page. `just lint-openapi` (vacuum 100/100) + `yamlfmt` clean.
-- [ ] Contract tests: list happy + empty, page happy (the percent-encoded
+- [x] Contract tests: list happy + empty, page happy (the percent-encoded
       spelling) + 404; traversal/undecodable paths 404; existing fixtures
       untouched.
-- [ ] `just test` / `just lint` / `just fmt` green; commit.
+- [x] `just test` / `just lint` / `just fmt` green; commit.
 
 #### Success Criteria
 
@@ -254,23 +290,46 @@ today.
   contract test; a repo without pages serves an empty list and 404s every
   page path; no existing route or schema changed shape.
 
+**Status: COMPLETE ✅** (2026-08-29) — `listRepoPages`/`getRepoPage` on
+the repo route (chi `/pages/*` wildcard, `url.PathUnescape` +
+`validPagePath` re-validation → 404, exact-byte lookup);
+`pageSummaryDTO`/`pageDTO`; store read wrappers; spec `1.3.0` (two ops,
+`PagePath` param, `PageList`/`PageSummary`/`Page` schemas,
+`getRepoIndex` landing-page note; vacuum 100/100). Handler tests cover
+list happy/empty, both path spellings, case-miss, and eight invalid-path
+flavors; the contract test validates listRepoPages (happy + empty) and
+getRepoPage (percent-encoded, directory page, 404) against the spec.
+
 ### Phase 5: Webhook — matching files outside the docs dir
 
 #### Tasks
 
-- [ ] `shouldIngest` gains the two exact-path checks from the repo row:
+- [x] `shouldIngest` gains the two exact-path checks from the repo row:
       `p == api_landing_page` (when set) and `p ∈ api_additional_docs`
       (when set); NULL columns match nothing.
-- [ ] Unit tests: a landing page outside the docs dir triggers; an
+- [x] Unit tests: a landing page outside the docs dir triggers; an
       additional doc triggers; an unrelated root file still skips; NULL
       columns behave exactly as today.
-- [ ] `just test` / `just lint` / `just fmt` green; commit.
+- [x] `just test` / `just lint` / `just fmt` green; commit.
 
 #### Success Criteria
 
 - A push touching only a root `CONTRIBUTING.md` listed in additional docs
   re-ingests; the same push against a never-opted-in repo is skipped —
   both proven at the `shouldIngest` table.
+
+**Status: COMPLETE ✅** (2026-08-29) — the changelog's exact-path match
+generalized instead of growing two more parameters: `shouldIngest` now
+takes `watched []string` and `watchedFiles(repo)` builds it from the
+repo row (changelog file + api landing page + decoded
+`api_additional_docs` JSONB; NULL columns contribute nothing; malformed
+JSONB warns and matches nothing rather than failing the webhook). The
+`shouldIngest` table gained the landing-outside-docs-dir, additional-doc,
+unrelated-root-file, and non-default-branch cases; `TestWatchedFiles`
+pins the row-to-set plumbing; `TestServeHTTPPushAdditionalDocEnqueues`
+proves the wiring end to end through `handlePush` (the success
+criterion's re-ingest, plus the never-opted-in skip already in
+`TestServeHTTPPushSkips`).
 
 ### Phase 6: Search — the source facet
 

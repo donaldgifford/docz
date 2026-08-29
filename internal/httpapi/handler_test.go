@@ -20,6 +20,7 @@ type fakeStore struct {
 	repos []store.Repo
 	types map[int64][]store.DocType
 	docs  map[int64][]store.Document
+	pages map[int64][]store.RepoPage
 }
 
 func (f *fakeStore) ListRepos(context.Context) ([]store.Repo, error) { return f.repos, nil }
@@ -64,6 +65,27 @@ func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID strin
 	return store.Document{}, pgx.ErrNoRows
 }
 
+func (f *fakeStore) ListRepoPages(_ context.Context, repoID int64) ([]store.ListRepoPagesRow, error) {
+	out := make([]store.ListRepoPagesRow, 0, len(f.pages[repoID]))
+	for i := range f.pages[repoID] {
+		p := &f.pages[repoID][i]
+		out = append(out, store.ListRepoPagesRow{
+			ID: p.ID, RepoID: p.RepoID, Path: p.Path, RepoPath: p.RepoPath, Title: p.Title,
+			GitSha: p.GitSha, ContentHash: p.ContentHash, UpdatedAt: p.UpdatedAt,
+		})
+	}
+	return out, nil
+}
+
+func (f *fakeStore) GetRepoPageByPath(_ context.Context, repoID int64, path string) (store.RepoPage, error) {
+	for i := range f.pages[repoID] {
+		if f.pages[repoID][i].Path == path {
+			return f.pages[repoID][i], nil
+		}
+	}
+	return store.RepoPage{}, pgx.ErrNoRows
+}
+
 func validText(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
 
 // seededStore returns a fakeStore with a full repo (custom type, doc, cached
@@ -99,6 +121,18 @@ func seededStore() *fakeStore {
 				Created: pgtype.Date{Valid: false}, Path: "docs/frameworks/0001-intro.md",
 				GitSha: "abc", ContentHash: "hash1", RawMd: "# Intro\n",
 			}},
+		},
+		pages: map[int64][]store.RepoPage{
+			1: {
+				{
+					ID: 200, RepoID: 1, Path: "guides", RepoPath: "docs/guides/README.md",
+					Title: "Guides", GitSha: "pgsha1", ContentHash: "phash1", RawMd: "# Guides\n",
+				},
+				{
+					ID: 201, RepoID: 1, Path: "guides/setup.md", RepoPath: "docs/guides/setup.md",
+					Title: "Setup", GitSha: "pgsha2", ContentHash: "phash2", RawMd: "# Setup\n",
+				},
+			},
 		},
 	}
 }
@@ -191,6 +225,85 @@ func TestReadEndpoints(t *testing.T) {
 		}
 		if body.Created != "" {
 			t.Errorf("Created = %q, want empty for NULL date", body.Created)
+		}
+	})
+
+	t.Run("list pages", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/platform/pages")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var body struct {
+			Pages []pageSummaryDTO `json:"pages"`
+		}
+		mustDecode(t, rec, &body)
+		if len(body.Pages) != 2 || body.Pages[0].Path != "guides" || body.Pages[1].Path != "guides/setup.md" {
+			t.Errorf("pages = %+v, want guides + guides/setup.md", body.Pages)
+		}
+	})
+
+	t.Run("pages list is empty for a repo without pages", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/bare/pages")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200 (the repo exists; its page set is empty)", rec.Code)
+		}
+		var body struct {
+			Pages []pageSummaryDTO `json:"pages"`
+		}
+		mustDecode(t, rec, &body)
+		if body.Pages == nil || len(body.Pages) != 0 {
+			t.Errorf("pages = %v, want an empty (non-null) list", body.Pages)
+		}
+	})
+
+	t.Run("get page by slash path returns raw_md", func(t *testing.T) {
+		// Both the literal and the percent-encoded-as-one-segment spellings
+		// must resolve the same page (DESIGN-0004 OQ-2a).
+		for _, p := range []string{"guides/setup.md", "guides%2Fsetup.md"} {
+			rec := doGet(t, srv, "/api/v1/repos/acme/platform/pages/"+p)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("GET pages/%s status = %d, want 200", p, rec.Code)
+			}
+			var body pageDTO
+			mustDecode(t, rec, &body)
+			if body.Path != "guides/setup.md" || body.RawMD != "# Setup\n" || body.Repo != "acme/platform" {
+				t.Errorf("via %q: page = %+v", p, body)
+			}
+		}
+	})
+
+	t.Run("missing page is 404", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/platform/pages/nope.md")
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404", rec.Code)
+		}
+	})
+
+	t.Run("page lookup is exact-byte, no case folding", func(t *testing.T) {
+		rec := doGet(t, srv, "/api/v1/repos/acme/platform/pages/GUIDES")
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("status = %d, want 404 (case miss must not serve)", rec.Code)
+		}
+	})
+
+	t.Run("invalid page paths are 404", func(t *testing.T) {
+		// The decoded wildcard is re-validated before lookup: docz's config
+		// validation does not survive URL decoding, so traversal and friends
+		// must die here, indistinguishable from a miss.
+		for _, p := range []string{
+			"..%2Fsecret",        // decoded traversal
+			"%2e%2e/guides",      // encoded dot segments
+			".%2Fguides",         // "." segment
+			"guides%2F%2Fsetup",  // empty segment
+			"%5Cwindows",         // backslash
+			"guides%00",          // control byte
+			"%2Fabsolute",        // leading slash
+			"guides%2Fsetup.md/", // trailing empty segment
+		} {
+			rec := doGet(t, srv, "/api/v1/repos/acme/platform/pages/"+p)
+			if rec.Code != http.StatusNotFound {
+				t.Errorf("GET pages/%s status = %d, want 404", p, rec.Code)
+			}
 		}
 	})
 

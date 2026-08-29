@@ -5,9 +5,20 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(doczcontract)* Pin docz v1.2.0 + freeze the api surface (R10)
+- *(store)* Repo_pages table + api columns and their query set
+- *(store)* Reconcile pages — PageInput, api repo fields, reconcileRepoPages
+- *(githubapp)* ApiHint + widened tree filter + additional_docs fetch
+- *(ingest)* BuildPages classifier + api-field wiring
+- *(httpapi)* Pages endpoints + spec 1.3.0
+- *(webhook)* Match api landing page + additional_docs pushes
+
 ### Bug Fixes
 
 - *(chart)* Pin appVersion to the published image tag, not the git tag ([#20](https://github.com/donaldgifford/docz-api/issues/20))
+- *(ingest)* Reject hostile tree paths at the writer; report absent additional_docs
 
 ### Documentation
 

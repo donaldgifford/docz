@@ -11,10 +11,12 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/google/go-github/v88/github"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/donaldgifford/docz-api/internal/queue"
 	"github.com/donaldgifford/docz-api/internal/store"
@@ -318,6 +320,28 @@ func TestServeHTTPPushEnqueuesOnRelevantChange(t *testing.T) {
 	}
 }
 
+// TestServeHTTPPushAdditionalDocEnqueues proves the repo-row plumbing end to
+// end: a push touching only a root file listed in api_additional_docs (a JSONB
+// column the handler must decode) re-ingests.
+func TestServeHTTPPushAdditionalDocEnqueues(t *testing.T) {
+	st := newFakeStore()
+	st.repos["acme/widgets"] = store.Repo{
+		ID:                7,
+		DocsDir:           "docs",
+		ApiAdditionalDocs: json.RawMessage(`["CONTRIBUTING.md"]`),
+	}
+	body := pushBody(t, 99, "widgets", "main", "refs/heads/main", "CONTRIBUTING.md")
+
+	rr, enq, _ := serve(t, st, "push", "d-push-extra", body)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202", rr.Code)
+	}
+	if len(enq.jobs) != 1 {
+		t.Fatalf("enqueued %d jobs, want 1 (additional doc push must re-ingest)", len(enq.jobs))
+	}
+}
+
 func TestServeHTTPPushSkips(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -464,46 +488,131 @@ func TestShouldIngest(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		event     *github.PushEvent
-		docsDir   string
-		changelog string
-		want      bool
+		name    string
+		event   *github.PushEvent
+		docsDir string
+		watched []string
+		want    bool
 	}{
-		{"docs change on default branch", push("refs/heads/main", "main", "docs/rfc/RFC-1.md"), "docs", "", true},
-		{"config change on default branch", push("refs/heads/main", "main", ".docz.yaml"), "docs", "", true},
-		{"non-default branch", push("refs/heads/topic", "main", "docs/rfc/RFC-1.md"), "docs", "", false},
-		{"irrelevant path", push("refs/heads/main", "main", "src/main.go"), "docs", "", false},
-		{"docs_dir prefix is exact", push("refs/heads/main", "main", "documentation/x.md"), "docs", "", false},
-		{"no commits", push("refs/heads/main", "main"), "docs", "", false},
-		// The changelog lives outside docs_dir, so it only matches when the
-		// repo has opted in and the path matches exactly.
+		{"docs change on default branch", push("refs/heads/main", "main", "docs/rfc/RFC-1.md"), "docs", nil, true},
+		{"config change on default branch", push("refs/heads/main", "main", ".docz.yaml"), "docs", nil, true},
+		{"non-default branch", push("refs/heads/topic", "main", "docs/rfc/RFC-1.md"), "docs", nil, false},
+		{"irrelevant path", push("refs/heads/main", "main", "src/main.go"), "docs", nil, false},
+		{"docs_dir prefix is exact", push("refs/heads/main", "main", "documentation/x.md"), "docs", nil, false},
+		{"no commits", push("refs/heads/main", "main"), "docs", nil, false},
+		// Watched files (changelog, api landing page, additional docs) live
+		// outside docs_dir, so they only match when the repo has opted in and
+		// the path matches exactly.
 		{
 			"configured changelog change",
-			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", "CHANGELOG.md", true,
+			push("refs/heads/main", "main", "CHANGELOG.md"), "docs",
+			[]string{"CHANGELOG.md"},
+			true,
 		},
 		{
 			"configured chart changelog change",
-			push("refs/heads/main", "main", "charts/acme/CHANGELOG.md"), "docs", "charts/acme/CHANGELOG.md", true,
+			push("refs/heads/main", "main", "charts/acme/CHANGELOG.md"), "docs",
+			[]string{"charts/acme/CHANGELOG.md"},
+			true,
 		},
 		{
 			"changelog change without an opted-in repo",
-			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", "", false,
+			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", nil, false,
 		},
 		{
 			"a different changelog than the configured one",
-			push("refs/heads/main", "main", "CHANGELOG.md"), "docs", "charts/acme/CHANGELOG.md", false,
+			push("refs/heads/main", "main", "CHANGELOG.md"), "docs",
+			[]string{"charts/acme/CHANGELOG.md"},
+			false,
 		},
 		{
 			"changelog change on a non-default branch",
-			push("refs/heads/topic", "main", "CHANGELOG.md"), "docs", "CHANGELOG.md", false,
+			push("refs/heads/topic", "main", "CHANGELOG.md"), "docs",
+			[]string{"CHANGELOG.md"},
+			false,
+		},
+		{
+			"api landing page outside docs_dir",
+			push("refs/heads/main", "main", "wiki/home.md"), "docs",
+			[]string{"wiki/home.md"},
+			true,
+		},
+		{
+			"api additional doc at the repo root",
+			push("refs/heads/main", "main", "CONTRIBUTING.md"), "docs",
+			[]string{"CHANGELOG.md", "CONTRIBUTING.md"},
+			true,
+		},
+		{
+			"unrelated root file with watched files configured",
+			push("refs/heads/main", "main", "LICENSE"), "docs",
+			[]string{"CHANGELOG.md", "CONTRIBUTING.md"},
+			false,
+		},
+		{
+			"additional doc on a non-default branch",
+			push("refs/heads/topic", "main", "CONTRIBUTING.md"), "docs",
+			[]string{"CONTRIBUTING.md"},
+			false,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := shouldIngest(tc.event, tc.docsDir, tc.changelog); got != tc.want {
+			if got := shouldIngest(tc.event, tc.docsDir, tc.watched); got != tc.want {
 				t.Errorf("shouldIngest() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestWatchedFiles pins the repo-row plumbing behind shouldIngest's watched
+// set: NULL columns contribute nothing, populated columns contribute their
+// exact paths, and a malformed JSONB array degrades to matching nothing
+// instead of failing the webhook.
+func TestWatchedFiles(t *testing.T) {
+	t.Parallel()
+	text := func(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
+
+	tests := []struct {
+		name string
+		repo store.Repo
+		want []string
+	}{
+		{"all columns NULL", store.Repo{}, nil},
+		{
+			"changelog only",
+			store.Repo{ChangelogFile: text("CHANGELOG.md")},
+			[]string{"CHANGELOG.md"},
+		},
+		{
+			"api columns only",
+			store.Repo{
+				ApiLandingPage:    text("wiki/home.md"),
+				ApiAdditionalDocs: json.RawMessage(`["CONTRIBUTING.md","SECURITY.md"]`),
+			},
+			[]string{"wiki/home.md", "CONTRIBUTING.md", "SECURITY.md"},
+		},
+		{
+			"all three sources",
+			store.Repo{
+				ChangelogFile:     text("CHANGELOG.md"),
+				ApiLandingPage:    text("docs/index.md"),
+				ApiAdditionalDocs: json.RawMessage(`["CONTRIBUTING.md"]`),
+			},
+			[]string{"CHANGELOG.md", "docs/index.md", "CONTRIBUTING.md"},
+		},
+		{
+			"malformed additional_docs JSON matches nothing",
+			store.Repo{ApiAdditionalDocs: json.RawMessage(`{"not":"an array"}`)},
+			nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := watchedFiles(&tc.repo); !slices.Equal(got, tc.want) {
+				t.Errorf("watchedFiles() = %v, want %v", got, tc.want)
 			}
 		})
 	}

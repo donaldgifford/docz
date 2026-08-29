@@ -57,11 +57,12 @@ func NewService(st repoStore, f RepoFetcher, idx Indexer) *Service {
 	return &Service{store: st, fetcher: f, indexer: idx}
 }
 
-// Run ingests one repo at HEAD: fetch, parse .docz.yaml, map its doc types and
-// documents, and reconcile in one transaction (the content-hash gate lives in
-// the store). A root CHANGELOG.md and the docs_dir/index.md repo home
-// (DESIGN-0003) are cached raw on the repo row. installationID is recorded on
-// the repo row for the later webhook path.
+// Run ingests one repo at HEAD: fetch, parse .docz.yaml, map its doc types,
+// documents, and — when the api: block is enabled — its pages (DESIGN-0004),
+// and reconcile in one transaction (the content-hash gate lives in the
+// store). The configured changelog and landing-page files are cached raw on
+// the repo row. installationID is recorded on the repo row for the later
+// webhook path.
 func (s *Service) Run(
 	ctx context.Context, installationID int64, owner, name string,
 ) (store.ReconcileResult, error) {
@@ -103,24 +104,28 @@ func (s *Service) Run(
 	if err != nil {
 		return zero, fmt.Errorf("documents for %s/%s: %w", owner, name, err)
 	}
+	apiLanding, apiDocs := apiFields(&cfg)
 
 	in := &store.ReconcileInput{
 		Repo: store.RepoInput{
-			InstallationID: installationID,
-			Owner:          owner,
-			Name:           name,
-			DefaultBranch:  snap.DefaultBranch,
-			DocsDir:        cfg.DocsDir,
-			ConfigSnapshot: configSnap,
-			LastSyncedSHA:  snap.HeadSHA,
-			ChangelogMD:    string(snap.ChangelogMD),
-			ChangelogSHA:   snap.ChangelogSHA,
-			ChangelogFile:  changelogFile(&cfg),
-			IndexMD:        string(snap.IndexMD),
-			IndexSHA:       snap.IndexSHA,
+			InstallationID:    installationID,
+			Owner:             owner,
+			Name:              name,
+			DefaultBranch:     snap.DefaultBranch,
+			DocsDir:           cfg.DocsDir,
+			ConfigSnapshot:    configSnap,
+			LastSyncedSHA:     snap.HeadSHA,
+			ChangelogMD:       string(snap.ChangelogMD),
+			ChangelogSHA:      snap.ChangelogSHA,
+			ChangelogFile:     changelogFile(&cfg),
+			IndexMD:           string(snap.IndexMD),
+			IndexSHA:          snap.IndexSHA,
+			APILandingPage:    apiLanding,
+			APIAdditionalDocs: apiDocs,
 		},
 		DocTypes:  docTypes,
 		Documents: documents,
+		Pages:     buildPages(&cfg, snap.Blobs),
 	}
 
 	result, err := s.reconcile(ctx, in)

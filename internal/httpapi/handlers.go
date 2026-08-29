@@ -3,6 +3,8 @@ package httpapi
 import (
 	"errors"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -71,6 +73,75 @@ func (h *Handler) getRepoChangelog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, toRepoChangelog(&repo))
+}
+
+// listRepoPages returns a repo's published pages (metadata only), ordered by
+// path. A repo with no pages — including every repo without an enabled api:
+// block — returns an empty list, not 404: the repo exists; its page set is
+// empty (DESIGN-0004; existence hiding stays at the repo level).
+func (h *Handler) listRepoPages(w http.ResponseWriter, r *http.Request) {
+	repo, ok := h.resolveRepo(w, r)
+	if !ok {
+		return
+	}
+	pages, err := h.store.ListRepoPages(r.Context(), repo.ID)
+	if err != nil {
+		serverError(w, "list pages", err)
+		return
+	}
+	out := make([]pageSummaryDTO, len(pages))
+	for i := range pages {
+		out[i] = toPageSummary(&pages[i])
+	}
+	writeJSON(w, map[string]any{"pages": out})
+}
+
+// getRepoPage returns one page (including raw markdown) by its published
+// path, taken from the chi wildcard. The decoded value is re-validated before
+// lookup — docz's config validation explicitly does not survive URL decoding,
+// so this check is load-bearing (DESIGN-0004) — and rejected as 404, not 400:
+// an invalid path is definitionally not a page, and existence hiding argues
+// for one indistinguishable miss. The lookup itself is exact-byte.
+func (h *Handler) getRepoPage(w http.ResponseWriter, r *http.Request) {
+	repo, ok := h.resolveRepo(w, r)
+	if !ok {
+		return
+	}
+	p, err := url.PathUnescape(chi.URLParam(r, "*"))
+	if err != nil || !validPagePath(p) {
+		writeError(w, http.StatusNotFound, "page not found")
+		return
+	}
+	page, err := h.store.GetRepoPageByPath(r.Context(), repo.ID, p)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "page not found")
+		return
+	}
+	if err != nil {
+		serverError(w, "get page", err)
+		return
+	}
+	writeJSON(w, toPage(repoLabel(&repo), &page))
+}
+
+// validPagePath reports whether a decoded pages wildcard is a lookup-safe
+// published path: non-empty, relative, forward-slash separated, no "." / ".."
+// / empty segments, no backslashes, no control bytes.
+func validPagePath(p string) bool {
+	if p == "" || strings.HasPrefix(p, "/") || strings.ContainsRune(p, '\\') {
+		return false
+	}
+	for _, r := range p {
+		if r < 0x20 || r == 0x7f {
+			return false
+		}
+	}
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return false
+		}
+	}
+	return true
 }
 
 // listTypes returns a repo's doc types.

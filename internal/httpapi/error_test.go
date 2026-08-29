@@ -36,6 +36,14 @@ func (errStore) GetDocumentByID(context.Context, int64, string) (store.Document,
 	return store.Document{}, errBoom
 }
 
+func (errStore) ListRepoPages(context.Context, int64) ([]store.ListRepoPagesRow, error) {
+	return nil, errBoom
+}
+
+func (errStore) GetRepoPageByPath(context.Context, int64, string) (store.RepoPage, error) {
+	return store.RepoPage{}, errBoom
+}
+
 func TestStoreErrorIs500(t *testing.T) {
 	st := errStore{}
 	// The authorizer must not itself fail, so allow everything.

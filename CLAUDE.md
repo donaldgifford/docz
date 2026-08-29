@@ -132,10 +132,16 @@ progresses:
 - **Build/lint/test entry points are `just`** — `just build`, `just test`,
   `just lint`, `just fmt`. There is no `Makefile`; any "`make lint`/`make fmt`"
   instruction maps to the corresponding `just` recipe.
-- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.1.0`
-  (a plain `require`, no `replace`; bumped from `v1.0.0` for the changelog
-  surface — `ChangelogConfig` + `ParseChangelog`, guarded by contract clause
-  R6 per IMPL-0005; the v0.5.0→v1.0.0 bump was INV-0001). As of `v1.0.0` docz **no longer pulls
+- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.2.0`
+  (a plain `require`, no `replace`; bumped from `v1.1.0` for the `api:` block
+  surface — `APIConfig` + `ErrInvalidAPIPath` + `docparse.Title`, guarded by
+  contract clause R10 per IMPL-0007; the v1.0.0→v1.1.0 bump added the
+  changelog surface — `ChangelogConfig` + `ParseChangelog`, contract clause
+  R6 per IMPL-0005; the v0.5.0→v1.0.0 bump was INV-0001). The bump crossed
+  `v1.1.1`, which flipped the built-in PLAN type default to disabled — the
+  IMPL-0007 fleet check confirmed every fleet manifest pins an explicit
+  `types:` block, so no repo was exposed. `pkg/doczcore/docparse` imports
+  with the alias `doczparse` (joining `doczcfg`/`doczdoc`). As of `v1.0.0` docz **no longer pulls
   `spf13/viper` transitively** (it moved `config.Load` to `yaml.v3`); `viper`
   (`v1.21.0`) is now a **standalone direct dep** used only by `internal/config`,
   so DESIGN-0001 Decision 2's "reuse viper from docz" rationale no longer holds.

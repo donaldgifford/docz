@@ -50,6 +50,20 @@ type repoChangelogDTO struct {
 	ChangelogSHA string `json:"changelog_sha"`
 }
 
+type pageSummaryDTO struct {
+	Path   string `json:"path"`
+	Title  string `json:"title"`
+	GitSHA string `json:"git_sha"`
+}
+
+type pageDTO struct {
+	Repo   string `json:"repo"`
+	Path   string `json:"path"`
+	Title  string `json:"title"`
+	RawMD  string `json:"raw_md"`
+	GitSHA string `json:"git_sha"`
+}
+
 type documentDTO struct {
 	Repo        string `json:"repo"`
 	DocID       string `json:"doc_id"`
@@ -124,6 +138,17 @@ func toRepoChangelog(r *store.Repo) repoChangelogDTO {
 		ChangelogMD:  nullText(r.ChangelogMd),
 		ChangelogSHA: nullText(r.ChangelogSha),
 	}
+}
+
+func toPageSummary(p *store.ListRepoPagesRow) pageSummaryDTO {
+	return pageSummaryDTO{Path: p.Path, Title: p.Title, GitSHA: p.GitSha}
+}
+
+// toPage maps one page row (DESIGN-0004). Every column is NOT NULL — row
+// existence is the presence signal, so there is no sha-gating subtlety here;
+// an empty-but-present page serves raw_md "".
+func toPage(repo string, p *store.RepoPage) pageDTO {
+	return pageDTO{Repo: repo, Path: p.Path, Title: p.Title, RawMD: p.RawMd, GitSHA: p.GitSha}
 }
 
 func toDocument(repo string, d *store.Document) documentDTO {

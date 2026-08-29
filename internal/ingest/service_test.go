@@ -230,6 +230,66 @@ func TestRunMapsChangelogFile(t *testing.T) {
 	}
 }
 
+// TestRunMapsAPIBlock pins the pages wiring (IMPL-0007): an enabled api:
+// block puts the resolved landing page + additional_docs on the repo input
+// and classified pages on the reconcile input; a dormant block leaves all
+// three empty, and an invalid enabled block fails the whole ingest through
+// the existing Validate path (no new error path).
+func TestRunMapsAPIBlock(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	run := func(t *testing.T, block string, blobs []BlobEntry) (*captureReconciler, error) {
+		t.Helper()
+		snap := &RepoSnapshot{
+			HeadSHA:       "head-sha",
+			DefaultBranch: "main",
+			ConfigYAML:    []byte(fixtureConfig + block),
+			Blobs:         blobs,
+		}
+		rec := &captureReconciler{}
+		_, err := NewService(rec, fakeFetcher{snap: snap}, nil).Run(t.Context(), 42, "acme", "platform")
+		return rec, err
+	}
+
+	t.Run("enabled block maps fields and pages", func(t *testing.T) {
+		rec, err := run(t, "api:\n  enabled: true\n  additional_docs: [CONTRIBUTING.md]\n",
+			[]BlobEntry{
+				{Path: "docs/guides/setup.md", GitSHA: "s1", Content: []byte("# Setup")},
+				{Path: "CONTRIBUTING.md", GitSHA: "s2", Content: []byte("# Contributing")},
+			})
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if rec.in.Repo.APILandingPage != "docs/index.md" {
+			t.Errorf("APILandingPage = %q, want the backfilled docs/index.md", rec.in.Repo.APILandingPage)
+		}
+		if len(rec.in.Repo.APIAdditionalDocs) != 1 || rec.in.Repo.APIAdditionalDocs[0] != "CONTRIBUTING.md" {
+			t.Errorf("APIAdditionalDocs = %v, want [CONTRIBUTING.md]", rec.in.Repo.APIAdditionalDocs)
+		}
+		if len(rec.in.Pages) != 2 {
+			t.Fatalf("Pages = %d, want 2 (the guide + the additional doc)", len(rec.in.Pages))
+		}
+	})
+
+	t.Run("dormant block maps nothing", func(t *testing.T) {
+		rec, err := run(t, "api:\n  enabled: false\n  additional_docs: [CONTRIBUTING.md]\n",
+			[]BlobEntry{{Path: "docs/guides/setup.md", GitSHA: "s1", Content: []byte("# Setup")}})
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if rec.in.Repo.APILandingPage != "" || rec.in.Repo.APIAdditionalDocs != nil || rec.in.Pages != nil {
+			t.Errorf("dormant block mapped (%q, %v, %d pages), want all empty",
+				rec.in.Repo.APILandingPage, rec.in.Repo.APIAdditionalDocs, len(rec.in.Pages))
+		}
+	})
+
+	t.Run("invalid enabled block fails the ingest", func(t *testing.T) {
+		if _, err := run(t, "api:\n  enabled: true\n  landing_page: ../escape.md\n", nil); err == nil {
+			t.Fatal("Run = nil error for an enabled traversal landing page, want the Validate failure")
+		}
+	})
+}
+
 func TestRunIndexesUpsertedDocuments(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 

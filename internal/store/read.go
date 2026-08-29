@@ -57,6 +57,28 @@ func (s *Store) GetDocumentByID(ctx context.Context, repoID int64, docID string)
 	return doc, nil
 }
 
+// ListRepoPages returns a repo's published pages (metadata only, no raw
+// markdown), ordered by published path. It backs the pages list endpoint; an
+// un-opted-in repo simply has no rows.
+func (s *Store) ListRepoPages(ctx context.Context, repoID int64) ([]ListRepoPagesRow, error) {
+	pages, err := s.q.ListRepoPages(ctx, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("list pages for repo %d: %w", repoID, err)
+	}
+	return pages, nil
+}
+
+// GetRepoPageByPath returns one page (including raw markdown) by repo and
+// published path. The match is exact-byte; a missing row surfaces as
+// pgx.ErrNoRows for the caller to map to 404.
+func (s *Store) GetRepoPageByPath(ctx context.Context, repoID int64, path string) (RepoPage, error) {
+	page, err := s.q.GetRepoPageByPath(ctx, GetRepoPageByPathParams{RepoID: repoID, Path: path})
+	if err != nil {
+		return RepoPage{}, fmt.Errorf("get page %q in repo %d: %w", path, repoID, err)
+	}
+	return page, nil
+}
+
 // GetDocumentsByIDs returns full document rows (including raw markdown) for the
 // given doc ids within one repo, ordered by doc id. The search indexer calls it
 // after a reconcile commit to build index documents for the docs that changed.

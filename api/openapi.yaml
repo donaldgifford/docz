@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.2.1
+  version: 1.3.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -71,12 +71,15 @@ paths:
     get:
       tags: [repos]
       operationId: getRepoIndex
-      summary: The repository home document (docs_dir/index.md).
+      summary: The repository home document (the landing page).
       description: |
-        Serves the raw `docs_dir/index.md` cached at the last ingest — the
-        file docz's wiki renders as its landing page. A repository whose HEAD
-        has no `index.md` returns 404; an empty-but-present file returns 200
-        with an empty `index_md`.
+        Serves the raw repository home cached at the last ingest —
+        `docs_dir/index.md` by default, the file docz's wiki renders as its
+        landing page. A repository with an enabled `.docz.yaml` `api:` block
+        may relocate it via `api.landing_page` (docz v1.2.0); the served
+        content follows the configured path. A repository whose HEAD has no
+        landing file returns 404; an empty-but-present file returns 200 with
+        an empty `index_md`.
       responses:
         "200":
           description: The cached repository home.
@@ -111,6 +114,63 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RepoChangelog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/pages:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: listRepoPages
+      summary: The repository's published pages.
+      description: |
+        Lists the pages the repository's `.docz.yaml` `api:` block publishes
+        (docz v1.2.0, DESIGN-0004): every markdown file under `docs_dir`
+        minus exclusions, directory pages at their directory path, and
+        `additional_docs` files at their repo-relative path. The flat list is
+        deliberate — consumers build their own tree. A repository with no
+        pages — including every repository without an enabled `api:` block —
+        returns 200 with an empty list, not 404: the repository exists; its
+        page set is empty.
+      responses:
+        "200":
+          description: The published pages, ordered by path.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/pages/{path}:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+      - $ref: "#/components/parameters/PagePath"
+    get:
+      tags: [repos]
+      operationId: getRepoPage
+      summary: One published page, addressed by its published path.
+      description: |
+        Serves one page's raw markdown by its published path — the same
+        string `listRepoPages` returns. Published paths contain `/`; clients
+        should percent-encode the whole path as one segment
+        (`pages/guides%2Fsetup.md`), though the server routes the literal
+        slash spelling identically. The lookup is exact-byte (no case
+        folding), and a decoded path that is not a clean relative path
+        (traversal, `.` segments, backslashes, control bytes) is a 404 —
+        indistinguishable from a miss.
+      responses:
+        "200":
+          description: The page, including its raw markdown.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -444,6 +504,17 @@ components:
       schema:
         type: string
       example: FW-0001
+    PagePath:
+      name: path
+      in: path
+      required: true
+      style: simple
+      description: |
+        The page's published path. Contains `/` for nested pages; clients
+        percent-encode the whole value as one segment.
+      schema:
+        type: string
+      example: guides%2Fsetup.md
   responses:
     Unauthorized:
       description: Missing or invalid session.
@@ -564,6 +635,66 @@ components:
           type: string
           description: Git blob SHA of the cached changelog; usable as a cache key.
           example: 9a1c4e7
+    PageList:
+      description: The pages a repository's `api:` block publishes.
+      type: object
+      additionalProperties: false
+      required: [pages]
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/PageSummary"
+    PageSummary:
+      description: One published page, metadata only.
+      type: object
+      additionalProperties: false
+      required: [path, title, git_sha]
+      properties:
+        path:
+          type: string
+          description: |
+            The published path — the addressing key for `getRepoPage`.
+            Directory pages use the directory path (no extension); file
+            pages keep their `.md` extension.
+          example: guides/setup.md
+        title:
+          type: string
+          description: |
+            The page's first H1, or a title-cased filename/directory-name
+            fallback when it has none.
+          example: Setup
+        git_sha:
+          type: string
+          description: Git blob SHA of the page's source file; a cache key.
+          example: 8c3f1b2
+    Page:
+      description: One published page, including its raw markdown.
+      type: object
+      additionalProperties: false
+      required: [repo, path, title, raw_md, git_sha]
+      properties:
+        repo:
+          type: string
+          description: The "owner/name" identifier.
+          example: acme/platform
+        path:
+          type: string
+          description: The published path.
+          example: guides/setup.md
+        title:
+          type: string
+          description: The page title (first H1 or fallback).
+          example: Setup
+        raw_md:
+          type: string
+          description: |
+            Raw markdown of the page's source file at the last ingest. "" for
+            an empty-but-present file.
+        git_sha:
+          type: string
+          description: Git blob SHA of the page's source file; a cache key.
+          example: 8c3f1b2
     DocType:
       description: A document type declared in the repo's `.docz.yaml`.
       type: object

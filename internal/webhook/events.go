@@ -2,9 +2,11 @@ package webhook
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/google/go-github/v88/github"
@@ -92,7 +94,7 @@ func (h *Handler) handlePush(ctx context.Context, ev *github.PushEvent) error {
 		return fmt.Errorf("get repo %s/%s: %w", owner, name, err)
 	}
 
-	if !shouldIngest(ev, repo.DocsDir, repo.ChangelogFile.String) {
+	if !shouldIngest(ev, repo.DocsDir, watchedFiles(&repo)) {
 		slog.Debug("push not relevant to docz; skipping", "repo", owner+"/"+name, "ref", ev.GetRef())
 		return nil
 	}
@@ -203,16 +205,17 @@ func logRelease(ev *github.ReleaseEvent) {
 }
 
 // shouldIngest reports whether a push warrants a re-ingest: it must target the
-// repo's default branch and touch either .docz.yaml or a path under docsDir. The
-// changed-path set is the union of added/modified/removed across every commit in
-// the push, not just the head commit (which would miss files from intermediate
-// commits in a multi-commit or force push).
+// repo's default branch and touch either .docz.yaml, a path under docsDir, or
+// one of the watched exact paths. The changed-path set is the union of
+// added/modified/removed across every commit in the push, not just the head
+// commit (which would miss files from intermediate commits in a multi-commit
+// or force push).
 //
-// changelogFile is the repo's resolved changelog path ("" when the repo has not
-// enabled the changelog: block). It is matched explicitly because that file
-// lives outside docsDir — a release's changelog-sync push touches nothing else,
-// so without this the served changelog would lag its own release.
-func shouldIngest(ev *github.PushEvent, docsDir, changelogFile string) bool {
+// watched is the repo row's set of files served from outside docsDir (the
+// resolved changelog, the api landing page, api additional docs) — without the
+// exact-path match a push touching only one of them would leave its served
+// copy stale.
+func shouldIngest(ev *github.PushEvent, docsDir string, watched []string) bool {
 	if ev.GetRef() != "refs/heads/"+ev.GetRepo().GetDefaultBranch() {
 		return false
 	}
@@ -222,16 +225,43 @@ func shouldIngest(ev *github.PushEvent, docsDir, changelogFile string) bool {
 		// them without materializing a union, returning on the first match.
 		for _, set := range [][]string{c.Added, c.Modified, c.Removed} {
 			for _, p := range set {
-				if p == doczConfigFile || strings.HasPrefix(p, prefix) {
-					return true
-				}
-				if changelogFile != "" && p == changelogFile {
+				if p == doczConfigFile || strings.HasPrefix(p, prefix) || slices.Contains(watched, p) {
 					return true
 				}
 			}
 		}
 	}
 	return false
+}
+
+// watchedFiles collects the repo row's exact-path push triggers: the resolved
+// changelog file, the api landing page, and every api_additional_docs entry.
+// All three columns are NULL until their features are opted into, and a NULL
+// column contributes nothing — a repo that never opted in matches exactly as
+// before.
+func watchedFiles(repo *store.Repo) []string {
+	var files []string
+	for _, f := range []string{repo.ChangelogFile.String, repo.ApiLandingPage.String} {
+		if f != "" {
+			files = append(files, f)
+		}
+	}
+	return append(files, jsonStrings(repo.ApiAdditionalDocs)...)
+}
+
+// jsonStrings decodes a JSONB string-array column, mapping NULL to nil. The
+// column is written by ingest from a validated config, so malformed JSON is a
+// bug, not caller input — warn and match nothing rather than fail the webhook.
+func jsonStrings(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var out []string
+	if err := json.Unmarshal(raw, &out); err != nil {
+		slog.Warn("ignoring malformed JSON array column on repo row", "err", err)
+		return nil
+	}
+	return out
 }
 
 // installationInput maps a GitHub installation to the store's boundary input.

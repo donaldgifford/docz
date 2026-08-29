@@ -331,6 +331,14 @@ func TestOpenAPIContract(t *testing.T) {
 		{name: "getRepoIndexMissing", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/index"},
 		{name: "getRepoChangelog", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/changelog"},
 		{name: "getRepoChangelogMissing", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/changelog"},
+		{name: "listRepoPages", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/pages"},
+		{name: "listRepoPagesEmpty", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/pages"},
+		// The percent-encoded-as-one-segment spelling is the documented client
+		// form (DESIGN-0004 OQ-2a); the literal-slash spelling routes the same
+		// server-side and is covered by the handler tests.
+		{name: "getRepoPage", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/pages/guides%2Fsetup.md"},
+		{name: "getRepoPageDirectory", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/pages/guides"},
+		{name: "getRepoPageMissing", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/pages/nope.md"},
 		{name: "listTypes", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types"},
 		{name: "listDocs", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/frameworks/docs"},
 		{name: "getDoc", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001"},

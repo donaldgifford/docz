@@ -91,6 +91,18 @@ func doc(docID, hash string) DocumentInput {
 	}
 }
 
+// page builds a PageInput with a distinct published path and content hash.
+func page(path, hash string) PageInput {
+	return PageInput{
+		Path:        path,
+		RepoPath:    "docs/" + path + ".md",
+		Title:       "Page " + path,
+		GitSHA:      "psha-" + path,
+		ContentHash: hash,
+		RawMD:       "# " + path,
+	}
+}
+
 func TestPingIntegration(t *testing.T) {
 	if err := testStore.Ping(t.Context()); err != nil {
 		t.Fatalf("Ping: %v", err)
@@ -330,6 +342,113 @@ func TestReconcileRepoIndexPair(t *testing.T) {
 	repo = fetch()
 	if repo.IndexMd.Valid || repo.IndexSha.Valid {
 		t.Errorf("index pair not cleared: md.valid=%v sha.valid=%v", repo.IndexMd.Valid, repo.IndexSha.Valid)
+	}
+}
+
+// TestReconcileRepoPages covers the repo_pages lifecycle (IMPL-0007):
+// round-trip with the api columns, content-hash gate no-op, delete-absent,
+// and disable-at-HEAD wiping every row and nulling both repo columns —
+// pages are desired state, exactly like the changelog triple.
+func TestReconcileRepoPages(t *testing.T) {
+	ctx := t.Context()
+	seedInstallation(t, 500)
+
+	input := func(pages []PageInput, landing string, additional []string) *ReconcileInput {
+		return &ReconcileInput{
+			Repo: RepoInput{
+				InstallationID: 500, Owner: "acme", Name: "pages", DefaultBranch: "main",
+				DocsDir: "docs", ConfigSnapshot: json.RawMessage(`{}`),
+				APILandingPage: landing, APIAdditionalDocs: additional,
+			},
+			Pages: pages,
+		}
+	}
+	fetchRepo := func() Repo {
+		t.Helper()
+		repo, err := testStore.q.GetRepoByOwnerName(ctx, GetRepoByOwnerNameParams{Owner: "acme", Name: "pages"})
+		if err != nil {
+			t.Fatalf("GetRepoByOwnerName: %v", err)
+		}
+		return repo
+	}
+
+	// Round-trip: rows land, api columns persist.
+	enabled := input(
+		[]PageInput{page("guides/setup.md", "ph1"), page("impl", "ph2")},
+		"docs/index.md", []string{"CONTRIBUTING.md", "SECURITY.md"},
+	)
+	res, err := testStore.ReconcileRepo(ctx, enabled)
+	if err != nil {
+		t.Fatalf("first reconcile: %v", err)
+	}
+	if res.PagesUpserted != 2 || res.PagesUnchanged != 0 || res.PagesDeleted != 0 {
+		t.Errorf("first reconcile pages = %d/%d/%d (upserted/unchanged/deleted), want 2/0/0",
+			res.PagesUpserted, res.PagesUnchanged, res.PagesDeleted)
+	}
+	if len(res.UpsertedPagePaths) != 2 {
+		t.Errorf("UpsertedPagePaths = %v, want both paths", res.UpsertedPagePaths)
+	}
+	repo := fetchRepo()
+	if repo.ApiLandingPage.String != "docs/index.md" {
+		t.Errorf("ApiLandingPage = %q, want docs/index.md", repo.ApiLandingPage.String)
+	}
+	if want := `["CONTRIBUTING.md", "SECURITY.md"]`; string(repo.ApiAdditionalDocs) != want &&
+		string(repo.ApiAdditionalDocs) != `["CONTRIBUTING.md","SECURITY.md"]` {
+		t.Errorf("ApiAdditionalDocs = %s, want %s", repo.ApiAdditionalDocs, want)
+	}
+	got, err := testStore.q.GetRepoPageByPath(ctx, GetRepoPageByPathParams{RepoID: res.RepoID, Path: "impl"})
+	if err != nil {
+		t.Fatalf("GetRepoPageByPath: %v", err)
+	}
+	if got.RepoPath != "docs/impl.md" || got.Title != "Page impl" || got.RawMd != "# impl" {
+		t.Errorf("page row = {%q %q %q}, want the seeded values", got.RepoPath, got.Title, got.RawMd)
+	}
+
+	// Identical desired state: the content-hash gate makes it a no-op.
+	res, err = testStore.ReconcileRepo(ctx, enabled)
+	if err != nil {
+		t.Fatalf("identical reconcile: %v", err)
+	}
+	if res.PagesUnchanged != 2 || res.PagesUpserted != 0 || len(res.UpsertedPagePaths) != 0 {
+		t.Errorf("identical reconcile pages = %d unchanged / %d upserted, want 2 / 0",
+			res.PagesUnchanged, res.PagesUpserted)
+	}
+
+	// One page changes, one is removed at HEAD.
+	res, err = testStore.ReconcileRepo(ctx, input(
+		[]PageInput{page("guides/setup.md", "ph1-v2")},
+		"docs/index.md", []string{"CONTRIBUTING.md", "SECURITY.md"},
+	))
+	if err != nil {
+		t.Fatalf("changed reconcile: %v", err)
+	}
+	if res.PagesUpserted != 1 || res.PagesDeleted != 1 || res.PagesUnchanged != 0 {
+		t.Errorf("changed reconcile pages = %d/%d/%d (upserted/deleted/unchanged), want 1/1/0",
+			res.PagesUpserted, res.PagesDeleted, res.PagesUnchanged)
+	}
+	if len(res.DeletedPagePaths) != 1 || res.DeletedPagePaths[0] != "impl" {
+		t.Errorf("DeletedPagePaths = %v, want [impl]", res.DeletedPagePaths)
+	}
+
+	// Block disabled at HEAD: every row deleted, both columns nulled.
+	res, err = testStore.ReconcileRepo(ctx, input(nil, "", nil))
+	if err != nil {
+		t.Fatalf("disable reconcile: %v", err)
+	}
+	if res.PagesDeleted != 1 {
+		t.Errorf("disable reconcile PagesDeleted = %d, want 1", res.PagesDeleted)
+	}
+	rows, err := testStore.q.ListRepoPageHashes(ctx, res.RepoID)
+	if err != nil {
+		t.Fatalf("ListRepoPageHashes: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Errorf("page rows after disable = %d, want 0", len(rows))
+	}
+	repo = fetchRepo()
+	if repo.ApiLandingPage.Valid || repo.ApiAdditionalDocs != nil {
+		t.Errorf("api columns not nulled: landing=%v additional=%s",
+			repo.ApiLandingPage.Valid, repo.ApiAdditionalDocs)
 	}
 }
 

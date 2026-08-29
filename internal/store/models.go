@@ -46,22 +46,36 @@ type Installation struct {
 }
 
 type Repo struct {
-	ID             int64              `json:"id"`
-	InstallationID int64              `json:"installation_id"`
-	Owner          string             `json:"owner"`
-	Name           string             `json:"name"`
-	DefaultBranch  string             `json:"default_branch"`
-	DocsDir        string             `json:"docs_dir"`
-	ConfigSnapshot json.RawMessage    `json:"config_snapshot"`
-	LastSyncedSha  pgtype.Text        `json:"last_synced_sha"`
-	LastSyncedAt   pgtype.Timestamptz `json:"last_synced_at"`
-	ChangelogMd    pgtype.Text        `json:"changelog_md"`
-	ChangelogSha   pgtype.Text        `json:"changelog_sha"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	IndexMd        pgtype.Text        `json:"index_md"`
-	IndexSha       pgtype.Text        `json:"index_sha"`
-	ChangelogFile  pgtype.Text        `json:"changelog_file"`
+	ID                int64              `json:"id"`
+	InstallationID    int64              `json:"installation_id"`
+	Owner             string             `json:"owner"`
+	Name              string             `json:"name"`
+	DefaultBranch     string             `json:"default_branch"`
+	DocsDir           string             `json:"docs_dir"`
+	ConfigSnapshot    json.RawMessage    `json:"config_snapshot"`
+	LastSyncedSha     pgtype.Text        `json:"last_synced_sha"`
+	LastSyncedAt      pgtype.Timestamptz `json:"last_synced_at"`
+	ChangelogMd       pgtype.Text        `json:"changelog_md"`
+	ChangelogSha      pgtype.Text        `json:"changelog_sha"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	IndexMd           pgtype.Text        `json:"index_md"`
+	IndexSha          pgtype.Text        `json:"index_sha"`
+	ChangelogFile     pgtype.Text        `json:"changelog_file"`
+	ApiLandingPage    pgtype.Text        `json:"api_landing_page"`
+	ApiAdditionalDocs json.RawMessage    `json:"api_additional_docs"`
+}
+
+type RepoPage struct {
+	ID          int64              `json:"id"`
+	RepoID      int64              `json:"repo_id"`
+	Path        string             `json:"path"`
+	RepoPath    string             `json:"repo_path"`
+	Title       string             `json:"title"`
+	GitSha      string             `json:"git_sha"`
+	ContentHash string             `json:"content_hash"`
+	RawMd       string             `json:"raw_md"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

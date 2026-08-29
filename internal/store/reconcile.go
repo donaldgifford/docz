@@ -32,18 +32,20 @@ func (s *Store) ReconcileRepo(ctx context.Context, in *ReconcileInput) (res Reco
 	q := s.q.WithTx(tx)
 
 	repoID, err := q.UpsertRepo(ctx, UpsertRepoParams{
-		InstallationID: in.Repo.InstallationID,
-		Owner:          in.Repo.Owner,
-		Name:           in.Repo.Name,
-		DefaultBranch:  in.Repo.DefaultBranch,
-		DocsDir:        in.Repo.DocsDir,
-		ConfigSnapshot: in.Repo.ConfigSnapshot,
-		LastSyncedSha:  textOrNull(in.Repo.LastSyncedSHA),
-		ChangelogMd:    textOrNull(in.Repo.ChangelogMD),
-		ChangelogSha:   textOrNull(in.Repo.ChangelogSHA),
-		ChangelogFile:  textOrNull(in.Repo.ChangelogFile),
-		IndexMd:        textOrNull(in.Repo.IndexMD),
-		IndexSha:       textOrNull(in.Repo.IndexSHA),
+		InstallationID:    in.Repo.InstallationID,
+		Owner:             in.Repo.Owner,
+		Name:              in.Repo.Name,
+		DefaultBranch:     in.Repo.DefaultBranch,
+		DocsDir:           in.Repo.DocsDir,
+		ConfigSnapshot:    in.Repo.ConfigSnapshot,
+		LastSyncedSha:     textOrNull(in.Repo.LastSyncedSHA),
+		ChangelogMd:       textOrNull(in.Repo.ChangelogMD),
+		ChangelogSha:      textOrNull(in.Repo.ChangelogSHA),
+		ChangelogFile:     textOrNull(in.Repo.ChangelogFile),
+		IndexMd:           textOrNull(in.Repo.IndexMD),
+		IndexSha:          textOrNull(in.Repo.IndexSHA),
+		ApiLandingPage:    textOrNull(in.Repo.APILandingPage),
+		ApiAdditionalDocs: jsonStringsOrNull(in.Repo.APIAdditionalDocs),
 	})
 	if err != nil {
 		return res, fmt.Errorf("upsert repo %s/%s: %w", in.Repo.Owner, in.Repo.Name, err)
@@ -56,6 +58,9 @@ func (s *Store) ReconcileRepo(ctx context.Context, in *ReconcileInput) (res Reco
 		return res, derr
 	}
 	if derr := reconcileDocuments(ctx, q, repoID, in.Documents, &res); derr != nil {
+		return res, derr
+	}
+	if derr := reconcileRepoPages(ctx, q, repoID, in.Pages, &res); derr != nil {
 		return res, derr
 	}
 
@@ -157,6 +162,59 @@ func reconcileDocuments(
 		}
 		res.DocsDeleted++
 		res.DeletedDocIDs = append(res.DeletedDocIDs, docID)
+	}
+	return nil
+}
+
+// reconcileRepoPages upserts pages that are new or whose content hash
+// changed, skips those whose hash is unchanged, and deletes pages absent
+// from the desired set — the reconcileDocuments discipline keyed on the
+// published path. A dormant api: block arrives as an empty desired set, so
+// every existing row is deleted (desired state, not a cache).
+func reconcileRepoPages(
+	ctx context.Context, q *Queries, repoID int64, desired []PageInput, res *ReconcileResult,
+) error {
+	rows, err := q.ListRepoPageHashes(ctx, repoID)
+	if err != nil {
+		return fmt.Errorf("list page hashes for repo %d: %w", repoID, err)
+	}
+	current := make(map[string]string, len(rows))
+	for _, r := range rows {
+		current[r.Path] = r.ContentHash
+	}
+
+	keep := make(map[string]struct{}, len(desired))
+	for i := range desired {
+		p := &desired[i]
+		keep[p.Path] = struct{}{}
+		if hash, ok := current[p.Path]; ok && hash == p.ContentHash {
+			res.PagesUnchanged++
+			continue
+		}
+		if uerr := q.UpsertRepoPage(ctx, UpsertRepoPageParams{
+			RepoID:      repoID,
+			Path:        p.Path,
+			RepoPath:    p.RepoPath,
+			Title:       p.Title,
+			GitSha:      p.GitSHA,
+			ContentHash: p.ContentHash,
+			RawMd:       p.RawMD,
+		}); uerr != nil {
+			return fmt.Errorf("upsert page %q: %w", p.Path, uerr)
+		}
+		res.PagesUpserted++
+		res.UpsertedPagePaths = append(res.UpsertedPagePaths, p.Path)
+	}
+
+	for path := range current {
+		if _, ok := keep[path]; ok {
+			continue
+		}
+		if derr := q.DeleteRepoPage(ctx, DeleteRepoPageParams{RepoID: repoID, Path: path}); derr != nil {
+			return fmt.Errorf("delete page %q: %w", path, derr)
+		}
+		res.PagesDeleted++
+		res.DeletedPagePaths = append(res.DeletedPagePaths, path)
 	}
 	return nil
 }

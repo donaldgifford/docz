@@ -7,10 +7,13 @@ import (
 	"maps"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/google/go-github/v88/github"
+
+	"github.com/donaldgifford/docz-api/internal/ingest"
 )
 
 // stubTransport serves canned GitHub API responses keyed off the request path,
@@ -291,6 +294,168 @@ func TestDocsDirHint(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAPIHint(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want apiHints
+	}{
+		{"absent block is dormant", "docs_dir: docs\n", apiHints{}},
+		{"malformed yaml falls back to dormant", "\t: not yaml", apiHints{}},
+		{
+			"enabled without fields",
+			"api:\n  enabled: true\n",
+			apiHints{enabled: true},
+		},
+		{
+			"landing page dot-slash normalized",
+			"api:\n  enabled: true\n  landing_page: ./docs/home.md\n",
+			apiHints{enabled: true, landingPage: "docs/home.md"},
+		},
+		{
+			"exclude trailing slash collapsed",
+			"api:\n  enabled: true\n  exclude: [scratch/, drafts]\n",
+			apiHints{enabled: true, exclude: []string{"scratch", "drafts"}},
+		},
+		{
+			"additional docs normalized",
+			"api:\n  enabled: true\n  additional_docs: [./CONTRIBUTING.md, SECURITY.md]\n",
+			apiHints{enabled: true, additionalDocs: []string{"CONTRIBUTING.md", "SECURITY.md"}},
+		},
+		{
+			"fields without enabled stay dormant",
+			"api:\n  landing_page: docs/home.md\n  additional_docs: [CONTRIBUTING.md]\n",
+			apiHints{landingPage: "docs/home.md", additionalDocs: []string{"CONTRIBUTING.md"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := apiHint([]byte(tt.yaml))
+			if got.enabled != tt.want.enabled || got.landingPage != tt.want.landingPage ||
+				!slices.Equal(got.exclude, tt.want.exclude) ||
+				!slices.Equal(got.additionalDocs, tt.want.additionalDocs) {
+				t.Errorf("apiHint(%q) = %+v, want %+v", tt.yaml, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestFetchAPIPages covers the api-block fetch surface (DESIGN-0004): the
+// widened keep-set when enabled, the byte-for-byte dormant invariant, the
+// relocated landing page, and the zero-requests-when-absent additional_docs
+// rule. Like TestFetchRepoChangelog, blobs are withheld from the stub so any
+// unexpected request 404s the fetch loudly.
+func TestFetchAPIPages(t *testing.T) {
+	// The tree carries a docz doc, page candidates (incl. templates — the
+	// fetch keeps them; ingest prunes), a non-md file under docs, files
+	// outside docs, and additional_docs candidates.
+	const tree = `{"sha":"headsha","truncated":false,"tree":[
+		{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+		{"path":"docs/rfc/0001-intro.md","type":"blob","sha":"docsha"},
+		{"path":"docs/rfc/README.md","type":"blob","sha":"rfcreadmesha"},
+		{"path":"docs/guides/setup.md","type":"blob","sha":"guidesha"},
+		{"path":"docs/templates/rfc.md","type":"blob","sha":"tmplsha"},
+		{"path":"docs/diagram.png","type":"blob","sha":"pngsha"},
+		{"path":"docs/index.md","type":"blob","sha":"idxsha"},
+		{"path":"docs/home.md","type":"blob","sha":"homesha"},
+		{"path":"CONTRIBUTING.md","type":"blob","sha":"contribsha"},
+		{"path":"README.md","type":"blob","sha":"readmesha"}
+	]}`
+
+	run := func(t *testing.T, cfgYAML string, extra map[string]string) *ingest.RepoSnapshot {
+		t.Helper()
+		blobs := map[string]string{"cfgsha": b64(cfgYAML)}
+		maps.Copy(blobs, extra)
+		gh, err := github.NewClient(github.WithTransport(stubTransport{tree: tree, blobs: blobs}))
+		if err != nil {
+			t.Fatalf("NewClient: %v", err)
+		}
+		c := &Client{gh: gh}
+		snap, err := c.Fetch(t.Context(), "acme", "platform")
+		if err != nil {
+			t.Fatalf("Fetch: %v", err)
+		}
+		return snap
+	}
+
+	t.Run("dormant block fetches today's set byte-for-byte", func(t *testing.T) {
+		// Only the config, the docz doc, and docs/index.md may be requested:
+		// every other sha is withheld, so a widened fetch would 404.
+		snap := run(t, "api:\n  enabled: false\n  additional_docs: [CONTRIBUTING.md]\n",
+			map[string]string{"docsha": b64("---\nid: RFC-0001\n---\n"), "idxsha": b64("# Home")})
+		if len(snap.Blobs) != 1 || snap.Blobs[0].Path != "docs/rfc/0001-intro.md" {
+			t.Errorf("dormant Blobs = %+v, want only the docz doc", snap.Blobs)
+		}
+		if snap.IndexSHA != "idxsha" {
+			t.Errorf("IndexSHA = %q, want idxsha (DESIGN-0003 unchanged)", snap.IndexSHA)
+		}
+	})
+
+	t.Run("enabled widens to every md under docs_dir", func(t *testing.T) {
+		snap := run(t, "api:\n  enabled: true\n",
+			map[string]string{
+				"docsha": b64("---\nid: RFC-0001\n---\n"), "rfcreadmesha": b64("# RFCs"),
+				"guidesha": b64("# Setup"), "tmplsha": b64("template"),
+				"homesha": b64("# Home page"), "idxsha": b64("# Home"),
+			})
+		want := []string{
+			"docs/rfc/0001-intro.md", "docs/rfc/README.md", "docs/guides/setup.md",
+			"docs/templates/rfc.md", "docs/home.md", "docs/index.md",
+		}
+		got := make([]string, len(snap.Blobs))
+		for i, b := range snap.Blobs {
+			got[i] = b.Path
+		}
+		slices.Sort(got)
+		slices.Sort(want)
+		if !slices.Equal(got, want) {
+			t.Errorf("enabled Blobs = %v, want %v (every .md under docs, no .png, nothing outside)", got, want)
+		}
+		// Default landing page still resolves docs/index.md.
+		if snap.IndexSHA != "idxsha" {
+			t.Errorf("IndexSHA = %q, want idxsha", snap.IndexSHA)
+		}
+	})
+
+	t.Run("landing override fetches the configured path", func(t *testing.T) {
+		snap := run(t, "api:\n  enabled: true\n  landing_page: docs/home.md\n",
+			map[string]string{
+				"docsha": b64("---\nid: RFC-0001\n---\n"), "rfcreadmesha": b64("# RFCs"),
+				"guidesha": b64("# Setup"), "tmplsha": b64("template"),
+				"homesha": b64("# Home page"), "idxsha": b64("# Home"),
+			})
+		if snap.IndexSHA != "homesha" || string(snap.IndexMD) != "# Home page" {
+			t.Errorf("index = %q / %q, want the configured docs/home.md", snap.IndexMD, snap.IndexSHA)
+		}
+	})
+
+	t.Run("additional docs fetched when present, zero requests when absent or non-markdown", func(t *testing.T) {
+		// README.md is present in the tree but withheld from the stub: a
+		// non-markdown entry ("LICENSE"-style, here the extensionless
+		// README-as-decoy is stood in by listing a present non-md path) must
+		// not be requested at all. The stub 404s any unexpected sha.
+		snap := run(t, "api:\n  enabled: true\n  additional_docs: [CONTRIBUTING.md, MISSING.md, README]\n",
+			map[string]string{
+				"docsha": b64("---\nid: RFC-0001\n---\n"), "rfcreadmesha": b64("# RFCs"),
+				"guidesha": b64("# Setup"), "tmplsha": b64("template"),
+				"homesha": b64("# Home page"), "idxsha": b64("# Home"),
+				"contribsha": b64("# Contributing"),
+			})
+		var contrib bool
+		for _, b := range snap.Blobs {
+			if b.Path == "CONTRIBUTING.md" {
+				contrib = b.GitSHA == "contribsha" && string(b.Content) == "# Contributing"
+			}
+			if b.Path == "MISSING.md" || b.Path == "README" {
+				t.Errorf("%s fetched, want zero requests (absent / non-markdown)", b.Path)
+			}
+		}
+		if !contrib {
+			t.Error("CONTRIBUTING.md not in Blobs, want it fetched via additional_docs")
+		}
+	})
 }
 
 func TestFetchErrorsWithoutConfig(t *testing.T) {

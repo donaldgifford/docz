@@ -17,8 +17,15 @@ sql:
         emit_empty_slices: true
         overrides:
           # JSONB columns are marshaled/unmarshaled by the store layer, so
-          # surface them as json.RawMessage rather than []byte.
+          # surface them as json.RawMessage rather than []byte. The override
+          # is matched per nullability, so nullable JSONB (api_additional_docs)
+          # needs its own entry; a nil RawMessage maps to SQL NULL.
           - db_type: "jsonb"
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"
+          - db_type: "jsonb"
+            nullable: true
             go_type:
               import: "encoding/json"
               type: "RawMessage"

@@ -27,6 +27,8 @@ type storeReader interface {
 	GetDocTypesForRepo(ctx context.Context, repoID int64) ([]store.DocType, error)
 	ListDocumentsByType(ctx context.Context, repoID int64, typeName string) ([]store.ListDocumentsByTypeRow, error)
 	GetDocumentByID(ctx context.Context, repoID int64, docID string) (store.Document, error)
+	ListRepoPages(ctx context.Context, repoID int64) ([]store.ListRepoPagesRow, error)
+	GetRepoPageByPath(ctx context.Context, repoID int64, path string) (store.RepoPage, error)
 }
 
 // Searcher is the search surface httpapi needs. *search.Client satisfies it.
@@ -69,6 +71,8 @@ func (h *Handler) Mount(r chi.Router, gate func(http.Handler) http.Handler, extr
 			r.Get("/", h.getRepo)
 			r.Get("/index", h.getRepoIndex)
 			r.Get("/changelog", h.getRepoChangelog)
+			r.Get("/pages", h.listRepoPages)
+			r.Get("/pages/*", h.getRepoPage)
 			r.Get("/types", h.listTypes)
 			r.Get("/types/{type}/docs", h.listDocs)
 			r.Get("/types/{type}/docs/{doc_id}", h.getDoc)

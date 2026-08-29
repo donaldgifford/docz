@@ -145,19 +145,26 @@ type (
 	// block (IMPL-0005). A disabled or absent block leaves all three empty, so
 	// the reconcile nulls all three columns — the changelog is opt-in desired
 	// state, not a sticky cache.
+	//
+	// APILandingPage/APIAdditionalDocs carry the post-Load api: block values
+	// (IMPL-0007) — the webhook's exact-match surface for api files outside
+	// docs_dir. Empty means the block is disabled or absent, and the
+	// reconcile nulls both columns, the same desired-state rule.
 	RepoInput struct {
-		InstallationID int64
-		Owner          string
-		Name           string
-		DefaultBranch  string
-		DocsDir        string
-		ConfigSnapshot json.RawMessage
-		LastSyncedSHA  string
-		ChangelogMD    string
-		ChangelogSHA   string
-		ChangelogFile  string
-		IndexMD        string
-		IndexSHA       string
+		InstallationID    int64
+		Owner             string
+		Name              string
+		DefaultBranch     string
+		DocsDir           string
+		ConfigSnapshot    json.RawMessage
+		LastSyncedSHA     string
+		ChangelogMD       string
+		ChangelogSHA      string
+		ChangelogFile     string
+		IndexMD           string
+		IndexSHA          string
+		APILandingPage    string
+		APIAdditionalDocs []string
 	}
 
 	// DocTypeInput is one desired doc-type row (from .docz.yaml).
@@ -185,29 +192,49 @@ type (
 		RawMD       string
 	}
 
+	// PageInput is one desired page row (DESIGN-0004): non-docz markdown the
+	// repo's api: block publishes. Path is the published path (the addressing
+	// key); RepoPath is where the file actually lives in the repo. ContentHash
+	// gates rewrites exactly as it does for documents.
+	PageInput struct {
+		Path        string
+		RepoPath    string
+		Title       string
+		GitSHA      string
+		ContentHash string
+		RawMD       string
+	}
+
 	// ReconcileInput is the full desired state for one repo: its top-level
-	// fields, the doc types declared in its config, and every document
-	// discovered at HEAD.
+	// fields, the doc types declared in its config, every document discovered
+	// at HEAD, and every page the api: block publishes (empty when the block
+	// is disabled — the reconcile then deletes all page rows).
 	ReconcileInput struct {
 		Repo      RepoInput
 		DocTypes  []DocTypeInput
 		Documents []DocumentInput
+		Pages     []PageInput
 	}
 
 	// ReconcileResult summarizes what one ReconcileRepo call changed. It drives
 	// structured logging and lets tests assert on the content-hash gate.
-	// UpsertedDocIDs/DeletedDocIDs name the documents that actually changed, so
-	// the search indexer can reuse the same content-hash gate instead of
-	// re-indexing every document each run.
+	// UpsertedDocIDs/DeletedDocIDs (and their page-path twins) name the
+	// records that actually changed, so the search indexer can reuse the same
+	// content-hash gate instead of re-indexing everything each run.
 	ReconcileResult struct {
-		RepoID         int64
-		DocsUpserted   int
-		DocsDeleted    int
-		DocsUnchanged  int
-		TypesUpserted  int
-		TypesDeleted   int
-		UpsertedDocIDs []string
-		DeletedDocIDs  []string
+		RepoID            int64
+		DocsUpserted      int
+		DocsDeleted       int
+		DocsUnchanged     int
+		TypesUpserted     int
+		TypesDeleted      int
+		PagesUpserted     int
+		PagesDeleted      int
+		PagesUnchanged    int
+		UpsertedDocIDs    []string
+		DeletedDocIDs     []string
+		UpsertedPagePaths []string
+		DeletedPagePaths  []string
 	}
 )
 
@@ -217,6 +244,22 @@ func textOrNull(s string) pgtype.Text {
 		return pgtype.Text{}
 	}
 	return pgtype.Text{String: s, Valid: true}
+}
+
+// jsonStringsOrNull maps an empty slice to SQL NULL and any other value to
+// its JSON array encoding. Marshaling []string cannot fail, so no error is
+// returned.
+func jsonStringsOrNull(vals []string) json.RawMessage {
+	if len(vals) == 0 {
+		return nil
+	}
+	b, err := json.Marshal(vals)
+	if err != nil {
+		// Unreachable for []string; keep the panic loud rather than
+		// silently persisting NULL for a non-empty desired state.
+		panic(fmt.Sprintf("marshal string slice: %v", err))
+	}
+	return b
 }
 
 // dateOrNull maps the zero time to SQL NULL and any other value to a date.
