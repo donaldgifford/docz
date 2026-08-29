@@ -3,6 +3,34 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Features
+
+- *(search)* Source-aware index schema — IndexDoc Source/Path, source facet filterable
+- *(ingest)* Page index mapping — hashed page PK, toIndexPage, doc Source/Path
+- *(ingest)* Sync pages into the search index after commit
+- *(search)* Source + path on SearchHit; spec 1.4.0
+
+### Refactor
+
+- *(ingest)* Review nits — unshadow the indexed-record loop, rename mixed-source helpers
+
+### Documentation
+
+- *(impl)* Check off IMPL-0007 Phase 6
+- Pages consumer notes (api/deploy READMEs) + CLAUDE.md IMPL-0007 section
+- IMPL-0007 close-out — Phase 7 checked off, DESIGN-0004 Implemented, IMPL-0007 Completed
+
+### Testing
+
+- *(search)* Page records in the integration corpus — source facet, hit shape, deletion, purge
+- *(e2e)* Pages serve-and-disable proof against real Postgres + Meilisearch
+
+### Miscellaneous Tasks
+
+- *(docz)* Dogfood the api block — publish docs pages + DEVELOPMENT.md
+
 ## [0.7.0] - 2026-08-29
 
 ### Features

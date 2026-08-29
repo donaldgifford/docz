@@ -335,6 +335,17 @@ either restart healthy pods or silently do nothing.
   default-branch push touching `.docz.yaml`, `docs_dir/`, or the configured
   changelog file, or a manual
   `docz-api -onboard owner/name@installationID`.
+- **Pages opt-in (IMPL-0007):** the `/api/v1/repos/{owner}/{name}/pages`
+  endpoints serve the non-docz markdown a repo's `.docz.yaml` `api:` block
+  publishes (docz v1.2.0). **Enabling the block publishes every `.md` under
+  `docs_dir`** — brief operators accordingly: `api.exclude` is the guard rail
+  for drafts and internal notes (`templates/` is always excluded), and
+  `api.additional_docs` opts in repo-root files such as `CONTRIBUTING.md`.
+  Like the changelog, the block is desired state: disabling it deletes the
+  served pages (and their search entries) on the next ingest. Repos without
+  the block serve an empty list, cost zero extra GitHub requests at fetch
+  time, and are byte-for-byte untouched. Opting in takes effect on the next
+  re-ingest, same triggers as the changelog above.
 - The images pin major/minor tags (`postgres:17-alpine`, `redis:7.4-alpine`,
   `getmeili/meilisearch:v1.12`); Renovate PRs updates.
 - For Kubernetes, translate this to a Deployment (service) plus StatefulSets or

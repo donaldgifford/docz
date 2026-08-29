@@ -768,6 +768,69 @@ deltas are noted here.
   round-trips the columns; `TestFetchRepoChangelog` proves the no-fetch cases
   by **withholding the blob** (the stub 404s on an unfetched sha).
 
+## Pages endpoints + search source facet (DESIGN-0004 / IMPL-0007)
+
+docz v1.2.0's `api:` block publishes a repo's **non-docz markdown** as pages:
+fetched at ingest, reconciled into `repo_pages`, served at
+`GET /api/v1/repos/{owner}/{name}/pages[/{path}]` (spec `1.3.0`), and
+searchable under a `source` facet (spec `1.4.0`). Built per
+`docs/design/0004-*.md` (grounded by INV-0008) and `docs/impl/0007-*.md`.
+Per IMPL OQ-1a it shipped as **two PRs**: PR-1 = Phases 1–5 (pages surface),
+PR-2 = Phases 6–7 (search facet + close-out). Deltas from the
+index/changelog precedents:
+
+- **Contract clause R10** (`internal/doczcontract/api_test.go`):
+  `Config.API{Enabled, LandingPage, Exclude, AdditionalDocs}`,
+  `ErrInvalidAPIPath`, `APILandingFileName`, normalization-at-Load (landing
+  backfill `docs_dir/index.md` **only when enabled**; dormant blocks are
+  never validated or backfilled), and `docparse.Title` (first H1, ATX +
+  setext, frontmatter skipped — frontmatter `title:` deliberately unread).
+  Import alias **`doczparse`** joins `doczcfg`/`doczdoc`.
+- **Dormancy is byte-for-byte.** A repo without an enabled block fetches
+  exactly what v1.1.0 fetched (proven by withheld-blob stubs: the test stub
+  404s any blob request the dormant path shouldn't make). `classifyTree`
+  widens to every `.md` under `docs_dir` **only when** `apiHint` reports
+  enabled; `additional_docs` fetches are per-entry, skipped for non-`.md`
+  entries without a request.
+- **`ingest.buildPages`** is the six-rule classifier (DESIGN-0004): landing
+  skip → over-fetch guard → templates/`api.exclude` pruning → type-dir
+  discrimination (type-dir `README.md` is the type's one page; `IsDoczFile`
+  matches stay silent; strays warn + skip) → README-wins-over-index directory
+  precedence (lone `index.md` serves the directory; `docs_dir` root never
+  forms a directory page) → repo-relative `additional_docs`, classified
+  second so a cross-namespace collision deterministically goes to the
+  docs_dir page (design OQ-1a). **`validPublishedPath` guards the single
+  writer**: git-tree paths (dot segments, control bytes, backslashes) never
+  become store keys; the serve layer re-applies the same rules to decoded URL
+  paths (`validPagePath`) and 404s — indistinguishable from a miss.
+- **Pages are desired state.** `reconcileRepoPages` mirrors the documents
+  reconcile (content-hash gate, delete-absent) keyed on the published path;
+  a dormant block maps `Pages: nil` + empty api fields, so the reconcile
+  wipes every row and nulls `repos.api_landing_page`/`api_additional_docs`
+  (migration `20260828000000_add_repo_pages`). The nullable JSONB column
+  needed its **own sqlc override entry** (`nullable: true` →
+  `json.RawMessage`).
+- **Webhook:** `shouldIngest`'s changelog exact-path check generalized to a
+  `watched []string` built by `watchedFiles(repo)` (changelog + api landing
+  page + decoded `api_additional_docs`; NULL columns contribute nothing) —
+  a push touching only a root additional doc re-ingests.
+- **Search (PR-2):** `IndexDoc`/`SearchHit` carry `Source` (`doc`/`page`) +
+  `Path` (repo-relative on docs, published on pages); `source` is filterable
+  + faceted. Page PK is `<repo_id>_p_<hex(sha256(published_path))[:16]>` —
+  published paths carry chars Meilisearch ids reject, so the path is hashed;
+  the `p` marker keeps it out of the doc-id namespace. `syncIndex` folds page
+  deletes/upserts into its one delete + one index call via
+  `GetRepoPagesByPaths`; the repo-id purge covers pages by construction.
+- **Serve:** `GET .../pages` returns an **empty list, not 404**, for a repo
+  without the block (the repo exists; its page set is empty); `GET
+  .../pages/*` is a chi wildcard + `url.PathUnescape`, so both the literal
+  and percent-encoded spellings resolve. Exact-byte lookup, no case folding.
+- **Proof:** `TestE2ERepoPagesServeAndDisable` (real Postgres + Meilisearch)
+  covers onboard → list/serve (directory page, file page, additional doc) →
+  search with `source: page` → disable-at-HEAD → empty list, 404s, index
+  purged. This repo **dogfoods** the block (`.docz.yaml`: `api.enabled` +
+  `additional_docs: [DEVELOPMENT.md]`).
+
 ## Helm chart + publish pipeline (INV-0004 / IMPL-0004)
 
 The `charts/docz-api/` Helm chart, the container/chart publish workflows

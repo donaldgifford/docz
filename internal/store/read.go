@@ -93,3 +93,18 @@ func (s *Store) GetDocumentsByIDs(ctx context.Context, repoID int64, docIDs []st
 	}
 	return docs, nil
 }
+
+// GetRepoPagesByPaths returns full page rows (including raw markdown) for the
+// given published paths within one repo — the pages counterpart of
+// GetDocumentsByIDs on the search indexer's post-commit path. The result may
+// be shorter than paths if a page was removed concurrently.
+func (s *Store) GetRepoPagesByPaths(ctx context.Context, repoID int64, paths []string) ([]RepoPage, error) {
+	if len(paths) == 0 {
+		return nil, nil
+	}
+	pages, err := s.q.GetRepoPagesByPaths(ctx, GetRepoPagesByPathsParams{RepoID: repoID, Paths: paths})
+	if err != nil {
+		return nil, fmt.Errorf("get pages by paths in repo %d: %w", repoID, err)
+	}
+	return pages, nil
+}

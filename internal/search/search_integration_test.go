@@ -77,33 +77,60 @@ func runMain(m *testing.M) int {
 	return m.Run()
 }
 
-// sampleDocs is a fixed three-document corpus spanning two repos and two types.
+// sampleDocs is a fixed six-record corpus spanning two repos, two doc types,
+// and both sources: three documents plus three api-block pages (two in repo 1,
+// one in repo 2 — so the repo-scope and purge tests cover pages too). Page
+// records leave the doc-only fields empty, exactly as ingest's toIndexPage
+// does; their ids use the hashed-page shape but are literals here (the hash
+// itself is ingest's concern).
 func sampleDocs() []IndexDoc {
 	return []IndexDoc{
 		{
-			ID: "1_RFC-0001", Repo: "acme/platform", RepoID: 1, DocID: "RFC-0001",
+			ID: "1_RFC-0001", Source: SourceDoc, Repo: "acme/platform", RepoID: 1, DocID: "RFC-0001",
 			Type: "rfc", Title: "Structured logging", Status: "Accepted", Author: "Jane Dev",
-			Created: "2026-01-15", Body: "We should adopt structured logging across services.",
+			Created: "2026-01-15", Path: "docs/rfc/0001-structured-logging.md",
+			Body:      "We should adopt structured logging across services.",
 			UpdatedAt: 1750615451,
 		},
 		{
-			ID: "1_RFC-0002", Repo: "acme/platform", RepoID: 1, DocID: "RFC-0002",
+			ID: "1_RFC-0002", Source: SourceDoc, Repo: "acme/platform", RepoID: 1, DocID: "RFC-0002",
 			Type: "rfc", Title: "Tracing", Status: "Draft", Author: "John Ops",
-			Created: "2026-02-01", Body: "A distributed tracing rollout plan.",
+			Created: "2026-02-01", Path: "docs/rfc/0002-tracing.md",
+			Body:      "A distributed tracing rollout plan.",
 			UpdatedAt: 1750615452,
 		},
 		{
-			ID: "2_ADR-0001", Repo: "beta/infra", RepoID: 2, DocID: "ADR-0001",
+			ID: "2_ADR-0001", Source: SourceDoc, Repo: "beta/infra", RepoID: 2, DocID: "ADR-0001",
 			Type: "adr", Title: "Use Postgres", Status: "Accepted", Author: "Jane Dev",
-			Created: "2026-03-01", Body: "Adopt Postgres as the datastore, with request logging.",
+			Created: "2026-03-01", Path: "docs/adr/0001-use-postgres.md",
+			Body:      "Adopt Postgres as the datastore, with request logging.",
 			UpdatedAt: 1750615453,
+		},
+		{
+			ID: "1_p_00112233aabbccdd", Source: SourcePage, Repo: "acme/platform", RepoID: 1,
+			Title: "Setup Guide", Path: "guides/setup.md",
+			Body:      "Widget fleet deployment walkthrough.",
+			UpdatedAt: 1750615454,
+		},
+		{
+			ID: "1_p_1122334455667788", Source: SourcePage, Repo: "acme/platform", RepoID: 1,
+			Title: "Contributing", Path: "CONTRIBUTING.md",
+			Body:      "Contribution guidelines for the platform.",
+			UpdatedAt: 1750615455,
+		},
+		{
+			ID: "2_p_99aabbccddeeff00", Source: SourcePage, Repo: "beta/infra", RepoID: 2,
+			Title: "Runbooks", Path: "runbooks",
+			Body:      "Operational runbooks for infra logging.",
+			UpdatedAt: 1750615456,
 		},
 	}
 }
 
-// seed re-indexes the full sample corpus, restoring a known 3-document state.
+// seed re-indexes the full sample corpus, restoring a known six-record state.
 // Every test seeds first so the tests are order-independent despite the shared
-// index (all docs share the same primary keys, so this is an idempotent upsert).
+// index (all records share the same primary keys, so this is an idempotent
+// upsert).
 func seed(t *testing.T) {
 	t.Helper()
 	if err := testClient.IndexDocuments(t.Context(), sampleDocs()); err != nil {
@@ -149,8 +176,8 @@ func TestIntegrationFacetCounts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("search: %v", err)
 	}
-	if res.EstimatedTotal != 3 {
-		t.Errorf("estimated_total_hits = %d, want 3", res.EstimatedTotal)
+	if res.EstimatedTotal != 6 {
+		t.Errorf("estimated_total_hits = %d, want 6", res.EstimatedTotal)
 	}
 	if got := res.Facets["type"]; got["rfc"] != 2 || got["adr"] != 1 {
 		t.Errorf("type facet = %v, want rfc:2 adr:1", got)
@@ -158,11 +185,14 @@ func TestIntegrationFacetCounts(t *testing.T) {
 	if got := res.Facets["status"]; got["Accepted"] != 2 || got["Draft"] != 1 {
 		t.Errorf("status facet = %v, want Accepted:2 Draft:1", got)
 	}
-	if got := res.Facets["repo"]; got["acme/platform"] != 2 || got["beta/infra"] != 1 {
-		t.Errorf("repo facet = %v, want acme/platform:2 beta/infra:1", got)
+	if got := res.Facets["repo"]; got["acme/platform"] != 4 || got["beta/infra"] != 2 {
+		t.Errorf("repo facet = %v, want acme/platform:4 beta/infra:2", got)
 	}
 	if got := res.Facets["author"]; got["Jane Dev"] != 2 || got["John Ops"] != 1 {
 		t.Errorf("author facet = %v, want Jane Dev:2 John Ops:1", got)
+	}
+	if got := res.Facets["source"]; got["doc"] != 3 || got["page"] != 3 {
+		t.Errorf("source facet = %v, want doc:3 page:3", got)
 	}
 }
 
@@ -184,6 +214,94 @@ func TestIntegrationSnippetHighlight(t *testing.T) {
 	if !strings.Contains(snippet, "<em>") || !strings.Contains(snippet, "</em>") {
 		t.Errorf("snippet = %q, want <em>-highlighted match", snippet)
 	}
+}
+
+// TestIntegrationPageHitShape pins a page hit's wire shape: source "page",
+// the published path, and "" for every doc-only field. The repo scope applies
+// to pages exactly as it does to docs.
+func TestIntegrationPageHitShape(t *testing.T) {
+	seed(t)
+
+	res, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "contribution guidelines",
+		AllowedRepoIDs: []int64{1},
+	})
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(res.Hits) == 0 {
+		t.Fatalf("no hits for the CONTRIBUTING.md page in repo 1")
+	}
+	hit := res.Hits[0]
+	if hit.Source != SourcePage || hit.Path != "CONTRIBUTING.md" || hit.Title != "Contributing" {
+		t.Errorf("page hit = %+v, want source page at CONTRIBUTING.md", hit)
+	}
+	if hit.DocID != "" || hit.Type != "" || hit.Status != "" || hit.Author != "" {
+		t.Errorf("page hit doc-only fields = %+v, want all empty", hit)
+	}
+	if !strings.Contains(hit.Snippet, "<em>") {
+		t.Errorf("page snippet = %q, want <em>-highlighted match", hit.Snippet)
+	}
+
+	// Repo 2's runbooks page is invisible under a repo-1 scope...
+	scoped, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "runbooks",
+		AllowedRepoIDs: []int64{1},
+	})
+	if err != nil {
+		t.Fatalf("scoped search: %v", err)
+	}
+	for _, h := range scoped.Hits {
+		if h.Source == SourcePage && h.Repo != "acme/platform" {
+			t.Errorf("repo-1 scope leaked page %+v", h)
+		}
+	}
+	// ...and visible under its own.
+	own, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "runbooks",
+		AllowedRepoIDs: []int64{2},
+	})
+	if err != nil {
+		t.Fatalf("repo-2 search: %v", err)
+	}
+	if len(own.Hits) == 0 || own.Hits[0].Path != "runbooks" {
+		t.Fatalf("repo-2 page not findable in its own scope: %+v", own.Hits)
+	}
+}
+
+// TestIntegrationPageDeletionRemovesFromIndex mirrors the doc-deletion test
+// for the page namespace: deleting a page's hashed primary key removes it.
+func TestIntegrationPageDeletionRemovesFromIndex(t *testing.T) {
+	seed(t)
+
+	before, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "deployment walkthrough",
+		AllowedRepoIDs: []int64{1},
+	})
+	if err != nil {
+		t.Fatalf("search before delete: %v", err)
+	}
+	if len(before.Hits) == 0 {
+		t.Fatalf("expected the setup guide page before deletion")
+	}
+
+	if err := testClient.DeleteDocuments(t.Context(), []string{"1_p_00112233aabbccdd"}); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+
+	after, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "deployment walkthrough",
+		AllowedRepoIDs: []int64{1},
+	})
+	if err != nil {
+		t.Fatalf("search after delete: %v", err)
+	}
+	for _, h := range after.Hits {
+		if h.Path == "guides/setup.md" {
+			t.Errorf("setup guide page still present after deletion: %+v", after.Hits)
+		}
+	}
+	seed(t) // restore the shared corpus
 }
 
 func TestIntegrationDeletionRemovesFromIndex(t *testing.T) {
@@ -222,13 +340,15 @@ func TestIntegrationDeletionRemovesFromIndex(t *testing.T) {
 func TestIntegrationDeleteRepoDocuments(t *testing.T) {
 	seed(t)
 
-	// Repo 2 has one document before the purge.
+	// Repo 2 has one document and one page before the purge; the repo_id
+	// filter behind DeleteRepoDocuments covers both sources, which is what
+	// makes the offboard purge complete (IMPL-0007 Phase 6).
 	before, err := testClient.Search(t.Context(), &SearchParams{AllowedRepoIDs: []int64{2}})
 	if err != nil {
 		t.Fatalf("search repo 2 before purge: %v", err)
 	}
-	if before.EstimatedTotal == 0 {
-		t.Fatalf("expected repo 2 documents before purge")
+	if before.EstimatedTotal != 2 {
+		t.Fatalf("expected repo 2's doc + page before purge, got %d", before.EstimatedTotal)
 	}
 
 	if derr := testClient.DeleteRepoDocuments(t.Context(), 2); derr != nil {

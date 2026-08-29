@@ -59,13 +59,15 @@ func (contractSearcher) Search(context.Context, *search.SearchParams) (search.Se
 		Query:          "intro",
 		EstimatedTotal: 1,
 		Hits: []search.SearchHit{{
-			Repo: "acme/platform", DocID: "FW-0001", Type: "frameworks",
-			Title: "Intro", Status: "Draft", Author: "Jane",
+			Source: search.SourceDoc, Repo: "acme/platform", DocID: "FW-0001",
+			Type: "frameworks", Title: "Intro", Path: "docs/frameworks/0001-intro.md",
+			Status: "Draft", Author: "Jane",
 			Snippet: "an <em>intro</em> to frameworks",
 		}},
 		Facets: map[string]search.FacetMap{
 			"type":   {"frameworks": 1},
 			"status": {"Draft": 1},
+			"source": {"doc": 1},
 		},
 	}, nil
 }

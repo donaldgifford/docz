@@ -40,11 +40,17 @@ release version). Bump it by hand on any change to a specced wire shape:
 The version is the signal consumers pin against, so a wire change without a bump
 is a contract bug.
 
-Current: **`1.2.0`** — `getRepoChangelog`
-(`GET /api/v1/repos/{owner}/{name}/changelog`) serves a repository's cached
-changelog. It is opt-in per repository via the `.docz.yaml` `changelog:` block,
-so a repository that has not enabled it returns 404 (IMPL-0005). `1.1.0` added
-`getRepoIndex`.
+Current: **`1.4.0`** — search hits carry `source` (`doc`/`page`) and `path`,
+and `source` joins the facet counts, so page results are distinguishable and
+deep-linkable (IMPL-0007 Phase 6). `1.3.0` added the pages surface:
+`listRepoPages` (`GET /api/v1/repos/{owner}/{name}/pages`) and `getRepoPage`
+(`GET .../pages/{path}`), publishing the markdown a repository's `.docz.yaml`
+`api:` block opts into (docz v1.2.0, DESIGN-0004). **Enabling the block
+publishes every `.md` under the docs dir** — `api.exclude` is the guard rail
+for drafts and internal notes; `templates/` is always excluded. A repository
+without the block serves an empty page list (200, not 404) and 404s every page
+path. `1.2.0` added `getRepoChangelog` (opt-in via the `changelog:` block;
+IMPL-0005). `1.1.0` added `getRepoIndex`.
 
 ## Consuming it (the docz-site)
 

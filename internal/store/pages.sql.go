@@ -53,6 +53,48 @@ func (q *Queries) GetRepoPageByPath(ctx context.Context, arg GetRepoPageByPathPa
 	return i, err
 }
 
+const getRepoPagesByPaths = `-- name: GetRepoPagesByPaths :many
+SELECT id, repo_id, path, repo_path, title, git_sha, content_hash, raw_md, updated_at FROM repo_pages
+WHERE repo_id = $1 AND path = ANY ($2::text[])
+`
+
+type GetRepoPagesByPathsParams struct {
+	RepoID int64    `json:"repo_id"`
+	Paths  []string `json:"paths"`
+}
+
+// Full rows (including raw_md) for the search-index sync: the reconcile
+// reports which published paths changed, and this fetches their content.
+func (q *Queries) GetRepoPagesByPaths(ctx context.Context, arg GetRepoPagesByPathsParams) ([]RepoPage, error) {
+	rows, err := q.db.Query(ctx, getRepoPagesByPaths, arg.RepoID, arg.Paths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RepoPage{}
+	for rows.Next() {
+		var i RepoPage
+		if err := rows.Scan(
+			&i.ID,
+			&i.RepoID,
+			&i.Path,
+			&i.RepoPath,
+			&i.Title,
+			&i.GitSha,
+			&i.ContentHash,
+			&i.RawMd,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRepoPageHashes = `-- name: ListRepoPageHashes :many
 SELECT path, content_hash FROM repo_pages WHERE repo_id = $1
 `

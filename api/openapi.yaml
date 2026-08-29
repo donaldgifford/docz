@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.3.0
+  version: 1.4.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -766,11 +766,18 @@ components:
           type: string
           description: Full Markdown source; present only on the single-document endpoint.
     SearchHit:
-      description: One search result with a highlighted body snippet.
+      description: |
+        One search result with a highlighted body snippet. A hit is either a
+        docz document (`source: doc`) or an api-block page (`source: page`);
+        the doc-only fields (`doc_id`, `type`, `status`, `author`) are `""` on
+        page hits.
       type: object
       additionalProperties: false
-      required: [repo, doc_id, type, title, status, author, snippet]
+      required: [source, repo, doc_id, type, title, path, status, author, snippet]
       properties:
+        source:
+          type: string
+          enum: [doc, page]
         repo:
           type: string
           example: acme/platform
@@ -782,6 +789,11 @@ components:
           example: frameworks
         title:
           type: string
+        path:
+          type: string
+          description: >
+            Repo-relative file path on doc hits; the published page path (addressable via the pages endpoints) on page hits.
+          example: docs/frameworks/0001-intro.md
         status:
           type: string
           description: '"" when unset.'

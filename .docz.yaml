@@ -13,6 +13,11 @@ changelog:
   enabled: true  # enable changelog mapping of docz files.
   file: CHANGELOG.md  # name of the changelog file. Defaults to CHANGELOG.md
 
+api:
+  enabled: true  # publish non-docz markdown under docs_dir as pages (docz v1.2.0)
+  additional_docs:
+    - DEVELOPMENT.md  # repo-root contributor guide, served at its own path
+
 types:
   rfc:
     enabled: true

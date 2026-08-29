@@ -35,5 +35,5 @@ docz create design "Your Design Title"
 | DESIGN-0001 | docz-api cross-repo docz registry and ingestion service | Approved | 2026-06-29 | Donald Gifford | [0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md](0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md) |
 | DESIGN-0002 | OpenAPI contract for docz-api and the docz-site | Implemented | 2026-07-08 | Donald Gifford | [0002-openapi-contract-for-docz-api-and-the-docz-site.md](0002-openapi-contract-for-docz-api-and-the-docz-site.md) |
 | DESIGN-0003 | Repo index endpoint: serve docs_dir index.md as the repo home | Implemented | 2026-07-10 | Donald Gifford | [0003-repo-index-endpoint-serve-docsdir-indexmd-as-the-repo-home.md](0003-repo-index-endpoint-serve-docsdir-indexmd-as-the-repo-home.md) |
-| DESIGN-0004 | Consume the docz v1.2.0 api block: pages, landing page, and additional docs | Approved | 2026-08-28 | Donald Gifford | [0004-consume-the-docz-v120-api-block-pages-landing-page-and.md](0004-consume-the-docz-v120-api-block-pages-landing-page-and.md) |
+| DESIGN-0004 | Consume the docz v1.2.0 api block: pages, landing page, and additional docs | Implemented | 2026-08-28 | Donald Gifford | [0004-consume-the-docz-v120-api-block-pages-landing-page-and.md](0004-consume-the-docz-v120-api-block-pages-landing-page-and.md) |
 <!-- END DOCZ AUTO-GENERATED -->

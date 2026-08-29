@@ -21,8 +21,9 @@ func (f fakeFetcher) Fetch(context.Context, string, string) (*RepoSnapshot, erro
 }
 
 // captureReconciler records the ReconcileInput the service builds, standing in
-// for the real store. It reports every input document as upserted so the
-// indexing path is exercised, and answers GetDocumentsByIDs from that input.
+// for the real store. It reports every input document and page as upserted so
+// the indexing path is exercised, and answers GetDocumentsByIDs and
+// GetRepoPagesByPaths from that input.
 type captureReconciler struct {
 	in *store.ReconcileInput
 }
@@ -35,11 +36,40 @@ func (c *captureReconciler) ReconcileRepo(
 		RepoID:        1,
 		DocsUpserted:  len(in.Documents),
 		TypesUpserted: len(in.DocTypes),
+		PagesUpserted: len(in.Pages),
 	}
 	for i := range in.Documents {
 		res.UpsertedDocIDs = append(res.UpsertedDocIDs, in.Documents[i].DocID)
 	}
+	for i := range in.Pages {
+		res.UpsertedPagePaths = append(res.UpsertedPagePaths, in.Pages[i].Path)
+	}
 	return res, nil
+}
+
+func (c *captureReconciler) GetRepoPagesByPaths(
+	_ context.Context, _ int64, paths []string,
+) ([]store.RepoPage, error) {
+	out := make([]store.RepoPage, 0, len(paths))
+	if c.in == nil {
+		return out, nil
+	}
+	for _, path := range paths {
+		for i := range c.in.Pages {
+			p := &c.in.Pages[i]
+			if p.Path == path {
+				out = append(out, store.RepoPage{
+					RepoID:   1,
+					Path:     p.Path,
+					RepoPath: p.RepoPath,
+					Title:    p.Title,
+					RawMd:    p.RawMD,
+				})
+				break
+			}
+		}
+	}
+	return out, nil
 }
 
 func (c *captureReconciler) GetDocumentsByIDs(
@@ -58,6 +88,7 @@ func (c *captureReconciler) GetDocumentsByIDs(
 					DocID:  d.DocID,
 					Type:   d.Type,
 					Title:  d.Title,
+					Path:   d.Path,
 					RawMd:  d.RawMD,
 				})
 				break
@@ -321,6 +352,52 @@ func TestRunIndexesUpsertedDocuments(t *testing.T) {
 	}
 	if len(idx.deleted) != 0 {
 		t.Errorf("deleted = %v, want none", idx.deleted)
+	}
+}
+
+// TestRunIndexesUpsertedPages pins Phase 6's sync path: an enabled api: block
+// lands its classified pages in the search index alongside the docs, each
+// record tagged with its source.
+func TestRunIndexesUpsertedPages(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	snap := &RepoSnapshot{
+		HeadSHA:       "head-sha",
+		DefaultBranch: "main",
+		ConfigYAML:    []byte(fixtureConfig + "api:\n  enabled: true\n"),
+		Blobs: []BlobEntry{
+			{Path: "docs/frameworks/0001-intro.md", GitSHA: "d1", Content: []byte(fixtureDoc)},
+			{Path: "docs/guides/setup.md", GitSHA: "p1", Content: []byte("# Setup Guide")},
+		},
+	}
+	rec := &captureReconciler{}
+	idx := &captureIndexer{}
+	svc := NewService(rec, fakeFetcher{snap: snap}, idx)
+
+	if _, err := svc.Run(t.Context(), 42, "acme", "platform"); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	if len(idx.indexed) != 2 {
+		t.Fatalf("indexed %d records, want 2 (one doc + one page)", len(idx.indexed))
+	}
+	bySource := make(map[string]search.IndexDoc, len(idx.indexed))
+	for _, record := range idx.indexed {
+		bySource[record.Source] = record
+	}
+	doc, ok := bySource[search.SourceDoc]
+	if !ok || doc.DocID != "FW-0001" || doc.Path != "docs/frameworks/0001-intro.md" {
+		t.Errorf("doc record = %+v, want FW-0001 with its repo path", doc)
+	}
+	page, ok := bySource[search.SourcePage]
+	if !ok {
+		t.Fatalf("no page record indexed; got %+v", idx.indexed)
+	}
+	if page.ID != pagePrimaryKey(1, "guides/setup.md") || page.Path != "guides/setup.md" {
+		t.Errorf("page record = %+v, want the hashed PK + published path", page)
+	}
+	if page.Title != "Setup Guide" || page.Body != "# Setup Guide" || page.DocID != "" || page.Type != "" {
+		t.Errorf("page record fields = %+v, want title/body set and doc-only fields empty", page)
 	}
 }
 

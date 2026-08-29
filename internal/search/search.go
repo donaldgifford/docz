@@ -25,7 +25,7 @@ const (
 )
 
 // facetNames are the attributes faceted (and returned as counts) on every search.
-var facetNames = []string{"repo", "type", "status", "author"}
+var facetNames = []string{"repo", "type", "status", "author", "source"}
 
 // Search runs a full-text query with facet filters and returns hits, facet
 // counts, and highlighted snippets. The authorize seam's AllowedRepoIDs is
@@ -41,7 +41,7 @@ func (c *Client) Search(ctx context.Context, p *SearchParams) (SearchResult, err
 		Offset:                p.Offset,
 		Limit:                 limit,
 		Facets:                facetNames,
-		AttributesToRetrieve:  []string{"repo", "doc_id", "type", "title", "status", "author", "body"},
+		AttributesToRetrieve:  []string{"source", "repo", "doc_id", "type", "title", "path", "status", "author", "body"},
 		AttributesToCrop:      []string{"body"},
 		CropLength:            snippetCropLength,
 		AttributesToHighlight: []string{"body"},
@@ -78,10 +78,12 @@ func (c *Client) Search(ctx context.Context, p *SearchParams) (SearchResult, err
 // rawHit is the decode target for one Meilisearch hit. _formatted carries the
 // cropped, highlighted body used as the result snippet.
 type rawHit struct {
+	Source    string       `json:"source"`
 	Repo      string       `json:"repo"`
 	DocID     string       `json:"doc_id"`
 	Type      string       `json:"type"`
 	Title     string       `json:"title"`
+	Path      string       `json:"path"`
 	Status    string       `json:"status"`
 	Author    string       `json:"author"`
 	Formatted rawFormatted `json:"_formatted"`
@@ -104,10 +106,12 @@ func decodeHits(h meilisearch.Hits) ([]SearchHit, error) {
 	for i := range raws {
 		r := &raws[i]
 		hits[i] = SearchHit{
+			Source:  r.Source,
 			Repo:    r.Repo,
 			DocID:   r.DocID,
 			Type:    r.Type,
 			Title:   r.Title,
+			Path:    r.Path,
 			Status:  r.Status,
 			Author:  r.Author,
 			Snippet: r.Formatted.Body,

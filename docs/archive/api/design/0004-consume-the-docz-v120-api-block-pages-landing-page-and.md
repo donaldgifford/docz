@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0004
 title: "Consume the docz v1.2.0 api block: pages, landing page, and additional docs"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-08-28
 ---
@@ -9,7 +9,7 @@ created: 2026-08-28
 
 # DESIGN 0004: Consume the docz v1.2.0 api block: pages, landing page, and additional docs
 
-**Status:** Approved
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-08-28
 

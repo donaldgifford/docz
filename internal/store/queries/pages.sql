@@ -32,3 +32,9 @@ ORDER BY path;
 -- Full row including raw_md for the single-page endpoint. The match is
 -- exact-byte on the stored published path — no case folding (DESIGN-0004).
 SELECT * FROM repo_pages WHERE repo_id = $1 AND path = $2;
+
+-- name: GetRepoPagesByPaths :many
+-- Full rows (including raw_md) for the search-index sync: the reconcile
+-- reports which published paths changed, and this fetches their content.
+SELECT * FROM repo_pages
+WHERE repo_id = @repo_id AND path = ANY (@paths::text[]);

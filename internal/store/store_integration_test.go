@@ -403,6 +403,20 @@ func TestReconcileRepoPages(t *testing.T) {
 	if got.RepoPath != "docs/impl.md" || got.Title != "Page impl" || got.RawMd != "# impl" {
 		t.Errorf("page row = {%q %q %q}, want the seeded values", got.RepoPath, got.Title, got.RawMd)
 	}
+	// The index-sync read: fetch changed rows by their published paths; an
+	// absent path just shortens the result.
+	batch, err := testStore.GetRepoPagesByPaths(ctx, res.RepoID, []string{"impl", "guides/setup.md", "gone"})
+	if err != nil {
+		t.Fatalf("GetRepoPagesByPaths: %v", err)
+	}
+	if len(batch) != 2 {
+		t.Errorf("GetRepoPagesByPaths returned %d rows, want 2 (absent path skipped)", len(batch))
+	}
+	for i := range batch {
+		if batch[i].RawMd == "" {
+			t.Errorf("page %q missing raw_md (index sync needs the body)", batch[i].Path)
+		}
+	}
 
 	// Identical desired state: the content-hash gate makes it a no-op.
 	res, err = testStore.ReconcileRepo(ctx, enabled)
