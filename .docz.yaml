@@ -97,3 +97,11 @@ wiki:
   exclude:
     - templates
     - examples
+
+api:
+  enabled: true # publish non-docz markdown under docs_dir as docz-api pages
+  exclude:
+    - examples # mirrors the wiki exclusion
+  additional_docs:
+    - CONTRIBUTING.md
+    - DEVELOPMENT.md
