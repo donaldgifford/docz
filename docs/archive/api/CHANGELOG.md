@@ -3,21 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.8.1] - 2026-08-30
 
 ### Bug Fixes
 
-- *(doczcontract)* Pin docz v1.2.2 — json-tagged config marshal
-
-### Documentation
-
-- *(impl)* IMPL-0008 — serve .docz.yaml key spellings in config_snapshot ([#25](https://github.com/donaldgifford/docz-api/issues/25))
-- *(impl)* Record IMPL-0008 OQ answers — 1a 2a 3a
-
-### Testing
-
-- *(doczcontract)* Freeze the marshaled snapshot shape (R11)
-- *(e2e)* Prove config_snapshot serves yaml key spellings on the wire
+- *(api)* Serve .docz.yaml key spellings in config_snapshot (docz v1.2.2) ([#26](https://github.com/donaldgifford/docz-api/issues/26))
 
 ## [0.8.0] - 2026-08-29
 
