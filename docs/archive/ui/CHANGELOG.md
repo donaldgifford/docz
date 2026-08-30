@@ -3,41 +3,15 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.6.0] - 2026-08-30
 
 ### Features
 
-- *(search)* SearchHit source/path sweep for spec 1.4.1
-- *(lib)* ApiConfig — the api: block snapshot gate
-- *(mocks)* Demo-org pages fixtures — docz-site dogfoods the api: block
-- *(shell)* Reserve the pages/* splat route
-- *(reader)* Published-page reader with source-path reconstruction
-- *(links)* Pages join the byPath link index
-- *(home)* Landing-page-aware relative-link base (IMPL-0005 Phase 2)
-- *(recents)* Kind-discriminated doc/page entries (IMPL-0005 Phase 2)
-- *(nav)* RepoNav pages tree with gated list and prefetch (IMPL-0005 Phase 3)
-- *(palette)* Page hits, kind-aware recents, page prefetch (IMPL-0005 Phase 3)
-- *(directory)* Inline page rows and source-split count line (IMPL-0005 Phase 3)
+- Render non-docz pages — reader, nav, and search surfaces (IMPL-0005) ([#23](https://github.com/donaldgifford/docz-site/issues/23))
 
 ### Documentation
 
 - DESIGN-0004 — render non-docz pages from the docz v1.2.0 api block ([#22](https://github.com/donaldgifford/docz-site/issues/22))
-- Pages surface in README and CLAUDE.md (IMPL-0005 Phase 4)
-- *(impl)* Record upstream source-filter ask docz-api#27 (IMPL-0005 Phase 4)
-- *(impl)* Full local gate green for IMPL-0005 (Phase 4)
-
-### Testing
-
-- *(mocks)* Pin the pages fixture shapes and resolver contract
-- *(pages)* Reader matrix, reconstruction table, XSS page targets (IMPL-0005 Phase 2)
-- *(a11y)* Axe sweep entry for the page reader (IMPL-0005 Phase 2)
-- *(a11y)* Sweep the pages tree and mixed doc/page directory (IMPL-0005 Phase 3)
-- *(e2e)* Pages-tree journey into a rendered page (IMPL-0005 Phase 3)
-
-### Miscellaneous Tasks
-
-- *(api)* Re-vendor openapi.yaml at 1.4.1 (pages endpoints, search source/path)
-- *(chart)* AppVersion 0.6.0, chart 0.1.7 (IMPL-0005 Phase 4)
 
 ## [0.5.0] - 2026-08-28
 
