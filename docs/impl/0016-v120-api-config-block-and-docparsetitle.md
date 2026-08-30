@@ -1,7 +1,7 @@
 ---
 id: IMPL-0016
 title: "v1.2.0 — api config block and docparse.Title"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-08-11
 ---
@@ -397,12 +397,15 @@ the repo's own documentation tell the truth.
 
 - [x] Open the release PR with the `minor` label. `pr-semver-bump` +
       goreleaser cut and publish `v1.2.0`.
-- [ ] Verify the published module from a scratch module outside this repo:
+- [x] Verify the published module from a scratch module outside this repo:
       `go get github.com/donaldgifford/docz@v1.2.0`, then exercise the full R10
       surface — block decode, `./` normalization, `errors.Is` on a traversal
       rejection, a dormant block loading clean, and `docparse.Title` on a
-      document with and without an H1.
-- [ ] Post-tag `dont-release` PR flipping DESIGN-0011 → Implemented and
+      document with and without an H1. Covered externally rather than by a
+      throwaway module: docz-api's `internal/doczcontract` R10 clause now
+      exercises exactly this surface from a real consumer module pinned to the
+      published `v1.2.0` (issue #87).
+- [x] Post-tag `dont-release` PR flipping DESIGN-0011 → Implemented and
       IMPL-0016 → Completed (Decision 7 — the `#67`/`#68`/`#79` pattern, since
       the release PR's own merge is what cuts the tag).
 - [x] Note in the release body that this is the release docz-api pins for R10,
@@ -419,14 +422,21 @@ the repo's own documentation tell the truth.
 
 #### Phase 4 status
 
-**Blocked on the merge, which is a release decision rather than an
-implementation step.** Merging the release PR is what cuts the tag, so the
-three remaining tasks — the scratch-module exercise against the published
-module, the release-body note, and the post-tag status flips — cannot run
-before it.
+**Complete.** PR [#84](https://github.com/donaldgifford/docz/pull/84) merged
+2026-08-26 with the `minor` label; `pr-semver-bump` + goreleaser cut and
+published `v1.2.0` (and `v1.2.1` has shipped since). The published-module
+verification is covered by docz-api's `internal/doczcontract` R10 clause
+against the pinned release rather than a throwaway scratch module (issue
+#87). This document's status flip to Completed — and DESIGN-0011's to
+Implemented — landed in the post-tag `dont-release` PR, closing out the
+phase.
 
-Done: PR [#84](https://github.com/donaldgifford/docz/pull/84) is open with the
-`minor` label and green, and the release body is written.
+One correction from the release itself: goreleaser generates its own release
+body, so the `### RELEASE NOTES` section extracted from #84 was overwritten
+by boilerplate on publish. The `v1.2.0` release body was fixed after the
+fact via `gh release edit` with the notes from #84. Future release PRs
+should expect the same overwrite until the goreleaser/`pr-semver-bump`
+ordering is reworked.
 
 That last task turned out **not** to need the tag, contrary to how this record
 first described it. `pr-semver-bump` is configured with
@@ -487,7 +497,9 @@ path-validated) needs a decision.
       no wiki golden moved
 - [x] `test/consumer`: R10 surface via public import paths — and verified red
       when `Config.API` is renamed, since this module sits outside root `./...`
-- [ ] Scratch module against the published `v1.2.0`
+- [x] Scratch module against the published `v1.2.0` — covered externally by
+      docz-api's `internal/doczcontract`, a real consumer module pinned to the
+      published release (issue #87)
 - [x] `make ci` green at the end of every phase
 
 ## Dependencies

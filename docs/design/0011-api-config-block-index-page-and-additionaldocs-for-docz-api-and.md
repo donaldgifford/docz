@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0011
 title: "api config block: index page and additional_docs for docz-api and docz-site"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-08-10
 ---
