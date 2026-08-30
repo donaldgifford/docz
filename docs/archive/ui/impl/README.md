@@ -36,5 +36,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0002 | Reader polish: rendering pipeline and QoL backlog from INV-0001 | Draft | 2026-07-12 | Donald Gifford | [0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md](0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md) |
 | IMPL-0003 | Nav pins, changelog page, and doc link resolution | Completed | 2026-08-11 | Donald Gifford | [0003-nav-pins-changelog-page-and-doc-link-resolution.md](0003-nav-pins-changelog-page-and-doc-link-resolution.md) |
 | IMPL-0004 | No-auth mode and session-unavailable handling | Completed | 2026-08-27 | Donald Gifford | [0004-no-auth-mode-and-session-unavailable-handling.md](0004-no-auth-mode-and-session-unavailable-handling.md) |
-| IMPL-0005 | Render non-docz pages: reader, nav, and search surfaces | In Progress | 2026-08-30 | Donald Gifford | [0005-render-non-docz-pages-reader-nav-and-search-surfaces.md](0005-render-non-docz-pages-reader-nav-and-search-surfaces.md) |
+| IMPL-0005 | Render non-docz pages: reader, nav, and search surfaces | Completed | 2026-08-30 | Donald Gifford | [0005-render-non-docz-pages-reader-nav-and-search-surfaces.md](0005-render-non-docz-pages-reader-nav-and-search-surfaces.md) |
 <!-- END DOCZ AUTO-GENERATED -->

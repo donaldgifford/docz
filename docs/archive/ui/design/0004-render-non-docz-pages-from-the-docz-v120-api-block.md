@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0004
 title: "Render non-docz pages from the docz v1.2.0 api block"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-08-30
 ---

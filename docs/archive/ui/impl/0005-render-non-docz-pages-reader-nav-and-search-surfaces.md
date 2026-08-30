@@ -1,7 +1,7 @@
 ---
 id: IMPL-0005
 title: "Render non-docz pages: reader, nav, and search surfaces"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-08-30
 ---
@@ -253,10 +253,11 @@ Pages become findable: nav tree, palette, directory.
 - [x] Full local gate + changelog sync (`git fetch --tags`, regen,
       cliff-skipped `chore(changelog):` commit **as the last branch
       commit** — the IMPL-0004 lesson)
-- [ ] PR `feat/impl-0005` labeled `minor`; merge on green;
-      sync main
-- [ ] Mark this IMPL Completed and DESIGN-0004 Implemented; close
-      issue #21 (the merge references it)
+- [x] PR `feat/impl-0005` labeled `minor`; merge on green;
+      sync main — PR #23, squash-merged as b276597; Release cut
+      v0.6.0 (image + chart + SLSA provenance published)
+- [x] Mark this IMPL Completed and DESIGN-0004 Implemented; close
+      issue #21 (the merge references it — closed by the #23 merge)
 
 #### Success Criteria
 
