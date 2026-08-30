@@ -7,12 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
-- *(design)* DESIGN-0004 — render non-docz pages from the docz v1.2.0 api block
-- *(design)* DESIGN-0004 OQ-1 answered — casing bug fixed upstream first
-- *(design)* DESIGN-0004 — upstream casing chain shipped (docz v1.2.2, docz-api v0.8.1)
-- *(design)* DESIGN-0004 approved — OQs decided (1 other/upstream-first, 2a-6a)
-- *(impl)* IMPL-0005 — render non-docz pages (phased plan from DESIGN-0004)
-- *(impl)* IMPL-0005 open questions decided — 1a 2a 3a
+- DESIGN-0004 — render non-docz pages from the docz v1.2.0 api block ([#22](https://github.com/donaldgifford/docz-site/issues/22))
 
 ## [0.5.0] - 2026-08-28
 
