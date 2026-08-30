@@ -670,9 +670,29 @@ goals; it just states them from docz-api's side.
   `<docs_dir>/templates/` always excluded — is specified in DESIGN-0011 and is
   docz-api's to implement. docz declares; it does not fetch, walk, or route.
 
+- **R11 — `Config` serializes with `.docz.yaml` key spellings (docz
+  `v1.2.2`).** Every exported field of the config structs carries a `json`
+  tag mirroring its `yaml` tag — name and `omitempty` alike — so a
+  `json.Marshal` of a loaded `Config` round-trips with the same key spellings
+  a repo owner authors: `changelog.enabled`, `api.landing_page`,
+  `types.<name>.id_prefix`. This ratifies what was already de-facto contract:
+  docz-api marshals the post-`Load` config into each repo's
+  `config_snapshot` (served on `GET /api/v1/repos/{owner}/{name}`), and
+  docz-site reads that snapshot expecting the `.docz.yaml` spellings. Before
+  the tags existed, the snapshot carried Go field names (`{"DocsDir": …,
+  "API": {"LandingPage": …}}`), which made docz-site's changelog nav gate
+  silently never fire against a real docz-api (docz issue #89). Pinned by a
+  reflection test that walks every struct reachable from `Config` and fails
+  on any exported field whose `json` tag is missing or diverges from its
+  `yaml` tag, so a future field cannot ship untagged — and by an exact
+  marshaled-shape test, so a key rename is caught as the consumer-breaking
+  change it is.
+
 When R1–R7 are met and the tag is cut, docz-api drops its `replace` directive
 and pins the published version; nothing else in the docz repo is required for
-docz-api to build and run. R10 raises that pin to `v1.2.0`.
+docz-api to build and run. R10 raises that pin to `v1.2.0`; R11 to `v1.2.2`,
+which is where `config_snapshot` starts serving the yaml spellings on each
+repo's next ingest.
 
 ## API / Interface Changes
 

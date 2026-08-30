@@ -39,45 +39,45 @@ import (
 // for the wiki nav for one release; deprecation/removal of NavTitles is
 // deferred to a future release.
 type TypeConfig struct {
-	Enabled     bool     `mapstructure:"enabled"      yaml:"enabled"`
-	Dir         string   `mapstructure:"dir"          yaml:"dir"`
-	Template    string   `mapstructure:"template"     yaml:"template"`
-	IDPrefix    string   `mapstructure:"id_prefix"    yaml:"id_prefix"`
-	IDWidth     int      `mapstructure:"id_width"     yaml:"id_width"`
-	Statuses    []string `mapstructure:"statuses"     yaml:"statuses"`
-	StatusField string   `mapstructure:"status_field" yaml:"status_field"`
-	PluralLabel string   `mapstructure:"plural_label" yaml:"plural_label,omitempty"`
+	Enabled     bool     `mapstructure:"enabled"      yaml:"enabled"                json:"enabled"`
+	Dir         string   `mapstructure:"dir"          yaml:"dir"                    json:"dir"`
+	Template    string   `mapstructure:"template"     yaml:"template"               json:"template"`
+	IDPrefix    string   `mapstructure:"id_prefix"    yaml:"id_prefix"              json:"id_prefix"`
+	IDWidth     int      `mapstructure:"id_width"     yaml:"id_width"               json:"id_width"`
+	Statuses    []string `mapstructure:"statuses"     yaml:"statuses"               json:"statuses"`
+	StatusField string   `mapstructure:"status_field" yaml:"status_field"           json:"status_field"`
+	PluralLabel string   `mapstructure:"plural_label" yaml:"plural_label,omitempty" json:"plural_label,omitempty"`
 	// Aliases are optional per-type CLI shorthands (e.g. "fw" for a
 	// "frameworks" type), resolved by resolveType alongside the built-in
 	// registry aliases (DESIGN-0006 Decision 6). Empty for the built-ins,
 	// whose aliases live in the DocType registry.
-	Aliases []string `mapstructure:"aliases" yaml:"aliases,omitempty"`
+	Aliases []string `mapstructure:"aliases" yaml:"aliases,omitempty" json:"aliases,omitempty"`
 }
 
 // IndexConfig holds configuration for index/README generation.
 type IndexConfig struct {
-	AutoUpdate     bool `mapstructure:"auto_update"     yaml:"auto_update"`
-	PreserveHeader bool `mapstructure:"preserve_header" yaml:"preserve_header"`
+	AutoUpdate     bool `mapstructure:"auto_update"     yaml:"auto_update"     json:"auto_update"`
+	PreserveHeader bool `mapstructure:"preserve_header" yaml:"preserve_header" json:"preserve_header"`
 }
 
 // AuthorConfig holds configuration for author resolution.
 type AuthorConfig struct {
-	FromGit bool   `mapstructure:"from_git" yaml:"from_git"`
-	Default string `mapstructure:"default"  yaml:"default"`
+	FromGit bool   `mapstructure:"from_git" yaml:"from_git" json:"from_git"`
+	Default string `mapstructure:"default"  yaml:"default"  json:"default"`
 }
 
 // WikiConfig holds configuration for the wiki/MkDocs integration.
 type WikiConfig struct {
-	AutoUpdate         bool              `mapstructure:"auto_update"         yaml:"auto_update"`
-	MkDocsPath         string            `mapstructure:"mkdocs_path"         yaml:"mkdocs_path"`
-	Plugins            []string          `mapstructure:"plugins"             yaml:"plugins,omitempty"`
-	MarkdownExtensions []string          `mapstructure:"markdown_extensions" yaml:"markdown_extensions,omitempty"`
-	Exclude            []string          `mapstructure:"exclude"             yaml:"exclude"`
-	NavTitles          map[string]string `mapstructure:"nav_titles"          yaml:"nav_titles"`
-	DocsDir            string            `mapstructure:"docs_dir"            yaml:"docs_dir,omitempty"`
-	RepoURL            string            `mapstructure:"repo_url"            yaml:"repo_url,omitempty"`
-	SiteURL            string            `mapstructure:"site_url"            yaml:"site_url,omitempty"`
-	Theme              string            `mapstructure:"theme"               yaml:"theme,omitempty"`
+	AutoUpdate         bool              `mapstructure:"auto_update"         yaml:"auto_update"                   json:"auto_update"`
+	MkDocsPath         string            `mapstructure:"mkdocs_path"         yaml:"mkdocs_path"                   json:"mkdocs_path"`
+	Plugins            []string          `mapstructure:"plugins"             yaml:"plugins,omitempty"             json:"plugins,omitempty"`
+	MarkdownExtensions []string          `mapstructure:"markdown_extensions" yaml:"markdown_extensions,omitempty" json:"markdown_extensions,omitempty"`
+	Exclude            []string          `mapstructure:"exclude"             yaml:"exclude"                       json:"exclude"`
+	NavTitles          map[string]string `mapstructure:"nav_titles"          yaml:"nav_titles"                    json:"nav_titles"`
+	DocsDir            string            `mapstructure:"docs_dir"            yaml:"docs_dir,omitempty"            json:"docs_dir,omitempty"`
+	RepoURL            string            `mapstructure:"repo_url"            yaml:"repo_url,omitempty"            json:"repo_url,omitempty"`
+	SiteURL            string            `mapstructure:"site_url"            yaml:"site_url,omitempty"            json:"site_url,omitempty"`
+	Theme              string            `mapstructure:"theme"               yaml:"theme,omitempty"               json:"theme,omitempty"`
 }
 
 // TOCConfig holds configuration for table of contents generation.
@@ -86,8 +86,8 @@ type WikiConfig struct {
 // .docz.yaml files keep working unchanged after the Go-side rename
 // (`ToC` → `TOC`) — see IMPL-0008 Decisions §5.
 type TOCConfig struct {
-	Enabled     bool `mapstructure:"enabled"      yaml:"enabled"`
-	MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
+	Enabled     bool `mapstructure:"enabled"      yaml:"enabled"      json:"enabled"`
+	MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings" json:"min_headings"`
 }
 
 // ChangelogConfig maps the changelog: block of .docz.yaml, which opts a
@@ -102,13 +102,13 @@ type ChangelogConfig struct {
 	// Enabled opts the repo into changelog mapping. Default false, so
 	// the block is dormant — and its File is left unvalidated — until a
 	// repo turns it on.
-	Enabled bool `yaml:"enabled"`
+	Enabled bool `yaml:"enabled" json:"enabled"`
 
 	// File is the changelog path relative to the repo root. Subpaths are
 	// allowed for per-chart changelogs (charts/<name>/CHANGELOG.md).
 	// Default "CHANGELOG.md"; an empty value resolves back to that
 	// default at load time.
-	File string `yaml:"file"`
+	File string `yaml:"file" json:"file"`
 }
 
 // APIConfig declares what docz-api ingests and docz-site renders for
@@ -139,13 +139,13 @@ type APIConfig struct {
 	// documents under the type directories. It is not a switch for
 	// ingesting the repo at all (Decision 4), because every existing
 	// repo has no api: block and none of them should go dark.
-	Enabled bool `yaml:"enabled"`
+	Enabled bool `yaml:"enabled" json:"enabled"`
 
 	// LandingPage is the repo's landing page, relative to the repo root.
 	// Empty resolves to <docs_dir>/index.md at load time, so it tracks a
 	// non-default docs_dir (Decision 3). Consumers address it as the repo
 	// root rather than at its own path.
-	LandingPage string `yaml:"landing_page"`
+	LandingPage string `yaml:"landing_page" json:"landing_page"`
 
 	// Exclude lists path prefixes under docs_dir that are never
 	// published. Entries name directories, so a trailing "/" is
@@ -157,7 +157,7 @@ type APIConfig struct {
 	// empty, so a repo that sets Exclude does not silently lose the
 	// protection (the footgun WikiConfig.Exclude has, where setting the
 	// key replaces the default list wholesale).
-	Exclude []string `yaml:"exclude"`
+	Exclude []string `yaml:"exclude" json:"exclude"`
 
 	// AdditionalDocs lists markdown OUTSIDE docs_dir, relative to the
 	// repo root — CONTRIBUTING.md, DEVELOPMENT.md. Anything under
@@ -167,19 +167,19 @@ type APIConfig struct {
 	// Bare strings rather than objects (Decision 1): the title comes
 	// from the document's H1 via docparse.Title, and there is no
 	// per-entry metadata worth the schema.
-	AdditionalDocs []string `yaml:"additional_docs"`
+	AdditionalDocs []string `yaml:"additional_docs" json:"additional_docs"`
 }
 
 // Config is the top-level configuration for docz.
 type Config struct {
-	DocsDir   string                `mapstructure:"docs_dir" yaml:"docs_dir"`
-	Types     map[string]TypeConfig `mapstructure:"types"    yaml:"types"`
-	Index     IndexConfig           `mapstructure:"index"    yaml:"index"`
-	Author    AuthorConfig          `mapstructure:"author"   yaml:"author"`
-	Wiki      WikiConfig            `mapstructure:"wiki"     yaml:"wiki"`
-	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"`
-	Changelog ChangelogConfig       `                        yaml:"changelog"`
-	API       APIConfig             `                        yaml:"api"`
+	DocsDir   string                `mapstructure:"docs_dir" yaml:"docs_dir"  json:"docs_dir"`
+	Types     map[string]TypeConfig `mapstructure:"types"    yaml:"types"     json:"types"`
+	Index     IndexConfig           `mapstructure:"index"    yaml:"index"     json:"index"`
+	Author    AuthorConfig          `mapstructure:"author"   yaml:"author"    json:"author"`
+	Wiki      WikiConfig            `mapstructure:"wiki"     yaml:"wiki"      json:"wiki"`
+	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"       json:"toc"`
+	Changelog ChangelogConfig       `                        yaml:"changelog" json:"changelog"`
+	API       APIConfig             `                        yaml:"api"       json:"api"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
