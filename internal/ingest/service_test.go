@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -199,8 +200,17 @@ func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
 	if repo.IndexMD != "# Home\n" || repo.IndexSHA != "idx-sha" {
 		t.Errorf("index = %q / %q, want cached raw", repo.IndexMD, repo.IndexSHA)
 	}
-	if len(repo.ConfigSnapshot) == 0 {
-		t.Error("ConfigSnapshot is empty, want the marshaled config")
+	// The snapshot must carry .docz.yaml key spellings (docz v1.2.2 json
+	// tags, contract clause R11), not Go field names.
+	var snapshot map[string]json.RawMessage
+	if err := json.Unmarshal(repo.ConfigSnapshot, &snapshot); err != nil {
+		t.Fatalf("decode ConfigSnapshot: %v", err)
+	}
+	if _, ok := snapshot["docs_dir"]; !ok {
+		t.Errorf("ConfigSnapshot missing yaml-spelled docs_dir key: %s", repo.ConfigSnapshot)
+	}
+	if _, ok := snapshot["DocsDir"]; ok {
+		t.Error("ConfigSnapshot carries Go field name DocsDir, want yaml spellings only")
 	}
 
 	// The custom type is mapped from .docz.yaml.

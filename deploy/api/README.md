@@ -346,6 +346,13 @@ either restart healthy pods or silently do nothing.
   the block serve an empty list, cost zero extra GitHub requests at fetch
   time, and are byte-for-byte untouched. Opting in takes effect on the next
   re-ingest, same triggers as the changelog above.
+- **Snapshot key spellings (IMPL-0008):** as of docz v1.2.2 the
+  `config_snapshot` served on repo detail carries the `.docz.yaml` key
+  spellings (`changelog.enabled`, `api.landing_page`) instead of Go field
+  names (`Changelog`, `API`). Rows written earlier refresh **naturally** —
+  each repo's snapshot rewrites on its next ingest; a default-branch push
+  or a `docz-api -onboard owner/name@installationID` nudge clears any
+  stragglers at fleet scale. No backfill job exists or is needed.
 - The images pin major/minor tags (`postgres:17-alpine`, `redis:7.4-alpine`,
   `getmeili/meilisearch:v1.12`); Renovate PRs updates.
 - For Kubernetes, translate this to a Deployment (service) plus StatefulSets or

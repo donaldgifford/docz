@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/coreos/go-oidc/v3 v3.19.0
-	github.com/donaldgifford/docz v1.2.0
+	github.com/donaldgifford/docz v1.2.2
 	github.com/getkin/kin-openapi v0.144.0
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/go-github/v88 v88.0.0

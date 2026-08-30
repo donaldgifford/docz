@@ -178,6 +178,25 @@ func TestE2EOnboardAndServe(t *testing.T) {
 		if detail.LastSyncedSHA != "head-1" || len(detail.Types) != 1 || len(detail.Config) == 0 {
 			t.Errorf("detail = %+v", detail)
 		}
+
+		// The served config_snapshot carries .docz.yaml key spellings
+		// (docz v1.2.2 json tags, contract clause R11) — the spellings
+		// docz-site's changelog:/api: snapshot gates read. Go field names
+		// must never leak to the wire again.
+		var snapshot map[string]json.RawMessage
+		if err := json.Unmarshal(detail.Config, &snapshot); err != nil {
+			t.Fatalf("decode config_snapshot: %v", err)
+		}
+		for _, key := range []string{"docs_dir", "changelog", "api"} {
+			if _, ok := snapshot[key]; !ok {
+				t.Errorf("config_snapshot missing yaml-spelled key %q (keys: %v)", key, mapKeys(snapshot))
+			}
+		}
+		for _, stale := range []string{"DocsDir", "Changelog", "API"} {
+			if _, ok := snapshot[stale]; ok {
+				t.Errorf("config_snapshot carries Go field name %q, want yaml spellings only", stale)
+			}
+		}
 	})
 
 	t.Run("custom type addressable by name, prefix, and alias", func(t *testing.T) {
@@ -353,6 +372,14 @@ func TestE2ERepoChangelogServeAndDisable(t *testing.T) {
 	if code := getJSON(t, "/api/v1/repos/acme/releases/changelog", nil); code != http.StatusNotFound {
 		t.Errorf("changelog after opt-out: status = %d, want 404", code)
 	}
+}
+
+func mapKeys(m map[string]json.RawMessage) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func containsRepo(repos []struct{ Repo string }, want string) bool {

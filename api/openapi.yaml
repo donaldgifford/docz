@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.4.0
+  version: 1.4.1
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -591,7 +591,12 @@ components:
         config_snapshot:
           type: object
           additionalProperties: true
-          description: The repo's `.docz.yaml` at HEAD, as a JSON object.
+          description: >
+            The repo's `.docz.yaml` at HEAD, as a JSON object. Keys use the `.docz.yaml` spellings (`docs_dir`, `changelog.enabled`,
+            `api.landing_page`, …). Optional keys (`aliases`, `plural_label`, `wiki.repo_url`, …) are absent when unset, and
+            unset list fields (`api.exclude`, `api.additional_docs`, `types.<name>.statuses`) serialize as `null` — readers
+            should treat missing keys and `null` lists as empty. Snapshots written before docz v1.2.2 carried Go field names
+            (`Changelog`, `API`) and refresh to this shape on each repo's next ingest.
         types:
           type: array
           items:

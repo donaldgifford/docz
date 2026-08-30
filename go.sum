@@ -51,6 +51,8 @@ github.com/donaldgifford/docz v1.1.0 h1:YLVQi9QlwRphS84gXkH6X39eVufxPCds1K24s+qx
 github.com/donaldgifford/docz v1.1.0/go.mod h1:YWffd55Zk1BGmaaw1cm4sPaIbnJuzi9wbRaBYtV7EnQ=
 github.com/donaldgifford/docz v1.2.0 h1:tenV0YpZhMJcSZgLD4eGO6YQZg6FlyXdeZUTnncCnJw=
 github.com/donaldgifford/docz v1.2.0/go.mod h1:YWffd55Zk1BGmaaw1cm4sPaIbnJuzi9wbRaBYtV7EnQ=
+github.com/donaldgifford/docz v1.2.2 h1:0jzdvuGSG33DaBAv7BvAeFcqkVahXk0cKE+AOSpCYwA=
+github.com/donaldgifford/docz v1.2.2/go.mod h1:YWffd55Zk1BGmaaw1cm4sPaIbnJuzi9wbRaBYtV7EnQ=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/ISU=

@@ -132,12 +132,18 @@ progresses:
 - **Build/lint/test entry points are `just`** — `just build`, `just test`,
   `just lint`, `just fmt`. There is no `Makefile`; any "`make lint`/`make fmt`"
   instruction maps to the corresponding `just` recipe.
-- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.2.0`
-  (a plain `require`, no `replace`; bumped from `v1.1.0` for the `api:` block
-  surface — `APIConfig` + `ErrInvalidAPIPath` + `docparse.Title`, guarded by
-  contract clause R10 per IMPL-0007; the v1.0.0→v1.1.0 bump added the
-  changelog surface — `ChangelogConfig` + `ParseChangelog`, contract clause
-  R6 per IMPL-0005; the v0.5.0→v1.0.0 bump was INV-0001). The bump crossed
+- **docz parsing library** is pinned at `github.com/donaldgifford/docz v1.2.2`
+  (a plain `require`, no `replace`; bumped from `v1.2.0` per IMPL-0008 for
+  the json-tagged config structs — every config field now carries a `json`
+  tag mirroring its `yaml` tag in name and `omitempty`, so the marshaled
+  `config_snapshot` serves `.docz.yaml` key spellings; guarded by contract
+  clause **R11**, mirroring upstream DESIGN-0008 R11. The crossed `v1.2.1`
+  is config-only — docz's own api-block dogfood merge. The v1.1.0→v1.2.0
+  bump added the `api:` block surface — `APIConfig` + `ErrInvalidAPIPath` +
+  `docparse.Title`, contract clause R10 per IMPL-0007; the v1.0.0→v1.1.0
+  bump added the changelog surface — `ChangelogConfig` + `ParseChangelog`,
+  contract clause R6 per IMPL-0005; the v0.5.0→v1.0.0 bump was INV-0001).
+  The v1.2.0 bump crossed
   `v1.1.1`, which flipped the built-in PLAN type default to disabled — the
   IMPL-0007 fleet check confirmed every fleet manifest pins an explicit
   `types:` block, so no repo was exposed. `pkg/doczcore/docparse` imports

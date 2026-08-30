@@ -31,7 +31,7 @@ created: 2026-08-22
   - [Phase 4: The four mute HTTP sinks](#phase-4-the-four-mute-http-sinks)
     - [Tasks](#tasks-3)
     - [Success Criteria](#success-criteria-3)
-  - [Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode](#phase-5-auth_providersnone--first-setup-no-auth-mode)
+  - [Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode](#phase-5-authprovidersnone--first-setup-no-auth-mode)
     - [Tasks](#tasks-4)
     - [Success Criteria](#success-criteria-4)
   - [Phase 6: Deliberate-failure verification, deploy, close-out](#phase-6-deliberate-failure-verification-deploy-close-out)

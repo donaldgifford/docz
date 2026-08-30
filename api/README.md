@@ -40,7 +40,13 @@ release version). Bump it by hand on any change to a specced wire shape:
 The version is the signal consumers pin against, so a wire change without a bump
 is a contract bug.
 
-Current: **`1.4.0`** — search hits carry `source` (`doc`/`page`) and `path`,
+Current: **`1.4.1`** — editorial: documents `config_snapshot`'s key
+spellings (docz v1.2.2's json-tagged config marshal serves the
+`.docz.yaml` names — `changelog.enabled`, `api.landing_page` — with
+`omitempty` keys absent when unset and unset list fields as `null`).
+The wire type is unchanged; snapshot readers can pin this version for
+the spelling guarantee. `1.4.0` — search hits carry `source`
+(`doc`/`page`) and `path`,
 and `source` joins the facet counts, so page results are distinguishable and
 deep-linkable (IMPL-0007 Phase 6). `1.3.0` added the pages surface:
 `listRepoPages` (`GET /api/v1/repos/{owner}/{name}/pages`) and `getRepoPage`
