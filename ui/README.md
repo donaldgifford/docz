@@ -13,7 +13,20 @@ blocks (language badge + filename chrome), GitHub-style alert
 callouts, lazily-loaded mermaid diagrams, doc-id cross-links, a
 metadata table with an html/md/json format switch, and copy-link
 section headings. The ⌘K palette searches every indexed repo, leads
-with your recently-opened docs, and prefetches the highlighted hit.
+with your recently-opened docs and pages, and prefetches the
+highlighted hit.
+
+## Pages
+
+Repos that enable the docz 1.2.0 `api:` config block publish non-docz
+markdown — READMEs, guides, any `additional_docs` — alongside their
+typed documents. The site renders them at
+`/:owner/:repo/pages/<published path>` through the same sanitizing
+reader pipeline, adds a collapsible Pages tree to the repo nav, lists
+page hits inline in the directory and palette (a neutral `page`
+marker, never a type badge), and resolves relative links between docs
+and pages in both directions. Repos without the block are untouched —
+no extra requests, byte-identical surfaces.
 
 ## Quickstart
 

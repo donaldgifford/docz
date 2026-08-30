@@ -257,6 +257,38 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   commit_preprocessors backtick tag-shaped tokens in subjects: a raw
   `<em>` in a commit subject once reached the rendered page and
   rehype-raw mangled the list structure (axe caught it).
+- Published pages (DESIGN-0004, spec 1.4.1): repos with an enabled
+  docz 1.2.0 `api:` block publish non-docz markdown. `/pages/*` is the
+  SECOND reserved segment (registered above `:type` beside changelog);
+  the empty splat redirects to the repo home (the landing page IS the
+  home — `repo-home.tsx` anchors its link base at
+  `apiConfig(snapshot)?.landingPage`). Everything gates on
+  `apiConfig(config_snapshot)` (`src/lib/apiConfig.ts`, defensive like
+  changelogConfig — wrong shape means the whole surface stays dark
+  with ZERO pages requests; tests pin that for nav, reader, and
+  index). The wire omits source repo paths; `src/lib/pagePaths.ts`
+  reconstructs them (additional_docs member → itself; `.md` →
+  docs_dir join; extensionless directory → BOTH README.md and
+  index.md keys) — those keys join `useRepoDocIndex`'s `byPath` (docs
+  win collisions) so docs and pages cross-link both directions, and
+  the page reader (`src/routes/page.tsx`) drops its own keys and uses
+  the first as its relative-link base. ORVAL GOTCHA: generated URL
+  builders interpolate path params RAW — always pass
+  `encodeURIComponent(path)` (one segment, the spec-blessed spelling;
+  prefetch in `usePrefetchPage` must match or cache keys diverge).
+  Discovery: RepoNav's Pages tree (`repo-nav-pages.tsx`, mounted only
+  on an apiConfig hit), palette + directory render `source: "page"`
+  hits keyed/linked by published path with a neutral mono marker
+  (doc-only columns "—"; the directory count line appends
+  "· X docs · Y pages" ONLY when pages matched, so non-opted
+  deployments stay byte-identical). searchDocs has NO source filter
+  param yet (additive upstream ask). `useRepoFacts.total` reads
+  `facets.source.doc` — the raw estimated total now counts pages.
+  Recents (`recentDocs.ts`) are kind-discriminated (`doc` | `page`);
+  page entries store the published path, validated per segment with
+  dot-only segments rejected, and a stored payload without `kind`
+  resets the store. Fixture pages live in `DEMO_PAGES` (docz-site
+  only; docz-api stays non-opted for the gate tests).
 - Palette (`src/components/command-palette.tsx`, mounted in AppShell):
   state is palette-local, never the URL. cmdk normalizes item values —
   keys are lowercased and navigation resolves through a unified

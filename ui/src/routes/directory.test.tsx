@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { act } from "react";
@@ -25,10 +25,12 @@ function syntheticSearchHandler(total: number) {
     const offset = Number.parseInt(url.searchParams.get("offset") ?? "0", 10);
     const limit = Number.parseInt(url.searchParams.get("limit") ?? "20", 10);
     const hits: SearchHit[] = Array.from({ length: total }, (_, i) => ({
+      source: "doc" as const,
       repo: "acme/docs",
       doc_id: `DOC-${String(i).padStart(4, "0")}`,
       type: "guide",
       title: `Synthetic doc ${String(i)}`,
+      path: `docs/guide/${String(i).padStart(4, "0")}-synthetic.md`,
       status: "Draft",
       author: "someone",
       snippet: "",
@@ -73,13 +75,68 @@ describe("directory route", () => {
       expect(screen.getByText(title)).toBeInTheDocument();
     }
 
-    // SearchHit has no updated_at (additive ask) — every row renders "—".
-    expect(screen.getAllByText("—")).toHaveLength(5);
+    // SearchHit has no updated_at (additive ask) — every row renders
+    // "—" there; the 5 page rows add a second "—" in the doc-id column.
+    expect(screen.getAllByText("—")).toHaveLength(15);
 
     // Rows link straight into the reader.
     expect(
       screen.getByRole("link", { name: new RegExp(API_CONTRACT_TITLE) }),
     ).toHaveAttribute("href", "/donaldgifford/docz-api/design/DESIGN-0002");
+  });
+
+  it("renders page hits inline with the source marker and page-route links", async () => {
+    mountAt("/");
+    await screen.findByText(SITE_DESIGN_TITLE);
+
+    // The guide page row: neutral mono marker (no type badge), title
+    // linking to the page route.
+    const row = screen.getByRole("link", {
+      name: /Local development against a real docz-api/,
+    });
+    expect(row).toHaveAttribute(
+      "href",
+      "/donaldgifford/docz-site/pages/guides/local-dev.md",
+    );
+    expect(within(row).getByText("page")).toBeInTheDocument();
+
+    // The count line splits by source when pages are present (OQ-3a).
+    expect(screen.getByTestId("results-count")).toHaveTextContent(
+      "showing 10 of 10 · 5 docs · 5 pages",
+    );
+  });
+
+  it("keeps the count line byte-identical when no pages match", async () => {
+    // A doc-only filter drops page hits upstream — the source split
+    // disappears with them.
+    mountAt("/?type=impl");
+    await screen.findByText(SITE_IMPL_TITLE);
+    expect(screen.getByTestId("results-count")).toHaveTextContent(
+      /^showing 1 of 1$/,
+    );
+  });
+
+  it("prefetches the page payload on row hover", async () => {
+    const requested: string[] = [];
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/pages/*", ({ request }) => {
+        requested.push(new URL(request.url).pathname);
+        return undefined; // fall through to the fixture handler
+      }),
+    );
+    const user = userEvent.setup();
+    mountAt("/");
+    const row = await screen.findByText(
+      "Local development against a real docz-api",
+    );
+
+    expect(requested).toEqual([]);
+    await user.hover(row);
+    await waitFor(() => {
+      expect(
+        requested.some((path) => path.endsWith("/pages/guides%2Flocal-dev.md")),
+      ).toBe(true);
+    });
   });
 
   it("prefetches the doc payload on row hover", async () => {
@@ -154,7 +211,7 @@ describe("directory route", () => {
     await screen.findByText(SITE_DESIGN_TITLE);
 
     expect(screen.getByTestId("results-count")).toHaveTextContent(
-      "showing 5 of 5",
+      "showing 10 of 10 · 5 docs · 5 pages",
     );
 
     // Chips are the union of type facet values, plus the all-types reset.
@@ -166,11 +223,12 @@ describe("directory route", () => {
 
     // Picker menu lists per-repo counts and the cross-repo total.
     await user.click(screen.getByRole("button", { name: /repo:/ }));
+    // Repo counts span docs AND pages — they describe result rows.
     expect(
-      screen.getByRole("button", { name: "all repos 5" }),
+      screen.getByRole("button", { name: "all repos 10" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "donaldgifford/docz-site 2" }),
+      screen.getByRole("button", { name: "donaldgifford/docz-site 7" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "donaldgifford/docz-api 3" }),

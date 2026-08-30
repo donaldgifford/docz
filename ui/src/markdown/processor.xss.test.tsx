@@ -226,6 +226,9 @@ describe("relative link resolution stays inert", () => {
   // an attacker-chosen target.
   const BY_PATH = new Map([
     ["docs/adr/0013-scoped-test-ids.md", "/acme/mods/adr/ADR-0013"],
+    // A published page's RECONSTRUCTED source path (DESIGN-0004) —
+    // page targets ride the same whitelist as docs.
+    ["docs/guides/local-dev.md", "/acme/mods/pages/guides/local-dev.md"],
   ]);
   const LINKS = { base: "docs/rfc/RFC-0001.md", byPath: BY_PATH };
 
@@ -242,6 +245,15 @@ describe("relative link resolution stays inert", () => {
     ["root-absolute path", "[x](/docs/adr/0013-scoped-test-ids.md)"],
     ["protocol-relative URL", "[x](//evil.example/docs.md)"],
     ["scheme smuggled as a path", "[x](javascript:alert(1))"],
+    [
+      "traversal past the root toward a page target",
+      "[x](../../../docs/guides/local-dev.md)",
+    ],
+    ["root-absolute page target", "[x](/docs/guides/local-dev.md)"],
+    [
+      "encoded traversal toward a page target",
+      "[x](..%2F..%2F..%2Fdocs%2Fguides%2Flocal-dev.md)",
+    ],
   ])("never resolves %s", async (_name, payload) => {
     const container = await renderWithLinks(payload);
     assertNeutralized(container);
@@ -262,6 +274,19 @@ describe("relative link resolution stays inert", () => {
     // percent-encodes the hostile fragment on top of attribute escaping.
     expect(container.querySelector("a")?.getAttribute("href")).toBe(
       "/acme/mods/adr/ADR-0013#%22%3E%3Cscript%3Ealert(1)%3C/script%3E",
+    );
+    expect(container.querySelector("script")).toBeNull();
+  });
+
+  it("emits only the map's href on a page-target hit, fragment inert", async () => {
+    const { content } = await renderMarkdown(
+      '[x](../guides/local-dev.md#"><script>alert(1)</script>)',
+      { links: LINKS },
+    );
+    const { container } = render(<MemoryRouter>{content}</MemoryRouter>);
+    assertNeutralized(container);
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "/acme/mods/pages/guides/local-dev.md#%22%3E%3Cscript%3Ealert(1)%3C/script%3E",
     );
     expect(container.querySelector("script")).toBeNull();
   });

@@ -13,18 +13,24 @@
 import { http, HttpResponse } from "msw";
 
 import doczSiteChangelog from "../../CHANGELOG.md?raw";
+import doczSiteReadme from "../../README.md?raw";
 import doczSiteDesign0001 from "../../docs/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md?raw";
+import doczSiteDesignIndex from "../../docs/design/README.md?raw";
 import doczSiteImpl0001 from "../../docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md?raw";
+import doczSiteImplIndex from "../../docs/impl/README.md?raw";
+import doczSiteInput from "../../docs/input.md?raw";
 import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
 import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
 import doczApiIndex from "./content/docz-api-index.md?raw";
 import doczApiRfc0001 from "./content/docz-api-rfc-0001.md?raw";
+import doczSiteGuideLocalDev from "./content/docz-site-guides-local-dev.md?raw";
 
 import { resolveDocType } from "@/lib/docTypes";
 
 import type {
   DocType,
   Document,
+  Page,
   RepoDetail,
   RepoSummary,
   SearchHit,
@@ -177,6 +183,72 @@ export const DEMO_DOCS: Document[] = [
   }),
 ];
 
+/** First ATX h1, or a title-cased basename/dirname — the docparse.Title
+ *  fallback shape (docz-api applies it at ingest; fixtures mirror it). */
+function pageTitle(raw: string, publishedPath: string): string {
+  const h1 = /^#\s+(.+?)\s*$/m.exec(raw)?.[1];
+  if (h1 !== undefined && h1 !== "") {
+    return h1;
+  }
+  const base = publishedPath.split("/").at(-1) ?? publishedPath;
+  const stem = base.replace(/\.md$/i, "");
+  return stem.charAt(0).toUpperCase() + stem.slice(1);
+}
+
+interface FixturePageInput {
+  repo: string;
+  /** Published path — the addressing key (extensionless = directory page). */
+  path: string;
+  raw: string;
+}
+
+function makePage(input: FixturePageInput): Page {
+  const slug = input.path.replaceAll("/", "-").replace(/\.md$/i, "");
+  return {
+    repo: input.repo,
+    path: input.path,
+    title: pageTitle(input.raw, input.path),
+    raw_md: input.raw,
+    git_sha: `fixture-page-sha-${slug}`,
+  };
+}
+
+// The docz-site repo dogfoods the api: block (OQ-2a): its real docz
+// index READMEs publish as directory pages (extensionless), docs/input.md
+// as a file page, a snapshot as the nested file page, and the root
+// README.md rides additional_docs. docz-api stays non-opted — its pages
+// list is deterministically empty and its snapshot has no api: block.
+export const DEMO_PAGES: Record<string, Page[]> = {
+  "donaldgifford/docz-site": [
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "README.md",
+      raw: doczSiteReadme,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "design",
+      raw: doczSiteDesignIndex,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "guides/local-dev.md",
+      raw: doczSiteGuideLocalDev,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "impl",
+      raw: doczSiteImplIndex,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "input.md",
+      raw: doczSiteInput,
+    }),
+  ],
+  "donaldgifford/docz-api": [],
+};
+
 const DEMO_REPOS: RepoSummary[] = Object.keys(DEMO_TYPES).map((repo) => ({
   repo,
   default_branch: "main",
@@ -195,7 +267,7 @@ function summary(doc: Document): Document {
   return rest;
 }
 
-function snippetFor(doc: Document, q: string): string {
+function snippetFor(doc: { raw_md?: string | null }, q: string): string {
   const body = (doc.raw_md ?? "").replace(/[#>`|-]/g, " ");
   const lower = body.toLowerCase();
   const at = q === "" ? -1 : lower.indexOf(q.toLowerCase());
@@ -241,13 +313,70 @@ export const demoOrgHandlers = [
       // Both demo repos opt into the changelog: block (spec 1.2.0) so
       // the RepoNav row's config_snapshot gate is exercised; faker
       // repos get random snapshots without it, keeping the row hidden.
+      // Only docz-site opts into the api: block (DESIGN-0004) — its
+      // `exclude: null` mirrors the real nil-slice marshal (the arr()
+      // path); docz-api's absent block keeps every pages surface dark.
       config_snapshot: {
         docs_dir: "docs",
         changelog: { enabled: true, file: "CHANGELOG.md" },
+        ...(key === "donaldgifford/docz-site"
+          ? {
+              api: {
+                enabled: true,
+                landing_page: "docs/index.md",
+                exclude: null,
+                additional_docs: ["README.md"],
+              },
+            }
+          : {}),
       },
       types,
     };
     return HttpResponse.json(detail);
+  }),
+
+  // listRepoPages (spec 1.3.0, DESIGN-0004): demo repos answer
+  // deterministically — docz-site's dogfooded set, docz-api's empty
+  // list (non-opted repos are 200 [], never 404). Outside the demo
+  // org, faker answers.
+  http.get("*/api/v1/repos/:owner/:name/pages", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    const pages = DEMO_PAGES[key];
+    if (pages === undefined) {
+      return undefined;
+    }
+    return HttpResponse.json({
+      pages: pages.map(({ path, title, git_sha }) => ({
+        path,
+        title,
+        git_sha,
+      })),
+    });
+  }),
+
+  // getRepoPage: published paths contain "/", and the client sends the
+  // whole path percent-encoded as ONE segment — derive it from the URL
+  // rather than MSW params so both spellings resolve identically.
+  http.get("*/api/v1/repos/:owner/:name/pages/*", ({ params, request }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    const pages = DEMO_PAGES[key];
+    if (pages === undefined) {
+      return undefined;
+    }
+    const marker = "/pages/";
+    const pathname = new URL(request.url).pathname;
+    const encoded = pathname.slice(pathname.indexOf(marker) + marker.length);
+    let requested: string;
+    try {
+      requested = decodeURIComponent(encoded);
+    } catch {
+      return HttpResponse.json({ error: "page not found" }, { status: 404 });
+    }
+    const page = pages.find((candidate) => candidate.path === requested);
+    if (page === undefined) {
+      return HttpResponse.json({ error: "page not found" }, { status: 404 });
+    }
+    return HttpResponse.json(page);
   }),
 
   // getRepoChangelog (spec 1.2.0): docz-site serves its real
@@ -360,21 +489,49 @@ export const demoOrgHandlers = [
       return haystack.includes(q.toLowerCase());
     });
 
+    // Pages ride the same index (spec 1.4.1): doc-only filters drop
+    // them, q matches title+body, and doc-only hit fields are "".
+    const pageMatches =
+      type !== null || status !== null || author !== null
+        ? []
+        : Object.values(DEMO_PAGES)
+            .flat()
+            .filter((page) => {
+              if (repo !== null && page.repo !== repo) return false;
+              if (q === "") return true;
+              const haystack = `${page.title}\n${page.raw_md}`.toLowerCase();
+              return haystack.includes(q.toLowerCase());
+            });
+
     // Facets and the estimated total cover the whole filtered set (as
     // Meilisearch does); only `hits` is the offset/limit window.
     const offset = intParam(url, "offset", 0);
     const limit = intParam(url, "limit", 20);
-    const hits: SearchHit[] = matches
-      .slice(offset, offset + limit)
-      .map((doc) => ({
+    const allHits: SearchHit[] = [
+      ...matches.map((doc) => ({
+        source: "doc" as const,
         repo: doc.repo,
         doc_id: doc.doc_id,
         type: doc.type,
         title: doc.title,
+        path: doc.path,
         status: doc.status,
         author: doc.author,
         snippet: snippetFor(doc, q),
-      }));
+      })),
+      ...pageMatches.map((page) => ({
+        source: "page" as const,
+        repo: page.repo,
+        doc_id: "",
+        type: "",
+        title: page.title,
+        path: page.path,
+        status: "",
+        author: "",
+        snippet: snippetFor(page, q),
+      })),
+    ];
+    const hits = allHits.slice(offset, offset + limit);
 
     const facet = (key: (doc: Document) => string) =>
       Object.fromEntries(
@@ -385,16 +542,26 @@ export const demoOrgHandlers = [
           }, {}),
         ),
       );
+    // The repo facet spans docs AND pages; source counts omit zeros
+    // (facets never carry zero-hit keys).
+    const repoFacet = facet((doc) => doc.repo);
+    for (const page of pageMatches) {
+      repoFacet[page.repo] = (repoFacet[page.repo] ?? 0) + 1;
+    }
+    const sourceFacet: Record<string, number> = {};
+    if (matches.length > 0) sourceFacet.doc = matches.length;
+    if (pageMatches.length > 0) sourceFacet.page = pageMatches.length;
 
     return HttpResponse.json({
       query: q,
-      estimated_total_hits: matches.length,
+      estimated_total_hits: allHits.length,
       hits,
       facets: {
-        repo: facet((doc) => doc.repo),
+        repo: repoFacet,
         type: facet((doc) => doc.type),
         status: facet((doc) => doc.status),
         author: facet((doc) => doc.author),
+        source: sourceFacet,
       },
     });
   }),

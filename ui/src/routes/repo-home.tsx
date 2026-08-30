@@ -11,10 +11,25 @@ import {
 import { RepoFrame } from "@/components/repo-frame";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { apiConfig } from "@/lib/apiConfig";
 import { arr } from "@/lib/wire";
 import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
 
 import type { RepoDetail } from "@/api/__generated__/docz-api.schemas";
+
+/**
+ * The home body's relative-link base. An enabled api: block may
+ * relocate the served landing page (api.landing_page, resolved at
+ * ingest) — relative links must anchor to wherever the file actually
+ * lives (DESIGN-0004). Empty on wrong shapes, hence `!== ""`, not ??.
+ */
+function homeBase(detail: RepoDetail): string {
+  const landing = apiConfig(detail.config_snapshot)?.landingPage;
+  if (landing !== undefined && landing !== "") {
+    return landing;
+  }
+  return detail.docs_dir === "" ? "index.md" : `${detail.docs_dir}/index.md`;
+}
 
 /*
  * TechDocs-style repo home (DESIGN-0001 Decision 8 + DESIGN-0003): the
@@ -113,8 +128,7 @@ export function Component() {
       : {
           xrefs: docIndex.byId,
           paths: docIndex.byPath,
-          base:
-            detail.docs_dir === "" ? "index.md" : `${detail.docs_dir}/index.md`,
+          base: homeBase(detail),
         },
   );
 

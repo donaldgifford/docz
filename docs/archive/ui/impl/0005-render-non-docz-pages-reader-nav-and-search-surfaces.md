@@ -1,7 +1,7 @@
 ---
 id: IMPL-0005
 title: "Render non-docz pages: reader, nav, and search surfaces"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-08-30
 ---
@@ -10,7 +10,7 @@ created: 2026-08-30
 
 # IMPL-0005: Render non-docz pages: reader, nav, and search surfaces
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-08-30
 
@@ -89,7 +89,7 @@ release (v0.6.0).
 
 Each phase builds on the previous one. A phase is complete when all
 its tasks are checked off and its success criteria are met. Per OQ-1,
-the phases land as commits on ONE branch/PR (`feat/api-block-pages`).
+the phases land as commits on ONE branch/PR (`feat/impl-0005`).
 
 ---
 
@@ -100,20 +100,20 @@ config gate — no rendered-surface changes yet.
 
 #### Tasks
 
-- [ ] Re-vendor `api/openapi.yaml` at `1.4.1` from docz-api `v0.8.1`
+- [x] Re-vendor `api/openapi.yaml` at `1.4.1` from docz-api `v0.8.1`
       and run `bun run gen-api`; confirm the new surface (pages
       endpoints, `SearchHit.source`/`path`, `config_snapshot`
       spelling contract) and `gen-api-check` current
-- [ ] The forced `SearchHit` sweep: every fixture/test hit gains
+- [x] The forced `SearchHit` sweep: every fixture/test hit gains
       `source: "doc"` and its real repo `path`; the fixture search
       handler emits `source` facet counts; typecheck is the
       completeness proof (required fields)
-- [ ] `src/lib/apiConfig.ts` + tests: `apiConfig(snapshot)` →
+- [x] `src/lib/apiConfig.ts` + tests: `apiConfig(snapshot)` →
       `{landingPage, additionalDocs} | undefined` per DESIGN-0004
       Component 2 — lowercase spellings only, `enabled !== true` →
       undefined, `arr()` semantics for null lists, wrong shapes and
       stale capitalized snapshots read as "no pages surface"
-- [ ] Demo-org page fixtures: `listRepoPages`/`getRepoPage` resolvers
+- [x] Demo-org page fixtures: `listRepoPages`/`getRepoPage` resolvers
       layered before faker (fall-through outside the demo org, the
       existing pattern); api-block `config_snapshot` on the opted
       fixture repo; content is this repo's REAL markdown (OQ-2a):
@@ -121,7 +121,7 @@ config gate — no rendered-surface changes yet.
       pages via `?raw`, one nested file page, one root
       `additional_docs` entry (snapshot if not in-repo); non-opted
       fixture repo returns `{"pages": []}` and no `api:` block
-- [ ] Fixture realism pins: one repo carries `exclude`/
+- [x] Fixture realism pins: one repo carries `exclude`/
       `additional_docs: null` (the `arr()` path); fixture published
       paths cover a directory page (extensionless), a nested `.md`
       file page, and an `additional_docs` root file
@@ -143,43 +143,43 @@ and cross-links resolve before any discovery UI exists.
 
 #### Tasks
 
-- [ ] Router: `:owner/:repo/pages/*` registered above `:type`
+- [x] Router: `:owner/:repo/pages/*` registered above `:type`
       (reserved-word comment mirroring the changelog entry); empty
       splat (`/pages`, `/pages/`) redirects to the repo home
       (design OQ-2a: the landing page IS the repo home)
-- [ ] `src/routes/page.tsx`: mounts in `RepoFrame` (breadcrumbs home
+- [x] `src/routes/page.tsx`: mounts in `RepoFrame` (breadcrumbs home
       · pages · path segments), four states (skeleton / content /
       NotFoundPanel / ErrorPanel-with-retry; 503 stays the retryable
       panel per DESIGN-0003), `useRenderedSource` with **h1 kept**,
       ToC rail, metadata footer line (`git_sha` short + source path)
       instead of the doc meta table
-- [ ] Splat → API call: pass the splat through
+- [x] Splat → API call: pass the splat through
       `encodeURIComponent` before the generated hook — orval's URL
       builder interpolates **raw** (verified), and the spec blesses
       the one-segment percent-encoded spelling; never string-build
       the URL by hand
-- [ ] `useRepoDocIndex`: gated `listRepoPages` query (skipped
+- [x] `useRepoDocIndex`: gated `listRepoPages` query (skipped
       entirely without an `apiConfig` hit) joins the all-resolve
       barrier; `byPath` gains page entries per the reconstruction
       table (additional_docs member → itself; `.md` → docs_dir join;
       extensionless → both `README.md` and `index.md` keys); hrefs
       `/{owner}/{name}/pages/{path}`; page bodies drop their own
       source path (the reader's own-id drop generalized)
-- [ ] Repo home relative-link base follows
+- [x] Repo home relative-link base follows
       `apiConfig(snapshot)?.landingPage ?? docs_dir/index.md`
-- [ ] Recents schema (design OQ-5a): `RecentDoc` gains
+- [x] Recents schema (design OQ-5a): `RecentDoc` gains
       `kind: "doc" | "page"`; page entries carry the published path
       in the coordinates slot with per-segment validation (`/` split,
       each segment `SEGMENT`-checked); missing `kind` on stored
       entries is malformed → store resets; the page reader records on
       successful load
-- [ ] Tests: reconstruction unit table; reader four states + splat
+- [x] Tests: reconstruction unit table; reader four states + splat
       shapes (nested, percent-encodable, empty-splat redirect);
       reserved `pages` outranks `:type`; doc→page and page→doc link
       resolution end-to-end; own-path drop; XSS resolver-active
       section gains page-target cases (hostile hrefs, traversal —
       fail closed); recents kind round-trip + reset-on-old-shape
-- [ ] Axe sweep entry: page reader
+- [x] Axe sweep entry: page reader
 
 #### Success Criteria
 
@@ -197,32 +197,32 @@ Pages become findable: nav tree, palette, directory.
 
 #### Tasks
 
-- [ ] RepoNav Pages tree (design OQ-2a): section between the type
+- [x] RepoNav Pages tree (design OQ-2a): section between the type
       drawers and the changelog row, rendered only when `apiConfig`
       hits AND the list is non-empty; tree built from the flat list
       (path-split); directory nodes collapse with the type-drawer
       caret behavior and are links when a directory page exists;
       leaves link with `PageSummary` titles; the active route's
       branch auto-expands; hover/focus prefetches `getRepoPage`
-- [ ] Palette: page hits render with a neutral mono "page" marker
+- [x] Palette: page hits render with a neutral mono "page" marker
       (no type badge), title + repo + published path, navigate to
       the page route, highlighted-hit prefetch extends to
       `getRepoPage`; recents list renders `kind`-aware hrefs and the
       `recent:` value-prefix convention holds for page entries
-- [ ] Directory: page hits render inline — title links to the page
+- [x] Directory: page hits render inline — title links to the page
       route, `source` marker, "—" for type/status/author (the
       empty-string wire convention, like `updated_at`); the
       results-count line extends to "N results · X docs · Y pages"
       from the `source` facet counts, page term omitted when Y = 0
       so non-opted deployments stay byte-identical (OQ-3a); row
       hover/focus prefetch
-- [ ] Tests: nav gating (absent without block — zero requests;
+- [x] Tests: nav gating (absent without block — zero requests;
       present with; collapse/expand; caret vs navigate), palette
       page-hit rendering + navigation + recents, directory page rows
-      + counts, prefetch wiring
-- [ ] Axe sweep entries: repo page with the Pages tree; directory
+      + counts, prefetch wiring (landed with each surface's commit)
+- [x] Axe sweep entries: repo page with the Pages tree; directory
       with mixed doc/page hits
-- [ ] e2e journey (one spec): repo nav → Pages tree → open a page →
+- [x] e2e journey (one spec): repo nav → Pages tree → open a page →
       rendered markdown; assert the mermaid chunk stays off a
       diagram-free page
 
@@ -241,19 +241,19 @@ Pages become findable: nav tree, palette, directory.
 
 #### Tasks
 
-- [ ] Update CLAUDE.md (pages surface: reserved route, apiConfig
+- [x] Update CLAUDE.md (pages surface: reserved route, apiConfig
       gate, reconstruction rule, recents kind, orval raw-interpolation
       gotcha) and README (Pages section under the feature list)
-- [ ] File the additive upstream ask on docz-api: a `source` filter
+- [x] File the additive upstream ask on docz-api: a `source` filter
       param on `searchDocs` (unblocks the directory filter control
-      follow-up)
-- [ ] Chart bump per convention: appVersion `0.5.0` → `0.6.0`
+      follow-up) — filed as donaldgifford/docz-api#27
+- [x] Chart bump per convention: appVersion `0.5.0` → `0.6.0`
       (label `minor`, design OQ-6a), chart `0.1.6` → `0.1.7`,
       deployment unittest image-tag assert, helm-docs regenerated
-- [ ] Full local gate + changelog sync (`git fetch --tags`, regen,
+- [x] Full local gate + changelog sync (`git fetch --tags`, regen,
       cliff-skipped `chore(changelog):` commit **as the last branch
       commit** — the IMPL-0004 lesson)
-- [ ] PR `feat/api-block-pages` labeled `minor`; merge on green;
+- [ ] PR `feat/impl-0005` labeled `minor`; merge on green;
       sync main
 - [ ] Mark this IMPL Completed and DESIGN-0004 Implemented; close
       issue #21 (the merge references it)
@@ -331,7 +331,7 @@ alternatives; write in your own option if none fits.
 
 **Reviewed 2026-08-30 — decided: 1a, 2a, 3a.** Options preserved
 below for the record. Consequences are folded into the phase tasks:
-one branch/PR (`feat/api-block-pages`) carries all four phases (1a);
+one branch/PR (`feat/impl-0005`) carries all four phases (1a);
 the demo fixtures serve this repo's real markdown mirroring the
 dogfood state (2a); the directory presents source counts on the
 results-count line, page term omitted at zero (3a).

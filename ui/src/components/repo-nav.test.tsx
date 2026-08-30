@@ -10,14 +10,19 @@ import { server } from "@/test/server";
 
 const SITE_DESIGN_TITLE = "docz-site: cross-repo docz reader and search UI";
 
-function mountNavAt(path: string) {
+function mountNavAt(path: string, name = "docz-site") {
   // The real route shape matters: RepoNav reads `:type` from useParams
-  // to decide which drawer follows navigation.
+  // to decide which drawer follows navigation, and the pages tree reads
+  // the pages route's splat to auto-expand the active branch.
   const router = createMemoryRouter(
     [
       {
+        path: "/:owner/:repo/pages/*",
+        element: <RepoNav owner="donaldgifford" name={name} />,
+      },
+      {
         path: "/:owner/:repo/:type?/:docId?",
-        element: <RepoNav owner="donaldgifford" name="docz-site" />,
+        element: <RepoNav owner="donaldgifford" name={name} />,
       },
     ],
     { initialEntries: [path] },
@@ -140,6 +145,102 @@ describe("RepoNav", () => {
     expect(screen.getByRole("link", { name: /Home/ })).not.toHaveAttribute(
       "aria-current",
     );
+  });
+});
+
+describe("RepoNav pages tree", () => {
+  const GUIDE_TITLE = "Local development against a real docz-api";
+
+  it("renders the opted repo's tree: leaf titles, directory-page links, closed dirs", async () => {
+    mountNavAt("/donaldgifford/docz-site");
+
+    expect(await screen.findByText("pages")).toBeInTheDocument();
+
+    // File pages at the top level link with their PageSummary titles.
+    expect(screen.getByRole("link", { name: "docz-site" })).toHaveAttribute(
+      "href",
+      "/donaldgifford/docz-site/pages/README.md",
+    );
+    // Directory pages (extensionless) are links too.
+    expect(
+      screen.getByRole("link", { name: "Design Documents" }),
+    ).toHaveAttribute("href", "/donaldgifford/docz-site/pages/design");
+
+    // guides/ has no page of its own: a toggle, never a link — and its
+    // children stay hidden until expanded.
+    expect(screen.getByRole("button", { name: "guides/" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: GUIDE_TITLE }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("expands a directory from the caret without navigating", async () => {
+    const user = userEvent.setup();
+    mountNavAt("/donaldgifford/docz-site");
+
+    const caret = await screen.findByRole("button", { name: "guides pages" });
+    expect(caret).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(caret);
+    expect(caret).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: GUIDE_TITLE })).toHaveAttribute(
+      "href",
+      "/donaldgifford/docz-site/pages/guides/local-dev.md",
+    );
+
+    await user.click(caret);
+    expect(
+      screen.queryByRole("link", { name: GUIDE_TITLE }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("auto-expands the active route's branch and marks the page active", async () => {
+    mountNavAt("/donaldgifford/docz-site/pages/guides/local-dev.md");
+
+    const leaf = await screen.findByRole("link", { name: GUIDE_TITLE });
+    await waitFor(() => {
+      expect(leaf).toHaveAttribute("aria-current", "page");
+    });
+  });
+
+  it("prefetches a page on hover with the one-segment encoded spelling", async () => {
+    const requested: string[] = [];
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/pages/*", ({ request }) => {
+        requested.push(new URL(request.url).pathname);
+        return undefined; // fall through to the fixture handler
+      }),
+    );
+    const user = userEvent.setup();
+    mountNavAt("/donaldgifford/docz-site");
+
+    await user.click(
+      await screen.findByRole("button", { name: "guides pages" }),
+    );
+    const leaf = screen.getByRole("link", { name: GUIDE_TITLE });
+
+    expect(requested).toEqual([]);
+    await user.hover(leaf);
+    await waitFor(() => {
+      expect(
+        requested.some((path) => path.endsWith("/pages/guides%2Flocal-dev.md")),
+      ).toBe(true);
+    });
+  });
+
+  it("stays hidden for non-opted repos with zero pages requests", async () => {
+    let pagesRequests = 0;
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/pages", () => {
+        pagesRequests += 1;
+        return undefined;
+      }),
+    );
+    mountNavAt("/donaldgifford/docz-api", "docz-api");
+
+    await screen.findByText("main · docz.yaml");
+    expect(screen.queryByText("pages")).not.toBeInTheDocument();
+    expect(pagesRequests).toBe(0);
   });
 });
 

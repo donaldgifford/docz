@@ -2,9 +2,11 @@ import { useState } from "react";
 import { NavLink, useParams } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
+import { NavPagesSection } from "@/components/repo-nav-pages";
 import { usePrefetchChangelog } from "@/hooks/usePrefetchChangelog";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { useRepoFacts } from "@/hooks/useRepoFacts";
+import { apiConfig } from "@/lib/apiConfig";
 import { changelogBasename, changelogConfig } from "@/lib/changelogConfig";
 import { resolveDocType } from "@/lib/docTypes";
 import { arr } from "@/lib/wire";
@@ -196,6 +198,12 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
             {changelogBasename(changelogCfg.file)}
           </span>
         </NavLink>
+      )}
+
+      {/* Pages tree (DESIGN-0004 OQ-2a): mounted only when the api:
+          block gate hits, so non-opted repos never fire the list. */}
+      {apiConfig(detail?.config_snapshot) !== undefined && (
+        <NavPagesSection owner={owner} name={name} />
       )}
 
       <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[10px] tracking-[0.14em] text-fg-muted uppercase">

@@ -75,7 +75,7 @@ describe("command palette", () => {
 
     // Empty query lists everything, grouped per repo.
     expect(
-      await dialog.findByText("donaldgifford/docz-site — 2 matches"),
+      await dialog.findByText("donaldgifford/docz-site — 7 matches"),
     ).toBeInTheDocument();
     expect(
       dialog.getByText("donaldgifford/docz-api — 3 matches"),
@@ -101,7 +101,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     const dialog = palette();
-    await dialog.findByText("donaldgifford/docz-site — 2 matches");
+    await dialog.findByText("donaldgifford/docz-site — 7 matches");
 
     await user.keyboard("ingestion service");
     await waitFor(() => {
@@ -121,7 +121,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     const dialog = palette();
-    await dialog.findByText("donaldgifford/docz-site — 2 matches");
+    await dialog.findByText("donaldgifford/docz-site — 7 matches");
 
     // Repo pill (short name) scopes to that repo.
     await user.click(dialog.getByRole("button", { name: "docz-api" }));
@@ -163,7 +163,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     const dialog = palette();
-    await dialog.findByText("donaldgifford/docz-site — 2 matches");
+    await dialog.findByText("donaldgifford/docz-site — 7 matches");
 
     // "frontmatter" appears in doc bodies, never in a fixture title.
     await user.keyboard("frontmatter");
@@ -193,7 +193,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 2 matches");
+    await palette().findByText("donaldgifford/docz-site — 7 matches");
     await user.keyboard("ingestion service");
     await palette().findByText("donaldgifford/docz-api — 1 match");
 
@@ -223,7 +223,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 2 matches");
+    await palette().findByText("donaldgifford/docz-site — 7 matches");
 
     // The auto-highlighted first hit warms immediately…
     await waitFor(() => {
@@ -251,6 +251,7 @@ describe("command palette", () => {
       "docz:recent-docs",
       JSON.stringify([
         {
+          kind: "doc",
           repo: "donaldgifford/docz-api",
           type: "design",
           docId: "DESIGN-0002",
@@ -280,6 +281,7 @@ describe("command palette", () => {
       "docz:recent-docs",
       JSON.stringify([
         {
+          kind: "doc",
           repo: "donaldgifford/docz-site",
           type: "impl",
           docId: "IMPL-0001",
@@ -301,13 +303,99 @@ describe("command palette", () => {
     });
   });
 
+  it("renders page hits with the neutral marker and opens the page route", async () => {
+    const user = userEvent.setup();
+    const router = mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    const dialog = palette();
+    // Page hits ride the docz-site group on the empty query — marker
+    // line `page · <published path>`, no type badge.
+    expect(
+      await dialog.findByText("donaldgifford/docz-site — 7 matches"),
+    ).toBeInTheDocument();
+    expect(dialog.getByText("page · README.md")).toBeInTheDocument();
+
+    // "container pair" only appears in the guide page's body.
+    await user.keyboard("container pair");
+    await dialog.findByText("donaldgifford/docz-site — 1 match");
+    expect(dialog.getByText("page · guides/local-dev.md")).toBeInTheDocument();
+
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(
+        "/donaldgifford/docz-site/pages/guides/local-dev.md",
+      );
+    });
+  });
+
+  it("prefetches the highlighted page hit", async () => {
+    const requested: string[] = [];
+    server.use(
+      http.get("*/api/v1/repos/:owner/:name/pages/*", ({ request }) => {
+        requested.push(new URL(request.url).pathname);
+        return undefined; // fall through to the fixture handler
+      }),
+    );
+    const user = userEvent.setup();
+    mountAt("/repos", createQueryClient());
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    await user.keyboard("container pair");
+    await palette().findByText("donaldgifford/docz-site — 1 match");
+
+    // The lone page hit is auto-highlighted — the prefetch uses the
+    // reader's one-segment encoded spelling, so the cache key matches.
+    await waitFor(() => {
+      expect(
+        requested.some((path) => path.endsWith("/pages/guides%2Flocal-dev.md")),
+      ).toBe(true);
+    });
+  });
+
+  it("leads with page recents and opens them kind-aware", async () => {
+    localStorage.setItem(
+      "docz:recent-docs",
+      JSON.stringify([
+        {
+          kind: "page",
+          repo: "donaldgifford/docz-site",
+          path: "guides/local-dev.md",
+          title: "Local development against a real docz-api",
+        },
+      ]),
+    );
+    const user = userEvent.setup();
+    const router = mountAt("/repos");
+    await screen.findByText("docz");
+
+    await user.keyboard("{Meta>}k{/Meta}");
+    const dialog = palette();
+    expect(await dialog.findByText("recent")).toBeInTheDocument();
+    // The marker line renders in the recent item and (as the
+    // highlighted hit) in the preview pane.
+    expect(
+      dialog.getAllByText("page · guides/local-dev.md · docz-site").length,
+    ).toBeGreaterThan(0);
+
+    // The recent page entry is the initial highlight — Enter opens it.
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(
+        "/donaldgifford/docz-site/pages/guides/local-dev.md",
+      );
+    });
+  });
+
   it("navigates to the reader on Enter and closes", async () => {
     const user = userEvent.setup();
     const router = mountAt("/repos");
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 2 matches");
+    await palette().findByText("donaldgifford/docz-site — 7 matches");
 
     // ↓ to the second hit, then Enter.
     await user.keyboard("{ArrowDown}{Enter}");

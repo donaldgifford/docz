@@ -31,11 +31,24 @@ function mountAt(path: string) {
 }
 
 describe("axe: core views", () => {
-  it("directory", { timeout: AXE_TIMEOUT }, async () => {
-    mountAt("/");
-    await screen.findByTestId("results-count", undefined, { timeout: 10_000 });
-    await expectNoAxeViolations();
-  });
+  it(
+    "directory with mixed doc/page hits",
+    { timeout: AXE_TIMEOUT },
+    async () => {
+      mountAt("/");
+      await screen.findByTestId("results-count", undefined, {
+        timeout: 10_000,
+      });
+      // The fixture org publishes pages — wait for a page row so the
+      // sweep covers the mixed-source list (IMPL-0005 Phase 3).
+      await screen.findByRole(
+        "link",
+        { name: /Local development against a real docz-api/ },
+        { timeout: 10_000 },
+      );
+      await expectNoAxeViolations();
+    },
+  );
 
   it("repos index", { timeout: AXE_TIMEOUT }, async () => {
     mountAt("/repos");
@@ -83,6 +96,23 @@ describe("axe: core views", () => {
     await screen.findByRole(
       "heading",
       { level: 1, name: "Changelog" },
+      { timeout: 10_000 },
+    );
+    await expectNoAxeViolations();
+  });
+
+  it("page reader with the pages tree", { timeout: AXE_TIMEOUT }, async () => {
+    mountAt("/donaldgifford/docz-site/pages/guides/local-dev.md");
+    await screen.findByRole(
+      "heading",
+      { level: 1, name: "Local development against a real docz-api" },
+      { timeout: 10_000 },
+    );
+    // RepoNav's pages tree, active branch auto-expanded — wait for a
+    // tree link so the sweep covers it (IMPL-0005 Phase 3).
+    await screen.findAllByRole(
+      "link",
+      { name: "Design Documents" },
       { timeout: 10_000 },
     );
     await expectNoAxeViolations();

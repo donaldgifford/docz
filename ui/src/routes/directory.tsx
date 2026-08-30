@@ -8,6 +8,7 @@ import { StatusBadge, TypeBadge } from "@/components/badges";
 import { RepoPicker, TypeChips } from "@/components/directory-controls";
 import { ErrorPanel, SessionRequiredRedirect } from "@/components/query-states";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
+import { usePrefetchPage } from "@/hooks/usePrefetchPage";
 import {
   EMPTY_SEARCH_STATE,
   hasActiveFilters,
@@ -100,24 +101,46 @@ function SearchBox({
   );
 }
 
+/** Row key AND page-vs-doc link target — pages key on published path. */
+function hitKey(hit: SearchHit): string {
+  return hit.source === "page"
+    ? `${hit.repo}/pages/${hit.path}`
+    : `${hit.repo}/${hit.type}/${hit.doc_id}`;
+}
+
 function HitRow({ hit }: { hit: SearchHit }) {
   const repoName = hit.repo.split("/").at(-1) ?? hit.repo;
   const prefetchDoc = usePrefetchDoc();
+  const prefetchPage = usePrefetchPage();
   const [hitOwner = "", hitRepo = ""] = hit.repo.split("/");
+  const isPage = hit.source === "page";
   const prefetch = () => {
-    prefetchDoc(hitOwner, hitRepo, hit.type, hit.doc_id);
+    if (isPage) {
+      prefetchPage(hitOwner, hitRepo, hit.path);
+    } else {
+      prefetchDoc(hitOwner, hitRepo, hit.type, hit.doc_id);
+    }
   };
   return (
     <li>
       <Link
-        to={`/${hit.repo}/${hit.type}/${hit.doc_id}`}
+        to={`/${hitKey(hit)}`}
         onMouseEnter={prefetch}
         onFocus={prefetch}
         className={`${ROW_GRID} transition-colors hover:bg-bg-raised`}
       >
-        <TypeBadge type={hit.type} />
-        <span className="hidden font-mono text-[12.5px] text-fg-tertiary md:block">
-          {hit.doc_id}
+        {/* Pages carry the neutral source marker, never a type badge
+            (DESIGN-0004 OQ-3a); doc-only columns render "—". */}
+        {isPage ? (
+          <span className="font-mono text-[11px] text-fg-muted">page</span>
+        ) : (
+          <TypeBadge type={hit.type} />
+        )}
+        <span
+          title={isPage ? hit.path : undefined}
+          className="hidden font-mono text-[12.5px] text-fg-tertiary md:block"
+        >
+          {isPage ? "—" : hit.doc_id}
         </span>
         <span className="truncate text-[14px] text-fg-primary">
           {hit.title}
@@ -265,6 +288,10 @@ export function Component() {
               {result.hits.length}
             </b>{" "}
             of {result.estimated_total_hits}
+            {/* Source split only when pages are present, so non-opted
+                deployments render today's exact line (OQ-3a). */}
+            {(result.facets.source?.page ?? 0) > 0 &&
+              ` · ${String(result.facets.source?.doc ?? 0)} docs · ${String(result.facets.source?.page ?? 0)} pages`}
           </div>
         )}
       </div>
@@ -321,7 +348,7 @@ export function Component() {
         <div className="mt-4 mb-16">
           <ul className="border-t border-border-hairline">
             {result.hits.map((hit) => (
-              <HitRow key={`${hit.repo}/${hit.type}/${hit.doc_id}`} hit={hit} />
+              <HitRow key={hitKey(hit)} hit={hit} />
             ))}
           </ul>
           {result.hits.length < result.estimated_total_hits && (

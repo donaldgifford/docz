@@ -172,6 +172,7 @@ export function Component() {
   useEffect(() => {
     if (doc !== undefined) {
       recordRecentDoc({
+        kind: "doc",
         repo: doc.repo,
         type: doc.type,
         docId: doc.doc_id,

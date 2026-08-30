@@ -30,7 +30,11 @@ export function useRepoFacts(repo: string): {
       result === undefined
         ? undefined
         : {
-            total: result.estimated_total_hits,
+            // Pages joined the index (spec 1.4.1), so the raw total
+            // counts them too — every "docs: N" surface wants the
+            // source facet's doc count. A missing key means zero docs
+            // (facets omit zero-hit values).
+            total: result.facets.source?.doc ?? 0,
             typeCounts: result.facets.type ?? {},
           },
     isError: query.isError,

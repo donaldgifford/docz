@@ -7,6 +7,7 @@ import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { StatusBadge } from "@/components/badges";
 import { Snippet } from "@/components/snippet";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
+import { usePrefetchPage } from "@/hooks/usePrefetchPage";
 import { readRecentDocs } from "@/lib/recentDocs";
 
 import type {
@@ -58,9 +59,25 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 // Lowercased: cmdk normalizes item values, so keys must round-trip
 // through it unchanged. Navigation resolves the hit through a map and
-// uses the original casing.
+// uses the original casing. Page hits key on their published path —
+// their doc coordinates are all "".
 function hitKey(hit: SearchHit): string {
-  return `${hit.repo}/${hit.type}/${hit.doc_id}`.toLowerCase();
+  return (
+    hit.source === "page"
+      ? `${hit.repo}/pages/${hit.path}`
+      : `${hit.repo}/${hit.type}/${hit.doc_id}`
+  ).toLowerCase();
+}
+
+function hitHref(hit: SearchHit): string {
+  return hit.source === "page"
+    ? `/${hit.repo}/pages/${hit.path}`
+    : `/${hit.repo}/${hit.type}/${hit.doc_id}`;
+}
+
+/** The mono id line: doc id, or the neutral "page" marker + path. */
+function hitMarker(hit: SearchHit): string {
+  return hit.source === "page" ? `page · ${hit.path}` : hit.doc_id;
 }
 
 const GROUP_CLASS =
@@ -103,7 +120,7 @@ function PreviewPane({ hit }: { hit: SearchHit | undefined }) {
   return (
     <>
       <div className="font-mono text-[11.5px] text-accent">
-        {hit.doc_id} · {hit.repo.split("/").at(-1) ?? hit.repo}
+        {hitMarker(hit)} · {hit.repo.split("/").at(-1) ?? hit.repo}
       </div>
       <h3 className="mt-[0.3rem] mb-2 text-[16px] font-semibold text-fg-primary">
         {hit.title}
@@ -194,24 +211,41 @@ export function CommandPalette({
 
   const hits = useMemo(() => result?.hits ?? [], [result]);
 
-  // Empty-query state leads with recently-opened docs (IMPL-0002
-  // Phase 6, OQ-7a) — synthesized as snippet-less hits so navigation,
-  // preview, and prefetch reuse the same machinery. Values get a
-  // `recent:` prefix; the same doc also appearing in the results list
-  // below keeps its own key.
+  // Empty-query state leads with recently-opened docs and pages
+  // (IMPL-0002 Phase 6, OQ-7a; kind per DESIGN-0004 OQ-5a) —
+  // synthesized as snippet-less hits so navigation, preview, and
+  // prefetch reuse the same machinery. Values get a `recent:` prefix;
+  // the same doc also appearing in the results list below keeps its
+  // own key.
   const recentHits = useMemo<SearchHit[]>(() => {
     if (!open || debouncedQ !== "") {
       return [];
     }
-    return readRecentDocs().map((entry) => ({
-      repo: entry.repo,
-      doc_id: entry.docId,
-      type: entry.type,
-      title: entry.title,
-      status: "",
-      author: "",
-      snippet: "",
-    }));
+    return readRecentDocs().map((entry) =>
+      entry.kind === "page"
+        ? {
+            source: "page" as const,
+            repo: entry.repo,
+            doc_id: "",
+            type: "",
+            title: entry.title,
+            path: entry.path,
+            status: "",
+            author: "",
+            snippet: "",
+          }
+        : {
+            source: "doc" as const,
+            repo: entry.repo,
+            doc_id: entry.docId,
+            type: entry.type,
+            title: entry.title,
+            path: "",
+            status: "",
+            author: "",
+            snippet: "",
+          },
+    );
   }, [open, debouncedQ]);
 
   const entries = useMemo(
@@ -239,15 +273,21 @@ export function CommandPalette({
   // Warm the reader for the highlighted hit — the same treatment doc
   // links get on hover/focus, so Enter paints without a skeleton.
   const prefetchDoc = usePrefetchDoc();
+  const prefetchPage = usePrefetchPage();
   useEffect(() => {
     if (!open || activeHit === undefined) {
       return;
     }
     const [owner, name] = activeHit.repo.split("/");
-    if (owner !== undefined && name !== undefined) {
+    if (owner === undefined || name === undefined) {
+      return;
+    }
+    if (activeHit.source === "page") {
+      prefetchPage(owner, name, activeHit.path);
+    } else {
       prefetchDoc(owner, name, activeHit.type, activeHit.doc_id);
     }
-  }, [open, activeHit, prefetchDoc]);
+  }, [open, activeHit, prefetchDoc, prefetchPage]);
 
   const groups = useMemo(() => {
     const byRepo = new Map<string, SearchHit[]>();
@@ -269,7 +309,7 @@ export function CommandPalette({
       return;
     }
     onOpenChange(false);
-    void navigate(`/${hit.repo}/${hit.type}/${hit.doc_id}`);
+    void navigate(hitHref(hit));
   };
 
   const moveActive = (delta: number) => {
@@ -405,7 +445,8 @@ export function CommandPalette({
                       className={ITEM_CLASS}
                     >
                       <div className="mb-[2px] font-mono text-[11.5px] text-fg-tertiary">
-                        {hit.doc_id} · {hit.repo.split("/").at(-1) ?? hit.repo}
+                        {hitMarker(hit)} ·{" "}
+                        {hit.repo.split("/").at(-1) ?? hit.repo}
                       </div>
                       <div className="text-[13.5px] text-fg-primary">
                         {hit.title}
@@ -433,8 +474,10 @@ export function CommandPalette({
                       className={ITEM_CLASS}
                     >
                       <div className="mb-[2px] flex items-center justify-between gap-2">
+                        {/* Pages carry the neutral marker, never a
+                            type badge (DESIGN-0004 OQ-3a). */}
                         <span className="font-mono text-[11.5px] text-fg-tertiary">
-                          {hit.doc_id}
+                          {hitMarker(hit)}
                         </span>
                         {hit.status !== "" && (
                           <StatusBadge status={hit.status} />

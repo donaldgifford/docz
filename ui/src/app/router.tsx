@@ -25,6 +25,15 @@ export const routes: RouteObject[] = [
         path: ":owner/:repo/changelog",
         lazy: () => import("@/routes/repo-changelog"),
       },
+      // Static segment — `pages` joins `changelog` as a reserved word
+      // (DESIGN-0004): the splat is a published page path (may contain
+      // "/"); an empty splat redirects to the repo home, because the
+      // landing page IS the repo home. A doc type literally named
+      // "pages" stays reachable via its id_prefix/alias URL.
+      {
+        path: ":owner/:repo/pages/*",
+        lazy: () => import("@/routes/page"),
+      },
       { path: ":owner/:repo/:type", lazy: () => import("@/routes/repo-type") },
       {
         path: ":owner/:repo/:type/:docId",
