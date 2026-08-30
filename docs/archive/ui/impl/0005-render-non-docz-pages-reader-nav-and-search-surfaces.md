@@ -302,16 +302,16 @@ Pages become findable: nav tree, palette, directory.
 
 ## Testing Plan
 
-- [ ] Unit: `apiConfig` table; reconstruction table; recents kind;
+- [x] Unit: `apiConfig` table; reconstruction table; recents kind;
       reader four states; nav gating/tree; palette + directory page
       hits
-- [ ] Integration (route-level, MSW): deep-link page render;
+- [x] Integration (route-level, MSW): deep-link page render;
       empty-splat redirect; doc↔page link resolution; 503 → retryable
       panel, never `/login`
-- [ ] XSS: resolver-active page-target cases; sanitize order
+- [x] XSS: resolver-active page-target cases; sanitize order
       untouched
-- [ ] Axe: three new entries; existing sweep stays green
-- [ ] e2e: one pages journey; mermaid-chunk absence on pages
+- [x] Axe: three new entries; existing sweep stays green
+- [x] e2e: one pages journey; mermaid-chunk absence on pages
 
 ## Dependencies
 

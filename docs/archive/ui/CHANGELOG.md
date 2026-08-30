@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - IMPL-0005 close-out — statuses and index tables ([#24](https://github.com/donaldgifford/docz-site/issues/24))
+- *(impl)* Tick IMPL-0005 testing-plan summary boxes
 
 ## [0.6.0] - 2026-08-30
 
