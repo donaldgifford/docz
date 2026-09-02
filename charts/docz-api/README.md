@@ -34,7 +34,7 @@ provenance attestations (GitHub artifact attestations, Build L2).
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.5.1 \
+  --version 0.6.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.5.1 \
+  --version 0.6.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -244,7 +244,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.5.1
+  ghcr.io/donaldgifford/charts/docz-api:0.6.0
 ```
 
 ### Build provenance
@@ -254,7 +254,7 @@ it came from this repository:
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz-api:0.5.1 \
+  oci://ghcr.io/donaldgifford/charts/docz-api:0.6.0 \
   --owner donaldgifford
 ```
 
@@ -267,7 +267,7 @@ cosign verify-attestation \
     '^https://github.com/donaldgifford/docz-api/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.5.1
+  ghcr.io/donaldgifford/charts/docz-api:0.6.0
 ```
 
 ## Values
@@ -281,7 +281,7 @@ cosign verify-attestation \
 | autoscaling.minReplicas | int | `1` | Minimum replicas |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target average CPU utilization (percent) |
 | autoscaling.targetMemoryUtilizationPercentage | int | `0` | Target average memory utilization (percent). Unset → no memory metric. |
-| config | object | `{"appId":"","authProviders":"github","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","keycloakClientID":"","keycloakIssuer":"","logFormat":"json","logLevel":"info","oktaClientID":"","oktaIssuer":"","port":8080,"sessionTTL":""}` | docz-api application configuration (non-secret env vars). Empty strings for the optional tuning knobs mean "emit nothing; let the binary apply its own default". |
+| config | object | `{"appId":"","authProviders":"github","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","keycloakClientID":"","keycloakIssuer":"","keycloakScopes":"","logFormat":"json","logLevel":"info","oktaClientID":"","oktaIssuer":"","oktaScopes":"","port":8080,"sessionTTL":""}` | docz-api application configuration (non-secret env vars). Empty strings for the optional tuning knobs mean "emit nothing; let the binary apply its own default". |
 | config.appId | string | `""` | GitHub App ID (GITHUB_APP_ID) |
 | config.authProviders | string | `"github"` | Comma-separated login providers: github, okta, keycloak (AUTH_PROVIDERS). The special value "none" — which must be the only entry — disables site login entirely: every request is served as an anonymous identity and no login routes are mounted, so no redirect base, session secret, or provider credentials are needed. It is the first-setup shape (prove GitHub App ingestion works before wiring a login provider) and it leaves the read API open to anyone who can reach the Service, so do not ship it on a public endpoint. |
 | config.authRedirectBase | string | `""` | Absolute base URL the OAuth/OIDC provider redirects back to; the chart appends /auth/callback (AUTH_REDIRECT_BASE). Required unless authProviders is "none". |
@@ -290,10 +290,12 @@ cosign verify-attestation \
 | config.ingestDebounce | string | `""` | Ingest debounce window as a Go duration (INGEST_DEBOUNCE). Empty → 5s. |
 | config.keycloakClientID | string | `""` | Keycloak client id (KEYCLOAK_CLIENT_ID). The client must be confidential (client authentication on). Required while `keycloak` is in authProviders. |
 | config.keycloakIssuer | string | `""` | Keycloak OIDC issuer, e.g. `https://kc.example.com/realms/docz-api` (KEYCLOAK_ISSUER). Required while `keycloak` is in authProviders. |
+| config.keycloakScopes | string | `""` | Comma-separated OAuth scopes Keycloak is asked for beyond `openid`, which is always sent (KEYCLOAK_SCOPES). Empty → `profile,email`. Only add a scope assigned to the client (default or optional client scope): an unassigned scope fails the authorize request with `invalid_scope`. Stock Keycloak has no `groups` client scope — add one with a group membership mapper before requesting it here. |
 | config.logFormat | string | `"json"` | Log format: text or json (LOG_FORMAT) |
 | config.logLevel | string | `"info"` | Log level: debug, info, warn, error (LOG_LEVEL) |
 | config.oktaClientID | string | `""` | Okta client id (OKTA_CLIENT_ID). The Okta app must be an OIDC **Web Application** (confidential client, authorization-code flow) — an SPA or Native app has no client secret and cannot complete the exchange. Required while `okta` is in authProviders. |
 | config.oktaIssuer | string | `""` | Okta OIDC issuer, copied verbatim from the issuer's own `.well-known/openid-configuration` (OKTA_ISSUER). Discovery runs at startup, so a wrong value fails the boot. Required while `okta` is in authProviders. e.g. `https://acme.okta.com/oauth2/default` |
+| config.oktaScopes | string | `""` | Comma-separated OAuth scopes Okta is asked for beyond `openid`, which is always sent (OKTA_SCOPES). Empty → `profile,email`. Only add a scope the Okta app is actually assigned: an unassigned scope fails the whole authorize request with `invalid_scope`, so login breaks entirely rather than degrading. Add `groups` only if the authorization server publishes a groups claim — docz-api serves it on `/api/v1/auth/session` for the site to read, but makes no access decision with it. Prefer setting this in a values file: `--set` splits on commas, so it needs `--set-string 'config.oktaScopes=profile\,email'`. |
 | config.port | int | `8080` | Container HTTP listen port (drives HTTP_ADDR and the Service targetPort). Everything — API, /healthz, /readyz, /metrics — is served here. |
 | config.sessionTTL | string | `""` | Session lifetime as a Go duration (SESSION_TTL). Empty → 720h. |
 | extraEnv | list | `[]` | Additional environment variables |

@@ -34,7 +34,7 @@ func buildAuthProviders(ctx context.Context, cfg *config.Config) ([]auth.Provide
 	if cfg.AuthEnabled("okta") {
 		p, err := auth.NewOIDCProvider(ctx, "okta",
 			cfg.Auth.Okta.Issuer, cfg.Auth.Okta.ClientID,
-			cfg.Auth.Okta.ClientSecret.Reveal(), redirectURL)
+			cfg.Auth.Okta.ClientSecret.Reveal(), redirectURL, cfg.Auth.Okta.Scopes)
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,7 @@ func buildAuthProviders(ctx context.Context, cfg *config.Config) ([]auth.Provide
 	if cfg.AuthEnabled("keycloak") {
 		p, err := auth.NewOIDCProvider(ctx, "keycloak",
 			cfg.Auth.Keycloak.Issuer, cfg.Auth.Keycloak.ClientID,
-			cfg.Auth.Keycloak.ClientSecret.Reveal(), redirectURL)
+			cfg.Auth.Keycloak.ClientSecret.Reveal(), redirectURL, cfg.Auth.Keycloak.Scopes)
 		if err != nil {
 			return nil, err
 		}

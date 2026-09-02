@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.4.1
+  version: 1.4.2
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -854,7 +854,13 @@ components:
           description: GitHub login; omitted for OIDC providers.
         groups:
           type: array
-          description: OIDC group/role claims; omitted for GitHub OAuth.
+          description: |
+            OIDC group/role claims, passed through verbatim for the consumer
+            to use; docz-api makes no access decision with them. Omitted for
+            GitHub OAuth, and for an OIDC provider whose issuer does not put
+            the claim in the id_token — which needs either the `groups` scope
+            (opt-in per deployment, since an issuer rejects a scope its client
+            is not assigned) or a claim mapper. Treat it as always optional.
           items:
             type: string
     StatusResponse:

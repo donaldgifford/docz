@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -158,6 +159,44 @@ func TestLoadAuthProviderEnabled(t *testing.T) {
 	if cfg.AuthEnabled("okta") {
 		t.Error("AuthEnabled(okta) = true, want false")
 	}
+}
+
+// TestLoadOIDCScopes pins the {OKTA,KEYCLOAK}_SCOPES contract: the default is
+// the two scopes every issuer serves, "groups" is opt-in, and the two
+// providers are configured independently — an issuer rejects the whole
+// authorize request with invalid_scope for a scope its client is not
+// assigned, so one may publish groups while the other cannot.
+func TestLoadOIDCScopes(t *testing.T) {
+	t.Run("default omits groups", func(t *testing.T) {
+		cfg, err := load(t, validEnv())
+		if err != nil {
+			t.Fatalf("Load: %v", err)
+		}
+		want := []string{"profile", "email"}
+		if !slices.Equal(cfg.Auth.Okta.Scopes, want) {
+			t.Errorf("Okta.Scopes = %v, want %v", cfg.Auth.Okta.Scopes, want)
+		}
+		if !slices.Equal(cfg.Auth.Keycloak.Scopes, want) {
+			t.Errorf("Keycloak.Scopes = %v, want %v", cfg.Auth.Keycloak.Scopes, want)
+		}
+	})
+
+	t.Run("configured per provider", func(t *testing.T) {
+		env := validEnv()
+		env["OKTA_SCOPES"] = "profile, email, groups"
+		env["KEYCLOAK_SCOPES"] = "profile"
+
+		cfg, err := load(t, env)
+		if err != nil {
+			t.Fatalf("Load: %v", err)
+		}
+		if want := []string{"profile", "email", "groups"}; !slices.Equal(cfg.Auth.Okta.Scopes, want) {
+			t.Errorf("Okta.Scopes = %v, want %v", cfg.Auth.Okta.Scopes, want)
+		}
+		if want := []string{"profile"}; !slices.Equal(cfg.Auth.Keycloak.Scopes, want) {
+			t.Errorf("Keycloak.Scopes = %v, want %v", cfg.Auth.Keycloak.Scopes, want)
+		}
+	})
 }
 
 // none-mode is the first-setup shape: it must boot with no session secret, no

@@ -224,6 +224,40 @@ tests:
               secretKeyRef:
                 name: RELEASE-NAME-docz-api
                 key: okta-client-secret
+      # Scopes are opt-in: unset must emit no env at all so the binary's own
+      # profile,email default applies. Requesting a scope the app is not
+      # assigned fails the authorize request with invalid_scope.
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OKTA_SCOPES
+
+  - it: emits the OIDC scope env only when configured
+    set:
+      config:
+        authProviders: "okta,keycloak"
+        oktaIssuer: "https://acme.okta.com/oauth2/default"
+        oktaClientID: "0oaEXAMPLE"
+        oktaScopes: "profile,email,groups"
+        keycloakIssuer: "https://kc.example.com/realms/docz-api"
+        keycloakClientID: "docz-api"
+      secrets:
+        oktaClientSecret: "okta-secret"
+        keycloakClientSecret: "kc-secret"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OKTA_SCOPES
+            value: "profile,email,groups"
+      # keycloakScopes was left unset, so its env stays absent even though
+      # the provider is enabled — the two are configured independently.
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: KEYCLOAK_SCOPES
 
   - it: emits the Keycloak trio when keycloak is in authProviders
     set:

@@ -26,8 +26,10 @@
         "githubOAuthClientID": { "type": "string" },
         "oktaIssuer": { "type": "string" },
         "oktaClientID": { "type": "string" },
+        "oktaScopes": { "type": "string" },
         "keycloakIssuer": { "type": "string" },
         "keycloakClientID": { "type": "string" },
+        "keycloakScopes": { "type": "string" },
         "githubApiBase": { "type": "string" },
         "sessionTTL": { "type": "string" },
         "ingestDebounce": { "type": "string" }

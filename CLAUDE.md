@@ -498,6 +498,24 @@ progresses:
     before reading claims, dropping an email the issuer marks
     `email_verified:false`. `Registry` is a name→provider map with sorted
     `Names()`.
+  - **GOTCHA — requested OIDC scopes are per-provider config, not hardcoded**
+    (`{OKTA,KEYCLOAK}_SCOPES`, default `profile,email`). An issuer rejects the
+    **whole** authorize request with `invalid_scope` when the client is not
+    assigned a requested scope — so login breaks entirely rather than
+    degrading, and a scope no deployment universally has must never be
+    hardcoded. `groups` used to be, which blocked any Okta/Keycloak client
+    without it (stock Keycloak has no `groups` client scope; Okta needs one
+    defined on the authorization server). It is now opt-in. `openid` is always
+    prepended by `withOpenID` and de-duplicated, so config can neither drop
+    the scope OIDC mandates nor request it twice. The scopes are per-provider
+    because one issuer may publish groups while the other cannot.
+  - **`Identity.Groups` is passthrough only.** It is read from the `id_token`
+    (unconditionally — a claim mapper can supply it with no scope), carried in
+    the Redis session, and served on `GET /api/v1/auth/session` as an optional
+    `groups` array for docz-site. **Nothing in docz-api reads it for an access
+    decision** — `internal/authorize` has zero references — and it is never
+    persisted (the `users` table has no groups column). So dropping the scope
+    costs no server-side behavior.
   - **stateless CSRF via signed state** (`auth/state.go`): the OAuth `state` is
     `base64url(payload).hex(HMAC-SHA256(secret, payload))` where payload carries
     `{Provider, Nonce, ExpiresAt}` (5-min TTL). `VerifyState` is constant-time

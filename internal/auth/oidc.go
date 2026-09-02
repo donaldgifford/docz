@@ -22,8 +22,14 @@ var _ Provider = (*OIDCProvider)(nil)
 // It does network I/O, so it is called at startup with a bounded context: a
 // misconfigured issuer fails the boot rather than the first login. redirectURL
 // is the absolute /auth/callback URL registered with the OIDC client.
+//
+// scopes are the requested scopes beyond openid, which is always sent because
+// OIDC requires it. They are configurable because an issuer rejects the whole
+// authorize request with invalid_scope when the client is not assigned a
+// requested scope — so a scope no deployment universally has (notably
+// "groups") must not be hardcoded. A nil or empty slice requests openid alone.
 func NewOIDCProvider(
-	ctx context.Context, name, issuer, clientID, clientSecret, redirectURL string,
+	ctx context.Context, name, issuer, clientID, clientSecret, redirectURL string, scopes []string,
 ) (*OIDCProvider, error) {
 	provider, err := oidc.NewProvider(ctx, issuer)
 	if err != nil {
@@ -36,10 +42,27 @@ func NewOIDCProvider(
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			RedirectURL:  redirectURL,
-			Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups"},
+			Scopes:       withOpenID(scopes),
 			Endpoint:     provider.Endpoint(),
 		},
 	}, nil
+}
+
+// withOpenID returns scopes with openid guaranteed first and no duplicates, so
+// a configured list can neither drop the scope OIDC mandates nor request it
+// twice by naming it explicitly.
+func withOpenID(scopes []string) []string {
+	out := make([]string, 0, len(scopes)+1)
+	out = append(out, oidc.ScopeOpenID)
+	seen := map[string]bool{oidc.ScopeOpenID: true}
+	for _, s := range scopes {
+		if s == "" || seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	return out
 }
 
 // Name returns the provider key ("okta" | "keycloak").
@@ -67,6 +90,10 @@ func (o *OIDCProvider) Exchange(ctx context.Context, code string) (*Identity, er
 		return nil, fmt.Errorf("%s id_token verify: %w", o.name, err)
 	}
 
+	// Groups is read unconditionally but never required: it arrives only when
+	// the issuer puts the claim in the id_token, which needs either the
+	// "groups" scope (opt-in via {OKTA,KEYCLOAK}_SCOPES) or a claim mapper.
+	// Absent, it stays nil and drops out of the session response.
 	var claims struct {
 		Sub           string   `json:"sub"`
 		Email         string   `json:"email"`

@@ -62,6 +62,14 @@ type MeiliConfig struct {
 // It must be the only entry when present; see AuthDisabled.
 const ProviderNone = "none"
 
+// _defaultOIDCScopes is the {OKTA,KEYCLOAK}_SCOPES default: the two standard
+// scopes every OIDC issuer serves out of the box. "groups" is deliberately
+// absent — nothing in docz-api reads the claim for an access decision, and
+// requesting a scope the client is not assigned fails the whole authorize
+// request with invalid_scope. Deployments whose issuer publishes groups can
+// opt back in.
+const _defaultOIDCScopes = "profile,email"
+
 // AuthConfig holds site-user authentication configuration. Providers lists the
 // enabled login providers; a provider's credentials are required only when it
 // is enabled. RedirectBase is the public origin used to build each provider's
@@ -88,6 +96,13 @@ type OIDCProvider struct {
 	Issuer       string // {OKTA,KEYCLOAK}_ISSUER.
 	ClientID     string // {OKTA,KEYCLOAK}_CLIENT_ID.
 	ClientSecret Secret // {OKTA,KEYCLOAK}_CLIENT_SECRET.
+
+	// Scopes are the OAuth scopes requested beyond openid, which the provider
+	// always sends. Per-provider because an issuer rejects a scope its client
+	// is not assigned: Okta and Keycloak both fail the authorize request with
+	// invalid_scope, so one deployment may offer "groups" while another
+	// cannot. Default "profile,email" — the set every OIDC issuer serves.
+	Scopes []string // {OKTA,KEYCLOAK}_SCOPES.
 }
 
 // SessionConfig holds session store settings.
@@ -132,6 +147,8 @@ func Load() (Config, error) {
 
 	v.SetDefault("github_api_base", "https://api.github.com")
 	v.SetDefault("auth_providers", "github")
+	v.SetDefault("okta_scopes", _defaultOIDCScopes)
+	v.SetDefault("keycloak_scopes", _defaultOIDCScopes)
 	v.SetDefault("session_ttl", "720h")
 	v.SetDefault("ingest_debounce", "5s")
 	v.SetDefault("http_addr", ":8080")
@@ -172,11 +189,13 @@ func Load() (Config, error) {
 				Issuer:       v.GetString("okta_issuer"),
 				ClientID:     v.GetString("okta_client_id"),
 				ClientSecret: Secret(v.GetString("okta_client_secret")),
+				Scopes:       splitTrimmed(v.GetString("okta_scopes")),
 			},
 			Keycloak: OIDCProvider{
 				Issuer:       v.GetString("keycloak_issuer"),
 				ClientID:     v.GetString("keycloak_client_id"),
 				ClientSecret: Secret(v.GetString("keycloak_client_secret")),
+				Scopes:       splitTrimmed(v.GetString("keycloak_scopes")),
 			},
 		},
 		Session: SessionConfig{

@@ -128,6 +128,16 @@ config:
   # Native app has no client secret and cannot complete the exchange.
   # Required while `okta` is in authProviders.
   oktaClientID: ""
+  # -- Comma-separated OAuth scopes Okta is asked for beyond `openid`, which
+  # is always sent (OKTA_SCOPES). Empty → `profile,email`. Only add a scope
+  # the Okta app is actually assigned: an unassigned scope fails the whole
+  # authorize request with `invalid_scope`, so login breaks entirely rather
+  # than degrading. Add `groups` only if the authorization server publishes
+  # a groups claim — docz-api serves it on `/api/v1/auth/session` for the
+  # site to read, but makes no access decision with it. Prefer setting this
+  # in a values file: `--set` splits on commas, so it needs
+  # `--set-string 'config.oktaScopes=profile\,email'`.
+  oktaScopes: ""
   # -- Keycloak OIDC issuer, e.g.
   # `https://kc.example.com/realms/docz-api` (KEYCLOAK_ISSUER). Required
   # while `keycloak` is in authProviders.
@@ -136,6 +146,13 @@ config:
   # confidential (client authentication on). Required while `keycloak` is
   # in authProviders.
   keycloakClientID: ""
+  # -- Comma-separated OAuth scopes Keycloak is asked for beyond `openid`,
+  # which is always sent (KEYCLOAK_SCOPES). Empty → `profile,email`. Only
+  # add a scope assigned to the client (default or optional client scope):
+  # an unassigned scope fails the authorize request with `invalid_scope`.
+  # Stock Keycloak has no `groups` client scope — add one with a group
+  # membership mapper before requesting it here.
+  keycloakScopes: ""
   # -- GitHub API base URL; override for GitHub Enterprise
   # (GITHUB_API_BASE). Empty → api.github.com.
   githubApiBase: ""

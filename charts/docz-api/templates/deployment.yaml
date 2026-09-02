@@ -140,6 +140,10 @@ spec:
                 secretKeyRef:
                   name: {{ include "docz-api.secretName" . }}
                   key: okta-client-secret
+            {{- with .Values.config.oktaScopes }}
+            - name: OKTA_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
             {{- end }}
             {{- if has "keycloak" $providers }}
             - name: KEYCLOAK_ISSUER
@@ -151,6 +155,10 @@ spec:
                 secretKeyRef:
                   name: {{ include "docz-api.secretName" . }}
                   key: keycloak-client-secret
+            {{- with .Values.config.keycloakScopes }}
+            - name: KEYCLOAK_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
             {{- end }}
             - name: LOG_LEVEL
               value: {{ .Values.config.logLevel | quote }}

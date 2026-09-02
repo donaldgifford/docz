@@ -34,7 +34,8 @@ func discoveryServer(t *testing.T) string {
 func TestNewOIDCProviderDiscovers(t *testing.T) {
 	issuer := discoveryServer(t)
 	p, err := NewOIDCProvider(
-		context.Background(), "okta", issuer, "cid", "secret", "https://docz.test/auth/callback")
+		context.Background(), "okta", issuer, "cid", "secret", "https://docz.test/auth/callback",
+		[]string{"profile", "email"})
 	if err != nil {
 		t.Fatalf("NewOIDCProvider against a live discovery doc: %v", err)
 	}
@@ -58,6 +59,47 @@ func TestNewOIDCProviderDiscovers(t *testing.T) {
 	if scope := q.Get("scope"); !strings.Contains(scope, "openid") {
 		t.Errorf("scope = %q, want it to include openid", scope)
 	}
+	// "groups" is opt-in: an issuer rejects the whole authorize request with
+	// invalid_scope when its client is not assigned a requested scope, and
+	// nothing in docz-api reads the claim for an access decision.
+	if scope := q.Get("scope"); strings.Contains(scope, "groups") {
+		t.Errorf("scope = %q, want no groups unless configured", scope)
+	}
+}
+
+// TestNewOIDCProviderScopes pins the requested scope set: openid is always
+// sent (OIDC mandates it) and never duplicated, configured scopes are passed
+// through in order, and an empty configuration still yields a valid request.
+func TestNewOIDCProviderScopes(t *testing.T) {
+	issuer := discoveryServer(t)
+	tests := []struct {
+		name   string
+		scopes []string
+		want   string
+	}{
+		{"default set", []string{"profile", "email"}, "openid profile email"},
+		{"groups opted in", []string{"profile", "email", "groups"}, "openid profile email groups"},
+		{"none configured", nil, "openid"},
+		{"openid named explicitly is not doubled", []string{"openid", "profile"}, "openid profile"},
+		{"empty entries dropped", []string{"", "profile", ""}, "openid profile"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := NewOIDCProvider(
+				context.Background(), "okta", issuer, "cid", "secret",
+				"https://docz.test/auth/callback", tt.scopes)
+			if err != nil {
+				t.Fatalf("NewOIDCProvider: %v", err)
+			}
+			u, err := url.Parse(p.AuthCodeURL("s"))
+			if err != nil {
+				t.Fatalf("AuthCodeURL unparseable: %v", err)
+			}
+			if got := u.Query().Get("scope"); got != tt.want {
+				t.Errorf("scope = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestNewOIDCProviderErrorsOnBadIssuer(t *testing.T) {
@@ -66,7 +108,8 @@ func TestNewOIDCProviderErrorsOnBadIssuer(t *testing.T) {
 	srv := httptest.NewServer(http.NotFoundHandler())
 	t.Cleanup(srv.Close)
 	if _, err := NewOIDCProvider(
-		context.Background(), "keycloak", srv.URL, "cid", "secret", "https://docz.test/cb"); err == nil {
+		context.Background(), "keycloak", srv.URL, "cid", "secret", "https://docz.test/cb",
+		nil); err == nil {
 		t.Error("NewOIDCProvider with an unreachable discovery doc returned nil error")
 	}
 }
