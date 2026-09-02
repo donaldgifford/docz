@@ -310,6 +310,16 @@ change removes.
   touching the documents pipeline carries more blast radius than a page
   classifier fix. Worth its own small change.
 
+  **RESOLVED (2026-09-02)**, in the follow-up branch
+  `fix/ingest-type-dir-readme-log-noise`: the `ErrNoFrontmatter` warn is
+  now gated on `doczdoc.IsDoczFile(path.Base(blob.Path))`, so only a file
+  whose name follows the docz convention (`^\d+-.*\.md$`) is reported. The
+  README and other page candidates go quiet, and the double-report is gone
+  because `buildPages` remains the single reporter of genuine strays. The
+  change is **logging only** — the `ParseFrontmatter` result still decides
+  what becomes a document, so a non-convention file with valid frontmatter
+  ingests exactly as before.
+
 ## Open Questions
 
 ### 1. Where does the type-dir README land after the carve-out is gone?

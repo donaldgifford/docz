@@ -784,10 +784,17 @@ deltas are noted here.
 > README skips **silently** — `docz update` writes it there on every run,
 > so a Warn would fire on correct configuration. No schema or spec change;
 > reconcile's desired-state delete retires existing rows on each repo's
-> next ingest. **Known adjacent noise:** `buildDocuments` still logs
-> `skipping doc without frontmatter` for that same README (it matches by
-> type dir, not `IsDoczFile`) — pre-existing, deliberately left out of
-> IMPL-0009's scope, tracked as its follow-up.
+> next ingest. **Adjacent noise, since fixed:** `buildDocuments` matches by
+> type dir rather than `IsDoczFile`, so an enabled `api:` block (which
+> widens the fetch to every `.md` under `docs_dir`) sent that same README
+> through `ParseFrontmatter` and logged `skipping doc without frontmatter`
+> on every ingest. Its `ErrNoFrontmatter` warn is now gated on
+> `doczdoc.IsDoczFile(path.Base(...))`: an unparseable **document** is a
+> real mistake worth surfacing, while a README or page candidate is not —
+> and it kills the double-report, since `buildPages` already names genuine
+> strays. **Logging only** — which blobs become documents is unchanged, so
+> a non-convention file carrying valid frontmatter still ingests exactly
+> as before.
 
 docz v1.2.0's `api:` block publishes a repo's **non-docz markdown** as pages:
 fetched at ingest, reconciled into `repo_pages`, served at
