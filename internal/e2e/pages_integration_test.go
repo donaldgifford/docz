@@ -74,6 +74,11 @@ func TestE2ERepoPagesServeAndDisable(t *testing.T) {
 `
 	blobs := []ingest.BlobEntry{
 		{Path: "docs/frameworks/0001-intro.md", GitSHA: "g1", Content: doc("FW-0001", "Intro", "# Intro")},
+		// IMPL-0009: the enabled type dir's own README publishes nothing —
+		// docz-site owns the type surface at /:owner/:repo/frameworks, so a
+		// page row here would duplicate it. Its distinctive word (Pangolin)
+		// is what the search assertion below hunts for.
+		{Path: "docs/frameworks/README.md", GitSHA: "g5", Content: []byte("# Frameworks\n\nPangolin index table.\n")},
 		{Path: "docs/guides/README.md", GitSHA: "g2", Content: []byte("# Guides\n\nZebra guide directory.\n")},
 		{Path: "docs/examples/example1.md", GitSHA: "g3", Content: []byte("# Example One\n\nQuokka walkthrough example.\n")},
 		{Path: "CONTRIBUTING.md", GitSHA: "g4", Content: []byte("# Contributing\n\nWombat contribution rules.\n")},
@@ -121,6 +126,20 @@ func TestE2ERepoPagesServeAndDisable(t *testing.T) {
 			}
 			if page.Repo != "acme/paged" || page.RawMD != wantRaw {
 				t.Errorf("page %q = %+v, want the ingested markdown", path, page)
+			}
+		}
+	})
+
+	// IMPL-0009: the enabled type dir publishes nothing. Its README is
+	// ingested and classified, but never becomes a page row — the list above
+	// already proves the count, and these prove the path and the index.
+	t.Run("type dir publishes no page", func(t *testing.T) {
+		if code := getJSON(t, "/api/v1/repos/acme/paged/pages/frameworks", nil); code != http.StatusNotFound {
+			t.Errorf("type dir page status = %d, want 404 (type dirs publish nothing)", code)
+		}
+		for _, h := range searchHits(t, searchMux, "pangolin") {
+			if h.Source == "page" {
+				t.Errorf("type-dir README indexed as a page: %+v", h)
 			}
 		}
 	})

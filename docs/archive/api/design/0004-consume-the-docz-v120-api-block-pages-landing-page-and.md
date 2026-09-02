@@ -177,7 +177,7 @@ mapping implements DESIGN-0011's rule plus INV-0008's 5a amendment:
 | Source file | Published path | Why |
 | ----------- | -------------- | --- |
 | `<landing_page>` (default `docs/index.md`) | — (repo row, served by `/index`) | The repo root is always the landing page (5a rule 1); it is a pointer on the repo record, not a page row (DESIGN-0011 data model) |
-| `docs/impl/README.md` | `impl` | A directory's `README.md` is that directory's page — including type dirs, where the docz-generated table *is* the type page |
+| `docs/impl/README.md` | `impl` | A directory's `README.md` is that directory's page — **unless the directory is an enabled type dir**, which publishes nothing (amended by IMPL-0009; see rule 4) |
 | `docs/guides/index.md` (no README) | `guides` | Lone `index.md` serves as the directory page (5a amendment; docz README's "index.md or README.md") |
 | `docs/guides/index.md` (README present) | `guides/index.md` | Both present → `README.md` wins the directory; the index is path-addressed, nothing dropped |
 | `docs/examples/example1.md` | `examples/example1.md` | Path-addressed at its `docs_dir`-relative path, extension kept (6a) |
@@ -250,10 +250,12 @@ the consumption rule over the widened blob set. Per blob, in order:
 3. Under `<docs_dir>/templates/` or an `api.exclude` prefix → **skip**
    (always-excluded beats everything; the deny-list is the authoritative
    post-`Load` config, exclusive of the fetch hint).
-4. Inside an enabled type's dir: `README.md` → **directory page** for that
-   type dir; `IsDoczFile` + frontmatter → **document** (the existing
-   pipeline, unchanged — `IsDoczFile` is now the discriminator DESIGN-0011
-   says it becomes, not a keep-filter); anything else → **skip + Warn**
+4. Inside an enabled type's dir: **nothing is published** (amended by
+   IMPL-0009, see below). `IsDoczFile` + frontmatter → **document** (the
+   existing pipeline, unchanged — `IsDoczFile` is now the discriminator
+   DESIGN-0011 says it becomes, not a keep-filter); `README.md` → skip,
+   **silently** (docz writes it there on every `docz update`, so reporting
+   it would fire on correct configuration); anything else → **skip + Warn**
    (DESIGN-0011 rule 3: a stray file in a docz-managed namespace is more
    likely a mistake than an intent; the Warn is the "report" half of
    skip-and-report).
@@ -269,7 +271,32 @@ stay silent about them (they are `buildPages`'s business) — the existing
 
 The type-dir `README.md` is called out in the IMPL as its own test case: it
 is DESIGN-0011's predicted most-likely bug (fails `IsDoczFile`, lives in a
-type dir, must be **kept**).
+type dir).
+
+> **Amendment (IMPL-0009, [issue #28], 2026-09-01).** Rule 4 originally
+> **kept** the type dir's `README.md`, publishing it as the extensionless
+> `<dir>` directory page per docz DESIGN-0011 clause 2 — whose premise was
+> that "the docz-generated index table therefore *is* the type page's body,
+> which is how docz-site already serves it."
+>
+> The premise does not survive contact with the consumer. docz-site
+> synthesizes its own type page at `/:owner/:repo/:type` (live `listDocs`,
+> counts, curated blurbs) and reserves that URL for the type route, so the
+> published README materialized at a **second** URL,
+> `/:owner/:repo/pages/<dir>` — duplicating the type surface in the repo nav
+> (the type appears under *doc types* AND its README under *pages*), in
+> search (a `source: "page"` hit beside the type's own documents), and
+> serving a stale, less capable copy of the type page as its body.
+>
+> Enabled type dirs therefore publish **nothing**. Typed documents remain
+> `buildDocuments`'s business and strays keep the skip+Warn; only the
+> README carve-out is gone, and it skips silently. No schema or
+> spec-surface change — the pages list simply stops including these rows,
+> and reconcile's desired-state delete retires the existing ones on each
+> repo's next ingest. docz's DESIGN-0011 clause 2 is amended in step to
+> exempt enabled type dirs from the uniform directory-page mapping.
+>
+> [issue #28]: https://github.com/donaldgifford/docz-api/issues/28
 
 ### Store: repo_pages and the reconcile
 
@@ -454,7 +481,8 @@ subtlety the repo-row caches need).
   the bumped pin — this is the gate everything else waits on.
 - **Unit — classifier:** table-driven `buildPages` cases: both-index-files
   precedence (README wins, index path-addressed), lone index as directory
-  page, type-dir README kept (the predicted bug), type-dir stray skipped
+  page, type-dir README published nothing and silently (IMPL-0009
+  amendment), type-dir stray skipped
   with Warn, templates/ and exclude pruning, landing page skipped,
   additional_docs mapping, the OQ-1 collision (deterministic winner +
   Warn), title fallbacks (no-H1 file → filename; directory page →

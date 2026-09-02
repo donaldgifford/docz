@@ -776,6 +776,19 @@ deltas are noted here.
 
 ## Pages endpoints + search source facet (DESIGN-0004 / IMPL-0007)
 
+> **Amended by IMPL-0009 (issue #28):** enabled **type dirs publish
+> nothing** — rule 4's type-dir `README.md` carve-out is gone. docz-site
+> synthesizes its own type page at `/:owner/:repo/:type` from the live
+> document list, so publishing the docz-generated index table duplicated
+> that surface at `/pages/<dir>` (repo nav, search hit, stale body). The
+> README skips **silently** — `docz update` writes it there on every run,
+> so a Warn would fire on correct configuration. No schema or spec change;
+> reconcile's desired-state delete retires existing rows on each repo's
+> next ingest. **Known adjacent noise:** `buildDocuments` still logs
+> `skipping doc without frontmatter` for that same README (it matches by
+> type dir, not `IsDoczFile`) — pre-existing, deliberately left out of
+> IMPL-0009's scope, tracked as its follow-up.
+
 docz v1.2.0's `api:` block publishes a repo's **non-docz markdown** as pages:
 fetched at ingest, reconciled into `repo_pages`, served at
 `GET /api/v1/repos/{owner}/{name}/pages[/{path}]` (spec `1.3.0`), and
@@ -800,8 +813,9 @@ index/changelog precedents:
   entries without a request.
 - **`ingest.buildPages`** is the six-rule classifier (DESIGN-0004): landing
   skip → over-fetch guard → templates/`api.exclude` pruning → type-dir
-  discrimination (type-dir `README.md` is the type's one page; `IsDoczFile`
-  matches stay silent; strays warn + skip) → README-wins-over-index directory
+  discrimination (**enabled type dirs publish nothing** per IMPL-0009 —
+  `IsDoczFile` matches and the dir's own `README.md` stay silent; strays warn
+  + skip) → README-wins-over-index directory
   precedence (lone `index.md` serves the directory; `docs_dir` root never
   forms a directory page) → repo-relative `additional_docs`, classified
   second so a cross-namespace collision deterministically goes to the

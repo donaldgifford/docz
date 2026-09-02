@@ -1,6 +1,8 @@
 package ingest
 
 import (
+	"context"
+	"log/slog"
 	"slices"
 	"testing"
 
@@ -51,7 +53,7 @@ func TestBuildPagesClassifier(t *testing.T) {
 
 	blobs := []BlobEntry{
 		pblob("docs/index.md", "# Home"),                          // rule 1: landing → repo row, not a page
-		pblob("docs/rfc/README.md", "# RFC Index"),                // rule 4: type-dir README kept (the predicted bug)
+		pblob("docs/rfc/README.md", "# RFC Index"),                // rule 4: type-dir README publishes nothing (IMPL-0009)
 		pblob("docs/rfc/0001-intro.md", "---\nid: RFC-0001\n---"), // rule 4: docz doc → document pipeline
 		pblob("docs/rfc/notes.md", "# Stray"),                     // rule 4: stray in a type dir → skip + Warn
 		pblob("docs/impl/README.md", "# Impl Notes"),              // rule 5: README wins the directory…
@@ -74,7 +76,7 @@ func TestBuildPagesClassifier(t *testing.T) {
 		got = append(got, pages[i].Path)
 	}
 	want := []string{
-		"rfc", "impl", "impl/index.md", "guides",
+		"impl", "impl/index.md", "guides",
 		"examples/example1.md", "getting-started.md", "CONTRIBUTING.md",
 	}
 	slices.Sort(got)
@@ -83,11 +85,14 @@ func TestBuildPagesClassifier(t *testing.T) {
 		t.Fatalf("published paths = %v, want %v", got, want)
 	}
 
-	// Directory pages carry the directory address and their source file.
-	rfc := pages[byPath["rfc"]]
-	if rfc.RepoPath != "docs/rfc/README.md" || rfc.Title != "RFC Index" {
-		t.Errorf("rfc page = {%q %q}, want the type-dir README", rfc.RepoPath, rfc.Title)
+	// IMPL-0009: an enabled type dir publishes nothing, including its own
+	// README.md — the consumer owns the type surface, so publishing the
+	// docz-generated index table duplicated it at a second URL.
+	if _, published := byPath["rfc"]; published {
+		t.Error("type dir rfc published a page; type dirs publish nothing")
 	}
+
+	// Directory pages carry the directory address and their source file.
 	impl := pages[byPath["impl"]]
 	if impl.RepoPath != "docs/impl/README.md" {
 		t.Errorf("impl directory page from %q, want docs/impl/README.md (README wins)", impl.RepoPath)
@@ -107,7 +112,7 @@ func TestBuildPagesClassifier(t *testing.T) {
 	if ex.Title != "Example One" || ex.RawMD != "# Example One" || ex.GitSHA != "sha-docs/examples/example1.md" {
 		t.Errorf("example page = %+v, want title/raw/sha from the blob", ex)
 	}
-	if ex.ContentHash == "" || ex.ContentHash == pages[byPath["rfc"]].ContentHash {
+	if ex.ContentHash == "" || ex.ContentHash == pages[byPath["guides"]].ContentHash {
 		t.Error("ContentHash missing or not content-derived")
 	}
 }
@@ -139,6 +144,74 @@ api:
 	if pages[0].Path != "examples/a.md" || pages[0].RepoPath != "docs/examples/a.md" {
 		t.Errorf("winner = {%q %q}, want the docs_dir file at the shared path",
 			pages[0].Path, pages[0].RepoPath)
+	}
+}
+
+// warnPaths captures the "path" attribute of every Warn record a classifier
+// run emits, so the skip-and-report half of rule 4 can be asserted directly.
+type warnPaths struct {
+	paths []string
+}
+
+func (*warnPaths) Enabled(context.Context, slog.Level) bool { return true }
+
+//nolint:gocritic // hugeParam: signature mandated by slog.Handler.
+func (w *warnPaths) Handle(_ context.Context, rec slog.Record) error {
+	if rec.Level != slog.LevelWarn {
+		return nil
+	}
+	rec.Attrs(func(a slog.Attr) bool {
+		if a.Key == "path" {
+			w.paths = append(w.paths, a.Value.String())
+		}
+		return true
+	})
+	return nil
+}
+
+func (w *warnPaths) WithAttrs([]slog.Attr) slog.Handler { return w }
+func (w *warnPaths) WithGroup(string) slog.Handler      { return w }
+
+// TestBuildPagesTypeDirWarnsOnlyForStrays pins IMPL-0009 OQ-1a: a type dir
+// publishes nothing, but only a genuine stray is reported. `docz update`
+// writes an index-table README.md into every type dir, so warning about it
+// would fire on correct configuration on every ingest — training operators to
+// ignore the Warn that does mean "likely a mistake" (DESIGN-0011 rule 3).
+func TestBuildPagesTypeDirWarnsOnlyForStrays(t *testing.T) {
+	cfg := loadPagesConfig(t, `docs_dir: docs
+types:
+  rfc:
+    enabled: true
+    dir: rfc
+    id_prefix: RFC
+    id_width: 4
+    statuses: [Draft]
+api:
+  enabled: true
+`)
+
+	w := &warnPaths{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(w))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	pages := buildPages(&cfg, []BlobEntry{
+		pblob("docs/rfc/README.md", "# RFC Index"),                // docz-generated: silent
+		pblob("docs/rfc/0001-intro.md", "---\nid: RFC-0001\n---"), // a document: silent
+		pblob("docs/rfc/notes.md", "# Stray"),                     // a stray: skip + Warn
+		// The silence is scoped to the type dir's OWN README. One nested
+		// deeper is a human's misplaced directory, not a docz artifact, so it
+		// stays reported — like the index.md that would sit beside it.
+		pblob("docs/rfc/sub/README.md", "# Nested"),
+	})
+
+	if len(pages) != 0 {
+		t.Fatalf("pages = %+v, want none (type dirs publish nothing)", pages)
+	}
+	slices.Sort(w.paths)
+	want := []string{"docs/rfc/notes.md", "docs/rfc/sub/README.md"}
+	if !slices.Equal(w.paths, want) {
+		t.Errorf("warned paths = %v, want %v (only the dir's own README is silent)", w.paths, want)
 	}
 }
 

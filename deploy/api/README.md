@@ -353,6 +353,14 @@ either restart healthy pods or silently do nothing.
   each repo's snapshot rewrites on its next ingest; a default-branch push
   or a `docz-api -onboard owner/name@installationID` nudge clears any
   stragglers at fleet scale. No backfill job exists or is needed.
+- **Type dirs publish no pages (IMPL-0009):** a docz type directory's own
+  `README.md` (the generated index table) is no longer served under
+  `/pages`; the type surface belongs to the consumer's type route. Existing
+  rows retire **naturally** — each repo's next ingest deletes them and
+  purges them from the search index. The same triggers apply: a
+  default-branch push under `docs_dir/`, or a `docz-api -onboard
+  owner/name@installationID` nudge. Until then those stale page rows keep
+  serving; nothing breaks. No backfill job exists or is needed.
 - The images pin major/minor tags (`postgres:17-alpine`, `redis:7.4-alpine`,
   `getmeili/meilisearch:v1.12`); Renovate PRs updates.
 - For Kubernetes, translate this to a Deployment (service) plus StatefulSets or

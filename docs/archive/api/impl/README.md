@@ -40,4 +40,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0006 | Error observability: log every failure, self-heal the queue, optional no-auth mode | In Progress | 2026-08-22 | Donald Gifford | [0006-error-observability-log-every-failure-self-heal-the-queue.md](0006-error-observability-log-every-failure-self-heal-the-queue.md) |
 | IMPL-0007 | Consume the docz v1.2.0 api block: pages, landing page, and additional docs | Completed | 2026-08-28 | Donald Gifford | [0007-consume-the-docz-v120-api-block-pages-landing-page-and.md](0007-consume-the-docz-v120-api-block-pages-landing-page-and.md) |
 | IMPL-0008 | Serve docz yaml key spellings in config snapshot via docz v1.2.2 | Completed | 2026-08-30 | Donald Gifford | [0008-serve-docz-yaml-key-spellings-in-config-snapshot-via-docz-v122.md](0008-serve-docz-yaml-key-spellings-in-config-snapshot-via-docz-v122.md) |
+| IMPL-0009 | Stop publishing type-dir READMEs as directory pages | Draft | 2026-09-01 | Donald Gifford | [0009-stop-publishing-type-dir-readmes-as-directory-pages.md](0009-stop-publishing-type-dir-readmes-as-directory-pages.md) |
 <!-- END DOCZ AUTO-GENERATED -->

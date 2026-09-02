@@ -167,19 +167,23 @@ func (c *pageClassifier) classifyDocsDir(p string) (string, bool) {
 	if c.excluded(p) {
 		return "", false
 	}
-	// Rule 4: type dirs are reserved for docz documents; the one page they
-	// publish is their own README.md (the docz-generated table IS the type
-	// page). IsDoczFile matches stay silent — they are buildDocuments's
-	// business. Anything else in a docz-managed namespace is more likely a
-	// mistake than an intent: skip + Warn (DESIGN-0011 rule 3).
+	// Rule 4: type dirs publish nothing (IMPL-0009, amending DESIGN-0004 and
+	// docz DESIGN-0011 clause 2). The consumer owns the type surface — it
+	// synthesizes /:owner/:repo/:type from the live document list — so
+	// publishing the dir's docz-generated README.md as a page only
+	// duplicated that surface at a second URL. IsDoczFile matches stay silent
+	// (buildDocuments's business), and so does the README: docz writes it
+	// there on every `docz update`, so warning about it would fire on correct
+	// configuration. Anything else in a docz-managed namespace is more likely
+	// a mistake than an intent: skip + Warn (DESIGN-0011 rule 3).
 	if td := c.typeDirOf(p); td != "" {
-		if p == td+"/"+readmeName {
-			return strings.TrimPrefix(td, c.docsDir+"/"), true
+		// The silence is for the dir's OWN README.md — the file `docz update`
+		// regenerates. A README nested deeper (docs/rfc/sub/README.md) is a
+		// human's misplaced directory, so it stays a reported stray like the
+		// index.md beside it.
+		if p != td+"/"+readmeName && !doczdoc.IsDoczFile(path.Base(p)) {
+			slog.Warn("skipping stray file in a docz type directory", "path", p)
 		}
-		if doczdoc.IsDoczFile(path.Base(p)) {
-			return "", false
-		}
-		slog.Warn("skipping stray file in a docz type directory", "path", p)
 		return "", false
 	}
 	// Rules 5: a directory's README.md is that directory's page; a lone
