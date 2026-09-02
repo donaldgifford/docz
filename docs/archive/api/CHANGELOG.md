@@ -3,26 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.8.2] - 2026-09-02
 
 ### Bug Fixes
 
-- *(ingest)* Stop publishing type-dir READMEs as pages
-- *(deps)* Bump golang.org/x/crypto to v0.55.0 (CVE-2026-56854)
-- *(deps)* Bump google.golang.org/grpc to v1.83.1 (CVE-2026-84304)
-- *(ingest)* Scope the type-dir README silence to the dir's own README
-
-### Documentation
-
-- *(impl)* IMPL-0009 — stop publishing type-dir READMEs as pages ([#28](https://github.com/donaldgifford/docz-api/issues/28))
-- *(impl)* Record IMPL-0009 OQ answers — 1a 3a 4a
-- *(impl)* Record IMPL-0009 OQ answer — 2a
-- Record the IMPL-0009 type-dir amendment
-- *(impl)* Close out IMPL-0009 — all three phases complete
-
-### Testing
-
-- *(e2e)* Prove type dirs publish no pages
+- *(ingest)* Stop publishing type-dir READMEs as pages ([#29](https://github.com/donaldgifford/docz-api/issues/29))
 
 ## [0.8.1] - 2026-08-30
 
