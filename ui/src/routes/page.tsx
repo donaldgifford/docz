@@ -160,7 +160,7 @@ export function Component() {
         <article className="doc-prose">{rendered.data.content}</article>
         <div
           data-testid="page-meta"
-          className="mt-10 border-t border-border-hairline pt-3 font-mono text-[11px] text-fg-muted"
+          className="mt-10 border-t border-border-hairline pt-3 font-mono text-[12px] text-fg-muted"
         >
           {sourceInputs?.base ?? page.path} · {page.git_sha.slice(0, 7)}
         </div>
@@ -179,7 +179,7 @@ export function Component() {
       ]}
       rail={
         <>
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
             On this page
           </div>
           <TocList toc={rendered.data?.toc ?? []} />

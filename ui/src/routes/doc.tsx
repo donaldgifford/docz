@@ -114,15 +114,15 @@ function DocHeader({ doc }: { doc: Document }) {
   return (
     <header className="mb-9 border-b border-border-hairline pb-8">
       {/* Id line: DESIGN / 0009, with the fading rule from the mockup */}
-      <div className="mb-4 flex items-center gap-3 font-mono text-[13px] tracking-[0.04em] text-accent after:h-px after:flex-1 after:bg-gradient-to-r after:from-(--color-accent-border) after:to-transparent after:content-['']">
+      <div className="mb-4 flex items-center gap-3 font-mono text-[14px] tracking-[0.04em] text-accent after:h-px after:flex-1 after:bg-gradient-to-r after:from-(--color-accent-border) after:to-transparent after:content-['']">
         <span>{parts ? `${parts[0]} / ${parts[1]}` : doc.doc_id}</span>
       </div>
 
-      <h1 className="font-serif text-[clamp(1.9rem,4.5vw,2.6rem)] leading-[1.14] font-normal tracking-[-0.02em] text-fg-primary">
+      <h1 className="font-serif text-[clamp(1.9rem,4.5vw,2.6rem)] leading-[1.14] font-bold text-fg-primary">
         {doc.title}
       </h1>
 
-      <div className="mt-4 flex flex-wrap items-center gap-[14px] font-mono text-[12px] text-fg-tertiary">
+      <div className="mt-4 flex flex-wrap items-center gap-[14px] font-mono text-[13px] text-fg-tertiary">
         {doc.status !== "" && (
           <>
             <StatusPill status={doc.status} />
@@ -241,7 +241,7 @@ export function Component() {
         // lifecycle moved into the article header, so long documents
         // keep their outline visible without burying anything.
         <section className="mb-8">
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
             On this page
           </div>
           <TocList toc={toc} />
@@ -262,7 +262,7 @@ export function Component() {
       {/* Narrow viewports: ToC as a disclosure above the article
           (the right rail hides below the frame's 1181px breakpoint). */}
       <details className="mb-6 border border-border-hairline px-4 py-3 min-[1181px]:hidden">
-        <summary className="cursor-pointer font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+        <summary className="cursor-pointer font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
           On this page
         </summary>
         <div className="pt-3">
@@ -279,7 +279,7 @@ export function Component() {
           role="region"
           aria-label="raw markdown"
           tabIndex={0}
-          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[12.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary"
+          className="overflow-x-auto border border-border-default bg-code-bg p-5 font-mono text-[13.5px] leading-[1.55] whitespace-pre-wrap text-fg-secondary"
         >
           {doc.raw_md ?? ""}
         </pre>

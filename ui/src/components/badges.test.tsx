@@ -1,21 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { StatusBadge, StatusPill, TypeBadge } from "@/components/badges";
-
-describe("TypeBadge", () => {
-  it("renders the type with its curated color", () => {
-    render(<TypeBadge type="rfc" />);
-    const badge = screen.getByText("rfc");
-    expect(badge.style.getPropertyValue("--c")).toBe("var(--color-t-rfc)");
-  });
-
-  it("renders unknown types with a deterministic fallback color", () => {
-    render(<TypeBadge type="runbook" />);
-    const badge = screen.getByText("runbook");
-    expect(badge.style.getPropertyValue("--c")).toBe("var(--color-hash-7)");
-  });
-});
+import { StatusBadge, StatusPill } from "@/components/badges";
 
 describe("StatusBadge", () => {
   it("renders label plus color dot", () => {

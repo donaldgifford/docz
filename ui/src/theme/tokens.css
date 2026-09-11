@@ -11,11 +11,17 @@
  * it — the type/status color module resolves tokens at runtime via
  * var(), so the full set is a runtime contract, not dead CSS. */
 @theme static {
-  /* Font stacks — families self-hosted via @fontsource in main.tsx. */
+  /* Font stacks — families self-hosted via @fontsource in main.tsx
+     (DESIGN-0005, seventh amendment). --font-serif is a REAL serif now
+     (Source Serif 4, variable): it carries reader prose, the headings
+     inside an article, and pull quotes. --font-sans carries UI chrome
+     and the page titles that sit outside the article. The earlier
+     Monaspace Xenon slab is gone — a mono can't set body text, and
+     mono headings on a serif page read as a second voice. */
   --font-sans:
-    "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --font-serif: "Source Serif 4", Georgia, serif;
+    "Mona Sans Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Monaspace Neon", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: "Source Serif 4 Variable", Charter, Georgia, serif;
 
   /* Background scale */
   --color-bg-base: #0c1017;
@@ -37,6 +43,11 @@
   --color-fg-secondary: #afb6c2;
   --color-fg-tertiary: #8a92a5;
   --color-fg-muted: #7e8695;
+  /* Reader body text (DESIGN-0005 OQ-10, amended on review): a step
+     brighter than fg-secondary so long-form prose holds up on dark
+     without touching UI secondary text; still a visible step below
+     fg-primary so bold and headings keep their lift. ~11.8:1 on base. */
+  --color-fg-prose: #c6ccd6;
 
   /* Accent */
   --color-accent: #7dcfff;
@@ -112,63 +123,135 @@
 }
 
 @layer components {
+  /*
+   * MONO_CHIP_OFFSET — why every bordered mono chip needs lopsided
+   * vertical padding.
+   *
+   * An inline box is as tall as the font's ascent plus descent, never
+   * its line-height, and the glyphs sit inside that box wherever the
+   * font's metrics put them. Monaspace Neon at any size leaves
+   * 0.032em of air above its capitals and 0.19em below the baseline.
+   * Symmetric padding therefore renders every chip with its text
+   * jammed against the top edge — the complaint that produced this
+   * comment, twice.
+   *
+   * Centering the cap band means making the paddings differ by
+   * 0.19 - 0.032 = 0.159em. This class carries that difference and is
+   * the ONLY vertical padding its elements should have: do not add a
+   * py-* utility beside it. Retuning the height is fine as long as the
+   * difference survives. Uppercase chips center exactly; mixed-case
+   * chips get descender clearance out of the bottom value.
+   */
+  .mono-chip-y {
+    /* 0.169em apart rather than the bare 0.159em: the browser rounds
+       the font's ascent and descent to whole pixels, which biases the
+       gap downward at small sizes. Measured residual across the chip
+       sizes in use is now under half a pixel. */
+    padding-top: 0.31em;
+    padding-bottom: 0.141em;
+  }
+
   /* Reader prose, ported from mockup .doc-prose. Scoped descendant
      selectors because the content is pipeline-rendered markdown we
      can't annotate with utility classes. */
   .doc-prose {
-    font-size: 15.5px;
-    line-height: 1.7;
-    color: var(--color-fg-secondary);
-  }
-  .doc-prose > p,
-  .doc-prose li {
+    /* DESIGN-0005 seventh amendment: the article is set in the serif at
+       19px on 1.78 leading, the rhythm of the long-form reference sites
+       this design was measured against. Headings below are in em so the
+       hierarchy scales with this number. */
     font-family: var(--font-serif);
-    font-size: 16px;
+    font-size: 19px;
+    line-height: 1.78;
+    /* A serif at this size needs no weight compensation — the earlier
+       450 existed because Mona Sans's regular read as hairline on
+       dark. Source Serif's regular has the stroke for it. */
+    font-weight: 400;
+    color: var(--color-fg-prose);
+    /* Unbroken tokens (long paths, URLs, inline code) wrap instead of
+       pushing into the rail. Inherited; <pre> keeps white-space: pre. */
+    overflow-wrap: break-word;
+  }
+  /* DESIGN-0005: the measure cap applies to text-bearing blocks only —
+     code blocks, tables, and figures keep the full column so wide
+     content is never squeezed. ch is measured in each element's own
+     face: 66ch of Source Serif is ~78 characters (~660px at 19px), the
+     line length the long-form reference sites settle on. */
+  .doc-prose
+    :is(p, ul, ol, dl, h1, h2, h3, h4, h5, h6, blockquote, .admonition, hr) {
+    max-width: 66ch;
   }
   .doc-prose p {
-    margin: 0 0 1.1rem;
+    margin: 0 0 1.65rem;
   }
   /* h1 appears only on the repo home (the reader strips body h1s and
      renders its own header) — style it like the reader's doc title so
      index.md-driven homes match. */
   .doc-prose h1 {
-    font-family: var(--font-serif);
     font-size: 2rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.25;
+    font-weight: 700;
+    line-height: 1.2;
     margin: 0 0 1.1rem;
     color: var(--color-fg-primary);
   }
+  /* Section headings share the body's serif at bold weight: one voice
+     per article (DESIGN-0005 seventh amendment — the Xenon slab read as
+     a second family). Sections are broken up structurally, not by
+     color: a hairline rule spanning the column and air above each h2. */
   .doc-prose h2 {
-    font-family: var(--font-serif);
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    margin: 2.6rem 0 0.9rem;
+    font-size: 1.45em;
+    font-weight: 700;
+    margin: 4rem 0 1.2rem;
+    padding-top: 1.8rem;
+    border-top: 1px solid var(--color-border-hairline);
     color: var(--color-fg-primary);
   }
   .doc-prose h2:first-child {
     margin-top: 0;
+    padding-top: 0;
+    border-top: none;
   }
-  .doc-prose h3,
-  .doc-prose h4 {
-    font-family: var(--font-sans);
-    font-size: 1.02rem;
-    font-weight: 600;
-    margin: 1.9rem 0 0.6rem;
+  .doc-prose h3 {
+    font-size: 1.2em;
+    font-weight: 700;
+    margin: 2.8rem 0 0.8rem;
     color: var(--color-fg-primary);
+  }
+  .doc-prose h4 {
+    font-size: 1em;
+    font-weight: 700;
+    margin: 1.8rem 0 0.5rem;
+    color: var(--color-fg-primary);
+  }
+  /* h5/h6 stay out of the ToC and get no copy link (markdown-heading
+     maps h2–h4), but they still need to read as headings. */
+  .doc-prose h5,
+  .doc-prose h6 {
+    font-family: var(--font-sans);
+    font-size: 0.95em;
+    font-weight: 600;
+    margin: 1.4rem 0 0.4rem;
+    color: var(--color-fg-primary);
+  }
+  .doc-prose h6 {
+    font-size: 0.8em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-fg-secondary);
   }
   .doc-prose h1,
   .doc-prose h2,
   .doc-prose h3,
-  .doc-prose h4 {
+  .doc-prose h4,
+  .doc-prose h5,
+  .doc-prose h6 {
     /* Anchor targets land below the sticky topbar. */
     scroll-margin-top: 80px;
   }
+  /* Run-in bold is demoted to 500 so it stops competing with h3; the
+     color step to fg-primary does the emphasis work. */
   .doc-prose strong {
     color: var(--color-fg-primary);
-    font-weight: 600;
+    font-weight: 650;
   }
   .doc-prose a {
     color: var(--color-accent);
@@ -181,17 +264,35 @@
   .doc-prose a:hover {
     text-decoration-color: var(--color-accent);
   }
+  /* Inline code (DESIGN-0005 OQ-4, amended twice on review): a neutral
+     chip — primary text on the elevated surface with a visible border —
+     so plain code reads as text, at 0.875em with no vertical padding so
+     the line box stays even. Only code that IS a link takes the accent:
+     inherited link color plus accent-tinted border and fill, so the
+     color carries meaning (Oxide's convention). */
   .doc-prose code {
     font-family: var(--font-mono);
-    font-size: 0.82em;
-    color: var(--color-accent);
-    background: var(--color-code-bg);
-    border: 1px solid var(--color-border-hairline);
-    padding: 1px 5px;
+    font-size: 0.875em;
+    color: var(--color-fg-primary);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    /* Vertical padding is ASYMMETRIC on purpose — see MONO_CHIP_OFFSET
+       below for the arithmetic. Monaspace Neon leaves 0.032em above
+       its capitals inside the inline box and 0.19em below the
+       baseline, so the two paddings must differ by 0.159em for the cap
+       band to sit centered. Inline padding overflows the line box
+       without moving neighboring lines, so the rhythm is safe, and the
+       0.06em floor keeps descenders clear of the border. */
+    padding: 0.25em 0.35em 0.06em;
+  }
+  .doc-prose a code {
+    color: inherit;
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-bg);
   }
   .doc-prose ul,
   .doc-prose ol {
-    margin: 0 0 1.1rem 1.3rem;
+    margin: 0 0 1.65rem 1.3rem;
   }
   .doc-prose ul {
     list-style: disc;
@@ -200,62 +301,96 @@
     list-style: decimal;
   }
   .doc-prose li {
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.6rem;
   }
   .doc-prose li::marker {
     color: var(--color-fg-muted);
+  }
+  /* GFM task lists (DESIGN-0005 dial-in): the sanitizer keeps the
+     disabled checkbox inputs, and browsers draw disabled controls
+     grey-on-grey. Draw them ourselves in the accent instead — unchecked
+     is the pill outline, checked is a filled accent box with a
+     bg-colored tick — and let the box take the bullet's place. */
+  .doc-prose li:has(> input[type="checkbox"], > p > input[type="checkbox"]) {
+    list-style: none;
+  }
+  .doc-prose input[type="checkbox"] {
+    appearance: none;
+    display: inline-grid;
+    place-content: center;
+    width: 0.95em;
+    height: 0.95em;
+    margin: 0 0.5em 0 -1.35em;
+    vertical-align: -0.12em;
+    border: 1px solid var(--color-accent-border);
+    background: var(--color-accent-bg);
+    color: var(--color-bg-base);
+    cursor: default;
+  }
+  .doc-prose input[type="checkbox"]:checked {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+  .doc-prose input[type="checkbox"]:checked::before {
+    content: "";
+    width: 0.5em;
+    height: 0.28em;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-0.1em) rotate(-45deg);
   }
   .doc-prose blockquote {
     margin: 1.5rem 0;
     padding: 1rem 1.4rem;
     background: var(--color-bg-raised);
     border: 1px solid var(--color-border-hairline);
-    color: var(--color-fg-secondary);
+    color: var(--color-fg-prose);
     font-style: italic;
-    font-family: var(--font-serif);
   }
-  /* GitHub-alert admonitions (IMPL-0002 Phase 3). Divs, not
-     blockquotes — the pull-quote treatment above never cascades in.
-     Backgrounds are the precomputed adm-*-bg tints; labels use the
-     matching status color (both pairs enforced in contrast.test.ts). */
+  /* GitHub-alert admonitions (IMPL-0002 Phase 3; restyled in the
+     DESIGN-0005 dial-in). Divs, not blockquotes — the pull-quote
+     treatment above never cascades in. The look follows the mockup's
+     `.banner`: a thin tinted rule around a quiet fill, with the kind
+     carried by a mono uppercase run-in label instead of a filled icon
+     disc (the discs read as stickers next to everything else on the
+     page). Backgrounds are the precomputed adm-*-bg tints; labels use
+     the matching status color (both pairs enforced in
+     contrast.test.ts). */
   .doc-prose .admonition {
-    position: relative;
-    margin: 1.5rem 0;
-    padding: 0.9rem 1.25rem 0.9rem 3.4rem;
+    margin: 1.6rem 0;
+    padding: 0.8rem 1.1rem;
     border: 1px solid var(--color-border-hairline);
-    line-height: 1.6;
-  }
-  .doc-prose .admonition::before {
-    position: absolute;
-    top: 0.85rem;
-    left: 1rem;
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    color: var(--color-bg-base);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
+    /* An aside, not the main line: a step down in size and leading so
+       the eye can skip it, matching the mockup banner's density. */
+    font-size: 0.95em;
+    line-height: 1.55;
   }
   .doc-prose .admonition .adm-label {
-    display: inline-flex;
-    margin-right: 0.5rem;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 0.75em;
     font-weight: 500;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
+    /* The label is a run-in: it shares the first line with the text,
+       so it must not be a flex box (that would force its own line). */
+    margin-right: 0.7rem;
+    white-space: nowrap;
   }
   .doc-prose .admonition p {
     display: inline;
     margin: 0;
-    color: var(--color-fg-secondary);
+    color: var(--color-fg-prose);
   }
   .doc-prose .admonition p + p {
     display: block;
     margin-top: 0.6rem;
+  }
+  /* Nested blocks sit flush with the box's own bottom padding. */
+  .doc-prose .admonition > :last-child {
+    margin-bottom: 0;
+  }
+  .doc-prose .admonition :is(ul, ol) {
+    margin-top: 0.5rem;
   }
   .doc-prose .admonition.note {
     background: var(--color-adm-note-bg);
@@ -264,22 +399,12 @@
   .doc-prose .admonition.note .adm-label {
     color: var(--color-st-proposed);
   }
-  .doc-prose .admonition.note::before {
-    content: "i";
-    background: var(--color-st-proposed);
-    font-family: var(--font-serif);
-    font-style: italic;
-  }
   .doc-prose .admonition.tip {
     background: var(--color-adm-tip-bg);
     border-color: color-mix(in srgb, var(--color-st-accepted) 30%, transparent);
   }
   .doc-prose .admonition.tip .adm-label {
     color: var(--color-st-accepted);
-  }
-  .doc-prose .admonition.tip::before {
-    content: "\2713";
-    background: var(--color-st-accepted);
   }
   .doc-prose .admonition.important {
     background: var(--color-adm-important-bg);
@@ -292,20 +417,12 @@
   .doc-prose .admonition.important .adm-label {
     color: var(--color-st-superseded);
   }
-  .doc-prose .admonition.important::before {
-    content: "\2726";
-    background: var(--color-st-superseded);
-  }
   .doc-prose .admonition.warning {
     background: var(--color-adm-warning-bg);
     border-color: color-mix(in srgb, var(--color-st-draft) 30%, transparent);
   }
   .doc-prose .admonition.warning .adm-label {
     color: var(--color-st-draft);
-  }
-  .doc-prose .admonition.warning::before {
-    content: "!";
-    background: var(--color-st-draft);
   }
   .doc-prose .admonition.caution {
     background: var(--color-adm-caution-bg);
@@ -314,15 +431,17 @@
   .doc-prose .admonition.caution .adm-label {
     color: var(--color-st-rejected);
   }
-  .doc-prose .admonition.caution::before {
-    content: "\2715";
-    background: var(--color-st-rejected);
+  /* wrap-table.ts puts every table in this scroll container: a table
+     wider than the column scrolls here instead of widening the page. */
+  .doc-prose .table-wrap {
+    overflow-x: auto;
+    margin: 0 0 1.4rem;
   }
   .doc-prose table {
     width: 100%;
     border-collapse: collapse;
-    margin: 0 0 1.4rem;
-    font-size: 13px;
+    margin: 0;
+    font-size: 14px;
   }
   .doc-prose th,
   .doc-prose td {
@@ -333,16 +452,23 @@
   }
   .doc-prose th {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-fg-muted);
     border-bottom: 1px solid var(--color-border-default);
   }
+  /* Code blocks get every Monaspace ligature set (DESIGN-0005 OQ-6);
+     texture healing (calt) is a browser default so it needs nothing.
+     Sets stay OFF for inline code and UI labels — mid-sentence
+     ligatures read as typos. Shiki carries the theme's italic scopes
+     inline, and the loaded Neon italic renders them for real. */
   .doc-prose pre {
     font-family: var(--font-mono);
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.55;
+    font-feature-settings:
+      "ss01", "ss02", "ss03", "ss04", "ss05", "ss06", "ss07", "ss08", "ss09";
     border: 1px solid var(--color-border-default);
     padding: 1rem 1.1rem;
     overflow-x: auto;
@@ -375,7 +501,7 @@
     background: var(--color-bg-raised);
     border-bottom: 1px solid var(--color-border-hairline);
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.14em;
   }
@@ -385,7 +511,7 @@
   }
   .doc-prose .codeblock-header .caption {
     color: var(--color-fg-tertiary);
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0.01em;
     text-transform: none;
     overflow: hidden;
@@ -401,7 +527,10 @@
      block via MarkdownPre semantics. */
   .doc-prose .mermaid-figure {
     margin: 1.5rem 0;
-    padding: 1rem;
+    /* Diagrams need room to read as a figure rather than a boxed
+       screenshot; the generous inset is the one thing the old portal
+       got visibly right. */
+    padding: 1.75rem 1.25rem;
     border: 1px solid var(--color-border-hairline);
     background: var(--color-bg-raised);
   }
@@ -411,11 +540,25 @@
     height: auto;
     margin: 0 auto;
   }
+  /* Under htmlLabels:false mermaid draws labels as SVG <text>, which
+     otherwise inherits the library's sans default and drifts from the
+     page. Pin the family and a readable fill. A diagram's own
+     `classDef` still wins: mermaid scopes those rules by the render
+     id, and an id selector outranks this one — which is how a document
+     colors individual nodes (see the specimen's styled flowchart). */
+  .doc-prose .mermaid-figure svg :is(.nodeLabel, .label) {
+    font-family: var(--font-mono);
+    fill: var(--color-fg-primary);
+  }
+  .doc-prose .mermaid-figure svg .edgeLabel {
+    font-family: var(--font-mono);
+    fill: var(--color-fg-tertiary);
+  }
   .doc-prose .mermaid-figure figcaption {
     margin-top: 0.6rem;
     text-align: center;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--color-fg-tertiary);
   }
   .doc-prose img {
@@ -475,7 +618,7 @@
     background: var(--color-bg-base);
     color: var(--color-fg-primary);
     font-family: var(--font-sans);
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }

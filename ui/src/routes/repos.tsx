@@ -30,12 +30,12 @@ function RepoCard({ repo }: { repo: RepoSummary }) {
         <span className="font-mono text-[14px] font-semibold text-fg-primary">
           {repo.repo}
         </span>
-        <span className="border border-border-default px-[7px] py-px font-mono text-[10.5px] text-fg-muted">
+        <span className="mono-chip-y border border-border-default px-[7px] font-mono text-[11.5px] text-fg-muted">
           {repo.default_branch}
         </span>
       </div>
 
-      <div className="mb-3 flex min-h-4 flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-fg-tertiary">
+      <div className="mb-3 flex min-h-4 flex-wrap gap-x-4 gap-y-1 font-mono text-[12px] text-fg-tertiary">
         {typeCounts.map(([type, count]) => (
           <span key={type}>
             <b className="font-medium text-fg-secondary">{count}</b> {type}
@@ -43,7 +43,7 @@ function RepoCard({ repo }: { repo: RepoSummary }) {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-4 font-mono text-[11px] text-fg-muted">
+      <div className="flex flex-wrap gap-4 font-mono text-[12px] text-fg-muted">
         <span className="text-t-framework">{repo.docs_dir}/</span>
         <span>
           docs:{" "}
@@ -90,7 +90,7 @@ export function Component() {
   return (
     <main className="mx-auto max-w-[940px] px-5">
       <header className="pt-10 pb-6">
-        <div className="font-mono text-[12.5px] tracking-[0.05em] text-accent">
+        <div className="font-mono text-[13.5px] tracking-[0.05em] text-accent">
           / docz <span className="text-fg-muted">/</span> repositories
         </div>
         <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">
@@ -121,10 +121,10 @@ export function Component() {
         <CardSkeletons />
       ) : repos.length === 0 ? (
         <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
-          <p className="font-mono text-[13px] text-fg-secondary">
+          <p className="font-mono text-[14px] text-fg-secondary">
             No repositories yet
           </p>
-          <p className="mt-2 max-w-96 text-[13px] text-fg-tertiary">
+          <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">
             Onboard a repo with the docz GitHub App to see it here.
           </p>
         </div>

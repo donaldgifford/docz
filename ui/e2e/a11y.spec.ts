@@ -41,6 +41,23 @@ test("reader passes full-rule axe", async ({ page }) => {
   await expectNoBlockingViolations(page);
 });
 
+test("markdown specimen page passes full-rule axe", async ({ page }) => {
+  // docs/guides/markdown-specimen.md renders every pipeline construct
+  // on one page; this is the only sweep that sees real mermaid output
+  // and real color-contrast for all of them.
+  await page.goto("/donaldgifford/docz-site/pages/guides/markdown-specimen.md");
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Markdown rendering specimen",
+    }),
+  ).toBeVisible();
+  await expect(page.locator("figure.mermaid-figure svg")).toHaveCount(3, {
+    timeout: 15_000,
+  });
+  await expectNoBlockingViolations(page);
+});
+
 test("repos and type page pass full-rule axe", async ({ page }) => {
   await page.goto("/repos");
   await expect(

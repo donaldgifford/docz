@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { useSearchDocs } from "@/api/__generated__/docz-api";
 import { SessionRequiredError } from "@/api/fetcher";
-import { StatusBadge, TypeBadge } from "@/components/badges";
+import { StatusPill } from "@/components/badges";
 import { RepoPicker, TypeChips } from "@/components/directory-controls";
 import { ErrorPanel, SessionRequiredRedirect } from "@/components/query-states";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
@@ -17,6 +17,7 @@ import {
   toSearchDocsParams,
   type DirectorySearchState,
 } from "@/lib/searchParams";
+import { formatUpdatedStamp, hitUpdatedAt } from "@/lib/updatedAt";
 
 import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
 
@@ -31,14 +32,22 @@ const Q_DEBOUNCE_MS = 200;
  * except the debounce buffer inside SearchBox.
  */
 
-// Mockup .doc-row grid; narrow viewports collapse to type/title/status.
-const ROW_GRID =
-  "grid grid-cols-[92px_minmax(0,1fr)_auto] items-center gap-[0.8rem] border-b border-border-hairline px-[0.4rem] py-[0.7rem] md:grid-cols-[116px_86px_minmax(0,1fr)_110px_150px_70px]";
+/*
+ * Hit rows are cards, not table rows (DESIGN-0005 dial-in, replacing
+ * the mockup's six-column `.doc-row`): "DOC-ID / repo" over the title
+ * on the left, the status pill in the middle, the updated stamp on the
+ * right. Status is the only color in the row — the type badge that used
+ * to lead it competed with it, and the doc id already spells the type
+ * out. Both outer columns are two lines, so they align with each other
+ * rather than floating against a taller middle.
+ */
+const ROW_CARD =
+  "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border border-border-hairline bg-bg-raised px-4 py-3 transition-colors hover:border-border-default hover:bg-bg-elevated md:grid-cols-[minmax(0,1fr)_132px_118px] md:gap-6";
 
 function DirectoryHero({ repo }: { repo: string | null }) {
   return (
     <header className="pt-10 pb-2">
-      <div className="font-mono text-[12.5px] tracking-[0.05em] text-accent">
+      <div className="font-mono text-[13.5px] tracking-[0.05em] text-accent">
         / docz <span className="text-fg-muted">/</span> {repo ?? "all repos"}
       </div>
       <h1 className="mt-2 mb-1 text-[clamp(1.6rem,4vw,2rem)] font-semibold tracking-[-0.01em] text-fg-primary">
@@ -96,7 +105,7 @@ function SearchBox({
       onChange={(event) => {
         setDraft(event.target.value);
       }}
-      className="mt-5 w-full border border-border-default bg-bg-raised px-3 py-2 font-mono text-[13px] text-fg-primary placeholder:text-fg-muted focus:border-border-strong focus:outline-none"
+      className="mt-5 w-full border border-border-default bg-bg-raised px-3 py-2 font-mono text-[14px] text-fg-primary placeholder:text-fg-muted focus:border-border-strong focus:outline-none"
     />
   );
 }
@@ -106,6 +115,34 @@ function hitKey(hit: SearchHit): string {
   return hit.source === "page"
     ? `${hit.repo}/pages/${hit.path}`
     : `${hit.repo}/${hit.type}/${hit.doc_id}`;
+}
+
+/**
+ * Right-hand stamp: date over time, mirroring the id/title pair on the
+ * left. Against a real docz-api this is the em dash today — see
+ * `hitUpdatedAt` for why, and for what makes it light up.
+ */
+function UpdatedCell({ hit }: { hit: SearchHit }) {
+  const iso = hitUpdatedAt(hit);
+  const stamp = formatUpdatedStamp(iso);
+  if (stamp === undefined) {
+    return (
+      <span className="hidden text-right font-mono text-[12.5px] text-fg-muted md:block">
+        —
+      </span>
+    );
+  }
+  return (
+    <time
+      dateTime={iso}
+      className="hidden text-right font-mono text-[12.5px] whitespace-nowrap text-fg-tertiary md:block"
+    >
+      {stamp.date}
+      <span className="mt-[3px] block text-[11.5px] text-fg-muted">
+        {stamp.time}
+      </span>
+    </time>
+  );
 }
 
 function HitRow({ hit }: { hit: SearchHit }) {
@@ -127,42 +164,35 @@ function HitRow({ hit }: { hit: SearchHit }) {
         to={`/${hitKey(hit)}`}
         onMouseEnter={prefetch}
         onFocus={prefetch}
-        className={`${ROW_GRID} transition-colors hover:bg-bg-raised`}
+        className={ROW_CARD}
       >
-        {/* Pages carry the neutral source marker, never a type badge
-            (DESIGN-0004 OQ-3a); doc-only columns render "—". */}
-        {isPage ? (
-          <span className="font-mono text-[11px] text-fg-muted">page</span>
-        ) : (
-          <TypeBadge type={hit.type} />
-        )}
-        <span
-          title={isPage ? hit.path : undefined}
-          className="hidden font-mono text-[12.5px] text-fg-tertiary md:block"
-        >
-          {isPage ? "—" : hit.doc_id}
+        <span className="min-w-0">
+          {/* Pages have no doc id, so they keep the neutral source
+              marker in its place (DESIGN-0004 OQ-3a). The repo rides
+              the same line: "DESIGN-0001 / docz-site" is one
+              coordinate, and splitting it across the card made the
+              reader scan sideways to assemble it. */}
+          <span
+            title={isPage ? `${hit.repo}/${hit.path}` : hit.repo}
+            className="block truncate font-mono text-[12px] tracking-[0.08em] text-fg-muted uppercase"
+          >
+            {isPage ? "page" : hit.doc_id}
+            {/* Inherits fg-muted: every token in this line is
+                contrast-checked, and a dimmer separator would only be
+                one the e2e axe sweep rejects. */}
+            <span aria-hidden className="px-[0.4em]">
+              /
+            </span>
+            <span className="normal-case">{repoName}</span>
+          </span>
+          <span className="mt-[3px] block truncate text-[16px] text-fg-primary">
+            {hit.title}
+          </span>
         </span>
-        <span className="truncate text-[14px] text-fg-primary">
-          {hit.title}
+        <span className="justify-self-start md:justify-self-center">
+          {hit.status !== "" && <StatusPill status={hit.status} />}
         </span>
-        {hit.status === "" ? (
-          <span aria-hidden />
-        ) : (
-          <StatusBadge status={hit.status} />
-        )}
-        <span
-          title={hit.repo}
-          className="hidden truncate font-mono text-[11.5px] text-fg-tertiary before:text-fg-muted before:content-['›_'] md:block"
-        >
-          {repoName}
-        </span>
-        {/*
-         * SearchHit carries no updated_at yet (additive ask in
-         * DESIGN-0001); formatRelativeTime takes over when it lands.
-         */}
-        <span className="hidden text-right font-mono text-[11px] text-fg-muted md:block">
-          —
-        </span>
+        <UpdatedCell hit={hit} />
       </Link>
     </li>
   );
@@ -173,19 +203,22 @@ function SkeletonRows() {
     <div
       aria-hidden
       data-testid="directory-skeleton"
-      className="mt-4 animate-pulse border-t border-border-hairline"
+      className="mt-4 animate-pulse space-y-2"
     >
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className={ROW_GRID}>
-          <div className="h-4 w-16 bg-bg-elevated" />
-          <div className="hidden h-3 w-14 bg-bg-raised md:block" />
-          <div
-            className="h-3 bg-bg-elevated"
-            style={{ width: `${String(88 - (i % 3) * 14)}%` }}
-          />
-          <div className="h-3 w-12 bg-bg-raised" />
-          <div className="hidden h-3 w-20 bg-bg-raised md:block" />
-          <div className="hidden h-3 w-10 justify-self-end bg-bg-raised md:block" />
+        <div key={i} className={ROW_CARD}>
+          <div>
+            <div className="h-3 w-20 bg-bg-elevated" />
+            <div
+              className="mt-2 h-4 bg-bg-elevated"
+              style={{ width: `${String(72 - (i % 3) * 14)}%` }}
+            />
+          </div>
+          <div className="h-5 w-20 bg-bg-elevated md:justify-self-center" />
+          <div className="hidden justify-self-end md:block">
+            <div className="h-3 w-[88px] bg-bg-elevated" />
+            <div className="mt-2 ml-auto h-3 w-14 bg-bg-elevated" />
+          </div>
         </div>
       ))}
     </div>
@@ -273,7 +306,7 @@ export function Component() {
             onClick={() => {
               applyFilters(EMPTY_SEARCH_STATE);
             }}
-            className="font-mono text-[11.5px] text-fg-muted hover:text-fg-primary"
+            className="font-mono text-[12.5px] text-fg-muted hover:text-fg-primary"
           >
             clear filters ✕
           </button>
@@ -281,7 +314,7 @@ export function Component() {
         {result !== undefined && (
           <div
             data-testid="results-count"
-            className="ml-auto font-mono text-[12px] text-fg-tertiary"
+            className="ml-auto font-mono text-[13px] text-fg-tertiary"
           >
             showing{" "}
             <b className="font-medium text-fg-secondary">
@@ -321,7 +354,7 @@ export function Component() {
       ) : result.hits.length === 0 ? (
         hasActiveFilters(state) ? (
           <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
-            <p className="font-mono text-[13px] text-fg-secondary">
+            <p className="font-mono text-[14px] text-fg-secondary">
               No matches
             </p>
             <button
@@ -329,24 +362,24 @@ export function Component() {
               onClick={() => {
                 applyFilters(EMPTY_SEARCH_STATE);
               }}
-              className="mt-3 border border-border-strong px-4 py-1 font-mono text-[12px] text-fg-secondary hover:bg-bg-hover"
+              className="mt-3 border border-border-strong px-4 py-1 font-mono text-[13px] text-fg-secondary hover:bg-bg-hover"
             >
               clear filters
             </button>
           </div>
         ) : (
           <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
-            <p className="font-mono text-[13px] text-fg-secondary">
+            <p className="font-mono text-[14px] text-fg-secondary">
               No documents yet
             </p>
-            <p className="mt-2 max-w-96 text-[13px] text-fg-tertiary">
+            <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">
               Onboard a repo with the docz GitHub App to index its docs here.
             </p>
           </div>
         )
       ) : (
         <div className="mt-4 mb-16">
-          <ul className="border-t border-border-hairline">
+          <ul className="space-y-2">
             {result.hits.map((hit) => (
               <HitRow key={hitKey(hit)} hit={hit} />
             ))}
@@ -364,7 +397,7 @@ export function Component() {
                   }),
                 );
               }}
-              className="mx-auto mt-6 block border border-border-default px-5 py-[0.45rem] font-mono text-[12px] text-fg-secondary hover:border-border-strong hover:text-fg-primary disabled:opacity-50"
+              className="mx-auto mt-6 block border border-border-default px-5 py-[0.45rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong hover:text-fg-primary disabled:opacity-50"
             >
               {searchQuery.isFetching
                 ? "loading…"

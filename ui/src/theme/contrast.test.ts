@@ -84,8 +84,9 @@ describe("text token contrast", () => {
 describe("admonition tint contrast", () => {
   const tokens = parseTokens(tokensCss);
   // Each alert kind renders its label in the mapped status color and
-  // its body in fg-secondary, both on the precomputed adm-*-bg tint
-  // (tokens.css keeps those as literal hex for exactly this check).
+  // its body in fg-prose (the reader body color, DESIGN-0005), both on
+  // the precomputed adm-*-bg tint (tokens.css keeps those as literal
+  // hex for exactly this check).
   const KIND_TO_LABEL_TOKEN: Record<string, string> = {
     note: "st-proposed",
     tip: "st-accepted",
@@ -101,7 +102,7 @@ describe("admonition tint contrast", () => {
       if (bg === undefined) {
         throw new Error(`--color-adm-${kind}-bg missing from tokens.css`);
       }
-      for (const textToken of [labelToken, "fg-secondary"]) {
+      for (const textToken of [labelToken, "fg-prose"]) {
         const hex = tokens.get(textToken);
         if (hex === undefined) {
           throw new Error(`--color-${textToken} missing from tokens.css`);

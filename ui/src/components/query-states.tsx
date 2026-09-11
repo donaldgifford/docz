@@ -31,7 +31,7 @@ export function SessionRequiredRedirect() {
 export function NotFoundPanel() {
   return (
     <div className="mx-auto my-16 w-max max-w-full border border-border-default bg-bg-raised px-8 py-6 text-center">
-      <p className="font-mono text-[13px] text-fg-secondary">
+      <p className="font-mono text-[14px] text-fg-secondary">
         Not found — or not visible to you
       </p>
     </div>
@@ -47,14 +47,14 @@ export function ErrorPanel({
 }) {
   return (
     <div className="mx-auto my-16 w-max max-w-full border border-[color-mix(in_srgb,var(--color-st-rejected)_35%,transparent)] bg-bg-raised px-8 py-6 text-center">
-      <p className="font-mono text-[13px] text-fg-secondary">
+      <p className="font-mono text-[14px] text-fg-secondary">
         Something went wrong
       </p>
-      <p className="mt-2 max-w-96 text-[13px] text-fg-tertiary">{message}</p>
+      <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 border border-border-strong px-4 py-1 font-mono text-[12px] text-fg-secondary hover:bg-bg-hover"
+        className="mt-4 border border-border-strong px-4 py-1 font-mono text-[13px] text-fg-secondary hover:bg-bg-hover"
       >
         retry
       </button>

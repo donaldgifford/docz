@@ -24,9 +24,9 @@
     "gen-api:check": "scripts/gen-api-check.sh"
   },
   "dependencies": {
-    "@fontsource/ibm-plex-mono": "^5.2.7",
-    "@fontsource/ibm-plex-sans": "^5.2.8",
-    "@fontsource/source-serif-4": "^5.2.9",
+    "@fontsource-variable/mona-sans": "5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.0",
+    "@fontsource/monaspace-neon": "5.3.0",
     "@shikijs/rehype": "^4.3.1",
     "@tanstack/react-query": "^5.101.2",
     "cmdk": "^1.1.1",

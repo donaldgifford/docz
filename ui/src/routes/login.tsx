@@ -30,7 +30,7 @@ function LoginCard({ children }: { children: ReactNode }) {
   return (
     <main className="mx-auto flex max-w-[420px] flex-col px-5 pt-[14vh]">
       <div className="border border-border-default bg-bg-raised px-8 py-8">
-        <div className="mb-1 font-mono text-[12.5px] tracking-[0.05em] text-accent">
+        <div className="mb-1 font-mono text-[13.5px] tracking-[0.05em] text-accent">
           / docz <span className="text-fg-muted">/</span> sign in
         </div>
         {children}
@@ -54,13 +54,13 @@ export function Component() {
         >
           Authentication is disabled
         </h1>
-        <p className="mb-6 text-[13px] text-fg-tertiary">
+        <p className="mb-6 text-[14px] text-fg-tertiary">
           This deployment runs without sign-in — everything here is readable
           without an account.
         </p>
         <Link
           to="/"
-          className="block border border-border-default px-4 py-[0.55rem] text-center font-mono text-[13px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
+          className="block border border-border-default px-4 py-[0.55rem] text-center font-mono text-[14px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
         >
           Browse the docs
         </Link>
@@ -73,7 +73,7 @@ export function Component() {
       <h1 className="mb-2 text-[22px] font-semibold tracking-[-0.01em] text-fg-primary">
         Sign in
       </h1>
-      <p className="mb-6 text-[13px] text-fg-tertiary">
+      <p className="mb-6 text-[14px] text-fg-tertiary">
         Authentication is handled by docz-api — no tokens ever reach this app.
       </p>
 
@@ -86,7 +86,7 @@ export function Component() {
               onClick={() => {
                 rememberProvider(provider.key);
               }}
-              className={`block border px-4 py-[0.55rem] text-center font-mono text-[13px] ${
+              className={`block border px-4 py-[0.55rem] text-center font-mono text-[14px] ${
                 index === 0
                   ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent hover:border-accent"
                   : "border-border-default text-fg-secondary hover:border-border-strong hover:text-fg-primary"

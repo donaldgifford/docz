@@ -24,7 +24,7 @@ function PickerItem({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center justify-between gap-6 px-3 py-[0.4rem] text-left font-mono text-[12px] hover:bg-bg-raised ${
+      className={`flex w-full items-center justify-between gap-6 px-3 py-[0.4rem] text-left font-mono text-[13px] hover:bg-bg-raised ${
         selected ? "text-fg-primary" : "text-fg-tertiary"
       }`}
     >
@@ -99,11 +99,11 @@ export function RepoPicker({
         onClick={() => {
           setOpen((value) => !value);
         }}
-        className="flex items-center gap-2 border border-border-default bg-bg-raised px-3 py-[0.35rem] font-mono text-[12px] text-fg-secondary hover:border-border-strong"
+        className="flex items-center gap-2 border border-border-default bg-bg-raised px-3 py-[0.35rem] font-mono text-[13px] text-fg-secondary hover:border-border-strong"
       >
         <span className="text-fg-muted">repo:</span>{" "}
         <span>{current ?? "all"}</span>
-        <span aria-hidden className="text-[9px] text-fg-muted">
+        <span aria-hidden className="text-[10px] text-fg-muted">
           ▾
         </span>
       </button>
@@ -151,7 +151,7 @@ function Chip({
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex items-center gap-[0.4rem] border px-[0.7rem] py-[0.25rem] font-mono text-[11.5px] tracking-[0.04em] uppercase ${
+      className={`mono-chip-y inline-flex items-center gap-[0.4rem] border px-[0.7rem] font-mono text-[12.5px] tracking-[0.04em] uppercase ${
         pressed
           ? "border-border-strong bg-bg-raised text-fg-primary"
           : "border-border-default text-fg-tertiary hover:text-fg-secondary"

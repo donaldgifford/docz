@@ -1,13 +1,24 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
-import { describe, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { routes } from "@/app/router";
 import { expectNoAxeViolations } from "@/test/axe";
 import { server } from "@/test/server";
+
+// mermaid can't render in jsdom (no SVG measurement); the rejecting
+// mock pins the specimen page's diagrams to MermaidBlock's source
+// fallback, which is the markup this sweep covers. The real render is
+// swept in e2e/a11y.spec.ts.
+vi.mock("mermaid", () => ({
+  default: {
+    initialize: vi.fn(),
+    render: vi.fn(() => Promise.reject(new Error("jsdom"))),
+  },
+}));
 
 /*
  * Phase 4 accessibility sweep: every core view mounts against the MSW
@@ -115,6 +126,28 @@ describe("axe: core views", () => {
       { name: "Design Documents" },
       { timeout: 10_000 },
     );
+    await expectNoAxeViolations();
+  });
+
+  it("markdown specimen page", { timeout: AXE_TIMEOUT }, async () => {
+    // docs/guides/markdown-specimen.md: every construct the pipeline
+    // renders, on one page — headings, alerts, code chrome, tables,
+    // footnotes, raw HTML, task lists — so a regression in any of them
+    // trips the sweep here rather than on a real document.
+    const { container } = mountAt(
+      "/donaldgifford/docz-site/pages/guides/markdown-specimen.md",
+    );
+    await screen.findByRole(
+      "heading",
+      { level: 1, name: "Markdown rendering specimen" },
+      { timeout: 10_000 },
+    );
+    // Every mermaid fence must settle on the fallback before the sweep.
+    await waitFor(() => {
+      expect(
+        container.querySelectorAll('[data-mermaid-fallback="failed"]'),
+      ).toHaveLength(3);
+    });
     await expectNoAxeViolations();
   });
 

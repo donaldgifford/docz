@@ -81,7 +81,7 @@ function hitMarker(hit: SearchHit): string {
 }
 
 const GROUP_CLASS =
-  "[&_[cmdk-group-heading]]:px-[0.6rem] [&_[cmdk-group-heading]]:pt-[0.6rem] [&_[cmdk-group-heading]]:pb-[0.3rem] [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:tracking-[0.06em] [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group-heading]]:uppercase";
+  "[&_[cmdk-group-heading]]:px-[0.6rem] [&_[cmdk-group-heading]]:pt-[0.6rem] [&_[cmdk-group-heading]]:pb-[0.3rem] [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:tracking-[0.06em] [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group-heading]]:uppercase";
 
 const ITEM_CLASS =
   "cursor-pointer border-l-2 border-l-transparent px-[0.6rem] py-2 data-[selected=true]:border-l-accent data-[selected=true]:bg-bg-elevated";
@@ -100,7 +100,7 @@ function PillButton({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`border px-[0.6rem] py-[0.2rem] font-mono text-[11.5px] ${
+      className={`mono-chip-y border px-[0.6rem] font-mono text-[12.5px] ${
         active
           ? "border-(--color-accent-border) bg-(--color-accent-bg) text-accent"
           : "border-border-default text-fg-tertiary hover:text-fg-secondary"
@@ -114,18 +114,18 @@ function PillButton({
 function PreviewPane({ hit }: { hit: SearchHit | undefined }) {
   if (hit === undefined) {
     return (
-      <p className="font-mono text-[12px] text-fg-muted">Nothing selected.</p>
+      <p className="font-mono text-[13px] text-fg-muted">Nothing selected.</p>
     );
   }
   return (
     <>
-      <div className="font-mono text-[11.5px] text-accent">
+      <div className="font-mono text-[12.5px] text-accent">
         {hitMarker(hit)} · {hit.repo.split("/").at(-1) ?? hit.repo}
       </div>
       <h3 className="mt-[0.3rem] mb-2 text-[16px] font-semibold text-fg-primary">
         {hit.title}
       </h3>
-      <div className="mb-4 flex flex-wrap items-center gap-2 font-mono text-[11.5px] text-fg-tertiary">
+      <div className="mb-4 flex flex-wrap items-center gap-2 font-mono text-[12.5px] text-fg-tertiary">
         {hit.status !== "" && <StatusBadge status={hit.status} />}
         {hit.author !== "" && (
           <>
@@ -134,7 +134,7 @@ function PreviewPane({ hit }: { hit: SearchHit | undefined }) {
           </>
         )}
       </div>
-      <p className="text-[13px] leading-[1.55] text-fg-tertiary">
+      <p className="text-[14px] leading-[1.55] text-fg-tertiary">
         <Snippet snippet={hit.snippet} />
       </p>
     </>
@@ -384,7 +384,7 @@ export function CommandPalette({
             className="flex-1 bg-transparent font-mono text-[15px] text-fg-primary outline-none placeholder:text-fg-muted"
           />
           {/* eslint-enable jsx-a11y/no-autofocus */}
-          <span className="flex items-center gap-[0.4rem] font-mono text-[11px] text-fg-muted">
+          <span className="flex items-center gap-[0.4rem] font-mono text-[12px] text-fg-muted">
             <kbd className="border border-border-default px-1">esc</kbd>
             to close
           </span>
@@ -430,7 +430,7 @@ export function CommandPalette({
 
         <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-2">
           <Command.List className="max-h-full overflow-y-auto p-[0.3rem] sm:border-r sm:border-border-hairline">
-            <Command.Empty className="px-4 py-6 font-mono text-[12.5px] text-fg-tertiary">
+            <Command.Empty className="px-4 py-6 font-mono text-[13.5px] text-fg-tertiary">
               No results{debouncedQ === "" ? "" : ` for “${debouncedQ}”`}.
             </Command.Empty>
             {recentHits.length > 0 && (
@@ -444,11 +444,11 @@ export function CommandPalette({
                       onSelect={openDoc}
                       className={ITEM_CLASS}
                     >
-                      <div className="mb-[2px] font-mono text-[11.5px] text-fg-tertiary">
+                      <div className="mb-[2px] font-mono text-[12.5px] text-fg-tertiary">
                         {hitMarker(hit)} ·{" "}
                         {hit.repo.split("/").at(-1) ?? hit.repo}
                       </div>
-                      <div className="text-[13.5px] text-fg-primary">
+                      <div className="text-[14.5px] text-fg-primary">
                         {hit.title}
                       </div>
                     </Command.Item>
@@ -476,17 +476,17 @@ export function CommandPalette({
                       <div className="mb-[2px] flex items-center justify-between gap-2">
                         {/* Pages carry the neutral marker, never a
                             type badge (DESIGN-0004 OQ-3a). */}
-                        <span className="font-mono text-[11.5px] text-fg-tertiary">
+                        <span className="font-mono text-[12.5px] text-fg-tertiary">
                           {hitMarker(hit)}
                         </span>
                         {hit.status !== "" && (
                           <StatusBadge status={hit.status} />
                         )}
                       </div>
-                      <div className="text-[13.5px] text-fg-primary">
+                      <div className="text-[14.5px] text-fg-primary">
                         {hit.title}
                       </div>
-                      <div className="mt-[2px] line-clamp-2 text-[12px] leading-[1.45] text-fg-tertiary">
+                      <div className="mt-[2px] line-clamp-2 text-[13px] leading-[1.45] text-fg-tertiary">
                         <Snippet snippet={hit.snippet} />
                       </div>
                     </Command.Item>
@@ -504,7 +504,7 @@ export function CommandPalette({
           </div>
         </div>
 
-        <div className="flex items-center gap-[1.1rem] border-t border-border-default px-4 py-[0.55rem] font-mono text-[11px] text-fg-muted">
+        <div className="flex items-center gap-[1.1rem] border-t border-border-default px-4 py-[0.55rem] font-mono text-[12px] text-fg-muted">
           <span className="flex items-center gap-[0.3rem]">
             <kbd className="border border-border-default px-1">↑</kbd>
             <kbd className="border border-border-default px-1">↓</kbd>

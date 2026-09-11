@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useParams } from "react-router";
 
 import { useGetRepo, useListDocs } from "@/api/__generated__/docz-api";
+import { NAV_GROUP_RAIL, navRowClass } from "@/components/nav-rail";
 import { NavPagesSection } from "@/components/repo-nav-pages";
 import { usePrefetchChangelog } from "@/hooks/usePrefetchChangelog";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
@@ -37,9 +38,7 @@ function navItemClass({ isActive }: { isActive: boolean }): string {
 }
 
 function docLinkClass({ isActive }: { isActive: boolean }): string {
-  return `block overflow-hidden py-[0.17rem] pr-[0.45rem] pl-[1.15rem] text-[11.5px] text-ellipsis whitespace-nowrap ${
-    isActive ? "text-accent" : "text-fg-muted hover:text-fg-primary"
-  }`;
+  return navRowClass(isActive, "pl-[0.7rem]");
 }
 
 function NavTypeSection({
@@ -77,7 +76,7 @@ function NavTypeSection({
           className={navItemClass}
         >
           <span className="truncate">{docType.name}</span>{" "}
-          <span className="text-[11px] text-fg-muted">{count ?? ""}</span>
+          <span className="text-[12px] text-fg-muted">{count ?? ""}</span>
         </NavLink>
         <button
           type="button"
@@ -85,13 +84,13 @@ function NavTypeSection({
           aria-label={`${docType.name} documents`}
           disabled={count === 0}
           onClick={onToggle}
-          className="w-6 flex-none cursor-pointer text-center text-[10px] text-fg-muted hover:bg-bg-raised hover:text-fg-primary disabled:cursor-default disabled:opacity-40"
+          className="w-6 flex-none cursor-pointer text-center text-[11px] text-fg-muted hover:bg-bg-raised hover:text-fg-primary disabled:cursor-default disabled:opacity-40"
         >
           <span aria-hidden>{expanded ? "▾" : "▸"}</span>
         </button>
       </div>
       {expanded && docs !== undefined && docs.length > 0 && (
-        <div className="mt-px mb-1">
+        <div className={`mt-px mb-1 ${NAV_GROUP_RAIL}`}>
           {docs.map((doc) => {
             const prefetch = () => {
               prefetchDoc(owner, name, docType.name, doc.doc_id);
@@ -152,12 +151,12 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
   return (
     <nav
       aria-label={`${repoId} navigation`}
-      className="font-mono text-[12.5px]"
+      className="font-mono text-[13.5px]"
     >
       <div className="mb-4 flex items-center gap-[0.55rem]">
         <span
           aria-hidden
-          className="grid size-[22px] flex-none place-items-center border border-border-default bg-bg-elevated text-[11px] text-accent"
+          className="grid size-[22px] flex-none place-items-center border border-border-default bg-bg-elevated text-[12px] text-accent"
         >
           {name.charAt(0).toUpperCase()}
         </span>
@@ -165,7 +164,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
           <div className="truncate leading-[1.2] font-semibold text-fg-primary">
             {repoId}
           </div>
-          <div className="text-[10.5px] text-fg-muted">
+          <div className="text-[11.5px] text-fg-muted">
             {detail === undefined
               ? "…"
               : `${detail.default_branch} · docz.yaml`}
@@ -175,7 +174,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
 
       <NavLink to={`/${repoId}`} end className={navItemClass}>
         <span>Home</span>{" "}
-        <span className="text-[11px] text-fg-muted">index.md</span>
+        <span className="text-[12px] text-fg-muted">index.md</span>
       </NavLink>
 
       {changelogCfg !== undefined && (
@@ -194,7 +193,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
           onFocus={prefetchChangelog}
         >
           <span>Changelog</span>{" "}
-          <span className="text-[11px] text-fg-muted">
+          <span className="text-[12px] text-fg-muted">
             {changelogBasename(changelogCfg.file)}
           </span>
         </NavLink>
@@ -206,7 +205,7 @@ export function RepoNav({ owner, name }: { owner: string; name: string }) {
         <NavPagesSection owner={owner} name={name} />
       )}
 
-      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[11px] tracking-[0.14em] text-fg-muted uppercase">
         doc types
       </div>
 

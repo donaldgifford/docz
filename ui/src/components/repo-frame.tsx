@@ -21,7 +21,7 @@ export function RepoBreadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-6 flex flex-wrap gap-2 font-mono text-[12px] text-fg-muted"
+      className="mb-6 flex flex-wrap gap-2 font-mono text-[13px] text-fg-muted"
     >
       <Link to="/repos" className="text-fg-tertiary hover:text-fg-primary">
         repos
@@ -66,7 +66,7 @@ export function RepoFrame({
       <div className="min-[861px]:sticky min-[861px]:top-[76px] min-[861px]:max-h-[calc(100vh-6rem)] min-[861px]:self-start min-[861px]:overflow-y-auto">
         {/* Narrow viewports get the nav as a collapsed drawer. */}
         <details className="border-b border-border-hairline pb-4 min-[861px]:hidden">
-          <summary className="cursor-pointer font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+          <summary className="cursor-pointer font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
             repo menu
           </summary>
           <div className="pt-4">

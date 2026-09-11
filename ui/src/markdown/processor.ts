@@ -26,6 +26,7 @@ import {
   MarkdownH3,
   MarkdownH4,
 } from "@/markdown/markdown-heading";
+import { MarkdownInput } from "@/markdown/markdown-input";
 import { MarkdownPre } from "@/markdown/markdown-pre";
 import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
 import {
@@ -33,7 +34,9 @@ import {
   type RelativeLinkContext,
 } from "@/markdown/relative-links";
 import { sanitizeSchema } from "@/markdown/schema";
+import { liftThemeContrast } from "@/markdown/theme-contrast";
 import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
+import { rehypeWrapTables } from "@/markdown/wrap-table";
 import { linkifyDocIds, type XrefResolver } from "@/markdown/xrefs";
 
 import type { Root } from "hast";
@@ -63,7 +66,13 @@ let highlighterPromise: Promise<HighlighterCore> | undefined;
 
 function getHighlighter(): Promise<HighlighterCore> {
   highlighterPromise ??= createHighlighterCore({
-    themes: [import("shiki/themes/tokyo-night.mjs")],
+    // tokyo-night, with every token color that fails AA on code-bg
+    // lifted (its comment family is ~2.5:1 raw) — see theme-contrast.ts.
+    themes: [
+      import("shiki/themes/tokyo-night.mjs").then((mod) =>
+        liftThemeContrast(mod.default),
+      ),
+    ],
     langs: [
       import("shiki/langs/yaml.mjs"),
       import("shiki/langs/go.mjs"),
@@ -183,7 +192,9 @@ export async function renderMarkdown(
         },
       ),
     )
-    .use(() => rehypeWrapCodeblocks());
+    .use(() => rehypeWrapCodeblocks())
+    // Wide tables scroll inside div.table-wrap instead of widening.
+    .use(() => rehypeWrapTables());
 
   /* eslint-disable @typescript-eslint/no-unsafe-assignment --
      typescript-eslint's checker computes an error type in this
@@ -207,6 +218,8 @@ export async function renderMarkdown(
     components: {
       a: MarkdownAnchor,
       pre: MarkdownPre,
+      // Task-list checkboxes get an accessible name (a11y "label" rule).
+      input: MarkdownInput,
       // ToC-collected headings get the copy-link affordance.
       h2: MarkdownH2,
       h3: MarkdownH3,

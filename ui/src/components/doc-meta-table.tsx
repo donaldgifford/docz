@@ -22,11 +22,11 @@ function MetaRow({ label, children }: { label: string; children: ReactNode }) {
     <tr className="border-b border-border-hairline last:border-b-0">
       <th
         scope="row"
-        className="w-[110px] py-[7px] pr-4 pl-3 text-left align-top font-mono text-[10px] font-medium tracking-[0.1em] text-fg-muted uppercase"
+        className="w-[110px] py-[7px] pr-4 pl-3 text-left align-top font-mono text-[11px] font-medium tracking-[0.1em] text-fg-muted uppercase"
       >
         {label}
       </th>
-      <td className="min-w-0 py-[7px] pr-3 text-[12.5px] break-words text-fg-primary">
+      <td className="min-w-0 py-[7px] pr-3 text-[13.5px] break-words text-fg-primary">
         {children}
       </td>
     </tr>
@@ -73,13 +73,13 @@ export function DocMetaTable({
   return (
     <div className="mb-6">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+        <span className="font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
           Metadata
         </span>
         <div
           role="group"
           aria-label="Document format"
-          className="flex items-center gap-1 font-mono text-[11px]"
+          className="flex items-center gap-1 font-mono text-[12px]"
         >
           <FormatButton
             active={format === "html"}
@@ -122,7 +122,7 @@ export function DocMetaTable({
             </Link>
           </MetaRow>
           <MetaRow label="Source">
-            <span className="font-mono text-[11.5px]">{doc.path}</span>
+            <span className="font-mono text-[12.5px]">{doc.path}</span>
           </MetaRow>
           {doc.created !== "" && (
             <MetaRow label="Created">{doc.created}</MetaRow>

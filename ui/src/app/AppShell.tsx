@@ -52,14 +52,14 @@ export function AppShell() {
         <Link to="/" className="flex items-center gap-[0.55rem]">
           <span
             aria-hidden
-            className="grid size-[22px] place-items-center bg-accent font-mono text-[13px] font-bold text-bg-base"
+            className="grid size-[22px] place-items-center bg-accent font-mono text-[14px] font-bold text-bg-base"
           >
             D
           </span>
           <span className="font-mono text-[14px] font-semibold tracking-[0.01em]">
             docz
           </span>
-          <span className="font-mono text-[13px] text-fg-muted">· reader</span>
+          <span className="font-mono text-[14px] text-fg-muted">· reader</span>
         </Link>
 
         {/* Search affordance: opens the ⌘K palette. Hidden on narrow
@@ -69,7 +69,7 @@ export function AppShell() {
           onClick={() => {
             setPaletteOpen(true);
           }}
-          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[12.5px] text-fg-tertiary hover:border-border-strong min-[720px]:flex"
+          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[13.5px] text-fg-tertiary hover:border-border-strong min-[720px]:flex"
         >
           <svg
             aria-hidden
@@ -85,16 +85,16 @@ export function AppShell() {
           </svg>
           <span>Search docs, rfcs, authors…</span>
           <span aria-hidden className="ml-auto flex gap-[3px]">
-            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[11px] text-fg-tertiary">
+            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[12px] text-fg-tertiary">
               ⌘
             </kbd>
-            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[11px] text-fg-tertiary">
+            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[12px] text-fg-tertiary">
               K
             </kbd>
           </span>
         </button>
 
-        <nav className="ml-auto flex items-center gap-[1.4rem] font-mono text-[13px]">
+        <nav className="ml-auto flex items-center gap-[1.4rem] font-mono text-[14px]">
           <NavLink to="/" end className={navLinkClass}>
             Directory
           </NavLink>

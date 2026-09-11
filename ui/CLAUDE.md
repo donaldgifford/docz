@@ -41,9 +41,28 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   Route modules live in `src/routes/*` and export a named `Component`;
   register new routes with `lazy: () => import("@/routes/<name>")` so
   each stays its own chunk.
-- Fonts are self-hosted `@fontsource` imports in `src/main.tsx` (IBM
-  Plex Sans/Mono, Source Serif 4) — never add a third-party font URL.
-  New weights = new per-weight CSS import there.
+- Fonts are self-hosted `@fontsource` imports in `src/main.tsx` —
+  never add a third-party font URL (mockup.html may use CDN links; it
+  ships nowhere). DESIGN-0005 as amended: **Source Serif 4 Variable**
+  (`--font-serif`) sets the article — reader prose, the headings inside
+  it, pull quotes, and article titles; **Mona Sans Variable**
+  (`--font-sans`) sets UI chrome and the heroes outside the article;
+  **Monaspace Neon** (`--font-mono`) sets every mono surface, and its
+  true italic is required for Shiki's italic scopes. Monaspace Xenon
+  was removed with the seventh amendment — a mono can't set body text.
+  Both variable families need the wght AND wght-italic imports.
+  Prose sizing is dialed in on the specimen page, not in the abstract:
+  body 19px/1.78 on a 66ch measure, headings in em so the hierarchy
+  scales with the body, chrome one step above the mockup's original
+  10–13.5px scale.
+- Bordered mono chips MUST use `.mono-chip-y` (tokens.css) for their
+  vertical padding and MUST NOT carry a `py-*` utility beside it —
+  Tailwind's utilities layer would win. An inline box is as tall as the
+  font's ascent+descent, and Monaspace Neon leaves 0.032em above its
+  capitals against 0.19em below the baseline, so symmetric padding
+  renders every chip visibly high. The class holds the compensating
+  difference; `.doc-prose code` carries its own copy with descender
+  clearance. Verify by measuring, not by eye.
 - `src/theme/tokens.css` — the single global stylesheet: Tailwind v4
   import + `@theme static` tokens ported from `mockup.html` `:root`.
   Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
@@ -83,11 +102,17 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   kinds) → capture-code-meta (fence meta → `metastring` property) →
   remark-rehype allowDangerousHtml → rehype-raw → **rehype-sanitize
   with `schema.ts`** → double-clobber collapse → rehype-slug + ToC
-  collector → Shiki core highlighter, tokyo-night, slim lazy grammar
-  set, chrome transformer stamping data-language/data-caption →
-  wrap-codeblock (div.codeblock header chrome; skips mermaid) →
-  xref linkify → hast-to-JSX). Sanitize AFTER rehype-raw, highlight
-  AFTER sanitize. Mermaid: `mermaid-marker` runs post-sanitize/
+  collector → Shiki core highlighter, tokyo-night run through
+  `theme-contrast.ts` (every token color failing 4.5:1 on `code-bg`
+  is nudged toward white — the comment family is ~2.5:1 raw; the test
+  pins `CODE_BG` to tokens.css), slim lazy grammar set, chrome
+  transformer stamping data-language/data-caption → wrap-codeblock
+  (div.codeblock header chrome; skips mermaid) → wrap-table
+  (div.table-wrap, overflow-x scroll; className unforgeable
+  post-sanitize) → xref linkify → hast-to-JSX, where task-list
+  `input`s map to `MarkdownInput` for an aria-label — axe's "label"
+  rule is critical and the schema strips aria-* from inputs). Sanitize
+  AFTER rehype-raw, highlight AFTER sanitize. Mermaid: `mermaid-marker` runs post-sanitize/
   pre-Shiki (strips language-mermaid so Shiki can't replace the pre,
   moves source onto `data-mermaid-source`), and MarkdownPre routes
   marked pres to `MermaidBlock` (`src/markdown/mermaid-block.tsx`),
@@ -97,6 +122,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `securityLevel: "strict"` AND `htmlLabels: false` — BOTH required
   (strict alone still materializes purified `<img src>` elements in
   foreignObject labels); render failure keeps the source visible.
+  Diagrams are MONOCHROME unless the document says otherwise: tokens.css
+  pins only label font-family and fill, and mermaid scopes a diagram's
+  own `classDef` rules by render id, so those outrank the stylesheet —
+  that's the supported way to color nodes (see the specimen's Figure 2).
+  themeVariables stay the minimal documented v11 set with an ASCII font
+  name; extras break `mermaid.render` silently.
   h2–h4 map to `markdown-heading.tsx`, which appends the
   hover/focus-revealed copy-link button (a labeled BUTTON, not a
   link — the underline rule for prose links stays untouched).
@@ -142,6 +173,16 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   handlers in both `src/test/server.ts` and `src/mocks/browser.ts`.
   Fixture resolvers return `undefined` to fall through to faker for
   anything outside the demo org.
+- Rendering specimen: `docs/guides/markdown-specimen.md` is the
+  kitchen sink — every construct the pipeline renders on one page. It
+  is a `?raw` fixture page (`/donaldgifford/docz-site/pages/guides/
+  markdown-specimen.md` under `dev:msw`) AND a real published page in
+  production, because `.docz.yaml` now carries the `api:` block
+  (docz-site dogfoods DESIGN-0004: README, type-dir indexes,
+  `docs/input.md`, and `docs/guides/*` all publish). Both axe sweeps
+  render it (jsdom with mermaid mocked to the fallback; e2e with the
+  real diagrams). When a pipeline feature lands, add a section to the
+  specimen in the same commit; judge typography changes there first.
 - Auth UX (Phase 5): `/login` (`src/routes/login.tsx`) renders provider
   buttons as REAL `<a href="/auth/login?provider=…">` anchors — the
   OAuth 302 must reach the browser, so never convert them to router
@@ -207,16 +248,41 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   the lifecycle is a closed-by-default `<details>` owned by
   `LifecycleRail` (renders nothing — shell included — for unknown
   types). Gated mockup rows (relationships, tags) slot into the table
-  when the DESIGN-0001 API asks land.
-- Directory (`src/routes/directory.tsx`): the URL is the only source of
+  when the DESIGN-0001 API asks land. `TocList` runs a scroll spy
+  (`src/hooks/useActiveHeading.ts`, IntersectionObserver over the
+  heading ids, top-of-viewport band) and marks the current row
+  `aria-current="location"` — it returns undefined where the observer
+  is missing (jsdom) and HOLDS the last heading when a long section
+  fills the band, so the rail never flickers to nothing.
+- Directory (`src/routes/directory.tsx`): hit rows are CARDS since the
+  DESIGN-0005 dial-in — `DOC-ID / repo` over the title, `StatusPill` in
+  the middle, the updated stamp (date over time) on the right — NOT the
+  mockup's six-column `.doc-row`, which this surface has now diverged
+  from (mockup.html still leads for prose and chrome tokens). Both
+  outer columns are two lines so they align with each other. There is
+  no type badge anywhere: the doc id already spells the type out and a
+  second colored chip fought the status for attention. Type color
+  survives on the filter chips only. The URL is the only source of
   filter truth — read via `parseSearchParams`, write via
   `serializeSearchState` (`src/lib/searchParams.ts`; its
   `toSearchDocsParams` maps state → API params, first-of-array facets).
   Typed queries debounce ~200 ms and commit with `replace: true`;
   discrete filter actions must push so back/forward walks history.
-  `SearchHit` has NO `updated_at` (additive ask in DESIGN-0001) — the
-  updated column renders "—"; `src/lib/relativeTime.ts` takes over when
-  the field lands.
+- The updated column: `SearchHit` still has NO `updated_at` property,
+  so against a real docz-api every row renders "—". docz-api ALREADY
+  indexes the value (`internal/search/types.go` stores `updated_at` in
+  Unix seconds; `client.go` makes it sortable) — `decodeHits` just
+  never copies it onto the wire struct, so the ask upstream is a decode
+  + an additive schema property, not an indexing change.
+  `src/lib/updatedAt.ts` is the whole surface: `hitUpdatedAt` reads the
+  property defensively (same posture as `apiConfig`/`changelogConfig`
+  over `config_snapshot`) so the column lights up with no further
+  change here, `formatUpdatedStamp` splits RFC3339 into the two lines
+  (locale pinned en-US, zone is the reader's, `timeZone` arg for
+  tests), and `formatRelativeTime` stays for surfaces wanting relative.
+  Demo fixtures forward each doc's own `updated_at` so the column is
+  reviewable under `dev:msw`; page hits send "" — nothing in the
+  contract dates a published page.
 - Faceted controls exclude their own dimension via separate limit-0
   searchDocs queries (directory picker/chips AND palette pills) so
   every option stays offered while one is selected. URL `offset` means
@@ -231,7 +297,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `:type` auto-expands, the caret button peeks without navigating, and
   listDocs only fires for open drawers. Facets omit zero-hit types —
   a missing typeCounts key after facts load means 0, which also
-  disables the caret. The repo home is the ONLY surface rendering an
+  disables the caret. In-group rows (type drawers, pages tree) share
+  the left rail from `src/components/nav-rail.ts` — the group draws a
+  hairline, each row a 2px border over it, active rows color it in.
+  Both files import from there, never from each other (RepoNav renders
+  the pages section, so the other direction is a cycle). The repo home is the ONLY surface rendering an
   h1 inside `.doc-prose` (the reader strips body h1s) — its style
   lives in tokens.css; don't remove it as "unused".
   URL `{type}` resolves by name/id_prefix/alias via

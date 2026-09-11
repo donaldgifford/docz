@@ -65,7 +65,9 @@ const STATUS_GROUPS: readonly [token: string, statuses: string[]][] = [
   ],
   ["rejected", ["rejected", "cancelled", "canceled", "abandoned"]],
   ["superseded", ["superseded"]],
-  ["deprecated", ["deprecated", "archived", "paused"]],
+  // Ended without a verdict, or parked: the muted token, so these never
+  // read as either success or failure.
+  ["deprecated", ["deprecated", "archived", "paused", "inconclusive"]],
 ];
 
 const STATUS_TOKENS: Readonly<Record<string, string | undefined>> =

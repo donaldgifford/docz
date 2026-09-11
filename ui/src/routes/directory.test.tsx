@@ -7,6 +7,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { routes } from "@/app/router";
+import { formatUpdatedStamp } from "@/lib/updatedAt";
 import { server } from "@/test/server";
 
 import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
@@ -17,6 +18,8 @@ const SITE_IMPL_TITLE =
 const API_DESIGN_TITLE =
   "docz-api cross-repo docz registry and ingestion service";
 const API_CONTRACT_TITLE = "OpenAPI contract for docz-api and the docz-site";
+/** That fixture doc's `updated_at`, which the demo search forwards. */
+const API_CONTRACT_UPDATED_AT = "2026-07-06T15:30:00Z";
 
 /** A search handler over `total` synthetic docs honoring offset/limit. */
 function syntheticSearchHandler(total: number) {
@@ -63,7 +66,7 @@ function mountAt(path: string) {
 }
 
 describe("directory route", () => {
-  it("lists every demo doc for the empty query, updated column unset", async () => {
+  it("lists every demo doc for the empty query, dated and repo-tagged", async () => {
     mountAt("/");
 
     expect(await screen.findByText(SITE_DESIGN_TITLE)).toBeInTheDocument();
@@ -75,9 +78,22 @@ describe("directory route", () => {
       expect(screen.getByText(title)).toBeInTheDocument();
     }
 
-    // SearchHit has no updated_at (additive ask) — every row renders
-    // "—" there; the 5 page rows add a second "—" in the doc-id column.
-    expect(screen.getAllByText("—")).toHaveLength(15);
+    // The repo rides the id line ("DESIGN-0001 / docz-site"), so it is
+    // still on every row after the date took the right-hand column.
+    expect(screen.getAllByText("docz-site").length).toBeGreaterThan(0);
+
+    // Doc hits carry the demo org's own stamp; page hits have none
+    // anywhere in the contract, so they keep the em dash.
+    const dated = screen.getByRole("link", {
+      name: new RegExp(API_CONTRACT_TITLE),
+    });
+    // Formatted in the runner's own zone, as in the browser — the
+    // format itself is pinned in updatedAt.test.ts.
+    const stamp = formatUpdatedStamp(API_CONTRACT_UPDATED_AT);
+    expect(stamp).toBeDefined();
+    expect(within(dated).getByText(stamp?.date ?? "")).toBeInTheDocument();
+    expect(within(dated).getByText(stamp?.time ?? "")).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
 
     // Rows link straight into the reader.
     expect(
@@ -102,7 +118,7 @@ describe("directory route", () => {
 
     // The count line splits by source when pages are present (OQ-3a).
     expect(screen.getByTestId("results-count")).toHaveTextContent(
-      "showing 10 of 10 · 5 docs · 5 pages",
+      "showing 11 of 11 · 5 docs · 6 pages",
     );
   });
 
@@ -211,7 +227,7 @@ describe("directory route", () => {
     await screen.findByText(SITE_DESIGN_TITLE);
 
     expect(screen.getByTestId("results-count")).toHaveTextContent(
-      "showing 10 of 10 · 5 docs · 5 pages",
+      "showing 11 of 11 · 5 docs · 6 pages",
     );
 
     // Chips are the union of type facet values, plus the all-types reset.
@@ -225,10 +241,10 @@ describe("directory route", () => {
     await user.click(screen.getByRole("button", { name: /repo:/ }));
     // Repo counts span docs AND pages — they describe result rows.
     expect(
-      screen.getByRole("button", { name: "all repos 10" }),
+      screen.getByRole("button", { name: "all repos 11" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "donaldgifford/docz-site 7" }),
+      screen.getByRole("button", { name: "donaldgifford/docz-site 8" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "donaldgifford/docz-api 3" }),

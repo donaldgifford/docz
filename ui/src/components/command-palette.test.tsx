@@ -75,7 +75,7 @@ describe("command palette", () => {
 
     // Empty query lists everything, grouped per repo.
     expect(
-      await dialog.findByText("donaldgifford/docz-site — 7 matches"),
+      await dialog.findByText("donaldgifford/docz-site — 8 matches"),
     ).toBeInTheDocument();
     expect(
       dialog.getByText("donaldgifford/docz-api — 3 matches"),
@@ -101,7 +101,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     const dialog = palette();
-    await dialog.findByText("donaldgifford/docz-site — 7 matches");
+    await dialog.findByText("donaldgifford/docz-site — 8 matches");
 
     await user.keyboard("ingestion service");
     await waitFor(() => {
@@ -121,7 +121,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     const dialog = palette();
-    await dialog.findByText("donaldgifford/docz-site — 7 matches");
+    await dialog.findByText("donaldgifford/docz-site — 8 matches");
 
     // Repo pill (short name) scopes to that repo.
     await user.click(dialog.getByRole("button", { name: "docz-api" }));
@@ -163,7 +163,7 @@ describe("command palette", () => {
 
     await user.keyboard("{Meta>}k{/Meta}");
     const dialog = palette();
-    await dialog.findByText("donaldgifford/docz-site — 7 matches");
+    await dialog.findByText("donaldgifford/docz-site — 8 matches");
 
     // "frontmatter" appears in doc bodies, never in a fixture title.
     await user.keyboard("frontmatter");
@@ -193,7 +193,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 7 matches");
+    await palette().findByText("donaldgifford/docz-site — 8 matches");
     await user.keyboard("ingestion service");
     await palette().findByText("donaldgifford/docz-api — 1 match");
 
@@ -223,7 +223,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 7 matches");
+    await palette().findByText("donaldgifford/docz-site — 8 matches");
 
     // The auto-highlighted first hit warms immediately…
     await waitFor(() => {
@@ -313,7 +313,7 @@ describe("command palette", () => {
     // Page hits ride the docz-site group on the empty query — marker
     // line `page · <published path>`, no type badge.
     expect(
-      await dialog.findByText("donaldgifford/docz-site — 7 matches"),
+      await dialog.findByText("donaldgifford/docz-site — 8 matches"),
     ).toBeInTheDocument();
     expect(dialog.getByText("page · README.md")).toBeInTheDocument();
 
@@ -395,7 +395,7 @@ describe("command palette", () => {
     await screen.findByText("docz");
 
     await user.keyboard("{Meta>}k{/Meta}");
-    await palette().findByText("donaldgifford/docz-site — 7 matches");
+    await palette().findByText("donaldgifford/docz-site — 8 matches");
 
     // ↓ to the second hit, then Enter.
     await user.keyboard("{ArrowDown}{Enter}");

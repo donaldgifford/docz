@@ -4,18 +4,21 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 
 // Self-hosted fonts (@fontsource) — the site must make no third-party
-// font requests. Weights track actual usage in the mockup/reader.
-import "@fontsource/ibm-plex-sans/400.css";
-import "@fontsource/ibm-plex-sans/500.css";
-import "@fontsource/ibm-plex-sans/600.css";
-import "@fontsource/ibm-plex-sans/700.css";
-import "@fontsource/ibm-plex-mono/400.css";
-import "@fontsource/ibm-plex-mono/600.css";
-import "@fontsource/ibm-plex-mono/700.css";
-import "@fontsource/source-serif-4/400.css";
-import "@fontsource/source-serif-4/400-italic.css";
-import "@fontsource/source-serif-4/600.css";
-import "@fontsource/source-serif-4/700.css";
+// font requests. DESIGN-0005 stack as amended: Source Serif 4
+// (variable) carries reader prose, its headings, and pull quotes;
+// Mona Sans (variable) carries UI chrome and page titles outside the
+// article; Monaspace Neon carries every mono surface, with its true
+// italic so Shiki's italic scopes render as designed. Both variable
+// families ship a weight axis plus a matching italic file. Keep this
+// set in sync with mockup.html's <link> list.
+import "@fontsource-variable/mona-sans/wght.css";
+import "@fontsource-variable/mona-sans/wght-italic.css";
+import "@fontsource-variable/source-serif-4/wght.css";
+import "@fontsource-variable/source-serif-4/wght-italic.css";
+import "@fontsource/monaspace-neon/400.css";
+import "@fontsource/monaspace-neon/400-italic.css";
+import "@fontsource/monaspace-neon/600.css";
+import "@fontsource/monaspace-neon/700.css";
 
 import "@/theme/tokens.css";
 

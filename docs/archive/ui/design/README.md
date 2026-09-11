@@ -36,4 +36,5 @@ docz create design "Your Design Title"
 | DESIGN-0002 | Nav pins, changelog page, and doc link resolution | Implemented | 2026-08-10 | Donald Gifford | [0002-nav-pins-changelog-page-and-doc-link-resolution.md](0002-nav-pins-changelog-page-and-doc-link-resolution.md) |
 | DESIGN-0003 | Support docz-api's no-auth mode and the session-unavailable 503 | Implemented | 2026-08-27 | Donald Gifford | [0003-support-docz-apis-no-auth-mode-and-the-session-unavailable-503.md](0003-support-docz-apis-no-auth-mode-and-the-session-unavailable-503.md) |
 | DESIGN-0004 | Render non-docz pages from the docz v1.2.0 api block | Implemented | 2026-08-30 | Donald Gifford | [0004-render-non-docz-pages-from-the-docz-v120-api-block.md](0004-render-non-docz-pages-from-the-docz-v120-api-block.md) |
+| DESIGN-0005 | Reader typography overhaul with Mona Sans and Monaspace | In Review | 2026-09-08 | Donald Gifford | [0005-reader-typography-overhaul-with-mona-sans-and-monaspace.md](0005-reader-typography-overhaul-with-mona-sans-and-monaspace.md) |
 <!-- END DOCZ AUTO-GENERATED -->

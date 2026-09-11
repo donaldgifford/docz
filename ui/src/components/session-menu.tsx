@@ -27,7 +27,7 @@ function InertPlaceholder({ testid }: { testid: string }) {
     <span
       aria-hidden
       data-testid={testid}
-      className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[11px] text-fg-secondary"
+      className="grid size-[26px] place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary"
     >
       ·
     </span>
@@ -149,17 +149,17 @@ export function SessionMenu() {
         onClick={() => {
           setOpen((wasOpen) => !wasOpen);
         }}
-        className="grid size-[26px] cursor-pointer place-items-center border border-border-default bg-bg-elevated text-[11px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
+        className="grid size-[26px] cursor-pointer place-items-center border border-border-default bg-bg-elevated text-[12px] text-fg-secondary hover:border-border-strong hover:text-fg-primary"
       >
         {initial}
       </button>
       {open && (
         <div className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-[200px] border border-border-default bg-bg-raised py-2">
           <div className="px-4 pb-2">
-            <div className="truncate text-[13px] text-fg-primary">
+            <div className="truncate text-[14px] text-fg-primary">
               {identity}
             </div>
-            <div className="font-mono text-[11px] text-fg-muted">
+            <div className="font-mono text-[12px] text-fg-muted">
               via {session.provider}
             </div>
           </div>
@@ -169,7 +169,7 @@ export function SessionMenu() {
             onClick={() => {
               logout.mutate();
             }}
-            className="w-full cursor-pointer border-t border-border-default px-4 pt-2 text-left font-mono text-[12.5px] text-fg-secondary hover:text-fg-primary disabled:cursor-default disabled:text-fg-muted"
+            className="w-full cursor-pointer border-t border-border-default px-4 pt-2 text-left font-mono text-[13.5px] text-fg-secondary hover:text-fg-primary disabled:cursor-default disabled:text-fg-muted"
           >
             {logout.isPending ? "Signing out…" : "Sign out"}
           </button>

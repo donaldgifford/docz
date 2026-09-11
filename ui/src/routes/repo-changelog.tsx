@@ -24,7 +24,7 @@ import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
  */
 
 const TITLE_CLASS =
-  "mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-normal tracking-[-0.02em] text-fg-primary";
+  "mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary";
 
 function ChangelogSkeleton() {
   return (
@@ -195,7 +195,7 @@ export function Component() {
       crumbs={[{ label: repoId, to: `/${repoId}` }, { label: "changelog" }]}
       rail={
         <>
-          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+          <div className="mb-3 border-b border-border-hairline pb-2 font-mono text-[11px] tracking-[0.14em] text-fg-muted uppercase">
             On this page
           </div>
           <TocList toc={rendered.data?.toc ?? []} />

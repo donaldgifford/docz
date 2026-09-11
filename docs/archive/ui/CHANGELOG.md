@@ -5,10 +5,38 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(reader)* Apply the DESIGN-0005 typography stack for live review
+- *(reader)* Break sections structurally — numbered h2 eyebrow, rule, sizes
+- *(reader)* Neutral inline code, accent only for linked code, brighter prose
+- *(docs)* Markdown rendering specimen page, published and fixtured
+- *(reader)* Raise prose to 18px with a 60ch measure and em headings
+- *(directory)* Card rows led by document status, no type badge
+- *(reader)* Set the article in Source Serif 4
+- *(directory)* Pair the id with its repo and date the card
+
+### Bug Fixes
+
+- *(reader)* Restore blue-on-blue inline code and draw task checkboxes in the accent
+- *(reader)* Set prose at weight 450, strong at 600
+- *(reader)* Label task checkboxes, lift code-comment contrast, scroll wide tables
+- *(ui)* Optically center text in every bordered mono chip
+
 ### Documentation
 
 - IMPL-0005 close-out — statuses and index tables ([#24](https://github.com/donaldgifford/docz-site/issues/24))
 - Tick IMPL-0005 testing-plan summary boxes ([#25](https://github.com/donaldgifford/docz-site/issues/25))
+- Draft DESIGN-0005 reader typography overhaul
+- Decide DESIGN-0005 OQs and mirror the typography in mockup.html
+
+### Styling
+
+- *(reader)* Enlarge chrome, fix chip padding, quiet admonitions
+
+### Revert
+
+- *(reader)* Drop the numbered h2 eyebrow, keep the rule and sizes
 
 ## [0.6.0] - 2026-08-30
 

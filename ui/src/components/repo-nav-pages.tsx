@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useParams } from "react-router";
 
 import { useListRepoPages } from "@/api/__generated__/docz-api";
+import { NAV_GROUP_RAIL, navRowClass } from "@/components/nav-rail";
 import { usePrefetchPage } from "@/hooks/usePrefetchPage";
 import { arr } from "@/lib/wire";
 
@@ -68,9 +69,7 @@ export function buildPageTree(pages: readonly PageSummary[]): PageTreeNode[] {
 }
 
 function pageLinkClass({ isActive }: { isActive: boolean }): string {
-  return `block min-w-0 flex-1 overflow-hidden py-[0.17rem] pr-[0.45rem] text-[11.5px] text-ellipsis whitespace-nowrap ${
-    isActive ? "text-accent" : "text-fg-muted hover:text-fg-primary"
-  }`;
+  return navRowClass(isActive, "flex-1");
 }
 
 function NavPageNode({
@@ -101,7 +100,7 @@ function NavPageNode({
           onToggle(node.path);
         }}
         style={indent}
-        className="block min-w-0 flex-1 cursor-pointer overflow-hidden py-[0.17rem] pr-[0.45rem] text-left text-[11.5px] text-ellipsis whitespace-nowrap text-fg-muted hover:text-fg-primary"
+        className={navRowClass(false, "flex-1 cursor-pointer text-left")}
       >
         {node.segment}/
       </button>
@@ -135,7 +134,7 @@ function NavPageNode({
             onClick={() => {
               onToggle(node.path);
             }}
-            className="w-6 flex-none cursor-pointer text-center text-[10px] text-fg-muted hover:bg-bg-raised hover:text-fg-primary"
+            className="w-6 flex-none cursor-pointer text-center text-[11px] text-fg-muted hover:bg-bg-raised hover:text-fg-primary"
           >
             <span aria-hidden>{expanded ? "▾" : "▸"}</span>
           </button>
@@ -196,25 +195,27 @@ export function NavPagesSection({
 
   return (
     <>
-      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[10px] tracking-[0.14em] text-fg-muted uppercase">
+      <div className="mt-[1.15rem] mb-[0.45rem] border-b border-border-hairline pb-[0.4rem] text-[11px] tracking-[0.14em] text-fg-muted uppercase">
         pages
       </div>
-      {buildPageTree(pages).map((node) => (
-        <NavPageNode
-          key={node.path}
-          owner={owner}
-          name={name}
-          node={node}
-          depth={0}
-          expandedDirs={expandedDirs}
-          onToggle={(path) => {
-            setOverrides((prev) => ({
-              ...prev,
-              [path]: !expandedDirs(path),
-            }));
-          }}
-        />
-      ))}
+      <div className={NAV_GROUP_RAIL}>
+        {buildPageTree(pages).map((node) => (
+          <NavPageNode
+            key={node.path}
+            owner={owner}
+            name={name}
+            node={node}
+            depth={0}
+            expandedDirs={expandedDirs}
+            onToggle={(path) => {
+              setOverrides((prev) => ({
+                ...prev,
+                [path]: !expandedDirs(path),
+              }));
+            }}
+          />
+        ))}
+      </div>
     </>
   );
 }

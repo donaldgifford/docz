@@ -103,3 +103,8 @@ toc:
 changelog:
   enabled: true # opt in so tools reading this config find your changelog
   file: CHANGELOG.md # repo-relative; subpaths work (charts/api/CHANGELOG.md)
+
+api:
+  enabled: true # publish non-docz markdown under docs/ as pages (DESIGN-0004)
+  additional_docs: # repo-relative files outside docs_dir
+    - README.md

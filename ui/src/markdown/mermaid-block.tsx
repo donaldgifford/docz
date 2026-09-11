@@ -79,8 +79,13 @@ export function mermaidThemeFromTokens(): Record<string, string> {
     clusterBkg: bgRaised,
     clusterBorder: border,
     titleColor: fgPrimary,
+    // Edge labels sit on the diagram surface, not the page: give them
+    // the figure's own background so arrows don't read through them.
+    edgeLabelBackground: bgRaised,
+    // ASCII family name only — passing the full font stack with quotes
+    // breaks mermaid.render silently (carried from the old portal).
     fontFamily: "monospace",
-    fontSize: "13px",
+    fontSize: "14px",
   };
 }
 
