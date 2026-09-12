@@ -1,7 +1,7 @@
 ---
 id: INV-0008
 title: "Last Updated frontmatter field: scope, git semantics, and effort"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-09-12
 ---
@@ -28,6 +28,7 @@ created: 2026-09-12
   - [Observation 9 — sizing against comparable past work](#observation-9--sizing-against-comparable-past-work)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
+  - [Decisions](#decisions)
   - [1. Field name?](#1-field-name)
   - [2. Sha representation, if recorded?](#2-sha-representation-if-recorded)
   - [3. Configurable key name per type (updatedfield, like statusfield)?](#3-configurable-key-name-per-type-updatedfield-like-statusfield)
@@ -127,7 +128,7 @@ DESIGN-0007's semver rule. Its only consumers are:
 | Consumer                       | Reads              | Change needed                          |
 | ------------------------------ | ------------------ | -------------------------------------- |
 | `cmd/list.go` `listEntry`      | `Created` → `date` | add `updated` to text + JSON output    |
-| `internal/index` `GenerateTable` | `Created` → `Date` column | optional new column (see OQ 6)  |
+| `internal/index` `GenerateTable` | `Created` → `Date` column | new `Updated` column (Decision 6) |
 | `document.DocEntry`            | embeds Frontmatter | none                                   |
 | `internal/wiki`                | title only         | none                                   |
 | docz-api (`ParseFrontmatter`)  | five fields        | pin bump + new column; see Observation 8 |
@@ -335,13 +336,14 @@ opt-in block that is inert until `enabled: true`. A shape consistent with
 ```yaml
 updated:
   enabled: false        # dormant by default in v1.x
-  sha: none             # none | short | full — sha adds a trailing commit per change
 ```
 
 `toc.enabled` defaults to true, but ToC regeneration is idempotent and
 git-free; this pass is neither, so default-off is the right v1.x call and
-a v2 could flip it. A per-type `updated_field` name (mirroring
-`status_field`) is possible but premature — see OQ 3.
+a v2 could flip it. A `sha: none | short | full` knob would sit in this
+block if the sha is ever recorded; it is deferred along with the sha
+(Recommendation). A per-type `updated_field` name (mirroring
+`status_field`) is possible but premature — see Decision 3.
 
 ### Observation 8 — consumer contract: additive, and the consumer cannot compute it alone
 
@@ -378,13 +380,13 @@ the raw file.
 | 4     | `cmd/`: `GitResolver` extension (last-change walk with bookkeeping filter, dirty, shallow), update pass, dry-run, stub + one `git init` integration test | new pattern | ~1–1½ days |
 | 5     | DESIGN doc, IMPL doc, DESIGN-0008 R12, `test/consumer` proof, `minor` release, docz-api follow-up issue | IMPL-0016 tail | ~½ day |
 
-Roughly **3½–4 days** for date + optional sha with the hybrid model. A
-**date-only** cut drops the sha plumbing and the `sha:` config knob but not
-Phase 4's git work (dirty detection and the backfill walk still need git),
-so it saves perhaps half a day. Dropping the git-derived path entirely
-(stamp-on-dirty only, no backfill, no filter) is the smallest cut at
-~2–2½ days, at the price of never populating the 34 existing docs unless
-someone edits them.
+Roughly **3½–4 days** for date + optional sha with the hybrid model. The
+**date-only** cut — the scope the Recommendation settles on — drops the sha
+plumbing and the `sha:` config knob but not Phase 4's git work (dirty
+detection and the backfill walk still need git), landing at **~3–3½ days**.
+Dropping the git-derived path entirely (stamp-on-dirty only, no backfill,
+no filter) is the smallest cut at ~2–2½ days, at the price of never
+populating the 34 existing docs unless someone edits them.
 
 ## Conclusion
 
@@ -413,27 +415,54 @@ one genuine design decision rather than an implementation risk.
 
 ## Recommendation
 
-1. **Proceed, date-first.** Write a DESIGN doc for an opt-in `updated:`
-   config block that adds an `updated: YYYY-MM-DD` frontmatter field, using
-   the hybrid model from Observation 6 (stamp today when dirty/untracked;
-   git-derived with the bookkeeping filter when clean).
-2. **Ship the sha as opt-in (`sha: short`), off by default**, with the
-   trailing-commit behavior documented on the config key itself. If that
-   trade-off reads as unacceptable during design review, drop it — the
-   consumer case for it is weak (Observation 8) and it can be added later
-   without a breaking change.
+**Do the `updated` date field first; defer the sha to a later follow-up.**
+The date is the part consumers need (sorting and display, Observation 8),
+it converges without bookkeeping commits (Observation 6), and it carries
+none of the sha's trailing-commit cost. The sha is a separate, later
+decision that can be added without a breaking change once the date has
+shipped and the backfill diff is behind existing repos.
+
+1. **Write a DESIGN doc for an opt-in `updated:` config block** that adds an
+   `updated: YYYY-MM-DD` frontmatter field, using the hybrid model from
+   Observation 6: stamp today when a doc is dirty or untracked; git-derived
+   (committer date, bookkeeping-line filter) when clean, which is what
+   backfills the 34 existing docs.
+2. **Leave the sha out of that DESIGN doc entirely** — no `updated_sha:`
+   key, no `sha:` config knob, no sha plumbing in the git resolver. Carry
+   the trailing-commit analysis (Observation 6) forward so the follow-up
+   starts from it rather than rediscovering it. When it comes, the shape is
+   already decided: a separate `updated_sha:` key (Decision 2), so `updated`
+   stays a clean date for docz-api's column.
 3. **Add the field to the six templates** so new docs carry it from
    creation, and have `docz status set` stamp it too — a status flip is a
    real update, and the command already rewrites the file.
-4. **Default `enabled: false` in v1.x** (dormancy pattern); consider flipping
+4. **Add the `Updated` column to the README index tables in the same
+   release** (Decision 6), accepting the one-time re-render of every table.
+5. **Default `enabled: false` in v1.x** (dormancy pattern); consider flipping
    the default in v2 once the backfill diff is behind existing repos.
-5. **Guard the failure modes explicitly**: warn-and-skip on shallow clones,
-   classify dirty/untracked before consulting history, degrade to no-op when
-   git is absent.
-6. Ratify the field for consumers as **DESIGN-0008 R12** and file the
+6. **Guard the failure modes explicitly**: warn once and skip the pass on a
+   shallow clone (Decision 5), classify dirty/untracked before consulting
+   history, degrade to no-op when git is absent.
+7. Ratify the field for consumers as **DESIGN-0008 R12** and file the
    docz-api column follow-up alongside the release.
 
-Open questions for the DESIGN doc, with the recommended option first:
+### Decisions
+
+All six open questions were resolved **(a)** on 2026-09-12 in review. The
+lettered options are kept below for the alternatives, which record what
+was weighed.
+
+| #   | Question                     | Decision                                                                                   |
+| --- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| 1   | Field name                   | `updated` — symmetric with `created`                                                       |
+| 2   | Sha representation           | a separate `updated_sha:` key — **deferred with the sha itself**; decided now so the follow-up does not reopen it |
+| 3   | Per-type key override        | no — fixed key                                                                             |
+| 4   | Date source                  | committer date (`%cI`)                                                                     |
+| 5   | Shallow clone                | warn once and skip the pass                                                                |
+| 6   | README `Updated` column      | yes, in the same release                                                                   |
+
+Open questions as put to review, recommended option first (all resolved
+**a**):
 
 ### 1. Field name?
 
