@@ -20,6 +20,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0005 | docz-api and docz-site: centralized cross-repo docz registry and viewer | Concluded | 2026-06-23 | Donald Gifford | [0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md](0005-docz-api-and-docz-site-centralized-cross-repo-docz-registry-and.md) |
 | INV-0006 | Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh | Open | 2026-07-03 | Donald Gifford | [0006-per-package-core-requirements-docz-cli-vs-docz-api-docz-site.md](0006-per-package-core-requirements-docz-cli-vs-docz-api-docz-site.md) |
 | INV-0007 | docz internals required for the api additional_docs block | Concluded | 2026-08-10 | Donald Gifford | [0007-docz-internals-required-for-the-api-additionaldocs-block.md](0007-docz-internals-required-for-the-api-additionaldocs-block.md) |
+| INV-0008 | Last Updated frontmatter field: scope, git semantics, and effort | Concluded | 2026-09-12 | Donald Gifford | [0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md](0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
