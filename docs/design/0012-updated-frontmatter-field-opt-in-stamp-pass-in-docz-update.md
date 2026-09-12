@@ -40,6 +40,7 @@ created: 2026-09-12
   - [6. Is the existing Date column renamed Created when Updated appears?](#6-is-the-existing-date-column-renamed-created-when-updated-appears)
   - [7. What does a normal (non-dry-run) docz update print for the pass?](#7-what-does-a-normal-non-dry-run-docz-update-print-for-the-pass)
   - [8. How narrow is the "bookkeeping commit" filter?](#8-how-narrow-is-the-bookkeeping-commit-filter)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -110,7 +111,7 @@ INV-0008 scoped the feature and settled six questions:
 | 3   | No per-type key override                                                                  |
 | 4   | Git-derived dates use the **committer** date                                              |
 | 5   | Shallow clone: warn once and skip the pass                                                |
-| 6   | `Updated` column in the README index tables, same release (revisited in OQ 5 — see below) |
+| 6   | `Updated` column in the README index tables, same release (refined by Decision 5 below: only when enabled) |
 
 Its central finding shapes everything here: a value derived from git history
 cannot describe the commit that contains it, so naive stamping never
@@ -192,7 +193,7 @@ update (INV-0008 Observation 6 showed exactly that diff for DESIGN-0011).
 | `docz status set`, commit                                        | stamped by the command | stamp rides along | same → **no write**                                                     |
 | Edit, commit *without* `docz update`, run later                  | clean → commit date   | trailing commit `B` | `B` is `updated:`-only → skipped; original commit → equal → **no write** |
 | Enable in an existing repo (all docs clean)                      | git-derived backfill, N writes | one commit | that commit is `updated:`-only per file → skipped → **no write**   |
-| Edit day 1 + `docz update`, commit day 2                         | dirty → day 1         | stamp rides along | clean; committer date is day 2 ≠ day 1 → **one write** (OQ 3)          |
+| Edit day 1 + `docz update`, commit day 2                         | dirty → day 1         | stamp rides along | clean; committer date is day 2 ≠ day 1 → **one write** (Decision 3)    |
 
 The last row is the only residual churn and it is bounded: one trailing
 commit, once, in the uncommon case where an edit and its commit straddle
@@ -226,14 +227,14 @@ type Config struct {
   siblings (global then repo, repo wins).
 - **Dormancy is total.** When disabled: `docz update` runs no stamp pass and
   makes no git call; `docz create` and `docz status set` do not stamp; the
-  README index and `docz list` layouts are unchanged (OQ 5). A repo can
-  commit the block disabled and enable it later.
+  README index and `docz list` layouts are unchanged (Decision 5). A repo
+  can commit the block disabled and enable it later.
 - `docz_yaml.tmpl` and `.docz.example.yaml` gain the block, disabled, with
   the comment above, so `docz init` output stays a complete map of the
   schema (DESIGN-0010 Decision 6 precedent). The existing
   `TestJSONTags_MirrorYAML` walk covers the new struct automatically, so it
   cannot ship without json tags.
-- Block name is OQ 1.
+- The block is named `updated:`, after the field it maintains (Decision 1).
 
 ### `docwrite.SetUpdated`
 
@@ -352,8 +353,9 @@ gated on `r.Cfg.Updated.Enabled`:
    same run.
 4. **Dry run:** one line per document that would change, in the ToC pass's
    style: `Would set updated in docs/rfc/0001-foo.md: (absent) -> 2026-09-12`.
-5. **Normal run output:** OQ 7. Write errors go to `r.Err` as warnings and
-   the pass continues, as the ToC pass does.
+5. **Normal run output:** silent on success, with a debug log per document,
+   matching the ToC pass (Decision 7). Write errors go to `r.Err` as
+   warnings and the pass continues, as the ToC pass does.
 6. `docz update <type>` stamps only that type, like the ToC pass.
 
 ### `docz create`
@@ -361,27 +363,31 @@ gated on `r.Cfg.Updated.Enabled`:
 When enabled, after `docwrite.Create` renders the file, the handler calls
 `SetUpdated(path, today)` so a new document carries `updated` from birth
 (equal to `created`). This is creation metadata, not index maintenance, so
-`--no-update` does not skip it. Templates are untouched (OQ 2) — which is
-what keeps on-disk template overrides, the claude-skills bundled copies, and
-disabled repos all correct without conditionals.
+`--no-update` does not skip it. Templates are untouched (Decision 2) —
+which is what keeps on-disk template overrides, the claude-skills bundled
+copies, and disabled repos all correct without conditionals.
 
 ### `docz status set`
 
 When enabled and the status actually changes (not `--dry-run`, not a
 same-value no-op), the handler stamps `updated` with today's date after
 `SetStatus`, so the CI flow *flip → commit* is self-contained and needs no
-later `docz update`. Reporting is OQ 4. Exit codes are unchanged; a failed
+later `docz update`. Reporting per Decision 4: the JSON output gains
+`"updated"` when a stamp was written; the text line is unchanged. Exit
+codes are unchanged; a failed
 stamp after a successful status write is reported as a write error (exit 1)
 with the status change already on disk — the same partial-write exposure
 `SetStatus` has today, now spanning two lines.
 
 ### Index table and `docz list`
 
-The README table gains an `Updated` column after `Date` when the block is
-enabled (OQ 5 — this is where INV-0008 Decision 6a and the dormancy rule
-disagree, and the design needs the call). `GenerateTable` takes the layout
-as a parameter; the internal package stays free of config. Whether `Date`
-is renamed `Created` in the new layout is OQ 6.
+The README table gains an `Updated` column after `Date` **only when the
+block is enabled** (Decision 5, which refines INV-0008 Decision 6a so the
+dormancy rule holds: a repo that never enables the block never sees its
+tables re-render). In that enabled layout the existing `Date` header is
+renamed `Created` (Decision 6); dormant repos keep `Date` byte-for-byte.
+`GenerateTable` takes the layout as a parameter; the internal package
+stays free of config.
 
 `docz list` follows the same rule: the text layout gains an `UPDATED`
 column only when enabled; the JSON output gains `"updated"` (`omitempty`)
@@ -420,9 +426,9 @@ config block, so the surface is proven importable from outside the module.
 
 | Command           | Change                                                                                                 |
 | ----------------- | ------------------------------------------------------------------------------------------------------ |
-| `docz update`     | stamp pass when enabled; `--dry-run` lines; one shallow-clone warning; layout change per OQ 5          |
-| `docz create`     | stamps the new file when enabled; templates unchanged                                                  |
-| `docz status set` | stamps on a real change when enabled; JSON gains `updated` (OQ 4)                                      |
+| `docz update`     | stamp pass when enabled; `--dry-run` lines; one shallow-clone warning; `Updated`/`Created` table layout when enabled (Decisions 5, 6) |
+| `docz create`     | stamps the new file when enabled; templates unchanged (Decision 2)                                     |
+| `docz status set` | stamps on a real change when enabled; JSON gains `updated`, text unchanged (Decision 4)                |
 | `docz list`       | JSON `updated` (omitempty); text column when enabled                                                   |
 | `docz init`       | generated `.docz.yaml` includes the disabled block                                                     |
 | `docz config`     | prints the block (no code change)                                                                      |
@@ -499,9 +505,11 @@ from the parsed frontmatter on each ingest; no backfill.
    stamps; document `fetch-depth: 0` in the README section for the block.
 4. **Dogfood:** enable the block in this repo in the post-release
    `dont-release` PR that also flips DESIGN-0012 → Implemented.
-5. **docz-api:** pin bump, `updated` column, R12 clause honored; docz-site
-   shows it and sorts by it with `created` fallback. Filed as follow-up
-   issues on those repos at release time.
+5. **docz-api:** pin bump, `updated` column, R12 clause honored — filed as
+   [docz-api #36](https://github.com/donaldgifford/docz-api/issues/36),
+   blocked on this design's release. docz-site shows the field and sorts by
+   it with `created` fallback; its issue is filed from the docz-api side
+   once #36 lands.
 6. **claude-skills docz plugin:** config and workflow references gain the
    block; bundled templates unchanged (issue #95 scope grows by one section).
 7. **Follow-up, not now:** `updated_sha:` per INV-0008 Decision 2, designed
@@ -509,10 +517,13 @@ from the parsed frontmatter on each ingest; no backfill.
 
 ## Open Questions
 
-Each question lists the recommended option first as **(a)**; the final
-option is left for a choice not listed here.
+All eight resolved **(a)** on 2026-09-12; see [Decisions](#decisions). The
+options are kept for the alternatives, which record what was weighed. Each
+question lists the recommended option first as **(a)**.
 
 ### 1. What is the config block called?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 The frontmatter key is fixed (`updated`, INV-0008 Decision 1); this is only
 the `.docz.yaml` block that switches the pass on.
@@ -530,6 +541,8 @@ the `.docz.yaml` block that switches the pass on.
 - d. Other.
 
 ### 2. How does a new document get the field?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 INV-0008 recommended adding `updated: {{ .Date }}` to the six embedded
 templates. Working through dormancy changed the picture: a template emits
@@ -555,6 +568,8 @@ forever after.
 
 ### 3. Does a clean document's stored stamp ever get "corrected" to the committer date?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 The one residual churn case: edit on day 1 and run `docz update` (stamp
 says day 1), commit on day 2. On the next run the document is clean and its
 last substantive commit is dated day 2.
@@ -574,6 +589,8 @@ last substantive commit is dated day 2.
 
 ### 4. Should `docz status set` stamp `updated`, and how is it reported?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 `status set` is the CI/automation primitive (IMPL-0011) with a stable text
 and JSON contract.
 
@@ -591,6 +608,8 @@ and JSON contract.
 - d. Other.
 
 ### 5. Does the README index table gain the `Updated` column unconditionally, or only when enabled?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 INV-0008 Decision 6 chose "yes, in the same release." Designing it exposed
 a conflict: an unconditional column changes every README table in every
@@ -611,6 +630,8 @@ decision holds either way; this question is about the "every repo" half.
 
 ### 6. Is the existing `Date` column renamed `Created` when `Updated` appears?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 With two date columns, a header that just says `Date` is ambiguous.
 
 - **a. (Recommended)** Rename it to `Created` only in the enabled layout
@@ -623,6 +644,8 @@ With two date columns, a header that just says `Date` is ambiguous.
 - d. Other.
 
 ### 7. What does a normal (non-dry-run) `docz update` print for the pass?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 The ToC pass is silent on success (debug log per file); the README step
 prints one `Updated <path>` line per type.
@@ -639,6 +662,8 @@ prints one `Updated <path>` line per type.
 
 ### 8. How narrow is the "bookkeeping commit" filter?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 - **a. (Recommended)** Only the `updated:` line is bookkeeping. Everything
   else — a `status:` flip, a ToC regeneration, whitespace — counts as a
   change. One regex, no judgment calls, and a `status` flip really is an
@@ -649,6 +674,21 @@ prints one `Updated <path>` line per type.
   headings changed, so in every later case it *is* content — and the
   parser has to track a region instead of a line.
 - c. Other.
+
+## Decisions
+
+All eight open questions resolved **(a)** on 2026-09-12.
+
+| #   | Question                          | Resolution                                                                                                                                  |
+| --- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Config block name                 | `updated:` — named after the field it maintains, like `toc:` / `changelog:` / `api:`; `config_snapshot` shows `updated.enabled` untranslated |
+| 2   | How new documents get the field   | `docz create` calls `SetUpdated` after rendering, only when enabled; templates untouched, so overrides, the plugin's bundled copies, and disabled repos need no conditional |
+| 3   | Day-boundary correction           | Write the committer date — one trailing commit, once, in the edit-day ≠ commit-day case; the field always converges to git's truth          |
+| 4   | `docz status set` stamping        | Stamp on a real status change when enabled; JSON gains `updated` (omitted when nothing was stamped); text line unchanged                     |
+| 5   | README `Updated` column           | Only when the block is enabled — refines INV-0008 Decision 6a so dormant repos never re-render; `GenerateTable` takes a layout parameter    |
+| 6   | `Date` → `Created` rename         | Only in the enabled layout, which re-renders anyway; dormant repos keep `Date` byte-for-byte                                                 |
+| 7   | Normal-run output                 | Silent on success, debug log per document, matching the ToC pass; warnings still print                                                      |
+| 8   | Bookkeeping filter scope          | Only the `updated:` line is bookkeeping; `status:` flips, ToC regeneration, and whitespace all count as changes                             |
 
 ## References
 

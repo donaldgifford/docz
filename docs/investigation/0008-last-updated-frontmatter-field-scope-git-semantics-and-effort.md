@@ -459,7 +459,7 @@ was weighed.
 | 3   | Per-type key override        | no — fixed key                                                                             |
 | 4   | Date source                  | committer date (`%cI`)                                                                     |
 | 5   | Shallow clone                | warn once and skip the pass                                                                |
-| 6   | README `Updated` column      | yes, in the same release                                                                   |
+| 6   | README `Updated` column      | yes, in the same release — refined by DESIGN-0012 Decision 5 to "only when the block is enabled," so dormant repos never re-render |
 
 Open questions as put to review, recommended option first (all resolved
 **a**):
