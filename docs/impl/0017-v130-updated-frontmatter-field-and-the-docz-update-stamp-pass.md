@@ -87,12 +87,15 @@ by INV-0008 (Concluded).
 - docz-api / docz-site work — tracked in docz-api #36.
 - Any general frontmatter editor, `--repo-root` cleanup beyond what the git
   path routing needs, or changes to `created`.
+- A `--no-stamp` / `--no-updated` flag on `docz update` (Decision 4): the
+  config block is the switch and a shallow clone already skips with a
+  warning.
 
 ## Implementation Phases
 
 Each phase builds on the previous one. A phase is complete when all its
 tasks are checked off and its success criteria are met. Phases are commit
-boundaries inside one PR (Open Question 2); every phase ends with
+boundaries inside one `minor` PR (Decision 2); every phase ends with
 `make fmt`, `make lint`, `make ci` green and a go-review pass over the
 phase's diff.
 
@@ -235,13 +238,13 @@ here changes runtime behavior; it is the schema Phases 4 and 5 build on.
 ### Phase 3: git resolver and the stream parser
 
 Everything that talks to git, in `cmd/` — plus the pure `git log -p`
-stream parser, whose home is Open Question 1. Built before the CLI
+stream parser in its own `internal/gitlog` package (Decision 1). Built before the CLI
 integration so Phase 4 is wired against a tested resolver and a scriptable
 stub.
 
 #### Tasks
 
-- [ ] go-architect pass before the new package (OQ 1a: `internal/gitlog`):
+- [ ] go-architect pass before the new package (Decision 1: `internal/gitlog`):
       confirm the parser's signature and that it is bytes-in/values-out with
       no `exec` inside it.
 - [ ] Stream parser `gitlog.FirstSubstantiveCommit(r io.Reader, ignore
@@ -273,7 +276,9 @@ stub.
       --untracked-files=all -- <path>` (empty → Clean, `??` → Untracked,
       else Modified; exit 128 / missing binary → Unavailable); `log --follow
       --format=%x00%H%x09%cs -p -- <path>` streamed through the parser with
-      early stop per OQ 7. Wire `Dir` in `loadAndValidateConfig` where
+      early stop (Decision 7: once the parser returns, close the process's
+      stdout and `Wait`, treating the broken-pipe exit as success). Wire
+      `Dir` in `loadAndValidateConfig` where
       `RepoRoot` is resolved, so `NewRunner`'s default `realGit{}` still
       means "cwd".
 - [ ] Route the path handed to git through the same resolution as the file
@@ -296,8 +301,10 @@ stub.
       classifies clean / modified / untracked (and a file added but not yet
       committed → Modified); `LastChange` returns the pinned committer date;
       an `updated:`-only follow-up commit is skipped; `git mv` + a content
-      edit is followed across the rename; `Shallow` is false; and, per OQ 3,
-      a `git clone --depth 1 file://…` of that repo reports `Shallow` true.
+      edit is followed across the rename; `Shallow` is false; and
+      (Decision 3) a `git clone --depth 1 file://…` of that repo reports
+      `Shallow` true, with the update pass run against it printing the
+      single warning and writing nothing.
 - [ ] Context-cancellation tests for the three new `realGit` methods,
       matching `TestRealGit_UserName_CtxCancel`.
 - [ ] Godoc; `make fmt`, `make lint`, `make ci` green; go-review pass.
@@ -331,7 +338,8 @@ This is where DESIGN-0012's convergence table becomes a test table.
 - [ ] `Runner.updateType`: after the ToC pass and before
       `index.GenerateTable`, call `r.stampUpdated(typeDir, docs, dryRun,
       gate)` implementing DESIGN-0012 §The stamping model: `State` → today
-      (`r.Now().Format(time.DateOnly)`) for Modified/Untracked, `LastChange`
+      (`r.Now().Format(time.DateOnly)`, the local date — Decision 8) for
+      Modified/Untracked, `LastChange`
       date for Clean, skip with debug when no history; compare against the
       scan's parsed `doc.Updated` (cmd owns the no-op short-circuit); on a
       difference, dry-run prints `Would set updated in <path>: <old|(absent)>
@@ -354,8 +362,9 @@ This is where DESIGN-0012's convergence table becomes a test table.
       failure goes through `statusWriteError` (exit 1). `statusResult` and
       `statusJSON` gain `Updated string \`json:"updated,omitempty"\``; the
       text line is unchanged (Decision 4). `--quiet` behavior unchanged.
-- [ ] `docz list`: `outputTable` gains an `UPDATED` column after `DATE` only
-      when enabled; CSV per OQ 5. JSON is done (Phase 2).
+- [ ] `docz list`: `outputTable` and `outputCSV` gain an `UPDATED` column
+      after `DATE` only when enabled (Decision 5 — the three formats agree).
+      JSON is done (Phase 2).
 - [ ] cmd tests for the pass with the scripted stub, one subtest per row of
       DESIGN-0012's convergence table: same-day edit; create-then-clean;
       status-set-then-clean; commit-without-update (git-derived write);
@@ -408,7 +417,7 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 - [ ] CLAUDE.md architecture map: `docwrite` (SetUpdated, upsert rules),
       `document` (Updated field), `config` (UpdatedConfig, dormancy), `cmd/`
       (stamp pass, GitResolver growth, stub shape), `internal/index`
-      (Layout), and the parser package per OQ 1.
+      (Layout), and `internal/gitlog` (Decision 1).
 - [ ] DESIGN-0008: add R12 verbatim from DESIGN-0012 §Consumer contract with
       `v1.3.0` filled in, and extend the "R10 raises that pin…" sentence.
 - [ ] `test/consumer/consumer_v13_test.go` (one file per release): parse a
@@ -428,7 +437,8 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
       release edit`), since goreleaser overwrote them on `v1.2.0` and
       `v1.2.2`; verify `go list -m github.com/donaldgifford/docz@v1.3.0`
       resolves from the proxy.
-- [ ] Post-tag `dont-release` PR (OQ 6): flip DESIGN-0012 → Implemented and
+- [ ] Post-tag `dont-release` PR (Decision 6 — one bookkeeping PR carrying
+      both the flips and the backfill): flip DESIGN-0012 → Implemented and
       IMPL-0017 → Completed; set `updated: enabled: true` in this repo's
       `.docz.yaml`; run `docz update` and commit the backfill (every
       document gains `updated:`, every README re-renders with the
@@ -465,7 +475,7 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 | `pkg/doczcore/config/config_test.go`, `parity_baseline_test.go`, `json_test.go` | Modify | Decode / merge / dormancy / parity / shape pin |
 | `internal/template/templates/docz_yaml.tmpl` | Modify | Dormant `updated:` block |
 | `.docz.example.yaml`, `.docz.yaml` | Modify | The block (disabled until Phase 5) |
-| `internal/gitlog/gitlog.go` (+ tests, testdata) | Create | `git log -p` stream parser — home per OQ 1 |
+| `internal/gitlog/gitlog.go` (+ tests, testdata) | Create | `git log -p` stream parser (Decision 1) |
 | `cmd/git.go` | Modify | `WorkTreeState`, `Change`, grown `GitResolver`, `realGit.Dir`, scriptable `staticGit` |
 | `cmd/git_test.go`, `cmd/git_integration_test.go` | Modify / Create | Stub tests; hermetic real-git test |
 | `cmd/root.go` | Modify | Wire `realGit{Dir: repoRoot}` |
@@ -506,10 +516,13 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 
 ## Open Questions
 
-Each question lists the recommended option first as **(a)**; the final
-option is left for a choice not listed here.
+All eight resolved **(a)** on 2026-09-12; see [Decisions](#decisions). The
+options are kept for the alternatives, which record what was weighed. Each
+question lists the recommended option first as **(a)**.
 
 ### 1. Where does the `git log -p` stream parser live?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 The parser is pure (reader in, `Commit` out, no `exec`), the only
 non-trivial logic in the git work, and the thing most worth fuzzing.
@@ -526,6 +539,8 @@ non-trivial logic in the git work, and the thing most worth fuzzing.
 
 ### 2. PR and release strategy?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 - **a. (Recommended)** One `minor` PR carrying all five phases, phases as
   commit boundaries, then the post-tag `dont-release` PR — the IMPL-0015 and
   IMPL-0016 shape (#78 → `v1.1.0` → #79; #84 → `v1.2.0` → #90), which has
@@ -541,6 +556,8 @@ non-trivial logic in the git work, and the thing most worth fuzzing.
 
 ### 3. Does the real-git integration test cover the shallow-clone path?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 - **a. (Recommended)** Yes — `git clone --depth 1 file://<tmp repo>` inside
   the same test, assert `Shallow()` is true there, and run the update pass
   against it to see the single warning and zero writes end to end. It is
@@ -551,6 +568,8 @@ non-trivial logic in the git work, and the thing most worth fuzzing.
 - c. Other.
 
 ### 4. Should `docz update` get a flag to skip the stamp pass?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 - **a. (Recommended)** No flag. The config block is the switch, a shallow
   clone already skips with a warning, and `--dry-run` shows what would
@@ -563,6 +582,8 @@ non-trivial logic in the git work, and the thing most worth fuzzing.
 
 ### 5. Does the `Updated` column also appear in `docz list --format=csv`?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 DESIGN-0012 specifies text (enabled-only) and JSON (`omitempty`); CSV was
 not mentioned.
 
@@ -573,6 +594,8 @@ not mentioned.
 - c. Other.
 
 ### 6. Where does the dogfood backfill in this repo land?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 Enabling the block here rewrites every document (35+ files) and every
 README table.
@@ -586,6 +609,8 @@ README table.
 - c. Other.
 
 ### 7. Does the resolver stop reading `git log -p` early?
+
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
 
 A full history is unbounded, but the answer is almost always in the first
 or second commit.
@@ -603,6 +628,8 @@ or second commit.
 
 ### 8. What clock does "today" use for an edit-time stamp?
 
+**Resolved: (a)** — locked 2026-09-12; see [Decisions](#decisions).
+
 - **a. (Recommended)** The local date from `r.Now()` — the same source and
   zone `created` already uses, and the same convention as git's `%cs`,
   which reports the committer's local date. A developer stamping at 23:00
@@ -614,7 +641,18 @@ or second commit.
 
 ## Decisions
 
-Pending — all eight open questions await review (2026-09-12).
+All eight open questions resolved **(a)** on 2026-09-12.
+
+| #   | Question                          | Resolution                                                                                                                                     |
+| --- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Stream parser home                | New `internal/gitlog` package — pure, parallel tests, fuzzable, private; `cmd/git.go` stays process plumbing                                    |
+| 2   | PR / release strategy             | One `minor` PR carrying all five phases as commit boundaries → `v1.3.0`, then a post-tag `dont-release` PR (the #84 → #90 shape)               |
+| 3   | Shallow-clone integration proof   | Yes — `git clone --depth 1 file://…` in the real-git test; assert `Shallow()` true and the pass warns once and writes nothing                  |
+| 4   | Skip flag on `docz update`        | No flag — the config block is the switch; a shallow clone already skips with a warning; `--dry-run` previews                                   |
+| 5   | CSV `Updated` column              | Yes, under the same enabled-only rule as the text table, so text, CSV, and JSON agree                                                           |
+| 6   | Dogfood backfill placement        | Same post-tag `dont-release` PR as the status flips — one bookkeeping PR per release, verified by a silent `docz update --dry-run` afterward   |
+| 7   | Early stop on `git log -p`        | Stop early — close the process's stdout after the first substantive commit and `Wait`, treating the broken-pipe exit as success                |
+| 8   | Clock for edit-time stamps        | Local date from `r.Now()` — the same source and zone as `created`, matching git's committer-local `%cs`                                          |
 
 ## References
 
