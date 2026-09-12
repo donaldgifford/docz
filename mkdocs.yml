@@ -16,6 +16,7 @@ nav:
         - 'DESIGN-0009: docz-site: cross-repo docz viewer and search UI': design/0009-docz-site-cross-repo-docz-viewer-and-search-ui.md
         - 'DESIGN-0010: Changelog config block and ParseChangelog': design/0010-changelog-config-block-and-parsechangelog.md
         - 'DESIGN-0011: api config block: index page and additional_docs for docz-api and docz-site': design/0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md
+        - 'DESIGN-0012: Updated frontmatter field: opt-in stamp pass in docz update': design/0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
