@@ -7,14 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
-- *(inv)* INV-0009 — expose the indexed updated timestamp on search hits ([#34](https://github.com/donaldgifford/docz-api/issues/34))
-- *(inv)* INV-0009 — record decisions on OQ 1–5 (sort ships in the same PR)
-- *(design)* DESIGN-0005 — timestamped and sortable search hits (from INV-0009)
-- *(design)* DESIGN-0005 — record decisions 2a–5a; OQ-1 pending
-- *(design)* DESIGN-0005 — record decision 1a; status Approved
-- *(impl)* IMPL-0010 — ship timestamped and sortable search hits (from DESIGN-0005)
-- *(impl)* IMPL-0010 — record OQ answers; grpc bump as Phase 1 prerequisite; docz-site issue task
-- *(impl)* IMPL-0010 — grpc prerequisite landed early in the docs PR
+- INV-0009 + DESIGN-0005 + IMPL-0010 — timestamped and sortable search hits ([#34](https://github.com/donaldgifford/docz-api/issues/34)) ([#35](https://github.com/donaldgifford/docz-api/issues/35))
 
 ## [0.9.0] - 2026-09-02
 
