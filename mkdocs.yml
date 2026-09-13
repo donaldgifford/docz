@@ -45,6 +45,7 @@ nav:
         - 'INV-0006: Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh': investigation/0006-per-package-core-requirements-docz-cli-vs-docz-api-docz-site.md
         - 'INV-0007: docz internals required for the api additional_docs block': investigation/0007-docz-internals-required-for-the-api-additionaldocs-block.md
         - 'INV-0008: Last Updated frontmatter field: scope, git semantics, and effort': investigation/0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md
+        - 'INV-0009: ToC regeneration in docz update and markdownlint MD051': investigation/0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md
     - Plans:
         - Overview: plan/README.md
     - RFCs:
