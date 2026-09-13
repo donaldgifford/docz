@@ -21,6 +21,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0006 | Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh | Open | 2026-07-03 | Donald Gifford | [0006-per-package-core-requirements-docz-cli-vs-docz-api-docz-site.md](0006-per-package-core-requirements-docz-cli-vs-docz-api-docz-site.md) |
 | INV-0007 | docz internals required for the api additional_docs block | Concluded | 2026-08-10 | Donald Gifford | [0007-docz-internals-required-for-the-api-additionaldocs-block.md](0007-docz-internals-required-for-the-api-additionaldocs-block.md) |
 | INV-0008 | Last Updated frontmatter field: scope, git semantics, and effort | Concluded | 2026-09-12 | Donald Gifford | [0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md](0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md) |
+| INV-0009 | ToC regeneration in docz update and markdownlint MD051 | Concluded | 2026-09-13 | Donald Gifford | [0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md](0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
