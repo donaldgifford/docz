@@ -26,7 +26,7 @@ created: 2026-09-13
   - [Observation 7 (side finding): doubled index markers in two generated READMEs](#observation-7-side-finding-doubled-index-markers-in-two-generated-readmes)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
-- [Open Questions](#open-questions)
+  - [Decisions](#decisions)
   - [1. Should docz update report ToC changes in normal (non-dry-run) output?](#1-should-docz-update-report-toc-changes-in-normal-non-dry-run-output)
   - [2. Should docz recognise marker spelling variants such as the spaced mtoc form?](#2-should-docz-recognise-marker-spelling-variants-such-as-the-spaced-mtoc-form)
   - [3. How far should the slug-fidelity fix go?](#3-how-far-should-the-slug-fidelity-fix-go)
@@ -330,7 +330,9 @@ lint job does.
 2. **Fix the skills (claude-skills, plugin 1.3.x).** `skills/update/SKILL.md`,
    the umbrella `docz` SKILL, and `references/workflow.md` should say
    `docz update` regenerates ToC fences as well as README tables, and that a
-   stale fence means "run `docz update`", never "delete the fence".
+   stale fence means "run `docz update`", never "delete the fence". Tracked
+   as an issue in that repo (claude-skills #98), not as a PR from this work
+   (Decision 6).
 3. **Fix slug fidelity in `docparse` (docz, one `fix(docparse)` release).**
    Make `AnchorSlug` match GitHub for underscores (#82) and Unicode
    letters/digits, and make `Headings` skip HTML-comment-enclosed lines.
@@ -345,15 +347,35 @@ lint job does.
 5. **Add a CI-gating mode.** `docz update --check`: dry-run semantics, drift
    summary, non-zero exit when any fence or README would change. Then the
    skill's "detect drift in CI" claim becomes true.
-6. **File issues** for 3 (non-ASCII, HTML comments — link #82), 4, 5, and
-   the doubled index markers (Observation 7). A markdownlint job for this
-   repo's own docs is a separate chore issue: 243 findings need config
-   decisions first, and MD051 should be fixed at the source (item 3) before
-   the gate goes in so the linter never fights `docz update`.
+6. **Issues filed 2026-09-13** once the decisions below were locked:
+   docz #94 (item 1), claude-skills #98 (item 2), docz #96 alongside #82
+   (item 3), docz #95 (item 4), docz #97 (item 5), docz #98 (a markdownlint
+   job for this repo's own docs — 243 findings need config decisions first,
+   and MD051 should be fixed at the source before the gate goes in so the
+   linter never fights `docz update`), and docz #99 (the doubled index
+   markers, Observation 7).
 
-Do **not** accept marker variants as a fix for row 1 — see Open Question 2.
+Do **not** accept marker variants as a fix for row 1 — see Decision 2.
 
-## Open Questions
+### Decisions
+
+All seven open questions were resolved on 2026-09-13 in review — 1–5 and
+7 as **(a)**, 6 as (a) for the docz half with the claude-skills half
+becoming an issue in that repo rather than a PR from this work. The
+lettered options are kept below for the alternatives, which record what
+was weighed.
+
+| #   | Question                          | Decision                                                                                      | Tracked in |
+| --- | --------------------------------- | --------------------------------------------------------------------------------------------- | ---------- |
+| 1   | Report ToC changes in normal runs | yes — `Updated ToC in <path>` per changed file, silent when nothing changed                   | docz #95 |
+| 2   | Accept marker spelling variants   | no — exact Marksman markers stay; warn once per file on a near-miss with no exact fence       | docz #95 |
+| 3   | Slug-fidelity scope               | all three divergences (underscores #82, Unicode letters/digits, HTML-comment headings) in one `fix(docparse)` release, goldens from GitHub's rendered anchors, changelog note | docz #96 + #82 |
+| 4   | CI-gating mode                    | `docz update --check` — dry-run semantics, drift summary only, exit 1 on drift; `--dry-run` unchanged | docz #97 |
+| 5   | markdownlint in this repo's CI    | not now — chore issue; land the slug fix first, then config decisions (MD024 siblings, MD040 languages) | docz #98 |
+| 6   | Where the doc fixes land          | docz: help text, `docz_yaml.tmpl` comment, README attribution, DESIGN-0003 amendment as a `patch` PR; claude-skills: a gh issue in that repo | docz #94; claude-skills #98 |
+| 7   | Doubled index-marker pair         | separate `fix(index)` issue, plus a one-off cleanup of this repo's investigation README         | docz #99 |
+
+Open questions as put to review, recommended option first:
 
 ### 1. Should `docz update` report ToC changes in normal (non-dry-run) output?
 
@@ -415,7 +437,7 @@ markdown-toc.nvim can be configured to produce) and mtoc's default
   Criteria" headings, fence languages for MD040, and so on). Land the slug
   fix first so the gate never contradicts `docz update`. *(recommendation)*
 - b. Add the job now with a CI-only config enabling MD051 alone; the five
-  current failures are all #82 and would be fixed by Open Question 3.
+  current failures are all #82 and would be fixed by Decision 3.
 - c. Add the job now with the full config and fix all 243 findings in the
   same PR.
 - d. Other.
@@ -427,7 +449,7 @@ markdown-toc.nvim can be configured to produce) and mtoc's default
   code. claude-skills: `docz:update` skill, umbrella SKILL, workflow
   reference — plugin 1.3.1. *(recommendation)*
 - b. docz only for now; skills in the next plugin bump.
-- c. Fold the docz text changes into the slug-fix PR (Open Question 3) as one
+- c. Fold the docz text changes into the slug-fix PR (Decision 3) as one
   release.
 - d. Other.
 
@@ -451,6 +473,21 @@ markdown-toc.nvim can be configured to produce) and mtoc's default
   — Decision 7 (silent normal-run output for the `updated:` stamp)
 - [Issue #82](https://github.com/donaldgifford/docz/issues/82) — underscores
   stripped from ToC anchors
+- Follow-up issues filed from this investigation:
+  [docz #94](https://github.com/donaldgifford/docz/issues/94) (help text,
+  config comment, README attribution, DESIGN-0003),
+  [docz #95](https://github.com/donaldgifford/docz/issues/95) (normal-run
+  ToC output, near-miss marker warning),
+  [docz #96](https://github.com/donaldgifford/docz/issues/96) (non-ASCII and
+  HTML-comment slug divergences, with #82),
+  [docz #97](https://github.com/donaldgifford/docz/issues/97)
+  (`docz update --check`),
+  [docz #98](https://github.com/donaldgifford/docz/issues/98) (markdownlint
+  in CI),
+  [docz #99](https://github.com/donaldgifford/docz/issues/99) (doubled index
+  markers),
+  [claude-skills #98](https://github.com/donaldgifford/claude-skills/issues/98)
+  (docz plugin skills)
 - `cmd/update.go` (`updateCmd.Long`, `runToCUpdate`), `pkg/doczcore/toc/toc.go`
   (`BeginMarker`/`EndMarker`, `parseHeadings`, `UpdateToC`),
   `pkg/doczcore/docparse` (`Headings`, `AnchorSlug`),
