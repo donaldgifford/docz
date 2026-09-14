@@ -19,6 +19,23 @@ const (
 // taskPollInterval is how often index writes poll Meilisearch task status.
 const taskPollInterval = 50 * time.Millisecond
 
+// sortableAttributes are the index attributes a search may order by. The
+// accepted sort tokens are derived from this list (see ParseSort), so adding
+// an attribute here plus its two direction tokens is the whole change.
+var sortableAttributes = []string{"created", "updated_at"}
+
+// rankingRules order Meilisearch's ranking, with "sort" ahead of the
+// relevance rules. That position is what makes a requested sort a total
+// order over the matches instead of a tie-break within relevance: at the
+// default position ("words, typo, proximity, attribute, sort, exactness") a
+// query's most relevant hit leads regardless of the sort the caller asked
+// for. The move is safe because the sort rule is inert on a search that
+// carries no sort parameter, so unsorted requests rank exactly as before
+// (DESIGN-0005). Relevance still orders records that tie on the sort keys.
+var rankingRules = []string{
+	"sort", "words", "typo", "proximity", "attribute", "exactness",
+}
+
 // Client is the Meilisearch access layer. One Client serves the whole process;
 // it satisfies the ingest.Indexer and httpapi.Searcher interfaces.
 type Client struct {
@@ -50,10 +67,8 @@ func (c *Client) EnsureIndex(ctx context.Context) error {
 	task, err := c.svc.Index(indexUID).UpdateSettingsWithContext(ctx, &meilisearch.Settings{
 		SearchableAttributes: []string{"title", "body"},
 		FilterableAttributes: []string{"repo", "repo_id", "type", "status", "author", "source"},
-		SortableAttributes:   []string{"created", "updated_at"},
-		RankingRules: []string{
-			"words", "typo", "proximity", "attribute", "sort", "exactness",
-		},
+		SortableAttributes:   sortableAttributes,
+		RankingRules:         rankingRules,
 	})
 	if err != nil {
 		return fmt.Errorf("update settings for index %q: %w", indexUID, err)

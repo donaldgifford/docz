@@ -360,6 +360,36 @@ progresses:
     task fail with "Document identifier … is invalid". The PK is internal to the
     index and never appears in the search response, so this is a safe deviation;
     `repo_id` is numeric so the first `_` splits the two parts unambiguously.
+  - **GOTCHA — `AttributesToRetrieve` is an explicit allow-list** (the
+    `retrieveAttributes` package var in `internal/search/search.go`). A new
+    index attribute must be added **there** as well as to `IndexDoc`, `rawHit`,
+    and `decodeHits` — three drop sites, not two. Miss the retrieve list and
+    Meilisearch simply omits the field from the response: the decoder yields a
+    zero value, every faked-searcher unit test still passes, and only a real
+    Meilisearch sees it. That is exactly how issue #34's plan came up short, so
+    `TestSearchRetrievesDatedAttributes` now pins the list.
+  - **GOTCHA — `sort` leads the ranking rules** (`rankingRules`, moved ahead of
+    `words` from its Meilisearch default slot between `attribute` and
+    `exactness`). That placement is what makes a requested sort a **total
+    order** over the matches; at the default position it only breaks ties
+    *within* relevance, so the most relevant hit leads no matter what the caller
+    asked for. The move is safe because the rule is **inert on a request that
+    carries no `sort`** — unsorted searches rank exactly as before. Don't move
+    it back: `TestRankingRulesSortLeads` and `TestIntegrationSortBeatsRelevance`
+    both fail by name (revert-drilled, IMPL-0010 Phase 4).
+  - **GOTCHA — Meilisearch sorts an empty value LAST in both directions.** It
+    treats `""` as absent rather than as the lexicographic minimum, so page
+    records (no authored `created`) trail documents ascending *and* descending.
+    DESIGN-0005 originally predicted the lexicographic reading and was
+    corrected in place.
+  - **GOTCHA — one reconcile stamps every row identically.** Postgres `now()`
+    is `transaction_timestamp()` and `ReconcileRepo` is a single transaction,
+    so every record one ingest touches shares `updated_at` to the microsecond —
+    and a fresh database restamps a whole repo at onboard. A sort on
+    `updated_at` alone would therefore be arbitrary within a repo, which is why
+    `sortKeys` appends an implicit secondary key (`created`, matching
+    direction). A test that seeds distinct stamps cannot see this;
+    `TestIntegrationSecondarySortKey` seeds a colliding pair on purpose.
 
 - **Phase 4 — Async ingestion: COMPLETE ✅** — ingest moved off the request
   path onto an asynq + Redis job queue, in-process with the API binary. All

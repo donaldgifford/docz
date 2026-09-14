@@ -62,6 +62,10 @@ func (contractSearcher) Search(context.Context, *search.SearchParams) (search.Se
 			Source: search.SourceDoc, Repo: "acme/platform", DocID: "FW-0001",
 			Type: "frameworks", Title: "Intro", Path: "docs/frameworks/0001-intro.md",
 			Status: "Draft", Author: "Jane",
+			// Real dates, not zero values: the schema types both as strings,
+			// so "" would satisfy it without ever exercising the spellings
+			// consumers generate against.
+			Created: "2026-01-15", UpdatedAt: "2025-06-22T18:04:11Z",
 			Snippet: "an <em>intro</em> to frameworks",
 		}},
 		Facets: map[string]search.FacetMap{
@@ -345,6 +349,19 @@ func TestOpenAPIContract(t *testing.T) {
 		{name: "listDocs", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/frameworks/docs"},
 		{name: "getDoc", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001"},
 		{name: "searchDocs", method: http.MethodGet, target: "http://localhost/api/v1/search?q=intro"},
+		// A sorted search validates the sort enum on the request side. The
+		// rejected case is deliberately absent: an out-of-enum value fails
+		// kin-openapi's request validation before the handler runs, so it
+		// would prove the spec rather than the handler — the 400 envelope is
+		// covered by the httpapi unit test instead.
+		{
+			name: "searchDocsSorted", method: http.MethodGet,
+			target: "http://localhost/api/v1/search?q=intro&sort=updated_at:desc",
+		},
+		{
+			name: "searchDocsSource", method: http.MethodGet,
+			target: "http://localhost/api/v1/search?q=intro&source=doc",
+		},
 		{name: "notFound", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/missing"},
 		{name: "getSession", method: http.MethodGet, target: "http://localhost/api/v1/auth/session"},
 		{name: "logout", method: http.MethodPost, target: "http://localhost/api/v1/auth/logout"},

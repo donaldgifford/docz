@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -213,6 +214,317 @@ func TestIntegrationSnippetHighlight(t *testing.T) {
 	snippet := res.Hits[0].Snippet
 	if !strings.Contains(snippet, "<em>") || !strings.Contains(snippet, "</em>") {
 		t.Errorf("snippet = %q, want <em>-highlighted match", snippet)
+	}
+}
+
+// paths returns each hit's path in result order, the readable identity for
+// an ordering assertion (the index primary key never reaches the wire).
+func paths(hits []SearchHit) []string {
+	out := make([]string, len(hits))
+	for i, h := range hits {
+		out[i] = h.Path
+	}
+	return out
+}
+
+// TestIntegrationHitDates proves the retrieve list. Both dates are attributes
+// Meilisearch only returns when asked for by name, so a stale
+// retrieveAttributes list would empty them here while every faked-searcher
+// test still passed (INV-0009 F2).
+func TestIntegrationHitDates(t *testing.T) {
+	seed(t)
+
+	res, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "structured logging",
+		AllowedRepoIDs: []int64{1},
+	})
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(res.Hits) == 0 {
+		t.Fatalf("no hits for 'structured logging' in repo 1")
+	}
+
+	// RFC-0001 is the top hit: seeded UpdatedAt 1750615451, Created 2026-01-15.
+	hit := res.Hits[0]
+	if hit.DocID != "RFC-0001" {
+		t.Fatalf("top hit = %q, want RFC-0001", hit.DocID)
+	}
+	if hit.UpdatedAt != "2025-06-22T18:04:11Z" {
+		t.Errorf("updated_at = %q, want 2025-06-22T18:04:11Z (RFC3339 in UTC)", hit.UpdatedAt)
+	}
+	if hit.Created != "2026-01-15" {
+		t.Errorf("created = %q, want 2026-01-15 passed through from the index", hit.Created)
+	}
+
+	// A page hit carries a real stamp and no authored date.
+	pages, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "contribution guidelines",
+		AllowedRepoIDs: []int64{1},
+		Source:         SourcePage,
+	})
+	if err != nil {
+		t.Fatalf("page search: %v", err)
+	}
+	if len(pages.Hits) == 0 {
+		t.Fatalf("no page hits for 'contribution guidelines'")
+	}
+	page := pages.Hits[0]
+	if page.UpdatedAt != "2025-06-22T18:04:15Z" {
+		t.Errorf("page updated_at = %q, want 2025-06-22T18:04:15Z — pages are stamped too", page.UpdatedAt)
+	}
+	if page.Created != "" {
+		t.Errorf("page created = %q, want empty", page.Created)
+	}
+}
+
+// TestIntegrationSortOrdersWholeResultSet sorts an unfiltered query, where
+// every hit ties on relevance, so the assertion is the exact seeded order.
+func TestIntegrationSortOrdersWholeResultSet(t *testing.T) {
+	seed(t)
+
+	// The corpus is seeded with strictly increasing UpdatedAt, so descending
+	// is the exact reverse of the seed order.
+	newestFirst := []string{
+		"runbooks", "CONTRIBUTING.md", "guides/setup.md",
+		"docs/adr/0001-use-postgres.md", "docs/rfc/0002-tracing.md",
+		"docs/rfc/0001-structured-logging.md",
+	}
+
+	desc, err := testClient.Search(t.Context(), &SearchParams{
+		AllowedRepoIDs: []int64{1, 2},
+		Sort:           SortUpdatedDesc,
+	})
+	if err != nil {
+		t.Fatalf("sorted search: %v", err)
+	}
+	if got := paths(desc.Hits); !slices.Equal(got, newestFirst) {
+		t.Errorf("updated_at:desc order =\n  %v\nwant\n  %v", got, newestFirst)
+	}
+
+	asc, err := testClient.Search(t.Context(), &SearchParams{
+		AllowedRepoIDs: []int64{1, 2},
+		Sort:           SortUpdatedAsc,
+	})
+	if err != nil {
+		t.Fatalf("sorted search: %v", err)
+	}
+	oldestFirst := slices.Clone(newestFirst)
+	slices.Reverse(oldestFirst)
+	if got := paths(asc.Hits); !slices.Equal(got, oldestFirst) {
+		t.Errorf("updated_at:asc order =\n  %v\nwant\n  %v", got, oldestFirst)
+	}
+}
+
+// TestIntegrationSortBeatsRelevance is the ranking-rule proof. "logging"
+// matches three records, and the one whose *title* carries the term
+// (RFC-0001) is the most relevant — it leads an unsorted search. Sorted by
+// newest, it must come last. This fails if the sort rule is returned to
+// Meilisearch's default position, where it only breaks ties within relevance.
+func TestIntegrationSortBeatsRelevance(t *testing.T) {
+	seed(t)
+
+	const (
+		mostRelevant = "docs/rfc/0001-structured-logging.md" // title match, oldest
+		newest       = "runbooks"                            // body match, newest
+	)
+
+	unsorted, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "logging",
+		AllowedRepoIDs: []int64{1, 2},
+	})
+	if err != nil {
+		t.Fatalf("unsorted search: %v", err)
+	}
+	if got := paths(unsorted.Hits); len(got) == 0 || got[0] != mostRelevant {
+		t.Fatalf("unsorted order = %v, want the title match %q first", got, mostRelevant)
+	}
+
+	sorted, err := testClient.Search(t.Context(), &SearchParams{
+		Query:          "logging",
+		AllowedRepoIDs: []int64{1, 2},
+		Sort:           SortUpdatedDesc,
+	})
+	if err != nil {
+		t.Fatalf("sorted search: %v", err)
+	}
+	want := []string{newest, "docs/adr/0001-use-postgres.md", mostRelevant}
+	if got := paths(sorted.Hits); !slices.Equal(got, want) {
+		t.Errorf("updated_at:desc over a query =\n  %v\nwant\n  %v "+
+			"(a total order, so the most relevant hit is last)", got, want)
+	}
+}
+
+// TestIntegrationCreatedSortEdges pins what happens to records with no
+// authored date — the api-block pages, whose created is "".
+//
+// Meilisearch places them LAST in both directions, not at the low end of a
+// lexicographic string order. It treats an empty value as absent for sorting
+// purposes and parks such documents at the end of the results whichever way
+// the sort runs. DESIGN-0005 predicted "first ascending, last descending";
+// this test found otherwise and the contract description was corrected to
+// match. The behavior is the better one for a "newest first" listing —
+// undated records never crowd the top — but it is Meilisearch's to define,
+// so it is pinned here.
+func TestIntegrationCreatedSortEdges(t *testing.T) {
+	seed(t)
+
+	// Dated documents, oldest to newest authored date.
+	docsAsc := []string{
+		"docs/rfc/0001-structured-logging.md", // 2026-01-15
+		"docs/rfc/0002-tracing.md",            // 2026-02-01
+		"docs/adr/0001-use-postgres.md",       // 2026-03-01
+	}
+	docsDesc := slices.Clone(docsAsc)
+	slices.Reverse(docsDesc)
+
+	for _, tc := range []struct {
+		name string
+		sort string
+		want []string
+	}{
+		{"descending", SortCreatedDesc, docsDesc},
+		{"ascending", SortCreatedAsc, docsAsc},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := testClient.Search(t.Context(), &SearchParams{
+				AllowedRepoIDs: []int64{1, 2},
+				Sort:           tc.sort,
+			})
+			if err != nil {
+				t.Fatalf("created sort search: %v", err)
+			}
+			if len(res.Hits) != 6 {
+				t.Fatalf("got %d hits, want the whole corpus", len(res.Hits))
+			}
+			if got := paths(res.Hits)[:3]; !slices.Equal(got, tc.want) {
+				t.Errorf("%s leading hits = %v, want the dated documents %v", tc.name, got, tc.want)
+			}
+			// The undated pages trail in both directions.
+			for _, h := range res.Hits[3:] {
+				if h.Source != SourcePage {
+					t.Errorf("%s trailing hit %q is a %s, want the undated pages last",
+						tc.name, h.Path, h.Source)
+				}
+			}
+		})
+	}
+}
+
+// TestIntegrationSecondarySortKey proves the tie-break. The shared corpus has
+// distinct stamps, so it can never exercise one; this indexes two records
+// that share an updated_at to the second — the shape every repository's first
+// ingest produces, since one reconcile is one transaction — and asserts the
+// requested sort falls through to created rather than to Meilisearch's
+// internal order.
+func TestIntegrationSecondarySortKey(t *testing.T) {
+	seed(t)
+
+	const sharedStamp = 1750619999
+	tied := []IndexDoc{
+		{
+			ID: "9_TIE-0001", Source: SourceDoc, Repo: "tie/repo", RepoID: 9, DocID: "TIE-0001",
+			Type: "rfc", Title: "Tied older", Created: "2026-05-01",
+			Path: "docs/rfc/0001-tied-older.md", Body: "tiebreaker corpus",
+			UpdatedAt: sharedStamp,
+		},
+		{
+			ID: "9_TIE-0002", Source: SourceDoc, Repo: "tie/repo", RepoID: 9, DocID: "TIE-0002",
+			Type: "rfc", Title: "Tied newer", Created: "2026-06-01",
+			Path: "docs/rfc/0002-tied-newer.md", Body: "tiebreaker corpus",
+			UpdatedAt: sharedStamp,
+		},
+	}
+	if err := testClient.IndexDocuments(t.Context(), tied); err != nil {
+		t.Fatalf("index tied docs: %v", err)
+	}
+	t.Cleanup(func() {
+		// The index is shared across this package's tests; leaving these in
+		// would break every corpus-count assertion.
+		if err := testClient.DeleteDocuments(context.Background(), []string{"9_TIE-0001", "9_TIE-0002"}); err != nil {
+			t.Errorf("clean up tied docs: %v", err)
+		}
+	})
+
+	for _, tc := range []struct {
+		name string
+		sort string
+		want []string
+	}{
+		{
+			name: "newest updated breaks ties toward the newer created",
+			sort: SortUpdatedDesc,
+			want: []string{"docs/rfc/0002-tied-newer.md", "docs/rfc/0001-tied-older.md"},
+		},
+		{
+			name: "oldest updated breaks ties toward the older created",
+			sort: SortUpdatedAsc,
+			want: []string{"docs/rfc/0001-tied-older.md", "docs/rfc/0002-tied-newer.md"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := testClient.Search(t.Context(), &SearchParams{
+				Query:          "tiebreaker corpus",
+				AllowedRepoIDs: []int64{9},
+				Sort:           tc.sort,
+			})
+			if err != nil {
+				t.Fatalf("search: %v", err)
+			}
+			if got := paths(res.Hits); !slices.Equal(got, tc.want) {
+				t.Errorf("order = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestIntegrationSourceFilter narrows to one record kind, with the counts
+// coming from the server rather than from client-side filtering.
+func TestIntegrationSourceFilter(t *testing.T) {
+	seed(t)
+
+	for _, tc := range []struct {
+		source string
+		want   int
+	}{
+		{SourceDoc, 3},
+		{SourcePage, 3},
+	} {
+		t.Run(tc.source, func(t *testing.T) {
+			res, err := testClient.Search(t.Context(), &SearchParams{
+				AllowedRepoIDs: []int64{1, 2},
+				Source:         tc.source,
+			})
+			if err != nil {
+				t.Fatalf("search: %v", err)
+			}
+			if int(res.EstimatedTotal) != tc.want {
+				t.Errorf("estimated_total_hits = %d, want %d", res.EstimatedTotal, tc.want)
+			}
+			for _, h := range res.Hits {
+				if h.Source != tc.source {
+					t.Errorf("hit %q has source %q, want only %q", h.Path, h.Source, tc.source)
+				}
+			}
+		})
+	}
+}
+
+// TestIntegrationEnsureIndexAppliesRankingRules proves the deploy path: the
+// ranking-rule order is applied to an index that already exists and holds
+// documents, not only to a freshly created one.
+func TestIntegrationEnsureIndexAppliesRankingRules(t *testing.T) {
+	seed(t)
+
+	if err := testClient.EnsureIndex(t.Context()); err != nil {
+		t.Fatalf("EnsureIndex on a populated index: %v", err)
+	}
+	got, err := testClient.svc.Index(indexUID).GetRankingRulesWithContext(t.Context())
+	if err != nil {
+		t.Fatalf("read ranking rules: %v", err)
+	}
+	if !slices.Equal(*got, rankingRules) {
+		t.Errorf("ranking rules = %v, want %v", *got, rankingRules)
 	}
 }
 

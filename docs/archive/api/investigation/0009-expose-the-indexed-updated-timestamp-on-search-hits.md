@@ -342,6 +342,10 @@ change, with three corrections to the issue's plan.
 
 ## Recommendation
 
+> **Landed 2026-09-13 in IMPL-0010** (one PR, spec `1.5.0`), designed
+> as DESIGN-0005 — which widened this recommendation with the `sort`
+> parameter and the `source` filter.
+
 Ship the issue as a single small fix PR, amended per the findings.
 
 ### Change list

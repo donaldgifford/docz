@@ -36,9 +36,22 @@ func TestBuildFilter(t *testing.T) {
 			p: SearchParams{
 				AllowedRepoIDs: []int64{7},
 				Repo:           "acme/platform", Type: "rfc", Status: "Accepted", Author: "jane",
+				Source: SourceDoc,
 			},
 			want: `repo_id IN [7] AND repo = "acme/platform" AND type = "rfc" AND ` +
-				`status = "Accepted" AND author = "jane"`,
+				`status = "Accepted" AND author = "jane" AND source = "doc"`,
+		},
+		{
+			name: "source alone narrows to one record kind",
+			p:    SearchParams{AllowedRepoIDs: nil, Source: SourcePage},
+			want: `source = "page"`,
+		},
+		{
+			// Unvalidated, like every other facet filter: an unknown value
+			// reaches Meilisearch and matches nothing, rather than 400ing.
+			name: "an unknown source is passed through",
+			p:    SearchParams{AllowedRepoIDs: nil, Source: "nonsense"},
+			want: `source = "nonsense"`,
 		},
 	}
 	for _, tc := range tests {

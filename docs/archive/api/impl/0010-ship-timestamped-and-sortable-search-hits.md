@@ -1,7 +1,7 @@
 ---
 id: IMPL-0010
 title: "Ship timestamped and sortable search hits"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-12
 ---
@@ -9,9 +9,13 @@ created: 2026-09-12
 
 # IMPL 0010: Ship timestamped and sortable search hits
 
-**Status:** Draft
+**Status:** In Progress
 **Author:** Donald Gifford
 **Date:** 2026-09-12
+**Progress:** All five phases complete and shipped as PR #37 (2026-09-13).
+One task remains and cannot run earlier: the docz-site follow-up issue,
+which needs the merge and the release tag. Flip to `Completed` when it is
+open.
 
 <!--toc:start-->
 - [Objective](#objective)
@@ -155,32 +159,35 @@ judged on its own changes.
       implementation branch inherits the bump from `main`; re-run the
       local scan before Phase 1's first push to confirm nothing new
       appeared.
-- [ ] `internal/search/search.go`: add `"created"` and `"updated_at"` to
+- [x] `internal/search/search.go`: add `"created"` and `"updated_at"` to
       `AttributesToRetrieve`; add `Created string` and `UpdatedAt int64` to
       `rawHit`; copy both in `decodeHits`, the stamp through a new
       `formatUnix(sec int64) string` (`0 → ""`, else
       `time.Unix(sec, 0).UTC().Format(time.RFC3339)`), with a doc comment
       naming the retrieve list as the first drop site (INV-0009 F2).
-- [ ] `internal/search/types.go`: `SearchHit` gains `Created string`
+      **Amended:** the retrieve list is hoisted to a package-level
+      `retrieveAttributes` var (mirroring the existing `facetNames`) so a
+      unit test can assert it directly — see the Phase 1 status note.
+- [x] `internal/search/types.go`: `SearchHit` gains `Created string`
       (`json:"created"`) and `UpdatedAt string` (`json:"updated_at"`)
       placed before `Snippet`; the type comment states the ingest-observed
       semantics and the `""` conventions (page hits: `created` empty,
       `updated_at` real).
-- [ ] `internal/httpapi/dto.go`: `nullTimestamp` renders
+- [x] `internal/httpapi/dto.go`: `nullTimestamp` renders
       `t.Time.UTC().Format(time.RFC3339)`; comment cites DESIGN-0005 (pgx
       scans in the process zone).
-- [ ] `api/openapi.yaml`: `SearchHit.properties.created` + `.updated_at`
+- [x] `api/openapi.yaml`: `SearchHit.properties.created` + `.updated_at`
       and both in `required`; replace `Document.updated_at`'s description
       with the DESIGN-0005 wording and use the same text on the hit;
       `info.version: 1.5.0`.
-- [ ] Unit tests: `formatUnix` table (zero, a value with `Z` suffix);
+- [x] Unit tests: `formatUnix` table (zero, a value with `Z` suffix);
       `decodeHits` round-trips both fields from a canned Meilisearch hit;
       `nullTimestamp` renders `Z` for a non-UTC `time.Time`; the httpapi
       `TestSearchEndpoint` wire struct asserts `created`/`updated_at`.
-- [ ] Contract test: `contractSearcher` returns `Created: "2026-01-15"`
-      and `UpdatedAt: "2026-09-10T17:52:00Z"` so the schema's string type
+- [x] Contract test: `contractSearcher` returns `Created: "2026-01-15"`
+      and `UpdatedAt: "2025-06-22T18:04:11Z"` so the schema's string type
       is exercised by real values.
-- [ ] `just fmt`, `just lint`, `just lint-openapi`, `just test` green;
+- [x] `just fmt`, `just lint`, `just lint-openapi`, `just test` green;
       commit (`feat(search): expose created and updated_at on search hits`).
 
 #### Success Criteria
@@ -193,8 +200,35 @@ judged on its own changes.
   required properties.
 - `just lint-openapi` stays 100/100.
 - A hand-decoded Meilisearch hit with `updated_at: 1750615451` renders
-  `"2026-06-22T18:04:11Z"` on the wire, matching what `nullTimestamp`
+  `"2025-06-22T18:04:11Z"` on the wire, matching what `nullTimestamp`
   renders for the same instant.
+
+**Status: COMPLETE ✅** (2026-09-13) — three commits: the read path +
+spec, the UTC pin, and the tests. All criteria met: `go build`, `go vet`,
+`just lint` (0 issues), `just lint-openapi` (100/100), and
+`go test ./internal/search/ ./internal/httpapi/` green; the local Trivy
+scan reports zero HIGH/CRITICAL (the grpc bump came in from `main`).
+
+Two corrections found while building:
+
+- **The golden value in this criterion was wrong.** DESIGN-0001's index
+  example renders `1750615451` as `2026-06-22T18:04:11Z`, and this plan
+  copied it. The epoch is actually **2025**-06-22T18:04:11Z, confirmed by
+  running the conversion. The tests pin the computed value; the criterion
+  above is corrected. Nothing in the code depended on the wrong figure —
+  it only ever appeared in prose.
+- **The retrieve list moved to a package var.** The task described editing
+  the literal in place, but the list is precisely the drop site no
+  faked-searcher test can observe (INV-0009 F2), so leaving it
+  unassertable would have repeated the bug's own blind spot.
+  `retrieveAttributes` mirrors the existing `facetNames` var and
+  `TestSearchRetrievesDatedAttributes` pins its contents against
+  `SearchHit`.
+
+`decodeHits` is covered through canned Meilisearch JSON rather than
+hand-built structs, so the index schema's JSON tags are exercised too; the
+page-hit case pins the asymmetry DESIGN-0005 promises (real `updated_at`,
+empty `created`).
 
 ---
 
@@ -205,29 +239,29 @@ ranking-rule move, and the first documented `400` on the read surface.
 
 #### Tasks
 
-- [ ] `internal/search/client.go`: hoist the sortable list to
+- [x] `internal/search/client.go`: hoist the sortable list to
       `var sortableAttributes = []string{"created", "updated_at"}` and use
       it in `EnsureIndex`; reorder `RankingRules` to
       `sort, words, typo, proximity, attribute, exactness` with a comment
       stating why (inert without `sort`; a requested sort is a total
       order; DESIGN-0005).
-- [ ] `internal/search/types.go`: the four `Sort*` token constants,
+- [x] `internal/search/types.go`: the four `Sort*` token constants,
       `ErrInvalidSort`, `ParseSort(s string) (string, error)` (`""` → `""`;
       accepted token → itself; else `ErrInvalidSort`); `SearchParams` gains
       `Sort string` documented as "a `ParseSort`-validated token or `""`".
-- [ ] `internal/search/search.go`: `sortKeys(token) []string` returning
+- [x] `internal/search/search.go`: `sortKeys(token) []string` returning
       the requested key plus its fixed secondary (the DESIGN-0005 table);
       `Search` sets `req.Sort = sortKeys(p.Sort)` when `p.Sort != ""`.
-- [ ] `internal/httpapi/search.go`: parse `sort` via `search.ParseSort`
+- [x] `internal/httpapi/search.go`: parse `sort` via `search.ParseSort`
       before the search; on `ErrInvalidSort` →
       `writeError(w, http.StatusBadRequest, "invalid sort")` and return
       without calling the searcher; otherwise set `params.Sort`.
-- [ ] `api/openapi.yaml`: `sort` query parameter on `searchDocs` with the
+- [x] `api/openapi.yaml`: `sort` query parameter on `searchDocs` with the
       four-value `enum` and the DESIGN-0005 description (total order,
       relevance breaks ties, `created` string-sort note);
       `components.responses.BadRequest` (`Error` envelope); `"400"` on
       `searchDocs` referencing it.
-- [ ] Unit tests: `ParseSort` table (`""`, each token, `updated_at`,
+- [x] Unit tests: `ParseSort` table (`""`, each token, `updated_at`,
       `UPDATED_AT:desc`, `updated_at:down`, `body:desc`, a token with
       surrounding whitespace); `sortKeys` table (each token → its pair); a
       guard that every token's attribute is in `sortableAttributes` and
@@ -235,12 +269,12 @@ ranking-rule move, and the first documented `400` on the read surface.
       `sort=updated_at:desc` reaches the fake searcher as `Sort`,
       `sort=bogus` → `400 {"error":"invalid sort"}` with the searcher never
       called, absent `sort` → `Sort == ""`.
-- [ ] Contract test: add `searchDocsSorted` to `TestOpenAPIContract`
+- [x] Contract test: add `searchDocsSorted` to `TestOpenAPIContract`
       (`/api/v1/search?q=intro&sort=updated_at:desc`) — request validation
       proves the enum, response validation the `200`. No `400` case: an
       out-of-enum value fails kin-openapi's request validation before the
       handler runs (DESIGN-0005 Testing Strategy).
-- [ ] `just fmt`, `just lint`, `just lint-openapi`, `just test` green;
+- [x] `just fmt`, `just lint`, `just lint-openapi`, `just test` green;
       commit (`feat(search): sort parameter with a total-order ranking`).
 
 #### Success Criteria
@@ -253,6 +287,32 @@ ranking-rule move, and the first documented `400` on the read surface.
 - `just lint-openapi` 100/100 with the new parameter and response
   component.
 
+**Status: COMPLETE ✅** (2026-09-13) — one commit. All criteria met:
+`go test ./...` green (including the new `searchDocsSorted` contract
+case), `just lint` 0 issues, `just lint-openapi` 100/100.
+
+- **The unsorted request is provably unchanged.** `Search` sets
+  `req.Sort` only when a token is present, and meilisearch-go tags
+  `Sort` `omitempty`, so an unsorted search marshals without a `sort`
+  key at all — not merely an empty one. *(Closed directly in Phase 5:
+  the request build moved into a pure `buildSearchRequest`, and
+  `TestBuildSearchRequestOmitsOptionalKeys` asserts both `Sort` and
+  `Filter` are nil on a plain query. It was drilled — dropping the
+  filter guard fails it. Until then the claim rested on reading the
+  guard and the struct tag.)*
+- **`sortSecondary` does double duty**: its keys are the accepted-token
+  allowlist `ParseSort` checks, and its values are the tie-break keys
+  `sortKeys` appends. One table, so the two cannot drift, and
+  `TestSortTokensCoverSortableAttributes` ties both to
+  `sortableAttributes` (every token names a sortable attribute, every
+  attribute has both directions, every secondary runs the same way).
+- **`rankingRules` is a package var with a guard test** rather than an
+  inline literal, because the placement is the whole point of the change
+  and a future edit that restores Meilisearch's default order would
+  otherwise fail only in the integration suite.
+- Whitespace around a token is rejected, not trimmed — the enum is the
+  contract, and near-miss leniency invites more of the same.
+
 ---
 
 ### Phase 3: The source filter
@@ -262,23 +322,23 @@ ask for documents or pages only, with accurate totals and offsets.
 
 #### Tasks
 
-- [ ] `internal/search/types.go`: `SearchParams` gains `Source string`
+- [x] `internal/search/types.go`: `SearchParams` gains `Source string`
       (doc comment: `"doc"`/`"page"`, `""` for both).
-- [ ] `internal/search/search.go`: `buildFilter` appends
+- [x] `internal/search/search.go`: `buildFilter` appends
       `appendEq(parts, "source", p.Source)` after `author`, keeping the
       documented clause order.
-- [ ] `internal/httpapi/search.go`: `Source: q.Get("source")`, passed
+- [x] `internal/httpapi/search.go`: `Source: q.Get("source")`, passed
       through unvalidated like the four existing facet filters (OQ-2a); a
       comment says why `source` is not a `400` while `sort` is.
-- [ ] `api/openapi.yaml`: `source` query parameter on `searchDocs`,
+- [x] `api/openapi.yaml`: `source` query parameter on `searchDocs`,
       `enum: [doc, page]`, description "Filter by record kind."
-- [ ] Unit tests: `TestBuildFilter` gains a `source` case and an
+- [x] Unit tests: `TestBuildFilter` gains a `source` case and an
       all-facets-in-order case including it; httpapi asserts `source=page`
       reaches the searcher and that `source=bogus` is passed through (a
       `200` with whatever the searcher returns — no `400`).
-- [ ] Contract test: `searchDocsSource` case
+- [x] Contract test: `searchDocsSource` case
       (`/api/v1/search?q=intro&source=doc`).
-- [ ] `just fmt`, `just lint`, `just lint-openapi`, `just test` green;
+- [x] `just fmt`, `just lint`, `just lint-openapi`, `just test` green;
       commit (`feat(search): source filter on searchDocs`).
 
 #### Success Criteria
@@ -287,6 +347,13 @@ ask for documents or pages only, with accurate totals and offsets.
   documented position; the contract test validates the `source` enum.
 - The unfiltered request is unchanged (no `source` clause when the
   parameter is absent).
+
+**Status: COMPLETE ✅** (2026-09-13) — one commit; all criteria met
+(`go test ./...` green, `just lint` 0 issues, `just lint-openapi`
+100/100). `buildFilter` appends the clause last, after `author`, so the
+documented clause order holds and the all-facets test pins the full
+string. An absent parameter adds no clause at all, leaving the
+unfiltered request unchanged.
 
 ---
 
@@ -299,36 +366,42 @@ This phase proves each claim at the seam that can see it.
 
 #### Tasks
 
-- [ ] `internal/search/search_integration_test.go` (real Meilisearch):
-  - [ ] a hit's `UpdatedAt` is a non-empty RFC3339 string ending in `Z`,
+- [x] `internal/search/search_integration_test.go` (real Meilisearch):
+  - [x] a hit's `UpdatedAt` is a non-empty RFC3339 string ending in `Z`,
         and `Created` is the seeded `YYYY-MM-DD` on doc hits / `""` on
         page hits (proves the retrieve list);
-  - [ ] empty query + `Sort: SortUpdatedDesc` over both repos → the exact
+  - [x] empty query + `Sort: SortUpdatedDesc` over both repos → the exact
         reverse of the seed order (all six records);
-  - [ ] `Query: "logging"` + `SortUpdatedDesc` → `2_p_99…`, `2_ADR-0001`,
+  - [x] `Query: "logging"` + `SortUpdatedDesc` → `2_p_99…`, `2_ADR-0001`,
         `1_RFC-0001` — a total order in which the most relevant hit is
         last (proves `sort` leads the ranking rules);
-  - [ ] `Sort: SortCreatedDesc` → the three page records last;
-        `SortCreatedAsc` → first (the `""` behavior the spec promises);
-  - [ ] `Source: SourceDoc` yields three hits and no page; `SourcePage`
+  - [x] `Sort: SortCreatedDesc` / `SortCreatedAsc` → the three page
+        records last in **both** directions (the observed `""` behavior;
+        see the status block — the spec and DESIGN-0005 were corrected);
+  - [x] `Source: SourceDoc` yields three hits and no page; `SourcePage`
         the converse;
-  - [ ] after a second `EnsureIndex` on the existing index,
+  - [x] after a second `EnsureIndex` on the existing index,
         `GetRankingRulesWithContext` returns the new order (proves the
-        settings migrate on an already-populated index, the deploy path).
-- [ ] `internal/e2e/search_integration_test.go` (real Postgres +
+        settings migrate on an already-populated index, the deploy path);
+  - [x] a purpose-seeded pair sharing one `updated_at` orders by the
+        secondary `created` key (the shared corpus cannot show it — every
+        seeded stamp is distinct).
+- [x] `internal/e2e/search_integration_test.go` (real Postgres +
       Meilisearch through the ingest pipeline):
-  - [ ] the wire struct gains `created`/`updated_at`; after onboarding,
+  - [x] the wire struct gains `created`/`updated_at`; after onboarding,
         `updated_at` parses as RFC3339 with a `Z` suffix and is byte-equal
         to `Document.updated_at` for the same doc via `getDoc`;
-  - [ ] `created` on the hit equals the fixture's frontmatter date;
-  - [ ] add a created-parameterized fixture helper beside `doc()` (which
+  - [x] `created` on the hit equals the fixture's frontmatter date;
+  - [x] add a created-parameterized fixture helper beside `doc()` (which
         hardcodes `2026-07-01`) and give the two search fixture docs
         distinct dates, then assert `sort=created:desc` orders them — the
         `updated_at` order cannot be proven here because one reconcile
         stamps both docs identically (INV-0009 F4 addendum), and the test
         says so in a comment;
-  - [ ] `sort=bogus` through the real router → `400`.
-- [ ] `just test-integration` green locally (Docker required).
+  - [x] `source=doc` returns both documents and `source=page` none, through
+        the real router;
+  - [x] `sort=bogus` through the real router → `400`.
+- [x] `just test-integration` green locally (Docker required).
 
 #### Success Criteria
 
@@ -339,6 +412,38 @@ This phase proves each claim at the seam that can see it.
 - CI's `Test Go` job (unit + contract) stays green; the integration tag
   runs locally as today.
 
+**Status: COMPLETE ✅** (2026-09-13) — one commit; all criteria met.
+`just test-integration` is green across all sixteen packages, and
+`just lint` reports 0 issues.
+
+Two findings changed documents rather than code:
+
+- **Meilisearch places an empty sort value last in both directions.**
+  DESIGN-0005 predicted a plain lexicographic order, in which the `""`
+  that page records carry for `created` would lead ascending.
+  `TestIntegrationCreatedSortEdges` found otherwise: an empty value is
+  treated as absent and sorts last either way. The observed behavior is
+  the better one — undated records never crowd the top of a "newest
+  first" listing — so the `sort` parameter description in the spec and a
+  dated correction block in DESIGN-0005 were updated, and no code moved.
+- **The shared-transaction stamp needed its own fixture.** One
+  `ReconcileRepo` is one transaction, so `now()` is identical for every
+  record it touches (INV-0009 F4 addendum) — but the shared integration
+  corpus seeds six distinct stamps, so it can never exercise the
+  secondary key. `TestIntegrationSecondarySortKey` seeds a pair with one
+  shared `updated_at` and asserts `created` breaks the tie. The e2e test
+  hits the same wall from the other side and says so in a comment: both
+  of its documents land in one reconcile, so only `created` can separate
+  them there.
+
+The ranking-rule placement was revert-drilled once rather than kept as a
+test: moving `sort` back to its default position failed
+`TestRankingRulesSortLeads` ("ranking rules = [words typo proximity
+attribute sort exactness], want \"sort\" first") and
+`TestIntegrationSortBeatsRelevance` (the most relevant hit led instead of
+trailing). Both name the placement in their failure text. The rules were
+restored and both are green.
+
 ---
 
 ### Phase 5: Docs, dependency gate, live smoke, close-out
@@ -348,30 +453,32 @@ the docz-side status flips.
 
 #### Tasks
 
-- [ ] `api/README.md`: current-version paragraph → `1.5.0` (dated hits,
+- [x] `api/README.md`: current-version paragraph → `1.5.0` (dated hits,
       `sort`, `source`, first `400`), inserting the skipped `1.4.2` entry
       (the `groups` description, PR #32); clarify the **major** rule's
       "newly required field" as request-side, citing the `1.4.0` precedent
       for response properties.
-- [ ] `CLAUDE.md` Phase 3 search bullets: a GOTCHA for the explicit
+- [x] `CLAUDE.md` Phase 3 search bullets: a GOTCHA for the explicit
       `AttributesToRetrieve` list (a new attribute must be added there or
       it never reaches the decoder), one for the `sort` ranking-rule
       placement (inert without the parameter; first = total order), and a
       line on the shared-transaction `updated_at` and the implicit
       secondary key.
-- [ ] Live smoke (OQ-4a): `docker compose up -d`, `just run`, `-onboard`
+- [x] Live smoke (OQ-4a): `docker compose up -d`, `just run`, `-onboard`
       this repo (it dogfoods the `api:` block, so both record kinds exist),
       then `curl` the four sorts, `source=doc`, `source=page`, a bogus
       sort (`400`), and Meilisearch's
       `GET /indexes/documents/settings/ranking-rules`; record the evidence
       in this phase's status block.
-- [ ] DESIGN-0005: status `Implemented` + a dated landing note; INV-0009:
+- [x] DESIGN-0005: status `Implemented` + a dated landing note; INV-0009:
       a one-line "landed in IMPL-0010" under the Recommendation.
-- [ ] `docz update` (then revert its underscore-anchor mangling in older
+- [x] `docz update` (then revert its underscore-anchor mangling in older
       docs), `just ci` green, `mise exec -- git-cliff -o CHANGELOG.md` +
       `chore(changelog): Auto-sync` as the last commit; open the PR with
       the `minor` label (OQ-3a), body ending with the Claude Code footer.
-- [ ] **After the PR merges and the release tags** — open a GitHub issue
+      → **PR #37**, all 14 checks green.
+- [ ] **`deferred — human required`: after the PR merges and the release
+      tags** — open a GitHub issue
       in `donaldgifford/docz-site` describing what docz-api changed and
       what the site must do to use it. Title
       `docz-api v0.10.0 / spec 1.5.0: dated, sortable, source-filterable
@@ -408,6 +515,72 @@ the docz-side status flips.
   the one item that cannot close before the merge; mark it `deferred —
   human required` only if the merge itself is pending).
 
+**Status: COMPLETE ✅** (2026-09-13), with the post-merge docz-site issue
+`deferred — human required` (it cannot be opened before the PR merges and
+the release tags).
+
+Shipped as **PR #37**, rebased once onto `main` (the docs PR's own
+changelog sync had landed, so `CHANGELOG.md` conflicted; the file was
+taken from `main` and regenerated). All 14 CI checks pass — Lint
+including `lint-openapi`, Test Go, Security Scan, CodeQL, Build with the
+SBOM scan, Docker Build, License Check, Changelog Drift, and the required
+`minor` semver label. The four skipped jobs are path-gated on the chart
+and alert files, which this PR does not touch.
+
+**Live smoke (OQ-4a).** The compose stack (Postgres + Redis + Meili, all
+`Healthy`), the built binary on `:8099` with `AUTH_PROVIDERS=none`, and
+this repository onboarded through the real GitHub App
+(`donaldgifford/docz-api@145915803`, App `donaldgifford-docz-api`
+authenticated at boot). `/readyz` reported
+`{"meilisearch":"ok","postgres":"ok","redis":"ok"}` and `/openapi.yaml`
+served `version: 1.5.0`. The repo dogfoods the `api:` block, so the
+corpus held both record kinds: 24 documents and 2 pages.
+
+What the live stack showed:
+
+- **The index settings migrated on a long-lived index.** This
+  Meilisearch volume predates the change, and after one startup
+  `GET /indexes/documents/settings/ranking-rules` returned
+  `["sort","words","typo","proximity","attribute","exactness"]` with
+  `sortable-attributes` `["created","updated_at"]`. That is the deploy
+  path, on a populated index, not a fresh one.
+- **Sort beats relevance.** For `q=publish` the unsorted top hit is
+  `operations/ecr-publish-setup.md`; with `sort=created:asc` the top hit
+  is `DESIGN-0001` and that page falls to last. A total order, exactly as
+  the ranking-rule position promises.
+- **An undated record sorts last in both directions.** In the 15-hit
+  `q=publish` set the one page (`created: ""`) was at index 14 under
+  `created:desc` *and* under `created:asc` — the corrected behavior, not
+  the lexicographic reading DESIGN-0005 first predicted.
+- **The shared-transaction stamp is real and the secondary key carries
+  the order.** All 24 documents came back with
+  `updated_at = 2026-09-13T17:58:34Z`, identical to the second, because
+  one reconcile is one transaction. `sort=updated_at:desc` was therefore
+  ordered entirely by the implicit `created` secondary key
+  (`DESIGN-0005`, `INV-0009`, `IMPL-0010`, `IMPL-0009`, …); without that
+  key the order would have been arbitrary.
+- **The filters and the error behave.** `source=doc` → 14 hits, all
+  `doc`; `source=page` → 1 hit, `operations/ecr-publish-setup.md`;
+  `source=doc&sort=created:desc` composes; `sort=bogus` →
+  `HTTP 400 {"error":"invalid sort"}`.
+- **One field, two endpoints.** For `DESIGN-0005` the search hit and
+  `GET …/types/design/docs/DESIGN-0005` both returned
+  `created 2026-09-12` and `updated_at 2026-09-13T17:58:34Z`.
+
+**A rollout observation worth keeping.** The first onboard hit a
+pre-existing index whose records were last written before IMPL-0007, and
+every one of those stale hits still carried a populated `updated_at` —
+the timestamps were in the index all along, and only the retrieve list
+was missing, which is precisely INV-0009's F1. Those same records carried
+an empty `source`, so they were invisible to a `source` filter and
+absent from the facet counts (26 records, facets summing to 14) until a
+content change re-indexed them. Nothing here regresses with this change,
+but it is the concrete shape of "natural refresh only" for any field
+added to `IndexDoc`: existing rows keep their old attribute set until the
+content hash moves. The smoke corpus was then cleared and re-ingested
+(24 upserted, 0 unchanged) so the assertions above ran against records
+written by this build.
+
 ---
 
 ## File Changes
@@ -435,20 +608,20 @@ the docz-side status flips.
 
 ## Testing Plan
 
-- [ ] Unit (`just test`): `formatUnix`, `decodeHits`, `nullTimestamp` UTC,
+- [x] Unit (`just test`): `formatUnix`, `decodeHits`, `nullTimestamp` UTC,
       `ParseSort`, `sortKeys`, the sortable-attribute guard, `buildFilter`
       `source`, httpapi sort/source/400.
-- [ ] Contract (`just test`, no tag): fixture carries real dates;
+- [x] Contract (`just test`, no tag): fixture carries real dates;
       `searchDocsSorted` + `searchDocsSource` validate the enums and the
       `200`s; `doc.Validate` covers `BadRequest`.
-- [ ] Integration (`just test-integration`): retrieve list, exact sort
+- [x] Integration (`just test-integration`): retrieve list, exact sort
       orders, total order under a query, `created` string-sort edges,
       `source` filter, ranking rules read back after a re-`EnsureIndex`.
-- [ ] e2e (`just test-integration`): RFC3339 `Z` + byte-equality with
+- [x] e2e (`just test-integration`): RFC3339 `Z` + byte-equality with
       `Document.updated_at`, `created` passthrough and sort, `400` through
       the real router.
-- [ ] Spec (`just lint-openapi`): vacuum 100/100, yamlfmt canonical.
-- [ ] Live smoke (OQ-4a): compose stack + `just run`, this repo onboarded,
+- [x] Spec (`just lint-openapi`): vacuum 100/100, yamlfmt canonical.
+- [x] Live smoke (OQ-4a): compose stack + `just run`, this repo onboarded,
       `curl` the four sorts, `source=doc`, a bogus sort, and the
       Meilisearch `GET /indexes/documents/settings/ranking-rules`.
 

@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0005
 title: "Timestamped and sortable search hits"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-12
 ---
@@ -9,9 +9,13 @@ created: 2026-09-12
 
 # DESIGN 0005: Timestamped and sortable search hits
 
-**Status:** Approved
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-09-12
+**Landed:** 2026-09-13 — implemented by IMPL-0010 in one PR (spec
+`1.5.0`). One prediction was corrected against a real Meilisearch: an
+empty sort value places a record last in **both** directions, not first
+ascending. See the correction block under "The sort parameter".
 
 <!--toc:start-->
 - [Overview](#overview)
@@ -334,11 +338,19 @@ to relevance and then Meilisearch's internal order, which is stable for a
 given index state — good enough for pagination at this scale and not worth a
 third sortable attribute.
 
-`created` sorts as its stored string. `YYYY-MM-DD` orders lexicographically
-as chronologically; page records carry `""`, so they sort first ascending and
-last descending. That is acceptable for a document-oriented "newest" view
-and is stated in the parameter description; a caller that wants documents
-only filters by source (OQ-5).
+`created` sorts as its stored string: `YYYY-MM-DD` orders lexicographically
+as chronologically. Page records carry `""`, and a caller that wants
+documents only filters by source (OQ-5).
+
+> **Corrected during implementation (2026-09-13, IMPL-0010 Phase 4).** This
+> section originally predicted that the empty `created` on page records
+> would sort **first ascending and last descending**, as a plain
+> lexicographic order implies. Meilisearch does not do that: it treats an
+> empty value as absent for sorting and places such records **last in both
+> directions**. The integration test found it, and the parameter
+> description in the spec states the real behavior. The observed behavior
+> is the more useful one — undated records never crowd the top of a
+> "newest first" listing — so only the documentation changed.
 
 ### The source filter
 

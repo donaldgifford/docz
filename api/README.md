@@ -35,12 +35,25 @@ release version). Bump it by hand on any change to a specced wire shape:
 - **minor** — additive, backward-compatible (a new endpoint, a new optional
   field, a new enum value).
 - **major** — breaking (a removed or renamed field, a changed type, a removed
-  endpoint, a newly required field or header).
+  endpoint, a newly required **request** field or header). "Required" is
+  request-side only: a response property moving into `required` is a stronger
+  promise to the consumer, never a breaking one, so it is additive — `1.4.0`
+  set that precedent by adding `source` and `path` as required on `SearchHit`.
 
 The version is the signal consumers pin against, so a wire change without a bump
 is a contract bug.
 
-Current: **`1.4.1`** — editorial: documents `config_snapshot`'s key
+Current: **`1.5.0`** — every search hit carries `created` (the authored
+`YYYY-MM-DD`, `""` on pages) and `updated_at` (RFC 3339 UTC, the same
+value the document endpoint serves), `searchDocs` accepts `sort`
+(`updated_at`/`created`, each direction) and `source` (`doc`/`page`), and
+the operation gains its first `400` for an unrecognized `sort`
+(IMPL-0010). The sort is a total order over the matches, and a record
+with no value for the key sorts last in either direction. `1.4.2` —
+editorial: `groups` on the session response is documented as always
+optional, since the OIDC scope that supplies it is now per-provider
+configuration rather than a hardcoded request (PR #32).
+`1.4.1` — editorial: documents `config_snapshot`'s key
 spellings (docz v1.2.2's json-tagged config marshal serves the
 `.docz.yaml` names — `changelog.enabled`, `api.landing_page` — with
 `omitempty` keys absent when unset and unset list fields as `null`).

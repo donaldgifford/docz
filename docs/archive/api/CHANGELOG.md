@@ -5,9 +5,29 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(search)* Expose created and updated_at on search hits
+- *(httpapi)* Pin Document.updated_at to UTC
+- *(search)* Sort parameter with a total-order ranking
+- *(search)* Source filter on searchDocs
+
 ### Documentation
 
 - INV-0009 + DESIGN-0005 + IMPL-0010 — timestamped and sortable search hits ([#34](https://github.com/donaldgifford/docz-api/issues/34)) ([#35](https://github.com/donaldgifford/docz-api/issues/35))
+- *(impl)* IMPL-0010 Phase 1 complete
+- *(impl)* IMPL-0010 Phase 2 complete
+- *(impl)* IMPL-0010 Phase 3 complete
+- *(api)* Record spec 1.5.0 and the search gotchas
+- Record the live smoke and flip DESIGN-0005 to Implemented
+- *(design)* Refresh the DESIGN index for 0005
+- *(impl)* IMPL-0010 Phase 5 complete, shipped as PR #37
+
+### Testing
+
+- *(search,httpapi)* Cover the dated hit fields and the UTC pin
+- *(search,e2e)* Prove the dated hits against real backends
+- *(search)* Assert the unsorted request shape directly
 
 ## [0.9.0] - 2026-09-02
 

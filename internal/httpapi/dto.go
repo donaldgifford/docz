@@ -211,9 +211,16 @@ func nullDate(d pgtype.Date) string {
 	return ""
 }
 
+// nullTimestamp renders a nullable timestamp as RFC3339 in UTC ("" when
+// NULL). The zone is pinned because pgx scans a timestamptz into the
+// process's own location unless ScanLocation is set, so an unpinned render
+// carries the host's offset — "Z" in the distroless image, "-04:00" under a
+// local `just run`. Pinning keeps the wire value identical on every host and
+// byte-identical to the search layer's formatUnix (DESIGN-0005). Same
+// instant either way.
 func nullTimestamp(t pgtype.Timestamptz) string {
 	if t.Valid {
-		return t.Time.Format(time.RFC3339)
+		return t.Time.UTC().Format(time.RFC3339)
 	}
 	return ""
 }

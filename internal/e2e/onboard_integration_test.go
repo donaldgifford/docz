@@ -101,7 +101,17 @@ types:
 `
 
 func doc(id, title, body string) []byte {
-	return []byte("---\nid: " + id + "\ntitle: " + title + "\nstatus: Draft\nauthor: Jane\ncreated: 2026-07-01\n---\n\n" + body + "\n")
+	return docCreated(id, title, body, "2026-07-01")
+}
+
+// docCreated builds a fixture document with an explicit frontmatter date, for
+// tests that need documents to differ by their authored date. One reconcile
+// is one transaction, so every document a single ingest writes shares an
+// updated_at to the microsecond — created is the only date that can vary
+// within one onboard.
+func docCreated(id, title, body, created string) []byte {
+	return []byte("---\nid: " + id + "\ntitle: " + title +
+		"\nstatus: Draft\nauthor: Jane\ncreated: " + created + "\n---\n\n" + body + "\n")
 }
 
 // fixtureOwner is the owner all fixture repos share.

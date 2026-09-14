@@ -16,6 +16,16 @@ import (
 func (h *Handler) searchDocs(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
+	// Validate the sort before searching: an unrecognized token is a caller
+	// error worth reporting, not something to drop silently, because the
+	// caller cannot tell a dropped sort from a satisfied one by reading the
+	// results (DESIGN-0005).
+	sortToken, err := search.ParseSort(q.Get("sort"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid sort")
+		return
+	}
+
 	params := search.SearchParams{
 		Query:          q.Get("q"),
 		AllowedRepoIDs: authorize.FromContext(r.Context()),
@@ -23,8 +33,14 @@ func (h *Handler) searchDocs(w http.ResponseWriter, r *http.Request) {
 		Type:           q.Get("type"),
 		Status:         q.Get("status"),
 		Author:         q.Get("author"),
-		Offset:         parseNonNegInt(q.Get("offset")),
-		Limit:          parseNonNegInt(q.Get("limit")),
+		// The facet filters are passed through unvalidated: an unknown value
+		// matches nothing, which is self-evident in the response. Only sort
+		// is rejected, because a dropped sort is invisible in the results
+		// while a dropped filter is not (DESIGN-0005 OQ-2a).
+		Source: q.Get("source"),
+		Sort:   sortToken,
+		Offset: parseNonNegInt(q.Get("offset")),
+		Limit:  parseNonNegInt(q.Get("limit")),
 	}
 
 	result, err := h.searcher.Search(r.Context(), &params)
