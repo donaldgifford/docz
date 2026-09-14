@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.9.1] - 2026-09-14
 
 ### Features
 
@@ -16,7 +16,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Miscellaneous Tasks
 
-- *(chart)* Bump appVersion to 0.10.0 (chart 0.7.0)
+- *(chart)* Bump appVersion to 0.10.0 (chart 0.7.0) ([#39](https://github.com/donaldgifford/docz-api/issues/39))
 
 ## [0.9.0] - 2026-09-02
 
