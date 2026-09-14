@@ -32,4 +32,6 @@ docz create adr "Your ADR Title"
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | ADR-0001 | pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0) | Accepted | 2026-07-03 | Donald Gifford | [0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md](0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md) |
+| ADR-0002 | docz is an API package whose first consumer is the CLI | Proposed | 2026-09-14 | Donald Gifford | [0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md](0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md) |
+| ADR-0003 | Remove plan from the built-in document types | Proposed | 2026-09-14 | Donald Gifford | [0003-remove-plan-from-the-built-in-document-types.md](0003-remove-plan-from-the-built-in-document-types.md) |
 <!-- END DOCZ AUTO-GENERATED -->

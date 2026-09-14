@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0013
 title: "Library-first docz: per-type document packages and a core API the CLI can sit on"
-status: Draft
+status: Abandoned
 author: Donald Gifford
 created: 2026-09-13
 ---
@@ -55,6 +55,19 @@ created: 2026-09-13
 <!--toc:end-->
 
 ## Overview
+
+> **Abandoned 2026-09-14 — superseded by
+> [ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
+> and
+> [DESIGN-0014](0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md).**
+> The review of this design settled the direction it was circling: docz is
+> an API package whose first consumer is the CLI, built as one unit and then
+> swapped under `cmd/`, with standalone `pkg/<type>` packages whose root
+> type is `Doc`. ADR-0002 records that decision; DESIGN-0014 specifies the
+> whole API. This document's §3 inventory and §5 `pkg/impl` specification
+> carry over there unchanged in substance (`Plan` renamed `Doc`), and its
+> open questions are either resolved in ADR-0002 or carried into
+> DESIGN-0014's. It is kept as the record of the first-principles working.
 
 docz does five kinds of work over a docs tree — extract facts from a document,
 mutate a document in place, interpret a document as a typed thing, operate on
