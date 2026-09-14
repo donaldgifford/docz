@@ -3,6 +3,21 @@
 Changes to the `docz-api` Helm chart only. For application-level changes,
 see the root [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.7.1
+
+### Fixed
+
+- **Chart `0.7.0` published before the image its `appVersion` names existed.**
+  It declares `appVersion: "0.10.0"`, but the release that carried it was
+  tagged `v0.9.1`, so `ghcr.io/donaldgifford/docz-api:0.10.0` was absent and
+  a default install would `ImagePullBackOff`. App `v0.10.0` publishes that
+  image, which repairs `0.7.0` in place — anyone already pinned to it needs
+  no action. This release exists so the fix ships as its own chart version
+  rather than rewriting bytes already published under `0.7.0`.
+
+The cause was release-process only; no template, value, or default changed
+between `0.7.0` and `0.7.1`.
+
 ## 0.7.0
 
 ### Changed
