@@ -48,6 +48,9 @@ created: 2026-09-13
   - [10. Generic facts for the next type package](#10-generic-facts-for-the-next-type-package)
   - [11. Beta mechanics](#11-beta-mechanics)
   - [12. Release sequencing and the ADR record](#12-release-sequencing-and-the-adr-record)
+  - [13. Enforcing the layer rules](#13-enforcing-the-layer-rules)
+  - [14. Is the CLI a consumer of pkg/impl in Phase A?](#14-is-the-cli-a-consumer-of-pkgimpl-in-phase-a)
+  - [15. Module boundary](#15-module-boundary)
 - [References](#references)
 <!--toc:end-->
 
@@ -874,6 +877,52 @@ prose already says "plan" for both.
 - b. Same sequencing, new ADR-0002 superseding ADR-0001 Decision 2.
 - c. Ship Phase A and IMPL-0017 together in v1.3.0.
 - d. Other.
+
+Questions 13–15 were added after the review reframed the design as "docz
+built again today, API first, with the CLI as its first consumer." They are
+the questions that framing raises and the ones above do not answer.
+
+### 13. Enforcing the layer rules
+
+The rules in §1 are only real if something checks them.
+
+- a. **Mechanical enforcement.** A `depguard` rule in `.golangci.yaml`: `cmd/`
+  may import only `pkg/...`, cobra, and the standard library once Phase B
+  lands (`internal/` allowed only for the template embed until OQ 8
+  resolves), and `pkg/doczcore/...` may not import `pkg/impl` or any other
+  type package. `test/consumer` keeps proving every `pkg/` package compiles
+  from outside the module. R1, R2, and R5 become CI failures rather than
+  prose. *(recommendation)*
+- b. Prose only; reviewers enforce.
+- c. Other.
+
+### 14. Is the CLI a consumer of `pkg/impl` in Phase A?
+
+"CLI as first consumer" read literally means the API should not ship without
+a first-party caller. OQ 1 keeps Phase A to parse-only for tempy's sake.
+
+- a. **Yes, read-only.** `docz task list <impl-id> [--format text|json]`
+  ships in Phase A over `impl.Parse` plus the scan-by-ID `status set`
+  already does — about a hundred lines, no writers — so the CLI is
+  literally the first consumer, and issue #100's acceptance bullet ("CLI and
+  library agree on task IDs") is true by construction because they are the
+  same code. `check` / `uncheck` wait for the byte cores' first caller
+  (Phase C). *(recommendation)*
+- b. No CLI caller until Phase C; tempy is the first consumer in practice.
+- c. Other.
+
+### 15. Module boundary
+
+ADR-0001 Alternative B (a separate library module) was rejected in July;
+API-first invites the question once more.
+
+- a. **One module, as today.** Go compiles per imported package, so a
+  consumer of `pkg/impl` pays for nothing else in the module; a second
+  module would add a release train and `replace` friction for the CLI itself
+  with no isolation gain. Library semver already governs the CLI's version
+  line, which is the API-first ordering. *(recommendation)*
+- b. Split `pkg/` into a `docz-core` module with its own version line.
+- c. Other.
 
 ## References
 
