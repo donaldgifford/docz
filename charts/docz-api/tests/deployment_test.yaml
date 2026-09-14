@@ -44,7 +44,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-api:0.6.0"
+          value: "ghcr.io/donaldgifford/docz-api:0.10.0"
 
   # The default tag must be pullable, and the release workflow publishes bare
   # semver (metadata-action's {{version}} strips the "v" from the git tag). An
