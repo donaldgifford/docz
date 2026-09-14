@@ -12,7 +12,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - INV-0009 + DESIGN-0005 + IMPL-0010 — timestamped and sortable search hits ([#34](https://github.com/donaldgifford/docz-api/issues/34)) ([#35](https://github.com/donaldgifford/docz-api/issues/35))
-- *(impl)* Close out IMPL-0010
+- *(impl)* Close out IMPL-0010 ([#38](https://github.com/donaldgifford/docz-api/issues/38))
 
 ## [0.9.0] - 2026-09-02
 
