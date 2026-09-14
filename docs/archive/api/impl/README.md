@@ -41,5 +41,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0007 | Consume the docz v1.2.0 api block: pages, landing page, and additional docs | Completed | 2026-08-28 | Donald Gifford | [0007-consume-the-docz-v120-api-block-pages-landing-page-and.md](0007-consume-the-docz-v120-api-block-pages-landing-page-and.md) |
 | IMPL-0008 | Serve docz yaml key spellings in config snapshot via docz v1.2.2 | Completed | 2026-08-30 | Donald Gifford | [0008-serve-docz-yaml-key-spellings-in-config-snapshot-via-docz-v122.md](0008-serve-docz-yaml-key-spellings-in-config-snapshot-via-docz-v122.md) |
 | IMPL-0009 | Stop publishing type-dir READMEs as directory pages | Completed | 2026-09-01 | Donald Gifford | [0009-stop-publishing-type-dir-readmes-as-directory-pages.md](0009-stop-publishing-type-dir-readmes-as-directory-pages.md) |
-| IMPL-0010 | Ship timestamped and sortable search hits | In Progress | 2026-09-12 | Donald Gifford | [0010-ship-timestamped-and-sortable-search-hits.md](0010-ship-timestamped-and-sortable-search-hits.md) |
+| IMPL-0010 | Ship timestamped and sortable search hits | Completed | 2026-09-12 | Donald Gifford | [0010-ship-timestamped-and-sortable-search-hits.md](0010-ship-timestamped-and-sortable-search-hits.md) |
 <!-- END DOCZ AUTO-GENERATED -->

@@ -1,7 +1,7 @@
 ---
 id: IMPL-0010
 title: "Ship timestamped and sortable search hits"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-09-12
 ---
@@ -9,13 +9,11 @@ created: 2026-09-12
 
 # IMPL 0010: Ship timestamped and sortable search hits
 
-**Status:** In Progress
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-09-12
-**Progress:** All five phases complete and shipped as PR #37 (2026-09-13).
-One task remains and cannot run earlier: the docz-site follow-up issue,
-which needs the merge and the release tag. Flip to `Completed` when it is
-open.
+**Completed:** 2026-09-13 — all five phases done. Shipped as PR #37 (merged
+as `0e9d06d`); the docz-site follow-up is donaldgifford/docz-site#29.
 
 <!--toc:start-->
 - [Objective](#objective)
@@ -477,8 +475,7 @@ the docz-side status flips.
       `chore(changelog): Auto-sync` as the last commit; open the PR with
       the `minor` label (OQ-3a), body ending with the Claude Code footer.
       → **PR #37**, all 14 checks green.
-- [ ] **`deferred — human required`: after the PR merges and the release
-      tags** — open a GitHub issue
+- [x] **After the PR merges** — open a GitHub issue
       in `donaldgifford/docz-site` describing what docz-api changed and
       what the site must do to use it. Title
       `docz-api v0.10.0 / spec 1.5.0: dated, sortable, source-filterable
@@ -515,9 +512,22 @@ the docz-side status flips.
   the one item that cannot close before the merge; mark it `deferred —
   human required` only if the merge itself is pending).
 
-**Status: COMPLETE ✅** (2026-09-13), with the post-merge docz-site issue
-`deferred — human required` (it cannot be opened before the PR merges and
-the release tags).
+**Status: COMPLETE ✅** (2026-09-13). The post-merge docz-site issue is
+**donaldgifford/docz-site#29**, opened after PR #37 merged as `0e9d06d`.
+It was filed against the merged spec rather than a release tag, since
+`v0.10.0` was not cut at the time; the issue says so and tells the site to
+pin `1.5.0` from the spec and re-pin when the image publishes.
+
+Two corrections went into that issue beyond the drafted body, both from
+reading the site's code rather than trusting the draft. `src/lib/
+updatedAt.ts` and `src/mocks/fixtures.ts` were confirmed to still exist,
+and `hitUpdatedAt`'s comment asserts that page hits "have no timestamp
+anywhere in the contract" — the same wrong premise INV-0009 found in
+issue #34. Pages carry a real `updated_at`; only `created` is empty on
+them. The issue also warns about the two behaviors a consumer would
+otherwise discover the hard way: an absent sort value sorts last in both
+directions, and `updated_at` is ingest-observed, so one reconcile stamps
+a whole repo identically.
 
 Shipped as **PR #37**, rebased once onto `main` (the docs PR's own
 changelog sync had landed, so `CHANGELOG.md` conflicted; the file was
