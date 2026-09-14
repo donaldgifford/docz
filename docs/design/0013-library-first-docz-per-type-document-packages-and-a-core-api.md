@@ -349,6 +349,9 @@ nothing from `internal/`, no template embed.
 
 #### 5.1 Surface
 
+The root type is written as `Plan` below; OQ 2 proposes `Doc` for the
+reasons given there. The shape is identical either way.
+
 ```go
 package impl // import "github.com/donaldgifford/docz/pkg/impl"
 
@@ -755,12 +758,24 @@ render in the MkDocs wiki; docz-site and GitHub already render Mermaid v12).
 
 ### 2. Identifier names and optional-marker representation
 
-- a. **`impl.Parse` / `impl.Plan` / `impl.Task`**, no `Impl` prefix
-  (`impl.ImplPlan` stutters); optional markers as `*Marker{Note, Line}` —
-  nil when absent, and the line is needed to splice. *(recommendation)*
-- b. The issue's names verbatim (`ParseImpl`, `ImplPlan`) with `*string`
+The root type's name matters beyond taste: docz already has a `plan` doc
+type (disabled by default since v1.1.1 and never used in practice), so
+`impl.Plan` would mean one thing and `docz create plan` another, and tempy's
+prose already says "plan" for both.
+
+- a. **`impl.Parse` returns `impl.Doc`.** The root type of every type package
+  is `Doc` — `impl.Doc` now, `rfc.Doc` or `adr.Doc` if they ever exist — a
+  naming convention rather than an interface. It sidesteps the PLAN
+  collision, matches docz's own noun (`DocEntry`, `DocType`,
+  `DoczFilePattern`), and reads as "an IMPL document". `Phase`, `Task`,
+  `Criterion` as specified; optional markers as `*Marker{Note, Line}` — nil
+  when absent, and the line is needed to splice. *(recommendation)*
+- b. `impl.Plan` — reads naturally for what an IMPL is, at the cost of the
+  collision above; only clean if the `plan` built-in type is removed first
+  (its own issue and semver decision, not this design's).
+- c. The issue's names verbatim (`ParseImpl`, `ImplPlan`) with `*string`
   markers — matches tempy's design prose today; tempy has no code yet.
-- c. Other.
+- d. Other.
 
 ### 3. Phase and task grammar
 
