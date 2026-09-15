@@ -3,46 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.8.0] - 2026-09-15
 
 ### Features
 
-- *(api)* Vendor docz-api spec 1.5.0 and regenerate the client
-- *(directory)* Read the 1.5.0 timestamps directly
-- *(directory)* Order by recency while browsing, relevance while searching
-- *(mermaid)* Name ELK as the diagram layout explicitly
-- *(mermaid)* Hold the classic look and assert the specimen's colors
-- *(server)* Whitelist DOCZ_MERMAID_LAYOUT into the runtime config
-- *(mermaid)* Resolve the diagram layout at runtime
-- *(chart)* Expose config.mermaidLayout
-
-### Bug Fixes
-
-- *(mermaid)* Stop diagram front matter from re-enabling HTML labels
-
-### Documentation
-
-- *(impl)* IMPL-0006 for mermaid v12 and spec 1.5.0
-- *(impl)* Record IMPL-0006 decisions and add the layout override
-- *(impl)* Answer OQ-11 — audit the secure list inside Phase 4
-- *(a11y)* Record the mermaid surface the jsdom mock stands in for
-- Record the diagram decisions and retire the expired premises
-- *(impl)* Decline the use-case specimen section, with the finding
-- *(impl)* Tick the testing plan and verify the escape hatch for real
-- *(impl)* Close out IMPL-0006
-- *(impl)* Record how the specimen screenshot criterion was met
-
-### Testing
-
-- *(mermaid)* Pin the v12 theme variables and the gradient opt-out
-- *(mermaid)* Verify the v12 security settings from the schema
-- *(e2e)* Catch an eager ELK chunk, not just an eager mermaid one
-- *(e2e)* Prove the dagre override skips the ELK chunk
-
-### Miscellaneous Tasks
-
-- *(lint)* Forbid deep-pathing into mermaid's dist
-- State the ES2024 browser floor instead of implying support
+- Adopt docz-api spec 1.5.0 and mermaid 12 ([#31](https://github.com/donaldgifford/docz-site/issues/31))
 
 ## [0.7.1] - 2026-09-11
 
