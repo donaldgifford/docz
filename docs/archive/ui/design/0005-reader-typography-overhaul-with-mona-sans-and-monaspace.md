@@ -449,6 +449,59 @@ nothing in the contract dates a published page. The stamp formats in
 the reader's own zone with the locale pinned to en-US, so month
 abbreviations and the 12-hour clock cannot drift per machine.
 
+**Ninth amendment (2026-09-15, diagrams — and the eighth's loose end).**
+
+The column is no longer empty. docz-api shipped the two-line decode as
+spec 1.5.0 (docz-api v0.9.1/v0.10.0), so `SearchHit.updated_at` is a
+typed, required property on **both** record kinds, `hitUpdatedAt` is
+deleted, and callers read the field directly. One correction to the
+eighth amendment's closing paragraph: it is `created`, not
+`updated_at`, that is `""` on a page hit — a published page has no
+authored date, but it does have an ingest stamp. Fixture pages carry
+one per repo, which is genuinely how onboard behaves.
+
+The diagram decisions this document now owns (IMPL-0006, OQ-1 and
+OQ-8):
+
+- **ELK is the layout**, matching mermaid 12's own default, but named
+  explicitly rather than inherited — a config that says which algorithm
+  draws the diagrams, and one place for an override to replace. It
+  arrives as its own ~436 KB gzipped chunk, fetched only by documents
+  that contain a diagram and only when the layout is `elk`.
+- **A deployment can select `dagre` without a rebuild**, through
+  `DOCZ_MERMAID_LAYOUT` and the chart's `config.mermaidLayout`,
+  following the runtime-config pattern established by
+  `DOCZ_AUTH_PROVIDERS` and `DOCZ_NAV_LINKS` — closed set, validated at
+  both ends. The e2e suite asserts both directions: ELK's chunk is
+  fetched by default and never fetched under the override.
+- **The `look` stays `classic`.** v12 moved the default to `neo`, which
+  rounds node corners, thickens strokes, and adds a shadow. This
+  document's own radius position is that the scale is wiped — sharp
+  corners everywhere, `rounded-pill` the only exception — so `neo`
+  would leave diagrams the single rounded surface on the site. Both
+  were rendered on the specimen and compared before choosing. The
+  monochrome policy is unchanged and now asserted on computed stroke
+  rather than by eye: Figure 2's three `classDef` colors arrive
+  verbatim, and every node the document does not color reads
+  `--color-border-strong` as a flat `rgb()` — which is also the proof
+  that `neo`'s node gradients stay off, since a gradient would read
+  `url(#…-gradient)`.
+
+**The security finding, recorded here because it predates the upgrade
+and shipped for months.** `MermaidBlock`'s guarantee rests on
+`securityLevel: "strict"` *and* `htmlLabels: false`, and mermaid lets a
+diagram's own YAML front matter override config. Its default `secure`
+list — the keys front matter may not set — covers `securityLevel` but
+**not** `htmlLabels`. Audited against the installed 11.16.0 before the
+version bump, the gap was real: a hostile `config:` block set
+`htmlLabels: true` at both the global and the nested `flowchart` path,
+re-enabling the exact vector strict mode does not close (a
+purified-but-real `<img src>` inside a `foreignObject` label).
+`MERMAID_SECURE_KEYS` closes it; one top-level entry covers every
+nesting depth, because mermaid's directive sanitizer recurses. Covered
+by `src/markdown/mermaid-config.test.ts` and by a second e2e figure
+whose front matter attempts exactly this.
+
 
 
 The doc title (`DocHeader` in `doc.tsx`) and the three page-level h1s

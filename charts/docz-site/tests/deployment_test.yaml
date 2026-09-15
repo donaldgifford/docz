@@ -96,6 +96,25 @@ tests:
             name: DOCZ_AUTH_PROVIDERS
             value: "keycloak,github"
 
+  - it: should default DOCZ_MERMAID_LAYOUT to elk
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_MERMAID_LAYOUT
+            value: "elk"
+
+  - it: should set DOCZ_MERMAID_LAYOUT from config.mermaidLayout
+    set:
+      config:
+        mermaidLayout: "dagre"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_MERMAID_LAYOUT
+            value: "dagre"
+
   - it: should omit DOCZ_NAV_LINKS by default
     asserts:
       - notContains:

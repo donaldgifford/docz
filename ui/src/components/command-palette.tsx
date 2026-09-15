@@ -232,6 +232,12 @@ export function CommandPalette({
             path: entry.path,
             status: "",
             author: "",
+            // Recents store coordinates and title only — never dates,
+            // never tokens — so the 1.5.0 stamps are unknown here and
+            // stay "" permanently, like status and author above. The
+            // palette shows neither.
+            created: "",
+            updated_at: "",
             snippet: "",
           }
         : {
@@ -243,6 +249,8 @@ export function CommandPalette({
             path: "",
             status: "",
             author: "",
+            created: "",
+            updated_at: "",
             snippet: "",
           },
     );

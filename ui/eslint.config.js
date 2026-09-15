@@ -31,6 +31,22 @@ export default tseslint.config(
     },
   },
   {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["mermaid/*"],
+              message:
+                "Import the bare `mermaid` specifier. Its package exports map to dist/mermaid.core.mjs; the minified sibling in dist/ contains syntax es-module-lexer (which Vite uses) rejects, so deep-pathing breaks the build.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Plain JS at the repo root (this file) has no tsconfig project.
     files: ["**/*.js"],
     ...tseslint.configs.disableTypeChecked,

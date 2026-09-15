@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.4.1
+  version: 1.5.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -280,6 +280,23 @@ paths:
           description: Filter by document author.
           schema:
             type: string
+        - name: source
+          in: query
+          description: >
+            Filter by record kind: `doc` for docz documents, `page` for api-block pages. Absent, both are returned.
+          schema:
+            type: string
+            enum: [doc, page]
+        - name: sort
+          in: query
+          description: >
+            Order the matches. The requested key is a total order over the result set, with a fixed secondary key and then
+            relevance breaking ties; absent, results are ranked by relevance alone. Records with no value for the sort key
+            are placed last in both directions, so sorting by `created` puts page hits — which carry no authored date — after
+            every document. An unrecognized value is a 400.
+          schema:
+            type: string
+            enum: ['updated_at:desc', 'updated_at:asc', 'created:desc', 'created:asc']
         - name: offset
           in: query
           description: Zero-based result offset.
@@ -303,6 +320,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
   /api/v1/auth/session:
@@ -516,6 +535,15 @@ components:
         type: string
       example: guides%2Fsetup.md
   responses:
+    BadRequest:
+      description: |
+        A query parameter is malformed — currently only an unrecognized
+        `sort` token. Filter parameters are not validated: an unknown facet
+        value simply matches nothing.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Missing or invalid session.
       content:
@@ -766,7 +794,10 @@ components:
           type: string
         updated_at:
           type: string
-          description: 'RFC3339, or "" when unset.'
+          description: >
+            When docz-api last ingested a content change for this record (RFC3339, UTC). The first ingest stamps every record
+            in the repository at onboard time; thereafter the value moves only when the content changes. Not the git commit
+            time. "" when unset.
         raw_md:
           type: string
           description: Full Markdown source; present only on the single-document endpoint.
@@ -774,11 +805,11 @@ components:
       description: |
         One search result with a highlighted body snippet. A hit is either a
         docz document (`source: doc`) or an api-block page (`source: page`);
-        the doc-only fields (`doc_id`, `type`, `status`, `author`) are `""` on
-        page hits.
+        the doc-only fields (`doc_id`, `type`, `status`, `author`, `created`)
+        are `""` on page hits. `updated_at` is populated on both kinds.
       type: object
       additionalProperties: false
-      required: [source, repo, doc_id, type, title, path, status, author, snippet]
+      required: [source, repo, doc_id, type, title, path, status, author, created, updated_at, snippet]
       properties:
         source:
           type: string
@@ -805,6 +836,16 @@ components:
         author:
           type: string
           description: '"" when unset.'
+        created:
+          type: string
+          description: >
+            The document's frontmatter date (YYYY-MM-DD). "" on page hits, which carry no authored date, and when unset.
+        updated_at:
+          type: string
+          description: >
+            When docz-api last ingested a content change for this record (RFC3339, UTC). The first ingest stamps every record
+            in the repository at onboard time; thereafter the value moves only when the content changes. Not the git commit
+            time. "" when unset.
         snippet:
           type: string
           description: Highlighted body excerpt with <em></em> around matches.
@@ -854,7 +895,13 @@ components:
           description: GitHub login; omitted for OIDC providers.
         groups:
           type: array
-          description: OIDC group/role claims; omitted for GitHub OAuth.
+          description: |
+            OIDC group/role claims, passed through verbatim for the consumer
+            to use; docz-api makes no access decision with them. Omitted for
+            GitHub OAuth, and for an OIDC provider whose issuer does not put
+            the claim in the id_token — which needs either the `groups` scope
+            (opt-in per deployment, since an issuer rejects a scope its client
+            is not assigned) or a claim mapper. Treat it as always optional.
           items:
             type: string
     StatusResponse:

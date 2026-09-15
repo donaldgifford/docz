@@ -15,8 +15,8 @@ const force401 = http.all("*/api/v1/*", () => {
   return undefined; // fall through to the fixtures
 });
 
-// e2e hook: a rendering-pipeline fixture (alert + code chrome + a
-// mermaid diagram with a hostile label) served only under its flag,
+// e2e hook: a rendering-pipeline fixture (alert + code chrome + two
+// mermaid diagrams with hostile labels) served only under its flag,
 // so the demo-org doc counts every other suite asserts stay stable.
 const RENDERING_DOC_FLAG = "docz:e2e:rendering-doc";
 const RENDERING_DOC_MD = [
@@ -32,6 +32,22 @@ const RENDERING_DOC_MD = [
   "```mermaid fig 1 - order flow",
   "flowchart TD",
   '  A["<img src=x onerror=alert(1)>"] --> B[Consumer]',
+  "```",
+  "",
+  // The same payload, but the diagram first tries to lift the
+  // protection that neutralizes it. `secure` (mermaid-block.tsx) is
+  // what makes this config block inert; without it both flags flip and
+  // the label materializes as a real <img> inside a foreignObject.
+  "```mermaid fig 2 - hostile front matter",
+  "---",
+  "config:",
+  "  htmlLabels: true",
+  "  securityLevel: loose",
+  "  flowchart:",
+  "    htmlLabels: true",
+  "---",
+  "flowchart TD",
+  '  C["<img src=x onerror=alert(2)>"] --> D[Sink]',
   "```",
 ].join("\n");
 const renderingDoc = http.get(

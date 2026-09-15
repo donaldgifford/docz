@@ -37,4 +37,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0003 | Nav pins, changelog page, and doc link resolution | Completed | 2026-08-11 | Donald Gifford | [0003-nav-pins-changelog-page-and-doc-link-resolution.md](0003-nav-pins-changelog-page-and-doc-link-resolution.md) |
 | IMPL-0004 | No-auth mode and session-unavailable handling | Completed | 2026-08-27 | Donald Gifford | [0004-no-auth-mode-and-session-unavailable-handling.md](0004-no-auth-mode-and-session-unavailable-handling.md) |
 | IMPL-0005 | Render non-docz pages: reader, nav, and search surfaces | Completed | 2026-08-30 | Donald Gifford | [0005-render-non-docz-pages-reader-nav-and-search-surfaces.md](0005-render-non-docz-pages-reader-nav-and-search-surfaces.md) |
+| IMPL-0006 | Mermaid v12 and docz-api spec 1.5.0 adoption | Completed | 2026-09-14 | Donald Gifford | [0006-mermaid-v12-and-docz-api-spec-150-adoption.md](0006-mermaid-v12-and-docz-api-spec-150-adoption.md) |
 <!-- END DOCZ AUTO-GENERATED -->

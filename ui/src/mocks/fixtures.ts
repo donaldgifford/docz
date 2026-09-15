@@ -214,6 +214,61 @@ function makePage(input: FixturePageInput): Page {
   };
 }
 
+/** The `sort` values spec 1.5.0 accepts; anything else is a 400. */
+const SORTS = new Set([
+  "updated_at:desc",
+  "updated_at:asc",
+  "created:desc",
+  "created:asc",
+]);
+
+/**
+ * Order hits the way Meilisearch does for a `sort` request.
+ *
+ * The quirk worth reproducing: **a record with no value for the sort
+ * key goes last in BOTH directions.** Meilisearch treats an empty value
+ * as absent rather than as the lexicographic minimum, so `created:asc`
+ * still puts page hits — which carry no authored date — after every
+ * document. A fixture that sorted `""` to the front would disagree with
+ * the real API in exactly the case the UI cares about, and every test
+ * built on it would inherit that.
+ *
+ * Both keys are lexicographically ordered in their wire format
+ * (`YYYY-MM-DD` and RFC3339 UTC), so string compare is the real order.
+ */
+function sortHits(hits: SearchHit[], sort: string | null): SearchHit[] {
+  if (sort === null) {
+    return hits;
+  }
+  const [key, direction] = sort.split(":");
+  const valueOf = (hit: SearchHit) =>
+    key === "created" ? hit.created : hit.updated_at;
+  const sign = direction === "asc" ? 1 : -1;
+  return [...hits].sort((a, b) => {
+    const left = valueOf(a);
+    const right = valueOf(b);
+    if (left === right) return 0;
+    if (left === "") return 1;
+    if (right === "") return -1;
+    return left < right ? -sign : sign;
+  });
+}
+
+/*
+ * Page SEARCH HITS carry `updated_at` from spec 1.5.0, but the `Page`
+ * schema itself does not (repo/path/title/raw_md/git_sha), so the stamp
+ * lives here rather than on the record.
+ *
+ * One value per repo is the realistic shape, not a shortcut: docz-api
+ * stamps every record in a repository at onboard, and one reconcile is
+ * one transaction, so the pages of a repo genuinely share a stamp to
+ * the microsecond until their content changes.
+ */
+const PAGE_INGESTED_AT: Readonly<Record<string, string>> = {
+  "donaldgifford/docz-site": "2026-08-30T17:04:00Z",
+  "donaldgifford/docz-api": "2026-08-30T17:04:00Z",
+};
+
 // The docz-site repo dogfoods the api: block (OQ-2a): its real docz
 // index READMEs publish as directory pages (extensionless), docs/input.md
 // as a file page, a snapshot as the nested file page, and the root
@@ -487,8 +542,18 @@ export const demoOrgHandlers = [
     const type = url.searchParams.get("type");
     const status = url.searchParams.get("status");
     const author = url.searchParams.get("author");
+    const source = url.searchParams.get("source");
+    const sort = url.searchParams.get("sort");
+
+    // The operation's only 4xx (spec 1.5.0). Filter values are NOT
+    // validated upstream — an unknown facet value just matches nothing
+    // — so `sort` is the one parameter that can be wrong.
+    if (sort !== null && !SORTS.has(sort)) {
+      return HttpResponse.json({ error: "invalid sort" }, { status: 400 });
+    }
 
     const matches = DEMO_DOCS.filter((doc) => {
+      if (source === "page") return false;
       if (repo !== null && doc.repo !== repo) return false;
       if (type !== null && doc.type !== type) return false;
       if (status !== null && doc.status !== status) return false;
@@ -501,7 +566,7 @@ export const demoOrgHandlers = [
     // Pages ride the same index (spec 1.4.1): doc-only filters drop
     // them, q matches title+body, and doc-only hit fields are "".
     const pageMatches =
-      type !== null || status !== null || author !== null
+      type !== null || status !== null || author !== null || source === "doc"
         ? []
         : Object.values(DEMO_PAGES)
             .flat()
@@ -517,13 +582,12 @@ export const demoOrgHandlers = [
     const offset = intParam(url, "offset", 0);
     const limit = intParam(url, "limit", 20);
     /*
-     * `updated_at` is NOT in the SearchHit schema — it is the open
-     * additive ask (see src/lib/updatedAt.ts). The demo org forwards
-     * the document's own stamp anyway, so the directory's updated
-     * column is reviewable here; against a real docz-api it renders
-     * the em dash, exactly as page hits do in both places.
+     * Spec 1.5.0 dates both record kinds: docs forward their own
+     * `updated_at` and frontmatter `created`; pages carry the repo's
+     * onboard stamp and an empty `created`, because a published page
+     * has no authored date.
      */
-    const allHits: (SearchHit & { updated_at: string })[] = [
+    const allHits: SearchHit[] = [
       ...matches.map((doc) => ({
         source: "doc" as const,
         repo: doc.repo,
@@ -533,6 +597,7 @@ export const demoOrgHandlers = [
         path: doc.path,
         status: doc.status,
         author: doc.author,
+        created: doc.created,
         snippet: snippetFor(doc, q),
         updated_at: doc.updated_at,
       })),
@@ -545,11 +610,12 @@ export const demoOrgHandlers = [
         path: page.path,
         status: "",
         author: "",
+        created: "",
         snippet: snippetFor(page, q),
-        updated_at: "",
+        updated_at: PAGE_INGESTED_AT[page.repo] ?? "",
       })),
     ];
-    const hits = allHits.slice(offset, offset + limit);
+    const hits = sortHits(allHits, sort).slice(offset, offset + limit);
 
     const facet = (key: (doc: Document) => string) =>
       Object.fromEntries(

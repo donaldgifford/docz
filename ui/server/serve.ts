@@ -120,18 +120,43 @@ export function resolveNavLinks(raw: string | undefined): NavLink[] {
   return links;
 }
 
+// Runtime diagram layout (IMPL-0006 OQ-1): mermaid 12 makes ELK the
+// default layout engine and so does this site, but a deployment that
+// wants dagre back must be able to say so without rebuilding the image
+// — the same bargain as auth providers and nav pins. A closed set, so
+// the only strings that can ever reach the inline <script> are the two
+// named here.
+const KNOWN_MERMAID_LAYOUTS = new Set(["dagre", "elk"]);
+const DEFAULT_MERMAID_LAYOUT = "elk";
+
+/** Whitelist-validate DOCZ_MERMAID_LAYOUT; empty/garbage → "elk". */
+export function resolveMermaidLayout(raw: string | undefined): string {
+  const layout = (raw ?? "").trim().toLowerCase();
+  return KNOWN_MERMAID_LAYOUTS.has(layout) ? layout : DEFAULT_MERMAID_LAYOUT;
+}
+
+/**
+ * Everything the SPA reads off window.__DOCZ_CONFIG__. Every field is
+ * the output of a whitelist above, never raw env text.
+ */
+export interface RuntimeConfig {
+  authProviders: string[];
+  nav: NavLink[];
+  mermaidLayout: string;
+}
+
 /** The inline <script> that publishes the runtime config to the SPA. */
-export function runtimeConfigScript(
-  providers: string[],
-  nav: NavLink[],
-): string {
+export function runtimeConfigScript(config: RuntimeConfig): string {
+  // Keys written out rather than stringifying the argument, so the
+  // emitted order does not depend on how a caller built the object.
   // Validation already forbids "</" anywhere, but escape it anyway
   // (JSON-legal) so the script can't be terminated even if a rule
   // ever loosens.
-  const json = JSON.stringify({ authProviders: providers, nav }).replaceAll(
-    "</",
-    "<\\/",
-  );
+  const json = JSON.stringify({
+    authProviders: config.authProviders,
+    nav: config.nav,
+    mermaidLayout: config.mermaidLayout,
+  }).replaceAll("</", "<\\/");
   return `<script>window.__DOCZ_CONFIG__=${json};</script>`;
 }
 
@@ -155,7 +180,12 @@ export function injectRuntimeConfig(html: string, script: string): string {
 
 const AUTH_PROVIDERS = resolveAuthProviders(process.env.DOCZ_AUTH_PROVIDERS);
 const NAV_LINKS = resolveNavLinks(process.env.DOCZ_NAV_LINKS);
-const CONFIG_SCRIPT = runtimeConfigScript(AUTH_PROVIDERS, NAV_LINKS);
+const MERMAID_LAYOUT = resolveMermaidLayout(process.env.DOCZ_MERMAID_LAYOUT);
+const CONFIG_SCRIPT = runtimeConfigScript({
+  authProviders: AUTH_PROVIDERS,
+  nav: NAV_LINKS,
+  mermaidLayout: MERMAID_LAYOUT,
+});
 
 // Text-ish assets get a build-time .gz sibling (see Dockerfile); fonts
 // and images are already compressed.

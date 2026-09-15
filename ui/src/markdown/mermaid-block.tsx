@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { Mermaid } from "mermaid";
+import type { Mermaid, MermaidConfig } from "mermaid";
+
+import { mermaidLayout } from "@/lib/mermaidLayout";
 
 /*
  * Client-side mermaid rendering (IMPL-0002 Phase 4, OQ-1a).
@@ -21,6 +23,15 @@ import type { Mermaid } from "mermaid";
  *   - htmlLabels false (global + flowchart): labels render as SVG
  *     <text>, so hostile markup in a node label stays literal text —
  *     no element ever materializes from document text.
+ * A THIRD setting keeps the second one true — see MERMAID_SECURE_KEYS.
+ *
+ * Both survive mermaid 12 unchanged: `securityLevel` keeps its four
+ * levels, and the root `htmlLabels` now explicitly OUTRANKS every
+ * per-diagram copy (`flowchart.htmlLabels` and friends are deprecated
+ * in its favour), which makes one `false` cover diagram types this file
+ * never names. The nested one stays set anyway — it costs a line and
+ * the precedence rule is upstream's to change.
+ *
  * Do not copy this pattern elsewhere and do not relax either setting;
  * keep the hostile-source rows in the XSS suite and e2e green when
  * touching this. (rfc-site's "strict doesn't render" note described
@@ -39,21 +50,101 @@ let renderSeq = 0;
 
 function getMermaid(): Promise<Mermaid> {
   mermaidPromise ??= import("mermaid").then((mod) => {
-    mod.default.initialize({
-      startOnLoad: false,
-      theme: "base",
-      securityLevel: "strict",
-      htmlLabels: false,
-      flowchart: { htmlLabels: false },
-      themeVariables: mermaidThemeFromTokens(),
-    });
+    mod.default.initialize(mermaidInitConfig());
     return mod.default;
   });
   return mermaidPromise;
 }
 
-// Minimal documented v11 variable set, read from the live tokens so
-// diagrams follow tokens.css; fallbacks keep jsdom/tests valid.
+/*
+ * `secure` is the list of config keys a diagram's own YAML front matter
+ * is forbidden to set. Mermaid's default list covers `securityLevel`
+ * but NOT `htmlLabels`, and the gap is real rather than theoretical:
+ * audited against the installed 11.16.0 and proven by test in
+ * `mermaid-config.test.ts`, a hostile `config:` block otherwise flips
+ * BOTH the global flag and the nested `flowchart.htmlLabels`,
+ * re-opening the exact vector strict mode leaves open. Mermaid's
+ * directive sanitizer recurses into nested config objects, so the ONE
+ * top-level entry covers both paths. `secure` is itself always secure,
+ * so a document cannot unset any of this.
+ *
+ * Upstream's own defaults are restated here rather than added to,
+ * because mermaid currently UNIONS this array with its defaults and
+ * that is an implementation detail — under clobber semantics a
+ * one-element array would silently drop `securityLevel` from the
+ * protected set. The EFFECTIVE list is what the test asserts on, and
+ * it also fails if a future mermaid protects a key this list omits.
+ */
+export const MERMAID_SECURE_KEYS = [
+  // Mermaid's defaults as of 11.16.0, unchanged in 12.0.0.
+  "secure",
+  "securityLevel",
+  "startOnLoad",
+  "maxTextSize",
+  "suppressErrorRendering",
+  "maxEdges",
+  // Ours.
+  "htmlLabels",
+] as const;
+
+/*
+ * v12 also changed the default `look` from `classic` to `neo`, which
+ * rounds node corners, thickens strokes, and adds a drop shadow. That
+ * is a separate change riding along with the layout one, and this site
+ * has a stated position on it: the radius scale in tokens.css is wiped
+ * — sharp corners everywhere, `rounded-pill` the only exception — so
+ * `neo` would leave diagrams the one surface with rounded boxes.
+ * Pinned rather than inherited, so the appearance is a decision on the
+ * record instead of a side effect of a dependency bump. Flipping to
+ * `neo` is this one line, and the specimen's Mermaid section is where
+ * to judge it.
+ */
+const MERMAID_LOOK = "classic";
+
+/**
+ * The exact config we ship — exported so tests exercise it, not a copy.
+ *
+ * `layout` is resolved per page load (IMPL-0006 OQ-1): ELK by default,
+ * `dagre` when the deployment says so through DOCZ_MERMAID_LAYOUT. The
+ * module memoizes `mermaidPromise`, so this runs once, which is right —
+ * the value cannot change without a new document. ELK arrives as its
+ * own ~436 KB gzipped chunk behind the same dynamic import as mermaid
+ * itself, and mermaid only fetches it when the layout is `elk`; neither
+ * may ever become eager, and the chunk assertion in
+ * e2e/rendering.spec.ts has to match the ELK filename, which does NOT
+ * contain "mermaid".
+ */
+export function mermaidInitConfig(): MermaidConfig {
+  return {
+    startOnLoad: false,
+    theme: "base",
+    layout: mermaidLayout(),
+    look: MERMAID_LOOK,
+    securityLevel: "strict",
+    htmlLabels: false,
+    flowchart: { htmlLabels: false },
+    secure: [...MERMAID_SECURE_KEYS],
+    themeVariables: mermaidThemeFromTokens(),
+  };
+}
+
+/*
+ * Minimal documented variable set, read from the live tokens so
+ * diagrams follow tokens.css; fallbacks keep jsdom/tests valid. Every
+ * key here was re-checked against mermaid 12's theme-base — an unknown
+ * variable breaks `mermaid.render` SILENTLY, so the failure mode is a
+ * blank figure rather than an error, and the test asserts each one
+ * survives the merge.
+ *
+ * `nodeBorder` is load-bearing beyond its own color in v12. The `neo`
+ * look strokes nodes with a gradient whenever the theme sets
+ * `useGradient` — and `base` does. Theme.calculate turns it back off
+ * precisely when the overrides carry `nodeBorder` and not
+ * `useGradient`, which is this map. MERMAID_LOOK keeps us off `neo`
+ * today, but the two guards are independent: drop `nodeBorder` and a
+ * later look change grows gradients across every diagram, against the
+ * monochrome policy.
+ */
 export function mermaidThemeFromTokens(): Record<string, string> {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string, fallback: string): string => {

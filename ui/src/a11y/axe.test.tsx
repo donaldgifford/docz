@@ -13,6 +13,12 @@ import { server } from "@/test/server";
 // mock pins the specimen page's diagrams to MermaidBlock's source
 // fallback, which is the markup this sweep covers. The real render is
 // swept in e2e/a11y.spec.ts.
+//
+// `default.initialize` and `default.render` are the ENTIRE surface
+// MermaidBlock touches, in v12 as in v11 — `mermaidInitConfig()` builds
+// the config without a mermaid instance, so nothing here needs to grow
+// when that config does. Add a member only when the module starts using
+// one, or this mock quietly diverges from what it stands in for.
 vi.mock("mermaid", () => ({
   default: {
     initialize: vi.fn(),

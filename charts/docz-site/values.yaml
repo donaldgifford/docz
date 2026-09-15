@@ -109,6 +109,14 @@ config:
   # AUTH_PROVIDERS. Empty/unknown → github. The GitHub App ingest
   # ("machine identity") is docz-api's and is independent of this.
   authProviders: "github"
+  # -- Diagram layout engine (DOCZ_MERMAID_LAYOUT): `elk` or `dagre`.
+  # mermaid 12 made ELK the default and so is it here; `dagre` restores
+  # the pre-12 layout without rebuilding the image. Injected into the
+  # SPA at runtime and whitelist-validated at both ends, so anything
+  # unrecognized falls back to `elk` — the values schema constrains it
+  # to the two names so a typo fails at install rather than silently
+  # rendering the default.
+  mermaidLayout: "elk"
   # -- Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}`
   # links rendered between Repos and the session menu. Injected into
   # the SPA at runtime as JSON, whitelist-validated by the server

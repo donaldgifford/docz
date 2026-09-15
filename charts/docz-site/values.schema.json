@@ -12,6 +12,11 @@
         "port": { "type": "integer" },
         "doczApiUrl": { "type": "string" },
         "authProviders": { "type": "string" },
+        "mermaidLayout": {
+          "description": "Diagram layout engine. Constrained because the server falls back to elk on anything it does not recognize, so a typo here would otherwise be invisible — diagrams would simply keep rendering the default.",
+          "type": "string",
+          "enum": ["dagre", "elk"]
+        },
         "navLinks": {
           "description": "Topbar nav pins rendered into DOCZ_NAV_LINKS as JSON.",
           "type": "array",

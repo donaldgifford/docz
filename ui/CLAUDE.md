@@ -73,13 +73,16 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   files). New config files at the repo root go in `tsconfig.node.json`'s
   `include`.
 - `src/api/fetcher.ts` — the orval fetch mutator and the typed errors
-  (`SessionRequiredError` 401, `NotFoundError` 404,
-  `SessionUnavailableError` 503 — transient, NEVER a logout —
-  `ApiError` rest). Match on these classes in UI code; never `fetch`
-  the API directly.
+  (`BadRequestError` 400 — spec 1.5.0, currently only an unrecognized
+  `sort`, which the generated unions make unreachable from our own code
+  so in practice it means a hand-edited URL — `SessionRequiredError`
+  401, `NotFoundError` 404, `SessionUnavailableError` 503 — transient,
+  NEVER a logout — `ApiError` rest). Match on these classes in UI code;
+  never `fetch` the API directly.
   Success returns orval's `{ data, status, headers }` envelope —
   narrow on `status === 200` before touching `.data`. Query defaults
-  live in `src/app/query-client.ts` (no retry on 401/404).
+  live in `src/app/query-client.ts` (no retry on 400/401/404 — all
+  three are stable answers, so asking again gets the same reply).
 - Tests: Vitest + Testing Library in jsdom (`vitest.config.ts`).
   `src/test/setup.ts` starts one MSW node server from the generated
   handlers with `onUnhandledRequest: "error"` — override per-test with
@@ -121,13 +124,42 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   innerHTML in the codebase: mermaid.render() output under
   `securityLevel: "strict"` AND `htmlLabels: false` — BOTH required
   (strict alone still materializes purified `<img src>` elements in
-  foreignObject labels); render failure keeps the source visible.
+  foreignObject labels) — AND `secure: MERMAID_SECURE_KEYS`, because
+  mermaid's own secure list omits `htmlLabels`, so without it a
+  diagram's YAML front matter turns the labels back on at BOTH the
+  global and the nested `flowchart` path (audited on 11.16.0; one
+  top-level entry covers both, the sanitizer recurses). That list
+  restates mermaid's defaults in full rather than appending to them —
+  the array union is an implementation detail — and
+  `mermaid-config.test.ts` asserts the EFFECTIVE list stays a superset
+  of the installed mermaid's, so a version that protects a new key
+  fails CI. The config lives in `mermaidInitConfig()`, exported so the
+  test exercises what ships. Render failure keeps the source visible.
   Diagrams are MONOCHROME unless the document says otherwise: tokens.css
   pins only label font-family and fill, and mermaid scopes a diagram's
   own `classDef` rules by render id, so those outrank the stylesheet —
-  that's the supported way to color nodes (see the specimen's Figure 2).
-  themeVariables stay the minimal documented v11 set with an ASCII font
-  name; extras break `mermaid.render` silently.
+  that's the supported way to color nodes (see the specimen's Figure 2,
+  asserted on computed stroke in `e2e/rendering.spec.ts`).
+  themeVariables stay the minimal documented set with an ASCII font
+  name; extras break `mermaid.render` silently. `nodeBorder` is NOT
+  just a color — mermaid's `neo` look gradients node strokes whenever
+  the theme sets `useGradient` (`base` does), and `Theme.calculate`
+  clears it exactly when the overrides carry `nodeBorder` without
+  `useGradient`. `look` is PINNED (`MERMAID_LOOK` = classic): v12
+  defaults to neo, which rounds node corners — diagrams would be the
+  only rounded surface under a wiped radius scale. `layout` is NOT a
+  constant: `src/lib/mermaidLayout.ts` resolves runtime
+  `DOCZ_MERMAID_LAYOUT` → build-time `VITE_MERMAID_LAYOUT` → `elk`,
+  closed set `dagre|elk`, validated at BOTH ends like nav pins — the
+  value goes straight into `mermaid.initialize`, so an unvalidated
+  string would be config injection on the library that renders
+  untrusted text. Unlike nav pins an invalid injected value is not
+  authoritative; it falls through. Chart value `config.mermaidLayout`,
+  schema-constrained to the two names because the server's fallback is
+  silent. ELK is its own ~436 KB gz chunk that mermaid fetches ONLY
+  when the layout is elk; e2e asserts both directions, and the
+  diagram-free chunk assertion matches `elk` as well as `mermaid`
+  because the ELK filename contains neither the word nor the library.
   h2–h4 map to `markdown-heading.tsx`, which appends the
   hover/focus-revealed copy-link button (a labeled BUTTON, not a
   link — the underline rule for prose links stays untouched).
@@ -268,21 +300,32 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   `toSearchDocsParams` maps state → API params, first-of-array facets).
   Typed queries debounce ~200 ms and commit with `replace: true`;
   discrete filter actions must push so back/forward walks history.
-- The updated column: `SearchHit` still has NO `updated_at` property,
-  so against a real docz-api every row renders "—". docz-api ALREADY
-  indexes the value (`internal/search/types.go` stores `updated_at` in
-  Unix seconds; `client.go` makes it sortable) — `decodeHits` just
-  never copies it onto the wire struct, so the ask upstream is a decode
-  + an additive schema property, not an indexing change.
-  `src/lib/updatedAt.ts` is the whole surface: `hitUpdatedAt` reads the
-  property defensively (same posture as `apiConfig`/`changelogConfig`
-  over `config_snapshot`) so the column lights up with no further
-  change here, `formatUpdatedStamp` splits RFC3339 into the two lines
-  (locale pinned en-US, zone is the reader's, `timeZone` arg for
-  tests), and `formatRelativeTime` stays for surfaces wanting relative.
-  Demo fixtures forward each doc's own `updated_at` so the column is
-  reviewable under `dev:msw`; page hits send "" — nothing in the
-  contract dates a published page.
+  ORDERING (IMPL-0006 OQ-3): `sort=updated_at:desc` goes out ONLY when
+  `q` is empty — `sort` is a TOTAL order over matches, not a tie-break
+  within relevance, so sorting a text search ranks recent-but-irrelevant
+  hits above the best match. It is DERIVED, never stored: no control
+  selects it, so it has no URL key, and `toSearchDocsParams` takes an
+  explicit `{ ordered: true }` passed only by the row-rendering query
+  (facet queries run at limit 0 — ordering them is work for a count
+  nobody reads). Same reasoning for `source`: no control, no URL key;
+  it is sent as a fixed `doc` by `useRepoFacts`, whose total is now
+  `estimated_total_hits` rather than a source-facet lookup.
+- The updated column: since spec 1.5.0 `SearchHit.updated_at` is a
+  typed REQUIRED property on BOTH record kinds — read `hit.updated_at`
+  directly, there is no accessor. `created` (frontmatter `YYYY-MM-DD`)
+  is the field that is "" on page hits; a published page has no
+  authored date. `updated_at` is INGEST-observed, not commit time: one
+  reconcile is one transaction, so every doc an ingest touches shares
+  the stamp to the microsecond and a fresh DB restamps a repo at
+  onboard. `src/lib/updatedAt.ts` holds `formatUpdatedStamp` (splits
+  RFC3339 into the two lines; locale pinned en-US, zone is the
+  reader's, `timeZone` arg for tests) and `formatRelativeTime` for
+  surfaces wanting relative. KEEP `formatUpdatedStamp`'s `Number.isNaN`
+  guard — it is what makes a deployment on a pre-1.5.0 docz-api render
+  "—" instead of "Invalid Date", since the type promises a string the
+  old API simply omits. Fixtures: docs forward their own stamp and
+  `created`; pages take `PAGE_INGESTED_AT[repo]`, one value per repo
+  because that is genuinely how onboard stamps behave.
 - Faceted controls exclude their own dimension via separate limit-0
   searchDocs queries (directory picker/chips AND palette pills) so
   every option stays offered while one is selected. URL `offset` means
@@ -351,9 +394,10 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   hits keyed/linked by published path with a neutral mono marker
   (doc-only columns "—"; the directory count line appends
   "· X docs · Y pages" ONLY when pages matched, so non-opted
-  deployments stay byte-identical). searchDocs has NO source filter
-  param yet (additive upstream ask). `useRepoFacts.total` reads
-  `facets.source.doc` — the raw estimated total now counts pages.
+  deployments stay byte-identical). searchDocs gained the `source`
+  filter in spec 1.5.0 (docz-api#27, closed) — `useRepoFacts` sends a
+  fixed `doc` and reads `estimated_total_hits`, so the total is a
+  doc count by construction rather than a facet lookup.
   Recents (`recentDocs.ts`) are kind-discriminated (`doc` | `page`);
   page entries store the published path, validated per segment with
   dot-only segments rejected, and a stored payload without `kind`
@@ -400,10 +444,21 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - TypeScript is pinned to the 5.9 series: typescript-eslint's parser
   cannot load the TS 7 (native compiler) line. Don't bump the major
   until typescript-eslint supports it.
+- package.json `overrides` holds a `dompurify` floor of `^3.4.13`.
+  mermaid asks for `^3.4.12` and GHSA-55q2-fjhq-7xh7 covers `<=3.4.12`;
+  it isn't reachable through mermaid (it needs `IN_PLACE` plus an
+  element hook that detaches a node — mermaid sanitizes a string and
+  only hooks attributes) but this is the sanitizer behind the one
+  `innerHTML` here, so it stays above the advisory. Fix a transitive
+  advisory with an override, never `bun update <pkg>` — that adds a
+  direct dependency on a package nothing imports.
 - ESLint is flat config (`eslint.config.js`): typescript-eslint
   strict + stylistic type-checked (projectService), react-hooks flat
   recommended, jsx-a11y, eslint-config-prettier last. Generated dir is
-  ignored.
+  ignored. One `no-restricted-imports` pattern: never deep-path into
+  `mermaid/*` — the bare specifier maps to `dist/mermaid.core.mjs`,
+  while the minified sibling carries syntax es-module-lexer (Vite)
+  rejects.
 - react-hooks v7 forbids `setState` inside effects
   (`set-state-in-effect`) — sync prop→state with the react.dev
   "adjust state during render" pattern (guarded `setState` in render

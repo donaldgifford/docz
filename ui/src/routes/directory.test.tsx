@@ -20,6 +20,8 @@ const API_DESIGN_TITLE =
 const API_CONTRACT_TITLE = "OpenAPI contract for docz-api and the docz-site";
 /** That fixture doc's `updated_at`, which the demo search forwards. */
 const API_CONTRACT_UPDATED_AT = "2026-07-06T15:30:00Z";
+/** The docz-site repo's onboard stamp, shared by all its page hits. */
+const PAGE_UPDATED_AT = "2026-08-30T17:04:00Z";
 
 /** A search handler over `total` synthetic docs honoring offset/limit. */
 function syntheticSearchHandler(total: number) {
@@ -36,6 +38,11 @@ function syntheticSearchHandler(total: number) {
       path: `docs/guide/${String(i).padStart(4, "0")}-synthetic.md`,
       status: "Draft",
       author: "someone",
+      // Distinct per row so an ordering assertion has something to
+      // order by; the pagination tests that use this handler only care
+      // that the set is stable.
+      created: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
+      updated_at: `2026-02-${String((i % 28) + 1).padStart(2, "0")}T12:00:00Z`,
       snippet: "",
     })).slice(offset, offset + limit);
     return HttpResponse.json({
@@ -82,18 +89,24 @@ describe("directory route", () => {
     // still on every row after the date took the right-hand column.
     expect(screen.getAllByText("docz-site").length).toBeGreaterThan(0);
 
-    // Doc hits carry the demo org's own stamp; page hits have none
-    // anywhere in the contract, so they keep the em dash.
+    // Spec 1.5.0 dates BOTH record kinds, so no row is left undated.
+    // Formatted in the runner's own zone, as in the browser — the
+    // format itself is pinned in updatedAt.test.ts.
     const dated = screen.getByRole("link", {
       name: new RegExp(API_CONTRACT_TITLE),
     });
-    // Formatted in the runner's own zone, as in the browser — the
-    // format itself is pinned in updatedAt.test.ts.
     const stamp = formatUpdatedStamp(API_CONTRACT_UPDATED_AT);
     expect(stamp).toBeDefined();
     expect(within(dated).getByText(stamp?.date ?? "")).toBeInTheDocument();
     expect(within(dated).getByText(stamp?.time ?? "")).toBeInTheDocument();
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+
+    // A page hit carries the repo's onboard stamp rather than the em
+    // dash it showed before 1.5.0.
+    const page = screen.getByRole("link", { name: /Markdown rendering/ });
+    const pageStamp = formatUpdatedStamp(PAGE_UPDATED_AT);
+    expect(pageStamp).toBeDefined();
+    expect(within(page).getByText(pageStamp?.date ?? "")).toBeInTheDocument();
+    expect(screen.queryAllByText("—")).toHaveLength(0);
 
     // Rows link straight into the reader.
     expect(
@@ -366,6 +379,59 @@ describe("directory route", () => {
     expect(
       screen.queryByRole("button", { name: /load more/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("asks for newest-first while browsing and relevance while searching", async () => {
+    // IMPL-0006 OQ-3. `sort` is a total order, not a relevance
+    // tie-break, so a typed query must drop it or recent-but-irrelevant
+    // hits outrank the best match.
+    const sorts: (string | null)[] = [];
+    server.use(
+      http.get("*/api/v1/search", ({ request }) => {
+        const url = new URL(request.url);
+        // Only the listing query is ordered; facet queries run limit 0.
+        if (url.searchParams.get("limit") !== "0") {
+          sorts.push(url.searchParams.get("sort"));
+        }
+        return HttpResponse.json({
+          query: url.searchParams.get("q") ?? "",
+          estimated_total_hits: 0,
+          hits: [],
+          facets: {},
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    mountAt("/");
+
+    await waitFor(() => {
+      expect(sorts).toContain("updated_at:desc");
+    });
+
+    await user.type(screen.getByRole("searchbox"), "reader");
+    await waitFor(() => {
+      expect(sorts.at(-1)).toBeNull();
+    });
+  });
+
+  it("load more never reshuffles the rows already on screen", async () => {
+    // The window grows from a fixed offset 0, so every wider fetch
+    // re-renders the earlier rows. A total-order sort makes that safe;
+    // this pins that it stays safe.
+    server.use(syntheticSearchHandler(60));
+    const user = userEvent.setup();
+    mountAt("/");
+
+    await screen.findByText("Synthetic doc 0");
+    const before = screen
+      .getAllByRole("listitem")
+      .map((row) => row.textContent);
+
+    await user.click(screen.getByRole("button", { name: /load more/ }));
+    await screen.findByText("Synthetic doc 49");
+    const after = screen.getAllByRole("listitem").map((row) => row.textContent);
+
+    expect(after.slice(0, before.length)).toEqual(before);
   });
 
   it("renders the full window for a deep-linked offset", async () => {

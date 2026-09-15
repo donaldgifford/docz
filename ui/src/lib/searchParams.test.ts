@@ -5,6 +5,7 @@ import {
   hasActiveFilters,
   parseSearchParams,
   serializeSearchState,
+  toSearchDocsParams,
   type DirectorySearchState,
 } from "@/lib/searchParams";
 
@@ -97,5 +98,55 @@ describe("hasActiveFilters", () => {
       true,
     );
     expect(hasActiveFilters({ ...EMPTY_SEARCH_STATE, repo: "a/b" })).toBe(true);
+  });
+});
+
+describe("toSearchDocsParams ordering (IMPL-0006 OQ-3)", () => {
+  it("sorts the empty listing newest-first", () => {
+    const params = toSearchDocsParams(EMPTY_SEARCH_STATE, 25, {
+      ordered: true,
+    });
+    expect(params.sort).toBe("updated_at:desc");
+  });
+
+  it("drops the sort once a query is typed", () => {
+    // `sort` is a total order, not a relevance tie-break, so keeping it
+    // during a text search would rank recent-but-irrelevant hits above
+    // the best match.
+    const params = toSearchDocsParams(
+      { ...EMPTY_SEARCH_STATE, q: "reader" },
+      25,
+      { ordered: true },
+    );
+    expect(params.sort).toBeUndefined();
+    expect(params.q).toBe("reader");
+  });
+
+  it("never sorts a facet query, even with an empty q", () => {
+    // Facet queries run at limit 0 — ordering them is server-side work
+    // for a count nobody reads.
+    expect(toSearchDocsParams(EMPTY_SEARCH_STATE, 0).sort).toBeUndefined();
+  });
+
+  it("keeps ordering independent of the other filters", () => {
+    const params = toSearchDocsParams(
+      { ...EMPTY_SEARCH_STATE, types: ["design"], offset: 25 },
+      50,
+      { ordered: true },
+    );
+    expect(params).toMatchObject({
+      limit: 50,
+      offset: 25,
+      type: "design",
+      sort: "updated_at:desc",
+    });
+  });
+
+  it("leaves no sort key in the URL", () => {
+    // Derived, not stored: no control selects it, so it has no URL
+    // surface and a round trip must not invent one.
+    const url = serializeSearchState(EMPTY_SEARCH_STATE);
+    expect(url.has("sort")).toBe(false);
+    expect(url.has("source")).toBe(false);
   });
 });

@@ -1,28 +1,19 @@
-import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
-
 /*
  * Everything about the "updated" column of a listing.
  *
- * `SearchHit` has no timestamp property. docz-api DOES index one —
- * `internal/search/types.go` stores `updated_at` (Unix seconds) on the
- * Meilisearch record and `internal/search/client.go` declares it a
- * sortable attribute — but `decodeHits` never copies it onto the wire
- * struct, so it is absent from the OpenAPI schema and therefore from
- * the generated type. Exposing it is the open additive ask
- * (DESIGN-0001; see also DESIGN-0005 amendment eight).
+ * Since spec 1.5.0 (docz-api v0.9.1/v0.10.0) `SearchHit.updated_at` is
+ * a typed, required property, so callers read it directly — the
+ * defensive accessor this module used to export existed only to hide an
+ * untyped probe of a field the schema did not have, and keeping it would
+ * have preserved the shape of a problem that no longer exists.
  *
- * `hitUpdatedAt` reads the property defensively, the same way
- * `apiConfig`/`changelogConfig` read `config_snapshot`: the column
- * lights up the day the field ships, with no further change here.
- * Until then doc hits render the em dash — as do page hits, which have
- * no timestamp anywhere in the contract.
+ * Both record kinds carry a stamp. `updated_at` is populated on doc AND
+ * page hits; `created` is the field that is `""` on pages, because a
+ * published page has no authored frontmatter date. Note that
+ * `updated_at` is ingest-observed — when docz-api last saw the content
+ * change — not git commit time, so a fresh database restamps a whole
+ * repo at onboard.
  */
-
-/** RFC3339 stamp for a hit, or "" when the API sent none. */
-export function hitUpdatedAt(hit: SearchHit): string {
-  const value: unknown = (hit as { updated_at?: unknown }).updated_at;
-  return typeof value === "string" ? value : "";
-}
 
 /**
  * Absolute two-line stamp for a listing row: `Sep 10, 2026` over
@@ -33,6 +24,12 @@ export function hitUpdatedAt(hit: SearchHit): string {
  * `timeZone` exists for tests; the app passes nothing and renders in
  * the reader's own zone. The locale is pinned to en-US so month
  * abbreviations and the 12-hour clock do not drift per machine.
+ *
+ * Keep the `Number.isNaN` guard. Beyond rejecting a malformed stamp, it
+ * is what makes a deployment pointed at a pre-1.5.0 docz-api degrade to
+ * the em dash instead of rendering "Invalid Date": the property is
+ * typed required, so an older API simply omits it and `undefined`
+ * arrives where a string was promised.
  */
 export function formatUpdatedStamp(
   iso: string,

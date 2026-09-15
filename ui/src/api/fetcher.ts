@@ -30,6 +30,19 @@ export class SessionRequiredError extends ApiError {
   }
 }
 
+/**
+ * 400 — a malformed query parameter (spec 1.5.0). Today the only one
+ * is an unrecognized `sort` on searchDocs, which the generated union
+ * types make unreachable from our own code — so in practice this means
+ * a hand-edited URL. A stable answer, never transient: do not retry.
+ */
+export class BadRequestError extends ApiError {
+  constructor(message: string, url: string) {
+    super(message, 400, url);
+    this.name = "BadRequestError";
+  }
+}
+
 /** 404 — also how docz-api hides repos the session can't access. */
 export class NotFoundError extends ApiError {
   constructor(message: string, url: string) {
@@ -72,6 +85,8 @@ async function toApiError(response: Response, url: string): Promise<ApiError> {
   }
 
   switch (response.status) {
+    case 400:
+      return new BadRequestError(message, url);
     case 401:
       return new SessionRequiredError(message, url);
     case 404:

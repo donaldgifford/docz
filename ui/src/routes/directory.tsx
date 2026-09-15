@@ -17,7 +17,7 @@ import {
   toSearchDocsParams,
   type DirectorySearchState,
 } from "@/lib/searchParams";
-import { formatUpdatedStamp, hitUpdatedAt } from "@/lib/updatedAt";
+import { formatUpdatedStamp } from "@/lib/updatedAt";
 
 import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
 
@@ -119,11 +119,12 @@ function hitKey(hit: SearchHit): string {
 
 /**
  * Right-hand stamp: date over time, mirroring the id/title pair on the
- * left. Against a real docz-api this is the em dash today — see
- * `hitUpdatedAt` for why, and for what makes it light up.
+ * left. Both record kinds carry `updated_at` since spec 1.5.0, so page
+ * rows are dated too; the em dash is now only for a genuinely unset
+ * stamp.
  */
 function UpdatedCell({ hit }: { hit: SearchHit }) {
-  const iso = hitUpdatedAt(hit);
+  const iso = hit.updated_at;
   const stamp = formatUpdatedStamp(iso);
   if (stamp === undefined) {
     return (
@@ -234,7 +235,9 @@ export function Component() {
   // renders exactly the same rows (the URL stays the only source of
   // truth). "Load more" grows the window by pushing offset.
   const searchQuery = useSearchDocs(
-    toSearchDocsParams({ ...state, offset: 0 }, state.offset + PAGE_SIZE),
+    toSearchDocsParams({ ...state, offset: 0 }, state.offset + PAGE_SIZE, {
+      ordered: true,
+    }),
     {
       // Keep the previous window on screen while a filter change
       // refetches; the skeleton is for first paint only.

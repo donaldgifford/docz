@@ -113,9 +113,18 @@ just preview       # serve the production build locally
 ```
 
 Routes, Shiki grammars, the markdown pipeline, and mermaid are
-separate lazy chunks — mermaid (~700 KB) only downloads on documents
-that actually contain a diagram. `scripts/bundle-budget.ts` fails CI
-if the eager JS exceeds its gzip budget.
+separate lazy chunks — mermaid (~700 KB) and the ELK layout engine it
+uses (~436 KB gzipped) only download on documents that actually contain
+a diagram. `scripts/bundle-budget.ts` fails CI if the eager JS exceeds
+its gzip budget.
+
+### Supported browsers
+
+**Chrome/Edge 119+, Firefox 122+, Safari 17.4+** — the first releases
+with full ES2024 support, which is what mermaid 12 ships. Safari is the
+binding constraint. The same list is `build.target` in
+`vite.config.ts`, so the bundler stops claiming support it cannot
+deliver; older browsers are not transpiled for, they are unsupported.
 
 ## Deploy
 

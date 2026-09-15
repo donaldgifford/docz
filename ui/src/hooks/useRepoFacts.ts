@@ -1,5 +1,7 @@
 import { useSearchDocs } from "@/api/__generated__/docz-api";
 
+import { SearchDocsSource } from "@/api/__generated__/docz-api.schemas";
+
 /*
  * Per-repo doc counts (DESIGN-0001 "Repos and repo pages"):
  * RepoSummary carries no counts, so totals and the per-type split come
@@ -7,6 +9,12 @@ import { useSearchDocs } from "@/api/__generated__/docz-api";
  * estimated_total_hits cover the whole filtered set. Cached per repo by
  * the query key; shared by the repos grid and the repo nav so their
  * numbers always agree.
+ *
+ * `source: doc` narrows the query to docz documents (spec 1.5.0). Every
+ * consumer here counts docs, and before the filter existed this had to
+ * read the doc count back out of the source facet while `type` counted
+ * pages too. Asking the server for documents is both simpler and more
+ * honest about what the numbers mean.
  */
 
 export interface RepoFacts {
@@ -21,7 +29,7 @@ export function useRepoFacts(repo: string): {
   isError: boolean;
 } {
   const query = useSearchDocs(
-    { repo, limit: 0 },
+    { repo, limit: 0, source: SearchDocsSource.doc },
     { query: { staleTime: 5 * 60_000 } },
   );
   const result = query.data?.status === 200 ? query.data.data : undefined;
@@ -30,11 +38,10 @@ export function useRepoFacts(repo: string): {
       result === undefined
         ? undefined
         : {
-            // Pages joined the index (spec 1.4.1), so the raw total
-            // counts them too — every "docs: N" surface wants the
-            // source facet's doc count. A missing key means zero docs
-            // (facets omit zero-hit values).
-            total: result.facets.source?.doc ?? 0,
+            // The query is already doc-only, so the estimated total IS
+            // the doc count. A missing type key means zero (facets omit
+            // zero-hit values).
+            total: result.estimated_total_hits,
             typeCounts: result.facets.type ?? {},
           },
     isError: query.isError,

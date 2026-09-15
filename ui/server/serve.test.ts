@@ -3,9 +3,21 @@ import { describe, expect, test } from "bun:test";
 import {
   injectRuntimeConfig,
   resolveAuthProviders,
+  resolveMermaidLayout,
   resolveNavLinks,
   runtimeConfigScript,
+  type RuntimeConfig,
 } from "./serve";
+
+/** A config with everything at its default, for tests varying one field. */
+function config(overrides: Partial<RuntimeConfig> = {}): RuntimeConfig {
+  return {
+    authProviders: ["github"],
+    nav: [],
+    mermaidLayout: "elk",
+    ...overrides,
+  };
+}
 
 describe("resolveAuthProviders", () => {
   test("defaults to GitHub when unset or empty", () => {
@@ -89,22 +101,70 @@ describe("resolveNavLinks", () => {
   });
 });
 
+describe("resolveMermaidLayout", () => {
+  test("defaults to elk when unset, empty, or unknown", () => {
+    expect(resolveMermaidLayout(undefined)).toBe("elk");
+    expect(resolveMermaidLayout("")).toBe("elk");
+    expect(resolveMermaidLayout("   ")).toBe("elk");
+    expect(resolveMermaidLayout("cytoscape")).toBe("elk");
+  });
+
+  test("accepts both layouts, normalizing case and space", () => {
+    expect(resolveMermaidLayout("dagre")).toBe("dagre");
+    expect(resolveMermaidLayout(" ELK ")).toBe("elk");
+    expect(resolveMermaidLayout("Dagre")).toBe("dagre");
+  });
+
+  test("never passes hostile text through", () => {
+    // The closed set is the whole defense: anything that is not one of
+    // the two names becomes the default, so no env string can reach the
+    // inline <script>.
+    for (const hostile of [
+      "elk</script><script>alert(1)</script>",
+      '"><img src=x onerror=alert(1)>',
+      "elk,dagre",
+      "__proto__",
+    ]) {
+      expect(resolveMermaidLayout(hostile)).toBe("elk");
+    }
+  });
+});
+
 describe("runtimeConfigScript / injectRuntimeConfig", () => {
   test("emits a script that publishes the validated provider list", () => {
-    const script = runtimeConfigScript(["keycloak", "github"], []);
-    expect(script).toBe(
-      '<script>window.__DOCZ_CONFIG__={"authProviders":["keycloak","github"],"nav":[]};</script>',
+    const script = runtimeConfigScript(
+      config({ authProviders: ["keycloak", "github"] }),
     );
+    expect(script).toBe(
+      '<script>window.__DOCZ_CONFIG__={"authProviders":["keycloak","github"],' +
+        '"nav":[],"mermaidLayout":"elk"};</script>',
+    );
+  });
+
+  test("publishes the chosen diagram layout", () => {
+    expect(
+      runtimeConfigScript(
+        config({ mermaidLayout: resolveMermaidLayout("dagre") }),
+      ),
+    ).toContain('"mermaidLayout":"dagre"');
+    expect(
+      runtimeConfigScript(
+        config({ mermaidLayout: resolveMermaidLayout("nonsense") }),
+      ),
+    ).toContain('"mermaidLayout":"elk"');
   });
 
   test("closed whitelist means no HTML/JS breakout is possible", () => {
     // Whatever the env, the script body only ever contains whitelist keys.
     const script = runtimeConfigScript(
-      resolveAuthProviders("okta</script>"),
-      [],
+      config({
+        authProviders: resolveAuthProviders("okta</script>"),
+        mermaidLayout: resolveMermaidLayout("elk</script>"),
+      }),
     );
     expect(script).not.toContain("</script></script>");
     expect(script).toContain('{"authProviders":["github"]');
+    expect(script).toContain('"mermaidLayout":"elk"');
   });
 
   test("injects the config ahead of the entry bundle (Vite head-script)", () => {
@@ -113,7 +173,10 @@ describe("runtimeConfigScript / injectRuntimeConfig", () => {
       '<!doctype html><html><head><meta charset="UTF-8" />' +
       '<script type="module" crossorigin src="/assets/index.js"></script>' +
       '</head><body><div id="root"></div></body></html>';
-    const out = injectRuntimeConfig(html, runtimeConfigScript(["okta"], []));
+    const out = injectRuntimeConfig(
+      html,
+      runtimeConfigScript(config({ authProviders: ["okta"] })),
+    );
     expect(out).toContain("__DOCZ_CONFIG__");
     // Textually before the entry bundle — not relying on module defer.
     expect(out.indexOf("__DOCZ_CONFIG__")).toBeLessThan(
@@ -135,15 +198,17 @@ describe("runtimeConfigScript / injectRuntimeConfig", () => {
       { label: "x", href: "/x</script><script>alert(1)</script>" },
       { label: "</script>", href: "/y" },
     ]);
-    const script = runtimeConfigScript(["github"], resolveNavLinks(hostile));
+    const script = runtimeConfigScript(
+      config({ nav: resolveNavLinks(hostile) }),
+    );
     expect(script).toBe(
-      '<script>window.__DOCZ_CONFIG__={"authProviders":["github"],"nav":[]};</script>',
+      '<script>window.__DOCZ_CONFIG__={"authProviders":["github"],' +
+        '"nav":[],"mermaidLayout":"elk"};</script>',
     );
     // …and even a value that somehow carried "</" is escaped so the
     // parser can't see a terminator mid-string.
     const belt = runtimeConfigScript(
-      ["github"],
-      [{ label: "x", href: "/x</script>" }],
+      config({ nav: [{ label: "x", href: "/x</script>" }] }),
     );
     expect(belt).not.toContain('href":"/x</script>');
     expect(belt).toContain("<\\/script>");

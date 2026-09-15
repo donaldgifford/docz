@@ -357,6 +357,18 @@ like the changelog row prefetches its content.
   `snippet.tsx` exactly like doc snippets — untrusted, `<em>`-split,
   everything else text.
 
+**Update (2026-09-15, spec 1.5.0 / IMPL-0006).** Two premises above
+have expired. `SearchHit.updated_at` is no longer missing — it is a
+typed, required property on both record kinds, so the directory's
+updated column renders a real stamp for pages as well as documents;
+`created` is the field that is `""` on a page hit, because a published
+page has no authored date. And the additive `source` query param
+landed with it (docz-api#27), so `useRepoFacts` filters server-side
+rather than reading a doc count back out of the source facet. No
+user-facing `source` filter control ships even so — that was a product
+choice, not a missing parameter. The rest of this component is as
+described.
+
 ### Cross-cutting: security invariants
 
 - Pages are untrusted markdown; they enter the **same** pipeline

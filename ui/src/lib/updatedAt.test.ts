@@ -1,48 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatRelativeTime,
-  formatUpdatedStamp,
-  hitUpdatedAt,
-} from "@/lib/updatedAt";
-
-import type { SearchHit } from "@/api/__generated__/docz-api.schemas";
+import { formatRelativeTime, formatUpdatedStamp } from "@/lib/updatedAt";
 
 const NOW = new Date("2026-07-11T12:00:00Z");
-
-function hit(extra: Record<string, unknown> = {}): SearchHit {
-  return {
-    source: "doc",
-    repo: "donaldgifford/docz-site",
-    doc_id: "DESIGN-0005",
-    type: "design",
-    title: "Reader typography",
-    path: "docs/design/0005-reader-typography.md",
-    status: "In Review",
-    author: "donaldgifford",
-    snippet: "",
-    ...extra,
-  };
-}
-
-describe("hitUpdatedAt", () => {
-  it("returns '' for the hits today's API actually sends", () => {
-    expect(hitUpdatedAt(hit())).toBe("");
-  });
-
-  it("reads the field once docz-api starts sending it", () => {
-    expect(hitUpdatedAt(hit({ updated_at: "2026-09-10T13:52:00Z" }))).toBe(
-      "2026-09-10T13:52:00Z",
-    );
-  });
-
-  it("ignores a non-string value rather than rendering it", () => {
-    // The Meilisearch record stores Unix seconds; a future wire change
-    // that forwards the raw number must not reach the formatter.
-    expect(hitUpdatedAt(hit({ updated_at: 1_757_512_320 }))).toBe("");
-    expect(hitUpdatedAt(hit({ updated_at: null }))).toBe("");
-  });
-});
 
 describe("formatUpdatedStamp", () => {
   it("splits an RFC3339 stamp into date and time lines", () => {
@@ -67,6 +27,15 @@ describe("formatUpdatedStamp", () => {
 
   it.each(["", "not-a-date"])("returns undefined for %o", (iso) => {
     expect(formatUpdatedStamp(iso, "UTC")).toBeUndefined();
+  });
+
+  it("degrades rather than rendering 'Invalid Date' for a missing field", () => {
+    // `updated_at` is typed required, so TypeScript says this cannot
+    // happen — but a deployment pointed at a pre-1.5.0 docz-api simply
+    // omits the property, and undefined arrives where a string was
+    // promised. The NaN guard is what makes that render the em dash.
+    const missing = undefined as unknown as string;
+    expect(formatUpdatedStamp(missing, "UTC")).toBeUndefined();
   });
 });
 

@@ -8,6 +8,8 @@
  * route sends the first selection of each array (interim until the API
  * grows multi-value filters).
  */
+import { SearchDocsSort } from "@/api/__generated__/docz-api.schemas";
+
 import type { SearchDocsParams } from "@/api/__generated__/docz-api.schemas";
 
 export interface DirectorySearchState {
@@ -82,12 +84,31 @@ export function serializeSearchState(
 /**
  * Map URL state onto the searchDocs query params. Facets send the first
  * selection of each array (see the module note); defaults are omitted.
+ *
+ * `ordered` asks for the listing's sort and is passed ONLY by the query
+ * that renders rows. Facet queries run at `limit: 0` and have no order
+ * to speak of, so making them sort would be pure server-side work for a
+ * count.
  */
 export function toSearchDocsParams(
   state: DirectorySearchState,
   limit: number,
+  { ordered = false }: { ordered?: boolean } = {},
 ): SearchDocsParams {
   const params: SearchDocsParams = { limit };
+  /*
+   * Recency for browsing, relevance for searching (IMPL-0006 OQ-3).
+   *
+   * `sort` is a TOTAL order over the matches, not a tie-break within
+   * relevance — the spec is explicit about that. Sorting a text search
+   * would therefore rank a recently-ingested irrelevant document above
+   * the best match, which is why the empty directory gets newest-first
+   * and a typed query does not. It is derived rather than stored: no
+   * control selects it, so it has no business in the URL.
+   */
+  if (ordered && state.q === "") {
+    params.sort = SearchDocsSort["updated_at:desc"];
+  }
   if (state.q !== "") {
     params.q = state.q;
   }
