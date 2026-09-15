@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Bug Fixes
 
-- *(chart)* Bump chart to 0.1.8 and appVersion to 0.8.0
+- *(chart)* Bump chart to 0.1.8 and appVersion to 0.8.0 ([#32](https://github.com/donaldgifford/docz-site/issues/32))
 
 ## [0.8.0] - 2026-09-15
 
