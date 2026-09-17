@@ -1,13 +1,12 @@
 package wiki
 
 import (
-	"bufio"
-	"bytes"
 	"errors"
 	"path/filepath"
 	"strings"
 	"unicode"
 
+	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
 	"github.com/donaldgifford/docz/pkg/doczcore/document"
 )
 
@@ -29,9 +28,9 @@ func DirTitle(dir string, navTitles map[string]string) string {
 //
 // For docz documents with valid frontmatter the result is
 // "<ID>: <Title>". Files with no frontmatter (or with frontmatter
-// missing ID/Title) fall back to the first H1 heading; if there is no
-// H1 either, the title-cased filename is returned. None of those
-// fallbacks count as an error.
+// missing ID/Title) fall back to the first H1 heading via
+// docparse.Title; if there is no H1 either, the title-cased filename is
+// returned. None of those fallbacks count as an error.
 func DocTitle(filePath string) (string, error) {
 	fm, data, err := document.LoadFrontmatter(filePath)
 	switch {
@@ -46,7 +45,7 @@ func DocTitle(filePath string) (string, error) {
 		return "", err
 	}
 
-	if h1 := firstH1(data); h1 != "" {
+	if h1 := docparse.Title(data); h1 != "" {
 		return h1, nil
 	}
 
@@ -60,39 +59,6 @@ func FilenameTitle(filename string) string {
 	name = strings.ReplaceAll(name, "-", " ")
 	name = strings.ReplaceAll(name, "_", " ")
 	return titleCase(name)
-}
-
-// firstH1 scans file content for the first markdown H1 heading and returns
-// the heading text. Returns empty string if no H1 is found. Scanner errors
-// (e.g. a line exceeding bufio's max token size) are read to surface intent
-// but deliberately discarded so callers don't have to handle them — title
-// derivation always falls back to the filename.
-func firstH1(data []byte) string {
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	inFrontmatter := false
-	for scanner.Scan() {
-		line := scanner.Text()
-		trimmed := strings.TrimSpace(line)
-
-		// Skip YAML frontmatter.
-		if trimmed == "---" {
-			inFrontmatter = !inFrontmatter
-			continue
-		}
-		if inFrontmatter {
-			continue
-		}
-
-		if after, ok := strings.CutPrefix(trimmed, "# "); ok {
-			return strings.TrimSpace(after)
-		}
-	}
-	//nolint:errcheck,gosec // intentional: firstH1 contract is to never
-	// return an error; scanner errors fall back to filename-based title
-	// resolution at the call site. Proper logging arrives with slog in
-	// IMPL-0009.
-	scanner.Err()
-	return ""
 }
 
 // titleCase capitalizes the first letter of each word in s.

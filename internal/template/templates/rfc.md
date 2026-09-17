@@ -5,13 +5,10 @@ status: {{ .Status }}
 author: {{ .Author }}
 created: {{ .Date }}
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# RFC {{ .Number }}: {{ .Title }}
-
-**Status:** {{ .Status }}
-**Author:** {{ .Author }}
-**Date:** {{ .Date }}
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
 
 <!--toc:start-->
 <!--toc:end-->
@@ -22,32 +19,24 @@ created: {{ .Date }}
 
 ## Problem Statement
 
-<!-- What problem does this RFC address? Include evidence and impact. -->
+<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
 
 ## Proposed Solution
 
 <!-- High-level description of the proposed approach -->
 
-## Design
-
-<!-- Detailed design including architecture, data flow, APIs, etc. -->
-
 ## Alternatives Considered
 
 <!-- What other approaches were evaluated and why were they rejected? -->
 
-## Implementation Phases
-
-<!-- Break the implementation into phases/milestones -->
-
-### Phase 1: ...
-
-### Phase 2: ...
-
 ## Risks and Mitigations
 
 | Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
+| ---- | ------ | ---------- | ---------- |
 |      |        |            |            |
 
 ## Success Criteria

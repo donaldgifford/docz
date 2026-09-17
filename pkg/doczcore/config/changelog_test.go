@@ -180,10 +180,16 @@ func TestValidate_ChangelogFile(t *testing.T) {
 		{name: "empty segment", file: "a//b/CHANGELOG.md", wantErr: "must be a clean path"},
 		{name: "leading dot slash", file: "./CHANGELOG.md", wantErr: "must be a clean path"},
 
+		// Win32 trims trailing periods from a path component, so "..."
+		// resolves as ".." there — traversal the ".." check cannot see.
+		{
+			name:    "triple dot segment",
+			file:    ".../CHANGELOG.md",
+			wantErr: "space or period",
+		},
+
 		// Near-misses that must stay valid: a drive letter needs the
-		// colon, "..." is an ordinary name, and a dotfile is not
-		// traversal.
-		{name: "triple dot segment", file: ".../CHANGELOG.md"},
+		// colon, and a dotfile is not traversal.
 		{name: "dot prefixed name", file: ".changelog/CHANGELOG.md"},
 		{name: "colon later in path", file: "charts/a:b/CHANGELOG.md"},
 		{name: "single letter dir", file: "c/x.md"},

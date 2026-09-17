@@ -26,10 +26,12 @@ func TestGoldenTemplates(t *testing.T) {
 	}
 
 	types := map[config.DocType]Data{
-		"rfc":    data,
-		"adr":    withOverrides(&data, "adr", "ADR", "Proposed"),
-		"design": withOverrides(&data, "design", "DESIGN", "Draft"),
-		"impl":   withOverrides(&data, "impl", "IMPL", "Draft"),
+		"rfc":           data,
+		"adr":           withOverrides(&data, "adr", "ADR", "Proposed"),
+		"design":        withOverrides(&data, "design", "DESIGN", "Draft"),
+		"impl":          withOverrides(&data, "impl", "IMPL", "Draft"),
+		"plan":          withOverrides(&data, "plan", "PLAN", "Draft"),
+		"investigation": withOverrides(&data, "investigation", "INV", "Open"),
 	}
 
 	for typeName, td := range types {

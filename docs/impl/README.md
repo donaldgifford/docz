@@ -46,4 +46,6 @@ docz create impl "Your Implementation Title"
 | IMPL-0013 | Promote parsing core to pkg/doczcore | Completed | 2026-06-30 | Donald Gifford | [0013-promote-parsing-core-to-pkgdoczcore.md](0013-promote-parsing-core-to-pkgdoczcore.md) |
 | IMPL-0014 | v1.0.0: the five-package pkg/doczcore public core | Completed | 2026-07-03 | Donald Gifford | [0014-v100-the-five-package-pkgdoczcore-public-core.md](0014-v100-the-five-package-pkgdoczcore-public-core.md) |
 | IMPL-0015 | v1.1.0 — changelog config block and ParseChangelog | Completed | 2026-08-02 | Donald Gifford | [0015-v110-changelog-config-block-and-parsechangelog.md](0015-v110-changelog-config-block-and-parsechangelog.md) |
+| IMPL-0016 | v1.2.0 — api config block and docparse.Title | Completed | 2026-08-11 | Donald Gifford | [0016-v120-api-config-block-and-docparsetitle.md](0016-v120-api-config-block-and-docparsetitle.md) |
+| IMPL-0017 | v1.3.0 — updated frontmatter field and the docz update stamp pass | Draft | 2026-09-12 | Donald Gifford | [0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md](0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md) |
 <!-- END DOCZ AUTO-GENERATED -->

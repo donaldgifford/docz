@@ -5,13 +5,10 @@ status: {{ .Status }}
 author: {{ .Author }}
 created: {{ .Date }}
 ---
+
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# IMPL {{ .Number }}: {{ .Title }}
-
-**Status:** {{ .Status }}
-**Author:** {{ .Author }}
-**Date:** {{ .Date }}
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
 
 <!--toc:start-->
 <!--toc:end-->
@@ -98,7 +95,7 @@ are checked off and its success criteria are met.
 <!-- Key files that will be created or modified -->
 
 | File | Action | Description |
-|------|--------|-------------|
+| ---- | ------ | ----------- |
 |      | Create |             |
 |      | Modify |             |
 

@@ -19,6 +19,15 @@ const (
 	// DefaultChangelogFile is the repo-relative path ChangelogConfig.File
 	// falls back to when the changelog block omits it (DESIGN-0010).
 	DefaultChangelogFile = "CHANGELOG.md"
+
+	// APILandingFileName is the filename APIConfig.LandingPage falls back
+	// to, resolved under DocsDir so it follows a non-default docs_dir
+	// (DESIGN-0011 Decision 3).
+	//
+	// Deliberately not WikiIndexName, which happens to hold the same
+	// string: that one names MkDocs' landing page, and the two should be
+	// free to diverge without silently changing each other.
+	APILandingFileName = "index.md"
 )
 
 // defaultMinHeadings is the default minimum heading count required before a

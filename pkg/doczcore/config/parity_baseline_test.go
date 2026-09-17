@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -44,6 +45,57 @@ func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
 
 	if !reflect.DeepEqual(want, got) {
 		t.Errorf("rendered template did not round-trip to DefaultConfig()\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+// TestDoczYAMLTemplate_EmitsEveryTopLevelBlock pins that the generated
+// .docz.yaml actually contains each top-level block, which the round-trip
+// guard above cannot do on its own.
+//
+// That guard unmarshals the rendered template into a ZERO Config and
+// compares it with DefaultConfig(). A block whose defaults are all zero
+// values therefore round-trips whether or not the template emits it —
+// exactly the api: case, where Enabled is false, LandingPage is "" and
+// both slices are nil. Dropping the block would leave the round-trip
+// green and silently stop `docz init` from telling anyone the feature
+// exists (DESIGN-0011 Decision 9).
+func TestDoczYAMLTemplate_EmitsEveryTopLevelBlock(t *testing.T) {
+	t.Parallel()
+
+	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
+	if err != nil {
+		t.Fatalf("loading template: %v", err)
+	}
+	tmpl, err := template.New("docz_yaml").Parse(tmplSrc)
+	if err != nil {
+		t.Fatalf("parsing template: %v", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, config.DefaultConfig()); err != nil {
+		t.Fatalf("rendering template: %v", err)
+	}
+	rendered := buf.String()
+
+	// One entry per yaml key on Config. Adding a field to Config without
+	// a template line should fail here.
+	for _, key := range []string{
+		"docs_dir:", "types:", "index:", "author:",
+		"wiki:", "toc:", "changelog:", "api:",
+	} {
+		if !strings.Contains(rendered, "\n"+key) && !strings.HasPrefix(rendered, key) {
+			t.Errorf("rendered .docz.yaml is missing the %q block:\n%s", key, rendered)
+		}
+	}
+
+	// The api block's sub-keys, since all four default to zero values and
+	// so are invisible to the round-trip comparison.
+	for _, key := range []string{
+		"  enabled:", "  landing_page:", "  exclude:", "  additional_docs:",
+	} {
+		if !strings.Contains(rendered, key) {
+			t.Errorf("rendered .docz.yaml is missing %q:\n%s", key, rendered)
+		}
 	}
 }
 

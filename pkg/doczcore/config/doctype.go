@@ -134,8 +134,12 @@ var allDocTypes = []DocTypeDef{
 		Name:    "plan",
 		Aliases: nil,
 		DefaultConfig: func() TypeConfig {
+			// Disabled by default: PLAN sits between RFC (proposal) and
+			// IMPL (phased execution), a slot most repos fill with
+			// DESIGN + IMPL instead. Repos that want it set
+			// types.plan.enabled: true.
 			return TypeConfig{
-				Enabled:     true,
+				Enabled:     false,
 				Dir:         "plan",
 				IDPrefix:    "PLAN",
 				IDWidth:     4,

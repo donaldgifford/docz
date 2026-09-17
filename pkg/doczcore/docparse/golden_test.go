@@ -14,13 +14,21 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 // fixtures are the corpus documents under testdata: a
-// template-conformant IMPL doc and a messy hand-written one.
-var fixtures = []string{"impl_plan", "messy"}
+// template-conformant IMPL doc, a messy hand-written one, and a document
+// built to put the title rules under pressure — the H1 not on line 1,
+// preceded by a fenced decoy, carrying inline markup, and followed by
+// rivals (a second H1, a setext heading) that must lose to it.
+//
+// The cases a single document cannot hold at once — no H1 at all, empty
+// input, an unterminated frontmatter block — live in the table in
+// title_test.go.
+var fixtures = []string{"impl_plan", "messy", "title_edges"}
 
 // renderFacts serializes every fact both walkers extract from content,
 // one line per fact, for golden comparison.
 func renderFacts(content []byte) string {
 	var sb strings.Builder
+	fmt.Fprintf(&sb, "# title\n%q\n", docparse.Title(content))
 	sb.WriteString("# headings\n")
 	for _, h := range docparse.Headings(content) {
 		fmt.Fprintf(&sb, "level=%d line=%d slug=%q text=%q\n", h.Level, h.Line, h.Slug, h.Text)

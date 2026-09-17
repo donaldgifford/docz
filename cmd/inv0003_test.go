@@ -133,15 +133,21 @@ func TestINV0003_RFCOnlyConfig_UpdateTouchesOnlyRFC(t *testing.T) {
 	}
 }
 
-func TestINV0003_NoConfig_InitScaffoldsAllSix(t *testing.T) {
+func TestINV0003_NoConfig_InitScaffoldsEnabledDefaults(t *testing.T) {
 	dir := setupINV0003Test(t, "")
 
 	runRoot(t, "init")
 
-	for _, typeName := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
+	for _, typeName := range []string{"rfc", "adr", "design", "impl", "investigation"} {
 		if _, err := os.Stat(filepath.Join(dir, "docs", typeName)); err != nil {
 			t.Errorf("docs/%s should be scaffolded in green-field init: %v", typeName, err)
 		}
+	}
+
+	// plan ships disabled, so a green-field init must not create it —
+	// the same rule INV-0003 established for any disabled type.
+	if _, err := os.Stat(filepath.Join(dir, "docs", "plan")); !os.IsNotExist(err) {
+		t.Errorf("docs/plan should not be scaffolded: plan is disabled by default (err = %v)", err)
 	}
 }
 

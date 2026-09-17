@@ -1,3 +1,4 @@
+---
 docs_dir: docs
 
 types:
@@ -57,7 +58,7 @@ types:
     status_field: "status"
 
   plan:
-    enabled: true
+    enabled: false # PLAN ships disabled; set true to use it
     dir: plan
     template: ""
     id_prefix: "PLAN"
@@ -98,10 +99,29 @@ wiki:
     - templates
     - examples
 
+# What docz-api ingests and docz-site renders for this repo, beyond the docz
+# documents under the type directories. See DESIGN-0011; shipped in docz v1.2.0.
+#
+# CAUTION: enabling this publishes every .md under docs_dir, not just docz
+# documents. Check what is in there first, and use exclude for the rest.
+# No docz command reads this block — it is a declaration for consumers.
 api:
-  enabled: true # publish non-docz markdown under docs_dir as docz-api pages
-  exclude:
-    - examples # mirrors the wiki exclusion
+  enabled: true
+
+  # The repo's landing page on docz-site.
+  # Optional; defaults to <docs_dir>/index.md.
+  landing_page: "docs/index.md"
+
+  # Path prefixes under docs_dir that are never published.
+  # docs_dir/templates/ is always excluded and need not be listed.
+  exclude: []
+
+  # Markdown OUTSIDE docs_dir. Every .md under docs_dir is already consumed:
+  #   docs/index.md            -> <site>/<owner>/<repo>
+  #   docs/impl/README.md      -> <site>/<owner>/<repo>/impl
+  #   docs/impl/0015-foo.md    -> <site>/<owner>/<repo>/impl/IMPL-0015
+  #   docs/examples/README.md  -> <site>/<owner>/<repo>/examples
+  # so only repo-root files need listing here:
   additional_docs:
-    - CONTRIBUTING.md
-    - DEVELOPMENT.md
+    - "CONTRIBUTING.md"
+    - "DEVELOPMENT.md"

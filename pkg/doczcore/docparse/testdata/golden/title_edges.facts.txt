@@ -1,0 +1,8 @@
+# title
+"Real Title With Markup"
+# headings
+level=2 line=21 slug="a-section-after-the-title" text="A Section After The Title"
+level=2 line=33 slug="another-section" text="Another Section"
+# tasks
+line=23 checked=false indent=0 text="a task, so this fixture exercises all three walkers"
+line=24 checked=true indent=0 text="a finished one"

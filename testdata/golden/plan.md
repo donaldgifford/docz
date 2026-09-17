@@ -1,14 +1,14 @@
 ---
-id: {{ .Prefix }}-{{ .Number }}
-title: "{{ .Title }}"
-status: {{ .Status }}
-author: {{ .Author }}
-created: {{ .Date }}
+id: PLAN-0001
+title: "Test Document"
+status: Draft
+author: Test Author
+created: 2026-02-22
 ---
 
 <!-- markdownlint-disable-file MD025 MD041 -->
 
-# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
+# PLAN-0001: Test Document
 
 <!--toc:start-->
 <!--toc:end-->

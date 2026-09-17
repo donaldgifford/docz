@@ -17,14 +17,18 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
 
+	// plan is the one built-in that ships disabled: it sits between RFC
+	// and IMPL, a slot most repos fill with DESIGN + IMPL instead.
+	disabledByDefault := map[string]bool{"plan": true}
+
 	for _, typeName := range DocTypeNames() {
 		tc, ok := cfg.Types[typeName]
 		if !ok {
 			t.Errorf("missing type config for %q", typeName)
 			continue
 		}
-		if !tc.Enabled {
-			t.Errorf("type %q should be enabled by default", typeName)
+		if want := !disabledByDefault[typeName]; tc.Enabled != want {
+			t.Errorf("type %q Enabled = %v, want %v", typeName, tc.Enabled, want)
 		}
 		if tc.IDWidth != 4 {
 			t.Errorf("type %q IDWidth = %d, want 4", typeName, tc.IDWidth)
@@ -466,20 +470,33 @@ func TestEnabledTypes(t *testing.T) {
 	t.Parallel()
 	cfg := DefaultConfig()
 	got := cfg.EnabledTypes()
-	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
+	want := []string{"rfc", "adr", "design", "impl", "investigation"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("EnabledTypes() = %v, want registry-order %v", got, want)
 	}
 
-	// Disable a type and confirm it drops out of the registry-order list.
+	// Enabling plan slots it back into registry order rather than
+	// appending it, which is what distinguishes a built-in from a custom
+	// type in EnabledTypes.
 	tc := cfg.Types["plan"]
-	tc.Enabled = false
+	tc.Enabled = true
 	cfg.Types["plan"] = tc
 
 	got = cfg.EnabledTypes()
-	want = []string{"rfc", "adr", "design", "impl", "investigation"}
+	want = []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("EnabledTypes() with plan disabled = %v, want %v", got, want)
+		t.Errorf("EnabledTypes() with plan enabled = %v, want %v", got, want)
+	}
+
+	// Disable a type and confirm it drops out of the registry-order list.
+	tc = cfg.Types["impl"]
+	tc.Enabled = false
+	cfg.Types["impl"] = tc
+
+	got = cfg.EnabledTypes()
+	want = []string{"rfc", "adr", "design", "plan", "investigation"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("EnabledTypes() with impl disabled = %v, want %v", got, want)
 	}
 }
 
@@ -608,7 +625,7 @@ func TestEnabledTypes_IncludesCustom(t *testing.T) {
 	cfg.Types["disabledcustom"] = disabled
 
 	got := cfg.EnabledTypes()
-	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation", "adapters", "frameworks"}
+	want := []string{"rfc", "adr", "design", "impl", "investigation", "adapters", "frameworks"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("EnabledTypes() = %v, want %v (built-ins registry-order, then custom sorted)", got, want)
 	}
@@ -686,5 +703,51 @@ func TestValidate_ValidCustomConfigPasses(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("expected the non-built-in type warning for 'frameworks', got %v", warnings)
+	}
+}
+
+// TestMergeMaps_APIBlock pins how the global and repo configs combine for
+// the api block: the block itself deep-merges key by key, so a repo that
+// names one field keeps the global's siblings, but a list value is
+// replaced wholesale rather than appended to. That is the same rule every
+// other list-valued key follows, and it is what makes a repo able to
+// *shrink* an inherited exclude list.
+//
+// Exercised through mergeMaps + decodeSettings rather than Load, because
+// Load reads the global config from the user's home directory.
+func TestMergeMaps_APIBlock(t *testing.T) {
+	t.Parallel()
+
+	global := map[string]any{"api": map[string]any{
+		"enabled":         true,
+		"landing_page":    "docs/global.md",
+		"exclude":         []any{"global-only", "shared"},
+		"additional_docs": []any{"GLOBAL.md"},
+	}}
+	repo := map[string]any{"api": map[string]any{
+		"exclude": []any{"repo-only"},
+	}}
+
+	settings := mergeMaps(mergeMaps(nil, global), repo)
+	cfg := DefaultConfig()
+	if err := decodeSettings(settings, &cfg); err != nil {
+		t.Fatalf("decodeSettings() = %v, want nil", err)
+	}
+	normalizeAPI(&cfg)
+
+	if !cfg.API.Enabled {
+		t.Error("API.Enabled = false, want true inherited from the global config")
+	}
+	if want := "docs/global.md"; cfg.API.LandingPage != want {
+		t.Errorf("API.LandingPage = %q, want %q inherited from the global config",
+			cfg.API.LandingPage, want)
+	}
+	if want := []string{"repo-only"}; !reflect.DeepEqual(cfg.API.Exclude, want) {
+		t.Errorf("API.Exclude = %q, want %q — the repo list replaces the global one",
+			cfg.API.Exclude, want)
+	}
+	if want := []string{"GLOBAL.md"}; !reflect.DeepEqual(cfg.API.AdditionalDocs, want) {
+		t.Errorf("API.AdditionalDocs = %q, want %q — an unnamed sibling survives",
+			cfg.API.AdditionalDocs, want)
 	}
 }
