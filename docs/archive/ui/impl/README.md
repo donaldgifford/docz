@@ -38,4 +38,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0004 | No-auth mode and session-unavailable handling | Completed | 2026-08-27 | Donald Gifford | [0004-no-auth-mode-and-session-unavailable-handling.md](0004-no-auth-mode-and-session-unavailable-handling.md) |
 | IMPL-0005 | Render non-docz pages: reader, nav, and search surfaces | Completed | 2026-08-30 | Donald Gifford | [0005-render-non-docz-pages-reader-nav-and-search-surfaces.md](0005-render-non-docz-pages-reader-nav-and-search-surfaces.md) |
 | IMPL-0006 | Mermaid v12 and docz-api spec 1.5.0 adoption | Completed | 2026-09-14 | Donald Gifford | [0006-mermaid-v12-and-docz-api-spec-150-adoption.md](0006-mermaid-v12-and-docz-api-spec-150-adoption.md) |
+| IMPL-0007 | Server observability — logs and probes, then metrics and traces | Draft | 2026-09-18 | Donald Gifford | [0007-server-observability-logs-and-probes-then-metrics-and-traces.md](0007-server-observability-logs-and-probes-then-metrics-and-traces.md) |
 <!-- END DOCZ AUTO-GENERATED -->

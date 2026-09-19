@@ -9,6 +9,16 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(chart)* Bump chart to 0.1.8 and appVersion to 0.8.0 ([#32](https://github.com/donaldgifford/docz-site/issues/32))
 
+### Documentation
+
+- *(inv)* INV-0006 server observability and the OTel/Prometheus split
+- *(inv)* Conclude INV-0006 with measured spikes and the split decision
+- *(design)* DESIGN-0006 server observability implementation design
+- *(design)* Split DESIGN-0006 into two PRs and decide OQ-2
+- *(design)* Resolve all DESIGN-0006 open questions, status Approved
+- *(impl)* IMPL-0007 phased plan for server observability
+- *(impl)* Resolve all IMPL-0007 open questions
+
 ## [0.8.0] - 2026-09-15
 
 ### Features
