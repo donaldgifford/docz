@@ -34,7 +34,8 @@ created: 2026-09-14
 types instead of six. Nobody has ever written a PLAN document; phased
 planning happens in IMPL documents. A repo that still carries a `plan:`
 block in `.docz.yaml` keeps working as a custom type and only loses
-`docz create plan` until it supplies its own template.
+`docz create plan` until it supplies its own template. The removal ships in
+v2.0.0 with the API (ADR-0002); the v1 line keeps `plan` as it is.
 
 ## Context
 
@@ -58,7 +59,8 @@ Issue #103 records the facts.
 1. **Remove the `plan` registry entry** from `pkg/doczcore/config/doctype.go`.
    `DocTypeNames()`, `TypesHelp()`, `DefaultConfig().Types`, and
    `DefaultNavTitles()` all derive from the registry, so it is the single
-   removal point in code.
+   removal point in code. This lands on the v2 line only (Open Question 2):
+   v1.x keeps the entry and its templates unchanged.
 
    ```go
    // doctype.go — the entry that goes. Everything else derives from the slice.
@@ -128,8 +130,8 @@ stateDiagram-v2
   Gone: not a type
   [*] --> BuiltInOn: v0.x
   BuiltInOn --> BuiltInOff: v1.1.1 (DESIGN-0011)
-  BuiltInOff --> Custom: this ADR, block kept
-  BuiltInOff --> Gone: this ADR, block removed
+  BuiltInOff --> Custom: v2.0.0, block kept
+  BuiltInOff --> Gone: v2.0.0, block removed
 ```
 
 ## Consequences
@@ -148,8 +150,8 @@ stateDiagram-v2
 ### Negative
 
 - **A removal from a frozen catalogue.** `config.DocTypeNames()` and
-  `LookupDocType` are v1.0 contract; dropping a value is, by the letter, a
-  breaking change (Open Question 1).
+  `LookupDocType` are v1.0 contract; dropping a value is a breaking change,
+  which is why it rides the v2.0.0 major (Open Question 1).
 - **Three fleet repos need a one-line config edit** or they keep a dormant
   custom type. Harmless, but it shows up in `docz config` output until
   fixed.
@@ -187,6 +189,10 @@ stateDiagram-v2
 
 ### 1. Semver treatment
 
+> **Resolved 2026-09-19: (c).** The removal is the breaking change it
+> technically is and rides the v2.0.0 major that ships the API and the
+> `/v2` module path (ADR-0002 Decisions 3 and 6). No deprecation cycle.
+
 - a. **One `minor` with a prominent release-note callout.** Zero documents
   exist, the fallback is graceful and documented, and the only observable
   change for a legacy config is `docz create plan` needing a template. A
@@ -198,8 +204,13 @@ stateDiagram-v2
 
 ### 2. Sequencing against the API work
 
+> **Resolved 2026-09-19: (a), with the v1 line untouched.** The removal
+> lands inside the `cmd/` swap release, now v2.0.0. Nothing changes on
+> v1.x: no warning, no template edit; `plan` stays a disabled built-in
+> there for as long as v1.x exists.
+
 - a. **Land inside the `cmd/` swap release** (ADR-0002 Decision 6): one
-  `minor` whose release notes already speak to library consumers, so the
+  release whose release notes already speak to library consumers, so the
   catalogue change and the new packages are read together, and the
   `docz_yaml.tmpl` and `index_*.md` edits ride the `doctemplate` promotion
   instead of conflicting with it. *(recommendation)*

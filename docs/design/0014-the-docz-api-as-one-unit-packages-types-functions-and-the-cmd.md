@@ -232,7 +232,7 @@ one place; their signatures are today's.
 #### 2.1 config (L0, unchanged)
 
 ```go
-package config // import "github.com/donaldgifford/docz/pkg/doczcore/config"
+package config // import "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 
 const ConfigFileName, IndexFileName, WikiIndexName, MkDocsFileName,
       TemplatesDir, DefaultChangelogFile, APILandingFileName string
@@ -269,7 +269,7 @@ the template embed, which is `doctemplate`'s (§2.7).
 #### 2.2 document (L0, unchanged)
 
 ```go
-package document // import "github.com/donaldgifford/docz/pkg/doczcore/document"
+package document // import "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 
 var DoczFilePattern *regexp.Regexp
 var ErrNoFrontmatter, ErrNoVersions error
@@ -292,7 +292,7 @@ document twice.
 #### 2.3 docparse (L0, additive)
 
 ```go
-package docparse // import "github.com/donaldgifford/docz/pkg/doczcore/docparse"
+package docparse // import "github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 
 type Heading struct { Level int; Text, Anchor string; Line int }
 type TaskItem struct { Text string; Checked bool; Indent, Line int }
@@ -320,7 +320,7 @@ contract and are not part of this design.
 #### 2.4 docwrite (L1, additive)
 
 ```go
-package docwrite // import "github.com/donaldgifford/docz/pkg/doczcore/docwrite"
+package docwrite // import "github.com/donaldgifford/docz/v2/pkg/doczcore/docwrite"
 
 // Existing, unchanged.
 var ErrUnsupportedLineEndings, ErrStatusFieldMissing error
@@ -360,7 +360,7 @@ behaviour, including the auto-increment scan (Open Question 5).
 #### 2.5 toc (L1, unchanged)
 
 ```go
-package toc // import "github.com/donaldgifford/docz/pkg/doczcore/toc"
+package toc // import "github.com/donaldgifford/docz/v2/pkg/doczcore/toc"
 
 const BeginMarker, EndMarker string
 type FileInput struct { Path string; Content []byte }
@@ -384,7 +384,7 @@ Promoted whole from `internal/index` as `pkg/doczcore/index`, plus a
 bytes-in splice and the scaffold `init` writes.
 
 ```go
-package index // import "github.com/donaldgifford/docz/pkg/doczcore/index"
+package index // import "github.com/donaldgifford/docz/v2/pkg/doczcore/index"
 
 const BeginMarker = "<!-- BEGIN DOCZ AUTO-GENERATED -->"
 const EndMarker   = "<!-- END DOCZ AUTO-GENERATED -->"
@@ -421,7 +421,7 @@ Promoted whole from `internal/template` as `pkg/doczcore/doctemplate`
 and template contents outside the contract.
 
 ```go
-package doctemplate // import "github.com/donaldgifford/docz/pkg/doczcore/doctemplate"
+package doctemplate // import "github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 
 var ErrNoTemplate error // no embedded, on-disk, or configured template for the type
 
@@ -458,7 +458,7 @@ is a root directory and a loaded config; every method is the orchestration
 one `cmd/` handler performs today, with the printing removed.
 
 ```go
-package repo // import "github.com/donaldgifford/docz/pkg/doczcore/repo"
+package repo // import "github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 
 type Repo struct {
     Root string         // repository root; every config-relative path is joined under it
@@ -640,7 +640,7 @@ Carried over from DESIGN-0013 §5 with the root type renamed. Spans are
 located by region (DESIGN-0015 §5), never by heading text.
 
 ```go
-package impl // import "github.com/donaldgifford/docz/pkg/impl"
+package impl // import "github.com/donaldgifford/docz/v2/pkg/impl"
 
 // Parse interprets an IMPL document. It never touches the filesystem.
 func Parse(doc []byte) (Doc, error)
@@ -735,7 +735,7 @@ TechDocs, not core and not a type. The existing primitives keep their
 signatures; two orchestration functions absorb `cmd/wiki.go`.
 
 ```go
-package wiki // import "github.com/donaldgifford/docz/pkg/wiki"
+package wiki // import "github.com/donaldgifford/docz/v2/pkg/wiki"
 
 // Existing primitives, unchanged.
 type MkDocsConfig struct { SiteName, SiteDescription, DocsDir, RepoURL, SiteURL, Theme string; Plugins, MarkdownExtensions []string }
@@ -780,7 +780,7 @@ Specified in DESIGN-0015 §3 and §4; listed here so the unit reads in one
 place.
 
 ```go
-package validate // import "github.com/donaldgifford/docz/pkg/doczcore/validate"
+package validate // import "github.com/donaldgifford/docz/v2/pkg/doczcore/validate"
 
 type Severity int
 const ( Error Severity = iota + 1; Warning )
@@ -895,6 +895,28 @@ from `RepoRoot` and the loaded config; tests that construct a `Runner`
 directly build one the same way. Every handler derives its context from
 the process signal context and attaches hooks that carry today's debug
 narration to the logger (§7), so `--verbose` output is unchanged.
+
+The acceptance test is functional parity with v1.2.2 (ADR-0002 Decision
+6), run across every built-in type. `test/parity/` holds one fixture repo
+per type — rfc, adr, design, impl, investigation — plus one custom type
+declared in `.docz.yaml` and one legacy `plan:` block (ADR-0003), each with
+a few documents. A driver runs every command in the table below against
+each fixture — `init`, `create`, `update` with and without `--dry-run`,
+`list` in text, json, and csv, `status set` including its error paths,
+`template show`/`export`/`override`, `config`, `wiki init`/`update` — and
+records stdout, stderr, the exit code, and every file written or changed.
+The goldens are captured once from the released v1.2.2 binary, before any
+template gains a marker, and checked in; `make parity` replays them
+against the freshly built binary and joins `make ci` in the swap PR. Two
+deltas are permitted and live in the comparison, not in the goldens:
+`<!--docz:…-->` lines are ignored in `create` and `template` output,
+because the templates gain region markers (DESIGN-0015), and `validate`,
+`update --regions`, and `task list` have no v1.2.2 golden. The legacy
+`plan:` fixture is compared for every command except `create plan`, whose
+v2 behaviour — the no-template error — is pinned by its own test
+(ADR-0003 Decision 3). Anything else that differs blocks the PR. The suite
+is the proof that the API reproduces the CLI; the `cmd/` unit tests pin
+behaviour per handler and do not cross types.
 
 | Command | Library call | What stays in `cmd/` |
 | ------- | ------------ | -------------------- |
@@ -1131,25 +1153,26 @@ reports; whether they need hooks of their own is Open Question 12.
 | ------- | ------ | ---- | ----------- |
 | `pkg/doczcore/config` | none | — | v1.0.0 |
 | `pkg/doczcore/document` | none | — | v1.0.0 |
-| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); #96 fixes are bugs | additive | v1.0.0 (existing), swap release (new) |
-| `pkg/doczcore/docwrite` | `SetStatusBytes`, `SetTaskStateBytes`, `SetTaskState`, `NextNumber`, `Render`, `Rendered`, `ErrTaskAlreadyUnchecked` | additive | v1.0.0 (existing), swap release (new) |
+| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); #96 fixes are bugs | additive | v1.0.0 (existing), v2.0.0 (new) |
+| `pkg/doczcore/docwrite` | `SetStatusBytes`, `SetTaskStateBytes`, `SetTaskState`, `NextNumber`, `Render`, `Rendered`, `ErrTaskAlreadyUnchecked` | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/toc` | none | — | v1.0.0 |
-| `pkg/doczcore/index` | promoted whole; `Splice`, `Scaffold`, marker constants exported | new public | swap release |
-| `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate` | new public | swap release |
-| `pkg/doczcore/validate` | new (DESIGN-0015) | new public | swap release |
-| `pkg/doczcore/repo` | new; every method takes a context; `Hooks`; `Validate`, `InsertRegions` | new public | swap release |
-| `pkg/impl` | new; `Parse` over regions; `Validate` | new public | swap release |
-| `pkg/wiki` | promoted whole; `Init`, `UpdateNav` with a context, options and reports | new public | swap release |
+| `pkg/doczcore/index` | promoted whole; `Splice`, `Scaffold`, marker constants exported | new public | v2.0.0 |
+| `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate` | new public | v2.0.0 |
+| `pkg/doczcore/validate` | new (DESIGN-0015) | new public | v2.0.0 |
+| `pkg/doczcore/repo` | new; every method takes a context; `Hooks`; `Validate`, `InsertRegions` | new public | v2.0.0 |
+| `pkg/impl` | new; `Parse` over regions; `Validate` | new public | v2.0.0 |
+| `pkg/wiki` | promoted whole; `Init`, `UpdateNav` with a context, options and reports | new public | v2.0.0 |
 | embedded templates | region markers added (DESIGN-0015 §2) | contents, not contract | — |
 | `internal/` | emptied | — | — |
 | `cmd/` | re-pointed; `validate`, `update --regions`; optional `task list` | new commands only, existing behaviour unchanged | — |
 | `.docz.yaml` | none | — | — |
 | `config.DocTypeNames()` | loses `plan` (ADR-0003) | catalogue change, same release | — |
+| module path | `github.com/donaldgifford/docz` → `github.com/donaldgifford/docz/v2` (ADR-0002 Decision 3); v1.x tags keep the old path | major | v2.0.0 |
 
-Per ADR-0002 Decision 7, every "swap release" row is experimental until the
-swap ships: its package doc comment opens with `EXPERIMENTAL` and a link to
-ADR-0002, and it may change between beta pins without a major bump. The
-swap PR removes the markers and the whole table is contract from then on.
+Per ADR-0002 Decision 7, every "v2.0.0" row is experimental until v2.0.0
+ships: its package doc comment opens with `EXPERIMENTAL` and a link to
+ADR-0002, and it may change between pre-release pins. The swap PR removes
+the markers and the whole table is contract from v2.0.0 on.
 
 ## Data Model
 
@@ -1289,6 +1312,10 @@ construct per call.
   temp-dir tests mirroring today's `cmd/wiki` tests.
 - **The swap**: the `cmd/` test suite runs unchanged. Any test that has to
   change is a behaviour change and blocks the PR (ADR-0001 Decision 7).
+- **Parity with v1.2.2**: `test/parity/` (§4) — goldens captured from the
+  v1.2.2 binary, replayed over the five built-in types, one custom type,
+  and a legacy `plan:` block; region-marker lines and the new commands are
+  the only permitted deltas.
 - **Consumer proof**: `test/consumer` imports every `pkg/` package —
   `repo`, `index`, `doctemplate`, `impl`, `wiki` join the existing five —
   and exercises one call each from outside the module.
@@ -1309,6 +1336,8 @@ construct per call.
 ```mermaid
 timeline
   title Build the whole API, then swap — every landing under dont-release until the last
+  section Module path
+    go.mod becomes docz/v2 : parity goldens captured from v1.2.2
   section Type layer first
     docparse Markers and Regions : validate package : pkg/impl Parse and Doc over regions : docwrite byte cores and Render : templates gain markers : consumer proof : tempy pins a pseudo-version
   section Promotions
@@ -1317,22 +1346,24 @@ timeline
     pkg/doczcore/repo : Scan List Find Create Update SetStatus Init Template ExportTemplate : Validate and InsertRegions : context and Hooks
   section Catalogue
     ADR-0003 plan removal : goldens and docs
-  section Swap (minor, v1.3.0)
+  section Swap (major, v2.0.0)
     cmd/ re-pointed, tests unchanged : docz validate and update --regions : docs/ migrated : EXPERIMENTAL removed : ADR-0001 amended : CLAUDE.md README
 ```
 
 | Step | Delivers | PR label | Consumer signal |
 | ---- | -------- | -------- | --------------- |
-| 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers; consumer proof | `dont-release` | tempy IMPL-0001 pins `docz@<sha>` and migrates its target repos' docs; sdk-booty-sh issue to migrate `doczwork` |
+| 0 | Module path → `github.com/donaldgifford/docz/v2` (`go.mod`, every import, `Makefile` and `.goreleaser.yml` ldflags, `test/consumer`); parity goldens captured from the v1.2.2 binary into `test/parity/` | `dont-release` | v1.x tags keep the old path; a `v1` branch is cut from v1.2.2 only on demand |
+| 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers; consumer proof | `dont-release` | tempy IMPL-0001 pins `docz/v2@<sha>` and migrates its target repos' docs; sdk-booty-sh issue to migrate `doczwork` |
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); `internal/` emptied | `dont-release` | — |
 | 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions` | `dont-release` | — |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` | claude-skills issue |
-| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue | `minor` → v1.3.0 | tempy re-pins the tag; docz-api, sdk-booty-sh run `update --regions` once and may adopt `validate`/`index`/`impl` at their leisure |
-| — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v1.4.0 | — | docz-api #36 unchanged |
+| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue | `major` → v2.0.0 | tempy re-pins the tag; docz-api, sdk-booty-sh run `update --regions` once and may adopt `validate`/`index`/`impl` at their leisure |
+| — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v2.1.0 | — | docz-api #36 unchanged |
 
 ```mermaid
 gitGraph
   commit id: "v1.2.2" tag: "v1.2.2"
+  commit id: "module path docz/v2, parity goldens"
   branch feat/impl
   commit id: "regions, validate, pkg/impl, byte cores"
   checkout main
@@ -1352,16 +1383,19 @@ gitGraph
   branch feat/cmd-swap
   commit id: "cmd/ on the API, validate, docs migrated"
   checkout main
-  merge feat/cmd-swap id: "minor" tag: "v1.3.0"
+  merge feat/cmd-swap id: "major" tag: "v2.0.0"
 ```
 
 One IMPL document covers this design and DESIGN-0015 together, one phase
-per step above (Open Question 11). Steps 1–4 each leave the CLI on its
-current code paths, so a `main` build
-at any point behaves exactly like v1.2.2 for CLI users while carrying the
-new packages for library consumers. Beta pinning uses pseudo-versions
-unless a consumer asks for a tag (ADR-0002 Open Question 3). Step 5 is the
-release; its release notes are the library changelog for everything above.
+per step above (Open Question 11). Steps 0–4 each leave the CLI on its
+current code paths, so a `main` build at any point behaves exactly like
+v1.2.2 for CLI users while carrying the new packages for library consumers.
+Pre-release pinning uses v2 pseudo-versions unless a consumer asks for an
+rc tag (ADR-0002 Open Question 3). Every PR from step 0 through step 4 is
+`dont-release`: once the module path is `/v2`, a `patch` or `minor` label
+would tag a v1 version that `go get` rejects for a `/v2` module. Step 5
+carries `major` and releases v2.0.0; its release notes are the library
+changelog for everything above.
 
 Docs touched by the work: ADR-0001 (dated amendment, Open Question 2 of
 ADR-0002), IMPL-0014 (Decision 3 note), DESIGN-0013 (Abandoned — done with
@@ -1605,7 +1639,7 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
   — the promotion pattern
 - [IMPL-0014](../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md)
   — the v1.0.0 core; [IMPL-0017](../impl/0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md)
-  — retargets to v1.4.0
+  — retargets to v2.1.0
 - Issues [#100](https://github.com/donaldgifford/docz/issues/100),
   [#103](https://github.com/donaldgifford/docz/issues/103),
   [#92](https://github.com/donaldgifford/docz/issues/92),

@@ -280,7 +280,7 @@ Three tiers, composed by the caller, never dispatched by a registry
 (ADR-0002 Decision 4).
 
 ```go
-package validate // import "github.com/donaldgifford/docz/pkg/doczcore/validate"
+package validate // import "github.com/donaldgifford/docz/v2/pkg/doczcore/validate"
 
 type Severity int
 const ( Error Severity = iota + 1; Warning )
@@ -480,7 +480,7 @@ in `doczcore` imports `impl`, so R2 holds and the command composes.
 | Package | Change | Kind |
 | ------- | ------ | ---- |
 | `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` | additive to the frozen package |
-| `pkg/doczcore/validate` | new: `Document`, `Options`, `Finding`, `Severity`, `Schema`, `SchemaRegion`, `SchemaFromTemplate`, the kind catalogue | new public, experimental until the swap |
+| `pkg/doczcore/validate` | new: `Document`, `Options`, `Finding`, `Severity`, `Schema`, `SchemaRegion`, `SchemaFromTemplate`, the kind catalogue | new public in v2.0.0, experimental until then |
 | `pkg/doczcore/repo` | `Validate`, `ValidateOptions`, `ValidateReport`, `DocFindings`, `IndexDrift`; `InsertRegions` and its types | part of the new package |
 | `pkg/impl` | `Validate`; `Parse` locates spans by region | part of the new package |
 | `internal/template/templates/*.md` | every built-in template gains region markers | template contents, not contract |
