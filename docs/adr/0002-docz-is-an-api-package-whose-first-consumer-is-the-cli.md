@@ -25,7 +25,7 @@ created: 2026-09-14
 - [Open Questions](#open-questions)
   - [1. How is "not yet frozen" signalled on the new packages?](#1-how-is-not-yet-frozen-signalled-on-the-new-packages)
   - [2. How is ADR-0001's record amended?](#2-how-is-adr-0001s-record-amended)
-  - [3. How do beta consumers pin the API before the swap?](#3-how-do-beta-consumers-pin-the-api-before-the-swap)
+  - [3. How are pre-releases cut before v2.0.0?](#3-how-are-pre-releases-cut-before-v200)
   - [4. Does the swap ship a first-party consumer of the type layer?](#4-does-the-swap-ship-a-first-party-consumer-of-the-type-layer)
   - [5. Are document types built on generics?](#5-are-document-types-built-on-generics)
 - [References](#references)
@@ -41,7 +41,9 @@ docz ships primitives; consumers own policy. The whole API is built first as
 one unit (DESIGN-0014) and `cmd/` is swapped onto it last. This supersedes
 the parts of ADR-0001 that kept `template`, `index`, and `wiki` internal and
 dropped the plan model, and it lifts ADR-0001's freeze for the new packages
-until the swap lands.
+until v2.0.0 is cut. This work does not cut it: it ships `v2.0.0-beta.N`
+pre-releases, and v2.0.0 proper waits for docz-api and then the UI to move
+into this repo, after the CLI.
 
 ## Context
 
@@ -123,10 +125,11 @@ implies.
    version line. Go compiles per imported package, so a consumer of
    `pkg/impl` pays for nothing else; a second module would add a release
    train and `replace` friction for the CLI itself with no isolation gain.
-   ADR-0001 Alternative B stays rejected. The API ships as **v2.0.0**, so
-   the module path becomes `github.com/donaldgifford/docz/v2` with the first
-   landing of this work (Decision 6): every pre-release pin is then a v2
-   pseudo-version and no consumer rewrites imports at release. The v1.x
+   ADR-0001 Alternative B stays rejected. The API ships on the **v2 line**,
+   so the module path becomes `github.com/donaldgifford/docz/v2` with the
+   first landing of this work; every tag this work cuts is a
+   `v2.0.0-beta.N` pre-release (Decision 6), and no consumer rewrites
+   imports when v2.0.0 proper follows. The v1.x
    tags stay importable at the old path indefinitely — docz-api's and
    sdk-booty-sh's v1 pins are untouched, and neither moves to v2 until
    that is decided on its own — and a `v1` branch is cut from v1.2.2 only
@@ -200,8 +203,7 @@ implies.
    §5) — and their moves happen in their own repos, afterwards. The final
    step is one PR that re-points `cmd/` at the library with no change to
    commands, flags, output, or exit codes (ADR-0001 Decision 7, the CLI
-   benchmark, still binding). That PR carries the `major` label and
-   releases **v2.0.0**. Its acceptance test is functional parity with
+   benchmark, still binding). Its acceptance test is functional parity with
    v1.2.2 (DESIGN-0014 §4): every command run over every built-in type —
    rfc, adr, design, impl, investigation — and one custom type, comparing
    outputs, exit codes, and written files against goldens captured from the
@@ -210,17 +212,28 @@ implies.
    is not in the suite: it leaves the catalogue in the same release
    (ADR-0003).
 
+   **Nothing in this work cuts v2.0.0.** Every PR in it, the swap
+   included, is `dont-release`; the swap is tagged `v2.0.0-beta.1` by hand
+   and later betas follow as needed (Open Question 3). The `major` label
+   is reserved for v2.0.0 proper, which is a different milestone: docz-api
+   moves into this repo and builds from `cmd/docz-api`, then the UI
+   follows, so one chart ships the API and the UI together. Each of those
+   is its own design, sequenced after the CLI, and this ADR does not
+   specify them.
+
 7. **Supersession and the freeze.** This ADR supersedes ADR-0001 Decision 2's
    retention of `template`, `index`, and `wiki` in `internal/` and IMPL-0014
    Decision 3(d)'s drop of the plan model. It keeps Decisions 1 (whole-package
    promotion), 3 (public may import internal — moot after the swap, still
    legal), 5 (API principles, now rules R3, R4, R6), and 7 (CLI benchmark).
    ADR-0001 Decision 6's v1.0.0 freeze continues to bind the five original
-   packages: v2.0.0 carries their v1 shapes forward unchanged, and the one
-   breaking change it makes to them is `plan` leaving the catalogue
+   packages: the v2 line carries their v1 shapes forward unchanged, and the
+   one breaking change it makes to them is `plan` leaving the catalogue
    (ADR-0003). The freeze **does not apply** to packages added under this
-   ADR until v2.0.0 ships: they are marked experimental, may change between
-   pre-release pins, and freeze at v2.0.0. From that release forward this
+   ADR until v2.0.0 proper ships — which this work does not cut (Decision
+   6): they are marked experimental, may change between betas, and freeze
+   at v2.0.0. The beta window is deliberate: docz-api moving into the repo
+   is the last chance to reshape them cheaply. From v2.0.0 forward this
    ADR governs the whole surface and ADR-0001 is superseded in part.
 
    ```mermaid
@@ -229,7 +242,8 @@ implies.
      [*] --> Frozen: five packages, v1.0.0 (ADR-0001)
      [*] --> Experimental: new package lands on main (dont-release)
      Experimental --> Experimental: change between pre-release pins
-     Experimental --> Frozen: cmd swap PR ships (major, v2.0.0)
+     Experimental --> Experimental: cmd swap ships as v2.0.0-beta.1
+     Experimental --> Frozen: v2.0.0 cut, after docz-api and the UI move in
      Frozen --> Frozen: additive minors only
    ```
 
@@ -274,7 +288,7 @@ implies.
 | Module path | `github.com/donaldgifford/docz` | `github.com/donaldgifford/docz/v2` from the first landing; v1.x tags keep the old path |
 | `pkg/doczcore/{config,document,docparse,docwrite,toc}` | frozen (v1.0.0) | frozen; additions only |
 | `config.DocTypeNames()` | six names | five; `plan` removed (ADR-0003) |
-| `pkg/doczcore/{repo,index,doctemplate}`, `pkg/impl`, `pkg/wiki` | experimental; may change between pins | frozen |
+| `pkg/doczcore/{repo,index,doctemplate}`, `pkg/impl`, `pkg/wiki` | experimental; may change between pins | experimental through the betas; frozen at v2.0.0 |
 | `cmd/` behaviour (commands, flags, text, exit codes) | unchanged | unchanged by the swap; the looser CLI-stability note applies as before |
 | `.docz.yaml` | unchanged | unchanged |
 | Embedded template contents and names | not contract | not contract (the embed stays unexported inside `doctemplate`) |
@@ -301,12 +315,13 @@ implies.
 
 ### Negative
 
-- **A larger frozen surface after the swap.** `repo`, `index`,
+- **A larger frozen surface at v2.0.0.** `repo`, `index`,
   `doctemplate`, and `wiki` become contract, including shapes ADR-0001 called
   CLI-flavoured (`index.UpdateOutcome`'s action enum). Mitigated by R4 —
-  enums and reports are typed, wording is not exported — and by the
-  pre-swap window in which they may still change.
-- **Two contracts in the meantime.** Until the swap, the tree carries a
+  enums and reports are typed, wording is not exported — and by the beta
+  window, which lasts until v2.0.0 is cut and in which they may still
+  change.
+- **Two contracts in the meantime.** Until v2.0.0, the tree carries a
   frozen tier and an experimental tier and contributors must know which is
   which (Open Question 1).
 - **The swap is one large PR.** Every command's tests must pass
@@ -322,12 +337,15 @@ implies.
   release notes are for library consumers.
 - **Dependencies do not change.** The promoted packages are stdlib +
   `yaml.v3`, like the core.
-- **Release mechanics.** `dont-release` for every landing after the module
-  path flips — a `patch` or `minor` label there would tag a v1 version on a
-  `/v2` module, which `go get` rejects — and one `major` for the swap, which
-  `pr-semver-bump` turns into v2.0.0. Human-readable pre-release tags are
-  optional (Open Question 3). IMPL-0017's `updated:` field retargets to
-  v2.1.0.
+- **Release mechanics.** `dont-release` on every PR in this work, the
+  swap included: a `patch` or `minor` label after the module path flips
+  would tag a v1 version on a `/v2` module, which `go get` rejects, and
+  `major` is reserved for v2.0.0 proper. Pre-releases are annotated tags
+  cut by hand (`make release TAG=v2.0.0-beta.N`); goreleaser already marks
+  a suffixed tag as a pre-release (`prerelease: auto`), and `release.yml`
+  gains a tag trigger for them in step 0 so a beta builds binaries (Open
+  Question 3). IMPL-0017's `updated:` field retargets to the v2 line,
+  after this unit.
 
 ## Alternatives Considered
 
@@ -366,8 +384,8 @@ implies.
 > too.
 
 - a. **Package doc comment plus release notes.** Each new package's doc
-  comment opens with an `EXPERIMENTAL` line pointing at this ADR; the swap
-  PR removes it. No import-path churn, no build tags; `go doc` shows it.
+  comment opens with an `EXPERIMENTAL` line pointing at this ADR; the
+  v2.0.0 cut removes it. No import-path churn, no build tags; `go doc` shows it.
   *(recommendation)*
 - b. Land them under an `x/` path (`pkg/x/repo`) and move to the final path
   at the swap — visible in the import path, but every beta consumer rewrites
@@ -386,25 +404,27 @@ implies.
   decisions in full.
 - c. Other.
 
-### 3. How do beta consumers pin the API before the swap?
+### 3. How are pre-releases cut before v2.0.0?
 
-> **Resolved 2026-09-19: (a), inside a v2.0.0 major.** Pseudo-versions on
-> `main` are enough while docz is its own only consumer; once the module
-> path has flipped they read `v2.0.0-0.<timestamp>-<sha>`, which is a
-> pre-release by construction. The release itself is a `major`, not the
-> `minor` this ADR first assumed: the API and the `plan` removal
-> (ADR-0003) ship together as v2.0.0 with the `/v2` module path (Decisions
-> 3 and 6). Human-readable `v2.0.0-rc.N` tags are optional and library-only
-> — `release.yml` runs on pushes to `main`, not on tags, so an rc tag
-> builds no binaries — and before cutting one, confirm `pr-semver-bump`
-> does not adopt it as the base for the `major` bump.
+> **Resolved 2026-09-19: (b) — manual `v2.0.0-beta.N` tags; nothing in
+> this work cuts v2.0.0.** The swap is tagged `v2.0.0-beta.1` from its
+> `main` merge commit with `make release TAG=…`, and further betas follow
+> as the API settles; between tags a v2 pseudo-version
+> (`v2.0.0-0.<timestamp>-<sha>`) is available without cutting anything.
+> Every PR stays `dont-release`. Two mechanics land in step 0:
+> `release.yml` gains an `on: push: tags` trigger for `v*-beta.*` so a beta
+> builds and publishes binaries (goreleaser's `prerelease: auto` already
+> marks it), and `pr-semver-bump`'s behaviour with a pre-release as the
+> latest tag is checked, since the eventual `major` must produce v2.0.0
+> and not v3.0.0 — if it cannot, v2.0.0 is tagged by hand the same way.
+> That eventual cut is not this work's (Decision 6).
 
 - a. **Pseudo-versions, no tags.** `go get github.com/donaldgifford/docz/v2@<sha>`
   on the `main` commit that carries what the consumer needs. Nothing to cut,
   nothing to clean up, and the release workflow's base version is untouched.
   A tag is added only if a consumer wants a human-readable version.
   *(recommendation)*
-- b. Manual `v2.0.0-rc.N` tags on `main` merge commits via `make release
+- b. Manual `v2.0.0-beta.N` tags on `main` merge commits via `make release
   TAG=…` — readable, but confirm first that `pr-semver-bump` does not adopt a
   pre-release tag as the base for the next bump.
 - c. A tag-triggered pre-release workflow with binaries — more than a library

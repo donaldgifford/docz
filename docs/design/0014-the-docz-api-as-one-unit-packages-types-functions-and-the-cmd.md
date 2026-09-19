@@ -122,7 +122,7 @@ ADR-0002's decisions this design implements:
 | 4 | Standalone `pkg/<type>` with `Doc` root | §2.9, §3 |
 | 5 | Primitives in docz, policy in consumers | §2.4 byte cores, §5 consumer map |
 | 6 | Build the whole API, swap `cmd/` last | Rollout |
-| 7 | ADR-0001 freeze lifted for new packages until the swap | API changes table |
+| 7 | ADR-0001 freeze lifted for new packages until v2.0.0 is cut; this unit ships betas only | API changes table |
 | — | DESIGN-0015: regions, the validator, `docz validate` — a requirement of this unit | §2.3, §2.11, §3, §4 |
 
 Carried over from DESIGN-0013 without change in substance: the inventory of
@@ -1191,9 +1191,11 @@ reports; whether they need hooks of their own is Open Question 12.
 | module path | `github.com/donaldgifford/docz` → `github.com/donaldgifford/docz/v2` (ADR-0002 Decision 3); v1.x tags keep the old path | major | v2.0.0 |
 
 Per ADR-0002 Decision 7, every "v2.0.0" row is experimental until v2.0.0
-ships: its package doc comment opens with `EXPERIMENTAL` and a link to
-ADR-0002, and it may change between pre-release pins. The swap PR removes
-the markers and the whole table is contract from v2.0.0 on.
+proper ships: its package doc comment opens with `EXPERIMENTAL` and a link
+to ADR-0002, and it may change between betas. This unit ends at
+`v2.0.0-beta.1` with the markers still in place; the v2.0.0 cut, after
+docz-api and the UI move into the repo, removes them and the whole table
+is contract from then on.
 
 ## Data Model
 
@@ -1367,19 +1369,19 @@ timeline
     pkg/doczcore/repo : Scan List Find Create Update SetStatus Init Template ExportTemplate : Validate and InsertRegions : context and Hooks
   section Catalogue
     ADR-0003 plan removal : goldens and docs
-  section Swap (major, v2.0.0)
-    cmd/ re-pointed, tests unchanged : docz validate and update --regions : docs/ migrated : EXPERIMENTAL removed : ADR-0001 amended : CLAUDE.md README
+  section Swap (v2.0.0-beta.1)
+    cmd/ re-pointed, tests unchanged : parity suite green : docz validate and update --regions : docs/ migrated : ADR-0001 amended : CLAUDE.md README
 ```
 
 | Step | Delivers | PR label |
 | ---- | -------- | -------- |
-| 0 | Module path → `github.com/donaldgifford/docz/v2` (`go.mod`, every import, `Makefile` and `.goreleaser.yml` ldflags, `test/consumer`); parity goldens captured from the v1.2.2 binary into `test/parity/`. v1.x tags keep the old path; a `v1` branch is cut from v1.2.2 only on demand | `dont-release` |
+| 0 | Module path → `github.com/donaldgifford/docz/v2` (`go.mod`, every import, `Makefile` and `.goreleaser.yml` ldflags, `test/consumer`); parity goldens captured from the v1.2.2 binary into `test/parity/`; `release.yml` gains a tag trigger for `v*-beta.*` pre-release tags and `pr-semver-bump`'s pre-release-base behaviour is checked (ADR-0002 Open Question 3). v1.x tags keep the old path; a `v1` branch is cut from v1.2.2 only on demand | `dont-release` |
 | 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers and its schema skeleton; consumer proof | `dont-release` |
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); schema resolution; `internal/` emptied | `dont-release` |
 | 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions`; `ExportTemplate` scaffolds custom types | `dont-release` |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` |
-| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue for the plugin's bundled templates | `major` → v2.0.0 |
-| — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v2.1.0 | — |
+| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue for the plugin's bundled templates | `dont-release`, then tag `v2.0.0-beta.1` by hand |
+| — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to the v2 line, after this unit | — |
 
 The table has no consumer column on purpose. The API is step one; the
 CLI's migration onto it is step two and the validation of step one, by
@@ -1411,20 +1413,27 @@ gitGraph
   branch feat/cmd-swap
   commit id: "cmd/ on the API, validate, docs migrated"
   checkout main
-  merge feat/cmd-swap id: "major" tag: "v2.0.0"
+  merge feat/cmd-swap id: "dont-release    " tag: "v2.0.0-beta.1"
 ```
 
 One IMPL document covers this design and DESIGN-0015 together, one phase
 per step above (Open Question 11). Steps 0–4 each leave the CLI on its
 current code paths, so a `main` build at any point behaves exactly like
 v1.2.2 for CLI users while carrying the new packages for library consumers.
-No external consumer pins during the build; if one ever needs to, v2
-pseudo-versions exist without a tag (ADR-0002 Open Question 3). Every PR
-from step 0 through step 4 is
-`dont-release`: once the module path is `/v2`, a `patch` or `minor` label
-would tag a v1 version that `go get` rejects for a `/v2` module. Step 5
-carries `major` and releases v2.0.0; its release notes are the library
-changelog for everything above.
+Every PR in this unit is `dont-release`, the swap included: once the
+module path is `/v2`, a `patch` or `minor` label would tag a v1 version
+that `go get` rejects for a `/v2` module, and `major` is reserved for
+v2.0.0 proper. Step 5 is tagged `v2.0.0-beta.1` by hand from its merge
+commit (`make release TAG=v2.0.0-beta.1`); goreleaser marks the tag a
+pre-release and the step-0 tag trigger builds its binaries. Its release
+notes are the library changelog for everything above. Further betas follow
+as the API settles; between tags a v2 pseudo-version exists without
+cutting anything (ADR-0002 Open Question 3).
+
+v2.0.0 proper is not this unit's to cut. It is the milestone at which
+docz-api has moved into this repo and builds from `cmd/docz-api`, and the
+UI has followed so one chart ships the API and the UI together — each its
+own design, after the CLI. The EXPERIMENTAL markers come off then.
 
 Docs touched by the work: ADR-0001 (dated amendment, Open Question 2 of
 ADR-0002), IMPL-0014 (Decision 3 note), DESIGN-0013 (Abandoned — done with

@@ -34,8 +34,9 @@ created: 2026-09-14
 types instead of six. Nobody has ever written a PLAN document; phased
 planning happens in IMPL documents. A repo that still carries a `plan:`
 block in `.docz.yaml` keeps working as a custom type and only loses
-`docz create plan` until it supplies its own template. The removal ships in
-v2.0.0 with the API (ADR-0002); the v1 line keeps `plan` as it is.
+`docz create plan` until it supplies its own template. The removal ships on
+the v2 line with the API, first in the beta that carries the `cmd/` swap
+(ADR-0002); the v1 line keeps `plan` as it is.
 
 ## Context
 
@@ -130,8 +131,8 @@ stateDiagram-v2
   Gone: not a type
   [*] --> BuiltInOn: v0.x
   BuiltInOn --> BuiltInOff: v1.1.1 (DESIGN-0011)
-  BuiltInOff --> Custom: v2.0.0, block kept
-  BuiltInOff --> Gone: v2.0.0, block removed
+  BuiltInOff --> Custom: v2 line, block kept
+  BuiltInOff --> Gone: v2 line, block removed
 ```
 
 ## Consequences
@@ -151,7 +152,7 @@ stateDiagram-v2
 
 - **A removal from a frozen catalogue.** `config.DocTypeNames()` and
   `LookupDocType` are v1.0 contract; dropping a value is a breaking change,
-  which is why it rides the v2.0.0 major (Open Question 1).
+  which is why it rides the v2 line (Open Question 1).
 - **Three fleet repos need a one-line config edit** or they keep a dormant
   custom type. Harmless, but it shows up in `docz config` output until
   fixed.
@@ -190,8 +191,9 @@ stateDiagram-v2
 ### 1. Semver treatment
 
 > **Resolved 2026-09-19: (c).** The removal is the breaking change it
-> technically is and rides the v2.0.0 major that ships the API and the
-> `/v2` module path (ADR-0002 Decisions 3 and 6). No deprecation cycle.
+> technically is and rides the v2 line that ships the API and the `/v2`
+> module path — first in a `v2.0.0-beta.N`, never in a v1 release
+> (ADR-0002 Decisions 3 and 6). No deprecation cycle.
 
 - a. **One `minor` with a prominent release-note callout.** Zero documents
   exist, the fallback is graceful and documented, and the only observable
@@ -205,7 +207,7 @@ stateDiagram-v2
 ### 2. Sequencing against the API work
 
 > **Resolved 2026-09-19: (a), with the v1 line untouched.** The removal
-> lands inside the `cmd/` swap release, now v2.0.0. Nothing changes on
+> lands inside the `cmd/` swap, which ships as `v2.0.0-beta.1`. Nothing changes on
 > v1.x: no warning, no template edit; `plan` stays a disabled built-in
 > there for as long as v1.x exists.
 
