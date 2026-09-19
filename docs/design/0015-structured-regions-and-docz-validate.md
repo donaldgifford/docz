@@ -37,6 +37,7 @@ created: 2026-09-19
   - [6. Which regions does the IMPL template mark?](#6-which-regions-does-the-impl-template-mark)
   - [7. Hand-rolled walker or a CommonMark AST?](#7-hand-rolled-walker-or-a-commonmark-ast)
   - [8. Unknown kinds](#8-unknown-kinds)
+  - [9. Should the ToC and index splices sit on the region walker?](#9-should-the-toc-and-index-splices-sit-on-the-region-walker)
 - [References](#references)
 <!--toc:end-->
 
@@ -128,15 +129,23 @@ A marker is an HTML comment on a line of its own:
 <!--docz:phase:start-->
 ### Phase 2: Promotions
 
+<!-- Describe what this phase establishes. -->
+
 <!--docz:tasks:start-->
+#### Tasks
+
 - [ ] internal/template moves to doctemplate
 - [ ] internal/index moves to index
 <!--docz:tasks:end-->
 
 <!--docz:criteria:start-->
+#### Success Criteria
+
 - `make ci` passes
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
+
+---
 ```
 
 | Rule | Statement |
@@ -144,12 +153,14 @@ A marker is an HTML comment on a line of its own:
 | Canonical form | `<!--docz:<kind>:start-->` and `<!--docz:<kind>:end-->`, no interior spaces, matching the ToC marker spelling |
 | Kind | `[a-z][a-z0-9-]*`; kind names are open, docz assigns meaning to the catalogue in §2 |
 | Placement | The whole trimmed line is the marker. Trailing text makes it not a marker. |
+| Headings | A region wraps its own heading: `#### Tasks` sits inside the `tasks` region and the `### Phase N:` heading inside the `phase` region, which is also how the migration pass cuts a span (§6) |
+| Thematic breaks | The `---` separators the IMPL template puts between phases sit outside every region |
 | Lenient read | Optional whitespace after `<!--`, around the `docz:` token, and before `-->` is accepted and reported as a spelling finding, canonicalized by the fixer (INV-0009 Finding 4) |
 | Fences | Inherited from `docparse`: a marker inside a fenced block is text |
 | Nesting | Regions nest by a stack. An end marker closes the innermost open region of the same kind; an end marker with no matching open region is stray; a region still open at end of file ends there. |
 | Repetition | Any kind may repeat at the same depth (phases). The catalogue says which kinds are singletons; repeating one is a finding, not a walker error. |
 | Legacy ToC | `<!--toc:start-->` and `<!--toc:end-->` keep their spelling for Marksman compatibility and are reported as kind `toc` |
-| Index markers | The README `DOCZ AUTO-GENERATED` pair is an index concern and is not reported |
+| Index markers | The README `DOCZ AUTO-GENERATED` pair is reported as kind `index` under its legacy spelling if Open Question 9 resolves (a); otherwise it stays an index-package concern and is not reported |
 
 The walker is two fact functions in `docparse`, additive to the frozen
 package and following its contract: bytes in, values out, no errors, never
@@ -212,7 +223,7 @@ Kinds docz assigns meaning to. Every other kind is well-formedness only.
 | `references` | all | yes | every top-level bullet contains a markdown link | validate |
 | `open-questions` | rfc, adr, design, inv | yes | `### N.` headings numbered contiguously from 1; each has lettered `- a.` options | validate; a future OQ resolver |
 | `decisions` | inv, adr | yes | a table with a Decision column | none |
-| `phase` | impl | no | first level-3 heading inside matches `Phase <token>:`; tokens unique across the document | `impl.Parse` |
+| `phase` | impl | no | first level-3 heading inside matches `Phase <token>:` once HTML comments are stripped (the template's placeholder title is a comment); tokens unique across the document | `impl.Parse` |
 | `tasks` | impl, inside `phase` | per phase | every top-level bullet is a checkbox item; nested checkboxes are a warning | `impl.Parse`, `docwrite` |
 | `criteria` | impl, inside `phase` | per phase | dash bullets, folded | `impl.Parse` |
 | `testing` | impl | yes | checkboxes allowed; never tasks | `impl.Parse` excludes |
@@ -388,7 +399,7 @@ The replacement rows:
 
 | Element | Rule | Replaces |
 | ------- | ---- | -------- |
-| Phase | A `phase` region at depth 0. The first level-3 heading inside it is the phase heading; its text must match `^Phase\s+([^\s/:]+):\s*(.*)$` for the token and title, else `impl.phase.no-heading`. | "a level-3 heading whose text matches …; span ends at the next heading of level ≤ 3" |
+| Phase | A `phase` region at depth 0. The first level-3 heading inside it is the phase heading; its text, with inline markdown and HTML comments stripped, must match `^Phase\s+([^\s/:]+):\s*(.*)$` for the token and title, else `impl.phase.no-heading`; a title empty after stripping is the `impl.phase.no-title` warning. | "a level-3 heading whose text matches …; span ends at the next heading of level ≤ 3" |
 | Tasks span | The `tasks` region at depth 1 inside the phase | "the `#### Tasks` sub-span when present, else the whole phase span" |
 | Criteria | The `criteria` region at depth 1 inside the phase; absent means `Criteria == nil` | "top-level dash bullets under `#### Success Criteria`" |
 | Outside phases | Any checkbox outside a `tasks` region is not a task; the `testing` region needs no special case | "checkboxes under `## Testing Plan` or any level-2 section are not tasks" |
@@ -439,8 +450,10 @@ flowchart TD
 
 Rules: a document that already has any `docz:` region is never given more
 (idempotent by construction); a span is the heading through the line before
-the next heading of the same or shallower level; markers are inserted on
-their own lines with a blank line preserved on each side; the pass runs
+the next heading of the same or shallower level, minus trailing blank lines
+and a trailing `---`, so the thematic breaks between phases stay outside the
+regions; markers are inserted on their own lines with a blank line
+preserved on each side; the pass runs
 `Regions` on its own output and refuses to write a document whose result
 is malformed. Every fleet repo runs it once, reviews the diff, and commits;
 after that `docz validate` keeps it true.
@@ -658,6 +671,23 @@ target repos run the migration pass before the loop is pointed at them.
   declare `<!--docz:risks:start-->` and validate checks pairing, nesting,
   and presence but no content rule. *(recommendation)*
 - b. Warn on kinds outside the catalogue.
+- c. Other.
+
+### 9. Should the ToC and index splices sit on the region walker?
+
+Both existing splices find their markers with `strings.Cut` and their own
+spellings; the review asked how much existing behaviour the markers can
+absorb.
+
+- a. **Internally yes, externally nothing changes.** `Regions` reports
+  `<!--toc:start-->` as kind `toc` and the README `DOCZ AUTO-GENERATED`
+  pair as kind `index`, both under their legacy spellings; `toc.UpdateToC`
+  and `index.Splice` locate their span through it. One marker walker
+  module-wide, and validate's `toc.stale` check reads the same span the
+  splicer writes. The frozen `toc` behaviour stays pinned by its golden.
+  *(recommendation)*
+- b. Leave both splices alone; `Regions` reports `toc` for validation
+  only and never sees the index pair.
 - c. Other.
 
 ## References

@@ -547,11 +547,16 @@ type InitReport struct { Files []InitFile } // .docz.yaml, each type dir, each R
 type ExportOptions struct { Overwrite bool }
 type ExportResult struct { Path string; Overwritten bool }
 
-var ErrNotFound     = errors.New("document not found")       // Find, FindIn, SetStatus
-var ErrTypeDisabled = errors.New("document type is disabled") // Scan, Create on a disabled type
-var ErrExists       = errors.New("file exists")               // Init without Force, ExportTemplate without Overwrite
+// Typed errors everywhere (Open Question 9, resolved b): every failure a
+// caller may branch on carries its facts, and cmd/ maps them to exit codes
+// with errors.As. UnknownTypeError wraps config.ErrUnknownType so the frozen
+// sentinel still answers errors.Is.
+type NotFoundError      struct { Type, ID string }                        // Find, FindIn, SetStatus
+type TypeDisabledError  struct { Type string }                            // Scan, Create on a disabled type
+type ExistsError        struct { Path string }                            // Init without Force, ExportTemplate without Overwrite
 type InvalidStatusError struct { Type, Status string; Allowed []string }
-// config.ErrUnknownType passes through from ValidateType, wrapped with the token.
+type UnknownTypeError   struct { Token string; Valid []string }           // Unwrap() returns config.ErrUnknownType
+type WriteError         struct { Path string; Err error }                 // Unwrap() returns Err
 ```
 
 What each write does, in order:
@@ -605,7 +610,7 @@ sequenceDiagram
   participant R as repo.SetStatus
   participant W as docwrite
   cmd->>R: SetStatus(ctx, "design", "DESIGN-0013", "Abandoned", {DryRun})
-  R->>R: FindIn → Entry (ErrNotFound → exit 1 in cmd)
+  R->>R: FindIn → Entry (NotFoundError → exit 1 in cmd)
   R->>R: status ∈ Types[t].Statuses? (InvalidStatusError → exit 2)
   alt Old == New or DryRun
     R-->>cmd: StatusResult{Changed:false | DryRun}
@@ -618,9 +623,9 @@ sequenceDiagram
 
 Rules the package keeps: `List` and `Update` with `nil` types iterate
 `Cfg.EnabledTypes()` (built-ins first, custom sorted), so custom types are
-never skipped; `Scan` on a disabled type returns `ErrTypeDisabled` rather
-than an empty slice, which is what `cmd/update.go`'s debug "type disabled,
-skipping" branch tests today; `Init` writes `.docz.yaml` via
+never skipped; `Scan` on a disabled type returns a `TypeDisabledError`
+rather than an empty slice, which is what `cmd/update.go`'s debug "type
+disabled, skipping" branch tests today; `Init` writes `.docz.yaml` via
 `doctemplate.DefaultConfigYAML`, creates each enabled type's directory, and
 writes `index.Scaffold(header)` per README, reporting one `InitFile` each;
 `ExportTemplate` with an empty destination is `docz template override`.
@@ -651,9 +656,9 @@ type Phase struct {
     Index       int         // 1-based ordinal among phases, document order
     Token       string      // heading token: "1", "A", "2B" — equals Index for template docs
     Title       string      // text after "Phase <token>:", inline markdown stripped
-    Description string      // prose between the heading and "#### Tasks", trimmed, comments removed
+    Description string      // prose between the phase heading and its first nested region, trimmed, comments removed
     Tasks       []Task
-    Criteria    []Criterion // nil when the phase has no "#### Success Criteria"
+    Criteria    []Criterion // nil when the phase has no criteria region
     Line        int         // heading line, 1-based
 }
 
@@ -806,7 +811,7 @@ tolerances for the fleet's hand-written documents (INV-0010) are unchanged.
 | Element | Rule | Source |
 | ------- | ---- | ------ |
 | Frontmatter | `document.ParseFrontmatter`; `ErrNoFrontmatter` is fatal | facts layer |
-| Phase | A `phase` region at depth 0. The first level-3 heading inside it is the phase heading; its stripped text matches `^Phase\s+([^\s/:]+):\s*(.+)$` for the token and title, else the `impl.phase.no-heading` finding. Headings outside a region (`### Phase 1` under File Changes) are never phases. | DESIGN-0015 §5; the regex now reads the token, it no longer finds the span |
+| Phase | A `phase` region at depth 0. The first level-3 heading inside it is the phase heading; its text, with inline markdown and HTML comments stripped, matches `^Phase\s+([^\s/:]+):\s*(.*)$` for the token and title, else the `impl.phase.no-heading` finding. A title empty after stripping (the template's placeholder is a comment) is the `impl.phase.no-title` warning. Headings outside a region (`### Phase 1` under File Changes) are never phases. | DESIGN-0015 §5; the regex now reads the token, it no longer finds the span; `impl.md` line 39 |
 | Phase token and ID | Token is capture 1; duplicate tokens → `DuplicatePhaseError`; `Index` is the 1-based ordinal | the corpus is numeric and contiguous |
 | Description | Lines strictly between the phase heading and the first depth-1 region inside the phase, HTML comments removed, trimmed | template guidance lives in comments |
 | Tasks span | The `tasks` region at depth 1 inside the phase; a phase without one yields the `impl.phase.no-tasks` finding and no tasks | DESIGN-0015 §5 |
@@ -820,6 +825,30 @@ tolerances for the fleet's hand-written documents (INV-0010) are unchanged.
 | Outside phases | Any checkbox outside a `tasks` region is not a task; the `testing` region needs no special rule | DESIGN-0015 §5 |
 | Fences | Inherited from `docparse`: nothing inside a fence is a heading or a task | facts layer |
 | Line endings | LF only; any CR → error, matching `docwrite` | DESIGN-0005 Decision 7 |
+
+**Continuation folding, worked** (Open Question 2). This repo wraps markdown
+at 80 columns, so most task bullets run onto indented follow-on lines, and
+`docparse.TaskItems` reports only the first line of each. `impl` folds the
+rest:
+
+```markdown
+- [ ] Add `docparse.Regions` with fence-aware marker matching and
+      byte-accurate lines, following the `Headings` walker.
+      Verify: `go test ./pkg/doczcore/docparse/...` passes
+- [ ] Document the walker — deferred: needs the kind catalogue first
+```
+
+That yields two tasks. The first has `Text` "Add `docparse.Regions` with
+fence-aware marker matching and byte-accurate lines, following the
+`Headings` walker.", `Verify` "go test ./pkg/doczcore/docparse/...",
+`Line` 1, and `EndLine` 3. The second has `Text` "Document the walker",
+`Deferred.Note` "needs the kind catalogue first", and `Line` and `EndLine`
+both 4. A follow-on line counts when it is non-blank, indented deeper than
+the bullet, and not itself a list item; a blank line or a nested list item
+ends the task. The verify line is matched case-insensitively, its first
+backtick span is the command, and prose after the span ("passes") is
+ignored rather than rejected, because docz-api's IMPL-0004 wrote four such
+lines by hand and they must parse.
 
 The line walker inside the tasks span is a small state machine; it is the
 only place `impl` reads raw lines:
@@ -873,7 +902,7 @@ narration to the logger (§7), so `--verbose` output is unchanged.
 | `docz create <type> <title>` | `repo.Create(CreateOptions{Type, Title, Author, Status, Now, Update: !noUpdate})`, then `wiki.UpdateNav` if `Wiki.AutoUpdate` | author resolution via `GitResolver`, printing |
 | `docz update [type]` | `repo.Update(types, UpdateOptions{DryRun})` | wording per `TypeReport`; the #95 near-miss warning over `ToC.Skipped` |
 | `docz list [type]` | `repo.List(types)` | `--status` filter, text/json/csv rendering of `listEntry` |
-| `docz status set <type> <id> <status>` | `repo.SetStatus(type, id, status, StatusOptions{DryRun})` | `errors.Is` → exit 1 (`ErrNotFound`, write error) or exit 2 (`ErrUnknownType`, `InvalidStatusError`, `ErrUnsupportedLineEndings`); text/json |
+| `docz status set <type> <id> <status>` | `repo.SetStatus(ctx, type, id, status, StatusOptions{DryRun})` | `errors.As` → exit 1 (`NotFoundError`, `WriteError`) or exit 2 (`UnknownTypeError`, `InvalidStatusError`, `ErrUnsupportedLineEndings`); text/json |
 | `docz template show <type>` | `repo.Template(type)` | printing |
 | `docz template export <type> [path]` | `repo.ExportTemplate(type, path, ExportOptions{})` | printing |
 | `docz template override <type>` | `repo.ExportTemplate(type, "", ExportOptions{})` | printing |
@@ -1326,7 +1355,9 @@ gitGraph
   merge feat/cmd-swap id: "minor" tag: "v1.3.0"
 ```
 
-Steps 1–4 each leave the CLI on its current code paths, so a `main` build
+One IMPL document covers this design and DESIGN-0015 together, one phase
+per step above (Open Question 11). Steps 1–4 each leave the CLI on its
+current code paths, so a `main` build
 at any point behaves exactly like v1.2.2 for CLI users while carrying the
 new packages for library consumers. Beta pinning uses pseudo-versions
 unless a consumer asks for a tag (ADR-0002 Open Question 3). Step 5 is the
@@ -1349,8 +1380,34 @@ diagrams render in the wiki).
 > are alternatives, and the last is a free-form "other". Questions 2–4 are
 > DESIGN-0013's 4–6, carried over unresolved; question 1 was DESIGN-0013's 3
 > and is restated for regions.
+>
+> **Update 2026-09-19:** all twelve questions are resolved — see the
+> Decisions table. DESIGN-0015's own questions remain open.
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Phase and task grammar | (a), corrected against `impl.md`: HTML comments are stripped from the phase heading before the token regex and an empty title is a warning; a region wraps its own heading; the `---` separators sit outside every region |
+| 2 | Continuation folding and verify lines | (a); worked example added to §3 |
+| 3 | Marker parsing on the read side | (a) lenient |
+| 4 | Criteria classification | (a) as issue #100 states |
+| 5 | Creation without I/O | (a) `NextNumber` plus `Render` |
+| 6 | Resolving a document by ID | (a) both `Find` and `FindIn` |
+| 7 | Status no-op short-circuit | (a) in `repo.SetStatus`, reported as `Changed: false` |
+| 8 | How much of wiki is orchestration | (a) `Init` and `UpdateNav` in `pkg/wiki` |
+| 9 | Error shapes in repo | **(b) typed errors everywhere** — the typed API should give all of its benefits; §2.8 updated |
+| 10 | Generic facts for the next type package | **superseded by DESIGN-0015**: regions are the typed spans a future package would want, and `Repo.Find` already maps a prefix to a type through config; both helpers dropped |
+| 11 | Delivery granularity | **one IMPL covering this design and DESIGN-0015 together**, a phase per rollout step; designs map to IMPLs many-to-one when they ship as a unit |
+| 12 | Hooks for wiki | (a) none; the nav report is enough |
 
 ### 1. Phase and task grammar
+
+> **Resolved 2026-09-19: (a)**, after checking the assumptions against
+> `internal/template/templates/impl.md`: the template's phase title is an
+> HTML comment placeholder, so comments are stripped before the token
+> regex and an empty title is the `impl.phase.no-title` warning; the
+> `#### Tasks` and `#### Success Criteria` headings sit inside their
+> regions; the `---` separators between phases sit outside every region.
+> DESIGN-0015 §1, §5, and §6 carry the same corrections.
 
 - a. **Phases are `phase` regions; the token comes from the first level-3
   heading inside; `tasks` and `criteria` are nested regions; top-level
@@ -1365,6 +1422,9 @@ diagrams render in the wiki).
 
 ### 2. Continuation folding and verify lines
 
+> **Resolved 2026-09-19: (a).** The worked example in §3 shows the fold,
+> the verify extraction, and the marker removal on a real-shaped task.
+
 - a. **Fold continuations into `Text`; verify is case-insensitive, first
   backtick span, trailing prose ignored** — the four hand-written docz-api
   lines parse. *(recommendation)*
@@ -1376,6 +1436,8 @@ diagrams render in the wiki).
 
 ### 3. Marker parsing on the read side
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **Lenient**: `deferred` after any dash, prefix or suffix, emphasis
   tolerated; strikethrough plus `skipped:` after any dash. Canonical
   spellings are documented for writers (consumers), not enforced by the
@@ -1384,6 +1446,8 @@ diagrams render in the wiki).
 - c. Other.
 
 ### 4. Criteria classification
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **As issue #100 states**: executable iff the bullet starts with a
   backtick span; the caveat that symbol-subject criteria (about a tenth in
@@ -1394,6 +1458,8 @@ diagrams render in the wiki).
 - d. Other.
 
 ### 5. Creation without I/O
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **`NextNumber(dir, width)` plus `Render(opts, number)`**, with `Create`
   composed from them. Two small functions; a no-checkout consumer supplies
@@ -1408,6 +1474,8 @@ diagrams render in the wiki).
 
 ### 6. Resolving a document by ID
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **Both `Find(id)` and `FindIn(type, id)`.** `Find` derives the type
   from the prefix through `ValidateType` (which already resolves
   `id_prefix` tokens, and `validateResolution` guarantees uniqueness) and
@@ -1419,6 +1487,10 @@ diagrams render in the wiki).
 - d. Other.
 
 ### 7. Where the status no-op short-circuit lives
+
+> **Resolved 2026-09-19: (a).** DESIGN-0005 Decision 8 is superseded for
+> the library path; the CLI's output is unchanged because it prints from
+> the result.
 
 DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 
@@ -1432,6 +1504,8 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 
 ### 8. How much of wiki is orchestration
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **`Init` and `UpdateNav` live in `pkg/wiki`.** They are the two things
   a consumer would otherwise copy from `cmd/wiki.go`, and the primitives
   stay exported for anyone who wants a different composition.
@@ -1443,6 +1517,13 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 - d. Other.
 
 ### 9. Error shapes in repo
+
+> **Resolved 2026-09-19: (b)** — typed errors everywhere. Review rationale:
+> a typed API should deliver all of its benefits, and a caller that can
+> `errors.As` into `NotFoundError{Type, ID}` should not have to re-derive
+> those facts from a message. `UnknownTypeError` unwraps to the frozen
+> `config.ErrUnknownType` so `errors.Is` keeps working. §2.8 and the
+> `status set` row in §4 are updated.
 
 - a. **Sentinels for the yes/no cases (`ErrNotFound`, `ErrTypeDisabled`,
   `ErrExists`) and one typed `InvalidStatusError` carrying the allowed
@@ -1457,6 +1538,14 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 
 ### 10. Generic facts for the next type package
 
+> **Resolved 2026-09-19: superseded by DESIGN-0015.** The question asked
+> whether to add two helpers ahead of a second type package: a
+> level-2-heading span reader (`docparse.Sections`) and an ID-prefix-to-type
+> mapper (`document.Kind`). Regions make the first redundant — typed spans
+> are exactly what the next package wants, and heading spans are the
+> heuristic being retired — and `Repo.Find` already does the second
+> through `config.ValidateType`. Both are dropped.
+
 - a. **Defer** `docparse.Sections` and `document.Kind` until a second type
   package exists; the shapes are noted so they are not redesigned.
   *(recommendation)*
@@ -1465,6 +1554,11 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 
 ### 11. Delivery granularity
 
+> **Resolved 2026-09-19: one IMPL covering this design and DESIGN-0015
+> together**, a phase per rollout step with the swap last. Designs and
+> IMPLs are not one-to-one: designs that ship as a unit are consumed by a
+> single IMPL.
+
 - a. **One IMPL document with a phase per rollout step** (five phases, the
   swap last), so the unit of delivery matches the unit of design and the
   acceptance criteria of the last phase are the swap's. *(recommendation)*
@@ -1472,6 +1566,12 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 - c. Other.
 
 ### 12. Hooks for wiki
+
+> **Resolved 2026-09-19: (a).** Hooks would give the wiki almost nothing:
+> `UpdateNav` is one YAML read, a title walk over the docs tree, and one
+> YAML write, and the two debug lines `cmd/wiki.go` logs today are
+> derivable from `NavReport` after the call. Cancelling the title walk on
+> a large tree is what matters, and the context covers that.
 
 - a. **None; the nav report is enough.** `wiki.Init` and `UpdateNav` take a
   context for cancellation and return reports; the two debug lines
