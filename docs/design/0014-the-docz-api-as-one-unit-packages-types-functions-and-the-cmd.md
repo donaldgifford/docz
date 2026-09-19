@@ -76,12 +76,14 @@ no release carries one design without the other.
 - **Specify the complete API once.** After this design, building the
   library is an IMPL with phases, not further design.
 - **Every CLI command is one library call plus printing.** The swap PR's
-  `cmd/` diff proves the API is complete.
-- **Byte cores under every path helper** (ADR-0002 R3), so no-checkout
-  consumers (tempy, docz-api) are first-class for mutation as well as
-  reading.
+  `cmd/` diff proves the API is complete, and the parity suite (§4) proves
+  it reproduces v1.2.2 byte for byte. That is how the API is validated: the
+  CLI is the real-world test, and no external consumer is part of it.
+- **Byte cores under every path helper** (ADR-0002 R3), so a no-checkout
+  consumer — the shape tempy and docz-api have — is first-class for
+  mutation as well as reading.
 - **`pkg/impl` fully specified** — surface, grammar, identity rules — with
-  `Doc` as the root type, so tempy can pin it before anything else lands.
+  `Doc` as the root type.
 - **Typed results everywhere; wording nowhere but `cmd/`** (R4).
 - **No CLI behaviour change** from the swap (ADR-0001 Decision 7).
 - **DESIGN-0015 ships in the same unit.** Region markers, the validator,
@@ -971,10 +973,12 @@ Expected size: `cmd/` non-test lines fall from about 4 600 to roughly half.
 | `wiki` | yes | — | — | — |
 | `validate` | yes | maybe (workspace gate) | — | yes (ingest warnings) |
 
-The CLI and tempy are the consumers this unit is built for and tested
-against. docz-api and sdk-booty-sh pin v1 and are unaffected by it; their
-columns record what each would use if and when it moves to v2, which is a
-separate decision made in that repo, not an obligation of this release.
+The CLI is the consumer this unit is built for and validated against. The
+other three columns are awareness, not scope: the packages each external
+consumer relies on today, or would, kept so the API is not shaped in a way
+that strands them. None of them is part of this work. tempy's adoption,
+and any move of docz-api or sdk-booty-sh off v1, happens in that repo
+after the API and the CLI are done.
 
 ```mermaid
 flowchart LR
@@ -987,11 +991,12 @@ flowchart LR
   impl --> document & docparse & config
 ```
 
-No consumer needs a package it does not import: a tempy binary compiles
-`impl`, `validate` (for the `Finding` type), `docwrite`, `doctemplate`
-(through `docwrite.Create`'s dependency — the one ride-along ADR-0001
-accepted), `document`, `docparse`, `config`, and `yaml.v3`. Nothing from
-`repo`, `index`, `toc`, or `wiki`, and no telemetry module from anywhere.
+No consumer needs a package it does not import: a binary that wants only
+the IMPL model compiles `impl`, `validate` (for the `Finding` type),
+`docwrite`, `doctemplate` (through `docwrite.Create`'s dependency — the
+one ride-along ADR-0001 accepted), `document`, `docparse`, `config`, and
+`yaml.v3`. Nothing from `repo`, `index`, `toc`, or `wiki`, and no
+telemetry module from anywhere.
 
 ### 6. Enforcing the layer rules
 
@@ -1355,7 +1360,7 @@ timeline
   section Module path
     go.mod becomes docz/v2 : parity goldens captured from v1.2.2
   section Type layer first
-    docparse Markers and Regions : validate package : pkg/impl Parse and Doc over regions : docwrite byte cores and Render : templates gain markers : consumer proof : tempy pins a pseudo-version
+    docparse Markers and Regions : validate package : pkg/impl Parse and Doc over regions : docwrite byte cores and Render : templates gain markers : consumer proof
   section Promotions
     internal/template → doctemplate with DefaultConfigYAML : internal/index → index with Splice and Scaffold : internal/wiki → pkg/wiki with Init and UpdateNav
   section Repository core
@@ -1366,15 +1371,22 @@ timeline
     cmd/ re-pointed, tests unchanged : docz validate and update --regions : docs/ migrated : EXPERIMENTAL removed : ADR-0001 amended : CLAUDE.md README
 ```
 
-| Step | Delivers | PR label | Consumer signal |
-| ---- | -------- | -------- | --------------- |
-| 0 | Module path → `github.com/donaldgifford/docz/v2` (`go.mod`, every import, `Makefile` and `.goreleaser.yml` ldflags, `test/consumer`); parity goldens captured from the v1.2.2 binary into `test/parity/` | `dont-release` | v1.x tags keep the old path; a `v1` branch is cut from v1.2.2 only on demand |
-| 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers; consumer proof | `dont-release` | tempy IMPL-0001 pins `docz/v2@<sha>` and migrates its target repos' docs; sdk-booty-sh issue to migrate `doczwork` |
-| 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); `internal/` emptied | `dont-release` | — |
-| 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions` | `dont-release` | — |
-| 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` | claude-skills issue |
-| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue | `major` → v2.0.0 | tempy re-pins the tag. docz-api and sdk-booty-sh pin v1 and are unaffected; moving either to v2 is its own later decision |
-| — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v2.1.0 | — | docz-api #36 unchanged |
+| Step | Delivers | PR label |
+| ---- | -------- | -------- |
+| 0 | Module path → `github.com/donaldgifford/docz/v2` (`go.mod`, every import, `Makefile` and `.goreleaser.yml` ldflags, `test/consumer`); parity goldens captured from the v1.2.2 binary into `test/parity/`. v1.x tags keep the old path; a `v1` branch is cut from v1.2.2 only on demand | `dont-release` |
+| 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers and its schema skeleton; consumer proof | `dont-release` |
+| 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); schema resolution; `internal/` emptied | `dont-release` |
+| 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions`; `ExportTemplate` scaffolds custom types | `dont-release` |
+| 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` |
+| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue for the plugin's bundled templates | `major` → v2.0.0 |
+| — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v2.1.0 | — |
+
+The table has no consumer column on purpose. The API is step one; the
+CLI's migration onto it is step two and the validation of step one, by
+byte-for-byte comparison against v1.2.2 (§4). tempy, docz-api, and
+sdk-booty-sh are not part of this work: what they rely on is recorded in
+§5 so the API is shaped with them in mind, and their adoption happens in
+their own repos once the API and the CLI are done.
 
 ```mermaid
 gitGraph
@@ -1383,7 +1395,7 @@ gitGraph
   branch feat/impl
   commit id: "regions, validate, pkg/impl, byte cores"
   checkout main
-  merge feat/impl id: "dont-release" tag: "tempy pins @sha"
+  merge feat/impl id: "dont-release"
   branch feat/promote
   commit id: "doctemplate, index, wiki"
   checkout main
@@ -1406,8 +1418,9 @@ One IMPL document covers this design and DESIGN-0015 together, one phase
 per step above (Open Question 11). Steps 0–4 each leave the CLI on its
 current code paths, so a `main` build at any point behaves exactly like
 v1.2.2 for CLI users while carrying the new packages for library consumers.
-Pre-release pinning uses v2 pseudo-versions unless a consumer asks for an
-rc tag (ADR-0002 Open Question 3). Every PR from step 0 through step 4 is
+No external consumer pins during the build; if one ever needs to, v2
+pseudo-versions exist without a tag (ADR-0002 Open Question 3). Every PR
+from step 0 through step 4 is
 `dont-release`: once the module path is `/v2`, a `patch` or `minor` label
 would tag a v1 version that `go get` rejects for a `/v2` module. Step 5
 carries `major` and releases v2.0.0; its release notes are the library

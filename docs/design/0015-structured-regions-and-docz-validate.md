@@ -716,11 +716,12 @@ additions are:
 | 2, promotions | `doctemplate.ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` |
 | 3, repository core | `repo.Validate` with the template check, `repo.InsertRegions`; `repo.ExportTemplate` scaffolds custom types |
 | 5, the swap | `docz validate`, `docz update --regions`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
-| after the release | tempy's target repos have already run `docz update --regions` (below). docz-api and sdk-booty-sh pin v1 and are unaffected: markers are HTML comments and a `schema:` line is an unknown key to a v1 parser, so a migrated corpus reads as before. Each moves to v2, and adopts `validate` if it wants it, by its own decision |
+| after the release | nothing in this repo. External consumers are not part of this work: docz-api and sdk-booty-sh pin v1 and read a migrated corpus as before, since markers are HTML comments and a `schema:` line is an unknown key to a v1 parser; tempy, and any repo that wants regions, runs `docz update --regions` on its own docs when it adopts v2, in its own repo |
 
-Because `impl.Parse` locates spans by region from its first commit, tempy's
-beta pin (DESIGN-0014 step 1) already expects migrated documents; tempy's
-target repos run the migration pass before the loop is pointed at them.
+`impl.Parse` locates spans by region from its first commit, so any
+document it is pointed at must have been migrated first. docz's own
+`docs/` are migrated in the swap PR; the parity suite's fixtures carry
+markers from the start.
 
 ## Open Questions
 

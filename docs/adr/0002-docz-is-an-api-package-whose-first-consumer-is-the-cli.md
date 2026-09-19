@@ -193,7 +193,11 @@ implies.
    `doctemplate`, and `wiki`, the new `repo` core, `pkg/impl`, the region
    walker, and the validator. Packages land on `main` additively
    under `dont-release` PRs as they are built; the CLI keeps its current
-   code paths throughout; beta consumers pin the commit they need. The final
+   code paths throughout. No external consumer is part of this work: the
+   API is step one, and the CLI's migration onto it is both step two and
+   the validation of step one. tempy, docz-api, and sdk-booty-sh are
+   awareness only — the packages they rely on shape the API (DESIGN-0014
+   §5) — and their moves happen in their own repos, afterwards. The final
    step is one PR that re-points `cmd/` at the library with no change to
    commands, flags, output, or exit codes (ADR-0001 Decision 7, the CLI
    benchmark, still binding). That PR carries the `major` label and
@@ -291,8 +295,9 @@ implies.
   what a phase is.
 - **Consumers stay in charge of their workflows.** tempy and sdk-booty-sh
   keep their policy; docz gives them exact lines to act on.
-- **Beta consumers are unblocked early** without a release: the packages
-  are on `main` and pinnable while the CLI is untouched.
+- **The CLI is untouched until the swap.** Every landing before it is
+  additive, so `main` behaves as v1.2.2 for CLI users throughout the
+  build.
 
 ### Negative
 
