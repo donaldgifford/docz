@@ -20,7 +20,7 @@ created: 2026-09-14
   - [1. Module layout and dependency graph](#1-module-layout-and-dependency-graph)
   - [2. Package specifications](#2-package-specifications)
     - [2.1 config (L0, unchanged)](#21-config-l0-unchanged)
-    - [2.2 document (L0, unchanged)](#22-document-l0-unchanged)
+    - [2.2 document (L0, additive)](#22-document-l0-additive)
     - [2.3 docparse (L0, additive)](#23-docparse-l0-additive)
     - [2.4 docwrite (L1, additive)](#24-docwrite-l1-additive)
     - [2.5 toc (L1, unchanged)](#25-toc-l1-unchanged)
@@ -266,7 +266,7 @@ canonical type, which is what `repo.Find` needs to map `IMPL-0017` to
 shape. Rendering the default `.docz.yaml` is *not* added here — it needs
 the template embed, which is `doctemplate`'s (§2.7).
 
-#### 2.2 document (L0, unchanged)
+#### 2.2 document (L0, additive)
 
 ```go
 package document // import "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
@@ -274,7 +274,7 @@ package document // import "github.com/donaldgifford/docz/v2/pkg/doczcore/docume
 var DoczFilePattern *regexp.Regexp
 var ErrNoFrontmatter, ErrNoVersions error
 
-type Frontmatter struct { ID, Title string; Status config.Status; Author, Created string }
+type Frontmatter struct { ID, Title string; Status config.Status; Author, Created string; Schema string } // Schema: new, optional, DESIGN-0015 §3
 type DocEntry struct { Frontmatter; Filename string; Content []byte }
 type Changelog, ChangelogVersion, ChangelogGroup struct
 
@@ -424,6 +424,7 @@ and template contents outside the contract.
 package doctemplate // import "github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 
 var ErrNoTemplate error // no embedded, on-disk, or configured template for the type
+var ErrNoSchema   error // no on-disk or embedded schema of that name (DESIGN-0015 §3)
 
 type Data struct { Number, Title, Date, Author string; Status config.Status; Type config.DocType; Prefix, Slug, Filename string }
 type IndexHeaderData struct { TypeName, PluralLabel string }
@@ -438,6 +439,9 @@ func RenderWikiIndex(tmpl string, data *WikiIndexData) (string, error)
 func FilenameSlug(title string) string
 func EmbeddedDocumentTemplate(docType config.DocType) (string, error)
 func EmbeddedWikiIndex() (string, error)
+func GenericTemplate() (string, error)                    // new: embedded default.md, scaffolding for a custom type (DESIGN-0015 §3)
+func ResolveSchema(name, docsDir string) ([]byte, error)  // new: <docsDir>/templates/schema/<name>.md → embedded schema/<name>.md
+func EmbeddedSchema(name string) ([]byte, error)          // new: baked-in only, for consumers with no checkout
 func DefaultConfigYAML() (string, error) // new: docz_yaml.tmpl rendered over config.DefaultConfig()
 ```
 
@@ -545,7 +549,7 @@ type InitFile struct { Path string; Action InitAction }
 type InitReport struct { Files []InitFile } // .docz.yaml, each type dir, each README
 
 type ExportOptions struct { Overwrite bool }
-type ExportResult struct { Path string; Overwritten bool }
+type ExportResult struct { Path string; Overwritten bool; Scaffolded bool; SchemaPath string } // Scaffolded: no template resolved, the generic pair was written and SchemaPath names the schema file (DESIGN-0015 §3)
 
 // Typed errors everywhere (Open Question 9, resolved b): every failure a
 // caller may branch on carries its facts, and cmd/ maps them to exit codes
@@ -793,24 +797,27 @@ type SchemaRegion struct { Kind, Parent string }
 type Schema struct { Regions []SchemaRegion }
 type Options struct { Schema Schema; Type config.TypeConfig; Filename string }
 
-func SchemaFromTemplate(tmpl []byte) Schema
+func SchemaFromMarkers(b []byte) Schema // a skeleton, a template, or a document: only its markers count
 func Document(content []byte, opts Options) []Finding
 ```
 
-Type-agnostic and importing only L0. The schema is derived from the type's
-resolved template through `docparse.Markers`, so custom types are validated
-from their template alone. `impl.Validate` returns the same `Finding`;
+Type-agnostic and importing only L0. The schema is a marker skeleton the
+document names in frontmatter, baked in per built-in type or a file under
+`templates/schema/`, resolved by the caller through `doctemplate` and
+passed in `Options` (DESIGN-0015 §3); `Document` never resolves anything
+itself. `impl.Validate` returns the same `Finding`;
 `repo.Validate` runs `Document` over a tree and adds the ToC and index drift
 checks; `cmd/validate.go` composes the three because the core cannot import
 a type package (R2).
 
 ### 3. The IMPL grammar
 
-The grammar is a contract of the IMPL *type* (R7). Spans come from the
-regions the template declares (DESIGN-0015 §5), so a repo that overrides
-`impl.md` keeps the contract as long as the markers stay; the content rules
-inside a region belong to the type, and no template changes them. The
-tolerances for the fleet's hand-written documents (INV-0010) are unchanged.
+The grammar is a contract over the `phase`, `tasks`, and `criteria` kinds
+(R7). Spans come from regions (DESIGN-0015 §5); which kinds a document must
+carry is its schema's to say (DESIGN-0015 §3), and the content rules
+inside a region belong to this package, so neither a template override nor
+a schema changes them. The tolerances for the fleet's hand-written
+documents (INV-0010) are unchanged.
 
 | Element | Rule | Source |
 | ------- | ---- | ------ |
@@ -931,7 +938,7 @@ behaviour per handler and do not cross types.
 | `docz status set <type> <id> <status>` | `repo.SetStatus(ctx, type, id, status, StatusOptions{DryRun})` | `errors.As` → exit 1 (`NotFoundError`, `WriteError`) or exit 2 (`UnknownTypeError`, `InvalidStatusError`, `ErrUnsupportedLineEndings`); text/json |
 | `docz template show <type>` | `repo.Template(type)` | printing |
 | `docz template export <type> [path]` | `repo.ExportTemplate(type, path, ExportOptions{})` | printing |
-| `docz template override <type>` | `repo.ExportTemplate(type, "", ExportOptions{})` | printing |
+| `docz template override <type>` | `repo.ExportTemplate(type, "", ExportOptions{})`; a custom type with no template gets the generic template and schema pair (DESIGN-0015 §3) | printing |
 | `docz config` | `config.Load` (via `Open`) | YAML printing |
 | `docz wiki init` | `wiki.Init(root, cfg, InitOptions{…})` | site-name default from git, `.docz.yaml` precondition, printing |
 | `docz wiki update` | `wiki.UpdateNav(root, cfg, NavOptions{DryRun})` | nav tree printing |
@@ -958,7 +965,7 @@ Expected size: `cmd/` non-test lines fall from about 4 600 to roughly half.
 | `docwrite` | yes | `SetTaskStateBytes`, `SetStatusBytes` | `SetTaskStateBytes` | — |
 | `toc` | yes | — | — | — |
 | `index` | yes | — | — | maybe (`GenerateTable` for its own indexes) |
-| `doctemplate` | yes | — | — | — |
+| `doctemplate` | yes | — | — | `EmbeddedSchema` (DESIGN-0015 §3) |
 | `repo` | yes | — | — | — (no checkout) |
 | `impl` | `task list` | yes | yes (migrates off its own model) | maybe (progress rendering) |
 | `wiki` | yes | — | — | — |
@@ -969,7 +976,7 @@ flowchart LR
   cli["docz CLI"] --> repo & wiki & impl & validate
   tempy["tempy (GitHub API, no checkout)"] --> impl & docwrite
   booty["sdk-booty-sh doczwork"] --> impl & docwrite
-  api["docz-api (no checkout)"] --> document & docparse & config & validate
+  api["docz-api (no checkout)"] --> document & docparse & config & validate & doctemplate
   api -.-> index & impl
   repo --> docwrite & toc & index & doctemplate & document & config
   impl --> document & docparse & config
@@ -1156,12 +1163,12 @@ reports; whether they need hooks of their own is Open Question 12.
 | Package | Change | Kind | Frozen from |
 | ------- | ------ | ---- | ----------- |
 | `pkg/doczcore/config` | none | — | v1.0.0 |
-| `pkg/doczcore/document` | none | — | v1.0.0 |
+| `pkg/doczcore/document` | `Frontmatter.Schema` (DESIGN-0015 §3) | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); #96 fixes are bugs | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/docwrite` | `SetStatusBytes`, `SetTaskStateBytes`, `SetTaskState`, `NextNumber`, `Render`, `Rendered`, `ErrTaskAlreadyUnchecked` | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/toc` | none | — | v1.0.0 |
 | `pkg/doczcore/index` | promoted whole; `Splice`, `Scaffold`, marker constants exported | new public | v2.0.0 |
-| `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate` | new public | v2.0.0 |
+| `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate`; `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` and the embedded schema skeletons (DESIGN-0015 §3) | new public | v2.0.0 |
 | `pkg/doczcore/validate` | new (DESIGN-0015) | new public | v2.0.0 |
 | `pkg/doczcore/repo` | new; every method takes a context; `Hooks`; `Validate`, `InsertRegions` | new public | v2.0.0 |
 | `pkg/impl` | new; `Parse` over regions; `Validate` | new public | v2.0.0 |

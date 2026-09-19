@@ -19,7 +19,7 @@ created: 2026-09-19
 - [Detailed Design](#detailed-design)
   - [1. Marker syntax and the walker](#1-marker-syntax-and-the-walker)
   - [2. Kind catalogue](#2-kind-catalogue)
-  - [3. The template is the schema](#3-the-template-is-the-schema)
+  - [3. The schema: a marker skeleton the document names](#3-the-schema-a-marker-skeleton-the-document-names)
   - [4. Validation: generic, per-type, repository](#4-validation-generic-per-type-repository)
   - [5. Effect on the IMPL grammar](#5-effect-on-the-impl-grammar)
   - [6. Migrating the corpus](#6-migrating-the-corpus)
@@ -45,8 +45,9 @@ created: 2026-09-19
 
 docz documents get explicit structure: HTML-comment markers that delimit
 typed regions of a document, a fact-level walker that reports them, a
-validator that checks documents against the structure their template
-declares, and a `docz validate` command and library entry point over both.
+validator that checks documents against the schema they name — a marker
+skeleton baked in per built-in type or kept as a file in the repo — and a
+`docz validate` command and library entry point over both.
 The markers replace the heading-text heuristics that DESIGN-0014's IMPL
 grammar would otherwise need to find phases and task lists, give custom
 types checkable structure without a Go package per type, and make a
@@ -61,9 +62,9 @@ no release carries one without the other.
 - **Explicit spans.** A program finds a document's references, open
   questions, phases, tasks, and criteria by marker, never by matching
   heading text.
-- **Structure for every type, including custom ones,** from the template
-  alone. A repo that adds a `frameworks` type and puts regions in its
-  template gets the same validation as a built-in.
+- **Structure for every type, including custom ones,** without Go code. A
+  repo that adds a `frameworks` type gets a scaffolded template and schema
+  pair and the same validation as a built-in.
 - **A validator that is bytes in, findings out,** so docz-api validates a
   document it fetched over an API and the CLI validates a tree, from one
   implementation.
@@ -78,8 +79,8 @@ no release carries one without the other.
 
 - Attributes on markers. A marker names a kind and nothing else; the
   human-visible data stays in the headings and lists it delimits.
-- A schema language. The template is the schema; there is no separate
-  declaration file.
+- A schema language. A schema is a marker skeleton read by the same walker
+  as a document; there is nothing to learn beyond the markers.
 - Rendering. Markers are HTML comments and are invisible in every renderer
   docz targets. Nothing here changes how a document looks.
 - Replacing `docparse.Headings` or the ToC walker. Regions are one more
@@ -232,18 +233,138 @@ Kinds docz assigns meaning to. Every other kind is well-formedness only.
 The catalogue is data in the `validate` package, not an interface: a
 `map[string]KindRule`. Adding a kind is one entry.
 
-### 3. The template is the schema
+### 3. The schema: a marker skeleton the document names
 
-The resolved template for a type declares which regions a document of that
-type must have and how they nest. The validator reads the template through
-the same `Markers` walker, so a template override that adds or removes a
-region changes the requirement with no config edit. That keeps R7's
-distinction intact: *presence and nesting* are the template's to declare,
-and rightly so, since a repo that overrides `impl.md` is defining its own
-structure; *content rules inside a kind* belong to the kind and are not
-changed by any template.
+A schema is a markdown file whose body is nothing but region markers: the
+kinds a document must carry and how they nest. It is read by the same
+`Markers` walker as a document, so there is no schema language and nothing
+a schema can require that a document cannot show. Every kind listed is
+required at least once under the same parent. A kind not listed is
+optional, and when present it is still checked by its content rule (§2);
+singleton-ness stays with the kind. A schema therefore only tightens by
+growing, and adding a kind to a baked-in schema is a breaking change that
+waits for a major.
+
+The baked-in IMPL schema, `schema/impl.md` beside the embedded templates:
+
+```markdown
+<!--toc:start-->
+<!--toc:end-->
+<!--docz:phase:start-->
+<!--docz:tasks:start-->
+<!--docz:tasks:end-->
+<!--docz:criteria:start-->
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
+<!--docz:testing:start-->
+<!--docz:testing:end-->
+<!--docz:references:start-->
+<!--docz:references:end-->
+```
+
+The ToC pair keeps its legacy spelling here as everywhere (§1). The IMPL
+template's single placeholder phase and a document's five phases both
+satisfy the one `phase` entry, and a phase without a `tasks` region fails,
+because the schema nests `tasks` under `phase`.
+
+**A document names its schema in frontmatter.** The optional `schema:`
+field holds a name. Absent or empty means the document's type name, which
+is how every document created from a built-in template validates against
+the baked-in schema without carrying a line for it. A name is
+`[a-z0-9][a-z0-9_-]*`; anything else is the `schema.name` finding.
+
+```yaml
+---
+id: IMPL-0021
+title: "Runbook for the nightly rebuild"
+status: Draft
+schema: impl-strict
+---
+```
+
+Resolution lives in `doctemplate` beside template resolution, with the
+same on-disk-then-embedded order:
+
+| Source | Location | Covers |
+| ------ | -------- | ------ |
+| Repo | `<docs-dir>/templates/schema/<name>.md` | the repo's own schemas, and overrides of baked-in ones by name |
+| Baked-in | embedded `schema/<name>.md`, one per built-in type | versioned with the library |
+| Template | the type's resolved template, read for its markers | only when the name is the type's own and neither file exists: a custom type that has not scaffolded a schema |
+
+A name that resolves nowhere is the `schema.unresolved` finding, emitted by
+whichever tier does the resolving — `repo.Validate` in a checkout, docz-api
+over the API — because `Document` never touches a filesystem; validation
+then runs with an empty schema, which is well-formedness only. docz-api,
+with no checkout, reads `Frontmatter.Schema` from the bytes it fetched and
+calls `EmbeddedSchema` with the name or the type, so the common case
+validates from bytes alone and a repo-local schema it cannot fetch is
+reported rather than guessed.
+
+```mermaid
+flowchart LR
+  fm["frontmatter schema: name<br/>absent or empty → type name"] --> file{"templates/schema/name.md?"}
+  file -- yes --> skel["skeleton bytes"]
+  file -- no --> baked{"baked-in name?"}
+  baked -- yes --> skel
+  baked -- no --> own{"name is the<br/>document's type?"}
+  own -- yes --> tmpl["resolved template"] --> skel
+  own -- no --> unres["finding: schema.unresolved<br/>well-formedness only"]
+  skel -->|SchemaFromMarkers| schema["Schema{Regions}"]
+  doc["document bytes"] -->|Markers, Regions| check{"every schema kind present<br/>under the same parent?"}
+  schema --> check
+  check -- no --> missing["finding: region.missing"]
+  check -- yes --> content["per-kind content rules"]
+```
+
+**Templates are golden tests, not schemas.** An earlier draft derived the
+schema from the resolved template. Three things were wrong with that: a
+consumer with no checkout has no templates, so docz-api could not validate
+at all; the test "render every template, validate it, expect nothing"
+could not fail on structure, because a template always contains its own
+regions; and a template override that dropped a region silently loosened
+the contract, the opposite of R7. With the schema its own artifact that
+test is the check that a template and its schema agree, and it runs in two
+places: a unit test over every embedded pair, and `repo.Validate` over
+every enabled type's resolved pair (§4), so a repo that overrides a
+template or writes a custom one is told when the pair drifts. The built-in
+templates ship without a `schema:` line, so a file `docz create` writes is
+byte-identical to v1.2.2's apart from the markers.
+
+| | Built-in type | Custom type |
+| - | ------------- | ----------- |
+| Template | embedded; override at `templates/<type>.md` | `templates/<type>.md`, hand-written or scaffolded |
+| Schema | embedded; override at `templates/schema/<type>.md` | `templates/schema/<type>.md`, scaffolded with the template; until then, derived from the template |
+| A different contract | `schema:` in the template's frontmatter | the same, e.g. `schema: impl` on a type that wants phases, tasks, and criteria, which also gives it `impl.Parse` (ADR-0002 R7) |
+| Golden test | unit test in `doctemplate` | `repo.Validate`'s template check |
+
+**Scaffolding a custom type.** Today a custom type's template is written
+by hand and `docz template override <type>` fails for one, since there is
+nothing to copy. `repo.ExportTemplate` with no destination now scaffolds
+instead when no template resolves: it writes the embedded generic template
+`default.md` — frontmatter, title, a ToC pair, and a `references` region,
+the sections every type shares — as `templates/<type>.md`, and the matching
+`schema/default.md` as `templates/schema/<type>.md`, reporting both paths
+(DESIGN-0014 §2.8). A custom type then has the same two artifacts a
+built-in has and the same check over them. `docz create` is unchanged and
+still fails clearly for a custom type with neither file (issue #92).
 
 ```go
+package document
+
+// Frontmatter gains one optional field, additive to the frozen package.
+type Frontmatter struct {
+    // … existing fields …
+    Schema string `yaml:"schema,omitempty"` // "" when absent or empty
+}
+
+package doctemplate
+
+var ErrNoSchema error // no on-disk or embedded schema of that name
+
+func ResolveSchema(name, docsDir string) ([]byte, error) // <docsDir>/templates/schema/<name>.md → embedded schema/<name>.md
+func EmbeddedSchema(name string) ([]byte, error)         // baked-in only: what docz-api uses without a checkout
+func GenericTemplate() (string, error)                   // embedded default.md, for scaffolding a custom type
+
 package validate
 
 type SchemaRegion struct {
@@ -251,28 +372,15 @@ type SchemaRegion struct {
     Parent string // "" at the top level
 }
 
-// Schema is the set of region kinds a document must carry, derived from the
-// type's template. A kind present in the template is required at least once
-// under the same parent.
+// Schema is the set of region kinds a document must carry. Empty means
+// well-formedness only.
 type Schema struct{ Regions []SchemaRegion }
 
-func SchemaFromTemplate(tmpl []byte) Schema
+// SchemaFromMarkers derives a schema from anything that carries region
+// markers: a skeleton, a template, or a document. Everything else in the
+// bytes is ignored.
+func SchemaFromMarkers(b []byte) Schema
 ```
-
-```mermaid
-flowchart LR
-  tmpl["resolved template<br/>(config path → docs/templates → embedded)"] -->|Markers| schema["Schema{Regions}"]
-  doc["document bytes"] -->|Markers, Regions| facts["markers and regions"]
-  schema --> check{"every schema kind present<br/>under the same parent?"}
-  facts --> check
-  check -- no --> missing["finding: region.missing"]
-  check -- yes --> content["per-kind content rules"]
-```
-
-The IMPL template's phase is a placeholder that documents repeat, so the
-rule is "at least once under the same parent," which makes a document with
-five phases and a template with one both valid. A phase without a `tasks`
-region fails, because the template nests `tasks` under `phase`.
 
 ### 4. Validation: generic, per-type, repository
 
@@ -294,7 +402,7 @@ type Finding struct {
 }
 
 type Options struct {
-    Schema   Schema
+    Schema   Schema            // resolved by the caller (§3); empty is well-formedness only
     Type     config.TypeConfig // statuses, id_prefix, id_width
     Filename string            // for the id-versus-filename check; "" skips it
 }
@@ -316,6 +424,11 @@ Generic checks, by code family:
 | `tasks.*` | `not-checkbox`, `nested-checkbox` | error, warning |
 | `toc.*` | `stale`, `missing` | warning, warning |
 | `file.*` | `crlf`, `name` | error, error |
+| `schema.*` | `name`, `unresolved` | error, error |
+
+`schema.name` is `Document`'s; `schema.unresolved` is emitted by the tier
+that resolves names (§3), since `Document` only ever sees a resolved
+`Schema`.
 
 Per-type checks live in the type package, return the same `Finding` type,
 and see the document through `impl.Parse`'s eyes:
@@ -330,9 +443,14 @@ func Validate(doc []byte) []validate.Finding
 //        impl.task.empty, impl.task.verify-no-command, impl.task.skipped-no-note
 ```
 
-The repository tier walks a tree, resolves each type's schema once, runs the
-generic tier on every document, and adds the two drift checks that need
-the filesystem: a stale ToC and a stale README index.
+The repository tier walks a tree, resolves a schema per document by name
+(§3, cached by name for the run), runs the generic tier on every document,
+checks every enabled type's rendered template against the schema its type
+name resolves to, and adds the two drift checks that need the filesystem:
+a stale ToC and a stale README index. The template check renders the
+resolved template with placeholder data, so its frontmatter passes by
+construction, and skips ToC drift, since a template's ToC is filled at
+create time; anything it reports is structural drift between the pair.
 
 ```go
 package repo
@@ -346,8 +464,9 @@ type DocFindings struct {
 type IndexDrift struct{ Type, Path string } // README table differs from a fresh render
 
 type ValidateReport struct {
-    Docs     []DocFindings
-    Index    []IndexDrift
+    Docs      []DocFindings
+    Templates []DocFindings // each enabled type's rendered template against its schema
+    Index     []IndexDrift
     Errors   int
     Warnings int
 }
@@ -363,13 +482,18 @@ sequenceDiagram
   participant U as user
   participant cmd as cmd/validate.go
   participant R as repo.Validate
+  participant T as doctemplate
   participant V as validate
   participant I as impl
   U->>cmd: docz validate [type] [--strict] [--format json]
   cmd->>R: Validate(ctx, types, {Strict})
   loop each enabled type
-    R->>R: schema := SchemaFromTemplate(resolved template)
+    R->>T: Resolve(type) and ResolveSchema(type)
+    R->>V: Document(rendered template, {Schema}) without ToC drift
+    V-->>R: []Finding under Templates
     loop each document
+      R->>T: ResolveSchema(frontmatter schema or type), cached by name
+      T-->>R: skeleton bytes, or schema.unresolved
       R->>V: Document(content, {Schema, Type, Filename})
       V-->>R: []Finding
       R->>R: toc.UpdateToC → toc.stale?
@@ -385,8 +509,8 @@ sequenceDiagram
 ```
 
 docz-api has no checkout and composes the same two calls over bytes it
-fetched; the sequence is in DESIGN-0014 §7 alongside the other consumer
-flows.
+fetched, resolving the schema through `EmbeddedSchema` (§3); the sequence
+is in DESIGN-0014 §7 alongside the other consumer flows.
 
 Exit codes follow `status set`: 0 clean, 1 findings at the failing severity,
 2 for a usage error such as an unknown type. `--format json` emits the
@@ -464,32 +588,37 @@ after that `docz validate` keeps it true.
 block-beta
   columns 3
   L4["L4 cmd/validate.go: composes repo.Validate and impl.Validate, prints, exits"]:3
-  L3["L3 repo.Validate, repo.InsertRegions: tree walk, schema per type, drift checks"]:3
+  L3["L3 repo.Validate, repo.InsertRegions: tree walk, schema per document, template check, drift checks"]:3
   L2a["L2 validate: Document, Schema, catalogue"]
   L2b["L2 impl.Validate: over impl.Parse"]
   L2c["L2 other type packages: the same shape when they exist"]
+  L1["L1 doctemplate.ResolveSchema, EmbeddedSchema: skeleton lookup, on disk then embedded"]:3
   L0["L0 docparse.Markers, docparse.Regions: facts, fence-aware, byte-accurate"]:3
 ```
 
 `validate` imports only L0 and `config`. `impl` imports `validate` for the
-`Finding` type, which is a downward edge. `repo` imports `validate`. Nothing
-in `doczcore` imports `impl`, so R2 holds and the command composes.
+`Finding` type, which is a downward edge. `repo` imports `validate`, and
+`doctemplate` for schemas as it already does for templates. docz-api
+imports `doctemplate` for the baked-in schemas and nothing above L2.
+Nothing in `doczcore` imports `impl`, so R2 holds and the command composes.
 
 ## API / Interface Changes
 
 | Package | Change | Kind |
 | ------- | ------ | ---- |
 | `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` | additive to the frozen package |
-| `pkg/doczcore/validate` | new: `Document`, `Options`, `Finding`, `Severity`, `Schema`, `SchemaRegion`, `SchemaFromTemplate`, the kind catalogue | new public in v2.0.0, experimental until then |
-| `pkg/doczcore/repo` | `Validate`, `ValidateOptions`, `ValidateReport`, `DocFindings`, `IndexDrift`; `InsertRegions` and its types | part of the new package |
+| `pkg/doczcore/document` | `Frontmatter.Schema` | additive to the frozen package |
+| `pkg/doczcore/doctemplate` | `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema`; embedded `schema/<type>.md` skeletons | part of the promoted package (DESIGN-0014 §2.7) |
+| `pkg/doczcore/validate` | new: `Document`, `Options`, `Finding`, `Severity`, `Schema`, `SchemaRegion`, `SchemaFromMarkers`, the kind catalogue | new public in v2.0.0, experimental until then |
+| `pkg/doczcore/repo` | `Validate`, `ValidateOptions`, `ValidateReport` with `Templates`, `DocFindings`, `IndexDrift`; `InsertRegions` and its types; `ExportTemplate` scaffolds a custom type's pair | part of the new package |
 | `pkg/impl` | `Validate`; `Parse` locates spans by region | part of the new package |
-| `internal/template/templates/*.md` | every built-in template gains region markers | template contents, not contract |
-| `cmd/` | `docz validate [type] [--strict] [--format text\|json]`; `docz update --regions [--dry-run]` | new commands, part of the swap |
+| `internal/template/templates/*.md` | every built-in template gains region markers; new `schema/<type>.md` skeletons, `default.md`, and `schema/default.md` | template contents, not contract |
+| `cmd/` | `docz validate [type] [--strict] [--format text\|json]`; `docz update --regions [--dry-run]`; `docz template override <custom-type>` scaffolds the pair | new commands, part of the swap |
 | `test/consumer` | imports `validate`, validates a fixture from outside the module | proof |
 | docz skills plugin | bundled templates and the create fallback gain markers; `docz validate` joins the workflow | claude-skills issue, filed when this design is approved |
 
-`docz create` needs no change: it renders the template, and the template
-carries the markers.
+`docz create` needs no change: it renders the template, the template
+carries the markers, and no `schema:` line is written.
 
 ## Data Model
 
@@ -524,6 +653,7 @@ classDiagram
   }
   class ValidateReport {
     Docs []DocFindings
+    Templates []DocFindings
     Index []IndexDrift
     Errors int
     Warnings int
@@ -550,11 +680,18 @@ Every value is computed from bytes and holds no reference to its input;
   regenerated with `-update`; `FuzzRegions` pins never-panic and the
   invariants `Start < End`, depth consistency, and `Closed` semantics.
 - **Validator tables** per code family, each with a passing and a failing
-  document; a table that runs `Document` over every embedded template
-  rendered with placeholder data and asserts zero findings, so the
-  templates can never ship inconsistent with the catalogue.
-- **Schema derivation** over each embedded template, asserting the expected
-  kinds and parents.
+  document, including `schema.name` and `schema.unresolved`.
+- **Golden pairs**: `Document` over every embedded template rendered with
+  placeholder data, against its baked-in schema, asserting zero findings —
+  the test that a template and its schema agree, and one that can fail;
+  `SchemaFromMarkers` over each embedded skeleton asserting the expected
+  kinds and parents; and the derivation from each built-in template
+  equalling its skeleton, so the two can only be edited together.
+- **Resolution**: a repo-local `templates/schema/impl.md` beats the baked-in
+  one; an unknown name yields `schema.unresolved` and a well-formedness-only
+  run; a custom type with no schema file validates against its template's
+  markers; `ExportTemplate` on a template-less custom type writes both
+  files, and the written pair validates clean.
 - **`impl.Validate`** over the DESIGN-0014 fixtures after migration, plus
   synthetic duplicate-token and no-heading cases.
 - **Migration**: run `InsertRegions` over snapshots of docz's own
@@ -575,8 +712,9 @@ additions are:
 
 | DESIGN-0014 step | Adds |
 | ---------------- | ---- |
-| 1, type layer | `docparse.Markers`/`Regions`; `validate` package; `impl.Parse` over regions; `impl.Validate`; templates gain markers; goldens regenerated |
-| 3, repository core | `repo.Validate`, `repo.InsertRegions` |
+| 1, type layer | `docparse.Markers`/`Regions`; `validate` package with `SchemaFromMarkers`; `impl.Parse` over regions; `impl.Validate`; templates gain markers; embedded `schema/<type>.md` skeletons and the `default.md` pair; `Frontmatter.Schema`; goldens regenerated |
+| 2, promotions | `doctemplate.ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` |
+| 3, repository core | `repo.Validate` with the template check, `repo.InsertRegions`; `repo.ExportTemplate` scaffolds custom types |
 | 5, the swap | `docz validate`, `docz update --regions`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
 | after the release | docz-api, sdk-booty-sh, and tempy run `docz update --regions` once and commit; docz-api adopts `validate.Document` for ingest warnings |
 
@@ -590,6 +728,18 @@ target repos run the migration pass before the loop is pointed at them.
 > are alternatives, and the last is a free-form "other".
 
 ### 1. Where does the schema come from?
+
+> **Resolved 2026-09-19: (d) — a marker skeleton the document names.**
+> Neither the template nor a config block. The schema is its own file
+> under `templates/schema/<name>.md`, with a baked-in one per built-in
+> type versioned with the library; a document names it in an optional
+> `schema:` frontmatter field, absent meaning the type's own; the
+> template becomes the golden test against it, and a custom type gets the
+> pair scaffolded by `template override`. Reasoning and the full shape in
+> §3. Raised by Donald on reading ADR-0002 Open Question 5: the template
+> is a rendering artifact, and a schema that lives in it cannot be reached
+> by docz-api, cannot be golden-tested, and is silently loosened by an
+> override.
 
 - a. **The resolved template, read through `Markers`.** Zero config, custom
   types get it for free, and `docz template override` is literally
