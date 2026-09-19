@@ -117,7 +117,7 @@ implies.
    | R4 | Results are typed structs and enums. English wording, exit codes, and formatting exist only in L4. |
    | R5 | `internal/` holds only what has a documented reason to stay private. After the swap, nothing does: the template embed moves with `doctemplate` and stays unexported there. |
    | R6 | No library-defined interfaces. Consumers define their own at the call site. |
-   | R7 | A type package's grammar is a contract of the *type*, not of the template file. A repo that overrides `impl.md` and renames `#### Tasks` has left the contract. |
+   | R7 | A type package's grammar is a contract over region *kinds*, not over the type name or the template file (restated 2026-09-19, Open Question 5). `impl.Parse` reads `phase`, `tasks`, and `criteria` regions and never asks which type declared them, so any type whose documents carry those kinds parses with it. A document without the kinds has left the contract, whatever its headings say. |
 
 3. **One module, at major version 2.** docz stays a single module with one
    version line. Go compiles per imported package, so a consumer of
@@ -154,7 +154,10 @@ implies.
 
    Types with no package keep the generic facts API (`document`,
    `docparse`, `config`), which already works on every type including
-   custom ones.
+   custom ones. A type package is a view over region kinds (R7), not over
+   a type name: a custom type whose documents carry the kinds a package
+   reads gets that package too, and no generics or dispatch are involved
+   (Open Question 5).
 
 5. **Primitives in docz, policy in consumers.** docz reports facts, gives
    typed structure with byte-accurate lines, and performs byte-minimal
@@ -443,6 +446,11 @@ API, and `plan` becomes the first type that exists only as a custom type
 | Facts and regions (`document`, `docparse`) | yes | yes; type-agnostic by R2 |
 | `impl.Parse` — phases, tasks, criteria; `docz task list` | IMPL | any document whose template carries the `phase`, `tasks`, and `criteria` regions |
 | A Go struct named after the type | `pkg/impl`, in docz | needs Go code: the consumer's own package over `docparse.Regions`, written the way `pkg/impl` is |
+
+> **Resolved 2026-09-19: (a).** R7 and Decision 4 restated above; DESIGN-0014
+> §2.9 notes that `impl.Parse` is keyed on kinds. Where the set of kinds a
+> type must carry is *declared* — template or config — is DESIGN-0015 Open
+> Question 1, reopened the same day.
 
 - a. **Types are data; type packages are views; no generics.** A document
   type is a `types.<name>` config entry plus a template, and the template's

@@ -637,7 +637,11 @@ so far with the context's error.
 #### 2.9 impl (L2, new)
 
 Carried over from DESIGN-0013 §5 with the root type renamed. Spans are
-located by region (DESIGN-0015 §5), never by heading text.
+located by region (DESIGN-0015 §5), never by heading text. `Parse` is keyed
+on the `phase`, `tasks`, and `criteria` kinds and never reads the type name
+(ADR-0002 R7 as restated under its Open Question 5): a custom type whose
+documents carry those kinds parses with it, and `docz task list` accepts
+its IDs.
 
 ```go
 package impl // import "github.com/donaldgifford/docz/v2/pkg/impl"
