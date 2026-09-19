@@ -161,7 +161,7 @@ A marker is an HTML comment on a line of its own:
 | Nesting | Regions nest by a stack. An end marker closes the innermost open region of the same kind; an end marker with no matching open region is stray; a region still open at end of file ends there. |
 | Repetition | Any kind may repeat at the same depth (phases). The catalogue says which kinds are singletons; repeating one is a finding, not a walker error. |
 | Legacy ToC | `<!--toc:start-->` and `<!--toc:end-->` keep their spelling for Marksman compatibility and are reported as kind `toc` |
-| Index markers | The README `DOCZ AUTO-GENERATED` pair is reported as kind `index` under its legacy spelling if Open Question 9 resolves (a); otherwise it stays an index-package concern and is not reported |
+| Index markers | The README `DOCZ AUTO-GENERATED` pair is reported as kind `index` under its legacy spelling (Open Question 9), so `index.Splice` and the drift check read one span |
 
 The walker is two fact functions in `docparse`, additive to the frozen
 package and following its contract: bytes in, values out, no errors, never
@@ -229,6 +229,7 @@ Kinds docz assigns meaning to. Every other kind is well-formedness only.
 | `criteria` | impl, inside `phase` | per phase | dash bullets, folded | `impl.Parse` |
 | `testing` | impl | yes | checkboxes allowed; never tasks | `impl.Parse` excludes |
 | `toc` | all | yes | headings after the region match the generated list | `toc`, validate |
+| `index` | README indexes | yes | the table between the markers equals a fresh render (`repo.Validate`, reported as `IndexDrift`) | `index.Splice`, validate |
 
 The catalogue is data in the `validate` package, not an interface: a
 `map[string]KindRule`. Adding a kind is one entry.
@@ -727,6 +728,21 @@ markers from the start.
 
 > Each question is numbered; option `a` is my recommendation, later letters
 > are alternatives, and the last is a free-form "other".
+>
+> **Update 2026-09-19:** all nine questions are resolved — see the
+> Decisions table.
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Where does the schema come from? | **(d)** a marker skeleton the document names in frontmatter, baked in per built-in type or a repo file under `templates/schema/`; templates become golden tests (§3) |
+| 2 | Marker spelling on the read side | (a) lenient read, canonical write, `marker.spelling` warning, fixed by the migration pass |
+| 3 | Is the finding message part of the contract? | (a) `Code` is the contract; `Detail` is a default a consumer may replace by code |
+| 4 | How is the corpus migrated? | (a) `docz update --regions`, dry-run aware, removable in a later major |
+| 5 | Do ToC and index drift belong to validate? | (a) yes: `toc.stale` per document, `IndexDrift` per type; subsumes issue #97's `update --check` |
+| 6 | Which regions does the IMPL template mark? | (a) the full set: `phase` with nested `tasks` and `criteria`, plus `testing` and `references` |
+| 7 | Hand-rolled walker or a CommonMark AST? | (a) hand-rolled, stdlib-only; goldmark behind the frozen contract only if CommonMark-fidelity bugs keep arriving |
+| 8 | Unknown kinds | (a) allowed; well-formedness only |
+| 9 | ToC and index splices on the region walker? | (a) internally yes: `Regions` reports the legacy ToC pair as `toc` and the README pair as `index`, and `toc.UpdateToC` and `index.Splice` locate their spans through it; externally nothing changes (DESIGN-0014 §2.5, §2.6) |
 
 ### 1. Where does the schema come from?
 
@@ -754,6 +770,8 @@ markers from the start.
 
 ### 2. Marker spelling on the read side
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **Lenient read, canonical write, spelling reported as a warning and
   fixed by the migration pass.** The INV-0009 lesson applied to the new
   markers on day one. *(recommendation)*
@@ -762,6 +780,8 @@ markers from the start.
 - c. Other.
 
 ### 3. Is the finding message part of the contract?
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **`Code` is the contract; `Detail` is a default a consumer may replace
   by code.** Linters work this way, docz-api can map codes to its own
@@ -775,6 +795,8 @@ markers from the start.
 
 ### 4. How is the corpus migrated?
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **`docz update --regions`, dry-run aware, one-shot by nature.** No new
   command family for a pass each repo runs once; the flag can be removed
   in a later major without anyone noticing. *(recommendation)*
@@ -784,6 +806,9 @@ markers from the start.
 - d. Other.
 
 ### 5. Do ToC and index drift belong to validate?
+
+> **Resolved 2026-09-19: (a).** Issue #97's `update --check` is subsumed;
+> the issue is retargeted at `docz validate` when this design is approved.
 
 - a. **Yes.** A stale ToC is a document finding (`toc.stale`) and a stale
   README is a repository finding; `docz validate` therefore subsumes
@@ -795,6 +820,8 @@ markers from the start.
 
 ### 6. Which regions does the IMPL template mark?
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **The full set: `phase` with nested `tasks` and `criteria`, plus
   `testing` and `references`.** Fifteen pairs on a five-phase document is
   the cost; the spans a program needs are all explicit and the testing
@@ -804,6 +831,8 @@ markers from the start.
 - c. Other.
 
 ### 7. Hand-rolled walker or a CommonMark AST?
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **Hand-rolled, stdlib-only, matching the other `docparse` walkers.**
   Marker lines are trivially recognized at the line level; the public core
@@ -818,6 +847,8 @@ markers from the start.
 
 ### 8. Unknown kinds
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **Allowed; well-formedness only.** A custom type's template can
   declare `<!--docz:risks:start-->` and validate checks pairing, nesting,
   and presence but no content rule. *(recommendation)*
@@ -829,6 +860,10 @@ markers from the start.
 Both existing splices find their markers with `strings.Cut` and their own
 spellings; the review asked how much existing behaviour the markers can
 absorb.
+
+> **Resolved 2026-09-19: (a).** §1's index-marker rule and §2's catalogue
+> are definitive; DESIGN-0014 §2.5 and §2.6 record the internal change to
+> `toc` and `index`.
 
 - a. **Internally yes, externally nothing changes.** `Regions` reports
   `<!--toc:start-->` as kind `toc` and the README `DOCZ AUTO-GENERATED`

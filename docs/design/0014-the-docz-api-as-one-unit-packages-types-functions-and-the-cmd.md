@@ -23,7 +23,7 @@ created: 2026-09-14
     - [2.2 document (L0, additive)](#22-document-l0-additive)
     - [2.3 docparse (L0, additive)](#23-docparse-l0-additive)
     - [2.4 docwrite (L1, additive)](#24-docwrite-l1-additive)
-    - [2.5 toc (L1, unchanged)](#25-toc-l1-unchanged)
+    - [2.5 toc (L1, unchanged surface)](#25-toc-l1-unchanged-surface)
     - [2.6 index (L1, promoted)](#26-index-l1-promoted)
     - [2.7 doctemplate (L1, promoted)](#27-doctemplate-l1-promoted)
     - [2.8 repo (L3, new)](#28-repo-l3-new)
@@ -359,7 +359,7 @@ module-wide) and splices a single byte. `Render` resolves the template with
 `doctemplate.Resolve` and never writes; `Create` keeps its exact current
 behaviour, including the auto-increment scan (Open Question 5).
 
-#### 2.5 toc (L1, unchanged)
+#### 2.5 toc (L1, unchanged surface)
 
 ```go
 package toc // import "github.com/donaldgifford/docz/v2/pkg/doczcore/toc"
@@ -378,7 +378,12 @@ func UpdateFiles(files []FileInput, minHeadings int, dryRun bool) (UpdateReport,
 
 `repo.Update` calls `UpdateFiles` exactly as `cmd/update.go` does today and
 embeds the report. The near-miss marker warning (#95) is a `Skipped`
-consumer in `cmd/`, not a change here.
+consumer in `cmd/`, not a change here. One internal change (DESIGN-0015
+Open Question 9): `UpdateToC` locates its span through `docparse.Regions`,
+which reports the legacy `<!--toc:start-->` pair as kind `toc`, instead of
+its own `strings.Cut`, and the heading walk slices past that region rather
+than past a literal end-marker line. The spelling written stays legacy for
+Marksman, and the existing golden pins the output byte-identical.
 
 #### 2.6 index (L1, promoted)
 
@@ -409,7 +414,11 @@ func DryRunReadme(readmePath, header, tableContent string) (UpdateOutcome, error
 ```
 
 `Splice` is the byte core; the two path helpers become wrappers and keep
-their outcomes byte-for-byte. `Scaffold` exists so the README `docz init`
+their outcomes byte-for-byte. It locates the marker pair through
+`docparse.Regions`, which reports the README pair as kind `index` under its
+legacy spelling (DESIGN-0015 Open Question 9), so there is one marker
+walker module-wide and `repo.Validate`'s drift check reads the same span
+the splicer writes; `index` gains a `docparse` import, which is L1 → L0. `Scaffold` exists so the README `docz init`
 writes and the README `docz update` splices agree on the marker block in
 one place — #99's doubled markers came from the header file and the
 scaffold each emitting a pair. The action enum is the typed result ADR-0001
@@ -1176,7 +1185,7 @@ reports; whether they need hooks of their own is Open Question 12.
 | `pkg/doczcore/document` | `Frontmatter.Schema` (DESIGN-0015 §3) | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); #96 fixes are bugs | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/docwrite` | `SetStatusBytes`, `SetTaskStateBytes`, `SetTaskState`, `NextNumber`, `Render`, `Rendered`, `ErrTaskAlreadyUnchecked` | additive | v1.0.0 (existing), v2.0.0 (new) |
-| `pkg/doczcore/toc` | none | — | v1.0.0 |
+| `pkg/doczcore/toc` | none on the surface; span located via `docparse.Regions` internally (DESIGN-0015 OQ 9) | — | v1.0.0 |
 | `pkg/doczcore/index` | promoted whole; `Splice`, `Scaffold`, marker constants exported | new public | v2.0.0 |
 | `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate`; `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` and the embedded schema skeletons (DESIGN-0015 §3) | new public | v2.0.0 |
 | `pkg/doczcore/validate` | new (DESIGN-0015) | new public | v2.0.0 |
