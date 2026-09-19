@@ -46,4 +46,5 @@ docz create design "Your Design Title"
 | DESIGN-0012 | Updated frontmatter field: opt-in stamp pass in docz update | Draft | 2026-09-12 | Donald Gifford | [0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md](0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md) |
 | DESIGN-0013 | Library-first docz: per-type document packages and a core API the CLI can sit on | Abandoned | 2026-09-13 | Donald Gifford | [0013-library-first-docz-per-type-document-packages-and-a-core-api.md](0013-library-first-docz-per-type-document-packages-and-a-core-api.md) |
 | DESIGN-0014 | The docz API as one unit: packages, types, functions, and the cmd swap | Draft | 2026-09-14 | Donald Gifford | [0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md](0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md) |
+| DESIGN-0015 | Structured regions and docz validate | Draft | 2026-09-19 | Donald Gifford | [0015-structured-regions-and-docz-validate.md](0015-structured-regions-and-docz-validate.md) |
 <!-- END DOCZ AUTO-GENERATED -->

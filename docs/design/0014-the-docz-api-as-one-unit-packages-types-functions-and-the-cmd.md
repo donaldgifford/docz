@@ -21,7 +21,7 @@ created: 2026-09-14
   - [2. Package specifications](#2-package-specifications)
     - [2.1 config (L0, unchanged)](#21-config-l0-unchanged)
     - [2.2 document (L0, unchanged)](#22-document-l0-unchanged)
-    - [2.3 docparse (L0, unchanged)](#23-docparse-l0-unchanged)
+    - [2.3 docparse (L0, additive)](#23-docparse-l0-additive)
     - [2.4 docwrite (L1, additive)](#24-docwrite-l1-additive)
     - [2.5 toc (L1, unchanged)](#25-toc-l1-unchanged)
     - [2.6 index (L1, promoted)](#26-index-l1-promoted)
@@ -29,10 +29,12 @@ created: 2026-09-14
     - [2.8 repo (L3, new)](#28-repo-l3-new)
     - [2.9 impl (L2, new)](#29-impl-l2-new)
     - [2.10 wiki (integration, promoted)](#210-wiki-integration-promoted)
+    - [2.11 validate (L2, new)](#211-validate-l2-new)
   - [3. The IMPL grammar](#3-the-impl-grammar)
   - [4. The cmd swap](#4-the-cmd-swap)
   - [5. Consumer map](#5-consumer-map)
   - [6. Enforcing the layer rules](#6-enforcing-the-layer-rules)
+  - [7. Context, cancellation, and hooks](#7-context-cancellation-and-hooks)
 - [API / Interface Changes](#api--interface-changes)
 - [Data Model](#data-model)
 - [Testing Strategy](#testing-strategy)
@@ -49,6 +51,7 @@ created: 2026-09-14
   - [9. Error shapes in repo](#9-error-shapes-in-repo)
   - [10. Generic facts for the next type package](#10-generic-facts-for-the-next-type-package)
   - [11. Delivery granularity](#11-delivery-granularity)
+  - [12. Hooks for wiki](#12-hooks-for-wiki)
 - [References](#references)
 <!--toc:end-->
 
@@ -61,7 +64,10 @@ IMPL grammar `pkg/impl` implements; the repository operations, wiki
 integration, and config rendering that today live only in `cmd/`; the map
 of which consumer calls what; and the `cmd/` swap that is the final step and
 the acceptance test. DESIGN-0013's inventory and `pkg/impl` specification
-carry over here; DESIGN-0013 itself is Abandoned.
+carry over here; DESIGN-0013 itself is Abandoned. DESIGN-0015 (structured
+regions and `docz validate`) is a **requirement** of this unit: the IMPL
+grammar locates its spans by region, the validator is part of the API, and
+no release carries one design without the other.
 
 ## Goals and Non-Goals
 
@@ -78,6 +84,11 @@ carry over here; DESIGN-0013 itself is Abandoned.
   `Doc` as the root type, so tempy can pin it before anything else lands.
 - **Typed results everywhere; wording nowhere but `cmd/`** (R4).
 - **No CLI behaviour change** from the swap (ADR-0001 Decision 7).
+- **DESIGN-0015 ships in the same unit.** Region markers, the validator,
+  and `docz validate` are part of the API; a release without them is not
+  this API.
+- **Traceable, not tracing.** Context enters at L3 and hooks let a consumer
+  instrument the library; docz imports no telemetry and logs nothing (§7).
 
 ### Non-Goals
 
@@ -94,6 +105,8 @@ carry over here; DESIGN-0013 itself is Abandoned.
   `NNNN-slug.md` filename convention.
 - The `updated:` field (DESIGN-0012 / IMPL-0017), which retargets to the
   release after the swap.
+- Telemetry or logging inside the library. The CLI, docz-api, and tempy
+  wire their own over the context and hooks in §7.
 
 ## Background
 
@@ -108,6 +121,7 @@ ADR-0002's decisions this design implements:
 | 5 | Primitives in docz, policy in consumers | §2.4 byte cores, §5 consumer map |
 | 6 | Build the whole API, swap `cmd/` last | Rollout |
 | 7 | ADR-0001 freeze lifted for new packages until the swap | API changes table |
+| — | DESIGN-0015: regions, the validator, `docz validate` — a requirement of this unit | §2.3, §2.11, §3, §4 |
 
 Carried over from DESIGN-0013 without change in substance: the inventory of
 what the CLI does and where each piece lands (§3 there, folded into §2 and
@@ -117,6 +131,12 @@ Resolved in the DESIGN-0013 review and taken as settled: `impl.Doc` (its
 OQ 2), `pkg/doczcore/repo` as the home of repository operations (OQ 7),
 `doctemplate` promoted with the embed unexported (OQ 8), `pkg/wiki`
 promoted (OQ 9), no depguard for now (OQ 13), one module (OQ 15).
+
+Added in the 2026-09-19 review: explicit region markers replace the
+heading-text heuristics for span finding, the IMPL template takes the full
+marker set, a validator and `docz validate` join the unit (all specified in
+DESIGN-0015), and the library exposes a context parameter and hooks at L3
+so every consumer instruments it its own way (§7).
 
 Today's dependency graph is in DESIGN-0013 Background. The distance from it
 to §1 below is: three packages move out of `internal/`, two packages are
@@ -131,13 +151,14 @@ github.com/donaldgifford/docz
 ├── pkg/doczcore/
 │   ├── config        L0  load · merge · validate · type registry              unchanged
 │   ├── document      L0  frontmatter · scan · changelog                      unchanged
-│   ├── docparse      L0  headings · task items · title                       unchanged
+│   ├── docparse      L0  headings · task items · title · markers · regions  additive
 │   ├── docwrite      L1  byte cores + path wrappers · render · create        +4 funcs
 │   ├── toc           L1  ToC splice                                          unchanged
 │   ├── index         L1  README index table + marker splice                  promoted
 │   ├── doctemplate   L1  resolve + render · embed unexported · default yaml  promoted
-│   └── repo          L3  Scan · List · Find · Create · Update · SetStatus · Init · templates   new
-├── pkg/impl          L2  Parse([]byte) → Doc                                 new
+│   ├── validate      L2  Document · Schema · Finding · kind catalogue        new
+│   └── repo          L3  Scan · List · Find · Create · Update · SetStatus · Init · Validate · InsertRegions · templates   new
+├── pkg/impl          L2  Parse([]byte) → Doc · Validate                      new
 ├── pkg/wiki          --  MkDocs / TechDocs: nav, mkdocs.yml, Init, UpdateNav promoted
 ├── cmd/              L4  cobra shell: flags → one call → print               swapped
 ├── internal/         --  empty
@@ -153,8 +174,9 @@ flowchart TD
     repo["doczcore/repo"]
     wiki["pkg/wiki"]
   end
-  subgraph L2 ["L2 — type packages"]
+  subgraph L2 ["L2 — interpretation"]
     impl["pkg/impl"]
+    validate["doczcore/validate"]
   end
   subgraph L1 ["L1 — mutation primitives"]
     docwrite["doczcore/docwrite"]
@@ -169,7 +191,13 @@ flowchart TD
   end
   cmd --> repo
   cmd --> wiki
-  cmd -.->|task list| impl
+  cmd -.->|validate, task list| impl
+  cmd -.-> validate
+  repo --> validate
+  impl --> validate
+  validate --> docparse
+  validate --> document
+  validate --> config
   repo --> docwrite
   repo --> toc
   repo --> index
@@ -261,7 +289,7 @@ func ParseChangelog(content []byte) (*Changelog, error)
 it to `toc.UpdateFiles` and `repo.Find` returns it, so no operation reads a
 document twice.
 
-#### 2.3 docparse (L0, unchanged)
+#### 2.3 docparse (L0, additive)
 
 ```go
 package docparse // import "github.com/donaldgifford/docz/pkg/doczcore/docparse"
@@ -273,10 +301,18 @@ func Headings(content []byte) []Heading
 func TaskItems(content []byte) []TaskItem
 func Title(content []byte) string
 func AnchorSlug(text string) string
+
+// New (DESIGN-0015 §1): region markers, under the same contract —
+// bytes in, values out, no errors, never panics, byte-accurate lines.
+type Role int
+type Marker struct { Kind string; Role Role; Line int; Canonical bool }
+type Region struct { Kind string; Start, End, Depth int; Closed bool }
+func Markers(content []byte) []Marker
+func Regions(content []byte) []Region
 ```
 
-`pkg/impl` builds on `Headings` and `TaskItems` and re-walks raw lines only
-for what they do not report (§3). `Sections` and a `document.Kind` helper
+`pkg/impl` builds on `Regions`, `Headings`, and `TaskItems` and re-walks raw
+lines only for what they do not report (§3). `Sections` and a `document.Kind` helper
 are deferred until a second type package exists (Open Question 10). The
 slug and comment-heading defects in #96 are bug fixes inside the frozen
 contract and are not part of this design.
@@ -429,7 +465,9 @@ type Repo struct {
     Cfg  *config.Config // loaded and validated by the caller
 }
 
-func Open(root, configFile string) (*Repo, error) // config.Load(configFile, root); a struct literal is equally valid
+// Every method takes a context (rule R8, §7): checked between per-type
+// iterations, passed to hooks, never stored.
+func Open(ctx context.Context, root, configFile string) (*Repo, error) // config.Load(configFile, root); a struct literal is equally valid
 
 // Paths (pure).
 func (r *Repo) Path(rel string) string           // filepath.Join(Root, rel)
@@ -437,20 +475,28 @@ func (r *Repo) TypeDir(typeName string) string   // Path(Cfg.TypeDir(typeName))
 func (r *Repo) ReadmePath(typeName string) string
 
 // Reads.
-func (r *Repo) Scan(typeName string) ([]document.DocEntry, error)  // ValidateType → ScanDocuments(TypeDir)
-func (r *Repo) List(types []string) ([]Entry, error)              // nil types → Cfg.EnabledTypes()
-func (r *Repo) Find(id string) (Entry, error)                     // type from the ID prefix, then FindIn
-func (r *Repo) FindIn(typeName, id string) (Entry, error)         // frontmatter id, case-sensitive
+func (r *Repo) Scan(ctx context.Context, typeName string) ([]document.DocEntry, error)  // ValidateType → ScanDocuments(TypeDir)
+func (r *Repo) List(ctx context.Context, types []string) ([]Entry, error)              // nil types → Cfg.EnabledTypes()
+func (r *Repo) Find(ctx context.Context, id string) (Entry, error)                     // type from the ID prefix, then FindIn
+func (r *Repo) FindIn(ctx context.Context, typeName, id string) (Entry, error)         // frontmatter id, case-sensitive
 
 // Writes.
-func (r *Repo) Create(opts CreateOptions) (CreateResult, error)
-func (r *Repo) Update(types []string, opts UpdateOptions) (UpdateReport, error)
-func (r *Repo) SetStatus(typeName, id, status string, opts StatusOptions) (StatusResult, error)
-func (r *Repo) Init(opts InitOptions) (InitReport, error)
+func (r *Repo) Create(ctx context.Context, opts CreateOptions) (CreateResult, error)
+func (r *Repo) Update(ctx context.Context, types []string, opts UpdateOptions) (UpdateReport, error)
+func (r *Repo) SetStatus(ctx context.Context, typeName, id, status string, opts StatusOptions) (StatusResult, error)
+func (r *Repo) Init(ctx context.Context, opts InitOptions) (InitReport, error)
+
+// Validation and migration (DESIGN-0015 §4, §6; types there).
+func (r *Repo) Validate(ctx context.Context, types []string, opts ValidateOptions) (ValidateReport, error)
+func (r *Repo) InsertRegions(ctx context.Context, types []string, opts InsertRegionsOptions) (InsertRegionsReport, error)
 
 // Templates.
-func (r *Repo) Template(typeName string) (string, error)                                     // doctemplate.Resolve with the type's config path
-func (r *Repo) ExportTemplate(typeName, dest string, opts ExportOptions) (ExportResult, error) // dest "" → <DocsDir>/templates/<type>.md (override)
+func (r *Repo) Template(ctx context.Context, typeName string) (string, error)                                     // doctemplate.Resolve with the type's config path
+func (r *Repo) ExportTemplate(ctx context.Context, typeName, dest string, opts ExportOptions) (ExportResult, error) // dest "" → <DocsDir>/templates/<type>.md (override)
+
+// Hooks (§7): optional callbacks carried in the context, the httptrace pattern.
+type Hooks struct { /* ScanStart, ScanDone, TypeSkipped, FileWritten, FileSkipped */ }
+func WithHooks(ctx context.Context, h *Hooks) context.Context
 ```
 
 ```go
@@ -477,11 +523,12 @@ type CreateResult struct {
 type UpdateOptions struct { DryRun bool }
 type UpdateReport struct { Types []TypeReport }
 type TypeReport struct {
-    Type  string
-    Dir   string             // repo-relative type dir
-    Docs  int
-    ToC   *toc.UpdateReport  // nil when Cfg.TOC.Enabled is false
-    Index index.UpdateOutcome
+    Type    string
+    Dir     string             // repo-relative type dir
+    Docs    int
+    ToC     *toc.UpdateReport  // nil when Cfg.TOC.Enabled is false
+    Index   index.UpdateOutcome
+    Elapsed time.Duration      // wall time for this type — cheap profiling data
 }
 
 type StatusOptions struct { DryRun bool }
@@ -516,7 +563,7 @@ sequenceDiagram
   participant C as config
   participant W as docwrite
   participant U as repo.Update
-  cmd->>R: Create({Type:"adr", Title, Author, Update:true})
+  cmd->>R: Create(ctx, {Type:"adr", Title, Author, Update:true})
   R->>C: ValidateType("adr") → "adr", then Types["adr"].Enabled?
   R->>W: Create(&CreateOptions{…, CreatedAt: Now})
   W-->>R: CreateResult{FilePath, Number, Filename}
@@ -534,8 +581,9 @@ sequenceDiagram
   participant T as toc
   participant H as doctemplate
   participant X as index
-  cmd->>R: Update(["adr"], {DryRun})
+  cmd->>R: Update(ctx, ["adr"], {DryRun})
   loop each type
+    R->>R: ctx.Err()? return the partial report
     R->>D: ScanDocuments(TypeDir)
     D-->>R: []DocEntry (Content cached)
     opt Cfg.TOC.Enabled
@@ -556,7 +604,7 @@ sequenceDiagram
   participant cmd as cmd/status.go
   participant R as repo.SetStatus
   participant W as docwrite
-  cmd->>R: SetStatus("design", "DESIGN-0013", "Abandoned", {DryRun})
+  cmd->>R: SetStatus(ctx, "design", "DESIGN-0013", "Abandoned", {DryRun})
   R->>R: FindIn → Entry (ErrNotFound → exit 1 in cmd)
   R->>R: status ∈ Types[t].Statuses? (InvalidStatusError → exit 2)
   alt Old == New or DryRun
@@ -576,12 +624,15 @@ skipping" branch tests today; `Init` writes `.docz.yaml` via
 `doctemplate.DefaultConfigYAML`, creates each enabled type's directory, and
 writes `index.Scaffold(header)` per README, reporting one `InitFile` each;
 `ExportTemplate` with an empty destination is `docz template override`.
-`Repo` holds no logger and prints nothing (R4); a caller that wants the
-debug narration `cmd/` emits today gets it from the report.
+`Repo` holds no logger and prints nothing (R4); the debug narration `cmd/`
+emits today arrives live through the hooks in §7, and every method takes a
+context it checks between types (rule R8), returning the report completed
+so far with the context's error.
 
 #### 2.9 impl (L2, new)
 
-Carried over from DESIGN-0013 §5 with the root type renamed.
+Carried over from DESIGN-0013 §5 with the root type renamed. Spans are
+located by region (DESIGN-0015 §5), never by heading text.
 
 ```go
 package impl // import "github.com/donaldgifford/docz/pkg/impl"
@@ -636,6 +687,10 @@ func (d Doc) Progress() (done, total int) // checked over non-skipped
 
 var ErrNoPhases = errors.New("impl: no phases found")
 type DuplicatePhaseError struct { Token string; Lines []int }
+
+// Validate reports IMPL-specific findings over Parse (DESIGN-0015 §4);
+// the generic checks are validate.Document's, and cmd/ composes both.
+func Validate(doc []byte) []validate.Finding
 ```
 
 Every `Line` is byte-accurate against the input (the `docparse` contract),
@@ -699,11 +754,11 @@ type Action int
 const ( Created Action = iota + 1; Skipped; Overwritten )
 type InitOptions struct { SiteName, SiteDescription, RepoURL, SiteURL, Theme string; Force bool }
 type InitReport struct { MkDocsPath string; MkDocs Action; IndexPath string; Index Action }
-func Init(root string, cfg *config.Config, opts InitOptions) (InitReport, error) // mkdocs.yml + <DocsDir>/index.md from ResolveWikiIndex
+func Init(ctx context.Context, root string, cfg *config.Config, opts InitOptions) (InitReport, error) // mkdocs.yml + <DocsDir>/index.md from ResolveWikiIndex
 
 type NavOptions struct { DryRun bool }
 type NavReport struct { Path string; Entries []NavEntry; Pages int; Written bool }
-func UpdateNav(root string, cfg *config.Config, opts NavOptions) (NavReport, error) // Read → ExistingNavOrder → BuildNav → NavToYAML → Write
+func UpdateNav(ctx context.Context, root string, cfg *config.Config, opts NavOptions) (NavReport, error) // Read → ExistingNavOrder → BuildNav → NavToYAML → Write
 ```
 
 What stays in `cmd/wiki.go`: defaulting the site name from the git remote
@@ -714,28 +769,55 @@ precondition, and the printed nav tree. `repo.Create` does **not** call
 `wiki` is a sibling, not below `repo`). Open Question 8 asks whether the two
 orchestration functions belong here at all.
 
+#### 2.11 validate (L2, new)
+
+Specified in DESIGN-0015 §3 and §4; listed here so the unit reads in one
+place.
+
+```go
+package validate // import "github.com/donaldgifford/docz/pkg/doczcore/validate"
+
+type Severity int
+const ( Error Severity = iota + 1; Warning )
+type Finding struct { Code string; Severity Severity; Line int; Kind, Detail string }
+type SchemaRegion struct { Kind, Parent string }
+type Schema struct { Regions []SchemaRegion }
+type Options struct { Schema Schema; Type config.TypeConfig; Filename string }
+
+func SchemaFromTemplate(tmpl []byte) Schema
+func Document(content []byte, opts Options) []Finding
+```
+
+Type-agnostic and importing only L0. The schema is derived from the type's
+resolved template through `docparse.Markers`, so custom types are validated
+from their template alone. `impl.Validate` returns the same `Finding`;
+`repo.Validate` runs `Document` over a tree and adds the ToC and index drift
+checks; `cmd/validate.go` composes the three because the core cannot import
+a type package (R2).
+
 ### 3. The IMPL grammar
 
-The grammar is a contract of the IMPL *type* (R7): it is what docz's own
-template produces, plus the tolerances the fleet's hand-written documents
-need (INV-0010). A repo that overrides `impl.md` and renames the section
-headings has left the contract.
+The grammar is a contract of the IMPL *type* (R7). Spans come from the
+regions the template declares (DESIGN-0015 §5), so a repo that overrides
+`impl.md` keeps the contract as long as the markers stay; the content rules
+inside a region belong to the type, and no template changes them. The
+tolerances for the fleet's hand-written documents (INV-0010) are unchanged.
 
 | Element | Rule | Source |
 | ------- | ---- | ------ |
 | Frontmatter | `document.ParseFrontmatter`; `ErrNoFrontmatter` is fatal | facts layer |
-| Phase | A level-3 heading whose stripped text matches `^Phase\s+([^\s/:]+):\s*(.+)$`. The span ends at the next heading of level 3 or shallower, or EOF. Headings that do not match (`### Phase 1` under File Changes, `### In Scope`) are not phases. | INV-0010 Obs 3 — the colon discriminates |
+| Phase | A `phase` region at depth 0. The first level-3 heading inside it is the phase heading; its stripped text matches `^Phase\s+([^\s/:]+):\s*(.+)$` for the token and title, else the `impl.phase.no-heading` finding. Headings outside a region (`### Phase 1` under File Changes) are never phases. | DESIGN-0015 §5; the regex now reads the token, it no longer finds the span |
 | Phase token and ID | Token is capture 1; duplicate tokens → `DuplicatePhaseError`; `Index` is the 1-based ordinal | the corpus is numeric and contiguous |
-| Description | Lines strictly between the heading and the first level-4 heading in the span, HTML comments removed, trimmed | template guidance lives in comments |
-| Tasks span | The `#### Tasks` sub-span when present, else the whole phase span; ends at the next heading of level 4 or shallower | sdk-booty-sh `subSpan` |
+| Description | Lines strictly between the phase heading and the first depth-1 region inside the phase, HTML comments removed, trimmed | template guidance lives in comments |
+| Tasks span | The `tasks` region at depth 1 inside the phase; a phase without one yields the `impl.phase.no-tasks` finding and no tasks | DESIGN-0015 §5 |
 | Task | A `docparse.TaskItem` with `Indent == 0` inside the tasks span; nested items are never tasks | INV-0010 Obs 3 |
 | Continuation | Following lines that are non-blank, indented deeper than the bullet, and not themselves list items belong to the task; `EndLine` is the last such line | 48 of 56 tasks wrap in IMPL-0017 |
 | Text | Continuation lines joined with single spaces after trimming; the verify line and marker text removed; other inline markdown kept verbatim | consumers match on Text |
 | Verify | A continuation line whose trimmed text starts with `verify:` case-insensitively; `Verify` is the contents of the first backtick span on that line; the rest of the line is ignored | docz-api IMPL-0004 |
 | Deferred | The token `deferred` followed by a hyphen, en dash, or em dash, on the task line or a continuation, optionally inside bold; `Note` is the text after the dash, after an optional `human required:`, folded to the task's end | docz-api IMPL-0006 prefix form; issue #100 suffix form |
 | Skipped | Task text wrapped in `~~…~~` followed by `skipped:` after any dash; `Note` is the text after the colon | issue #100 |
-| Criteria | Top-level dash bullets under `#### Success Criteria`, wrapped lines folded, an optional leading checkbox tolerated; `Executable` iff the bullet text starts with a backtick span | issue #100; INV-0010 Obs 5 caveat |
-| Outside phases | Checkboxes under `## Testing Plan` or any level-2 section are not tasks | template |
+| Criteria | Top-level dash bullets inside the phase's `criteria` region, wrapped lines folded, an optional leading checkbox tolerated; `Executable` iff the bullet text starts with a backtick span; no region means `Criteria == nil` | issue #100; INV-0010 Obs 5 caveat |
+| Outside phases | Any checkbox outside a `tasks` region is not a task; the `testing` region needs no special rule | DESIGN-0015 §5 |
 | Fences | Inherited from `docparse`: nothing inside a fence is a heading or a task | facts layer |
 | Line endings | LF only; any CR → error, matching `docwrite` | DESIGN-0005 Decision 7 |
 
@@ -781,7 +863,9 @@ The final step. Every handler becomes flags → one call → print, and the
 existing `cmd/` tests must pass unchanged, byte-for-byte, on the new code
 paths. `Runner` gains a `Repo *repo.Repo` built in `loadAndValidateConfig`
 from `RepoRoot` and the loaded config; tests that construct a `Runner`
-directly build one the same way.
+directly build one the same way. Every handler derives its context from
+the process signal context and attaches hooks that carry today's debug
+narration to the logger (§7), so `--verbose` output is unchanged.
 
 | Command | Library call | What stays in `cmd/` |
 | ------- | ------------ | -------------------- |
@@ -796,6 +880,8 @@ directly build one the same way.
 | `docz config` | `config.Load` (via `Open`) | YAML printing |
 | `docz wiki init` | `wiki.Init(root, cfg, InitOptions{…})` | site-name default from git, `.docz.yaml` precondition, printing |
 | `docz wiki update` | `wiki.UpdateNav(root, cfg, NavOptions{DryRun})` | nav tree printing |
+| `docz validate [type]` (DESIGN-0015 §4) | `repo.Validate(ctx, types, ValidateOptions{Strict})`, then `impl.Validate` per IMPL entry | composing the tiers, text/json, exit codes |
+| `docz update --regions` (DESIGN-0015 §6) | `repo.InsertRegions(ctx, types, InsertRegionsOptions{DryRun})` | printing |
 | `docz task list <impl-id>` (ADR-0002 OQ 4) | `repo.Find(id)` then `impl.Parse(entry.Content)` | text/json rendering of tasks |
 | `docz version` | — | all |
 
@@ -821,22 +907,24 @@ Expected size: `cmd/` non-test lines fall from about 4 600 to roughly half.
 | `repo` | yes | — | — | — (no checkout) |
 | `impl` | `task list` | yes | yes (migrates off its own model) | maybe (progress rendering) |
 | `wiki` | yes | — | — | — |
+| `validate` | yes | maybe (workspace gate) | — | yes (ingest warnings) |
 
 ```mermaid
 flowchart LR
-  cli["docz CLI"] --> repo & wiki & impl
+  cli["docz CLI"] --> repo & wiki & impl & validate
   tempy["tempy (GitHub API, no checkout)"] --> impl & docwrite
   booty["sdk-booty-sh doczwork"] --> impl & docwrite
-  api["docz-api (no checkout)"] --> document & docparse & config
+  api["docz-api (no checkout)"] --> document & docparse & config & validate
   api -.-> index & impl
   repo --> docwrite & toc & index & doctemplate & document & config
   impl --> document & docparse & config
 ```
 
 No consumer needs a package it does not import: a tempy binary compiles
-`impl`, `docwrite`, `doctemplate` (through `docwrite.Create`'s dependency —
-the one ride-along ADR-0001 accepted), `document`, `docparse`, `config`,
-and `yaml.v3`. Nothing from `repo`, `index`, `toc`, or `wiki`.
+`impl`, `validate` (for the `Finding` type), `docwrite`, `doctemplate`
+(through `docwrite.Create`'s dependency — the one ride-along ADR-0001
+accepted), `document`, `docparse`, `config`, and `yaml.v3`. Nothing from
+`repo`, `index`, `toc`, or `wiki`, and no telemetry module from anywhere.
 
 ### 6. Enforcing the layer rules
 
@@ -848,22 +936,184 @@ outside the module so a package that quietly depends on `cmd/` or
 so an import of it is a compile error. A `depguard` rule can be added when
 the tree is stable if drift appears.
 
+### 7. Context, cancellation, and hooks
+
+**Rule R8: context enters at L3.** Every function in `repo` and `wiki`
+takes a `context.Context` first. Nothing in L0–L2 does: a bytes-in function
+neither blocks nor touches the filesystem, so there is nothing to cancel
+and no span to attach, and the frozen packages could not change anyway.
+The new L1 path helpers stay context-free to match their frozen siblings;
+a single-file read-modify-write has no cancellation point worth a
+parameter. The reason to decide this now is mechanical: `repo` and `wiki`
+are experimental until the swap, so a context parameter costs nothing
+today and is a breaking change the day after.
+
+What the library does with the context: checks it between per-type
+iterations in `Update`, `List`, `Validate`, `InsertRegions`, and `Init`,
+returning the report completed so far together with `ctx.Err()`; reads
+hooks from it; passes it to nothing else, because nothing below L3 takes
+one. What the library does not do: import a telemetry module, log, or
+print. The public core stays stdlib plus `yaml.v3` (ADR-0001 Neutral), and
+tracing and logging policy is the consumer's (ADR-0002 Decision 5). The
+library is **traceable, not tracing**.
+
+Hooks are the `net/http/httptrace.ClientTrace` pattern: a struct of
+optional callbacks carried in the context, called synchronously when
+non-nil, never retained. A struct of funcs, not an interface (R6).
+
+```go
+package repo
+
+type FileKind int   // FileToC, FileIndex, FileDocument, FileConfig
+type SkipReason int // SkipTypeDisabled, SkipExists, SkipNoMarkers, SkipNotDoczFile
+
+// Hooks carries optional callbacks. Every field may be nil.
+type Hooks struct {
+    ScanStart   func(typeName, dir string)
+    ScanDone    func(typeName string, docs int)
+    TypeSkipped func(typeName string, reason SkipReason)
+    FileWritten func(path string, kind FileKind)
+    FileSkipped func(path string, reason SkipReason)
+}
+
+func WithHooks(ctx context.Context, h *Hooks) context.Context
+func HooksFrom(ctx context.Context) *Hooks // never nil; the zero value is all no-ops
+```
+
+The five events are exactly the debug lines `cmd/update.go`, `cmd/init.go`,
+and `cmd/create.go` emit today, so the swap wires them back one-to-one:
+
+```go
+ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+defer stop()
+ctx = repo.WithHooks(ctx, &repo.Hooks{
+    ScanStart: func(_, dir string) { r.Logger.Debug("scanning type", "dir", dir) },
+    ScanDone:  func(t string, n int) { r.Logger.Debug("scan complete", "type", t, "count", n) },
+})
+rep, err := r.Repo.Update(ctx, types, repo.UpdateOptions{DryRun: dryRun})
+```
+
+Reports carry `Elapsed` durations per type and per operation, which is the
+profiling data a consumer wants without any callback. `pprof` labels ride
+on the context automatically for a consumer that uses them.
+
+```mermaid
+flowchart TB
+  subgraph L4 ["L4 consumer: cmd/, docz-api, tempy"]
+    src["context source: signal, request, activity"]
+    hooks["Hooks wired to slog, spans, heartbeat"]
+  end
+  subgraph L3 ["L3 repo and wiki: context enters here (R8)"]
+    op["Update · Validate · Create · Init · UpdateNav"]
+    chk["ctx.Err() between types"]
+    fire["call each non-nil hook"]
+  end
+  subgraph pure ["L0–L2 impl, validate, docparse, document, docwrite byte cores"]
+    fn["bytes in, values out: no context, no hooks"]
+  end
+  hooks -.-> src
+  src -->|"WithHooks(ctx, hooks)"| op
+  op --> chk
+  op --> fire
+  op --> fn
+```
+
+The three flows the design must support today:
+
+```mermaid
+sequenceDiagram
+  participant U as user
+  participant cmd as cmd/update.go
+  participant R as repo.Update
+  participant H as Hooks (slog debug)
+  U->>cmd: docz update --verbose
+  cmd->>cmd: ctx from signal.NotifyContext, then WithHooks(ctx, slog hooks)
+  cmd->>R: Update(ctx, nil, {})
+  loop each enabled type
+    R->>R: ctx.Err()? stop with the partial report
+    R->>H: ScanStart(type, dir)
+    H-->>U: DEBUG scanning type dir=docs/adr
+    R->>R: scan, ToC pass, index pass
+    R->>H: ScanDone(type, n) and FileWritten(path, kind)
+    H-->>U: DEBUG scan complete type=adr count=12
+  end
+  R-->>cmd: UpdateReport
+  cmd->>U: Updated docs/adr/README.md … (wording from the report)
+  Note over U,R: Ctrl-C cancels ctx. Update returns after the current type with ctx.Err().
+```
+
+```mermaid
+sequenceDiagram
+  participant C as client
+  participant A as docz-api handler
+  participant G as GitHub API
+  participant V as validate.Document
+  participant I as impl.Parse
+  participant L as slog + OTel
+  C->>A: POST /ingest {repo, path, ref}
+  A->>L: start span "docz.ingest" on the request ctx
+  A->>G: fetch bytes at ref
+  G-->>A: content
+  A->>V: Document(content, {Schema, Type, Filename})
+  V-->>A: []Finding
+  A->>I: Parse(content)
+  I-->>A: Doc, or an error
+  A->>L: InfoContext(ctx, "findings", codes…), handler attaches trace_id
+  A-->>C: 200 with findings, or 422 when Errors > 0
+  Note over A,I: pure calls take no context. The caller's span already covers them.
+```
+
+```mermaid
+sequenceDiagram
+  participant T as tempy activity (Temporal worker)
+  participant R as repo.Validate
+  participant H as Hooks (heartbeat + slog)
+  participant W as workspace checkout
+  T->>T: ctx from the activity: timeout, cancellation, OTel interceptor span
+  T->>T: WithHooks(ctx, heartbeat on ScanDone)
+  T->>R: Validate(ctx, ["impl"], {Strict})
+  loop each document
+    R->>W: read, validate.Document, ToC drift
+    R->>H: ScanDone / FileSkipped
+    H->>T: activity.RecordHeartbeat(ctx)
+  end
+  alt activity timeout
+    T-->>R: ctx cancelled
+    R-->>T: partial ValidateReport, ctx.Err()
+    T->>T: retry or fail per tempy policy
+  else completed
+    R-->>T: ValidateReport
+    T->>T: gate: Errors == 0 before the next task
+  end
+```
+
+| Consumer | Context source | Hooks wired to | Span |
+| -------- | -------------- | -------------- | ---- |
+| docz CLI | `signal.NotifyContext` | `slog` at debug, the lines `cmd/` logs today | none; a 50 ms process has nothing to trace |
+| docz-api | request context | `slog` with the handler's `trace_id`, or nothing | its own, around each library call |
+| tempy | activity context | heartbeat plus `slog` | Temporal's OTel interceptor, already in the context |
+
+`wiki.Init` and `wiki.UpdateNav` take a context for cancellation and return
+reports; whether they need hooks of their own is Open Question 12.
+
 ## API / Interface Changes
 
 | Package | Change | Kind | Frozen from |
 | ------- | ------ | ---- | ----------- |
 | `pkg/doczcore/config` | none | — | v1.0.0 |
 | `pkg/doczcore/document` | none | — | v1.0.0 |
-| `pkg/doczcore/docparse` | none (#96 fixes are bugs) | — | v1.0.0 |
+| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); #96 fixes are bugs | additive | v1.0.0 (existing), swap release (new) |
 | `pkg/doczcore/docwrite` | `SetStatusBytes`, `SetTaskStateBytes`, `SetTaskState`, `NextNumber`, `Render`, `Rendered`, `ErrTaskAlreadyUnchecked` | additive | v1.0.0 (existing), swap release (new) |
 | `pkg/doczcore/toc` | none | — | v1.0.0 |
 | `pkg/doczcore/index` | promoted whole; `Splice`, `Scaffold`, marker constants exported | new public | swap release |
 | `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate` | new public | swap release |
-| `pkg/doczcore/repo` | new | new public | swap release |
-| `pkg/impl` | new | new public | swap release |
-| `pkg/wiki` | promoted whole; `Init`, `UpdateNav`, options and reports | new public | swap release |
+| `pkg/doczcore/validate` | new (DESIGN-0015) | new public | swap release |
+| `pkg/doczcore/repo` | new; every method takes a context; `Hooks`; `Validate`, `InsertRegions` | new public | swap release |
+| `pkg/impl` | new; `Parse` over regions; `Validate` | new public | swap release |
+| `pkg/wiki` | promoted whole; `Init`, `UpdateNav` with a context, options and reports | new public | swap release |
+| embedded templates | region markers added (DESIGN-0015 §2) | contents, not contract | — |
 | `internal/` | emptied | — | — |
-| `cmd/` | re-pointed; optional `task list` | no behaviour change | — |
+| `cmd/` | re-pointed; `validate`, `update --regions`; optional `task list` | new commands only, existing behaviour unchanged | — |
 | `.docz.yaml` | none | — | — |
 | `config.DocTypeNames()` | loses `plan` (ADR-0003) | catalogue change, same release | — |
 
@@ -1014,7 +1264,16 @@ construct per call.
   `repo`, `index`, `doctemplate`, `impl`, `wiki` join the existing five —
   and exercises one call each from outside the module.
 - **Layer rule R2**: a test in `pkg/doczcore` walks `go list -deps` for
-  each core package and fails if `pkg/impl` or `pkg/wiki` appears.
+  each core package and fails if `pkg/impl` or `pkg/wiki` appears, and a
+  sibling test fails if any `go.opentelemetry.io` or logging module appears
+  anywhere under `pkg/`.
+- **Context and hooks**: a cancelled context makes `repo.Update` return
+  after the current type with the partial report intact and `ctx.Err()`;
+  a hooks test asserts the exact event sequence for a two-type update,
+  which the CLI's debug-log test pins from the other side.
+- **Regions and validation**: DESIGN-0015's testing strategy. Its parity
+  proof (the heuristic parse equals the region parse on every task ID and
+  line over the migrated fixtures) is what lets the heuristics be deleted.
 
 ## Migration / Rollout Plan
 
@@ -1022,31 +1281,31 @@ construct per call.
 timeline
   title Build the whole API, then swap — every landing under dont-release until the last
   section Type layer first
-    pkg/impl Parse and Doc : docwrite byte cores and Render : consumer proof : tempy pins a pseudo-version
+    docparse Markers and Regions : validate package : pkg/impl Parse and Doc over regions : docwrite byte cores and Render : templates gain markers : consumer proof : tempy pins a pseudo-version
   section Promotions
     internal/template → doctemplate with DefaultConfigYAML : internal/index → index with Splice and Scaffold : internal/wiki → pkg/wiki with Init and UpdateNav
   section Repository core
-    pkg/doczcore/repo : Scan List Find Create Update SetStatus Init Template ExportTemplate
+    pkg/doczcore/repo : Scan List Find Create Update SetStatus Init Template ExportTemplate : Validate and InsertRegions : context and Hooks
   section Catalogue
     ADR-0003 plan removal : goldens and docs
   section Swap (minor, v1.3.0)
-    cmd/ re-pointed, tests unchanged : task list : EXPERIMENTAL removed : ADR-0001 amended : CLAUDE.md README
+    cmd/ re-pointed, tests unchanged : docz validate and update --regions : docs/ migrated : EXPERIMENTAL removed : ADR-0001 amended : CLAUDE.md README
 ```
 
 | Step | Delivers | PR label | Consumer signal |
 | ---- | -------- | -------- | --------------- |
-| 1 | `pkg/impl`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; consumer proof | `dont-release` | tempy IMPL-0001 pins `docz@<sha>`; sdk-booty-sh issue to migrate `doczwork` |
+| 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers; consumer proof | `dont-release` | tempy IMPL-0001 pins `docz@<sha>` and migrates its target repos' docs; sdk-booty-sh issue to migrate `doczwork` |
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); `internal/` emptied | `dont-release` | — |
-| 3 | `repo` | `dont-release` | — |
+| 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions` | `dont-release` | — |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` | claude-skills issue |
-| 5 | `cmd/` swap; optional `task list`; EXPERIMENTAL markers removed; ADR-0001 amendment; CLAUDE.md, README library section, release notes | `minor` → v1.3.0 | tempy re-pins the tag; docz-api may adopt `index`/`impl` at its leisure |
+| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue | `minor` → v1.3.0 | tempy re-pins the tag; docz-api, sdk-booty-sh run `update --regions` once and may adopt `validate`/`index`/`impl` at their leisure |
 | — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v1.4.0 | — | docz-api #36 unchanged |
 
 ```mermaid
 gitGraph
   commit id: "v1.2.2" tag: "v1.2.2"
   branch feat/impl
-  commit id: "pkg/impl + byte cores"
+  commit id: "regions, validate, pkg/impl, byte cores"
   checkout main
   merge feat/impl id: "dont-release" tag: "tempy pins @sha"
   branch feat/promote
@@ -1054,7 +1313,7 @@ gitGraph
   checkout main
   merge feat/promote id: "dont-release "
   branch feat/repo
-  commit id: "pkg/doczcore/repo"
+  commit id: "pkg/doczcore/repo with ctx and hooks"
   checkout main
   merge feat/repo id: "dont-release  "
   branch chore/plan
@@ -1062,7 +1321,7 @@ gitGraph
   checkout main
   merge chore/plan id: "dont-release   "
   branch feat/cmd-swap
-  commit id: "cmd/ on the API, tests unchanged"
+  commit id: "cmd/ on the API, validate, docs migrated"
   checkout main
   merge feat/cmd-swap id: "minor" tag: "v1.3.0"
 ```
@@ -1075,25 +1334,33 @@ release; its release notes are the library changelog for everything above.
 
 Docs touched by the work: ADR-0001 (dated amendment, Open Question 2 of
 ADR-0002), IMPL-0014 (Decision 3 note), DESIGN-0013 (Abandoned — done with
-this design), CLAUDE.md (architecture bullets for the five new packages and
-the emptied `internal/`), README (library section; six types become five),
-DEVELOPMENT.md (the "add a type" walkthrough moves its template paths),
-`mkdocs.yml` (`pymdownx.superfences` so these diagrams render in the wiki).
+this design), CLAUDE.md (architecture bullets for the six new packages and
+the emptied `internal/`), README (library section; six types become five;
+`docz validate`), DEVELOPMENT.md (the "add a type" walkthrough moves its
+template paths and gains the region markers), every embedded template
+(markers), docz's own `docs/` (migrated with `update --regions` in the swap
+PR), the docz skills plugin (claude-skills issue for the bundled templates
+and the validate step), `mkdocs.yml` (`pymdownx.superfences` so these
+diagrams render in the wiki).
 
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
-> are alternatives, and the last is a free-form "other". Questions 1–4 are
-> DESIGN-0013's 3–6, carried over unresolved.
+> are alternatives, and the last is a free-form "other". Questions 2–4 are
+> DESIGN-0013's 4–6, carried over unresolved; question 1 was DESIGN-0013's 3
+> and is restated for regions.
 
 ### 1. Phase and task grammar
 
-- a. **Colon-discriminated phases anywhere** (`^Phase\s+([^\s/:]+):`),
-  tasks scoped to `#### Tasks` when present, top-level only, duplicate
-  token is an error — §3 as written. *(recommendation)*
-- b. Every level-3 heading is a phase with ordinal fallback (sdk-booty-sh
-  today) — `In Scope` becomes phase 1 in template docs.
-- c. Phases only under `## Implementation Phases`.
+- a. **Phases are `phase` regions; the token comes from the first level-3
+  heading inside; `tasks` and `criteria` are nested regions; top-level
+  checkbox items only; a duplicate token is an error** — §3 as amended by
+  DESIGN-0015 §5. *(recommendation)*
+- b. The heading heuristics as DESIGN-0013 had them (`^Phase\s+…:` finds
+  the span, `#### Tasks` scopes the list), kept as a permanent fallback
+  beside the regions — two grammars to maintain.
+- c. Every level-3 heading is a phase with ordinal fallback (sdk-booty-sh
+  today).
 - d. Other.
 
 ### 2. Continuation folding and verify lines
@@ -1204,6 +1471,17 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 - b. One IMPL per package, tracked in a parent issue.
 - c. Other.
 
+### 12. Hooks for wiki
+
+- a. **None; the nav report is enough.** `wiki.Init` and `UpdateNav` take a
+  context for cancellation and return reports; the two debug lines
+  `cmd/wiki.go` logs today are derivable from `NavReport` after the call.
+  A `wiki.Hooks` can be added later without breaking anything.
+  *(recommendation)*
+- b. A `wiki.Hooks` mirroring `repo.Hooks` from day one, so both L3
+  packages instrument the same way.
+- c. Other.
+
 ## References
 
 - [ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
@@ -1212,8 +1490,12 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
   — the catalogue change that ships in the same release
 - [ADR-0001](../adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md)
   — the frozen base and the API principles kept
+- [DESIGN-0015](0015-structured-regions-and-docz-validate.md) — structured
+  regions, the validator, `docz validate`, the corpus migration; a
+  requirement of this unit
 - [DESIGN-0013](0013-library-first-docz-per-type-document-packages-and-a-core-api.md)
   — Abandoned; inventory and `pkg/impl` specification carried over
+- `net/http/httptrace` — the hooks-in-context pattern §7 follows
 - [INV-0010](../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md)
   — corpus grammar facts, existing primitives, consumer model
 - [DESIGN-0005](0005-status-set-cli-primitive.md) — byte-preservation

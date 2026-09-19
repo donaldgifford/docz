@@ -98,7 +98,7 @@ implies.
      columns 2
      L4["L4 Presentation — cmd/: cobra, flags, text/json/csv, exit codes, logging"]:2
      L3["L3 Repository operations — pkg/doczcore/repo, index, doctemplate; pkg/wiki"]
-     L2["L2 Type interpretation — pkg/impl (Doc), later pkg/rfc, pkg/adr …"]
+     L2["L2 Interpretation — pkg/impl (Doc), doczcore/validate, later pkg/rfc …"]
      L1["L1 Mutation primitives — docwrite byte cores · toc splice · create"]:2
      L0["L0 Facts — document (frontmatter, scan) · docparse (headings, tasks, title) · config"]:2
    ```
@@ -171,9 +171,10 @@ implies.
    smell" survives as the second question.
 
 6. **Build the whole API, then swap `cmd/`.** The unit of delivery is the
-   complete API specified in DESIGN-0014 — every package, type, function,
-   and error, including the promoted `index`, `doctemplate`, and `wiki`,
-   the new `repo` core, and `pkg/impl`. Packages land on `main` additively
+   complete API specified in DESIGN-0014 and DESIGN-0015 — every package,
+   type, function, and error, including the promoted `index`,
+   `doctemplate`, and `wiki`, the new `repo` core, `pkg/impl`, the region
+   walker, and the validator. Packages land on `main` additively
    under `dont-release` PRs as they are built; the CLI keeps its current
    code paths throughout; beta consumers pin the commit they need. The final
    step is one PR that re-points `cmd/` at the library with no change to
@@ -362,13 +363,18 @@ implies.
 "First consumer is the CLI" read literally means `pkg/impl` should have a
 CLI caller when it freezes.
 
-- a. **Yes, read-only.** `docz task list <impl-id> [--format text|json]` in
-  the swap PR over `impl.Parse` and `repo.Find` — about a hundred lines, no
-  writers — so the CLI and the library agree on task IDs by construction.
-  `check` / `uncheck` wait for a later minor. *(recommendation)*
-- b. No new command in the swap; tempy is the first consumer of `pkg/impl`
+- a. **Yes: `docz validate`.** DESIGN-0015's validator composes
+  `repo.Validate` with `impl.Validate`, which runs `impl.Parse`, so the
+  swap PR ships a first-party caller of the type layer that also gates the
+  corpus. The CLI and the library agree on task IDs by construction.
+  *(recommendation, revised 2026-09-19)*
+- b. `docz task list <impl-id> [--format text|json]` — read-only over
+  `impl.Parse` and `repo.Find`, about a hundred lines, no writers;
+  `check` / `uncheck` wait for a later minor.
+- c. Both a and b in the swap.
+- d. No new command in the swap; tempy is the first consumer of `pkg/impl`
   in practice and the CLI follows later.
-- c. Other.
+- e. Other.
 
 ## References
 
@@ -378,6 +384,8 @@ CLI caller when it freezes.
   `plan` type removal that lands alongside this work
 - [DESIGN-0014](../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md)
   — the API this ADR implies, specified as one unit
+- [DESIGN-0015](../design/0015-structured-regions-and-docz-validate.md)
+  — structured regions and `docz validate`, a requirement of that unit
 - [DESIGN-0013](../design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md)
   — Abandoned; the first-principles working that led here
 - [INV-0010](../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md)
