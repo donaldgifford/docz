@@ -971,6 +971,11 @@ Expected size: `cmd/` non-test lines fall from about 4 600 to roughly half.
 | `wiki` | yes | — | — | — |
 | `validate` | yes | maybe (workspace gate) | — | yes (ingest warnings) |
 
+The CLI and tempy are the consumers this unit is built for and tested
+against. docz-api and sdk-booty-sh pin v1 and are unaffected by it; their
+columns record what each would use if and when it moves to v2, which is a
+separate decision made in that repo, not an obligation of this release.
+
 ```mermaid
 flowchart LR
   cli["docz CLI"] --> repo & wiki & impl & validate
@@ -1368,7 +1373,7 @@ timeline
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); `internal/` emptied | `dont-release` | — |
 | 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions` | `dont-release` | — |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` | claude-skills issue |
-| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue | `major` → v2.0.0 | tempy re-pins the tag; docz-api, sdk-booty-sh run `update --regions` once and may adopt `validate`/`index`/`impl` at their leisure |
+| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; EXPERIMENTAL markers removed; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue | `major` → v2.0.0 | tempy re-pins the tag. docz-api and sdk-booty-sh pin v1 and are unaffected; moving either to v2 is its own later decision |
 | — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to v2.1.0 | — | docz-api #36 unchanged |
 
 ```mermaid

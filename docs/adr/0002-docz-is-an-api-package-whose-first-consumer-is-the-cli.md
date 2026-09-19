@@ -127,9 +127,11 @@ implies.
    the module path becomes `github.com/donaldgifford/docz/v2` with the first
    landing of this work (Decision 6): every pre-release pin is then a v2
    pseudo-version and no consumer rewrites imports at release. The v1.x
-   tags stay importable at the old path indefinitely — sdk-booty-sh's
-   v1.0.0 pin is untouched — and a `v1` branch is cut from v1.2.2 only if a
-   patch is ever needed there.
+   tags stay importable at the old path indefinitely — docz-api's and
+   sdk-booty-sh's v1 pins are untouched, and neither moves to v2 until
+   that is decided on its own — and a `v1` branch is cut from v1.2.2 only
+   if a patch is ever needed there. The order of work is the API, then the
+   CLI, then consumers.
 
 4. **Standalone `pkg/<type>` packages with `Doc` as the root type.** Per-type
    interpretation lives in a sibling of `doczcore`, one package per document

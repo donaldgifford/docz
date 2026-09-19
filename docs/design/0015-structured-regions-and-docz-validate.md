@@ -716,7 +716,7 @@ additions are:
 | 2, promotions | `doctemplate.ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` |
 | 3, repository core | `repo.Validate` with the template check, `repo.InsertRegions`; `repo.ExportTemplate` scaffolds custom types |
 | 5, the swap | `docz validate`, `docz update --regions`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
-| after the release | docz-api, sdk-booty-sh, and tempy run `docz update --regions` once and commit; docz-api adopts `validate.Document` for ingest warnings |
+| after the release | tempy's target repos have already run `docz update --regions` (below). docz-api and sdk-booty-sh pin v1 and are unaffected: markers are HTML comments and a `schema:` line is an unknown key to a v1 parser, so a migrated corpus reads as before. Each moves to v2, and adopts `validate` if it wants it, by its own decision |
 
 Because `impl.Parse` locates spans by region from its first commit, tempy's
 beta pin (DESIGN-0014 step 1) already expects migrated documents; tempy's
