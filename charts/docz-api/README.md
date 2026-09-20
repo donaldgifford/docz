@@ -34,7 +34,7 @@ provenance attestations (GitHub artifact attestations, Build L2).
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.7.1 \
+  --version 0.8.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.7.1 \
+  --version 0.8.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -214,7 +214,22 @@ managed instances.
   must never gate readiness.
 - Set `metrics.enabled: true` (default) to serve Prometheus metrics on
   `/metrics`; enable `serviceMonitor.enabled: true` to have a Prometheus
-  Operator scrape the `http` port at `/metrics`.
+  Operator scrape the `http` port at `/metrics`. With the baked Meilisearch
+  the same two switches enable its `/metrics` route and render a second
+  ServiceMonitor that scrapes it with the master key as a bearer token
+  (Meilisearch gates the route like every route but `/health`). The
+  `job` label of each scrape is its Service name, so the API is
+  `<release>-docz-api` and Meilisearch is `<release>-docz-api-meilisearch`.
+  Know what that token grants: it is the **master key**, which can create
+  and delete indexes and read every document, not a read-only scrape
+  credential — and Prometheus Operator copies it into a generated Secret
+  in the Prometheus namespace to mount it. Meilisearch can mint a key
+  scoped to `metrics.get` alone, but it must be created against the
+  running instance, so the chart cannot render one — and it cannot go in
+  `search.meili.existingSecret`, because the Meilisearch pod reads its
+  master key from that same Secret. A separate scrape-credential value is
+  a follow-up; until then, enabling the Meilisearch scrape means trusting
+  the Prometheus namespace with the master key.
 - Enable `prometheusRule.enabled: true` for the starter alert pack
   (`DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
   `DoczAPIIngestFailures`, `DoczAPISlowIngest`).
@@ -244,7 +259,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz-api/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.7.1
+  ghcr.io/donaldgifford/charts/docz-api:0.8.0
 ```
 
 ### Build provenance
@@ -254,7 +269,7 @@ it came from this repository:
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz-api:0.7.1 \
+  oci://ghcr.io/donaldgifford/charts/docz-api:0.8.0 \
   --owner donaldgifford
 ```
 
@@ -267,7 +282,7 @@ cosign verify-attestation \
     '^https://github.com/donaldgifford/docz-api/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.7.1
+  ghcr.io/donaldgifford/charts/docz-api:0.8.0
 ```
 
 ## Values
@@ -323,7 +338,7 @@ cosign verify-attestation \
 | livenessProbe.initialDelaySeconds | int | `5` |  |
 | livenessProbe.periodSeconds | int | `15` |  |
 | metrics | object | `{"enabled":true}` | Prometheus metrics. The /metrics endpoint is served on the main HTTP port; scrape it with the ServiceMonitor below. |
-| metrics.enabled | bool | `true` | Expose /metrics (METRICS_ENABLED) |
+| metrics.enabled | bool | `true` | Expose /metrics (METRICS_ENABLED). Also turns on the baked Meilisearch's Prometheus route (MEILI_EXPERIMENTAL_ENABLE_METRICS). |
 | nameOverride | string | `""` | Override the chart name |
 | nodeSelector | object | `{}` | Node selector |
 | otel | object | `{"endpoint":"","sampleRate":"","serviceName":""}` | OpenTelemetry tracing. Traces export over OTLP/HTTP; leave the endpoint empty to disable tracing (spans are created but not sent). |
@@ -385,7 +400,7 @@ cosign verify-attestation \
 | serviceAccount.annotations | object | `{}` | Annotations for the ServiceAccount |
 | serviceAccount.create | bool | `true` | Create a ServiceAccount |
 | serviceAccount.name | string | `""` | Override the ServiceAccount name |
-| serviceMonitor.enabled | bool | `false` | Create a Prometheus Operator ServiceMonitor scraping /metrics |
+| serviceMonitor.enabled | bool | `false` | Create Prometheus Operator ServiceMonitors: one scraping docz-api's /metrics, and in baked mode one scraping Meilisearch's /metrics with the master key as its bearer token. Both honour interval and labels. |
 | serviceMonitor.interval | string | `"30s"` | Scrape interval |
 | serviceMonitor.labels | object | `{}` | Additional labels for ServiceMonitor |
 | store | object | `{"backend":"postgres","external":{"existingSecret":"","secretKey":"DATABASE_URL"},"postgres":{"baked":{"image":"postgres:18.4","resources":{"limits":{"cpu":"1000m","memory":"1Gi"},"requests":{"cpu":"100m","memory":"256Mi"}},"storageClassName":"","storageSize":"10Gi"},"cnpg":{"imageName":"ghcr.io/cloudnative-pg/postgresql:18.4","instances":1,"pooler":{"enabled":false,"instances":1,"monitoring":{"enablePodMonitor":false},"pgbouncer":{"defaultPoolSize":25,"maxClientConnections":100,"parameters":{},"poolMode":"transaction"},"service":{"annotations":{},"enabled":false,"labels":{"bgp.cilium.io/advertise-service":"default","bgp.cilium.io/ip-pool":"default"},"type":"LoadBalancer"},"type":"rw"},"storage":{"size":"10Gi","storageClass":""}},"maxConns":16,"mode":"baked"}}` | Persistent state store (Postgres). See DESIGN-0012 §Backend modes. |

@@ -5,6 +5,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "docz-api.labels" . | nindent 4 }}
+    # Carried on the Service object (not just its pod selector) so the
+    # ServiceMonitor can select this Service alone; see servicemonitor.yaml.
+    app.kubernetes.io/component: server
 spec:
   type: {{ .Values.service.type }}
   ports:

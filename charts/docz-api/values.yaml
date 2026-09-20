@@ -177,7 +177,8 @@ otel:
 # -- Prometheus metrics. The /metrics endpoint is served on the main
 # HTTP port; scrape it with the ServiceMonitor below.
 metrics:
-  # -- Expose /metrics (METRICS_ENABLED)
+  # -- Expose /metrics (METRICS_ENABLED). Also turns on the baked
+  # Meilisearch's Prometheus route (MEILI_EXPERIMENTAL_ENABLE_METRICS).
   enabled: true
 
 # -- Application secrets. When `create` is true the chart renders a Secret
@@ -429,7 +430,9 @@ tailscale:
     create: true
 
 serviceMonitor:
-  # -- Create a Prometheus Operator ServiceMonitor scraping /metrics
+  # -- Create Prometheus Operator ServiceMonitors: one scraping docz-api's
+  # /metrics, and in baked mode one scraping Meilisearch's /metrics with
+  # the master key as its bearer token. Both honour interval and labels.
   enabled: false
   # -- Scrape interval
   interval: 30s

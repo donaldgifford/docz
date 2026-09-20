@@ -89,3 +89,19 @@ tests:
       - equal:
           path: metadata.labels.release
           value: kube-prometheus-stack
+
+  - it: should pin DoczAPIDown to the API job rather than a regex
+    # Prometheus Operator sets `job` to the scraped Service's name, and every
+    # Service in the release starts with the fullname. A regex like
+    # `.*docz-api.*` matched the Meilisearch scrape as well and paged
+    # "docz-api is down" for a backend target.
+    set:
+      prometheusRule:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.groups[0].rules[0].expr
+          value: up{job="RELEASE-NAME-docz-api"} == 0
+      - notMatchRegex:
+          path: spec.groups[0].rules[0].expr
+          pattern: '=~'

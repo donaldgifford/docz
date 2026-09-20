@@ -61,3 +61,21 @@ tests:
       - equal:
           path: spec.endpoints[0].path
           value: /metrics
+
+  - it: should select only the API Service with component=server
+    # Regression guard: every Service in the release carries name/instance,
+    # and the baked Meilisearch Service also has an http-named port. Without
+    # component the operator scraped Meilisearch's /metrics too, kept a
+    # permanently-down target, and fired DoczAPIDown on a healthy install.
+    set:
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: server
+      - isSubset:
+          path: spec.selector.matchLabels
+          content:
+            app.kubernetes.io/name: docz-api
+            app.kubernetes.io/instance: RELEASE-NAME

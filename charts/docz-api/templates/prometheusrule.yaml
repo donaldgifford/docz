@@ -20,8 +20,12 @@ spec:
   groups:
     - name: docz-api.rules
       rules:
+        # `job` is the scraped Service's name (Prometheus Operator default),
+        # and every Service in this release starts with the fullname, so a
+        # regex would also match the Meilisearch scrape and page "docz-api
+        # is down" for a backend target. Pin the exact API Service.
         - alert: DoczAPIDown
-          expr: up{job=~".*docz-api.*"} == 0
+          expr: up{job="{{ include "docz-api.fullname" . }}"} == 0
           for: 5m
           labels:
             severity: critical

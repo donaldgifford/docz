@@ -259,3 +259,25 @@ tests:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 60
         template: templates/deployment.yaml
+
+  - it: baked Meilisearch turns on its Prometheus route when metrics are enabled
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_EXPERIMENTAL_ENABLE_METRICS
+            value: "true"
+        template: templates/search-meili.yaml
+        documentIndex: 0
+
+  - it: baked Meilisearch leaves its Prometheus route off when metrics are disabled
+    set:
+      metrics.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MEILI_EXPERIMENTAL_ENABLE_METRICS
+            value: "true"
+        template: templates/search-meili.yaml
+        documentIndex: 0

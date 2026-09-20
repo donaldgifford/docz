@@ -54,3 +54,11 @@ tests:
       - equal:
           path: spec.selector["app.kubernetes.io/component"]
           value: server
+
+  - it: should carry component=server on the Service object for the ServiceMonitor
+    # The ServiceMonitor selects Services by their own labels, not by their
+    # pod selector, so the label has to be on the metadata too.
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: server

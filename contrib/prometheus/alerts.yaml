@@ -41,7 +41,7 @@ groups:
       # No docz-api target has been scrapeable for 5+ minutes. The job-label
       # regex tolerates the ServiceMonitor's generated job names.
       - alert: DoczAPIDown
-        expr: up{job=~".*docz-api.*"} == 0
+        expr: up{job="docz-api"} == 0
         for: 5m
         labels:
           severity: critical

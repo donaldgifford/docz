@@ -214,7 +214,22 @@ managed instances.
   must never gate readiness.
 - Set `metrics.enabled: true` (default) to serve Prometheus metrics on
   `/metrics`; enable `serviceMonitor.enabled: true` to have a Prometheus
-  Operator scrape the `http` port at `/metrics`.
+  Operator scrape the `http` port at `/metrics`. With the baked Meilisearch
+  the same two switches enable its `/metrics` route and render a second
+  ServiceMonitor that scrapes it with the master key as a bearer token
+  (Meilisearch gates the route like every route but `/health`). The
+  `job` label of each scrape is its Service name, so the API is
+  `<release>-docz-api` and Meilisearch is `<release>-docz-api-meilisearch`.
+  Know what that token grants: it is the **master key**, which can create
+  and delete indexes and read every document, not a read-only scrape
+  credential — and Prometheus Operator copies it into a generated Secret
+  in the Prometheus namespace to mount it. Meilisearch can mint a key
+  scoped to `metrics.get` alone, but it must be created against the
+  running instance, so the chart cannot render one — and it cannot go in
+  `search.meili.existingSecret`, because the Meilisearch pod reads its
+  master key from that same Secret. A separate scrape-credential value is
+  a follow-up; until then, enabling the Meilisearch scrape means trusting
+  the Prometheus namespace with the master key.
 - Enable `prometheusRule.enabled: true` for the starter alert pack
   (`DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
   `DoczAPIIngestFailures`, `DoczAPISlowIngest`).

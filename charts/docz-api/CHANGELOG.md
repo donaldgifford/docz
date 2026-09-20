@@ -3,6 +3,52 @@
 Changes to the `docz-api` Helm chart only. For application-level changes,
 see the root [CHANGELOG.md](../../CHANGELOG.md).
 
+## 0.8.0
+
+### Added
+
+- **Meilisearch metrics.** With `metrics.enabled` (default) the baked
+  Meilisearch now sets `MEILI_EXPERIMENTAL_ENABLE_METRICS=true`, and with
+  `serviceMonitor.enabled` the chart renders a second ServiceMonitor,
+  `<release>-docz-api-meilisearch`, that scrapes its `/metrics` with the
+  master key as a bearer token. Meilisearch gates that route behind the
+  key like every route but `/health` (401 without it), which is why it is
+  a separate ServiceMonitor and not a second endpoint on the API's. It
+  follows the same two switches the CNPG `enablePodMonitor` already does.
+  **Upgrading restarts the Meilisearch pod once** for the new env var.
+  **Know what the scrape token grants:** it is the master key — full
+  admin, not a read-only credential — and Prometheus Operator copies it
+  into a generated Secret in the Prometheus namespace. A `metrics.get`
+  scoped key would shrink that, but it has to be minted against the
+  running instance and cannot share `search.meili.existingSecret` with
+  the pod's master key, so a separate scrape-credential value is a
+  follow-up. See the README's monitoring notes.
+
+### Fixed
+
+- **The API ServiceMonitor scraped Meilisearch too.** Its selector matched
+  on name/instance only, every Service in the release carries those, and
+  the Meilisearch Service also has an `http`-named port — so with the
+  baked Meilisearch the operator scraped `:7700/metrics`, got 400, and kept
+  a permanently-down target. The selector now requires
+  `app.kubernetes.io/component: server`, which the API Service now carries
+  on its metadata (it was only in its pod selector). Same family as the
+  0.2.2 Service fix, on the monitoring side.
+- **`DoczAPIDown` fired on healthy installs.** Its `up{job=~".*docz-api.*"}`
+  matched the down Meilisearch target above, since Prometheus Operator
+  sets `job` to the Service name and every Service starts with the
+  fullname. It is now pinned to the API Service exactly:
+  `up{job="<release>-docz-api"}`. The plain-Prometheus pack in
+  `contrib/prometheus/alerts.yaml` got the same tightening, to
+  `job="docz-api"`, matching its own `DoczAPINoScrapes`.
+
+### Not in this release
+
+- Valkey and baked Postgres metrics. Neither image exposes Prometheus
+  metrics natively, so each needs an exporter sidecar, a metrics port, and
+  its own ServiceMonitor — a matched pair worth its own change. CNPG mode
+  already has metrics through the operator's PodMonitor.
+
 ## 0.7.1
 
 ### Fixed
