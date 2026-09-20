@@ -106,7 +106,7 @@ implies.
      columns 2
      L4["L4 Presentation — cmd/: cobra, flags, text/json/csv, exit codes, logging"]:2
      L3["L3 Repository operations — pkg/doczcore/repo, index, doctemplate; pkg/wiki"]
-     L2["L2 Interpretation — pkg/impl (Doc), doczcore/validate, later pkg/rfc …"]
+     L2["L2 Interpretation — pkg/impl · rfc · adr · design · investigation (Doc), doczcore/validate, doczcore/kinds"]
      L1["L1 Mutation primitives — docwrite byte cores · toc splice · create"]:2
      L0["L0 Facts — document (frontmatter, scan) · docparse (headings, tasks, title) · config"]:2
    ```
@@ -163,6 +163,16 @@ implies.
    a type name: a custom type whose documents carry the kinds a package
    reads gets that package too, and no generics or dispatch are involved
    (Open Question 5).
+
+   > **Amended 2026-09-19.** Every built-in type is a structured type and
+   > ships its package in the DESIGN-0014 unit: `pkg/impl`, `pkg/rfc`,
+   > `pkg/adr`, `pkg/design`, `pkg/investigation`, with the readers they
+   > share (open questions, references, decisions, criteria, alternatives)
+   > in `pkg/doczcore/kinds`. "Types with no package" now means custom
+   > types on their own schema. Unstructured markdown is not a type; it
+   > reaches a consumer through the `api:` block's additional docs. The
+   > convention above is unchanged: one package per type, `Doc` as the
+   > root, no registry.
 
 5. **Primitives in docz, policy in consumers.** docz reports facts, gives
    typed structure with byte-accurate lines, and performs byte-minimal

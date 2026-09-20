@@ -219,20 +219,50 @@ token 2, and takes the `tasks` region at depth 1 inside it.
 
 Kinds docz assigns meaning to. Every other kind is well-formedness only.
 
-| Kind | Types | Singleton | Content rule the validator checks | Programmatic consumer |
-| ---- | ----- | :-------: | --------------------------------- | --------------------- |
-| `references` | all | yes | every top-level bullet contains a markdown link | validate |
-| `open-questions` | rfc, adr, design, inv | yes | `### N.` headings numbered contiguously from 1; each has lettered `- a.` options | validate; a future OQ resolver |
-| `decisions` | inv, adr | yes | a table with a Decision column | none |
-| `phase` | impl | no | first level-3 heading inside matches `Phase <token>:` once HTML comments are stripped (the template's placeholder title is a comment); tokens unique across the document | `impl.Parse` |
-| `tasks` | impl, inside `phase` | per phase | every top-level bullet is a checkbox item; nested checkboxes are a warning | `impl.Parse`, `docwrite` |
-| `criteria` | impl, inside `phase` | per phase | dash bullets, folded | `impl.Parse` |
-| `testing` | impl | yes | checkboxes allowed; never tasks | `impl.Parse` excludes |
+| Kind | Types | Singleton | Content rule the validator checks | Reader |
+| ---- | ----- | :-------: | --------------------------------- | ------ |
 | `toc` | all | yes | headings after the region match the generated list | `toc`, validate |
 | `index` | README indexes | yes | the table between the markers equals a fresh render (`repo.Validate`, reported as `IndexDrift`) | `index.Splice`, validate |
+| `references` | all | yes | every top-level bullet contains a markdown link | `kinds.References` |
+| `open-questions` | all when present; required only by design | yes | `### N.` headings numbered contiguously from 1; each has lettered `- a.` options | `kinds.OpenQuestions`; a future OQ resolver |
+| `decisions` | all when present | yes | a table with a Question column and a Decision or Resolution column | `kinds.Decisions` |
+| `summary` | rfc, adr | yes | none | `kinds.Body` |
+| `alternatives` | rfc, adr | yes | at least one top-level bullet or level-3 heading (warning) | `kinds.Alternatives` |
+| `context` | adr, investigation | yes | none | `kinds.Body`; `kinds.Field` for `Triggered by` |
+| `criteria` | rfc at the top level; impl inside `phase` | rfc: yes; impl: per phase | dash bullets, folded | `kinds.Criteria` |
+| `testing` | design, impl | yes | checkboxes allowed; never tasks | `kinds.Body`; `impl` reads the checkboxes |
+| `problem`, `proposal` | rfc | yes | none | `kinds.Body` |
+| `risks` | rfc | yes | a table with Risk and Mitigation columns | `rfc` |
+| `decision` | adr | yes | none | `kinds.Body` |
+| `consequences` | adr | yes | contains `positive`, `negative`, and `neutral` | `adr` |
+| `positive`, `negative`, `neutral` | adr, inside `consequences` | per parent | top-level bullets | `kinds.Items` |
+| `overview`, `background`, `detailed-design`, `api-changes`, `data-model`, `rollout` | design | yes | none | `kinds.Body` |
+| `goals`, `non-goals` | design | yes | top-level bullets | `kinds.Items` |
+| `question`, `hypothesis`, `recommendation` | investigation | yes | none | `kinds.Body` |
+| `approach` | investigation | yes | an ordered list | `kinds.Items` |
+| `environment` | investigation | yes | a table with Component and Value columns | `investigation` |
+| `findings` | investigation | yes | none; each level-3 heading inside is an observation | `kinds.Sections` |
+| `conclusion` | investigation | yes | none; the `**Answer:**` field is the package's | `kinds.Field` |
+| `objective` | impl | yes | none; the `**Implements:**` field is the package's | `kinds.Field` |
+| `scope` | impl | yes | contains `in-scope` and `out-of-scope` | `impl` |
+| `in-scope`, `out-of-scope` | impl, inside `scope` | per parent | top-level bullets | `kinds.Items` |
+| `phase` | impl | no | first level-3 heading inside matches `Phase <token>:` once HTML comments are stripped (the template's placeholder title is a comment); tokens unique across the document | `impl.Parse` |
+| `tasks` | impl, inside `phase` | per phase | every top-level bullet is a checkbox item; nested checkboxes are a warning | `impl.Parse`, `docwrite` |
+| `file-changes` | impl | yes | a table with File, Action, and Description columns | `impl` |
+| `dependencies` | impl | yes | none | `kinds.Body` |
 
-The catalogue is data in the `validate` package, not an interface: a
-`map[string]KindRule`. Adding a kind is one entry.
+Forty-one kinds, amended 2026-09-19 from nine: every section of every
+built-in template is a region, because every built-in is a structured
+type with a package that reads every field (DESIGN-0014 §2.9). A kind
+with no content rule is still a named span a package reads. A level-3
+subsection the model does not expose on its own — Supporting Data under
+an RFC's problem or an ADR's decision, the numbered subsections of a
+detailed design — is not a kind; it stays inside its parent's body. A
+type's own Open Questions and Decisions sections are optional everywhere
+but design, so a template need not carry them, and a document that has
+them is still read and checked. The catalogue is data in the `validate`
+package, not an interface: a `map[string]KindRule`. Adding a kind is one
+entry.
 
 ### 3. The schema: a marker skeleton the document names
 
@@ -246,19 +276,32 @@ singleton-ness stays with the kind. A schema therefore only tightens by
 growing, and adding a kind to a baked-in schema is a breaking change that
 waits for a major.
 
-The baked-in IMPL schema, `schema/impl.md` beside the embedded templates:
+The baked-in IMPL schema, `schema/impl.md` beside the embedded templates,
+lists every section of the IMPL template (amended 2026-09-19; §2):
 
 ```markdown
 <!--toc:start-->
 <!--toc:end-->
+<!--docz:objective:start-->
+<!--docz:objective:end-->
+<!--docz:scope:start-->
+<!--docz:in-scope:start-->
+<!--docz:in-scope:end-->
+<!--docz:out-of-scope:start-->
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 <!--docz:phase:start-->
 <!--docz:tasks:start-->
 <!--docz:tasks:end-->
 <!--docz:criteria:start-->
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
+<!--docz:file-changes:start-->
+<!--docz:file-changes:end-->
 <!--docz:testing:start-->
 <!--docz:testing:end-->
+<!--docz:dependencies:start-->
+<!--docz:dependencies:end-->
 <!--docz:references:start-->
 <!--docz:references:end-->
 ```
@@ -266,7 +309,27 @@ The baked-in IMPL schema, `schema/impl.md` beside the embedded templates:
 The ToC pair keeps its legacy spelling here as everywhere (§1). The IMPL
 template's single placeholder phase and a document's five phases both
 satisfy the one `phase` entry, and a phase without a `tasks` region fails,
-because the schema nests `tasks` under `phase`.
+because the schema nests `tasks` under `phase`. The `## Implementation
+Phases` heading and its intro sit outside every region, as do the `---`
+breaks between phases; `scope` wraps its `## Scope` heading and nests the
+two `### In Scope` and `### Out of Scope` regions.
+
+The other four baked-in skeletons, kinds in template order with nesting
+shown by `>`:
+
+| Skeleton | Kinds |
+| -------- | ----- |
+| `schema/rfc.md` | toc, summary, problem, proposal, alternatives, risks, criteria, references |
+| `schema/adr.md` | toc, summary, context, decision, consequences > positive, negative, neutral; alternatives, references |
+| `schema/design.md` | toc, overview, goals, non-goals, background, detailed-design, api-changes, data-model, testing, rollout, open-questions, references |
+| `schema/investigation.md` | toc, question, hypothesis, context, approach, environment, findings, conclusion, recommendation, references |
+| `schema/default.md` (scaffolded for a custom type) | toc, references |
+
+A region wraps a heading of any level: in the design template the
+`## Goals and Non-Goals` heading stays outside while `goals` and
+`non-goals` each wrap their `###` heading at the top level. Templates
+gain markers only, never sections, since `docz create`'s output must
+still equal v1.2.2's apart from marker lines (DESIGN-0014 §4).
 
 **A document names its schema in frontmatter.** The optional `schema:`
 field holds a name. Absent or empty means the document's type name, which
@@ -431,17 +494,21 @@ Generic checks, by code family:
 that resolves names (§3), since `Document` only ever sees a resolved
 `Schema`.
 
-Per-type checks live in the type package, return the same `Finding` type,
-and see the document through `impl.Parse`'s eyes:
+Per-type checks live in the type packages, return the same `Finding`
+type, and see the document through their own `Parse` (DESIGN-0014 §2.9):
 
 ```go
-package impl
+package impl // and rfc, adr, design, investigation, each the same shape
 
-// Validate reports IMPL-specific findings. It runs Parse and inspects the
+// Validate reports type-specific findings. It runs Parse and inspects the
 // result; a document Parse rejects yields a single finding for the error.
 func Validate(doc []byte) []validate.Finding
-// codes: impl.phase.duplicate-token, impl.phase.no-heading, impl.phase.no-tasks,
-//        impl.task.empty, impl.task.verify-no-command, impl.task.skipped-no-note
+// impl:          impl.phase.duplicate-token, impl.phase.no-heading, impl.phase.no-tasks, impl.phase.no-title,
+//                impl.task.empty, impl.task.verify-no-command, impl.task.skipped-no-note
+// rfc:           rfc.alternatives.empty, rfc.risks.no-mitigation, rfc.status.open-question
+// adr:           adr.decision.empty, adr.consequences.empty, adr.superseded.no-reference
+// design:        design.goals.empty, design.status.open-question, design.decisions.mismatch
+// investigation: inv.context.no-trigger, inv.conclusion.no-answer, inv.conclusion.verdict
 ```
 
 The repository tier walks a tree, resolves a schema per document by name
@@ -460,6 +527,7 @@ type ValidateOptions struct{ Strict bool } // Strict: warnings count as failures
 
 type DocFindings struct {
     Type, Path string
+    Schema     string // the resolved schema name; "" when schema.unresolved was reported
     Findings   []validate.Finding
 }
 type IndexDrift struct{ Type, Path string } // README table differs from a fresh render
@@ -475,8 +543,12 @@ type ValidateReport struct {
 func (r *Repo) Validate(ctx context.Context, types []string, opts ValidateOptions) (ValidateReport, error)
 ```
 
-`repo.Validate` cannot call `impl.Validate` (R2: the core never imports a
-type package), so the command composes the tiers:
+`repo.Validate` cannot call a type package's `Validate` (R2: the core
+never imports a type package), so the command composes the tiers,
+switching on each document's resolved schema name and falling back to
+its type name (DESIGN-0014 §4): a built-in IMPL resolves to `impl` by its
+type name, a custom type that declares `schema: impl` is on the same
+contract, and a custom type on its own schema gets the generic tier only:
 
 ```mermaid
 sequenceDiagram
@@ -485,7 +557,7 @@ sequenceDiagram
   participant R as repo.Validate
   participant T as doctemplate
   participant V as validate
-  participant I as impl
+  participant I as type package
   U->>cmd: docz validate [type] [--strict] [--format json]
   cmd->>R: Validate(ctx, types, {Strict})
   loop each enabled type
@@ -502,8 +574,8 @@ sequenceDiagram
     R->>R: index.DryRunReadme → IndexDrift?
   end
   R-->>cmd: ValidateReport
-  loop each DocFindings with Type == impl
-    cmd->>I: Validate(entry.Content)
+  loop each DocFindings, switched on Schema with Type as fallback
+    cmd->>I: impl, rfc, adr, design, or investigation Validate(entry.Content)
     I-->>cmd: []Finding appended
   end
   cmd->>U: one line per finding as path:line code detail, then exit 0 clean, 1 on errors, 1 on warnings under --strict
@@ -534,7 +606,9 @@ Continuation folding, `verify:` lines, deferred and skipped markers, the
 criteria backtick rule, `Task.ID` positional identity, `Line`/`EndLine`
 byte accuracy, and the LF-only rule are unchanged. The heading regex still
 exists, but only to read the token from a heading the region already
-located.
+located. The four other type packages have no grammar of their own: each
+field is its region, read by a `kinds` reader or as a table (DESIGN-0014
+§2.9), so the replacement above is the only one this design makes.
 
 ### 6. Migrating the corpus
 
@@ -565,54 +639,68 @@ flowchart TD
   has -- yes --> canon{"non-canonical<br/>marker spelling?"}
   canon -- yes --> fix["rewrite markers in place"]
   canon -- no --> skip["unchanged"]
-  has -- no --> type{"type"}
-  type -- impl --> ph["Phase heading regex → phase; #### Tasks → tasks;<br/>#### Success Criteria → criteria; ## Testing Plan → testing"]
-  type -- others --> sec["## References → references; ## Open Questions → open-questions;<br/>## Decisions → decisions"]
-  ph --> ins["insert marker pairs around each span"]
-  sec --> ins
+  has -- no --> map["heading→kind map from the type's marked template,<br/>plus the shared kinds' default headings"]
+  map --> match["match the document's headings by level and text;<br/>phase headings by the impl regex"]
+  match --> ins["insert marker pairs around each span, parents before children"]
   ins --> out["written, or reported under --dry-run"]
 ```
+
+The heading-to-kind map is derived, not hand-written (amended 2026-09-19):
+for each region in the type's resolved template, the first heading inside
+it gives the level and text to look for, and the template's nesting gives
+the parent. A custom type with a marked template migrates the same way.
+Three additions cover what a template cannot say: the shared kinds'
+default headings (`## Open Questions`, `## Decisions`, `## References`)
+are always in the map, since a document may carry them when its template
+does not; the IMPL phase heading is matched by the `impl` regex, because
+the template's is a placeholder; and headings are compared after trimming,
+case-folding, and stripping inline markdown and HTML comments. A heading
+the document lacks is skipped, and `docz validate` then reports
+`region.missing` for the author to fix by hand.
 
 Rules: a document that already has any `docz:` region is never given more
 (idempotent by construction); a span is the heading through the line before
 the next heading of the same or shallower level, minus trailing blank lines
 and a trailing `---`, so the thematic breaks between phases stay outside the
-regions; markers are inserted on their own lines with a blank line
-preserved on each side; the pass runs
-`Regions` on its own output and refuses to write a document whose result
-is malformed. Every fleet repo runs it once, reviews the diff, and commits;
-after that `docz validate` keeps it true.
+regions; a parent region's span is its heading through the end of its last
+nested span; markers are inserted on their own lines with a blank line
+preserved on each side; the pass runs `Regions` on its own output and
+refuses to write a document whose result is malformed. Every fleet repo
+runs it once, reviews the diff, and commits; after that `docz validate`
+keeps it true.
 
 ### 7. Where each piece sits in the layers
 
 ```mermaid
 block-beta
   columns 3
-  L4["L4 cmd/validate.go: composes repo.Validate and impl.Validate, prints, exits"]:3
+  L4["L4 cmd/validate.go: composes repo.Validate and the type packages' Validate, prints, exits"]:3
   L3["L3 repo.Validate, repo.InsertRegions: tree walk, schema per document, template check, drift checks"]:3
   L2a["L2 validate: Document, Schema, catalogue"]
-  L2b["L2 impl.Validate: over impl.Parse"]
-  L2c["L2 other type packages: the same shape when they exist"]
+  L2b["L2 impl, rfc, adr, design, investigation: Validate over Parse"]
+  L2c["L2 kinds: readers for the shared kinds"]
   L1["L1 doctemplate.ResolveSchema, EmbeddedSchema: skeleton lookup, on disk then embedded"]:3
   L0["L0 docparse.Markers, docparse.Regions: facts, fence-aware, byte-accurate"]:3
 ```
 
-`validate` imports only L0 and `config`. `impl` imports `validate` for the
-`Finding` type, which is a downward edge. `repo` imports `validate`, and
-`doctemplate` for schemas as it already does for templates. docz-api
-imports `doctemplate` for the baked-in schemas and nothing above L2.
-Nothing in `doczcore` imports `impl`, so R2 holds and the command composes.
+`validate` imports only L0, `config`, and `kinds`. The type packages
+import `validate` for the `Finding` type and `kinds` for the shared
+readers, both downward edges. `repo` imports `validate`, and `doctemplate`
+for schemas as it already does for templates. docz-api imports
+`doctemplate` for the baked-in schemas and nothing above L2. Nothing in
+`doczcore` imports a type package, so R2 holds and the command composes.
 
 ## API / Interface Changes
 
 | Package | Change | Kind |
 | ------- | ------ | ---- |
-| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` | additive to the frozen package |
+| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role`; `ListItems`, `Tables`, `ListItem`, `Table` for the type packages (DESIGN-0014 §2.3) | additive to the frozen package |
 | `pkg/doczcore/document` | `Frontmatter.Schema` | additive to the frozen package |
 | `pkg/doczcore/doctemplate` | `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema`; embedded `schema/<type>.md` skeletons | part of the promoted package (DESIGN-0014 §2.7) |
 | `pkg/doczcore/validate` | new: `Document`, `Options`, `Finding`, `Severity`, `Schema`, `SchemaRegion`, `SchemaFromMarkers`, the kind catalogue | new public in v2.0.0, experimental until then |
-| `pkg/doczcore/repo` | `Validate`, `ValidateOptions`, `ValidateReport` with `Templates`, `DocFindings`, `IndexDrift`; `InsertRegions` and its types; `ExportTemplate` scaffolds a custom type's pair | part of the new package |
-| `pkg/impl` | `Validate`; `Parse` locates spans by region | part of the new package |
+| `pkg/doczcore/repo` | `Validate`, `ValidateOptions`, `ValidateReport` with `Templates`, `DocFindings` (with `Schema`), `IndexDrift`; `InsertRegions` and its types; `ExportTemplate` scaffolds a custom type's pair | part of the new package |
+| `pkg/doczcore/kinds` | readers for the shared kinds the catalogue names (DESIGN-0014 §2.12) | new public in v2.0.0, experimental until then |
+| `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` | `Validate` each; `Parse` locates every field by region (DESIGN-0014 §2.9) | part of the new packages |
 | `internal/template/templates/*.md` | every built-in template gains region markers; new `schema/<type>.md` skeletons, `default.md`, and `schema/default.md` | template contents, not contract |
 | `cmd/` | `docz validate [type] [--strict] [--format text\|json]`; `docz update --regions [--dry-run]`; `docz template override <custom-type>` scaffolds the pair | new commands, part of the swap |
 | `test/consumer` | imports `validate`, validates a fixture from outside the module | proof |
@@ -662,6 +750,7 @@ classDiagram
   class DocFindings {
     Type string
     Path string
+    Schema string
     Findings []Finding
   }
   Schema "1" --> "*" SchemaRegion
@@ -695,6 +784,11 @@ Every value is computed from bytes and holds no reference to its input;
   files, and the written pair validates clean.
 - **`impl.Validate`** over the DESIGN-0014 fixtures after migration, plus
   synthetic duplicate-token and no-heading cases.
+- **The four other packages' `Validate`** over their DESIGN-0014 fixtures
+  after migration, with one passing and one failing document per code
+  (an Accepted ADR with an empty decision, an Approved design with an
+  open question, a Concluded investigation without an answer, an RFC
+  whose risks table has no Mitigation column).
 - **Migration**: run `InsertRegions` over snapshots of docz's own
   `docs/impl` and `docs/design` trees under `t.TempDir()`, then assert
   `Regions` on the output matches the expected kinds and that a second run
@@ -713,7 +807,7 @@ additions are:
 
 | DESIGN-0014 step | Adds |
 | ---------------- | ---- |
-| 1, type layer | `docparse.Markers`/`Regions`; `validate` package with `SchemaFromMarkers`; `impl.Parse` over regions; `impl.Validate`; templates gain markers; embedded `schema/<type>.md` skeletons and the `default.md` pair; `Frontmatter.Schema`; goldens regenerated |
+| 1, type layer | `docparse.Markers`/`Regions`/`ListItems`/`Tables`; `validate` package with `SchemaFromMarkers` and the forty-one-kind catalogue; `kinds`; `Parse` over regions and `Validate` in all five type packages; every template section gains markers; embedded `schema/<type>.md` skeletons listing every section and the `default.md` pair; `Frontmatter.Schema`; goldens regenerated |
 | 2, promotions | `doctemplate.ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` |
 | 3, repository core | `repo.Validate` with the template check, `repo.InsertRegions`; `repo.ExportTemplate` scaffolds custom types |
 | 5, the swap | `docz validate`, `docz update --regions`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
@@ -739,10 +833,11 @@ markers from the start.
 | 3 | Is the finding message part of the contract? | (a) `Code` is the contract; `Detail` is a default a consumer may replace by code |
 | 4 | How is the corpus migrated? | (a) `docz update --regions`, dry-run aware, removable in a later major |
 | 5 | Do ToC and index drift belong to validate? | (a) yes: `toc.stale` per document, `IndexDrift` per type; subsumes issue #97's `update --check` |
-| 6 | Which regions does the IMPL template mark? | (a) the full set: `phase` with nested `tasks` and `criteria`, plus `testing` and `references` |
+| 6 | Which regions does the IMPL template mark? | (a) the full set: `phase` with nested `tasks` and `criteria`, plus `testing` and `references`; **amended 2026-09-19** to every section (§3) |
 | 7 | Hand-rolled walker or a CommonMark AST? | (a) hand-rolled, stdlib-only; goldmark behind the frozen contract only if CommonMark-fidelity bugs keep arriving |
 | 8 | Unknown kinds | (a) allowed; well-formedness only |
 | 9 | ToC and index splices on the region walker? | (a) internally yes: `Regions` reports the legacy ToC pair as `toc` and the README pair as `index`, and `toc.UpdateToC` and `index.Splice` locate their spans through it; externally nothing changes (DESIGN-0014 §2.5, §2.6) |
+| — | **Amendment 2026-09-19: every built-in is a structured type** | The catalogue grows from nine to forty-one kinds and every template section is a region (§2); each built-in's skeleton lists all of them (§3); `InsertRegions` derives its heading map from the marked template (§6); `docz validate` dispatches each document's type package on the resolved schema name with the type name as fallback, carried in `DocFindings.Schema` (§4). Unstructured markdown is the `api:` block's additional docs, not a type. DESIGN-0014 §2.9 and §2.12 hold the packages; IMPL-0018 Open Question 10 records the dispatch rule |
 
 ### 1. Where does the schema come from?
 

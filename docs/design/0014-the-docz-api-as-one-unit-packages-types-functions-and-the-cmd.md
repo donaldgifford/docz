@@ -27,9 +27,10 @@ created: 2026-09-14
     - [2.6 index (L1, promoted)](#26-index-l1-promoted)
     - [2.7 doctemplate (L1, promoted)](#27-doctemplate-l1-promoted)
     - [2.8 repo (L3, new)](#28-repo-l3-new)
-    - [2.9 impl (L2, new)](#29-impl-l2-new)
+    - [2.9 Type packages: impl, rfc, adr, design, investigation (L2, new)](#29-type-packages-impl-rfc-adr-design-investigation-l2-new)
     - [2.10 wiki (integration, promoted)](#210-wiki-integration-promoted)
     - [2.11 validate (L2, new)](#211-validate-l2-new)
+    - [2.12 kinds (L2, new)](#212-kinds-l2-new)
   - [3. The IMPL grammar](#3-the-impl-grammar)
   - [4. The cmd swap](#4-the-cmd-swap)
   - [5. Consumer map](#5-consumer-map)
@@ -60,7 +61,10 @@ created: 2026-09-14
 ADR-0002 decides that docz is an API package whose first consumer is the
 CLI, built as one unit and then swapped under `cmd/`. This design is that
 unit: every package, type, function, and error the library exposes; the
-IMPL grammar `pkg/impl` implements; the repository operations, wiki
+five type packages — `pkg/impl` with its grammar, and `pkg/rfc`,
+`pkg/adr`, `pkg/design`, `pkg/investigation` over the shared `kinds`
+readers, since every built-in is a structured type (amended 2026-09-19);
+the repository operations, wiki
 integration, and config rendering that today live only in `cmd/`; the map
 of which consumer calls what; and the `cmd/` swap that is the final step and
 the acceptance test. DESIGN-0013's inventory and `pkg/impl` specification
@@ -82,8 +86,10 @@ no release carries one design without the other.
 - **Byte cores under every path helper** (ADR-0002 R3), so a no-checkout
   consumer — the shape tempy and docz-api have — is first-class for
   mutation as well as reading.
-- **`pkg/impl` fully specified** — surface, grammar, identity rules — with
-  `Doc` as the root type.
+- **Every built-in type fully specified as a package** — `pkg/impl` with
+  surface, grammar, and identity rules, and `pkg/rfc`, `pkg/adr`,
+  `pkg/design`, `pkg/investigation` with a field per section — each with
+  `Doc` as the root type, over `pkg/doczcore/kinds`.
 - **Typed results everywhere; wording nowhere but `cmd/`** (R4).
 - **No CLI behaviour change** from the swap (ADR-0001 Decision 7).
 - **DESIGN-0015 ships in the same unit.** Region markers, the validator,
@@ -149,18 +155,23 @@ new, one package grows four functions, and `cmd/` shrinks.
 ### 1. Module layout and dependency graph
 
 ```text
-github.com/donaldgifford/docz
+github.com/donaldgifford/docz/v2
 ├── pkg/doczcore/
 │   ├── config        L0  load · merge · validate · type registry              unchanged
-│   ├── document      L0  frontmatter · scan · changelog                      unchanged
-│   ├── docparse      L0  headings · task items · title · markers · regions  additive
+│   ├── document      L0  frontmatter (+ schema) · scan · changelog           additive
+│   ├── docparse      L0  headings · task items · list items · tables · title · markers · regions  additive
 │   ├── docwrite      L1  byte cores + path wrappers · render · create        +4 funcs
 │   ├── toc           L1  ToC splice                                          unchanged
 │   ├── index         L1  README index table + marker splice                  promoted
 │   ├── doctemplate   L1  resolve + render · embed unexported · default yaml  promoted
 │   ├── validate      L2  Document · Schema · Finding · kind catalogue        new
+│   ├── kinds         L2  readers for the shared kinds: open questions, references, decisions, criteria, alternatives, fields, items   new
 │   └── repo          L3  Scan · List · Find · Create · Update · SetStatus · Init · Validate · InsertRegions · templates   new
 ├── pkg/impl          L2  Parse([]byte) → Doc · Validate                      new
+├── pkg/rfc           L2  Parse([]byte) → Doc · Validate                      new
+├── pkg/adr           L2  Parse([]byte) → Doc · Validate                      new
+├── pkg/design        L2  Parse([]byte) → Doc · Validate                      new
+├── pkg/investigation L2  Parse([]byte) → Doc · Validate                      new
 ├── pkg/wiki          --  MkDocs / TechDocs: nav, mkdocs.yml, Init, UpdateNav promoted
 ├── cmd/              L4  cobra shell: flags → one call → print               swapped
 ├── internal/         --  empty
@@ -177,7 +188,8 @@ flowchart TD
     wiki["pkg/wiki"]
   end
   subgraph L2 ["L2 — interpretation"]
-    impl["pkg/impl"]
+    types["pkg/impl · rfc · adr · design · investigation"]
+    kinds["doczcore/kinds"]
     validate["doczcore/validate"]
   end
   subgraph L1 ["L1 — mutation primitives"]
@@ -193,10 +205,13 @@ flowchart TD
   end
   cmd --> repo
   cmd --> wiki
-  cmd -.->|validate, task list| impl
+  cmd -.->|validate| types
   cmd -.-> validate
   repo --> validate
-  impl --> validate
+  types --> validate
+  types --> kinds
+  validate --> kinds
+  kinds --> docparse
   validate --> docparse
   validate --> document
   validate --> config
@@ -209,9 +224,9 @@ flowchart TD
   wiki --> doctemplate
   wiki --> docparse
   wiki --> config
-  impl --> document
-  impl --> docparse
-  impl --> config
+  types --> document
+  types --> docparse
+  types --> config
   docwrite --> doctemplate
   docwrite --> docparse
   docwrite --> document
@@ -222,8 +237,9 @@ flowchart TD
 ```
 
 Every edge points downward or sideways within a layer; `doczcore` has no
-edge into `pkg/impl` (R2); nothing points at `internal/` because nothing is
-there (R5).
+edge into any type package (R2); the five type packages have no edges
+between themselves, since what they share sits below them in `kinds`;
+nothing points at `internal/` because nothing is there (R5).
 
 ### 2. Package specifications
 
@@ -311,13 +327,22 @@ type Marker struct { Kind string; Role Role; Line int; Canonical bool }
 type Region struct { Kind string; Start, End, Depth int; Closed bool }
 func Markers(content []byte) []Marker
 func Regions(content []byte) []Region
+
+// New (this design, for the type packages): two more facts under the same contract.
+type ListItem struct { Text string; Ordered bool; Indent, Line int } // every bullet or numbered item; TaskItems is the checkbox subset
+type Table struct { Header []string; Rows [][]string; Line int }     // a GFM pipe table; cells trimmed, inline markdown kept
+func ListItems(content []byte) []ListItem
+func Tables(content []byte) []Table
 ```
 
-`pkg/impl` builds on `Regions`, `Headings`, and `TaskItems` and re-walks raw
-lines only for what they do not report (§3). `Sections` and a `document.Kind` helper
-are deferred until a second type package exists (Open Question 10). The
-slug and comment-heading defects in #96 are bug fixes inside the frozen
-contract and are not part of this design.
+The type packages build on `Regions`, `Headings`, `TaskItems`, `ListItems`,
+and `Tables` and re-walk raw lines only for what they do not report (§3).
+`ListItems` and `Tables` are the two facts the four prose-heavier packages
+need that `impl` did not (Open Question 10, amended): the bullets under
+Goals or Consequences, and the Risks, Environment, File Changes, and
+Decisions tables. A `document.Kind` helper stays dropped. The slug and
+comment-heading defects in #96 are bug fixes inside the frozen contract
+and are not part of this design.
 
 #### 2.4 docwrite (L1, additive)
 
@@ -649,14 +674,35 @@ emits today arrives live through the hooks in §7, and every method takes a
 context it checks between types (rule R8), returning the report completed
 so far with the context's error.
 
-#### 2.9 impl (L2, new)
+#### 2.9 Type packages: impl, rfc, adr, design, investigation (L2, new)
 
-Carried over from DESIGN-0013 §5 with the root type renamed. Spans are
-located by region (DESIGN-0015 §5), never by heading text. `Parse` is keyed
-on the `phase`, `tasks`, and `criteria` kinds and never reads the type name
-(ADR-0002 R7 as restated under its Open Question 5): a custom type whose
-documents carry those kinds parses with it, and `docz task list` accepts
-its IDs.
+Every built-in type is a structured type (amended 2026-09-19; ADR-0002
+Decision 4 as amended). Each ships a package of the same shape:
+`Parse([]byte) (Doc, error)` returns a typed value with one field per
+section of the type's template, and `Validate([]byte) []validate.Finding`
+reports the rules only a typed model can check — a status that
+contradicts the content, a table missing a column, a question left open
+past approval. Spans are located by region (DESIGN-0015 §5), never by
+heading text, and no package reads the type name (ADR-0002 R7): a custom
+type whose documents carry the kinds a package reads parses with it, and
+a custom type on its own schema gets the generic tier plus the `kinds`
+readers (§2.12) over whatever shared kinds it carries. Unstructured
+markdown is not a docz type at all; it enters a consumer through the
+`api:` block's additional docs (DESIGN-0011), which is the escape hatch
+that lets the types stay rigid.
+
+Field rules common to the five packages: a `string` field is its region's
+body with the heading and HTML comments removed and whitespace trimmed
+(`kinds.Body`); an `[]kinds.Item` field is the region's top-level list
+items; a table field is the first `docparse.Tables` table inside the
+region, rows mapped by column position; a `**Label:**` field is read with
+`kinds.Field`; the shared kinds use their `kinds` readers. An absent
+optional region leaves its field zero. `Parse` fails only for
+`document.ErrNoFrontmatter` and CR line endings; a document missing a
+required region still parses, with that field zero, and is reported by
+`validate.Document` against its schema, not by `Parse`. Every string is
+copied. `impl` is the one package with a grammar of its own beyond these
+rules (§3), carried over from DESIGN-0013 §5 with the root type renamed.
 
 ```go
 package impl // import "github.com/donaldgifford/docz/v2/pkg/impl"
@@ -665,20 +711,35 @@ package impl // import "github.com/donaldgifford/docz/v2/pkg/impl"
 func Parse(doc []byte) (Doc, error)
 
 type Doc struct {
-    ID     string        // frontmatter id, e.g. "IMPL-0017"
-    Title  string        // frontmatter title
-    Status config.Status // frontmatter status, typed like document.Frontmatter
-    Phases []Phase
+    ID      string        // frontmatter id, e.g. "IMPL-0017"
+    Title   string        // frontmatter title
+    Status  config.Status // frontmatter status, typed like document.Frontmatter
+    Author  string
+    Created string
+
+    Objective     string              // objective region body
+    Implements    []string            // IDs from the "**Implements:**" field, e.g. "DESIGN-0012"
+    InScope       []kinds.Item
+    OutOfScope    []kinds.Item
+    Phases        []Phase
+    FileChanges   []FileChange        // file-changes table rows
+    Testing       []docparse.TaskItem // testing region checkboxes; never tasks
+    Dependencies  string
+    OpenQuestions []kinds.Question    // nil when the document has none
+    Decisions     []kinds.Decision
+    References    []kinds.Reference
 }
 
+type FileChange struct { File, Action, Description string; Line int }
+
 type Phase struct {
-    Index       int         // 1-based ordinal among phases, document order
-    Token       string      // heading token: "1", "A", "2B" — equals Index for template docs
-    Title       string      // text after "Phase <token>:", inline markdown stripped
-    Description string      // prose between the phase heading and its first nested region, trimmed, comments removed
+    Index       int              // 1-based ordinal among phases, document order
+    Token       string           // heading token: "1", "A", "2B" — equals Index for template docs
+    Title       string           // text after "Phase <token>:", inline markdown stripped
+    Description string           // prose between the phase heading and its first nested region, trimmed, comments removed
     Tasks       []Task
-    Criteria    []Criterion // nil when the phase has no criteria region
-    Line        int         // heading line, 1-based
+    Criteria    []kinds.Criterion // nil when the phase has no criteria region
+    Line        int              // heading line, 1-based
 }
 
 type Task struct {
@@ -695,13 +756,6 @@ type Task struct {
 type Marker struct {
     Note string // reason text, "" when the marker carries none
     Line int    // line the marker sits on
-}
-
-type Criterion struct {
-    Text       string
-    Executable bool   // the bullet starts with a backtick span
-    Command    string // the span's contents when Executable
-    Line       int
 }
 
 func (d Doc) Task(id string) (Task, bool)
@@ -732,6 +786,8 @@ sequenceDiagram
   C->>I: Parse(doc []byte)
   I->>D: ParseFrontmatter(doc)
   D-->>I: Frontmatter{ID, Title, Status}
+  I->>P: Regions(doc)
+  P-->>I: []Region{Kind, Start, End, Depth}
   I->>P: Headings(doc)
   P-->>I: []Heading{Level, Text, Line}
   I->>P: TaskItems(doc)
@@ -740,11 +796,107 @@ sequenceDiagram
   I-->>C: Doc
 ```
 
-The convention for the next type package is this package: `pkg/<type>`,
-`Parse([]byte) (Doc, error)`, value-typed helpers, its own sentinel errors,
-imports only L0, no interface. A consumer that wants "parse whatever this
-is" maps `Frontmatter.ID`'s prefix to a type with `config.ValidateType`
-and switches — still concrete types.
+The other four packages, one per remaining built-in. `Author` and
+`Created` sit beside `ID`, `Title`, and `Status` in every `Doc` and are
+elided below.
+
+```go
+package rfc // import "github.com/donaldgifford/docz/v2/pkg/rfc"
+
+func Parse(doc []byte) (Doc, error)
+func Validate(doc []byte) []validate.Finding
+
+type Doc struct {
+    ID string; Title string; Status config.Status // …
+    Summary       string
+    Problem       string            // problem region body, its Supporting Data subsection included
+    Proposal      string
+    Alternatives  []kinds.Alternative
+    Risks         []Risk            // risks table rows
+    Criteria      []kinds.Criterion // success criteria at the document level
+    OpenQuestions []kinds.Question
+    References    []kinds.Reference
+}
+type Risk struct { Risk, Impact, Likelihood, Mitigation string; Line int }
+// codes: rfc.alternatives.empty (warning), rfc.risks.no-mitigation (warning),
+//        rfc.status.open-question (error: Accepted with an unresolved question)
+```
+
+```go
+package adr // import "github.com/donaldgifford/docz/v2/pkg/adr"
+
+type Doc struct {
+    ID string; Title string; Status config.Status // …
+    Summary       string
+    Context       string
+    Decision      string // decision region body, Supporting Data included
+    Consequences  Consequences
+    Alternatives  []kinds.Alternative
+    OpenQuestions []kinds.Question
+    References    []kinds.Reference
+}
+type Consequences struct { Positive, Negative, Neutral []kinds.Item }
+// codes: adr.decision.empty (error: Accepted with an empty decision), adr.consequences.empty (warning),
+//        adr.superseded.no-reference (warning: Superseded without a reference to another ADR)
+```
+
+```go
+package design // import "github.com/donaldgifford/docz/v2/pkg/design"
+
+type Doc struct {
+    ID string; Title string; Status config.Status // …
+    Overview       string
+    Goals          []kinds.Item
+    NonGoals       []kinds.Item
+    Background     string
+    DetailedDesign string // the whole region; its numbered subsections are the author's, not a grammar
+    APIChanges     string
+    DataModel      string
+    Testing        string
+    Rollout        string
+    OpenQuestions  []kinds.Question
+    Decisions      []kinds.Decision
+    References     []kinds.Reference
+}
+// codes: design.goals.empty (warning), design.status.open-question (error: Approved or Implemented with an unresolved question),
+//        design.decisions.mismatch (warning: a resolved question without a Decisions row, or a row without a question)
+```
+
+```go
+package investigation // import "github.com/donaldgifford/docz/v2/pkg/investigation"
+
+type Doc struct {
+    ID string; Title string; Status config.Status // …
+    Question       string
+    Hypothesis     string
+    Context        string
+    TriggeredBy    string          // the "**Triggered by:**" field, "" when absent
+    Approach       []kinds.Item    // the ordered list
+    Environment    []Component     // environment table rows
+    Findings       []kinds.Section // one per level-3 heading inside the findings region, any title
+    Conclusion     string
+    Answer         string          // text after "**Answer:**", either bold spelling the corpus uses
+    Verdict        Verdict         // Yes, No, Inconclusive, or Unknown when the answer's first word is none of them
+    Recommendation string
+    OpenQuestions  []kinds.Question
+    Decisions      []kinds.Decision
+    References     []kinds.Reference
+}
+type Component struct { Component, Value string; Line int }
+type Verdict int
+// codes: inv.context.no-trigger (warning), inv.conclusion.no-answer (error: Concluded or Inconclusive without an Answer),
+//        inv.conclusion.verdict (warning: the Answer's first word is not yes, no, or inconclusive)
+```
+
+The five packages share one shape and nothing else: `pkg/<type>`,
+`Parse([]byte) (Doc, error)`, `Validate([]byte) []validate.Finding`,
+value types, their own sentinel errors, imports limited to L0, `validate`,
+and `kinds`, and no interface between them. A consumer that wants "parse
+whatever this is" maps the frontmatter `schema:` name, else the ID prefix
+through `config.ValidateType`, to a package and switches — still concrete
+types, no registry (ADR-0002 Decision 4). A sixth built-in would be a
+sixth package of the same shape plus its template, skeleton, and catalogue
+rows.
 
 #### 2.10 wiki (integration, promoted)
 
@@ -821,6 +973,46 @@ itself. `impl.Validate` returns the same `Finding`;
 checks; `cmd/validate.go` composes the three because the core cannot import
 a type package (R2).
 
+#### 2.12 kinds (L2, new)
+
+Readers for the kinds more than one type shares, so five packages do not
+carry five copies of the open-question grammar. Each function takes the
+bytes of one region, heading included, and returns values; none touches
+the filesystem, returns an error, or reads the type name. `validate`'s
+content rules for `references` and `open-questions` call the same
+readers, so a finding and a parsed value can never disagree.
+
+```go
+package kinds // import "github.com/donaldgifford/docz/v2/pkg/doczcore/kinds"
+
+type Item struct { Text string; Line int }                      // a top-level list item, continuation lines folded
+type Section struct { Title, Body string; Line int }            // a level-3 heading inside the region and its body
+type Criterion struct { Text string; Executable bool; Command string; Line int }
+type Alternative struct { Label, Title, Text string; Line int } // "- **A. Title.** text" or a "### A. Title" heading; Label "" when unlettered
+type Reference struct { Text, URL string; Line int }            // URL "" for a bullet with no link
+type Option struct { Letter, Text string; Recommended bool; Line int }
+type Resolution struct { Date, Choice, Note string; Line int }  // from the "> **Resolved <date>: (x)** note" blockquote
+type Question struct { Number int; Title string; Options []Option; Resolved *Resolution; Line int }
+type Decision struct { Number int; Question, Resolution string; Line int }
+
+func Body(region []byte) string                        // region text minus its heading and HTML comments, trimmed
+func Items(region []byte) []Item                       // top-level bullets or numbered items, folded
+func Sections(region []byte) []Section
+func Criteria(region []byte) []Criterion               // dash bullets; Executable iff the text starts with a backtick span
+func Alternatives(region []byte) []Alternative
+func References(region []byte) []Reference
+func OpenQuestions(region []byte) []Question           // "### N. Title" headings, lettered "- x." options, the resolution blockquote
+func Decisions(region []byte) []Decision               // the first table with a Question column and a Decision or Resolution column
+func Field(region []byte, label string) (string, bool) // text after "**<label>:**" on a line, the bold closed on either side of the colon
+```
+
+The open-question grammar is the fleet's: `### N.` headings numbered from
+1, options as `- a.` bullets with the recommendation marked
+*(recommendation)* or by being `a`, resolution as a blockquote opening
+`**Resolved <date>: (<letter>)`. The criteria rule that DESIGN-0013 gave
+`impl` moves here unchanged, so an RFC's success criteria and an IMPL
+phase's are one definition.
+
 ### 3. The IMPL grammar
 
 The grammar is a contract over the `phase`, `tasks`, and `criteria` kinds
@@ -828,7 +1020,9 @@ The grammar is a contract over the `phase`, `tasks`, and `criteria` kinds
 carry is its schema's to say (DESIGN-0015 §3), and the content rules
 inside a region belong to this package, so neither a template override nor
 a schema changes them. The tolerances for the fleet's hand-written
-documents (INV-0010) are unchanged.
+documents (INV-0010) are unchanged. The other four packages have no
+grammar beyond §2.9's field rules: a field is its region, read by a
+`kinds` reader or as a table.
 
 | Element | Rule | Source |
 | ------- | ---- | ------ |
@@ -953,7 +1147,7 @@ behaviour per handler and do not cross types.
 | `docz config` | `config.Load` (via `Open`) | YAML printing |
 | `docz wiki init` | `wiki.Init(root, cfg, InitOptions{…})` | site-name default from git, `.docz.yaml` precondition, printing |
 | `docz wiki update` | `wiki.UpdateNav(root, cfg, NavOptions{DryRun})` | nav tree printing |
-| `docz validate [type]` (DESIGN-0015 §4) | `repo.Validate(ctx, types, ValidateOptions{Strict})`, then `impl.Validate` per IMPL entry | composing the tiers, text/json, exit codes |
+| `docz validate [type]` (DESIGN-0015 §4) | `repo.Validate(ctx, types, ValidateOptions{Strict})`, then the type package's `Validate` per entry, switched on `DocFindings.Schema` with the type name as fallback (`impl`, `rfc`, `adr`, `design`, `investigation`) | composing the tiers, text/json, exit codes |
 | `docz update --regions` (DESIGN-0015 §6) | `repo.InsertRegions(ctx, types, InsertRegionsOptions{DryRun})` | printing |
 | `docz task list <impl-id>` (ADR-0002 OQ 4) | `repo.Find(id)` then `impl.Parse(entry.Content)` | text/json rendering of tasks |
 | `docz version` | — | all |
@@ -978,7 +1172,8 @@ Expected size: `cmd/` non-test lines fall from about 4 600 to roughly half.
 | `index` | yes | — | — | maybe (`GenerateTable` for its own indexes) |
 | `doctemplate` | yes | — | — | `EmbeddedSchema` (DESIGN-0015 §3) |
 | `repo` | yes | — | — | — (no checkout) |
-| `impl` | `task list` | yes | yes (migrates off its own model) | maybe (progress rendering) |
+| `impl`, `rfc`, `adr`, `design`, `investigation` | `validate` | `impl` | `impl` (migrates off its own model) | maybe (typed rendering per type) |
+| `kinds` | via the type packages | via `impl` | via `impl` | maybe (open questions, references) |
 | `wiki` | yes | — | — | — |
 | `validate` | yes | maybe (workspace gate) | — | yes (ingest warnings) |
 
@@ -991,20 +1186,21 @@ after the API and the CLI are done.
 
 ```mermaid
 flowchart LR
-  cli["docz CLI"] --> repo & wiki & impl & validate
+  cli["docz CLI"] --> repo & wiki & impl & more & validate
   tempy["tempy (GitHub API, no checkout)"] --> impl & docwrite
   booty["sdk-booty-sh doczwork"] --> impl & docwrite
   api["docz-api (no checkout)"] --> document & docparse & config & validate & doctemplate
-  api -.-> index & impl
+  api -.-> index & impl & more
   repo --> docwrite & toc & index & doctemplate & document & config
-  impl --> document & docparse & config
+  impl --> kinds & document & docparse & config
+  more["rfc · adr · design · investigation"] --> kinds & document & docparse & config
 ```
 
 No consumer needs a package it does not import: a binary that wants only
 the IMPL model compiles `impl`, `validate` (for the `Finding` type),
-`docwrite`, `doctemplate` (through `docwrite.Create`'s dependency — the
-one ride-along ADR-0001 accepted), `document`, `docparse`, `config`, and
-`yaml.v3`. Nothing from `repo`, `index`, `toc`, or `wiki`, and no
+`kinds`, `docwrite`, `doctemplate` (through `docwrite.Create`'s
+dependency — the one ride-along ADR-0001 accepted), `document`,
+`docparse`, `config`, and `yaml.v3`. Nothing from `repo`, `index`, `toc`, or `wiki`, and no
 telemetry module from anywhere.
 
 ### 6. Enforcing the layer rules
@@ -1183,14 +1379,15 @@ reports; whether they need hooks of their own is Open Question 12.
 | ------- | ------ | ---- | ----------- |
 | `pkg/doczcore/config` | none | — | v1.0.0 |
 | `pkg/doczcore/document` | `Frontmatter.Schema` (DESIGN-0015 §3) | additive | v1.0.0 (existing), v2.0.0 (new) |
-| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); #96 fixes are bugs | additive | v1.0.0 (existing), v2.0.0 (new) |
+| `pkg/doczcore/docparse` | `Markers`, `Regions`, `Marker`, `Region`, `Role` (DESIGN-0015); `ListItems`, `Tables`, `ListItem`, `Table` (§2.3); #96 fixes are bugs | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/docwrite` | `SetStatusBytes`, `SetTaskStateBytes`, `SetTaskState`, `NextNumber`, `Render`, `Rendered`, `ErrTaskAlreadyUnchecked` | additive | v1.0.0 (existing), v2.0.0 (new) |
 | `pkg/doczcore/toc` | none on the surface; span located via `docparse.Regions` internally (DESIGN-0015 OQ 9) | — | v1.0.0 |
 | `pkg/doczcore/index` | promoted whole; `Splice`, `Scaffold`, marker constants exported | new public | v2.0.0 |
 | `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate`; `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` and the embedded schema skeletons (DESIGN-0015 §3) | new public | v2.0.0 |
 | `pkg/doczcore/validate` | new (DESIGN-0015) | new public | v2.0.0 |
 | `pkg/doczcore/repo` | new; every method takes a context; `Hooks`; `Validate`, `InsertRegions` | new public | v2.0.0 |
-| `pkg/impl` | new; `Parse` over regions; `Validate` | new public | v2.0.0 |
+| `pkg/doczcore/kinds` | new; readers for the shared kinds (§2.12) | new public | v2.0.0 |
+| `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` | new; `Parse` over regions to a typed `Doc`, `Validate`, one package per built-in (§2.9) | new public | v2.0.0 |
 | `pkg/wiki` | promoted whole; `Init`, `UpdateNav` with a context, options and reports | new public | v2.0.0 |
 | embedded templates | region markers added (DESIGN-0015 §2) | contents, not contract | — |
 | `internal/` | emptied | — | — |
@@ -1272,7 +1469,17 @@ classDiagram
     ID string
     Title string
     Status config.Status
+    Objective string
+    Implements []string
+    InScope []kinds.Item
+    OutOfScope []kinds.Item
     Phases []Phase
+    FileChanges []FileChange
+    Testing []docparse.TaskItem
+    Dependencies string
+    OpenQuestions []kinds.Question
+    Decisions []kinds.Decision
+    References []kinds.Reference
     Task(id) (Task, bool)
     Phase(token) (Phase, bool)
     Tasks() []Task
@@ -1284,7 +1491,7 @@ classDiagram
     Title string
     Description string
     Tasks []Task
-    Criteria []Criterion
+    Criteria []kinds.Criterion
     Line int
   }
   class Task {
@@ -1301,17 +1508,70 @@ classDiagram
     Note string
     Line int
   }
+  Doc "1" --> "*" Phase
+  Phase "1" --> "*" Task
+  Task --> "0..1" Marker : Deferred
+  Task --> "0..1" Marker : Skipped
+```
+
+The shared value types every `Doc` is built from (§2.12); the four other
+`Doc` shapes are the Go blocks in §2.9:
+
+```mermaid
+classDiagram
+  class Question {
+    Number int
+    Title string
+    Options []Option
+    Resolved *Resolution
+    Line int
+  }
+  class Option {
+    Letter string
+    Text string
+    Recommended bool
+    Line int
+  }
+  class Resolution {
+    Date string
+    Choice string
+    Note string
+    Line int
+  }
+  class Decision {
+    Number int
+    Question string
+    Resolution string
+    Line int
+  }
+  class Reference {
+    Text string
+    URL string
+    Line int
+  }
+  class Alternative {
+    Label string
+    Title string
+    Text string
+    Line int
+  }
   class Criterion {
     Text string
     Executable bool
     Command string
     Line int
   }
-  Doc "1" --> "*" Phase
-  Phase "1" --> "*" Task
-  Phase "1" --> "*" Criterion
-  Task --> "0..1" Marker : Deferred
-  Task --> "0..1" Marker : Skipped
+  class Item {
+    Text string
+    Line int
+  }
+  class Section {
+    Title string
+    Body string
+    Line int
+  }
+  Question "1" --> "*" Option
+  Question --> "0..1" Resolution
 ```
 
 No storage anywhere: every value is computed from bytes or from a scan and
@@ -1331,6 +1591,23 @@ construct per call.
   IDs are unique; no `Text` contains a verify prefix or a marker;
   `EndLine >= Line`; a skipped task keeps its ID. `FuzzParse` pins
   never-panic.
+- **`kinds`**: table tests per reader over fixtures cut from the corpus:
+  every open-questions section in ADR-0002, ADR-0003, DESIGN-0014, and
+  DESIGN-0015 (numbering, lettered options, the resolution blockquote
+  with and without a note), references with and without links, the
+  Decisions tables, criteria in both the RFC and IMPL positions,
+  alternatives as bullets and as headings, and `**Answer:**` in both
+  bold spellings the investigations use; a fuzz target per reader.
+- **`rfc`, `adr`, `design`, `investigation`**: golden fixtures under each
+  package's `testdata/`, snapshotted from the corpora that have them and
+  kept as `.orig.md` plus hand-migrated `.md` like `impl`'s: sdk-booty-sh's
+  three RFCs plus one rendered from the template (docz has no RFC), docz
+  ADR-0001–0003 with sdk-booty-sh's and tempy's ADRs, docz designs sampled
+  for shape variety plus docz-api's, and docz INV-0001–0010 (free-form
+  Findings headings, both Answer spellings). `.golden.txt` fact files
+  regenerated by `-update`, a `FuzzParse` each, and the invariants: every
+  `Line` is a line `docparse` reports; a field is zero iff its region is
+  absent; each `Validate` code appears only when its condition holds.
 - **`docwrite` byte cores**: the existing `status` and `checktask` goldens
   run through the path wrappers unchanged, plus a bytes-only table for the
   uncheck direction and for `Render` (output equals what `Create` writes).
@@ -1371,7 +1648,7 @@ timeline
   section Module path
     go.mod becomes docz/v2 : parity goldens captured from v1.2.2
   section Type layer first
-    docparse Markers and Regions : validate package : pkg/impl Parse and Doc over regions : docwrite byte cores and Render : templates gain markers : consumer proof
+    docparse Markers Regions ListItems Tables : validate package : kinds readers : five type packages Parse Doc Validate : docwrite byte cores and Render : every template section gains markers : consumer proof
   section Promotions
     internal/template → doctemplate with DefaultConfigYAML : internal/index → index with Splice and Scaffold : internal/wiki → pkg/wiki with Init and UpdateNav
   section Repository core
@@ -1385,7 +1662,7 @@ timeline
 | Step | Delivers | PR label |
 | ---- | -------- | -------- |
 | 0 | Module path → `github.com/donaldgifford/docz/v2` (`go.mod`, every import, `Makefile` and `.goreleaser.yml` ldflags, `test/consumer`); parity goldens captured from the v1.2.2 binary into `test/parity/`; `release.yml` gains a tag trigger for `v*-beta.*` pre-release tags and `pr-semver-bump`'s pre-release-base behaviour is checked (ADR-0002 Open Question 3). v1.x tags keep the old path; a `v1` branch is cut from v1.2.2 only on demand | `dont-release` |
-| 1 | `docparse.Markers`/`Regions`; `validate`; `pkg/impl` over regions with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers and its schema skeleton; consumer proof | `dont-release` |
+| 1 | `docparse.Markers`/`Regions`/`ListItems`/`Tables`; `validate` with the full kind catalogue; `kinds`; `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` over regions, each with `Validate`; `docwrite` byte cores, `SetTaskState`, `NextNumber`, `Render`; every embedded template gains markers around every section and its schema skeleton; consumer proof | `dont-release` |
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); schema resolution; `internal/` emptied | `dont-release` |
 | 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions`; `ExportTemplate` scaffolds custom types | `dont-release` |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` |
@@ -1404,7 +1681,7 @@ gitGraph
   commit id: "v1.2.2" tag: "v1.2.2"
   commit id: "module path docz/v2, parity goldens"
   branch feat/impl
-  commit id: "regions, validate, pkg/impl, byte cores"
+  commit id: "regions, validate, kinds, five type packages, byte cores"
   checkout main
   merge feat/impl id: "dont-release"
   branch feat/promote
@@ -1476,7 +1753,7 @@ diagrams render in the wiki).
 | 7 | Status no-op short-circuit | (a) in `repo.SetStatus`, reported as `Changed: false` |
 | 8 | How much of wiki is orchestration | (a) `Init` and `UpdateNav` in `pkg/wiki` |
 | 9 | Error shapes in repo | **(b) typed errors everywhere** — the typed API should give all of its benefits; §2.8 updated |
-| 10 | Generic facts for the next type package | **superseded by DESIGN-0015**: regions are the typed spans a future package would want, and `Repo.Find` already maps a prefix to a type through config; both helpers dropped |
+| 10 | Generic facts for the next type package | **superseded by DESIGN-0015**: regions are the typed spans a future package would want, and `Repo.Find` already maps a prefix to a type through config; both helpers dropped. **Amended 2026-09-19**: every built-in ships its package in this unit; the shared readers live in `kinds` (§2.12) and `docparse` gains `ListItems` and `Tables` (§2.3) |
 | 11 | Delivery granularity | **one IMPL covering this design and DESIGN-0015 together**, a phase per rollout step; designs map to IMPLs many-to-one when they ship as a unit |
 | 12 | Hooks for wiki | (a) none; the nav report is enough |
 
@@ -1626,6 +1903,13 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 > are exactly what the next package wants, and heading spans are the
 > heuristic being retired — and `Repo.Find` already does the second
 > through `config.ValidateType`. Both are dropped.
+>
+> **Amended 2026-09-19.** The second type package did not wait: every
+> built-in is a structured type and ships its package in this unit (§2.9).
+> What they share — open questions, references, decisions, criteria,
+> alternatives, fields, list items — lives in `pkg/doczcore/kinds` (§2.12),
+> and `docparse` gains the two facts they need, `ListItems` and `Tables`.
+> `document.Kind` stays dropped.
 
 - a. **Defer** `docparse.Sections` and `document.Kind` until a second type
   package exists; the shapes are noted so they are not redesigned.

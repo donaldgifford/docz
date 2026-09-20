@@ -19,7 +19,7 @@ created: 2026-09-19
   - [Phase 0: Module path, parity goldens, and release mechanics](#phase-0-module-path-parity-goldens-and-release-mechanics)
     - [Tasks](#tasks)
     - [Success Criteria](#success-criteria)
-  - [Phase 1: The type layer — regions, validate, pkg/impl, docwrite byte cores, marked templates](#phase-1-the-type-layer--regions-validate-pkgimpl-docwrite-byte-cores-marked-templates)
+  - [Phase 1: The type layer — regions, validate, kinds, five type packages, docwrite byte cores, marked templates](#phase-1-the-type-layer--regions-validate-kinds-five-type-packages-docwrite-byte-cores-marked-templates)
     - [Tasks](#tasks-1)
     - [Success Criteria](#success-criteria-1)
   - [Phase 2: Promotions — doctemplate, index, pkg/wiki; schema resolution; internal/ emptied](#phase-2-promotions--doctemplate-index-pkgwiki-schema-resolution-internal-emptied)
@@ -63,6 +63,14 @@ by hand. Nothing in this document cuts v2.0.0 (ADR-0002 Decision 6): that
 milestone is the docz-api and UI consolidation, each its own design, after
 the CLI.
 
+Every built-in type is a structured type (ADR-0002 Decision 4 as amended
+2026-09-19): five type packages, one per built-in, each reading every
+section of its template into a typed `Doc` over the shared `kinds`
+readers, so a consumer reads any docz document as a typed value with no
+ambiguity about what it holds. Unstructured markdown is not a type; it
+reaches a consumer through the `api:` block's additional docs
+(DESIGN-0011), which is the escape hatch that lets the types stay rigid.
+
 **Implements:** DESIGN-0014 (all 12 open questions resolved 2026-09-19) and
 DESIGN-0015 (all 9 resolved 2026-09-19) as one unit (DESIGN-0014 Open
 Question 11), under ADR-0002 (Decisions 1–7, R1–R8) and ADR-0003 (plan
@@ -74,10 +82,12 @@ removal on the v2 line).
 
 - Phase 0: module path `/v2`, the parity suite with goldens captured from
   the v1.2.2 binary, and the pre-release tag mechanics.
-- Phase 1: `docparse.Markers`/`Regions`; the `validate` package; `pkg/impl`
-  over regions with `impl.Validate`; `docwrite` byte cores, `SetTaskState`,
-  `NextNumber`, `Render`; markers and embedded schema skeletons for every
-  built-in template; `document.Frontmatter.Schema`.
+- Phase 1: `docparse.Markers`/`Regions`/`ListItems`/`Tables`; the
+  `validate` package with the forty-one-kind catalogue; `kinds`; the five
+  type packages `impl`, `rfc`, `adr`, `design`, and `investigation`, each
+  with `Parse` and `Validate`; `docwrite` byte cores, `SetTaskState`,
+  `NextNumber`, `Render`; markers around every section and embedded schema
+  skeletons for every built-in template; `document.Frontmatter.Schema`.
 - Phase 2: `internal/template` → `pkg/doczcore/doctemplate` (with schema
   resolution and `DefaultConfigYAML`), `internal/index` → `pkg/doczcore/index`
   (with `Splice` and `Scaffold`), `internal/wiki` → `pkg/wiki` (with `Init`
@@ -110,6 +120,9 @@ removal on the v2 line).
   `docwrite`, and `toc` beyond additions (ADR-0001 Decision 7 still holds
   through the betas; the freeze is lifted for shape changes only at v2.0.0).
 - `docz task list <impl-id>` (Open Question 5: deferred to a later beta).
+- A type package for custom types. A custom type on its own schema gets
+  the generic tier and the `kinds` readers; one that declares
+  `schema: <built-in>` gets that built-in's package (ADR-0002 R7).
 - Generics in the type layer (ADR-0002 Open Question 5: no).
 - A CommonMark AST (DESIGN-0015 Open Question 7: hand-rolled walker).
 - Hooks for `pkg/wiki` (DESIGN-0014 Open Question 12: none).
@@ -125,8 +138,9 @@ v1.2.2 for CLI users while carrying the new packages for library consumers.
 Every phase ends with `make fmt`, `make lint`, and `make ci` green, a
 go-review pass over the phase's diff, and — from Phase 1 on — `make parity`
 green against `build/bin/docz` under only the permitted deltas. A
-go-architect pass precedes Phase 1 (`validate`, `pkg/impl`) and Phase 3
-(`repo`), the two phases that create packages with no v1 ancestor. Every
+go-architect pass precedes Phase 1 (`validate`, `kinds`, and the five type
+packages) and Phase 3 (`repo`), the two phases that create packages with
+no v1 ancestor. Every
 new package's doc comment opens with the sentence "EXPERIMENTAL until
 v2.0.0: the surface may change between betas", removed at v2.0.0.
 
@@ -245,15 +259,16 @@ CLI does.
 
 ---
 
-### Phase 1: The type layer — regions, validate, pkg/impl, docwrite byte cores, marked templates
+### Phase 1: The type layer — regions, validate, kinds, five type packages, docwrite byte cores, marked templates
 
 Everything here is additive to the frozen packages or an entirely new
 package, so ADR-0001's freeze holds. Order inside the phase follows the
-dependency graph: `docparse` first (everything reads regions through it),
-then the templates and skeletons (the golden-pair tests need them), then
-`validate`, `pkg/impl`, the `docwrite` cores, and the consumer proof. The
-CLI's only visible change is the marker lines in `create` and `template`
-output, which the parity driver drops.
+dependency graph, one commit per package: `docparse` first (everything
+reads regions, list items, and tables through it), then the templates and
+skeletons (the golden-pair tests need them), then `kinds`, `validate`,
+`pkg/impl`, the four other type packages, the `docwrite` cores, and the
+consumer proof. The CLI's only visible change is the marker lines in
+`create` and `template` output, which the parity driver drops.
 
 #### Tasks
 
@@ -276,6 +291,14 @@ output, which the parity driver drops.
       with a `.golden.txt` fact file regenerated by `-update`. `FuzzRegions`
       pins never-panic, `Start < End`, depth consistency, and `Closed`
       semantics.
+- [ ] Add `docparse.ListItems` (`ListItem{Text, Ordered, Indent, Line}`:
+      every bullet or numbered item, `TaskItems` being the checkbox
+      subset) and `docparse.Tables` (`Table{Header, Rows, Line}`: GFM pipe
+      tables, cells trimmed, inline markdown kept, the delimiter row
+      dropped) under the same bytes-in/values-out contract, fence-aware,
+      with goldens under `testdata/{listitems,tables}/` and a fuzz target
+      each (DESIGN-0014 §2.3).
+      verify: `go test ./pkg/doczcore/docparse/...`
 - [ ] Re-point `toc.UpdateToC` and the `parseHeadings` skip past
       `<!--toc:end-->` onto `docparse.Regions` kind `toc` (DESIGN-0014
       §2.5); the exported surface does not change and the existing golden
@@ -286,23 +309,45 @@ output, which the parity driver drops.
       `LoadFrontmatter` round-trip it; a `docwrite.SetStatus` golden with a
       `schema:` line proves the status locator ignores it.
       verify: `go test ./pkg/doczcore/document/... ./pkg/doczcore/docwrite/...`
-- [ ] Add canonical region markers to every embedded template
-      (`rfc.md`, `adr.md`, `design.md`, `impl.md`, `investigation.md`, and
-      `plan.md` until Phase 4 deletes it): `references` around References,
-      `open-questions` and `decisions` where the template has them,
-      `testing` around the IMPL Testing Plan, and in `impl.md` a `phase`
-      region per phase wrapping its `tasks` and `criteria` regions, with
-      the `---` breaks left outside (DESIGN-0015 §2, Open Question 6). The
-      legacy ToC pair stays as it is. Built-in templates ship without a
-      `schema:` line. Regenerate the template goldens.
+- [ ] Add canonical region markers around every section of every embedded
+      template (`rfc.md`, `adr.md`, `design.md`, `impl.md`,
+      `investigation.md`, and `plan.md` until Phase 4 deletes it) per the
+      DESIGN-0015 §3 skeletons: one region per heading the type's `Doc`
+      exposes, nested where the skeleton nests (`consequences` over
+      positive, negative, neutral; `scope` over in-scope and out-of-scope;
+      `phase` over tasks and criteria), the `## Goals and Non-Goals` and
+      `## Implementation Phases` headings and the `---` breaks left
+      outside, Supporting Data left inside its parent. No template gains
+      or loses a section. The legacy ToC pair stays as it is. Built-in
+      templates ship without a `schema:` line. Regenerate the template
+      goldens.
       verify: `go test ./internal/template/... -update && go test ./internal/template/...`
 - [ ] Add the embedded skeletons `internal/template/templates/schema/<type>.md`
       for each built-in type, plus the generic pair `default.md` and
       `schema/default.md` used to scaffold custom types in Phase 3. A
-      skeleton is a body of only region markers: for IMPL, the legacy ToC
-      pair, then `phase` wrapping `tasks` and `criteria`, `testing`,
-      `references` (DESIGN-0015 §3). Extend the embed directive to cover
-      `templates/schema/*.md`.
+      skeleton is a body of only region markers listing every section of
+      its template in order with the same nesting (DESIGN-0015 §3: the
+      full IMPL skeleton and the table for the other four); `default.md`
+      carries the ToC pair and `references` only. Extend the embed
+      directive to cover `templates/schema/*.md`.
+- [ ] Create `pkg/doczcore/kinds` (`item.go`, `question.go`,
+      `reference.go`, `decision.go`, `criteria.go`, `alternative.go`,
+      `field.go`): `Item`, `Section`, `Criterion`, `Alternative`,
+      `Reference`, `Option`, `Resolution`, `Question`, `Decision`, and the
+      readers `Body`, `Items`, `Sections`, `Criteria`, `Alternatives`,
+      `References`, `OpenQuestions`, `Decisions`, `Field` (DESIGN-0014
+      §2.12), each taking one region's bytes, heading included, no error,
+      no filesystem, no type name. The open-question grammar is the
+      fleet's (`### N.` headings, lettered `- a.` options, the
+      `> **Resolved <date>: (x)**` blockquote); `Field` accepts both bold
+      spellings the investigations use for `**Answer:**`.
+      verify: `go test ./pkg/doczcore/kinds/...`
+- [ ] `kinds` tests: a table per reader over fixtures cut from the corpus
+      (every open-questions section of ADR-0002, ADR-0003, DESIGN-0014,
+      and DESIGN-0015; references with and without links; the Decisions
+      tables; criteria in the RFC and IMPL positions; alternatives as
+      bullets and as headings) and a fuzz target per reader pinning
+      never-panic and byte-accurate lines.
 - [ ] Create `pkg/doczcore/validate` (`finding.go`, `schema.go`,
       `document.go`, one file per code family): `Severity` (`Error`,
       `Warning`), `Finding{Code, Severity, Line, Kind, Detail}`,
@@ -311,8 +356,11 @@ output, which the parity driver drops.
       `Document([]byte, Options) []Finding` with the DESIGN-0015 §4 code
       families and severities (`marker.*`, `region.*`, `frontmatter.*`,
       `references.*`, `open-questions.*`, `tasks.*`, `toc.*`, `file.*`,
-      `schema.name`). Every schema kind is required at least once under
-      the same parent; unlisted kinds are optional; an empty `Schema` is
+      `schema.name`) and the forty-one-kind catalogue of DESIGN-0015 §2 as
+      a `map[string]KindRule`, whose `references` and `open-questions`
+      rules call the `kinds` readers. Every schema kind is required at
+      least once under the same parent; unlisted kinds are optional and
+      still checked by their rule when present; an empty `Schema` is
       well-formedness only. `Document` never fails.
       verify: `go test ./pkg/doczcore/validate/...`
 - [ ] Validator tables per code family with a passing and a failing
@@ -328,15 +376,21 @@ output, which the parity driver drops.
       or logging module appears under `pkg/`.
       verify: `go test ./pkg/doczcore/ -run 'TestLayer'`
 - [ ] Create `pkg/impl` (`doc.go`, `parse.go`, `walk.go`, `validate.go`):
-      `Parse([]byte) (Doc, error)`, `Doc{ID, Title, Status, Phases}`,
-      `Phase{Index, Token, Title, Description, Tasks, Criteria, Line}`,
-      `Task{ID, Text, Checked, Verify, Deferred, Skipped *Marker, Line,
-      EndLine}`, `Marker{Note, Line}`, `Criterion{Text, Executable,
-      Command, Line}`, `Doc.Task(id)`, `Doc.Phase(token)`, `Doc.Tasks()`,
-      `Doc.Progress()`, `ErrNoPhases`, `DuplicatePhaseError{Token, Lines}`.
-      Spans come from `docparse.Regions` (`phase` at depth 0, `tasks` and
-      `criteria` at depth 1); the type name is never read (R7). The
-      DESIGN-0014 §3 grammar table verbatim: first H3 inside the phase
+      `Parse([]byte) (Doc, error)`, `Doc{ID, Title, Status, Author,
+      Created, Objective, Implements, InScope, OutOfScope, Phases,
+      FileChanges, Testing, Dependencies, OpenQuestions, Decisions,
+      References}`, `Phase{Index, Token, Title, Description, Tasks,
+      Criteria []kinds.Criterion, Line}`, `Task{ID, Text, Checked, Verify,
+      Deferred, Skipped *Marker, Line, EndLine}`, `Marker{Note, Line}`,
+      `FileChange{File, Action, Description, Line}`, `Doc.Task(id)`,
+      `Doc.Phase(token)`, `Doc.Tasks()`, `Doc.Progress()`, `ErrNoPhases`,
+      `DuplicatePhaseError{Token, Lines}`. Spans come from
+      `docparse.Regions` (`phase` at depth 0, `tasks` and `criteria` at
+      depth 1; every other field from its own region per the DESIGN-0014
+      §2.9 field rules, with `kinds.Field` for `**Implements:**` and
+      `docparse.Tables` for the file-changes table); the type name is
+      never read (R7). The DESIGN-0014 §3 grammar table verbatim: first
+      H3 inside the phase
       region with inline markdown and HTML comments stripped, matched by
       `^Phase\s+([^\s/:]+):\s*(.*)$`; description between the heading and
       the first depth-1 region; tasks are `TaskItem`s with `Indent == 0`;
@@ -364,6 +418,35 @@ output, which the parity driver drops.
       reports; IDs are unique; no `Text` contains a verify prefix or a
       marker; `EndLine >= Line`; a skipped task keeps its ID. `FuzzParse`
       pins never-panic.
+- [ ] Create `pkg/rfc`, `pkg/adr`, `pkg/design`, and `pkg/investigation`,
+      one commit each, with the `Doc` shapes and `Validate` codes of
+      DESIGN-0014 §2.9: `rfc.Doc{Summary, Problem, Proposal, Alternatives,
+      Risks, Criteria, OpenQuestions, References}` with `Risk` from the
+      risks table; `adr.Doc{Summary, Context, Decision, Consequences
+      {Positive, Negative, Neutral}, Alternatives, OpenQuestions,
+      References}`; `design.Doc{Overview, Goals, NonGoals, Background,
+      DetailedDesign, APIChanges, DataModel, Testing, Rollout,
+      OpenQuestions, Decisions, References}`; `investigation.Doc{Question,
+      Hypothesis, Context, TriggeredBy, Approach, Environment, Findings,
+      Conclusion, Answer, Verdict, Recommendation, OpenQuestions,
+      Decisions, References}` with `Component` from the environment table
+      and `Verdict` from the answer's first word. Each `Parse` reads every
+      field from its region through `kinds` or `docparse.Tables`, fails
+      only on `ErrNoFrontmatter` or CR, and copies every string; each
+      `Validate` runs `Parse` and reports its three codes.
+      verify: `go test ./pkg/rfc/... ./pkg/adr/... ./pkg/design/... ./pkg/investigation/...`
+- [ ] Golden fixtures for the four packages under each `testdata/`, as
+      `.orig.md` plus hand-migrated `.md` pairs like `impl`'s: sdk-booty-sh's
+      three RFCs and one rendered from the template; docz ADR-0001–0003
+      with sdk-booty-sh's and tempy's ADRs; docz designs sampled for shape
+      variety (one with a Decisions table, one without Open Questions)
+      plus docz-api's; docz INV-0001–0010 (free-form Findings headings,
+      both `**Answer:**` spellings, one without a trigger line).
+      `.golden.txt` fact files regenerated by `-update`; a `FuzzParse`
+      each; the invariants: every `Line` is a line `docparse` reports, a
+      field is zero iff its region is absent, and each `Validate` code
+      appears only when its condition holds, with one passing and one
+      failing document per code.
 - [ ] `docwrite.SetStatusBytes(doc []byte, status string) (out []byte, old
       string, err error)` as the byte core; `SetStatus(path, …)` becomes
       read → core → write. The existing status goldens pass through the
@@ -379,24 +462,28 @@ output, which the parity driver drops.
       string) (Rendered, error)`; `Create` becomes `NextNumber` → `Render`
       → write. A test asserts `Render`'s output equals what `Create`
       writes for the same inputs.
-- [ ] Extend `test/consumer/doc.go`: `impl.Parse` over an inline fixture,
+- [ ] Extend `test/consumer/doc.go`: one `Parse` call per type package
+      over an inline fixture each, `kinds.OpenQuestions`,
       `validate.Document` with a schema from `SchemaFromMarkers`,
       `docparse.Regions`, and `docwrite.SetStatusBytes`, each asserting a
       known value from outside the module.
       verify: `make test-consumer`
-- [ ] CLAUDE.md: architecture bullets for `docparse` regions, `validate`,
-      `pkg/impl`, the `docwrite` byte cores, `Frontmatter.Schema`, and the
-      embedded skeletons; `DEVELOPMENT.md`'s "add a type" walkthrough
-      gains the markers-and-skeleton step.
+- [ ] CLAUDE.md: architecture bullets for `docparse` regions, list items,
+      and tables, `validate`, `kinds`, the five type packages, the
+      `docwrite` byte cores, `Frontmatter.Schema`, and the embedded
+      skeletons; `DEVELOPMENT.md`'s "add a type" walkthrough gains the
+      markers-and-skeleton step and the note that a built-in also needs a
+      package.
 
 #### Success Criteria
 
 - `make ci` is green and the `test/consumer` calls that existed at v1.2.2
   compile unchanged — nothing in the five frozen packages changed shape.
-- `go test ./pkg/doczcore/docparse/... ./pkg/doczcore/validate/... ./pkg/impl/...`
+- `go test ./pkg/doczcore/docparse/... ./pkg/doczcore/kinds/... ./pkg/doczcore/validate/... ./pkg/impl/... ./pkg/rfc/... ./pkg/adr/... ./pkg/design/... ./pkg/investigation/...`
   passes, fuzz seed corpora included.
-- Every embedded template validates clean against its skeleton and the
-  derivation test binds each template to its skeleton.
+- Every embedded template validates clean against its skeleton, the
+  derivation test binds each template to its skeleton, and each type
+  package parses its own rendered template with every field present.
 - `go test ./pkg/doczcore/toc/...` passes with the golden byte-identical
   after the `Regions` re-point.
 - The `docwrite` status and checktask goldens pass unchanged through the
@@ -404,8 +491,8 @@ output, which the parity driver drops.
 - `go test ./pkg/doczcore/ -run 'TestLayer'` passes.
 - `make parity` is green against `build/bin/docz` with marker lines as the
   only delta.
-- `make test-consumer` exercises `validate` and `impl` from outside the
-  module.
+- `make test-consumer` exercises `validate`, `kinds`, and all five type
+  packages from outside the module.
 
 ---
 
@@ -484,7 +571,7 @@ end of this phase `internal/` no longer exists.
 - Resolution tests pass and `EmbeddedSchema` returns a skeleton for every
   built-in.
 - `make parity` is green with marker lines as the only delta.
-- `make test-consumer` covers eight `pkg/` packages.
+- `make test-consumer` covers fifteen `pkg/` packages.
 - `go test ./pkg/doczcore/ -run 'TestLayer'` still passes with the three
   new packages in the graph.
 
@@ -558,24 +645,32 @@ one place the retiring heading heuristics live.
       settles), `ValidateReport{Docs, Templates, Index, Errors, Warnings}`.
       `repo` never imports `pkg/impl` (R2).
 - [ ] `InsertRegions(ctx, types, InsertRegionsOptions{DryRun})
-      (InsertRegionsReport, error)` per DESIGN-0015 §6: a document with
-      any `docz:` region is never given more (non-canonical spellings are
-      rewritten and counted in `Fixed`); for the impl type the phase
-      heading regex → `phase`, `#### Tasks` → `tasks`, `#### Success
-      Criteria` → `criteria`, `## Testing Plan` → `testing`; for other
-      types `## References`, `## Open Questions`, `## Decisions`; a span is
-      the heading through the line before the next heading of the same or
-      shallower level minus trailing blank lines and a trailing `---`;
-      markers on their own lines with a blank line on each side; the pass
-      runs `Regions` on its output and refuses to write a malformed result.
-- [ ] Migration tests: `InsertRegions` over each `pkg/impl/testdata/*.orig.md`
-      equals its hand-migrated sibling byte-for-byte, and a second run
-      changes nothing; snapshots of docz's own `docs/impl` and
-      `docs/design` under `t.TempDir()` yield the expected `Regions` kinds
-      and are idempotent. The heuristics parity proof: a test-only
-      heading-based locator over each `.orig.md` yields the same task IDs
-      and task-line text as `impl.Parse` over the migrated output, which is
-      what licenses deleting the heuristics with the pass later.
+      (InsertRegionsReport, error)` per DESIGN-0015 §6 as amended: a
+      document with any `docz:` region is never given more (non-canonical
+      spellings are rewritten and counted in `Fixed`); the heading-to-kind
+      map is derived from the type's resolved marked template (the first
+      heading inside each region gives level and text, the template's
+      nesting gives the parent) plus the shared kinds' default headings
+      (`## Open Questions`, `## Decisions`, `## References`), with the IMPL
+      phase heading matched by the `impl` regex; headings compare after
+      trimming, case-folding, and stripping inline markdown and comments;
+      a span is the heading through the line before the next heading of
+      the same or shallower level minus trailing blank lines and a
+      trailing `---`, a parent's span running to the end of its last
+      child; markers on their own lines with a blank line on each side,
+      parents inserted before children; a heading the document lacks is
+      skipped; the pass runs `Regions` on its output and refuses to write
+      a malformed result.
+- [ ] Migration tests: `InsertRegions` over each `.orig.md` fixture in the
+      five type packages' `testdata/` equals its hand-migrated sibling
+      byte-for-byte, and a second run changes nothing; snapshots of docz's
+      own `docs/{adr,design,impl,investigation}` trees under `t.TempDir()`
+      yield the expected `Regions` kinds and are idempotent; a custom type
+      with a marked template migrates by the same map. The heuristics
+      parity proof: a test-only heading-based locator over each IMPL
+      `.orig.md` yields the same task IDs and task-line text as
+      `impl.Parse` over the migrated output, which is what licenses
+      deleting the heuristics with the pass later.
 - [ ] `Hooks{ScanStart, ScanDone, TypeSkipped, FileWritten, FileSkipped}`,
       `WithHooks(ctx, Hooks) context.Context`, `HooksFrom(ctx) Hooks`,
       `FileKind`, and `SkipReason` (DESIGN-0014 §7, R8); nil hooks are
@@ -600,8 +695,9 @@ one place the retiring heading heuristics live.
   typed error, the cancelled-context test, and the hook-sequence test.
 - `go test ./pkg/doczcore/ -run 'TestLayer'` passes with `repo` in the
   graph and `pkg/impl` absent from its dependencies.
-- `InsertRegions` reproduces every hand-migrated fixture byte-for-byte and
-  is idempotent; the heuristics parity proof passes.
+- `InsertRegions` reproduces every hand-migrated fixture across the five
+  type packages byte-for-byte and is idempotent; the heuristics parity
+  proof passes.
 - `ExportTemplate` on a template-less custom type writes both files and
   the pair validates clean.
 - `make parity` is green with marker lines as the only delta.
@@ -703,8 +799,10 @@ Decision 7).
       nothing
 - [ ] `docz validate [type] [--strict] [--format text|json]` in
       `cmd/validate.go`: `repo.Validate`, then the per-type tier composed
-      in `cmd/` (`impl.Validate` for the documents Open Question 10
-      selects), one line per finding as `path:line code detail`, JSON as
+      in `cmd/` as an explicit five-arm switch on `DocFindings.Schema`
+      with the type name as fallback — `impl`, `rfc`, `adr`, `design`,
+      `investigation` (Open Question 10) — one line per finding as
+      `path:line code detail`, JSON as
       the report verbatim, exit 0 clean, 1 on errors (or warnings under
       `--strict`), 2 for a usage error; command tests pin both formats and
       every exit code.
@@ -726,13 +824,14 @@ Decision 7).
       verify: `make ci`
 - [ ] Extend `test/consumer/doc.go` so it imports every `pkg/` package
       (`config`, `document`, `docparse`, `docwrite`, `toc`, `validate`,
-      `doctemplate`, `index`, `repo`, `impl`, `wiki`) with one call each.
+      `kinds`, `doctemplate`, `index`, `repo`, `impl`, `rfc`, `adr`,
+      `design`, `investigation`, `wiki`) with one call each.
       verify: `make test-consumer`
 - [ ] ADR-0001 dated amendment (ADR-0002 Open Question 2): the frozen five
       keep their v1 shapes through the betas, `internal/template` is
       importable as `doctemplate`, and the new packages are experimental
       until v2.0.0; IMPL-0014 Decision 3 note; DESIGN-0013 → Abandoned.
-- [ ] Living docs: CLAUDE.md (architecture bullets for the six new
+- [ ] Living docs: CLAUDE.md (architecture bullets for the eleven new
       packages, the `cmd/` swap, `internal/` gone, the parity suite, the
       beta release procedure), README (library section with the `/v2`
       import path and the experimental note, `docz validate`, `update
@@ -767,8 +866,8 @@ Decision 7).
   --regions`; the legacy plan skips; the `types.plan` normaliser).
 - `build/bin/docz validate` exits 0 over docz's own `docs/` and a second
   `docz update --regions` reports every document unchanged.
-- `make test-consumer` imports all eleven `pkg/` packages from outside the
-  module.
+- `make test-consumer` imports all sixteen `pkg/` packages from outside
+  the module.
 - The `v2.0.0-beta.1` tag exists, its GitHub release is a pre-release with
   binaries, and `go get …/v2@v2.0.0-beta.1` resolves from a scratch module.
 - ADR-0001 carries the amendment; DESIGN-0014 and DESIGN-0015 read
@@ -787,12 +886,15 @@ Decision 7).
 | `test/parity/` (driver, `fixtures/`, `testdata/`, `README.md`) | Create | Parity suite with goldens captured from v1.2.2 (Phase 0) |
 | `.github/workflows/prerelease.yml` | Create | `v*-beta.*` tag trigger running goreleaser only (Phase 0, Open Question 4) |
 | `pkg/doczcore/docparse/regions.go` + `testdata/regions/` | Create | `Markers`, `Regions`, goldens, `FuzzRegions` (Phase 1) |
+| `pkg/doczcore/docparse/{listitems,tables}.go` + testdata | Create | `ListItems`, `Tables` facts for the type packages (Phase 1) |
+| `pkg/doczcore/kinds/` | Create | Readers for the shared kinds: open questions, references, decisions, criteria, alternatives, fields, items, sections (Phase 1) |
 | `pkg/doczcore/toc/toc.go` | Modify | Span located via `docparse.Regions` kind `toc` (Phase 1) |
 | `pkg/doczcore/document/document.go` | Modify | `Frontmatter.Schema` (Phase 1) |
-| `internal/template/templates/*.md`, `templates/schema/*.md`, `default.md` | Modify/Create | Region markers, embedded skeletons, generic pair (Phase 1) |
+| `internal/template/templates/*.md`, `templates/schema/*.md`, `default.md` | Modify/Create | Region markers around every section, embedded skeletons listing them, generic pair (Phase 1) |
 | `pkg/doczcore/validate/` | Create | `Finding`, `Schema`, `SchemaFromMarkers`, `Document` (Phase 1) |
 | `pkg/doczcore/layer_test.go` | Create | R2 dependency and no-telemetry tests (Phase 1) |
 | `pkg/impl/` + `testdata/` | Create | `Parse`, `Doc`, `Validate`, goldens in `.orig.md`/`.md` pairs, `FuzzParse` (Phase 1) |
+| `pkg/{rfc,adr,design,investigation}/` + `testdata/` | Create | `Parse`, `Doc`, `Validate`, goldens, `FuzzParse`, one package per built-in (Phase 1) |
 | `pkg/doczcore/docwrite/{status,checktask,create}.go` | Modify | `SetStatusBytes`, `SetTaskStateBytes`/`SetTaskState`, `NextNumber`/`Render` (Phase 1) |
 | `pkg/doczcore/doctemplate/` | Create (git mv) | Promotion + `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `DefaultConfigYAML` (Phase 2) |
 | `pkg/doczcore/index/` | Create (git mv) | Promotion + `Splice`, `Scaffold`, `UpdateAction` (Phase 2) |
@@ -816,12 +918,16 @@ Decision 7).
 
 - [ ] Parity: `test/parity/` goldens from v1.2.2 replayed against
       `build/bin/docz` from Phase 1 on; in `make ci` from Phase 5
-- [ ] `docparse`: region goldens and `FuzzRegions`; `toc` golden
-      byte-identical after the re-point
-- [ ] `validate`: per-family tables, golden pairs over every embedded
-      template and skeleton, the template-to-skeleton derivation test
-- [ ] `pkg/impl`: golden fixtures with invariants, `FuzzParse`, `Validate`
-      cases for every code
+- [ ] `docparse`: region, list-item, and table goldens with a fuzz target
+      each; `toc` golden byte-identical after the re-point
+- [ ] `kinds`: a table per reader over corpus cuts; a fuzz target per
+      reader
+- [ ] `validate`: per-family tables, the catalogue's per-kind rules, golden
+      pairs over every embedded template and skeleton, the
+      template-to-skeleton derivation test
+- [ ] `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation`:
+      golden fixtures with invariants, `FuzzParse`, `Validate` cases for
+      every code, each package parsing its own rendered template
 - [ ] `docwrite`: existing goldens through the path wrappers; bytes-only
       tables for `SetStatusBytes`, the uncheck direction, and `Render`
 - [ ] `doctemplate`, `index`, `wiki`: moved tests unchanged; `Splice`
@@ -1011,6 +1117,14 @@ DESIGN-0015 §4's sequence runs `impl.Validate` for `DocFindings` with
 Findings}` does not carry the resolved schema name, so `cmd/` cannot make
 that second case true.
 
+> **Resolved 2026-09-19: (a), generalised to every built-in.** Every
+> built-in is a structured type with its own package (DESIGN-0014 §2.9 as
+> amended), so the switch in `cmd/validate.go` has five arms — `impl`,
+> `rfc`, `adr`, `design`, `investigation` — keyed on `DocFindings.Schema`
+> with the type name as fallback. Applied to DESIGN-0015 §4 and
+> DESIGN-0014 §4; the escape hatch for unstructured markdown is the
+> `api:` block's additional docs, not a looser type.
+
 - a. **Add `Schema string` (the resolved schema name) to
   `repo.DocFindings`** and have `cmd/validate.go` run `impl.Validate` for
   every document whose `Schema == "impl"` or whose `Type == "impl"`. The
@@ -1027,7 +1141,9 @@ that second case true.
 
 ## Decisions
 
-Open Questions 1–9 resolved **(a)** on 2026-09-19; 10 is open.
+All ten open questions resolved **(a)** on 2026-09-19; 10 generalised
+to every built-in type, which amended DESIGN-0014 §2.9/§2.12 and
+DESIGN-0015 §2/§3/§4/§6 the same day.
 
 | # | Question | Resolution |
 | - | -------- | ---------- |
@@ -1040,7 +1156,7 @@ Open Questions 1–9 resolved **(a)** on 2026-09-19; 10 is open.
 | 7 | `docz validate` in CI | Yes, non-strict, appended to `make ci` after `parity` in Phase 5 |
 | 8 | Plan delta in the parity suite | A named `types.plan` normaliser, the fourth permitted delta, applied from Phase 4 |
 | 9 | Hand-marking this document | No; it migrates with the corpus in Phase 5 |
-| 10 | Per-type tier dispatch in `docz validate` | Open |
+| 10 | Per-type tier dispatch in `docz validate` | An explicit five-arm switch in `cmd/validate.go` on the new `DocFindings.Schema` with the type name as fallback; every built-in has a package (`impl`, `rfc`, `adr`, `design`, `investigation`), a custom type on `schema: <built-in>` gets that arm, one on its own schema gets the generic tier only |
 
 ## References
 
