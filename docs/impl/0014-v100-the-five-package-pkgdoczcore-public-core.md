@@ -562,6 +562,17 @@ Resolved by user review on 2026-07-03.
 | 2   | Unknown-key handling        | (a) lenient                       | viper parity — zero behavior change                                                                                   |
 | 3   | `ParsePlan` phase semantics | (d) drop `ParsePlan` — facts only | `docparse` ships `Headings` + `TaskItems`; the Plan/Phase model moves to sdk-booty-sh `doczwork` (handoff R2 revised) |
 | 4   | `UpdateFiles` publicity     | (a) whole package                 | consistent with the ADR-0001 whole-package rule                                                                       |
+
+> **Note (2026-09-20 — [ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
+> / IMPL-0018):** Decision 3(d) is **superseded**. Dropping the plan model kept
+> `docparse` to facts, and that part stands — `docparse` still reports headings,
+> task items, list items, and tables and interprets none of them. What changed is
+> where interpretation lives: it came back into the module a layer up, as
+> `pkg/doczcore/kinds` plus a package per built-in type, so `pkg/impl` now owns
+> the phase-and-task model this decision sent to sdk-booty-sh's `doczwork`. The
+> reasoning is ADR-0002's: a model every consumer rebuilds by hand is one docz
+> should have shipped, and rebuilding it three times is the evidence. Decisions
+> 1, 2, and 4 are unaffected.
 <!--docz:decisions:end-->
 
 <!--docz:references:start-->

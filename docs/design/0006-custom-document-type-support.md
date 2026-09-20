@@ -30,6 +30,7 @@ created: 2026-06-17
 - [Data Model](#data-model)
 - [Testing Strategy](#testing-strategy)
 - [Migration / Rollout Plan](#migration--rollout-plan)
+- [Open Questions](#open-questions)
 - [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->

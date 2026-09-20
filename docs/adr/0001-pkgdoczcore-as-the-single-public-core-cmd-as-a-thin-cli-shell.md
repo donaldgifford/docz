@@ -11,6 +11,7 @@ created: 2026-07-03
 
 <!--toc:start-->
 - [Status](#status)
+- [Summary](#summary)
 - [Context](#context)
   - [What the code looks like today (the facts that make this feasible)](#what-the-code-looks-like-today-the-facts-that-make-this-feasible)
   - [The benchmark](#the-benchmark)
@@ -120,6 +121,28 @@ the API behind it.
 
 <!--docz:decision:start-->
 ## Decision
+
+> **Amendment (2026-09-20 — [ADR-0002](0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
+> / IMPL-0018):** this ADR stays **Accepted** and most of it still governs, but
+> three items are superseded in part. Decision 2's retention of `template`,
+> `index`, and `wiki` in `internal/` is **superseded**: they are promoted as
+> `pkg/doczcore/doctemplate`, `pkg/doczcore/index`, and `pkg/wiki`, `internal/`
+> is empty, and `template` is therefore importable as `doctemplate` — so
+> Decision 3's public→internal allowance, while still legal, has nothing left
+> to reach. Decision 4's "`cmd/` + `internal/` are the CLI product" is
+> **superseded**: `cmd/` alone is, and it orchestrates through
+> `pkg/doczcore/repo`. IMPL-0014 Decision 3(d)'s drop of the plan model is
+> **superseded** by `pkg/impl`.
+>
+> Decision 6's freeze is unchanged for the five original packages: the v2 line
+> carries `config`, `document`, `docparse`, `docwrite`, and `toc` forward in
+> their v1 shapes through the betas, with one breaking change to the catalogue
+> they describe — `plan` leaves it
+> ([ADR-0003](0003-remove-plan-from-the-built-in-document-types.md)). The
+> freeze does **not** reach the packages ADR-0002 adds: they are experimental
+> until v2.0.0 proper, may change between betas, and freeze when it ships.
+> Decisions 1, 5, and 7 are kept as written. ADR-0002's "What this supersedes
+> in ADR-0001" table is the item-by-item record.
 
 > Revised 2026-07-03 after the INV-0006 per-package demand audit and design
 > review. The original draft moved *all* `internal/` packages public; the

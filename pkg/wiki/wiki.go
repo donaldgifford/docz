@@ -1,5 +1,9 @@
 // Package wiki provides MkDocs nav generation from a docs directory tree.
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // Promoted whole from internal/wiki (IMPL-0018 Phase 2, DESIGN-0014 §2.10)
 // as a sibling of the type packages rather than part of doczcore: this is
 // an integration with MkDocs and TechDocs, not core and not a type.

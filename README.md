@@ -96,6 +96,7 @@ docz update --dry-run  # preview changes without writing
 | `docz create <type> <title>` | Create a new document from a template |
 | `docz update [type]` | Regenerate README index tables |
 | `docz list [type]` | List documents, optionally filtered by type |
+| `docz validate [type]` | Check documents against their schema and report drift |
 | `docz template show <type>` | Print the resolved template to stdout |
 | `docz template export <type> [path]` | Write the resolved template to a file |
 | `docz template override <type>` | Copy the template into the local overrides directory |
@@ -138,6 +139,14 @@ docz update --dry-run  # preview changes without writing
 |------|-------------|
 | `--status <status>` | Filter documents by status (case-insensitive) |
 | `--format <fmt>` | Output format: `table` (default), `json`, `csv` |
+
+### `docz validate` Flags
+
+| Flag | Description |
+|------|-------------|
+| `--strict` | Fail on warnings and index drift as well as errors |
+| `--format <fmt>` | Output format: `text` (default), `json` |
+| `--fix` | Mark the regions inference finds, then report what is left |
 
 ### `docz wiki init` Flags
 
@@ -217,7 +226,7 @@ docs/investigation/
 
 ## Custom Document Types
 
-Beyond the six built-ins, you can define your own document types entirely in
+Beyond the five built-ins, you can define your own document types entirely in
 `.docz.yaml` — no rebuild required. Add an entry under `types:` with a unique
 `id_prefix` and a directory:
 
@@ -554,6 +563,87 @@ metadata block and the first section heading:
 
 Then run `docz update` to populate the ToC.
 
+## Validation
+
+`docz validate` checks each document against the set of regions its type's
+schema requires, the content rules of each region kind, and the drift only a
+regeneration can see — a stale table of contents, and a README index table
+that is not what `docz update` would write. With no type argument every
+enabled type is checked.
+
+Findings come from three tiers, all printed in one format:
+
+- **Generic** — marker well-formedness, frontmatter shape, whether a required
+  region is present, and the content rules of the kinds the document carries
+  (`marker.*`, `frontmatter.*`, `region.*`, `content.*`, `references.*`,
+  `toc.*`).
+- **Repository** — index drift, which is `docz update`'s work rather than an
+  author's (`index.drift`).
+- **Per-type** — the rules only a typed model can check, each prefixed with
+  the type name (`adr.decision.empty`, `impl.phase.no-tasks`,
+  `inv.conclusion.no-answer`).
+
+Every finding prints as `path:line code detail`. The **code is the stable
+part** — filter on it in CI; the wording after it may change.
+
+```bash
+docz validate                  # every enabled type
+docz validate adr              # only ADRs
+docz validate --format json    # one JSON report, for CI
+docz validate --strict         # warnings and index drift fail too
+docz validate --fix            # mark what inference found, then re-report
+```
+
+A run over this repository's own ADRs:
+
+```text
+docs/adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md:507 references.no-link reference has no link: **INV-0006** — per-package core requirements audit (docz C…
+docs/adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md:509 references.no-link reference has no link: **IMPL-0014** — the implementation plan for this ADR (all …
+docs/adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md:513 references.no-link reference has no link: **ADR context / prior art** — DESIGN-0007 (`pkg/doczcore` …
+```
+
+Those are warnings, so the command exits `0`. Adding `--strict` prints the
+same lines and then fails with a one-line count:
+
+```text
+Error: 0 errors, 5 warnings
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Nothing found, or warnings only and no `--strict` |
+| `1` | Errors were found, or anything was found with `--strict` |
+| `2` | The command was used wrongly (unknown type, bad `--format`) |
+
+Errors always fail. Warnings and index drift fail **only** under `--strict`,
+which is what makes that flag the CI gate: a stale ToC and a drifted index
+are `docz update`'s work, so someone running `docz validate` by hand sees
+them without being stopped by them.
+
+### Fixing Documents
+
+`docz validate --fix` writes two things and nothing else:
+
+- **Region markers** for documents whose regions were read by *inference*
+  from their headings — the `region.inferred` warning — so the spans become
+  explicit `<!--docz:<kind>:start-->` / `<!--docz:<kind>:end-->` pairs.
+- **Canonical marker spellings** for markers `docz` already read leniently —
+  the `marker.spelling` warning.
+
+A section the document does not have is never invented, so `--fix` cannot
+make a document valid on its own. It re-validates afterwards and prints
+what is left for you to fix by hand; the exit code is the second pass's. One
+line is printed per document it changed, naming the kinds it marked and the
+count of markers it canonicalized, and nothing at all for a document it left
+alone. A second `--fix` over the same repository writes nothing.
+
+This is the migration path for documents written before the schema existed.
+It is not required: inference is permanent, so a repository that never runs
+`--fix` keeps validating and parsing forever. Documents created by
+`docz create` are marked from birth and need it never.
+
 ## MkDocs / Backstage TechDocs Integration
 
 `docz wiki` generates and maintains a `mkdocs.yml` compatible with Backstage's
@@ -625,8 +715,9 @@ Only enabled types (those with `enabled: true` in config) are included.
 
 ## Using docz as a Go Library
 
-Since v1.0.0 the parsing and writing core is a public, semver-governed Go
-API under `pkg/doczcore` — the same code the CLI runs on:
+Since v1.0.0 the parsing and writing core has been a public, semver-governed
+Go API. On the v2 line that surface is the whole of docz: sixteen packages
+under `pkg/`, and every `docz` command is one call into them plus printing:
 
 ```bash
 go get github.com/donaldgifford/docz/v2@latest   # the v2 line
@@ -638,17 +729,39 @@ The module path carries the major version: the v2 line is
 unversioned `github.com/donaldgifford/docz`. A consumer that pins v1 is
 unaffected by the v2 work and can stay there.
 
+The packages are layered: facts, then mutation, then interpretation, then
+whole-repository operations. A layer imports only the layers beneath it.
+
 | Package | What it provides |
 |---------|------------------|
 | `pkg/doczcore/config` | `.docz.yaml` loading, validation, type resolution, and the `changelog:` / `api:` declarations (`Load`, `Validate`, `EnabledTypes`) |
 | `pkg/doczcore/document` | Frontmatter parsing, directory scanning, and changelog parsing (`ParseFrontmatter`, `ScanDocuments`, `ParseChangelog`) |
-| `pkg/doczcore/docparse` | Markdown facts: headings with GitHub anchor slugs, checkbox task items, 1-based line numbers, and the document title (`Headings`, `TaskItems`, `Title`) |
-| `pkg/doczcore/docwrite` | The write side: `Create` from templates, byte-preserving `SetStatus`, checkbox `CheckTask` |
+| `pkg/doczcore/docparse` | Markdown facts: headings with GitHub anchor slugs, checkbox task items, list items, pipe tables, the document title, and the `<!--docz:…-->` region spans (`Headings`, `TaskItems`, `Title`, `Regions`) |
+| `pkg/doczcore/docwrite` | The write side: `Create` from templates, byte-preserving `SetStatus`, checkbox `SetTaskState`, and a `…Bytes` core for each so a consumer holding bytes never needs a path |
 | `pkg/doczcore/toc` | ToC generation and marker splicing over `docparse` facts (`UpdateToC`, `UpdateFiles`) |
+| `pkg/doczcore/kinds` | Region spans to typed fields: the readers every document type shares, plus heading-based inference for documents written before markers (`ResolveRegions`, `RegionBytes`, `OpenQuestions`) |
+| `pkg/doczcore/validate` | The generic validator — markers, frontmatter, required regions, per-kind content rules, ToC freshness. It never fails; it returns findings (`Document`, `SchemaFromMarkers`) |
+| `pkg/rfc` | An RFC as a typed value: summary, problem, proposal, alternatives, and the risks table (`Parse`, `Validate`) |
+| `pkg/adr` | An ADR as a typed value: context, decision, and consequences split positive / negative / neutral (`Parse`, `Validate`) |
+| `pkg/design` | A design doc as a typed value: overview, goals, detailed design, decisions, and open questions with their options (`Parse`, `Validate`) |
+| `pkg/impl` | An implementation plan as a typed value: phases, tasks with byte-accurate lines to hand straight back to `docwrite`, and per-phase acceptance criteria (`Parse`, `Validate`) |
+| `pkg/investigation` | An investigation as a typed value: question, approach, findings, and a conclusion whose answer is also read as a `Verdict` (`Parse`, `Validate`) |
+| `pkg/doczcore/doctemplate` | Template and schema resolution (config path → repo override → embedded) and rendering (`Resolve`, `ResolveSchema`, `Render`) |
+| `pkg/doczcore/index` | The README index table and the splice between its markers, the latter as a pure function (`GenerateTable`, `Splice`, `UpdateReadme`) |
+| `pkg/doczcore/repo` | Whole-repository operations with typed reports and typed errors — what each `docz` command is one call to (`Open`, `Create`, `Update`, `Validate`, `Find`) |
+| `pkg/wiki` | MkDocs / Backstage TechDocs integration: write `mkdocs.yml`, then rebuild its nav from the docs tree (`Init`, `UpdateNav`) |
 
-Semver covers exported identifiers under `pkg/doczcore/*` only; `cmd/`,
-`internal/`, CLI output text, and embedded template contents are not part
-of the contract. See `go doc` on each package for the full API.
+> **Stability.** The five packages promoted at v1.0.0 — `config`, `document`,
+> `docparse`, `docwrite`, and `toc` — are **frozen** and take additions only
+> (ADR-0001 Decision 6); the one break the v2 line makes to them is `plan`
+> leaving `DocTypeNames()` (ADR-0003). The other eleven are
+> **experimental until v2.0.0 proper ships** (ADR-0002 Decision 7) and may
+> change between `v2.0.0-beta.N` tags. Pin a beta exactly if you depend on
+> them.
+
+Semver covers exported identifiers under `pkg/` only; `cmd/`, CLI output
+text, and embedded template contents are not part of the contract. There is
+no `internal/` left. See `go doc` on each package for the full API.
 
 ## Makefile Integration
 

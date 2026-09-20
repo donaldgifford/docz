@@ -1,5 +1,9 @@
 // Package validate reports what is wrong with a docz document.
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // The generic checks live here: marker well-formedness, the regions a
 // schema requires, frontmatter, the content rules of the kind catalogue,
 // ToC freshness, and the file-level rules (DESIGN-0015 §4). Type-specific

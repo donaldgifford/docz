@@ -18,6 +18,7 @@ created: 2026-04-02
 - [Hypothesis](#hypothesis)
 - [Context](#context)
 - [Approach](#approach)
+- [Environment](#environment)
 - [Findings](#findings)
   - [Finding 1: ensureDocsIndex() is fully hardcoded](#finding-1-ensuredocsindex-is-fully-hardcoded)
   - [Finding 2: writeMkDocsYAML() hardcodes techdocs-core](#finding-2-writemkdocsyaml-hardcodes-techdocs-core)

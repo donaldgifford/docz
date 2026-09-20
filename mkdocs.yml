@@ -1,3 +1,5 @@
+markdown_extensions:
+    - pymdownx.superfences
 nav:
     - Home: index.md
     - ADRs:
