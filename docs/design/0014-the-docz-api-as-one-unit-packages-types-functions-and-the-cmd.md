@@ -1715,7 +1715,7 @@ timeline
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); schema resolution; `internal/` emptied | `dont-release` |
 | 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions`; `ExportTemplate` scaffolds custom types | `dont-release` |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` |
-| 5 | `cmd/` swap; `docz validate` with `--fix`; docz's own `docs/` migrated; optional `task list`; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue for the plugin's bundled templates | `dont-release`, then tag `v2.0.0-beta.1` by hand |
+| 5 | `cmd/` swap; `docz validate` with `--fix`; docz's own `docs/` migrated; optional `task list`; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; docz #97 closed | `dont-release`, then tag `v2.0.0-beta.1` by hand |
 | — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to the v2 line, after this unit | — |
 
 The table has no consumer column on purpose. The API is step one; the
@@ -1777,9 +1777,13 @@ the emptied `internal/`), README (library section; six types become five;
 `docz validate`), DEVELOPMENT.md (the "add a type" walkthrough moves its
 template paths and gains the region markers), every embedded template
 (markers), docz's own `docs/` (migrated with `validate --fix` in the swap
-PR), the docz skills plugin (claude-skills issue for the bundled templates
-and the validate step), `mkdocs.yml` (`pymdownx.superfences` so these
-diagrams render in the wiki).
+PR), `mkdocs.yml` (`pymdownx.superfences` so these diagrams render in the
+wiki). The docz skills plugin is deliberately not on this list (amended
+2026-09-20): it serves v1 users, and marked templates or a five-type
+reference there before v2 ships would break them, so its update is a
+follow-up in claude-skills after `v2.0.0-beta.1`, not an issue filed from
+this unit. Its unmarked output reads through the inference path (§2.9)
+meanwhile.
 
 ## Open Questions
 

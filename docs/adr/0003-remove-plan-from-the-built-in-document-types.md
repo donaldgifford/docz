@@ -97,6 +97,13 @@ Issue #103 records the facts.
    reference, and `docz:create` fallback mapping; one in docz-api only if
    its contract package enumerates built-in type names.
 
+   > **Amended 2026-09-20:** the claude-skills issue is **not** filed with
+   > this decision. The plugin serves v1 users until v2 ships, and dropping
+   > its bundled `plan.md` or the PLAN row before then would break their
+   > `docz:create` fallback against a CLI that still accepts `plan`. It is
+   > filed as a follow-up once `v2.0.0-beta.1` is tagged (IMPL-0018 Out of
+   > Scope). The docz-api half of this decision stands as written.
+
 ### Supporting Data
 
 | Fact | Value | Source |
@@ -165,8 +172,8 @@ stateDiagram-v2
 - **Sequencing with #99** (index header scaffolding) touches the same file;
   ordering is a rebase, not a design question.
 - **The claude-skills plugin** ships its own copy of the templates and
-  updates on its own cadence; until then its fallback can still produce a
-  PLAN file that the CLI treats as custom.
+  updates on its own cadence, after v2 (Decision 5 amendment); until then
+  its fallback can still produce a PLAN file that the CLI treats as custom.
 
 ## Alternatives Considered
 
