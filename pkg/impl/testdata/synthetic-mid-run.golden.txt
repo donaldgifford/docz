@@ -1,0 +1,31 @@
+id="IMPL-9002" title="A task inserted mid-run" status="In Progress" inferred=false
+implements=[]
+objective="Record what happens to task IDs when someone adds a task to a phase that is already half d…"
+in-scope=0 out-of-scope=0
+dependencies="None."
+testing=1 references=0 open-questions=0 decisions=0
+progress=2/7
+file-change line=72 file="`pkg/impl/parse.go`" action="Modify" description="Handle CRLF"
+file-change line=73 file="`pkg/impl/walk.go`" action="Add" description="The insertion case"
+
+phase index=1 token="1" line=24 title="Already underway"
+  description="Tasks 1 and 2 were checked off, then \"Handle the CRLF case\" was inserted between them and …"
+  task 1.1 line=35 end=35 checked=true
+    text="Read the file"
+  task 1.2 line=36 end=36 checked=true
+    text="Parse the frontmatter"
+  task 1.3 line=37 end=37 checked=false
+    text="Handle the CRLF case"
+  task 1.4 line=38 end=39 checked=false verify="go test ./pkg/doczcore/docparse/..."
+    text="Walk the regions"
+  task 1.5 line=40 end=40 checked=false
+    text="Write the result"
+  criterion line=46 executable=true command="make ci" text="`make ci` is green"
+
+phase index=2 token="2" line=51 title="Not started"
+  description=""
+  task 2.1 line=56 end=56 checked=false
+    text="Wire it into the CLI"
+  task 2.2 line=57 end=57 checked=false
+    text="Update the docs"
+  criterion line=63 executable=true command="docz validate" text="`docz validate` reports nothing on this repo's own documents"

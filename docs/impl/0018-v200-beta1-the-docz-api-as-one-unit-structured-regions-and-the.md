@@ -508,7 +508,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       > nothing else, which is by design (DESIGN-0014 §3 names the
       > placeholder comment as the case the rule exists for). The guard
       > asserts exactly that, rather than the generic tier's zero.
-- [ ] Golden fixtures under `pkg/impl/testdata/`, snapshotted (never read
+- [x] Golden fixtures under `pkg/impl/testdata/`, snapshotted (never read
       from `docs/`) and kept in two copies each: `<name>.orig.md` exactly
       as written and `<name>.md` hand-migrated with canonical markers (the
       `.orig.md` copies become Phase 3's `InsertRegions` inputs): docz
@@ -523,6 +523,36 @@ consumer proof. The CLI's only visible change is the marker lines in
       marker; `EndLine >= Line`; a skipped task keeps its ID; `Parse` over
       each `.orig.md` equals `Parse` over its migrated sibling in every
       field but `Inferred`. `FuzzParse` pins never-panic.
+
+      > Amended 2026-09-20 during implementation. Three departures, each
+      > forced by the corpus, all recorded in `pkg/impl/testdata/README.md`:
+      >
+      > 1. The `.md` copies are **generated**, not hand-migrated: a test
+      >    helper writes the markers for exactly the spans inference found and
+      >    nothing else, and the golden pins the result. Hand-editing 3,900
+      >    lines would have introduced errors the pair test then had to hunt,
+      >    and generating them makes the files the literal expected output of
+      >    Phase 3's `InsertRegions`.
+      > 2. The pair comparison **excludes line numbers**. Markers are lines, so
+      >    adding them moves everything below; every other field must match
+      >    exactly. This is the same shape as the template inference proof.
+      > 3. The `Text` invariant checks that a verify prefix is not at the
+      >    **start** of the folded text, not that it is absent from it.
+      >    docz-api IMPL-0004 writes 39 of its 43 verify steps inline
+      >    mid-sentence, where DESIGN-0014 §3's line-start rule correctly does
+      >    not read them, so that prose stays in `Text` and belongs there.
+      >
+      > Two bugs the corpus found and this task fixed:
+      >
+      > - `kinds.InferRegions` let a level-2 region swallow a level-3 phase
+      >   when no level-2 heading followed it (sdk-booty-sh's messy fixture
+      >   puts `### Phase A:` directly under `## Objective`). The result was
+      >   two overlapping depth-0 regions, which no arrangement of markers can
+      >   express, so the migrated copy came back with the phase nested a level
+      >   too deep and `ErrNoPhases`. A span now also ends at a deeper heading
+      >   that opens a region it cannot contain, a declared child excepted.
+      > - A deferred `Note` stopped at the end of the line the marker sat on
+      >   rather than folding to the task's end as §3 specifies.
 - [ ] Create `pkg/rfc`, `pkg/adr`, `pkg/design`, and `pkg/investigation`,
       one commit each, with the `Doc` shapes and `Validate` codes of
       DESIGN-0014 §2.9: `rfc.Doc{Summary, Problem, Proposal, Alternatives,

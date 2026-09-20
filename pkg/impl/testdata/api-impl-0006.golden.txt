@@ -1,0 +1,141 @@
+id="IMPL-0006" title="Error observability: log every failure, self-heal the queue, optional no-auth mode" status="In Progress" inferred=false
+implements=[INV-0007]
+objective="Implement INV-0007's recommendations so that **no error terminates in a sink that cannot r…"
+in-scope=6 out-of-scope=4
+dependencies="- No new Go modules: `asynq` (ErrorHandler/Logger/Inspector), `ghinstallation/v2` (`NewApp…"
+testing=0 references=6 open-questions=0 decisions=0
+progress=31/32
+file-change line=610 file="`internal/queue/worker.go`" action="`Logger`/`LogLevel`/`ErrorHandler` in Config; comment fix" description=""
+file-change line=611 file="`internal/queue/logger.go` (new)" action="slog-backed `asynq.Logger` adapter" description=""
+file-change line=612 file="`internal/queue/client.go`" action="Inspector; conflict state-dispatch; coalesce log Info" description=""
+file-change line=613 file="`internal/queue/queue_integration_test.go`" action="archived self-heal + log-capture cases" description=""
+file-change line=614 file="`internal/githubapp/selfcheck.go` (new)" action="`SelfCheck` via `AppsTransport` + `Apps.Get`" description=""
+file-change line=615 file="`cmd/docz-api/main.go`" action="boot self-check; none-mode gate swap; startup Warn" description=""
+file-change line=616 file="`cmd/docz-api/auth.go`" action="empty registry under none-mode" description=""
+file-change line=617 file="`internal/config/validate.go`" action="`none` semantics; conditional requireds" description=""
+file-change line=618 file="`internal/config/config.go`" action="`AuthDisabled` helper" description=""
+file-change line=619 file="`internal/authorize/authorize.go`" action="log before 500" description=""
+file-change line=620 file="`internal/session/middleware.go`" action="error discrimination + log; OQ-2 status" description=""
+file-change line=621 file="`internal/webhook/webhook.go`" action="body-read Warn; parse Error" description=""
+file-change line=622 file="`internal/httpapi/handler.go`" action="`writeJSON` → `serverError`" description=""
+file-change line=623 file="`internal/authhttp/handler.go`" action="`writeJSON` → `serverError`; envelope fallback log" description=""
+file-change line=624 file="`internal/httpapi/openapi_contract_test.go`" action="none-mode handler variant" description=""
+file-change line=625 file="`charts/docz-api/templates/*` + `values.yaml` + tests" action="none-mode gating + unittest cases" description=""
+file-change line=626 file="`deploy/README.md`, `charts/docz-api/README.md.gotmpl`" action="none-mode + caveat docs" description=""
+file-change line=627 file="`CLAUDE.md`, `docs/investigation/0007-*.md`" action="conventions; OQ-1 answer" description=""
+
+phase index=1 token="1" line=99 title="Queue failure visibility — ErrorHandler, Logger, comment fix"
+  description="The one-change-site fix for F1 + F7.5: every failed attempt logs through slog, and asynq's…"
+  task 1.1 line=107 end=111 checked=true
+    text="Add an slog-backed `asynq.Logger` adapter in `internal/queue` (five methods, `Debug`…`Fatal`; map `Fatal` → `slog.Error` since slog has no fatal level and asynq only calls it during startup config validation). Set `Logger` + `LogLevel` (map from `LOG_LEVEL`) in the `asynq.Config` at `worker.go:54-59`."
+  task 1.2 line=112 end=116 checked=true
+    text="Add `ErrorHandler: asynq.ErrorHandlerFunc(...)` in the same `Config` block: `slog.Error(\"ingest job failed\", \"task_id\", …, \"type\", task.Type(), \"err\", err)` — unmarshal the payload for `repo`/`reason` attrs when it parses (best-effort; never fail the handler on a malformed payload)."
+  task 1.3 line=117 end=119 checked=true
+    text="Rewrite the false comment at `worker.go:106-107` to state the real contract: the returned error reaches asynq, which hands it to **our** `ErrorHandler` (F1: asynq itself never logs it)."
+  task 1.4 line=120 end=122 checked=true
+    text="Raise the coalesce log at `client.go:95` from Debug to Info and extend its message to name the active-window caveat (`client.go:70-73`), so the one place a push can vanish is visible at default log level."
+  task 1.5 line=123 end=126 checked=true
+    text="Unit tests: capture slog output (swap `slog.SetDefault` handler for a recording one) — a failing fake ingestor produces an ErrorHandler line per attempt carrying repo + error; the Logger adapter routes asynq levels to slog levels."
+  criterion line=132 executable=false command="" text="A job that fails N attempts emits N structured `ingest job failed` lines (repo, reason, er…"
+  criterion line=135 executable=true command="LOG_FORMAT=json" text="`LOG_FORMAT=json` produces **zero** non-JSON lines from the queue subsystem under a Redis …"
+  criterion line=139 executable=true command="just ci" text="`just ci` green."
+  criterion line=145 executable=false command="" text="**\"N lines for N attempts\"** is proven for the **first** attempt only (`TestFailedIngestLo…"
+  criterion line=152 executable=false command="" text="**JSON purity** is proven structurally rather than by scanning stderr: `TestAsynqInternalE…"
+
+phase index=2 token="2" line=162 title="Queue self-heal — un-swallow the archived-task conflict"
+  description="Kills F4: retry exhaustion must never silently eat future triggers."
+  task 2.1 line=169 end=170 checked=true
+    text="Add an `*asynq.Inspector` to `queue.Client` (same parsed redis opts; close it in `Client.Close` via the existing `errors.Join`)."
+  task 2.2 line=171 end=179 checked=true
+    text="On `ErrTaskIDConflict`/`ErrDuplicateTask` in `EnqueueIngest`: call `Inspector.GetTaskInfo(queueName, taskID)`. State pending/scheduled/retry → today's coalesce (now Info, Phase 1). State **archived** → `DeleteTask` + re-enqueue once (single retry, no loop); log Info `\"archived ingest task cleared; re-enqueued\"`. State **active** → keep coalesce semantics but log the drop caveat (OQ-6 defers the mechanical fix). `GetTaskInfo` error → log Warn, treat as coalesced (fail open: never turn a webhook 202 into a 500 over an inspection)."
+  task 2.3 line=180 end=181 checked=true
+    text="Unit test the state-dispatch with a fake inspector seam (consumer-side interface, matching house style)."
+  task 2.4 line=182 end=186 checked=true
+    text="Integration test (`queue_integration_test.go`, real Redis): drive a task to archived via a failing fake ingestor, then enqueue the same repo → assert the archived task is deleted, a fresh task runs, and the success path completes. Assert the pending-state coalesce still works (existing burst test keeps passing)."
+  criterion line=192 executable=false command="" text="The INV-0007 F4 scenario is dead: after retry exhaustion, the **next** trigger ingests (pr…"
+  criterion line=195 executable=false command="" text="No behavior change for the healthy coalesce path (existing debounce/burst integration test…"
+
+phase index=3 token="3" line=222 title="Boot-time GitHub App credential self-check"
+  description="F5's fix: bad App credentials fail the deploy, not the fifth silent retry."
+  task 3.1 line=229 end=232 checked=true
+    text="Add `githubapp.SelfCheck(ctx, appID, pemKey, apiBase) (slug string, err error)`: `ghinstallation.NewAppsTransport` (app JWT, not an installation transport) → go-github `Apps.Get(ctx, \"\")` → return the app slug. Honor `apiBase` exactly as `NewClient` does."
+  task 3.2 line=233 end=238 checked=true
+    text="Wire into `run()` after config load, bounded by a short context (reuse the `oidcDiscoveryTimeout` precedent): log `\"github app authenticated\" slug=…` on success; on failure apply the OQ-1 decision (recommendation: fail boot on credential rejection, warn-and-continue on transport errors, discriminated via `*github.ErrorResponse` status)."
+  task 3.3 line=239 end=240 checked=true
+    text="Skip the check in `-migrate` mode (no GitHub involvement); run it for serve and `-onboard`."
+  task 3.4 line=241 end=243 checked=true
+    text="Unit tests with a stub `http.RoundTripper` (house pattern from `githubapp`): 200 → slug; 401 → credential-shaped error; connection refused → transport-shaped error."
+  task 3.5 line=244 end=250 checked=true
+    text="Document the health-check trio in `deploy/README.md` (and the chart README's probes note): `/healthz` = liveness (\"pod is up\", bare 200); `/readyz` = readiness (\"dependencies connected, can accept traffic\" — postgres/meili/redis, 503 names the offender); the boot self-check = startup credential validation (crashes the boot on bad creds, in **neither** probe — GitHub down must not pull the read API from rotation)."
+  criterion line=256 executable=false command="" text="A deploy with a mangled PEM or wrong app id logs one unambiguous credential error at boot …"
+  criterion line=259 executable=false command="" text="A valid deploy logs the authenticated app slug once at startup."
+  criterion line=260 executable=false command="" text="GitHub being temporarily unreachable does not crash-loop an otherwise healthy API (transpo…"
+
+phase index=4 token="4" line=278 title="The four mute HTTP sinks"
+  description="F7's fix: every wrapped error chain now terminates in a logging sink."
+  task 4.1 line=285 end=287 checked=true
+    text="`internal/authorize/authorize.go:52` — `slog.Error(\"authorize failed\", \"err\", err)` before the 500. (The chain carries the store context; nothing else needed.)"
+  task 4.2 line=288 end=292 checked=true
+    text="`internal/session/middleware.go:33-35` — discriminate: `errors.Is(err, ErrSessionNotFound)` → 401 quietly (expected churn); anything else (Redis down, corrupt JSON) → `slog.Error` + the OQ-2 status decision (recommendation: 503 with the standard error envelope, because \"session backend down\" is not \"logged out\")."
+  task 4.3 line=293 end=296 checked=true
+    text="`internal/webhook/webhook.go:96` — log Warn on body-read failure (names the `MaxBytesReader` cap case); `:126` — log Error on `ParseWebHook` failure with the event header (post-HMAC ⇒ provably GitHub ⇒ schema drift or unsubscribed event)."
+  task 4.4 line=297 end=302 checked=true
+    text="`internal/httpapi/handler.go:112-113` and `internal/authhttp/handler.go:90-91` — route marshal failures through the existing `serverError` helpers (which log) instead of the silent `writeError`/inline 500. Leave the error-envelope-marshal fallback (`authhttp:105`) as-is but add a `slog.Error` (practically unreachable; one line buys completeness)."
+  task 4.5 line=303 end=307 checked=true
+    text="Unit tests per sink with a recording slog handler: erroring fake authorizer / lookuper / marshal-poisoned DTO (`json.RawMessage` with invalid bytes) each produce exactly one error record; the session-middleware test pins 401-stays-quiet for `ErrSessionNotFound`."
+  task 4.6 line=308 end=310 checked=true
+    text="Contract test still green; if OQ-2a (503) is chosen, confirm the spec needs no change (the contract test exercises defined scenarios only; 5xx paths are not specced per-op today)."
+  criterion line=316 executable=false command="" text="A Postgres outage on `/api/v1` and a Redis outage on the session gate each produce structu…"
+  criterion line=319 executable=false command="" text="Review of the four cited sites shows no error path that neither logs nor delegates to a lo…"
+  criterion line=321 executable=false command="" text="401 behavior for genuinely missing/expired sessions is byte-identical (contract test uncha…"
+  criterion line=329 executable=false command="" text="The session-gate outage status is a new **503 `{\"error\":\"session unavailable\"}`** (OQ-2a),…"
+  criterion line=335 executable=false command="" text="The webhook body-read sink logs at **Warn with headers only** — that failure happens *be…"
+  criterion line=340 executable=false command="" text="The `writeJSON` marshal sinks in `httpapi` and `authhttp` now route through each package's…"
+  criterion line=343 executable=false command="" text="No spec change was needed: the contract test exercises defined scenarios only, and 5xx pat…"
+
+phase index=5 token="5" line=349 title="AUTH_PROVIDERS=none — first-setup no-auth mode"
+  description="F6: one knob to run the read surface open, so first setup fights only the GitHub App crede…"
+  task 5.1 line=357 end=362 checked=true
+    text="`internal/config`: accept the literal `none` in `AUTH_PROVIDERS` (OQ-3 spelling). `validate.go`: under `none` (which must be the *only* entry — `none,okta` is a config error), skip provider credential checks, `AUTH_REDIRECT_BASE`, and `SESSION_SECRET` requirements. Add an `AuthDisabled()` helper alongside `AuthEnabled`."
+  task 5.2 line=363 end=371 checked=true
+    text="`cmd/docz-api`: when disabled, `buildAuthProviders` returns an empty registry; `runServer` swaps `session.Middleware` for an anonymous-identity injector (synthetic `session.Session` with provider `none`, subject `anonymous`, injected via the same ctx key so `FromContext` and `/api/v1/auth/session` work unchanged) composed over the same `authorize.Middleware`. Skip `MountPublic` (no `/auth/login`/`/auth/callback` routes — 404, the absent-route precedent from search; OQ-4). Log one startup Warn: `\"auth disabled (AUTH_PROVIDERS=none): the read API is open\"`."
+  task 5.3 line=372 end=375 checked=true
+    text="Session store: still constructed (Redis is required anyway for the queue) but the cookie path is never exercised; logout becomes a no-op revoke on the synthetic id — verify it 200s harmlessly rather than 500s."
+  task 5.4 line=376 end=381 checked=true
+    text="Chart: gate the `required` on `config.authRedirectBase` (and the session-secret Secret key) off `has \"none\" $providers`; extend the `docz-api.authProviders` helper docs; `values.yaml` comment block + README.md.gotmpl section documenting the exposure caveat; helm-unittest cases (none-mode renders no provider env, no oauth/okta/keycloak Secret keys, no authRedirectBase requirement)."
+  task 5.5 line=382 end=385 checked=true
+    text="Contract test: a none-mode handler variant asserting `/api/v1` reads succeed with no cookie and `/api/v1/auth/session` returns the synthetic identity (spec shape unchanged — `sessionDTO` already fits; no spec version bump expected, confirm during implementation)."
+  task 5.6 line=386 end=388 checked=true
+    text="Docs: `deploy/README.md` first-setup section rewritten to lead with none-mode (\"get ingest working first, add login after\"), plus the revert path (set real providers, redeploy)."
+  criterion line=394 executable=true command="AUTH_PROVIDERS=none" text="`AUTH_PROVIDERS=none` with **no** session secret, redirect base, or provider credentials b…"
+  criterion line=398 executable=false command="" text="Default (`github`) behavior is byte-identical: full test suite + contract test green with …"
+  criterion line=400 executable=true command="just helm-unittest" text="`just helm-unittest` green with the new cases; a none-mode `helm template` renders no prov…"
+  criterion line=402 executable=false command="" text="The docz-site, pointed at a none-mode API, renders docs with no login panel (manual smoke;…"
+  criterion line=418 executable=true command="AuthDisabled()" text="`AuthDisabled()` requires `none` to be the **only** entry; `none,github` is a config error…"
+  criterion line=423 executable=true command="session.AnonymousMiddleware" text="`session.AnonymousMiddleware` lives in `internal/session` because the context key is unexp…"
+  criterion line=430 executable=false command="" text="**The spec gained an editorial note** (`1.2.1`) rather than staying silent. A generated cl…"
+  criterion line=435 executable=false command="" text="The chart gates on a new `docz-api.authDisabled` helper so both the Deployment env and the…"
+
+phase index=6 token="6" line=445 title="Deliberate-failure verification, deploy, close-out"
+  description="INV-0007's origin story, rerun against the fixed binary — the phase that proves \"we are …"
+  task 6.1 line=454 end=459 checked=true
+    text="Local deliberate-failure drill (compose stack): onboard a repo whose fetch **must** fail (no `.docz.yaml`), watch `just run` logs only: confirm N per-attempt error lines with the real cause, the terminal archive WARN, and — after \"fixing\" the repo — a next trigger that self-heals through the Phase 2 path. **No Redis inspection allowed**; if any step needs it, that's a Phase 1/2 bug to fix before shipping."
+  task 6.2 line=460 end=462 checked=true
+    text="Repeat the drill with `LOG_FORMAT=json` piped through `jq -e` to prove every queue-subsystem line parses (Phase 1's second criterion, end to end)."
+  task 6.3 line=463 end=465 checked=true
+    text="Release: minor version bump (new env mode + logging surface), chart version bump for the Phase 5 template changes; `pr-semver` label `minor`."
+  task 6.4 line=466 end=475 checked=false deferred={line=466 note="blocked, no cluster available — redeploy the new image + chart; re-trigger the INV-0007 failing repo; close INV-0007 OQ-1 from the logs — record the actual root cause in INV-0007 (edit the OQ, note \"answered via the Phase 6 deploy\"). Confirmed blocked on 2026-08-26, not assumed: no reachable cluster context (only the unreachable homelab ones) and no AWS credentials, and the operator confirmed there is no cluster to use at present. INV-0007's runbook path — reading the archived task straight out of Valkey — needs the same access, so OQ-1 cannot be answered by any route until a cluster exists. Nothing in the branch depends on this; it is the last verification step, not a prerequisite."}
+    text=""
+  task 6.5 line=476 end=478 checked=true
+    text="Downstream: file the docz-site configuration issue for the auth/no-auth surface — donaldgifford/docz-site#17 (none-mode login UI, the new 503 versus 401 split, re-vendoring the spec at `1.2.1`)."
+  task 6.6 line=479 end=481 checked=true
+    text="Close-out: mark INV-0007 recommendations 1–6 as implemented in the INV; update CLAUDE.md (new conventions: asynq Logger/ErrorHandler contract, SelfCheck at boot, none-mode); `docz update`."
+  criterion line=487 executable=false command="" text="The full failure lifecycle — first failure, every retry, exhaustion, root-cause identifi…"
+  criterion line=490 executable=false command="" text="INV-0007 OQ-1 is answered and recorded, from production logs, not from the stored task rec…"
+  criterion line=492 executable=false command="" text="CI green, release published, EKS running the new version with the failing repo ingested (o…"
+  criterion line=506 executable=false command="" text="boot: `github app authenticated app_slug=donaldgifford-docz-api` (fix 2)"
+  criterion line=507 executable=false command="" text="6 x `ingest job attempt failed` at ERROR, `retried` 0→5, each naming the real cause: `GE…"
+  criterion line=510 executable=true command="WARN Retry exhausted for task id=ingest:donaldgifford/no-such-docz-repo" text="`WARN Retry exhausted for task id=ingest:donaldgifford/no-such-docz-repo` with `component=…"
+  criterion line=513 executable=false command="" text="next trigger: `cleared a finished ingest task and re-enqueued cleared_state=archived` — …"
+  criterion line=515 executable=false command="" text="a healthy repo ingests: `ingest job complete docs_upserted=16`"
+  criterion line=516 executable=false command="" text="a 5-trigger burst: `ingest job enqueued` once, four `ingest job coalesced into an existing…"

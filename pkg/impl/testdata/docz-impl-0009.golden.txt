@@ -1,0 +1,216 @@
+id="IMPL-0009" title="Runner Pattern and DocType Registry Refactor" status="Completed" inferred=false
+implements=[INV-0002]
+objective="The largest and most architectural of the INV-0002 waves. Eliminate the two systemic block…"
+in-scope=11 out-of-scope=4
+dependencies="- **Prerequisite:** DESIGN doc (Phase 1) - Builds on IMPL-0005, IMPL-0006, IMPL-0007, IMPL…"
+testing=6 references=6 open-questions=0 decisions=0
+progress=66/66
+file-change line=672 file="`docs/design/00NN-runner-pattern-and-doctype-registry.md`" action="Create" description="Prerequisite DESIGN doc"
+file-change line=673 file="`cmd/runner.go`" action="Create" description="`Runner` struct, `NewRunner`, helpers"
+file-change line=674 file="`cmd/git.go`" action="Create" description="`GitResolver` interface, `realGit`, tests use fakes"
+file-change line=675 file="`cmd/root.go`" action="Modify" description="Wire `Runner` into `PersistentPreRunE`"
+file-change line=676 file="`cmd/*.go`" action="Modify" description="Convert handlers to `(*Runner).Foo` methods"
+file-change line=677 file="`cmd/*_test.go`" action="Modify" description="Use `cmd.SetOut(&buf)`; pass test Runner"
+file-change line=678 file="`internal/document/time.go`" action="Delete" description="`timeNow` global no longer needed"
+file-change line=679 file="`internal/document/create.go`" action="Modify" description="Use `opts.CreatedAt`"
+file-change line=680 file="`internal/config/config.go`" action="Modify" description="`Load(configFile, repoRoot string)`"
+file-change line=681 file="`internal/config/doctype.go`" action="Create" description="`DocType` registry struct + `allDocTypes` table"
+file-change line=682 file="`internal/template/template.go`" action="Modify" description="Use typed `DocType`"
+file-change line=683 file="All test files" action="Modify" description="Remove `os.Chdir`; remove `os.Pipe` tricks"
+
+phase index=1 token="1" line=128 title="Author DESIGN doc"
+  description="Before writing any code, align on the architectural shape via a DESIGN document. This is t…"
+  task 1.1 line=136 end=137 checked=true
+    text="Create DESIGN doc: `docz create design \"Runner Pattern and DocType Registry\"` — DESIGN-0004 scaffolded 2026-05-27"
+  task 1.2 line=138 end=138 checked=true
+    text="DESIGN doc must cover:"
+  task 1.3 line=165 end=170 checked=true
+    text="DESIGN doc reviewed and accepted (status: Approved) — flipped from `In Review` after the full Phases 2–11 implementation shipped lint-clean and race-clean, validating the design's load-bearing claims (Runner construction, DocType registry, `repoRoot` parameter, stacked-PR split). Frontmatter and narrative status updated together."
+  criterion line=176 executable=false command="" text="DESIGN doc status is `Approved`"
+  criterion line=177 executable=false command="" text="Any new open questions raised by the DESIGN doc are resolved or explicitly deferred (IMPL-…"
+  criterion line=180 executable=false command="" text="Approved by repository owner"
+
+phase index=2 token="2" line=187 title="Introduce Runner struct (no behavior change)"
+  description="Establish the Runner shape with no functional change to handlers yet."
+  task 2.1 line=194 end=194 checked=true
+    text="Define `cmd.Runner` struct per the DESIGN doc, e.g.:"
+  task 2.2 line=207 end=212 checked=true
+    text="Add `NewRunner(cfg *config.Config) *Runner` with defaults (`os.Stdout`, `os.Stderr`, `slog.TextHandler` at `LevelInfo`, `time.Now`, `realGit{}`). Signature deviates from the DESIGN sketch — takes `*config.Config` per `gocritic hugeParam` (Config is ~240B); semantically equivalent (Runner stores `*cfg` as a value copy)."
+  task 2.3 line=213 end=216 checked=true
+    text="Add `GitResolver` interface plus `realGit`/`staticGit` implementations in `cmd/git.go`. (Bundled into Phase 2 because `Runner.Git` requires the type to compile; Phase 6 still owns the conversion of `cmd/create.go:gitUserName` callers.)"
+  task 2.4 line=217 end=219 checked=true
+    text="Add a single root-level `runner *Runner` global initialized in `PersistentPreRunE` — this is a temporary scaffolding step; later phases convert handlers one at a time."
+  task 2.5 line=220 end=224 checked=true
+    text="Confirm all existing tests pass with no changes. New tests added: `cmd/runner_test.go` (`TestNewRunner_Defaults`, `TestRunner_DirectConstruction`, `TestPackageRunner_AssignedFromNewRunner`) and `cmd/git_test.go` (`TestStaticGit_UserName`, `TestRealGit_UserName_Smoke`)."
+  criterion line=230 executable=true command="Runner" text="`Runner` defined and importable"
+  criterion line=231 executable=false command="" text="No handler converted yet — pure plumbing"
+  criterion line=232 executable=true command="make ci" text="`make ci` green"
+
+phase index=3 token="3" line=239 title="Migrate handlers to Runner methods + output writers"
+  description="Convert command handlers from package-level functions to `Runner` methods. Per DESIGN-0004…"
+  task 3.1 line=249 end=250 checked=true
+    text="Convert `runCreate` → `(*Runner).Create` accepting context and args; output through `r.Out` (Phase 3e)"
+  task 3.2 line=251 end=253 checked=true
+    text="Convert `runUpdate`, `runList`, `runInit`, `runTemplateShow`, `runTemplateExport`, `runTemplateOverride`, `runWikiInit`, `runWikiUpdate`, `runConfig`, `runVersion` similarly (Phases 3a/3b/3c/3d/3f)"
+  task 3.3 line=254 end=256 checked=true
+    text="Replace `fmt.Printf` / `os.Stdout` sites with writes through `r.Out` (single residual at `cmd/root.go:79` is in the bootstrap path before the Runner exists — acceptable)"
+  task 3.4 line=257 end=258 checked=true
+    text="Replace `fmt.Fprintf(os.Stderr, ...)` sites with `r.Err` writes or `r.Logger.Debug` (Phase 4 work folded in)"
+  task 3.5 line=259 end=263 checked=true
+    text="Update tests to construct a Runner with `bytes.Buffer` writers instead of `os.Pipe` tricks — finished in the cleanup commit: `installListRunner`, `setupWikiTestDir`, `newTemplateTestRunner`, `BenchmarkCmdUpdate`, and `config_test.go` all assemble a Runner with `Out` pointed at a `bytes.Buffer` or `io.Discard`"
+  criterion line=269 executable=true command="grep -rn 'fmt\\.Printf\\|fmt\\.Println\\|os\\.Stdout' cmd/*.go | grep -v _test.go" text="`grep -rn 'fmt\\.Printf\\|fmt\\.Println\\|os\\.Stdout' cmd/*.go | grep -v _test.go` returns onl…"
+  criterion line=271 executable=false command="" text="No test uses `os.Pipe` to capture output — verified with `grep -n 'os.Pipe' cmd/*_test.g…"
+  criterion line=273 executable=false command="" text="Tests can run `t.Parallel()` (where the underlying handler is side-effect-free) — every …"
+
+phase index=4 token="4" line=290 title="Introduce log/slog logger; eliminate if verbose"
+  description="Replace verbose-guard blocks with structured logging. (Note: the mechanical replacements l…"
+  task 4.1 line=299 end=305 checked=true
+    text="In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag (verbose → debug level; default → info level). `NewRunner` still installs the safe default (TextHandler at LevelInfo, stderr); the flag-driven swap happens in `loadAndValidateConfig` via `buildLogger`, which then overwrites `r.Logger` before the global `runner` is published. This keeps `NewRunner` callable from tests with no flag plumbing."
+  task 4.2 line=306 end=308 checked=true
+    text="Replace every `if verbose { fmt.Fprintf(os.Stderr, ...) }` block with `r.Logger.Debug(msg, \"key\", value)` — done as part of Phase 3 conversions"
+  task 4.3 line=309 end=310 checked=true
+    text="Internal packages remain quiet (no logger handle plumbed in — see DESIGN-0004 §D)"
+  task 4.4 line=311 end=311 checked=true
+    text="Decision §1 locked: `slog.TextHandler` default"
+  task 4.5 line=312 end=316 checked=true
+    text="Add `--log-level` flag (debug/info/warn/error) and `--log-format` flag (text/json) with the JSON handler swap. Resolution order: explicit `--log-level` wins, else `--verbose`→debug, else info. Invalid values surface a startup error rather than silently defaulting."
+  criterion line=322 executable=true command="grep -rn 'if verbose' cmd/*.go | grep -v _test.go" text="`grep -rn 'if verbose' cmd/*.go | grep -v _test.go` returns no matches"
+  criterion line=324 executable=true command="grep -rn '\\bverbose\\b' cmd/*.go | grep -v _test.go" text="`grep -rn '\\bverbose\\b' cmd/*.go | grep -v _test.go` returns only the `cmd/root.go` flag d…"
+  criterion line=327 executable=false command="" text="Tests can capture log output by configuring a buffer-backed handler — `TestBuildLogger_*…"
+
+phase index=5 token="5" line=336 title="Inject time into document.CreateOptions"
+  description="Eliminate the `internal/document/time.go` package global."
+  task 5.1 line=343 end=343 checked=true
+    text="Add `CreatedAt time.Time` to `document.CreateOptions`"
+  task 5.2 line=344 end=346 checked=true
+    text="In `document.Create`, use `opts.CreatedAt` (with zero-value fallback to `time.Now()`) and remove the call to `currentDate()` / `timeNow()`"
+  task 5.3 line=347 end=348 checked=true
+    text="Delete `internal/document/time.go` and the `timeNow` package variable"
+  task 5.4 line=349 end=350 checked=true
+    text="In `cmd/create.go`, populate `opts.CreatedAt = r.Now()` inside `(*Runner).Create`"
+  task 5.5 line=351 end=354 checked=true
+    text="Update `internal/document/create_test.go` to pass `CreatedAt` directly; remove `t.Cleanup` time-restore patterns; add `TestCreate_ZeroCreatedAtFallsBackToNow` to cover the zero-value path"
+  criterion line=360 executable=true command="grep -rn 'timeNow' internal/" text="`grep -rn 'timeNow' internal/` returns no matches"
+  criterion line=361 executable=false command="" text="Tests no longer mutate package globals to control time"
+
+phase index=6 token="6" line=368 title="Inject git resolution; propagate cmd.Context()"
+  description=""
+  task 6.1 line=373 end=374 checked=true
+    text="Define `type GitResolver interface { UserName(ctx context.Context) string }` in `cmd/git.go` (Phase 2)"
+  task 6.2 line=375 end=376 checked=true
+    text="Implement `realGit struct{}` that calls `exec.CommandContext(ctx, \"git\", \"config\", \"user.name\")` (Phase 2)"
+  task 6.3 line=377 end=377 checked=true
+    text="Add a test-friendly `staticGit{Name string}` implementation (Phase 2)"
+  task 6.4 line=378 end=378 checked=true
+    text="In `Runner`, hold `Git GitResolver` (Phase 2)"
+  task 6.5 line=379 end=380 checked=true
+    text="In `(*Runner).resolveAuthor`, call `r.Git.UserName(ctx)` instead of the package-level `gitUserName()` (Phase 3e)"
+  task 6.6 line=381 end=381 checked=true
+    text="Delete `cmd/create.go:gitUserName` (Phase 3e)"
+  task 6.7 line=382 end=386 checked=true
+    text="Author-resolution unit test that passes `staticGit{Name: \"Test User\"}`. `TestRunner_resolveAuthor` (cmd/runner_test.go) is a five-row table covering: flag wins over everything; config default wins over git; git wins when both are empty; `from_git=false` skips git; git returning empty falls through to \"Unknown\"."
+  criterion line=392 executable=true command="gitUserName" text="`gitUserName` is gone"
+  criterion line=393 executable=false command="" text="Author resolution is fully unit-testable (Runner.resolveAuthor takes ctx + flagAuthor and …"
+  criterion line=395 executable=true command="Ctrl+C" text="`Ctrl+C` during `docz create` cancels the git lookup. `TestRealGit_UserName_CtxCancel` (cm…"
+
+phase index=7 token="7" line=406 title="Add repoRoot to config.Load"
+  description="Eliminate `os.Chdir` in tests."
+  task 7.1 line=413 end=414 checked=true
+    text="Change `config.Load(configFile string) (Config, error)` to `config.Load(configFile, repoRoot string) (Config, error)`"
+  task 7.2 line=415 end=416 checked=true
+    text="`repoRoot` is the directory to scan for `.docz.yaml` (empty string = current working directory for back-compat default)"
+  task 7.3 line=417 end=418 checked=true
+    text="In `loadAndValidateConfig` (cmd/root.go), pass `os.Getwd()` explicitly"
+  task 7.4 line=419 end=422 checked=true
+    text="Update tests in `internal/config/config_test.go` and `internal/config/parity_baseline_test.go` to pass `t.TempDir()` directly via the new repoRoot param; remove every `os.Chdir` + `t.Cleanup(os.Chdir)` pattern in these files"
+  task 7.5 line=423 end=429 checked=true
+    text="Remove `os.Chdir` from `cmd/init_test.go`, `cmd/wiki_test.go`, and `cmd/template_test.go` — done by adding `Runner.RepoRoot` and an `inRepo(name)` helper for cwd-relative path resolution, plus a `--repo-root` Cobra flag with precedence `--repo-root > dir(--config) > os.Getwd()` so `root_test.go` and `inv0003_test.go` can drive `rootCmd.Execute()` without `os.Chdir`"
+  task 7.6 line=430 end=437 checked=true
+    text="Verify tests can run `t.Parallel()` now — `internal/*` already do (134 sites); the side-effect-free cmd tests (`git_test.go`, the `outputTable/JSON/CSV` table tests, `TestFilterByStatus`, the `TestBuildLogger_*` family, `TestRunner_resolveAuthor`, `TestRunner_Create_Parallel`) now do as well. The remaining cmd tests that exercise package-level `runner`/`appCfg`/flag globals stay serial pending the per-command opts struct refactor."
+  criterion line=443 executable=true command="grep -rn 'os\\.Chdir' ." text="`grep -rn 'os\\.Chdir' .` returns no matches in test code"
+  criterion line=444 executable=false command="" text="Tests run with `t.Parallel()` and pass"
+  criterion line=445 executable=true command="make test" text="`make test` wall-clock time decreases noticeably"
+
+phase index=8 token="8" line=452 title="Introduce DocType registry"
+  description="Replace the scattered type definitions with a single registration list."
+  task 8.1 line=459 end=463 checked=true
+    text="Define `internal/config/doctype.go` with the registry struct. Named `DocTypeDef` (not `DocType`) to leave `DocType` free for the typed-string in Phase 10 (DESIGN-0004 Open Question 2); `DefaultConfig` is a `func() TypeConfig` constructor so each lookup yields a fresh `Statuses` slice (DESIGN-0004 §E):"
+  task 8.2 line=476 end=477 checked=true
+    text="Define `var allDocTypes = []DocTypeDef{ ... }` listing all 6 types with their full metadata in one place"
+  task 8.3 line=478 end=482 checked=true
+    text="Add helpers: `AllDocTypes() []DocTypeDef` (returns `slices.Clone`), `LookupDocType(name string) (DocTypeDef, bool)` (case-insensitive, whitespace-trimmed, canonical + alias), `DocTypeNames() []string` (registry-declaration order — `ValidateType`'s error message and the existing `TestValidTypes` depend on this ordering)"
+  task 8.4 line=483 end=483 checked=true
+    text="Derive `DefaultConfig().Types` from `allDocTypes` via `defaultTypesMap()`"
+  task 8.5 line=484 end=484 checked=true
+    text="Derive `ValidTypes()` from `allDocTypes` (now delegates to `DocTypeNames()`)"
+  task 8.6 line=485 end=485 checked=true
+    text="Derive `DefaultNavTitles()` from `allDocTypes` via `defaultNavTitlesMap()`"
+  task 8.7 line=486 end=486 checked=true
+    text="Derive `typeAliases` from `allDocTypes` via `defaultTypeAliases()`"
+  task 8.8 line=487 end=495 checked=true
+    text="Derive `TypesHelp()` text from `allDocTypes` — done by adding a `HelpDescription` field to `DocTypeDef` and rewriting `TypesHelp` as a registry walk that auto-appends `(alias: …)` from each entry's `Aliases`. The byte-for-byte output is unchanged. `TestDocTypeRegistry_TypesHelpDerivedFromRegistry` replaces the previous static-string guard with a registry-derived assertion that every name, every `HelpDescription`, and every alias reaches the rendered help."
+  task 8.9 line=496 end=498 checked=true
+    text="Add a test: every registered `DocTypeDef` has a corresponding `internal/template/templates/<TemplateName>.md` embedded file (`TestDocTypeRegistry_AllHaveEmbeddedTemplate`)"
+  task 8.10 line=499 end=501 checked=true
+    text="Add a test: every registered `DocTypeDef` has a corresponding `internal/template/templates/index_<TemplateName>.md` (`TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`)"
+  task 8.11 line=502 end=508 checked=true
+    text="Add the rest of the DESIGN-0004 §E consistency invariant tests: no duplicate canonical names, no alias collides with a canonical name, `DefaultConfig()` validates, every entry's `DefaultConfig()` ships non-empty `Statuses`, `DefaultConfig()` hands back a fresh `Statuses` backing array per call, `LookupDocType` resolves canonical/aliases case-insensitively, and the derived `DefaultConfig()` matches the registry literal field-for-field"
+  criterion line=514 executable=false command="" text="Adding a new doc type requires editing exactly one location: `allDocTypes`, plus creating …"
+  criterion line=516 executable=false command="" text="A test catches a registered type missing its embedded templates"
+  criterion line=517 executable=false command="" text="All existing behavior unchanged (golden files green)"
+
+phase index=9 token="9" line=524 title="Drive iteration from EnabledTypes()"
+  description="Now that the registry is in place, `EnabledTypes()` should iterate the registry rather tha…"
+  task 9.1 line=532 end=535 checked=true
+    text="Update `Config.EnabledTypes()` (from IMPL-0006) to iterate `allDocTypes` (via `DocTypeNames`) and filter by `Config.Types[name].Enabled`. The old sort step is dropped — registry-declaration order is now the canonical order."
+  task 9.2 line=536 end=537 checked=true
+    text="Audit all remaining `ValidTypes()` call sites and replace with `EnabledTypes()` or `DocTypeNames()` as appropriate:"
+  task 9.3 line=544 end=544 checked=true
+    text="Delete `ValidTypes()` — no callers remain"
+  task 9.4 line=545 end=546 checked=true
+    text="Update `TestValidTypes` → `TestDocTypeNames`; update `TestEnabledTypes` and `TestDefaultConfig` to assert registry order"
+  criterion line=552 executable=true command="grep -rn 'ValidTypes' ." text="`grep -rn 'ValidTypes' .` returns only one match: a historical comment in `doctype.go` doc…"
+  criterion line=554 executable=false command="" text="All iteration goes through the registry"
+
+phase index=10 token="10" line=561 title="Introduce typed DocType and Status strings"
+  description="Add typed-string definitions for compile-time signal at API boundaries."
+  task 10.1 line=568 end=569 checked=true
+    text="Define `type DocType string` (typed wrapper, not the struct) in `internal/config/doctype.go`"
+  task 10.2 line=570 end=570 checked=true
+    text="Define `type Status string` alongside `DocType`"
+  task 10.3 line=571 end=573 checked=true
+    text="No registry rename needed — Phase 8 already named the struct `DocTypeDef`, so `DocType` is free for the typed-string wrapper (DESIGN-0004 Decision §2 resolves Open Question 2)"
+  task 10.4 line=574 end=574 checked=true
+    text="Update `document.CreateOptions.Type` to `config.DocType`"
+  task 10.5 line=575 end=577 checked=true
+    text="Update `template.Data.Type` (renamed from `TemplateData` in IMPL-0008) to `config.DocType` and `template.Data.Status` to `config.Status`"
+  task 10.6 line=578 end=581 checked=true
+    text="Update `template.EmbeddedDocumentTemplate(docType config.DocType)` — `template.Resolve` keeps `string` (internal resolution path, not in §F's enforcement surface) and casts once at the embed call site"
+  task 10.7 line=582 end=585 checked=true
+    text="Update `document.Frontmatter.Status` to `config.Status`. No custom YAML marshaler needed — `go.yaml.in/yaml/v3` round-trips typed strings whose underlying kind is `string` transparently. DESIGN-0004 §F revises Decision §3."
+  task 10.8 line=586 end=590 checked=true
+    text="Verify YAML round-trip back-compat with two tests in `document_test.go`: `TestFrontmatter_TypedStatus_YAMLRoundTrip` pins the bare-scalar emit and field-level round trip; `TestFrontmatter_TypedStatus_LegacyYAMLParses` pins parsing of a pre-typed-string YAML fixture"
+  criterion line=596 executable=true command="DocType" text="`DocType` and `Status` typed wrappers exist"
+  criterion line=597 executable=false command="" text="Function signatures across `internal/` use the typed forms"
+  criterion line=598 executable=true command=".docz.yaml" text="`.docz.yaml` files written by any prior docz version still parse (no top-level field chang…"
+
+phase index=11 token="11" line=607 title="Verify and ship"
+  description=""
+  task 11.1 line=612 end=612 checked=true
+    text="Full `make ci` green"
+  task 11.2 line=613 end=617 checked=true
+    text="Manual smoke test across all CLI commands — `version`, `--help`, `init`, `create rfc/adr/inv` (canonical and alias paths), `list` (no filter, type filter, `--status`), `update`, `template show`, `config`, `wiki update` all behave as expected against a `/tmp/docz-smoke` working directory"
+  task 11.3 line=618 end=627 checked=true
+    text="Verify all tests can run with `t.Parallel()`. Every top-level `Test*` in `internal/*` plus their table-driven subtests now call `t.Parallel()` (134 sites). Three iterations of `go test -race -shuffle=on -count=3 ./...` are green. cmd/ tests stay serial because they share package-level `runner` / `appCfg` / flag globals, but the pipe-discarding pattern (`_, w, _ := os.Pipe()`) that previously flaked under shuffle is fixed by capturing the read end and deferring its close — so even without parallelism the cmd/ suite is now order-independent"
+  task 11.4 line=628 end=630 checked=true
+    text="Update INV-0002 status — flipped to `Concluded`; Wave 4 marked done (PRs #44/#45/#46) and Wave 5 marked done (DESIGN-0004 + IMPL-0009 Phases 2-10) with item-by-item references"
+  task 11.5 line=631 end=633 checked=true
+    text="Update the architecture section of CLAUDE.md to reflect the new structure (Runner pattern, DocType registry, typed strings, logger flag wiring all noted)"
+  task 11.6 line=634 end=636 checked=true
+    text="Document the DocType registration pattern in CONTRIBUTING.md and DEVELOPMENT.md (single-file edit + two templates, pointers to the Phase 8 consistency tests)"
+  task 11.7 line=637 end=643 checked=true
+    text="Open final PR(s) with `dont-release` label. PR #48 (this PR) stacks on PR #47 (DESIGN-0004) per Decisions §6. The `--log-level` and `--log-format` flags are new user-visible surface but ship behind their existing defaults (text + info), so the runtime behavior matches the prior release and the PR keeps the `dont-release` label. When PR #47 merges, GitHub will auto-rebase PR #48's base onto main."
+  criterion line=649 executable=true command="make ci" text="`make ci` green"
+  criterion line=650 executable=false command="" text="A new contributor can add a doc type by editing one file plus two template files (CONTRIBU…"
+  criterion line=653 executable=false command="" text="Tests run in parallel — all internal/* tests, top-level and subtests, call `t.Parallel()…"
+  criterion line=657 executable=false command="" text="No `cmd/` package-level globals remain except the threaded `*Runner` and the bound Cobra f…"

@@ -1,0 +1,94 @@
+id="IMPL-0007" title="Eliminate Redundant File Reads and Heading Parses" status="In Progress" inferred=false
+implements=[INV-0002]
+objective="Fix the three \"must-fix\" performance findings from INV-0002 Wave 3: 1. During `docz update…"
+in-scope=4 out-of-scope=3
+dependencies="- Builds on IMPL-0006 (assumes Wave 2 helpers exist; specifically `EnabledTypes` simplifie…"
+testing=4 references=2 open-questions=0 decisions=0
+progress=27/27
+file-change line=343 file="`internal/index/index.go`" action="Modify" description="Add `DocEntry.Content`; populate in `ScanDocuments`"
+file-change line=344 file="`internal/index/index_test.go`" action="Modify" description="Add benchmark; assert `Content` populated"
+file-change line=345 file="`internal/toc/toc.go`" action="Modify" description="Change `UpdateToC` signature to return headings"
+file-change line=346 file="`internal/toc/toc_test.go`" action="Modify" description="Update test cases; add benchmark"
+file-change line=347 file="`cmd/update.go`" action="Modify" description="Use cached `Content`; consume returned `headings`"
+file-change line=348 file="`cmd/update_test.go`" action="Modify" description="Add `BenchmarkCmdUpdate`; verify no double-read"
+
+phase index=1 token="1" line=86 title="Baseline benchmarks"
+  description="Before changing anything, measure the current cost so we can prove the change is a win and…"
+  task 1.1 line=94 end=95 checked=true
+    text="Add `BenchmarkScanDocuments` in `internal/index/index_test.go` (100 / 500 / 1000 generated docs with ~2KB bodies)"
+  task 1.2 line=96 end=97 checked=true
+    text="Add `BenchmarkUpdateToC` in `internal/toc/toc_test.go` (10 / 50 / 200 headings with realistic body text between them)"
+  task 1.3 line=98 end=100 checked=true
+    text="Add `BenchmarkCmdUpdate` in `cmd/update_test.go` that runs `updateType(\"rfc\")` against a synthesized repo of 100 docs each carrying ToC markers and three H2 sections"
+  task 1.4 line=101 end=101 checked=true
+    text="Record baseline numbers in this doc (committed inline below)"
+  task 1.5 line=102 end=105 checked=true
+    text="Confirm the benchmarks are deterministic — ran each 3× and confirmed variance is under 5% for the index and toc benchmarks; `BenchmarkCmdUpdate/100` was 7% (end-to-end disk + render + write churn, accepted as the headline number)"
+  criterion line=123 executable=false command="" text="All three benchmarks compile and run"
+  criterion line=124 executable=false command="" text="Baseline numbers recorded in the doc for future comparison"
+  criterion line=125 executable=false command="" text="Benchmarks ignored by `go test ./...` (default — no `-bench` flag)"
+
+phase index=2 token="2" line=132 title="Cache bytes on DocEntry"
+  description="Capture the file bytes during `ScanDocuments` and expose them so callers that need the fil…"
+  task 2.1 line=140 end=141 checked=true
+    text="Add `Content []byte` to `index.DocEntry` (after the existing `Filename` field)"
+  task 2.2 line=142 end=143 checked=true
+    text="In `index.ScanDocuments`, populate `Content` from the bytes already read for `ParseFrontmatter` (no extra read)"
+  task 2.3 line=144 end=145 checked=true
+    text="Decision §1 honored: `Content` is always populated, no `ScanOptions` parameter introduced"
+  task 2.4 line=146 end=147 checked=true
+    text="`index.GenerateTable` audit: it only reads `Frontmatter` + `Filename`, so the heavier `DocEntry` does not affect it"
+  task 2.5 line=148 end=149 checked=true
+    text="Memory implication and ~10MB ceiling at CLI scale documented in `DocEntry`'s doc comment"
+  task 2.6 line=150 end=151 checked=true
+    text="Regression test `TestScanDocuments_PopulatesContent` asserts `Content` equals the on-disk bytes byte-for-byte"
+
+phase index=3 token="3" line=158 title="Refactor updateToCs to use cached bytes"
+  description="Stop re-reading files in `cmd/update.go:updateToCs`. The bytes are already on `DocEntry`."
+  task 3.1 line=166 end=167 checked=true
+    text="In `cmd/update.go:updateToCs`, replaced `os.ReadFile(docPath)` with `doc.Content`"
+  task 3.2 line=168 end=169 checked=true
+    text="Removed the warning-on-read-error path (dead now that the read is gone)"
+  task 3.3 line=170 end=171 checked=true
+    text="Confirmed the `os.WriteFile` path still functions — only the read is eliminated, not the write"
+  task 3.4 line=172 end=173 checked=true
+    text="All existing `cmd/update_test.go` tests still pass with the new cached-bytes flow; behavior unchanged"
+  criterion line=195 executable=false command="" text="A repo with 1000 docs runs `docz update` with 1000 file reads of doc bodies, not 2000 (eli…"
+  criterion line=198 executable=true command="BenchmarkCmdUpdate/100" text="`BenchmarkCmdUpdate/100` shows measurable improvement: -12% wall clock, -500 allocs (targe…"
+  criterion line=202 executable=false command="" text="All existing `cmd/update_test.go` tests pass"
+
+phase index=4 token="4" line=209 title="Change UpdateToC API to return []Heading"
+  description="Make the heading metadata available to callers without forcing a second parse."
+  task 4.1 line=217 end=218 checked=true
+    text="Changed `toc.UpdateToC` signature per Decisions §5: returns a `toc.UpdateResult{Updated, Headings, Found}` struct"
+  task 4.2 line=219 end=221 checked=true
+    text="`cmd/update.go:updateToCs` now consumes `res.Headings` in the dry-run branch instead of calling `toc.ParseHeadings` a second time on the same input"
+  task 4.3 line=222 end=224 checked=true
+    text="Audited every `UpdateToC` call site (grep -rn 'UpdateToC' .) — `cmd/update.go`, `internal/toc/toc_test.go`, and `internal/toc/golden_test.go` all updated to the struct return"
+  task 4.4 line=225 end=227 checked=true
+    text="Updated existing `TestUpdateToC` subtests for the new shape and added an assertion that `Headings` is surfaced (`len == 2` for the \"markers present with headings\" case)"
+  task 4.5 line=228 end=231 checked=true
+    text="Re-ran `BenchmarkUpdateToC` — costs ~8% more (10/50/200 sizes) due to the `[]Heading` slice now escaping to heap. The trade is deliberate: the dry-run path no longer double-parses, and the absolute regression is ~12µs even at 200 headings."
+  criterion line=257 executable=true command="grep -rn 'ParseHeadings' ." text="`grep -rn 'ParseHeadings' .` shows one production call site inside `UpdateToC` itself (`in…"
+  criterion line=260 executable=false command="" text="Dry-run `docz update --dry-run` no longer double-parses (the duplicate `toc.ParseHeadings(…"
+  criterion line=263 executable=true command="BenchmarkUpdateToC" text="`BenchmarkUpdateToC` slightly slower (≈8%) due to the returned slice escaping to heap \xe2\x80…"
+
+phase index=5 token="5" line=272 title="Verify and ship"
+  description=""
+  task 5.1 line=277 end=277 checked=true
+    text="Re-ran all three benchmarks; post-change numbers recorded below"
+  task 5.2 line=278 end=281 checked=true
+    text="Improvement targets: file-read halving met (1 read per doc, not 2). Dry-run double-parse eliminated. ≥30% wall-clock on `BenchmarkCmdUpdate/100` not met — measured -13%; the impl plan target was optimistic for the non-dry-run path"
+  task 5.3 line=282 end=282 checked=true
+    text="`make ci` green"
+  task 5.4 line=283 end=284 checked=true
+    text="Smoke test: `docz update --dry-run` against this repo — produces correct dry-run output, no files modified"
+  task 5.5 line=285 end=287 checked=true
+    text="Smoke test: `docz update` against this repo — README index files unchanged byte-for-byte (only the IMPL-0007 doc itself changed because we just edited it)"
+  task 5.6 line=288 end=288 checked=true
+    text="Open PR with `dont-release` label — PR #43"
+  task 5.7 line=289 end=290 checked=true
+    text="INV-0002 status already `In Progress`; no flip needed until all waves merge"
+  criterion line=330 executable=true command="BenchmarkCmdUpdate/100" text="`BenchmarkCmdUpdate/100` ≥30% faster than baseline"
+  criterion line=331 executable=false command="" text="No golden-file regression"
+  criterion line=332 executable=false command="" text="No memory leak under repeated invocation (sanity check)"

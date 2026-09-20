@@ -1,0 +1,34 @@
+id="IMPL-9001" title="A plan with abandoned work" status="In Progress" inferred=false
+implements=[]
+objective="Record every spelling of an abandoned task, so the IDs a consumer has already written down…"
+in-scope=0 out-of-scope=0
+dependencies="None."
+testing=1 references=1 open-questions=0 decisions=0
+progress=2/6
+
+phase index=1 token="1" line=23 title="Abandon some work"
+  description="The interesting property is the numbering: tasks 1.2 and 1.4 are skipped, and 1.3 and 1.5 …"
+  task 1.1 line=31 end=31 checked=true
+    text="Land the parser"
+  task 1.2 line=32 end=32 checked=false skipped={line=32 note="the first one covers both cases"}
+    text="Land the second parser"
+  task 1.3 line=33 end=33 checked=true
+    text="Land the walker"
+  task 1.4 line=34 end=34 checked=false skipped={line=34 note=""}
+    text="Land the cache"
+  task 1.5 line=35 end=36 checked=false verify="go test ./..."
+    text="Land the writer"
+  criterion line=42 executable=true command="go test ./..." text="`go test ./...` passes"
+  criterion line=43 executable=false command="" text="No task ID changed when a task was skipped"
+
+phase index=2 token="2" line=48 title="Defer the rest"
+  description=""
+  task 2.1 line=53 end=53 checked=false deferred={line=53 note="needs a release owner"}
+    text="Cut the release"
+  task 2.2 line=54 end=54 checked=false deferred={line=54 note="waiting on the upstream fix"}
+    text=""
+  task 2.3 line=55 end=55 checked=false
+    text="Announce it"
+  task 2.4 line=56 end=56 checked=false skipped={line=56 note="v1 is frozen"}
+    text="Backport to v1"
+  criterion line=62 executable=false command="" text="The release is tagged"

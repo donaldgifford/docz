@@ -192,9 +192,26 @@ func commandIn(line string) string {
 // Both spellings the fleet uses are accepted: the prefix form docz-api
 // IMPL-0006 writes, where the task text opens with "deferred - …", and the
 // suffix form issue #100 asked for, where it closes with one.
+//
+// The note folds to the end of the task (DESIGN-0014 §3), not to the end of
+// the line the marker sits on. A reason for not doing something runs to several
+// lines as often as the task does, and stopping at the line break would cut it
+// mid-sentence. The consequence is that a document which writes the whole task
+// inside the marker — as docz-api IMPL-0006 does — gets a long note and an
+// empty Text, which validate reports as impl.task.empty. That is the honest
+// reading: the rule cannot tell where such an author meant the note to stop.
 func deferredIn(parts []part) *Marker {
-	for _, p := range parts {
-		m := deferredMarker.FindStringSubmatch(p.text)
+	for i, p := range parts {
+		if !deferredMarker.MatchString(p.text) {
+			continue
+		}
+
+		tail := make([]string, 0, len(parts)-i)
+		for _, rest := range parts[i:] {
+			tail = append(tail, rest.text)
+		}
+
+		m := deferredMarker.FindStringSubmatch(strings.Join(tail, " "))
 		if m == nil {
 			continue
 		}

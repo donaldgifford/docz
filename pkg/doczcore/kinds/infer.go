@@ -216,7 +216,7 @@ func InferRegions(doc []byte, spec HeadingSpec) []docparse.Region {
 			continue
 		}
 
-		end := spanEnd(lines, heads, i, h.Level)
+		end := spanEnd(lines, heads, i, h.Level, spec, rule.Kind)
 
 		// An inferred region opens on the line before its heading, so the
 		// heading lands strictly inside the span exactly as it does inside a
@@ -288,11 +288,31 @@ func matchRule(spec HeadingSpec, h docparse.Heading) (HeadingRule, bool) {
 //
 // The break goes because the IMPL template puts one between phases: it
 // separates the sections, it is not the tail of the one above it.
-func spanEnd(lines []string, heads []docparse.Heading, i, level int) int {
+//
+// A span ends at the next heading of the same or shallower level, and also at
+// any deeper heading that opens a region this one cannot contain. The second
+// rule is what keeps two regions from overlapping: sdk-booty-sh's messy
+// fixture puts "### Phase A:" directly under "## Objective" with no level-2
+// heading between them, and by level alone the objective would run to the end
+// of the document and swallow the phase. Two depth-0 regions cannot overlap —
+// no arrangement of markers expresses it — so a document that was read that
+// way could not be migrated, and its phase would come back nested one level
+// too deep. A declared child is exempt: an in-scope region is inside its
+// scope, which is the whole point of the parent field.
+func spanEnd(
+	lines []string, heads []docparse.Heading, i, level int,
+	spec HeadingSpec, kind string,
+) int {
 	end := len(lines)
 
 	for _, next := range heads[i+1:] {
 		if next.Level <= level {
+			end = next.Line - 1
+
+			break
+		}
+
+		if rule, ok := matchRule(spec, next); ok && !descends(spec, rule.Kind, kind) {
 			end = next.Line - 1
 
 			break
@@ -374,4 +394,33 @@ func nest(regions []docparse.Region, spec HeadingSpec) []docparse.Region {
 	}
 
 	return out
+}
+
+// descends reports whether kind is ancestor, or nests inside it through the
+// spec's parent links.
+//
+// Walked rather than looked up one level, so a spec that nests three deep
+// behaves. The loop is bounded by the spec's length because a cycle in the
+// parent links — which a hand-written table could have — must not hang a
+// parse.
+func descends(spec HeadingSpec, kind, ancestor string) bool {
+	parentOf := make(map[string]string, len(spec))
+	for _, r := range spec {
+		parentOf[r.Kind] = r.Parent
+	}
+
+	for range len(spec) + 1 {
+		if kind == ancestor {
+			return true
+		}
+
+		parent, ok := parentOf[kind]
+		if !ok || parent == "" {
+			return false
+		}
+
+		kind = parent
+	}
+
+	return false
 }

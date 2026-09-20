@@ -1,0 +1,13 @@
+id="IMPL-8001" title="Clean Plan" status="Draft" inferred=false
+implements=[]
+objective="Build cleanly."
+in-scope=0 out-of-scope=0
+dependencies=""
+testing=0 references=0 open-questions=0 decisions=0
+progress=0/1
+
+phase index=1 token="A" line=20 title="One"
+  description=""
+  task A.1 line=25 end=25 checked=false
+    text="Only task"
+  criterion line=31 executable=false command="" text="The task is done"
