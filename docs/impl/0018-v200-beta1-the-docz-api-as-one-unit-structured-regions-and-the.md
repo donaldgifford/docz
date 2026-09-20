@@ -685,7 +685,7 @@ end of this phase `internal/` no longer exists.
       (created, updated, no markers, both dry-run forms) and the `Scaffold`
       regression from issue #99: exactly one marker pair for every type,
       built-in and custom.
-- [ ] `git mv internal/wiki pkg/wiki` and add `Action` (`Created`,
+- [x] `git mv internal/wiki pkg/wiki` and add `Action` (`Created`,
       `Skipped`, `Overwritten`), `InitOptions{SiteName, SiteDescription,
       RepoURL, SiteURL, Theme, Force}`, `InitReport{MkDocsPath, MkDocs,
       IndexPath, Index}`, `Init(ctx, root, cfg, opts)`, `NavOptions{DryRun}`,
@@ -694,10 +694,10 @@ end of this phase `internal/` no longer exists.
       primitives stay exported; `cmd/wiki.go` keeps its own helpers until
       Phase 5.
       verify: `go test ./pkg/wiki/...`
-- [ ] Temp-dir tests for `wiki.Init` and `UpdateNav` mirroring today's
+- [x] Temp-dir tests for `wiki.Init` and `UpdateNav` mirroring today's
       `cmd/wiki` tests (create, skip, force, dry-run, the nav page count);
       existing goldens carry over with the move.
-- [ ] Re-point every `cmd/` import from `internal/{template,index,wiki}`
+- [x] Re-point every `cmd/` import from `internal/{template,index,wiki}`
       to the promoted packages with no logic change; remove the now-empty
       `internal/` directory.
       verify: `test ! -d internal && go test ./cmd/...`
@@ -705,7 +705,7 @@ end of this phase `internal/` no longer exists.
       `doctemplate.EmbeddedSchema`, `index.Scaffold`, and
       `wiki.FilenameTitle`, one call each.
       verify: `make test-consumer`
-- [ ] CLAUDE.md: bullets for the three promoted packages, the schema
+- [x] CLAUDE.md: bullets for the three promoted packages, the schema
       resolution tiers, and the removal of `internal/`; drop the sentence
       that `internal/template` is not importable from outside the module.
 
