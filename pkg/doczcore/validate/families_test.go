@@ -309,6 +309,29 @@ func TestDocument_CodeFamilies(t *testing.T) {
 				"## Alpha\n\n## Beta\n",
 			opts: validate.Options{MinHeadings: 1},
 		},
+		{
+			// An unmarked document whose ToC pair is real and filled. The
+			// ToC lookup has to read the document's own markers, because
+			// inference replaces the region list wholesale and a ToC pair
+			// has no heading to be inferred from -- so the real pair used
+			// to vanish and this reported toc.missing on a good document.
+			name: "toc: an inferred document keeps its real ToC pair",
+			body: goodFrontmatter +
+				"<!--toc:start-->\n- [Summary](#summary)\n<!--toc:end-->\n\n" +
+				"## Summary\n\ntext\n",
+			opts: validate.Options{
+				Schema: schemaOf("toc", "summary"),
+				Headings: kinds.HeadingSpec{
+					{Kind: "summary", Level: 2, Text: "summary"},
+				},
+				MinHeadings: 1,
+			},
+			// The inference warning is the expected one. What must not
+			// appear is any complaint about the ToC or the summary region.
+			wantCode: "region.inferred",
+			wantSev:  validate.Warning,
+			notCodes: []string{"toc.missing", "toc.stale", "region.missing"},
+		},
 
 		// content.*
 		{
