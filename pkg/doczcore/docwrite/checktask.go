@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
 // Sentinel errors returned by CheckTask, distinguishable with errors.Is.

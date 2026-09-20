@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 func TestInitSkipsDisabledTypes(t *testing.T) {

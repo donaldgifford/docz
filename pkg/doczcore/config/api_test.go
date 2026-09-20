@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // TestLoad_APIBlockNormalization covers the decode and normalization half

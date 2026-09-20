@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // homeTitle is the nav title applied to the root-level index.md page.

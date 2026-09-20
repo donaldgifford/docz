@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/donaldgifford/docz/internal/index"
-	doctemplate "github.com/donaldgifford/docz/internal/template"
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/pkg/doczcore/document"
-	"github.com/donaldgifford/docz/pkg/doczcore/toc"
+	"github.com/donaldgifford/docz/v2/internal/index"
+	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/toc"
 )
 
 var updateDryRun bool

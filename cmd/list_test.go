@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // installListRunner wires up the package-level runner for the list

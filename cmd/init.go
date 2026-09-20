@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	doctemplate "github.com/donaldgifford/docz/internal/template"
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 var forceInit bool

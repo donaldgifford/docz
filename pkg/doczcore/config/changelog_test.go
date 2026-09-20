@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // writeConfig writes a .docz.yaml into a fresh temp dir and returns the

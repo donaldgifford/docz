@@ -14,7 +14,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 var updateChangelog = flag.Bool("update", false, "update golden files")

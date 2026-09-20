@@ -1,7 +1,7 @@
 ---
 id: IMPL-0018
 title: "v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-19
 ---
@@ -166,7 +166,7 @@ CLI does.
 
 #### Tasks
 
-- [ ] Change the `go.mod` module line to `github.com/donaldgifford/docz/v2`
+- [x] Change the `go.mod` module line to `github.com/donaldgifford/docz/v2`
       and rewrite every import under `cmd/`, `internal/`, and `pkg/`
       (including tests) to the `/v2` path; run `make fmt`.
       verify: `go build ./... && go vet ./...`

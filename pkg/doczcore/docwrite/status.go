@@ -7,8 +7,8 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // ErrStatusFieldMissing is returned by SetStatus when a file has valid

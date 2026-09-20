@@ -3,7 +3,7 @@ package docparse_test
 import (
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
 func TestAnchorSlug(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
 func TestGenerateToC(t *testing.T) {

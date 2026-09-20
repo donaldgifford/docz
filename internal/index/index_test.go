@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // indexHeader is a stand-in for the caller-resolved header string that
