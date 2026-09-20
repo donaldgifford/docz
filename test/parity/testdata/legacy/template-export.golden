@@ -1,0 +1,66 @@
+$ docz template export rfc
+exit 0
+
+=== stdout
+Exported rfc template to $ROOT/rfc.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/README.md (1275 bytes, 9da4edaedca2)
+rfc.md (1019 bytes, 2de8389dfdf9)
+
+=== written rfc.md
+---
+id: {{ .Prefix }}-{{ .Number }}
+title: "{{ .Title }}"
+status: {{ .Status }}
+author: {{ .Author }}
+created: {{ .Date }}
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
+
+<!--toc:start-->
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Problem Statement
+
+<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Proposed Solution
+
+<!-- High-level description of the proposed approach -->
+
+## Alternatives Considered
+
+<!-- What other approaches were evaluated and why were they rejected? -->
+
+## Risks and Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
+| ---- | ------ | ---------- | ---------- |
+|      |        |            |            |
+
+## Success Criteria
+
+<!-- How will we measure whether this RFC achieved its goals? -->
+
+## References
+
+<!-- Links to related ADRs, RFCs, issues, external docs -->

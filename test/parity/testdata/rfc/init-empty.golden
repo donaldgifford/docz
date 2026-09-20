@@ -1,0 +1,353 @@
+$ docz init
+exit 0
+
+=== stdout
+Created $ROOT/.docz.yaml
+Created $ROOT/docs/rfc/README.md
+Created $ROOT/docs/adr/README.md
+Created $ROOT/docs/design/README.md
+Created $ROOT/docs/impl/README.md
+Created $ROOT/docs/investigation/README.md
+Initialized docz successfully.
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (4347 bytes, 92e6f3808534)
+docs/adr/README.md (893 bytes, 08fd6bf08489)
+docs/design/README.md (901 bytes, e52dcb4be112)
+docs/impl/README.md (942 bytes, 3177d075d107)
+docs/investigation/README.md (569 bytes, 764e5e30cf98)
+docs/rfc/README.md (992 bytes, 877b91d16f9d)
+
+=== written .docz.yaml
+# .docz.yaml -- configuration for the docz CLI.
+#
+# This file is created by `docz init` and read by every other docz command.
+# Edit anything below; rerun `docz init` only on a fresh checkout — the
+# command will not overwrite an existing .docz.yaml.
+#
+# About the `types:` block:
+#   If you include `types:`, docz uses ONLY the types you list. Omitting a
+#   type opts it out of scaffolding and updates. Remove the `types:` block
+#   entirely to keep all six built-in types (rfc, adr, design, impl, plan,
+#   investigation).
+#
+# Custom types:
+#   Add your own type by giving it a unique `id_prefix` and `dir`. It can then
+#   be created/listed by its name, its `id_prefix`, or any `aliases:` entry
+#   (e.g. `docz create frameworks`, `docz create FW`, `docz create fw`).
+#   A duplicate `id_prefix` or an alias that collides with another type is
+#   rejected at startup. See the commented example below the built-in types.
+#
+# Documentation: https://github.com/donaldgifford/docz
+
+docs_dir: docs
+
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: "ADR"
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: "status"
+    plural_label: "ADRs"
+
+  design:
+    enabled: true
+    dir: design
+    template: ""
+    id_prefix: "DESIGN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Review
+      - Approved
+      - Implemented
+      - Abandoned
+    status_field: "status"
+    plural_label: "Design"
+
+  impl:
+    enabled: true
+    dir: impl
+    template: ""
+    id_prefix: "IMPL"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Paused
+      - Cancelled
+    status_field: "status"
+    plural_label: "Implementation Plans"
+
+  investigation:
+    enabled: true
+    dir: investigation
+    template: ""
+    id_prefix: "INV"
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+    status_field: "status"
+    plural_label: "Investigations"
+
+  plan:
+    enabled: false
+    dir: plan
+    template: ""
+    id_prefix: "PLAN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Cancelled
+    status_field: "status"
+    plural_label: "Plans"
+
+  rfc:
+    enabled: true
+    dir: rfc
+    template: ""
+    id_prefix: "RFC"
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+    status_field: "status"
+    plural_label: "RFCs"
+
+  # Example custom type (uncomment and edit):
+  # frameworks:
+  #   enabled: true
+  #   dir: frameworks
+  #   template: ""              # defaults to docs/templates/frameworks.md, else embedded
+  #   id_prefix: "FW"           # must be unique across all types
+  #   id_width: 4
+  #   aliases: ["fw"]           # optional CLI shorthands
+  #   statuses:
+  #     - Draft
+  #     - Active
+  #     - Deprecated
+  #   status_field: "status"
+  #   plural_label: "Frameworks"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: true
+  default: ""
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    design: Design
+    impl: Implementation Plans
+    investigation: Investigations
+    plan: Plans
+    rfc: RFCs
+
+toc:
+  enabled: true
+  min_headings: 3
+
+# Changelog awareness. Off by default; enable it so tools that read this
+# config (docz-api, docz-site) know where your changelog lives. docz does
+# not generate changelogs — git-cliff does.
+changelog:
+  enabled: false
+  file: CHANGELOG.md
+
+# docz-api / docz-site surface. Off by default. Enabling it publishes
+# every .md under docs_dir, so add exclude entries for anything that
+# should stay private. <docs_dir>/templates/ is always excluded.
+#
+# The URL path mirrors the docs_dir path: docs/index.md is the repo root,
+# a directory's README.md is that directory's page, and docz documents
+# keep their id-addressed route.
+api:
+  enabled: false
+  # Optional; defaults to <docs_dir>/index.md.
+  landing_page:
+  # Path prefixes under docs_dir that are never published, e.g.
+  #   exclude:
+  #     - scratch
+  exclude:
+  # Markdown outside docs_dir; anything inside it is already consumed, e.g.
+  #   additional_docs:
+  #     - CONTRIBUTING.md
+  additional_docs:
+
+=== written docs/adr/README.md
+# Architecture Decision Records (ADRs)
+
+This directory contains Architecture Decision Records documenting significant
+technical decisions.
+
+## What are ADRs?
+
+ADRs document **technical implementation decisions** for specific architectural
+components. Each ADR focuses on a single decision and includes:
+
+- **Context**: The problem or constraint that led to this decision
+- **Decision**: What was chosen and why
+- **Consequences**: Trade-offs, pros, and cons
+- **Alternatives**: Other options that were considered
+
+## Creating a New ADR
+
+```bash
+docz create adr "Your ADR Title"
+```
+
+## ADR Status
+
+- **Proposed**: Under discussion, not yet approved
+- **Accepted**: Approved and being implemented or already implemented
+- **Deprecated**: No longer relevant or superseded
+- **Superseded by ADR-XXXX**: Replaced by another ADR
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+<!-- END DOCZ AUTO-GENERATED -->
+
+=== written docs/design/README.md
+# Design Documents
+
+This directory contains detailed design documents for feature implementation.
+
+## What are Design Documents?
+
+Design documents describe **how a feature or system will be built**. Each design
+document includes:
+
+- **Overview**: What is being designed and why
+- **Goals and Non-Goals**: Scope boundaries
+- **Detailed Design**: Architecture, APIs, data models
+- **Testing Strategy**: How the design will be validated
+- **Migration Plan**: How to roll out the changes
+
+## Creating a New Design Document
+
+```bash
+docz create design "Your Design Title"
+```
+
+## Design Status
+
+- **Draft**: Initial draft, still being written
+- **In Review**: Ready for review and feedback
+- **Approved**: Approved and ready for implementation
+- **Implemented**: Design has been fully implemented
+- **Abandoned**: Design was not pursued
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+<!-- END DOCZ AUTO-GENERATED -->
+
+=== written docs/impl/README.md
+# Implementation Plans
+
+This directory contains implementation plans with concrete tasks and milestones.
+
+## What are Implementation Plans?
+
+Implementation plans describe **the concrete steps to build a feature or system**.
+Each plan includes:
+
+- **Objective**: What is being implemented and which RFC/design it implements
+- **Scope**: What is in and out of scope
+- **Implementation Steps**: Ordered tasks with checkboxes
+- **File Changes**: Key files that will be created or modified
+- **Testing Plan**: How the implementation will be validated
+
+## Creating a New Implementation Plan
+
+```bash
+docz create impl "Your Implementation Title"
+```
+
+## Implementation Status
+
+- **Draft**: Plan is being written
+- **In Progress**: Implementation is underway
+- **Completed**: Implementation is finished
+- **Paused**: Work is temporarily stopped
+- **Cancelled**: Plan was abandoned
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+<!-- END DOCZ AUTO-GENERATED -->
+
+=== written docs/investigation/README.md
+# Investigations
+
+Time-boxed research spikes and validation experiments. Use an investigation
+doc to answer a specific question before committing to a design or
+implementation — e.g. proving a library can handle a requirement, reproducing
+a bug, or validating a performance assumption.
+
+Design docs, plans, and implementation docs can reference investigations by ID
+(e.g. `INV-0001`) to document how open questions were resolved.
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+<!-- END DOCZ AUTO-GENERATED -->
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+<!-- END DOCZ AUTO-GENERATED -->
+
+=== written docs/rfc/README.md
+# Requests for Comments (RFCs)
+
+This directory contains RFCs documenting high-level proposals for major features
+and system redesigns.
+
+## What are RFCs?
+
+RFCs document **high-level problem definitions and solution strategies**. Each
+RFC focuses on:
+
+- **Problem Statement**: The issue being addressed with evidence
+- **Proposed Solution**: High-level approach and architecture
+- **Implementation Phases**: Overview of how the solution will be built
+- **Alternatives**: Other approaches that were considered
+- **Risks and Success Criteria**: What could go wrong and how we measure success
+
+## Creating a New RFC
+
+```bash
+docz create rfc "Your RFC Title"
+```
+
+## RFC Status
+
+- **Draft**: Initial draft, not yet ready for review
+- **Proposed**: Ready for review and feedback
+- **Accepted**: Approved and ready for implementation
+- **Rejected**: Not moving forward with this proposal
+- **Superseded**: Replaced by another RFC
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+<!-- END DOCZ AUTO-GENERATED -->

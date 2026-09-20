@@ -1,0 +1,23 @@
+$ docz wiki update --dry-run
+exit 0
+
+=== stdout
+- Home: index.md
+- ADRs:
+    - Overview: adr/README.md
+    - ADR-0001: Drop the plan doc type: adr/0001-drop-the-plan-doc-type.md
+- RFCs:
+    - Overview: rfc/README.md
+    - RFC-0001: Consolidate the release pipeline: rfc/0001-consolidate-the-release-pipeline.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/index.md (114 bytes, 7e75d523c95b)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/README.md (1275 bytes, 9da4edaedca2)
+mkdocs.yml (382 bytes, 79686e6a4afc)

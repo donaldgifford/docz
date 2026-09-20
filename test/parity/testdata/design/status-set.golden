@@ -1,0 +1,89 @@
+$ docz status set design DESIGN-0001 Implemented
+exit 0
+
+=== stdout
+docs/design/0001-token-refresh-flow.md: status Approved -> Implemented
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (732 bytes, 0a7d82da49d4)
+docs/design/0001-token-refresh-flow.md (2080 bytes, 2efd05e290b8)
+docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/README.md (1287 bytes, 0f8b694d2c3a)
+
+=== written docs/design/0001-token-refresh-flow.md
+---
+id: DESIGN-0001
+title: "Token refresh flow"
+status: Implemented
+author: Parity Fixture
+created: 2026-03-04
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# DESIGN-0001: Token refresh flow
+
+<!--toc:start-->
+- [Overview](#overview)
+- [Goals and Non-Goals](#goals-and-non-goals)
+  - [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Background](#background)
+- [Detailed Design](#detailed-design)
+- [API / Interface Changes](#api--interface-changes)
+- [Data Model](#data-model)
+- [Testing Strategy](#testing-strategy)
+- [Migration / Rollout Plan](#migration--rollout-plan)
+- [Open Questions](#open-questions)
+- [References](#references)
+<!--toc:end-->
+
+## Overview
+
+<!-- What is being designed and why? 2-3 sentences. -->
+
+## Goals and Non-Goals
+
+### Goals
+
+-
+
+### Non-Goals
+
+-
+
+## Background
+
+<!-- Context, prior art, and any prerequisites -->
+
+## Detailed Design
+
+<!-- The core of the document. Architecture diagrams, API contracts,
+     data models, component interactions, etc. -->
+
+## API / Interface Changes
+
+<!-- Public API surface changes, CLI changes, config changes -->
+
+## Data Model
+
+<!-- Schema changes, storage considerations -->
+
+## Testing Strategy
+
+<!-- How will this be tested? Unit, integration, e2e? -->
+
+## Migration / Rollout Plan
+
+<!-- How do we get from here to there safely? -->
+
+## Open Questions
+
+<!-- Unresolved decisions or areas needing further investigation -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->

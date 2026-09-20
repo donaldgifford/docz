@@ -1,0 +1,50 @@
+$ docz create frameworks Parity flagged document --author Pinned Author --status Deprecated --no-update
+exit 0
+
+=== stdout
+Created FRAMEWORKS: $ROOT/docs/frameworks/0003-parity-flagged-document.md
+
+=== stderr
+Warning: config declares non-built-in type "frameworks" (typo?)
+
+=== files
+.docz.yaml (1148 bytes, aae68059d6d3)
+docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/README.md (1167 bytes, 80b1981d1cfe)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/0003-parity-flagged-document.md (594 bytes, 1cac4f57d1da)
+docs/frameworks/README.md (650 bytes, 9327fc0355b1)
+docs/templates/frameworks.md (616 bytes, 3285c201e10e)
+
+=== written docs/frameworks/0003-parity-flagged-document.md
+---
+id: FW-0003
+title: "Parity flagged document"
+status: Deprecated
+author: Pinned Author
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# FW-0003: Parity flagged document
+
+<!--toc:start-->
+<!--toc:end-->
+
+## Summary
+
+<!-- What the framework is and which problem it covers -->
+
+## Owner
+
+<!-- Team or person accountable for the framework -->
+
+## Adoption
+
+<!-- Which services use it today, and what adopting it costs -->
+
+## References
+
+<!-- Links to the upstream project, internal guides, related decisions -->

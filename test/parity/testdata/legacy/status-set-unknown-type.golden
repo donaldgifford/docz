@@ -1,0 +1,15 @@
+$ docz status set nosuchtype RFC-0001 Superseded
+exit 2
+
+=== stdout
+(empty)
+
+=== stderr
+Error: unknown document type "nosuchtype" (valid types: rfc, adr)
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/README.md (1275 bytes, 9da4edaedca2)

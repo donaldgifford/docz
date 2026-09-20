@@ -1,0 +1,131 @@
+$ docz create design Parity created document
+exit 0
+
+=== stdout
+Created DESIGN: $ROOT/docs/design/0003-parity-created-document.md
+Updated $ROOT/docs/design/README.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (732 bytes, 0a7d82da49d4)
+docs/design/0001-token-refresh-flow.md (2077 bytes, 5bd162da5acc)
+docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/0003-parity-created-document.md (1476 bytes, e53bca23f2e2)
+docs/design/README.md (1436 bytes, 772120d62a84)
+
+=== written docs/design/0003-parity-created-document.md
+---
+id: DESIGN-0003
+title: "Parity created document"
+status: Draft
+author: Parity Fixture
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# DESIGN-0003: Parity created document
+
+<!--toc:start-->
+- [Overview](#overview)
+- [Goals and Non-Goals](#goals-and-non-goals)
+  - [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Background](#background)
+- [Detailed Design](#detailed-design)
+- [API / Interface Changes](#api--interface-changes)
+- [Data Model](#data-model)
+- [Testing Strategy](#testing-strategy)
+- [Migration / Rollout Plan](#migration--rollout-plan)
+- [Open Questions](#open-questions)
+- [References](#references)
+<!--toc:end-->
+
+## Overview
+
+<!-- What is being designed and why? 2-3 sentences. -->
+
+## Goals and Non-Goals
+
+### Goals
+
+-
+
+### Non-Goals
+
+-
+
+## Background
+
+<!-- Context, prior art, and any prerequisites -->
+
+## Detailed Design
+
+<!-- The core of the document. Architecture diagrams, API contracts,
+     data models, component interactions, etc. -->
+
+## API / Interface Changes
+
+<!-- Public API surface changes, CLI changes, config changes -->
+
+## Data Model
+
+<!-- Schema changes, storage considerations -->
+
+## Testing Strategy
+
+<!-- How will this be tested? Unit, integration, e2e? -->
+
+## Migration / Rollout Plan
+
+<!-- How do we get from here to there safely? -->
+
+## Open Questions
+
+<!-- Unresolved decisions or areas needing further investigation -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->
+
+=== written docs/design/README.md
+# Design Documents
+
+This directory contains detailed design documents for feature implementation.
+
+## What are Design Documents?
+
+Design documents describe **how a feature or system will be built**. Each design
+document includes:
+
+- **Overview**: What is being designed and why
+- **Goals and Non-Goals**: Scope boundaries
+- **Detailed Design**: Architecture, APIs, data models
+- **Testing Strategy**: How the design will be validated
+- **Migration Plan**: How to roll out the changes
+
+## Creating a New Design Document
+
+```bash
+docz create design "Your Design Title"
+```
+
+## Design Status
+
+- **Draft**: Initial draft, still being written
+- **In Review**: Ready for review and feedback
+- **Approved**: Approved and ready for implementation
+- **Implemented**: Design has been fully implemented
+- **Abandoned**: Design was not pursued
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Design
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| DESIGN-0001 | Token refresh flow | Approved | 2026-03-04 | Parity Fixture | [0001-token-refresh-flow.md](0001-token-refresh-flow.md) |
+| DESIGN-0002 | Wiki nav generation | Approved | 2026-03-04 | Parity Fixture | [0002-wiki-nav-generation.md](0002-wiki-nav-generation.md) |
+| DESIGN-0003 | Parity created document | Draft | $DATE | Parity Fixture | [0003-parity-created-document.md](0003-parity-created-document.md) |
+<!-- END DOCZ AUTO-GENERATED -->

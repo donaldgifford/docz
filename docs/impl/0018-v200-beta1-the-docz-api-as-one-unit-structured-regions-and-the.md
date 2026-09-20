@@ -214,7 +214,7 @@ CLI does.
       plan`. A `-update` flag captures goldens only when `DOCZ_PARITY_BIN`
       names the binary to capture from.
       verify: `go vet -tags parity ./test/parity/...`
-- [ ] Add the `parity-capture` Makefile target: `go install
+- [x] Add the `parity-capture` Makefile target: `go install
       github.com/donaldgifford/docz/cmd/docz@v1.2.2` into a temporary
       `GOBIN` (Open Question 2), then the `-update` run with
       `DOCZ_PARITY_BIN` pointing at it; the variable can be preset to
@@ -225,7 +225,7 @@ CLI does.
       delta, with the reason in the PR.
       verify: `make parity-capture` leaves a populated
       `test/parity/testdata/`
-- [ ] Add the `parity` Makefile target (build `build/bin/docz`, then
+- [x] Add the `parity` Makefile target (build `build/bin/docz`, then
       `go test -tags parity ./test/parity/...` against it, overridable with
       `BIN=`). Not yet in `make ci` (Phase 5 wires it). As a determinism
       self-check, replay the goldens against the same v1.2.2 binary they

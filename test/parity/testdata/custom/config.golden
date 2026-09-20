@@ -1,0 +1,78 @@
+$ docz config
+exit 0
+
+=== stdout
+docs_dir: $ROOT/docs
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: ADR
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: status
+    plural_label: ADRs
+  frameworks:
+    enabled: true
+    dir: frameworks
+    template: ""
+    id_prefix: FW
+    id_width: 4
+    statuses:
+      - Draft
+      - Active
+      - Deprecated
+    status_field: status
+    plural_label: Frameworks
+    aliases:
+      - fw
+index:
+  auto_update: true
+  preserve_header: true
+author:
+  from_git: false
+  default: Parity Fixture
+wiki:
+  auto_update: true
+  mkdocs_path: $ROOT/mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    design: Design
+    frameworks: Frameworks
+    impl: Implementation Plans
+    investigation: Investigations
+    plan: Plans
+    rfc: RFCs
+toc:
+  enabled: true
+  min_headings: 3
+changelog:
+  enabled: false
+  file: CHANGELOG.md
+api:
+  enabled: false
+  landing_page: ""
+  exclude: []
+  additional_docs: []
+
+=== stderr
+Warning: config declares non-built-in type "frameworks" (typo?)
+
+=== files
+.docz.yaml (1148 bytes, aae68059d6d3)
+docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/README.md (1167 bytes, 80b1981d1cfe)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/README.md (650 bytes, 9327fc0355b1)
+docs/templates/frameworks.md (616 bytes, 3285c201e10e)

@@ -1,0 +1,17 @@
+$ docz list impl
+exit 0
+
+=== stdout
+ID         TITLE                         STATUS       DATE        AUTHOR          TYPE
+--         -----                         ------       ----        ------          ----
+IMPL-0001  Phase out the legacy scanner  In Progress  2026-03-04  Parity Fixture  IMPL
+IMPL-0002  Registry store migration      In Progress  2026-03-04  Parity Fixture  IMPL
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (748 bytes, 1eb4fc792707)
+docs/impl/0001-phase-out-the-legacy-scanner.md (3850 bytes, a7c60a54a035)
+docs/impl/0002-registry-store-migration.md (6709 bytes, daf5e9ef4fb6)
+docs/impl/README.md (1389 bytes, 69869db9f54c)

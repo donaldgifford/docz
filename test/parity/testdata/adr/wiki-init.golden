@@ -1,0 +1,40 @@
+$ docz wiki init
+exit 0
+
+=== stdout
+Created $ROOT/mkdocs.yml
+Created $ROOT/docs/index.md
+Updated nav in $ROOT/mkdocs.yml (4 pages)
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (698 bytes, 7f99dbecefa5)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1645 bytes, fc2adfcd894c)
+docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/README.md (1349 bytes, e3d3787df33c)
+docs/index.md (90 bytes, ea3789661e5a)
+mkdocs.yml (354 bytes, d9a55dd88ce0)
+
+=== written docs/index.md
+# 001
+
+Welcome to the documentation for 001.
+
+## Document Types
+
+- [ADRs](adr/README.md)
+
+
+=== written mkdocs.yml
+nav:
+    - Home: index.md
+    - ADRs:
+        - Overview: adr/README.md
+        - 'ADR-0001: Use PostgreSQL for the registry store': adr/0001-use-postgresql-for-the-registry-store.md
+        - 'ADR-0002: Vendor the markdown walker': adr/0002-vendor-the-markdown-walker.md
+plugins:
+    - techdocs-core
+site_description: Documentation for 001
+site_name: 1

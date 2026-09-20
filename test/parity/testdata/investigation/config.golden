@@ -1,0 +1,61 @@
+$ docz config
+exit 0
+
+=== stdout
+docs_dir: $ROOT/docs
+types:
+  investigation:
+    enabled: true
+    dir: investigation
+    template: ""
+    id_prefix: INV
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+    status_field: status
+    plural_label: Investigations
+index:
+  auto_update: true
+  preserve_header: true
+author:
+  from_git: false
+  default: Parity Fixture
+wiki:
+  auto_update: true
+  mkdocs_path: $ROOT/mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    design: Design
+    impl: Implementation Plans
+    investigation: Investigations
+    plan: Plans
+    rfc: RFCs
+toc:
+  enabled: true
+  min_headings: 3
+changelog:
+  enabled: false
+  file: CHANGELOG.md
+api:
+  enabled: false
+  landing_page: ""
+  exclude: []
+  additional_docs: []
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (776 bytes, 51d3c85c73e5)
+docs/investigation/0001-evaluate-message-queue-options.md (2772 bytes, e0595763ce45)
+docs/investigation/0002-why-the-nightly-rebuild-flakes.md (5207 bytes, 0c1a5c34ba68)
+docs/investigation/README.md (1316 bytes, 45c47b091931)

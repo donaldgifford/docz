@@ -1,0 +1,80 @@
+$ docz status set adr ADR-0001 Superseded --format json
+exit 0
+
+=== stdout
+{"path":"docs/adr/0001-use-postgresql-for-the-registry-store.md","from":"Accepted","to":"Superseded","dry_run":false,"changed":true}
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (698 bytes, 7f99dbecefa5)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1647 bytes, c26b91e084e4)
+docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/README.md (1349 bytes, e3d3787df33c)
+
+=== written docs/adr/0001-use-postgresql-for-the-registry-store.md
+---
+id: ADR-0001
+title: "Use PostgreSQL for the registry store"
+status: Superseded
+author: Parity Fixture
+created: 2026-03-04
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# ADR-0001: Use PostgreSQL for the registry store
+
+<!--toc:start-->
+- [Summary](#summary)
+- [Context](#context)
+- [Decision](#decision)
+  - [Supporting Data](#supporting-data)
+- [Consequences](#consequences)
+  - [Positive](#positive)
+  - [Negative](#negative)
+  - [Neutral](#neutral)
+- [Alternatives Considered](#alternatives-considered)
+- [References](#references)
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Context
+
+<!-- What is the issue that we're seeing that motivates this decision? -->
+
+## Decision
+
+<!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Consequences
+
+<!-- What becomes easier or more difficult to do because of this change? -->
+
+### Positive
+
+-
+
+### Negative
+
+-
+
+### Neutral
+
+-
+
+## Alternatives Considered
+
+<!-- What other options were evaluated? -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->

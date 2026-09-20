@@ -6,7 +6,7 @@
 // The suite is the evidence for ADR-0002 Decision 4: the CLI is the first
 // tool moved onto the API, and "moved, not changed" is only a claim until a
 // byte comparison backs it. Goldens come from v1.2.2 and from nowhere else
-// (see testdata/README.md); a v2 build that differs is either a bug or a
+// (see README.md); a v2 build that differs is either a bug or a
 // permitted delta argued for in a pull request.
 //
 // The driver itself lives in parity_test.go behind the "parity" build tag,
