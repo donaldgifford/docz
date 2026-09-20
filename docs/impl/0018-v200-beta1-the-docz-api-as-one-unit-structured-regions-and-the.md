@@ -231,7 +231,7 @@ CLI does.
       self-check, replay the goldens against the same v1.2.2 binary they
       came from.
       verify: `make parity BIN=<v1.2.2 binary>`
-- [ ] Add `.github/workflows/prerelease.yml` on `push: tags: ['v*-beta.*']`
+- [x] Add `.github/workflows/prerelease.yml` on `push: tags: ['v*-beta.*']`
       running only the goreleaser job (checkout with full history,
       setup-go, GPG import, `goreleaser release --clean`) so a pushed beta
       tag builds binaries with the `/v2` ldflags; `prerelease: auto`
