@@ -387,7 +387,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       > fixtures task); its equivalent runs here already as
       > `TestInferenceEqualsMarkers` over all six embedded templates plus
       > `TestInferRegions_OverARealDocument` over the real ADR-0002.
-- [ ] Create `pkg/doczcore/validate` (`finding.go`, `schema.go`,
+- [x] Create `pkg/doczcore/validate` (`finding.go`, `schema.go`,
       `document.go`, one file per code family): `Severity` (`Error`,
       `Warning`), `Finding{Code, Severity, Line, Kind, Detail}`,
       `SchemaRegion{Kind, Parent}`, `Schema{Regions}`, `Options{Schema,
@@ -408,6 +408,22 @@ consumer proof. The CLI's only visible change is the marker lines in
       the inferred regions; an absent heading is still `region.missing`
       (DESIGN-0015 §4 as amended).
       verify: `go test ./pkg/doczcore/validate/...`
+
+      > **Done 2026-09-20, with three amendments the templates and the corpus
+      > forced.** A content rule checks *shape*, not completeness: an empty
+      > section is incomplete rather than malformed, and DESIGN-0015 §4
+      > already puts emptiness in the type tier
+      > (`rfc.alternatives.empty`, `adr.decision.empty`,
+      > `design.goals.empty`). Keeping the §2 `alternatives` rule
+      > "at least one bullet or heading" as a generic check would have made
+      > `docz validate` fail the document `docz create` had just written,
+      > which contradicts this phase's zero-findings criterion; the criterion
+      > wins and the emptiness check moves to the type packages. Content
+      > findings use a `content.*` family (`not-bullets`, `not-ordered`,
+      > `no-table`, `table-columns`), since §4's `region.*` family is
+      > presence and structure and §2 names no codes. And `toc.missing`
+      > supersedes `region.missing` for the `toc` and `index` kinds, so one
+      > absence yields one finding at one severity rather than two.
 - [ ] Validator tables per code family with a passing and a failing
       document each, `schema.name` included. Golden pairs: `Document` over
       every embedded template rendered with placeholder data, against its
