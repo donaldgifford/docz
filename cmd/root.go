@@ -18,9 +18,11 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -52,8 +54,24 @@ auto-generated index pages.
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
+//
+// The context it runs under is cancelled on SIGINT, which is what makes
+// Ctrl-C stop a long `docz update` between types instead of mid-file
+// (DESIGN-0014 §7). Cancellation is cooperative: the repo API checks it
+// between per-type iterations and returns the report completed so far, so
+// what was already written stays written.
+//
+// stop is called before any os.Exit rather than deferred, because
+// os.Exit does not run deferred functions and a defer here would only
+// look like it did.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+
+	err := rootCmd.ExecuteContext(ctx)
+
+	stop()
+
+	if err != nil {
 		os.Exit(exitCodeFor(err))
 	}
 }
@@ -176,6 +194,14 @@ func loadAndValidateConfig(cmd *cobra.Command, _ []string) error {
 	}
 	r.Logger = logger
 	runner = r
+
+	// Hooks ride the context from here down, so every handler's
+	// r.Repo.<Op>(cmd.Context(), …) narrates onto this logger without any
+	// handler knowing that is what happens. SetContext is on the leaf
+	// command Cobra hands PersistentPreRunE, which is the same command
+	// whose RunE reads cmd.Context() next.
+	cmd.SetContext(repo.WithHooks(cmd.Context(), r.hooks()))
+
 	return nil
 }
 

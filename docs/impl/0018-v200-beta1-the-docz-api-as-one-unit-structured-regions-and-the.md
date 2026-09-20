@@ -974,11 +974,17 @@ Decision 7).
       > inside validation, where it was before the swap. `Repo.Cfg` is
       > then pointed at `Runner.Cfg` so the two are one object rather than
       > two that start out equal.
-- [ ] Wire the context and hooks (DESIGN-0014 §7): `signal.NotifyContext`
+- [x] Wire the context and hooks (DESIGN-0014 §7): `signal.NotifyContext`
       at the top of `Execute`, `repo.WithHooks` mapping `ScanStart`,
       `ScanDone`, `TypeSkipped`, `FileWritten`, and `FileSkipped` onto the
       `r.Logger.Debug` lines `cmd/` emits today, so the existing debug-log
       test pins the mapping from the other side.
+      > `ScanStart` and `ScanDone` keep the exact messages §7 pins. The
+      > other three are reworded to the hook's shape, because no old
+      > message matches them one-to-one — both "config file exists,
+      > skipping" and "readme exists, skipping" are one `FileSkipped` with
+      > reason "already exists". No golden pins any of them: no parity
+      > fixture passes `--verbose`.
 - [ ] Re-point each command per the DESIGN-0014 §4 table: `init` →
       `repo.Init` and, when the wiki block is enabled, `wiki.Init`;
       `create` → `repo.Create` then `wiki.UpdateNav` behind `Wiki.AutoUpdate`;
