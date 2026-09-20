@@ -174,7 +174,7 @@ CLI does.
       `.goreleaser.yml` to `github.com/donaldgifford/docz/v2/cmd.Version`
       and `.Commit`; confirm `make build` still injects the version.
       verify: `make build && build/bin/docz version`
-- [ ] Update `test/consumer/go.mod` (`replace github.com/donaldgifford/docz/v2
+- [x] Update `test/consumer/go.mod` (`replace github.com/donaldgifford/docz/v2
       => ../..`) and the import paths in `test/consumer/doc.go`; the
       existing assertions do not change.
       verify: `make test-consumer`

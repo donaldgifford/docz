@@ -7,8 +7,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // doczYAML declares one built-in type (rfc) and one custom type (frameworks,
