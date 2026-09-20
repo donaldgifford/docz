@@ -985,7 +985,7 @@ Decision 7).
       > skipping" and "readme exists, skipping" are one `FileSkipped` with
       > reason "already exists". No golden pins any of them: no parity
       > fixture passes `--verbose`.
-- [ ] Re-point each command per the DESIGN-0014 §4 table: `init` →
+- [x] Re-point each command per the DESIGN-0014 §4 table: `init` →
       `repo.Init` and, when the wiki block is enabled, `wiki.Init`;
       `create` → `repo.Create` then `wiki.UpdateNav` behind `Wiki.AutoUpdate`;
       `update` → `repo.Update`; `list` → `repo.Scan`; `status set` →
@@ -1022,6 +1022,38 @@ Decision 7).
       5. There is no `cfg.Wiki.SiteName` tier — `config.WikiConfig` has no
          such field. The chain is `opts.SiteName` → `filepath.Base(root)` →
          `"my-project"`, so `cmd/` still resolves the git remote.
+
+      Landed. No pre-existing `cmd/` test file changed —
+      `git diff --stat HEAD -- 'cmd/*_test.go'` is empty — and `make parity`
+      is green. Six things the swap had to settle:
+
+      1. `updateType`, `Update`, and `statusSet` keep their exact signatures
+         as shims over new ctx-taking methods, because 23 test call sites
+         name them. Every RunE wrapper goes through a new `cmdContext(cmd)`,
+         since the tests also call every wrapper as `runX(nil, args)` and
+         `cmd.Context()` on a nil command panics.
+      2. `repo.InitOptions.Force` no longer reaches `.docz.yaml`. `docz init
+         --force` has never overwritten a config, and a configuration is the
+         file most likely to have been hand-edited and least likely to be
+         reconstructible from defaults. This is a Phase 3 correction; its
+         repo test now pins the preservation.
+      3. The issue-#99 duplicate index marker pair is fixed by `repo.Init`
+         writing `index.Scaffold`, which is visible in `init` output. Handled
+         as a **fifth permitted parity delta** with the `index-pair`
+         normaliser, applied to both sides; without it eight goldens
+         mismatch.
+      4. Routing through repo makes every command respect `enabled`, where
+         `config.ValidateType` never did: `docz list <disabled>` is now an
+         empty listing, and `status set` and the three `template`
+         subcommands error. `update` keeps its silent no-op because cmd
+         resolves the token itself, which also keeps
+         `config.ValidateType`'s error wording.
+      5. `runWikiUpdateNav` survives as the single cmd-level wiki-nav seam
+         that `create` calls, now taking a context, rather than `create`
+         holding a second copy of the nav update.
+      6. `wiki init --force` spends the force in cmd by removing
+         `mkdocs.yml` and calling `wiki.Init` without it, so a hand-edited
+         `docs/index.md` is still preserved (delta 2 above).
 - [ ] `docz validate [type] [--strict] [--format text|json]` in
       `cmd/validate.go`: `repo.Validate`, then the per-type tier composed
       in `cmd/` as an explicit five-arm switch on `DocFindings.Schema`

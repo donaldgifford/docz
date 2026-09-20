@@ -56,7 +56,8 @@ with the reason in the pull request that does it.
 
 ## Permitted deltas
 
-DESIGN-0014 §4 allows three, and IMPL-0018 Open Question 8 adds a fourth:
+DESIGN-0014 §4 allows three, IMPL-0018 Open Question 8 adds a fourth, and
+Phase 5 adds a fifth:
 
 | Delta | Why | How it is handled |
 | ----- | --- | ----------------- |
@@ -64,6 +65,7 @@ DESIGN-0014 §4 allows three, and IMPL-0018 Open Question 8 adds a fourth:
 | New commands and flags | `docz validate` did not exist in v1.2.2 | No golden covers them; they get their own tests |
 | New findings printed by existing commands | warnings the v1 CLI could not produce | Argued for per case in the PR that adds them |
 | Every trace of the `plan` document type | ADR-0003 removes the built-in on the v2 line | The `plan` normaliser, applied to **both** sides at comparison time |
+| The duplicate index marker pair | repo.Init writes `index.Scaffold`, fixing issue #99 | The `index-pair` normaliser, applied to **both** sides at comparison time |
 
 Anything else that differs is a regression until someone shows otherwise.
 
@@ -91,11 +93,22 @@ Each is named, lives outside the build tag, and has unit tests that run in
   templates' *Implements* and *Triggered by* hints. Every rule is anchored on a
   spelling only the type uses, so `impl: Implementation Plans` and
   `## Testing Plan` are left alone.
+- **index-pair** collapses a repeated, empty index marker pair down to one.
+  Issue #99: two of the embedded index headers end with their own pair and v1's
+  `init` appended another unconditionally, so a new repository got a second pair
+  no splice would ever touch again — the table always fills the first.
+  `repo.Init` writes `index.Scaffold`, which appends a pair only when the header
+  lacks one. Only an empty pair directly following another pair's end is
+  collapsed, so a golden that records a spliced README still compares its table
+  line by line.
 
-**plan is the one normaliser that runs on both sides**, in `runCase` rather
-than in the `norms` list, because the golden is the side carrying the removed
-type: normalising only the captured output would leave every trace as a
-difference. Two consequences follow from that symmetry.
+**plan and index-pair are the two normalisers that run on both sides**, in
+`runCase` rather than in the `norms` list, because the golden is the side
+carrying what they remove — the removed type, and the duplicate pair.
+Normalising only the captured output would leave every trace as a difference.
+They run in that order: plan is what replaces a recorded body's size and
+digest, so it has to see the body list before index-pair edits any body. Two
+consequences follow from that symmetry.
 
 A `stdout` or `stderr` block the pass empties is rewritten to `(empty)`, so a
 legacy fixture whose only stderr was the plan warning matches a run that

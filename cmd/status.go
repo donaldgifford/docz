@@ -1,17 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docwrite"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
 
 // formatText is the default --format value for `status set`; formatJSON
@@ -124,21 +123,36 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 }
 
-func runStatusSet(_ *cobra.Command, args []string) error {
+func runStatusSet(cmd *cobra.Command, args []string) error {
 	opts := statusSetOpts{
 		dryRun: statusDryRun,
 		quiet:  statusQuiet,
 		format: statusFormat,
 	}
-	return getRunner().statusSet(opts, args)
+	return getRunner().statusSetCtx(cmdContext(cmd), opts, args)
 }
 
-// statusSet runs the `docz status set` resolution algorithm: validate the
-// type, locate the document by frontmatter id, validate the requested
-// status against the type's lifecycle, then mutate the file unless the
-// status is unchanged or --dry-run is set. See DESIGN-0005 §Resolution
-// algorithm.
+// statusSet is the context-free entry point `docz status set`'s tests call.
+// The signature predates the repo tier and is kept: a handler that only
+// ever ran to completion had nothing to cancel, so there was no context to
+// take. statusSetCtx below is the real handler.
 func (r *Runner) statusSet(opts statusSetOpts, args []string) error {
+	return r.statusSetCtx(context.Background(), opts, args)
+}
+
+// statusSetCtx runs the `docz status set` resolution algorithm through
+// repo.SetStatus, which performs it in the order DESIGN-0005 §Resolution
+// algorithm fixed: resolve the type, locate the document by frontmatter id,
+// validate the requested status against the type's lifecycle, then mutate
+// the file unless the status is unchanged or --dry-run is set.
+//
+// Everything left here is cmd's own: --format membership, the wording and
+// exit code of each failure (statusExitError), and the emitted line. The
+// `changed` field is computed from the returned pair rather than read off
+// StatusResult.Changed, because repo reports Changed: false for a dry run —
+// it describes whether bytes moved — while this command's output and JSON
+// report what *would* have happened (DESIGN-0005 Decision 7).
+func (r *Runner) statusSetCtx(ctx context.Context, opts statusSetOpts, args []string) error {
 	typeArg, idArg, newStatus := args[0], args[1], args[2]
 
 	format, err := resolveStatusFormat(opts.format)
@@ -146,48 +160,76 @@ func (r *Runner) statusSet(opts statusSetOpts, args []string) error {
 		return err
 	}
 
-	typeName, err := r.Cfg.ValidateType(typeArg)
+	rp := r.repoOrOpen()
+
+	out, err := rp.SetStatus(ctx, typeArg, idArg, newStatus, repo.StatusOptions{
+		DryRun: opts.dryRun,
+	})
 	if err != nil {
-		return exitErrorf(errExitCode2, "%v", err)
-	}
-	statuses := r.Cfg.Types[typeName].Statuses
-
-	typeDir := r.inRepo(r.Cfg.TypeDir(typeName))
-	docs, err := document.ScanDocuments(typeDir)
-	if err != nil {
-		return exitErrorf(errExitCode1, "scanning %s: %v", r.relPath(typeDir), err)
+		return statusExitError(rp, err)
 	}
 
-	entry := findByID(docs, idArg)
-	if entry == nil {
-		return exitErrorf(errExitCode1,
-			"no %s document with id %q found in %s",
-			typeName, idArg, r.relPath(typeDir))
-	}
-
-	if !slices.Contains(statuses, newStatus) {
-		return exitErrorf(errExitCode2,
-			"%q is not a valid status for %s.\nValid statuses: %s.",
-			newStatus, typeName, strings.Join(statuses, ", "))
-	}
-
-	docPath := filepath.Join(typeDir, entry.Filename)
-	res := statusResult{
-		path:    r.relPath(docPath),
-		from:    string(entry.Status),
-		to:      newStatus,
+	// out.Path is already relative to the repo root, which is the form this
+	// command has always printed — relativizing it again would strip a
+	// leading path element.
+	return r.emitStatus(statusResult{
+		path:    out.Path,
+		from:    out.Old,
+		to:      out.New,
 		dryRun:  opts.dryRun,
-		changed: string(entry.Status) != newStatus,
+		changed: out.Old != out.New,
 		quiet:   opts.quiet,
 		format:  format,
+	})
+}
+
+// statusExitError maps a repo failure onto the message and exit code
+// `docz status set` has always produced (DESIGN-0005 §Exit codes).
+//
+// Exit 2 is the validation family — an unresolvable type, a disabled type,
+// a status outside the lifecycle, unsupported line endings — and exit 1 is
+// the lookup-or-write family. The wording is assembled from the typed
+// errors' fields rather than from their Error() strings wherever the two
+// differ: repo's NotFoundError cannot name the directory it searched (only
+// cmd knows how to shorten a path for display) and its InvalidStatusError
+// lists the valid statuses on one line where this command uses two.
+func statusExitError(rp *repo.Repo, err error) error {
+	var unknown *repo.UnknownTypeError
+	if errors.As(err, &unknown) {
+		// UnknownTypeError renders exactly what config.ValidateType did.
+		return exitErrorf(errExitCode2, "%v", unknown)
 	}
 
-	if res.changed && !opts.dryRun {
-		if _, err := docwrite.SetStatus(docPath, newStatus); err != nil {
-			return statusWriteError(err)
-		}
+	var disabled *repo.TypeDisabledError
+	if errors.As(err, &disabled) {
+		return exitErrorf(errExitCode2, "%v", disabled)
 	}
-	return r.emitStatus(res)
+
+	var notFound *repo.NotFoundError
+	if errors.As(err, &notFound) {
+		return exitErrorf(errExitCode1,
+			"no %s document with id %q found in %s",
+			notFound.Type, notFound.ID, rp.RelPath(rp.TypeDir(notFound.Type)))
+	}
+
+	var badStatus *repo.InvalidStatusError
+	if errors.As(err, &badStatus) {
+		return exitErrorf(errExitCode2,
+			"%q is not a valid status for %s.\nValid statuses: %s.",
+			badStatus.Status, badStatus.Type, strings.Join(badStatus.Allowed, ", "))
+	}
+
+	// The wrapped cause, not the WriteError: docwrite already names the file
+	// it could not write, and repo's "writing <path>: " prefix would say it
+	// a second time.
+	var write *repo.WriteError
+	if errors.As(err, &write) {
+		return statusWriteError(write.Err)
+	}
+
+	// A scan failure or a cancelled context. repo.Scan's message already
+	// reads "scanning <relpath>: …", which is what this command printed.
+	return exitErrorf(errExitCode1, "%v", err)
 }
 
 // resolveStatusFormat validates --format membership (Decision 2),
@@ -205,17 +247,6 @@ func resolveStatusFormat(format string) (string, error) {
 	}
 }
 
-// findByID returns the entry whose frontmatter id exactly matches id
-// (case-sensitive, Decision 3), or nil when none does.
-func findByID(docs []document.DocEntry, id string) *document.DocEntry {
-	for i := range docs {
-		if docs[i].ID == id {
-			return &docs[i]
-		}
-	}
-	return nil
-}
-
 // statusWriteError maps a docwrite.SetStatus failure to the right exit
 // code: unsupported line endings are a validation failure (exit 2,
 // Decision 7); everything else (missing frontmatter, IO) is a lookup or
@@ -225,19 +256,6 @@ func statusWriteError(err error) error {
 		return exitErrorf(errExitCode2, "%v", err)
 	}
 	return exitErrorf(errExitCode1, "%v", err)
-}
-
-// relPath renders p relative to r.RepoRoot for display (Decision 3),
-// falling back to p when RepoRoot is unset or p is on another root.
-func (r *Runner) relPath(p string) string {
-	if r.RepoRoot == "" {
-		return p
-	}
-	rel, err := filepath.Rel(r.RepoRoot, p)
-	if err != nil {
-		return p
-	}
-	return rel
 }
 
 // emitStatus writes the result through r.Out in the configured format.

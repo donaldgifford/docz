@@ -1,16 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"path/filepath"
-	"unicode"
 
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/index"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/toc"
 )
 
@@ -32,98 +30,134 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 }
 
-func runUpdate(_ *cobra.Command, args []string) error {
-	return getRunner().Update(updateDryRun, args)
+func runUpdate(cmd *cobra.Command, args []string) error {
+	return getRunner().update(cmdContext(cmd), updateDryRun, args)
 }
 
 // Update is the `docz update` handler. With no args it iterates every
 // enabled type; with one arg it updates only that type.
+//
+// Kept at this signature for the tests that call it; the work is in
+// update, which takes the context the RunE wrapper has and this one does
+// not.
 func (r *Runner) Update(dryRun bool, args []string) error {
+	return r.update(context.Background(), dryRun, args)
+}
+
+// update resolves the type argument and hands the whole operation to
+// repo.Update, then prints its report.
+//
+// The resolution stays here rather than being left to repo for two
+// reasons, both about preserving what the CLI already does:
+//
+//   - config.ValidateType's "unknown document type" error lists the
+//     built-in catalogue, where repo.UnknownTypeError lists the enabled
+//     set. The former is the message users have been reading.
+//   - A type named explicitly but switched off has always been a quiet
+//     no-op here. repo.Update reports TypeDisabledError for it, on the
+//     grounds that the user asked for that type by name — the right call
+//     for a library, and not the CLI's existing behaviour.
+//
+// A nil types slice is what tells repo.Update to walk every enabled type,
+// so the no-argument path does not enumerate them here either.
+func (r *Runner) update(ctx context.Context, dryRun bool, args []string) error {
 	var types []string
+
 	if len(args) > 0 {
 		typeName, err := r.Cfg.ValidateType(args[0])
 		if err != nil {
 			return err
 		}
-		types = []string{typeName}
-	} else {
-		types = r.Cfg.EnabledTypes()
-	}
 
-	for _, typeName := range types {
-		tc, ok := r.Cfg.Types[typeName]
-		if !ok || !tc.Enabled {
-			r.Logger.Debug("type disabled, skipping", "type", typeName)
-			continue
+		if tc, ok := r.Cfg.Types[typeName]; !ok || !tc.Enabled {
+			r.Logger.Debug("type skipped",
+				"type", typeName,
+				"reason", repo.SkipTypeDisabled.String(),
+			)
+
+			return nil
 		}
 
-		if err := r.updateType(typeName, dryRun); err != nil {
-			return fmt.Errorf("updating %s: %w", typeName, err)
+		types = []string{typeName}
+	}
+
+	report, err := r.repoOrOpen().Update(ctx, types, repo.UpdateOptions{DryRun: dryRun})
+
+	// Printed before the error is returned, and from the report rather
+	// than as the work happens: a failed or cancelled run fills in every
+	// type that finished, and those are types whose README really was
+	// rewritten. Swallowing their lines would leave the user with a
+	// failure and no idea how far it got.
+	if perr := r.printUpdateReport(report); perr != nil {
+		return perr
+	}
+
+	return err
+}
+
+// updateType updates a single type by canonical name.
+//
+// A thin wrapper over the same repo.Update the no-argument path uses, so
+// `docz update rfc` and one iteration of `docz update` cannot drift. Kept
+// at this signature because the update tests and BenchmarkCmdUpdate call
+// it directly.
+func (r *Runner) updateType(typeName string, dryRun bool) error {
+	return r.update(context.Background(), dryRun, []string{typeName})
+}
+
+// printUpdateReport writes the user-facing lines for every type the
+// operation completed, in the order it processed them.
+func (r *Runner) printUpdateReport(report repo.UpdateReport) error {
+	for i := range report.Types {
+		if err := r.printTypeReport(&report.Types[i]); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (r *Runner) updateType(typeName string, dryRun bool) error {
-	tc := r.Cfg.Types[typeName]
-	typeDir := r.Cfg.TypeDir(typeName)
-	readmePath := filepath.Join(typeDir, config.IndexFileName)
-
-	r.Logger.Debug("scanning type", "dir", typeDir)
-
-	docs, err := document.ScanDocuments(typeDir)
-	if err != nil {
-		return fmt.Errorf("scanning %s: %w", typeDir, err)
+// printTypeReport writes one type's lines: the table-of-contents pass
+// first, then the README index outcome.
+//
+// The order matters and is the order the operation itself ran in — a
+// dry run that listed the index diff before the documents it would also
+// rewrite would read as though the documents were an afterthought.
+//
+// Taken by pointer because TypeReport embeds two nested reports and
+// gocritic counts the bytes.
+func (r *Runner) printTypeReport(tr *repo.TypeReport) error {
+	if tr.ToC != nil {
+		r.printToCReport(tr.ToC)
 	}
 
-	r.Logger.Debug("scan complete", "type", typeName, "count", len(docs))
-
-	if r.Cfg.TOC.Enabled {
-		r.runToCUpdate(typeDir, docs, dryRun)
-	}
-
-	label := indexLabel(tc.PluralLabel, typeName)
-	heading := "All " + label
-	tableContent := index.GenerateTable(docs, heading)
-
-	header, err := doctemplate.ResolveIndexHeader(typeName, r.Cfg.DocsDir, doctemplate.IndexHeaderData{
-		TypeName:    typeName,
-		PluralLabel: label,
-	})
-	if err != nil {
-		return fmt.Errorf("resolving index header for %s: %w", typeName, err)
-	}
-
-	if dryRun {
-		outcome, err := index.DryRunReadme(readmePath, header, tableContent)
-		if err != nil {
-			return fmt.Errorf("dry-run readme %s: %w", readmePath, err)
-		}
-		return r.printIndexOutcome(outcome)
-	}
-
-	outcome, err := index.UpdateReadme(readmePath, header, tableContent)
-	if err != nil {
-		return fmt.Errorf("updating readme %s: %w", readmePath, err)
-	}
-	return r.printIndexOutcome(outcome)
+	return r.printIndexOutcome(tr.Index)
 }
 
-// indexLabel is the display label for a type's index header and table
-// heading: the configured plural_label, or a Title-cased type name when the
-// type (typically a custom one) declares no plural_label (DESIGN-0006
-// Decision 3).
-func indexLabel(pluralLabel, typeName string) string {
-	if pluralLabel != "" {
-		return pluralLabel
+// printToCReport writes the table-of-contents pass's user-facing lines
+// and logs the rest.
+//
+// Only dry-run lines and write failures are worth a user's attention; a
+// document whose ToC was rewritten is reported by the FileWritten hook at
+// debug level, and one that was already current is logged here. Neither
+// is news at the default level, which is why `docz update` on a clean
+// repository prints one line per type rather than one per document.
+func (r *Runner) printToCReport(report *toc.UpdateReport) {
+	for _, fr := range report.WouldUpdate {
+		//nolint:errcheck // user-facing dry-run line; write failures
+		// would surface again on the next normal write.
+		fmt.Fprintf(r.Out, "Would update ToC in %s (%d headings)\n", fr.Path, fr.Headings)
 	}
-	if typeName == "" {
-		return typeName
+
+	for _, fr := range report.Unchanged {
+		r.Logger.Debug("ToC unchanged", "path", fr.Path)
 	}
-	r := []rune(typeName)
-	r[0] = unicode.ToUpper(r[0])
-	return string(r)
+
+	for _, fe := range report.WriteErrors {
+		//nolint:errcheck // warning to stderr; nothing actionable if the
+		// warning itself fails to print.
+		fmt.Fprintf(r.Err, "Warning: writing ToC to %s: %v\n", fe.Path, fe.Err)
+	}
 }
 
 // printIndexOutcome translates the typed index.UpdateOutcome into a
@@ -150,47 +184,4 @@ func (r *Runner) printIndexOutcome(o index.UpdateOutcome) error {
 		return err
 	}
 	return nil
-}
-
-// runToCUpdate builds the toc.FileInput list from cached scan results,
-// delegates to toc.UpdateFiles, and formats user-facing messages so the
-// internal/toc package stays free of I/O-shaped strings.
-func (r *Runner) runToCUpdate(typeDir string, docs []document.DocEntry, dryRun bool) {
-	if len(docs) == 0 {
-		return
-	}
-
-	files := make([]toc.FileInput, len(docs))
-	for i := range docs {
-		files[i] = toc.FileInput{
-			Path:    filepath.Join(typeDir, docs[i].Filename),
-			Content: docs[i].Content,
-		}
-	}
-
-	report, err := toc.UpdateFiles(files, r.Cfg.TOC.MinHeadings, dryRun)
-	if err != nil {
-		//nolint:errcheck // warning to stderr; nothing actionable
-		// if the warning itself fails to print.
-		fmt.Fprintf(r.Err, "Warning: ToC update failed: %v\n", err)
-		return
-	}
-
-	for _, fr := range report.WouldUpdate {
-		//nolint:errcheck // user-facing dry-run line; write failures
-		// would surface again on the next normal write.
-		fmt.Fprintf(r.Out, "Would update ToC in %s (%d headings)\n", fr.Path, fr.Headings)
-	}
-
-	for _, fr := range report.Updated {
-		r.Logger.Debug("ToC updated", "path", fr.Path)
-	}
-	for _, fr := range report.Unchanged {
-		r.Logger.Debug("ToC unchanged", "path", fr.Path)
-	}
-
-	for _, fe := range report.WriteErrors {
-		//nolint:errcheck // warning to stderr; see above.
-		fmt.Fprintf(r.Err, "Warning: writing ToC to %s: %v\n", fe.Path, fe.Err)
-	}
 }

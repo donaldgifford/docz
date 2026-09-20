@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
@@ -142,6 +145,21 @@ func (r *Runner) inRepo(name string) string {
 		return name
 	}
 	return filepath.Join(r.RepoRoot, name)
+}
+
+// cmdContext returns the context a RunE wrapper should pass down: the
+// command's own, or a background one when there is no command.
+//
+// Every RunE wrapper in this package is also called directly as
+// `runX(nil, args)` by the tests, and cmd.Context() on a nil *cobra.Command
+// panics. One helper rather than a nil check at each wrapper, so a new
+// command cannot forget the one that makes its tests crash.
+func cmdContext(cmd *cobra.Command) context.Context {
+	if cmd == nil {
+		return context.Background()
+	}
+
+	return cmd.Context()
 }
 
 // resolveLogLevel picks the slog.Level per the --log-level / --verbose

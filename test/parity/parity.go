@@ -460,6 +460,71 @@ func dropPlanTraces(lines []string) (kept []string, bodies map[string]bool) {
 	return kept, bodies
 }
 
+// The index README's auto-generated marker lines, as the whole line. Compared
+// by equality rather than by pattern because these two spellings are the only
+// ones index.UpdateReadme will splice into.
+const (
+	indexBeginLine = "<!-- BEGIN DOCZ AUTO-GENERATED -->"
+	indexEndLine   = "<!-- END DOCZ AUTO-GENERATED -->"
+)
+
+// IndexPairNormalizer collapses a repeated, empty index marker pair down to
+// one.
+//
+// The fifth permitted delta, and the second non-additive one. Issue #99: two of
+// the embedded index headers end with their own marker pair, and v1's `init`
+// appended another unconditionally, so a new repository got a second pair that
+// no splice would ever touch again — the table always fills the first. repo.Init
+// writes index.Scaffold, which appends a pair only when the header lacks one, so
+// the duplicate is gone.
+//
+// That makes a v1.2.2 `init` golden for the investigation type differ from the
+// v2 binary by two lines it should differ by. Like the plan normaliser this runs
+// on the formatted text of **both** sides, because the golden is the side
+// carrying the duplicate and the side without it cannot know one was there.
+//
+// Only an empty pair immediately following another pair's end is collapsed:
+// `END, BEGIN, END` becomes `END`. A pair with a table between its markers is
+// never touched, so a golden that records a spliced README still compares its
+// table line by line. The recorded size and digest need no special handling
+// here — the plan normaliser already replaces them for every file whose body the
+// golden records, which is every file this one can change.
+func IndexPairNormalizer() Normalizer {
+	return Normalizer{
+		Name: "index-pair",
+		Apply: func(s string) string {
+			if !strings.Contains(s, indexBeginLine) {
+				return s
+			}
+
+			return strings.Join(collapseIndexPairs(strings.Split(s, "\n")), "\n")
+		},
+	}
+}
+
+// collapseIndexPairs drops every empty marker pair that directly follows
+// another pair's end line.
+//
+// One pass suffices for any number of consecutive pairs: each collapse consumes
+// the follower and leaves the same end line in place to be compared against the
+// next one.
+func collapseIndexPairs(lines []string) []string {
+	out := make([]string, 0, len(lines))
+
+	for i := 0; i < len(lines); i++ {
+		if len(out) > 0 && out[len(out)-1] == indexEndLine &&
+			lines[i] == indexBeginLine && i+1 < len(lines) && lines[i+1] == indexEndLine {
+			i++
+
+			continue
+		}
+
+		out = append(out, lines[i])
+	}
+
+	return out
+}
+
 // writtenBlockPath returns the path a "=== written <path>" header names.
 func writtenBlockPath(line string) (string, bool) {
 	const prefix = "=== written "

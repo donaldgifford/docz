@@ -13,9 +13,13 @@ import (
 
 // InitOptions is what a caller can vary about scaffolding a repository.
 type InitOptions struct {
-	// Force rewrites a file that is already there. Without it an existing
-	// file is reported as InitSkipped, because running init twice is a normal
-	// thing to do and the second run must not eat the first run's edits.
+	// Force rewrites an index README that is already there. Without it an
+	// existing file is reported as InitSkipped, because running init twice is
+	// a normal thing to do and the second run must not eat the first run's
+	// edits.
+	//
+	// Force does not reach .docz.yaml, which is never overwritten. See
+	// initConfig.
 	Force bool
 }
 
@@ -94,7 +98,7 @@ func (r *Repo) Init(ctx context.Context, opts InitOptions) (InitReport, error) {
 		return report, err
 	}
 
-	cfgFile, err := r.initConfig(ctx, opts.Force)
+	cfgFile, err := r.initConfig(ctx)
 	if err != nil {
 		return report, err
 	}
@@ -118,16 +122,22 @@ func (r *Repo) Init(ctx context.Context, opts InitOptions) (InitReport, error) {
 }
 
 // initConfig writes .docz.yaml from the same defaults every other consumer
-// renders.
+// renders, and never overwrites one that is already there.
+//
+// Not even with Force, which is the one file that rule applies to. A
+// configuration is the thing in a repository most likely to have been edited
+// by hand and least likely to be reconstructible from defaults: whatever a
+// user ran `init --force` to fix, it was not their own `.docz.yaml`. Deleting
+// the file is how you ask for a fresh one, and that is an explicit act.
 //
 // doctemplate.DefaultConfigYAML rather than a literal here, so a new config
 // key reaches a scaffolded repository by being added to config.DefaultConfig
 // and nowhere else.
-func (r *Repo) initConfig(ctx context.Context, force bool) (InitFile, error) {
+func (r *Repo) initConfig(ctx context.Context) (InitFile, error) {
 	path := r.Path(config.ConfigFileName)
 	rel := r.RelPath(path)
 
-	action, write := initAction(path, force)
+	action, write := initAction(path, false)
 	if !write {
 		fireFileSkipped(ctx, rel, SkipExists)
 
