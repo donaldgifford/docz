@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
 
 // LogFormat values for the --log-format flag.
@@ -56,6 +57,18 @@ type Runner struct {
 	Logger *slog.Logger
 	Now    func() time.Time
 	Git    GitResolver
+
+	// Repo is the API every handler orchestrates through (DESIGN-0014
+	// §4). It owns the config: Cfg above is a value copy of *Repo.Cfg,
+	// kept because the print, emit, and format helpers read it by value
+	// and IMPL-0018 Phase 5 changes no cmd/ test.
+	//
+	// Nil for a Runner a test built directly without one. Handlers reach
+	// it through repoOrOpen (added with the first handler that needs it),
+	// which builds one from Cfg and RepoRoot rather than dereferencing
+	// nil — so a test that only cares about formatting does not have to
+	// know this field exists.
+	Repo *repo.Repo
 
 	// RepoRoot is the directory cwd-relative path lookups resolve
 	// against. Production wires it to os.Getwd() in

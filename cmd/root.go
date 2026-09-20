@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
 
 var (
@@ -111,7 +112,7 @@ func init() {
 // silently printing warnings and continuing with a half-defaulted config.
 // Cobra short-circuits PersistentPreRunE when --help/-h is set or no
 // runnable subcommand was given, so help still works with a broken config.
-func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
+func loadAndValidateConfig(cmd *cobra.Command, _ []string) error {
 	// Precedence for the repo root: explicit --repo-root flag, else
 	// directory of --config when that's set, else process cwd. The
 	// repo-root knob lets tests drive PersistentPreRunE without
@@ -122,16 +123,26 @@ func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	cfg, err := config.Load(cfgFile, root)
+	// repo.Open is the library's own load: config.Load then Validate,
+	// wrapped with the same two messages this function used to build by
+	// hand. Everything below adjusts the config it returned, so there is
+	// one config in the process and the Repo owns it.
+	rp, err := repo.Open(cmd.Context(), root, cfgFile)
 	if err != nil {
-		return fmt.Errorf("loading config: %w", err)
+		return err
 	}
 
 	if docsDir != "" {
-		cfg.DocsDir = docsDir
+		rp.Cfg.DocsDir = docsDir
 	}
 
-	warnings, validErr := cfg.Validate()
+	// Validated a second time, deliberately. Open discards the warnings
+	// because they are a presentation concern it has no business
+	// printing, and this is where they get printed; re-running it also
+	// puts a --docs-dir override back inside validation, where it was
+	// before the swap. Validate is pure and in-memory, so the only cost
+	// is the call.
+	warnings, validErr := rp.Cfg.Validate()
 	for _, w := range warnings {
 		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
 	}
@@ -140,17 +151,25 @@ func loadAndValidateConfig(_ *cobra.Command, _ []string) error {
 	}
 
 	// Absolutize cwd-relative config paths against root so handlers
-	// don't carry an implicit dependency on the process cwd.
-	if !filepath.IsAbs(cfg.DocsDir) {
-		cfg.DocsDir = filepath.Join(root, cfg.DocsDir)
+	// don't carry an implicit dependency on the process cwd. The repo
+	// package is indifferent — Repo.Path passes an absolute path through
+	// — but cmd's own helpers join DocsDir directly.
+	if !filepath.IsAbs(rp.Cfg.DocsDir) {
+		rp.Cfg.DocsDir = filepath.Join(root, rp.Cfg.DocsDir)
 	}
-	if cfg.Wiki.MkDocsPath != "" && !filepath.IsAbs(cfg.Wiki.MkDocsPath) {
-		cfg.Wiki.MkDocsPath = filepath.Join(root, cfg.Wiki.MkDocsPath)
+	if rp.Cfg.Wiki.MkDocsPath != "" && !filepath.IsAbs(rp.Cfg.Wiki.MkDocsPath) {
+		rp.Cfg.Wiki.MkDocsPath = filepath.Join(root, rp.Cfg.Wiki.MkDocsPath)
 	}
 
-	appCfg = cfg
-	r := NewRunner(&cfg)
+	appCfg = *rp.Cfg
+	r := NewRunner(rp.Cfg)
 	r.RepoRoot = root
+
+	// Point the Repo back at the Runner's copy so there is one config
+	// rather than two that merely start out equal. A handler that adjusts
+	// r.Cfg and the Repo it orchestrates through cannot then disagree.
+	rp.Cfg = &r.Cfg
+	r.Repo = rp
 	logger, err := buildLogger(r.Err, verbose, logLevel, logFormat)
 	if err != nil {
 		return err

@@ -964,10 +964,16 @@ Decision 7).
 
 #### Tasks
 
-- [ ] `Runner` gains `Repo *repo.Repo`; `loadAndValidateConfig` resolves the
+- [x] `Runner` gains `Repo *repo.Repo`; `loadAndValidateConfig` resolves the
       repo root as today, then calls `repo.Open` and sets `Runner.Cfg`
       from `Repo.Cfg` so the print, emit, and format helpers are untouched.
       verify: `go test ./cmd/...`
+      > `repo.Open` drops validation warnings by design, and `cmd/` has to
+      > print them, so `Cfg.Validate` is called a second time on the
+      > config Open returned. That also keeps a `--docs-dir` override
+      > inside validation, where it was before the swap. `Repo.Cfg` is
+      > then pointed at `Runner.Cfg` so the two are one object rather than
+      > two that start out equal.
 - [ ] Wire the context and hooks (DESIGN-0014 §7): `signal.NotifyContext`
       at the top of `Execute`, `repo.WithHooks` mapping `ScanStart`,
       `ScanDone`, `TypeSkipped`, `FileWritten`, and `FileSkipped` onto the
