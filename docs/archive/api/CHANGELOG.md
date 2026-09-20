@@ -3,11 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.10.1] - 2026-09-20
 
 ### Bug Fixes
 
-- *(chart)* Scrape Meilisearch metrics and stop the API monitor selecting it
+- *(chart)* Scrape Meilisearch metrics and stop the API monitor selecting it ([#42](https://github.com/donaldgifford/docz-api/issues/42))
 
 ## [0.10.0] - 2026-09-14
 
