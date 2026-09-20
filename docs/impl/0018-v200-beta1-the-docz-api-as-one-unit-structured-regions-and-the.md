@@ -1242,9 +1242,11 @@ Decision 7).
       `docz validate`: `toc.stale` and `IndexDrift` are the CI gate) with a
       comment naming the beta tag. The claude-skills plugin is not touched
       in this unit (Out of Scope).
-      **deferred — human required:** the comment has to name the beta tag,
-      and the tag does not exist until the task below is done. Closing the
-      issue before then would point a reader at nothing.
+      **deferred — human required:** the issue is already closed (2026-09-20,
+      by the retarget in PR #105), so all that is outstanding is the comment,
+      and it has to name the beta tag that the task below creates. Its last
+      comment already promises exactly that: "Closes when the `cmd/` swap
+      lands as `v2.0.0-beta.1`".
 - [ ] Merge as `dont-release`, then from the merge commit run
       `make release TAG=v2.0.0-beta.1`; confirm the pre-release workflow
       built the binaries and marked the release a pre-release; write the
