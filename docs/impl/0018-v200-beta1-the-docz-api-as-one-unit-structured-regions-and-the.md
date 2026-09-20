@@ -484,11 +484,30 @@ consumer proof. The CLI's only visible change is the marker lines in
       > a stated reason, because `Doc` is past the linter's size threshold;
       > and the deferred marker is accepted in both the prefix and suffix
       > spellings the fleet writes, not only the suffix one.
-- [ ] `impl.Validate(doc []byte) []validate.Finding` with the codes
+- [x] `impl.Validate(doc []byte) []validate.Finding` with the codes
       `impl.phase.duplicate-token`, `impl.phase.no-heading`,
       `impl.phase.no-tasks`, `impl.phase.no-title`, `impl.task.empty`,
       `impl.task.verify-no-command`, `impl.task.skipped-no-note`; a
       document `Parse` rejects yields a single finding for the error.
+
+      > Added during implementation: an eighth code, `impl.parse`, for the
+      > rejections that are not a duplicate token (no frontmatter, CR line
+      > endings, no phases). The design requires one finding for a rejected
+      > document and the seven named codes all describe a document that
+      > parsed, so there was nothing to report it as. The generic tier still
+      > reports the underlying problem in its own family; `impl.parse` says
+      > only that the typed model is unavailable.
+      >
+      > `impl.task.verify-no-command` reads the verify line off the document
+      > rather than off a flag on `Task`. "A verify line with nothing runnable
+      > on it" is a fact about how the document is written, not one a consumer
+      > acts on, and `Task.Verify == ""` already tells a consumer there is no
+      > command.
+      >
+      > The rendered template reports three `impl.phase.no-title` warnings and
+      > nothing else, which is by design (DESIGN-0014 §3 names the
+      > placeholder comment as the case the rule exists for). The guard
+      > asserts exactly that, rather than the generic tier's zero.
 - [ ] Golden fixtures under `pkg/impl/testdata/`, snapshotted (never read
       from `docs/`) and kept in two copies each: `<name>.orig.md` exactly
       as written and `<name>.md` hand-migrated with canonical markers (the

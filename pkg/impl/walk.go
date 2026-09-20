@@ -14,11 +14,16 @@ var (
 	// accepted, because an author writing "**verify:**" meant the same thing.
 	verifyLine = regexp.MustCompile(`(?i)^\*{0,2}verify\*{0,2}\s*:`)
 
-	// deferredMarker matches the deferred token and the dash that introduces
-	// its note. Three dashes because the corpus uses all three: a hyphen, an
-	// en dash, and an em dash. The bold is optional and the note may be
-	// absent, so a bare "deferred" with no dash still marks the task.
-	deferredMarker = regexp.MustCompile(`(?i)\*{0,2}deferred\*{0,2}\s*(?:[-–—]\s*(.*))?$`)
+	// deferredMarker matches the deferred token, the dash that must follow
+	// it, and the note after that.
+	//
+	// Three dashes because the corpus uses all three: a hyphen, an en dash,
+	// and an em dash. The dash is required (DESIGN-0014 §3), so a task whose
+	// text merely ends with the word "deferred" is not marked; the note may be
+	// empty, which validate reports as impl.task.skipped-no-note's sibling.
+	// The bold is optional, and a closing "**" that lands inside the note is
+	// stripped from it.
+	deferredMarker = regexp.MustCompile(`(?i)\*{0,2}deferred\*{0,2}\s*[-–—]\s*(.*)$`)
 
 	// humanRequired strips the qualification the corpus writes before a
 	// deferred note's real text, so Note is the reason rather than the
@@ -26,8 +31,10 @@ var (
 	humanRequired = regexp.MustCompile(`(?i)^human[ _-]?required\s*:?\s*`)
 
 	// skippedText matches a struck-through task followed by a skipped note:
-	// "~~do the thing~~ — skipped: no longer needed".
-	skippedText = regexp.MustCompile(`(?i)^~~(.*?)~~\s*[-–—]?\s*skipped\s*:?\s*(.*)$`)
+	// "~~do the thing~~ — skipped: no longer needed". The dash is optional and
+	// the colon is not, so a task that merely strikes some of its text through
+	// stays a task.
+	skippedText = regexp.MustCompile(`(?i)^~~(.*?)~~\s*[-–—]?\s*skipped\s*:\s*(.*)$`)
 
 	// backtickSpan captures the contents of a code span, for a verify line's
 	// command.
@@ -193,8 +200,9 @@ func deferredIn(parts []part) *Marker {
 		}
 
 		note := humanRequired.ReplaceAllString(strings.TrimSpace(m[1]), "")
+		note = strings.TrimSpace(strings.ReplaceAll(note, "**", ""))
 
-		return &Marker{Note: strings.TrimSpace(note), Line: p.line}
+		return &Marker{Note: note, Line: p.line}
 	}
 
 	return nil
