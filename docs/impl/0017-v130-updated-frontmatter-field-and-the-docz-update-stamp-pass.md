@@ -59,6 +59,15 @@ DESIGN-0008 R12, with docz-api #36 waiting on the tag.
 
 **Implements:** DESIGN-0012 (all eight decisions locked 2026-09-12), scoped
 by INV-0008 (Concluded).
+
+> **Note (2026-09-20 — IMPL-0018):** this plan now targets the **v2 line**, not
+> `v1.3.0`. It had not started when ADR-0002 moved the module to
+> `github.com/donaldgifford/docz/v2`, and a `/v2` module may not carry a v1 tag,
+> so there is no `v1.3.0` for it to ship as. The work itself is unchanged and
+> still additive; what changes is where it lands. Two things to re-read before
+> starting: `docwrite.SetUpdated` now has byte-core siblings to match
+> (`SetStatusBytes`, `SetTaskStateBytes`), and the `docz update` stamp pass runs
+> inside `repo.Update` rather than in `cmd/update.go`.
 <!--docz:objective:end-->
 
 <!--docz:scope:start-->

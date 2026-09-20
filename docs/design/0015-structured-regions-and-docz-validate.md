@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0015
 title: "Structured regions and docz validate"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-19
 ---

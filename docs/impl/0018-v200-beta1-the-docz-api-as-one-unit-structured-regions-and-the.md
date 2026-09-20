@@ -1197,21 +1197,54 @@ Decision 7).
       > per package rather than taken on trust — the thinnest are `wiki`
       > (`FilenameTitle`), `design` and `impl` (`Parse`). No edit was needed,
       > `doc.go` already documents the sixteen.
-- [ ] ADR-0001 dated amendment (ADR-0002 Open Question 2): the frozen five
+- [x] ADR-0001 dated amendment (ADR-0002 Open Question 2): the frozen five
       keep their v1 shapes through the betas, `internal/template` is
       importable as `doctemplate`, and the new packages are experimental
       until v2.0.0; IMPL-0014 Decision 3 note; DESIGN-0013 → Abandoned.
-- [ ] Living docs: CLAUDE.md (architecture bullets for the eleven new
+      > The amendment is a dated blockquote at the head of ADR-0001's
+      > Decision section, above the 2026-07-03 revision note, per the
+      > DESIGN-0007 pattern Open Question 2 chose. Status stays Accepted.
+      > IMPL-0014's note sits under its Decisions table and separates the two
+      > halves of 3(d): keeping `docparse` to facts stands, sending the phase
+      > model out of the module does not.
+      >
+      > DESIGN-0013 was already Abandoned with its pointer to ADR-0002 and
+      > DESIGN-0014, flipped when ADR-0002 landed. Nothing to do.
+- [x] Living docs: CLAUDE.md (architecture bullets for the eleven new
       packages, the `cmd/` swap, `internal/` gone, the parity suite, the
       beta release procedure), README (library section with the `/v2`
       import path and the experimental note, `docz validate` and
       `--fix`, five types), `DEVELOPMENT.md` (add-a-type walkthrough
       with markers and skeleton, release section), and `mkdocs.yml`
       (`pymdownx.superfences` so the design diagrams render).
+      > This task found a gap rather than only refreshing prose: **the
+      > `EXPERIMENTAL` doc comments this plan's own preamble requires had
+      > never been written**, on any of the eleven packages. `go doc` said
+      > nothing about which tier a consumer was importing into, which is the
+      > mechanism ADR-0002 Open Question 1 chose the option for. All eleven
+      > now carry the paragraph; the five frozen packages deliberately do
+      > not. It goes in the **second** paragraph because revive's
+      > `package-comments` and staticcheck's ST1000 both require a package
+      > comment to open with `Package <name>` — a deviation from "opens
+      > with", forced by the linters, and `go doc` shows it immediately
+      > either way.
+      >
+      > `DEVELOPMENT.md`'s add-a-type walkthrough already covered markers and
+      > the skeleton (Phase 4 retargeted it from `plan` to `postmortem`) and
+      > already had the beta release path, so it gained only the two
+      > stability tiers and `make validate`. `.docz.yaml` gets
+      > `pymdownx.superfences` alongside `mkdocs.yml`, or a fresh
+      > `docz wiki init` would drop it again.
+      >
+      > `docz update` ran at the end, refreshing the five ToCs the new
+      > sections invalidated.
 - [ ] Close docz issue #97 (retargeted 2026-09-20 from `update --check` to
       `docz validate`: `toc.stale` and `IndexDrift` are the CI gate) with a
       comment naming the beta tag. The claude-skills plugin is not touched
       in this unit (Out of Scope).
+      **deferred — human required:** the comment has to name the beta tag,
+      and the tag does not exist until the task below is done. Closing the
+      issue before then would point a reader at nothing.
 - [ ] Merge as `dont-release`, then from the merge commit run
       `make release TAG=v2.0.0-beta.1`; confirm the pre-release workflow
       built the binaries and marked the release a pre-release; write the
@@ -1219,15 +1252,33 @@ Decision 7).
       path with the v1 tags keeping the old one, the plan fallback) into
       the GitHub release body with `gh release edit`.
       verify: `gh release view v2.0.0-beta.1 --json isPrerelease,assets`
+      **deferred — human required:** merging a pull request and pushing a tag
+      are the two outward-facing acts in this plan. The branch is ready and
+      `make ci` is green; the release notes still have to be written against
+      whatever the merge commit turns out to be.
 - [ ] Post-tag proof: from a scratch module,
       `go get github.com/donaldgifford/docz/v2@v2.0.0-beta.1` resolves
       through the module proxy and `test/consumer`'s calls compile against
       it without the local replace.
+      **deferred — human required:** blocked on the tag. The proxy cannot
+      resolve a version nobody has pushed.
 - [ ] Status flips with `docz status set`: DESIGN-0014 and DESIGN-0015 →
       Implemented and this document → Completed (ADR-0002 and ADR-0003
       were Accepted and both designs Approved with the docs PR on
       2026-09-20); note in IMPL-0017's Objective that it now targets the
       v2 line.
+      > Three of the four are done, with `docz status set` rather than an
+      > editor: DESIGN-0014 and DESIGN-0015 are Implemented, and IMPL-0017's
+      > Objective carries a dated note that it targets the v2 line — there is
+      > no `v1.3.0` for it to ship as, since a `/v2` module may not carry a v1
+      > tag. It also names the two things to re-read before starting, because
+      > `docwrite` gained byte cores and the stamp pass now belongs to
+      > `repo.Update`.
+      >
+      > **This document stays In Progress.** Flipping it to Completed while
+      > the three tasks above are deferred would say the unit shipped when the
+      > tag does not exist. The flip is the last act of the release, after
+      > `gh release view` confirms the pre-release.
 <!--docz:tasks:end-->
 
 <!--docz:criteria:start-->

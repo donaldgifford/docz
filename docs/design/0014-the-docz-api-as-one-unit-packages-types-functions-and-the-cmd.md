@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0014
 title: "The docz API as one unit: packages, types, functions, and the cmd swap"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-14
 ---
