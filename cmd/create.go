@@ -114,19 +114,28 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		return err
 	}
 
+	// Printing runs to the end even if it fails partway, and its error is
+	// kept only when the creation itself succeeded. A write to r.Out that
+	// fails is worth reporting on its own and never worth reporting instead
+	// of the index failure below, which is the one that tells the user their
+	// new document is not in the README yet.
+	//
+	// repo.Create has already wrapped err as "updating <type>: …", so it is
+	// returned as it stands rather than wrapped a second time in words that
+	// say the same thing.
 	if _, perr := fmt.Fprintf(r.Out, "Created %s: %s\n",
-		strings.ToUpper(docType), result.FilePath); perr != nil {
-		return perr
+		strings.ToUpper(docType), result.FilePath); perr != nil && err == nil {
+		err = perr
 	}
 
 	if result.Update != nil {
-		if perr := r.printTypeReport(result.Update); perr != nil {
-			return perr
+		if perr := r.printTypeReport(result.Update); perr != nil && err == nil {
+			err = perr
 		}
 	}
 
 	if err != nil {
-		return fmt.Errorf("auto-updating index: %w", err)
+		return err
 	}
 
 	return r.autoUpdateNav(ctx, opts.noUpdate)

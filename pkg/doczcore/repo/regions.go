@@ -229,7 +229,10 @@ func (r *Repo) insertRegionsInDoc(
 			return &WriteError{Path: rel, Err: err}
 		}
 
-		fireFileWritten(ctx, path, FileDocument)
+		// rel, not path: every other site fires repo-relative (writeAndFire,
+		// and the index sites in update.go), and a consumer that logged one
+		// absolute path among relative ones would look like two bugs.
+		fireFileWritten(ctx, rel, FileDocument)
 	}
 
 	report.Changed = append(report.Changed, InsertRegionsResult{

@@ -52,8 +52,13 @@ func (r *Runner) initRepo(ctx context.Context, force bool) error {
 
 	report, err := rp.Init(ctx, repo.InitOptions{Force: force})
 
-	if perr := r.printInitReport(rp, report); perr != nil {
-		return perr
+	// The scaffolding error outranks a failure to print the report about it.
+	// A write to r.Out failing is worth reporting when it is the only thing
+	// that went wrong, and worth dropping when it is not: "cannot write to
+	// stdout" in place of "could not create docs/rfc/README.md" would name
+	// the symptom and lose the cause.
+	if perr := r.printInitReport(rp, report); perr != nil && err == nil {
+		err = perr
 	}
 
 	if err != nil {

@@ -214,16 +214,23 @@ func (r *Repo) writeIndex(
 		splice = index.DryRunReadme
 	}
 
+	// Repo-relative in both the error and the hooks, which is what the rest
+	// of the package reports and what writeAndFire documents. An absolute
+	// path here would put the server's checkout layout into a docz-api error
+	// body, and would make one hook event in a run look different from the
+	// others for no reason a consumer could act on.
+	rel := r.RelPath(path)
+
 	outcome, err := splice(path, header, table)
 	if err != nil {
-		return index.UpdateOutcome{}, &WriteError{Path: path, Err: err}
+		return index.UpdateOutcome{}, &WriteError{Path: rel, Err: err}
 	}
 
 	switch outcome.Action {
 	case index.ActionNoMarkers:
-		fireFileSkipped(ctx, outcome.Path, SkipNoMarkers)
+		fireFileSkipped(ctx, r.RelPath(outcome.Path), SkipNoMarkers)
 	case index.ActionCreated, index.ActionUpdated:
-		fireFileWritten(ctx, outcome.Path, FileIndex)
+		fireFileWritten(ctx, r.RelPath(outcome.Path), FileIndex)
 	case index.ActionDryRunCreated, index.ActionDryRunUpdated:
 		// Nothing was written, so nothing is reported as written. The
 		// would-be body is in the outcome for a caller to show.

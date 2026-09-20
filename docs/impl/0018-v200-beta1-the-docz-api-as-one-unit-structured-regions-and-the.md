@@ -1306,6 +1306,45 @@ Decision 7).
   `DEVELOPMENT.md` describe the v2 layout.
 - `main` builds a CLI that behaves like v1.2.2 apart from the two new
   commands and the plan removal.
+
+> **Review pass (2026-09-20).** Every phase ends with one (see the preamble
+> above). Phase 5's ran over `git diff a135b10^..HEAD -- '*.go'`, 35 files and
+> about 2 400 insertions, as a style pass against the Uber guide and a security
+> pass over the trust boundaries. Six findings were acted on; all are in this
+> phase's own code.
+>
+> The one that mattered: `docz wiki init --force` spends the force by
+> **unlinking** `mkdocs.yml` before `wiki.Init` writes it back, and
+> `wiki.mkdocs_path` is a config key that `config.Validate` does **not** run
+> through the repo-relative path rules. Before the swap that value reached
+> `os.WriteFile`, where a directory failed; unlinking first deleted it instead.
+> The remove is now guarded on a regular file (`os.Lstat`, so a symlink is not
+> followed), which restores the pre-swap outcome, and two tests pin both sides
+> of the guard. Out-of-root *overwrite* was reachable in v1.2.2 too and is left
+> alone: fixing it means validating `wiki.mkdocs_path`, `docs_dir`, and each
+> type's `dir`, which is a new hard config error and not a permitted parity
+> delta. It wants its own change.
+>
+> Also fixed: a print error outranked the real failure in `init`, `update`, and
+> `create`, so a broken `r.Out` could report "cannot write to stdout" in place
+> of the index write that actually failed — in `create` the update error was
+> dropped entirely. `create` also wrapped an error `repo.Create` had already
+> wrapped. Two `repo` sites reported an absolute path where the package
+> documents repo-relative, which would have put a server's checkout layout into
+> a docz-api error body and made one hook event in a run look unlike the
+> others.
+>
+> **Deviation from the `cmd/` test freeze.** It now holds for every *existing*
+> file — `git diff --stat <pre-swap> -- 'cmd/*_test.go'` lists only additions —
+> but there are two new files rather than the one the criterion above allows:
+> `validate_test.go` for the new command, and `wiki_force_test.go` for the
+> guard. A security fix with no test is worse than a second new file, and the
+> freeze's purpose is that the swap did not edit its own evidence.
+>
+> Not acted on: GO-2026-4970, a stdlib vulnerability `govulncheck` reaches only
+> through `test/parity`'s own walker over a tree the suite created, fixed in
+> go1.26.5 while `go.mod` pins 1.26.4. A toolchain bump, not a code change, and
+> it wants the toolchain installed first.
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
 

@@ -448,6 +448,11 @@ func TestInsertRegionsDryRun(t *testing.T) {
 // TestInsertRegionsFiresFileWritten pins the hook a real write does fire, with
 // the kind that says what the file is rather than leaving a consumer to
 // pattern-match the path.
+//
+// The path is repo-relative, like every other event the package fires. This
+// site used to pass the absolute one, which made `docz validate --fix
+// --verbose` log a different path shape from `docz init --verbose` for no
+// reason a consumer could act on.
 func TestInsertRegionsFiresFileWritten(t *testing.T) {
 	t.Parallel()
 
@@ -476,8 +481,10 @@ func TestInsertRegionsFiresFileWritten(t *testing.T) {
 		t.Fatalf("InsertRegions: %v", err)
 	}
 
-	if !slices.Equal(paths, []string{path}) {
-		t.Errorf("FileWritten paths = %v, want %v", paths, []string{path})
+	want := []string{r.RelPath(path)}
+
+	if !slices.Equal(paths, want) {
+		t.Errorf("FileWritten paths = %v, want %v", paths, want)
 	}
 
 	if !slices.Equal(found, []FileKind{FileDocument}) {

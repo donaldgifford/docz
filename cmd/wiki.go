@@ -226,12 +226,33 @@ func (r *Runner) wikiUpdateNav(ctx context.Context, mkdocsPath string) error {
 // force is spent here: the file the user asked to replace goes, Init's own
 // absent-then-create path writes it back, and Init runs with Force off so
 // an existing landing page is skipped exactly as before.
+//
+// Only a regular file is removed. `wiki.mkdocs_path` is a config key, so its
+// value can come from a cloned repository, and it is not one of the keys
+// config.Validate runs through the repo-relative path rules — so it may name
+// a directory, a symlink, or something outside the root entirely. Before this
+// command spent the force by unlinking, such a path reached os.WriteFile and
+// failed there; unlinking first would instead delete it. Anything but a
+// regular file is therefore left alone for wiki.Init's own write to reject,
+// which is what it did before the swap.
+//
+// Two smaller differences from that write remain by design, because the force
+// has to be spent somewhere: replacing a regular file gives the new one the
+// package's own mode rather than the old file's, and a failure between the
+// unlink and the write leaves no file where there was one. Both are scoped to
+// a path the user named and asked to have replaced.
 func wikiPrepareMkDocs(mkdocsPath string, force bool) error {
 	if !force {
 		if _, err := os.Stat(mkdocsPath); err == nil {
 			return wikiExistsError(mkdocsPath)
 		}
 
+		return nil
+	}
+
+	// Lstat, not Stat: a symlink is not a regular file, and following one
+	// here would unlink whatever it points at.
+	if info, err := os.Lstat(mkdocsPath); err == nil && !info.Mode().IsRegular() {
 		return nil
 	}
 

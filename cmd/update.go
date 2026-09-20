@@ -88,8 +88,11 @@ func (r *Runner) update(ctx context.Context, dryRun bool, args []string) error {
 	// type that finished, and those are types whose README really was
 	// rewritten. Swallowing their lines would leave the user with a
 	// failure and no idea how far it got.
-	if perr := r.printUpdateReport(report); perr != nil {
-		return perr
+	//
+	// The update's own error outranks a failure to print that report, so a
+	// broken r.Out cannot hide which type failed.
+	if perr := r.printUpdateReport(report); perr != nil && err == nil {
+		err = perr
 	}
 
 	return err

@@ -480,12 +480,7 @@ func validateSummary(report *repo.ValidateReport) string {
 		parts = append(parts, plural(drift, "drifted index"))
 	}
 
-	out := parts[0]
-	for _, p := range parts[1:] {
-		out += ", " + p
-	}
-
-	return out
+	return strings.Join(parts, ", ")
 }
 
 // plural renders a count with its noun, adding an s for anything but one.
