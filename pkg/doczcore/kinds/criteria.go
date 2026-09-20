@@ -60,7 +60,7 @@ func Criteria(region []byte) []Criterion {
 			Text:       text,
 			Executable: leading,
 			Command:    command,
-			Line:       it.Line,
+			Line:       it.Line + bodyOffset,
 		})
 	}
 

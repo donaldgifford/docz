@@ -66,7 +66,7 @@ func bulletAlternatives(region []byte) []Alternative {
 		}
 
 		label, title, text := splitBullet(it.Text)
-		out = append(out, Alternative{Label: label, Title: title, Text: text, Line: it.Line})
+		out = append(out, Alternative{Label: label, Title: title, Text: text, Line: it.Line + bodyOffset})
 	}
 
 	if len(out) == 0 {

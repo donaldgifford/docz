@@ -66,7 +66,7 @@ func Decisions(region []byte) []Decision {
 				Question:   strings.TrimSpace(row[question]),
 				Resolution: strings.TrimSpace(row[resolution]),
 				// Header, then the delimiter row, then the body.
-				Line: table.Line + 2 + i,
+				Line: table.Line + 2 + i + bodyOffset,
 			})
 		}
 

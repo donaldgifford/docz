@@ -33,7 +33,7 @@ func References(region []byte) []Reference {
 			continue
 		}
 
-		out = append(out, Reference{Text: it.Text, URL: firstLinkURL(it.Text), Line: it.Line})
+		out = append(out, Reference{Text: it.Text, URL: firstLinkURL(it.Text), Line: it.Line + bodyOffset})
 	}
 
 	if len(out) == 0 {

@@ -71,12 +71,12 @@ func TestItems(t *testing.T) {
 		{
 			name: "flat bullets",
 			in:   region("### Goals", "- One thing.", "- Another."),
-			want: []kinds.Item{{Text: "One thing.", Line: 2}, {Text: "Another.", Line: 3}},
+			want: []kinds.Item{{Text: "One thing.", Line: 3}, {Text: "Another.", Line: 4}},
 		},
 		{
 			name: "a wrapped bullet folds to one line",
 			in:   region("### Goals", "- A goal that runs", "  onto a second line."),
-			want: []kinds.Item{{Text: "A goal that runs onto a second line.", Line: 2}},
+			want: []kinds.Item{{Text: "A goal that runs onto a second line.", Line: 3}},
 		},
 		{
 			// A nested bullet is neither a top-level item nor a continuation
@@ -84,12 +84,12 @@ func TestItems(t *testing.T) {
 			// nesting reads docparse.ListItems over the same bytes.
 			name: "a nested bullet is not reported",
 			in:   region("### Goals", "- Parent.", "  - Child."),
-			want: []kinds.Item{{Text: "Parent.", Line: 2}},
+			want: []kinds.Item{{Text: "Parent.", Line: 3}},
 		},
 		{
 			name: "numbered items count",
 			in:   region("## Approach", "1. First.", "2. Second."),
-			want: []kinds.Item{{Text: "First.", Line: 2}, {Text: "Second.", Line: 3}},
+			want: []kinds.Item{{Text: "First.", Line: 3}, {Text: "Second.", Line: 4}},
 		},
 		{
 			name: "the template's empty bullet is not an item",
@@ -99,7 +99,7 @@ func TestItems(t *testing.T) {
 		{
 			name: "inline markdown is kept verbatim",
 			in:   region("### Goals", "- **Bold** and `code` and [a link](x.md)."),
-			want: []kinds.Item{{Text: "**Bold** and `code` and [a link](x.md).", Line: 2}},
+			want: []kinds.Item{{Text: "**Bold** and `code` and [a link](x.md).", Line: 3}},
 		},
 	}
 
@@ -312,8 +312,8 @@ func TestDecisions(t *testing.T) {
 		t.Errorf("second = %+v", got[1])
 	}
 
-	if got[0].Line != 4 {
-		t.Errorf("first row line = %d, want 4", got[0].Line)
+	if got[0].Line != 5 {
+		t.Errorf("first row line = %d, want 5", got[0].Line)
 	}
 }
 

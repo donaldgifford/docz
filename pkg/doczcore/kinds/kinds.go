@@ -24,6 +24,19 @@ import (
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
+// bodyOffset converts a body line number back to a region line number.
+//
+// Every Line a reader reports is 1-based within the region, counting the
+// region's own first line as 1 — the same numbering docparse uses when it is
+// handed the same bytes, so a caller turns any of them into a document line
+// the one way: region.Start + Line. bodyLines drops that first line, so a
+// reader that walked the body adds this back before reporting.
+//
+// Named rather than written as a literal 1 because getting it wrong is
+// invisible: a finding or a splice target one line above the thing it means
+// still looks like a line number.
+const bodyOffset = 1
+
 // A region's own heading is line 1 of the bytes a reader is handed. Every
 // reader drops it: a heading names the span, it is not content in it.
 //

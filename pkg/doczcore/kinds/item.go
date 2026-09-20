@@ -65,7 +65,7 @@ func Items(region []byte) []Item {
 			continue
 		}
 
-		out = append(out, Item{Text: it.Text, Line: it.Line})
+		out = append(out, Item{Text: it.Text, Line: it.Line + bodyOffset})
 	}
 
 	if len(out) == 0 {
@@ -109,7 +109,7 @@ func Sections(region []byte) []Section {
 		out = append(out, Section{
 			Title: h.Text,
 			Body:  strings.TrimSpace(stripComments(strings.Join(lines[h.Line:end], "\n"))),
-			Line:  h.Line,
+			Line:  h.Line + bodyOffset,
 		})
 	}
 

@@ -158,7 +158,7 @@ func OpenQuestions(region []byte) []Question {
 			Title:    strings.TrimSpace(m[2]),
 			Options:  optionsIn(folded, h.Line, end),
 			Resolved: resolutionIn(lines, h.Line, end),
-			Line:     h.Line,
+			Line:     h.Line + bodyOffset,
 		})
 	}
 
@@ -189,7 +189,7 @@ func optionsIn(folded []foldedItem, after, through int) []Option {
 			Letter:      strings.ToLower(m[1]),
 			Text:        text,
 			Recommended: recommendationMarker.MatchString(text),
-			Line:        it.Line,
+			Line:        it.Line + bodyOffset,
 		})
 	}
 
@@ -232,7 +232,7 @@ func resolutionIn(lines []string, after, through int) *Resolution {
 			Date:   m[1],
 			Choice: strings.ToLower(m[2]),
 			Note:   resolutionNote(strings.Join(parts, " ")),
-			Line:   n,
+			Line:   n + bodyOffset,
 		}
 	}
 
