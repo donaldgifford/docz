@@ -9,8 +9,8 @@ docs/adr/0001-use-postgresql-for-the-registry-store.md: status Accepted -> Super
 
 === files
 .docz.yaml (698 bytes, 7f99dbecefa5)
-docs/adr/0001-use-postgresql-for-the-registry-store.md (1647 bytes, c26b91e084e4)
-docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1165 bytes, 4622c9a13d9c)
+docs/adr/0002-vendor-the-markdown-walker.md (6586 bytes, 1d7a545b1e1b)
 docs/adr/README.md (1349 bytes, e3d3787df33c)
 
 === written docs/adr/0001-use-postgresql-for-the-registry-store.md

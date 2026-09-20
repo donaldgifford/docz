@@ -82,7 +82,7 @@ api:
 
 === files
 .docz.yaml (1782 bytes, 5f476a5dfcfa)
-docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/0001-drop-the-plan-doc-type.md (1133 bytes, fa34d09a4d3e)
 docs/adr/README.md (1146 bytes, ee1e083b756e)
-docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1334 bytes, 75747f949fd3)
 docs/rfc/README.md (1275 bytes, 9da4edaedca2)

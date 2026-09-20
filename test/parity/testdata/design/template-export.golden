@@ -10,8 +10,8 @@ Exported design template to $ROOT/design.md
 === files
 .docz.yaml (732 bytes, 0a7d82da49d4)
 design.md (1070 bytes, 452d812558b7)
-docs/design/0001-token-refresh-flow.md (2077 bytes, 5bd162da5acc)
-docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/0001-token-refresh-flow.md (1469 bytes, 17057cd497e5)
+docs/design/0002-wiki-nav-generation.md (6710 bytes, b55bd53bb0c9)
 docs/design/README.md (1287 bytes, 0f8b694d2c3a)
 
 === written design.md

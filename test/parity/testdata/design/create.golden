@@ -10,10 +10,10 @@ Updated $ROOT/docs/design/README.md
 
 === files
 .docz.yaml (732 bytes, 0a7d82da49d4)
-docs/design/0001-token-refresh-flow.md (2077 bytes, 5bd162da5acc)
-docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
-docs/design/0003-parity-created-document.md (1476 bytes, e53bca23f2e2)
-docs/design/README.md (1436 bytes, 772120d62a84)
+docs/design/0001-token-refresh-flow.md (1469 bytes, 17057cd497e5)
+docs/design/0002-wiki-nav-generation.md (6710 bytes, b55bd53bb0c9)
+docs/design/0003-parity-created-document.md (1471 bytes, 67853c7b6125)
+docs/design/README.md (1431 bytes, 2dd98e219c71)
 
 === written docs/design/0003-parity-created-document.md
 ---

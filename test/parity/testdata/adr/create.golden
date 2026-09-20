@@ -10,10 +10,10 @@ Updated $ROOT/docs/adr/README.md
 
 === files
 .docz.yaml (698 bytes, 7f99dbecefa5)
-docs/adr/0001-use-postgresql-for-the-registry-store.md (1645 bytes, fc2adfcd894c)
-docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
-docs/adr/0003-parity-created-document.md (1135 bytes, 08931190d421)
-docs/adr/README.md (1498 bytes, 142e8835a9a0)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1163 bytes, 82c3f0197649)
+docs/adr/0002-vendor-the-markdown-walker.md (6586 bytes, 1d7a545b1e1b)
+docs/adr/0003-parity-created-document.md (1130 bytes, 455e61b9811e)
+docs/adr/README.md (1493 bytes, 7b86fcaafe0a)
 
 === written docs/adr/0003-parity-created-document.md
 ---

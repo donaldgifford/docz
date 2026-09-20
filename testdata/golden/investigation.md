@@ -13,17 +13,24 @@ created: 2026-02-22
 <!--toc:start-->
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 <!-- What specific question are we trying to answer? Be precise — a good
      investigation question has a clear yes/no or concrete answer.
      Example: "Can we use X library to achieve Y without Z limitation?" -->
 
+<!--docz:question:end-->
+
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 <!-- What do you expect to find, and why? This forces upfront thinking and
      makes the conclusion more meaningful. -->
 
+<!--docz:hypothesis:end-->
+
+<!--docz:context:start-->
 ## Context
 
 <!-- Why is this investigation needed right now? What design, plan, or
@@ -31,6 +38,9 @@ created: 2026-02-22
 
 **Triggered by:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX / issue #XXX -->
 
+<!--docz:context:end-->
+
+<!--docz:approach:start-->
 ## Approach
 
 <!-- How will you test the hypothesis? List the specific steps, experiments,
@@ -41,6 +51,9 @@ created: 2026-02-22
 2.
 3.
 
+<!--docz:approach:end-->
+
+<!--docz:environment:start-->
 ## Environment
 
 <!-- Versions, configuration, or setup details relevant to reproducibility.
@@ -50,6 +63,9 @@ created: 2026-02-22
 | --------- | --------------- |
 |           |                 |
 
+<!--docz:environment:end-->
+
+<!--docz:findings:start-->
 ## Findings
 
 <!-- What did you actually observe? Include command output, logs, benchmark
@@ -59,6 +75,9 @@ created: 2026-02-22
 
 ### Observation 2
 
+<!--docz:findings:end-->
+
+<!--docz:conclusion:start-->
 ## Conclusion
 
 <!-- Answer the original question directly. State clearly what was found:
@@ -66,11 +85,19 @@ created: 2026-02-22
 
 **Answer:** <!-- Yes / No / Inconclusive -->
 
+<!--docz:conclusion:end-->
+
+<!--docz:recommendation:start-->
 ## Recommendation
 
 <!-- What should happen next based on this conclusion? Update the parent
      doc, unblock the design decision, open a follow-up investigation, etc. -->
 
+<!--docz:recommendation:end-->
+
+<!--docz:references:start-->
 ## References
 
 <!-- Links to parent docs, related investigations, issues, external sources -->
+
+<!--docz:references:end-->

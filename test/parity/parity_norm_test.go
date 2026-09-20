@@ -1,6 +1,8 @@
 package parity
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -101,6 +103,30 @@ func TestMarkerNormalizer(t *testing.T) {
 			name: "leaves marker-free input untouched",
 			in:   "plain\nbody\n",
 			want: "plain\nbody\n",
+		},
+		// The template layout: sections separated by one blank line, every
+		// marker on a line of its own. Dropping a marker between two blanks
+		// has to take one of them, or v2 shows a double blank where v1.2.2
+		// has one and every section break is a false difference.
+		{
+			name: "a marker between two blanks takes one with it",
+			in:   "text\n\n<!--docz:summary:end-->\n\n## Next\n",
+			want: "text\n\n## Next\n",
+		},
+		{
+			name: "stacked closers collapse to one blank",
+			in:   "-\n\n<!--docz:out-of-scope:end-->\n<!--docz:scope:end-->\n\n## Next\n",
+			want: "-\n\n## Next\n",
+		},
+		{
+			name: "an opener above a heading keeps the blank above it",
+			in:   "text\n\n<!--docz:summary:start-->\n## Summary\n",
+			want: "text\n\n## Summary\n",
+		},
+		{
+			name: "a blank not next to a marker is untouched",
+			in:   "a\n\n\nb\n<!--docz:x:start-->\n",
+			want: "a\n\n\nb\n",
 		},
 	}
 
@@ -266,5 +292,57 @@ func TestTree_SkipsGitlinkFile(t *testing.T) {
 
 	if len(files) != 1 || files[0].Path != "keep.md" {
 		t.Errorf("Tree recorded %+v, want only keep.md", files)
+	}
+}
+
+// A recorded size and digest describe the normalised body, so the number
+// beside a body in a golden is one a reviewer can check against what they
+// are reading.
+func TestNormalizeFiles_RecomputesSizeAndSum(t *testing.T) {
+	t.Parallel()
+
+	raw := "## Summary\n\n<!--docz:summary:end-->\n\ntext\n"
+	want := "## Summary\n\ntext\n"
+
+	got := NormalizeFiles([]File{{Path: "a.md", Body: raw, Size: 99, Sum: "stale"}},
+		MarkerNormalizer())
+
+	if len(got) != 1 {
+		t.Fatalf("NormalizeFiles returned %d files, want 1", len(got))
+	}
+
+	if got[0].Body != want {
+		t.Errorf("Body = %q, want %q", got[0].Body, want)
+	}
+
+	if got[0].Size != int64(len(want)) {
+		t.Errorf("Size = %d, want %d", got[0].Size, len(want))
+	}
+
+	sum := sha256.Sum256([]byte(want))
+	if wantSum := hex.EncodeToString(sum[:])[:12]; got[0].Sum != wantSum {
+		t.Errorf("Sum = %q, want %q", got[0].Sum, wantSum)
+	}
+}
+
+// Both snapshots are normalised before Changed compares them, so a file the
+// command did not touch is still recognised as unchanged and its body stays
+// out of the golden.
+func TestNormalizeFiles_KeepsChangedComparable(t *testing.T) {
+	t.Parallel()
+
+	norms := []Normalizer{MarkerNormalizer()}
+	untouched := File{Path: "a.md", Body: "<!--docz:x:start-->\nsame\n", Size: 25, Sum: "raw"}
+
+	before := NormalizeFiles([]File{untouched}, norms...)
+	after := NormalizeFiles([]File{untouched}, norms...)
+
+	changed := Changed(before, after)
+	if len(changed) != 1 {
+		t.Fatalf("Changed returned %d files, want 1", len(changed))
+	}
+
+	if changed[0].Body != "" {
+		t.Errorf("an untouched file recorded a body: %q", changed[0].Body)
 	}
 }

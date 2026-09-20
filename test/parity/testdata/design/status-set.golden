@@ -9,8 +9,8 @@ docs/design/0001-token-refresh-flow.md: status Approved -> Implemented
 
 === files
 .docz.yaml (732 bytes, 0a7d82da49d4)
-docs/design/0001-token-refresh-flow.md (2080 bytes, 2efd05e290b8)
-docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/0001-token-refresh-flow.md (1472 bytes, 709349c5fcc0)
+docs/design/0002-wiki-nav-generation.md (6710 bytes, b55bd53bb0c9)
 docs/design/README.md (1287 bytes, 0f8b694d2c3a)
 
 === written docs/design/0001-token-refresh-flow.md

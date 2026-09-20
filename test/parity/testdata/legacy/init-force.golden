@@ -11,9 +11,9 @@ Initialized docz successfully.
 
 === files
 .docz.yaml (1782 bytes, 5f476a5dfcfa)
-docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/0001-drop-the-plan-doc-type.md (1133 bytes, fa34d09a4d3e)
 docs/adr/README.md (893 bytes, 08fd6bf08489)
-docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1334 bytes, 75747f949fd3)
 docs/rfc/README.md (992 bytes, 877b91d16f9d)
 
 === written docs/adr/README.md

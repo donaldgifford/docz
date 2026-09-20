@@ -10,10 +10,10 @@ Updated $ROOT/docs/impl/README.md
 
 === files
 .docz.yaml (748 bytes, 1eb4fc792707)
-docs/impl/0001-phase-out-the-legacy-scanner.md (3850 bytes, a7c60a54a035)
-docs/impl/0002-registry-store-migration.md (6709 bytes, daf5e9ef4fb6)
-docs/impl/0003-parity-created-document.md (2964 bytes, 861786347e38)
-docs/impl/README.md (1536 bytes, 48f4ef00a5cd)
+docs/impl/0001-phase-out-the-legacy-scanner.md (2980 bytes, e1a031a40f88)
+docs/impl/0002-registry-store-migration.md (5839 bytes, 71a284ece127)
+docs/impl/0003-parity-created-document.md (2959 bytes, 4b2296e7028b)
+docs/impl/README.md (1531 bytes, 7d206b655c6d)
 
 === written docs/impl/0003-parity-created-document.md
 ---

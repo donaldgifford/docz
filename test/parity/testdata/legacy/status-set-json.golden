@@ -9,9 +9,9 @@ exit 0
 
 === files
 .docz.yaml (1782 bytes, 5f476a5dfcfa)
-docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/0001-drop-the-plan-doc-type.md (1133 bytes, fa34d09a4d3e)
 docs/adr/README.md (1146 bytes, ee1e083b756e)
-docs/rfc/0001-consolidate-the-release-pipeline.md (1702 bytes, d4f0c9e9c91e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1336 bytes, 0c14a5c56b4e)
 docs/rfc/README.md (1275 bytes, 9da4edaedca2)
 
 === written docs/rfc/0001-consolidate-the-release-pipeline.md

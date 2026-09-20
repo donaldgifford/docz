@@ -27,8 +27,14 @@ stays a source-only run and nothing in CI needs a binary until Phase 5 wires
 | go.mod checksum | `h1:YWffd55Zk1BGmaaw1cm4sPaIbnJuzi9wbRaBYtV7EnQ=` |
 | Toolchain | `go1.26.4` |
 | Platform | `darwin/arm64` |
-| Captured | 2026-09-20, IMPL-0018 Phase 0 |
+| Captured | 2026-09-20, IMPL-0018 Phase 0; re-captured the same day in Phase 1 |
 | Cases | 213 across 7 fixtures |
+
+The Phase 1 re-capture changed only the size and digest on each recorded file:
+the `markers` normaliser learned to take a marker's blank line with it, and
+sizes moved onto the normalised body. Every content line of every golden is
+byte-identical to the Phase 0 capture, and the goldens still come from the
+v1.2.2 binary, not from a v2 build.
 
 `make parity-capture` installs the tag into a temporary `GOBIN` rather than
 trusting whatever `docz` is on `PATH`. The installed binary reports
@@ -72,7 +78,15 @@ Each is named, lives outside the build tag, and has unit tests that run in
 - **date** replaces today with `$DATE`. `docz create` stamps today into
   frontmatter, so without this every golden would expire overnight.
 - **markers** drops whole region-marker lines. A marker with text beside it
-  is kept, which is also what the walker does with it.
+  is kept, which is also what the walker does with it. A marker alone between
+  two blank lines takes one of them with it: the templates put every marker on
+  its own line and separate sections with a single blank, so keeping both
+  blanks would turn every section break into a false difference.
+
+A recorded size and digest are computed from the normalised body, not the raw
+one, so the number beside a body describes the body the golden shows. Both
+tree snapshots go through the same pass, so the before/after comparison that
+decides which bodies to record still compares like with like.
 
 ## The run environment is an allowlist
 

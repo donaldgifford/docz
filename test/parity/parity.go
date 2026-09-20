@@ -91,6 +91,13 @@ var markerLine = regexp.MustCompile(`^[ \t]*<!--docz:[a-z0-9-]+:(start|end)-->[ 
 //
 // Only whole marker lines go. A marker with text beside it is not a marker to
 // the walker either, and leaving it in keeps that agreement visible.
+//
+// A marker sitting alone between two blank lines takes one of them with it.
+// The templates separate their sections with a single blank line and put the
+// markers on lines of their own, so dropping a marker without its blank would
+// leave a double blank where v1.2.2 has one and turn every section break into
+// a false difference. Only that shape is collapsed: a blank line not adjacent
+// to a dropped marker is untouched.
 func MarkerNormalizer() Normalizer {
 	return Normalizer{
 		Name: "markers",
@@ -102,17 +109,47 @@ func MarkerNormalizer() Normalizer {
 			lines := strings.Split(s, "\n")
 			kept := make([]string, 0, len(lines))
 
-			for _, line := range lines {
-				if markerLine.MatchString(line) {
+			for i := 0; i < len(lines); i++ {
+				if !markerLine.MatchString(lines[i]) {
+					kept = append(kept, lines[i])
+
 					continue
 				}
 
-				kept = append(kept, line)
+				surrounded := len(kept) > 0 && kept[len(kept)-1] == "" &&
+					i+1 < len(lines) && lines[i+1] == ""
+				if surrounded {
+					i++
+				}
 			}
 
 			return strings.Join(kept, "\n")
 		},
 	}
+}
+
+// NormalizeFiles applies norms to every recorded body and recomputes the size
+// and digest from the result.
+//
+// Recording a raw size beside a normalised body would make the golden argue
+// with itself: the marker lines the body no longer shows would still be in its
+// byte count, so a v2 tree and the v1.2.2 tree it matches line for line would
+// differ on the one number a reviewer cannot check by eye. Both snapshots go
+// through this, so the before/after comparison that decides which bodies to
+// record still compares like with like.
+func NormalizeFiles(files []File, norms ...Normalizer) []File {
+	out := make([]File, 0, len(files))
+
+	for _, f := range files {
+		f.Body = Normalize(f.Body, norms...)
+		sum := sha256.Sum256([]byte(f.Body))
+		f.Size = int64(len(f.Body))
+		f.Sum = hex.EncodeToString(sum[:])[:12]
+
+		out = append(out, f)
+	}
+
+	return out
 }
 
 // A File is one entry of a recorded file tree.

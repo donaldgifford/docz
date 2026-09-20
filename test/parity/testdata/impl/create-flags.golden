@@ -9,9 +9,9 @@ Created IMPL: $ROOT/docs/impl/0003-parity-flagged-document.md
 
 === files
 .docz.yaml (748 bytes, 1eb4fc792707)
-docs/impl/0001-phase-out-the-legacy-scanner.md (3850 bytes, a7c60a54a035)
-docs/impl/0002-registry-store-migration.md (6709 bytes, daf5e9ef4fb6)
-docs/impl/0003-parity-flagged-document.md (2191 bytes, 1a87a8f009b3)
+docs/impl/0001-phase-out-the-legacy-scanner.md (2980 bytes, e1a031a40f88)
+docs/impl/0002-registry-store-migration.md (5839 bytes, 71a284ece127)
+docs/impl/0003-parity-flagged-document.md (2186 bytes, aea118630897)
 docs/impl/README.md (1389 bytes, 69869db9f54c)
 
 === written docs/impl/0003-parity-flagged-document.md

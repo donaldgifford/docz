@@ -10,9 +10,9 @@ Error: override file already exists: $ROOT/docs/templates/frameworks.md
 
 === files
 .docz.yaml (1148 bytes, aae68059d6d3)
-docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/0001-keep-frameworks-in-a-register.md (1147 bytes, 18f4df12d792)
 docs/adr/README.md (1167 bytes, 80b1981d1cfe)
-docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
-docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (647 bytes, 7d1eb6c56cf9)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2205 bytes, 3d21a457244f)
 docs/frameworks/README.md (650 bytes, 9327fc0355b1)
-docs/templates/frameworks.md (616 bytes, 3285c201e10e)
+docs/templates/frameworks.md (560 bytes, 86e849838d8d)

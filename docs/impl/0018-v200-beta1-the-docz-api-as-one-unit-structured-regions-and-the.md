@@ -319,7 +319,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       `LoadFrontmatter` round-trip it; a `docwrite.SetStatus` golden with a
       `schema:` line proves the status locator ignores it.
       verify: `go test ./pkg/doczcore/document/... ./pkg/doczcore/docwrite/...`
-- [ ] Add canonical region markers around every section of every embedded
+- [x] Add canonical region markers around every section of every embedded
       template (`rfc.md`, `adr.md`, `design.md`, `impl.md`,
       `investigation.md`, and `plan.md` until Phase 4 deletes it) per the
       DESIGN-0015 §3 skeletons: one region per heading the type's `Doc`
