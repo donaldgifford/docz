@@ -332,7 +332,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       templates ship without a `schema:` line. Regenerate the template
       goldens.
       verify: `go test ./internal/template/... -update && go test ./internal/template/...`
-- [ ] Add the embedded skeletons `internal/template/templates/schema/<type>.md`
+- [x] Add the embedded skeletons `internal/template/templates/schema/<type>.md`
       for each built-in type, plus the generic pair `default.md` and
       `schema/default.md` used to scaffold custom types in Phase 3. A
       skeleton is a body of only region markers listing every section of
