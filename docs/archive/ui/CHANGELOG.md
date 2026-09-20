@@ -3,27 +3,11 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.10.0] - 2026-09-20
 
 ### Features
 
-- *(server)* Prometheus metrics on /metrics
-- *(server)* OpenTelemetry tracing over OTLP/HTTP
-
-### Documentation
-
-- Close out IMPL-0007 PR 2 and bump the chart
-- Record IMPL-0007 verification against a live docz-api
-- Note the CodeQL gap while PR 2 is stacked
-- Record PR 1's chart publish and the post-retarget state
-
-### Testing
-
-- *(server)* Make the server suite independent of a built dist
-
-### Miscellaneous Tasks
-
-- *(docker)* Ship the server as a single bundled file
+- *(server)* Prometheus metrics and OpenTelemetry tracing ([#36](https://github.com/donaldgifford/docz-site/issues/36))
 
 ## [0.9.0] - 2026-09-20
 
