@@ -1,0 +1,67 @@
+id="ADR-0002" title="Use OPA (embedded) for scope policy evaluation" status="Proposed" inferred=false
+author="Donald Gifford" created="2026-05-10"
+summary=""
+context="The Agent Capability Tokens RFC (RFC-NNNN) requires a policy engine to evaluate capability…"
+decision="Use **Open Policy Agent (OPA) embedded as a Go library** via `github.com/open-policy-agent…"
+consequences positive=5 negative=4 neutral=3
+alternatives=0 open-questions=0 references=8
+
+positive line=114
+  text="**Single policy language across IaC, K8s admission, agent capability, and egress.** One Rego skill set serves four use cases."
+
+positive line=116
+  text="**No new daemon to operate.** Embedded library; if the agent runs, the policy engine runs."
+
+positive line=118
+  text="**Decision Logs feature gives free audit trail.** OPA can emit every evaluation as a structured log; ties cleanly into Langfuse / OTel."
+
+positive line=120
+  text="**regal lint** catches Rego anti-patterns in CI; the language is notorious for spaghetti without discipline, and the linter is the discipline."
+
+positive line=122
+  text="**Familiar idiom.** OPA's `data.<package>.allow` and `input.<...>` patterns are widely documented; new engineers ramp in days."
+
+negative line=129
+  text="**Rego is its own language.** New hires unfamiliar with it pay a learning cost. Mitigated by the existing Conftest usage — several team members already know Rego."
+
+negative line=132
+  text="**Cedar's IAM-shape syntax is genuinely nicer for our specific use case.** Cedar's `permit(principal, action, resource)` reads more naturally for capability authz than Rego's general-purpose data structure. Accepted cost; consistency wins."
+
+negative line=136
+  text="**OPA bundle size.** The embedded evaluator adds ~5MB to the framework binary. Not a meaningful cost in a containerized deployment."
+
+negative line=138
+  text="**Policy debugging requires Rego comfort.** `opa eval --explain` is excellent but assumes Rego literacy. Cedar has similar tooling but with a more approachable language. Net wash given the consistency benefit."
+
+neutral line=146
+  text="**Both OPA and Cedar are OSS, both have Go SDKs.** Licensing and language-support concerns are equivalent."
+
+neutral line=148
+  text="**Both evaluate in microseconds.** Performance is not the deciding factor."
+
+neutral line=149
+  text="**Both are likely to remain healthy projects.** OPA is CNCF graduated; Cedar is AWS-backed with growing community adoption. Neither is a survival risk."
+
+reference line=205 url=""
+  text="Sibling: RFC-NNNN Agent Capability Tokens — uses this engine"
+
+reference line=206 url=""
+  text="Sibling: ADR-NNNN Use JWT for v1 — produces the claims this engine evaluates"
+
+reference line=207 url=""
+  text="Internal: Existing Conftest-for-Terraform-IaC usage in homelab Kubernetes security stack — same Rego skill set"
+
+reference line=209 url="https://www.openpolicyagent.org/"
+  text="External: [Open Policy Agent](https://www.openpolicyagent.org/)"
+
+reference line=210 url="https://pkg.go.dev/github.com/open-policy-agent/opa/rego"
+  text="External: [OPA Go library](https://pkg.go.dev/github.com/open-policy-agent/opa/rego)"
+
+reference line=212 url="https://github.com/StyraInc/regal"
+  text="External: [regal Rego linter](https://github.com/StyraInc/regal)"
+
+reference line=213 url="https://www.cedarpolicy.com/"
+  text="External: [Cedar](https://www.cedarpolicy.com/) — rejected; documented for the v2 review point"
+
+reference line=215 url="https://casbin.org/"
+  text="External: [Casbin](https://casbin.org/) — rejected"

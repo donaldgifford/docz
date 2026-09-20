@@ -1,0 +1,90 @@
+id="INV-0005" title="docz-api and docz-site: centralized cross-repo docz registry and viewer" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-06-23"
+question="Can we build a small companion service — **docz-api** — that uses a GitHub App to onbo…"
+hypothesis="**Yes — and meaningfully simpler than rfc-api.** rfc-api spends most of its complexity o…"
+context="docz today produces beautifully structured docs *per repo*, and the `wiki` command can ren…"
+triggered-by="the desire for one URL across all docz repos; relationship to"
+conclusion="**Answer: Yes — feasible, and simpler than rfc-api.** Because docz standardizes location…"
+answer=""
+verdict=unknown
+recommendation="The open questions are resolved (see [Decisions](#decisions)). Next steps: 1. **Proceed to…"
+approach=5 environment=7 findings=6
+open-questions=8 decisions=0 references=6
+
+step line=105 text="Enumerate exactly what docz already standardizes that an ingester can rely on (`.docz.yaml…"
+
+step line=107 text="Map the rfc-api / rfc-site component model onto docz and identify which parts collapse or …"
+
+step line=109 text="Sketch the data model (Postgres), the ingestion + webhook refresh flow, the search index (…"
+
+step line=112 text="Identify the docz-side prerequisite: how the API gets a doc list without re-implementing d…"
+
+step line=115 text="Surface the unavoidable risks (visibility/auth, versioning semantics, fetch strategy) as O…"
+
+component line=126 component="Ingestion/onboarding" value="GitHub App (installation tokens, webhooks)"
+
+component line=127 component="Site user auth" value="Pluggable OIDC: GitHub (default), Okta, Keycloak"
+
+component line=128 component="API service" value="Go (reuses docz's own parsing packages)"
+
+component line=129 component="Registry store" value="PostgreSQL (caches raw markdown + metadata at ingest)"
+
+component line=130 component="Search" value="Meilisearch (full-text + faceting)"
+
+component line=131 component="Markdown render" value="JS renderer in docz-site (e.g. markdown-it)"
+
+component line=132 component="Front end" value="docz-site (repos → types → docs nav + search + reader)"
+
+finding line=138 body=825 bytes title="Observation 1 — docz hands the ingester a manifest, not a haystack"
+  "The single biggest simplification: `.docz.yaml` *is* the per-repo manifest. To ingest a re…"
+
+finding line=156 body=592 bytes title="Observation 2 — the rfc-api/rfc-site model maps cleanly, minus the hard parsing"
+  "| rfc-api / rfc-site concern | docz-api equivalent | Notes | |---|---|---| | Discover wher…"
+
+finding line=169 body=2120 bytes title="Observation 3 — proposed architecture"
+  "**Onboarding.** A GitHub App is installed on selected repos/orgs. Required permissions are…"
+
+finding line=208 body=975 bytes title="Observation 4 — the docz-side enabler: don't re-implement the parser"
+  "docz-api should not re-implement frontmatter/config parsing — that would drift from the …"
+
+finding line=227 body=1703 bytes title="Observation 5 — the hard part is visibility/auth, and it is not docz-specific"
+  "The one piece that is *not* simplified: a viewer aggregating private-repo content must enf…"
+
+finding line=257 body=367 bytes title="Observation 6 — why docz-site is not \"just MkDocs per repo\""
+  "docz's existing `wiki` integration renders **one repo** as MkDocs/TechDocs. docz-site is d…"
+
+question 1 line=312 options=3 title="How does docz-api fetch repo content?"
+  resolved=false
+
+question 2 line=320 options=3 title="Where is markdown rendered to HTML?"
+  resolved=false
+
+question 3 line=328 options=3 title="Which renderer?"
+  resolved=false
+
+question 4 line=336 options=3 title="What does \"version\" mean for a doc?"
+  resolved=false
+
+question 5 line=344 options=3 title="Which branch(es) are ingested?"
+  resolved=false
+
+question 6 line=351 options=3 title="What is the visibility / access model?"
+  resolved=false
+
+question 7 line=361 options=3 title="How does the API obtain the doc list without re-implementing docz?"
+  resolved=false
+
+question 8 line=370 options=3 title="Scope of the first deliverable?"
+  resolved=false
+
+reference line=400 url="" text="docz `.docz.yaml` schema and type model — `internal/config`"
+
+reference line=401 url="" text="docz document scanning / frontmatter — `internal/document` (`ScanDocuments`, `LoadFrontm…"
+
+reference line=403 url="" text="docz custom document types — DESIGN-0006 / IMPL-0012 (registry must be type-agnostic, dr…"
+
+reference line=405 url="" text="docz per-repo wiki (MkDocs/TechDocs) — the per-repo counterpart to docz-site"
+
+reference line=406 url="" text="mdp markdown renderer — [[0004-v1-release-plan-tui-markdown-preview-and-cli-parity]] (co…"
+
+reference line=409 url="" text="Prior art: rfc-api / rfc-site (the general system docz-api simplifies)"

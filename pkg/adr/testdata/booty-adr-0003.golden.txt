@@ -1,0 +1,61 @@
+id="ADR-0003" title="Develop SDK, harness, and ADK layers in one repo; defer repo split" status="Accepted" inferred=false
+author="Donald Gifford" created="2026-07-02"
+summary=""
+context="The original plan was two artifacts in two places: this repo as the \"lower-level\" framewor…"
+decision="**All layers — framework SDK, loop harness, and future ADK components — develop in thi…"
+consequences positive=4 negative=3 neutral=2
+alternatives=3 open-questions=0 references=6
+
+positive line=117
+  text="Atomic cross-layer changes while both surfaces churn — no release/pin/bump cycle between the core and the harness; RFC-0001's \"framework churn breaks the ADK\" risk largely dissolves."
+
+positive line=120
+  text="One docz suite (IDs keep cross-referencing), one CI, one set of conventions, one `CLAUDE.md`."
+
+positive line=122
+  text="Fastest path to the actual goal: donald-loop workloads running, without repo-plumbing work in front of it."
+
+positive line=124
+  text="INV-0007's sub-module analysis gets adopted as living guidance instead of dying with the Copilot pivot."
+
+negative line=131
+  text="Root-module `go.sum` growth must be watched — the escalation rule (rule 3) is the containment, and it requires discipline to apply _when_ a heavy dep lands, not after consumers already carry it."
+
+negative line=134
+  text="CI blast radius: every layer shares the gate. Acceptable at current scale; a future path-filtered matrix is available if `just ci` gets slow."
+
+negative line=136
+  text="If the public-release trigger fires, the split becomes a bigger one-time event than it would have been with pre-separated repos. Accepted: that event may never come, and the layering rules bound its cost."
+
+neutral line=144
+  text="The private-repo posture (INV-0001 Q1) now covers all layers equally."
+
+neutral line=145
+  text="RFC-0001 remains the ADK's product definition; only its placement assumption changes. Its phases still gate on their own prerequisites."
+
+alternative line=153 label="" title="Two repos now (original implicit plan)."
+  text="Rejected: pays the version-pinning and compat tax at peak churn, for a boundary we can't y…"
+
+alternative line=157 label="" title="One repo, sub-modules everywhere from day one."
+  text="Rejected: INV-0007 itself documents the release-ordering and CI overhead of multi-module r…"
+
+alternative line=161 label="" title="Harness here, ADK in its own repo later regardless."
+  text="Rejected as a standing commitment — it re-creates the churn tax the moment ADK work star…"
+
+reference line=169 url="../rfc/0001-agent-dev-kit-on-the-agentic-go-framework.md"
+  text="[RFC-0001 Agent Dev Kit on the Agentic Go Framework](../rfc/0001-agent-dev-kit-on-the-agentic-go-framework.md) — placement assumption amended by this ADR"
+
+reference line=171 url="../design/0002-doc-driven-agent-loop-harness-v1-design.md"
+  text="[DESIGN-0002 Doc-Driven Agent Loop Harness v1 Design](../design/0002-doc-driven-agent-loop-harness-v1-design.md) — the first ADK slice landing in-repo"
+
+reference line=173 url="../investigation/0008-doc-driven-agent-loop-harness-scoping-hcl-jobs-over-impl-docs.md"
+  text="[INV-0008 Doc-Driven Agent Loop Harness Scoping](../investigation/0008-doc-driven-agent-loop-harness-scoping-hcl-jobs-over-impl-docs.md) — the scoping that pulled the slice forward"
+
+reference line=175 url="../investigation/0007-distribution-model-for-the-copilot-sdk-provider.md"
+  text="[INV-0007 Distribution Model for the Copilot SDK Provider](../investigation/0007-distribution-model-for-the-copilot-sdk-provider.md) — Axis A sub-module analysis, adopted here as the escalation mechanism"
+
+reference line=177 url="../investigation/0001-agentic-go-framework-scoping.md"
+  text="[INV-0001 Agentic Go Framework Scoping](../investigation/0001-agentic-go-framework-scoping.md) — Q1: private module, public release deferred (the main split trigger)"
+
+reference line=179 url="https://github.com/open-telemetry/opentelemetry-go-contrib"
+  text="External precedent: [opentelemetry-go-contrib](https://github.com/open-telemetry/opentelemetry-go-contrib), [aws-sdk-go-v2](https://github.com/aws/aws-sdk-go-v2) — multi-module monorepos via per-component `go.mod`"

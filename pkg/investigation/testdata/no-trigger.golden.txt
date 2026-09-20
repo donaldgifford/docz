@@ -1,0 +1,34 @@
+id="INV-0011" title="One parity fixture repository per built-in type" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-09-20"
+question="Does `test/parity` need one fixture repository per built-in document type, or would a sing…"
+hypothesis="One repository is enough. Every command under test takes a type name, so six types in one …"
+context="The suite was captured from the v1.2.2 release binary with seven fixture repositories: one…"
+triggered-by=""
+conclusion="Coverage is unchanged, so the collapse is possible; readability is not, so it is not worth…"
+answer="No, one repository per type is not required for coverage, but the"
+verdict=no
+recommendation=""
+approach=3 environment=3 findings=2
+open-questions=0 decisions=0 references=2
+
+step line=44 text="Count the distinct command invocations each fixture repository contributes."
+
+step line=45 text="Collapse the six type repositories into one and re-capture the goldens."
+
+step line=46 text="Diff the collapsed goldens against the ones captured from v1.2.2."
+
+component line=54 component="Go" value="1.25.1"
+
+component line=55 component="docz" value="v1.2.2"
+
+component line=56 component="Platform" value="darwin/arm64"
+
+finding line=62 body=307 bytes title="The file tree is most of every golden"
+  "A golden records stdout, stderr, the exit code, and the whole file tree. In a collapsed re…"
+
+finding line=69 body=205 bytes title="Collapsing does not change a single stdout"
+  "The 213 stdout and exit-code captures came back byte-identical. The hypothesis is right ab…"
+
+reference line=89 url="" text="`test/parity/README.md` — provenance of the captured goldens"
+
+reference line=90 url="../adr/0002-v200-api-first-and-the-v2-module-path.md" text="[ADR-0002](../adr/0002-v200-api-first-and-the-v2-module-path.md)"

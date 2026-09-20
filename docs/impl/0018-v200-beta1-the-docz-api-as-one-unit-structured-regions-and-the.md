@@ -578,7 +578,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       type (`doctemplate` is a test-only import there), so a template
       edit that moves a heading fails the package's tests and production
       imports stay at L0, `kinds`, and `validate`.
-- [ ] Golden fixtures for the four packages under each `testdata/`, as
+- [x] Golden fixtures for the four packages under each `testdata/`, as
       `.orig.md` plus hand-migrated `.md` pairs like `impl`'s: sdk-booty-sh's
       three RFCs and one rendered from the template; docz ADR-0001–0003
       with sdk-booty-sh's and tempy's ADRs; docz designs sampled for shape

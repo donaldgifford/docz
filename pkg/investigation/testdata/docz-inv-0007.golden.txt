@@ -1,0 +1,80 @@
+id="INV-0007" title="docz internals required for the api additional_docs block" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-08-10"
+question="DESIGN-0011 proposes an `api:` block in `.docz.yaml` carrying an index page and an `additi…"
+hypothesis="Mostly additive. `ChangelogConfig` (DESIGN-0010 / IMPL-0015) is the exact precedent — a …"
+context="**Triggered by:** DESIGN-0011 (`api:` block), which in turn serves DESIGN-0008 (docz-api i…"
+triggered-by="DESIGN-0011 (`api:` block), which in turn serves DESIGN-0008"
+conclusion="**Answer: No — this is not purely additive config.** The config block is as small as hyp…"
+answer=""
+verdict=unknown
+recommendation="1. **Ship the config block and the title extractor in the same minor release.** Splitting …"
+approach=5 environment=4 findings=7
+open-questions=3 decisions=3 references=7
+
+step line=81 text="Read the drafted `api:` block in `.docz.example.yaml` and enumerate every field it implies…"
+
+step line=83 text="Trace the `ChangelogConfig` precedent end to end to establish what \"purely additive config…"
+
+step line=85 text="For each field, ask what a consumer must *do* with it, and check whether the public surfac…"
+
+step line=87 text="Check DESIGN-0008's ingestion pipeline and DESIGN-0009's route map for assumptions that ad…"
+
+step line=89 text="Grep the public packages for the specific capabilities implied (title extraction, path val…"
+
+component line=98 component="docz" value="`v1.1.0` (frozen `pkg/doczcore`, ADR-0001)"
+
+component line=99 component="Branch" value="`docs/design-api-additional-docs`"
+
+component line=100 component="Precedent" value="DESIGN-0010 / IMPL-0015 (`changelog:` block)"
+
+component line=101 component="Consumers" value="docz-api (DESIGN-0008), docz-site (DESIGN-0009)"
+
+finding line=107 body=808 bytes title="F1. The config block itself is genuinely small"
+  "The `changelog:` precedent is a fair estimate for the `api:` block. Everything `ChangelogC…"
+
+finding line=125 body=2140 bytes title="F2. There is no public way to get a title out of a frontmatter-less markdown file"
+  "This is the finding that breaks the assumption. Every document docz currently describes ha…"
+
+finding line=173 body=940 bytes title="F3. The path-validation rules exist but are not reusable"
+  "`additional_docs` entries are repo-relative paths fetched out of a git tree — byte for b…"
+
+finding line=197 body=1401 bytes title="F4. Additional docs have no id, and the whole downstream contract is keyed on id"
+  "DESIGN-0009's route map addresses a document as: ``` /:owner/:repo/:type/:docId e.g. .../d…"
+
+finding line=231 body=817 bytes title="F5. The ingestion fetcher filters the tree by type dir, so additional docs are invisible to it"
+  "DESIGN-0008 step 1 is explicit: > filter to `.docz.yaml` and blobs under `docs_dir/<type.d…"
+
+finding line=251 body=576 bytes title="F6. Globs cannot be expanded by docz in the consumer's model"
+  "The natural next request after `additional_docs` is `docs/examples/*.md`. docz cannot expa…"
+
+finding line=264 body=398 bytes title="F7. wiki exclude and api additional_docs disagree about examples"
+  "`DefaultConfig()` sets `Wiki.Exclude: []string{\"templates\", \"examples\"}`, and the drafted …"
+
+question 1 line=315 options=0 title="Where should the H1/title extractor live?"
+  resolved=false
+
+question 2 line=344 options=0 title="Should the path-validation rules be shared between changelog.file and additional_docs?"
+  resolved=false
+
+question 3 line=363 options=0 title="Does docz need to expose the URL/route mapping?"
+  resolved=false
+
+decision 1 line=390 question="H1 extractor home" resolution="`docparse.Title(content []byte) string` — new function in `docparse`, returns the first …"
+
+decision 2 line=391 question="Share the path validator" resolution="Extract one unexported `validateRepoRelativePath`; `validateChangelog` and `validateAPI` b…"
+
+decision 3 line=392 question="Expose route mapping" resolution="No — docz stores and validates config only. Route construction is docz-site's; DESIGN-00…"
+
+reference line=438 url="" text="DESIGN-0011 — the `api:` block this investigation supports"
+
+reference line=439 url="" text="DESIGN-0008 §Ingestion pipeline, §Requirements for the docz repo (R1–R9)"
+
+reference line=440 url="" text="DESIGN-0009 §Information architecture and route map"
+
+reference line=441 url="" text="DESIGN-0010 / IMPL-0015 — the `changelog:` block precedent and its path-hardening histor…"
+
+reference line=443 url="" text="ADR-0001 — the five-package public core, whole-package promotion, and the one-definition…"
+
+reference line=445 url="" text="`internal/wiki/titles.go` — the existing, unreachable title logic"
+
+reference line=446 url="" text="`pkg/doczcore/docparse/headings.go:11` — the H1 exclusion"

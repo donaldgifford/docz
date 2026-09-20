@@ -1,0 +1,81 @@
+id="INV-0006" title="Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh" status="Open" inferred=false
+author="Donald Gifford" created="2026-07-03"
+question="For every package the docz CLI is built from — `pkg/doczcore/{config,document}` (public …"
+hypothesis="External consumers need only the parsing/config core plus the two byte-level write primiti…"
+context="ADR-0001 (Proposed) would end the per-consumer promotion drip by moving all five remaining…"
+triggered-by="ADR-0001; DESIGN-0008 (docz-api), DESIGN-0009 (docz-site),"
+conclusion="**Answer: Yes — the hypothesis is confirmed.** The demand-complete public core is exactl…"
+answer=""
+verdict=unknown
+recommendation="1. **Revise ADR-0001 before acceptance**: scope v1.0.0 as the freeze of the four-package c…"
+approach=4 environment=3 findings=7
+open-questions=4 decisions=4 references=7
+
+step line=87 text="Enumerate the exported surface of each package with `go doc -all` (the two public packages…"
+
+step line=89 text="Map `cmd/`'s actual per-symbol usage: `grep -oE '(doctemplate|index|toc|wiki|docwrite)\\.[A…"
+
+step line=92 text="Extract each consumer's requirements from its primary source: DESIGN-0008 Requirements R1\xe2…"
+
+step line=95 text="Diff the requirement sets per package; audit third-party dependencies and `//go:embed` usa…"
+
+component line=105 component="docz tree" value="post-`v0.5.0`, commit `eb5c027` (branch `docs/adr-doczcore-v1-single-core`)"
+
+component line=106 component="Go" value="1.26.4"
+
+component line=107 component="Consumer sources" value="DESIGN-0008 (docz-api), DESIGN-0009 (docz-site, Draft), `docz-v0.6.0-requirements.md` (sdk-booty-sh handoff)"
+
+finding line=113 body=1859 bytes title="Observation 1 — the consumer demand set, from primary sources"
+  "**docz-api** (DESIGN-0008, R1–R9) is read-only and names its exact surface in the R2 tab…"
+
+finding line=150 body=2414 bytes title="Observation 2 — per-package matrix: cmd/ requires vs consumers require"
+  "| Package | `cmd/` requires (non-test call sites) | docz-api | sdk-booty-sh | docz-site | …"
+
+finding line=169 body=1202 bytes title="Observation 3 — the packages nobody outside asks for are also the CLI-shaped ones"
+  "The three unpromoted-by-demand packages are exactly the ones whose APIs encode CLI decisio…"
+
+finding line=191 body=1302 bytes title="Observation 4 — Create is the only coupling between the write side and the template engine"
+  "The single cross-`internal` edge in the tree is `docwrite → template` (`internal/docwrit…"
+
+finding line=215 body=830 bytes title="Observation 5 — toc vs docparse: one concern splits cleanly in half"
+  "`internal/toc` is two concerns in one package: 1. a **heading walk** (`ParseHeadings`, `He…"
+
+finding line=233 body=826 bytes title="Observation 6 — dependency and embed audit: the four-package core is clean"
+  "- After `v0.6.0` R1 (viper removal), the demand-complete core `pkg/doczcore/{config,docume…"
+
+finding line=249 body=586 bytes title="Observation 7 — the wholesale-move failure mode has already happened once, in miniature"
+  "The `v0.5.0` wholesale move of `config` carried some CLI-display helpers into the public, …"
+
+question 1 line=314 options=3 title="Scope of the v1.0 public core?"
+  resolved=true date="2026-07-03" choice="a" note="via the promotion rule adopted in ADR-0001 Decision 1 (\"public by default where demand exi…"
+
+question 2 line=331 options=3 title="Where does Create live at v1.0?"
+  resolved=true date="2026-07-03" choice="b" note="package cohesion beats surface minimalism: splitting `docwrite` to hide one function leave…"
+
+question 3 line=352 options=2 title="One parser — does internal/toc delegate to docparse?"
+  resolved=true date="2026-07-03" choice="a" note="delegate; and the export-lean ADR-0001 revision goes further: the splice itself promotes t…"
+
+question 4 line=369 options=3 title="The already-public CLI-shaped config helpers at v1.0?"
+  resolved=true date="2026-07-03" choice="a" note="keep, consistent with the export-lean rule; document them as CLI-support helpers in the pa…"
+
+decision 1 line=400 question="v1.0 core scope" resolution="(a) as demand floor"
+
+decision 2 line=401 question="`Create` at v1.0" resolution="(b) promote `docwrite` whole"
+
+decision 3 line=402 question="`toc` → `docparse` delegation" resolution="(a) delegate"
+
+decision 4 line=403 question="CLI-shaped `config` helpers" resolution="(a) keep"
+
+reference line=409 url="" text="**ADR-0001** — pkg/doczcore as the single public core (the trigger; this INV grounds its…"
+
+reference line=412 url="" text="**DESIGN-0008** — docz-api: Requirements R1–R9, incl. the exact-symbol R2 table and R8…"
+
+reference line=414 url="" text="**DESIGN-0009** — docz-site: thin client of docz-api; client-side rendering (Decision 3)…"
+
+reference line=417 url="" text="**`docz-v0.6.0-requirements.md`** — sdk-booty-sh handoff: R1 viper-free `config.Load`, R…"
+
+reference line=420 url="" text="**DESIGN-0007 / IMPL-0013** — the `v0.5.0` promotion (read-only stance, minimal-surface …"
+
+reference line=422 url="" text="**INV-0005** — Decision 7 (shared library over re-implemented parser)."
+
+reference line=423 url="" text="Audit method: `go doc -all` per package; `grep -oE '(doctemplate|index|toc|wiki|docwrite)\\…"

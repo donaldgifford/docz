@@ -1,0 +1,95 @@
+id="DESIGN-0001" title="docz-api cross-repo docz registry and ingestion service" status="Approved"
+author="Donald Gifford" created="2026-06-29" inferred=false
+goals=8 non-goals=7 open-questions=13 decisions=0 references=10
+overview len=2294 excerpt="**docz-api** is the Go backend service maintained in this repository. It aggregates the do…"
+background len=1927 excerpt="docz produces structured docs _per repo_. Each repo has a root `.docz.yaml` manifest that …"
+detailed-design len=20458 excerpt="### Service shape and package layout docz-api is a single Go binary (`cmd/docz-api/`) over…"
+api-changes len=7040 excerpt="This is a greenfield service, so \"interface changes\" means the initial HTTP/JSON surface p…"
+data-model len=6723 excerpt="The Postgres schema refines the INV-0005 sketch. All timestamps are `timestamptz`. JSONB c…"
+testing len=2534 excerpt="- **Unit — parsing / ingest mapping.** Given fixture bytes for `.docz.yaml` and a set of…"
+rollout len=2868 excerpt="docz-api is a **greenfield repository**; this document is its seed design. There is no in-…"
+
+goal line=101 text="**Cross-repo registry.** A Postgres store keyed by `(repo, doc_id)` holding every docz document across every onboarded repo, with its frontmatter, cached raw markdown, and `git_sha`."
+goal line=104 text="**Type-agnostic ingestion.** The registry is driven entirely by each repo's `.docz.yaml`. Custom docz types (e.g. `frameworks` / `FW-0001`) ingest identically to the six built-ins, and a type is addressable by its canonical name, its `id_prefix`, or a declared `alias` — the same resolution the CLI uses (DESIGN-0006). The six built-in type names are **never** hardcoded anywhere in the service."
+goal line=110 text="**GitHub App onboarding + incremental refresh.** Repos opt in by installing the app; `push` / `release` webhooks on the default branch drive diff-based partial re-ingest; `content_hash` gates redundant work."
+goal line=113 text="**Raw-markdown caching, not HTML.** The API serves raw markdown plus metadata (Decisions 2 + 3); docz-site renders to HTML client-side."
+goal line=115 text="**Pluggable site-user authentication (Decision 6).** Authentication is provider-based: GitHub (default/preferred), Okta, and Keycloak — all three required. _Authorization_ (which repos a user may read) is out of scope for this iteration and deferred to a future SpiceDB-backed middleware (Decision 10); the enforcement seam is built now so it slots in additively."
+goal line=120 text="**Full-text + faceted search.** A Meilisearch index over `title`/`body` with facets on `repo` / `type` / `status` / `author`."
+goal line=122 text="**A stable, versioned JSON contract** that docz-site (DESIGN-0009) consumes unchanged — the site is built against these endpoints from the first slice."
+goal line=124 text="**A thin vertical slice first (Decision 8).** One hand-onboarded repo → ingest → serve one type, deferring full auth and webhooks, to prove the fetch → parse → upsert → serve loop end to end."
+non-goal line=132 text="**Rendering markdown to HTML.** No `rendered_html` column, no server-side renderer. Rendering is docz-site's job (Decision 3). docz's mdp renderer is intentionally scoped to single-user neovim/terminal use and is not a fit for a server-side multi-tenant renderer."
+non-goal line=136 text="**Non-default branches and PR/preview builds.** The default branch HEAD is the single current version (Decisions 4 + 5). Per-doc version history is a later extension: the plan is to consume each repo's `CHANGELOG.md` as the source of truth for an audit/versions log and surface it in the UI, rather than snapshot on git tags (Decision 12). Ingest already **caches that `CHANGELOG.md` raw** (see Data Model / IMPL-0001 OQ 10) so the source is on hand, but parsing and serving it stay out of scope here."
+non-goal line=143 text="**Authorization (for now).** This iteration ships authentication only; deciding _which_ repos/docs a user may read is deferred to a future SpiceDB-backed middleware (Decision 10). Until then every authenticated user sees all onboarded repos."
+non-goal line=147 text="**Re-implementing docz's parser.** Frontmatter and config parsing come from the DESIGN-0007 shared library only (Decision 7)."
+non-goal line=149 text="**Building docz-site.** The viewer (nav, reader, client-side rendering) is DESIGN-0009 in its own repo. docz-api is strictly the backend."
+non-goal line=151 text="**Per-repo MkDocs/TechDocs.** docz's existing `wiki` command renders one repo as MkDocs; docz-api is deliberately the complementary cross-repo aggregator, not a replacement for per-repo TechDocs."
+non-goal line=154 text="**Write-back to repos.** docz-api is read-only against GitHub content; it never opens PRs or mutates a source repo."
+
+question 1 line=981 options=2 title="Reconcile the API path shape and versioning with docz-site?"
+  unresolved
+
+question 2 line=996 options=2 title="How is the docz parsing library pinned while building?"
+  resolved line=998 date="2026-07-01" choice="" note="DESIGN-0007 shipped as docz `v0.5.0`, so the tag exists up front and no prototyping `repla…"
+
+question 3 line=1019 options=2 title="HTTP router / framework?"
+  unresolved
+
+question 4 line=1029 options=3 title="Postgres access layer?"
+  unresolved
+
+question 5 line=1041 options=2 title="Database migration tool?"
+  unresolved
+
+question 6 line=1050 options=2 title="REST or GraphQL for the JSON API?"
+  unresolved
+
+question 7 line=1061 options=2 title="Synchronous ingest or a background worker?"
+  unresolved
+
+question 8 line=1074 options=2 title="Where are sessions stored?"
+  unresolved
+
+question 9 line=1085 options=2 title="Webhook retry / idempotency strategy?"
+  unresolved
+
+question 10 line=1097 options=2 title="How is Okta/Keycloak group to repo authorization configured?"
+  unresolved
+
+question 11 line=1108 options=2 title="Meilisearch API-key scoping for any direct site access?"
+  unresolved
+
+question 12 line=1120 options=2 title="Tag/release version snapshots now, or stay HEAD-only?"
+  unresolved
+
+question 13 line=1132 options=2 title="Multi-org / multi-tenant model?"
+  unresolved
+
+reference line=1169 url=""
+  text="**INV-0005** — _docz-api and docz-site: centralized cross-repo docz registry and viewer.…"
+
+reference line=1173 url=""
+  text="**DESIGN-0007** — the shared docz parsing library (`pkg/doczcore/config` + `pkg/doczcore…"
+
+reference line=1177 url=""
+  text="**DESIGN-0008** — the seed copy of this design that originated in the docz repo; this do…"
+
+reference line=1179 url=""
+  text="**DESIGN-0009** — _docz-site_, the front-end consumer of this API (nav, search, client-s…"
+
+reference line=1183 url=""
+  text="**DESIGN-0006 / IMPL-0012** — docz custom document types; why the registry must be type-…"
+
+reference line=1185 url="https://docs.github.com/en/apps"
+  text="**GitHub Apps** — installation tokens, permissions, and webhook delivery: <https://docs.…"
+
+reference line=1187 url="https://docs.github.com/en/rest/git/trees"
+  text="**GitHub Git Trees API** — recursive tree + blob fetch without a checkout (Decision 1): …"
+
+reference line=1189 url="https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries"
+  text="**GitHub webhook signature verification** — `X-Hub-Signature-256` / HMAC-SHA256: <https:…"
+
+reference line=1192 url="https://www.meilisearch.com/docs"
+  text="**Meilisearch** — searchable/filterable/sortable attributes, facets, and tenant tokens: …"
+
+reference line=1194 url="https://openid.net/developers/how-connect-works/"
+  text="**OpenID Connect (OIDC)** — authorization-code flow for the Okta/Keycloak providers: <ht…"

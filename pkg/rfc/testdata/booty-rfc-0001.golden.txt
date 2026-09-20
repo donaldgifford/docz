@@ -1,0 +1,104 @@
+id="RFC-0001" title="Agent Dev Kit on the Agentic Go Framework" status="Draft" inferred=false
+author="Donald Gifford" created="2026-05-10"
+summary="Build an **Agent Dev Kit (ADK)** on top of the agentic Go framework — the opinionated, b…"
+problem="The agentic Go framework will give us a clean library for building agents. It will not giv…"
+proposal="The ADK is six components, each built on the agentic framework: 1. **`adk-server`** — HT…"
+alternatives=0 risks=9 criteria=11 open-questions=0 references=10
+
+risk line=483
+  risk="Scope creep — ADK becomes a shelley clone with extra steps"
+  impact="High — wasted effort, no differentiation"
+  likelihood="Medium"
+  mitigation="Stay disciplined: ADK is the org-fit layer, not a coding-agent product. Reference agents are reference, not the focus"
+
+risk line=484
+  risk="Multi-tenant security mistake (cross-tenant data leak)"
+  impact="Critical — privacy / compliance"
+  likelihood="Low with RLS"
+  mitigation="Postgres RLS at the schema layer; security review before each tenant-touching change; integration tests that explicitly try to cross tenants"
+
+risk line=485
+  risk="Framework churn breaking the ADK"
+  impact="Medium — stop-the-world refactors"
+  likelihood="Medium until framework v1.0"
+  mitigation="ADK pins to framework versions; framework follows semver; ADK's CI runs against framework HEAD nightly to catch breakage early"
+
+risk line=486
+  risk="Becoming the bottleneck for new agents"
+  impact="High — slows down agent dev"
+  likelihood="Medium"
+  mitigation="Reference agents must be runnable without ADK changes; framework + bring-your-own-server is always a supported escape hatch"
+
+risk line=487
+  risk="Vault JIT integration complexity"
+  impact="Medium — secret-management bugs"
+  likelihood="Medium"
+  mitigation="Reuse the agent platform's existing pattern verbatim; no new secret model in the ADK"
+
+risk line=488
+  risk="K8s controller bugs orphan harness pods"
+  impact="Medium — resource leak"
+  likelihood="Medium"
+  mitigation="Owner references; finalizers; periodic reconciliation; existing operator patterns from the homelab"
+
+risk line=489
+  risk="Reference agents diverge from production agents"
+  impact="Medium — examples become stale"
+  likelihood="High over time"
+  mitigation="Reference agents are the actual production agents (triage bot is shipped from the example dir); no parallel \"demo\" implementations"
+
+risk line=490
+  risk="Skill registry signing key compromise"
+  impact="High — supply-chain attack on agents"
+  likelihood="Low"
+  mitigation="Sigstore + transparency log; key rotation runbook; audit log of every skill resolution"
+
+risk line=491
+  risk="ADK ships before framework hits v1 stability"
+  impact="Medium — public surface churn"
+  likelihood="High in early phases"
+  mitigation="ADK v0.x explicitly experimental; no public API guarantees until framework v1"
+
+criterion line=499 executable=false command=""
+  text="Triage bot runs identically on the ADK and standalone (modulo config); the agent code is unaware of the deployment context"
+criterion line=501 executable=false command=""
+  text="Time from `adk new agent` to a running first iteration: < 10 minutes for a developer who has never touched the ADK before"
+criterion line=506 executable=false command=""
+  text="Tenant isolation verified by security review (RLS, audit log, JIT scope verification)"
+criterion line=508 executable=false command=""
+  text="Triage bot and price tracker both deployed via CRDs in homelab cluster, observable in Langfuse, with cost attribution by tenant"
+criterion line=513 executable=false command=""
+  text="Coding agent runs in Firecracker microVM (production-shape) and Apple Virtualization (dev-shape) with identical observable behavior on a fixed test input"
+criterion line=519 executable=false command=""
+  text="≥ 10 versioned, signed skills in the registry"
+criterion line=520 executable=false command=""
+  text="≥ 3 production agents on the ADK (triage, investigator, tracker port, plus any new ones since)"
+criterion line=522 executable=false command=""
+  text="Time-to-first-prototype for a new agent author: < 1 day for chat- shaped, < 2 days for code-execution-shaped"
+criterion line=527 executable=false command=""
+  text="Every new agent built in the org uses the ADK by default; building outside the ADK requires a justification doc"
+criterion line=529 executable=false command=""
+  text="Time to deploy a new agent to production: days, not weeks"
+criterion line=530 executable=false command=""
+  text="Single source of truth for agent observability, cost attribution, and audit (Langfuse + Postgres audit log)"
+
+reference line=537 url=""
+  text="Forthcoming: Agentic Go Framework RFC (sibling, the foundation this RFC layers on top of)"
+reference line=539 url=""
+  text="Forthcoming: Sandbox Options INV (sibling, conclusions feed Phase 3 defaults)"
+reference line=540 url=""
+  text="Forthcoming: AWS Access Triage Slack Bot RFC (sibling; first reference agent)"
+reference line=541 url=""
+  text="Internal: Agent platform RFC + DESIGN suite (AgentType / AgentRun CRDs, harness containers, Vault JIT, River queue)"
+reference line=543 url=""
+  text="Internal: Backstage IDP catalog (skill registry metadata source)"
+reference line=544 url="https://github.com/boldsoftware/shelley"
+  text="External: [boldsoftware/shelley](https://github.com/boldsoftware/shelley) — primary inspiration, with the divergences documented in the comparison table"
+reference line=546 url="https://github.com/boldsoftware/sketch"
+  text="External: [boldsoftware/sketch](https://github.com/boldsoftware/sketch) — shelley's predecessor; the Sketch coding-agent product"
+reference line=548 url="https://github.com/Code-Hex/vz"
+  text="External: [Code-Hex/vz](https://github.com/Code-Hex/vz) — Apple Virtualization framework Go binding (Phase 3 dependency)"
+reference line=550 url="https://github.com/firecracker-microvm/firecracker-go-sdk"
+  text="External: [firecracker-go-sdk](https://github.com/firecracker-microvm/firecracker-go-sdk) — Firecracker Go SDK (Phase 3 dependency)"
+reference line=553 url=""
+  text="External: Postgres RLS documentation — for tenant isolation patterns"

@@ -1,0 +1,49 @@
+id="INV-0003" title="Init and Update Should Respect Config-Listed Types Only" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-05-20"
+question="When `.docz.yaml` lists only a subset of doc types (e.g. only `rfc`), should `docz init` a…"
+hypothesis="Init and update both iterate `config.ValidTypes()` (the hardcoded built-in list) and check…"
+context="A user noticed that `docz init` and `docz update` ignore the apparent intent of their `.do…"
+triggered-by="User report in repo working session, 2026-05-20."
+conclusion="**Answer:** Yes, the user's report is a real bug-shaped behavior, not a misconfiguration. …"
+answer="Yes, the user's report is a real bug-shaped behavior, not a"
+verdict=yes
+recommendation="Adopt option **A**, and ship it as a small, standalone follow-up — call it IMPL-0010 —…"
+approach=4 environment=4 findings=3
+open-questions=0 decisions=0 references=6
+
+step line=86 text="Reproduce the bug in an empty temp directory with an rfc-only `.docz.yaml`."
+
+step line=88 text="Trace the data flow through `config.Load`, viper's merge, and the command-side iteration i…"
+
+step line=91 text="Compare against IMPL-0006's planned changes (defaults template, sparse `setDefaults`, `Ena…"
+
+step line=94 text="Enumerate options for fixing the semantics and pick a recommendation."
+
+component line=102 component="docz binary" value="`v0.0.12-8-gf29a7b8` (post-IMPL-0005 merge)"
+
+component line=103 component="Go runtime" value="1.25.7"
+
+component line=104 component="Config layer" value="`viper v1.21.0`"
+
+component line=105 component="Branch" value="`docs/inv-0003-init-respects-config`"
+
+finding line=111 body=600 bytes title="Reproduction"
+  "Empty temp dir, `.docz.yaml` mentions only `rfc`, then `docz init`: ```yaml # .docz.yaml d…"
+
+finding line=142 body=907 bytes title="Root cause"
+  "Three contributing facts: 1. `config.DefaultConfig()` at `internal/config/config.go:66` re…"
+
+finding line=163 body=780 bytes title="Why IMPL-0006 alone does not fix this"
+  "IMPL-0006 Phase 1 swaps `DefaultConfig()` from a hand-built Go struct to a parse of the em…"
+
+reference line=277 url="" text="INV-0002 — Architectural Review and Cleanup Opportunities, finding F1 (defaults drift) a…"
+
+reference line=279 url="" text="IMPL-0006 — Correctness and Duplication Cleanup, Phases 1 and 5"
+
+reference line=280 url="" text="`internal/config/config.go:66` — `DefaultConfig()`"
+
+reference line=281 url="" text="`internal/config/config.go:291` — `setDefaults`"
+
+reference line=282 url="" text="`cmd/init.go:36`, `cmd/update.go:35`, `cmd/list.go:52`, `cmd/wiki.go:309`"
+
+reference line=283 url="" text="Viper merge semantics — https://github.com/spf13/viper#establishing-defaults"

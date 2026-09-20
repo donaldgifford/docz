@@ -1,0 +1,104 @@
+id="RFC-0002" title="AWS Access Triage Slack Bot" status="Draft" inferred=false
+author="Donald Gifford" created="2026-05-10"
+summary="Stand up a Slack bot in `#aws-access-support` that triages AWS access errors pasted by dev…"
+problem="The org has ~1,500 developers across 200+ AWS accounts authenticating via Okta-federated S…"
+proposal="A Slack bot in `#aws-access-support` (and bot-allowed in any team channel on @-mention) th…"
+alternatives=0 risks=9 criteria=14 open-questions=0 references=7
+
+risk line=491
+  risk="Hallucinated SCP / role / policy names"
+  impact="High — incorrect routing, dev sent on wild goose chase"
+  likelihood="Medium without controls"
+  mitigation="All specifics must come from tool results; structured tool I/O; periodic Langfuse evals on assertion-grounding"
+
+risk line=492
+  risk="Pasted secrets persisted in logs"
+  impact="High — credential exposure"
+  likelihood="High without controls"
+  mitigation="Secret scanner runs first; original paste never persisted; redacted version only"
+
+risk line=493
+  risk="Confident wrong answers eroding trust"
+  impact="High — devs stop using the bot"
+  likelihood="Medium"
+  mitigation="Confidence thresholds, explicit \"I'm not sure\" path, escalate-to-human always one click away"
+
+risk line=494
+  risk="Cross-tenant info leakage"
+  impact="High — privacy / compliance"
+  likelihood="Medium"
+  mitigation="Identity-aware filtering on every tool result; per-channel allowlist; audit trail"
+
+risk line=495
+  risk="Prompt injection via paste content"
+  impact="Medium — bot misbehavior"
+  likelihood="High (hostile pastes are easy)"
+  mitigation="Pasted content as tool-result data only, never appended to system prompt; structural separation"
+
+risk line=496
+  risk="LLM cost runaway under volume spike"
+  impact="Medium — budget overrun"
+  likelihood="Medium"
+  mitigation="Phase 1 is LLM-free; Phase 2 has bounded tool budget; per-day cost cap with auto-degrade to deterministic-only"
+
+risk line=497
+  risk="Bot becomes critical path, fails noisily"
+  impact="Medium — outages block support"
+  likelihood="Low"
+  mitigation="Bot is additive to existing human triage, not a replacement; graceful degradation to \"post a message saying I'm down\""
+
+risk line=498
+  risk="SCP / framework owner data goes stale"
+  impact="Medium — wrong routing"
+  likelihood="Medium"
+  mitigation="Owner registry sourced from Backstage catalog, single source of truth; periodic reconciliation"
+
+risk line=499
+  risk="Devs use bot to probe other teams' access"
+  impact="Low — abuse"
+  likelihood="Low"
+  mitigation="Identity-aware filtering, audit trail, channel allowlist"
+
+criterion line=507 executable=false command=""
+  text="≥50% of threads resolved self-serve in <60 seconds median"
+criterion line=508 executable=false command=""
+  text="Pattern false-positive rate <5%, measured via user follow-up (\"that didn't fix it\") signal"
+criterion line=510 executable=false command=""
+  text="Zero secret-leak incidents in monthly audit"
+criterion line=511 executable=false command=""
+  text="100% of threads logged with linked identity for audit"
+criterion line=515 executable=false command=""
+  text="≥75% of threads resolved without human escalation"
+criterion line=516 executable=false command=""
+  text="Median time-to-first-useful-reply <10 seconds"
+criterion line=517 executable=false command=""
+  text="Agent loop cost per thread <$0.10 average"
+criterion line=518 executable=false command=""
+  text="Agent hallucination rate <1% on Langfuse evals (sample of 100/week)"
+criterion line=522 executable=false command=""
+  text="Deep investigation invoked on <10% of threads (the residual hard cases, not the bulk)"
+criterion line=524 executable=false command=""
+  text="Cited cause in ≥80% of policy-change tickets, traceable to the tool result"
+criterion line=528 executable=false command=""
+  text="Median time from blocked dev → correct exception ticket open with approver paged: <5 minutes"
+criterion line=530 executable=false command=""
+  text="≥90% of exception tickets routed to the correct framework owner on first try"
+criterion line=534 executable=false command=""
+  text="50% reduction in median time-to-resolve for AWS access tickets (baseline measured pre-rollout from JSM)"
+criterion line=536 executable=false command=""
+  text="Reduction in `#aws-access-support` human-triager hours per week (track via Slack analytics + on-call rotation surveys)"
+
+reference line=543 url="https://github.com/tenable/access-undenied-aws"
+  text="Upstream: [tenable/access-undenied-aws](https://github.com/tenable/access-undenied-aws) — Python policy-chain analyzer, source of inspiration for Phase 3's `deep_investigate` tool"
+reference line=547 url=""
+  text="Related (forthcoming): RFC for the Go port of access-undenied-aws, which becomes the `deep_investigate` tool"
+reference line=549 url=""
+  text="Related (forthcoming): RFC for the agentic Go framework / SDK that this bot will be built on (extracted from the server price tracker's interface-driven LLM client)"
+reference line=552 url=""
+  text="Internal: Agent platform RFC + DESIGN suite (AgentType / AgentRun CRDs, harness containers, Vault JIT) — this bot is a candidate first consumer"
+reference line=554 url=""
+  text="Internal: Wiz operator RFC + Backstage-to-Wiz sync — same identity / ownership data flows"
+reference line=556 url=""
+  text="Internal: docz wiki (MkDocs) — KB search target for the `kb_search` tool"
+reference line=557 url="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html"
+  text="AWS docs: [Service Control Policies](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html), [Permissions Boundaries](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html), [DecodeAuthorizationMessage](https://docs.aws.amazon.com/STS/latest/APIReference/API_DecodeAuthorizationMessage.html)"

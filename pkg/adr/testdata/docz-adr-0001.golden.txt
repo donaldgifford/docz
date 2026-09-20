@@ -1,0 +1,91 @@
+id="ADR-0001" title="pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)" status="Accepted" inferred=false
+author="Donald Gifford" created="2026-07-03"
+summary=""
+context="docz began as a single CLI binary with all logic under `internal/`. As external consumers …"
+decision="> Revised 2026-07-03 after the INV-0006 per-package demand audit and design > review. The …"
+consequences positive=5 negative=4 neutral=3
+alternatives=4 open-questions=7 references=5
+
+positive line=208
+  text="**One coherent public surface**, designed as a whole rather than accreted per-consumer. Consumers import exactly the subpackage they need."
+
+positive line=210
+  text="**Ends the promotion drip.** No more one-off promotion PRs; the next consumer need is already satisfied (or is a normal additive minor)."
+
+positive line=212
+  text="**`cmd/` becomes a clean, thin shell** — a working reference implementation of the library and a forcing function that keeps logic out of the CLI layer."
+
+positive line=214
+  text="**Cheap moment to do it.** The dependency surface is already stdlib + `yaml.v3` (viper leaves in the same release); the import graph is shallow; the move is mostly `git mv` + repoint. Pre-1.0 is the last window where the API can be reshaped without a major bump."
+
+positive line=218
+  text="**An explicit stability guarantee** external consumers can pin — the point of a `v1.0.0`."
+
+negative line=225
+  text="**`Create` and the `toc` splice become contract without a consumer.** Promoting `docwrite` whole (cohesion) freezes `Create`'s observable conventions — the `NNNN-slug.md` filename shape, the auto-increment scan, the template-resolution tiers — and promoting `toc` freezes the splice API (`UpdateFiles` and its report categories included) before any external caller exists. Mitigated: options/result/report structs evolve additively, and the filename and ID conventions are already de facto frozen via the public `document.DoczFilePattern`."
+
+negative line=233
+  text="**Consumers of `docwrite` compile the embed.** The `internal/template` dependency rides along in builds (not in the API). The cost is a handful of embedded markdown templates plus stdlib `text/template` — negligible, but nonzero for a consumer that only wants `SetStatus`."
+
+negative line=237
+  text="**Support burden.** Public APIs invite bug reports and feature requests against code that was previously ours to change freely — now scoped to the five core packages rather than everything."
+
+negative line=240
+  text="**A softer \"single core\" story.** The CLI is *not* a pure `pkg/doczcore` consumer; contributors must learn the rule (\"presentation stays internal\") rather than a flat \"everything is public.\""
+
+neutral line=253
+  text="**Dependency graph barely changes.** With viper removed in this release the public core depends on `yaml.v3` + stdlib only; `docparse`, `toc`, and the `docwrite` splice primitives are stdlib-only, and per-subpackage imports mean a consumer of `document` compiles none of the CLI's internal machinery."
+
+neutral line=258
+  text="**Version jump is bookkeeping.** The `major` label drives `v1.0.0` through the existing `pr-semver-bump` + goreleaser automation, same mechanism as prior tags."
+
+neutral line=260
+  text="**No CLI behavior change.** This is a relocation + freeze, not a feature change."
+
+alternative line=313 label="a" title="Status quo — promote on demand."
+  text="Keep `internal/` as the default and promote a package only when a consumer needs it and it…"
+
+alternative line=318 label="b" title="Separate `doczcore` module"
+  text="(`github.com/donaldgifford/docz-core`) with its own version line. *Pros:* fully decouples …"
+
+alternative line=322 label="c" title="Flat single `pkg/doczcore` package."
+  text="Collapse everything into one package. *Pros:* one import. *Cons:* no per-subpackage tree-s…"
+
+alternative line=325 label="d" title="This ADR — subpackage family under `pkg/doczcore`, v1.0 freeze."
+  text="Promote the remaining logic packages into the existing `pkg/doczcore/*` namespace and comm…"
+
+question 1 line=342 title="Package granularity — subpackage family or one flat package?"
+  options=2 [b c] resolved={line=344 date="2026-07-03" choice="a" note="implied by the per-package promotion rule (Decision 1) and the INV-0006 per-package audit."}
+
+question 2 line=356 title="Sequencing against the in-flight v0.6.0?"
+  options=2 [b c] resolved={line=358 date="2026-07-03" choice="b" note="amended by fact-check — the premise of (a) was wrong: nothing of the v0.6.0 slate exists…"}
+
+question 3 line=371 title="How do we treat the CLI-shaped packages (template, index, wiki) at v1.0?"
+  options=3 [b c d] resolved={line=373 date="2026-07-03" choice="" note="none of the drafted options — they stay `internal/` (zero demand, INV-0006), while `docw…"}
+
+question 4 line=389 title="toc vs docparse overlap in the public API?"
+  options=3 [b c d] resolved={line=391 date="2026-07-03" choice="a" note="export-lean: the splice is document machinery (bytes-in content transforms), not CLI prese…"}
+
+question 5 line=405 title="What remains in internal/ after the move?"
+  options=2 [b c] resolved={line=407 date="2026-07-03" choice="a" note="strengthened — `internal/` stays *populated* (`template`, `index`, `toc` splice, `wiki`)…"}
+
+question 6 line=418 title="Embedded templates — how public?"
+  options=2 [b c] resolved={line=420 date="2026-07-03" choice="" note="moot — `template` never promotes; the embed stays private behind the `internal/` boundar…"}
+
+question 7 line=431 title="Post-1.0 compatibility & deprecation policy?"
+  options=2 [b c] resolved={line=433 date="2026-07-03" choice="a" note="simplified — roll forward. Standard semver coverage as drafted; breaking changes ship in…"}
+
+reference line=469 url=""
+  text="**INV-0006** — per-package core requirements audit (docz CLI vs docz-api, docz-site, sdk-booty-sh): the demand evidence behind the revised scope."
+
+reference line=471 url=""
+  text="**IMPL-0014** — the implementation plan for this ADR (all six phases of the single `v1.0.0` release). Note: the IMPL-0014 id was once informally reserved for a standalone-`v0.6.0` plan that was never written; the id now belongs to the v1.0.0 plan."
+
+reference line=475 url=""
+  text="**ADR context / prior art** — DESIGN-0007 (`pkg/doczcore` public surface, read-only stance), IMPL-0013 (`v0.5.0` promotion), and the `docz-v0.6.0-requirements.md` handoff (R1–R3), whose slate ships inside `v1.0.0`."
+
+reference line=479 url=""
+  text="**Consumers** — DESIGN-0008 (docz-api), DESIGN-0009 (docz-site), the `sdk-booty-sh` v0.6.0 requirements handoff (loop harness)."
+
+reference line=481 url=""
+  text="**Release mechanism** — `pr-semver-bump` (`major` label → `v1.0.0`) + goreleaser, same path as prior tags."
