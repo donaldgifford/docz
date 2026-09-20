@@ -701,7 +701,7 @@ end of this phase `internal/` no longer exists.
       to the promoted packages with no logic change; remove the now-empty
       `internal/` directory.
       verify: `test ! -d internal && go test ./cmd/...`
-- [ ] Extend `test/consumer/doc.go`: `doctemplate.EmbeddedDocumentTemplate`,
+- [x] Extend `test/consumer/doc.go`: `doctemplate.EmbeddedDocumentTemplate`,
       `doctemplate.EmbeddedSchema`, `index.Scaffold`, and
       `wiki.FilenameTitle`, one call each.
       verify: `make test-consumer`

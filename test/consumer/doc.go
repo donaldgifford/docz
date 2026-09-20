@@ -8,6 +8,11 @@
 // document, docparse, docwrite, toc. IMPL-0018 Phase 1 adds the v2 type
 // layer: pkg/doczcore/kinds and pkg/doczcore/validate, plus the five type
 // packages pkg/rfc, pkg/adr, pkg/design, pkg/impl, and pkg/investigation.
-// Every call here is bytes in and values out, because docz-api reads a
-// document through the GitHub API and has no checkout to point at.
+// Phase 2 adds the three promotions that emptied internal/:
+// pkg/doczcore/doctemplate, pkg/doczcore/index, and pkg/wiki. Fifteen pkg/
+// packages in all.
+//
+// Almost every call here is bytes in and values out, because docz-api reads a
+// document through the GitHub API and has no checkout to point at. The few
+// that take a path take a t.TempDir(), never a path in this repo.
 package consumer
