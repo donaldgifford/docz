@@ -373,6 +373,14 @@ Ship behind the existing `dont-release` PR label so the rfc-api
 Action can be coordinated with the next docz release.
 <!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
+## Open Questions
+
+None outstanding. Every question this design raised was answered in the
+2026-06-01 review before implementation began; the ten topics and the option
+chosen for each are recorded in [Decisions](#decisions) below.
+<!--docz:open-questions:end-->
+
 <!--docz:decisions:start-->
 ## Decisions
 

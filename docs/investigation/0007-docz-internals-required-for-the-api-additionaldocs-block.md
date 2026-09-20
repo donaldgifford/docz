@@ -274,7 +274,7 @@ inconsistency.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer: No — this is not purely additive config.** The config block is as
+**Answer:** No — this is not purely additive config. The config block is as
 small as hypothesized (F1), but the feature as drafted needs one genuine
 addition to the frozen public surface and one internal refactor:
 

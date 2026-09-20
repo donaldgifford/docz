@@ -87,6 +87,15 @@ Dogfooding `docz` on its own repository revealed:
 6. Propose changes and open questions
 <!--docz:approach:end-->
 
+<!--docz:environment:start-->
+## Environment
+
+Not applicable. Every step of the approach was a read of the docz source tree
+at the branch point — `cmd/wiki.go`, `cmd/init.go`, and
+`internal/template/embed.go` — with nothing built, run, or configured, so no
+version or setup detail affects the findings below.
+<!--docz:environment:end-->
+
 <!--docz:findings:start-->
 ## Findings
 

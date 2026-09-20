@@ -266,7 +266,7 @@ design so the two features don't appear to overlap.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer: Yes — feasible, and simpler than rfc-api.** Because docz standardizes
+**Answer:** Yes — feasible, and simpler than rfc-api. Because docz standardizes
 location (`.docz.yaml`), structure (typed dirs), and metadata (frontmatter), the
 ingestion side of docz-api is largely mechanical, and the rfc-api/rfc-site
 architecture (GitHub App → Postgres registry → Meilisearch → viewer, refreshed by

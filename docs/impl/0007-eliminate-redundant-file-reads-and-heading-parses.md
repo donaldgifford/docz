@@ -288,6 +288,7 @@ actually paid the duplicate-parse cost.
 - [x] Open PR with `dont-release` label — PR #43
 - [x] INV-0002 status already `In Progress`; no flip needed until all
       waves merge
+<!--docz:tasks:end-->
 
 Post-change numbers (Apple M5 Max, Go 1.25.7, medians of 3 runs):
 
@@ -322,7 +323,6 @@ remaining time in `runUpdate` is `os.WriteFile` per touched document
 and `index.UpdateReadme`'s splice work, neither of which is the
 subject of this wave. The architectural goal — halve the file-read
 count, surface heading metadata in the return value — is met.
-<!--docz:tasks:end-->
 
 <!--docz:criteria:start-->
 #### Success Criteria

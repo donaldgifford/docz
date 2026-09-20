@@ -416,6 +416,16 @@ Purely additive, with one guardrail to call out:
 - Ships in a normal minor release; no config migration.
 <!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
+## Open Questions
+
+None outstanding. Every question this design raised was answered in the
+2026-06-17 review before implementation began; the eight topics and the option
+chosen for each are recorded in [Decisions](#decisions) below. The one item
+deliberately left for later — a per-type `index_template:` key — is deferred
+there rather than open here.
+<!--docz:open-questions:end-->
+
 <!--docz:decisions:start-->
 ## Decisions
 

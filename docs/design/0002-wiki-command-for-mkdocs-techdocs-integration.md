@@ -45,6 +45,8 @@ created: 2026-03-11
   - [Nav Serialization](#nav-serialization)
   - [Title Extraction from Documents](#title-extraction-from-documents)
 - [Testing Strategy](#testing-strategy)
+- [Migration / Rollout Plan](#migration--rollout-plan)
+- [Open Questions](#open-questions)
 - [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
@@ -126,6 +128,7 @@ Key constraints:
 - The title in nav can differ from the document title
 <!--docz:background:end-->
 
+<!--docz:api-changes:start-->
 ## CLI Interface
 
 ### Command Structure
@@ -213,7 +216,9 @@ This is controlled by a new config key:
 wiki:
   auto_update: true   # default: true if mkdocs.yml exists
 ```
+<!--docz:api-changes:end-->
 
+<!--docz:detailed-design:start-->
 ## Nav Generation
 
 ### Directory Scanning
@@ -332,7 +337,9 @@ Welcome to the documentation for <site_name>.
   `wiki update` errors with a message to run `wiki init` first
 - **Excluded directories** — `templates/` and `examples/` are excluded by
   default (configurable)
+<!--docz:detailed-design:end-->
 
+<!--docz:data-model:start-->
 ## Configuration
 
 ### New Config Keys
@@ -359,6 +366,7 @@ type WikiConfig struct {
     NavTitles  map[string]string `mapstructure:"nav_titles"  yaml:"nav_titles"`
 }
 ```
+<!--docz:data-model:end-->
 
 ## Implementation
 
@@ -434,6 +442,21 @@ For non-docz markdown files, use a two-pass approach:
 - **Integration tests** for `wiki update` (scans real directories, writes nav)
 - **Golden file tests** for nav output given a known directory structure
 <!--docz:testing:end-->
+
+<!--docz:rollout:start-->
+## Migration / Rollout Plan
+
+No migration is required. The command group is additive — a repo with no
+`mkdocs.yml` is unaffected until it runs `docz wiki init`, and `wiki update`
+rewrites only the `nav:` key, leaving every other field in place.
+<!--docz:rollout:end-->
+
+<!--docz:open-questions:start-->
+## Open Questions
+
+None remain open. The questions this design raised were settled before
+implementation and are recorded under Decisions below.
+<!--docz:open-questions:end-->
 
 <!--docz:decisions:start-->
 ## Decisions

@@ -40,6 +40,21 @@ created: 2026-07-03
 Accepted (2026-07-03 — all seven open questions resolved; implemented by
 IMPL-0014)
 
+<!--docz:summary:start-->
+## Summary
+
+Establish `pkg/doczcore` as docz's single public core: any package an external
+consumer requires is promoted **whole** out of `internal/` unless a documented
+reason keeps the machinery private, which makes the frozen surface
+`pkg/doczcore/{config,document,docparse,docwrite,toc}` and leaves `template`,
+`index`, and `wiki` in `internal/` as the CLI's private half. `cmd/` plus
+`internal/` stay the CLI product — cobra wiring, the `Runner`, flags, output
+formatting, and exit codes only — while `pkg/doczcore` becomes the library
+product. All of it ships in a single `v1.0.0`, the first release whose exported
+identifiers under `pkg/doczcore/*` are a semver-governed compatibility
+contract, and it changes no CLI command, output, or exit code.
+<!--docz:summary:end-->
+
 <!--docz:context:start-->
 ## Context
 

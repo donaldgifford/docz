@@ -119,10 +119,40 @@ func TestDocument_TemplatesValidateCleanWithoutInference(t *testing.T) {
 	}
 }
 
+// stripDoczMarkers removes every `docz:` marker line from a document, so a
+// migrated document can still be read the way an unmigrated one is.
+//
+// Only the `docz:` pairs. The `toc` and `index` spans are generated sections
+// rather than regions an author writes, and taking their markers away would
+// report a missing ToC instead of exercising inference.
+func stripDoczMarkers(body []byte) []byte {
+	lines := strings.Split(string(body), "\n")
+	kept := make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "<!--docz:") && strings.HasSuffix(trimmed, "-->") {
+			continue
+		}
+
+		kept = append(kept, line)
+	}
+
+	return []byte(strings.Join(kept, "\n"))
+}
+
 // TestDocument_OverTheCorpus runs the validator over this repo's own
-// documents. None carries markers, so every one exercises inference, and
-// what it reports has to be proportionate: a validator whose output a
-// maintainer learns to ignore is not a validator.
+// documents with their markers taken back out, and what it reports has to be
+// proportionate: a validator whose output a maintainer learns to ignore is not
+// a validator.
+//
+// The corpus carried no markers when this test was written and carries them
+// everywhere since IMPL-0018 Phase 5 migrated it, which would leave inference
+// untested here. Stripping them is deliberate rather than a workaround: the
+// claim DESIGN-0015 §6 rests on is that a document nobody has migrated still
+// reads, and the honest way to keep testing that against real prose is to
+// un-migrate a real document. Reading `docs/` live is the point — the corpus
+// grows, and inference has to keep up with what people actually write.
 func TestDocument_OverTheCorpus(t *testing.T) {
 	t.Parallel()
 
@@ -150,7 +180,8 @@ func TestDocument_OverTheCorpus(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got := validate.Document(body, optionsFor(t, tt.typ, filepath.Base(paths[0])))
+			got := validate.Document(stripDoczMarkers(body),
+				optionsFor(t, tt.typ, filepath.Base(paths[0])))
 
 			codes := make(map[string]int, len(got))
 			for _, f := range got {

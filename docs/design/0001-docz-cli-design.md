@@ -12,6 +12,7 @@ created: 2026-02-22
 <!--toc:start-->
 - [Problem Statement](#problem-statement)
 - [Proposed Solution](#proposed-solution)
+- [Goals](#goals)
 - [Document Types](#document-types)
 - [CLI Interface](#cli-interface)
   - [Command Structure](#command-structure)
@@ -46,8 +47,10 @@ created: 2026-02-22
 - [Testing Strategy](#testing-strategy)
 - [Future Considerations](#future-considerations)
 - [Resolved Decisions](#resolved-decisions)
+- [References](#references)
 <!--toc:end-->
 
+<!--docz:background:start-->
 ## Problem Statement
 
 Managing standardized documentation across repositories is painful. The previous
@@ -65,7 +68,9 @@ several problems:
 4. **No Claude Code integration** -- The scripts couldn't serve as Claude Code
    skills, so AI-assisted document creation required manually copying template
    contents into prompts.
+<!--docz:background:end-->
 
+<!--docz:overview:start-->
 ## Proposed Solution
 
 Build `docz` as a single Go binary that:
@@ -80,7 +85,16 @@ Build `docz` as a single Go binary that:
   with a table of documents, their statuses, and links.
 - **Exports templates** for use by Claude Code skills, enabling AI-assisted
   document authoring that calls `docz` under the hood.
+<!--docz:overview:end-->
 
+<!--docz:goals:start-->
+## Goals
+
+This design predates the template's Goals section; its goals are the five
+behaviours listed under Proposed Solution above.
+<!--docz:goals:end-->
+
+<!--docz:data-model:start-->
 ## Document Types
 
 | Type | Directory | Purpose | Status Values |
@@ -89,7 +103,9 @@ Build `docz` as a single Go binary that:
 | ADR | `docs/adr/` | Architecture decision records for specific technical decisions | Proposed, Accepted, Deprecated, Superseded |
 | DESIGN | `docs/design/` | Detailed design documents for feature implementation | Draft, In Review, Approved, Implemented, Abandoned |
 | IMPL | `docs/impl/` | Implementation plans with concrete tasks and milestones | Draft, In Progress, Completed, Paused, Cancelled |
+<!--docz:data-model:end-->
 
+<!--docz:api-changes:start-->
 ## CLI Interface
 
 ### Command Structure
@@ -253,7 +269,9 @@ Templates are resolved in this order (first match wins):
 
 This means a repo can override just one type's template while using defaults
 for the rest.
+<!--docz:api-changes:end-->
 
+<!--docz:detailed-design:start-->
 ## Template System
 
 ### Placeholder Variables
@@ -779,7 +797,9 @@ arithmetic.
   empty table).
 - `docz update` silently skips files without YAML frontmatter (no error, no
   fallback parsing).
+<!--docz:detailed-design:end-->
 
+<!--docz:rollout:start-->
 ## Migration from Bash Scripts
 
 Users migrating from the bash-based approach:
@@ -799,6 +819,7 @@ Users migrating from the bash-based approach:
 | `./tools/docs/create-rfc.sh "Title"` | `docz create rfc "Title"` |
 | `./tools/docs/update-adr-readme.sh` | `docz update adr` |
 | `./tools/docs/update-rfc-readme.sh` | `docz update rfc` |
+<!--docz:rollout:end-->
 
 <!--docz:testing:start-->
 ## Testing Strategy
@@ -813,6 +834,7 @@ Users migrating from the bash-based approach:
   output against checked-in expected files.
 <!--docz:testing:end-->
 
+<!--docz:non-goals:start-->
 ## Future Considerations
 
 These are explicitly **out of scope** for v1 but noted for later:
@@ -830,7 +852,9 @@ These are explicitly **out of scope** for v1 but noted for later:
   Claude Code plugin, following the official plugin setup. Skills will call
   the `docz` CLI to get templates, create documents, and update indexes.
   Deferred to a later release to focus on the core CLI first.
+<!--docz:non-goals:end-->
 
+<!--docz:open-questions:start-->
 ## Resolved Decisions
 
 1. **Filename format** -- Keep `NNNN-slug.md` without a type prefix in the
@@ -867,3 +891,12 @@ These are explicitly **out of scope** for v1 but noted for later:
    `docs/{adr,rfc,design,impl}/README.md`. If the README files already exist,
    they are **not overwritten** unless `--force` is passed. Directories are
    always created if missing (mkdir -p semantics).
+<!--docz:open-questions:end-->
+
+<!--docz:references:start-->
+## References
+
+This design predates the template's References section and cites no external
+material; the prior art it replaces is the bash scripts described under
+Problem Statement above.
+<!--docz:references:end-->

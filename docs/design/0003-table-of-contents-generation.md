@@ -340,6 +340,14 @@ files.
    `.docz.yaml`.
 <!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
+## Open Questions
+
+None outstanding. This design was written and implemented after its questions
+had been settled; the choices and their rationale are recorded in
+[Decisions](#decisions) below.
+<!--docz:open-questions:end-->
+
 <!--docz:decisions:start-->
 ## Decisions
 

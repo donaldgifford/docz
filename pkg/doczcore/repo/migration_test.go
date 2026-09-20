@@ -222,13 +222,24 @@ func TestMigrationFixtureEquality(t *testing.T) {
 // proving anything.
 var migrationCorpusTypes = []string{"adr", "design", "impl", "investigation"}
 
+// migrationMarkerLine matches a whole region-marker line including its
+// newline, so removing one leaves the document's own lines untouched.
+var migrationMarkerLine = regexp.MustCompile(
+	`(?m)^[ \t]*<!--docz:[a-z0-9-]+:(?:start|end)-->\n`,
+)
+
 // migrationSnapshotCorpus copies this repository's own documents into a fresh
-// repository and returns it.
+// repository, with their region markers taken back out, and returns it.
 //
 // A copy rather than a run in place. The pass writes, and a test that wrote to
 // docs/ would rewrite the documents it is reading its expectations from — and
 // would do it the first time somebody ran the suite, before anybody had
 // reviewed a diff.
+//
+// The strip is what keeps this a migration. IMPL-0018 Phase 5 ran the pass over
+// docs/ for real, so copying the corpus verbatim now hands the fixer documents
+// it has already fixed and the proof degenerates into the no-op case — which
+// the idempotence half of this test covers anyway, on its second run.
 func migrationSnapshotCorpus(t *testing.T) *Repo {
 	t.Helper()
 
@@ -254,7 +265,9 @@ func migrationSnapshotCorpus(t *testing.T) *Repo {
 				t.Fatalf("reading %s: %v", entry.Name(), err)
 			}
 
-			regionsPutDoc(t, r, typeName, entry.Name(), string(body))
+			bare := migrationMarkerLine.ReplaceAllString(string(body), "")
+
+			regionsPutDoc(t, r, typeName, entry.Name(), bare)
 
 			copied++
 		}

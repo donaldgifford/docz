@@ -653,7 +653,7 @@ no data or config migration to undo.
 
 ### 1. What is the public package name/path and shape?
 
-**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
 
 - **a. (Recommended)** `pkg/doczcore/config` + `pkg/doczcore/document` — preserve
   the existing two-package split under a `doczcore` namespace, moving each
@@ -667,7 +667,7 @@ no data or config migration to undo.
 
 ### 2. Move wholesale (update all imports) vs. leave permanent re-export shims?
 
-**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
 
 - **a. (Recommended)** Move wholesale and update every in-repo import; no shim
   survives the release. One canonical path, no rot.
@@ -679,8 +679,8 @@ no data or config migration to undo.
 
 ### 3. Add `docz export --json` now, or defer it?
 
-**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped in
-`v0.5.0` without `export`; the library is the sole consumer path so far.
+> **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped in
+> `v0.5.0` without `export`; the library is the sole consumer path so far.
 
 - **a. (Recommended)** Defer. Decision 7 chose the library as primary; ship the
   promotion first and add `export` only when a concrete non-Go consumer appears.
@@ -692,8 +692,8 @@ no data or config migration to undo.
 
 ### 4. Module/versioning strategy?
 
-**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions). The next
-minor is `v0.5.0` (latest tag today is `v0.4.1`).
+> **Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions). The next
+> minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 - **a. (Recommended)** Same module, new `pkg/doczcore` path; tag a normal minor
   `vX.Y.0` and let docz-api pin it. Stay in the current major; cut `v1.0.0` only
@@ -707,12 +707,12 @@ minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 ### 5. How much surface to expose?
 
-**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Read-side
-only: `SetStatus`/`Create` stayed **internal** (`internal/docwrite`), so the
-public surface is read-only (IMPL-0013 Decision 1). **Revised 2026-07-04**
-(ADR-0001 / IMPL-0014 Phase 3): `docwrite` promoted whole to
-`pkg/doczcore/docwrite`; the public write surface is status + checkbox +
-create, by design — see the amendment in [Overview](#overview).
+> **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Read-side
+> only: `SetStatus`/`Create` stayed **internal** (`internal/docwrite`), so the
+> public surface is read-only (IMPL-0013 Decision 1). **Revised 2026-07-04**
+> (ADR-0001 / IMPL-0014 Phase 3): `docwrite` promoted whole to
+> `pkg/doczcore/docwrite`; the public write surface is status + checkbox +
+> create, by design — see the amendment in [Overview](#overview).
 
 - **a. (Recommended)** Minimal: config (`Load`/`Validate`/resolution/
   `EnabledTypes`/`TypeDir`) + document (`ScanDocuments`/`LoadFrontmatter`/
@@ -726,6 +726,11 @@ create, by design — see the amendment in [Overview](#overview).
 
 ### 6. If `docz export` ships, what is the manifest schema shape?
 
+> **Resolved 2026-09-20:** not recorded at approval time. The question is
+> conditional on a command that never shipped — Decision 3 deferred
+> `docz export --json`, and the CLI still has no `export` command — so there is
+> no manifest schema to settle. The options stay for whoever revives `export`.
+
 - **a. (Recommended)** One top-level object `{schema_version, docs_dir, types[],
   documents[]}`, `documents` sorted by `(type, id)`, raw markdown omitted by
   default (opt-in via `--content`).
@@ -735,6 +740,12 @@ create, by design — see the amendment in [Overview](#overview).
 - d. Other.
 
 ### 7. Does docz-api vendor a docz checkout or always consume the library via go.mod?
+
+> **Resolved 2026-09-20:** not recorded at approval time, and not docz's to
+> record — as the [Decisions](#decisions) preamble says, this is docz-api's own
+> consumption model and stays in DESIGN-0008's scope. What this design owed it
+> shipped: a pinnable tag and a published import path, proven from outside the
+> module by `test/consumer/` (question 8).
 
 - **a. (Recommended)** Always consume `pkg/doczcore` as a normal `go.mod`
   dependency pinned to a tag; no vendored source, no shelling out.
@@ -746,9 +757,9 @@ create, by design — see the amendment in [Overview](#overview).
 
 ### 8. Where does the consumer import smoke test live?
 
-**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped as
-`test/consumer/` (own `go.mod` + local `replace`), wired into `make test-consumer`
-/ `make ci` (IMPL-0013 Decision 2 / Phase 3).
+> **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped as
+> `test/consumer/` (own `go.mod` + local `replace`), wired into `make test-consumer`
+> / `make ci` (IMPL-0013 Decision 2 / Phase 3).
 
 - **a. (Recommended)** A separate minimal module under `test/consumer/` with its
   own `go.mod`, importing the published-style path — the truest proof an

@@ -308,7 +308,7 @@ Table-driven with golden fixtures:
 
 ### 1. Parser package home?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The handoff doc leans toward the doc package; docz's actual v1.0.0 layout has
@@ -328,7 +328,7 @@ three candidate homes with different contract implications.
 
 ### 2. `Date` field type?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 - **a. (Recommended)** Raw string, as specced — no timezone/format opinions;
@@ -341,7 +341,7 @@ three candidate homes with different contract implications.
 
 ### 3. Preamble fidelity?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 - **a. (Recommended)** Verbatim capture, as specced — consumers render it, so
@@ -353,7 +353,7 @@ three candidate homes with different contract implications.
 
 ### 4. Should heading detection be fence-aware?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The spec detects version/group headings by line shape. A fenced code block in
@@ -373,7 +373,7 @@ trimmed-line ` ``` ` toggle).
 
 ### 5. Where does `file` validation live?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The handoff says "`Load`'s existing validation pass", but in docz v1.0.0
@@ -394,7 +394,7 @@ docz-api the same way).
 
 ### 6. Should `docz init` emit the block in generated `.docz.yaml`?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 `docz config` prints the resolved block for free once the field exists. But
@@ -410,7 +410,7 @@ docz-api the same way).
 
 ### 7. Does `file` validation apply when the block is disabled?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The design leans twice on a dormancy guarantee ("repos can add the block …
@@ -433,7 +433,7 @@ debris) would hard-fail config load even though the feature is off.
 
 ### 8. Are nested sub-bullets part of the parent item or their own item?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The continuation rule ("including continuation lines indented under the
@@ -453,7 +453,7 @@ contract protects) when git-cliff or a human emits a nested list.
 
 ### 9. What happens on duplicate version headings?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 Version identity is "the load-bearing contract" (docz-api's backlinks join on

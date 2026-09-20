@@ -496,6 +496,11 @@ future asset design will want them.
 
 ### 10. Should images and other assets be consumed?
 
+> **Resolved 2026-08-10: (a)** — out of scope for docz: no config and no schema
+> change, because assets are not documents. See [Decisions](#decisions) row 10
+> and revision-history item 5, which closed this to keep the design to the
+> config block and `docparse.Title`.
+
 Markdown under `docs_dir` routinely references relative images
 (`![diagram](./images/arch.png)`). If only `.md` is ingested, those render
 broken. DESIGN-0008 does not mention assets at all — there is no existing
