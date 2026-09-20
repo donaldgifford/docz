@@ -248,7 +248,7 @@ CLI does.
       (tag v2.0.0 by hand with `make release TAG=`) in the release section
       of `DEVELOPMENT.md`, together with the beta procedure and the
       on-demand `v1` branch.
-- [ ] CLAUDE.md: module path in the `test/consumer` bullet; a "Parity
+- [x] CLAUDE.md: module path in the `test/consumer` bullet; a "Parity
       suite" bullet describing `test/parity/`, the normalisers, the
       permitted deltas, and the rule that goldens come from v1.2.2 only.
 
