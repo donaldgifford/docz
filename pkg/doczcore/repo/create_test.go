@@ -14,12 +14,28 @@ import (
 )
 
 // createTestRepo returns a Repo over an empty temp root with the default
-// config, which is the state `docz init` leaves behind: every built-in
-// type enabled except plan, docs under docs/, ToC on.
+// config, which is the state `docz init` leaves behind: every built-in type
+// enabled, docs under docs/, ToC on.
 func createTestRepo(t *testing.T) *Repo {
 	t.Helper()
 
 	cfg := config.DefaultConfig()
+
+	return &Repo{Root: t.TempDir(), Cfg: &cfg}
+}
+
+// createTestRepoWithDisabled returns the same Repo with one built-in switched
+// off, which is the only way to reach TypeDisabledError now: every built-in is
+// enabled by default since ADR-0003 dropped plan, the one that used to ship
+// disabled.
+func createTestRepoWithDisabled(t *testing.T, typeName string) *Repo {
+	t.Helper()
+
+	cfg := config.DefaultConfig()
+
+	tc := cfg.Types[typeName]
+	tc.Enabled = false
+	cfg.Types[typeName] = tc
 
 	return &Repo{Root: t.TempDir(), Cfg: &cfg}
 }
@@ -268,18 +284,20 @@ func TestCreate_ExistingPathIsAnExistsError(t *testing.T) {
 func TestCreate_DisabledTypeIsATypeDisabledError(t *testing.T) {
 	t.Parallel()
 
-	r := createTestRepo(t)
+	r := createTestRepoWithDisabled(t, "design")
 
-	// plan ships disabled (ADR-0003), so it resolves and is still refused.
-	_, err := r.Create(t.Context(), CreateOptions{Type: "plan", Title: "Anything"})
+	// A disabled type still resolves, and is still refused. That it is a
+	// different error from an unknown token is the whole point: one is a
+	// config edit, the other is a typo.
+	_, err := r.Create(t.Context(), CreateOptions{Type: "design", Title: "Anything"})
 
 	var disabled *TypeDisabledError
 	if !errors.As(err, &disabled) {
 		t.Fatalf("Create error = %v, want *TypeDisabledError", err)
 	}
 
-	if disabled.Type != "plan" {
-		t.Errorf("TypeDisabledError.Type = %q, want %q", disabled.Type, "plan")
+	if disabled.Type != "design" {
+		t.Errorf("TypeDisabledError.Type = %q, want %q", disabled.Type, "design")
 	}
 
 	if _, err := os.Stat(filepath.Join(r.Root, "docs")); !errors.Is(err, os.ErrNotExist) {

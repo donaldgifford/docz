@@ -12,7 +12,7 @@ created: 2026-03-22
 
 **Status:** Draft **Author:** Donald Gifford **Date:** 2026-03-22
 
- <!--toc:start-->
+<!--toc:start-->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)

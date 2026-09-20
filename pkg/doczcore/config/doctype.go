@@ -131,29 +131,6 @@ var allDocTypes = []DocTypeDef{
 		HelpDescription: "Implementation plans",
 	},
 	{
-		Name:    "plan",
-		Aliases: nil,
-		DefaultConfig: func() TypeConfig {
-			// Disabled by default: PLAN sits between RFC (proposal) and
-			// IMPL (phased execution), a slot most repos fill with
-			// DESIGN + IMPL instead. Repos that want it set
-			// types.plan.enabled: true.
-			return TypeConfig{
-				Enabled:     false,
-				Dir:         "plan",
-				IDPrefix:    "PLAN",
-				IDWidth:     4,
-				Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
-				StatusField: "status",
-				PluralLabel: "Plans",
-			}
-		},
-		NavTitle:        "Plans",
-		PluralLabel:     "Plans",
-		TemplateName:    "plan",
-		HelpDescription: "Planning documents — goal, approach, components",
-	},
-	{
 		Name:    "investigation",
 		Aliases: []string{"inv"},
 		DefaultConfig: func() TypeConfig {

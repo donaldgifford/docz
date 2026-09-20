@@ -63,7 +63,7 @@ DESIGN-0014 §4 allows three, and IMPL-0018 Open Question 8 adds a fourth:
 | Region marker lines in `create` and `template` output | Phase 1 adds markers to every template section | The `markers` normaliser drops whole marker lines before comparison |
 | New commands and flags | `docz validate` did not exist in v1.2.2 | No golden covers them; they get their own tests |
 | New findings printed by existing commands | warnings the v1 CLI could not produce | Argued for per case in the PR that adds them |
-| The `types.plan` block in `docz config` and `docz init` output | ADR-0003 removes the built-in on the v2 line, so the rendered config changes | A named normaliser, added in Phase 4 with the removal |
+| Every trace of the `plan` document type | ADR-0003 removes the built-in on the v2 line | The `plan` normaliser, applied to **both** sides at comparison time |
 
 Anything else that differs is a regression until someone shows otherwise.
 
@@ -82,6 +82,32 @@ Each is named, lives outside the build tag, and has unit tests that run in
   two blank lines takes one of them with it: the templates put every marker on
   its own line and separate sections with a single blank, so keeping both
   blanks would turn every section break into a false difference.
+- **plan** removes every trace of the document type ADR-0003 dropped. Five
+  traces: the `plan:` block under `types:`, the `plan: Plans` entry under
+  `wiki.nav_titles`, the `config declares non-built-in type "plan"` warning a
+  repo keeping its block now gets on every command, the comment preamble of a
+  generated `.docz.yaml` (v2 rewrote it to say five built-in types and to
+  explain the fallback), and the `PLAN-XXXX` placeholder in the IMPL and INV
+  templates' *Implements* and *Triggered by* hints. Every rule is anchored on a
+  spelling only the type uses, so `impl: Implementation Plans` and
+  `## Testing Plan` are left alone.
+
+**plan is the one normaliser that runs on both sides**, in `runCase` rather
+than in the `norms` list, because the golden is the side carrying the removed
+type: normalising only the captured output would leave every trace as a
+difference. Two consequences follow from that symmetry.
+
+A `stdout` or `stderr` block the pass empties is rewritten to `(empty)`, so a
+legacy fixture whose only stderr was the plan warning matches a run that
+printed nothing.
+
+A file whose body the golden records loses its recorded size and digest to
+`$SIZE` and `$SUM`. A byte count computed before a line was dropped cannot be
+recomputed from the golden's text, and the rule has to be the same on both
+sides — the side that no longer carries the trace cannot know one was there.
+Nothing is lost: a recorded body is compared line by line, so its digest is
+the redundant half of that check, and a file with no recorded body keeps the
+digest as its only one.
 
 A recorded size and digest are computed from the normalised body, not the raw
 one, so the number beside a body describes the body the golden shows. Both

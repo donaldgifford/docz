@@ -346,3 +346,149 @@ func TestNormalizeFiles_KeepsChangedComparable(t *testing.T) {
 		t.Errorf("an untouched file recorded a body: %q", changed[0].Body)
 	}
 }
+
+// The plan normaliser is the fourth permitted delta (ADR-0003, IMPL-0018 Open
+// Question 8) and the only one that runs on both sides of the comparison, so
+// every rule needs a case for what it removes and a case for the near-miss it
+// has to leave alone.
+func TestPlanNormalizer(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "drops the plan block under types",
+			in: "types:\n  adr:\n    dir: adr\n" +
+				"  plan:\n    dir: plan\n    id_prefix: PLAN\n" +
+				"  rfc:\n    dir: rfc\n",
+			want: "types:\n  adr:\n    dir: adr\n  rfc:\n    dir: rfc\n",
+		},
+		{
+			name: "a blank line inside the block goes with it",
+			// The rendered config separates type blocks with one blank line, so
+			// keeping it would leave a double blank where v1.2.2 has one.
+			in:   "types:\n  plan:\n    dir: plan\n\n  rfc:\n    dir: rfc\n",
+			want: "types:\n  rfc:\n    dir: rfc\n",
+		},
+		{
+			name: "drops the nav title entry",
+			in: "  nav_titles:\n    impl: Implementation Plans\n" +
+				"    plan: Plans\n    rfc: RFCs\n",
+			want: "  nav_titles:\n    impl: Implementation Plans\n    rfc: RFCs\n",
+		},
+		{
+			name: "keeps a label that merely contains the word",
+			// impl's plural label is "Implementation Plans". A rule that matched
+			// the word rather than the entry would delete a type still shipping.
+			in:   "    impl: Implementation Plans\n",
+			want: "    impl: Implementation Plans\n",
+		},
+		{
+			name: "drops the non-built-in warning",
+			in:   "=== stderr\nWarning: config declares non-built-in type \"plan\" (typo?)\n",
+			want: "=== stderr\n(empty)\n",
+		},
+		{
+			name: "keeps a warning about another type",
+			in:   "Warning: config declares non-built-in type \"frameworks\" (typo?)\n",
+			want: "Warning: config declares non-built-in type \"frameworks\" (typo?)\n",
+		},
+		{
+			name: "drops the id-prefix hint from a field line",
+			in:   "**Implements:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX -->\n",
+			want: "**Implements:** <!-- RFC-XXXX / DESIGN-XXXX -->\n",
+		},
+		{
+			name: "drops the hint from the middle of a list",
+			in:   "**Triggered by:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX / issue #XXX -->\n",
+			want: "**Triggered by:** <!-- RFC-XXXX / DESIGN-XXXX / issue #XXX -->\n",
+		},
+		{
+			name: "drops the slash form",
+			in:   "<!-- Link to the RFC/DESIGN/PLAN it implements. -->\n",
+			want: "<!-- Link to the RFC/DESIGN it implements. -->\n",
+		},
+		{
+			name: "keeps a heading that contains the word",
+			// `## Testing Plan` is the reason the hint rules are substring
+			// deletions of the id-prefix spellings and not a word match.
+			in:   "## Testing Plan\n\n<!-- Links to related RFCs, ADRs, designs, plans, issues -->\n",
+			want: "## Testing Plan\n\n<!-- Links to related RFCs, ADRs, designs, plans, issues -->\n",
+		},
+		{
+			name: "drops the generated config preamble",
+			in: "=== written .docz.yaml\n" +
+				"# .docz.yaml -- configuration for the docz CLI.\n" +
+				"#\n" +
+				"#   entirely to keep all six built-in types (rfc, adr, design, impl, plan,\n" +
+				"#   investigation).\n" +
+				"\n" +
+				"docs_dir: docs\n",
+			want: "=== written .docz.yaml\ndocs_dir: docs\n",
+		},
+		{
+			name: "keeps a comment that is not the preamble",
+			in:   "docs_dir: docs\n# a comment somebody added\n",
+			want: "docs_dir: docs\n# a comment somebody added\n",
+		},
+		{
+			name: "leaves plan-free input untouched",
+			in:   "=== stdout\ndocs_dir: docs\n\n=== files\ndocs/rfc/README.md (10 bytes, abc123)\n",
+			want: "=== stdout\ndocs_dir: docs\n\n=== files\ndocs/rfc/README.md (10 bytes, abc123)\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := Normalize(tt.in, PlanNormalizer()); got != tt.want {
+				t.Errorf("PlanNormalizer()\ngot:  %q\nwant: %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestPlanNormalizer_NeutralisesRecordedBodies pins the rule that makes the
+// two sides comparable at all: a file whose body the golden records loses its
+// size and digest, and a file whose body it does not keeps both.
+//
+// The rule cannot depend on which side carried a trace, because the side that
+// no longer carries one has no way to know a trace was there.
+func TestPlanNormalizer_NeutralisesRecordedBodies(t *testing.T) {
+	t.Parallel()
+
+	in := "=== files\n" +
+		"docs/impl/0001-a.md (2959 bytes, 4b2296e7028b)\n" +
+		"docs/impl/README.md (1531 bytes, 7d206b655c6d)\n" +
+		"\n=== written docs/impl/0001-a.md\n" +
+		"**Implements:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX -->\n"
+
+	want := "=== files\n" +
+		"docs/impl/0001-a.md ($SIZE bytes, $SUM)\n" +
+		"docs/impl/README.md (1531 bytes, 7d206b655c6d)\n" +
+		"\n=== written docs/impl/0001-a.md\n" +
+		"**Implements:** <!-- RFC-XXXX / DESIGN-XXXX -->\n"
+
+	if got := Normalize(in, PlanNormalizer()); got != want {
+		t.Errorf("PlanNormalizer()\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+// TestPlanNormalizer_Idempotent pins that a second pass is a no-op, since the
+// suite applies it to a golden that may already have been through it in a
+// previous run's diff output.
+func TestPlanNormalizer_Idempotent(t *testing.T) {
+	t.Parallel()
+
+	in := "types:\n  plan:\n    dir: plan\n\n  rfc:\n    dir: rfc\n" +
+		"=== stderr\nWarning: config declares non-built-in type \"plan\" (typo?)\n"
+
+	once := Normalize(in, PlanNormalizer())
+	if twice := Normalize(once, PlanNormalizer()); twice != once {
+		t.Errorf("a second pass changed the result\nonce:  %q\ntwice: %q", once, twice)
+	}
+}

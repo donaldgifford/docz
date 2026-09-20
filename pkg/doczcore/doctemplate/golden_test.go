@@ -30,7 +30,6 @@ func TestGoldenTemplates(t *testing.T) {
 		"adr":           withOverrides(&data, "adr", "ADR", "Proposed"),
 		"design":        withOverrides(&data, "design", "DESIGN", "Draft"),
 		"impl":          withOverrides(&data, "impl", "IMPL", "Draft"),
-		"plan":          withOverrides(&data, "plan", "PLAN", "Draft"),
 		"investigation": withOverrides(&data, "investigation", "INV", "Open"),
 	}
 

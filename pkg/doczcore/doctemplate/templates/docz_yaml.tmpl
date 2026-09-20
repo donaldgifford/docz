@@ -7,8 +7,14 @@
 # About the `types:` block:
 #   If you include `types:`, docz uses ONLY the types you list. Omitting a
 #   type opts it out of scaffolding and updates. Remove the `types:` block
-#   entirely to keep all six built-in types (rfc, adr, design, impl, plan,
+#   entirely to keep all five built-in types (rfc, adr, design, impl,
 #   investigation).
+#
+#   `plan` was a built-in through v1 and is not one in v2 (ADR-0003). A repo
+#   that still wants it keeps its `types.plan` block, which now declares a
+#   custom type: add `docs/templates/plan.md` — `docz template override plan`
+#   scaffolds one — and everything except `docz create plan` keeps working
+#   until you do.
 #
 # Custom types:
 #   Add your own type by giving it a unique `id_prefix` and `dir`. It can then

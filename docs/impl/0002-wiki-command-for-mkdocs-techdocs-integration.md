@@ -13,7 +13,7 @@ created: 2026-03-11
 **Author:** Donald Gifford
 **Date:** 2026-03-11
 
-  <!--toc:start-->
+<!--toc:start-->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)

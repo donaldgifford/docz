@@ -327,13 +327,22 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 		return
 	}
 
-	want, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read golden (run `make parity-capture` first): %v", err)
 	}
 
-	if got != string(want) {
-		t.Errorf("parity mismatch for %s/%s\n%s", f.name, c.name, firstDiff(string(want), got))
+	// The plan normaliser runs here rather than in norms above, and on both
+	// sides: the golden is the side carrying the removed type, so normalising
+	// only the captured output would leave every one of its traces as a
+	// difference (ADR-0003, IMPL-0018 Open Question 8).
+	plan := PlanNormalizer()
+
+	want := Normalize(string(raw), plan)
+	got = Normalize(got, plan)
+
+	if got != want {
+		t.Errorf("parity mismatch for %s/%s\n%s", f.name, c.name, firstDiff(want, got))
 	}
 }
 

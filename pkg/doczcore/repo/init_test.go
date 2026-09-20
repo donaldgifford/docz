@@ -21,9 +21,10 @@ const initTestCustomType = "frameworks"
 
 // initTestRepo returns a Repo over an empty directory.
 //
-// withCustom adds the custom type, and enables the `plan` type that ships
-// disabled: its embedded index header is one of the two that end with their own
-// marker pair, so the issue #99 assertion has to be able to reach it.
+// withCustom adds the custom type, which is the tier-3 rendered header. The
+// issue #99 reach over a header that ends with its own pair comes from
+// investigation, an enabled built-in -- index_plan.md was the other one and
+// went away with the type (ADR-0003).
 func initTestRepo(t *testing.T, withCustom bool) (*repo.Repo, string) {
 	t.Helper()
 
@@ -31,10 +32,6 @@ func initTestRepo(t *testing.T, withCustom bool) (*repo.Repo, string) {
 	cfg := config.DefaultConfig()
 
 	if withCustom {
-		plan := cfg.Types["plan"]
-		plan.Enabled = true
-		cfg.Types["plan"] = plan
-
 		cfg.Types[initTestCustomType] = config.TypeConfig{
 			Enabled:  true,
 			Dir:      initTestCustomType,

@@ -9,7 +9,7 @@ created: 2026-02-22
 
 # DESIGN-0001: docz CLI Tool
 
-  <!--toc:start-->
+<!--toc:start-->
 - [Problem Statement](#problem-statement)
 - [Proposed Solution](#proposed-solution)
 - [Document Types](#document-types)

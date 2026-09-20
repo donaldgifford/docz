@@ -36,7 +36,7 @@ created: {{ .Date }}
 <!-- Why is this investigation needed right now? What design, plan, or
      error triggered it? Link to the parent document(s). -->
 
-**Triggered by:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX / issue #XXX -->
+**Triggered by:** <!-- RFC-XXXX / DESIGN-XXXX / issue #XXX -->
 
 <!--docz:context:end-->
 

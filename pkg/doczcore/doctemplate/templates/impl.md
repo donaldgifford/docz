@@ -16,9 +16,9 @@ created: {{ .Date }}
 <!--docz:objective:start-->
 ## Objective
 
-<!-- What is being implemented? Link to the RFC/DESIGN/PLAN it implements. -->
+<!-- What is being implemented? Link to the RFC/DESIGN it implements. -->
 
-**Implements:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX -->
+**Implements:** <!-- RFC-XXXX / DESIGN-XXXX -->
 
 <!--docz:objective:end-->
 

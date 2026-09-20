@@ -449,7 +449,7 @@ Since IMPL-0009 (DocType registry, DESIGN-0004 §E) the config side of a
 built-in type is a single Go edit plus two embedded templates. Since IMPL-0018
 (DESIGN-0014, ADR-0002) a built-in is also a **structured type**, so it needs a
 marker skeleton and a `pkg/<type>` package as well. The example below walks
-through adding a `plan`-style doc.
+through adding a `postmortem` type.
 
 > A type that only needs a template and an index — no typed reader, no
 > validation rules — is a **custom type**, not a built-in. See *Custom Types via
@@ -457,7 +457,7 @@ through adding a `plan`-style doc.
 
 ### Step 1: Add the document template
 
-Create `pkg/doczcore/doctemplate/templates/plan.md`. The file is a Go `text/template`
+Create `pkg/doczcore/doctemplate/templates/postmortem.md`. The file is a Go `text/template`
 with access to all `template.Data` fields:
 
 | Variable | Type | Notes |
@@ -465,7 +465,7 @@ with access to all `template.Data` fields:
 | `{{ .Number }}` | string | Zero-padded ID, e.g. `0001` |
 | `{{ .Title }}` | string | Document title as provided on the CLI |
 | `{{ .Slug }}` | string | Kebab-case title for the filename |
-| `{{ .Filename }}` | string | e.g. `0001-my-plan.md` |
+| `{{ .Filename }}` | string | e.g. `0001-my-postmortem.md` |
 | `{{ .Date }}` | string | ISO date (`YYYY-MM-DD`) |
 | `{{ .Author }}` | string | Resolved from config/flag/git |
 | `{{ .Status }}` | `config.Status` (typed string) | Initial status |
@@ -480,11 +480,11 @@ region marker pair** (DESIGN-0015 §1), so a document created by `docz create` i
 marked from birth and never needs migrating:
 
 ```markdown
-<!--docz:objective:start-->
-## Objective
+<!--docz:timeline:start-->
+## Timeline
 
-<!-- What this plan is for. -->
-<!--docz:objective:end-->
+<!-- What happened, in order. -->
+<!--docz:timeline:end-->
 ```
 
 Reuse an existing kind's name wherever the section means the same thing
@@ -496,17 +496,17 @@ free. A kind nobody else uses is fine too — an unknown kind is allowed, and
 
 ### Step 2: Add the marker skeleton
 
-Create `pkg/doczcore/doctemplate/templates/schema/plan.md`: the *schema* for the type,
+Create `pkg/doczcore/doctemplate/templates/schema/postmortem.md`: the *schema* for the type,
 which is a markdown body of nothing but the template's marker pairs, in the same
 order and nesting, with no headings and no prose.
 
 ```markdown
 <!--toc:start-->
 <!--toc:end-->
-<!--docz:objective:start-->
-<!--docz:objective:end-->
-<!--docz:criteria:start-->
-<!--docz:criteria:end-->
+<!--docz:timeline:start-->
+<!--docz:timeline:end-->
+<!--docz:decisions:start-->
+<!--docz:decisions:end-->
 <!--docz:references:start-->
 <!--docz:references:end-->
 ```
@@ -526,14 +526,14 @@ built-in template ships.
 
 ### Step 3: Add the index header template
 
-Create `pkg/doczcore/doctemplate/templates/index_plan.md`. This is written to
-`docs/plan/README.md` by `docz init` and must include the auto-generated
+Create `pkg/doczcore/doctemplate/templates/index_postmortem.md`. This is written to
+`docs/postmortem/README.md` by `docz init` and must include the auto-generated
 markers so `docz update` can splice the table:
 
 ```markdown
-# Plans
+# Postmortems
 
-Description of what plan documents are for.
+Description of what postmortem documents are for.
 
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
@@ -559,22 +559,22 @@ change required — `DefaultConfig().Types`, `Wiki.NavTitles`,
 ```go
 // pkg/doczcore/config/doctype.go
 {
-    Name:    "plan",
-    Aliases: nil, // or []string{"planning"}
+    Name:    "postmortem",
+    Aliases: nil, // or []string{"pm"}
     DefaultConfig: func() TypeConfig {
         return TypeConfig{
             Enabled:     true,
-            Dir:         "plan",
-            IDPrefix:    "PLAN",
+            Dir:         "postmortem",
+            IDPrefix:    "PM",
             IDWidth:     4,
-            Statuses:    []string{"Draft", "In Progress", "Completed", "Cancelled"},
+            Statuses:    []string{"Draft", "In Review", "Final"},
             StatusField: "status",
-            PluralLabel: "Plans",
+            PluralLabel: "Postmortems",
         }
     },
-    NavTitle:     "Plans",
-    PluralLabel:  "Plans",
-    TemplateName: "plan",
+    NavTitle:     "Postmortems",
+    PluralLabel:  "Postmortems",
+    TemplateName: "postmortem",
 },
 ```
 
@@ -584,7 +584,7 @@ poison the next caller (DESIGN-0004 §E).
 
 ### Step 6: Add the type package
 
-A built-in is a structured type, so it also needs `pkg/plan/` — four files,
+A built-in is a structured type, so it also needs `pkg/postmortem/` — four files,
 the same four every type package has (DESIGN-0014 §2):
 
 | File | Holds |
@@ -619,7 +619,7 @@ keeps:
 
 The heading table must equal `kinds.SpecFromTemplate` over the type's embedded
 template, so copy that test too — it is what keeps the table and the template
-from drifting apart. Then add a golden corpus under `pkg/plan/testdata/`:
+from drifting apart. Then add a golden corpus under `pkg/postmortem/testdata/`:
 real documents snapshotted as `.orig.md` (never read from `docs/` at test time),
 their generated marked `.md` siblings, `.golden.txt` fact files, and a
 `FuzzParse`. See `pkg/impl/golden_test.go` for the harness and any
@@ -638,10 +638,10 @@ Run the template tests with `-update` to generate new golden files:
 
 ```bash
 go test ./pkg/doczcore/doctemplate/... -update
-go test ./pkg/plan/... -update      # the corpus fact files from Step 6
+go test ./pkg/postmortem/... -update      # the corpus fact files from Step 6
 ```
 
-This creates `testdata/golden/plan.md` from a sample render, and the
+This creates `testdata/golden/postmortem.md` from a sample render, and the
 `.golden.txt` fact files for each corpus fixture. **Review both before
 committing** — a golden nobody read pins whatever the code happened to do.
 
@@ -649,15 +649,15 @@ committing** — a golden nobody read pins whatever the code happened to do.
 
 ```bash
 make build
-./build/bin/docz init --force    # creates docs/plan/README.md
-./build/bin/docz create plan "First Plan"
-./build/bin/docz list plan
-./build/bin/docz template show plan
+./build/bin/docz init --force    # creates docs/postmortem/README.md
+./build/bin/docz create postmortem "First Postmortem"
+./build/bin/docz list postmortem
+./build/bin/docz template show postmortem
 make ci
 ```
 
 Once `docz validate` lands (IMPL-0018 Phase 5) also run
-`./build/bin/docz validate plan`, which checks a created document against the
+`./build/bin/docz validate postmortem`, which checks a created document against the
 Step 2 skeleton and should report nothing.
 
 ## Custom Types via Configuration
@@ -695,11 +695,42 @@ docz create runbook "Database Failover Procedure"
 # → docs/runbooks/0001-database-failover-procedure.md
 ```
 
-**Limitations of custom types in v1:**
-- Custom types do not appear in `ValidTypes()` and will emit a config warning
-- `docz init` does not create directories for custom types automatically — create
-  the directory and its README manually or use `docz update runbook`
-- The `list` command includes custom types if their directories exist
+A custom type resolves by canonical name, by any `aliases` entry, and by its
+`id_prefix`, all case-insensitively, so `docz create RUN`, `run`, and `runbook`
+all reach the same type. `Config.EnabledTypes()` includes it — built-ins first in
+registry order, then custom types sorted — so no-argument `docz init`, `update`,
+`list`, and `wiki update` all reach it, and `init` scaffolds its directory and
+README like any other type.
+
+**What a custom type does not get:**
+
+- No `pkg/<type>` reader. Nothing parses its regions into a typed `Doc`, so
+  `docz validate` checks only that its markers pair and that any kind it reuses
+  satisfies that kind's content rule.
+- No embedded template. `docz create` needs one at the type's `template` path or
+  at `docs/templates/<type>.md`, and says so by naming the file when it finds
+  neither.
+- No embedded index header. `doctemplate.ResolveIndexHeader` renders the generic
+  one from the type's plural label instead (DESIGN-0006 Decision 3).
+- A startup warning that the type is not built in, which is advisory only.
+
+### `plan` is the worked example
+
+ADR-0003 removes `plan` from the built-in catalogue on the v2 line, and a repo
+that already has `docs/plan` keeps it by keeping its `types.plan` block — the
+block now declares a custom type. Everything above applies: `init`, `update`,
+`list`, and `wiki update` all still reach the directory, and only `docz create
+plan` stops working until the repo supplies `docs/templates/plan.md`.
+
+```bash
+docz template export impl docs/templates/plan.md   # closest built-in
+$EDITOR docs/templates/plan.md
+```
+
+`cmd/legacy_plan_test.go` is the promise: it loads a v1-era config with the block
+still in it and asserts that the type resolves three ways, that `init`, `update`,
+and `list` all see the document, and that `create` fails by naming the template
+path rather than by saying the type does not exist.
 
 ## Template System Internals
 

@@ -66,7 +66,7 @@ func TestDefaultConfig(t *testing.T) {
 	}
 	wantTitles := map[string]string{
 		"rfc": "RFCs", "adr": "ADRs", "design": "Design",
-		"impl": "Implementation Plans", "plan": "Plans",
+		"impl":          "Implementation Plans",
 		"investigation": "Investigations",
 	}
 	for k, want := range wantTitles {
@@ -96,7 +96,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestDocTypeNames(t *testing.T) {
 	t.Parallel()
 	types := DocTypeNames()
-	want := []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
+	want := []string{"rfc", "adr", "design", "impl", "investigation"}
 	if len(types) != len(want) {
 		t.Fatalf("DocTypeNames() has %d elements, want %d", len(types), len(want))
 	}
@@ -146,8 +146,8 @@ func TestLoad_NoConfigFiles(t *testing.T) {
 	if cfg.DocsDir != "docs" {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
-	if len(cfg.Types) != 6 {
-		t.Errorf("expected 6 types, got %d", len(cfg.Types))
+	if len(cfg.Types) != 5 {
+		t.Errorf("expected 5 types, got %d", len(cfg.Types))
 	}
 }
 
@@ -179,8 +179,8 @@ author:
 		t.Error("Author.FromGit should be false")
 	}
 	// Types should still have defaults.
-	if len(cfg.Types) != 6 {
-		t.Errorf("expected 6 types, got %d", len(cfg.Types))
+	if len(cfg.Types) != 5 {
+		t.Errorf("expected 5 types, got %d", len(cfg.Types))
 	}
 }
 
@@ -475,28 +475,28 @@ func TestEnabledTypes(t *testing.T) {
 		t.Errorf("EnabledTypes() = %v, want registry-order %v", got, want)
 	}
 
-	// Enabling plan slots it back into registry order rather than
-	// appending it, which is what distinguishes a built-in from a custom
-	// type in EnabledTypes.
-	tc := cfg.Types["plan"]
-	tc.Enabled = true
-	cfg.Types["plan"] = tc
+	// Disable a type and confirm it drops out of the registry-order list.
+	tc := cfg.Types["design"]
+	tc.Enabled = false
+	cfg.Types["design"] = tc
 
 	got = cfg.EnabledTypes()
-	want = []string{"rfc", "adr", "design", "impl", "plan", "investigation"}
+	want = []string{"rfc", "adr", "impl", "investigation"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("EnabledTypes() with plan enabled = %v, want %v", got, want)
+		t.Errorf("EnabledTypes() with design disabled = %v, want %v", got, want)
 	}
 
-	// Disable a type and confirm it drops out of the registry-order list.
-	tc = cfg.Types["impl"]
-	tc.Enabled = false
-	cfg.Types["impl"] = tc
+	// Re-enabling it slots it back into registry order rather than appending
+	// it, which is what distinguishes a built-in from a custom type here.
+	// Every built-in is enabled by default since ADR-0003 dropped plan, so
+	// the round trip has to start by switching one off.
+	tc.Enabled = true
+	cfg.Types["design"] = tc
 
 	got = cfg.EnabledTypes()
-	want = []string{"rfc", "adr", "design", "plan", "investigation"}
+	want = []string{"rfc", "adr", "design", "impl", "investigation"}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("EnabledTypes() with impl disabled = %v, want %v", got, want)
+		t.Errorf("EnabledTypes() with design re-enabled = %v, want %v", got, want)
 	}
 }
 

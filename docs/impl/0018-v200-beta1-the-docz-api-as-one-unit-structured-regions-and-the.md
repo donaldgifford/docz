@@ -31,6 +31,7 @@ created: 2026-09-19
   - [Phase 4: Catalogue — ADR-0003 plan removal](#phase-4-catalogue--adr-0003-plan-removal)
     - [Tasks](#tasks-4)
     - [Success Criteria](#success-criteria-4)
+    - [Release notes](#release-notes)
   - [Phase 5: The cmd swap, docz validate, corpus migration, and v2.0.0-beta.1](#phase-5-the-cmd-swap-docz-validate-corpus-migration-and-v200-beta1)
     - [Tasks](#tasks-5)
     - [Success Criteria](#success-criteria-5)
@@ -857,36 +858,43 @@ the fourth permitted delta to the parity suite (Open Question 8).
 
 #### Tasks
 
-- [ ] Remove the `plan` entry from `allDocTypes` in
+- [x] Remove the `plan` entry from `allDocTypes` in
       `pkg/doczcore/config/doctype.go`; `DocTypeNames`, `TypesHelp`,
       `DefaultConfig().Types`, and `DefaultNavTitles` follow from the
       registry.
       verify: `go test ./pkg/doczcore/config/...`
-- [ ] Delete the embedded `plan.md`, `index_plan.md`, and
+- [x] Delete the embedded `plan.md`, `index_plan.md`, and
       `schema/plan.md`, their goldens, and the `types.plan.enabled: true`
       comment in `docz_yaml.tmpl`; trim the PLAN hints in the `impl.md`
       and `investigation.md` "Implements / Triggered by" comments.
-- [ ] Regenerate goldens with `go test ./... -update` and fix the
+- [x] Regenerate goldens with `go test ./... -update` and fix the
       remaining test references (`--help` output, `init` creating five
       directories, config and wiki nav-title tests).
       verify: `make test`
-- [ ] Legacy-block tests: a `.docz.yaml` carrying `types.plan` loads as a
+- [x] Legacy-block tests: a `.docz.yaml` carrying `types.plan` loads as a
       custom type; `list` and `update` work over `docs/plan`;
       `docz create plan` fails with the message naming
       `docs/templates/plan.md` as the fix; `docz template override plan`
       now scaffolds the generic pair (Phase 3), which the message can
       point at.
-- [ ] Add the `types.plan` normaliser to the parity driver — the block is
+      > Landed with one deviation. `repo.ExportTemplate` does scaffold the
+      > generic pair, but `cmd/template.go` does not reach it until the
+      > Phase 5 swap, so `template override plan` still fails today — it
+      > names the same path `create` does, which is the useful half.
+      > `TestLegacyPlan_TemplateOverrideNamesTheSamePath` asserts that and
+      > fails deliberately once the swap lands, as the reminder to assert
+      > the scaffolded pair instead.
+- [x] Add the `types.plan` normaliser to the parity driver — the block is
       dropped from `docz config` output and from a generated `.docz.yaml`
       on both sides before comparing — with its own unit test, list it as
       the fourth permitted delta in `test/parity/README.md`, and confirm
       the legacy fixture's skips (`create plan`, `template show|export
       plan`) hold (Open Question 8).
       verify: `make parity`
-- [ ] This repo's own remnants: drop the dormant `plan:` block from
+- [x] This repo's own remnants: drop the dormant `plan:` block from
       `.docz.yaml`, delete `docs/plan/README.md`, and run
       `docz wiki update` so `mkdocs.yml` loses the Plans nav entry.
-- [ ] Docs: README types table and the PLAN section; CLAUDE.md "Six
+- [x] Docs: README types table and the PLAN section; CLAUDE.md "Six
       built-in doc types" becomes five and the alias line loses nothing;
       `DEVELOPMENT.md`'s worked example if it names plan; a release-notes
       paragraph (kept in the PR body under `### RELEASE NOTES` for the
@@ -902,6 +910,46 @@ the fourth permitted delta to the parity suite (Open Question 8).
   with the `types.plan` normaliser as the fourth permitted delta.
 - README, CLAUDE.md, and `DEVELOPMENT.md` no longer describe plan as a
   built-in; `mkdocs.yml` has no Plans entry.
+
+#### Release notes
+
+Task 7 asks for this paragraph in the Phase 4 PR body under a
+`### RELEASE NOTES` heading, where the Phase 5 tag's notes pick it up. It is
+kept here as well so the text survives the PR: every claim below was run
+against `build/bin/docz` on a repo whose only config is a v1-era
+`types.plan` block.
+
+```markdown
+### RELEASE NOTES
+
+**Breaking: `plan` is no longer a built-in document type.** ADR-0003 removes it
+from the v2 catalogue, leaving five built-ins: RFC, ADR, DESIGN, IMPL, and INV.
+
+**Your plan documents are unaffected and there is nothing to migrate.** `plan`
+becomes a *custom type*, and the `types.plan` block already in your
+`.docz.yaml` is what declares it — so keep the block. `docz init`, `update`,
+`list`, `status set`, and `wiki update` all keep working over `docs/plan`
+exactly as before. Deleting the block is what would lose you the type.
+
+**One command changes.** `docz create plan "..."` now fails, because there is
+no bundled plan template left to render. The error names the file to create, so
+supply your own once and it works again:
+
+    docz template export impl docs/templates/plan.md
+    $EDITOR docs/templates/plan.md
+
+Two smaller effects of the type becoming custom:
+
+- `docs/plan/README.md` gets its header generated from the type's plural label
+  instead of a bundled file. A block without `plural_label` reads "Plan"
+  rather than "Plans", so add `plural_label: Plans` to keep the old wording.
+- `docz` prints `config declares non-built-in type "plan"` at startup. It is
+  advisory, applies to every custom type, and nothing depends on it.
+
+A repo that has stopped writing plan documents can set
+`types.plan.enabled: false` and keep the directory as an archive, or drop the
+block and the directory together.
+```
 
 ---
 
