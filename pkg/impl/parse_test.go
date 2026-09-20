@@ -728,3 +728,79 @@ func equal(got, want []string) bool {
 
 	return true
 }
+
+// TestParse_RenderedTemplate is the criterion that the package and the
+// template it ships agree: the document `docz create impl` writes parses, and
+// every field is either filled or zero for a reason.
+//
+// The zeroes are the point. The template's placeholders are HTML comments, a
+// bare "-" bullet, and a table of empty cells, and all three are deliberately
+// read as nothing — which is what makes a freshly created document validate
+// clean instead of reporting its own placeholders as content. Pinning the whole
+// shape means a template edit that renames a heading, moves a marker, or fills
+// a placeholder in shows up here rather than silently changing what every
+// document created afterwards parses to.
+func TestParse_RenderedTemplate(t *testing.T) {
+	t.Parallel()
+
+	got := parse(t, renderedTemplate(t))
+
+	if got.Inferred {
+		t.Error("Inferred = true: the template carries markers")
+	}
+
+	// What the template fills in.
+	if got.Objective == "" {
+		t.Error("Objective is empty")
+	}
+
+	if len(got.Phases) != 3 {
+		t.Fatalf("got %d phases, want the template's 3", len(got.Phases))
+	}
+
+	if len(got.Testing) != 3 {
+		t.Errorf("Testing has %d checkboxes, want the template's 3", len(got.Testing))
+	}
+
+	for _, phase := range got.Phases {
+		if len(phase.Tasks) == 0 {
+			t.Errorf("phase %s has no tasks", phase.Token)
+		}
+
+		if len(phase.Criteria) == 0 {
+			t.Errorf("phase %s has no criteria", phase.Token)
+		}
+
+		// The title is a placeholder comment, which impl.phase.no-title
+		// reports — see TestValidate_Template. The description is guidance in a
+		// comment, so it reads as nothing.
+		if phase.Title != "" {
+			t.Errorf("phase %s title = %q, want empty: the template's is a comment",
+				phase.Token, phase.Title)
+		}
+
+		if phase.Description != "" {
+			t.Errorf("phase %s description = %q, want empty: the template's "+
+				"guidance is a comment", phase.Token, phase.Description)
+		}
+	}
+
+	// What the template leaves for the author, each zero for a stated reason.
+	for _, tt := range []struct {
+		field, why string
+		empty      bool
+	}{
+		{"InScope", "the placeholder is a bare \"-\" bullet", len(got.InScope) == 0},
+		{"OutOfScope", "the placeholder is a bare \"-\" bullet", len(got.OutOfScope) == 0},
+		{"FileChanges", "its rows have no file and no description", len(got.FileChanges) == 0},
+		{"Dependencies", "the placeholder is an HTML comment", got.Dependencies == ""},
+		{"References", "the placeholder is an HTML comment", len(got.References) == 0},
+		{"Implements", "the placeholder is an HTML comment", len(got.Implements) == 0},
+		{"OpenQuestions", "the template ships no such section", got.OpenQuestions == nil},
+		{"Decisions", "the template ships no such section", got.Decisions == nil},
+	} {
+		if !tt.empty {
+			t.Errorf("%s is filled, want empty: %s", tt.field, tt.why)
+		}
+	}
+}
