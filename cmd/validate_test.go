@@ -463,3 +463,177 @@ func TestValidate_UsageErrorsExitTwo(t *testing.T) {
 		})
 	}
 }
+
+// vtestUnmarked is the clean fixture with its docz region markers stripped —
+// a pre-v2 document, which is what `--fix` exists for.
+//
+// The ToC pair is kept. Stripping it too would add toc.missing to every
+// assertion here, and the ToC is not a region the migration pass marks.
+func vtestUnmarked() string {
+	var kept []string
+
+	for _, line := range strings.Split(vtestADRClean, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "<!--docz:") {
+			continue
+		}
+
+		kept = append(kept, line)
+	}
+
+	return strings.Join(kept, "\n")
+}
+
+// TestValidateFix_MarksInferredRegions pins what --fix writes: the document on
+// disk gains the markers, and the run says which kinds it marked.
+func TestValidateFix_MarksInferredRegions(t *testing.T) {
+	r, out, root := vtestRunner(t, vtestUnmarked())
+
+	docPath := filepath.Join(root, "docs", "adr", "0001-a-decision.md")
+
+	before, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(string(before), "<!--docz:") {
+		t.Fatal("the fixture is already marked; vtestUnmarked no longer strips")
+	}
+
+	if err := r.validate(t.Context(), validateOpts{format: formatText, fix: true}, nil); err != nil {
+		t.Fatalf("validate --fix = %v, want nil\noutput:\n%s", err, out.String())
+	}
+
+	after, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, kind := range []string{"summary", "context", "decision", "consequences"} {
+		if !strings.Contains(string(after), "<!--docz:"+kind+":start-->") {
+			t.Errorf("document was not marked with %s:\n%s", kind, after)
+		}
+	}
+
+	// The pass line names the file and the kinds, which is the whole record
+	// of what was rewritten.
+	first := strings.SplitN(out.String(), "\n", 2)[0]
+	if !strings.HasPrefix(first, filepath.Join("docs", "adr", "0001-a-decision.md")+": marked ") {
+		t.Errorf("first line does not report the marked document: %q", first)
+	}
+
+	if !strings.Contains(first, "summary") {
+		t.Errorf("the pass line does not list the kinds it inserted: %q", first)
+	}
+}
+
+// TestValidateFix_SecondRunWritesNothing is the idempotence promise. A
+// migration a user is afraid to run twice is a migration they will not run.
+func TestValidateFix_SecondRunWritesNothing(t *testing.T) {
+	r, out, root := vtestRunner(t, vtestUnmarked())
+
+	docPath := filepath.Join(root, "docs", "adr", "0001-a-decision.md")
+
+	if err := r.validate(t.Context(), validateOpts{format: formatText, fix: true}, nil); err != nil {
+		t.Fatalf("first --fix = %v, want nil\noutput:\n%s", err, out.String())
+	}
+
+	marked, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out.Reset()
+
+	if err := r.validate(t.Context(), validateOpts{format: formatText, fix: true}, nil); err != nil {
+		t.Fatalf("second --fix = %v, want nil\noutput:\n%s", err, out.String())
+	}
+
+	again, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(marked, again) {
+		t.Errorf("the second --fix rewrote the document:\n%s", again)
+	}
+
+	if strings.Contains(out.String(), ": marked ") {
+		t.Errorf("the second --fix reported writing a file:\n%s", out.String())
+	}
+}
+
+// TestValidateFix_ReportsWhatItCannotFix pins the division of labour: the pass
+// marks the sections that are there and says nothing about the one that is
+// not, which the report afterwards is for.
+func TestValidateFix_ReportsWhatItCannotFix(t *testing.T) {
+	doc := strings.Replace(vtestUnmarked(), `## References
+
+- [RFC-0001](../rfc/0001-a-proposal.md)
+`, "", 1)
+
+	r, out, _ := vtestRunner(t, doc)
+
+	err := r.validate(t.Context(), validateOpts{format: formatText, fix: true}, nil)
+	if err == nil {
+		t.Fatalf("validate --fix succeeded, want the unfixable region to fail it\noutput:\n%s",
+			out.String())
+	}
+
+	if got := exitCodeFor(err); got != 1 {
+		t.Errorf("exit code = %d, want 1", got)
+	}
+
+	if !strings.Contains(out.String(), ": marked ") {
+		t.Errorf("the pass marked nothing:\n%s", out.String())
+	}
+
+	codes := vtestCodes(out.String())
+	if !codes["region.missing"] {
+		t.Errorf("want region.missing in the second report:\n%s", out.String())
+	}
+
+	// The whole point of re-validating: the code that sent us here must be
+	// gone from what the user is shown.
+	if codes["region.inferred"] {
+		t.Errorf("region.inferred survived the fix:\n%s", out.String())
+	}
+}
+
+// TestValidateFix_JSONCarriesBothHalves pins the one shape a JSON consumer can
+// decode: the pass and the report it left behind, in a single object.
+func TestValidateFix_JSONCarriesBothHalves(t *testing.T) {
+	r, out, _ := vtestRunner(t, vtestUnmarked())
+
+	if err := r.validate(t.Context(),
+		validateOpts{format: formatJSON, fix: true}, nil); err != nil {
+		t.Fatalf("validate --fix --format json = %v, want nil", err)
+	}
+
+	var got struct {
+		Fixed struct {
+			Changed []struct {
+				Path     string   `json:"path"`
+				Inserted []string `json:"inserted"`
+			} `json:"changed"`
+		} `json:"fixed"`
+		Report struct {
+			Errors int `json:"errors"`
+		} `json:"report"`
+	}
+
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("output is not one JSON object: %v\n%s", err, out.String())
+	}
+
+	if len(got.Fixed.Changed) != 1 {
+		t.Fatalf("got %d changed documents, want 1", len(got.Fixed.Changed))
+	}
+
+	if len(got.Fixed.Changed[0].Inserted) == 0 {
+		t.Error("the changed document lists no inserted kinds")
+	}
+
+	if got.Report.Errors != 0 {
+		t.Errorf("errors = %d, want 0 after a successful fix", got.Report.Errors)
+	}
+}

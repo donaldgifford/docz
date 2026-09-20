@@ -1081,13 +1081,28 @@ Decision 7).
       > format under its own `index.drift` code at line 0, and it fails only
       > under `--strict` alongside warnings. That is what makes the flag the
       > CI gate issue #97 was retargeted to.
-- [ ] `docz validate --fix`: after the first report, `repo.InsertRegions`
+- [x] `docz validate --fix`: after the first report, `repo.InsertRegions`
       over the documents that reported `region.inferred` or
       `marker.spelling`, print each file written and the kinds inserted,
       re-run `repo.Validate` and the type tier, print the remaining
       findings, and exit on the second report; command tests pin the
       files written, the second report, and that a second `--fix` writes
       nothing.
+      > Selection is by **type**, not by document, because that is the
+      > granularity `repo.InsertRegions` works at. Nothing is lost by
+      > widening: the pass never re-marks a document that already carries a
+      > region, so the extra documents in a named type are read and left
+      > alone, and narrowing would mean a second API that could disagree
+      > with the first about what "already marked" means.
+      >
+      > The first report is never printed. Printing findings that the next
+      > line of output has already repaired would be the most confusing
+      > thing this command could do.
+      >
+      > `validate.CodeRegionInferred` and `CodeMarkerSpelling` are now
+      > exported constants. They are the only two codes a consumer matches
+      > in order to *act*, and a typo in one silently turns `--fix` into a
+      > no-op that looks like "nothing to fix".
 - [ ] Migrate docz's own `docs/` in this PR as separate commits (Open
       Question 6): run `build/bin/docz validate --fix` and commit the
       mechanical diff on its own, then fix by hand whatever the second

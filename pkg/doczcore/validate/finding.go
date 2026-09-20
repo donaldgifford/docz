@@ -84,6 +84,29 @@ func (s Severity) String() string {
 	}
 }
 
+// The two codes a caller must match by name rather than read.
+//
+// Every code is the contract (see Finding.Code), but these two are the only
+// ones a consumer branches on to *act*: they are exactly what `docz validate
+// --fix` repairs, so the migration pass selects on them. Constants rather
+// than literals at the call site, because a typo in one of these silently
+// turns the fix pass into a no-op — which is the kind of failure that looks
+// like "there was nothing to fix".
+//
+// The rest stay as literals in the check that emits them. They are read, not
+// matched, and a package-level constant for each would be a second catalogue
+// of codes to keep in step with the first.
+const (
+	// CodeRegionInferred reports a document read by inference rather than
+	// from its own markers (DESIGN-0015 §6). Its detail lists the kinds
+	// inference located, which are the kinds --fix would mark.
+	CodeRegionInferred = "region.inferred"
+
+	// CodeMarkerSpelling reports a marker docz read leniently but does not
+	// itself write. --fix rewrites it in place.
+	CodeMarkerSpelling = "marker.spelling"
+)
+
 // Finding is one thing wrong with a document.
 type Finding struct {
 	// Code is the stable identifier and the only part of a finding that is

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -38,6 +39,7 @@ var errValidateFailed = errors.New("validation failed")
 var (
 	validateStrict bool
 	validateFormat string
+	validateFix    bool
 )
 
 // validateOpts is the per-invocation flag state, packed so the handler
@@ -45,6 +47,18 @@ var (
 type validateOpts struct {
 	strict bool
 	format string
+	fix    bool
+}
+
+// validateFixOutput is what `--format json --fix` emits: the pass and the
+// report it left behind, in one object.
+//
+// A second bare report would be two JSON documents on one stream, which is
+// not a thing a consumer can decode. The `fixed` key is how a consumer knows
+// which shape it has.
+type validateFixOutput struct {
+	Fixed  *repo.InsertRegionsReport `json:"fixed"`
+	Report *repo.ValidateReport      `json:"report"`
 }
 
 var validateCmd = &cobra.Command{
@@ -59,6 +73,12 @@ With no type argument every enabled type is checked.
 
 Findings print one per line as 'path:line code detail'. The code is the
 stable part: the wording after it may change, the code will not.
+
+With --fix, documents whose regions were read by inference get those regions
+marked, and markers docz read leniently are rewritten in the canonical
+spelling. Nothing else is changed: a section the document does not have is
+not invented, so what --fix cannot repair is reported afterwards for you to
+fix by hand. A second --fix over the same repository writes nothing.
 
 Exit codes:
   0  nothing found, or warnings only without --strict
@@ -75,11 +95,13 @@ func init() {
 		"fail on warnings and index drift as well as errors")
 	validateCmd.Flags().StringVar(&validateFormat, "format", formatText,
 		"output format: text or json")
+	validateCmd.Flags().BoolVar(&validateFix, "fix", false,
+		"mark the regions inference finds, then report what is left")
 	rootCmd.AddCommand(validateCmd)
 }
 
 func runValidate(cmd *cobra.Command, args []string) error {
-	opts := validateOpts{strict: validateStrict, format: validateFormat}
+	opts := validateOpts{strict: validateStrict, format: validateFormat, fix: validateFix}
 
 	return getRunner().validate(cmdContext(cmd), opts, args)
 }
@@ -99,18 +121,162 @@ func (r *Runner) validate(ctx context.Context, opts validateOpts, args []string)
 
 	rp := r.repoOrOpen()
 
-	report, err := rp.Validate(ctx, args, repo.ValidateOptions{Strict: opts.strict})
+	report, err := r.validatePass(ctx, rp, args, opts)
 	if err != nil {
 		return validateExitError(err)
 	}
 
+	if !opts.fix {
+		if err := r.printValidateReport(format, &report); err != nil {
+			return err
+		}
+
+		return validateOutcome(&report, opts.strict)
+	}
+
+	return r.validateFix(ctx, rp, format, args, opts, &report)
+}
+
+// validatePass is one full validation: the repository tier plus the per-type
+// tier composed onto it.
+//
+// Extracted because `--fix` runs it twice — once to find what to mark, once to
+// report what is left — and a fix that reported against a different set of
+// checks than it decided from would be reporting about a different repository.
+func (r *Runner) validatePass(
+	ctx context.Context, rp *repo.Repo, args []string, opts validateOpts,
+) (repo.ValidateReport, error) {
+	report, err := rp.Validate(ctx, args, repo.ValidateOptions{Strict: opts.strict})
+	if err != nil {
+		return report, err
+	}
+
 	r.applyTypeTier(rp, &report)
 
-	if err := r.printValidateReport(format, &report); err != nil {
+	return report, nil
+}
+
+// validateFix marks the regions inference found, then reports what is left.
+//
+// The first report is never printed. Its job is to decide whether there is
+// anything to mark; printing findings that the next paragraph of output has
+// already fixed would be the most confusing thing this command could do.
+// What the user sees is the pass, then the state of the repository after it,
+// and the exit code is the second report's.
+func (r *Runner) validateFix(
+	ctx context.Context,
+	rp *repo.Repo,
+	format string,
+	args []string,
+	opts validateOpts,
+	first *repo.ValidateReport,
+) error {
+	var fixed repo.InsertRegionsReport
+
+	if types := fixableTypes(first); len(types) > 0 {
+		var err error
+
+		fixed, err = rp.InsertRegions(ctx, types, repo.InsertRegionsOptions{})
+		if err != nil {
+			// The report is not printed on this path. A pass that aborted
+			// mid-write leaves a repository whose state is the error's to
+			// describe, and re-validating it would bury that behind a
+			// hundred findings.
+			return validateExitError(err)
+		}
+	}
+
+	second, err := r.validatePass(ctx, rp, args, opts)
+	if err != nil {
+		return validateExitError(err)
+	}
+
+	if format == formatJSON {
+		enc := json.NewEncoder(r.Out)
+		enc.SetIndent("", "  ")
+
+		if err := enc.Encode(validateFixOutput{Fixed: &fixed, Report: &second}); err != nil {
+			return err
+		}
+
+		return validateOutcome(&second, opts.strict)
+	}
+
+	if err := r.printFixReport(&fixed); err != nil {
 		return err
 	}
 
-	return validateOutcome(&report, opts.strict)
+	if err := r.printValidateText(&second); err != nil {
+		return err
+	}
+
+	return validateOutcome(&second, opts.strict)
+}
+
+// fixableTypes names the types holding at least one document the migration
+// pass would touch.
+//
+// Types rather than documents, because that is the granularity
+// repo.InsertRegions works at. Nothing is lost by widening: the pass is
+// idempotent and never re-marks a document that already carries a region, so
+// the extra documents in a named type are read and left alone. Narrowing to
+// the exact document list would mean a second API that could disagree with
+// the first about what "already marked" means.
+//
+// The two codes are the two things the pass can repair. region.inferred says
+// a document was read by inference and would be marked; marker.spelling says
+// its markers are docz's but not canonically spelled, which the pass rewrites
+// in place. Anything else in the report is for an author to fix by hand, and
+// running the pass would not help.
+func fixableTypes(report *repo.ValidateReport) []string {
+	seen := make(map[string]bool)
+
+	var types []string
+
+	for i := range report.Docs {
+		doc := &report.Docs[i]
+
+		for _, f := range doc.Findings {
+			if f.Code != validate.CodeRegionInferred && f.Code != validate.CodeMarkerSpelling {
+				continue
+			}
+
+			if !seen[doc.Type] {
+				seen[doc.Type] = true
+				types = append(types, doc.Type)
+			}
+
+			break
+		}
+	}
+
+	return types
+}
+
+// printFixReport writes one line per document the pass changed.
+//
+// Nothing is printed for a document it left alone. A repository of a hundred
+// already-marked documents should say nothing about them, so that the handful
+// of lines it does print are the whole of what changed.
+func (r *Runner) printFixReport(report *repo.InsertRegionsReport) error {
+	for _, res := range report.Changed {
+		parts := make([]string, 0, 2)
+
+		if len(res.Inserted) > 0 {
+			parts = append(parts, "marked "+strings.Join(res.Inserted, ", "))
+		}
+
+		if res.Fixed > 0 {
+			parts = append(parts, "canonicalized "+plural(res.Fixed, "marker"))
+		}
+
+		if _, err := fmt.Fprintf(r.Out, "%s: %s\n",
+			res.Path, strings.Join(parts, "; ")); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // applyTypeTier appends each document's type-specific findings to the

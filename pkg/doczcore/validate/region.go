@@ -251,7 +251,7 @@ func inferredFinding(regions []docparse.Region, schema Schema, spec kinds.Headin
 		detail += "; not found, looked for " + strings.Join(looked, ", ")
 	}
 
-	return Finding{Code: "region.inferred", Severity: Warning, Detail: detail}
+	return Finding{Code: CodeRegionInferred, Severity: Warning, Detail: detail}
 }
 
 // headingFor describes the heading a spec rule looks for, so a finding can
