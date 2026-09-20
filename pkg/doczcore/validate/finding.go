@@ -16,6 +16,7 @@
 package validate
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 )
@@ -35,6 +36,42 @@ const (
 	Warning
 )
 
+// MarshalJSON writes a severity as its name rather than its number.
+//
+// The number is an implementation detail of an iota block, and a consumer
+// reading `"severity": 1` would have to know which end of the enum it came
+// from. `docz validate --format json` and docz-api both serve this report,
+// and the same argument that put yaml-spelled json tags on every config
+// struct (issue #89, DESIGN-0008 R11) applies to it: the wire shape is the
+// contract, so it says what it means.
+func (s Severity) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+// UnmarshalJSON reads a severity written by MarshalJSON.
+//
+// Here because a type that marshals one way and unmarshals another is a
+// trap. An unrecognised name is an error rather than a zero value: a
+// consumer that silently read "eror" as "no severity" would filter a real
+// finding out of its own report.
+func (s *Severity) UnmarshalJSON(b []byte) error {
+	var name string
+	if err := json.Unmarshal(b, &name); err != nil {
+		return err
+	}
+
+	switch name {
+	case "error":
+		*s = Error
+	case "warning":
+		*s = Warning
+	default:
+		return fmt.Errorf("unknown severity %q (want \"error\" or \"warning\")", name)
+	}
+
+	return nil
+}
+
 // String renders a severity for a message.
 func (s Severity) String() string {
 	switch s {
@@ -53,20 +90,20 @@ type Finding struct {
 	// the contract: "region.unclosed", "frontmatter.status" (DESIGN-0015
 	// Open Question 3). A consumer switches on Code and may replace Detail
 	// with its own wording.
-	Code string
+	Code string `json:"code"`
 
 	// Severity is Error or Warning.
-	Severity Severity
+	Severity Severity `json:"severity"`
 
 	// Line is 1-based, or 0 when the finding concerns the whole document.
-	Line int
+	Line int `json:"line"`
 
 	// Kind is the region kind the finding concerns, or "" when none does.
-	Kind string
+	Kind string `json:"kind,omitempty"`
 
 	// Detail is the default human-readable text. It is a default, not the
 	// contract: a consumer that wants its own phrasing switches on Code.
-	Detail string
+	Detail string `json:"detail"`
 }
 
 // String renders a finding the way a CLI would print one line of it.

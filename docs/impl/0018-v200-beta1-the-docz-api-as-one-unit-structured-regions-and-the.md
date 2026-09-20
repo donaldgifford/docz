@@ -1054,7 +1054,7 @@ Decision 7).
       6. `wiki init --force` spends the force in cmd by removing
          `mkdocs.yml` and calling `wiki.Init` without it, so a hand-edited
          `docs/index.md` is still preserved (delta 2 above).
-- [ ] `docz validate [type] [--strict] [--format text|json]` in
+- [x] `docz validate [type] [--strict] [--format text|json]` in
       `cmd/validate.go`: `repo.Validate`, then the per-type tier composed
       in `cmd/` as an explicit five-arm switch on `DocFindings.Schema`
       with the type name as fallback — `impl`, `rfc`, `adr`, `design`,
@@ -1063,6 +1063,24 @@ Decision 7).
       the report verbatim, exit 0 clean, 1 on errors (or warnings under
       `--strict`), 2 for a usage error; command tests pin both formats and
       every exit code.
+      > Three decisions the task left open.
+      >
+      > The per-type tier runs over `report.Docs` only, not `Templates`. A
+      > Templates entry is a template rendered with placeholder metadata so
+      > a sound one reports nothing; running a type's content rules over
+      > comment prose would report a finding on every run of every healthy
+      > repository.
+      >
+      > "The report verbatim" needed a wire shape. `validate.Finding` and
+      > the repo report structs gained json tags, and `validate.Severity`
+      > marshals as `"error"`/`"warning"` rather than as its iota — the same
+      > argument that put yaml-spelled json tags on every config struct
+      > (issue #89, DESIGN-0008 R11), since docz-api serves this too.
+      >
+      > `IndexDrift` is not a Finding, so cmd prints it in the finding line
+      > format under its own `index.drift` code at line 0, and it fails only
+      > under `--strict` alongside warnings. That is what makes the flag the
+      > CI gate issue #97 was retargeted to.
 - [ ] `docz validate --fix`: after the first report, `repo.InsertRegions`
       over the documents that reported `region.inferred` or
       `marker.spelling`, print each file written and the kinds inserted,
