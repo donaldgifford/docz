@@ -117,11 +117,46 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	body, err := EmbeddedDocumentTemplate(config.DocType(docType))
 	if err != nil {
 		return "", fmt.Errorf(
-			"%w: type %q has no embedded template, no template: path in config, "+
+			"%w: type %q has no embedded template, no template path in its config, "+
 				"and no file at %s", ErrNoTemplate, docType, localPath)
 	}
 
 	return body, nil
+}
+
+// ResolveSchema returns the marker skeleton for the given schema name,
+// checking a repo-local override before the baked-in one:
+//  1. <docsDir>/templates/schema/<name>.md
+//  2. the embedded schema/<name>.md
+//
+// A repo that adds a section to its own copy gets it required without waiting
+// for a docz release, which is the whole reason the schema is a file of markers
+// rather than a table in the binary (DESIGN-0015 §3).
+//
+// Neither tier is rendered. A skeleton is markers, not a template, and running
+// it through text/template would give a literal "{{" in somebody's override a
+// meaning it does not have.
+//
+// A name outside the grammar is ErrBadSchemaName and neither lookup happens;
+// a name that resolves nowhere is ErrNoSchema. Both are checked before the
+// filesystem, so a document whose frontmatter names "../../etc/passwd" is
+// refused by the grammar rather than by os.ReadFile.
+func ResolveSchema(name, docsDir string) ([]byte, error) {
+	if !schemaName.MatchString(name) {
+		return nil, badSchemaName(name)
+	}
+
+	local := filepath.Join(docsDir, config.TemplatesDir, schemaDir, name+".md")
+	if data, err := os.ReadFile(local); err == nil {
+		return data, nil
+	}
+
+	data, err := EmbeddedSchema(name)
+	if err != nil {
+		return nil, fmt.Errorf("%w and no file at %s", err, local)
+	}
+
+	return data, nil
 }
 
 // IndexHeaderData is the render context for the generic fallback index

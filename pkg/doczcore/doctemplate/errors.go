@@ -1,6 +1,9 @@
 package doctemplate
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // The sentinels this package returns, distinguishable with errors.Is.
 //
@@ -21,21 +24,26 @@ var (
 	// ErrNoSchema means no on-disk or embedded marker skeleton exists under
 	// the given name (DESIGN-0015 §3).
 	//
-	// A name that is not a legal schema name yields this too, wrapped with
-	// ErrBadSchemaName, so a caller that wants to tell "you asked for a
-	// skeleton nobody shipped" from "that is not a name" can, while a caller
-	// that only wants "no schema" tests one sentinel.
-	ErrNoSchema = errors.New("no schema of that name")
+	// An illegal name yields this as well as ErrBadSchemaName, so a caller
+	// that only wants "there is no schema" tests one sentinel while validate
+	// can still tell the two apart.
+	ErrNoSchema = errors.New("no schema")
 
 	// ErrBadSchemaName means the name does not match the schema-name grammar
 	// [a-z0-9][a-z0-9_-]*.
 	//
-	// The grammar is enforced here rather than at the filesystem, because the
-	// name comes from a document's own frontmatter and may name anything at
-	// all. It is narrow on purpose: a name is a filename stem under
-	// templates/schema/, so a separator, a dot segment, or an upper-case
-	// letter would resolve differently on two machines or not at all. It
-	// wraps ErrNoSchema, because a name that cannot resolve has no schema —
-	// that is the finding validate reports as schema.name.
+	// The grammar is enforced before the filesystem, because the name comes
+	// from a document's own frontmatter and may say anything at all. It is
+	// narrow on purpose: a name is a filename stem under templates/schema/, so
+	// a separator, a dot segment, or an upper-case letter would escape the
+	// directory, resolve differently on two machines, or not resolve at all.
+	// This is the finding validate reports as schema.name.
 	ErrBadSchemaName = errors.New("not a valid schema name")
 )
+
+// badSchemaName is the error both lookups return for a name outside the
+// grammar. One helper, so the two cannot drift: a caller matching on either
+// sentinel gets the same answer from EmbeddedSchema and ResolveSchema.
+func badSchemaName(name string) error {
+	return fmt.Errorf("%w: %w: %q", ErrNoSchema, ErrBadSchemaName, name)
+}

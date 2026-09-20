@@ -73,7 +73,7 @@ func TestSchemasAgreeWithTemplates(t *testing.T) {
 				t.Fatalf("EmbeddedSchema(%q): %v", name, err)
 			}
 
-			want := strings.Join(pairs(t, skeleton), "\n")
+			want := strings.Join(pairs(t, string(skeleton)), "\n")
 			if got := strings.Join(pairs(t, body), "\n"); got != want {
 				t.Errorf("template and schema disagree\n--- template ---\n%s\n--- schema ---\n%s",
 					got, want)
@@ -104,7 +104,7 @@ func TestDefaultSchemaIsSatisfiedByDefaultTemplate(t *testing.T) {
 		have[p] = true
 	}
 
-	for _, required := range pairs(t, skeleton) {
+	for _, required := range pairs(t, string(skeleton)) {
 		if !have[required] {
 			t.Errorf("the generic template is missing %q", required)
 		}
@@ -128,11 +128,13 @@ func TestSchemasAreMarkersOnly(t *testing.T) {
 				t.Fatalf("EmbeddedSchema(%q): %v", name, err)
 			}
 
-			if !strings.HasSuffix(skeleton, "\n") {
+			text := string(skeleton)
+
+			if !strings.HasSuffix(text, "\n") {
 				t.Error("skeleton does not end in a newline")
 			}
 
-			for i, line := range strings.Split(strings.TrimSuffix(skeleton, "\n"), "\n") {
+			for i, line := range strings.Split(strings.TrimSuffix(text, "\n"), "\n") {
 				if !strings.HasPrefix(line, "<!--") || !strings.HasSuffix(line, "-->") {
 					t.Errorf("line %d is not a marker: %q", i+1, line)
 				}

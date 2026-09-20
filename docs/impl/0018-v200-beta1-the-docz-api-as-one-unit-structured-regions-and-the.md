@@ -662,7 +662,7 @@ end of this phase `internal/` no longer exists.
       error)`. `cmd/init` calls `DefaultConfigYAML` in place of its inline
       rendering — the one `cmd/` edit this phase makes beyond imports.
       verify: `go test ./pkg/doczcore/doctemplate/... ./cmd/...`
-- [ ] Schema resolution: `EmbeddedSchema(name string) ([]byte, error)`
+- [x] Schema resolution: `EmbeddedSchema(name string) ([]byte, error)`
       (baked-in only) and `ResolveSchema(name, docsDir string) ([]byte,
       error)` — `<docsDir>/templates/schema/<name>.md`, then the embedded
       `schema/<name>.md`, else `ErrNoSchema`. The name grammar
@@ -671,7 +671,7 @@ end of this phase `internal/` no longer exists.
       `schema.name`). The third tier — the type's own resolved template's
       markers when the name is the type name — and the `schema.unresolved`
       finding belong to the resolving tier in `repo.Validate` (Phase 3).
-- [ ] Resolution tests: a repo-local `templates/schema/impl.md` beats the
+- [x] Resolution tests: a repo-local `templates/schema/impl.md` beats the
       baked-in one; an unknown name is `ErrNoSchema`; `EmbeddedSchema`
       returns a skeleton for every built-in and for `default`.
 - [ ] `git mv internal/index pkg/doczcore/index` and add `BeginMarker`,

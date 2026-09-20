@@ -30,7 +30,7 @@ func optionsFor(t *testing.T, name, filename string) validate.Options {
 	}
 
 	return validate.Options{
-		Schema:      validate.SchemaFromMarkers([]byte(skeleton)),
+		Schema:      validate.SchemaFromMarkers(skeleton),
 		Type:        config.DefaultConfig().Types[name],
 		Filename:    filename,
 		Headings:    kinds.SpecFromTemplate([]byte(marked)),

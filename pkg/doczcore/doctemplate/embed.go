@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"regexp"
 	"text/template"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
@@ -48,6 +49,22 @@ func GenericTemplate() (string, error) {
 	return EmbeddedDocumentTemplate(DefaultTemplateName)
 }
 
+// schemaDir is the subdirectory of templates/ that holds the marker
+// skeletons, on disk and in the embedded tree alike. One spelling, because a
+// repo-local override has to land where the resolver looks.
+const schemaDir = "schema"
+
+// schemaName is the schema-name grammar: lower-case alphanumerics, hyphens,
+// and underscores, starting with an alphanumeric.
+//
+// Narrow on purpose. A name is a filename stem, and it arrives from a
+// document's own frontmatter, which may say anything at all. Anything with a
+// separator, a dot segment, or an upper-case letter in it would resolve
+// differently on a case-insensitive filesystem than on a case-sensitive one,
+// or escape the directory, or not resolve at all — so the grammar is checked
+// before either lookup rather than left to whichever filesystem answers.
+var schemaName = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*$`)
+
 // EmbeddedSchema returns the embedded marker skeleton for the given schema
 // name — one per built-in type, plus DefaultTemplateName for a custom type
 // that has not scaffolded its own (DESIGN-0015 §3).
@@ -56,16 +73,24 @@ func GenericTemplate() (string, error) {
 // same walker as a document, so there is no schema language and nothing a
 // skeleton can require that a document cannot show.
 //
-// The name is taken as a plain filename, so a caller must not pass a path: a
-// name with a separator or a dot segment misses rather than escaping the
-// embedded tree, because embed.FS rejects it.
-func EmbeddedSchema(name string) (string, error) {
-	data, err := templateFS.ReadFile("templates/schema/" + name + ".md")
-	if err != nil {
-		return "", fmt.Errorf("no embedded schema %q: %w", name, err)
+// Baked-in only, which is the point: a consumer with no checkout has the
+// binary's own skeletons and nothing else (DESIGN-0014 §2.7). A repo that
+// overrides one is served by ResolveSchema.
+//
+// A name outside the grammar is ErrBadSchemaName, which wraps ErrNoSchema, so
+// a caller that only wants "there is no schema" tests one sentinel and
+// validate can still tell the two apart to emit schema.name.
+func EmbeddedSchema(name string) ([]byte, error) {
+	if !schemaName.MatchString(name) {
+		return nil, badSchemaName(name)
 	}
 
-	return string(data), nil
+	data, err := templateFS.ReadFile("templates/" + schemaDir + "/" + name + ".md")
+	if err != nil {
+		return nil, fmt.Errorf("%w: %q is not baked in", ErrNoSchema, name)
+	}
+
+	return data, nil
 }
 
 // EmbeddedWikiIndex returns the embedded default wiki index template
