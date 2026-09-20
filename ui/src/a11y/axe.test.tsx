@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import { routes } from "@/app/router";
 import { expectNoAxeViolations } from "@/test/axe";
 import { server } from "@/test/server";
+import { BOOM_PATH, routesWithThrow } from "@/test/throwing-routes";
 
 // mermaid can't render in jsdom (no SVG measurement); the rejecting
 // mock pins the specimen page's diagrams to MermaidBlock's source
@@ -219,5 +220,31 @@ describe("axe: core views", () => {
     await userEvent.keyboard("/");
     await screen.findByRole("dialog", undefined, { timeout: 10_000 });
     await expectNoAxeViolations();
+  });
+
+  // The error boundary is the one UI surface DESIGN-0006 adds, so it
+  // owes the same sweep as every other view: a panel with no heading or
+  // an unfocusable recovery link would fail here (Component 9).
+  it("route error boundary", { timeout: AXE_TIMEOUT }, async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      const router = createMemoryRouter(routesWithThrow(), {
+        initialEntries: [BOOM_PATH],
+      });
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>,
+      );
+      await screen.findByText("Something went wrong");
+      await expectNoAxeViolations();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });

@@ -1,7 +1,7 @@
 ---
 id: IMPL-0007
 title: "Server observability — logs and probes, then metrics and traces"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-18
 ---
@@ -77,7 +77,8 @@ first; Prometheus metrics and OpenTelemetry tracing second.
 - Bundling the server so it can carry dependencies at all
   (Component 7).
 - The request-pipeline wrapper (Component 8).
-- A root-route `errorElement` reusing `ErrorPanel` (Component 9).
+- An error boundary below `AppShell` reusing `ErrorPanel`'s chrome
+  (Component 9).
 - Chart values, a `ServiceMonitor`, and `values.schema.json` enums.
 
 ### Out of Scope
@@ -121,19 +122,19 @@ logging (Phase 2) before metrics depend on its cardinality properties.
 
 ##### Tasks
 
-- [ ] Create `server/route-class.ts` with the closed `RouteClass` union
+- [x] Create `server/route-class.ts` with the closed `RouteClass` union
       (`asset`, `static`, `spa`, `proxy:api`, `proxy:auth`,
       `proxy:webhooks`, `proxy:openapi`, `probe`).
-- [ ] Add `normalizeMethod()` collapsing anything outside
+- [x] Add `normalizeMethod()` collapsing anything outside
       `GET HEAD POST PUT PATCH DELETE OPTIONS` to `other` — `fetch()`
       accepts arbitrary method tokens, so this is attacker-controlled
       input, not a formality.
-- [ ] Create `server/redact.ts` implementing DESIGN-0006's three rules:
+- [x] Create `server/redact.ts` implementing DESIGN-0006's three rules:
       headers never recorded; query keys kept and every value replaced
       with `<redacted>` via an **allowlist**; `Location` reduced to host.
-- [ ] Write `server/route-class.test.ts` — every class, unknown methods,
+- [x] Write `server/route-class.test.ts` — every class, unknown methods,
       hostile paths staying in-class.
-- [ ] Write `server/redact.test.ts` — including that an *unknown* query
+- [x] Write `server/redact.test.ts` — including that an *unknown* query
       key is redacted by default (proves allowlist, not denylist).
 
 ##### Success Criteria
@@ -156,23 +157,23 @@ the language level.
 
 ##### Tasks
 
-- [ ] Create `server/logger.ts` — levels `debug < info < warn < error`,
+- [x] Create `server/logger.ts` — levels `debug < info < warn < error`,
       JSON and `text` modes, one object per line to stdout.
-- [ ] Add `resolveLogLevel()` and `resolveLogFormat()` to `serve.ts`,
+- [x] Add `resolveLogLevel()` and `resolveLogFormat()` to `serve.ts`,
       following the existing whitelist-with-fallback pattern.
-- [ ] Convert the startup banner to a structured `server.start` event.
-- [ ] **Bind the proxy `catch`** and emit `proxy.error` with
+- [x] Convert the startup banner to a structured `server.start` event.
+- [x] **Bind the proxy `catch`** and emit `proxy.error` with
       `err_name`/`err_message`/`target_host`/`duration_ms`.
-- [ ] Give `502 DOCZ_API_URL is not configured` a distinct
+- [x] Give `502 DOCZ_API_URL is not configured` a distinct
       `not_configured` reason so a config fault is distinguishable from
       a network fault.
-- [ ] Add `proxy.request` (debug) carrying `upstream_status` and
+- [x] Add `proxy.request` (debug) carrying `upstream_status` and
       `location_host` — the OAuth-journey line the issue asks for.
-- [ ] Add `http.request` (debug) using Phase 1's classifier.
-- [ ] Skip probe paths at every level.
-- [ ] Write `server/logger.test.ts` — level filtering, both formats,
+- [x] Add `http.request` (debug) using Phase 1's classifier.
+- [x] Skip probe paths at every level.
+- [x] Write `server/logger.test.ts` — level filtering, both formats,
       unknown level falls back.
-- [ ] Write the **redaction gate**: drive a realistic OAuth callback
+- [x] Write the **redaction gate**: drive a realistic OAuth callback
       through the logger at *every* level, asserting on captured stdout
       that `code`/`state` values never appear while their keys do.
       Parameterise over levels so a future level cannot bypass it.
@@ -198,26 +199,26 @@ becomes a real check.
 
 ##### Tasks
 
-- [ ] Export `handleRequest` so tests can drive the request path by
+- [x] Export `handleRequest` so tests can drive the request path by
       calling it with a `Request` and asserting on the `Response`
       (OQ-1a). `import.meta.main` already prevents startup on import,
       so no port is bound.
-- [ ] Add a pure `checkReady(distDir)` returning per-check status, so
+- [x] Add a pure `checkReady(distDir)` returning per-check status, so
       the logic is testable without touching the module-level `DIST`
       (which is read once at import and cannot be varied afterwards).
-- [ ] Add the `/readyz` route: 200 `{"status":"ready","checks":{…}}`,
+- [x] Add the `/readyz` route: 200 `{"status":"ready","checks":{…}}`,
       503 naming the offender.
-- [ ] Emit `readyz.fail` (warn) when a check fails.
-- [ ] Confirm `/healthz` is byte-identical to today and still
+- [x] Emit `readyz.fail` (warn) when a check fails.
+- [x] Confirm `/healthz` is byte-identical to today and still
       unconditional.
-- [ ] Point the chart's `readinessProbe` at `/readyz`; leave
+- [x] Point the chart's `readinessProbe` at `/readyz`; leave
       `livenessProbe` and the Dockerfile `HEALTHCHECK` on `/healthz`.
-- [ ] Add `config.logLevel` / `config.logFormat` chart values, env
+- [x] Add `config.logLevel` / `config.logFormat` chart values, env
       wiring, and `values.schema.json` enums.
-- [ ] Update `charts/docz-site/tests/deployment_test.yaml` — readiness
+- [x] Update `charts/docz-site/tests/deployment_test.yaml` — readiness
       path, new env, defaults.
-- [ ] Run `just helm-docs`.
-- [ ] Write `/readyz` tests: ready when dist present, 503 naming `dist`
+- [x] Run `just helm-docs`.
+- [x] Write `/readyz` tests: ready when dist present, 503 naming `dist`
       when absent, **and that it makes no network call to docz-api**.
 
 ##### Success Criteria
@@ -238,22 +239,27 @@ not export.
 
 ##### Tasks
 
-- [ ] Add an `errorElement` to the root route in `src/app/router.tsx`
-      (`path: "/"` already wraps every child, so one covers all
-      descendants and renders inside `AppShell`).
-- [ ] Render via the existing `ErrorPanel` from
+- [x] Add an error boundary in `src/app/router.tsx` on a **pathless
+      layout route directly below `AppShell`**, wrapping every real
+      route. NOT on the root route: a boundary replaces the element of
+      the route that owns it, so a root-level one swaps out `AppShell`
+      and takes the topbar with it. (Corrected here and in DESIGN-0006
+      Component 9, which described the root placement; a test pins both
+      behaviours.)
+- [x] Render via the existing `ErrorPanel` from
       `src/components/query-states.tsx` — no new visual design.
-- [ ] Offer a link to `/` as the only recovery affordance (OQ-5a) — no
+- [x] Offer a link to `/` as the only recovery affordance (OQ-5a) — no
       reset button, which risks an immediate re-throw loop.
-- [ ] Keep `console.error`; the boundary changes what the *user* sees,
+- [x] Keep `console.error`; the boundary changes what the *user* sees,
       not what a developer can observe.
-- [ ] Confirm `window.onerror` / `unhandledrejection` / any beacon
+- [x] Confirm `window.onerror` / `unhandledrejection` / any beacon
       wiring is **absent** — those are export-shaped and out of scope.
-- [ ] Add a route test: mount with `createMemoryRouter`, throw from a
+- [x] Add a route test: mount with `createMemoryRouter`, throw from a
       child, assert the panel renders and the topbar survives.
-- [ ] Add an entry to `src/a11y/axe.test.tsx` rendering a throwing route,
+- [x] Add an entry to `src/a11y/axe.test.tsx` rendering a throwing route,
       asserting zero serious/critical violations.
-- [ ] Re-run `just bundle-budget` and record the delta.
+- [x] Re-run `just bundle-budget` and record the delta. **Measured:
+      122.5 -> 122.8 KB gz (+0.3 KB), 7.2 KB under the 130 KB budget.**
 
 ##### Success Criteria
 
@@ -271,17 +277,18 @@ not export.
 
 ##### Tasks
 
-- [ ] Update `CLAUDE.md` — the logging/redaction rules, the reserved
+- [x] Update `CLAUDE.md` — the logging/redaction rules, the reserved
       server paths, and the liveness-vs-readiness distinction.
-- [ ] Update `README.md` and the chart README with the new env and
+- [x] Update `README.md` and the chart README with the new env and
       values.
-- [ ] Tick every Phase 1–4 box in this document.
-- [ ] Bump the chart to **0.1.9** and `appVersion` to the release
-      (bare semver — metadata-action strips the `v`).
-- [ ] Regenerate `CHANGELOG.md` after `git fetch --tags`; the
+- [x] Tick every Phase 1–4 box in this document.
+- [x] Bump the chart to **0.1.9** and `appVersion` to the release
+      (bare semver — metadata-action strips the `v`). **Done: chart
+      `0.1.9`, `appVersion: "0.9.0"`.**
+- [x] Regenerate `CHANGELOG.md` after `git fetch --tags`; the
       `chore(changelog): Auto-sync` commit must be **last**.
-- [ ] Open the PR with exactly one release label (`minor`) and
-      `Closes #18` in the body (OQ-3a).
+- [x] Open the PR with exactly one release label (`minor`) and
+      `Closes #18` in the body (OQ-3a). **[#35](https://github.com/donaldgifford/docz-site/pull/35).**
 
 ##### Success Criteria
 

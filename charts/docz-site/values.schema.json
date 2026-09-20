@@ -28,6 +28,16 @@
               "href": { "type": "string" }
             }
           }
+        },
+        "logLevel": {
+          "description": "Log verbosity. Constrained because the server falls back to info on anything it does not recognize, so a typo here would otherwise be invisible — the deployment would simply keep logging at the default.",
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"]
+        },
+        "logFormat": {
+          "description": "Log output format: json for one object per line into an aggregator, text for readable local runs.",
+          "type": "string",
+          "enum": ["json", "text"]
         }
       }
     },

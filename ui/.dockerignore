@@ -38,6 +38,9 @@ Thumbs.db
 
 # Testing
 coverage
+# server/ is copied wholesale into the runtime image (see Dockerfile);
+# its suites are not runtime code and must not ship.
+server/*.test.ts
 
 # Misc
 README.md

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { stashReturnTo } from "@/lib/authReturn";
@@ -38,6 +38,34 @@ export function NotFoundPanel() {
   );
 }
 
+/**
+ * The panel chrome, shared so the query-error and route-error surfaces
+ * stay one visual design with one place to change it. `children` is the
+ * recovery affordance — a retry button here, a link out of a crashed
+ * route in RouteErrorBoundary.
+ */
+export function ErrorPanelFrame({
+  message,
+  children,
+}: {
+  message: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mx-auto my-16 w-max max-w-full border border-[color-mix(in_srgb,var(--color-st-rejected)_35%,transparent)] bg-bg-raised px-8 py-6 text-center">
+      <p className="font-mono text-[14px] text-fg-secondary">
+        Something went wrong
+      </p>
+      <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">{message}</p>
+      {children}
+    </div>
+  );
+}
+
+/** Shared class for the panel's single action, button or link. */
+export const ERROR_PANEL_ACTION =
+  "mt-4 inline-block border border-border-strong px-4 py-1 font-mono text-[13px] text-fg-secondary hover:bg-bg-hover";
+
 export function ErrorPanel({
   message,
   onRetry,
@@ -46,18 +74,10 @@ export function ErrorPanel({
   onRetry: () => void;
 }) {
   return (
-    <div className="mx-auto my-16 w-max max-w-full border border-[color-mix(in_srgb,var(--color-st-rejected)_35%,transparent)] bg-bg-raised px-8 py-6 text-center">
-      <p className="font-mono text-[14px] text-fg-secondary">
-        Something went wrong
-      </p>
-      <p className="mt-2 max-w-96 text-[14px] text-fg-tertiary">{message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-4 border border-border-strong px-4 py-1 font-mono text-[13px] text-fg-secondary hover:bg-bg-hover"
-      >
+    <ErrorPanelFrame message={message}>
+      <button type="button" onClick={onRetry} className={ERROR_PANEL_ACTION}>
         retry
       </button>
-    </div>
+    </ErrorPanelFrame>
   );
 }

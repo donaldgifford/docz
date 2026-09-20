@@ -73,6 +73,9 @@ resources:
     cpu: 250m
     memory: 128Mi
 
+# -- Liveness probe. Stays on /healthz, which is unconditional: a
+# failing liveness probe RESTARTS the container, and restarting cannot
+# fix a broken image or mount — that is just CrashLoopBackOff.
 livenessProbe:
   # @default -- See values.yaml
   httpGet:
@@ -81,10 +84,16 @@ livenessProbe:
   initialDelaySeconds: 5
   periodSeconds: 15
 
+# -- Readiness probe. Points at /readyz, which verifies the dist/ is
+# servable and the runtime config validated — a failing readiness probe
+# HOLDS TRAFFIC, so a bad deploy stalls the rollout and the previous
+# ReplicaSet keeps serving. /readyz makes no call to docz-api by
+# design: gating readiness on the API would evict every pod from the
+# Service when the API blipped.
 readinessProbe:
   # @default -- See values.yaml
   httpGet:
-    path: /healthz
+    path: /readyz
     port: http
   initialDelaySeconds: 5
   periodSeconds: 10
@@ -94,8 +103,8 @@ readinessProbe:
 # browser and API share one origin (no CORS, first-party session cookie).
 config:
   # -- Container HTTP listen port (drives the PORT env var and the
-  # Service targetPort). The SPA, /healthz, and the API proxy are all
-  # served here.
+  # Service targetPort). The SPA, /healthz, /readyz, and the API proxy
+  # are all served here.
   port: 8080
   # -- Absolute base URL of the docz-api the site proxies to
   # (DOCZ_API_URL). In-cluster this is the docz-api Service, e.g.
@@ -124,6 +133,18 @@ config:
   # entries degrade to fewer/no pins, never a broken page. Empty →
   # no pins and the env var is omitted.
   navLinks: []
+  # -- Log verbosity (DOCZ_LOG_LEVEL): `debug`, `info`, `warn`, or
+  # `error`. `debug` adds a line per request plus the proxied `/auth/*`
+  # flow — the level to reach for when troubleshooting an Okta or
+  # Keycloak login. Credential-bearing values (`code`, `state`,
+  # cookies) are redacted at every level, enforced by a test. The
+  # values schema constrains this to the four names so a typo fails at
+  # install; at runtime an unrecognized level falls back to `info`,
+  # never to something noisier.
+  logLevel: "info"
+  # -- Log output format (DOCZ_LOG_FORMAT): `json` (one object per
+  # line, for a log aggregator) or `text` (readable, for local runs).
+  logFormat: "json"
 
 # -- Horizontal Pod Autoscaler. Off by default.
 autoscaling:

@@ -54,6 +54,10 @@ spec:
               value: {{ .Values.config.authProviders | quote }}
             - name: DOCZ_MERMAID_LAYOUT
               value: {{ .Values.config.mermaidLayout | quote }}
+            - name: DOCZ_LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: DOCZ_LOG_FORMAT
+              value: {{ .Values.config.logFormat | quote }}
             {{- with .Values.config.navLinks }}
             - name: DOCZ_NAV_LINKS
               value: {{ toJson . | quote }}

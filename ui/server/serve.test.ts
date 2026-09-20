@@ -3,6 +3,8 @@ import { describe, expect, test } from "bun:test";
 import {
   injectRuntimeConfig,
   resolveAuthProviders,
+  resolveLogFormat,
+  resolveLogLevel,
   resolveMermaidLayout,
   resolveNavLinks,
   runtimeConfigScript,
@@ -127,6 +129,44 @@ describe("resolveMermaidLayout", () => {
     ]) {
       expect(resolveMermaidLayout(hostile)).toBe("elk");
     }
+  });
+});
+
+describe("resolveLogLevel", () => {
+  test("defaults to info when unset, empty, or unknown", () => {
+    expect(resolveLogLevel(undefined)).toBe("info");
+    expect(resolveLogLevel("")).toBe("info");
+    expect(resolveLogLevel("   ")).toBe("info");
+    expect(resolveLogLevel("trace")).toBe("info");
+    expect(resolveLogLevel("verbose")).toBe("info");
+  });
+
+  test("accepts every level, normalizing case and space", () => {
+    expect(resolveLogLevel("debug")).toBe("debug");
+    expect(resolveLogLevel(" DEBUG ")).toBe("debug");
+    expect(resolveLogLevel("Warn")).toBe("warn");
+    expect(resolveLogLevel("error")).toBe("error");
+  });
+
+  test("an unknown level fails CLOSED — quieter, never noisier", () => {
+    // A typo'd level must not silently turn on debug output on a
+    // production deployment, where debug carries request paths.
+    expect(resolveLogLevel("dbug")).toBe("info");
+    expect(resolveLogLevel("__proto__")).toBe("info");
+  });
+});
+
+describe("resolveLogFormat", () => {
+  test("defaults to json when unset, empty, or unknown", () => {
+    expect(resolveLogFormat(undefined)).toBe("json");
+    expect(resolveLogFormat("")).toBe("json");
+    expect(resolveLogFormat("logfmt")).toBe("json");
+  });
+
+  test("accepts both formats, normalizing case and space", () => {
+    expect(resolveLogFormat("text")).toBe("text");
+    expect(resolveLogFormat(" TEXT ")).toBe("text");
+    expect(resolveLogFormat("json")).toBe("json");
   });
 });
 

@@ -1,6 +1,6 @@
 # Multi-stage build (IMPL-0001 Phase 4): full toolchain to build,
 # slim Bun runtime to serve. The runtime image contains only dist/ and
-# server/serve.ts — no node_modules, no sources.
+# the server/ modules — no node_modules, no app sources.
 #
 #   docker build -t docz-site .
 #   docker run -p 8080:8080 -e DOCZ_API_URL=http://docz-api:8080 docz-site
@@ -25,7 +25,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=build /app/dist ./dist
-COPY server/serve.ts ./server/serve.ts
+# The WHOLE server/ directory, not an enumerated file: serve.ts imports
+# sibling modules (logger, redact, route-class), and naming one file
+# here meant the container failed to start with "Cannot find module
+# './logger'" the moment serve.ts stopped being self-contained. Tests
+# are excluded via .dockerignore.
+COPY server/ ./server/
 
 USER bun
 EXPOSE 8080

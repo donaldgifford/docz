@@ -388,10 +388,25 @@ console message and nothing else (INV-0006 F9). `src/app/router.tsx`
 defines no `errorElement`, `src/` contains no error boundary, and
 `src/main.tsx` installs no global handler.
 
-**Shape.** An `errorElement` on the root route (`path: "/"`, which
-already wraps every child) catches render and lazy-load errors from any
-descendant. It renders inside `AppShell`, so the topbar survives and the
-user can navigate away rather than being stranded.
+**Shape.** An error boundary catches render and lazy-load errors from
+any descendant and renders inside `AppShell`, so the topbar survives and
+the user can navigate away rather than being stranded.
+
+> [!IMPORTANT]
+> **Amended during IMPL-0007 Phase 4.** This section originally said to
+> put the `errorElement` on the root route (`path: "/"`) "which already
+> wraps every child". That does not do what it claims: a boundary
+> replaces the element of the route that **owns** it, so a root-level
+> boundary swaps out `AppShell` itself and takes the topbar with it —
+> stranding the user on a panel with no navigation, which is precisely
+> the failure this component exists to fix.
+>
+> The boundary therefore sits on a **pathless layout route directly
+> below `AppShell`**, wrapping every real route. The panel then renders
+> through `AppShell`'s `<Outlet/>` and the chrome survives. Both
+> behaviours are pinned in `src/app/route-error.test.tsx`, including a
+> test that the root-level placement loses the topbar — so the reason
+> for the extra nesting level cannot be refactored away by accident.
 
 **Appearance is not a new design.** `src/components/query-states.tsx`
 already exports `ErrorPanel` alongside `NotFoundPanel` — the established

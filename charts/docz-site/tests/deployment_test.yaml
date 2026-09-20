@@ -32,7 +32,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-site:0.8.0"
+          value: "ghcr.io/donaldgifford/docz-site:0.9.0"
 
   - it: should use custom image tag when set
     set:
@@ -55,14 +55,17 @@ tests:
             name: http
             protocol: TCP
 
-  - it: should probe /healthz for both liveness and readiness
+  # The split matters: liveness failing RESTARTS the container, readiness
+  # failing HOLDS TRAFFIC. A broken dist/ must stall the rollout, not
+  # CrashLoopBackOff, so the two probes must never share a path again.
+  - it: should probe /healthz for liveness and /readyz for readiness
     asserts:
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet.path
           value: /healthz
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.path
-          value: /healthz
+          value: /readyz
 
   - it: should set the PORT and DOCZ_API_URL env vars
     asserts:
@@ -114,6 +117,43 @@ tests:
           content:
             name: DOCZ_MERMAID_LAYOUT
             value: "dagre"
+
+  - it: should default DOCZ_LOG_LEVEL to info and DOCZ_LOG_FORMAT to json
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_LEVEL
+            value: "info"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_FORMAT
+            value: "json"
+
+  - it: should set the log env from config.logLevel and config.logFormat
+    set:
+      config:
+        logLevel: "debug"
+        logFormat: "text"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_LEVEL
+            value: "debug"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_FORMAT
+            value: "text"
+
+  - it: should reject a log level outside the schema enum
+    set:
+      config:
+        logLevel: "trace"
+    asserts:
+      - failedTemplate: {}
 
   - it: should omit DOCZ_NAV_LINKS by default
     asserts:

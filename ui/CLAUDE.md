@@ -245,6 +245,58 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   is a disclosure (not `role="menu"`), and logout runs `onSettled` —
   navigate to `/login` BEFORE `queryClient.clear()`, or the page being
   left refetches everything under the dead session.
+- Server observability (DESIGN-0006, IMPL-0007): every signal shares
+  ONE classifier, `server/route-class.ts` — a closed 8-value
+  `RouteClass` union plus `normalizeMethod()`. BOTH inputs are
+  attacker-controlled (SPA paths are unbounded; `fetch()` accepts
+  arbitrary method tokens), so nothing is ever echoed from the request
+  into a label. Never build a label any other way — the closed set is
+  what keeps log volume and metric cardinality bounded by construction.
+  `server/redact.ts` is an ALLOWLIST: query keys survive, every value
+  becomes `<redacted>`, and `SAFE_QUERY_VALUE_KEYS` is deliberately
+  EMPTY so a parameter nobody thought about is redacted by default.
+  Headers are never recorded (cookie → `has_cookie` presence only);
+  `Location` → host only. NEVER log a raw URL. `server/logger.ts`
+  (hand-written, no dependency) does NOT redact — callers pass values
+  already through redact.ts, and that boundary stays sharp: a logger
+  that redacts is one someone eventually trusts with a raw URL.
+  `server/redaction-gate.test.ts` is a security gate in the spirit of
+  the XSS suite — parameterised over every level × format, asserting on
+  SERIALISED output, with a self-check proving it fails when redaction
+  is bypassed. Extend it when adding a log field. Config resolvers fail
+  CLOSED (unknown level → `info`, never something noisier, because
+  debug carries request paths).
+  Probes short-circuit BEFORE any signal (a kubelet every 10 s would
+  otherwise be most of the log volume). `/healthz`, `/readyz`, and
+  `/metrics` are RESERVED server paths and must never fall through to
+  the SPA — a probe path answering 200 text/html silently poisons
+  whatever scraped it, which is why `/metrics` 404s until its phase
+  lands. `/healthz` is UNCONDITIONAL (liveness restarts the container,
+  and restarting cannot conjure a `dist/`); `/readyz` checks (readiness
+  holds traffic, so a bad deploy stalls the rollout and the previous
+  ReplicaSet keeps serving). `/readyz` makes NO call to docz-api —
+  gating readiness on the API would evict every pod from the Service
+  when it blipped, turning a degradation DESIGN-0003 already handles
+  into a total outage; upstream health is a metric. `checkReady` and
+  `invalidConfigVars` take `distDir`/`env` as arguments (module-level
+  `DIST` is read once at import), and `invalidConfigVars` runs the REAL
+  resolvers and reports whether they fell back rather than restating
+  any whitelist. It is deliberately narrow — only a non-empty value
+  that validates empty-handed counts, because readiness failure stalls
+  a rollout and that is too blunt for a cosmetic typo.
+- The route error boundary (`src/app/route-error.tsx`) sits on a
+  PATHLESS layout route directly below `AppShell`, NOT on the root
+  route. A boundary replaces the element of the route that owns it, so
+  a root-level one swaps out AppShell and takes the topbar with it —
+  stranding the user on a panel with no navigation, which is the exact
+  failure it exists to fix. `route-error.test.tsx` pins both, including
+  that the root placement loses the topbar, so the extra nesting level
+  can't be refactored away as redundant. It CATCHES AND DISPLAYS only:
+  no `window.onerror`, no `unhandledrejection`, no beacon (a test
+  verifies their absence). A link home is the ONLY affordance — a retry
+  would re-render the same crashed route and throw again. Panel chrome
+  is shared via `ErrorPanelFrame` in query-states.tsx; the error state
+  is in the axe sweep.
 - Session classification (DESIGN-0003): auth chrome renders from
   `classifySession` (`src/lib/session.ts`) — pending / signed-in /
   anonymous (`provider === "none"`, docz-api's AUTH_PROVIDERS=none) /
@@ -426,6 +478,15 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   password's value (a REDACTED placeholder still matches — drop the
   password component entirely), and a purge means rewriting branch
   history.
+- Changing anything under `charts/` requires bumping `Chart.yaml`'s
+  `version` in the SAME PR. `ghcr.yml`'s chart job reads that value and
+  runs a `helm pull` idempotency precheck, so a chart change without a
+  bump publishes NOTHING and the run is still all-green — the only
+  signal is `SLSA provenance (chart)` showing `skipped`. `appVersion`
+  tracks the app release and must be BARE semver (metadata-action
+  strips the `v`); `tests/deployment_test.yaml` pins the image tag to
+  it, so the two move together. `charts/` is in `.prettierignore` — do
+  not reformat those files with a JSON/YAML round-trip.
 - Per-task local gate is `just ci` semantics: test, lint, `tsc -b
   --force`, build, AND `bun run format:check` — formatting misses fail
   CI even when everything else is green.
