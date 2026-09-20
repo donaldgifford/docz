@@ -1,8 +1,10 @@
-package template
+package doctemplate
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
+	"text/template"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
@@ -21,12 +23,29 @@ const DefaultTemplateName = "default"
 // docType is the typed config.DocType (DESIGN-0004 §F) so a stray
 // status or path string fails to compile here rather than producing a
 // confusing "no embedded template for type %q" miss at runtime.
+//
+// A type with no embedded template is ErrNoTemplate. The embedded FS's own
+// error is not wrapped: it says only that a file does not exist, which a
+// caller already knows, and the sentinel is what a caller can act on.
 func EmbeddedDocumentTemplate(docType config.DocType) (string, error) {
 	data, err := templateFS.ReadFile("templates/" + string(docType) + ".md")
 	if err != nil {
-		return "", fmt.Errorf("no embedded template for type %q: %w", docType, err)
+		return "", fmt.Errorf("%w: %q has no embedded template", ErrNoTemplate, docType)
 	}
+
 	return string(data), nil
+}
+
+// GenericTemplate returns the embedded default body template — the one that
+// scaffolds a custom type (DESIGN-0015 §3).
+//
+// Its own name rather than EmbeddedDocumentTemplate(DefaultTemplateName),
+// because "default" is not a document type and asking for it through the
+// type-shaped accessor reads as though it were one. A consumer scaffolding a
+// repo writes this next to the skeleton EmbeddedSchema returns for the same
+// name, and the pair is what makes a custom type's documents validate.
+func GenericTemplate() (string, error) {
+	return EmbeddedDocumentTemplate(DefaultTemplateName)
 }
 
 // EmbeddedSchema returns the embedded marker skeleton for the given schema
@@ -59,13 +78,30 @@ func EmbeddedWikiIndex() (string, error) {
 	return string(data), nil
 }
 
-// EmbeddedDoczYAML returns the embedded text/template source for the
-// `.docz.yaml` config file produced by `docz init`. Callers render it
-// with `text/template`, passing a `config.Config` as the template data.
-func EmbeddedDoczYAML() (string, error) {
-	data, err := templateFS.ReadFile("templates/docz_yaml.tmpl")
+// DefaultConfigYAML returns the `.docz.yaml` that `docz init` writes: the
+// embedded template rendered over config.DefaultConfig().
+//
+// It absorbs the rendering every caller was doing for itself, so `docz init`
+// and any consumer that scaffolds a repo produce the same file from the same
+// source of defaults (DESIGN-0014 §2.7). The template source is deliberately
+// not exported: rendering it over some *other* config would produce a file
+// whose comments describe defaults it does not hold, and nothing in the fleet
+// wants that.
+func DefaultConfigYAML() (string, error) {
+	src, err := templateFS.ReadFile("templates/docz_yaml.tmpl")
 	if err != nil {
 		return "", fmt.Errorf("reading embedded docz yaml template: %w", err)
 	}
-	return string(data), nil
+
+	tmpl, err := template.New("docz_yaml").Parse(string(src))
+	if err != nil {
+		return "", fmt.Errorf("parsing docz yaml template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, config.DefaultConfig()); err != nil {
+		return "", fmt.Errorf("rendering docz yaml template: %w", err)
+	}
+
+	return buf.String(), nil
 }

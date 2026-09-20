@@ -6,9 +6,9 @@ import (
 	"testing"
 	"text/template"
 
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
 	"github.com/donaldgifford/docz/v2/pkg/design"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/kinds"
 )
 
@@ -19,7 +19,7 @@ const typeName = "design"
 // the template it was derived from.
 //
 // The table is written out as data rather than derived at run time, because
-// deriving it would mean this package importing internal/template, and rule R2
+// deriving it would mean this package importing doctemplate, and rule R2
 // stops a type package's production imports at the core. So the coupling lives
 // here instead: rename a section in the template, or move a marker, and this
 // test fails rather than a field silently going zero for every document the
@@ -74,9 +74,9 @@ func TestHeadings_RenderingChangesNothing(t *testing.T) {
 
 // embeddedTemplate returns the type's template as it ships.
 //
-// internal/template is reachable from a test inside the module, and only from
-// a test: an external test package's imports are not in the package's own
-// dependency graph, so the layer test does not see this one.
+// doctemplate is a layer above this package, so only a test may reach it: an
+// external test package's imports are not in the package's own dependency
+// graph, so the layer test does not see this one.
 func embeddedTemplate(t *testing.T) []byte {
 	t.Helper()
 

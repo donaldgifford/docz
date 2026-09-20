@@ -652,7 +652,7 @@ end of this phase `internal/` no longer exists.
 
 #### Tasks
 
-- [ ] `git mv internal/template pkg/doczcore/doctemplate` (package
+- [x] `git mv internal/template pkg/doczcore/doctemplate` (package
       `doctemplate`, embedded `templates/` and `docz_yaml.tmpl` included)
       and settle the exported surface per DESIGN-0014 §2.7: `ErrNoTemplate`,
       `ErrNoSchema`, `Data`, `IndexHeaderData`, `WikiIndexData`, `Resolve`,

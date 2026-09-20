@@ -1,4 +1,4 @@
-package template
+package doctemplate
 
 import (
 	"flag"
@@ -47,7 +47,8 @@ func TestGoldenTemplates(t *testing.T) {
 				t.Fatalf("Render(): %v", err)
 			}
 
-			goldenPath := filepath.Join("..", "..", "testdata", "golden", string(typeName)+".md")
+			goldenPath := filepath.Join(
+				"..", "..", "..", "testdata", "golden", string(typeName)+".md")
 
 			if *update {
 				if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {

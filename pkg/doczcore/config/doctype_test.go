@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/v2/internal/template"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 )
 
 // TestDocTypeRegistry_AllHaveEmbeddedTemplate asserts that every doc
@@ -16,7 +16,7 @@ import (
 func TestDocTypeRegistry_AllHaveEmbeddedTemplate(t *testing.T) {
 	t.Parallel()
 	for _, dt := range config.AllDocTypes() {
-		if _, err := template.EmbeddedDocumentTemplate(config.DocType(dt.TemplateName)); err != nil {
+		if _, err := doctemplate.EmbeddedDocumentTemplate(config.DocType(dt.TemplateName)); err != nil {
 			t.Errorf(
 				"doc type %q has no embedded template %q.md: %v",
 				dt.Name, dt.TemplateName, err,
@@ -26,10 +26,10 @@ func TestDocTypeRegistry_AllHaveEmbeddedTemplate(t *testing.T) {
 }
 
 // The registry<->embedded-index-header coupling invariant (every doc type
-// ships index_<TemplateName>.md) now lives in internal/template's
+// ships index_<TemplateName>.md) now lives in doctemplate's
 // TestResolveIndexHeader_EmbeddedBuiltin, which reads the embedded FS
 // directly and also asserts byte-identity. EmbeddedIndexHeader was removed
-// in IMPL-0012 Phase 2 in favor of template.ResolveIndexHeader.
+// in IMPL-0012 Phase 2 in favor of doctemplate.ResolveIndexHeader.
 
 // TestDocTypeRegistry_NoDuplicateNames guards against two registry
 // entries claiming the same canonical name — a silent footgun where

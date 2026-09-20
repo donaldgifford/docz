@@ -37,7 +37,7 @@ func listPackages(t *testing.T) []string {
 // imports only.
 //
 // Test imports are excluded, and that is the point rather than a shortcut: a
-// core package's test may import internal/template to pin its behaviour
+// core package's test may import doctemplate to pin its behaviour
 // against the embedded templates, and several do. What must not happen is a
 // core package depending on a type package in the code a consumer compiles.
 func deps(t *testing.T, pkg string) []string {

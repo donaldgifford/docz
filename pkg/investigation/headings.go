@@ -25,7 +25,7 @@ const (
 // It is the same data kinds.SpecFromTemplate derives from the embedded
 // investigation template, written out here and pinned to it by a test.
 // Written out because of rule R2 and the layer rules: deriving it at run time
-// would mean this package importing internal/template, and a type package's
+// would mean this package importing doctemplate, and a type package's
 // production imports stop at the core. The test carries the coupling instead,
 // so a template section that is renamed fails the build rather than silently
 // making a field zero for every legacy document.

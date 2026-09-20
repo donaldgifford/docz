@@ -1,4 +1,4 @@
-package template
+package doctemplate
 
 import (
 	"sort"
