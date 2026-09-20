@@ -193,7 +193,7 @@ CLI does.
       canonical region markers from the start (DESIGN-0015 rollout note)
       so no later migration touches them, and `author:` is pinned in each
       fixture config.
-- [ ] Write the parity driver as a Go test in `test/parity/` behind
+- [x] Write the parity driver as a Go test in `test/parity/` behind
       `//go:build parity`, driving the binary with `os/exec` (Open
       Question 3), with one subtest per fixture × command: `init` on an
       empty directory
