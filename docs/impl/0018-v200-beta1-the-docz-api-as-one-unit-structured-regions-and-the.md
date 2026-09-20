@@ -48,6 +48,7 @@ created: 2026-09-19
   - [8. The plan delta in the parity suite](#8-the-plan-delta-in-the-parity-suite)
   - [9. Marking this document by hand now](#9-marking-this-document-by-hand-now)
   - [10. Which documents get the per-type tier in docz validate](#10-which-documents-get-the-per-type-tier-in-docz-validate)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -108,6 +109,7 @@ removal on the v2 line).
 - Any change to the frozen v1.0 surface of `config`, `document`, `docparse`,
   `docwrite`, and `toc` beyond additions (ADR-0001 Decision 7 still holds
   through the betas; the freeze is lifted for shape changes only at v2.0.0).
+- `docz task list <impl-id>` (Open Question 5: deferred to a later beta).
 - Generics in the type layer (ADR-0002 Open Question 5: no).
 - A CommonMark AST (DESIGN-0015 Open Question 7: hand-rolled walker).
 - Hooks for `pkg/wiki` (DESIGN-0014 Open Question 12: none).
@@ -116,7 +118,8 @@ removal on the v2 line).
 
 Each phase builds on the previous one. A phase is complete when all its
 tasks are checked off and its success criteria are met. One phase is one
-`dont-release` PR merged in order (Open Question 1); Phases 0–4 leave the
+`dont-release` PR merged in order, Phase 1's landing as per-package commits
+(Open Question 1); Phases 0–4 leave the
 CLI on its current code paths, so a `main` build at any point behaves like
 v1.2.2 for CLI users while carrying the new packages for library consumers.
 Every phase ends with `make fmt`, `make lint`, and `make ci` green, a
@@ -166,8 +169,10 @@ CLI does.
       canonical region markers from the start (DESIGN-0015 rollout note)
       so no later migration touches them, and `author:` is pinned in each
       fixture config.
-- [ ] Write the parity driver in `test/parity/` (shape per Open Question 3)
-      with one case per fixture × command: `init` on an empty directory
+- [ ] Write the parity driver as a Go test in `test/parity/` behind
+      `//go:build parity`, driving the binary with `os/exec` (Open
+      Question 3), with one subtest per fixture × command: `init` on an
+      empty directory
       and on the fixture; `create <type> "<title>"` with `--author`,
       `--status`, and `--no-update`; `update` and `update <type>` with and
       without `--dry-run`; `list` in text, json, and csv with `--status`;
@@ -185,24 +190,30 @@ CLI does.
       plan`. A `-update` flag captures goldens only when `DOCZ_PARITY_BIN`
       names the binary to capture from.
       verify: `go vet -tags parity ./test/parity/...`
-- [ ] Capture the goldens once from the v1.2.2 binary (source per Open
-      Question 2) and commit them with `test/parity/README.md` recording
-      the tag, commit sha, `go version`, and platform. Goldens are never
-      regenerated from a v2 build; a golden is only edited by hand under a
-      permitted delta, with the reason in the PR.
-      verify: `DOCZ_PARITY_BIN=<v1.2.2 binary> go test -tags parity ./test/parity/ -update`
-      leaves a populated `test/parity/testdata/`
+- [ ] Add the `parity-capture` Makefile target: `go install
+      github.com/donaldgifford/docz/cmd/docz@v1.2.2` into a temporary
+      `GOBIN` (Open Question 2), then the `-update` run with
+      `DOCZ_PARITY_BIN` pointing at it; the variable can be preset to
+      capture from another binary. Capture the goldens once and commit
+      them with `test/parity/README.md` recording the tag, the module
+      checksum, `go version`, and platform. Goldens are never regenerated
+      from a v2 build; a golden is only edited by hand under a permitted
+      delta, with the reason in the PR.
+      verify: `make parity-capture` leaves a populated
+      `test/parity/testdata/`
 - [ ] Add the `parity` Makefile target (build `build/bin/docz`, then
       `go test -tags parity ./test/parity/...` against it, overridable with
-      `BIN=`) and `parity-capture` (the `-update` run gated on
-      `DOCZ_PARITY_BIN`). Not yet in `make ci` (Phase 5 wires it). As a
-      determinism self-check, replay the goldens against the same v1.2.2
-      binary they came from.
+      `BIN=`). Not yet in `make ci` (Phase 5 wires it). As a determinism
+      self-check, replay the goldens against the same v1.2.2 binary they
+      came from.
       verify: `make parity BIN=<v1.2.2 binary>`
-- [ ] Add the pre-release build trigger (shape per Open Question 4) so a
-      pushed `v*-beta.*` tag runs goreleaser with the `/v2` ldflags;
-      `prerelease: auto` already marks the GitHub release. The
-      label-driven `bump-version` job must not run on tag events.
+- [ ] Add `.github/workflows/prerelease.yml` on `push: tags: ['v*-beta.*']`
+      running only the goreleaser job (checkout with full history,
+      setup-go, GPG import, `goreleaser release --clean`) so a pushed beta
+      tag builds binaries with the `/v2` ldflags; `prerelease: auto`
+      already marks the GitHub release (Open Question 4). `release.yml` is
+      untouched, so the label-driven `bump-version` job never sees a tag
+      event.
       verify: `actionlint .github/workflows/*.yml` (or the schema check the
       repo's editor runs) and `make release-local`
 - [ ] Check `pr-semver-bump`'s pre-release-base behaviour (ADR-0002 Open
@@ -227,9 +238,9 @@ CLI does.
   against the binary they were captured from.
 - `make release-local` builds a snapshot with the `/v2` ldflags and
   `build/bin/docz version` prints an injected version.
-- `test/parity/README.md` records the capture provenance; the pre-release
-  workflow exists and lints clean; the `pr-semver-bump` finding is written
-  into `DEVELOPMENT.md`.
+- `test/parity/README.md` records the capture provenance;
+  `.github/workflows/prerelease.yml` exists and lints clean; the
+  `pr-semver-bump` finding is written into `DEVELOPMENT.md`.
 - The PR merges with `dont-release` and `main` cuts nothing.
 
 ---
@@ -603,8 +614,8 @@ one place the retiring heading heuristics live.
 The one breaking change to the frozen catalogue, riding the v2 line as
 ADR-0003 decided. It lands as its own PR ahead of the swap so the registry
 is final before `cmd/` is re-pointed, and it is the first phase whose CLI
-output differs from v1.2.2 in more than marker lines — which is why Open
-Question 8 needs an answer before this phase starts.
+output differs from v1.2.2 in more than marker lines, which is why it adds
+the fourth permitted delta to the parity suite (Open Question 8).
 
 #### Tasks
 
@@ -627,9 +638,12 @@ Question 8 needs an answer before this phase starts.
       `docs/templates/plan.md` as the fix; `docz template override plan`
       now scaffolds the generic pair (Phase 3), which the message can
       point at.
-- [ ] Apply the parity rule from Open Question 8 to the driver and confirm
+- [ ] Add the `types.plan` normaliser to the parity driver — the block is
+      dropped from `docz config` output and from a generated `.docz.yaml`
+      on both sides before comparing — with its own unit test, list it as
+      the fourth permitted delta in `test/parity/README.md`, and confirm
       the legacy fixture's skips (`create plan`, `template show|export
-      plan`) hold.
+      plan`) hold (Open Question 8).
       verify: `make parity`
 - [ ] This repo's own remnants: drop the dormant `plan:` block from
       `.docz.yaml`, delete `docs/plan/README.md`, and run
@@ -646,8 +660,8 @@ Question 8 needs an answer before this phase starts.
   `config.LookupDocType("plan")` reports false.
 - No `plan.md`, `index_plan.md`, or `schema/plan.md` exists under the
   embedded templates, and `docz --help` lists five types.
-- The legacy-block tests pass and the parity legacy fixture is green under
-  the agreed delta rule; `make parity` is green for every fixture.
+- The legacy-block tests pass; `make parity` is green for every fixture
+  with the `types.plan` normaliser as the fourth permitted delta.
 - README, CLAUDE.md, and `DEVELOPMENT.md` no longer describe plan as a
   built-in; `mkdocs.yml` has no Plans entry.
 
@@ -696,18 +710,19 @@ Decision 7).
       every exit code.
 - [ ] `docz update --regions [--dry-run]` → `repo.InsertRegions` with the
       report printed per document; command tests pin the dry-run output.
-- [ ] `docz task list <impl-id>` only if Open Question 5 says so.
-- [ ] Migrate docz's own `docs/` (placement per Open Question 6): run
-      `build/bin/docz update --regions`, commit the mechanical diff on its
-      own, then run `docz validate` and fix by hand whatever the corpus
-      reports (documents whose sections do not match their skeleton,
-      non-canonical markers, stale ToCs after `docz update`), committing
-      the hand edits separately.
+- [ ] Migrate docz's own `docs/` in this PR as separate commits (Open
+      Question 6): run `build/bin/docz update --regions` and commit the
+      mechanical diff on its own, then run `docz validate` and fix by hand
+      whatever the corpus reports (documents whose sections do not match
+      their skeleton, non-canonical markers, stale ToCs after `docz
+      update`), committing the hand edits separately.
       verify: `build/bin/docz validate` exits 0
 - [ ] Wire `make parity` into `make ci` and the `test-go` CI job after the
       consumer smoke test; the swapped binary must be green under only the
-      permitted deltas. Apply Open Question 7's decision on `docz validate`
-      in CI.
+      permitted deltas. Then add a `validate` target running
+      `build/bin/docz validate` non-strict over this repo's `docs/` and
+      append it to `make ci` after `parity` (Open Question 7), so warnings
+      print and errors fail.
       verify: `make ci`
 - [ ] Extend `test/consumer/doc.go` so it imports every `pkg/` package
       (`config`, `document`, `docparse`, `docwrite`, `toc`, `validate`,
@@ -747,10 +762,9 @@ Decision 7).
 
 - `make ci`, now including `make parity`, is green on the swap PR and the
   `cmd/` test files are byte-identical to the Phase 4 baseline.
-- `make parity` is green against the swapped binary with only the
-  permitted deltas (marker lines; no goldens for `validate`, `update
-  --regions`, or `task list`; the legacy plan skips; the Open Question 8
-  rule).
+- `make parity` is green against the swapped binary with only the four
+  permitted deltas (marker lines; no goldens for `validate` or `update
+  --regions`; the legacy plan skips; the `types.plan` normaliser).
 - `build/bin/docz validate` exits 0 over docz's own `docs/` and a second
   `docz update --regions` reports every document unchanged.
 - `make test-consumer` imports all eleven `pkg/` packages from outside the
@@ -771,7 +785,7 @@ Decision 7).
 | ---- | ------ | ----------- |
 | `go.mod`, `**/*.go`, `Makefile`, `.goreleaser.yml`, `test/consumer/go.mod` | Modify | Module path `/v2` and ldflags (Phase 0) |
 | `test/parity/` (driver, `fixtures/`, `testdata/`, `README.md`) | Create | Parity suite with goldens captured from v1.2.2 (Phase 0) |
-| `.github/workflows/prerelease.yml` or `release.yml` | Create/Modify | `v*-beta.*` tag trigger (Phase 0, Open Question 4) |
+| `.github/workflows/prerelease.yml` | Create | `v*-beta.*` tag trigger running goreleaser only (Phase 0, Open Question 4) |
 | `pkg/doczcore/docparse/regions.go` + `testdata/regions/` | Create | `Markers`, `Regions`, goldens, `FuzzRegions` (Phase 1) |
 | `pkg/doczcore/toc/toc.go` | Modify | Span located via `docparse.Regions` kind `toc` (Phase 1) |
 | `pkg/doczcore/document/document.go` | Modify | `Frontmatter.Schema` (Phase 1) |
@@ -793,7 +807,7 @@ Decision 7).
 | `cmd/validate.go`, `cmd/validate_test.go` | Create | `docz validate` (Phase 5) |
 | `cmd/update.go` | Modify | `--regions` (Phase 5) |
 | `docs/**/*.md` | Modify | Corpus migrated with `update --regions` and hand fixes (Phase 5) |
-| `Makefile`, `.github/workflows/ci.yml` | Modify | `parity` in `make ci` and the `test-go` job (Phase 5) |
+| `Makefile`, `.github/workflows/ci.yml` | Modify | `parity` and `validate` in `make ci` and the `test-go` job (Phase 5) |
 | `test/consumer/doc.go` | Modify | Grows with each phase to cover every `pkg/` package |
 | `docs/adr/0001-*.md`, `docs/impl/0014-*.md`, `docs/design/0013-*.md` | Modify | Amendment, note, Abandoned (Phase 5) |
 | `CLAUDE.md`, `README.md`, `DEVELOPMENT.md` | Modify | Per phase; consolidated in Phase 5 |
@@ -851,6 +865,8 @@ largest step (two new packages, four frozen packages touched additively,
 every template, and the fixture corpus), and its review cost is the
 question.
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **One `dont-release` PR per phase, merged in order**, with Phase 1's
   work landing as a sequence of per-package commits so a reviewer can walk
   it commit by commit. Matches the design's gitGraph, and each phase's
@@ -867,6 +883,8 @@ question.
 The goldens are captured once and committed, so this only has to be
 reproducible and documented.
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **`go install github.com/donaldgifford/docz/cmd/docz@v1.2.2` into a
   temporary `GOBIN`** from a `make parity-capture` target: checksum-verified
   by the module proxy, no checkout, and the tag plus `go version` are
@@ -879,6 +897,8 @@ reproducible and documented.
 - d. Other.
 
 ### 3. Shape of the parity driver
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **A Go test in `test/parity/` inside the root module behind
   `//go:build parity`**, driving the binary with `os/exec`, one subtest per
@@ -894,6 +914,8 @@ reproducible and documented.
 - d. Other.
 
 ### 4. Pre-release build trigger
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **A separate `.github/workflows/prerelease.yml`** on
   `push: tags: ['v*-beta.*']` that runs only the goreleaser job (checkout
@@ -911,6 +933,9 @@ reproducible and documented.
 DESIGN-0014 §4 lists it as optional; ADR-0002 Open Question 4 says the CLI
 needs no first-party caller of `pkg/impl`.
 
+> **Resolved 2026-09-19: (a).** Removed from Phase 5; listed under Out of
+> Scope.
+
 - a. **Defer past this document.** Nothing consumes it, the parity suite
   has no golden for it, and it can ship in any later beta without a design
   change. *(recommendation)*
@@ -923,6 +948,8 @@ needs no first-party caller of `pkg/impl`.
 DESIGN-0015's rollout says "in the same PR" as the swap. The mechanical
 diff over every document in `docs/` is large.
 
+> **Resolved 2026-09-19: (a).**
+
 - a. **Same PR as the swap, as separate commits**: the `docz update
   --regions` output as one commit, hand fixes as another, so the reviewer
   can skip the mechanical one. Keeps the design's statement true and lets
@@ -933,6 +960,8 @@ diff over every document in `docs/` is large.
 - c. Other.
 
 ### 7. `docz validate` in this repo's CI
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **Yes, non-strict**: `build/bin/docz validate` joins `make ci` in
   Phase 5 after the corpus migration, so the corpus cannot drift from its
@@ -950,6 +979,9 @@ not after Phase 4, and `docz init`'s generated `.docz.yaml` carries the
 plan comment in v1.2.2 and not after. DESIGN-0014 §4's permitted deltas do
 not cover this. (`docz --help` also changes, but it is not in the suite.)
 
+> **Resolved 2026-09-19: (a).** The fourth permitted delta; applied in
+> Phase 4.
+
 - a. **A named normaliser in the driver** that drops the `types.plan` block
   from `docz config` output and from a generated `.docz.yaml` on both
   sides before comparing, listed as the fourth permitted delta in
@@ -962,6 +994,8 @@ not cover this. (`docz --help` also changes, but it is not in the suite.)
 - d. Other.
 
 ### 9. Marking this document by hand now
+
+> **Resolved 2026-09-19: (a).**
 
 - a. **No.** Leave IMPL-0018 unmarked and migrate it with the corpus in
   Phase 5, so it is one more real `InsertRegions` case. Nothing reads its
@@ -979,13 +1013,34 @@ that second case true.
 
 - a. **Add `Schema string` (the resolved schema name) to
   `repo.DocFindings`** and have `cmd/validate.go` run `impl.Validate` for
-  every document whose `Schema == "impl"`. A built-in impl document
-  resolves to `impl` by its type name, so the literal case in the diagram
-  still holds, and a custom type on the impl contract is covered. A
-  one-field, dated amendment to DESIGN-0015 §4. *(recommendation)*
+  every document whose `Schema == "impl"` or whose `Type == "impl"`. The
+  first clause covers a custom type on the impl contract; the second keeps
+  a built-in IMPL document on the impl check even when it names a stricter
+  repo-local skeleton (`schema: strict-impl`), since it is still an IMPL.
+  A custom type whose own skeleton merely copies the phase, tasks, and
+  criteria kinds is not on the impl contract and gets the generic tier
+  only — the name is the declaration. A one-field, dated amendment to
+  DESIGN-0015 §4. *(recommendation)*
 - b. Dispatch on `Type == "impl"` only, as the diagram reads; a custom type
   with `schema: impl` gets the generic tier only until a later beta.
 - c. Other.
+
+## Decisions
+
+Open Questions 1–9 resolved **(a)** on 2026-09-19; 10 is open.
+
+| # | Question | Resolution |
+| - | -------- | ---------- |
+| 1 | PR granularity | One `dont-release` PR per phase, merged in order; Phase 1 lands as per-package commits |
+| 2 | v1.2.2 binary for the golden capture | `go install …/cmd/docz@v1.2.2` into a temporary `GOBIN` from `make parity-capture`; provenance in `test/parity/README.md` |
+| 3 | Parity driver shape | A Go test in `test/parity/` behind `//go:build parity`, `os/exec` over the binary, file goldens, `-update` gated on `DOCZ_PARITY_BIN` |
+| 4 | Pre-release build trigger | A separate `prerelease.yml` on `v*-beta.*` tags running only goreleaser; `release.yml` untouched |
+| 5 | `docz task list` | Deferred past this document; removed from Phase 5 |
+| 6 | Corpus migration placement | In the swap PR as separate commits: the mechanical `update --regions` diff, then the hand fixes |
+| 7 | `docz validate` in CI | Yes, non-strict, appended to `make ci` after `parity` in Phase 5 |
+| 8 | Plan delta in the parity suite | A named `types.plan` normaliser, the fourth permitted delta, applied from Phase 4 |
+| 9 | Hand-marking this document | No; it migrates with the corpus in Phase 5 |
+| 10 | Per-type tier dispatch in `docz validate` | Open |
 
 ## References
 
