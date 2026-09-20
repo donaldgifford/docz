@@ -436,7 +436,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       `pkg/wiki` appears; a sibling test fails if any `go.opentelemetry.io`
       or logging module appears under `pkg/`.
       verify: `go test ./pkg/doczcore/ -run 'TestLayer'`
-- [ ] Create `pkg/impl` (`doc.go`, `parse.go`, `walk.go`, `validate.go`):
+- [x] Create `pkg/impl` (`doc.go`, `parse.go`, `walk.go`, `validate.go`):
       `Parse([]byte) (Doc, error)`, `Doc{ID, Title, Status, Author,
       Created, Objective, Implements, InScope, OutOfScope, Phases,
       FileChanges, Testing, Dependencies, OpenQuestions, Decisions,
@@ -463,6 +463,27 @@ consumer proof. The CLI's only visible change is the marker lines in
       deferred and skipped markers; criteria `Executable` iff the bullet
       starts with a backtick span; LF only; every string copied.
       verify: `go test ./pkg/impl/...`
+
+      > Amended 2026-09-20 during implementation. Writing the first consumer
+      > of the `kinds` readers exposed an off-by-one in them: every reader
+      > numbered its `Line` from the region *body* (the region's own first
+      > line dropped) while documenting, and `validate` assuming,
+      > "counted from the start of the region". `pkg/impl`'s criteria line
+      > assertion caught it. The readers now add `bodyOffset` at each
+      > construction site, so one numbering holds across `docparse` and
+      > `kinds`, a caller converts to a document line the one way
+      > (`region.Start + Line`), and `validate`'s existing arithmetic for
+      > references and open questions became correct without a change. The
+      > `kinds` goldens and six hand-written `Line` expectations shifted by
+      > one; nothing else moved. `pkg/impl` then shifts every field's lines
+      > onto the document, per the DESIGN-0014 §5 invariant that every
+      > reported `Line` is a line of the file the caller read.
+      >
+      > Two departures from the written task, both forced: the `Doc` lookups
+      > keep the value receivers DESIGN-0014 §2.9 pins, with a `nolint` and
+      > a stated reason, because `Doc` is past the linter's size threshold;
+      > and the deferred marker is accepted in both the prefix and suffix
+      > spellings the fleet writes, not only the suffix one.
 - [ ] `impl.Validate(doc []byte) []validate.Finding` with the codes
       `impl.phase.duplicate-token`, `impl.phase.no-heading`,
       `impl.phase.no-tasks`, `impl.phase.no-title`, `impl.task.empty`,
