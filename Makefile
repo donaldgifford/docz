@@ -184,7 +184,7 @@ license-report: ## Generate CSV report of all dependency licenses
 
 ## CI/CD
 
-ci: lint test test-consumer parity validate build license-check ## Run CI pipeline (lint + test + parity + validate + build + license check)
+ci: lint test test-consumer parity validate build license-check ## Run CI pipeline (lint + test + test-consumer + parity + validate + build + license check)
 	@ $(MAKE) --no-print-directory log-$@
 	@echo "✓ CI pipeline complete"
 
