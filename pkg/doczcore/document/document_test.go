@@ -279,3 +279,82 @@ created: "2025-01-01"
 		t.Errorf("Status = %q, want %q", fm.Status, "Draft")
 	}
 }
+
+// TestFrontmatter_Schema covers the optional `schema:` field added in
+// DESIGN-0015 §3: it round-trips through both read paths, an absent line
+// leaves it empty rather than erroring, and `omitempty` keeps it off the
+// wire for the common case so a re-marshalled document does not grow a
+// line it did not have.
+func TestFrontmatter_Schema(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ParseFrontmatter reads the name", func(t *testing.T) {
+		t.Parallel()
+
+		fm, err := ParseFrontmatter([]byte(
+			"---\nid: IMPL-0021\ntitle: T\nstatus: Draft\nschema: impl-strict\n---\nbody\n",
+		))
+		if err != nil {
+			t.Fatalf("ParseFrontmatter failed: %v", err)
+		}
+
+		if fm.Schema != "impl-strict" {
+			t.Errorf("Schema = %q, want %q", fm.Schema, "impl-strict")
+		}
+	})
+
+	t.Run("an absent line is empty, not an error", func(t *testing.T) {
+		t.Parallel()
+
+		fm, err := ParseFrontmatter([]byte("---\nid: RFC-0001\nstatus: Draft\n---\nbody\n"))
+		if err != nil {
+			t.Fatalf("ParseFrontmatter failed: %v", err)
+		}
+
+		if fm.Schema != "" {
+			t.Errorf("Schema = %q, want empty", fm.Schema)
+		}
+	})
+
+	t.Run("LoadFrontmatter reads the name", func(t *testing.T) {
+		t.Parallel()
+
+		path := filepath.Join(t.TempDir(), "doc.md")
+		content := "---\nid: IMPL-0021\ntitle: T\nstatus: Draft\nschema: impl\n---\nbody\n"
+
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		fm, _, err := LoadFrontmatter(path)
+		if err != nil {
+			t.Fatalf("LoadFrontmatter failed: %v", err)
+		}
+
+		if fm.Schema != "impl" {
+			t.Errorf("Schema = %q, want %q", fm.Schema, "impl")
+		}
+	})
+
+	t.Run("marshal omits an empty name and keeps a set one", func(t *testing.T) {
+		t.Parallel()
+
+		empty, err := yaml.Marshal(Frontmatter{ID: "RFC-0001", Status: config.Status("Draft")})
+		if err != nil {
+			t.Fatalf("yaml.Marshal failed: %v", err)
+		}
+
+		if bytes.Contains(empty, []byte("schema:")) {
+			t.Errorf("empty Schema was written to the wire: %q", empty)
+		}
+
+		set, err := yaml.Marshal(Frontmatter{ID: "IMPL-0021", Schema: "impl-strict"})
+		if err != nil {
+			t.Fatalf("yaml.Marshal failed: %v", err)
+		}
+
+		if !bytes.Contains(set, []byte("schema: impl-strict\n")) {
+			t.Errorf("expected a bare `schema: impl-strict` scalar, got %q", set)
+		}
+	})
+}

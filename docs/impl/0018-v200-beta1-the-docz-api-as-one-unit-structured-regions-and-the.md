@@ -314,7 +314,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       §2.5); the exported surface does not change and the existing golden
       pins the output byte-identical.
       verify: `go test ./pkg/doczcore/toc/...`
-- [ ] Add `Schema string` with the yaml tag `schema,omitempty` to
+- [x] Add `Schema string` with the yaml tag `schema,omitempty` to
       `document.Frontmatter` (DESIGN-0015 §3); `ParseFrontmatter` and
       `LoadFrontmatter` round-trip it; a `docwrite.SetStatus` golden with a
       `schema:` line proves the status locator ignores it.

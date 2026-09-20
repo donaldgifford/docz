@@ -77,7 +77,8 @@ func (r *Runner) List(opts listOpts, args []string) error {
 		if err != nil {
 			return fmt.Errorf("scanning %s: %w", typeDir, err)
 		}
-		for _, doc := range docs {
+		for i := range docs {
+			doc := &docs[i]
 			entries = append(entries, listEntry{
 				ID:      doc.ID,
 				Title:   doc.Title,

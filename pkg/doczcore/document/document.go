@@ -36,6 +36,15 @@ type Frontmatter struct {
 	Status  config.Status `yaml:"status"`
 	Author  string        `yaml:"author"`
 	Created string        `yaml:"created"`
+
+	// Schema names the marker skeleton this document claims to follow
+	// (DESIGN-0015 §3). Empty — the common case, and what every built-in
+	// template ships — means the document's own type name, so a document
+	// validates against the baked-in schema without carrying a line for
+	// it. This package only round-trips the field: resolving the name to
+	// a skeleton, and judging whether the name is well-formed, belong to
+	// the validate layer.
+	Schema string `yaml:"schema,omitempty"`
 }
 
 // ErrNoFrontmatter is returned when a file has no YAML frontmatter delimiters.
