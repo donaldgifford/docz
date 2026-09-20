@@ -282,7 +282,7 @@ consumer proof. The CLI's only visible change is the marker lines in
 
 #### Tasks
 
-- [ ] Add `pkg/doczcore/docparse/regions.go` with `Role`, `Marker{Kind, Role,
+- [x] Add `pkg/doczcore/docparse/regions.go` with `Role`, `Marker{Kind, Role,
       Line, Canonical}`, `Region{Kind, Start, End, Depth, Closed}`,
       `Markers([]byte) []Marker`, and `Regions([]byte) []Region` per
       DESIGN-0015 §1: trimmed-line match, lenient spellings on the read
