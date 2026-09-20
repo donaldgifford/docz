@@ -11,6 +11,11 @@ PROJECT_URL := https://github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
 
 GO ?= go
 GO_PACKAGE := github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
+
+# MODULE_PATH is the import path of this module, major-version suffix
+# included. The v2 line ships as .../docz/v2 (ADR-0002 Decision 3), so
+# ldflags must name that path or the version injection silently no-ops.
+MODULE_PATH := $(GO_PACKAGE)/v2
 GOOS ?= $(shell $(GO) env GOOS)
 GOARCH ?= $(shell $(GO) env GOARCH)
 
@@ -47,7 +52,7 @@ build: build-core ## Build everything (core)
 build-core: ## Build core binary
 	@ $(MAKE) --no-print-directory log-$@
 	@mkdir -p $(BIN_DIR)
-	@go build -ldflags "-X github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)/cmd.Version=$(VERSION) -X github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)/cmd.Commit=$(COMMIT_HASH)" -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
+	@go build -ldflags "-X $(MODULE_PATH)/cmd.Version=$(VERSION) -X $(MODULE_PATH)/cmd.Commit=$(COMMIT_HASH)" -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
 	@echo "✓ Core binaries built"
 
 ## Testing

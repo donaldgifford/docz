@@ -170,7 +170,7 @@ CLI does.
       and rewrite every import under `cmd/`, `internal/`, and `pkg/`
       (including tests) to the `/v2` path; run `make fmt`.
       verify: `go build ./... && go vet ./...`
-- [ ] Update the `-X` ldflags in the `Makefile` `build-core` target and in
+- [x] Update the `-X` ldflags in the `Makefile` `build-core` target and in
       `.goreleaser.yml` to `github.com/donaldgifford/docz/v2/cmd.Version`
       and `.Commit`; confirm `make build` still injects the version.
       verify: `make build && build/bin/docz version`
