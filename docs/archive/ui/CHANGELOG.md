@@ -3,29 +3,19 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
-## [unreleased]
+## [0.9.0] - 2026-09-20
 
 ### Features
 
-- *(server)* Route classification and redaction primitives
-- *(server)* Structured logging with a redaction gate
-- *(server)* Split liveness and readiness probes
-- *(app)* Catch route render errors instead of blanking the page
+- *(server)* Structured logging, split probes, and a route error boundary ([#35](https://github.com/donaldgifford/docz-site/issues/35))
 
 ### Bug Fixes
 
 - *(chart)* Bump chart to 0.1.8 and appVersion to 0.8.0 ([#32](https://github.com/donaldgifford/docz-site/issues/32))
-- *(docker)* Copy the whole server/ directory into the runtime image
 
 ### Documentation
 
 - INV-0006, DESIGN-0006, and IMPL-0007 for server observability ([#34](https://github.com/donaldgifford/docz-site/issues/34))
-- Close out IMPL-0007 PR 1 and bump the chart
-- Tick IMPL-0007 Phase 5 close-out boxes
-
-### Testing
-
-- *(app)* Await the lazy destination when leaving the error panel
 
 ## [0.8.0] - 2026-09-15
 
