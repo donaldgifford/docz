@@ -1143,24 +1143,60 @@ Decision 7).
       > exported constants. They are the only two codes a consumer matches
       > in order to *act*, and a typo in one silently turns `--fix` into a
       > no-op that looks like "nothing to fix".
-- [ ] Migrate docz's own `docs/` in this PR as separate commits (Open
+- [x] Migrate docz's own `docs/` in this PR as separate commits (Open
       Question 6): run `build/bin/docz validate --fix` and commit the
       mechanical diff on its own, then fix by hand whatever the second
       report lists (sections whose heading was renamed, stale ToCs after
       `docz update`), committing the hand edits separately.
       verify: `build/bin/docz validate` exits 0
-- [ ] Wire `make parity` into `make ci` and the `test-go` CI job after the
+      > Two commits, as specified: the mechanical pass marked 45 documents
+      > (purely additive, `docs/examples/` untouched) and left **56 errors**
+      > and 244 warnings. The hand pass cleared all 56 and `docz validate`
+      > exits 0. Warnings were deliberately left alone — the target is
+      > non-strict, and 217 of the 244 are `references.no-link` on reference
+      > lists that name a document without linking it.
+      >
+      > Only one family was the anticipated "heading was renamed" case.
+      > `region.missing` (20) was mostly older documents that never had the
+      > section: where the prose existed under another heading it is wrapped
+      > in markers verbatim, and only a genuinely absent section got new
+      > text. `design.status.open-question` (31) was a **grammar mismatch,
+      > not missing work**: DESIGN-0010's nine resolutions were written as
+      > plain paragraphs, and `kinds.resolutionIn` only reads a blockquote.
+      > `inv.conclusion.no-answer` (2) was the same shape of problem —
+      > INV-0005 and INV-0007 wrote `**Answer: Yes — …**` with one bold run
+      > around label and value, which is neither spelling `kinds.Field`
+      > accepts. Both are recorded as findings below rather than fixed in
+      > the grammar, which Phase 1 froze.
+      >
+      > Fallout the task did not anticipate: three tests read `docs/` live
+      > and asserted it carried no markers. They now strip the markers back
+      > out instead of freezing a snapshot, so they keep tracking what the
+      > corpus actually looks like.
+- [x] Wire `make parity` into `make ci` and the `test-go` CI job after the
       consumer smoke test; the swapped binary must be green under only the
       permitted deltas. Then add a `validate` target running
       `build/bin/docz validate` non-strict over this repo's `docs/` and
       append it to `make ci` after `parity` (Open Question 7), so warnings
       print and errors fail.
       verify: `make ci`
-- [ ] Extend `test/consumer/doc.go` so it imports every `pkg/` package
+      > `ci` is now `lint test test-consumer parity validate build
+      > license-check`. Both new targets depend on `build`, so the binary
+      > `parity` drives and the one `validate` runs are the working tree's.
+      > In `ci.yml` the two steps go into `test-go` after the consumer smoke
+      > test and before the Codecov upload, which stays last because it is
+      > `continue-on-error`.
+- [x] Extend `test/consumer/doc.go` so it imports every `pkg/` package
       (`config`, `document`, `docparse`, `docwrite`, `toc`, `validate`,
       `kinds`, `doctemplate`, `index`, `repo`, `impl`, `rfc`, `adr`,
       `design`, `investigation`, `wiki`) with one call each.
       verify: `make test-consumer`
+      > Already satisfied when this task came up: Phases 1–3 each added their
+      > own consumer file as they landed, so all sixteen are imported with at
+      > least one real call each and `make test-consumer` is green. Verified
+      > per package rather than taken on trust — the thinnest are `wiki`
+      > (`FilenameTitle`), `design` and `impl` (`Parse`). No edit was needed,
+      > `doc.go` already documents the sixteen.
 - [ ] ADR-0001 dated amendment (ADR-0002 Open Question 2): the frozen five
       keep their v1 shapes through the betas, `internal/template` is
       importable as `doctemplate`, and the new packages are experimental

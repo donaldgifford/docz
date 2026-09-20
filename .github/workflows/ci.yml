@@ -54,6 +54,16 @@ jobs:
       - name: Run consumer smoke test (external module)
         run: make test-consumer
 
+      # The goldens are captured from the v1.2.2 release and never from a v2
+      # build, so this is what keeps the rewritten CLI answering as the old one
+      # did. Only the deltas named in test/parity/README.md are permitted.
+      - name: Replay functional parity goldens
+        run: make parity
+
+      # Non-strict: an error in docz's own corpus fails, a warning prints.
+      - name: Validate this repository's docs
+        run: make validate
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7
         with:
