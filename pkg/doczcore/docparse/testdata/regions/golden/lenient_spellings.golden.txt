@@ -1,0 +1,17 @@
+# markers
+line=6 kind="summary" role=start canonical=false
+line=10 kind="summary" role=end canonical=false
+line=12 kind="context" role=start canonical=false
+line=16 kind="context" role=end canonical=false
+line=18 kind="toc" role=start canonical=false
+line=20 kind="toc" role=end canonical=true
+line=22 kind="index" role=start canonical=false
+line=24 kind="index" role=end canonical=false
+line=26 kind="references" role=start canonical=true
+line=30 kind="references" role=end canonical=true
+# regions
+kind="summary" start=6 end=10 depth=0 closed=true
+kind="context" start=12 end=16 depth=0 closed=true
+kind="toc" start=18 end=20 depth=0 closed=true
+kind="index" start=22 end=24 depth=0 closed=true
+kind="references" start=26 end=30 depth=0 closed=true

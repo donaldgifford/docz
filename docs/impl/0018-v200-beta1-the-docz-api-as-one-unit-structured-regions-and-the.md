@@ -294,7 +294,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       kind `index` (Open Question 9 of DESIGN-0015). Bytes in, values out,
       no error return.
       verify: `go test ./pkg/doczcore/docparse/...`
-- [ ] Walker goldens under `pkg/doczcore/docparse/testdata/regions/`: the
+- [x] Walker goldens under `pkg/doczcore/docparse/testdata/regions/`: the
       canonical IMPL shape, nested and repeated kinds, stray end, unclosed
       at end of file, markers inside a fence, every lenient spelling, a
       legacy-ToC-only document, and a README with the index pair; each

@@ -1,0 +1,8 @@
+# markers
+line=14 kind="summary" role=start canonical=true
+line=20 kind="summary" role=end canonical=true
+line=22 kind="references" role=start canonical=true
+line=26 kind="references" role=end canonical=true
+# regions
+kind="summary" start=14 end=20 depth=0 closed=true
+kind="references" start=22 end=26 depth=0 closed=true

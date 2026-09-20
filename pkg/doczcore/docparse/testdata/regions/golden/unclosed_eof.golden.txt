@@ -1,0 +1,12 @@
+# markers
+line=3 kind="summary" role=start canonical=true
+line=7 kind="summary" role=end canonical=true
+line=9 kind="scope" role=start canonical=true
+line=12 kind="in-scope" role=start canonical=true
+line=16 kind="scope" role=end canonical=true
+line=18 kind="references" role=start canonical=true
+# regions
+kind="summary" start=3 end=7 depth=0 closed=true
+kind="scope" start=9 end=16 depth=0 closed=true
+kind="in-scope" start=12 end=16 depth=1 closed=false
+kind="references" start=18 end=22 depth=0 closed=false
