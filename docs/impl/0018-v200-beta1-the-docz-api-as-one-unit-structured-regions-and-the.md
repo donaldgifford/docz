@@ -424,7 +424,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       > presence and structure and §2 names no codes. And `toc.missing`
       > supersedes `region.missing` for the `toc` and `index` kinds, so one
       > absence yields one finding at one severity rather than two.
-- [ ] Validator tables per code family with a passing and a failing
+- [x] Validator tables per code family with a passing and a failing
       document each, `schema.name` included. Golden pairs: `Document` over
       every embedded template rendered with placeholder data, against its
       skeleton, asserts zero findings; `SchemaFromMarkers` over each
