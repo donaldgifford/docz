@@ -599,3 +599,48 @@ func sameItems(got, want []kinds.Item) bool {
 
 	return true
 }
+
+// TestParse_RenderedTemplate parses what `docz create design` writes.
+//
+// Every content field is zero, and that is the assertion: the template's
+// placeholders are all HTML comments and bare bullets, so a field that started
+// coming back non-empty would mean a placeholder had leaked into the parsed
+// model and into whatever a consumer rendered from it.
+func TestParse_RenderedTemplate(t *testing.T) {
+	t.Parallel()
+
+	got := parse(t, renderedTemplate(t))
+
+	if got.Inferred {
+		t.Error("Inferred = true: the template carries markers")
+	}
+
+	if got.ID != "DESIGN-0001" || got.Title != "A placeholder title" {
+		t.Errorf("ID/Title = %q/%q, want DESIGN-0001/A placeholder title", got.ID, got.Title)
+	}
+
+	for _, tt := range []struct {
+		field, why string
+		empty      bool
+	}{
+		{"Overview", "the placeholder is an HTML comment", got.Overview == ""},
+		{"Goals", "the placeholder is a bare \"-\" bullet", len(got.Goals) == 0},
+		{"NonGoals", "the placeholder is a bare \"-\" bullet", len(got.NonGoals) == 0},
+		{"Background", "the placeholder is an HTML comment", got.Background == ""},
+		{"DetailedDesign", "the placeholder is an HTML comment", got.DetailedDesign == ""},
+		{"APIChanges", "the placeholder is an HTML comment", got.APIChanges == ""},
+		{"DataModel", "the placeholder is an HTML comment", got.DataModel == ""},
+		{"Testing", "the placeholder is an HTML comment", got.Testing == ""},
+		{"Rollout", "the placeholder is an HTML comment", got.Rollout == ""},
+		{"References", "the placeholder is an HTML comment", len(got.References) == 0},
+		{
+			"OpenQuestions", "the section ships with no numbered question",
+			len(got.OpenQuestions) == 0,
+		},
+		{"Decisions", "the section ships with an empty table", len(got.Decisions) == 0},
+	} {
+		if !tt.empty {
+			t.Errorf("%s is filled, want empty: %s", tt.field, tt.why)
+		}
+	}
+}

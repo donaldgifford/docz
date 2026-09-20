@@ -561,3 +561,53 @@ func keepMarkers(doc []byte, keep ...string) []byte {
 
 	return []byte(strings.Join(out, "\n"))
 }
+
+// TestParse_RenderedTemplate parses what `docz create rfc` writes.
+//
+// The corpus already carries this document as the template-rendered fixture,
+// but that one is parsed through inference with its markers stripped. This is
+// the marked path, which is what `docz create` actually produces, and the
+// assertion is that every field is zero for a stated reason — the template's
+// placeholders are HTML comments and a wholly empty table row. A field that
+// started coming back filled would mean a placeholder had leaked into the
+// parsed model and into whatever a consumer rendered from it.
+func TestParse_RenderedTemplate(t *testing.T) {
+	t.Parallel()
+
+	got := parse(t, renderedTemplate(t))
+
+	if got.Inferred {
+		t.Error("Inferred = true: the template carries markers")
+	}
+
+	if got.ID != "RFC-0001" || got.Title != "A placeholder title" {
+		t.Errorf("ID/Title = %q/%q, want RFC-0001/A placeholder title", got.ID, got.Title)
+	}
+
+	// Problem is the one non-empty body field and it states no problem: the
+	// region holds a guidance comment and a "### Supporting Data" subsection,
+	// and the subsection is deliberately part of the statement (DESIGN-0014
+	// §2.9), so stripping the comments leaves the heading alone. No RFC in the
+	// corpus uses that subsection, so this is the only document where the rule
+	// that keeps it produces anything.
+	if want := "### Supporting Data"; got.Problem != want {
+		t.Errorf("Problem = %q, want %q", got.Problem, want)
+	}
+
+	for _, tt := range []struct {
+		field, why string
+		empty      bool
+	}{
+		{"Summary", "the placeholder is an HTML comment", got.Summary == ""},
+		{"Proposal", "the placeholder is an HTML comment", got.Proposal == ""},
+		{"Alternatives", "the placeholder is an HTML comment", len(got.Alternatives) == 0},
+		{"Risks", "the one table row is wholly empty and dropped", len(got.Risks) == 0},
+		{"Criteria", "the placeholder is a bare \"-\" bullet", len(got.Criteria) == 0},
+		{"References", "the placeholder is an HTML comment", len(got.References) == 0},
+		{"OpenQuestions", "the template ships no such section", got.OpenQuestions == nil},
+	} {
+		if !tt.empty {
+			t.Errorf("%s is filled, want empty: %s", tt.field, tt.why)
+		}
+	}
+}

@@ -621,3 +621,55 @@ func equal(got, want []string) bool {
 
 	return true
 }
+
+// TestParse_RenderedTemplate parses what `docz create adr` writes.
+//
+// The point is not that a fresh document is full — it is that every field is
+// zero for a reason somebody stated, because the template's placeholders are
+// HTML comments and bare bullets. A field that started coming back non-empty
+// would mean a placeholder had leaked into the parsed model, which is exactly
+// what a consumer rendering a new ADR would show its reader.
+func TestParse_RenderedTemplate(t *testing.T) {
+	t.Parallel()
+
+	got := parse(t, renderedTemplate(t))
+
+	if got.Inferred {
+		t.Error("Inferred = true: the template carries markers")
+	}
+
+	// The frontmatter is the one part the template really fills in.
+	if got.ID != "ADR-0001" || got.Title != "A placeholder title" {
+		t.Errorf("ID/Title = %q/%q, want ADR-0001/A placeholder title", got.ID, got.Title)
+	}
+
+	// Decision is the one non-empty body field, and it carries no decision:
+	// the region holds a guidance comment and a "### Supporting Data"
+	// subsection, and the subsection is deliberately part of the decision
+	// (DESIGN-0014 §2.9), so stripping the comments leaves the heading alone.
+	// adr.decision.empty therefore does not fire on a fresh document, which is
+	// right — its status is Proposed, not Accepted.
+	if want := "### Supporting Data"; got.Decision != want {
+		t.Errorf("Decision = %q, want %q", got.Decision, want)
+	}
+
+	cons := got.Consequences
+
+	for _, tt := range []struct {
+		field, why string
+		empty      bool
+	}{
+		{"Summary", "the placeholder is an HTML comment", got.Summary == ""},
+		{"Context", "the placeholder is an HTML comment", got.Context == ""},
+		{"Consequences.Positive", "the placeholder is a bare \"-\" bullet", len(cons.Positive) == 0},
+		{"Consequences.Negative", "the placeholder is a bare \"-\" bullet", len(cons.Negative) == 0},
+		{"Consequences.Neutral", "the placeholder is a bare \"-\" bullet", len(cons.Neutral) == 0},
+		{"Alternatives", "the placeholder is an HTML comment", len(got.Alternatives) == 0},
+		{"References", "the placeholder is an HTML comment", len(got.References) == 0},
+		{"OpenQuestions", "the template ships no such section", got.OpenQuestions == nil},
+	} {
+		if !tt.empty {
+			t.Errorf("%s is filled, want empty: %s", tt.field, tt.why)
+		}
+	}
+}

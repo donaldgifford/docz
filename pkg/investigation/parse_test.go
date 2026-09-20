@@ -626,3 +626,76 @@ func keepMarkers(doc []byte, kinds ...string) []byte {
 
 	return []byte(strings.Join(out, "\n"))
 }
+
+// TestParse_RenderedTemplate parses what `docz create inv` writes.
+//
+// Two fields come back non-empty and neither carries information: the template
+// ships the bold labels with nothing after them, and two placeholder findings
+// headings. Everything else is zero for a stated reason. A field that started
+// coming back filled would mean a placeholder had leaked into the parsed model.
+func TestParse_RenderedTemplate(t *testing.T) {
+	t.Parallel()
+
+	got := parse(t, renderedTemplate(t))
+
+	if got.Inferred {
+		t.Error("Inferred = true: the template carries markers")
+	}
+
+	if got.ID != "INV-0001" || got.Title != "A placeholder title" {
+		t.Errorf("ID/Title = %q/%q, want INV-0001/A placeholder title", got.ID, got.Title)
+	}
+
+	// The label is there and its value is not, which is the state kinds.Field's
+	// second return exists to distinguish. Both fields are found-and-empty, so
+	// inv.context.no-trigger does not fire on a fresh document while
+	// inv.conclusion.no-answer does not either — the status is Open.
+	if want := "**Triggered by:**"; got.Context != want {
+		t.Errorf("Context = %q, want %q: the label with no value", got.Context, want)
+	}
+
+	if want := "**Answer:**"; got.Conclusion != want {
+		t.Errorf("Conclusion = %q, want %q: the label with no value", got.Conclusion, want)
+	}
+
+	if got.TriggeredBy != "" || got.Answer != "" {
+		t.Errorf("TriggeredBy/Answer = %q/%q, want both empty", got.TriggeredBy, got.Answer)
+	}
+
+	if got.Verdict != investigation.VerdictUnknown {
+		t.Errorf("Verdict = %v, want VerdictUnknown for an empty answer", got.Verdict)
+	}
+
+	// The findings region ships two level-3 placeholder headings, and they are
+	// sections with no body. Findings headings are the author's own, so the
+	// reader cannot tell a placeholder from a real one — validate does not
+	// either, and that is why there is no inv.findings rule.
+	if len(got.Findings) != 2 {
+		t.Fatalf("len(Findings) = %d, want the template's 2", len(got.Findings))
+	}
+
+	for i, section := range got.Findings {
+		if section.Body != "" {
+			t.Errorf("Findings[%d].Body = %q, want empty: the placeholder is a comment",
+				i, section.Body)
+		}
+	}
+
+	for _, tt := range []struct {
+		field, why string
+		empty      bool
+	}{
+		{"Question", "the placeholder is an HTML comment", got.Question == ""},
+		{"Hypothesis", "the placeholder is an HTML comment", got.Hypothesis == ""},
+		{"Approach", "the placeholder is a bare \"-\" bullet", len(got.Approach) == 0},
+		{"Environment", "its rows have no component and no value", len(got.Environment) == 0},
+		{"Recommendation", "the placeholder is an HTML comment", got.Recommendation == ""},
+		{"References", "the placeholder is an HTML comment", len(got.References) == 0},
+		{"OpenQuestions", "the template ships no such section", got.OpenQuestions == nil},
+		{"Decisions", "the template ships no such section", got.Decisions == nil},
+	} {
+		if !tt.empty {
+			t.Errorf("%s is filled, want empty: %s", tt.field, tt.why)
+		}
+	}
+}
