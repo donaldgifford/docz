@@ -69,6 +69,15 @@ build:
 bundle-budget:
     bun scripts/bundle-budget.ts
 
+# Bundle the server exactly as the image does (dist-server/serve.js)
+build-server:
+    bun build server/serve.ts --target=bun --outfile=dist-server/serve.js
+
+# Run the bundled server against dist/ — what the container actually
+# executes. Needs a prior `just build`.
+serve-bundle: build-server
+    bun dist-server/serve.js
+
 # Playwright e2e against an MSW-enabled preview build (dist-msw/)
 e2e:
     bun run e2e

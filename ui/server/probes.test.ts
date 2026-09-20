@@ -192,8 +192,11 @@ describe("reserved paths", () => {
     }
   });
 
-  test("/metrics is 404 until its phase lands, not an SPA page", async () => {
+  test("/metrics serves exposition, never an SPA page", async () => {
+    // Metrics default to enabled, so this is the on-path. The
+    // disabled-path 404 is covered in metrics.test.ts.
     const res = await handleRequest(new Request("http://localhost/metrics"));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type") ?? "").toContain("text/plain");
   });
 });

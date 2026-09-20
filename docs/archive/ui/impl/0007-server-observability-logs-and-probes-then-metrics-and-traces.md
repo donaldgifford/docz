@@ -1,7 +1,7 @@
 ---
 id: IMPL-0007
 title: "Server observability — logs and probes, then metrics and traces"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-09-18
 ---
@@ -320,17 +320,19 @@ Verified feasible before writing this phase: a file using `Bun.serve`,
 
 ##### Tasks
 
-- [ ] Add a `bun build server/serve.ts --target=bun --outfile=dist-server/serve.js`
+- [x] Add a `bun build server/serve.ts --target=bun --outfile=dist-server/serve.js`
       step to the Dockerfile build stage.
-- [ ] Change the runtime stage to copy `dist-server/serve.js` instead of
+- [x] Change the runtime stage to copy `dist-server/serve.js` instead of
       `server/serve.ts`; update `CMD`.
-- [ ] Add `dist-server/` to `.gitignore`.
-- [ ] Add a `just` recipe for building and running the bundle locally.
-- [ ] Confirm `server/serve.test.ts` still imports the **source**, not
+- [x] Add `dist-server/` to `.gitignore`.
+- [x] Add a `just` recipe for building and running the bundle locally.
+- [x] Confirm `server/serve.test.ts` still imports the **source**, not
       the bundle.
-- [ ] Rebuild the image and verify `/healthz`, `/readyz`, the SPA
+- [x] Rebuild the image and verify `/healthz`, `/readyz`, the SPA
       fallback, and the API proxy all behave identically.
-- [ ] Note the image size delta.
+- [x] Note the image size delta. **Measured: 284 MB before and
+      after — the bundle is 14.16 KB against four source files of
+      comparable size, so there is no delta to speak of.**
 
 ##### Success Criteria
 
@@ -347,29 +349,29 @@ Component 5.
 
 ##### Tasks
 
-- [ ] Add `prom-client` as a dependency.
-- [ ] Create `server/metrics.ts` — the four instruments plus
+- [x] Add `prom-client` as a dependency.
+- [x] Create `server/metrics.ts` — the four instruments plus
       `collectDefaultMetrics()`, on an explicit `Registry`.
-- [ ] Add `resolveMetricsEnabled()` and the `/metrics` route.
-- [ ] **When disabled, `/metrics` must return an explicit 404** — if the
+- [x] Add `resolveMetricsEnabled()` and the `/metrics` route.
+- [x] **When disabled, `/metrics` must return an explicit 404** — if the
       route is simply not registered it falls through to the SPA
       handler and a scraper receives `index.html` with a `200`
       (OQ-4a).
-- [ ] Record `docz_site_proxy_errors_total` in both 502 paths, with
+- [x] Record `docz_site_proxy_errors_total` in both 502 paths, with
       `unreachable` and `not_configured` reasons.
-- [ ] Wire HTTP metrics into the Phase 8 pipeline wrapper using Phase 1
+- [x] Wire HTTP metrics into the Phase 8 pipeline wrapper using Phase 1
       labels only.
-- [ ] Add chart `metrics.enabled` + `serviceMonitor.*` values, and
+- [x] Add chart `metrics.enabled` + `serviceMonitor.*` values, and
       `templates/servicemonitor.yaml` gated on **both** flags, mirroring
       docz-api's.
-- [ ] Note in the chart README that `nodejs_gc_duration_seconds` never
+- [x] Note in the chart README that `nodejs_gc_duration_seconds` never
       samples under Bun, so Node dashboards will show empty panels.
-- [ ] Write metrics tests: exposition parses, labels bounded, probe
+- [x] Write metrics tests: exposition parses, labels bounded, probe
       paths absent, disabled returns 404 (not HTML).
-- [ ] Write a **cardinality regression test**: drive many distinct
+- [x] Write a **cardinality regression test**: drive many distinct
       hostile paths and methods through the pipeline and assert the
       registry's series count stays bounded.
-- [ ] Add `helm unittest` cases for the ServiceMonitor gating.
+- [x] Add `helm unittest` cases for the ServiceMonitor gating.
 
 ##### Success Criteria
 
@@ -391,36 +393,52 @@ three signals.
 
 ##### Tasks
 
-- [ ] Add the OTel dependencies (`@opentelemetry/sdk-trace-node`,
+- [x] Add the OTel dependencies (`@opentelemetry/sdk-trace-node`,
       `@opentelemetry/api`, the OTLP/HTTP exporter).
-- [ ] Create `server/tracing.ts` — `NodeTracerProvider.register()`,
+- [x] Create `server/tracing.ts` — `NodeTracerProvider.register()`,
       resource `service.name`, clamped head sampler, batch exporter.
       Empty endpoint means no export and no overhead.
-- [ ] Add `resolveOtelEndpoint/ServiceName/SampleRate` with the usual
+- [x] Add `resolveOtelEndpoint/ServiceName/SampleRate` with the usual
       whitelist-and-clamp discipline.
-- [ ] Implement the pipeline wrapper (Component 8): probe paths
+- [x] Implement the pipeline wrapper (Component 8): probe paths
       short-circuit before any signal; everything else emits log,
       metric, and span from **one** place.
-- [ ] Start the server span with allowlisted attributes only —
+- [x] Start the server span with allowlisted attributes only —
       `http.request.method`, `http.route`, `http.response.status_code`,
       redacted `url.path`. **Never** `url.full`, never headers.
-- [ ] Add the `proxy.upstream` child span and inject `traceparent` on
+- [x] Add the `proxy.upstream` child span and inject `traceparent` on
       the fetch to docz-api.
-- [ ] Set span status `ERROR` on 5xx only.
-- [ ] Confirm **no** auto-instrumentation package is installed — that is
+- [x] Set span status `ERROR` on 5xx only.
+- [x] Confirm **no** auto-instrumentation package is installed — that is
       the mechanism that would ship OAuth codes to a collector.
-- [ ] Write tracing tests with an in-memory exporter: parent/child
+- [x] Write tracing tests with an in-memory exporter: parent/child
       linkage, `traceparent` well-formed, attributes allowlisted,
       no span for probe paths, nothing exported when unconfigured.
-- [ ] Add an attribute-redaction test mirroring Phase 2's log gate — no
+- [x] Add an attribute-redaction test mirroring Phase 2's log gate — no
       `code`/`state` value on any span.
-- [ ] Add chart `otel.*` values, env wiring, schema, helm tests.
+- [x] Add chart `otel.*` values, env wiring, schema, helm tests.
 
 ##### Success Criteria
 
 - With a local collector, a single browser request produces one trace
   spanning docz-site **and** docz-api, joined by our injected
   `traceparent`, with no docz-api change.
+  **VERIFIED against a live stack**, 2026-09-19. Both services were
+  pointed at one `otel/opentelemetry-collector`; docz-api needed only
+  its own `OTEL_*` env, no code change. One proxied request produced a
+  single trace, `9aab035c7e6828fa3715ad353bcabac3`:
+
+  | Span | Service | ID | Parent |
+  | --- | --- | --- | --- |
+  | `GET proxy:api` | docz-site | `2666e2b9de221a09` | (root) |
+  | `proxy.upstream` | docz-site | `5f374598ffdd7670` | `2666e2b9de221a09` |
+  | `GET /api/v1/*` | **docz-api** | `31382ce24371ef75` | `5f374598ffdd7670` |
+
+  docz-api's server span is parented by our proxy span, so INV-0006 F5
+  is now observed rather than assumed. The two exporters disagree on
+  the wire — docz-api posts protobuf to a `host:port`, our SDK posts
+  JSON to a full URL — which a standards-compliant collector absorbs,
+  but it is worth knowing before blaming a config.
 - With no endpoint configured, nothing is exported and no network call
   is attempted.
 - No span attribute anywhere contains a `code` or `state` value.
@@ -432,23 +450,62 @@ three signals.
 
 ##### Tasks
 
-- [ ] Update `CLAUDE.md` — the metrics/tracing surface, the bundling
+- [x] Update `CLAUDE.md` — the metrics/tracing surface, the bundling
       step, and the no-auto-instrumentation rule.
-- [ ] Update `README.md` and the chart README.
-- [ ] Tick every Phase 6–8 box.
-- [ ] Bump the chart to **0.1.10** and `appVersion` to the release.
-- [ ] Regenerate `CHANGELOG.md`; `chore(changelog): Auto-sync` last.
-- [ ] Flip DESIGN-0006 to `Implemented` and this document to
+- [x] Update `README.md` and the chart README.
+- [x] Tick every Phase 6–8 box.
+- [x] Bump the chart to **0.1.10** (done: chart 0.1.10, appVersion 0.10.0) and `appVersion` to the release.
+- [x] Regenerate `CHANGELOG.md`; `chore(changelog): Auto-sync` last.
+- [x] Flip DESIGN-0006 to `Implemented` and this document to
       `Completed`.
-- [ ] Open the PR with one release label (`minor`).
+- [x] Open the PR with one release label (`minor`) — **#36**, opened
+      against the PR 1 branch so its diff is only Phases 6–9. GitHub
+      retargets it to `main` when #35 merges. Stacked for *review*
+      only; they are merged one at a time, never in a loop.
 
 ##### Success Criteria
 
 - `just ci` green including `format:check`.
-- All CI checks pass, Helm jobs included.
+- All CI checks pass, Helm jobs included. While #36 was stacked the
+  security workflows did not fire on it — they trigger on PRs targeting
+  `main`, so it ran 8 checks where #35 ran 10, leaving PR 2's server
+  code without static analysis. #35 merging retargeted #36 to `main`
+  and CodeQL + Analyze TypeScript now run on it; **both must be green
+  before merging**, since this is the PR touching OAuth-bearing proxy
+  traffic. Worth knowing for any future stack: the retarget is also
+  what turns the branch `DIRTY`, because the repo squash-merges and
+  git cannot match PR 1's individual commits against the single squash
+  on main. The fix is `git rebase --onto main <pr1-tip>`, which replays
+  only PR 2's commits — not a merge, which would resurrect them.
 - Chart version bumped and, after merge, the publish job actually
   publishes (`SLSA provenance (chart)` must **not** show `skipped`).
+  **PR 1 VERIFIED** on merge (2026-09-20): `SLSA provenance (chart)`
+  ran `success`, and the artefact was pulled back to confirm rather
+  than inferred from a green run —
+  `ghcr.io/donaldgifford/charts/docz-site:0.1.9`,
+  digest `sha256:b05c3f74…`, tag `v0.9.0`. Repeat the same check for
+  chart **0.1.10** when #36 merges.
 - Both PRs' behaviour verified against a real docz-api, not only MSW.
+  **VERIFIED** 2026-09-19 against the docz-api local stack, with the
+  shipped container (both PRs' code). Beyond the trace join above:
+  - Real upstream 401 and a real GitHub OAuth `302` both proxied, the
+    latter logged as `location_host="github.com"` with
+    `path="/auth/login?provider=<redacted>"` — the redaction rules hold
+    on live credential-bearing traffic, not just synthetic fixtures.
+  - `/healthz` and `/readyz` produced **zero** log lines at `debug` and
+    **zero** upstream requests: `/readyz` makes no docz-api call.
+  - A real browse yielded exactly four route-class labels
+    (`spa`, `proxy:api`, `proxy:auth`, `proxy:openapi`), unknown SPA
+    paths included — the closed set holds outside tests.
+  - **The outage-amplification claim (INV-0006 F3) was tested by
+    actually killing docz-api.** `/readyz` stayed `200 ready` and the
+    SPA kept serving while the API hop returned `502` and
+    `docz_site_proxy_errors_total{reason="unreachable"}` incremented.
+    A readiness gate on the upstream would have evicted the pod here;
+    this is the alertable signal that replaces it, and it is now
+    demonstrated rather than argued.
+  - `url.full` appeared **zero** times in exported spans; the attribute
+    set was exactly the allowlist.
 
 ## File Changes
 
@@ -475,20 +532,31 @@ three signals.
 
 ## Testing Plan
 
-- [ ] Unit tests for every new pure module (`bun test server/`).
-- [ ] The redaction gate, parameterised over all levels, asserting on
+- [x] Unit tests for every new pure module (`bun test server/`) — 141
+      tests across 10 files.
+- [x] The redaction gate, parameterised over all levels, asserting on
       captured stdout — and demonstrated to fail when redaction is
-      disabled.
-- [ ] Span-attribute redaction test mirroring it.
-- [ ] Cardinality regression test over many hostile paths and methods.
-- [ ] `/readyz` behaviour with dist present and absent, and proof it
-      makes no upstream call.
-- [ ] `/metrics` disabled returns 404, explicitly not the SPA shell.
-- [ ] Route test for the error boundary + axe entry for the error state.
-- [ ] Helm unit tests for every new value, the probe change, and
-      ServiceMonitor gating.
-- [ ] Manual verification against a real docz-api, including one
-      end-to-end trace spanning both services.
+      disabled. The self-check runs in the suite, so the gate cannot
+      pass vacuously.
+- [x] Span-attribute redaction test mirroring it.
+- [x] Cardinality regression test over many hostile paths and methods —
+      10 000 paths × 5 methods must stay under 100 series, with a
+      companion test proving the guard **fails** on an unbounded label.
+- [x] `/readyz` behaviour with dist present and absent, and proof it
+      makes no upstream call (`globalThis.fetch` stubbed, `calls === 0`;
+      re-confirmed against a live docz-api, which logged no probe hits).
+- [x] `/metrics` disabled returns 404, explicitly not the SPA shell.
+      Needs a child process: `bun test` shares one module registry, so
+      re-importing after setting env would test nothing.
+- [x] Route test for the error boundary + axe entry for the error state,
+      including a test pinning *why* the boundary sits on a pathless
+      route rather than `path: "/"` (owning the root would swap out
+      AppShell and take the topbar with it).
+- [x] Helm unit tests for every new value, the probe change, and
+      ServiceMonitor gating — 48 tests.
+- [x] Manual verification against a real docz-api, including one
+      end-to-end trace spanning both services — see Phase 8/9 above for
+      the span table and the killed-upstream result.
 
 ## Dependencies
 

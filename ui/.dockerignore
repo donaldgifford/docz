@@ -38,8 +38,8 @@ Thumbs.db
 
 # Testing
 coverage
-# server/ is copied wholesale into the runtime image (see Dockerfile);
-# its suites are not runtime code and must not ship.
+# Server suites are not runtime code and never belong in the build
+# context (the server ships as a bundle; see Dockerfile).
 server/*.test.ts
 
 # Misc

@@ -182,6 +182,29 @@ outage.
 `/healthz`, `/readyz`, and `/metrics` are reserved server paths — no
 SPA route can claim them.
 
+Prometheus metrics are on `/metrics`, enabled by default
+(`DOCZ_METRICS_ENABLED`): request counts and durations by method and
+route class, upstream proxy durations, and `docz_site_proxy_errors_total`
+— the docz-api health signal that can page a human without evicting a
+pod. Labels are drawn from a closed set, so no request can inflate
+cardinality. When disabled the endpoint returns an explicit `404`
+rather than the SPA shell. One caveat: `nodejs_gc_duration_seconds` is
+declared but never samples under Bun, so stock Node dashboards show
+empty GC panels.
+
+Tracing is OpenTelemetry over OTLP/HTTP, off until
+`OTEL_EXPORTER_OTLP_ENDPOINT` names an absolute `http(s)` URL — with no
+endpoint no provider is registered and no network call is attempted.
+It is **hand-instrumented on purpose**: OTel's HTTP auto-instrumentation
+records `url.full`, which on a server that proxies `/auth/*` would ship
+OAuth codes to a collector. Span attributes are an allowlist and the
+proxy hop carries a `traceparent`, so docz-api — which already extracts
+it — joins the same trace with no configuration of its own.
+
+The server ships as a single bundled file (`bun build --target=bun`),
+because the runtime image carries no `node_modules`. `just build-server`
+produces it; `just serve-bundle` runs what the container runs.
+
 `deploy/compose.yaml` is a reference single-host stack: the site is the
 only published port, with docz-api and its dependencies (Postgres,
 Redis, Meilisearch) on a private network. See docz-api's

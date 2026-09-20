@@ -17,6 +17,20 @@
  */
 
 import {
+  context,
+  propagation,
+  SpanStatusCode,
+  trace,
+} from "@opentelemetry/api";
+
+import { createMetrics } from "./metrics";
+import {
+  initTracing,
+  resolveOtelEndpoint,
+  resolveSampleRate,
+  resolveServiceName,
+} from "./tracing";
+import {
   createLogger,
   LOG_FORMATS,
   LOG_LEVELS,
@@ -156,6 +170,18 @@ export function resolveMermaidLayout(raw: string | undefined): string {
 // reason a deployment will not boot.
 const DEFAULT_LOG_LEVEL: LogLevel = "info";
 const DEFAULT_LOG_FORMAT: LogFormat = "json";
+
+/**
+ * Whitelist-validate DOCZ_METRICS_ENABLED; default ON, matching
+ * docz-api's METRICS_ENABLED. Only an explicit, recognised "false"
+ * turns it off — a typo leaves metrics on, which is the harmless
+ * direction (an endpoint nobody scrapes costs nothing; a silently
+ * dark one costs a blind spot).
+ */
+export function resolveMetricsEnabled(raw: string | undefined): boolean {
+  const value = (raw ?? "").trim().toLowerCase();
+  return !["false", "0", "no", "off"].includes(value);
+}
 
 /** Whitelist-validate DOCZ_LOG_LEVEL; empty/garbage → "info". */
 export function resolveLogLevel(raw: string | undefined): LogLevel {
@@ -325,7 +351,21 @@ const MERMAID_LAYOUT = resolveMermaidLayout(process.env.DOCZ_MERMAID_LAYOUT);
 const LOG_LEVEL = resolveLogLevel(process.env.DOCZ_LOG_LEVEL);
 const LOG_FORMAT = resolveLogFormat(process.env.DOCZ_LOG_FORMAT);
 
+const METRICS_ENABLED = resolveMetricsEnabled(process.env.DOCZ_METRICS_ENABLED);
+
+const OTEL_ENDPOINT = resolveOtelEndpoint(
+  process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+);
+const tracing = initTracing({
+  endpoint: OTEL_ENDPOINT,
+  serviceName: resolveServiceName(process.env.OTEL_SERVICE_NAME),
+  sampleRate: resolveSampleRate(process.env.OTEL_TRACES_SAMPLER_ARG),
+});
+
 const log = createLogger({ level: LOG_LEVEL, format: LOG_FORMAT });
+// Undefined when disabled, so the instruments are never even created —
+// the feature is absent rather than present-and-ignored.
+const metrics = METRICS_ENABLED ? createMetrics() : undefined;
 const CONFIG_SCRIPT = runtimeConfigScript({
   authProviders: AUTH_PROVIDERS,
   nav: NAV_LINKS,
@@ -347,6 +387,7 @@ async function proxy(
       reason: "not_configured",
       err_message: "DOCZ_API_URL is not set",
     });
+    metrics?.recordProxyError("not_configured");
     return new Response("DOCZ_API_URL is not configured", { status: 502 });
   }
   const target = new URL(url.pathname + url.search, DOCZ_API_URL);
@@ -355,6 +396,29 @@ async function proxy(
   headers.set("x-forwarded-host", url.host);
   headers.set("x-forwarded-proto", url.protocol.replace(":", ""));
   const started = performance.now();
+
+  const span = tracing.tracer.startSpan("proxy.upstream", {
+    attributes: {
+      "http.request.method": method,
+      "http.route": route,
+      // The upstream HOST, never the URL — the path and query on an
+      // /auth/* hop carry the authorization code.
+      "server.address": target.host,
+    },
+  });
+  // Inject traceparent from the child span's context. docz-api installs
+  // a TraceContext propagator unconditionally and Extracts on every
+  // request, so its spans become children of this one with ZERO
+  // upstream change (INV-0006 F5).
+  propagation.inject(trace.setSpan(context.active(), span), headers, {
+    set: (carrier, key, value) => {
+      carrier.set(
+        key,
+        typeof value === "string" ? value : JSON.stringify(value),
+      );
+    },
+  });
+
   try {
     const upstream = await fetch(target, {
       method: req.method,
@@ -364,6 +428,13 @@ async function proxy(
       // redirects through instead of following them server-side.
       redirect: "manual",
     });
+    span.setAttribute("http.response.status_code", upstream.status);
+    if (upstream.status >= 500) {
+      // 5xx only. A 401 or 404 from docz-api is a client fault, not a
+      // failed span — same serverErrorFloor docz-api itself uses.
+      span.setStatus({ code: SpanStatusCode.ERROR });
+    }
+    span.end();
     // The OAuth-debugging line: where we sent the request, what came
     // back, and which host the browser is about to be redirected to.
     // Never the Location query — that carries client id and state.
@@ -376,6 +447,7 @@ async function proxy(
       has_cookie: hasCookie(req.headers),
       duration_ms: Math.round(performance.now() - started),
     });
+    metrics?.recordProxy(route, performance.now() - started);
     return new Response(upstream.body, {
       status: upstream.status,
       headers: upstream.headers,
@@ -394,6 +466,12 @@ async function proxy(
       err_message: err instanceof Error ? err.message : String(err),
       duration_ms: Math.round(performance.now() - started),
     });
+    span.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: err instanceof Error ? err.name : "unknown",
+    });
+    span.end();
+    metrics?.recordProxyError("unreachable");
     return new Response("upstream unreachable", { status: 502 });
   }
 }
@@ -516,21 +594,57 @@ export async function handleRequest(req: Request): Promise<Response> {
     return await probe(pathname);
   }
 
+  const method = normalizeMethod(req.method);
   const started = performance.now();
-  const { response, servedFromDisk } = await route(req, url);
-  // One emission point, so the log line can never disagree with the
-  // metric and span that join it here in later phases.
-  log.debug("http.request", {
-    method: normalizeMethod(req.method),
-    route: classifyRoute(pathname, servedFromDisk),
-    path: redactUrl(url),
-    status: response.status,
-    duration_ms: Math.round(performance.now() - started),
-  });
-  return response;
+
+  // The server span is the ROOT and wraps the whole pipeline, so the
+  // proxy child below inherits it through the active context. Its name
+  // is finalised after routing, because the route class is only knowable
+  // once we know whether a file was found.
+  const span = tracing.tracer.startSpan(`${method} ${pathname}`);
+
+  try {
+    return await context.with(
+      trace.setSpan(context.active(), span),
+      async () => {
+        const { response, servedFromDisk } = await route(req, url);
+        const elapsed = performance.now() - started;
+        const routeClass = classifyRoute(pathname, servedFromDisk);
+
+        // ONE emission point for all three signals, so a log line, a
+        // metric, and a span can never disagree about what a request
+        // was (Component 8).
+        log.debug("http.request", {
+          method,
+          route: routeClass,
+          path: redactUrl(url),
+          status: response.status,
+          duration_ms: Math.round(elapsed),
+        });
+        metrics?.recordRequest(method, routeClass, response.status, elapsed);
+
+        span.updateName(`${method} ${routeClass}`);
+        // ALLOWLIST. Never url.full, never headers — on this proxy the
+        // full URL of an /auth/* hop carries the OAuth code, which is
+        // exactly what auto-instrumentation would have shipped.
+        span.setAttributes({
+          "http.request.method": method,
+          "http.route": routeClass,
+          "http.response.status_code": response.status,
+          "url.path": redactUrl(url),
+        });
+        if (response.status >= 500) {
+          span.setStatus({ code: SpanStatusCode.ERROR });
+        }
+        return response;
+      },
+    );
+  } finally {
+    span.end();
+  }
 }
 
-/** Operational endpoints. `/metrics` arrives in a later phase. */
+/** Operational endpoints, excluded from every signal. */
 async function probe(pathname: string): Promise<Response> {
   if (pathname === "/healthz") {
     // Liveness only, and unconditional by design — see the readiness
@@ -540,7 +654,35 @@ async function probe(pathname: string): Promise<Response> {
   if (pathname === "/readyz") {
     return await readyz();
   }
+  if (pathname === "/metrics") {
+    return await exposeMetrics();
+  }
   return new Response("not found", { status: 404 });
+}
+
+/**
+ * Exposition, or an EXPLICIT 404 when metrics are off.
+ *
+ * The explicit 404 is the whole point (OQ-4a): `/metrics` is in
+ * PROBE_PATHS unconditionally, so a disabled endpoint still answers
+ * here. Leaving the route unregistered instead would drop the request
+ * into the SPA fallback, and a scraper would receive `index.html` with
+ * a 200 — silently poisoning a dashboard with parse errors rather than
+ * reporting the endpoint as absent.
+ */
+async function exposeMetrics(): Promise<Response> {
+  if (metrics === undefined) {
+    return new Response("metrics are disabled", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+  return new Response(await metrics.registry.metrics(), {
+    headers: {
+      "content-type": metrics.registry.contentType,
+      "cache-control": "no-store",
+    },
+  });
 }
 
 async function readyz(): Promise<Response> {
@@ -579,5 +721,7 @@ if (import.meta.main) {
     proxy_target: DOCZ_API_URL ?? "(none — API proxy disabled)",
     log_level: LOG_LEVEL,
     log_format: LOG_FORMAT,
+    metrics_enabled: METRICS_ENABLED,
+    tracing: tracing.enabled ? (OTEL_ENDPOINT ?? "on") : "off",
   });
 }

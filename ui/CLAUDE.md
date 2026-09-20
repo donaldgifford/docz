@@ -31,6 +31,11 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - `just local-up` / `just local-down` — build + run the site container
   (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
   stack's network; re-run `local-up` after changes to rebuild/recreate
+  Bringing docz-api up for a real-stack check: its compose publishes
+  :8080, which is often already taken on this machine. The site reaches
+  it by service NAME over the shared network, so that publish is
+  unnecessary — start it with a throwaway override setting
+  `ports: !override []` rather than stopping whatever owns the port.
 
 ## Architecture
 
@@ -231,6 +236,18 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   Bun-only (outside the vitest `src/` graph) — its `serve.test.ts` runs
   under `bun test server/` (`just test-server`, in the CI chain); guard
   new top-level side effects with `import.meta.main`.
+  Three traps that all pass locally and fail on CI. (1) `test-server`
+  runs BEFORE `build`, so a clean checkout has NO `dist/` and every SPA
+  path answers 500 — server tests must never assume a built dist, and a
+  stale local one hides it. Assert on responses the router makes itself
+  (a POST to a non-proxied path is a deterministic 405). (2) Bun's
+  `Request` constructor SILENTLY rewrites an unrecognised method token
+  to GET (`BREW`, `EVIL-METHOD` → `GET`), so hostile methods cannot be
+  driven through `handleRequest` that way — assert `normalizeMethod`
+  directly. (3) Never substring-assert over a whole prom-client
+  exposition: `process_open_fds` is `/proc`-only (absent on macOS) and
+  its help text "file descriptors" CONTAINS "script". Filter to
+  `docz_site_` lines first.
   On 401, `SessionRequiredRedirect` (query-states.tsx) stashes
   `pathname+search` via `src/lib/authReturn.ts` and replaces to
   `/login`; `RestoreAfterLogin` (AppShell) probes getSession on "/"
@@ -284,6 +301,50 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   any whitelist. It is deliberately narrow — only a non-empty value
   that validates empty-handed counts, because readiness failure stalls
   a rollout and that is too blunt for a cosmetic typo.
+- Metrics and tracing (DESIGN-0006 Components 5-6) label from
+  `route-class.ts` and NOWHERE else. Metric labels are the one place
+  where unbounded input is expensive rather than merely noisy — each
+  distinct combination is a series stored forever — so never build a
+  label from request text. `metrics.test.ts` drives 10 000 hostile
+  paths and asserts the series count stays bounded, with a companion
+  test proving that guard fails on an unbounded label.
+  `DOCZ_METRICS_ENABLED` defaults ON; when off, `/metrics` returns an
+  EXPLICIT 404 rather than being unregistered — an unregistered route
+  falls through to the SPA handler and hands a scraper `index.html`
+  with a 200, silently poisoning a dashboard.
+  Tracing is HAND-INSTRUMENTED and must stay that way: OTel's HTTP
+  auto-instrumentation records `url.full`, which on this proxy means
+  shipping OAuth codes to a collector. NEVER install an
+  `@opentelemetry/*instrumentation*` package — a test asserts none is
+  present. Span attributes are an allowlist (method, route class,
+  status, REDACTED url.path); `tracing-spans.test.ts` is the tracing
+  counterpart to the log redaction gate. `traceparent` is injected on
+  the proxy hop and docz-api already Extracts it, so end-to-end traces
+  need zero upstream change — OBSERVED, not assumed: one proxied request
+  produced a single trace whose docz-api server span is parented by our
+  `proxy.upstream` span. The two exporters disagree on the wire —
+  docz-api's Go `otlptracehttp` posts PROTOBUF to a bare `host:port`,
+  our SDK posts JSON to a full URL — so point them at the same collector
+  with the spellings each expects and let it absorb the difference;
+  don't "fix" one to match the other. An unconfigured `OTEL_EXPORTER_OTLP_ENDPOINT`
+  means no provider, no export, no network call; the resolver fails
+  CLOSED on anything that is not an absolute http(s) URL, because this
+  value decides where telemetry is SENT.
+  `nodejs_gc_duration_seconds` is declared but NEVER samples under Bun
+  (measured) — stock Node dashboards show empty GC panels.
+  The server ships BUNDLED (`bun build --target=bun` in the Dockerfile,
+  `just build-server`): the runtime image has no node_modules, so a
+  dependency is only possible bundled. It also retired the enumerated
+  `COPY server/serve.ts`, which broke the container the moment serve.ts
+  gained a sibling module — CI never builds and runs the image, so that
+  shipped green. Build and run the image by hand when touching
+  `server/` or the Dockerfile.
+  Env read once at import (`DOCZ_METRICS_ENABLED`, the OTEL_* vars)
+  cannot be re-tested by setting `process.env` and re-importing —
+  `bun test` shares ONE module registry across the whole run. Those
+  paths use a child process (`metrics-disabled.test.ts`,
+  `tracing-spans.test.ts`), and the child must MARK its stdout payload
+  because the server's own structured logs share that stream.
 - The route error boundary (`src/app/route-error.tsx`) sits on a
   PATHLESS layout route directly below `AppShell`, NOT on the root
   route. A boundary replaces the element of the route that owns it, so

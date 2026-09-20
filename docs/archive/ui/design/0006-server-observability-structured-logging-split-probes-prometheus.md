@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0006
 title: "Server observability — structured logging, split probes, Prometheus metrics, and OTel tracing"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-18
 ---

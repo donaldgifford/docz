@@ -41,6 +41,24 @@
         }
       }
     },
+    "otel": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "endpoint": {
+          "description": "OTLP/HTTP traces endpoint. Empty means tracing is off. Constrained to absolute http(s) URLs because this decides where request telemetry is sent — the server treats anything else as unset rather than guessing.",
+          "type": "string",
+          "pattern": "^$|^https?://"
+        },
+        "serviceName": { "type": "string" },
+        "sampleRate": {
+          "description": "Head sample rate. The server clamps out-of-range values, but a schema rejection at install time is a better signal than a silent clamp.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
     "service": {
       "type": "object",
       "additionalProperties": true,

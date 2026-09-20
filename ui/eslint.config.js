@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       "dist",
       "dist-msw",
+      "dist-server",
       "coverage",
       "node_modules",
       "test-results",

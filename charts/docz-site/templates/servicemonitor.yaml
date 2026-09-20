@@ -1,0 +1,25 @@
+{{- /*
+Gated on BOTH flags: a ServiceMonitor pointing at a /metrics that the
+container answers 404 would look healthy in Prometheus config and
+produce nothing but scrape failures.
+*/ -}}
+{{- if and .Values.metrics.enabled .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "docz-site.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz-site.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "docz-site.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

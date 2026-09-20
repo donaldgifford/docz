@@ -1,0 +1,69 @@
+suite: servicemonitor
+templates:
+  - servicemonitor.yaml
+tests:
+  # Gated on BOTH flags: a ServiceMonitor aimed at a /metrics the
+  # container answers 404 would look configured while producing nothing
+  # but scrape failures.
+  - it: should render nothing by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render nothing when only serviceMonitor is enabled
+    set:
+      metrics:
+        enabled: false
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render nothing when only metrics is enabled
+    set:
+      metrics:
+        enabled: true
+      serviceMonitor:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render when both are enabled
+    set:
+      metrics:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ServiceMonitor
+      - equal:
+          path: spec.endpoints[0].path
+          value: /metrics
+      - equal:
+          path: spec.endpoints[0].port
+          value: http
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 30s
+
+  - it: should honor a custom interval and extra labels
+    set:
+      metrics:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+        interval: 15s
+        labels:
+          release: kube-prometheus-stack
+    asserts:
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 15s
+      - equal:
+          path: metadata.labels.release
+          value: kube-prometheus-stack

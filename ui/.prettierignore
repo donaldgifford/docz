@@ -1,5 +1,6 @@
 dist
 dist-msw
+dist-server
 build
 node_modules
 coverage

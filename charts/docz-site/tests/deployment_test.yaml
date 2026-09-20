@@ -32,7 +32,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-site:0.9.0"
+          value: "ghcr.io/donaldgifford/docz-site:0.10.0"
 
   - it: should use custom image tag when set
     set:
@@ -147,6 +147,63 @@ tests:
           content:
             name: DOCZ_LOG_FORMAT
             value: "text"
+
+  - it: should default DOCZ_METRICS_ENABLED to true and follow metrics.enabled
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_METRICS_ENABLED
+            value: "true"
+
+  - it: should set DOCZ_METRICS_ENABLED false when metrics are disabled
+    set:
+      metrics:
+        enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_METRICS_ENABLED
+            value: "false"
+
+  # Unset is what turns tracing off, so an empty endpoint must omit the
+  # env entirely rather than set it to "".
+  - it: should omit every OTEL_ env var by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+          any: true
+
+  - it: should wire the OTEL env when an endpoint is configured
+    set:
+      otel:
+        endpoint: "http://otel-collector:4318/v1/traces"
+        serviceName: "docz-site-staging"
+        sampleRate: 0.1
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://otel-collector:4318/v1/traces"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "docz-site-staging"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_TRACES_SAMPLER_ARG
+            value: "0.1"
 
   - it: should reject a log level outside the schema enum
     set:

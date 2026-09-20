@@ -146,6 +146,39 @@ config:
   # line, for a log aggregator) or `text` (readable, for local runs).
   logFormat: "json"
 
+metrics:
+  # -- Expose Prometheus metrics on /metrics (DOCZ_METRICS_ENABLED).
+  # When false the endpoint returns an explicit 404 rather than falling
+  # through to the SPA — a scraper is told the endpoint is absent
+  # instead of being handed index.html with a 200.
+  enabled: true
+
+serviceMonitor:
+  # -- Create a Prometheus Operator ServiceMonitor scraping /metrics.
+  # Requires `metrics.enabled`; the template is gated on both.
+  enabled: false
+  # -- Scrape interval
+  interval: 30s
+  # -- Additional labels for the ServiceMonitor (e.g. the `release`
+  # label your Prometheus Operator selects on)
+  labels: {}
+
+otel:
+  # -- OTLP/HTTP traces endpoint (OTEL_EXPORTER_OTLP_ENDPOINT), e.g.
+  # http://otel-collector:4318/v1/traces. EMPTY MEANS TRACING IS OFF —
+  # no provider is registered, no network call is attempted, and the
+  # env var is omitted entirely. Only absolute http(s) URLs are
+  # accepted; anything else is treated as unset rather than guessed at,
+  # because this decides where request telemetry is sent.
+  endpoint: ""
+  # -- Service name reported to the collector (OTEL_SERVICE_NAME)
+  serviceName: "docz-site"
+  # -- Head sample rate (OTEL_TRACES_SAMPLER_ARG), clamped to 0..1.
+  # docz-site injects `traceparent` on the proxy hop and docz-api
+  # already extracts it, so a sampled request produces ONE trace
+  # spanning both services with no docz-api configuration.
+  sampleRate: 1
+
 # -- Horizontal Pod Autoscaler. Off by default.
 autoscaling:
   # -- Enable a HorizontalPodAutoscaler

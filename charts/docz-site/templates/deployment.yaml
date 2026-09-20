@@ -58,6 +58,18 @@ spec:
               value: {{ .Values.config.logLevel | quote }}
             - name: DOCZ_LOG_FORMAT
               value: {{ .Values.config.logFormat | quote }}
+            - name: DOCZ_METRICS_ENABLED
+              value: {{ .Values.metrics.enabled | quote }}
+            {{- with .Values.otel.endpoint }}
+            {{- /* Omitted entirely when empty: unset is what turns
+                   tracing off, so an empty string must not be set. */}}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ . | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ $.Values.otel.serviceName | quote }}
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: {{ $.Values.otel.sampleRate | quote }}
+            {{- end }}
             {{- with .Values.config.navLinks }}
             - name: DOCZ_NAV_LINKS
               value: {{ toJson . | quote }}
