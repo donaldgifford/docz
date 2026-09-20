@@ -479,12 +479,21 @@ three signals.
   only PR 2's commits — not a merge, which would resurrect them.
 - Chart version bumped and, after merge, the publish job actually
   publishes (`SLSA provenance (chart)` must **not** show `skipped`).
-  **PR 1 VERIFIED** on merge (2026-09-20): `SLSA provenance (chart)`
-  ran `success`, and the artefact was pulled back to confirm rather
-  than inferred from a green run —
-  `ghcr.io/donaldgifford/charts/docz-site:0.1.9`,
-  digest `sha256:b05c3f74…`, tag `v0.9.0`. Repeat the same check for
-  chart **0.1.10** when #36 merges.
+  **VERIFIED for BOTH PRs** on merge (2026-09-20). In each case
+  `SLSA provenance (chart)` ran `success` rather than `skipped`, and
+  the artefact was then pulled back from GHCR — a green Release run is
+  precisely the signal this trap counterfeits, so the job status alone
+  was not treated as proof.
+
+  | PR | Chart | Digest | appVersion | Tag |
+  | --- | --- | --- | --- | --- |
+  | #35 | 0.1.9 | `sha256:b05c3f74…` | 0.9.0 | `v0.9.0` |
+  | #36 | 0.1.10 | `sha256:f0d742ec…` | 0.10.0 | `v0.10.0` |
+
+  `appVersion` was read out of the *published* chart, not the repo, and
+  `ghcr.io/donaldgifford/docz-site:0.10.0` confirmed present — the two
+  move together because `tests/deployment_test.yaml` pins the image tag
+  to `appVersion`.
 - Both PRs' behaviour verified against a real docz-api, not only MSW.
   **VERIFIED** 2026-09-19 against the docz-api local stack, with the
   shipped container (both PRs' code). Beyond the trace join above:
