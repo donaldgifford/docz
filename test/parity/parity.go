@@ -170,11 +170,17 @@ func walkTree(fsys fs.FS) ([]File, error) {
 			return err
 		}
 
-		if d.IsDir() {
-			if d.Name() == ".git" {
+		// A gitlink is a *file* named .git holding an absolute host path, which
+		// no normaliser would catch, so the name is skipped at either type.
+		if d.Name() == ".git" {
+			if d.IsDir() {
 				return fs.SkipDir
 			}
 
+			return nil
+		}
+
+		if d.IsDir() {
 			return nil
 		}
 

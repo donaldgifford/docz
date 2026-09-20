@@ -248,3 +248,23 @@ func writeFile(t *testing.T, path, body string) {
 		t.Fatalf("write %s: %v", path, err)
 	}
 }
+
+// A gitlink is a file named .git holding an absolute host path that no
+// normaliser would catch, so the name is skipped whether it is a file or a
+// directory.
+func TestTree_SkipsGitlinkFile(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".git"), "gitdir: /Users/someone/code/x/.git/modules/y\n")
+	writeFile(t, filepath.Join(dir, "keep.md"), "a\n")
+
+	files, err := Tree(dir)
+	if err != nil {
+		t.Fatalf("Tree: %v", err)
+	}
+
+	if len(files) != 1 || files[0].Path != "keep.md" {
+		t.Errorf("Tree recorded %+v, want only keep.md", files)
+	}
+}

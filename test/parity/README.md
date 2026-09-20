@@ -74,6 +74,39 @@ Each is named, lives outside the build tag, and has unit tests that run in
 - **markers** drops whole region-marker lines. A marker with text beside it
   is kept, which is also what the walker does with it.
 
+## The run environment is an allowlist
+
+The driver does not hand `os.Environ()` to the binary under test. It builds
+the environment from scratch: `PATH`, `HOME` pointed at the fixture copy,
+`TZ=UTC`, the two `GIT_CONFIG_*` nulls, and `NO_COLOR`.
+
+That is not belt-and-braces. docz reads a global `~/.docz.yaml` and
+deep-merges it *under* the repo's, so an inherited `HOME` would merge
+whoever ran the capture into all 213 cases and commit their author name,
+paths, and custom types into `testdata/*/config.golden`. `TZ` is pinned
+because the driver computes today's date for the `date` normaliser while the
+binary stamps its own; a run spanning midnight in another zone would miss.
+Nothing CI puts in the environment, `GITHUB_TOKEN` included, reaches the
+binary.
+
+Each invocation is bounded at 30 seconds with a one-second `WaitDelay`, so a
+hung case names itself instead of consuming the whole `go test` deadline.
+
+## Known limits
+
+- **Fixture file modes are not preserved.** `copyTree` writes 0o644 files and
+  0o755 directories, so a fixture cannot pin a permission-error path such as
+  a read-only `docs/` or an unreadable `.docz.yaml`. Preserving the source
+  mode is the fix if a case ever needs one.
+- **Only regular files may live in `fixtures/`.** A symlink or FIFO fails the
+  copy with an error rather than being skipped: `os.ReadFile` follows a
+  symlink, so an entry pointing at a file outside the repo would be copied
+  in, read back, and embedded in a committed golden, and symlink mode is
+  invisible in a diff.
+- **Both tree snapshots hold every file body in memory.** Fine at 148K of
+  fixtures; it does mean `Tree` is not something to point at an arbitrary
+  directory.
+
 ## Fixtures
 
 Seven repositories under `fixtures/`, each with `author.from_git: false` and

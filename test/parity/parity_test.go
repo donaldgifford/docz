@@ -11,6 +11,7 @@ package parity
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -276,7 +277,7 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 	}
 
 	for _, args := range c.setup {
-		if _, _, _, err := run(bin, root, args); err != nil {
+		if _, _, _, err := run(t.Context(), bin, root, args); err != nil {
 			t.Fatalf("setup %v: %v", args, err)
 		}
 	}
@@ -286,7 +287,7 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 		t.Fatalf("snapshot before: %v", err)
 	}
 
-	stdout, stderr, code, err := run(bin, root, c.args)
+	stdout, stderr, code, err := run(t.Context(), bin, root, c.args)
 	if err != nil {
 		t.Fatalf("run %v: %v", c.args, err)
 	}
@@ -335,26 +336,58 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 	}
 }
 
+// caseTimeout bounds one invocation. Without it a binary that hangs blocks
+// until the package-level `go test` deadline, which then panics the whole run
+// without naming the case that wedged it. With 200-odd cases that deadline is
+// a budget, not a safety net.
+const caseTimeout = 30 * time.Second
+
 // run executes the binary in dir and returns its output and exit code. A
 // non-zero exit is data, not an error; the returned error is for a failure to
 // run the binary at all.
-func run(bin, dir string, args []string) (stdout, stderr string, code int, err error) {
-	cmd := exec.Command(bin, args...)
+func run(
+	ctx context.Context,
+	bin, dir string,
+	args []string,
+) (stdout, stderr string, code int, err error) {
+	ctx, cancel := context.WithTimeout(ctx, caseTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = dir
+
+	// A child holding the output pipes open after the deadline must not wedge
+	// Wait as well.
+	cmd.WaitDelay = time.Second
 
 	var out, errb bytes.Buffer
 
 	cmd.Stdout = &out
 	cmd.Stderr = &errb
 
-	// A user's global git config must not reach a fixture: every fixture pins
-	// author.from_git: false, and these keep an unpinned path from silently
-	// picking up whoever ran the suite.
-	cmd.Env = append(os.Environ(),
+	// The environment is an allowlist, not os.Environ() plus overrides. The
+	// suite's whole value is that a golden means the same thing on every
+	// machine, and docz reads a global ~/.docz.yaml and deep-merges it under
+	// the repo's (config.Load). Inheriting HOME would merge whoever ran the
+	// capture into all 213 cases and commit their author name, paths, and
+	// custom types into testdata. HOME points at the fixture copy, where no
+	// global config exists.
+	//
+	// TZ is pinned because the parent computes today's date for the $DATE
+	// normaliser while the child stamps its own; a run spanning midnight in a
+	// different zone would otherwise miss.
+	//
+	// Anything CI puts in the environment, GITHUB_TOKEN included, is simply
+	// not handed to the binary under test.
+	cmd.Env = []string{
+		"PATH=" + os.Getenv("PATH"),
+		"HOME=" + dir,
+		"USERPROFILE=" + dir,
+		"TZ=UTC",
 		"GIT_CONFIG_GLOBAL=/dev/null",
 		"GIT_CONFIG_SYSTEM=/dev/null",
 		"NO_COLOR=1",
-	)
+	}
 
 	runErr := cmd.Run()
 
@@ -391,6 +424,16 @@ func copyTree(src, dst string) error {
 			}
 
 			return os.MkdirAll(target, 0o755)
+		}
+
+		// Refuse anything that is not a regular file rather than skipping it.
+		// os.ReadFile follows a symlink, so a fixture entry pointing at
+		// ~/.ssh/id_rsa would be copied in as a regular file, read back by
+		// Tree, and embedded verbatim in a committed golden; a FIFO with no
+		// writer would block the read outright. Symlink mode is invisible in a
+		// diff, so this has to fail loudly instead of relying on review.
+		if !d.Type().IsRegular() {
+			return fmt.Errorf("fixture %s: not a regular file (%s)", path, d.Type())
 		}
 
 		body, err := os.ReadFile(path)
