@@ -183,14 +183,14 @@ func TestCriteria(t *testing.T) {
 		t.Errorf("a leading checkbox was not stripped: %q", got[1].Text)
 	}
 
-	// A backtick span in the middle names a command worth offering to run,
-	// but the criterion is not itself a command to run.
+	// A backtick span in the middle of a criterion names something other
+	// than a command, so neither Executable nor Command is set from it.
 	if got[2].Executable {
 		t.Errorf("third is executable, want not: %+v", got[2])
 	}
 
-	if got[2].Command != "docz status" {
-		t.Errorf("third command = %q, want 'docz status'", got[2].Command)
+	if got[2].Command != "" {
+		t.Errorf("third command = %q, want empty", got[2].Command)
 	}
 }
 

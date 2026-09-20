@@ -1,0 +1,3 @@
+line=2 executable=false command="" text="docz-api and the wiki build both consume a pinned `docs-vX.Y.Z` tag instead of `main` within one quarter of this RFC shipping"
+line=4 executable=false command="" text="zero docs-only incidents attributable to a mid-merge read in the two quarters after rollout"
+line=6 executable=false command="" text="every merged doc change carries a changelog entry mapped to a tag"

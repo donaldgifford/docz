@@ -1,0 +1,4 @@
+line=2 executable=true command="git diff --stat pkg/doczcore/docwrite/testdata/golden/status/" text="`git diff --stat pkg/doczcore/docwrite/testdata/golden/status/` is empty after the refactor — the locator generalization is provably byte-preserving."
+line=5 executable=true command="TestSetStatus_*" text="`TestSetStatus_*` pass unchanged; `TestSetUpdated_Golden`, the error table, and `FuzzSetUpdated` (≥ 1M execs locally, seed corpus committed) green."
+line=8 executable=false command="" text="A document written by `SetUpdated` round-trips through `document.ParseFrontmatter` with `Updated` set and no other field changed."
+line=10 executable=true command="make ci" text="`make ci` green."

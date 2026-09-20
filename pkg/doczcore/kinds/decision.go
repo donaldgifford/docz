@@ -39,6 +39,12 @@ type Decision struct {
 // a document that orders its columns differently or titles the third one
 // "Resolution" still parses. A table without both columns is skipped
 // rather than guessed at.
+//
+// Four spellings of the decision column are accepted, because the corpus
+// writes four. ADR-0001's table is headed "Choice" and carries a fourth
+// "Notes" column; a reader that only knew "Decision" and "Resolution" could
+// not read this repo's own ADR-0001, and validate would report a finding
+// against a document that is written correctly. Extra columns are ignored.
 func Decisions(region []byte) []Decision {
 	lines := bodyLines(region)
 
@@ -89,7 +95,7 @@ func decisionColumns(header []string) (number, question, resolution int) {
 			if question < 0 {
 				question = i
 			}
-		case "decision", "resolution", "answer":
+		case "decision", "resolution", "answer", "choice":
 			if resolution < 0 {
 				resolution = i
 			}

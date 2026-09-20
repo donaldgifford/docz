@@ -363,7 +363,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       minus trailing blanks and a trailing `---`; a parent's span to the
       end of its last child).
       verify: `go test ./pkg/doczcore/kinds/...`
-- [ ] `kinds` tests: a table per reader over fixtures cut from the corpus
+- [x] `kinds` tests: a table per reader over fixtures cut from the corpus
       (every open-questions section of ADR-0002, ADR-0003, DESIGN-0014,
       and DESIGN-0015; references with and without links; the Decisions
       tables; criteria in the RFC and IMPL positions; alternatives as
@@ -374,6 +374,19 @@ consumer proof. The CLI's only visible change is the marker lines in
       `.orig.md` fixtures asserting the regions equal `docparse.Regions`
       over the migrated sibling in kind, depth, and parent; a mixed
       document (one marker) infers nothing; `FuzzInferRegions`.
+
+      > **Done 2026-09-20, with two amendments.** Alternatives as headings
+      > has no corpus fixture: all three real `## Alternatives Considered`
+      > sections in this repo are lettered bullet lists, so that shape is
+      > covered by a unit test and the gap is recorded in
+      > `pkg/doczcore/kinds/testdata/README.md` rather than papered over with
+      > an invented fixture. Criteria in the RFC position comes from the
+      > parity suite's RFC fixture, since no RFC has ever been committed
+      > under `docs/`. The `.orig.md` half of the inference proof moves to
+      > the task that creates those fixtures (Phase 1, the type-package
+      > fixtures task); its equivalent runs here already as
+      > `TestInferenceEqualsMarkers` over all six embedded templates plus
+      > `TestInferRegions_OverARealDocument` over the real ADR-0002.
 - [ ] Create `pkg/doczcore/validate` (`finding.go`, `schema.go`,
       `document.go`, one file per code family): `Severity` (`Error`,
       `Warning`), `Finding{Code, Severity, Line, Kind, Detail}`,

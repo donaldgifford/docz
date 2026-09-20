@@ -19,6 +19,7 @@ package kinds
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
@@ -175,6 +176,10 @@ func topLevel(items []foldedItem) []foldedItem {
 // whether s starts with one. The two answers come together because the
 // callers need both: Criterion.Executable is "starts with a span" and
 // Criterion.Command is "the span's contents".
+//
+// A span with nothing between its backticks names no command, so it is not
+// a span here. Without that a criterion could be reported as executable
+// with nothing to run.
 func backtickSpan(s string) (string, bool) {
 	open := strings.Index(s, "`")
 	if open < 0 {
@@ -184,9 +189,23 @@ func backtickSpan(s string) (string, bool) {
 	rest := s[open+1:]
 
 	end := strings.Index(rest, "`")
-	if end < 0 {
+	if end <= 0 {
 		return "", false
 	}
 
 	return rest[:end], open == 0
+}
+
+// untilSpace truncates s at its first whitespace character.
+//
+// A markdown URL cannot contain unescaped whitespace, so everything from the
+// first space on is something else: a link title, or a malformed target. Both
+// callers need the same answer, and "the URL up to the space" is the one a
+// renderer would follow.
+func untilSpace(s string) string {
+	if i := strings.IndexFunc(s, unicode.IsSpace); i >= 0 {
+		return s[:i]
+	}
+
+	return s
 }

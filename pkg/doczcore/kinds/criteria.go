@@ -14,8 +14,11 @@ type Criterion struct {
 	// "`make ci` passes with zero errors".
 	Executable bool
 
-	// Command is the contents of the first backtick span, set whether or
-	// not the span opens the text, so a consumer can offer to run it.
+	// Command is the contents of the opening backtick span, and is set only
+	// when Executable is. A span in the middle of a criterion names
+	// something else — the corpus writes filenames and identifiers there,
+	// "every `.orig.md` fixture parses" — and a consumer reading Command
+	// without checking Executable would offer to run one.
 	Command string
 
 	// Line is the 1-based line of the bullet, counted from the start of
@@ -49,6 +52,9 @@ func Criteria(region []byte) []Criterion {
 		}
 
 		command, leading := backtickSpan(text)
+		if !leading {
+			command = ""
+		}
 
 		out = append(out, Criterion{
 			Text:       text,

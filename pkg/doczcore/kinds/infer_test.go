@@ -1,6 +1,8 @@
 package kinds_test
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -255,3 +257,98 @@ func contentLines(region []byte) string {
 // (?s) so a comment spanning lines goes whole, as the templates' guidance
 // comments do.
 var commentPattern = regexp.MustCompile(`(?s)<!--.*?-->`)
+
+// A half-marked document is read by its markers, not by its headings. Mixing
+// the two would make the same document parse differently depending on how much
+// of it the author had got round to marking, and a region the author had not
+// reached yet would appear and disappear as they worked.
+func TestInferRegions_OneMarkerIsEnough(t *testing.T) {
+	t.Parallel()
+
+	spec := kinds.HeadingSpec{
+		{Kind: "summary", Level: 2, Text: "summary"},
+		{Kind: "context", Level: 2, Text: "context"},
+		{Kind: "decision", Level: 2, Text: "decision"},
+	}
+
+	doc := []byte("# T\n\n<!--toc:start-->\n<!--toc:end-->\n\n" +
+		"<!--docz:summary:start-->\n## Summary\n\none\n<!--docz:summary:end-->\n\n" +
+		"## Context\n\ntwo\n\n## Decision\n\nthree\n")
+
+	if got := kinds.InferRegions(doc, spec); got != nil {
+		t.Errorf("InferRegions() = %s, want nil", kindsOf(got))
+	}
+
+	regions, inferred := kinds.ResolveRegions(doc, spec)
+	if inferred {
+		t.Error("ResolveRegions inferred for a half-marked document")
+	}
+
+	// The ToC pair and the one marked region, and neither unmarked heading.
+	if got := kindsOf(regions); got != "toc summary" {
+		t.Errorf("ResolveRegions() = %q, want \"toc summary\"", got)
+	}
+}
+
+// Inference has to work on the corpus, not only on templates. ADR-0002 is a
+// real hand-written document with no region markers, and it is the shape
+// `docz validate --fix` will meet on every repo in the fleet.
+func TestInferRegions_OverARealDocument(t *testing.T) {
+	t.Parallel()
+
+	marked, err := doctemplate.EmbeddedDocumentTemplate(config.DocType("adr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	paths, err := filepath.Glob(filepath.Join("..", "..", "..", "docs", "adr", "0002-*.md"))
+	if err != nil || len(paths) != 1 {
+		t.Skipf("ADR-0002 not found in this checkout: %v", err)
+	}
+
+	doc, err := os.ReadFile(paths[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	regions, inferred := kinds.ResolveRegions(doc, kinds.SpecFromTemplate([]byte(marked)))
+	if !inferred {
+		t.Fatal("ADR-0002 carries region markers; pick another unmarked document")
+	}
+
+	found := make(map[string]bool, len(regions))
+	for _, r := range regions {
+		found[r.Kind] = true
+	}
+
+	// Every section ADR-0002 has, including the three nested under its
+	// consequences, plus the Open Questions the ADR template does not ship —
+	// that one comes from the shared defaults.
+	for _, kind := range []string{
+		"summary", "context", "decision", "consequences",
+		"positive", "negative", "neutral",
+		"alternatives", "open-questions", "references",
+	} {
+		if !found[kind] {
+			t.Errorf("inference missed %q in ADR-0002: found %s", kind, kindsOf(regions))
+		}
+	}
+
+	// ADR-0002 has no Decisions section: it records its decisions in a table
+	// inside Open Questions. A spec rule with no matching heading must yield
+	// no region, or every document would appear to have every kind.
+	if found["decisions"] {
+		t.Error("inference invented a decisions region ADR-0002 does not have")
+	}
+
+	// The regions must hold the document's text, not the template's.
+	for _, r := range regions {
+		if r.Kind != "summary" {
+			continue
+		}
+
+		if body := kinds.Body(kinds.RegionBytes(doc, r)); body == "" {
+			t.Error("the summary region is empty")
+		}
+	}
+}

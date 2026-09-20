@@ -55,10 +55,9 @@ func firstLinkURL(s string) string {
 		if mid := strings.Index(s[open:], "]("); mid >= 0 {
 			rest := s[open+mid+2:]
 			if end := strings.Index(rest, ")"); end >= 0 {
-				// A title after the URL ("(url \"t\")") is not part of it.
-				url, _, _ := strings.Cut(strings.TrimSpace(rest[:end]), " ")
-
-				return url
+				// A title after the URL ("(url \"t\")") is not part of it, and
+				// neither is anything after a tab.
+				return untilSpace(strings.TrimSpace(rest[:end]))
 			}
 		}
 	}
@@ -75,8 +74,10 @@ func firstLinkURL(s string) string {
 		return ""
 	}
 
+	// An autolink is a whole URL in angle brackets. Anything with whitespace
+	// in it, or with no scheme, is some other use of the brackets.
 	url := rest[:end]
-	if strings.ContainsAny(url, " \t") || !strings.Contains(url, ":") {
+	if url != untilSpace(url) || !strings.Contains(url, ":") {
 		return ""
 	}
 

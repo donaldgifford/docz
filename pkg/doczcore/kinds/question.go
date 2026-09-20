@@ -16,11 +16,15 @@ type Option struct {
 	// Text is the option, wrapped lines folded, inline markdown kept.
 	Text string
 
-	// Recommended is true when the option carries the "*(recommendation)*"
-	// marker. The fleet's convention also makes option "a" the
-	// recommendation, but that is a habit rather than the contract: an
-	// author who recommends "c" says so, and reading the marker rather
-	// than the letter is what lets them.
+	// Recommended is true when the option carries the parenthesised
+	// recommendation marker. The corpus qualifies it — "*(recommendation,
+	// revised 2026-09-19)*", "*(recommendation, per review)*" — so the
+	// marker is matched by its opening rather than as a fixed string.
+	//
+	// The fleet's convention also makes option "a" the recommendation, but
+	// that is a habit rather than the contract: an author who recommends
+	// "c" says so, and reading the marker rather than the letter is what
+	// lets them.
 	Recommended bool
 
 	// Line is the 1-based line of the bullet, counted from the start of
@@ -52,8 +56,11 @@ type Resolution struct {
 // Question is one open question: a numbered heading, its lettered options,
 // and its resolution when it has one.
 type Question struct {
-	// Number is the number from the heading. A heading that is not
-	// numbered is not a question and is not reported.
+	// Number is the number from the heading, reported as written. A heading
+	// that carries no number is not a question and is not reported at all,
+	// but a heading numbered zero is reported as zero rather than dropped:
+	// the grammar numbers from 1, so that is validate's finding to make, and
+	// a reader that filtered it would hide the document's mistake.
 	Number int
 
 	// Title is the heading text after the number, inline markdown
@@ -83,13 +90,22 @@ var (
 	optionBullet = regexp.MustCompile(`^([a-zA-Z])[.)]\s+(.*)$`)
 
 	// resolvedQuote matches the resolution blockquote's opening. The date
-	// and the letter are both optional in the pattern so a malformed
-	// blockquote still reports as a resolution: an author who wrote
-	// "Resolved: (a)" has resolved the question, and reporting it as open
-	// would be the worse answer.
+	// and the letter are both optional so a malformed blockquote still
+	// reports as a resolution: an author who wrote "Resolved: (a)" has
+	// resolved the question, and reporting it as open would be worse.
+	//
+	// The letter must be in parentheses. The corpus resolves some questions
+	// without one — "Resolved 2026-09-19: superseded by DESIGN-0015" — and
+	// an unparenthesised letter would read the "s" of "superseded" as the
+	// choice. The opening bold need not be closed on the same line, because
+	// two of the corpus's resolutions close it two lines later.
 	resolvedQuote = regexp.MustCompile(
-		`^\*{0,2}Resolved\*{0,2}\s*([0-9]{4}-[0-9]{2}-[0-9]{2})?\s*:?\s*\(?([a-zA-Z])?\)?`,
+		`^\*{0,2}Resolved\*{0,2}\s*(\d{4}-\d{2}-\d{2})?\*{0,2}\s*:?\s*(?:\(([a-zA-Z])\))?`,
 	)
+
+	// recommendationMarker matches the marker and any qualification inside
+	// its parentheses.
+	recommendationMarker = regexp.MustCompile(`\*\(recommendation[^)]*\)\*`)
 )
 
 // OpenQuestions returns the region's numbered questions with their options
@@ -172,7 +188,7 @@ func optionsIn(folded []foldedItem, after, through int) []Option {
 		out = append(out, Option{
 			Letter:      strings.ToLower(m[1]),
 			Text:        text,
-			Recommended: strings.Contains(text, "*(recommendation)*"),
+			Recommended: recommendationMarker.MatchString(text),
 			Line:        it.Line,
 		})
 	}
@@ -197,24 +213,45 @@ func resolutionIn(lines []string, after, through int) *Resolution {
 
 		parts := []string{strings.TrimSpace(stripComments(quoted[len(m[0]):]))}
 
+		// The note is the rest of the blockquote, folded. A bare ">" is a
+		// paragraph break inside one blockquote, not its end: DESIGN-0014's
+		// tenth question records its amendment in a second paragraph of the
+		// same quote, and dropping it would lose the amendment.
 		for k := n + 1; k <= through && k <= len(lines); k++ {
 			more, ok := blockquoteText(lines[k-1])
-			if !ok || strings.TrimSpace(more) == "" {
+			if !ok {
 				break
 			}
 
-			parts = append(parts, strings.TrimSpace(stripComments(more)))
+			if trimmed := strings.TrimSpace(stripComments(more)); trimmed != "" {
+				parts = append(parts, trimmed)
+			}
 		}
 
 		return &Resolution{
 			Date:   m[1],
 			Choice: strings.ToLower(m[2]),
-			Note:   strings.TrimSpace(strings.Trim(strings.Join(parts, " "), " .—-")),
+			Note:   resolutionNote(strings.Join(parts, " ")),
 			Line:   n,
 		}
 	}
 
 	return nil
+}
+
+// resolutionNote cleans up what is left of a resolution blockquote once the
+// date and the choice have been read.
+//
+// Bold markers go. The corpus wraps the whole resolution sentence in bold
+// and closes it anywhere from just after the letter to two lines later, so
+// the opener is consumed by the pattern and the closer would otherwise land
+// in the middle of the note. Dropping both keeps the words and loses only
+// the emphasis, which a note has no use for.
+//
+// Only leading punctuation is trimmed. A trailing period ends a sentence,
+// and cutting it would make every note read as a fragment.
+func resolutionNote(s string) string {
+	return strings.TrimSpace(strings.TrimLeft(strings.ReplaceAll(s, "**", ""), " .,:;—-"))
 }
 
 // blockquoteText strips a leading ">" and returns the text after it.

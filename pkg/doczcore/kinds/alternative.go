@@ -38,18 +38,21 @@ var (
 )
 
 // Alternatives returns the region's alternatives, read from whichever of
-// the two shapes the document uses: top-level bullets, or level-3 headings
-// with their bodies.
+// the two shapes the document uses: level-3 headings with their bodies, or
+// top-level bullets.
 //
-// Bullets win when the region has both. A region that leads with bullets
-// and then explains one of them under a heading is describing one set of
-// alternatives, and counting the heading again would double it.
+// Headings win when the region has both, because a heading is the stronger
+// structural signal and bullets under one belong to it. INV-0003's options
+// section is the case: each alternative is a level-3 heading whose body is a
+// pair of "**Pros:**" and "**Cons:**" bullets at indent 0. Reading bullets
+// first there would report six pros and cons as six alternatives and never
+// see the three that exist.
 func Alternatives(region []byte) []Alternative {
-	if out := bulletAlternatives(region); len(out) > 0 {
+	if out := headingAlternatives(region); len(out) > 0 {
 		return out
 	}
 
-	return headingAlternatives(region)
+	return bulletAlternatives(region)
 }
 
 func bulletAlternatives(region []byte) []Alternative {
@@ -62,8 +65,7 @@ func bulletAlternatives(region []byte) []Alternative {
 			continue
 		}
 
-		label, rest := splitLabel(it.Text)
-		title, text := splitBoldLeadIn(rest)
+		label, title, text := splitBullet(it.Text)
 		out = append(out, Alternative{Label: label, Title: title, Text: text, Line: it.Line})
 	}
 
@@ -93,9 +95,27 @@ func headingAlternatives(region []byte) []Alternative {
 	return out
 }
 
+// splitBullet reads a bullet's label, title, and text.
+//
+// The label may sit either side of the bold. The corpus writes it inside —
+// "- **A. Promote on demand, again.** why not" in all three of this repo's
+// ADRs — while an open question's options write it outside, "- a. **Yes.**
+// because". Looking outside first and then inside covers both, and a bullet
+// with neither shape keeps its whole text.
+func splitBullet(s string) (label, title, text string) {
+	label, rest := splitLabel(s)
+	title, text = splitBoldLeadIn(rest)
+
+	if label == "" {
+		label, title = splitLabel(title)
+	}
+
+	return label, title, text
+}
+
 // splitLabel pulls a leading letter or number label off an alternative:
-// "a. Read the template" yields "a" and the rest. A label is read before a
-// bold lead-in, because the corpus writes the letter outside the bold.
+// "a. Read the template" yields "a" and the rest. A heading writes its label
+// this way, outside any bold, so headingAlternatives needs only this.
 func splitLabel(s string) (label, rest string) {
 	m := labelPrefix.FindStringSubmatch(s)
 	if m == nil {
