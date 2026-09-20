@@ -591,17 +591,17 @@ consumer proof. The CLI's only visible change is the marker lines in
       only when its condition holds, with one passing and one failing
       document per code, and `Parse` over each `.orig.md` equals `Parse`
       over its migrated sibling in every field but `Inferred`.
-- [ ] `docwrite.SetStatusBytes(doc []byte, status string) (out []byte, old
+- [x] `docwrite.SetStatusBytes(doc []byte, status string) (out []byte, old
       string, err error)` as the byte core; `SetStatus(path, …)` becomes
       read → core → write. The existing status goldens pass through the
       wrapper unchanged; a bytes-only table covers the core.
       verify: `go test ./pkg/doczcore/docwrite/...`
-- [ ] `docwrite.SetTaskStateBytes(doc []byte, line int, checked bool)
+- [x] `docwrite.SetTaskStateBytes(doc []byte, line int, checked bool)
       ([]byte, error)`, `SetTaskState(path, line, checked)`, and
       `ErrTaskAlreadyUnchecked`; `CheckTask` becomes `SetTaskState(path,
       line, true)`. The checktask goldens pass unchanged; a bytes-only
       table covers the uncheck direction.
-- [ ] `docwrite.Rendered{Filename, Content}`, `NextNumber(dir string,
+- [x] `docwrite.Rendered{Filename, Content}`, `NextNumber(dir string,
       width int) (string, error)`, and `Render(opts *CreateOptions, number
       string) (Rendered, error)`; `Create` becomes `NextNumber` → `Render`
       → write. A test asserts `Render`'s output equals what `Create`
