@@ -553,7 +553,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       >   that opens a region it cannot contain, a declared child excepted.
       > - A deferred `Note` stopped at the end of the line the marker sat on
       >   rather than folding to the task's end as §3 specifies.
-- [ ] Create `pkg/rfc`, `pkg/adr`, `pkg/design`, and `pkg/investigation`,
+- [x] Create `pkg/rfc`, `pkg/adr`, `pkg/design`, and `pkg/investigation`,
       one commit each, with the `Doc` shapes and `Validate` codes of
       DESIGN-0014 §2.9: `rfc.Doc{Summary, Problem, Proposal, Alternatives,
       Risks, Criteria, OpenQuestions, References}` with `Risk` from the
@@ -572,7 +572,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       CR, and copies every string; each `Validate` runs `Parse` and
       reports its three codes.
       verify: `go test ./pkg/rfc/... ./pkg/adr/... ./pkg/design/... ./pkg/investigation/...`
-- [ ] Heading tables: each of the five packages carries `var headings
+- [x] Heading tables: each of the five packages carries `var headings
       kinds.HeadingSpec` as data, and a test in the package asserts it
       equals `kinds.SpecFromTemplate` over the embedded template of its
       type (`doctemplate` is a test-only import there), so a template

@@ -3,54 +3,10 @@ package impl_test
 import (
 	"strings"
 	"testing"
-	"text/template"
 
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/validate"
 	"github.com/donaldgifford/docz/v2/pkg/impl"
 )
-
-// renderedTemplate renders the embedded IMPL template the way docz create
-// does, so the guard below reads exactly the bytes a user's first document
-// holds.
-//
-// The internal template package is reachable from a test inside the module,
-// and only from a test: production code in pkg/ may not import it (rule R2,
-// checked by the layer test, which does not see an external test package's
-// imports). That is the point — the coupling lives in the test, so renaming a
-// template section fails here rather than silently leaving a field zero.
-func renderedTemplate(t *testing.T) []byte {
-	t.Helper()
-
-	body, err := doctemplate.EmbeddedDocumentTemplate(config.DocType("impl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tmpl, err := template.New("impl").Parse(body)
-	if err != nil {
-		t.Fatalf("parsing the impl template: %v", err)
-	}
-
-	typ := config.DefaultConfig().Types["impl"]
-
-	var sb strings.Builder
-
-	err = tmpl.Execute(&sb, map[string]any{
-		"Prefix": typ.IDPrefix,
-		"Number": "0001",
-		"Title":  "A placeholder title",
-		"Status": typ.Statuses[0],
-		"Author": "Test Author",
-		"Date":   "2026-09-20",
-	})
-	if err != nil {
-		t.Fatalf("rendering the impl template: %v", err)
-	}
-
-	return []byte(sb.String())
-}
 
 // codes returns the findings' codes in order, which is what a table case
 // asserts: the wording of a Detail is not a contract, the code is.
