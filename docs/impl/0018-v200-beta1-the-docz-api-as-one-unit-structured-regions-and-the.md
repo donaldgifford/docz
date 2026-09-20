@@ -734,43 +734,43 @@ what `kinds.InferRegions` finds; no heuristic lives here.
 
 #### Tasks
 
-- [ ] Create `pkg/doczcore/repo` (`repo.go`, `scan.go`, `create.go`,
+- [x] Create `pkg/doczcore/repo` (`repo.go`, `scan.go`, `create.go`,
       `update.go`, `status.go`, `init.go`, `template.go`, `validate.go`,
       `regions.go`, `hooks.go`, `errors.go`) with `Repo{Root, Cfg}`,
       `Open(ctx, root, configFile)` (config load and validate), and the
       path helpers `Path`, `TypeDir`, `ReadmePath` (DESIGN-0014 §2.8).
       verify: `go test ./pkg/doczcore/repo/...`
-- [ ] Typed errors in `errors.go`: `NotFoundError{Type, ID}`,
+- [x] Typed errors in `errors.go`: `NotFoundError{Type, ID}`,
       `TypeDisabledError{Type}`, `ExistsError{Path}`,
       `InvalidStatusError{Type, Status, Allowed}`, `UnknownTypeError{Token,
       Valid}` unwrapping to `config.ErrUnknownType`, and `WriteError{Path,
       Err}` (Open Question 9 of DESIGN-0014); an error test per shape.
-- [ ] Read side: `Scan(ctx, types...)`, `List`, `Find(ctx, id)`,
+- [x] Read side: `Scan(ctx, types...)`, `List`, `Find(ctx, id)`,
       `FindIn(ctx, typeName, id)` returning `Entry{DocEntry, Type, Path}`;
       nil types means `EnabledTypes()`; a disabled type is
       `TypeDisabledError`; an unresolved id is `NotFoundError`.
-- [ ] `Create(ctx, CreateOptions{Type, Title, Author, Status, Now, Update})
+- [x] `Create(ctx, CreateOptions{Type, Title, Author, Status, Now, Update})
       (CreateResult, error)` over `docwrite.NextNumber` and `Render`, with
       `Update == true` running the type's index and ToC pass and reporting
       it in `CreateResult.Update`; `ExistsError` on a filename collision.
       `Create` never calls `wiki.UpdateNav` — that stays in `cmd/` behind
       `Wiki.AutoUpdate`.
-- [ ] `Update(ctx, UpdateOptions{DryRun}, types...) (UpdateReport, error)`:
+- [x] `Update(ctx, UpdateOptions{DryRun}, types...) (UpdateReport, error)`:
       per type `Scan`, `toc.UpdateFiles`, and `index.UpdateReadme` or
       `DryRunReadme` with the header from `doctemplate.ResolveIndexHeader`,
       producing `TypeReport{Type, Dir, Docs, ToC, Index, Elapsed}`. This
       absorbs `cmd/update.go`'s `updateType`, `runToCUpdate`, and
       `indexLabel`, which stay in `cmd/` until Phase 5.
-- [ ] `SetStatus(ctx, typeName, id, status, StatusOptions{DryRun})
+- [x] `SetStatus(ctx, typeName, id, status, StatusOptions{DryRun})
       (StatusResult, error)`: an unchanged value returns `Changed: false`
       without writing (DESIGN-0014 Open Question 7); `InvalidStatusError`
       for a status outside `TypeConfig.Statuses`; `WriteError` wraps the
       `docwrite` failure.
-- [ ] `Init(ctx, InitOptions{Force}) (InitReport, error)`: `.docz.yaml`
+- [x] `Init(ctx, InitOptions{Force}) (InitReport, error)`: `.docz.yaml`
       from `doctemplate.DefaultConfigYAML`, the enabled type directories,
       and `index.Scaffold(header)` READMEs; `InitFile{Path, Action}` with
       `InitCreated`, `InitSkipped`, `InitOverwritten`.
-- [ ] `Template(ctx, typeName) ([]byte, error)` and `ExportTemplate(ctx,
+- [x] `Template(ctx, typeName) ([]byte, error)` and `ExportTemplate(ctx,
       typeName, dest, ExportOptions{Overwrite}) (ExportResult, error)`;
       `dest == ""` means override at `<docsDir>/templates/<type>.md`. For a
       custom type with no resolvable template it scaffolds
@@ -778,7 +778,7 @@ what `kinds.InferRegions` finds; no heuristic lives here.
       `templates/<type>.md` and `templates/schema/<type>.md`, returning
       `Scaffolded: true` and `SchemaPath` (DESIGN-0015 §3). A test asserts
       the written pair validates clean.
-- [ ] `Validate(ctx, types, ValidateOptions{Strict}) (ValidateReport,
+- [x] `Validate(ctx, types, ValidateOptions{Strict}) (ValidateReport,
       error)` per DESIGN-0015 §4: per enabled type, the template check
       (render the resolved template with placeholder data, validate
       against the schema the type name resolves to, skip ToC drift); per
@@ -791,7 +791,7 @@ what `kinds.InferRegions` finds; no heuristic lives here.
       `DocFindings{Type, Path, Findings}` (plus the field Open Question 10
       settles), `ValidateReport{Docs, Templates, Index, Errors, Warnings}`.
       `repo` never imports `pkg/impl` (R2).
-- [ ] `InsertRegions(ctx, types, InsertRegionsOptions{DryRun})
+- [x] `InsertRegions(ctx, types, InsertRegionsOptions{DryRun})
       (InsertRegionsReport, error)` per DESIGN-0015 §6 as amended: a
       document with any `docz:` region is never given more (non-canonical
       spellings are rewritten and counted in `Fixed`); otherwise regions
@@ -803,7 +803,7 @@ what `kinds.InferRegions` finds; no heuristic lives here.
       runs `Regions` on its output and refuses to write a malformed
       result. `DryRun` stays on the library option for consumers; the CLI
       has no flag for it because plain `validate` is the preview.
-- [ ] Migration tests: `InsertRegions` over each `.orig.md` fixture in the
+- [x] Migration tests: `InsertRegions` over each `.orig.md` fixture in the
       five type packages' `testdata/` equals its hand-migrated sibling
       byte-for-byte, and a second run changes nothing; snapshots of docz's
       own `docs/{adr,design,impl,investigation}` trees under `t.TempDir()`
@@ -813,21 +813,21 @@ what `kinds.InferRegions` finds; no heuristic lives here.
       `.orig.md` yields the same task IDs and task-line text as
       `impl.Parse` over the migrated output, which is what licenses
       deleting the heuristics with the pass later.
-- [ ] `Hooks{ScanStart, ScanDone, TypeSkipped, FileWritten, FileSkipped}`,
+- [x] `Hooks{ScanStart, ScanDone, TypeSkipped, FileWritten, FileSkipped}`,
       `WithHooks(ctx, Hooks) context.Context`, `HooksFrom(ctx) Hooks`,
       `FileKind`, and `SkipReason` (DESIGN-0014 §7, R8); nil hooks are
       no-ops; the context is checked between per-type iterations and a
       cancelled run returns the partial report with `ctx.Err()`.
-- [ ] Context and hooks tests: a cancelled context makes `Update` return
+- [x] Context and hooks tests: a cancelled context makes `Update` return
       after the current type with the partial report intact; a hooks test
       asserts the exact event sequence for a two-type update.
-- [ ] Table tests over `t.TempDir()` repos for every method, each
+- [x] Table tests over `t.TempDir()` repos for every method, each
       asserting the typed report and the on-disk result, including the
       dry-run forms.
-- [ ] Extend `test/consumer/doc.go`: `repo.Open` on a temp repo, `Scan`,
+- [x] Extend `test/consumer/doc.go`: `repo.Open` on a temp repo, `Scan`,
       `SetStatus` with `DryRun`, and `Validate`, asserting typed results.
       verify: `make test-consumer`
-- [ ] CLAUDE.md: the `repo` bullet (methods, typed errors, hooks, the
+- [x] CLAUDE.md: the `repo` bullet (methods, typed errors, hooks, the
       no-op status rule, the never-imports-`impl` rule).
 
 #### Success Criteria

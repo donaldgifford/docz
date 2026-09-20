@@ -9,8 +9,14 @@
 // layer: pkg/doczcore/kinds and pkg/doczcore/validate, plus the five type
 // packages pkg/rfc, pkg/adr, pkg/design, pkg/impl, and pkg/investigation.
 // Phase 2 adds the three promotions that emptied internal/:
-// pkg/doczcore/doctemplate, pkg/doczcore/index, and pkg/wiki. Fifteen pkg/
-// packages in all.
+// pkg/doczcore/doctemplate, pkg/doczcore/index, and pkg/wiki. Phase 3 adds
+// pkg/doczcore/repo, the repository tier. Sixteen pkg/ packages in all.
+//
+// repo is the one that decides whether the v2 claim holds. Every other file
+// here proves a primitive is reachable; repo proves the operation is, so a
+// consumer that wants to scaffold a repo, refresh its indexes, move a
+// status, validate a tree, or migrate an unmarked document does not
+// reimplement cmd/ to get it.
 //
 // Almost every call here is bytes in and values out, because docz-api reads a
 // document through the GitHub API and has no checkout to point at. The few
