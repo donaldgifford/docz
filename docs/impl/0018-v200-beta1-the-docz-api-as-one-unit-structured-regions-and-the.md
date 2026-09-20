@@ -939,6 +939,29 @@ Decision 7).
       `exitCodeFor`, the print/emit/format functions, and every flag.
       verify: `git diff --stat origin/main -- 'cmd/*_test.go'` prints
       nothing
+
+      Five `wiki.Init` / `UpdateNav` behaviour deltas recorded in Phase 2
+      that this task must reconcile, since `pkg/wiki` chose the library
+      semantics and left the CLI's to the caller:
+      1. An existing `mkdocs.yml` is `wiki.Skipped`, not an error, and
+         `Init` goes on to write the index. `WikiInit` must turn
+         `report.MkDocs == wiki.Skipped` into today's `"%s already exists
+         (use --force to overwrite)"` *before* reporting the index, or
+         `TestWikiInit_FailsIfExists` passes while `docs/index.md` starts
+         being created on that path.
+      2. `InitOptions.Force` covers the index too, where `ensureDocsIndex`
+         always skipped an existing one. Pass force per-file unless `docz
+         wiki init --force` should start replacing a hand-edited landing
+         page. No `cmd/` test observes this.
+      3. `wiki.Init` does not update the nav; `WikiInit` is `wiki.Init` →
+         print → `wiki.UpdateNav` → print.
+      4. `UpdateNav` returns `ReadMkDocs` / `WriteMkDocs` errors unwrapped
+         (they already name the path), still wrapping `fs.ErrNotExist`, so
+         the `"not found (run docz wiki init first)"` message is cmd's to
+         add.
+      5. There is no `cfg.Wiki.SiteName` tier — `config.WikiConfig` has no
+         such field. The chain is `opts.SiteName` → `filepath.Base(root)` →
+         `"my-project"`, so `cmd/` still resolves the git remote.
 - [ ] `docz validate [type] [--strict] [--format text|json]` in
       `cmd/validate.go`: `repo.Validate`, then the per-type tier composed
       in `cmd/` as an explicit five-arm switch on `DocFindings.Schema`
