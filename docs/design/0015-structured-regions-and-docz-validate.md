@@ -60,8 +60,9 @@ no release carries one without the other.
 ### Goals
 
 - **Explicit spans.** A program finds a document's references, open
-  questions, phases, tasks, and criteria by marker, never by matching
-  heading text.
+  questions, phases, tasks, and criteria by marker; a document that has
+  none is read by inference from its headings, flagged, and fixable
+  (amended 2026-09-20).
 - **Structure for every type, including custom ones,** without Go code. A
   repo that adds a `frameworks` type gets a scaffolded template and schema
   pair and the same validation as a built-in.
@@ -70,8 +71,11 @@ no release carries one without the other.
   implementation.
 - **A checkable gate for agent-written documents.** The conventions the
   docz skills describe in prose become findings the CLI reports.
-- **One grammar.** The corpus is migrated once so the heading heuristics
-  retire instead of surviving as a permanent fallback.
+- **One grammar, one heuristic.** Markers are the contract; the single
+  heading heuristic, `kinds.InferRegions`, is the backwards-compatible
+  fallback for documents that predate them, pinned by the proof that it
+  agrees with the markers (amended 2026-09-20 from "the heuristics
+  retire").
 - **Learn from INV-0009.** Marker spelling variants are read leniently and
   reported, never silently skipped.
 
@@ -469,6 +473,7 @@ type Options struct {
     Schema   Schema            // resolved by the caller (§3); empty is well-formedness only
     Type     config.TypeConfig // statuses, id_prefix, id_width
     Filename string            // for the id-versus-filename check; "" skips it
+    Headings kinds.HeadingSpec // for inference when the document has no docz markers (§6); empty disables it
 }
 
 // Document runs every generic check. It never fails; a document with no
@@ -481,7 +486,7 @@ Generic checks, by code family:
 | Family | Codes | Severity |
 | ------ | ----- | -------- |
 | `marker.*` | `stray-end`, `unclosed`, `spelling`, `in-fence` | error, error, warning, warning |
-| `region.*` | `missing`, `duplicate-singleton`, `wrong-parent` | error, warning, error |
+| `region.*` | `missing`, `duplicate-singleton`, `wrong-parent`, `inferred` | error, warning, error, warning |
 | `frontmatter.*` | `missing`, `id-prefix`, `id-number`, `status`, `created`, `title` | error, error, error, error, warning, warning |
 | `references.*` | `no-link` | warning |
 | `open-questions.*` | `numbering`, `no-options` | warning, warning |
@@ -493,6 +498,19 @@ Generic checks, by code family:
 `schema.name` is `Document`'s; `schema.unresolved` is emitted by the tier
 that resolves names (§3), since `Document` only ever sees a resolved
 `Schema`.
+
+**A document with no markers is not an error** (amended 2026-09-20).
+When `Options.Headings` is set and the document carries no `docz:`
+marker, `Document` infers its regions with `kinds.InferRegions` (§6),
+emits one `region.inferred` warning whose `Detail` names the kinds it
+inferred and, for each schema kind it could not, the heading it looked
+for, and then runs every other check over the inferred regions as if
+they were marked. A schema kind whose heading is absent is still
+`region.missing`, an error: the section is genuinely unrecognisable and
+the author must act. With `Headings` empty, or once a document carries
+any marker, nothing is inferred and unmarked sections are `region.missing`
+as before. The type packages set `Doc.Inferred` on the same condition and
+never emit the warning themselves, so a run reports it once.
 
 Per-type checks live in the type packages, return the same `Finding`
 type, and see the document through their own `Parse` (DESIGN-0014 §2.9):
@@ -512,7 +530,10 @@ func Validate(doc []byte) []validate.Finding
 ```
 
 The repository tier walks a tree, resolves a schema per document by name
-(§3, cached by name for the run), runs the generic tier on every document,
+(§3, cached by name for the run), derives a heading spec per type from
+its resolved template (`kinds.SpecFromTemplate`, §6) so unmarked
+documents are inferred rather than failed, runs the generic tier on
+every document,
 checks every enabled type's rendered template against the schema its type
 name resolves to, and adds the two drift checks that need the filesystem:
 a stale ToC and a stale README index. The template check renders the
@@ -612,9 +633,16 @@ field is its region, read by a `kinds` reader or as a table (DESIGN-0014
 
 ### 6. Migrating the corpus
 
-Nothing in the fleet carries region markers. One additive pass on the
-repository layer inserts them where the retiring heuristics find spans, so
-the heuristics live in exactly one place and can be deleted with it.
+Nothing in the fleet carries region markers, and nothing has to before
+it is read (amended 2026-09-20): `Parse` and `validate.Document` infer
+regions from headings when a document has none (§4, DESIGN-0014 §2.9),
+through the one heading heuristic in the module, `kinds.InferRegions`,
+which is permanent rather than a migration aid. Migration is that same
+inference followed by a write: `repo.InsertRegions` marks what
+`InferRegions` found, and `docz validate --fix` drives it (Open Question
+4 as amended). Plain `docz validate` is the preview — the
+`region.inferred` warning lists exactly the kinds `--fix` would mark —
+so the pass needs no dry-run flag of its own on the command.
 
 ```go
 package repo
@@ -627,7 +655,7 @@ type InsertRegionsResult struct {
 }
 type InsertRegionsReport struct {
     Changed   []InsertRegionsResult
-    Unchanged []string // already carries docz regions, or nothing to find
+    Unchanged []string // already carries docz regions, or no heading in the spec was found
 }
 
 func (r *Repo) InsertRegions(ctx context.Context, types []string, opts InsertRegionsOptions) (InsertRegionsReport, error)
@@ -639,9 +667,9 @@ flowchart TD
   has -- yes --> canon{"non-canonical<br/>marker spelling?"}
   canon -- yes --> fix["rewrite markers in place"]
   canon -- no --> skip["unchanged"]
-  has -- no --> map["heading→kind map from the type's marked template,<br/>plus the shared kinds' default headings"]
-  map --> match["match the document's headings by level and text;<br/>phase headings by the impl regex"]
-  match --> ins["insert marker pairs around each span, parents before children"]
+  has -- no --> map["kinds.SpecFromTemplate: heading→kind map from the type's marked template,<br/>plus the shared kinds' default headings"]
+  map --> match["kinds.InferRegions: match the document's headings by level and text;<br/>Phase token: headings by prefix"]
+  match --> ins["insert marker pairs around each inferred span, parents before children"]
   ins --> out["written, or reported under --dry-run"]
 ```
 
@@ -652,11 +680,16 @@ the parent. A custom type with a marked template migrates the same way.
 Three additions cover what a template cannot say: the shared kinds'
 default headings (`## Open Questions`, `## Decisions`, `## References`)
 are always in the map, since a document may carry them when its template
-does not; the IMPL phase heading is matched by the `impl` regex, because
-the template's is a placeholder; and headings are compared after trimming,
-case-folding, and stripping inline markdown and HTML comments. A heading
-the document lacks is skipped, and `docz validate` then reports
-`region.missing` for the author to fix by hand.
+does not; a template heading that ends in a placeholder comment
+(`### Phase N: <!-- … -->`) becomes a prefix rule that matches
+`Phase <token>:`, so the type package's regex reads the token afterwards
+and `repo` never imports `impl`; and headings are compared after
+trimming, case-folding, and stripping inline markdown and HTML comments.
+A heading the document lacks is skipped, and `docz validate` then reports
+`region.missing` for the author to fix by hand. Once `--fix` has written
+the markers it could, that document carries markers and is no longer
+inferred, so the section it could not find is a hard `region.missing`
+until the author adds the marker or restores the heading.
 
 Rules: a document that already has any `docz:` region is never given more
 (idempotent by construction); a span is the heading through the line before
@@ -665,9 +698,10 @@ and a trailing `---`, so the thematic breaks between phases stay outside the
 regions; a parent region's span is its heading through the end of its last
 nested span; markers are inserted on their own lines with a blank line
 preserved on each side; the pass runs `Regions` on its own output and
-refuses to write a document whose result is malformed. Every fleet repo
-runs it once, reviews the diff, and commits; after that `docz validate`
-keeps it true.
+refuses to write a document whose result is malformed. A repo runs
+`docz validate --fix` once, at its own pace, reviews the diff, and
+commits; until it does, its documents still parse, with `Inferred` set
+and one warning each; after it does, `docz validate` keeps it true.
 
 ### 7. Where each piece sits in the layers
 
@@ -699,10 +733,10 @@ for schemas as it already does for templates. docz-api imports
 | `pkg/doczcore/doctemplate` | `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema`; embedded `schema/<type>.md` skeletons | part of the promoted package (DESIGN-0014 §2.7) |
 | `pkg/doczcore/validate` | new: `Document`, `Options`, `Finding`, `Severity`, `Schema`, `SchemaRegion`, `SchemaFromMarkers`, the kind catalogue | new public in v2.0.0, experimental until then |
 | `pkg/doczcore/repo` | `Validate`, `ValidateOptions`, `ValidateReport` with `Templates`, `DocFindings` (with `Schema`), `IndexDrift`; `InsertRegions` and its types; `ExportTemplate` scaffolds a custom type's pair | part of the new package |
-| `pkg/doczcore/kinds` | readers for the shared kinds the catalogue names (DESIGN-0014 §2.12) | new public in v2.0.0, experimental until then |
-| `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` | `Validate` each; `Parse` locates every field by region (DESIGN-0014 §2.9) | part of the new packages |
+| `pkg/doczcore/kinds` | readers for the shared kinds the catalogue names; `HeadingSpec`, `SpecFromTemplate`, `InferRegions` for documents without markers (DESIGN-0014 §2.12) | new public in v2.0.0, experimental until then |
+| `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` | `Validate` each; `Parse` locates every field by region, inferring regions from headings when the document has none and setting `Doc.Inferred` (DESIGN-0014 §2.9) | part of the new packages |
 | `internal/template/templates/*.md` | every built-in template gains region markers; new `schema/<type>.md` skeletons, `default.md`, and `schema/default.md` | template contents, not contract |
-| `cmd/` | `docz validate [type] [--strict] [--format text\|json]`; `docz update --regions [--dry-run]`; `docz template override <custom-type>` scaffolds the pair | new commands, part of the swap |
+| `cmd/` | `docz validate [type] [--strict] [--fix] [--format text\|json]`, where `--fix` writes the markers inference found and re-validates; `docz template override <custom-type>` scaffolds the pair | new commands, part of the swap |
 | `test/consumer` | imports `validate`, validates a fixture from outside the module | proof |
 | docz skills plugin | bundled templates and the create fallback gain markers; `docz validate` joins the workflow | claude-skills issue, filed when this design is approved |
 
@@ -792,11 +826,16 @@ Every value is computed from bytes and holds no reference to its input;
 - **Migration**: run `InsertRegions` over snapshots of docz's own
   `docs/impl` and `docs/design` trees under `t.TempDir()`, then assert
   `Regions` on the output matches the expected kinds and that a second run
-  changes nothing. `impl.Parse` over the migrated fixtures must agree with
-  the pre-migration heuristic parse on every task ID and line, which is the
-  parity proof that the heuristics can be deleted.
+  changes nothing. Every type package's `Parse` over an unmigrated
+  fixture must equal its `Parse` over the migrated sibling in every field
+  but `Inferred`, and `validate.Document` with `Headings` set must report
+  `region.inferred` and nothing the migrated sibling does not; that is
+  the proof that inference and markers agree, which is what makes the
+  fallback safe. A mixed fixture (one marker present) asserts nothing is
+  inferred.
 - **Command tests** for `validate` pin exit codes and both formats; for
-  `update --regions` pin dry-run output.
+  `validate --fix` pin the files written, the second report, and that a
+  second `--fix` writes nothing.
 - **Consumer proof**: `test/consumer` validates a fixture and asserts a
   known code.
 
@@ -810,13 +849,15 @@ additions are:
 | 1, type layer | `docparse.Markers`/`Regions`/`ListItems`/`Tables`; `validate` package with `SchemaFromMarkers` and the forty-one-kind catalogue; `kinds`; `Parse` over regions and `Validate` in all five type packages; every template section gains markers; embedded `schema/<type>.md` skeletons listing every section and the `default.md` pair; `Frontmatter.Schema`; goldens regenerated |
 | 2, promotions | `doctemplate.ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` |
 | 3, repository core | `repo.Validate` with the template check, `repo.InsertRegions`; `repo.ExportTemplate` scaffolds custom types |
-| 5, the swap | `docz validate`, `docz update --regions`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
-| after the release | nothing in this repo. External consumers are not part of this work: docz-api and sdk-booty-sh pin v1 and read a migrated corpus as before, since markers are HTML comments and a `schema:` line is an unknown key to a v1 parser; tempy, and any repo that wants regions, runs `docz update --regions` on its own docs when it adopts v2, in its own repo |
+| 5, the swap | `docz validate` with `--fix`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
+| after the release | nothing in this repo. External consumers are not part of this work: docz-api and sdk-booty-sh pin v1 and read a migrated corpus as before, since markers are HTML comments and a `schema:` line is an unknown key to a v1 parser; tempy, and any repo that wants regions, runs `docz validate --fix` on its own docs when it adopts v2, in its own repo |
 
-`impl.Parse` locates spans by region from its first commit, so any
-document it is pointed at must have been migrated first. docz's own
-`docs/` are migrated in the swap PR; the parity suite's fixtures carry
-markers from the start.
+Nothing has to be migrated before it is read: every type package's
+`Parse` and `validate.Document` infer regions from headings when a
+document carries none (§4, §6), with `Doc.Inferred` and one
+`region.inferred` warning as the signal. docz's own `docs/` are migrated
+in the swap PR with `validate --fix`; the parity suite's fixtures carry
+markers from the start; every other repo migrates when it chooses.
 
 ## Open Questions
 
@@ -831,13 +872,14 @@ markers from the start.
 | 1 | Where does the schema come from? | **(d)** a marker skeleton the document names in frontmatter, baked in per built-in type or a repo file under `templates/schema/`; templates become golden tests (§3) |
 | 2 | Marker spelling on the read side | (a) lenient read, canonical write, `marker.spelling` warning, fixed by the migration pass |
 | 3 | Is the finding message part of the contract? | (a) `Code` is the contract; `Detail` is a default a consumer may replace by code |
-| 4 | How is the corpus migrated? | (a) `docz update --regions`, dry-run aware, removable in a later major |
+| 4 | How is the corpus migrated? | (a) `docz update --regions`; **amended 2026-09-20 to (c)** `docz validate --fix`, since inference is permanent and the pass is defined by the findings `validate` reports |
 | 5 | Do ToC and index drift belong to validate? | (a) yes: `toc.stale` per document, `IndexDrift` per type; subsumes issue #97's `update --check` |
 | 6 | Which regions does the IMPL template mark? | (a) the full set: `phase` with nested `tasks` and `criteria`, plus `testing` and `references`; **amended 2026-09-19** to every section (§3) |
 | 7 | Hand-rolled walker or a CommonMark AST? | (a) hand-rolled, stdlib-only; goldmark behind the frozen contract only if CommonMark-fidelity bugs keep arriving |
 | 8 | Unknown kinds | (a) allowed; well-formedness only |
 | 9 | ToC and index splices on the region walker? | (a) internally yes: `Regions` reports the legacy ToC pair as `toc` and the README pair as `index`, and `toc.UpdateToC` and `index.Splice` locate their spans through it; externally nothing changes (DESIGN-0014 §2.5, §2.6) |
 | — | **Amendment 2026-09-19: every built-in is a structured type** | The catalogue grows from nine to forty-one kinds and every template section is a region (§2); each built-in's skeleton lists all of them (§3); `InsertRegions` derives its heading map from the marked template (§6); `docz validate` dispatches each document's type package on the resolved schema name with the type name as fallback, carried in `DocFindings.Schema` (§4). Unstructured markdown is the `api:` block's additional docs, not a type. DESIGN-0014 §2.9 and §2.12 hold the packages; IMPL-0018 Open Question 10 records the dispatch rule |
+| — | **Amendment 2026-09-20: documents without markers still parse** | A document with no `docz:` marker is inferred from its headings by `kinds.InferRegions`, in every type package's `Parse` (`Doc.Inferred`) and in `validate.Document` (`Options.Headings`, one `region.inferred` warning); a heading that is absent is still `region.missing`; markers, once present, are authoritative. Migration is `docz validate --fix`, which writes what inference found and re-validates (Open Question 4 as amended). The heuristic is permanent and pinned by the inference-equals-markers proof (§4, §6, DESIGN-0014 §2.9, §2.12) |
 
 ### 1. Where does the schema come from?
 
@@ -890,7 +932,13 @@ markers from the start.
 
 ### 4. How is the corpus migrated?
 
-> **Resolved 2026-09-19: (a).**
+> **Resolved 2026-09-19: (a). Amended 2026-09-20: (c).** Once inference
+> became a permanent fallback rather than a one-shot heuristic (§6), the
+> pass is defined by findings — `region.inferred` and `marker.spelling`
+> — and belongs to the command that reports them: `docz validate --fix`
+> writes the markers inference found, re-validates, and prints what
+> remains. "Fix" promises exactly that and nothing more. Plain `validate`
+> is the preview, so there is no dry-run flag, and no `update --regions`.
 
 - a. **`docz update --regions`, dry-run aware, one-shot by nature.** No new
   command family for a pass each repo runs once; the flag can be removed

@@ -704,6 +704,25 @@ required region still parses, with that field zero, and is reported by
 copied. `impl` is the one package with a grammar of its own beyond these
 rules (§3), carried over from DESIGN-0013 §5 with the root type renamed.
 
+**Documents without markers parse too** (amended 2026-09-20). When a
+document carries no `docz:` marker at all — legacy ToC and index pairs do
+not count — `Parse` infers its regions from headings with
+`kinds.InferRegions` and the package's own heading table, then proceeds
+exactly as it would over markers, and sets `Doc.Inferred`. That is the
+backwards-compatibility path: every v1-created document in the fleet,
+and everything the skills plugin writes until it updates, reads as a
+typed value with one flag to warn on, and `docz validate --fix` (§4)
+writes the markers the inference found. Markers, once present, are
+authoritative: a document with some markers and some bare headings is
+never inferred, and its unmarked sections are `region.missing`. The
+heading table is the built-in template's, so a legacy document whose
+author renamed a section gets that field zero and a `region.missing`
+finding, fixed by hand or by adding the marker. `Parse` still errors only
+when nothing of the type is there: an IMPL with no `Phase <token>:`
+headings is `ErrNoPhases`, inferred or not. The library never logs;
+`Inferred` and the `region.inferred` warning (DESIGN-0015 §4) are the
+signals the CLI and docz-api print from.
+
 ```go
 package impl // import "github.com/donaldgifford/docz/v2/pkg/impl"
 
@@ -716,6 +735,7 @@ type Doc struct {
     Status  config.Status // frontmatter status, typed like document.Frontmatter
     Author  string
     Created string
+    Inferred bool // spans inferred from headings: the document carries no docz markers
 
     Objective     string              // objective region body
     Implements    []string            // IDs from the "**Implements:**" field, e.g. "DESIGN-0012"
@@ -808,6 +828,7 @@ func Validate(doc []byte) []validate.Finding
 
 type Doc struct {
     ID string; Title string; Status config.Status // …
+    Inferred bool // spans inferred from headings: no docz markers in the document
     Summary       string
     Problem       string            // problem region body, its Supporting Data subsection included
     Proposal      string
@@ -827,6 +848,7 @@ package adr // import "github.com/donaldgifford/docz/v2/pkg/adr"
 
 type Doc struct {
     ID string; Title string; Status config.Status // …
+    Inferred bool // spans inferred from headings: no docz markers in the document
     Summary       string
     Context       string
     Decision      string // decision region body, Supporting Data included
@@ -845,6 +867,7 @@ package design // import "github.com/donaldgifford/docz/v2/pkg/design"
 
 type Doc struct {
     ID string; Title string; Status config.Status // …
+    Inferred bool // spans inferred from headings: no docz markers in the document
     Overview       string
     Goals          []kinds.Item
     NonGoals       []kinds.Item
@@ -867,6 +890,7 @@ package investigation // import "github.com/donaldgifford/docz/v2/pkg/investigat
 
 type Doc struct {
     ID string; Title string; Status config.Status // …
+    Inferred bool // spans inferred from headings: no docz markers in the document
     Question       string
     Hypothesis     string
     Context        string
@@ -1004,6 +1028,13 @@ func References(region []byte) []Reference
 func OpenQuestions(region []byte) []Question           // "### N. Title" headings, lettered "- x." options, the resolution blockquote
 func Decisions(region []byte) []Decision               // the first table with a Question column and a Decision or Resolution column
 func Field(region []byte, label string) (string, bool) // text after "**<label>:**" on a line, the bold closed on either side of the colon
+
+// Inference (amended 2026-09-20): regions for a document that carries no markers.
+type HeadingRule struct { Kind string; Level int; Text, Prefix string; Parent string } // Text is an exact match after folding; Prefix matches "Phase <token>:"-style headings
+type HeadingSpec []HeadingRule
+
+func SpecFromTemplate(tmpl []byte) HeadingSpec                          // the first heading inside each region of a marked template, plus the shared kinds' default headings
+func InferRegions(doc []byte, spec HeadingSpec) []docparse.Region       // synthetic regions from headings; nil when the document has any docz marker
 ```
 
 The open-question grammar is the fleet's: `### N.` headings numbered from
@@ -1012,6 +1043,21 @@ The open-question grammar is the fleet's: `### N.` headings numbered from
 `**Resolved <date>: (<letter>)`. The criteria rule that DESIGN-0013 gave
 `impl` moves here unchanged, so an RFC's success criteria and an IMPL
 phase's are one definition.
+
+`InferRegions` is the one heading heuristic in the module, and it is
+permanent, not a migration aid (DESIGN-0015 §6). A spec comes from a
+marked template through `SpecFromTemplate` — level, text, and parent per
+region, with a template heading that ends in a placeholder comment
+(`### Phase N: <!-- … -->`) generalised to the prefix rule
+`Phase <token>:` — or from a type package's own table, which is the same
+data pinned to the embedded template by a test, so the packages import
+nothing above L0 for it. Headings compare after trimming, case-folding,
+and stripping inline markdown and comments; a span runs to the next
+heading of the same or shallower level minus trailing blank lines and a
+trailing `---`; a parent's span runs to the end of its last child. The
+result is `[]docparse.Region` with the same `Start`, `End`, `Depth`
+semantics as the walker's, so nothing downstream knows which path
+produced it.
 
 ### 3. The IMPL grammar
 
@@ -1127,7 +1173,7 @@ against the freshly built binary and joins `make ci` in the swap PR. Two
 deltas are permitted and live in the comparison, not in the goldens:
 `<!--docz:…-->` lines are ignored in `create` and `template` output,
 because the templates gain region markers (DESIGN-0015), and `validate`,
-`update --regions`, and `task list` have no v1.2.2 golden. The legacy
+with or without `--fix`, and `task list` have no v1.2.2 golden. The legacy
 `plan:` fixture is compared for every command except `create plan`, whose
 v2 behaviour — the no-template error — is pinned by its own test
 (ADR-0003 Decision 3). Anything else that differs blocks the PR. The suite
@@ -1148,7 +1194,7 @@ behaviour per handler and do not cross types.
 | `docz wiki init` | `wiki.Init(root, cfg, InitOptions{…})` | site-name default from git, `.docz.yaml` precondition, printing |
 | `docz wiki update` | `wiki.UpdateNav(root, cfg, NavOptions{DryRun})` | nav tree printing |
 | `docz validate [type]` (DESIGN-0015 §4) | `repo.Validate(ctx, types, ValidateOptions{Strict})`, then the type package's `Validate` per entry, switched on `DocFindings.Schema` with the type name as fallback (`impl`, `rfc`, `adr`, `design`, `investigation`) | composing the tiers, text/json, exit codes |
-| `docz update --regions` (DESIGN-0015 §6) | `repo.InsertRegions(ctx, types, InsertRegionsOptions{DryRun})` | printing |
+| `docz validate --fix [type]` (DESIGN-0015 §6) | the same, then `repo.InsertRegions(ctx, types, InsertRegionsOptions{})` over the documents that reported `region.inferred` or `marker.spelling`, then `repo.Validate` again | printing what was written, then the remaining findings; exit code from the second report |
 | `docz task list <impl-id>` (ADR-0002 OQ 4) | `repo.Find(id)` then `impl.Parse(entry.Content)` | text/json rendering of tasks |
 | `docz version` | — | all |
 
@@ -1386,12 +1432,12 @@ reports; whether they need hooks of their own is Open Question 12.
 | `pkg/doczcore/doctemplate` | promoted whole; `DefaultConfigYAML`, `ErrNoTemplate`; `ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` and the embedded schema skeletons (DESIGN-0015 §3) | new public | v2.0.0 |
 | `pkg/doczcore/validate` | new (DESIGN-0015) | new public | v2.0.0 |
 | `pkg/doczcore/repo` | new; every method takes a context; `Hooks`; `Validate`, `InsertRegions` | new public | v2.0.0 |
-| `pkg/doczcore/kinds` | new; readers for the shared kinds (§2.12) | new public | v2.0.0 |
-| `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` | new; `Parse` over regions to a typed `Doc`, `Validate`, one package per built-in (§2.9) | new public | v2.0.0 |
+| `pkg/doczcore/kinds` | new; readers for the shared kinds; `HeadingSpec`, `SpecFromTemplate`, `InferRegions` (§2.12) | new public | v2.0.0 |
+| `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` | new; `Parse` over regions to a typed `Doc`, inferring regions from headings when a document has none and setting `Doc.Inferred`; `Validate`; one package per built-in (§2.9) | new public | v2.0.0 |
 | `pkg/wiki` | promoted whole; `Init`, `UpdateNav` with a context, options and reports | new public | v2.0.0 |
 | embedded templates | region markers added (DESIGN-0015 §2) | contents, not contract | — |
 | `internal/` | emptied | — | — |
-| `cmd/` | re-pointed; `validate`, `update --regions`; optional `task list` | new commands only, existing behaviour unchanged | — |
+| `cmd/` | re-pointed; `validate` with `--fix`; optional `task list` | new commands only, existing behaviour unchanged | — |
 | `.docz.yaml` | none | — | — |
 | `config.DocTypeNames()` | loses `plan` (ADR-0003) | catalogue change, same release | — |
 | module path | `github.com/donaldgifford/docz` → `github.com/donaldgifford/docz/v2` (ADR-0002 Decision 3); v1.x tags keep the old path | major | v2.0.0 |
@@ -1638,7 +1684,10 @@ construct per call.
   which the CLI's debug-log test pins from the other side.
 - **Regions and validation**: DESIGN-0015's testing strategy. Its parity
   proof (the heuristic parse equals the region parse on every task ID and
-  line over the migrated fixtures) is what lets the heuristics be deleted.
+  line over the migrated fixtures) is the proof that inference and
+  markers agree, which is what makes the no-marker fallback safe; the
+  same fixtures parsed unmigrated must yield the same facts with
+  `Inferred` set.
 
 ## Migration / Rollout Plan
 
@@ -1656,7 +1705,7 @@ timeline
   section Catalogue
     ADR-0003 plan removal : goldens and docs
   section Swap (v2.0.0-beta.1)
-    cmd/ re-pointed, tests unchanged : parity suite green : docz validate and update --regions : docs/ migrated : ADR-0001 amended : CLAUDE.md README
+    cmd/ re-pointed, tests unchanged : parity suite green : docz validate and validate --fix : docs/ migrated : ADR-0001 amended : CLAUDE.md README
 ```
 
 | Step | Delivers | PR label |
@@ -1666,7 +1715,7 @@ timeline
 | 2 | `doctemplate`, `index`, `wiki` promotions (`git mv` + additions); schema resolution; `internal/` emptied | `dont-release` |
 | 3 | `repo` with context, `Hooks`, `Validate`, `InsertRegions`; `ExportTemplate` scaffolds custom types | `dont-release` |
 | 4 | ADR-0003: `plan` removed, goldens regenerated, docs | `dont-release` |
-| 5 | `cmd/` swap; `docz validate`, `docz update --regions`; docz's own `docs/` migrated; optional `task list`; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue for the plugin's bundled templates | `dont-release`, then tag `v2.0.0-beta.1` by hand |
+| 5 | `cmd/` swap; `docz validate` with `--fix`; docz's own `docs/` migrated; optional `task list`; parity suite green and in `make ci`; ADR-0001 amendment; CLAUDE.md, README library section, release notes; claude-skills issue for the plugin's bundled templates | `dont-release`, then tag `v2.0.0-beta.1` by hand |
 | — | IMPL-0017 (`updated:` field) retargets from v1.3.0 to the v2 line, after this unit | — |
 
 The table has no consumer column on purpose. The API is step one; the
@@ -1727,7 +1776,7 @@ this design), CLAUDE.md (architecture bullets for the six new packages and
 the emptied `internal/`), README (library section; six types become five;
 `docz validate`), DEVELOPMENT.md (the "add a type" walkthrough moves its
 template paths and gains the region markers), every embedded template
-(markers), docz's own `docs/` (migrated with `update --regions` in the swap
+(markers), docz's own `docs/` (migrated with `validate --fix` in the swap
 PR), the docz skills plugin (claude-skills issue for the bundled templates
 and the validate step), `mkdocs.yml` (`pymdownx.superfences` so these
 diagrams render in the wiki).

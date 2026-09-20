@@ -479,7 +479,7 @@ API, and `plan` becomes the first type that exists only as a custom type
 | Functionality | Built-in type | Custom type |
 | ------------- | ------------- | ----------- |
 | `create`, `list`, `update`, `status set`, `init`, `template`, `wiki`, and the `repo` methods behind them | yes | yes today (DESIGN-0006); unchanged by this ADR |
-| `validate` against a schema; `update --regions` | from the embedded template | from its own template, the same way (DESIGN-0015 §3) |
+| `validate` against a schema; `validate --fix` | from the embedded template | from its own template, the same way (DESIGN-0015 §3) |
 | Facts and regions (`document`, `docparse`) | yes | yes; type-agnostic by R2 |
 | `impl.Parse` — phases, tasks, criteria; `docz task list` | IMPL | any document whose template carries the `phase`, `tasks`, and `criteria` regions |
 | A Go struct named after the type | `pkg/impl`, in docz | needs Go code: the consumer's own package over `docparse.Regions`, written the way `pkg/impl` is |

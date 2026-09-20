@@ -70,6 +70,9 @@ readers, so a consumer reads any docz document as a typed value with no
 ambiguity about what it holds. Unstructured markdown is not a type; it
 reaches a consumer through the `api:` block's additional docs
 (DESIGN-0011), which is the escape hatch that lets the types stay rigid.
+A document without markers still parses, by inference from its headings,
+with `Doc.Inferred` set and one `region.inferred` warning; `docz validate
+--fix` writes the markers inference found (amended 2026-09-20).
 
 **Implements:** DESIGN-0014 (all 12 open questions resolved 2026-09-19) and
 DESIGN-0015 (all 9 resolved 2026-09-19) as one unit (DESIGN-0014 Open
@@ -98,7 +101,7 @@ removal on the v2 line).
 - Phase 4: ADR-0003 — `plan` removed from the built-in registry, templates,
   goldens, and docs.
 - Phase 5: `cmd/` re-pointed at the API with its tests unchanged;
-  `docz validate` and `docz update --regions`; docz's own `docs/` migrated;
+  `docz validate` with `--fix`; docz's own `docs/` migrated;
   parity in `make ci`; ADR-0001 amendment; living docs; the claude-skills
   issue; the `v2.0.0-beta.1` tag.
 - The external-consumer proof (`test/consumer`) extended to every `pkg/`
@@ -340,19 +343,35 @@ consumer proof. The CLI's only visible change is the marker lines in
       no filesystem, no type name. The open-question grammar is the
       fleet's (`### N.` headings, lettered `- a.` options, the
       `> **Resolved <date>: (x)**` blockquote); `Field` accepts both bold
-      spellings the investigations use for `**Answer:**`.
+      spellings the investigations use for `**Answer:**`. Plus the
+      inference trio (`infer.go`): `HeadingRule{Kind, Level, Text, Prefix,
+      Parent}`, `HeadingSpec`, `SpecFromTemplate(tmpl []byte)` (first
+      heading inside each region of a marked template, nesting as parent,
+      a placeholder-comment heading such as `### Phase N: <!-- … -->`
+      generalised to the prefix rule `Phase <token>:`, the shared kinds'
+      default headings always included), and `InferRegions(doc, spec)
+      []docparse.Region` (nil when the document has any `docz:` marker;
+      headings compared after trimming, case-folding, and stripping inline
+      markdown and comments; spans to the next same-or-shallower heading
+      minus trailing blanks and a trailing `---`; a parent's span to the
+      end of its last child).
       verify: `go test ./pkg/doczcore/kinds/...`
 - [ ] `kinds` tests: a table per reader over fixtures cut from the corpus
       (every open-questions section of ADR-0002, ADR-0003, DESIGN-0014,
       and DESIGN-0015; references with and without links; the Decisions
       tables; criteria in the RFC and IMPL positions; alternatives as
       bullets and as headings) and a fuzz target per reader pinning
-      never-panic and byte-accurate lines.
+      never-panic and byte-accurate lines. For inference: `SpecFromTemplate`
+      over every embedded template asserting the expected rules including
+      the phase prefix rule; `InferRegions` over each type package's
+      `.orig.md` fixtures asserting the regions equal `docparse.Regions`
+      over the migrated sibling in kind, depth, and parent; a mixed
+      document (one marker) infers nothing; `FuzzInferRegions`.
 - [ ] Create `pkg/doczcore/validate` (`finding.go`, `schema.go`,
       `document.go`, one file per code family): `Severity` (`Error`,
       `Warning`), `Finding{Code, Severity, Line, Kind, Detail}`,
       `SchemaRegion{Kind, Parent}`, `Schema{Regions}`, `Options{Schema,
-      Type, Filename}`, `SchemaFromMarkers([]byte) Schema`, and
+      Type, Filename, Headings}`, `SchemaFromMarkers([]byte) Schema`, and
       `Document([]byte, Options) []Finding` with the DESIGN-0015 §4 code
       families and severities (`marker.*`, `region.*`, `frontmatter.*`,
       `references.*`, `open-questions.*`, `tasks.*`, `toc.*`, `file.*`,
@@ -361,7 +380,13 @@ consumer proof. The CLI's only visible change is the marker lines in
       rules call the `kinds` readers. Every schema kind is required at
       least once under the same parent; unlisted kinds are optional and
       still checked by their rule when present; an empty `Schema` is
-      well-formedness only. `Document` never fails.
+      well-formedness only. `Document` never fails. `Options.Headings
+      kinds.HeadingSpec`: when set and the document carries no `docz:`
+      marker, regions come from `kinds.InferRegions`, one `region.inferred`
+      warning names the kinds inferred and, per schema kind it could not
+      infer, the heading it looked for, and every other check runs over
+      the inferred regions; an absent heading is still `region.missing`
+      (DESIGN-0015 §4 as amended).
       verify: `go test ./pkg/doczcore/validate/...`
 - [ ] Validator tables per code family with a passing and a failing
       document each, `schema.name` included. Golden pairs: `Document` over
@@ -389,8 +414,11 @@ consumer proof. The CLI's only visible change is the marker lines in
       depth 1; every other field from its own region per the DESIGN-0014
       §2.9 field rules, with `kinds.Field` for `**Implements:**` and
       `docparse.Tables` for the file-changes table); the type name is
-      never read (R7). The DESIGN-0014 §3 grammar table verbatim: first
-      H3 inside the phase
+      never read (R7). A document with no `docz:` marker has its regions
+      inferred by `kinds.InferRegions` from the package's heading table
+      and `Doc.Inferred` set; markers, once present, are authoritative
+      (DESIGN-0014 §2.9 as amended). The DESIGN-0014 §3 grammar table
+      verbatim: first H3 inside the phase
       region with inline markdown and HTML comments stripped, matched by
       `^Phase\s+([^\s/:]+):\s*(.*)$`; description between the heading and
       the first depth-1 region; tasks are `TaskItem`s with `Indent == 0`;
@@ -416,8 +444,9 @@ consumer proof. The CLI's only visible change is the marker lines in
       mid-run. `.golden.txt` fact files regenerated by `-update`.
       Invariant tests: every `Task.Line` is a line `docparse.TaskItems`
       reports; IDs are unique; no `Text` contains a verify prefix or a
-      marker; `EndLine >= Line`; a skipped task keeps its ID. `FuzzParse`
-      pins never-panic.
+      marker; `EndLine >= Line`; a skipped task keeps its ID; `Parse` over
+      each `.orig.md` equals `Parse` over its migrated sibling in every
+      field but `Inferred`. `FuzzParse` pins never-panic.
 - [ ] Create `pkg/rfc`, `pkg/adr`, `pkg/design`, and `pkg/investigation`,
       one commit each, with the `Doc` shapes and `Validate` codes of
       DESIGN-0014 §2.9: `rfc.Doc{Summary, Problem, Proposal, Alternatives,
@@ -431,10 +460,18 @@ consumer proof. The CLI's only visible change is the marker lines in
       Conclusion, Answer, Verdict, Recommendation, OpenQuestions,
       Decisions, References}` with `Component` from the environment table
       and `Verdict` from the answer's first word. Each `Parse` reads every
-      field from its region through `kinds` or `docparse.Tables`, fails
-      only on `ErrNoFrontmatter` or CR, and copies every string; each
-      `Validate` runs `Parse` and reports its three codes.
+      field from its region through `kinds` or `docparse.Tables`, infers
+      regions from its heading table when the document has no `docz:`
+      marker (setting `Doc.Inferred`), fails only on `ErrNoFrontmatter` or
+      CR, and copies every string; each `Validate` runs `Parse` and
+      reports its three codes.
       verify: `go test ./pkg/rfc/... ./pkg/adr/... ./pkg/design/... ./pkg/investigation/...`
+- [ ] Heading tables: each of the five packages carries `var headings
+      kinds.HeadingSpec` as data, and a test in the package asserts it
+      equals `kinds.SpecFromTemplate` over the embedded template of its
+      type (`doctemplate` is a test-only import there), so a template
+      edit that moves a heading fails the package's tests and production
+      imports stay at L0, `kinds`, and `validate`.
 - [ ] Golden fixtures for the four packages under each `testdata/`, as
       `.orig.md` plus hand-migrated `.md` pairs like `impl`'s: sdk-booty-sh's
       three RFCs and one rendered from the template; docz ADR-0001–0003
@@ -444,9 +481,10 @@ consumer proof. The CLI's only visible change is the marker lines in
       both `**Answer:**` spellings, one without a trigger line).
       `.golden.txt` fact files regenerated by `-update`; a `FuzzParse`
       each; the invariants: every `Line` is a line `docparse` reports, a
-      field is zero iff its region is absent, and each `Validate` code
-      appears only when its condition holds, with one passing and one
-      failing document per code.
+      field is zero iff its region is absent, each `Validate` code appears
+      only when its condition holds, with one passing and one failing
+      document per code, and `Parse` over each `.orig.md` equals `Parse`
+      over its migrated sibling in every field but `Inferred`.
 - [ ] `docwrite.SetStatusBytes(doc []byte, status string) (out []byte, old
       string, err error)` as the byte core; `SetStatus(path, …)` becomes
       read → core → write. The existing status goldens pass through the
@@ -484,6 +522,9 @@ consumer proof. The CLI's only visible change is the marker lines in
 - Every embedded template validates clean against its skeleton, the
   derivation test binds each template to its skeleton, and each type
   package parses its own rendered template with every field present.
+- Every `.orig.md` fixture parses through inference to the same facts as
+  its migrated sibling with `Inferred` set, and each package's heading
+  table equals `SpecFromTemplate` over its embedded template.
 - `go test ./pkg/doczcore/toc/...` passes with the golden byte-identical
   after the `Regions` re-point.
 - The `docwrite` status and checktask goldens pass unchanged through the
@@ -582,8 +623,8 @@ end of this phase `internal/` no longer exists.
 The package that turns the primitives into the operations a consumer
 would otherwise copy out of `cmd/`. Every method takes a context, returns
 a typed report, and prints nothing; `cmd/` does not adopt any of it until
-Phase 5, so this phase is invisible to CLI users. `InsertRegions` is the
-one place the retiring heading heuristics live.
+Phase 5, so this phase is invisible to CLI users. `InsertRegions` writes
+what `kinds.InferRegions` finds; no heuristic lives here.
 
 #### Tasks
 
@@ -647,20 +688,15 @@ one place the retiring heading heuristics live.
 - [ ] `InsertRegions(ctx, types, InsertRegionsOptions{DryRun})
       (InsertRegionsReport, error)` per DESIGN-0015 §6 as amended: a
       document with any `docz:` region is never given more (non-canonical
-      spellings are rewritten and counted in `Fixed`); the heading-to-kind
-      map is derived from the type's resolved marked template (the first
-      heading inside each region gives level and text, the template's
-      nesting gives the parent) plus the shared kinds' default headings
-      (`## Open Questions`, `## Decisions`, `## References`), with the IMPL
-      phase heading matched by the `impl` regex; headings compare after
-      trimming, case-folding, and stripping inline markdown and comments;
-      a span is the heading through the line before the next heading of
-      the same or shallower level minus trailing blank lines and a
-      trailing `---`, a parent's span running to the end of its last
-      child; markers on their own lines with a blank line on each side,
-      parents inserted before children; a heading the document lacks is
-      skipped; the pass runs `Regions` on its output and refuses to write
-      a malformed result.
+      spellings are rewritten and counted in `Fixed`); otherwise regions
+      come from `kinds.InferRegions` with `kinds.SpecFromTemplate` over
+      the type's resolved template, so custom types with a marked template
+      migrate too, and the pass writes what inference found: markers on
+      their own lines with a blank line on each side, parents inserted
+      before children; a heading the document lacks is skipped; the pass
+      runs `Regions` on its output and refuses to write a malformed
+      result. `DryRun` stays on the library option for consumers; the CLI
+      has no flag for it because plain `validate` is the preview.
 - [ ] Migration tests: `InsertRegions` over each `.orig.md` fixture in the
       five type packages' `testdata/` equals its hand-migrated sibling
       byte-for-byte, and a second run changes nothing; snapshots of docz's
@@ -806,14 +842,18 @@ Decision 7).
       the report verbatim, exit 0 clean, 1 on errors (or warnings under
       `--strict`), 2 for a usage error; command tests pin both formats and
       every exit code.
-- [ ] `docz update --regions [--dry-run]` → `repo.InsertRegions` with the
-      report printed per document; command tests pin the dry-run output.
+- [ ] `docz validate --fix`: after the first report, `repo.InsertRegions`
+      over the documents that reported `region.inferred` or
+      `marker.spelling`, print each file written and the kinds inserted,
+      re-run `repo.Validate` and the type tier, print the remaining
+      findings, and exit on the second report; command tests pin the
+      files written, the second report, and that a second `--fix` writes
+      nothing.
 - [ ] Migrate docz's own `docs/` in this PR as separate commits (Open
-      Question 6): run `build/bin/docz update --regions` and commit the
-      mechanical diff on its own, then run `docz validate` and fix by hand
-      whatever the corpus reports (documents whose sections do not match
-      their skeleton, non-canonical markers, stale ToCs after `docz
-      update`), committing the hand edits separately.
+      Question 6): run `build/bin/docz validate --fix` and commit the
+      mechanical diff on its own, then fix by hand whatever the second
+      report lists (sections whose heading was renamed, stale ToCs after
+      `docz update`), committing the hand edits separately.
       verify: `build/bin/docz validate` exits 0
 - [ ] Wire `make parity` into `make ci` and the `test-go` CI job after the
       consumer smoke test; the swapped binary must be green under only the
@@ -834,8 +874,8 @@ Decision 7).
 - [ ] Living docs: CLAUDE.md (architecture bullets for the eleven new
       packages, the `cmd/` swap, `internal/` gone, the parity suite, the
       beta release procedure), README (library section with the `/v2`
-      import path and the experimental note, `docz validate`, `update
-      --regions`, five types), `DEVELOPMENT.md` (add-a-type walkthrough
+      import path and the experimental note, `docz validate` and
+      `--fix`, five types), `DEVELOPMENT.md` (add-a-type walkthrough
       with markers and skeleton, release section), and `mkdocs.yml`
       (`pymdownx.superfences` so the design diagrams render).
 - [ ] File the claude-skills issue for the docz plugin: bundled templates
@@ -862,10 +902,10 @@ Decision 7).
 - `make ci`, now including `make parity`, is green on the swap PR and the
   `cmd/` test files are byte-identical to the Phase 4 baseline.
 - `make parity` is green against the swapped binary with only the four
-  permitted deltas (marker lines; no goldens for `validate` or `update
-  --regions`; the legacy plan skips; the `types.plan` normaliser).
+  permitted deltas (marker lines; no goldens for `validate` with or
+  without `--fix`; the legacy plan skips; the `types.plan` normaliser).
 - `build/bin/docz validate` exits 0 over docz's own `docs/` and a second
-  `docz update --regions` reports every document unchanged.
+  `docz validate --fix` writes nothing.
 - `make test-consumer` imports all sixteen `pkg/` packages from outside
   the module.
 - The `v2.0.0-beta.1` tag exists, its GitHub release is a pre-release with
@@ -906,9 +946,8 @@ Decision 7).
 | `.docz.yaml`, `docs/plan/README.md`, `mkdocs.yml` | Modify/Delete | This repo's plan remnants (Phase 4) |
 | `cmd/runner.go`, `cmd/root.go` | Modify | `Runner.Repo`, `repo.Open`, context and hooks wiring (Phase 5) |
 | `cmd/{init,create,update,list,status,template,wiki}.go` | Modify | Re-pointed at `repo` and `wiki`; helpers deleted (Phase 5) |
-| `cmd/validate.go`, `cmd/validate_test.go` | Create | `docz validate` (Phase 5) |
-| `cmd/update.go` | Modify | `--regions` (Phase 5) |
-| `docs/**/*.md` | Modify | Corpus migrated with `update --regions` and hand fixes (Phase 5) |
+| `cmd/validate.go`, `cmd/validate_test.go` | Create | `docz validate` and `--fix` (Phase 5) |
+| `docs/**/*.md` | Modify | Corpus migrated with `validate --fix` and hand fixes (Phase 5) |
 | `Makefile`, `.github/workflows/ci.yml` | Modify | `parity` and `validate` in `make ci` and the `test-go` job (Phase 5) |
 | `test/consumer/doc.go` | Modify | Grows with each phase to cover every `pkg/` package |
 | `docs/adr/0001-*.md`, `docs/impl/0014-*.md`, `docs/design/0013-*.md` | Modify | Amendment, note, Abandoned (Phase 5) |
@@ -927,7 +966,9 @@ Decision 7).
       template-to-skeleton derivation test
 - [ ] `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation`:
       golden fixtures with invariants, `FuzzParse`, `Validate` cases for
-      every code, each package parsing its own rendered template
+      every code, each package parsing its own rendered template and each
+      `.orig.md` fixture through inference; heading tables pinned to the
+      embedded templates
 - [ ] `docwrite`: existing goldens through the path wrappers; bytes-only
       tables for `SetStatusBytes`, the uncheck direction, and `Render`
 - [ ] `doctemplate`, `index`, `wiki`: moved tests unchanged; `Splice`
@@ -940,7 +981,8 @@ Decision 7).
 - [ ] Layer rules: `go list -deps` walk and the no-telemetry test in
       `pkg/doczcore`
 - [ ] `cmd/`: test files unchanged through the swap; new tests only for
-      `validate` (formats, exit codes) and `update --regions` (dry-run)
+      `validate` (formats, exit codes) and `validate --fix` (files
+      written, second report, idempotence)
 - [ ] Consumer proof: `test/consumer` imports every `pkg/` package by the
       end of Phase 5 and compiles against the published beta
 - [ ] Corpus: `docz validate` exits 0 over docz's own `docs/` after
@@ -1056,8 +1098,8 @@ diff over every document in `docs/` is large.
 
 > **Resolved 2026-09-19: (a).**
 
-- a. **Same PR as the swap, as separate commits**: the `docz update
-  --regions` output as one commit, hand fixes as another, so the reviewer
+- a. **Same PR as the swap, as separate commits**: the `docz validate
+  --fix` output as one commit, hand fixes as another, so the reviewer
   can skip the mechanical one. Keeps the design's statement true and lets
   the swap PR itself prove `docz validate` over a real corpus.
   *(recommendation)*
@@ -1152,11 +1194,12 @@ DESIGN-0015 §2/§3/§4/§6 the same day.
 | 3 | Parity driver shape | A Go test in `test/parity/` behind `//go:build parity`, `os/exec` over the binary, file goldens, `-update` gated on `DOCZ_PARITY_BIN` |
 | 4 | Pre-release build trigger | A separate `prerelease.yml` on `v*-beta.*` tags running only goreleaser; `release.yml` untouched |
 | 5 | `docz task list` | Deferred past this document; removed from Phase 5 |
-| 6 | Corpus migration placement | In the swap PR as separate commits: the mechanical `update --regions` diff, then the hand fixes |
+| 6 | Corpus migration placement | In the swap PR as separate commits: the mechanical `validate --fix` diff, then the hand fixes |
 | 7 | `docz validate` in CI | Yes, non-strict, appended to `make ci` after `parity` in Phase 5 |
 | 8 | Plan delta in the parity suite | A named `types.plan` normaliser, the fourth permitted delta, applied from Phase 4 |
 | 9 | Hand-marking this document | No; it migrates with the corpus in Phase 5 |
 | 10 | Per-type tier dispatch in `docz validate` | An explicit five-arm switch in `cmd/validate.go` on the new `DocFindings.Schema` with the type name as fallback; every built-in has a package (`impl`, `rfc`, `adr`, `design`, `investigation`), a custom type on `schema: <built-in>` gets that arm, one on its own schema gets the generic tier only |
+| — | **Amendment 2026-09-20: documents without markers** | A document with no `docz:` marker parses by inference from its headings (`kinds.InferRegions`; `Doc.Inferred`; one `region.inferred` warning, `region.missing` still an error for an absent heading; markers once present are authoritative); `docz validate --fix` writes what inference found and re-validates, replacing `update --regions` (DESIGN-0015 OQ 4 → c). Phase 1, 3, and 5 tasks updated |
 
 ## References
 
