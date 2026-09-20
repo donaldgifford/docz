@@ -49,6 +49,7 @@ created: 2026-03-11
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 Add a `docz wiki` command group that generates and maintains a `mkdocs.yml`
@@ -56,9 +57,11 @@ file compatible with Backstage's TechDocs plugin. The `wiki update` command
 scans the `docs/` directory and rebuilds the MkDocs `nav:` section to reflect
 the current file structure — including docz-managed documents and any other
 markdown files in the docs tree.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Generate a `mkdocs.yml` that works out of the box with `mkdocs serve` and
@@ -67,14 +70,18 @@ markdown files in the docs tree.
 - Include all markdown files in the docs directory, not just docz-managed types
 - Integrate with the existing `docz create` workflow so the nav stays current
 - Support a reasonable default nav structure with zero configuration
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Building or serving the MkDocs site (use `mkdocs serve` / `mkdocs build`)
 - Managing MkDocs themes, plugins, or extensions beyond `techdocs-core`
 - Supporting non-markdown content (images, PDFs are referenced but not tracked)
 - Replacing MkDocs as the site generator
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 Backstage's TechDocs plugin reads a `mkdocs.yml` at the repo root to generate
@@ -117,6 +124,7 @@ Key constraints:
 - Nav paths are relative to the `docs_dir` (defaults to `docs/`)
 - Nav entries can be nested for grouping
 - The title in nav can differ from the document title
+<!--docz:background:end-->
 
 ## CLI Interface
 
@@ -416,6 +424,7 @@ For non-docz markdown files, use a two-pass approach:
 2. Fall back to converting the filename to title case
    (e.g., `system-overview.md` → `System Overview`)
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Unit tests** for nav generation from a mock directory tree
@@ -424,7 +433,9 @@ For non-docz markdown files, use a two-pass approach:
 - **Integration tests** for `wiki init` (creates mkdocs.yml and index.md)
 - **Integration tests** for `wiki update` (scans real directories, writes nav)
 - **Golden file tests** for nav output given a known directory structure
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 1. **Ordering behavior** — `wiki init` generates the nav in alphabetical order.
@@ -445,10 +456,13 @@ For non-docz markdown files, use a two-pass approach:
 
 5. **Nav titles for `impl` and `investigation`** — `impl` maps to
    "Implementation Plans" and `investigation` maps to "Investigations".
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [Backstage TechDocs](https://backstage.io/docs/features/techdocs/)
 - [MkDocs Configuration](https://www.mkdocs.org/user-guide/configuration/)
 - [MkDocs Nav](https://www.mkdocs.org/user-guide/writing-your-docs/#configure-pages-and-navigation)
 - DESIGN-0001: docz CLI Tool
+<!--docz:references:end-->

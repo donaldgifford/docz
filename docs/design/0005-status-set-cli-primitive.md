@@ -33,6 +33,7 @@ created: 2026-05-30
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 Add a CLI primitive `docz status set <type> <id> <new-status>` that
@@ -46,9 +47,11 @@ This design centers on making `.docz.yaml`'s `statuses:` list the
 single source of truth for what statuses are valid, and on
 preserving the exact byte shape of the rest of the frontmatter so
 the mutation is a minimal, reviewable diff.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Programmatic, idempotent status mutation safe for use inside CI
@@ -64,7 +67,9 @@ the mutation is a minimal, reviewable diff.
   CI pattern
 - Implementation reuses the existing `internal/document` scan +
   frontmatter parse helpers — no new YAML round-trip path
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Reverse direction (frontmatter → label sync). Excluded to avoid
@@ -77,7 +82,9 @@ the mutation is a minimal, reviewable diff.
   membership is the only check — Decision 4
 - Writing or reading any field other than `status:` in the
   frontmatter
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 The triggering use case is a GitHub Action in the **rfc-api** repo
@@ -106,7 +113,9 @@ the contract.
 
 **Reference design:** rfc-api **DESIGN-0004** §"docz status
 primitive" (PR <https://github.com/donaldgifford/rfc-api/pull/34>).
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### Command shape
@@ -239,7 +248,9 @@ format used by every other command, regardless of `--format`.
 contract; the line is for humans). Errors still print to stderr
 under `--quiet`. When `--quiet` is combined with `--format=json` the
 JSON object is also suppressed — `--quiet` always wins.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 New Cobra commands (`cmd/status.go`):
@@ -262,7 +273,9 @@ No `internal/config` changes.
 
 `docz --help` text is auto-derived from Cobra; no manual edit
 needed.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 No schema changes. One new helper in `internal/document/status.go`:
@@ -290,7 +303,9 @@ Implementation notes:
   own table-driven unit tests under `internal/document/status_test.go`
 - The cmd handler in `cmd/status.go` wraps it with type/id
   resolution and the runner's `Out`/`Err` writers
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 `internal/document/status_test.go` (unit, `t.Parallel()`):
@@ -339,7 +354,9 @@ IMPL-0009 pattern with `Out: &bytes.Buffer{}` and
 
 Smoke test: against this repo, run `docz status set design
 DESIGN-0005 "In Review"` and watch the diff (one line changed).
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 There is no migration. The command is purely additive.
@@ -354,7 +371,9 @@ task list. Suggested phases there:
 
 Ship behind the existing `dont-release` PR label so the rfc-api
 Action can be coordinated with the next docz release.
+<!--docz:rollout:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-06-01. Every recommendation
@@ -373,7 +392,9 @@ first-class JSON output.
 | 8 | Idempotency placement | (a) Cmd-level short-circuit — `cmd/status.go` checks current == new before calling `SetStatus`; the helper always writes when invoked |
 | 9 | Status field name | (a) Hard-coded `status:` — `TypeConfig.StatusField` is `"status"` for every default type |
 | 10 | `status get` / `status list-allowed` companion verbs | (a) Not in this design — `set` only; the `status` parent verb is established here so follow-up additions are one-file |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [Issue #52](https://github.com/donaldgifford/docz/issues/52) — the
@@ -389,3 +410,4 @@ first-class JSON output.
   parse
 - `internal/config/doctype.go` — `TypeConfig.Statuses` is the
   lifecycle source of truth this command enforces
+<!--docz:references:end-->

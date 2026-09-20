@@ -56,6 +56,7 @@ created: 2026-09-14
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 ADR-0002 decides that docz is an API package whose first consumer is the
@@ -72,9 +73,11 @@ carry over here; DESIGN-0013 itself is Abandoned. DESIGN-0015 (structured
 regions and `docz validate`) is a **requirement** of this unit: the IMPL
 grammar locates its spans by region, the validator is part of the API, and
 no release carries one design without the other.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **Specify the complete API once.** After this design, building the
@@ -97,7 +100,9 @@ no release carries one design without the other.
   this API.
 - **Traceable, not tracing.** Context enters at L3 and hooks let a consumer
   instrument the library; docz imports no telemetry and logs nothing (§7).
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Typed models for RFC, ADR, DESIGN, or INV. The pattern is fixed (§2.9,
@@ -115,7 +120,9 @@ no release carries one design without the other.
   release after the swap.
 - Telemetry or logging inside the library. The CLI, docz-api, and tempy
   wire their own over the context and hooks in §7.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 ADR-0002's decisions this design implements:
@@ -149,7 +156,9 @@ so every consumer instruments it its own way (§7).
 Today's dependency graph is in DESIGN-0013 Background. The distance from it
 to §1 below is: three packages move out of `internal/`, two packages are
 new, one package grows four functions, and `cmd/` shrinks.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### 1. Module layout and dependency graph
@@ -1418,7 +1427,9 @@ sequenceDiagram
 
 `wiki.Init` and `wiki.UpdateNav` take a context for cancellation and return
 reports; whether they need hooks of their own is Open Question 12.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 | Package | Change | Kind | Frozen from |
@@ -1448,7 +1459,9 @@ to ADR-0002, and it may change between betas. This unit ends at
 `v2.0.0-beta.1` with the markers still in place; the v2.0.0 cut, after
 docz-api and the UI move into the repo, removes them and the whole table
 is contract from then on.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 ```mermaid
@@ -1623,7 +1636,9 @@ classDiagram
 No storage anywhere: every value is computed from bytes or from a scan and
 holds no handle to the filesystem. `Repo` is two fields and is safe to
 construct per call.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **`pkg/impl`**: golden fixtures snapshotted under `pkg/impl/testdata/`
@@ -1688,7 +1703,9 @@ construct per call.
   markers agree, which is what makes the no-marker fallback safe; the
   same fixtures parsed unmigrated must yield the same facts with
   `Inferred` set.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 ```mermaid
@@ -1784,7 +1801,9 @@ reference there before v2 ships would break them, so its update is a
 follow-up in claude-skills after `v2.0.0-beta.1`, not an issue filed from
 this unit. Its unmarked output reads through the inference path (§2.9)
 meanwhile.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -1999,7 +2018,9 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
 - b. A `wiki.Hooks` mirroring `repo.Hooks` from day one, so both L3
   packages instrument the same way.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
@@ -2035,3 +2056,4 @@ DESIGN-0005 Decision 8 put "current equals new → no write" in `cmd/`.
   sdk-booty-sh `pkg/loop/doczwork`
 - `cmd/{update,create,init,status,wiki,template,list}.go`,
   `internal/{index,template,wiki}`, `pkg/doczcore/*`
+<!--docz:references:end-->

@@ -38,6 +38,7 @@ created: 2026-07-03
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 For every package the docz CLI is built from — `pkg/doczcore/{config,document}`
@@ -50,7 +51,9 @@ Concretely: does any external consumer need the embedded templates, README
 index generation, ToC splicing, or MkDocs wiki machinery — or is the
 demand-complete public core exactly the four parse/config/write-primitive
 packages (`config`, `document`, `docparse`, `docwrite`)?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 External consumers need only the parsing/config core plus the two byte-level
@@ -60,7 +63,9 @@ zero external demand. If confirmed, ADR-0001's "move everything public" scope
 is wider than demand, and the idiomatic Go resolution is a smaller frozen
 `pkg/doczcore` core with the presentation packages remaining in `internal/` —
 the CLI goal ("works exactly as today") does not require promoting them.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 ADR-0001 (Proposed) would end the per-consumer promotion drip by moving all
@@ -74,7 +79,9 @@ Question 3) can be resolved on evidence.
 
 **Triggered by:** ADR-0001; DESIGN-0008 (docz-api), DESIGN-0009 (docz-site),
 the sdk-booty-sh `v0.6.0` requirements handoff (`docz-v0.6.0-requirements.md`).
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Enumerate the exported surface of each package with `go doc -all` (the two
@@ -88,7 +95,9 @@ the sdk-booty-sh `v0.6.0` requirements handoff (`docz-v0.6.0-requirements.md`).
 4. Diff the requirement sets per package; audit third-party dependencies and
    `//go:embed` usage to check what each promotion would drag into a
    consumer's build.
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component | Version / Value |
@@ -96,7 +105,9 @@ the sdk-booty-sh `v0.6.0` requirements handoff (`docz-v0.6.0-requirements.md`).
 | docz tree | post-`v0.5.0`, commit `eb5c027` (branch `docs/adr-doczcore-v1-single-core`) |
 | Go | 1.26.4 |
 | Consumer sources | DESIGN-0008 (docz-api), DESIGN-0009 (docz-site, Draft), `docz-v0.6.0-requirements.md` (sdk-booty-sh handoff) |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Observation 1 — the consumer demand set, from primary sources
@@ -245,7 +256,9 @@ the exact failure mode ADR-0001's full promotion would repeat at 10× scale
 with `template`/`index`/`wiki` — evidence that "promote wholesale, review
 lightly" (ADR-0001 OQ3a) leaks CLI shapes into the contract. What to do with
 these three already-public symbols at v1.0 is Open Question 4.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer: Yes — the hypothesis is confirmed.**
@@ -268,7 +281,9 @@ buys consistency, not capability. The idiomatic Go shape for this repo is the
 standard library-with-CLI layout: a deliberate, frozen `pkg/` surface plus an
 `internal/` that exists precisely to keep product-private code out of the
 contract.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 1. **Revise ADR-0001 before acceptance**: scope v1.0.0 as the freeze of the
@@ -288,7 +303,9 @@ contract.
    (Open Question 4), and the CLI-stability note.
 4. Resolve the Open Questions below, then fold the outcome into ADR-0001's
    Decision section and cut the implementation plan.
+<!--docz:recommendation:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -366,7 +383,9 @@ contract.
   breaking-in-0.x is legal and no consumer is affected, but it contradicts
   the additive-minor posture of `v0.6.0` and needs its own release).
 - d. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-07-03 and folded into ADR-0001's revised
@@ -382,7 +401,9 @@ ships inside the single `v1.0.0` release with no intermediate tag.
 | 2   | `Create` at v1.0                | (b) promote `docwrite` whole    | cohesion over splitting; implemented over `internal/template`, embed stays private (Observation 4) |
 | 3   | `toc` → `docparse` delegation   | (a) delegate                    | and the splice promotes to public `pkg/doczcore/toc` (ADR-0001 export-lean); `toc`'s walker retires |
 | 4   | CLI-shaped `config` helpers     | (a) keep                        | documented as CLI-support helpers in the package doc                                               |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - **ADR-0001** — pkg/doczcore as the single public core (the trigger; this
@@ -403,3 +424,4 @@ ships inside the single `v1.0.0` release with no intermediate tag.
   `grep -oE '(doctemplate|index|toc|wiki|docwrite)\.[A-Z]\w*' cmd/*.go`
   (non-test); `grep -rn 'docz/internal' internal/` (cross-internal edges);
   `grep -rn 'yaml' internal/ pkg/` (dependency audit).
+<!--docz:references:end-->

@@ -94,13 +94,16 @@ created: 2026-05-15
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 What architectural debt, idiomatic-Go gaps, style violations, and performance
 issues exist in the docz codebase today, and how should they be prioritized into
 a cleanup roadmap that improves testability, extensibility, and maintainability
 without breaking the existing public surface?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 The codebase predates the team's standardized Go style guides and architecture
@@ -122,7 +125,9 @@ patterns, so we expect to find:
 
 We expect most issues to be mechanical fixes; the larger architectural items
 (Runner pattern, DocType registry) will need a dedicated design doc.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 The docz codebase (~4,200 LOC across `cmd/` and `internal/`) was written before
@@ -138,7 +143,9 @@ plan a phased refactor and ratchet quality up over time.
 
 **Triggered by:** Dogfooding pain points; bug pattern of three-way default drift
 (`markdown_extensions` PR #30, disabled-types PR #31).
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 Ran four specialized review agents in parallel against the full codebase, each
@@ -159,7 +166,9 @@ with a distinct focus, then synthesized and deduplicated the findings:
 
 All four agents read the same set of files; findings were cross-referenced to
 identify the highest-confidence (multi-agent agreement) issues.
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component               | Value                                 |
@@ -170,7 +179,9 @@ identify the highest-confidence (multi-agent agreement) issues.
 | CLI framework           | Cobra + Viper                         |
 | Template engine         | `text/template` with `//go:embed`     |
 | Current docz version    | v0.0.10-5-g2272af5                    |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 The findings are grouped by severity and theme. Items marked **[multi-agent]**
@@ -841,7 +852,9 @@ should not change:
 - The `0o644` / `0o750` octal literal style is modern.
 - `filepath.ToSlash` is correctly used in `internal/wiki/wiki.go:86` for
   cross-platform nav paths.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** Yes — there is significant, well-defined cleanup opportunity. The
@@ -864,7 +877,9 @@ None of these are blocking bugs in production usage today, but the
 defaults-drift category has already produced two real bugs (PR #30, PR #31) and
 will produce more. The testability and domain-modeling work unblocks future
 feature work.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 A phased refactor in five waves, ordered by impact-to-effort and by what
@@ -983,7 +998,9 @@ they're fine for CLI scale.
 
 F47 (`Create` input validation) and F48 (CRLF frontmatter) are nice-to-have
 robustness fixes; bundle into Wave 2 or land opportunistically.
+<!--docz:recommendation:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0001: Wiki Init Template and Init Enabled Fix — earlier dogfooding pass
@@ -1003,3 +1020,4 @@ robustness fixes; bundle into Wave 2 or land opportunistically.
 - `internal/wiki/{wiki,titles,mkdocs}.go` — MkDocs nav generation
 - Review agents used: `go-development:go-architect`, `go-development:go-style`,
   `go-development:go-performance`, and a general-purpose idiomatic Go review
+<!--docz:references:end-->

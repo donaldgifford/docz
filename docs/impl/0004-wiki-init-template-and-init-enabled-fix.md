@@ -35,6 +35,7 @@ created: 2026-04-02
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement the three changes identified in INV-0001: (1) a customizable template
@@ -42,9 +43,12 @@ for the wiki `docs/index.md` homepage, (2) configurable MkDocs plugins via
 `.docz.yaml`, and (3) fix `docz init` to skip types with `enabled: false`.
 
 **Implements:** INV-0001
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Embedded `wiki_index.md` template with `{{ .SiteName }}` and `{{ .Types }}`
@@ -58,12 +62,16 @@ for the wiki `docs/index.md` homepage, (2) configurable MkDocs plugins via
 - Fix `ensureDocsIndex()` to skip disabled types in the type list
 - Tests for all changes
 - Update README.md and DEVELOPMENT.md
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - `wiki update` syncing plugins from config (INV-0001 Decision 4)
 - New config key for wiki index template path (uses override pattern)
 - Changes to `writeDefaultConfig()` type listing (INV-0001 Decision 1)
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -72,11 +80,13 @@ are checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Init Enabled Fix and Config Changes
 
 Fix the `docz init` bug and add `Plugins` field to `WikiConfig`. These are
 foundational changes that the wiki template work depends on.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Fix `cmd/init.go` `runInit()` to skip types with `enabled: false`:
@@ -111,21 +121,27 @@ foundational changes that the wiki template work depends on.
   - `TestLoad_WikiPlugins` — round-trip config test for plugins
   - `TestWikiInit_Plugins` — verify `mkdocs.yml` includes configured plugins
   - `TestWikiInit_MultiplePlugins` — verify multiple plugins render correctly
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz init` does not create directories for disabled types
 - `docz wiki init` writes all configured plugins to `mkdocs.yml`
 - `go test ./...` passes
 - `make lint` passes
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Wiki Index Template
 
 Add the embedded `wiki_index.md` template with override support and rewrite
 `ensureDocsIndex()` to use it. This phase delivers the customizable homepage.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `internal/template/templates/wiki_index.md` with template content:
@@ -173,7 +189,9 @@ Add the embedded `wiki_index.md` template with override support and rewrite
     in the generated `docs/index.md`
   - `TestWikiInit_IndexTemplateOverride` — place a custom template at
     `docs/templates/wiki_index.md`, verify it's used instead of the embedded one
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz wiki init` renders `docs/index.md` from the template
@@ -181,13 +199,17 @@ Add the embedded `wiki_index.md` template with override support and rewrite
 - Local override at `<docs_dir>/templates/wiki_index.md` takes precedence
 - `go test ./...` passes
 - `make lint` passes
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Documentation, Polish, and CI Readiness
 
 Update docs, verify edge cases, and ensure CI passes.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Update `README.md`:
@@ -206,16 +228,21 @@ Update docs, verify edge cases, and ensure CI passes.
     variables work, no errors on extra template content)
 - [x] Run `make ci` and ensure it passes cleanly
 - [x] Clean up any TODO/FIXME comments
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes with zero errors
 - README documents wiki plugins config and index template override
 - DEVELOPMENT.md reflects the new template file
 - All edge cases produce correct output
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -231,7 +258,9 @@ Update docs, verify edge cases, and ensure CI passes.
 | `internal/template/template_test.go` | Modify | Add wiki index template tests |
 | `README.md` | Modify | Document plugins config and index template override |
 | `DEVELOPMENT.md` | Modify | Add `wiki_index.md` to project layout |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Unit test for `EmbeddedWikiIndex()` loading
@@ -243,7 +272,9 @@ Update docs, verify edge cases, and ensure CI passes.
 - [x] Integration test for `docz wiki init` rendering index template
 - [x] Integration test for index template skipping disabled types
 - [x] Integration test for index template local override
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 1. **`docz init --force` does not recreate directories for disabled types.**
@@ -253,13 +284,17 @@ Update docs, verify edge cases, and ensure CI passes.
 2. **No ToC markers in the wiki index template.** The template is a useful
    starting point, not prescriptive. Keep it minimal so users can customize
    freely.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - No new external dependencies
 - Builds on existing template resolution pattern in `internal/template/`
 - Builds on existing `WikiConfig` in `internal/config/`
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0001: Wiki Init Template and Init Enabled Fix
@@ -268,3 +303,4 @@ Update docs, verify edge cases, and ensure CI passes.
 - `internal/template/template.go` — existing `Resolve()` and `Render()` pattern
 - `cmd/wiki.go` — `ensureDocsIndex()`, `writeMkDocsYAML()`
 - `cmd/init.go` — `runInit()`
+<!--docz:references:end-->

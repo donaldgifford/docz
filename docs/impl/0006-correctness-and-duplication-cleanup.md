@@ -56,6 +56,7 @@ created: 2026-05-15
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Eliminate the active bug class behind INV-0002: three-way duplication of
@@ -65,9 +66,12 @@ After this wave, adding a new field to `Config` should require exactly one
 edit and `.docz.yaml` validation errors should be visible.
 
 **Implements:** INV-0002 (Wave 2 — Correctness and duplication)
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Derive `cmd/init.go:writeDefaultConfig` from `config.DefaultConfig()` (F12)
@@ -81,18 +85,23 @@ edit and `.docz.yaml` validation errors should be visible.
 - Add `TypeConfig.PluralLabel` field to remove the `"adr"` magic-string
   special case (F34)
 - Frontmatter CRLF tolerance (F48)
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Moving `writeMkDocsYAML` or `updateToCs` (IMPL-0008)
 - Introducing typed `DocType` or `Status` (IMPL-0009)
 - Restructuring command output / logging (IMPL-0009)
 - Performance changes around double-reads (IMPL-0007)
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Derive `.docz.yaml` write from `DefaultConfig()`
 
 Eliminate the 100-line hardcoded YAML in `writeDefaultConfig` by rendering
@@ -105,6 +114,7 @@ The `//nolint:funlen` directive on `writeDefaultConfig` was already
 removed as part of IMPL-0005 (per its Decisions §6), so it is not on
 this phase's task list.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Audit `cmd/init.go:writeDefaultConfig` against
@@ -126,7 +136,9 @@ this phase's task list.
       back to a `Config` deep-equal to the original `DefaultConfig()`
       (guarded by `TestDoczYAMLTemplate_RoundTripsToDefaultConfig` in
       `internal/config/parity_baseline_test.go`)
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `writeDefaultConfig` is under 30 lines
@@ -136,9 +148,12 @@ this phase's task list.
 - The generated `.docz.yaml` retains its header comment block and
   per-section comments (regression guard against the "marshal loses
   comments" failure mode)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Audit and fix `setDefaults` coverage
 
 `setDefaults` (config.go:291-319) was hand-written to mirror `DefaultConfig`
@@ -146,6 +161,7 @@ but has drifted: it is missing `MarkdownExtensions`, `DocsDir`, `RepoURL`,
 `SiteURL`, `Theme` (added later). Decide between reflection-driven or
 removal.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Diff `setDefaults` against `DefaultConfig` and document every missing
@@ -164,21 +180,27 @@ removal.
       (`TestLoad_PartialOverridesPreserveSiblingDefaults`)
 - [x] Add a repo-root-config partial-override test covering the
       `MergeConfigMap` path (`TestLoad_RepoConfigPartialOverridesPreserveSiblingDefaults`)
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - A user `.docz.yaml` that sets only `wiki.repo_url:` correctly merges over
   defaults — verified by a test
 - Adding a new field to `Config` does not require a corresponding edit to
   `setDefaults` (or `setDefaults` no longer exists)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Propagate config validation error at startup
 
 Currently `cmd/root.go:initConfig` prints the validation error to stderr and
 continues with the broken config. Convert to a hard failure.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Move config loading + validation out of `cobra.OnInitialize` into a
@@ -193,20 +215,26 @@ continues with the broken config. Convert to a hard failure.
 - [x] Add a test that `docz --help` still works with a broken config
       (`TestPersistentPreRunE_HelpWorksWithBrokenConfig`) — guards the
       Cobra-short-circuit behavior promised by Decisions §3
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz` with a broken `.docz.yaml` exits 1 immediately with a clear message
 - `docz --help` still works even with a broken `.docz.yaml` (help should not
   require config) — see Decisions §3
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Distinguish missing vs. unparseable config files
 
 `mergeConfigFile` currently swallows both "file does not exist" and "YAML
 parse error" silently. Surface the parse error.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] In `internal/config/config.go:mergeConfigFile`, change the second
@@ -222,15 +250,20 @@ parse error" silently. Surface the parse error.
       error with path in message (`TestLoad_MalformedRepoConfigReturnsError`),
       (c) permission denied → returns error
       (`TestLoad_UnreadableRepoConfigReturnsError`)
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - A `.docz.yaml` containing `not: valid: yaml: :` causes `docz` to exit 1
   with a clear "parse error in .docz.yaml: ..." message
 - Tests for all three cases above pass
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: Honor user-listed types only (INV-0003 fix)
 
 Implement INV-0003's recommended Option A: when `.docz.yaml` includes a
@@ -242,6 +275,7 @@ This phase has to land before Phase 7's `EnabledTypes()` helper, because
 the helper's return value is only meaningful once the config truly
 reflects the user's intent.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `userListedTypeNames(path)` in `internal/config/config.go` that
@@ -259,7 +293,9 @@ reflects the user's intent.
   3. `TestINV0003_NoConfig_InitScaffoldsAllSix`
   4. `TestINV0003_DisabledADRListed_OnlyRFCScaffolded`
   5. `TestINV0003_IncrementalAddType_PreservesExistingFiles`
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - The reproduction from INV-0003 — an rfc-only `.docz.yaml` + bare
@@ -268,13 +304,17 @@ reflects the user's intent.
   preserved, with a regression test guarding it
 - Status of INV-0003 can be flipped to `Concluded` and linked to the
   PR for this wave
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 6: Wrap bare `return err` sites with context
 
 Walk every flagged site and add `fmt.Errorf("doing X: %w", err)` wrapping.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Wrap `cmd/update.go` runUpdate loop (`updating %s: %w`) and
@@ -296,21 +336,27 @@ Walk every flagged site and add `fmt.Errorf("doing X: %w", err)` wrapping.
       a code comment explaining the unwrapped propagation (validateType
       already returns a fully-formatted error). Phase 7 collapses them
       further.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn 'return err$' cmd/ internal/` returns no results (or each
   remaining instance has an explicit code comment justifying it)
 - Every error message includes enough context to identify the failing
   operation
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 7: Extract `ValidateType` helper and `EnabledTypes()` method
 
 Collapse the four "unknown document type" sites and three enabled-type
 guard blocks into single helpers.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `(c *Config) ValidateType(name string) (canonical, err)` to
@@ -334,21 +380,27 @@ guard blocks into single helpers.
 - [x] Reword the `Validate()` warning string for "type listed in config
       but not built-in" so the "unknown document type" phrase lives only
       on the `ErrUnknownType` sentinel
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - "unknown document type" string appears in exactly one source location
 - `EnabledTypes()` returns sorted, deterministic output (verified by test)
 - `make test` passes
 - Behavior unchanged: existing CLI invocations produce identical output
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 8: Add `TypeConfig.PluralLabel`; remove `"adr"` magic-string
 
 Replace the special-case at `cmd/update.go:85-87` with config-driven
 pluralization.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `PluralLabel string` field to `TypeConfig` with
@@ -381,20 +433,26 @@ pluralization.
       changes are the expected ones (DESIGNs→Design, IMPLs→Implementation
       Plans, INVESTIGATIONs→Investigations) plus the empty headings
       filled in for adr, plan, rfc (which were never rendered before)
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - No magic strings remain in `cmd/update.go`
 - README index headings come from config, not string manipulation
 - Existing repos with `.docz.yaml` files continue to work (back-compat:
   `PluralLabel` is optional and falls back to the old behavior if absent)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 9: Frontmatter CRLF tolerance
 
 `document.ParseFrontmatter` currently rejects `---\r\n` line endings.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] In `internal/document/document.go`, relax the post-`---` check to
@@ -402,16 +460,22 @@ pluralization.
       closing `\n---` cut already tolerated CRLF
 - [x] Add table-driven cases covering `\n`, `\r\n`, and mixed line endings
       to `TestParseFrontmatter`
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - A docs file authored on Windows (CRLF) is parsed successfully
 - Test covers all three line-ending variants
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 10: Verify and ship
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Run `make ci` — green
@@ -430,16 +494,21 @@ pluralization.
       `PluralLabel`, INV-0003 `types:` replace-on-presence semantics,
       parse-error surfacing — so it's not a no-release refactor)
 - [x] Update INV-0002 status to "In Progress"
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes
 - Hand-crafted "broken config" gives a clear error
 - Hand-crafted "config missing a field added later" still works because
   defaults merge over
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -454,7 +523,9 @@ pluralization.
 | `internal/config/config.go` | Modify | Add `ValidateType`, `EnabledTypes`, `PluralLabel`, `ErrUnknownType`; reflective or simplified `setDefaults`; fix `mergeConfigFile` |
 | `internal/document/document.go` | Modify | CRLF tolerance |
 | `internal/wiki/wiki.go` | Modify | Wrap `scanDir` errors |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Round-trip test: `DefaultConfig() → template-render → yaml.Unmarshal →
@@ -490,7 +561,9 @@ pluralization.
 - [x] CRLF frontmatter test — `TestParseFrontmatter` table extended
       with `frontmatter with CRLF line endings` and
       `frontmatter with mixed line endings` subtests
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved during INV-0002 planning review.
@@ -519,7 +592,9 @@ Resolved during INV-0002 planning review.
    (`var ErrUnknownType = errors.New("unknown document type")`).
    Defer typed-error / "did you mean…?" enhancements until user
    feedback requests them.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - Builds on IMPL-0005 (assumes idiom modernization has landed; we use
@@ -530,7 +605,9 @@ Resolved during INV-0002 planning review.
   `ValidateType` are available)
 - Must reach `Completed` before any v1 design/implementation work begins,
   per the INV-0004 prerequisite gate (alongside IMPL-0007/0008/0009)
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0002 — Wave 2, findings F7–F12, F34, F38–F40, F48, F49
@@ -541,3 +618,4 @@ Resolved during INV-0002 planning review.
 - PR #30 — `markdown_extensions` defaults-drift case study
 - PR #31 — disabled-types defaults-drift case study
 - Viper `MergeConfigMap` semantics — relevant to Decisions §2
+<!--docz:references:end-->

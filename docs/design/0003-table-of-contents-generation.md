@@ -39,6 +39,7 @@ created: 2026-03-22
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 Add automatic table of contents (ToC) generation to `docz update`. When
@@ -46,9 +47,11 @@ Add automatic table of contents (ToC) generation to `docz update`. When
 the table of contents between them based on the document's heading structure.
 This complements the existing README index table generation and provides
 navigable ToC within longer documents like RFCs and design docs.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Generate a markdown table of contents from document headings
@@ -58,14 +61,18 @@ navigable ToC within longer documents like RFCs and design docs.
 - Support configuring ToC behavior per-repo via `.docz.yaml`
 - Respect the `--dry-run` flag for previewing ToC changes
 - Work with all six document types
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Replacing editor-based ToC plugins (should coexist with them)
 - Generating ToC for non-docz markdown files outside the docs directory
 - Adding ToC to README index files (those have the auto-generated table)
 - Nested/collapsible ToC (keep it simple markdown links)
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 Longer docz documents (RFCs, design docs, implementation plans) benefit from a
@@ -90,7 +97,9 @@ regardless of how the document was edited.
 - **doctoc**: Node.js CLI that generates ToC with similar marker-based approach
 - **markdown-toc (Go)**: Various Go implementations that parse headings and
   generate linked lists
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### Marker Format
@@ -263,7 +272,9 @@ type ToCConfig struct {
     MinHeadings int  `mapstructure:"min_headings" yaml:"min_headings"`
 }
 ```
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 ### CLI Changes
@@ -290,12 +301,16 @@ toc:
 All six document templates gain `<!--toc:start-->` / `<!--toc:end-->` markers
 placed after the metadata header block. Existing documents without markers are
 unaffected — ToC generation is opt-in via the markers.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 No data model changes. ToC is a pure text transformation on existing document
 files.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Unit tests for `internal/toc/`**:
@@ -309,7 +324,9 @@ files.
   `docz create` produces documents with markers
 - **Edge cases**: document with no headings, document with only H1, markers but
   empty content between them, markers in code blocks (should be ignored)
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 1. **Existing documents** are unaffected — no ToC markers means no ToC
@@ -321,7 +338,9 @@ files.
    documents (it only updates README index files).
 4. Users can disable ToC generation entirely via `toc.enabled: false` in
    `.docz.yaml`.
+<!--docz:rollout:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 1. **ToC scoping follows `docz update` scoping.** `docz update rfc` only updates
@@ -342,7 +361,9 @@ files.
    `<!--toc:start-->` / `<!--toc:end-->` markers go after the
    `**Status:**`/`**Author:**`/`**Date:**` lines and before the first section
    heading.
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [lazyvim markdown-toc plugin](https://github.com/hedyhli/markdown-toc.nvim) —
@@ -350,3 +371,4 @@ files.
 - DESIGN-0001: docz CLI Tool — original CLI design
 - `internal/index/index.go` — existing marker-based splicing pattern
   (`spliceMarkers`)
+<!--docz:references:end-->

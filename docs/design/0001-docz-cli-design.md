@@ -800,6 +800,7 @@ Users migrating from the bash-based approach:
 | `./tools/docs/update-adr-readme.sh` | `docz update adr` |
 | `./tools/docs/update-rfc-readme.sh` | `docz update rfc` |
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Unit tests** for each `internal/` package: config parsing, template
@@ -810,6 +811,7 @@ Users migrating from the bash-based approach:
   parsing and flag handling.
 - **Golden file tests** for template rendering and index generation: compare
   output against checked-in expected files.
+<!--docz:testing:end-->
 
 ## Future Considerations
 

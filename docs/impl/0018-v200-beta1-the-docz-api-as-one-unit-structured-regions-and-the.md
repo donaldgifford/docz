@@ -53,6 +53,7 @@ created: 2026-09-19
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Build the whole docz API under the `github.com/donaldgifford/docz/v2`
@@ -79,9 +80,12 @@ with `Doc.Inferred` set and one `region.inferred` warning; `docz validate
 DESIGN-0015 (all 9 resolved 2026-09-19) as one unit (DESIGN-0014 Open
 Question 11), under ADR-0002 (Decisions 1–7, R1–R8) and ADR-0003 (plan
 removal on the v2 line).
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Phase 0: module path `/v2`, the parity suite with goldens captured from
@@ -107,7 +111,9 @@ removal on the v2 line).
   closed; the `v2.0.0-beta.1` tag.
 - The external-consumer proof (`test/consumer`) extended to every `pkg/`
   package as each lands.
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Cutting v2.0.0. Every PR here is `dont-release`; `major` is reserved for
@@ -137,6 +143,8 @@ removal on the v2 line).
 - Generics in the type layer (ADR-0002 Open Question 5: no).
 - A CommonMark AST (DESIGN-0015 Open Question 7: hand-rolled walker).
 - Hooks for `pkg/wiki` (DESIGN-0014 Open Question 12: none).
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -157,6 +165,7 @@ v2.0.0: the surface may change between betas", removed at v2.0.0.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 0: Module path, parity goldens, and release mechanics
 
 The three things every later phase depends on: the `/v2` import path that
@@ -165,6 +174,7 @@ before any behaviour-adjacent change lands, and the tag trigger that
 Phase 5 needs to publish a beta. Nothing in this phase changes what the
 CLI does.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Change the `go.mod` module line to `github.com/donaldgifford/docz/v2`
@@ -252,7 +262,9 @@ CLI does.
 - [x] CLAUDE.md: module path in the `test/consumer` bullet; a "Parity
       suite" bullet describing `test/parity/`, the normalisers, the
       permitted deltas, and the rule that goldens come from v1.2.2 only.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes on the `/v2` module path with the `cmd/` test files
@@ -267,9 +279,12 @@ CLI does.
   `.github/workflows/prerelease.yml` exists and lints clean; the
   `pr-semver-bump` finding is written into `DEVELOPMENT.md`.
 - The PR merges with `dont-release` and `main` cuts nothing.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: The type layer — regions, validate, kinds, five type packages, docwrite byte cores, marked templates
 
 Everything here is additive to the frozen packages or an entirely new
@@ -281,6 +296,7 @@ skeletons (the golden-pair tests need them), then `kinds`, `validate`,
 consumer proof. The CLI's only visible change is the marker lines in
 `create` and `template` output, which the parity driver drops.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `pkg/doczcore/docparse/regions.go` with `Role`, `Marker{Kind, Role,
@@ -619,7 +635,9 @@ consumer proof. The CLI's only visible change is the marker lines in
       skeletons; `DEVELOPMENT.md`'s "add a type" walkthrough gains the
       markers-and-skeleton step and the note that a built-in also needs a
       package.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green and the `test/consumer` calls that existed at v1.2.2
@@ -641,9 +659,12 @@ consumer proof. The CLI's only visible change is the marker lines in
   only delta.
 - `make test-consumer` exercises `validate`, `kinds`, and all five type
   packages from outside the module.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Promotions — doctemplate, index, pkg/wiki; schema resolution; internal/ emptied
 
 Three `git mv` promotions that carry their tests with them, plus the
@@ -651,6 +672,7 @@ additions each package needs to stand on its own. `cmd/` only re-points
 its imports; its logic and its tests are untouched until Phase 5. At the
 end of this phase `internal/` no longer exists.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] `git mv internal/template pkg/doczcore/doctemplate` (package
@@ -709,7 +731,9 @@ end of this phase `internal/` no longer exists.
 - [x] CLAUDE.md: bullets for the three promoted packages, the schema
       resolution tiers, and the removal of `internal/`; drop the sentence
       that `internal/template` is not importable from outside the module.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green; `internal/` does not exist; the `cmd/` test files
@@ -722,9 +746,12 @@ end of this phase `internal/` no longer exists.
 - `make test-consumer` covers fifteen `pkg/` packages.
 - `go test ./pkg/doczcore/ -run 'TestLayer'` still passes with the three
   new packages in the graph.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: The repository core — pkg/doczcore/repo with context, Hooks, Validate, InsertRegions
 
 The package that turns the primitives into the operations a consumer
@@ -733,6 +760,7 @@ a typed report, and prints nothing; `cmd/` does not adopt any of it until
 Phase 5, so this phase is invisible to CLI users. `InsertRegions` writes
 what `kinds.InferRegions` finds; no heuristic lives here.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `pkg/doczcore/repo` (`repo.go`, `scan.go`, `create.go`,
@@ -830,7 +858,9 @@ what `kinds.InferRegions` finds; no heuristic lives here.
       verify: `make test-consumer`
 - [x] CLAUDE.md: the `repo` bullet (methods, typed errors, hooks, the
       no-op status rule, the never-imports-`impl` rule).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green and `cmd/` is untouched (no diff under `cmd/`).
@@ -845,9 +875,12 @@ what `kinds.InferRegions` finds; no heuristic lives here.
   the pair validates clean.
 - `make parity` is green with marker lines as the only delta.
 - `make test-consumer` covers `repo`.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Catalogue — ADR-0003 plan removal
 
 The one breaking change to the frozen catalogue, riding the v2 line as
@@ -856,6 +889,7 @@ is final before `cmd/` is re-pointed, and it is the first phase whose CLI
 output differs from v1.2.2 in more than marker lines, which is why it adds
 the fourth permitted delta to the parity suite (Open Question 8).
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Remove the `plan` entry from `allDocTypes` in
@@ -899,7 +933,9 @@ the fourth permitted delta to the parity suite (Open Question 8).
       `DEVELOPMENT.md`'s worked example if it names plan; a release-notes
       paragraph (kept in the PR body under `### RELEASE NOTES` for the
       Phase 5 tag's notes) spelling out the custom-type fallback.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green; `config.DocTypeNames()` returns five names and
@@ -910,6 +946,7 @@ the fourth permitted delta to the parity suite (Open Question 8).
   with the `types.plan` normaliser as the fourth permitted delta.
 - README, CLAUDE.md, and `DEVELOPMENT.md` no longer describe plan as a
   built-in; `mkdocs.yml` has no Plans entry.
+<!--docz:criteria:end-->
 
 #### Release notes
 
@@ -950,9 +987,11 @@ A repo that has stopped writing plan documents can set
 `types.plan.enabled: false` and keep the directory as an archive, or drop the
 block and the directory together.
 ```
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: The cmd swap, docz validate, corpus migration, and v2.0.0-beta.1
 
 The validation of everything above: `cmd/` moves onto the API with its
@@ -962,6 +1001,7 @@ the merge commit is tagged `v2.0.0-beta.1` by hand. Any `cmd/` test that
 has to change is a behaviour change and blocks the PR (ADR-0001
 Decision 7).
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] `Runner` gains `Repo *repo.Repo`; `loadAndValidateConfig` resolves the
@@ -1152,7 +1192,9 @@ Decision 7).
       were Accepted and both designs Approved with the docs PR on
       2026-09-20); note in IMPL-0017's Objective that it now targets the
       v2 line.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci`, now including `make parity`, is green on the swap PR and the
@@ -1171,9 +1213,12 @@ Decision 7).
   `DEVELOPMENT.md` describe the v2 layout.
 - `main` builds a CLI that behaves like v1.2.2 apart from the two new
   commands and the plan removal.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -1208,7 +1253,9 @@ Decision 7).
 | `test/consumer/doc.go` | Modify | Grows with each phase to cover every `pkg/` package |
 | `docs/adr/0001-*.md`, `docs/impl/0014-*.md`, `docs/design/0013-*.md` | Modify | Amendment, note, Abandoned (Phase 5) |
 | `CLAUDE.md`, `README.md`, `DEVELOPMENT.md` | Modify | Per phase; consolidated in Phase 5 |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [ ] Parity: `test/parity/` goldens from v1.2.2 replayed against
@@ -1243,7 +1290,9 @@ Decision 7).
       end of Phase 5 and compiles against the published beta
 - [ ] Corpus: `docz validate` exits 0 over docz's own `docs/` after
       migration
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - ADR-0002 and ADR-0003 accepted, DESIGN-0014 and DESIGN-0015 approved,
@@ -1256,7 +1305,9 @@ Decision 7).
   after every phase, go-test for the new test packages.
 - Nothing external: docz-api, docz-site, tempy, and sdk-booty-sh are not
   waited on and do not wait on this.
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -1436,7 +1487,9 @@ that second case true.
 - b. Dispatch on `Type == "impl"` only, as the diagram reads; a custom type
   with `schema: impl` gets the generic tier only until a later beta.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All ten open questions resolved **(a)** on 2026-09-19; 10 generalised
@@ -1457,7 +1510,9 @@ DESIGN-0015 §2/§3/§4/§6 the same day.
 | 10 | Per-type tier dispatch in `docz validate` | An explicit five-arm switch in `cmd/validate.go` on the new `DocFindings.Schema` with the type name as fallback; every built-in has a package (`impl`, `rfc`, `adr`, `design`, `investigation`), a custom type on `schema: <built-in>` gets that arm, one on its own schema gets the generic tier only |
 | — | **Amendment 2026-09-20: documents without markers** | A document with no `docz:` marker parses by inference from its headings (`kinds.InferRegions`; `Doc.Inferred`; one `region.inferred` warning, `region.missing` still an error for an absent heading; markers once present are authoritative); `docz validate --fix` writes what inference found and re-validates, replacing `update --regions` (DESIGN-0015 OQ 4 → c). Phase 1, 3, and 5 tasks updated |
 | — | **Amendment 2026-09-20: claude-skills deferred, #97 retargeted** | The docz skills plugin is not touched and no claude-skills issue is filed in this unit: it serves v1 users and marked templates or five types there would break them before v2 ships; its update is a follow-up after `v2.0.0-beta.1` (Out of Scope; ADR-0003 Decision 5 amendment). docz issue #97 (`update --check`) was retargeted the same day to `docz validate` (`toc.stale`, `IndexDrift`) and is closed by Phase 5 |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0014](../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md)
@@ -1479,3 +1534,4 @@ DESIGN-0015 §2/§3/§4/§6 the same day.
   removal facts
 - `test/parity/README.md` — golden provenance and permitted deltas (created
   in Phase 0)
+<!--docz:references:end-->

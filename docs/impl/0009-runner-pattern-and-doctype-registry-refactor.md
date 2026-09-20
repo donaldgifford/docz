@@ -59,6 +59,7 @@ created: 2026-05-15
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 The largest and most architectural of the INV-0002 waves. Eliminate the
@@ -80,9 +81,12 @@ This wave is gated on a **DESIGN doc** that aligns on the Runner shape and
 DocType registry API before implementation begins.
 
 **Implements:** INV-0002 (Wave 5 — Architecture refactor)
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Author a DESIGN doc covering Runner pattern + DocType registry
@@ -103,7 +107,9 @@ DocType registry API before implementation begins.
   hardcoded slice (F15)
 - Introduce `type DocType string` and `type Status string` typed strings
   for compile-time signal (F16)
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Adding new user-facing commands or flags
@@ -111,16 +117,20 @@ DocType registry API before implementation begins.
   user-written `.docz.yaml` files)
 - Migrating from Cobra to a different CLI framework
 - Internationalization / structured logging consumers
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Author DESIGN doc
 
 Before writing any code, align on the architectural shape via a DESIGN
 document. This is the prerequisite gate.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create DESIGN doc: `docz create design "Runner Pattern and DocType Registry"`
@@ -158,7 +168,9 @@ document. This is the prerequisite gate.
       load-bearing claims (Runner construction, DocType registry,
       `repoRoot` parameter, stacked-PR split). Frontmatter and
       narrative status updated together.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - DESIGN doc status is `Approved`
@@ -166,13 +178,17 @@ document. This is the prerequisite gate.
   explicitly deferred (IMPL-0009's own decisions are already fixed in
   the Decisions section below)
 - Approved by repository owner
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Introduce `Runner` struct (no behavior change)
 
 Establish the Runner shape with no functional change to handlers yet.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Define `cmd.Runner` struct per the DESIGN doc, e.g.:
@@ -206,15 +222,20 @@ Establish the Runner shape with no functional change to handlers yet.
       `TestRunner_DirectConstruction`, `TestPackageRunner_AssignedFromNewRunner`)
       and `cmd/git_test.go` (`TestStaticGit_UserName`,
       `TestRealGit_UserName_Smoke`).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `Runner` defined and importable
 - [x] No handler converted yet — pure plumbing
 - [x] `make ci` green
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Migrate handlers to Runner methods + output writers
 
 Convert command handlers from package-level functions to `Runner` methods.
@@ -222,6 +243,7 @@ Per DESIGN-0004 §C, handlers write to `r.Out` / `r.Err` (NOT
 `cmd.OutOrStdout()` — the task wording below predates the DESIGN and is
 superseded).
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Convert `runCreate` → `(*Runner).Create` accepting context and
@@ -239,7 +261,9 @@ superseded).
       `installListRunner`, `setupWikiTestDir`, `newTemplateTestRunner`,
       `BenchmarkCmdUpdate`, and `config_test.go` all assemble a Runner
       with `Out` pointed at a `bytes.Buffer` or `io.Discard`
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/*.go | grep -v _test.go`
@@ -257,15 +281,19 @@ superseded).
       cmd tests still go through `runUpdate`/`runCreate`/`rootCmd.Execute`
       and therefore touch the shared globals, so they stay serial
       until per-command opts structs land in a follow-up RFC.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Introduce `log/slog` logger; eliminate `if verbose`
 
 Replace verbose-guard blocks with structured logging. (Note: the
 mechanical replacements landed alongside the Phase 3 conversions;
 the `--log-level` / `--log-format` flag wiring remains.)
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] In `Runner`, wire `Logger *slog.Logger` from the `--verbose` flag
@@ -286,7 +314,9 @@ the `--log-level` / `--log-format` flag wiring remains.)
       explicit `--log-level` wins, else `--verbose`→debug, else info.
       Invalid values surface a startup error rather than silently
       defaulting.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `grep -rn 'if verbose' cmd/*.go | grep -v _test.go` returns no
@@ -297,13 +327,17 @@ the `--log-level` / `--log-format` flag wiring remains.)
 - [x] Tests can capture log output by configuring a buffer-backed
       handler — `TestBuildLogger_*` cases use a `bytes.Buffer` as the
       slog Writer and assert on emitted records (text and JSON)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: Inject time into `document.CreateOptions`
 
 Eliminate the `internal/document/time.go` package global.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `CreatedAt time.Time` to `document.CreateOptions`
@@ -318,16 +352,22 @@ Eliminate the `internal/document/time.go` package global.
       directly; remove `t.Cleanup` time-restore patterns; add
       `TestCreate_ZeroCreatedAtFallsBackToNow` to cover the
       zero-value path
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `grep -rn 'timeNow' internal/` returns no matches
 - [x] Tests no longer mutate package globals to control time
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 6: Inject git resolution; propagate `cmd.Context()`
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Define `type GitResolver interface { UserName(ctx context.Context) string }`
@@ -344,7 +384,9 @@ Eliminate the `internal/document/time.go` package global.
       table covering: flag wins over everything; config default wins
       over git; git wins when both are empty; `from_git=false` skips
       git; git returning empty falls through to "Unknown".
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `gitUserName` is gone
@@ -355,13 +397,17 @@ Eliminate the `internal/document/time.go` package global.
       already-cancelled context and asserts the call returns "" within
       2s — a future regression that drops the ctx would time out
       instead of hanging the suite.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 7: Add `repoRoot` to `config.Load`
 
 Eliminate `os.Chdir` in tests.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Change `config.Load(configFile string) (Config, error)` to
@@ -389,19 +435,25 @@ Eliminate `os.Chdir` in tests.
       do as well. The remaining cmd tests that exercise package-level
       `runner`/`appCfg`/flag globals stay serial pending the
       per-command opts struct refactor.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn 'os\.Chdir' .` returns no matches in test code
 - Tests run with `t.Parallel()` and pass
 - `make test` wall-clock time decreases noticeably
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 8: Introduce `DocType` registry
 
 Replace the scattered type definitions with a single registration list.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Define `internal/config/doctype.go` with the registry struct.
@@ -454,21 +506,27 @@ Replace the scattered type definitions with a single registration list.
       `Statuses` backing array per call, `LookupDocType` resolves
       canonical/aliases case-insensitively, and the derived
       `DefaultConfig()` matches the registry literal field-for-field
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - Adding a new doc type requires editing exactly one location:
   `allDocTypes`, plus creating the two template files
 - A test catches a registered type missing its embedded templates
 - All existing behavior unchanged (golden files green)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 9: Drive iteration from `EnabledTypes()`
 
 Now that the registry is in place, `EnabledTypes()` should iterate the
 registry rather than the hardcoded `ValidTypes()` slice.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Update `Config.EnabledTypes()` (from IMPL-0006) to iterate
@@ -486,19 +544,25 @@ registry rather than the hardcoded `ValidTypes()` slice.
 - [x] Delete `ValidTypes()` — no callers remain
 - [x] Update `TestValidTypes` → `TestDocTypeNames`; update
       `TestEnabledTypes` and `TestDefaultConfig` to assert registry order
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn 'ValidTypes' .` returns only one match: a historical comment
   in `doctype.go` documenting the consolidation
 - All iteration goes through the registry
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 10: Introduce typed `DocType` and `Status` strings
 
 Add typed-string definitions for compile-time signal at API boundaries.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Define `type DocType string` (typed wrapper, not the struct)
@@ -524,7 +588,9 @@ Add typed-string definitions for compile-time signal at API boundaries.
       pins the bare-scalar emit and field-level round trip;
       `TestFrontmatter_TypedStatus_LegacyYAMLParses` pins parsing of a
       pre-typed-string YAML fixture
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `DocType` and `Status` typed wrappers exist
@@ -532,11 +598,15 @@ Add typed-string definitions for compile-time signal at API boundaries.
 - [x] `.docz.yaml` files written by any prior docz version still parse
       (no top-level field changed type — only Frontmatter.Status and
       template.Data fields, neither of which appear in `.docz.yaml`)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 11: Verify and ship
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Full `make ci` green
@@ -571,7 +641,9 @@ Add typed-string definitions for compile-time signal at API boundaries.
       so the runtime behavior matches the prior release and the PR
       keeps the `dont-release` label. When PR #47 merges, GitHub will
       auto-rebase PR #48's base onto main.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] `make ci` green
@@ -587,9 +659,12 @@ Add typed-string definitions for compile-time signal at API boundaries.
       (`cfgFile`, `docsDir`, `verbose`, `logLevel`, `logFormat`, and
       per-command flag vars like `createStatus`); the bound globals
       are CLI-flag plumbing rather than runtime state
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -606,7 +681,9 @@ Add typed-string definitions for compile-time signal at API boundaries.
 | `internal/config/doctype.go` | Create | `DocType` registry struct + `allDocTypes` table |
 | `internal/template/template.go` | Modify | Use typed `DocType` |
 | All test files | Modify | Remove `os.Chdir`; remove `os.Pipe` tricks |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Every Runner method has a focused unit test using a constructed
@@ -643,7 +720,9 @@ Add typed-string definitions for compile-time signal at API boundaries.
       The pre-existing `TestParseFrontmatter` table also covers the
       `.docz.yaml` Config-level round trip indirectly through the
       golden-driven `internal/config` tests.
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved during INV-0002 planning review.
@@ -682,14 +761,18 @@ Resolved during INV-0002 planning review.
     single Wave 5 PR if a compatibility issue surfaces. Branch
     protection plus the consistency tests should catch most issues
     pre-merge.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **Prerequisite:** DESIGN doc (Phase 1)
 - Builds on IMPL-0005, IMPL-0006, IMPL-0007, IMPL-0008 — each makes the
   surface area smaller and the refactor easier
 - This is the final wave; nothing depends on it landing
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0002 — Wave 5, findings F1–F6, F14–F16
@@ -699,3 +782,4 @@ Resolved during INV-0002 planning review.
 - Effective Go — package design, interface design
 - `log/slog` package docs (Go 1.21+) — structured logging API
 - Cobra `Command.OutOrStdout` documentation
+<!--docz:references:end-->

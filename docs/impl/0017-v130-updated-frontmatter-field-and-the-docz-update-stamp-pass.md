@@ -47,6 +47,7 @@ created: 2026-09-12
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement DESIGN-0012: an opt-in `updated:` config block and an
@@ -58,9 +59,12 @@ DESIGN-0008 R12, with docz-api #36 waiting on the tag.
 
 **Implements:** DESIGN-0012 (all eight decisions locked 2026-09-12), scoped
 by INV-0008 (Concluded).
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - `docwrite.SetUpdated` — the package's first upsert (rewrite in place, or
@@ -77,7 +81,9 @@ by INV-0008 (Concluded).
 - Living docs (README, CLAUDE.md), DESIGN-0008 R12, the external-consumer
   proof, the `v1.3.0` release, the post-tag flips **and** dogfooding the
   block in this repo.
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - The commit sha (`updated_sha:`) — deferred by INV-0008; DESIGN-0012
@@ -90,6 +96,8 @@ by INV-0008 (Concluded).
 - A `--no-stamp` / `--no-updated` flag on `docz update` (Decision 4): the
   config block is the switch and a shallow clone already skips with a
   warning.
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -101,12 +109,14 @@ phase's diff.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: `docwrite.SetUpdated`
 
 The byte-level write primitive, in `pkg/doczcore/docwrite`. Built first
 because Phases 4 and 5 call it and its golden suite is the proof that the
 status locator refactor changed nothing.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [ ] go-architect pass on the insert design before coding: confirm the
@@ -165,7 +175,9 @@ status locator refactor changed nothing.
       upsert and why it is not a general editor. Godoc on every new exported
       symbol.
 - [ ] `make fmt`, `make lint`, `make ci` green; go-review pass on the diff.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `git diff --stat pkg/doczcore/docwrite/testdata/golden/status/` is empty
@@ -177,15 +189,19 @@ status locator refactor changed nothing.
 - A document written by `SetUpdated` round-trips through
   `document.ParseFrontmatter` with `Updated` set and no other field changed.
 - `make ci` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: read side and the `updated:` config block
 
 `document.Frontmatter.Updated`, `config.UpdatedConfig`, defaults, the
 generated-config template, and the JSON data field in `docz list`. Nothing
 here changes runtime behavior; it is the schema Phases 4 and 5 build on.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [ ] `document.Frontmatter` gains `Updated string \`yaml:"updated"\`` with a
@@ -221,7 +237,9 @@ here changes runtime behavior; it is the schema Phases 4 and 5 build on.
       field emits it; one without omits the key.
 - [ ] Godoc on every new exported symbol; `make fmt`, `make lint`,
       `make ci` green; go-review pass.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz config` prints the resolved `updated:` block with no `cmd/` change.
@@ -232,9 +250,12 @@ here changes runtime behavior; it is the schema Phases 4 and 5 build on.
 - `docz list --format=json` on a fixture with `updated:` emits the key; on
   one without, omits it.
 - `make ci` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: git resolver and the stream parser
 
 Everything that talks to git, in `cmd/` — plus the pure `git log -p`
@@ -242,6 +263,7 @@ stream parser in its own `internal/gitlog` package (Decision 1). Built before th
 integration so Phase 4 is wired against a tested resolver and a scriptable
 stub.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [ ] go-architect pass before the new package (Decision 1: `internal/gitlog`):
@@ -308,7 +330,9 @@ stub.
 - [ ] Context-cancellation tests for the three new `realGit` methods,
       matching `TestRealGit_UserName_CtxCancel`.
 - [ ] Godoc; `make fmt`, `make lint`, `make ci` green; go-review pass.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - Parser table + fuzz green in parallel; the captured real-history fixture
@@ -319,14 +343,18 @@ stub.
 - Every pre-existing `cmd/` test compiles and passes with the grown
   interface and stub.
 - `make ci` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: CLI integration
 
 The stamp pass, the two command-time stamps, and the enabled-only layouts.
 This is where DESIGN-0012's convergence table becomes a test table.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [ ] `Runner.Update`: when `r.Cfg.Updated.Enabled`, probe git **once per
@@ -386,7 +414,9 @@ This is where DESIGN-0012's convergence table becomes a test table.
       with and without `updated`.
 - [ ] Godoc; `make fmt`, `make lint`, `make ci` green; go-review pass over
       the whole phase (the largest diff in the plan).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - All convergence-table subtests green, each proving a zero-write second
@@ -397,13 +427,17 @@ This is where DESIGN-0012's convergence table becomes a test table.
   nothing else; a real run prints only the README lines.
 - `cmd/` tests remain serial; `internal/*` and `pkg/*` tests remain parallel.
 - `make ci` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: living docs, consumer contract, release, dogfood
 
 Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [ ] README: the Features bullet lists `updated`; the Configuration example
@@ -449,7 +483,9 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
       `config_snapshot` key; note on claude-skills #95 that the config and
       workflow references need the block (templates unchanged).
 - [ ] `make ci` green at the end; go-review pass on the docs diff.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `v1.3.0` tagged, published with the real release notes, and resolvable
@@ -459,7 +495,10 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 - DESIGN-0012 Implemented, IMPL-0017 Completed, this repo enabled and
   converged (`docz update --dry-run` silent on `main`).
 - docz-api #36 unblocked with everything it needs to start.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -486,7 +525,9 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 | `test/consumer/consumer_v13_test.go` | Create | R12 proof |
 | `README.md`, `CLAUDE.md` | Modify | Living docs |
 | `docs/design/0008-*.md` | Modify | R12 clause |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [ ] `docwrite`: status goldens byte-identical; updated goldens; error
@@ -503,7 +544,9 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 - [ ] `test/consumer`: R12 proof, verified red on rename
 - [ ] Dogfood: `docz update --dry-run` silent on `main` after the post-tag PR
 - [ ] `make ci` green at the end of every phase
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **DESIGN-0012** — approved; all eight decisions locked 2026-09-12
@@ -513,7 +556,9 @@ Ships `v1.3.0`, then flips statuses and enables the block in this repo.
 - **git ≥ 2.21** on developer machines and CI runners (`%cs`); no new Go
   module dependencies — `go.mod` stays cobra + yaml
 - **docz-api #36** — downstream, blocked on the tag; nothing here waits on it
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 All eight resolved **(a)** on 2026-09-12; see [Decisions](#decisions). The
@@ -638,7 +683,9 @@ or second commit.
   and `%cs` near midnight, which manufactures exactly the one-write churn
   case Decision 3 tolerates only as rare.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All eight open questions resolved **(a)** on 2026-09-12.
@@ -653,7 +700,9 @@ All eight open questions resolved **(a)** on 2026-09-12.
 | 6   | Dogfood backfill placement        | Same post-tag `dont-release` PR as the status flips — one bookkeeping PR per release, verified by a silent `docz update --dry-run` afterward   |
 | 7   | Early stop on `git log -p`        | Stop early — close the process's stdout after the first substantive commit and `Wait`, treating the broken-pipe exit as success                |
 | 8   | Clock for edit-time stamps        | Local date from `r.Now()` — the same source and zone as `created`, matching git's committer-local `%cs`                                          |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0012](../design/0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md)
@@ -670,3 +719,4 @@ All eight open questions resolved **(a)** on 2026-09-12.
 - [docz-api #36](https://github.com/donaldgifford/docz-api/issues/36) — the
   downstream follow-up blocked on `v1.3.0`
 - claude-skills #95 — plugin references to update after release
+<!--docz:references:end-->

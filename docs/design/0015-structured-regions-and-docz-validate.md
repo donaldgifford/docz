@@ -41,6 +41,7 @@ created: 2026-09-19
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 docz documents get explicit structure: HTML-comment markers that delimit
@@ -54,9 +55,11 @@ types checkable structure without a Go package per type, and make a
 document's well-formedness something the CLI can gate on and docz-api can
 report. This design is a requirement of the API unit DESIGN-0014 delivers:
 no release carries one without the other.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **Explicit spans.** A program finds a document's references, open
@@ -78,7 +81,9 @@ no release carries one without the other.
   retire").
 - **Learn from INV-0009.** Marker spelling variants are read leniently and
   reported, never silently skipped.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Attributes on markers. A marker names a kind and nothing else; the
@@ -92,7 +97,9 @@ no release carries one without the other.
 - Auto-fixing content findings. The migration pass inserts markers and
   canonicalizes their spelling; it never rewrites prose, tasks, or
   frontmatter.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 **The precedent is already in the tree.** The ToC splice owns a region
@@ -123,7 +130,9 @@ candidates are heading-text heuristics or explicit markers. So an AST is an
 implementation option for the walker underneath the same functions, not an
 alternative to marking; Open Question 7 records the choice and the trigger
 for revisiting it.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### 1. Marker syntax and the walker
@@ -723,7 +732,9 @@ readers, both downward edges. `repo` imports `validate`, and `doctemplate`
 for schemas as it already does for templates. docz-api imports
 `doctemplate` for the baked-in schemas and nothing above L2. Nothing in
 `doczcore` imports a type package, so R2 holds and the command composes.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 | Package | Change | Kind |
@@ -742,7 +753,9 @@ for schemas as it already does for templates. docz-api imports
 
 `docz create` needs no change: it renders the template, the template
 carries the markers, and no `schema:` line is written.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 ```mermaid
@@ -794,7 +807,9 @@ classDiagram
 
 Every value is computed from bytes and holds no reference to its input;
 `Regions` and `Markers` copy nothing but ints and short kind strings.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Walker goldens** under `pkg/doczcore/docparse/testdata/regions/`: the
@@ -838,7 +853,9 @@ Every value is computed from bytes and holds no reference to its input;
   second `--fix` writes nothing.
 - **Consumer proof**: `test/consumer` validates a fixture and asserts a
   known code.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 This design ships inside DESIGN-0014's unit and follows its steps; the
@@ -858,7 +875,9 @@ document carries none (§4, §6), with `Doc.Inferred` and one
 `region.inferred` warning as the signal. docz's own `docs/` are migrated
 in the swap PR with `validate --fix`; the parity suite's fixtures carry
 markers from the start; every other repo migrates when it chooses.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -1020,7 +1039,9 @@ absorb.
 - b. Leave both splices alone; `Regions` reports `toc` for validation
   only and never sees the index pair.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0014](0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md)
@@ -1042,3 +1063,4 @@ absorb.
   marker regions
 - markdown-magic (`doc-gen` comment blocks) — prior art for
   comment-delimited regions in markdown
+<!--docz:references:end-->

@@ -35,6 +35,7 @@ created: 2026-03-22
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement automatic table of contents generation integrated into `docz update`,
@@ -43,9 +44,12 @@ as specified in DESIGN-0003. Documents with `<!--toc:start-->
 markers will have their ToC regenerated from document headings on each update.
 
 **Implements:** DESIGN-0003
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - `internal/toc/` package: heading parsing, slug generation, ToC rendering,
@@ -58,13 +62,17 @@ markers will have their ToC regenerated from document headings on each update.
 - Update `cmd/init.go` default config to include `toc` section
 - Unit tests, golden file tests, integration tests
 - Update README.md and DEVELOPMENT.md
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Standalone `docz toc` command (deferred per DESIGN-0003 Decision 4)
 - ToC in README index files
 - ToC for non-docz markdown files
 - Nested/collapsible ToC formats
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -73,12 +81,14 @@ are checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Core ToC Package (`internal/toc/`)
 
 Build the `internal/toc/` package with all the pure logic: heading parsing,
 slug generation, ToC rendering, and marker splicing. No CLI integration yet —
 this phase is the self-contained library.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `internal/toc/toc.go` with exported constants, types, and functions:
@@ -116,7 +126,9 @@ this phase is the self-contained library.
     levels, code blocks, inline formatting; compare output against
     `testdata/golden/toc/basic.md`
   - Use the `-update` flag pattern from the wiki package
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go build ./internal/toc/...` succeeds
@@ -125,15 +137,19 @@ this phase is the self-contained library.
 - `Slugify` produces anchors matching GitHub rendering for all test cases
 - Headings inside fenced code blocks are correctly skipped
 - Duplicate headings get `-1`, `-2` suffixes
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Config, CLI Integration, and Template Updates
 
 Wire the ToC package into the config system and the `docz update` command. Update
 embedded templates to include ToC markers. Update `docz init` to include the
 `toc` config section.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `ToCConfig` struct to `internal/config/config.go`:
@@ -187,7 +203,9 @@ embedded templates to include ToC markers. Update `docz init` to include the
   - `TestUpdateToCNoMarkers`: doc without markers is untouched
   - `TestCreateIncludesToCMarkers`: verify `docz create` produces docs with
     `<!--toc:start-->` / `<!--toc:end-->` markers
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go test ./...` passes with all tests green
@@ -197,13 +215,17 @@ embedded templates to include ToC markers. Update `docz init` to include the
 - `docz create <type> <title>` produces documents with ToC markers
 - ToC generation is skipped when `toc.enabled: false`
 - Documents below `min_headings` threshold have empty ToC markers
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Documentation, Polish, and CI Readiness
 
 Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Update `README.md`:
@@ -224,7 +246,9 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 - [x] Run `make ci` and ensure it passes cleanly
 - [x] Review test coverage: target >90% for `internal/toc/`, >80% overall
 - [x] Clean up any TODO/FIXME comments introduced during implementation
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes with zero errors
@@ -232,9 +256,12 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 - README.md documents the ToC feature and configuration
 - DEVELOPMENT.md reflects the new package
 - All edge cases produce correct output
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -256,7 +283,9 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 | `testdata/golden/*.md` | Modify | Regenerated via `-update` (templates changed) |
 | `README.md` | Modify | Document ToC feature and config |
 | `DEVELOPMENT.md` | Modify | Add internal/toc package to layout |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Unit tests for `Slugify` — table-driven with edge cases
@@ -267,7 +296,9 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
 - [x] Config tests for ToCConfig defaults and round-trip loading
 - [x] Integration tests for `docz update` with ToC
 - [x] Integration test for `docz create` including markers
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 1. **Inline markdown stripping matches GitHub anchor behavior.** Strip bold
@@ -284,17 +315,22 @@ Update user-facing docs, verify edge cases, ensure CI passes, and clean up.
    standard marker). No blank line after `<!--toc:start-->` or before
    `<!--toc:end-->` unless the lazyvim plugin output requires it — verify
    exact format during Phase 1 implementation and match it.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - No new external dependencies required
 - Uses only Go standard library (`strings`, `regexp`, `os`, `fmt`)
 - Builds on existing patterns from `internal/index/` (marker splicing) and
   `internal/wiki/` (golden file testing)
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - DESIGN-0003: Table of Contents Generation
 - `internal/index/index.go` — `spliceMarkers()` pattern to reuse
 - `internal/wiki/golden_test.go` — golden file test pattern to follow
 - `internal/config/config.go` — config struct pattern for ToCConfig
+<!--docz:references:end-->

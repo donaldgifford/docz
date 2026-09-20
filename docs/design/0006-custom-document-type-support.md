@@ -34,6 +34,7 @@ created: 2026-06-17
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 docz lets a repository declare extra document types in `.docz.yaml` beyond
@@ -54,9 +55,11 @@ This design closes both: index-header resolution gains the same three-tier
 behavior body templates already have, and type-argument resolution gains an
 `id_prefix` tier so `docz create FW "…"` (or `fw`) resolves to the
 `frameworks` type and uses the template at `docs/templates/frameworks.md`.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **Index headers resolve for any enabled type.** `docz update` /
@@ -77,7 +80,9 @@ behavior body templates already have, and type-argument resolution gains an
 - **Preserve built-in output byte-for-byte** — no golden churn for
   `rfc`/`adr`/`design`/`impl`/`plan`/`investigation`. Built-ins
   *additionally* gain prefix shorthands (`RFC`, `ADR`, …) for consistency.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - An explicit per-type `index_template:` config key (Decision 7 —
@@ -89,7 +94,9 @@ behavior body templates already have, and type-argument resolution gains an
   custom types correctly and is the model this design copies.
 - Validating or templating the contents of user-authored index headers (a
   disk override is emitted verbatim, exactly as today).
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 A custom type touches two independent resolution paths, and each has a
@@ -165,7 +172,9 @@ resolution key**. Two further facts:
   uniqueness** across types.
 - Because all subcommands route through `ValidateType`, a change there is
   uniform across `create` / `update` / `list` / `status` / `template`.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### Output: index-header resolution (`template.ResolveIndexHeader`)
@@ -288,7 +297,9 @@ by-name path. This tier only widens *which inputs resolve to the type*.
   that collides (case-insensitive) with another enabled type's canonical
   name, alias, or `id_prefix` is the same class of ambiguity, so `Validate`
   rejects it on the same footing as a duplicate prefix.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 - **`internal/template`** — `ResolveIndexHeader(docType, docsDir string,
@@ -312,7 +323,9 @@ by-name path. This tier only widens *which inputs resolve to the type*.
   `update` / `list` / `status` / `template`. New *override path*:
   `docs/templates/index_<type>.md`. Net effect: custom types are fully
   usable and built-ins gain prefix shorthands.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 - **New embedded template** `internal/template/templates/index_default.md`,
@@ -345,7 +358,9 @@ by-name path. This tier only widens *which inputs resolve to the type*.
   (case-insensitive, across enabled types' names/aliases/prefixes) —
   validated, not stored differently. No frontmatter, README-marker, or
   persisted-state changes.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **`internal/template`** — `ResolveIndexHeader` tiers: (1) a temp-dir
@@ -373,7 +388,9 @@ by-name path. This tier only widens *which inputs resolve to the type*.
   `docz list fw` and `docz status set FW …` resolve.
 - **Golden stability** — `go test ./... -update` must change **no** built-in
   golden files (tier 2 verbatim path is a no-op for the six built-ins).
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 Purely additive, with one guardrail to call out:
@@ -397,7 +414,9 @@ Purely additive, with one guardrail to call out:
 - The `non-built-in type %q (typo?)` warning is kept (Decision 8) — it
   still catches genuine typos and is cheap.
 - Ships in a normal minor release; no config migration.
+<!--docz:rollout:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-06-17. Every recommendation accepted
@@ -415,7 +434,9 @@ resolution — rather than deferring them.
 | 6 | Per-type `aliases:` field | **(b) Add `aliases: []string` to `TypeConfig` now** so custom types declare shorthands like built-ins do; unioned with the registry aliases in resolution tier 2, on top of implicit `id_prefix` matching |
 | 7 | Per-type `index_template:` key | (a) Defer — the `templates/index_<type>.md` convention plus the generated fallback covers the need; additive later |
 | 8 | `non-built-in type (typo?)` warning | (a) Keep it — still catches genuine typos and is cheap |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - Body-template resolver this design mirrors:
@@ -438,3 +459,4 @@ resolution — rather than deferring them.
 - Built-in alias registry (`DocTypeDef.Aliases`):
   `internal/config/doctype.go:38`
 - Typed `DocType`/`Status` boundary conventions: DESIGN-0004 §F
+<!--docz:references:end-->

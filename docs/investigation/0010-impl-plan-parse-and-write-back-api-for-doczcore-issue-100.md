@@ -41,6 +41,7 @@ created: 2026-09-13
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 Issue #100 asks `pkg/doczcore` for an IMPL plan model — `ParseImpl`,
@@ -49,7 +50,9 @@ Issue #100 asks `pkg/doczcore` for an IMPL plan model — `ParseImpl`,
 docz, does it fit the frozen v1 surface and ADR-0001's facts-versus-
 interpretation rule, which parts already exist, what does the real IMPL
 corpus say the grammar has to tolerate, and how big is the work?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 Feasible as one additive `minor` release, with three costs the issue does not
@@ -62,7 +65,9 @@ compares CLI task IDs with the library's has no CLI to compare against.
 Roughly half of the read side already exists in `docparse` and in
 sdk-booty-sh's `doczwork`, and the write side is an extension of `docwrite`'s
 byte-preserving splices.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 Issue #100 (opened 2026-09-13) is the docz half of **tempy** — a Temporal-
@@ -90,7 +95,9 @@ itself never calls, encoding policy docz has no opinion on, is a smell."
 
 **Triggered by:** issue #100; tempy DESIGN-0001 / IMPL-0001; ADR-0001;
 IMPL-0014 Decision 3.
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Read the issue's API and conventions against tempy DESIGN-0001 (the
@@ -108,7 +115,9 @@ IMPL-0014 Decision 3.
    every hand-written `verify:` / deferred / skipped marker.
 5. Check the CLI for any task surface the acceptance bullet could mean.
 6. Size the work against IMPL-0015 / IMPL-0016 (four phases each).
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component | Version / Value |
@@ -117,7 +126,9 @@ IMPL-0014 Decision 3.
 | sdk-booty-sh `doczwork` | `~/code/sdk-booty-sh/pkg/loop/doczwork`, pins docz **v1.0.0** |
 | tempy | `~/code/tempy`, DESIGN-0001 and IMPL-0001 dated 2026-09-13, no Go code against docz yet |
 | corpus | 16 docz IMPL docs (`docs/impl/0001`–`0017`, no 0010), 10 docz-api and 3 sdk-booty-sh IMPL docs, `doczwork` clean/messy fixtures |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Observation 1: the request reverses a recorded decision, and the reversal is justified
@@ -293,7 +304,9 @@ snapshots of real docs (this repo's IMPL-0009/0014/0017 for wrapping,
 docz-api IMPL-0004 for `Verify:`, IMPL-0006 for the prefix deferred marker,
 `doczwork`'s messy fixture), copied under `testdata/` rather than read from
 `docs/` so later edits to living docs cannot break the suite.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** Yes — feasible as one additive `minor` release, with the design
@@ -312,7 +325,9 @@ the proposed spelling; the criteria heuristic misfires on about a tenth of
 legacy criteria; `DiffPlans` needs text-based matching; tempy's `unblock`
 needs a marker remover the issue does not list; and the CLI-agreement
 acceptance bullet needs a CLI to exist.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 1. **Write DESIGN-0013 from this investigation** with the decisions below
@@ -336,7 +351,9 @@ acceptance bullet needs a CLI to exist.
 7. **File the consumer issues at design time**: tempy already has its
    IMPL-0001 task; file one in sdk-booty-sh to migrate `doczwork` onto
    `impl` and drop its private model (the duplication the issue is about).
+<!--docz:recommendation:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 ### 1. Where does the model live, and what are the names?
@@ -459,7 +476,9 @@ acceptance bullet needs a CLI to exist.
 - b. Both in one v1.3.0 — couples an unstarted feature to tempy's critical
   path.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [Issue #100](https://github.com/donaldgifford/docz/issues/100) — the request
@@ -478,3 +497,4 @@ acceptance bullet needs a CLI to exist.
   `pkg/doczcore/document/document.go`, `internal/template/templates/impl.md`
 - docz-api `docs/impl/0004-…md` (`Verify:` lines), `docs/impl/0006-…md`
   (prefix deferred marker)
+<!--docz:references:end-->

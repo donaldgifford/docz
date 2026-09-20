@@ -39,6 +39,7 @@ enumerated in this doc, now living in `cmd/inv0003_test.go`.
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 When `.docz.yaml` lists only a subset of doc types (e.g. only `rfc`), should
@@ -49,7 +50,9 @@ config file → scaffold everything" default?
 The user-facing concern is concrete: a project that only wants `rfc` runs
 `docz init` and watches all six default type directories (`rfc`, `adr`,
 `design`, `impl`, `plan`, `investigation`) get scaffolded anyway.
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 Init and update both iterate `config.ValidTypes()` (the hardcoded built-in
@@ -60,7 +63,9 @@ disable it — the default seed survives the merge.
 
 If the hypothesis is correct, the fix is a semantics change at the config
 layer, not at the command sites.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 A user noticed that `docz init` and `docz update` ignore the apparent intent
@@ -73,7 +78,9 @@ INV-0002 (Wave 2) already flagged the underlying defaults-drift issue as
 finding F1 and routed the fix into IMPL-0006 Phase 1. This investigation
 narrows the scope to the *user-visible* symptom and asks whether IMPL-0006
 as written actually closes the loop, or whether a follow-up is needed.
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Reproduce the bug in an empty temp directory with an rfc-only
@@ -85,7 +92,9 @@ as written actually closes the loop, or whether a follow-up is needed.
    `setDefaults`, `EnabledTypes()` helper) to determine which planned step,
    if any, actually disables a type omitted from the user's config.
 4. Enumerate options for fixing the semantics and pick a recommendation.
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component | Version / Value |
@@ -94,7 +103,9 @@ as written actually closes the loop, or whether a follow-up is needed.
 | Go runtime | 1.25.7 |
 | Config layer | `viper v1.21.0` |
 | Branch | `docs/inv-0003-init-respects-config` |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Reproduction
@@ -165,7 +176,9 @@ operate on the same set.
 Therefore: IMPL-0006 as written normalizes the *plumbing*. The semantic
 question this investigation raises — does omission mean "skip" or "use the
 default" — is orthogonal and must be answered separately.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** Yes, the user's report is a real bug-shaped behavior, not a
@@ -175,6 +188,7 @@ DESIGN-0001 phrasing) would expect the opposite.
 
 IMPL-0006 in its current form does not change this contract. A separate
 decision is required.
+<!--docz:conclusion:end-->
 
 ## Options
 
@@ -216,6 +230,7 @@ false`.
 - **Cons:** Two flags is one too many. Confusing to document. Same UX
   failure mode as option B on first run.
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 Adopt option **A**, and ship it as a small, standalone follow-up — call it
@@ -254,7 +269,9 @@ Scope of the IMPL-0010 follow-up:
 
 These belong in `cmd/init_test.go` and `cmd/update_test.go` as
 `TestInit_RespectsListedTypes_*` cases using `t.TempDir()`.
+<!--docz:recommendation:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0002 — Architectural Review and Cleanup Opportunities, finding F1
@@ -264,3 +281,4 @@ These belong in `cmd/init_test.go` and `cmd/update_test.go` as
 - `internal/config/config.go:291` — `setDefaults`
 - `cmd/init.go:36`, `cmd/update.go:35`, `cmd/list.go:52`, `cmd/wiki.go:309`
 - Viper merge semantics — https://github.com/spf13/viper#establishing-defaults
+<!--docz:references:end-->

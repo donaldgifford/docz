@@ -44,6 +44,7 @@ created: 2026-08-02
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement DESIGN-0010: an opt-in `changelog:` block in `.docz.yaml`
@@ -54,9 +55,12 @@ docz-api can bump its pin once and freeze the surface as contract clause R6.
 
 **Implements:** DESIGN-0010 (all nine open questions resolved **(a)**,
 2026-08-02 — see its Decisions table).
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - `config`: `ChangelogConfig`, `Config.Changelog`, defaults, empty-`file`
@@ -66,12 +70,16 @@ docz-api can bump its pin once and freeze the surface as contract clause R6.
   best-effort, never-panic parsing (Decisions 4/8/9).
 - `docz init` template surfacing (Decision 6) + `docz config` verification.
 - Consumer-module proof, living docs, and the `v1.1.0` release.
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Any `docz changelog` CLI subcommand; changelog generation (git-cliff owns
   it); wiki/mkdocs nav integration; commit→file backlinks (docz-api feature 2).
 - docz-api's own work: the pin bump, contract clause R6, fetch/serve endpoints.
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -80,11 +88,13 @@ are checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: `changelog:` config block
 
 The config side in `pkg/doczcore/config`: struct, defaults, merge/backfill
 semantics, and enabled-only validation.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `ChangelogConfig{Enabled bool, File string}` (yaml tags
@@ -117,7 +127,9 @@ semantics, and enabled-only validation.
       dormant now decodes instead of being ignored (the INV-0005 F2 rollout
       handshake).
 - [x] Field/doc comments on the new symbols; `make fmt` + `make lint` green.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - Config table green; `docz config` prints the resolved block (no cmd/ code
@@ -125,14 +137,18 @@ semantics, and enabled-only validation.
 - Unknown-key leniency and case-sensitivity pins in `parity_baseline_test.go`
   still green (the rollout guarantee is intact).
 - `make ci` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: `document.ParseChangelog`
 
 The parser in `pkg/doczcore/document` (Decision 1), next to
 `ParseFrontmatter`: same bytes-in / typed-struct / sentinel-error shape.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `changelog.go`: `Changelog{Preamble, Versions}`,
@@ -180,7 +196,9 @@ The parser in `pkg/doczcore/document` (Decision 1), next to
       parser makes "frontmatter parsing and document scanning" wrong.
       (Not in the original plan; surfaced by the Phase 2 architecture
       review.)
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - Golden tests green over all fixtures; `ErrNoVersions` identity via
@@ -189,14 +207,18 @@ The parser in `pkg/doczcore/document` (Decision 1), next to
 - Version identity spot-pins: `[0.4.2]` → `0.4.2`, `[v0.4.2]` → `0.4.2`,
   `[Unreleased]` → `unreleased` + `Unreleased: true`.
 - The package stays free of new third-party deps; `make ci` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: CLI surfacing + consumer proof
 
 Make the block discoverable (Decision 6) and prove the new surface from
 outside the module before it freezes.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] cmd/ test: `docz config` output includes the resolved `changelog:`
@@ -210,18 +232,24 @@ outside the module before it freezes.
 - [x] README: add the `changelog:` block to the Configuration section and a
       `ParseChangelog` mention to the "Using docz as a Go Library" table's
       `document` row.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` green including `make test-consumer`; the consumer module
   exercises both the config block and the parser.
 - `docz init` output carries the dormant block; `docz config` prints it
   resolved.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: living docs + the `v1.1.0` release
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Update `CLAUDE.md` (config + document architecture bullets gain the
@@ -240,7 +268,9 @@ outside the module before it freezes.
       Implemented and this IMPL → Completed (`dont-release` PR, the #67/#68
       pattern); notify docz-api that the pin bump + contract clause R6 are
       unblocked.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - The `v1.1.0` tag exists with a successful goreleaser release; the scratch
@@ -249,9 +279,12 @@ outside the module before it freezes.
   block + parser); DESIGN-0010 = Implemented, IMPL-0015 = Completed.
 - docz-api notified; no breaking change to any existing v1.0.0 symbol
   (`gorelease`-style sanity: additive only).
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -266,7 +299,9 @@ outside the module before it freezes.
 | `cmd/config_*_test.go` | Modify | Resolved-block output pin |
 | `test/consumer/consumer_v1_test.go` (or sibling) | Modify | External proof of block + parser |
 | `README.md`, `CLAUDE.md`, `DEVELOPMENT.md` | Modify | Living docs |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Config table + parity pins (Phase 1) — merge, backfill, enabled-only
@@ -276,14 +311,18 @@ outside the module before it freezes.
 - [x] cmd/ `docz config`/`docz init` output pins (Phase 3).
 - [x] Consumer-module external proof of the full new surface (Phase 3).
 - [x] `make ci` gates every phase; zero churn outside intended goldens.
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - DESIGN-0010 (Accepted decisions; this plan encodes them).
 - docz-api INV-0005 (requirements source) and its pin-bump procedure
   (INV-0001) — consumer-side, not blocking.
 - No new Go module dependencies (stdlib-only parser).
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 ### 1. PR / release strategy for this branch?
@@ -341,7 +380,9 @@ DESIGN-0010's signature is `(*Changelog, error)`, but its stated precedent —
   `ParseFrontmatter`. Symmetry, but deviates from the handed-off signature
   docz-api's contract work is already written against.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All three open questions resolved **(a)** on 2026-08-02.
@@ -351,6 +392,7 @@ All three open questions resolved **(a)** on 2026-08-02.
 | 1   | PR / release strategy    | One `minor` PR from `feat/docz-changelog-support` (design + IMPL + implementation) → `v1.1.0`; post-tag `dont-release` status flip |
 | 2   | Fleet fixture source     | Verbatim snapshot of docz-api's real `CHANGELOG.md` (git-cliff quirks included), frozen in testdata                                |
 | 3   | `ParseChangelog` return  | `(*Changelog, error)` as handed off — nil on error; the R6 contract signature docz-api encodes                                     |
+<!--docz:decisions:end-->
 
 ## Notes for review
 
@@ -449,6 +491,7 @@ section flagged, a wrapped continuation folded into its item, and
 DESIGN-0010 → Implemented, IMPL-0015 → Completed. docz-api's pin bump and
 contract clause R6 are unblocked.
 
+<!--docz:references:start-->
 ## References
 
 - DESIGN-0010 — Changelog config block and ParseChangelog (all decisions)
@@ -456,3 +499,4 @@ contract clause R6 are unblocked.
   `internal/doczcontract` clause R6 (the pin target)
 - IMPL-0014 / ADR-0001 — the v1.0.0 freeze this release adds to
 - Keep a Changelog 1.1.0; git-cliff + the fleet-shared `cliff.toml`
+<!--docz:references:end-->

@@ -38,6 +38,7 @@ created: 2026-05-15
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Apply the low-risk mechanical fixes from INV-0002 Wave 1: centralize scattered
@@ -46,9 +47,12 @@ issues that have zero design risk. The goal is a single "style sweep" PR that
 improves readability without changing any behavior.
 
 **Implements:** INV-0002 (Wave 1 — Mechanical wins)
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Centralize file-mode and filename constants (F36, F37, F35)
@@ -63,7 +67,9 @@ improves readability without changing any behavior.
 - Set `SilenceUsage: true` on root command (F44)
 - Move package doc-comment from `internal/wiki/titles.go` to `wiki.go` (F45)
 - Drop named return values in `config.Validate()` (F27)
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Any change that alters public API surface or YAML config shape
@@ -71,6 +77,8 @@ improves readability without changing any behavior.
   fanout that's larger than mechanical)
 - Anything touching `cmd/` globals or output routing (deferred to IMPL-0009)
 - Behavioral changes to defaults loading (deferred to IMPL-0006)
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -79,12 +87,14 @@ are checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Centralize scattered constants
 
 Create a single source of truth for file modes, well-known filenames, and a
 handful of magic numbers that appear inline today. This phase is purely
 mechanical extraction — no logic changes.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Decide constant home: extend `internal/config` or add `internal/doczfs`
@@ -109,7 +119,9 @@ mechanical extraction — no logic changes.
       `internal/config/config.go:141`
 - [x] Document why `maxSlugLength = 64` (filesystem path limit) inline at
       `internal/template/template.go:31`
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn '0o644\|0o750' cmd/ internal/` returns only the constant
@@ -118,14 +130,18 @@ mechanical extraction — no logic changes.
   returns only the constant declarations
 - `go build ./...` succeeds
 - `make test` passes with zero golden-file diffs
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Modernize Go stdlib idioms
 
 Replace legacy patterns with the modern equivalents available in Go 1.25.7.
 Each substitution is local; no APIs change.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Replace `os.IsNotExist(err)` with `errors.Is(err, fs.ErrNotExist)` at:
@@ -154,7 +170,9 @@ Each substitution is local; no APIs change.
       to `toc.go`; replace call site at `toc.go:133` with `strconv.Itoa(...)`
 - [x] Replace `currentDate()` body with `timeNow().Format(time.DateOnly)` at
       `internal/document/create.go:118-121`
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn 'os\.IsNotExist\|sort\.Slice\|strings\.NewReader(string(' cmd/ internal/`
@@ -163,13 +181,17 @@ Each substitution is local; no APIs change.
 - `internal/wiki/titles.go` no longer imports `strings` solely for `NewReader`
 - `make ci` passes
 - `make test` passes with zero golden-file diffs
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Cobra and style polish
 
 Small Cobra hygiene and a handful of cosmetic style fixes.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `defer enc.Close()` in `cmd/config.go:24-30`; remove the explicit
@@ -189,7 +211,9 @@ Small Cobra hygiene and a handful of cosmetic style fixes.
       `internal/document/document.go:44` (sentinel candidates flagged in
       INV-0002 deferred to IMPL-0006). `:252` keeps `fmt.Errorf` because it
       includes a `%q` verb; only the truly static strings were swapped.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `cmd/config.go` does not leak a YAML encoder on error
@@ -197,13 +221,17 @@ Small Cobra hygiene and a handful of cosmetic style fixes.
   block on a `RunE` error (only the error message)
 - `go vet ./...` is clean
 - `make ci` passes
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Verify and ship
 
 Run the full quality gate and confirm zero behavioral change.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Run `make fmt` to normalize formatting
@@ -216,7 +244,9 @@ Run the full quality gate and confirm zero behavioral change.
       change) — [PR #36](https://github.com/donaldgifford/docz/pull/36)
 - [x] Confirm no `.docz.yaml` user-config files would break (status, schema,
       and YAML key spellings are unchanged)
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes
@@ -224,9 +254,12 @@ Run the full quality gate and confirm zero behavioral change.
 - Manual smoke test succeeds for the five core commands
 - PR diff contains zero behavior changes (only renames, imports, and
   constant references)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -248,7 +281,9 @@ Run the full quality gate and confirm zero behavioral change.
 | `internal/document/document.go` | Modify | `errors.New` for static error |
 | `internal/toc/toc.go` | Modify | Delete `itoa`; use `strconv.Itoa` |
 | `internal/config/config.go` | Modify | Drop named returns; named constants |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Run existing test suite (`make test`) and confirm zero golden-file diffs
@@ -259,7 +294,9 @@ Run the full quality gate and confirm zero behavioral change.
       line endings (sanity-checks the `bytes.NewReader` swap; full CRLF
       handling deferred to IMPL-0006)
 - [x] Manual smoke test against the docz repo itself
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved during INV-0002 planning review.
@@ -277,16 +314,21 @@ Resolved during INV-0002 planning review.
 6. **`//nolint:funlen` directive on `writeDefaultConfig`:** delete it in
    this wave. The function will be rewritten in IMPL-0006; the directive
    is already stale.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - None. This wave has no design prerequisites and no external blockers.
 - Must merge before IMPL-0006 (which expects the modernized idioms as the
   baseline).
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0002: Architectural Review and Cleanup Opportunities — Wave 1
   recommendation, findings F9, F27, F28–F37, F43–F45
 - Uber Go Style Guide — `errors.Is`, `slices`, time formatting, named returns
 - Effective Go — package doc comment placement
+<!--docz:references:end-->

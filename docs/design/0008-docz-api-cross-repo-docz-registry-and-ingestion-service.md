@@ -52,6 +52,7 @@ created: 2026-06-23
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 **docz-api** is a small Go backend service that aggregates the documentation of
@@ -93,9 +94,11 @@ of "what docz docs exist in this tree."
 > upstream documents remain load-bearing: **DESIGN-0007** defines the shared
 > parsing library this service imports; **INV-0005** is the investigation whose
 > locked decisions this design implements.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **Cross-repo registry.** A Postgres store keyed by `(repo, doc_id)` holding
@@ -124,7 +127,9 @@ of "what docz docs exist in this tree."
 - **A thin vertical slice first (Decision 8).** One hand-onboarded repo → ingest
   → serve one type, deferring full auth and webhooks, to prove the fetch → parse
   → upsert → serve loop end to end.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - **Rendering markdown to HTML.** No `rendered_html` column, no server-side
@@ -149,7 +154,9 @@ of "what docz docs exist in this tree."
   not a replacement for per-repo TechDocs.
 - **Write-back to repos.** docz-api is read-only against GitHub content; it
   never opens PRs or mutates a source repo.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 docz produces structured docs _per repo_. Each repo has a root `.docz.yaml`
@@ -193,7 +200,9 @@ decision concrete. It promotes the docz CLI's `internal/config` (`Load`,
 `LoadFrontmatter`, `ParseFrontmatter`) into an importable `pkg/doczcore/…`
 surface. Both the CLI and docz-api depend on it, so the registry's view of a
 repo is byte-for-byte the CLI's view.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### Service shape and package layout
@@ -552,6 +561,7 @@ GitHub        Webhook        Ingest          Parser(pkg)    Postgres   Meili
 Redis (not shown above) sits between the webhook handler and the ingest worker
 as the job queue, and separately holds the session store; Postgres and
 Meilisearch are the durable stores.
+<!--docz:detailed-design:end-->
 
 ## Requirements for the docz repo (what docz-api needs from docz)
 
@@ -694,6 +704,7 @@ docz-api to build and run. R10 raises that pin to `v1.2.0`; R11 to `v1.2.2`,
 which is where `config_snapshot` starts serving the yaml spellings on each
 repo's next ingest.
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 This is a greenfield service, so "interface changes" means the initial HTTP/JSON
@@ -850,7 +861,9 @@ INGEST_DEBOUNCE=5s
 No group→repo authorization mapping appears here: authorization is deferred to a
 future SpiceDB-backed middleware (Decision 10). When that feature lands, its
 configuration (an endpoint/credentials for the authZ service) is added then.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 The Postgres schema refines the INV-0005 sketch. All timestamps are
@@ -981,7 +994,9 @@ relationship store rather than a row in this schema.
 - `id` is the composite primary key `<repo_id>:<doc_id>`.
 - `title` + `body` are searchable; `repo` / `type` / `status` / `author` are
   filterable facets; `created` / `updated_at` are sortable.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Unit — parsing / ingest mapping.** Given fixture bytes for `.docz.yaml` and
@@ -1026,7 +1041,9 @@ relationship store rather than a row in this schema.
 - **Golden / fixture discipline.** Reuse the docz convention: fixture trees and
   expected JSON under `testdata/`, regenerated with an `-update` flag, never
   hand-edited.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 docz-api is a **greenfield repository**; this document is its seed design. There
@@ -1074,7 +1091,9 @@ the service is built and shipped.
 6. **Then docz-site (DESIGN-0009)** consumes the JSON API. The site is built
    against the slice's endpoints from the start so the contract is exercised
    early.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > **Resolved 2026-06-30** — see the [Decisions](#decisions) table below for the
@@ -1247,7 +1266,9 @@ should not be blocked waiting for a tag.
   isolation — needed only if docz-api is offered as a shared/hosted service.
 - c. One deployment per org, no cross-org concept at all.
 - Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-06-30. Recommendations accepted except where
@@ -1268,7 +1289,9 @@ noted (7 + 8 adopt Redis up front; 10 is an "Other").
 | 11  | Search access         | (a) proxy through docz-api                                     | Single key holder + future authZ filter point; curl-friendly surface eases a later MCP search tool                                             |
 | 12  | Versioning            | (a) HEAD-only now                                              | Later: consume each repo's `CHANGELOG.md` as the audit/versions source of truth and present it in the UI                                       |
 | 13  | Tenancy               | (a) single logical tenant                                      | Multiple GitHub orgs/installations coexist; per-org GitHub App creds are just how the API pulls data — transparent to end users                |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - **docz-api `DESIGN-0001`** — the service's own canonical, **Approved** copy of
@@ -1302,3 +1325,4 @@ noted (7 + 8 adopt Redis up front; 10 is an "Other").
   tenant tokens: <https://www.meilisearch.com/docs>.
 - **OpenID Connect (OIDC)** — authorization-code flow for the Okta/Keycloak
   providers: <https://openid.net/developers/how-connect-works/>.
+<!--docz:references:end-->
