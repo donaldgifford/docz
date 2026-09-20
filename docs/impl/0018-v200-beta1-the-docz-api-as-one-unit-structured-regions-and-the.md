@@ -606,7 +606,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       string) (Rendered, error)`; `Create` becomes `NextNumber` → `Render`
       → write. A test asserts `Render`'s output equals what `Create`
       writes for the same inputs.
-- [ ] Extend `test/consumer/doc.go`: one `Parse` call per type package
+- [x] Extend `test/consumer/doc.go`: one `Parse` call per type package
       over an inline fixture each, `kinds.OpenQuestions`,
       `validate.Document` with a schema from `SchemaFromMarkers`,
       `docparse.Regions`, and `docwrite.SetStatusBytes`, each asserting a
