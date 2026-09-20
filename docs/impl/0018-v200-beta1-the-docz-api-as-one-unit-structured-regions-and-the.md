@@ -340,7 +340,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       full IMPL skeleton and the table for the other four); `default.md`
       carries the ToC pair and `references` only. Extend the embed
       directive to cover `templates/schema/*.md`.
-- [ ] Create `pkg/doczcore/kinds` (`item.go`, `question.go`,
+- [x] Create `pkg/doczcore/kinds` (`item.go`, `question.go`,
       `reference.go`, `decision.go`, `criteria.go`, `alternative.go`,
       `field.go`): `Item`, `Section`, `Criterion`, `Alternative`,
       `Reference`, `Option`, `Resolution`, `Question`, `Decision`, and the
