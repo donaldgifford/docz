@@ -674,14 +674,14 @@ end of this phase `internal/` no longer exists.
 - [x] Resolution tests: a repo-local `templates/schema/impl.md` beats the
       baked-in one; an unknown name is `ErrNoSchema`; `EmbeddedSchema`
       returns a skeleton for every built-in and for `default`.
-- [ ] `git mv internal/index pkg/doczcore/index` and add `BeginMarker`,
+- [x] `git mv internal/index pkg/doczcore/index` and add `BeginMarker`,
       `EndMarker`, the action enum exported as `UpdateAction`,
       `Splice(existing []byte, header, table string) ([]byte, UpdateAction)`
       locating the pair via `docparse.Regions` kind `index`, and
       `Scaffold(header string) []byte`; `UpdateReadme` and `DryRunReadme`
       become wrappers over `Splice`. The package now imports `docparse`.
       verify: `go test ./pkg/doczcore/index/...`
-- [ ] `Splice` table pinning every `UpdateReadme` outcome unchanged
+- [x] `Splice` table pinning every `UpdateReadme` outcome unchanged
       (created, updated, no markers, both dry-run forms) and the `Scaffold`
       regression from issue #99: exactly one marker pair for every type,
       built-in and custom.
