@@ -309,7 +309,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       with goldens under `testdata/{listitems,tables}/` and a fuzz target
       each (DESIGN-0014 §2.3).
       verify: `go test ./pkg/doczcore/docparse/...`
-- [ ] Re-point `toc.UpdateToC` and the `parseHeadings` skip past
+- [x] Re-point `toc.UpdateToC` and the `parseHeadings` skip past
       `<!--toc:end-->` onto `docparse.Regions` kind `toc` (DESIGN-0014
       §2.5); the exported surface does not change and the existing golden
       pins the output byte-identical.
