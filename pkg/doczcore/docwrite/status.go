@@ -21,7 +21,12 @@ var ErrStatusFieldMissing = errors.New("no status field in frontmatter")
 // ErrUnsupportedLineEndings is returned by SetStatus and CheckTask when
 // a file uses CR or CRLF line endings. The byte-level mutators only
 // support LF, matching docz's Unix-only stance (DESIGN-0005 Decision 7).
-var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
+//
+// It is document.ErrUnsupportedLineEndings, not a second sentinel for the
+// same failure: the refusal is a fact about the bytes, so it belongs at
+// the facts layer where a reader can use it too. Matching either with
+// errors.Is matches both, and the message is unchanged.
+var ErrUnsupportedLineEndings = document.ErrUnsupportedLineEndings
 
 // statusKeyRE matches a frontmatter status line anchored at column 0,
 // consuming the `status:` key and the spacing that precedes the value.

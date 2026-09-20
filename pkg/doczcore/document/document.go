@@ -50,6 +50,18 @@ type Frontmatter struct {
 // ErrNoFrontmatter is returned when a file has no YAML frontmatter delimiters.
 var ErrNoFrontmatter = errors.New("no YAML frontmatter found")
 
+// ErrUnsupportedLineEndings reports a document whose bytes use CR or CRLF
+// line endings. docz is LF-only (DESIGN-0005 Decision 7), so every line
+// number in the module counts by LF and every write helper refuses a file
+// with a carriage return in it.
+//
+// It lives here, at the facts layer, because the failure is a fact about
+// bytes rather than about writing them. docwrite.ErrUnsupportedLineEndings
+// is this error, so a caller matching either with errors.Is matches both;
+// a type package's Parse can reject CR without importing the write side,
+// which rule R2 keeps it away from.
+var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
+
 // ParseFrontmatter extracts and parses YAML frontmatter from file content.
 // Frontmatter must be delimited by "---" lines at the start of the file.
 func ParseFrontmatter(content []byte) (Frontmatter, error) {
