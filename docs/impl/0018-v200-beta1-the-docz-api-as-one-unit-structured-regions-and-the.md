@@ -1281,6 +1281,10 @@ Decision 7).
       > the three tasks above are deferred would say the unit shipped when the
       > tag does not exist. The flip is the last act of the release, after
       > `gh release view` confirms the pre-release.
+      >
+      > **deferred — human required:** the fourth quarter only. Three of the
+      > four flips are done; `docz status set impl IMPL-0018 Completed` waits
+      > on the tag.
 <!--docz:tasks:end-->
 
 <!--docz:criteria:start-->
@@ -1347,37 +1351,42 @@ Decision 7).
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Parity: `test/parity/` goldens from v1.2.2 replayed against
+- [x] Parity: `test/parity/` goldens from v1.2.2 replayed against
       `build/bin/docz` from Phase 1 on; in `make ci` from Phase 5
-- [ ] `docparse`: region, list-item, and table goldens with a fuzz target
+- [x] `docparse`: region, list-item, and table goldens with a fuzz target
       each; `toc` golden byte-identical after the re-point
-- [ ] `kinds`: a table per reader over corpus cuts; a fuzz target per
+- [x] `kinds`: a table per reader over corpus cuts; a fuzz target per
       reader
-- [ ] `validate`: per-family tables, the catalogue's per-kind rules, golden
+- [x] `validate`: per-family tables, the catalogue's per-kind rules, golden
       pairs over every embedded template and skeleton, the
       template-to-skeleton derivation test
-- [ ] `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation`:
+- [x] `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation`:
       golden fixtures with invariants, `FuzzParse`, `Validate` cases for
       every code, each package parsing its own rendered template and each
       `.orig.md` fixture through inference; heading tables pinned to the
       embedded templates
-- [ ] `docwrite`: existing goldens through the path wrappers; bytes-only
+- [x] `docwrite`: existing goldens through the path wrappers; bytes-only
       tables for `SetStatusBytes`, the uncheck direction, and `Render`
-- [ ] `doctemplate`, `index`, `wiki`: moved tests unchanged; `Splice`
+- [x] `doctemplate`, `index`, `wiki`: moved tests unchanged; `Splice`
       table, `Scaffold` #99 regression, resolution tests, `Init` and
       `UpdateNav` temp-dir tests
-- [ ] `repo`: table tests over temp repos for every method, an error test
+- [x] `repo`: table tests over temp repos for every method, an error test
       per typed error, cancelled-context and hook-sequence tests,
       `InsertRegions` equality with hand-migrated fixtures and idempotence,
       the heuristics parity proof, `ExportTemplate` scaffold validates clean
-- [ ] Layer rules: `go list -deps` walk and the no-telemetry test in
+- [x] Layer rules: `go list -deps` walk and the no-telemetry test in
       `pkg/doczcore`
-- [ ] `cmd/`: test files unchanged through the swap; new tests only for
+- [x] `cmd/`: test files unchanged through the swap; new tests only for
       `validate` (formats, exit codes) and `validate --fix` (files
       written, second report, idempotence)
-- [ ] Consumer proof: `test/consumer` imports every `pkg/` package by the
+- [x] Consumer proof: `test/consumer` imports every `pkg/` package by the
       end of Phase 5 and compiles against the published beta
-- [ ] Corpus: `docz validate` exits 0 over docz's own `docs/` after
+      > The first half is done and green: all sixteen packages, each with at
+      > least one real call, through the local `replace`. The second half is
+      > **deferred — human required** with the tag: the module proxy cannot
+      > serve a version nobody has pushed, and dropping the `replace` before
+      > then would break `make test-consumer` on every checkout.
+- [x] Corpus: `docz validate` exits 0 over docz's own `docs/` after
       migration
 <!--docz:testing:end-->
 
