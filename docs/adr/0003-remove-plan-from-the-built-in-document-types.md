@@ -1,7 +1,7 @@
 ---
 id: ADR-0003
 title: "Remove plan from the built-in document types"
-status: Proposed
+status: Accepted
 author: Donald Gifford
 created: 2026-09-14
 ---

@@ -1,7 +1,7 @@
 ---
 id: ADR-0002
 title: "docz is an API package whose first consumer is the CLI"
-status: Proposed
+status: Accepted
 author: Donald Gifford
 created: 2026-09-14
 ---
@@ -119,7 +119,7 @@ implies.
    | R4 | Results are typed structs and enums. English wording, exit codes, and formatting exist only in L4. |
    | R5 | `internal/` holds only what has a documented reason to stay private. After the swap, nothing does: the template embed moves with `doctemplate` and stays unexported there. |
    | R6 | No library-defined interfaces. Consumers define their own at the call site. |
-   | R7 | A type package's grammar is a contract over region *kinds*, not over the type name or the template file (restated 2026-09-19, Open Question 5). `impl.Parse` reads `phase`, `tasks`, and `criteria` regions and never asks which type declared them, so any type whose documents carry those kinds parses with it. A document without the kinds has left the contract, whatever its headings say. |
+   | R7 | A type package's grammar is a contract over region *kinds*, not over the type name or the template file (restated 2026-09-19, Open Question 5). `impl.Parse` reads `phase`, `tasks`, and `criteria` regions and never asks which type declared them, so any type whose documents carry those kinds parses with it. A document that carries no markers at all is read by inference from the built-in headings and flagged (DESIGN-0015 §6, amended 2026-09-20); one that carries markers but lacks the kinds has left the contract, whatever its headings say. |
 
 3. **One module, at major version 2.** docz stays a single module with one
    version line. Go compiles per imported package, so a consumer of

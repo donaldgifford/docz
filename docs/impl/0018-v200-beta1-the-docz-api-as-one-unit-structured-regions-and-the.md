@@ -893,9 +893,10 @@ Decision 7).
       through the module proxy and `test/consumer`'s calls compile against
       it without the local replace.
 - [ ] Status flips with `docz status set`: DESIGN-0014 and DESIGN-0015 →
-      Implemented, ADR-0002 and ADR-0003 → Accepted, this document →
-      Completed; note in IMPL-0017's Objective that it now targets the v2
-      line.
+      Implemented and this document → Completed (ADR-0002 and ADR-0003
+      were Accepted and both designs Approved with the docs PR on
+      2026-09-20); note in IMPL-0017's Objective that it now targets the
+      v2 line.
 
 #### Success Criteria
 
