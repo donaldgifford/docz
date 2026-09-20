@@ -612,7 +612,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       `docparse.Regions`, and `docwrite.SetStatusBytes`, each asserting a
       known value from outside the module.
       verify: `make test-consumer`
-- [ ] CLAUDE.md: architecture bullets for `docparse` regions, list items,
+- [x] CLAUDE.md: architecture bullets for `docparse` regions, list items,
       and tables, `validate`, `kinds`, the five type packages, the
       `docwrite` byte cores, `Frontmatter.Schema`, and the embedded
       skeletons; `DEVELOPMENT.md`'s "add a type" walkthrough gains the
