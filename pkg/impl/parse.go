@@ -61,9 +61,9 @@ func Parse(doc []byte) (Doc, error) {
 			out.Objective = kinds.Body(body)
 			out.Implements = implementsIn(body)
 		case "in-scope":
-			out.InScope = shiftItems(kinds.Items(body), r)
+			out.InScope = kinds.ShiftItems(kinds.Items(body), r)
 		case "out-of-scope":
-			out.OutOfScope = shiftItems(kinds.Items(body), r)
+			out.OutOfScope = kinds.ShiftItems(kinds.Items(body), r)
 		case "file-changes":
 			out.FileChanges = fileChanges(body, r)
 		case "testing":
@@ -71,11 +71,11 @@ func Parse(doc []byte) (Doc, error) {
 		case kindDependencies:
 			out.Dependencies = kinds.Body(body)
 		case "open-questions":
-			out.OpenQuestions = shiftQuestions(kinds.OpenQuestions(body), r)
+			out.OpenQuestions = kinds.ShiftQuestions(kinds.OpenQuestions(body), r)
 		case kindDecisions:
-			out.Decisions = shiftDecisions(kinds.Decisions(body), r)
+			out.Decisions = kinds.ShiftDecisions(kinds.Decisions(body), r)
 		case kindReferences:
-			out.References = shiftReferences(kinds.References(body), r)
+			out.References = kinds.ShiftReferences(kinds.References(body), r)
 		}
 	}
 
@@ -157,13 +157,15 @@ func cell(row []string, i int) string {
 	return strings.TrimSpace(row[i])
 }
 
-// Every reader in docparse and kinds numbers lines from the start of the
-// bytes it was handed, which for a region is the region. A Doc's lines are
-// the document's, because a Line is an address a consumer acts on — the line
-// docwrite splices at, the line an editor jumps to (DESIGN-0014 §5). The
-// shift helpers below are the conversion, and there is one per value type
-// rather than one generic helper because Line sits at a different depth in
-// each: a question carries lines on its options and its resolution too.
+// Every reader in docparse and kinds numbers lines from the start of the bytes
+// it was handed, which for a region is the region. A Doc's lines are the
+// document's, because a Line is an address a consumer acts on — the line
+// docwrite splices at, the line an editor jumps to (DESIGN-0014 §5).
+//
+// kinds owns that conversion for its own value types, so five type packages do
+// not carry five chances to be off by one. shiftTasks is the one case it does
+// not cover: docparse.TaskItem belongs to the facts layer, and only this
+// package has a field of them.
 
 // shiftTasks rebases task-item line numbers from a region onto the document.
 func shiftTasks(items []docparse.TaskItem, at docparse.Region) []docparse.TaskItem {
@@ -176,90 +178,6 @@ func shiftTasks(items []docparse.TaskItem, at docparse.Region) []docparse.TaskIt
 	for _, item := range items {
 		item.Line += at.Start
 		out = append(out, item)
-	}
-
-	return out
-}
-
-// shiftItems rebases list-item line numbers onto the document.
-func shiftItems(items []kinds.Item, at docparse.Region) []kinds.Item {
-	if len(items) == 0 {
-		return nil
-	}
-
-	out := make([]kinds.Item, 0, len(items))
-
-	for _, item := range items {
-		item.Line += at.Start
-		out = append(out, item)
-	}
-
-	return out
-}
-
-// shiftReferences rebases reference line numbers onto the document.
-func shiftReferences(refs []kinds.Reference, at docparse.Region) []kinds.Reference {
-	if len(refs) == 0 {
-		return nil
-	}
-
-	out := make([]kinds.Reference, 0, len(refs))
-
-	for _, ref := range refs {
-		ref.Line += at.Start
-		out = append(out, ref)
-	}
-
-	return out
-}
-
-// shiftDecisions rebases decision-row line numbers onto the document.
-func shiftDecisions(decisions []kinds.Decision, at docparse.Region) []kinds.Decision {
-	if len(decisions) == 0 {
-		return nil
-	}
-
-	out := make([]kinds.Decision, 0, len(decisions))
-
-	for _, d := range decisions {
-		d.Line += at.Start
-		out = append(out, d)
-	}
-
-	return out
-}
-
-// shiftQuestions rebases an open question's line numbers onto the document,
-// including the ones on its options and its resolution: a consumer that jumps
-// to an unresolved option needs that line, not the heading above it.
-func shiftQuestions(questions []kinds.Question, at docparse.Region) []kinds.Question {
-	if len(questions) == 0 {
-		return nil
-	}
-
-	out := make([]kinds.Question, 0, len(questions))
-
-	for _, q := range questions {
-		q.Line += at.Start
-
-		if len(q.Options) > 0 {
-			options := make([]kinds.Option, 0, len(q.Options))
-
-			for _, option := range q.Options {
-				option.Line += at.Start
-				options = append(options, option)
-			}
-
-			q.Options = options
-		}
-
-		if q.Resolved != nil {
-			resolved := *q.Resolved
-			resolved.Line += at.Start
-			q.Resolved = &resolved
-		}
-
-		out = append(out, q)
 	}
 
 	return out
@@ -357,7 +275,7 @@ func parsePhase(
 		case kindTasks:
 			phase.Tasks = parseTasks(lines, child, phase.Token)
 		case kindCriteria:
-			phase.Criteria = shiftCriteria(kinds.Criteria(body), child)
+			phase.Criteria = kinds.ShiftCriteria(kinds.Criteria(body), child)
 		}
 	}
 
@@ -424,23 +342,6 @@ func descriptionBetween(lines []string, after, before int) string {
 	}
 
 	return strings.TrimSpace(stripComments(strings.Join(lines[after:high], "\n")))
-}
-
-// shiftCriteria rebases criterion line numbers from a region onto the
-// document.
-func shiftCriteria(criteria []kinds.Criterion, at docparse.Region) []kinds.Criterion {
-	if len(criteria) == 0 {
-		return nil
-	}
-
-	out := make([]kinds.Criterion, 0, len(criteria))
-
-	for _, c := range criteria {
-		c.Line += at.Start
-		out = append(out, c)
-	}
-
-	return out
 }
 
 // stripComments removes HTML comments, including ones spanning lines, the
