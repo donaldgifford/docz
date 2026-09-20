@@ -435,9 +435,15 @@ repo config.
 Version and commit information are injected at build time via ldflags:
 
 ```makefile
--X github.com/donaldgifford/docz/cmd.Version=$(VERSION)
--X github.com/donaldgifford/docz/cmd.Commit=$(COMMIT_HASH)
+-X $(MODULE_PATH)/cmd.Version=$(VERSION)
+-X $(MODULE_PATH)/cmd.Commit=$(COMMIT_HASH)
 ```
+
+`MODULE_PATH` is `github.com/donaldgifford/docz/v2` — the import path with
+its major-version suffix. A `-X` flag that names a path no package has is
+ignored without a warning, so the suffix is load-bearing: drop it and
+`docz version` reports `dev` from a release build. v1.x tags keep the
+unversioned path and its ldflags.
 
 The variables live in `cmd/version.go`:
 

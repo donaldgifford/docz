@@ -178,7 +178,7 @@ CLI does.
       => ../..`) and the import paths in `test/consumer/doc.go`; the
       existing assertions do not change.
       verify: `make test-consumer`
-- [ ] Update every non-Go spelling of the module path: the README install
+- [x] Update every non-Go spelling of the module path: the README install
       and library sections, `DEVELOPMENT.md`, and the CLAUDE.md
       `test/consumer` bullet; state that v1.x tags keep the old path.
       verify: `grep -rnE 'donaldgifford/docz/(cmd|pkg|internal)' --include='*.go' .`
