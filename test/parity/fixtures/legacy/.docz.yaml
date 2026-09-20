@@ -1,0 +1,82 @@
+# Parity fixture: a repo whose config still carries the `plan:` block that
+# `docz init` wrote before v1.1.1 turned the type off by default. The block
+# is dormant (enabled: false), which is the shape the fleet actually has, so
+# `update`, `list`, and `wiki` never touch it and only `docz config` reports
+# it. ADR-0003 removes `plan` from the built-in registry on the v2 line, at
+# which point this block is read as a custom type and the config output
+# changes: that is the one permitted plan delta in the parity suite.
+#
+# The nav_titles map still names plan too, exactly as the old init output
+# left it. author is pinned (from_git: false) so `docz create` output does
+# not depend on the machine running the suite.
+
+docs_dir: docs
+
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: "ADR"
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: "status"
+    plural_label: "ADRs"
+
+  plan:
+    enabled: false
+    dir: plan
+    template: ""
+    id_prefix: "PLAN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Cancelled
+    status_field: "status"
+    plural_label: "Plans"
+
+  rfc:
+    enabled: true
+    dir: rfc
+    template: ""
+    id_prefix: "RFC"
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+    status_field: "status"
+    plural_label: "RFCs"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: false
+  default: "Parity Fixture"
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    plan: Plans
+    rfc: RFCs
+
+toc:
+  enabled: true
+  min_headings: 3

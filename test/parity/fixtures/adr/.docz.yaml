@@ -1,0 +1,42 @@
+# Parity fixture: the adr type. author is pinned (from_git: false) so
+# `docz create` output does not depend on the machine running the suite.
+
+docs_dir: docs
+
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: "ADR"
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: "status"
+    plural_label: "ADRs"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: false
+  default: "Parity Fixture"
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+
+toc:
+  enabled: true
+  min_headings: 3

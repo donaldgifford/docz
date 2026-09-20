@@ -183,7 +183,7 @@ CLI does.
       `test/consumer` bullet; state that v1.x tags keep the old path.
       verify: `grep -rnE 'donaldgifford/docz/(cmd|pkg|internal)' --include='*.go' .`
       prints nothing
-- [ ] Build the parity fixture repos under `test/parity/fixtures/`: one
+- [x] Build the parity fixture repos under `test/parity/fixtures/`: one
       per built-in type (`rfc`, `adr`, `design`, `impl`, `investigation`)
       with two or three documents each — one straight from the type's
       template and one hand-written in the fleet's messier style — one
