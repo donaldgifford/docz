@@ -431,7 +431,7 @@ consumer proof. The CLI's only visible change is the marker lines in
       skeleton asserts the expected kinds and parents; and the derivation
       test asserts `SchemaFromMarkers(template) == SchemaFromMarkers(skeleton)`
       for each built-in, so the pair can only be edited together.
-- [ ] Add the layer-rule tests in `pkg/doczcore` (DESIGN-0014 §6, R2): a
+- [x] Add the layer-rule tests in `pkg/doczcore` (DESIGN-0014 §6, R2): a
       `go list -deps` walk per core package fails if `pkg/impl` or
       `pkg/wiki` appears; a sibling test fails if any `go.opentelemetry.io`
       or logging module appears under `pkg/`.
