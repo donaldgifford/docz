@@ -102,8 +102,8 @@ removal on the v2 line).
   goldens, and docs.
 - Phase 5: `cmd/` re-pointed at the API with its tests unchanged;
   `docz validate` with `--fix`; docz's own `docs/` migrated;
-  parity in `make ci`; ADR-0001 amendment; living docs; the claude-skills
-  issue; the `v2.0.0-beta.1` tag.
+  parity in `make ci`; ADR-0001 amendment; living docs; docz issue #97
+  closed; the `v2.0.0-beta.1` tag.
 - The external-consumer proof (`test/consumer`) extended to every `pkg/`
   package as each lands.
 
@@ -114,7 +114,14 @@ removal on the v2 line).
   `beta.1` follow the same hand-tagged path as the API settles.
 - docz-api, docz-site, tempy, and sdk-booty-sh. They pin v1 and are
   unaffected; what they rely on is recorded in DESIGN-0014 §5 for awareness
-  only. No downstream issues except the claude-skills one DESIGN-0014 names.
+  only. No downstream issues.
+- The claude-skills docz plugin (amended 2026-09-20). It serves v1 users,
+  and bundling marked templates, five types, or a `docz validate` step
+  before v2 ships would break them, so the plugin is not touched and no
+  claude-skills issue is filed here; it updates as a follow-up once
+  `v2.0.0-beta.1` is out. Until then its `docz:create` fallback keeps
+  writing unmarked v1 documents, which the inference path reads (DESIGN-0014
+  §2.9).
 - Moving docz-api into this repo (`cmd/docz-api`) and the UI; one chart.
 - IMPL-0017 (`updated:` field). It retargets from v1.3.0 to the v2 line
   after this unit; no work here.
@@ -878,9 +885,10 @@ Decision 7).
       `--fix`, five types), `DEVELOPMENT.md` (add-a-type walkthrough
       with markers and skeleton, release section), and `mkdocs.yml`
       (`pymdownx.superfences` so the design diagrams render).
-- [ ] File the claude-skills issue for the docz plugin: bundled templates
-      gain markers, the bundled `plan.md` goes, the doc-types reference
-      drops to five, and a `docz validate` step joins the workflow.
+- [ ] Close docz issue #97 (retargeted 2026-09-20 from `update --check` to
+      `docz validate`: `toc.stale` and `IndexDrift` are the CI gate) with a
+      comment naming the beta tag. The claude-skills plugin is not touched
+      in this unit (Out of Scope).
 - [ ] Merge as `dont-release`, then from the merge commit run
       `make release TAG=v2.0.0-beta.1`; confirm the pre-release workflow
       built the binaries and marked the release a pre-release; write the
@@ -996,7 +1004,7 @@ Decision 7).
 - The `v1.2.2` tag and a Go 1.26.4 toolchain for the golden capture.
 - goreleaser v2 with `prerelease: auto`, and the `pr-semver-bump` v1.7.4
   behaviour finding from Phase 0 before Phase 5 tags.
-- `gh` for the release-body edit and the claude-skills issue.
+- `gh` for the release-body edit and closing docz #97.
 - The go-development skills: go-architect before Phases 1 and 3, go-review
   after every phase, go-test for the new test packages.
 - Nothing external: docz-api, docz-site, tempy, and sdk-booty-sh are not
@@ -1201,6 +1209,7 @@ DESIGN-0015 §2/§3/§4/§6 the same day.
 | 9 | Hand-marking this document | No; it migrates with the corpus in Phase 5 |
 | 10 | Per-type tier dispatch in `docz validate` | An explicit five-arm switch in `cmd/validate.go` on the new `DocFindings.Schema` with the type name as fallback; every built-in has a package (`impl`, `rfc`, `adr`, `design`, `investigation`), a custom type on `schema: <built-in>` gets that arm, one on its own schema gets the generic tier only |
 | — | **Amendment 2026-09-20: documents without markers** | A document with no `docz:` marker parses by inference from its headings (`kinds.InferRegions`; `Doc.Inferred`; one `region.inferred` warning, `region.missing` still an error for an absent heading; markers once present are authoritative); `docz validate --fix` writes what inference found and re-validates, replacing `update --regions` (DESIGN-0015 OQ 4 → c). Phase 1, 3, and 5 tasks updated |
+| — | **Amendment 2026-09-20: claude-skills deferred, #97 retargeted** | The docz skills plugin is not touched and no claude-skills issue is filed in this unit: it serves v1 users and marked templates or five types there would break them before v2 ships; its update is a follow-up after `v2.0.0-beta.1` (Out of Scope; ADR-0003 Decision 5 amendment). docz issue #97 (`update --check`) was retargeted the same day to `docz validate` (`toc.stale`, `IndexDrift`) and is closed by Phase 5 |
 
 ## References
 

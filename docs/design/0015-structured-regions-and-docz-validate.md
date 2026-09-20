@@ -738,7 +738,7 @@ for schemas as it already does for templates. docz-api imports
 | `internal/template/templates/*.md` | every built-in template gains region markers; new `schema/<type>.md` skeletons, `default.md`, and `schema/default.md` | template contents, not contract |
 | `cmd/` | `docz validate [type] [--strict] [--fix] [--format text\|json]`, where `--fix` writes the markers inference found and re-validates; `docz template override <custom-type>` scaffolds the pair | new commands, part of the swap |
 | `test/consumer` | imports `validate`, validates a fixture from outside the module | proof |
-| docz skills plugin | bundled templates and the create fallback gain markers; `docz validate` joins the workflow | claude-skills issue, filed when this design is approved |
+| docz skills plugin | unchanged in this unit (amended 2026-09-20): it serves v1 users, and marked templates would break them. Bundled templates, the create fallback, and a `docz validate` step follow v2 in claude-skills; its unmarked output reads through inference (§6) meanwhile | follow-up after `v2.0.0-beta.1`, no issue filed here |
 
 `docz create` needs no change: it renders the template, the template
 carries the markers, and no `schema:` line is written.
@@ -849,7 +849,7 @@ additions are:
 | 1, type layer | `docparse.Markers`/`Regions`/`ListItems`/`Tables`; `validate` package with `SchemaFromMarkers` and the forty-one-kind catalogue; `kinds`; `Parse` over regions and `Validate` in all five type packages; every template section gains markers; embedded `schema/<type>.md` skeletons listing every section and the `default.md` pair; `Frontmatter.Schema`; goldens regenerated |
 | 2, promotions | `doctemplate.ResolveSchema`, `EmbeddedSchema`, `GenericTemplate`, `ErrNoSchema` |
 | 3, repository core | `repo.Validate` with the template check, `repo.InsertRegions`; `repo.ExportTemplate` scaffolds custom types |
-| 5, the swap | `docz validate` with `--fix`; docz's own `docs/` migrated in the same PR; README and skills documentation; claude-skills issue |
+| 5, the swap | `docz validate` with `--fix`; docz's own `docs/` migrated in the same PR; README documentation; docz #97 closed. The skills plugin follows v2, not this phase (amended 2026-09-20) |
 | after the release | nothing in this repo. External consumers are not part of this work: docz-api and sdk-booty-sh pin v1 and read a migrated corpus as before, since markers are HTML comments and a `schema:` line is an unknown key to a v1 parser; tempy, and any repo that wants regions, runs `docz validate --fix` on its own docs when it adopts v2, in its own repo |
 
 Nothing has to be migrated before it is read: every type package's
@@ -951,7 +951,9 @@ markers from the start; every other repo migrates when it chooses.
 ### 5. Do ToC and index drift belong to validate?
 
 > **Resolved 2026-09-19: (a).** Issue #97's `update --check` is subsumed;
-> the issue is retargeted at `docz validate` when this design is approved.
+> the issue was retargeted at `docz validate` on 2026-09-20 (title, body
+> note, and comment) and closes when IMPL-0018 Phase 5 lands. v1 never
+> gets `--check`.
 
 - a. **Yes.** A stale ToC is a document finding (`toc.stale`) and a stale
   README is a repository finding; `docz validate` therefore subsumes
