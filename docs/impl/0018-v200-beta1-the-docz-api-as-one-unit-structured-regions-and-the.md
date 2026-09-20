@@ -240,7 +240,7 @@ CLI does.
       event.
       verify: `actionlint .github/workflows/*.yml` (or the schema check the
       repo's editor runs) and `make release-local`
-- [ ] Check `pr-semver-bump`'s pre-release-base behaviour (ADR-0002 Open
+- [x] Check `pr-semver-bump`'s pre-release-base behaviour (ADR-0002 Open
       Question 3): read how v1.7.4 discovers the latest tag and whether a
       pre-release counts, and what `major` from `v2.0.0-beta.N` yields.
       npm `semver.inc("2.0.0-beta.1", "major")` is `2.0.0`, so the open

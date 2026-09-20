@@ -454,6 +454,81 @@ var (
 )
 ```
 
+## Releasing
+
+Two paths, and on the v2 line only the second one is used.
+
+### The label path (how v1 shipped)
+
+`.github/workflows/release.yml` runs on every push to `main`. It reads the
+merged pull request's label, and `jefflinse/pr-semver-bump` computes and
+pushes the next tag; goreleaser then builds the release. One of `major`,
+`minor`, `patch`, or `dont-release` must be on the PR or **the job fails**:
+a missing label is an error, not a skip.
+
+### The beta path (the whole v2 line)
+
+Nothing on the v2 line is released by label. Every pull request carries
+`dont-release`, and a beta is cut by hand from the merge commit:
+
+```bash
+make release TAG=v2.0.0-beta.1     # tags and pushes
+```
+
+`.github/workflows/prerelease.yml` fires on `v*-beta.*`, runs goreleaser
+only, and `prerelease: auto` marks the GitHub release from the suffix.
+
+A `/v2` module may not carry a v1 tag: `go get` rejects the mismatch. That
+is the hard reason every PR after the module move is `dont-release`, not a
+matter of taste.
+
+### What pr-semver-bump v1.7.4 actually does with a beta tag
+
+Read from the action's source at that tag (ADR-0002 Open Question 3),
+because the answer decides whether the real `v2.0.0` can be cut by label at
+all:
+
+| Question | Answer |
+| -------- | ------ |
+| How does it find the current version? | The GitHub **git matching-refs API**, not local tags, so `fetch-depth` is irrelevant to it. Every parseable ref is sorted with `semver.rcompare` and the top one wins. |
+| Does a pre-release count as latest? | **Yes.** The only filter is "does it parse", with no pre-release check, and `2.0.0-beta.1` outranks `1.2.2` by precedence. |
+| `major` on top of `v2.0.0-beta.1`? | `v2.0.0`, via npm `semver.inc`. The intended cut works. |
+| `minor` or `patch` on top of it? | **Also `v2.0.0`.** semver short-circuits any increment from a pre-major pre-release. |
+| No tags at all? | `0.0.0` is the base, so `major` gives `v1.0.0`. |
+| A typo'd tag such as `v2.0.0.beta.1`? | Silently unparseable, so discovery falls back to `v1.2.2` with no warning. |
+
+Two consequences worth knowing before they bite:
+
+- **Any release label merged during the beta window cuts the real
+  `v2.0.0`,** not just `major`. A single `patch`-labelled PR would consume
+  the version, and the later deliberate `major` PR would then compute
+  `v3.0.0`. This is why `dont-release` is not optional.
+- **`base-branch` is off,** so discovery sees every tag in the repository
+  regardless of branch. Once a beta tag is the highest semver tag, a
+  `patch`-labelled PR on `main` yields `v2.0.0` rather than `v1.2.3`, so
+  **v1 maintenance cannot use the label path.**
+
+**Fallback.** If the `major` label misbehaves when v2.0.0 is finally cut,
+tag it by hand and let `prerelease.yml`'s sibling `release.yml` stay out of
+it:
+
+```bash
+make release TAG=v2.0.0
+```
+
+### The v1 maintenance branch
+
+There is no `v1` branch and none is created until something needs one. Cut
+it from `v1.2.2` on demand:
+
+```bash
+git switch -c v1 v1.2.2
+```
+
+It keeps the unversioned module path. Release from it by hand
+(`make release TAG=v1.2.3`) for the reason above: the label path would
+compute a v2 version from the repository's highest tag.
+
 ## Testing Patterns
 
 ### Filesystem tests
@@ -511,10 +586,15 @@ appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 | `make build` | Build the binary to `build/bin/docz` |
 | `make test` | Run all tests |
 | `make test-coverage` | Tests with coverage report |
+| `make test-consumer` | Run the external-module consumer smoke test (separate `go.mod`) |
+| `make parity` | Replay the v1.2.2 parity goldens (`BIN=<path>` to drive another binary) |
+| `make parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
 | `make lint` | Run golangci-lint |
 | `make lint-fix` | Auto-fix lint issues |
 | `make fmt` | Run gofmt + goimports |
 | `make ci` | Full CI pipeline (lint + test + build + license-check) |
+| `make release TAG=vX.Y.Z` | Tag and push a release by hand |
+| `make release-local` | Goreleaser snapshot, nothing published |
 | `make docs-init` | Run `docz init` |
 | `make docs-update` | Run `docz update` |
 | `make docs-list` | Run `docz list` |
