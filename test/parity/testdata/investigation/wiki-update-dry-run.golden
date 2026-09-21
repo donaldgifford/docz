@@ -1,0 +1,20 @@
+$ docz wiki update --dry-run
+exit 0
+
+=== stdout
+- Home: index.md
+- Investigations:
+    - Overview: investigation/README.md
+    - INV-0001: Evaluate message queue options: investigation/0001-evaluate-message-queue-options.md
+    - INV-0002: Why the nightly rebuild flakes: investigation/0002-why-the-nightly-rebuild-flakes.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (776 bytes, 51d3c85c73e5)
+docs/index.md (110 bytes, 631bc7256b6c)
+docs/investigation/0001-evaluate-message-queue-options.md (2772 bytes, e0595763ce45)
+docs/investigation/0002-why-the-nightly-rebuild-flakes.md (5207 bytes, 0c1a5c34ba68)
+docs/investigation/README.md (1316 bytes, 45c47b091931)
+mkdocs.yml (388 bytes, b11185732aa2)

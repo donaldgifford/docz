@@ -1,0 +1,60 @@
+$ docz config
+exit 0
+
+=== stdout
+docs_dir: $ROOT/docs
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: ADR
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: status
+    plural_label: ADRs
+index:
+  auto_update: true
+  preserve_header: true
+author:
+  from_git: false
+  default: Parity Fixture
+wiki:
+  auto_update: true
+  mkdocs_path: $ROOT/mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    design: Design
+    impl: Implementation Plans
+    investigation: Investigations
+    plan: Plans
+    rfc: RFCs
+toc:
+  enabled: true
+  min_headings: 3
+changelog:
+  enabled: false
+  file: CHANGELOG.md
+api:
+  enabled: false
+  landing_page: ""
+  exclude: []
+  additional_docs: []
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (698 bytes, 7f99dbecefa5)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1645 bytes, fc2adfcd894c)
+docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/README.md (1349 bytes, e3d3787df33c)

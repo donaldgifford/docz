@@ -1,0 +1,50 @@
+$ docz update --dry-run
+exit 0
+
+=== stdout
+# Architecture Decision Records (ADRs)
+
+This directory contains Architecture Decision Records documenting significant
+technical decisions.
+
+## What are ADRs?
+
+ADRs document **technical implementation decisions** for specific architectural
+components. Each ADR focuses on a single decision and includes:
+
+- **Context**: The problem or constraint that led to this decision
+- **Decision**: What was chosen and why
+- **Consequences**: Trade-offs, pros, and cons
+- **Alternatives**: Other options that were considered
+
+## Creating a New ADR
+
+```bash
+docz create adr "Your ADR Title"
+```
+
+## ADR Status
+
+- **Proposed**: Under discussion, not yet approved
+- **Accepted**: Approved and being implemented or already implemented
+- **Deprecated**: No longer relevant or superseded
+- **Superseded by ADR-XXXX**: Replaced by another ADR
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All ADRs
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| ADR-0001 | Use PostgreSQL for the registry store | Accepted | 2026-03-04 | Parity Fixture | [0001-use-postgresql-for-the-registry-store.md](0001-use-postgresql-for-the-registry-store.md) |
+| ADR-0002 | Vendor the markdown walker | Accepted | 2026-03-04 | Parity Fixture | [0002-vendor-the-markdown-walker.md](0002-vendor-the-markdown-walker.md) |
+<!-- END DOCZ AUTO-GENERATED -->
+
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (698 bytes, 7f99dbecefa5)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1645 bytes, fc2adfcd894c)
+docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/README.md (1349 bytes, e3d3787df33c)

@@ -1,0 +1,40 @@
+$ docz wiki init
+exit 0
+
+=== stdout
+Created $ROOT/mkdocs.yml
+Created $ROOT/docs/index.md
+Updated nav in $ROOT/mkdocs.yml (4 pages)
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (748 bytes, 1eb4fc792707)
+docs/impl/0001-phase-out-the-legacy-scanner.md (3850 bytes, a7c60a54a035)
+docs/impl/0002-registry-store-migration.md (6709 bytes, daf5e9ef4fb6)
+docs/impl/README.md (1389 bytes, 69869db9f54c)
+docs/index.md (107 bytes, 397797c193dd)
+mkdocs.yml (353 bytes, fc89c4e8b1f7)
+
+=== written docs/index.md
+# 001
+
+Welcome to the documentation for 001.
+
+## Document Types
+
+- [Implementation Plans](impl/README.md)
+
+
+=== written mkdocs.yml
+nav:
+    - Home: index.md
+    - Implementation Plans:
+        - Overview: impl/README.md
+        - 'IMPL-0001: Phase out the legacy scanner': impl/0001-phase-out-the-legacy-scanner.md
+        - 'IMPL-0002: Registry store migration': impl/0002-registry-store-migration.md
+plugins:
+    - techdocs-core
+site_description: Documentation for 001
+site_name: 1

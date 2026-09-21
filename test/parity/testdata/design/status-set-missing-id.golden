@@ -1,0 +1,14 @@
+$ docz status set design DESIGN-9999 Implemented
+exit 1
+
+=== stdout
+(empty)
+
+=== stderr
+Error: no design document with id "DESIGN-9999" found in docs/design
+
+=== files
+.docz.yaml (732 bytes, 0a7d82da49d4)
+docs/design/0001-token-refresh-flow.md (2077 bytes, 5bd162da5acc)
+docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/README.md (1287 bytes, 0f8b694d2c3a)

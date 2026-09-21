@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
-	"github.com/donaldgifford/docz/pkg/doczcore/docwrite"
-	"github.com/donaldgifford/docz/pkg/doczcore/toc"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docwrite"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/toc"
 )
 
 // planDoc is an IMPL-style body with headings and checkbox tasks — the

@@ -1,0 +1,20 @@
+$ docz wiki update --dry-run
+exit 0
+
+=== stdout
+- Home: index.md
+- Design:
+    - Overview: design/README.md
+    - DESIGN-0001: Token refresh flow: design/0001-token-refresh-flow.md
+    - DESIGN-0002: Wiki nav generation: design/0002-wiki-nav-generation.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (732 bytes, 0a7d82da49d4)
+docs/design/0001-token-refresh-flow.md (2077 bytes, 5bd162da5acc)
+docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/README.md (1287 bytes, 0f8b694d2c3a)
+docs/index.md (95 bytes, b8a1cea4761c)
+mkdocs.yml (319 bytes, b633ee5f8809)

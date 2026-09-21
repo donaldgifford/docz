@@ -1,0 +1,115 @@
+$ docz create rfc Parity created document
+exit 0
+
+=== stdout
+Created RFC: $ROOT/docs/rfc/0003-parity-created-document.md
+Updated $ROOT/docs/rfc/README.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (710 bytes, d449b58824ae)
+docs/rfc/0001-switch-the-ingest-queue-to-nats.md (1695 bytes, 587c4679eeef)
+docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (5160 bytes, 825d376386a0)
+docs/rfc/0003-parity-created-document.md (1313 bytes, 0766448f7e8d)
+docs/rfc/README.md (1630 bytes, 2eae7f547729)
+
+=== written docs/rfc/0003-parity-created-document.md
+---
+id: RFC-0003
+title: "Parity created document"
+status: Draft
+author: Parity Fixture
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# RFC-0003: Parity created document
+
+<!--toc:start-->
+- [Summary](#summary)
+- [Problem Statement](#problem-statement)
+  - [Supporting Data](#supporting-data)
+- [Proposed Solution](#proposed-solution)
+- [Alternatives Considered](#alternatives-considered)
+- [Risks and Mitigations](#risks-and-mitigations)
+- [Success Criteria](#success-criteria)
+- [References](#references)
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Problem Statement
+
+<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Proposed Solution
+
+<!-- High-level description of the proposed approach -->
+
+## Alternatives Considered
+
+<!-- What other approaches were evaluated and why were they rejected? -->
+
+## Risks and Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
+| ---- | ------ | ---------- | ---------- |
+|      |        |            |            |
+
+## Success Criteria
+
+<!-- How will we measure whether this RFC achieved its goals? -->
+
+## References
+
+<!-- Links to related ADRs, RFCs, issues, external docs -->
+
+=== written docs/rfc/README.md
+# Requests for Comments (RFCs)
+
+This directory contains RFCs documenting high-level proposals for major features
+and system redesigns.
+
+## What are RFCs?
+
+RFCs document **high-level problem definitions and solution strategies**. Each
+RFC focuses on:
+
+- **Problem Statement**: The issue being addressed with evidence
+- **Proposed Solution**: High-level approach and architecture
+- **Implementation Phases**: Overview of how the solution will be built
+- **Alternatives**: Other approaches that were considered
+- **Risks and Success Criteria**: What could go wrong and how we measure success
+
+## Creating a New RFC
+
+```bash
+docz create rfc "Your RFC Title"
+```
+
+## RFC Status
+
+- **Draft**: Initial draft, not yet ready for review
+- **Proposed**: Ready for review and feedback
+- **Accepted**: Approved and ready for implementation
+- **Rejected**: Not moving forward with this proposal
+- **Superseded**: Replaced by another RFC
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All RFCs
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| RFC-0001 | Switch the ingest queue to NATS | Draft | 2026-03-04 | Parity Fixture | [0001-switch-the-ingest-queue-to-nats.md](0001-switch-the-ingest-queue-to-nats.md) |
+| RFC-0002 | Adopt semantic versioning for the docs corpus | Proposed | 2026-03-04 | Parity Fixture | [0002-adopt-semantic-versioning-for-the-docs-corpus.md](0002-adopt-semantic-versioning-for-the-docs-corpus.md) |
+| RFC-0003 | Parity created document | Draft | $DATE | Parity Fixture | [0003-parity-created-document.md](0003-parity-created-document.md) |
+<!-- END DOCZ AUTO-GENERATED -->

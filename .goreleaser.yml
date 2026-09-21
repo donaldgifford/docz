@@ -15,8 +15,8 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -X github.com/donaldgifford/docz/cmd.Version={{ .Version }}
-      - -X github.com/donaldgifford/docz/cmd.Commit={{ .ShortCommit }}
+      - -X github.com/donaldgifford/docz/v2/cmd.Version={{ .Version }}
+      - -X github.com/donaldgifford/docz/v2/cmd.Commit={{ .ShortCommit }}
 
 archives:
   - id: default

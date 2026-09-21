@@ -36,3 +36,6 @@ go.work.sum
 
 # Build directories
 build/
+
+# goreleaser output (make release-local, make release)
+dist/

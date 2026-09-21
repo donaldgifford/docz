@@ -1,0 +1,51 @@
+$ docz update design --dry-run
+exit 0
+
+=== stdout
+# Design Documents
+
+This directory contains detailed design documents for feature implementation.
+
+## What are Design Documents?
+
+Design documents describe **how a feature or system will be built**. Each design
+document includes:
+
+- **Overview**: What is being designed and why
+- **Goals and Non-Goals**: Scope boundaries
+- **Detailed Design**: Architecture, APIs, data models
+- **Testing Strategy**: How the design will be validated
+- **Migration Plan**: How to roll out the changes
+
+## Creating a New Design Document
+
+```bash
+docz create design "Your Design Title"
+```
+
+## Design Status
+
+- **Draft**: Initial draft, still being written
+- **In Review**: Ready for review and feedback
+- **Approved**: Approved and ready for implementation
+- **Implemented**: Design has been fully implemented
+- **Abandoned**: Design was not pursued
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Design
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| DESIGN-0001 | Token refresh flow | Approved | 2026-03-04 | Parity Fixture | [0001-token-refresh-flow.md](0001-token-refresh-flow.md) |
+| DESIGN-0002 | Wiki nav generation | Approved | 2026-03-04 | Parity Fixture | [0002-wiki-nav-generation.md](0002-wiki-nav-generation.md) |
+<!-- END DOCZ AUTO-GENERATED -->
+
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (732 bytes, 0a7d82da49d4)
+docs/design/0001-token-refresh-flow.md (2077 bytes, 5bd162da5acc)
+docs/design/0002-wiki-nav-generation.md (7318 bytes, 9d41181ede78)
+docs/design/README.md (1287 bytes, 0f8b694d2c3a)

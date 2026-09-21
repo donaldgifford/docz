@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // Data holds all variables available for document-template rendering.

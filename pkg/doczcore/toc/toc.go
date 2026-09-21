@@ -8,7 +8,7 @@ package toc
 import (
 	"strings"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
 // Markers used to delimit the ToC region in a document.

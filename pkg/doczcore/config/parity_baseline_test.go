@@ -11,8 +11,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	doctemplate "github.com/donaldgifford/docz/internal/template"
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // TestDoczYAMLTemplate_RoundTripsToDefaultConfig is the IMPL-0006 Phase 1

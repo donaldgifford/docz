@@ -1,0 +1,70 @@
+$ docz template show adr
+exit 0
+
+=== stdout
+---
+id: {{ .Prefix }}-{{ .Number }}
+title: "{{ .Title }}"
+status: {{ .Status }}
+author: {{ .Author }}
+created: {{ .Date }}
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
+
+<!--toc:start-->
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Context
+
+<!-- What is the issue that we're seeing that motivates this decision? -->
+
+## Decision
+
+<!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Consequences
+
+<!-- What becomes easier or more difficult to do because of this change? -->
+
+### Positive
+
+-
+
+### Negative
+
+-
+
+### Neutral
+
+-
+
+## Alternatives Considered
+
+<!-- What other options were evaluated? -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->
+
+=== stderr
+Warning: config declares non-built-in type "frameworks" (typo?)
+
+=== files
+.docz.yaml (1148 bytes, aae68059d6d3)
+docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/README.md (1167 bytes, 80b1981d1cfe)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/README.md (650 bytes, 9327fc0355b1)
+docs/templates/frameworks.md (616 bytes, 3285c201e10e)

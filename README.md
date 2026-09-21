@@ -32,8 +32,12 @@ make build
 # Binary: build/bin/docz
 
 # Or install directly
-go install github.com/donaldgifford/docz/cmd/docz@latest
+go install github.com/donaldgifford/docz/v2/cmd/docz@latest
 ```
+
+The `/v2` path is the current development line. Released v1.x tags stay on
+the unversioned path, so `go install github.com/donaldgifford/docz/cmd/docz@v1.2.2`
+is how you pin the last v1 release.
 
 ### Initialize a repository
 
@@ -644,8 +648,14 @@ Since v1.0.0 the parsing and writing core is a public, semver-governed Go
 API under `pkg/doczcore` — the same code the CLI runs on:
 
 ```bash
-go get github.com/donaldgifford/docz@latest
+go get github.com/donaldgifford/docz/v2@latest   # the v2 line
+go get github.com/donaldgifford/docz@v1.2.2      # the last v1 release
 ```
+
+The module path carries the major version: the v2 line is
+`github.com/donaldgifford/docz/v2`, and every v1.x tag keeps the
+unversioned `github.com/donaldgifford/docz`. A consumer that pins v1 is
+unaffected by the v2 work and can stay there.
 
 | Package | What it provides |
 |---------|------------------|

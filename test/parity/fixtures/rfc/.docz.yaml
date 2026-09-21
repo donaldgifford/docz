@@ -1,0 +1,43 @@
+# Parity fixture: the rfc type. author is pinned (from_git: false) so
+# `docz create` output does not depend on the machine running the suite.
+
+docs_dir: docs
+
+types:
+  rfc:
+    enabled: true
+    dir: rfc
+    template: ""
+    id_prefix: "RFC"
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+    status_field: "status"
+    plural_label: "RFCs"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: false
+  default: "Parity Fixture"
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    rfc: RFCs
+
+toc:
+  enabled: true
+  min_headings: 3

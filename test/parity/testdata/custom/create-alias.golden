@@ -1,0 +1,76 @@
+$ docz create fw Parity alias create
+exit 0
+
+=== stdout
+Created FRAMEWORKS: $ROOT/docs/frameworks/0003-parity-alias-create.md
+Updated $ROOT/docs/frameworks/README.md
+
+=== stderr
+Warning: config declares non-built-in type "frameworks" (typo?)
+
+=== files
+.docz.yaml (1148 bytes, aae68059d6d3)
+docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/README.md (1167 bytes, 80b1981d1cfe)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/0003-parity-alias-create.md (674 bytes, 0fe78cf74b9d)
+docs/frameworks/README.md (783 bytes, 58a96c09d8ec)
+docs/templates/frameworks.md (616 bytes, 3285c201e10e)
+
+=== written docs/frameworks/0003-parity-alias-create.md
+---
+id: FW-0003
+title: "Parity alias create"
+status: Draft
+author: Parity Fixture
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# FW-0003: Parity alias create
+
+<!--toc:start-->
+- [Summary](#summary)
+- [Owner](#owner)
+- [Adoption](#adoption)
+- [References](#references)
+<!--toc:end-->
+
+## Summary
+
+<!-- What the framework is and which problem it covers -->
+
+## Owner
+
+<!-- Team or person accountable for the framework -->
+
+## Adoption
+
+<!-- Which services use it today, and what adopting it costs -->
+
+## References
+
+<!-- Links to the upstream project, internal guides, related decisions -->
+
+=== written docs/frameworks/README.md
+# Frameworks
+
+This directory contains Frameworks.
+
+## Creating a New Document
+
+```bash
+docz create frameworks "Your Title"
+```
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Frameworks
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| FW-0001 | Adopt the internal auth framework | Active | 2026-03-04 | Parity Fixture | [0001-adopt-the-internal-auth-framework.md](0001-adopt-the-internal-auth-framework.md) |
+| FW-0002 | Retire the legacy job runner | Deprecated | 2026-03-04 | Parity Fixture | [0002-retire-the-legacy-job-runner.md](0002-retire-the-legacy-job-runner.md) |
+| FW-0003 | Parity alias create | Draft | $DATE | Parity Fixture | [0003-parity-alias-create.md](0003-parity-alias-create.md) |
+<!-- END DOCZ AUTO-GENERATED -->

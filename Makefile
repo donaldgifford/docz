@@ -11,6 +11,11 @@ PROJECT_URL := https://github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
 
 GO ?= go
 GO_PACKAGE := github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)
+
+# MODULE_PATH is the import path of this module, major-version suffix
+# included. The v2 line ships as .../docz/v2 (ADR-0002 Decision 3), so
+# ldflags must name that path or the version injection silently no-ops.
+MODULE_PATH := $(GO_PACKAGE)/v2
 GOOS ?= $(shell $(GO) env GOOS)
 GOARCH ?= $(shell $(GO) env GOARCH)
 
@@ -20,6 +25,10 @@ GOIMPORTS_LOCAL_ARG := -local github.com/donaldgifford
 
 BUILD_DIR := build
 BIN_DIR := $(BUILD_DIR)/bin
+
+# BIN is the binary the parity suite drives. Override it to replay the
+# goldens against a release build instead of the local one.
+BIN ?= $(BIN_DIR)/$(PROJECT_NAME)
 
 ## Version Information
 
@@ -36,6 +45,7 @@ COVERAGE_OUT := coverage.out
 
 .PHONY: build
 .PHONY: test test-all test-coverage test-consumer
+.PHONY: parity parity-capture
 .PHONY: lint lint-fix fmt clean
 .PHONY: run run-local test-api ci check
 .PHONY: release-check release-local
@@ -47,7 +57,7 @@ build: build-core ## Build everything (core)
 build-core: ## Build core binary
 	@ $(MAKE) --no-print-directory log-$@
 	@mkdir -p $(BIN_DIR)
-	@go build -ldflags "-X github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)/cmd.Version=$(VERSION) -X github.com/$(PROJECT_OWNER)/$(PROJECT_NAME)/cmd.Commit=$(COMMIT_HASH)" -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
+	@go build -ldflags "-X $(MODULE_PATH)/cmd.Version=$(VERSION) -X $(MODULE_PATH)/cmd.Commit=$(COMMIT_HASH)" -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
 	@echo "✓ Core binaries built"
 
 ## Testing
@@ -74,6 +84,34 @@ test-coverage: ## Run tests with coverage report
 test-consumer: ## Run the external-module consumer smoke test (separate go.mod)
 	@ $(MAKE) --no-print-directory log-$@
 	@cd test/consumer && go test ./...
+
+## Functional parity (IMPL-0018 Phase 0)
+
+# The release the goldens are captured from. Goldens come from this tag and
+# from nowhere else: regenerating them from a v2 build would make the suite
+# agree with whatever it happens to be measuring.
+PARITY_TAG ?= v1.2.2
+PARITY_PKG := $(GO_PACKAGE)/cmd/$(PROJECT_NAME)
+
+parity: build ## Replay the parity goldens (BIN=<path> to drive another binary)
+	@ $(MAKE) --no-print-directory log-$@
+	@DOCZ_PARITY_BIN="$(abspath $(BIN))" go test -tags parity -count=1 ./test/parity/...
+	@echo "✓ Parity goldens replay against $(BIN)"
+
+parity-capture: ## Capture parity goldens from the $(PARITY_TAG) release binary
+	@ $(MAKE) --no-print-directory log-$@
+	@set -e; \
+	bin="$(DOCZ_PARITY_BIN)"; tmp=""; \
+	if [ -z "$$bin" ]; then \
+		tmp=$$(mktemp -d); \
+		echo "  installing $(PARITY_PKG)@$(PARITY_TAG)"; \
+		GOBIN="$$tmp" GOFLAGS= go install $(PARITY_PKG)@$(PARITY_TAG); \
+		bin="$$tmp/$(PROJECT_NAME)"; \
+	fi; \
+	echo "  capturing from $$bin ($$($$bin version))"; \
+	DOCZ_PARITY_BIN="$$bin" go test -tags parity -count=1 ./test/parity/... -update; \
+	[ -n "$$tmp" ] && rm -rf "$$tmp" || true
+	@echo "✓ Goldens captured into test/parity/testdata (record provenance in test/parity/README.md)"
 
 ## Code Quality
 

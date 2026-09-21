@@ -1,0 +1,68 @@
+$ docz template show adr
+exit 0
+
+=== stdout
+---
+id: {{ .Prefix }}-{{ .Number }}
+title: "{{ .Title }}"
+status: {{ .Status }}
+author: {{ .Author }}
+created: {{ .Date }}
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
+
+<!--toc:start-->
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Context
+
+<!-- What is the issue that we're seeing that motivates this decision? -->
+
+## Decision
+
+<!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Consequences
+
+<!-- What becomes easier or more difficult to do because of this change? -->
+
+### Positive
+
+-
+
+### Negative
+
+-
+
+### Neutral
+
+-
+
+## Alternatives Considered
+
+<!-- What other options were evaluated? -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/README.md (1275 bytes, 9da4edaedca2)

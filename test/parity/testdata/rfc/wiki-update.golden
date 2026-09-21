@@ -1,0 +1,16 @@
+$ docz wiki update
+exit 0
+
+=== stdout
+Updated nav in $ROOT/mkdocs.yml (4 pages)
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (710 bytes, d449b58824ae)
+docs/index.md (90 bytes, f1bdf8c85d57)
+docs/rfc/0001-switch-the-ingest-queue-to-nats.md (1695 bytes, 587c4679eeef)
+docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (5160 bytes, 825d376386a0)
+docs/rfc/README.md (1484 bytes, ce1d596cf81a)
+mkdocs.yml (380 bytes, 67e650d5926a)

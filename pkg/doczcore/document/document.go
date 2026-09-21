@@ -20,7 +20,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // Frontmatter holds the YAML frontmatter metadata from a document file.

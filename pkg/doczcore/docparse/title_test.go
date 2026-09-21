@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
 // TestTitle covers the cases the corpus fixtures do not reach. The

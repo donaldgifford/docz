@@ -1,0 +1,66 @@
+$ docz create rfc Parity flagged document --author Pinned Author --status Superseded --no-update
+exit 0
+
+=== stdout
+Created RFC: $ROOT/docs/rfc/0002-parity-flagged-document.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/0002-parity-flagged-document.md (999 bytes, 4676272d2dba)
+docs/rfc/README.md (1275 bytes, 9da4edaedca2)
+
+=== written docs/rfc/0002-parity-flagged-document.md
+---
+id: RFC-0002
+title: "Parity flagged document"
+status: Superseded
+author: Pinned Author
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# RFC-0002: Parity flagged document
+
+<!--toc:start-->
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Problem Statement
+
+<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Proposed Solution
+
+<!-- High-level description of the proposed approach -->
+
+## Alternatives Considered
+
+<!-- What other approaches were evaluated and why were they rejected? -->
+
+## Risks and Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
+| ---- | ------ | ---------- | ---------- |
+|      |        |            |            |
+
+## Success Criteria
+
+<!-- How will we measure whether this RFC achieved its goals? -->
+
+## References
+
+<!-- Links to related ADRs, RFCs, issues, external docs -->

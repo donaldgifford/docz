@@ -1,0 +1,123 @@
+$ docz create adr Parity second type
+exit 0
+
+=== stdout
+Created ADR: $ROOT/docs/adr/0002-parity-second-type.md
+Updated $ROOT/docs/adr/README.md
+
+=== stderr
+Warning: config declares non-built-in type "frameworks" (typo?)
+
+=== files
+.docz.yaml (1148 bytes, aae68059d6d3)
+docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/0002-parity-second-type.md (1125 bytes, 93509309e8ba)
+docs/adr/README.md (1301 bytes, 3efa4db08f15)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/README.md (650 bytes, 9327fc0355b1)
+docs/templates/frameworks.md (616 bytes, 3285c201e10e)
+
+=== written docs/adr/0002-parity-second-type.md
+---
+id: ADR-0002
+title: "Parity second type"
+status: Proposed
+author: Parity Fixture
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# ADR-0002: Parity second type
+
+<!--toc:start-->
+- [Summary](#summary)
+- [Context](#context)
+- [Decision](#decision)
+  - [Supporting Data](#supporting-data)
+- [Consequences](#consequences)
+  - [Positive](#positive)
+  - [Negative](#negative)
+  - [Neutral](#neutral)
+- [Alternatives Considered](#alternatives-considered)
+- [References](#references)
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Context
+
+<!-- What is the issue that we're seeing that motivates this decision? -->
+
+## Decision
+
+<!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Consequences
+
+<!-- What becomes easier or more difficult to do because of this change? -->
+
+### Positive
+
+-
+
+### Negative
+
+-
+
+### Neutral
+
+-
+
+## Alternatives Considered
+
+<!-- What other options were evaluated? -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->
+
+=== written docs/adr/README.md
+# Architecture Decision Records (ADRs)
+
+This directory contains Architecture Decision Records documenting significant
+technical decisions.
+
+## What are ADRs?
+
+ADRs document **technical implementation decisions** for specific architectural
+components. Each ADR focuses on a single decision and includes:
+
+- **Context**: The problem or constraint that led to this decision
+- **Decision**: What was chosen and why
+- **Consequences**: Trade-offs, pros, and cons
+- **Alternatives**: Other options that were considered
+
+## Creating a New ADR
+
+```bash
+docz create adr "Your ADR Title"
+```
+
+## ADR Status
+
+- **Proposed**: Under discussion, not yet approved
+- **Accepted**: Approved and being implemented or already implemented
+- **Deprecated**: No longer relevant or superseded
+- **Superseded by ADR-XXXX**: Replaced by another ADR
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All ADRs
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| ADR-0001 | Keep frameworks in a register | Accepted | 2026-03-04 | Parity Fixture | [0001-keep-frameworks-in-a-register.md](0001-keep-frameworks-in-a-register.md) |
+| ADR-0002 | Parity second type | Proposed | $DATE | Parity Fixture | [0002-parity-second-type.md](0002-parity-second-type.md) |
+<!-- END DOCZ AUTO-GENERATED -->

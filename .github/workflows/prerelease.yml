@@ -1,0 +1,57 @@
+---
+# $schema=https://www.schemastore.org/github-action.json
+#
+# Pre-release builds for hand-pushed beta tags (IMPL-0018 Phase 0, ADR-0002
+# Open Question 3).
+#
+# Nothing on the v2 line is released by label: every pull request carries
+# `dont-release`, and a beta is cut by pushing the tag yourself
+# (`make release TAG=v2.0.0-beta.1`). This workflow is what turns that tag
+# into binaries.
+#
+# It deliberately has no bump-version job. release.yml stays on
+# `push: branches: [main]`, so its pr-semver-bump step never sees a tag
+# event and the two workflows cannot both claim the same version.
+#
+# goreleaser's `prerelease: auto` marks the GitHub release as a pre-release
+# on its own, because the tag carries a `-beta.N` suffix.
+name: Pre-release
+
+on:
+  push:
+    tags:
+      - 'v*-beta.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Pre-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # goreleaser reads the tag history to build the changelog, so a
+          # shallow checkout gives it nothing to work with.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v7
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}

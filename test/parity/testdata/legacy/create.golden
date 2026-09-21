@@ -1,0 +1,115 @@
+$ docz create rfc Parity created document
+exit 0
+
+=== stdout
+Created RFC: $ROOT/docs/rfc/0002-parity-created-document.md
+Updated $ROOT/docs/rfc/README.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/0002-parity-created-document.md (1313 bytes, 33d3c59618ab)
+docs/rfc/README.md (1421 bytes, c458e16c0f67)
+
+=== written docs/rfc/0002-parity-created-document.md
+---
+id: RFC-0002
+title: "Parity created document"
+status: Draft
+author: Parity Fixture
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# RFC-0002: Parity created document
+
+<!--toc:start-->
+- [Summary](#summary)
+- [Problem Statement](#problem-statement)
+  - [Supporting Data](#supporting-data)
+- [Proposed Solution](#proposed-solution)
+- [Alternatives Considered](#alternatives-considered)
+- [Risks and Mitigations](#risks-and-mitigations)
+- [Success Criteria](#success-criteria)
+- [References](#references)
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Problem Statement
+
+<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Proposed Solution
+
+<!-- High-level description of the proposed approach -->
+
+## Alternatives Considered
+
+<!-- What other approaches were evaluated and why were they rejected? -->
+
+## Risks and Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
+| ---- | ------ | ---------- | ---------- |
+|      |        |            |            |
+
+## Success Criteria
+
+<!-- How will we measure whether this RFC achieved its goals? -->
+
+## References
+
+<!-- Links to related ADRs, RFCs, issues, external docs -->
+
+=== written docs/rfc/README.md
+# Requests for Comments (RFCs)
+
+This directory contains RFCs documenting high-level proposals for major features
+and system redesigns.
+
+## What are RFCs?
+
+RFCs document **high-level problem definitions and solution strategies**. Each
+RFC focuses on:
+
+- **Problem Statement**: The issue being addressed with evidence
+- **Proposed Solution**: High-level approach and architecture
+- **Implementation Phases**: Overview of how the solution will be built
+- **Alternatives**: Other approaches that were considered
+- **Risks and Success Criteria**: What could go wrong and how we measure success
+
+## Creating a New RFC
+
+```bash
+docz create rfc "Your RFC Title"
+```
+
+## RFC Status
+
+- **Draft**: Initial draft, not yet ready for review
+- **Proposed**: Ready for review and feedback
+- **Accepted**: Approved and ready for implementation
+- **Rejected**: Not moving forward with this proposal
+- **Superseded**: Replaced by another RFC
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All RFCs
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| RFC-0001 | Consolidate the release pipeline | Accepted | 2026-03-04 | Parity Fixture | [0001-consolidate-the-release-pipeline.md](0001-consolidate-the-release-pipeline.md) |
+| RFC-0002 | Parity created document | Draft | $DATE | Parity Fixture | [0002-parity-created-document.md](0002-parity-created-document.md) |
+<!-- END DOCZ AUTO-GENERATED -->

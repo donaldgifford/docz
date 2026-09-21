@@ -1,0 +1,71 @@
+$ docz template export adr
+exit 0
+
+=== stdout
+Exported adr template to $ROOT/adr.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (698 bytes, 7f99dbecefa5)
+adr.md (858 bytes, 9eae86b88ea3)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1645 bytes, fc2adfcd894c)
+docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/README.md (1349 bytes, e3d3787df33c)
+
+=== written adr.md
+---
+id: {{ .Prefix }}-{{ .Number }}
+title: "{{ .Title }}"
+status: {{ .Status }}
+author: {{ .Author }}
+created: {{ .Date }}
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# {{ .Prefix }}-{{ .Number }}: {{ .Title }}
+
+<!--toc:start-->
+<!--toc:end-->
+
+## Summary
+
+<!-- Brief 2-3 sentence summary of the proposal -->
+
+## Context
+
+<!-- What is the issue that we're seeing that motivates this decision? -->
+
+## Decision
+
+<!-- What is the change that we're proposing and/or doing? -->
+
+### Supporting Data
+
+<!-- Data gathered that support the proposed solution. -->
+
+## Consequences
+
+<!-- What becomes easier or more difficult to do because of this change? -->
+
+### Positive
+
+-
+
+### Negative
+
+-
+
+### Neutral
+
+-
+
+## Alternatives Considered
+
+<!-- What other options were evaluated? -->
+
+## References
+
+<!-- Links to related RFCs, ADRs, issues, external docs -->

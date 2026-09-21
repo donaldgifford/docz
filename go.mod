@@ -1,4 +1,4 @@
-module github.com/donaldgifford/docz
+module github.com/donaldgifford/docz/v2
 
 go 1.26.4
 

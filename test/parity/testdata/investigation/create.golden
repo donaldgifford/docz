@@ -1,0 +1,133 @@
+$ docz create investigation Parity created document
+exit 0
+
+=== stdout
+Created INVESTIGATION: $ROOT/docs/investigation/0003-parity-created-document.md
+Updated $ROOT/docs/investigation/README.md
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (776 bytes, 51d3c85c73e5)
+docs/investigation/0001-evaluate-message-queue-options.md (2772 bytes, e0595763ce45)
+docs/investigation/0002-why-the-nightly-rebuild-flakes.md (5207 bytes, 0c1a5c34ba68)
+docs/investigation/0003-parity-created-document.md (2257 bytes, ba72d154ef0c)
+docs/investigation/README.md (1461 bytes, 9178e63a7ff5)
+
+=== written docs/investigation/0003-parity-created-document.md
+---
+id: INV-0003
+title: "Parity created document"
+status: Open
+author: Parity Fixture
+created: $DATE
+---
+
+<!-- markdownlint-disable-file MD025 MD041 -->
+
+# INV-0003: Parity created document
+
+<!--toc:start-->
+- [Question](#question)
+- [Hypothesis](#hypothesis)
+- [Context](#context)
+- [Approach](#approach)
+- [Environment](#environment)
+- [Findings](#findings)
+  - [Observation 1](#observation-1)
+  - [Observation 2](#observation-2)
+- [Conclusion](#conclusion)
+- [Recommendation](#recommendation)
+- [References](#references)
+<!--toc:end-->
+
+## Question
+
+<!-- What specific question are we trying to answer? Be precise — a good
+     investigation question has a clear yes/no or concrete answer.
+     Example: "Can we use X library to achieve Y without Z limitation?" -->
+
+## Hypothesis
+
+<!-- What do you expect to find, and why? This forces upfront thinking and
+     makes the conclusion more meaningful. -->
+
+## Context
+
+<!-- Why is this investigation needed right now? What design, plan, or
+     error triggered it? Link to the parent document(s). -->
+
+**Triggered by:** <!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX / issue #XXX -->
+
+## Approach
+
+<!-- How will you test the hypothesis? List the specific steps, experiments,
+     or code paths you will exercise. Keep it concrete enough that someone
+     else could replicate the investigation. -->
+
+1.
+2.
+3.
+
+## Environment
+
+<!-- Versions, configuration, or setup details relevant to reproducibility.
+     Delete this section if not applicable. -->
+
+| Component | Version / Value |
+| --------- | --------------- |
+|           |                 |
+
+## Findings
+
+<!-- What did you actually observe? Include command output, logs, benchmark
+     numbers, or code snippets as evidence. Fill this in as you go. -->
+
+### Observation 1
+
+### Observation 2
+
+## Conclusion
+
+<!-- Answer the original question directly. State clearly what was found:
+     confirmed / refuted / inconclusive, and why. -->
+
+**Answer:** <!-- Yes / No / Inconclusive -->
+
+## Recommendation
+
+<!-- What should happen next based on this conclusion? Update the parent
+     doc, unblock the design decision, open a follow-up investigation, etc. -->
+
+## References
+
+<!-- Links to parent docs, related investigations, issues, external sources -->
+
+=== written docs/investigation/README.md
+# Investigations
+
+Time-boxed research spikes and validation experiments. Use an investigation
+doc to answer a specific question before committing to a design or
+implementation — e.g. proving a library can handle a requirement, reproducing
+a bug, or validating a performance assumption.
+
+Design docs, plans, and implementation docs can reference investigations by ID
+(e.g. `INV-0001`) to document how open questions were resolved.
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Investigations
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| INV-0001 | Evaluate message queue options | Concluded | 2026-03-04 | Parity Fixture | [0001-evaluate-message-queue-options.md](0001-evaluate-message-queue-options.md) |
+| INV-0002 | Why the nightly rebuild flakes | Concluded | 2026-03-04 | Parity Fixture | [0002-why-the-nightly-rebuild-flakes.md](0002-why-the-nightly-rebuild-flakes.md) |
+| INV-0003 | Parity created document | Open | $DATE | Parity Fixture | [0003-parity-created-document.md](0003-parity-created-document.md) |
+<!-- END DOCZ AUTO-GENERATED -->
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Investigations
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| INV-0001 | Evaluate message queue options | Concluded | $DATE | Parity Fixture | [0001-evaluate-message-queue-options.md](0001-evaluate-message-queue-options.md) |
+<!-- END DOCZ AUTO-GENERATED -->

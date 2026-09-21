@@ -1,7 +1,7 @@
 ---
 id: IMPL-0018
 title: "v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-19
 ---
@@ -166,24 +166,24 @@ CLI does.
 
 #### Tasks
 
-- [ ] Change the `go.mod` module line to `github.com/donaldgifford/docz/v2`
+- [x] Change the `go.mod` module line to `github.com/donaldgifford/docz/v2`
       and rewrite every import under `cmd/`, `internal/`, and `pkg/`
       (including tests) to the `/v2` path; run `make fmt`.
       verify: `go build ./... && go vet ./...`
-- [ ] Update the `-X` ldflags in the `Makefile` `build-core` target and in
+- [x] Update the `-X` ldflags in the `Makefile` `build-core` target and in
       `.goreleaser.yml` to `github.com/donaldgifford/docz/v2/cmd.Version`
       and `.Commit`; confirm `make build` still injects the version.
       verify: `make build && build/bin/docz version`
-- [ ] Update `test/consumer/go.mod` (`replace github.com/donaldgifford/docz/v2
+- [x] Update `test/consumer/go.mod` (`replace github.com/donaldgifford/docz/v2
       => ../..`) and the import paths in `test/consumer/doc.go`; the
       existing assertions do not change.
       verify: `make test-consumer`
-- [ ] Update every non-Go spelling of the module path: the README install
+- [x] Update every non-Go spelling of the module path: the README install
       and library sections, `DEVELOPMENT.md`, and the CLAUDE.md
       `test/consumer` bullet; state that v1.x tags keep the old path.
       verify: `grep -rnE 'donaldgifford/docz/(cmd|pkg|internal)' --include='*.go' .`
       prints nothing
-- [ ] Build the parity fixture repos under `test/parity/fixtures/`: one
+- [x] Build the parity fixture repos under `test/parity/fixtures/`: one
       per built-in type (`rfc`, `adr`, `design`, `impl`, `investigation`)
       with two or three documents each — one straight from the type's
       template and one hand-written in the fleet's messier style — one
@@ -193,7 +193,7 @@ CLI does.
       canonical region markers from the start (DESIGN-0015 rollout note)
       so no later migration touches them, and `author:` is pinned in each
       fixture config.
-- [ ] Write the parity driver as a Go test in `test/parity/` behind
+- [x] Write the parity driver as a Go test in `test/parity/` behind
       `//go:build parity`, driving the binary with `os/exec` (Open
       Question 3), with one subtest per fixture × command: `init` on an
       empty directory
@@ -214,7 +214,7 @@ CLI does.
       plan`. A `-update` flag captures goldens only when `DOCZ_PARITY_BIN`
       names the binary to capture from.
       verify: `go vet -tags parity ./test/parity/...`
-- [ ] Add the `parity-capture` Makefile target: `go install
+- [x] Add the `parity-capture` Makefile target: `go install
       github.com/donaldgifford/docz/cmd/docz@v1.2.2` into a temporary
       `GOBIN` (Open Question 2), then the `-update` run with
       `DOCZ_PARITY_BIN` pointing at it; the variable can be preset to
@@ -225,13 +225,13 @@ CLI does.
       delta, with the reason in the PR.
       verify: `make parity-capture` leaves a populated
       `test/parity/testdata/`
-- [ ] Add the `parity` Makefile target (build `build/bin/docz`, then
+- [x] Add the `parity` Makefile target (build `build/bin/docz`, then
       `go test -tags parity ./test/parity/...` against it, overridable with
       `BIN=`). Not yet in `make ci` (Phase 5 wires it). As a determinism
       self-check, replay the goldens against the same v1.2.2 binary they
       came from.
       verify: `make parity BIN=<v1.2.2 binary>`
-- [ ] Add `.github/workflows/prerelease.yml` on `push: tags: ['v*-beta.*']`
+- [x] Add `.github/workflows/prerelease.yml` on `push: tags: ['v*-beta.*']`
       running only the goreleaser job (checkout with full history,
       setup-go, GPG import, `goreleaser release --clean`) so a pushed beta
       tag builds binaries with the `/v2` ldflags; `prerelease: auto`
@@ -240,7 +240,7 @@ CLI does.
       event.
       verify: `actionlint .github/workflows/*.yml` (or the schema check the
       repo's editor runs) and `make release-local`
-- [ ] Check `pr-semver-bump`'s pre-release-base behaviour (ADR-0002 Open
+- [x] Check `pr-semver-bump`'s pre-release-base behaviour (ADR-0002 Open
       Question 3): read how v1.7.4 discovers the latest tag and whether a
       pre-release counts, and what `major` from `v2.0.0-beta.N` yields.
       npm `semver.inc("2.0.0-beta.1", "major")` is `2.0.0`, so the open
@@ -248,7 +248,7 @@ CLI does.
       (tag v2.0.0 by hand with `make release TAG=`) in the release section
       of `DEVELOPMENT.md`, together with the beta procedure and the
       on-demand `v1` branch.
-- [ ] CLAUDE.md: module path in the `test/consumer` bullet; a "Parity
+- [x] CLAUDE.md: module path in the `test/consumer` bullet; a "Parity
       suite" bullet describing `test/parity/`, the normalisers, the
       permitted deltas, and the rule that goldens come from v1.2.2 only.
 

@@ -1,0 +1,14 @@
+$ docz status set rfc RFC-0001 Accepted --dry-run
+exit 0
+
+=== stdout
+[dry-run] docs/rfc/0001-switch-the-ingest-queue-to-nats.md: status Draft -> Accepted
+
+=== stderr
+(empty)
+
+=== files
+.docz.yaml (710 bytes, d449b58824ae)
+docs/rfc/0001-switch-the-ingest-queue-to-nats.md (1695 bytes, 587c4679eeef)
+docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (5160 bytes, 825d376386a0)
+docs/rfc/README.md (1484 bytes, ce1d596cf81a)

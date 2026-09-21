@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/donaldgifford/docz/cmd"
+import "github.com/donaldgifford/docz/v2/cmd"
 
 func main() {
 	cmd.Execute()

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/donaldgifford/docz/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // LogFormat values for the --log-format flag.

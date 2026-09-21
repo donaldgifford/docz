@@ -1,0 +1,16 @@
+$ docz status set rfc RFC-0001 Nonsense
+exit 2
+
+=== stdout
+(empty)
+
+=== stderr
+Error: "Nonsense" is not a valid status for rfc.
+Valid statuses: Draft, Proposed, Accepted, Rejected, Superseded.
+
+=== files
+.docz.yaml (1782 bytes, 5f476a5dfcfa)
+docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/README.md (1146 bytes, ee1e083b756e)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
+docs/rfc/README.md (1275 bytes, 9da4edaedca2)

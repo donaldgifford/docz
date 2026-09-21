@@ -1,0 +1,21 @@
+$ docz list
+exit 0
+
+=== stdout
+ID        TITLE                              STATUS      DATE        AUTHOR          TYPE
+--        -----                              ------      ----        ------          ----
+ADR-0001  Keep frameworks in a register      Accepted    2026-03-04  Parity Fixture  ADR
+FW-0001   Adopt the internal auth framework  Active      2026-03-04  Parity Fixture  FRAMEWORKS
+FW-0002   Retire the legacy job runner       Deprecated  2026-03-04  Parity Fixture  FRAMEWORKS
+
+=== stderr
+Warning: config declares non-built-in type "frameworks" (typo?)
+
+=== files
+.docz.yaml (1148 bytes, aae68059d6d3)
+docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/README.md (1167 bytes, 80b1981d1cfe)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
+docs/frameworks/README.md (650 bytes, 9327fc0355b1)
+docs/templates/frameworks.md (616 bytes, 3285c201e10e)
