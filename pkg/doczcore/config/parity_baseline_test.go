@@ -7,12 +7,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"text/template"
 
 	"go.yaml.in/yaml/v3"
 
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 )
 
 // TestDoczYAMLTemplate_RoundTripsToDefaultConfig is the IMPL-0006 Phase 1
@@ -22,25 +21,16 @@ import (
 // any of the three change without the others.
 func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
 	t.Parallel()
-	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
-	if err != nil {
-		t.Fatalf("loading template: %v", err)
-	}
-
-	tmpl, err := template.New("docz_yaml").Parse(tmplSrc)
-	if err != nil {
-		t.Fatalf("parsing template: %v", err)
-	}
-
 	want := config.DefaultConfig()
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, want); err != nil {
-		t.Fatalf("rendering template: %v", err)
+
+	rendered, err := doctemplate.DefaultConfigYAML()
+	if err != nil {
+		t.Fatalf("rendering the default config: %v", err)
 	}
 
 	var got config.Config
-	if err := yaml.Unmarshal(buf.Bytes(), &got); err != nil {
-		t.Fatalf("unmarshalling rendered yaml: %v\nrendered:\n%s", err, buf.String())
+	if err := yaml.Unmarshal([]byte(rendered), &got); err != nil {
+		t.Fatalf("unmarshalling rendered yaml: %v\nrendered:\n%s", err, rendered)
 	}
 
 	if !reflect.DeepEqual(want, got) {
@@ -62,20 +52,10 @@ func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
 func TestDoczYAMLTemplate_EmitsEveryTopLevelBlock(t *testing.T) {
 	t.Parallel()
 
-	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
+	rendered, err := doctemplate.DefaultConfigYAML()
 	if err != nil {
-		t.Fatalf("loading template: %v", err)
+		t.Fatalf("rendering the default config: %v", err)
 	}
-	tmpl, err := template.New("docz_yaml").Parse(tmplSrc)
-	if err != nil {
-		t.Fatalf("parsing template: %v", err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, config.DefaultConfig()); err != nil {
-		t.Fatalf("rendering template: %v", err)
-	}
-	rendered := buf.String()
 
 	// One entry per yaml key on Config. Adding a field to Config without
 	// a template line should fail here.
@@ -105,22 +85,11 @@ func TestDoczYAMLTemplate_EmitsEveryTopLevelBlock(t *testing.T) {
 // switches back to marshal, this catches it.
 func TestDoczYAMLTemplate_RetainsCommentHeader(t *testing.T) {
 	t.Parallel()
-	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
+	out, err := doctemplate.DefaultConfigYAML()
 	if err != nil {
-		t.Fatalf("loading template: %v", err)
+		t.Fatalf("rendering the default config: %v", err)
 	}
 
-	tmpl, err := template.New("docz_yaml").Parse(tmplSrc)
-	if err != nil {
-		t.Fatalf("parsing template: %v", err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, config.DefaultConfig()); err != nil {
-		t.Fatalf("rendering template: %v", err)
-	}
-
-	out := buf.String()
 	for _, want := range []string{
 		"# .docz.yaml -- configuration for the docz CLI",
 		"# About the `types:` block",

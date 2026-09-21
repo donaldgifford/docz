@@ -1,5 +1,14 @@
-// Package template provides embedded templates, resolution, and rendering.
-package template
+// Package doctemplate provides docz's embedded templates, the resolution order
+// that lets a repo override them, and the rendering that turns one into a
+// document.
+//
+// Promoted whole from internal/template (IMPL-0018 Phase 2, DESIGN-0014 §2.7).
+// The embed.FS stays unexported and the template *contents* are outside the
+// semver contract: they are observable through `docz template show`, and a
+// consumer that wants a template's text calls Resolve and treats the result as
+// data. What is governed is the resolution order, the render data, and the
+// errors.
+package doctemplate
 
 import (
 	"bytes"
@@ -80,6 +89,13 @@ func FilenameSlug(title string) string {
 //  1. Explicit path from config (configPath)
 //  2. Local override file at docsDir/templates/<docType>.md
 //  3. Embedded default template
+//
+// A type with none of the three is ErrNoTemplate, wrapped with the type name
+// and the on-disk path that was looked for. That is issue #92: a custom type
+// whose config names no template, or names one that is not there, used to fail
+// with the embedded FS's "file does not exist" — an error that told a person
+// neither which type was wrong nor where to put the file. It is also what
+// ADR-0003's retired plan: block hits once the type leaves the registry.
 func Resolve(docType, configPath, docsDir string) (string, error) {
 	// 1. Explicit config path.
 	if configPath != "" {
@@ -87,6 +103,7 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("reading template from config path %q: %w", configPath, err)
 		}
+
 		return string(data), nil
 	}
 
@@ -97,7 +114,49 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	}
 
 	// 3. Embedded default.
-	return EmbeddedDocumentTemplate(config.DocType(docType))
+	body, err := EmbeddedDocumentTemplate(config.DocType(docType))
+	if err != nil {
+		return "", fmt.Errorf(
+			"%w: type %q has no embedded template, no template path in its config, "+
+				"and no file at %s", ErrNoTemplate, docType, localPath)
+	}
+
+	return body, nil
+}
+
+// ResolveSchema returns the marker skeleton for the given schema name,
+// checking a repo-local override before the baked-in one:
+//  1. <docsDir>/templates/schema/<name>.md
+//  2. the embedded schema/<name>.md
+//
+// A repo that adds a section to its own copy gets it required without waiting
+// for a docz release, which is the whole reason the schema is a file of markers
+// rather than a table in the binary (DESIGN-0015 §3).
+//
+// Neither tier is rendered. A skeleton is markers, not a template, and running
+// it through text/template would give a literal "{{" in somebody's override a
+// meaning it does not have.
+//
+// A name outside the grammar is ErrBadSchemaName and neither lookup happens;
+// a name that resolves nowhere is ErrNoSchema. Both are checked before the
+// filesystem, so a document whose frontmatter names "../../etc/passwd" is
+// refused by the grammar rather than by os.ReadFile.
+func ResolveSchema(name, docsDir string) ([]byte, error) {
+	if !schemaName.MatchString(name) {
+		return nil, badSchemaName(name)
+	}
+
+	local := filepath.Join(docsDir, config.TemplatesDir, schemaDir, name+".md")
+	if data, err := os.ReadFile(local); err == nil {
+		return data, nil
+	}
+
+	data, err := EmbeddedSchema(name)
+	if err != nil {
+		return nil, fmt.Errorf("%w and no file at %s", err, local)
+	}
+
+	return data, nil
 }
 
 // IndexHeaderData is the render context for the generic fallback index

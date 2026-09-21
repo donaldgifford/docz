@@ -652,7 +652,7 @@ end of this phase `internal/` no longer exists.
 
 #### Tasks
 
-- [ ] `git mv internal/template pkg/doczcore/doctemplate` (package
+- [x] `git mv internal/template pkg/doczcore/doctemplate` (package
       `doctemplate`, embedded `templates/` and `docz_yaml.tmpl` included)
       and settle the exported surface per DESIGN-0014 §2.7: `ErrNoTemplate`,
       `ErrNoSchema`, `Data`, `IndexHeaderData`, `WikiIndexData`, `Resolve`,
@@ -662,7 +662,7 @@ end of this phase `internal/` no longer exists.
       error)`. `cmd/init` calls `DefaultConfigYAML` in place of its inline
       rendering — the one `cmd/` edit this phase makes beyond imports.
       verify: `go test ./pkg/doczcore/doctemplate/... ./cmd/...`
-- [ ] Schema resolution: `EmbeddedSchema(name string) ([]byte, error)`
+- [x] Schema resolution: `EmbeddedSchema(name string) ([]byte, error)`
       (baked-in only) and `ResolveSchema(name, docsDir string) ([]byte,
       error)` — `<docsDir>/templates/schema/<name>.md`, then the embedded
       `schema/<name>.md`, else `ErrNoSchema`. The name grammar
@@ -671,21 +671,21 @@ end of this phase `internal/` no longer exists.
       `schema.name`). The third tier — the type's own resolved template's
       markers when the name is the type name — and the `schema.unresolved`
       finding belong to the resolving tier in `repo.Validate` (Phase 3).
-- [ ] Resolution tests: a repo-local `templates/schema/impl.md` beats the
+- [x] Resolution tests: a repo-local `templates/schema/impl.md` beats the
       baked-in one; an unknown name is `ErrNoSchema`; `EmbeddedSchema`
       returns a skeleton for every built-in and for `default`.
-- [ ] `git mv internal/index pkg/doczcore/index` and add `BeginMarker`,
+- [x] `git mv internal/index pkg/doczcore/index` and add `BeginMarker`,
       `EndMarker`, the action enum exported as `UpdateAction`,
       `Splice(existing []byte, header, table string) ([]byte, UpdateAction)`
       locating the pair via `docparse.Regions` kind `index`, and
       `Scaffold(header string) []byte`; `UpdateReadme` and `DryRunReadme`
       become wrappers over `Splice`. The package now imports `docparse`.
       verify: `go test ./pkg/doczcore/index/...`
-- [ ] `Splice` table pinning every `UpdateReadme` outcome unchanged
+- [x] `Splice` table pinning every `UpdateReadme` outcome unchanged
       (created, updated, no markers, both dry-run forms) and the `Scaffold`
       regression from issue #99: exactly one marker pair for every type,
       built-in and custom.
-- [ ] `git mv internal/wiki pkg/wiki` and add `Action` (`Created`,
+- [x] `git mv internal/wiki pkg/wiki` and add `Action` (`Created`,
       `Skipped`, `Overwritten`), `InitOptions{SiteName, SiteDescription,
       RepoURL, SiteURL, Theme, Force}`, `InitReport{MkDocsPath, MkDocs,
       IndexPath, Index}`, `Init(ctx, root, cfg, opts)`, `NavOptions{DryRun}`,
@@ -694,18 +694,18 @@ end of this phase `internal/` no longer exists.
       primitives stay exported; `cmd/wiki.go` keeps its own helpers until
       Phase 5.
       verify: `go test ./pkg/wiki/...`
-- [ ] Temp-dir tests for `wiki.Init` and `UpdateNav` mirroring today's
+- [x] Temp-dir tests for `wiki.Init` and `UpdateNav` mirroring today's
       `cmd/wiki` tests (create, skip, force, dry-run, the nav page count);
       existing goldens carry over with the move.
-- [ ] Re-point every `cmd/` import from `internal/{template,index,wiki}`
+- [x] Re-point every `cmd/` import from `internal/{template,index,wiki}`
       to the promoted packages with no logic change; remove the now-empty
       `internal/` directory.
       verify: `test ! -d internal && go test ./cmd/...`
-- [ ] Extend `test/consumer/doc.go`: `doctemplate.EmbeddedDocumentTemplate`,
+- [x] Extend `test/consumer/doc.go`: `doctemplate.EmbeddedDocumentTemplate`,
       `doctemplate.EmbeddedSchema`, `index.Scaffold`, and
       `wiki.FilenameTitle`, one call each.
       verify: `make test-consumer`
-- [ ] CLAUDE.md: bullets for the three promoted packages, the schema
+- [x] CLAUDE.md: bullets for the three promoted packages, the schema
       resolution tiers, and the removal of `internal/`; drop the sentence
       that `internal/template` is not importable from outside the module.
 
@@ -939,6 +939,29 @@ Decision 7).
       `exitCodeFor`, the print/emit/format functions, and every flag.
       verify: `git diff --stat origin/main -- 'cmd/*_test.go'` prints
       nothing
+
+      Five `wiki.Init` / `UpdateNav` behaviour deltas recorded in Phase 2
+      that this task must reconcile, since `pkg/wiki` chose the library
+      semantics and left the CLI's to the caller:
+      1. An existing `mkdocs.yml` is `wiki.Skipped`, not an error, and
+         `Init` goes on to write the index. `WikiInit` must turn
+         `report.MkDocs == wiki.Skipped` into today's `"%s already exists
+         (use --force to overwrite)"` *before* reporting the index, or
+         `TestWikiInit_FailsIfExists` passes while `docs/index.md` starts
+         being created on that path.
+      2. `InitOptions.Force` covers the index too, where `ensureDocsIndex`
+         always skipped an existing one. Pass force per-file unless `docz
+         wiki init --force` should start replacing a hand-edited landing
+         page. No `cmd/` test observes this.
+      3. `wiki.Init` does not update the nav; `WikiInit` is `wiki.Init` →
+         print → `wiki.UpdateNav` → print.
+      4. `UpdateNav` returns `ReadMkDocs` / `WriteMkDocs` errors unwrapped
+         (they already name the path), still wrapping `fs.ErrNotExist`, so
+         the `"not found (run docz wiki init first)"` message is cmd's to
+         add.
+      5. There is no `cfg.Wiki.SiteName` tier — `config.WikiConfig` has no
+         such field. The chain is `opts.SiteName` → `filepath.Base(root)` →
+         `"my-project"`, so `cmd/` still resolves the git remote.
 - [ ] `docz validate [type] [--strict] [--format text|json]` in
       `cmd/validate.go`: `repo.Validate`, then the per-type tier composed
       in `cmd/` as an explicit five-arm switch on `DocFindings.Schema`

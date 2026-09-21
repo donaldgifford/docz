@@ -13,8 +13,13 @@ const modulePath = "github.com/donaldgifford/docz/v2"
 // corePackages are the type-agnostic packages of the docz API. Listed rather
 // than globbed so adding a core package is a deliberate edit to this list,
 // which is where a reviewer will look to ask whether it belongs.
+// doctemplate and index joined the list in IMPL-0018 Phase 2, when they were
+// promoted out of internal/: both are type-agnostic, so both are bound by R2.
+// pkg/wiki was promoted in the same phase and is deliberately absent — it sits
+// beside the type packages at L3, not inside the core.
 var corePackages = []string{
 	"config", "document", "docparse", "docwrite", "toc", "kinds", "validate",
+	"doctemplate", "index",
 }
 
 // listPackages returns every package under pkg/.
@@ -37,7 +42,7 @@ func listPackages(t *testing.T) []string {
 // imports only.
 //
 // Test imports are excluded, and that is the point rather than a shortcut: a
-// core package's test may import internal/template to pin its behaviour
+// core package's test may import doctemplate to pin its behaviour
 // against the embedded templates, and several do. What must not happen is a
 // core package depending on a type package in the code a consumer compiles.
 func deps(t *testing.T, pkg string) []string {

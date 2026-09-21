@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/donaldgifford/docz/v2/internal/index"
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/index"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/toc"
 )
 
@@ -127,7 +127,7 @@ func indexLabel(pluralLabel, typeName string) string {
 }
 
 // printIndexOutcome translates the typed index.UpdateOutcome into a
-// user-facing message on r.Out. The internal/index package is
+// user-facing message on r.Out. The index package is
 // intentionally silent on English wording — that lives here.
 func (r *Runner) printIndexOutcome(o index.UpdateOutcome) error {
 	switch o.Action {

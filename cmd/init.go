@@ -1,16 +1,14 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
-	"text/template"
 
 	"github.com/spf13/cobra"
 
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 )
 
 var forceInit bool
@@ -70,7 +68,7 @@ func (r *Runner) writeDefaultConfig() error {
 		return nil
 	}
 
-	content, err := renderDefaultConfig()
+	content, err := doctemplate.DefaultConfigYAML()
 	if err != nil {
 		return fmt.Errorf("rendering default config: %w", err)
 	}
@@ -81,28 +79,6 @@ func (r *Runner) writeDefaultConfig() error {
 
 	_, err = fmt.Fprintf(r.Out, "Created %s\n", configPath)
 	return err
-}
-
-// renderDefaultConfig renders the embedded .docz.yaml template using
-// config.DefaultConfig() as the template data, so the generated file is
-// derived from the same source the binary uses at runtime.
-func renderDefaultConfig() (string, error) {
-	tmplSrc, err := doctemplate.EmbeddedDoczYAML()
-	if err != nil {
-		return "", fmt.Errorf("loading docz yaml template: %w", err)
-	}
-
-	tmpl, err := template.New("docz_yaml").Parse(tmplSrc)
-	if err != nil {
-		return "", fmt.Errorf("parsing docz yaml template: %w", err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, config.DefaultConfig()); err != nil {
-		return "", fmt.Errorf("rendering docz yaml template: %w", err)
-	}
-
-	return buf.String(), nil
 }
 
 func (r *Runner) writeIndexReadme(path, typeName string, force bool) error {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/validate"
 )
 
@@ -42,7 +42,7 @@ func TestSchemaFromMarkers_DerivesTheSameSchemaAsItsTemplate(t *testing.T) {
 			}
 
 			fromTemplate := formatSchema(validate.SchemaFromMarkers([]byte(body)))
-			fromSkeleton := formatSchema(validate.SchemaFromMarkers([]byte(skeleton)))
+			fromSkeleton := formatSchema(validate.SchemaFromMarkers(skeleton))
 
 			if fromTemplate != fromSkeleton {
 				t.Errorf("the %s template and its schema disagree\n--- template ---\n%s\n--- schema ---\n%s",
@@ -130,7 +130,7 @@ func TestSchemaFromMarkers_BakedInSkeletons(t *testing.T) {
 
 			sort.Strings(tt.want)
 
-			if got := formatSchema(validate.SchemaFromMarkers([]byte(skeleton))); got !=
+			if got := formatSchema(validate.SchemaFromMarkers(skeleton)); got !=
 				strings.Join(tt.want, "\n") {
 				t.Errorf("schema/%s.md\n--- got ---\n%s\n--- want ---\n%s",
 					tt.name, got, strings.Join(tt.want, "\n"))
@@ -151,7 +151,7 @@ func TestSchemaFromMarkers_GenericSkeleton(t *testing.T) {
 	}
 
 	want := "references under \"\"\ntoc under \"\""
-	if got := formatSchema(validate.SchemaFromMarkers([]byte(skeleton))); got != want {
+	if got := formatSchema(validate.SchemaFromMarkers(skeleton)); got != want {
 		t.Errorf("schema/default.md = %q, want %q", got, want)
 	}
 }

@@ -76,7 +76,7 @@ func TestTitle(t *testing.T) {
 			// Matches document.ParseFrontmatter, which trims leading
 			// newlines before looking for its delimiter. The two must
 			// agree on what "opens with frontmatter" means, since
-			// internal/wiki calls one and falls through to the other.
+			// pkg/wiki calls one and falls through to the other.
 			name:    "leading blank line before frontmatter",
 			content: "\n---\nid: X\n# owner: platform-team\n---\n\n# The Title\n",
 			want:    "The Title",

@@ -10,9 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	doctemplate "github.com/donaldgifford/docz/v2/internal/template"
-	"github.com/donaldgifford/docz/v2/internal/wiki"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
+	"github.com/donaldgifford/docz/v2/pkg/wiki"
 )
 
 var (

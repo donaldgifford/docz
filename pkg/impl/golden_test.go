@@ -430,10 +430,11 @@ func TestCorpusMigrationChangesNothingButMarkers(t *testing.T) {
 	}
 }
 
-// withoutLines renders a Doc's facts with every line number dropped.
+// withoutLines renders a Doc's facts with every line number dropped, and
+// without Inferred: markers are lines, so adding them moves everything below,
+// and Inferred is the one field the two copies are meant to differ on.
 func withoutLines(d *impl.Doc) string {
 	stripped := *d
-	stripped.Inferred = false
 
 	var sb strings.Builder
 

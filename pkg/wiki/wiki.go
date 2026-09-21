@@ -1,4 +1,15 @@
 // Package wiki provides MkDocs nav generation from a docs directory tree.
+//
+// Promoted whole from internal/wiki (IMPL-0018 Phase 2, DESIGN-0014 §2.10)
+// as a sibling of the type packages rather than part of doczcore: this is
+// an integration with MkDocs and TechDocs, not core and not a type.
+//
+// Init and UpdateNav are the two operations — the orchestration
+// cmd/wiki.go performs today, so a consumer gets the operation and not
+// just the primitives. Everything else here is a primitive the two are
+// built from, exported for anyone who wants a different composition.
+// Neither operation prints, logs, or resolves a git remote; those stay
+// with the caller.
 package wiki
 
 import (

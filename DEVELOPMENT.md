@@ -48,25 +48,26 @@ docz/
 │   │   ├── create.go        # Create(), NextNumber(), Render()
 │   │   ├── status.go        # SetStatus()/SetStatusBytes() frontmatter mutator
 │   │   └── checktask.go     # CheckTask()/SetTaskState[Bytes]() checkbox splice
-│   └── toc/
-│       ├── toc.go           # GenerateToC(), UpdateToC() (walks via docparse)
-│       └── update.go        # UpdateFiles() batch splice + UpdateReport
+│   ├── toc/
+│   │   ├── toc.go           # GenerateToC(), UpdateToC() (walks via docparse)
+│   │   └── update.go        # UpdateFiles() batch splice + UpdateReport
+│   ├── index/               # README index table + marker splice
+│   │   └── index.go         # GenerateTable(), Scaffold(), Splice(), UpdateReadme()
+│   └── doctemplate/         # embedded templates, skeletons, resolution
+│       ├── embed.go         # //go:embed, EmbeddedDocumentTemplate(), EmbeddedSchema()
+│       ├── template.go      # Resolve(), ResolveSchema(), Render(), Data
+│       ├── errors.go        # ErrNoTemplate, ErrNoSchema, ErrBadSchemaName
+│       └── templates/       # embedded files (doc + schema/ + index_* + wiki_index)
 ├── pkg/{rfc,adr,design,impl,investigation}/   # one typed reader per built-in
 │   ├── doc.go               # the Doc struct
 │   ├── headings.go          # kind constants + the HeadingSpec table
 │   ├── parse.go             # Parse(doc []byte) (Doc, error)
 │   └── validate.go          # Validate() + the type's Code* constants
-├── internal/
-│   ├── index/
-│   │   └── index.go         # GenerateTable(), UpdateReadme(), DryRunReadme()
-│   ├── template/
-│   │   ├── embed.go          # //go:embed, EmbeddedDocumentTemplate(), EmbeddedIndexHeader()
-│   │   ├── template.go       # Slugify(), Resolve(), Render(), TemplateData
-│   │   └── templates/        # embedded template files (doc + index_* + wiki_index)
-│   └── wiki/
-│       ├── titles.go         # DirTitle(), DocTitle(), FilenameTitle()
-│       ├── wiki.go           # NavEntry, ScanDocs(), SortEntries(), CountPages()
-│       └── mkdocs.go         # ReadMkDocs(), WriteMkDocs(), NavToYAML(), MergeNavOrder()
+├── pkg/wiki/                # MkDocs / TechDocs integration (not core, not a type)
+│   ├── orchestrate.go       # Action, Init(), UpdateNav(), InitReport, NavReport
+│   ├── titles.go            # DirTitle(), DocTitle(), FilenameTitle()
+│   ├── wiki.go              # NavEntry, ScanDocs(), BuildNav(), CountPages()
+│   └── mkdocs.go            # ReadMkDocs(), WriteMkDocs(), NavToYAML(), MergeNavOrder()
 ├── test/consumer/           # separate module proving the public surface externally
 └── testdata/
     └── golden/              # golden file fixtures for template, toc, and wiki tests
@@ -109,26 +110,42 @@ rejects an absolute, traversing, or directory-shaped `changelog.file`,
 config load, so a repo can add it before the feature is turned on
 (DESIGN-0010).
 
-### `internal/template`
+### `pkg/doczcore/doctemplate`
 
 Handles template resolution and rendering.
 
 **Resolution order (first match wins):**
 1. `types.<type>.template` path in config (absolute or relative to repo root)
 2. `<docs_dir>/templates/<type>.md` (local override file)
-3. Embedded default (`internal/template/templates/<type>.md`)
+3. Embedded default (`pkg/doczcore/doctemplate/templates/<type>.md`)
 
 ```go
-content, err := template.Resolve(docType, tc.Template, cfg.DocsDir)
-rendered, err := template.Render(content, &template.TemplateData{...})
+content, err := doctemplate.Resolve(docType, tc.Template, cfg.DocsDir)
+rendered, err := doctemplate.Render(content, &doctemplate.Data{...})
 ```
 
-`Slugify(title)` converts a title to kebab-case, strips non-alphanumeric
+A type with none of the three is `ErrNoTemplate`, wrapped with the type name
+and the on-disk path a person would create (issue #92).
+
+`FilenameSlug(title)` converts a title to kebab-case, strips non-alphanumeric
 characters, and truncates to 64 characters on a word boundary.
+
+**Marker skeletons** resolve the same way, one tier shorter:
+`ResolveSchema(name, docsDir)` checks `<docs_dir>/templates/schema/<name>.md`
+then the embedded `schema/<name>.md`, and `EmbeddedSchema(name)` is the
+baked-in tier alone for a consumer with no checkout. Neither is rendered — a
+skeleton is markers, not a template. The name grammar `[a-z0-9][a-z0-9_-]*` is
+enforced before either lookup, because the name arrives from a document's own
+frontmatter and may say anything at all; an illegal one returns both
+`ErrNoSchema` and `ErrBadSchemaName`.
+
+`DefaultConfigYAML()` renders the embedded `docz_yaml.tmpl` over
+`config.DefaultConfig()`, so `docz init` and any consumer that scaffolds a repo
+produce the same `.docz.yaml` from the same source of defaults.
 
 `ResolveWikiIndex(docsDir)` resolves the wiki homepage template:
 1. Local override at `<docs_dir>/templates/wiki_index.md`
-2. Embedded default (`internal/template/templates/wiki_index.md`)
+2. Embedded default (`pkg/doczcore/doctemplate/templates/wiki_index.md`)
 
 `RenderWikiIndex(tmpl, data)` renders the template with `WikiIndexData`
 (site name and enabled types).
@@ -142,6 +159,11 @@ not a general editor: `Create` renders a template into a new document,
 `CheckTask(path, line)` flips the `[ ]` on a 1-based line (typically a
 `docparse.TaskItem.Line`) to `[x]` with a single-byte splice. Both
 mutators are LF-only (`ErrUnsupportedLineEndings`).
+
+Each has a **byte core** underneath it — `SetStatusBytes`,
+`SetTaskStateBytes`, and `NextNumber` + `Render` — for a consumer holding
+bytes it fetched rather than a path it can write. A core never modifies its
+input and returns bare sentinels; the path wrappers add the path and the line.
 
 ```go
 result, err := docwrite.Create(&docwrite.CreateOptions{
@@ -163,7 +185,7 @@ result, err := docwrite.Create(&docwrite.CreateOptions{
 (`NNNN-*.md`) files and returns `max(existing IDs) + 1`. It starts at 1 if the
 directory is empty or missing.
 
-### `internal/index`
+### `pkg/doczcore/index`
 
 Scans document directories and generates README tables.
 
@@ -313,14 +335,43 @@ Generates table of contents for markdown documents. Uses `<!--toc:start-->` /
 - **`update.go`** — `UpdateFiles()` batch splice over in-memory docs,
   returning a categorized `UpdateReport`.
 
-### `internal/wiki`
+### `pkg/wiki`
 
-Generates and maintains MkDocs nav from the docs directory tree. Split across
-three files:
+Generates and maintains MkDocs nav from the docs directory tree. Promoted whole
+from `internal/wiki` in IMPL-0018 Phase 2, and deliberately a sibling of the
+type packages rather than a member of `pkg/doczcore`: this is an integration
+with MkDocs and Backstage TechDocs, not core and not a document type.
+
+**The two operations** live in `orchestrate.go` and are what `cmd/wiki.go` used
+to compose by hand, so a consumer gets the operation and not just the parts:
+
+- **`Init(ctx, root, cfg, InitOptions) (InitReport, error)`** — writes
+  `mkdocs.yml` and the docs landing page. Each file is created when absent,
+  left alone when present, and rewritten when `Force` is set; `InitReport`
+  carries both paths and an `Action` (`Created` / `Skipped` / `Overwritten`)
+  for each. A file already there is not an error at this layer — refusing over
+  a skipped `mkdocs.yml` is `docz wiki init`'s policy, not the package's.
+- **`UpdateNav(ctx, root, cfg, NavOptions) (NavReport, error)`** — rebuilds the
+  `nav:` key from the documents under `cfg.DocsDir`, preserving every other key
+  in the file and the existing top-level section order. `NavReport` returns the
+  `[]NavEntry` tree rather than rendered YAML, so the caller decides how to
+  print it; `DryRun` fills the same report with `Written` false.
+
+Both resolve every config-relative path under `root`, so neither consults the
+process working directory, and both check `ctx` between steps — a cancelled run
+returns the report so far and leaves what it already wrote in place.
+
+Three things stay in `cmd/` on purpose: deriving the site name from the git
+remote (an L4 dependency, the same as the author name), requiring `.docz.yaml`
+to exist first, and all printing. `InitOptions.SiteName` arrives already
+resolved; the package's own fallback reaches no further than `cfg` and `root`.
+
+**The primitives** the two are built from stay exported for anyone who wants a
+different composition:
 
 - **`titles.go`** — Title extraction: `DirTitle()` maps directory names to
   nav titles using configurable overrides. `DocTitle()` extracts titles from
-  frontmatter, H1 headings, or filename fallback.
+  frontmatter, then `docparse.Title`, then a filename fallback.
 - **`wiki.go`** — Nav tree building: `ScanDocs()` recursively walks the docs
   directory and builds a `[]NavEntry` tree. `SortEntries()` sorts top-level
   entries (Home first, rest alphabetical). `CountPages()` counts leaf entries.
@@ -342,7 +393,7 @@ through adding a `plan`-style doc.
 
 ### Step 1: Add the document template
 
-Create `internal/template/templates/plan.md`. The file is a Go `text/template`
+Create `pkg/doczcore/doctemplate/templates/plan.md`. The file is a Go `text/template`
 with access to all `template.Data` fields:
 
 | Variable | Type | Notes |
@@ -381,7 +432,7 @@ free. A kind nobody else uses is fine too — an unknown kind is allowed, and
 
 ### Step 2: Add the marker skeleton
 
-Create `internal/template/templates/schema/plan.md`: the *schema* for the type,
+Create `pkg/doczcore/doctemplate/templates/schema/plan.md`: the *schema* for the type,
 which is a markdown body of nothing but the template's marker pairs, in the same
 order and nesting, with no headings and no prose.
 
@@ -411,7 +462,7 @@ built-in template ships.
 
 ### Step 3: Add the index header template
 
-Create `internal/template/templates/index_plan.md`. This is written to
+Create `pkg/doczcore/doctemplate/templates/index_plan.md`. This is written to
 `docs/plan/README.md` by `docz init` and must include the auto-generated
 markers so `docz update` can splice the table:
 
@@ -426,7 +477,8 @@ Description of what plan documents are for.
 
 ### Step 4: Embed pick-up
 
-The `//go:embed templates/*.md` directive in `internal/template/embed.go`
+The `//go:embed templates/*.md` directive in
+`pkg/doczcore/doctemplate/embed.go`
 picks the new files up automatically. The Phase 8 consistency tests in
 `pkg/doczcore/config/doctype_test.go`
 (`TestDocTypeRegistry_AllHaveEmbeddedTemplate` and
@@ -521,7 +573,7 @@ for the new type so `docz --help` lists it.
 Run the template tests with `-update` to generate new golden files:
 
 ```bash
-go test ./internal/template/... -update
+go test ./pkg/doczcore/doctemplate/... -update
 go test ./pkg/plan/... -update      # the corpus fact files from Step 6
 ```
 
@@ -747,7 +799,7 @@ func TestCreate(t *testing.T) {
 Golden files live under `testdata/golden/`. Update them with:
 
 ```bash
-go test ./internal/template/... -update
+go test ./pkg/doczcore/doctemplate/... -update
 ```
 
 Do not hand-edit golden files; always regenerate them via `-update` and review
