@@ -34,9 +34,11 @@ var statusCRLFDoc = strings.ReplaceAll(statusDoc, "\n", "\r\n")
 // statusTestRepo builds a repository containing the two design documents the
 // status table needs, and returns it with its root.
 //
-// The default config is used unmodified so the statuses under test are the
-// real ones a repo gets, and so the disabled `plan` type is available to prove
-// the disabled-type path without inventing a config.
+// The statuses under test are the real ones a repo gets, so the table
+// exercises the same values a user would type. The one change to the defaults
+// is switching `rfc` off, which is the only way to reach the disabled-type path
+// now that ADR-0003 has left every built-in enabled; no case in the table uses
+// rfc for anything else.
 func statusTestRepo(t *testing.T) (*repo.Repo, string) {
 	t.Helper()
 
@@ -52,6 +54,10 @@ func statusTestRepo(t *testing.T) (*repo.Repo, string) {
 		strings.ReplaceAll(statusCRLFDoc, "DESIGN-0001", "DESIGN-0002"))
 
 	cfg := config.DefaultConfig()
+
+	rfc := cfg.Types["rfc"]
+	rfc.Enabled = false
+	cfg.Types["rfc"] = rfc
 
 	return &repo.Repo{Root: root, Cfg: &cfg}, root
 }
@@ -205,8 +211,8 @@ func TestSetStatus(t *testing.T) {
 		},
 		{
 			name:    "disabled type",
-			typeArg: "plan",
-			id:      "PLAN-0001",
+			typeArg: "rfc",
+			id:      "RFC-0001",
 			status:  "Draft",
 			wantErr: func(t *testing.T, err error) {
 				t.Helper()
@@ -216,8 +222,8 @@ func TestSetStatus(t *testing.T) {
 					t.Fatalf("want *TypeDisabledError, got %T: %v", err, err)
 				}
 
-				if disabled.Type != "plan" {
-					t.Errorf("Type = %q, want plan", disabled.Type)
+				if disabled.Type != "rfc" {
+					t.Errorf("Type = %q, want rfc", disabled.Type)
 				}
 			},
 		},

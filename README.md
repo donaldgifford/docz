@@ -7,7 +7,7 @@ README index tables up to date.
 
 ## Features
 
-- **Six built-in document types:** RFC, ADR, DESIGN, IMPL, PLAN, INV (PLAN ships disabled — enable it in `.docz.yaml`)
+- **Five built-in document types:** RFC, ADR, DESIGN, IMPL, INV
 - **Custom document types:** define your own types in `.docz.yaml` — own prefix, statuses, aliases, and templates — invoked by name, alias, or `id_prefix`
 - **Auto-incremented IDs:** documents are numbered sequentially within their type directory
 - **YAML frontmatter:** every document carries structured metadata (id, title, status, author, created)
@@ -55,8 +55,7 @@ This creates:
 - `docs/investigation/README.md`
 
 Types with `enabled: false` in `.docz.yaml` are skipped — no directory or
-README is created for them. **PLAN is disabled by default**, which is why
-`docs/plan/` is absent above; set `types.plan.enabled: true` to scaffold it.
+README is created for them.
 
 ### Create your first document
 
@@ -156,6 +155,13 @@ docz update --dry-run  # preview changes without writing
 
 ## Document Types
 
+> **Upgrading from v1?** `plan` was a sixth built-in through v1 and is not one
+> in v2 (ADR-0003). A repo that keeps its `types.plan` block loses nothing: the
+> block now declares a **custom** type, so `init`, `list`, `update`, `status`,
+> and the wiki nav all keep working over `docs/plan/`. Only `docz create plan`
+> stops, because there is no bundled template left to create from — run
+> `docz template override plan` to scaffold one and it works again.
+
 ### RFC — Request for Comments
 
 High-level proposals for significant changes. Use when you need broader
@@ -196,27 +202,13 @@ docs/impl/
 └── 0001-telemetry-pipeline-implementation.md
 ```
 
-### PLAN — Plan
-
-Mid-level planning documents that sit between an RFC (what and why) and an IMPL
-(step-by-step execution). Use a plan to work out the approach and component
-breakdown before writing detailed tasks.
-
-**Disabled by default** — most repos fill this slot with a DESIGN plus an IMPL.
-Set `types.plan.enabled: true` in `.docz.yaml` to turn it on.
-
-```
-docs/plan/
-└── 0001-telemetry-pipeline-approach.md
-```
-
 ### INV — Investigation
 
 Time-boxed research spikes and validation experiments. Use to answer a specific
 question before committing to a design or implementation — e.g. proving a
 library handles a requirement, reproducing a weird error, or validating a
-performance assumption. Design, plan, and impl docs can reference investigations
-by ID to document how open questions were resolved.
+performance assumption. Design and impl docs can reference investigations by ID
+to document how open questions were resolved.
 
 ```
 docs/investigation/
@@ -344,16 +336,6 @@ types:
       - Completed
       - Paused
       - Cancelled
-  plan:
-    enabled: false # PLAN ships disabled; set true to use it
-    dir: plan
-    id_prefix: PLAN
-    id_width: 4
-    statuses:
-      - Draft
-      - In Progress
-      - Completed
-      - Cancelled
   investigation:
     enabled: true
     dir: investigation
@@ -382,7 +364,6 @@ wiki:
     adr: "ADRs"
     design: "Design"
     impl: "Implementation Plans"
-    plan: "Plans"
     investigation: "Investigations"
   # docs_dir: docs           # override MkDocs docs_dir
   # repo_url: https://github.com/org/repo

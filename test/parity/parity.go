@@ -342,3 +342,238 @@ func writeBlock(b *strings.Builder, name, body string) {
 		b.WriteString("\n\\ no trailing newline\n")
 	}
 }
+
+// planNavTitle matches the wiki nav-title entry the removed built-in
+// contributed. Anchored on the exact label so `impl: Implementation Plans`,
+// which also contains the word, is untouched.
+var planNavTitle = regexp.MustCompile(`^[ \t]+plan: Plans[ \t]*$`)
+
+// planTypeKey matches the `plan:` key of a type block, capturing its indent so
+// the block's more-deeply-indented body can be dropped with it.
+var planTypeKey = regexp.MustCompile(`^([ \t]+)plan:[ \t]*$`)
+
+// planWarning matches the validation warning a repo that kept its `types.plan`
+// block now gets on every command, because plan is a custom type there.
+var planWarning = regexp.MustCompile(
+	`^Warning: config declares non-built-in type "plan" \(typo\?\)[ \t]*$`)
+
+// recordedFile matches an entry of the "=== files" list, capturing the path so
+// a touched file's size and digest can be replaced.
+var recordedFile = regexp.MustCompile(`^(\S+) \(\d+ bytes, [0-9a-f]+\)$`)
+
+// PlanNormalizer removes every trace of the `plan` document type, which
+// ADR-0003 drops from the built-in catalogue on the v2 line.
+//
+// This is the fourth permitted delta (IMPL-0018 Open Question 8) and the first
+// one that is not additive: a v1.2.2 golden shows a type the v2 binary does not
+// have, so the difference cannot be argued away per case. Unlike the other
+// normalisers it runs on the formatted text of **both** sides at comparison
+// time rather than on the captured output alone, because the golden is the side
+// carrying the type.
+//
+// Four traces, each anchored tightly enough that a type whose label merely
+// contains the word — `impl: Implementation Plans` — is left alone:
+//
+//   - the `plan:` block under `types:`, key line and indented body;
+//   - the `plan: Plans` entry under `wiki.nav_titles`;
+//   - the "non-built-in type" warning, which a repo keeping its `types.plan`
+//     block now gets on every command because plan is a custom type there;
+//   - the comment preamble of a generated `.docz.yaml`, which v2 rewrote to
+//     say five built-in types instead of six and to explain the fallback.
+//
+// A fifth trace is the `PLAN-XXXX` placeholder in the IMPL and INV templates'
+// "Implements" and "Triggered by" hints, which name an id prefix docz can no
+// longer issue.
+//
+// The recorded size and digest become placeholders for every file whose body the
+// golden records, and for no others. A byte count computed before a line was
+// dropped cannot be recomputed from the golden's text, and the rule has to be
+// the same on both sides — the side that no longer carries the trace cannot
+// know a trace was there. Nothing is lost: a recorded body is compared line by
+// line, so its digest is the redundant half of that check, and a file with no
+// recorded body keeps the digest as its only one.
+func PlanNormalizer() Normalizer {
+	return Normalizer{
+		Name: "plan",
+		Apply: func(s string) string {
+			lines, bodies := dropPlanTraces(strings.Split(s, "\n"))
+
+			return strings.Join(restoreBlocks(lines, bodies), "\n")
+		},
+	}
+}
+
+// planHints are the template placeholder references to the removed type, as
+// pure substring deletions in the order they have to be applied.
+//
+// Deletions rather than rewrites: the v1 hint listed PLAN beside RFC and
+// DESIGN, and v2 lists the other two, so removing the token from the v1 side
+// produces the v2 line exactly. A rewrite would need the normaliser to know
+// both spellings, which is how a normaliser starts hiding real differences.
+// The prose elsewhere in those templates that happens to use the word "plan"
+// is untouched, in the templates and here: it means a planning document, not
+// the type, and `## Testing Plan` is a heading a substring rule would eat.
+var planHints = []string{" / PLAN-XXXX", "/PLAN"}
+
+// dropPlanTraces removes every plan trace and reports the paths whose bodies
+// the golden records.
+//
+// The set decides which size and digest lines are comparable, and it is read
+// off the format rather than from what the pass edited: the two sides disagree
+// about which bodies carry a trace, so a rule that depended on that would
+// neutralise different entries on each side.
+func dropPlanTraces(lines []string) (kept []string, bodies map[string]bool) {
+	kept = make([]string, 0, len(lines))
+	bodies = make(map[string]bool)
+
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+
+		if path, ok := writtenBlockPath(line); ok {
+			bodies[path] = true
+		}
+
+		if planNavTitle.MatchString(line) || planWarning.MatchString(line) {
+			continue
+		}
+
+		if m := planTypeKey.FindStringSubmatch(line); m != nil {
+			i = skipIndentedUnder(lines, i, len(m[1]))
+
+			continue
+		}
+
+		if isConfigPreambleStart(lines, i) {
+			i = skipCommentPreamble(lines, i)
+
+			continue
+		}
+
+		trimmed := line
+		for _, hint := range planHints {
+			trimmed = strings.ReplaceAll(trimmed, hint, "")
+		}
+
+		kept = append(kept, trimmed)
+	}
+
+	return kept, bodies
+}
+
+// writtenBlockPath returns the path a "=== written <path>" header names.
+func writtenBlockPath(line string) (string, bool) {
+	const prefix = "=== written "
+	if !strings.HasPrefix(line, prefix) {
+		return "", false
+	}
+
+	return strings.TrimPrefix(line, prefix), true
+}
+
+// restoreBlocks repairs what line removal broke in the format itself: a stdout
+// or stderr block emptied by the pass reads "(empty)" as it would have if the
+// binary had printed nothing, and a recorded body's size and digest become
+// placeholders.
+//
+// Without the first half, a legacy fixture whose only stderr was the plan
+// warning would differ from an identical run that printed nothing at all,
+// which is the opposite of what the normaliser is for.
+func restoreBlocks(lines []string, bodies map[string]bool) []string {
+	out := make([]string, 0, len(lines))
+
+	for i, line := range lines {
+		if line == "=== stdout" || line == "=== stderr" {
+			out = append(out, line)
+
+			if blockIsEmpty(lines, i) {
+				out = append(out, "(empty)")
+			}
+
+			continue
+		}
+
+		if m := recordedFile.FindStringSubmatch(line); len(m) > 1 && bodies[m[1]] {
+			out = append(out, m[1]+" ($SIZE bytes, $SUM)")
+
+			continue
+		}
+
+		out = append(out, line)
+	}
+
+	return out
+}
+
+// blockIsEmpty reports whether the block opened at the header on line i has no
+// content left: nothing but blank lines before the next header or the end.
+func blockIsEmpty(lines []string, header int) bool {
+	for j := header + 1; j < len(lines); j++ {
+		line := lines[j]
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
+		return strings.HasPrefix(line, "=== ")
+	}
+
+	return true
+}
+
+// skipIndentedUnder returns the index of the last line belonging to the block
+// opened at start, whose key is indented by indent characters.
+//
+// A block ends at the first line indented no more deeply than its key. A blank
+// line inside it belongs to it, because the rendered config puts one between
+// type blocks and dropping the key without it would leave a double blank where
+// v1.2.2 has one.
+func skipIndentedUnder(lines []string, start, indent int) int {
+	last := start
+
+	for j := start + 1; j < len(lines); j++ {
+		line := lines[j]
+
+		if strings.TrimSpace(line) == "" {
+			last = j
+
+			continue
+		}
+
+		if len(line)-len(strings.TrimLeft(line, " \t")) <= indent {
+			return last
+		}
+
+		last = j
+	}
+
+	return last
+}
+
+// configPreambleFirstLine is the opening comment of the generated .docz.yaml,
+// which is what identifies the preamble rather than any comment anywhere.
+const configPreambleFirstLine = "# .docz.yaml -- configuration for the docz CLI."
+
+// isConfigPreambleStart reports whether the line at i opens the generated
+// config's comment header.
+func isConfigPreambleStart(lines []string, i int) bool {
+	return lines[i] == configPreambleFirstLine
+}
+
+// skipCommentPreamble returns the index of the last line of the comment block
+// opened at start: every following line that is a comment or blank, stopping at
+// the first line of actual configuration.
+func skipCommentPreamble(lines []string, start int) int {
+	last := start
+
+	for j := start + 1; j < len(lines); j++ {
+		trimmed := strings.TrimSpace(lines[j])
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			last = j
+
+			continue
+		}
+
+		return last
+	}
+
+	return last
+}

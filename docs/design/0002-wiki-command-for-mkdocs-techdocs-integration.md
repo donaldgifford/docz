@@ -13,7 +13,7 @@ created: 2026-03-11
 **Author:** Donald Gifford
 **Date:** 2026-03-11
 
-  <!--toc:start-->
+<!--toc:start-->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)

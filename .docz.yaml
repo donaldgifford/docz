@@ -56,19 +56,6 @@ types:
       - Cancelled
     status_field: "status"
 
-  plan:
-    enabled: true
-    dir: plan
-    template: ""
-    id_prefix: "PLAN"
-    id_width: 4
-    statuses:
-      - Draft
-      - In Progress
-      - Completed
-      - Cancelled
-    status_field: "status"
-
   investigation:
     enabled: true
     dir: investigation
