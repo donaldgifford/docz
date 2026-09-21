@@ -73,7 +73,7 @@ func Document(content []byte, opts Options) []Finding {
 
 	findings = append(findings, checkRegions(regions, opts.Schema)...)
 	findings = append(findings, checkContent(content, regions)...)
-	findings = append(findings, checkToC(content, regions, &opts)...)
+	findings = append(findings, checkToC(content, &opts)...)
 
 	sortFindings(findings)
 
@@ -105,10 +105,15 @@ func resolveRegions(content []byte, opts *Options) (regions []docparse.Region, i
 // Only a document that already has a ToC region is checked for staleness. A
 // repo that does not use them is not doing anything wrong, which is why
 // toc.missing fires only when the schema asks for one.
-func checkToC(content []byte, regions []docparse.Region, opts *Options) []Finding {
+func checkToC(content []byte, opts *Options) []Finding {
 	var region docparse.Region
 
-	for _, r := range regions {
+	// The document's own markers, not the region list the caller's other
+	// checks run over. A ToC region is a literal marker pair and can never
+	// be inferred, so when inference replaced the list — an unmarked
+	// document — a real, filled ToC pair had vanished from it and this
+	// reported toc.missing on a document whose ToC was perfectly good.
+	for _, r := range docparse.Regions(content) {
 		if r.Kind == docparse.TocKind {
 			region = r
 
@@ -129,8 +134,6 @@ func checkToC(content []byte, regions []docparse.Region, opts *Options) []Findin
 		}}
 	}
 
-	// An inferred region cannot be a ToC region: the pair has no heading, so
-	// a document whose regions were inferred has real ToC markers or none.
 	current := strings.TrimSpace(string(kinds.RegionBytes(content, region)))
 
 	// An empty region is not yet generated, which is different from stale.

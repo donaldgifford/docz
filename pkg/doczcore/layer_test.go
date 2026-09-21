@@ -15,11 +15,14 @@ const modulePath = "github.com/donaldgifford/docz/v2"
 // which is where a reviewer will look to ask whether it belongs.
 // doctemplate and index joined the list in IMPL-0018 Phase 2, when they were
 // promoted out of internal/: both are type-agnostic, so both are bound by R2.
-// pkg/wiki was promoted in the same phase and is deliberately absent — it sits
-// beside the type packages at L3, not inside the core.
+// repo joined in Phase 3. R2 is scoped by directory rather than by layer —
+// "doczcore has no edge into any type package" — so repo being L3 does not
+// exempt it, and it is the package most likely to reach for pkg/impl by
+// accident. pkg/wiki is deliberately absent: it sits beside the type packages
+// at L3, not inside the core.
 var corePackages = []string{
 	"config", "document", "docparse", "docwrite", "toc", "kinds", "validate",
-	"doctemplate", "index",
+	"doctemplate", "index", "repo",
 }
 
 // listPackages returns every package under pkg/.
@@ -75,7 +78,6 @@ func TestLayerRules_CoreNeverImportsATypePackage(t *testing.T) {
 		modulePath + "/pkg/adr",
 		modulePath + "/pkg/design",
 		modulePath + "/pkg/investigation",
-		modulePath + "/pkg/repo",
 		modulePath + "/pkg/wiki",
 	}
 

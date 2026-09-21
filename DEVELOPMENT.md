@@ -53,11 +53,19 @@ docz/
 │   │   └── update.go        # UpdateFiles() batch splice + UpdateReport
 │   ├── index/               # README index table + marker splice
 │   │   └── index.go         # GenerateTable(), Scaffold(), Splice(), UpdateReadme()
-│   └── doctemplate/         # embedded templates, skeletons, resolution
-│       ├── embed.go         # //go:embed, EmbeddedDocumentTemplate(), EmbeddedSchema()
-│       ├── template.go      # Resolve(), ResolveSchema(), Render(), Data
-│       ├── errors.go        # ErrNoTemplate, ErrNoSchema, ErrBadSchemaName
-│       └── templates/       # embedded files (doc + schema/ + index_* + wiki_index)
+│   ├── doctemplate/         # embedded templates, skeletons, resolution
+│   │   ├── embed.go         # //go:embed, EmbeddedDocumentTemplate(), EmbeddedSchema()
+│   │   ├── template.go      # Resolve(), ResolveSchema(), Render(), Data
+│   │   ├── errors.go        # ErrNoTemplate, ErrNoSchema, ErrBadSchemaName
+│   │   └── templates/       # embedded files (doc + schema/ + index_* + wiki_index)
+│   └── repo/                # the repository tier: operations, not primitives
+│       ├── repo.go          # Repo{Root, Cfg}, Open(), Path/TypeDir/ReadmePath
+│       ├── errors.go        # the six typed errors
+│       ├── hooks.go         # Hooks, WithHooks(), FileKind, SkipReason
+│       ├── scan.go          # Entry, Scan(), List(), Find(), FindIn()
+│       ├── create.go …      # Create/Update/SetStatus/Init/Template/Export
+│       ├── validate.go      # Validate(), ValidateReport, DocFindings
+│       └── regions.go       # InsertRegions() — the migration write
 ├── pkg/{rfc,adr,design,impl,investigation}/   # one typed reader per built-in
 │   ├── doc.go               # the Doc struct
 │   ├── headings.go          # kind constants + the HeadingSpec table
@@ -334,6 +342,62 @@ Generates table of contents for markdown documents. Uses `<!--toc:start-->` /
   indentation. `UpdateToC()` splices the generated ToC between markers.
 - **`update.go`** — `UpdateFiles()` batch splice over in-memory docs,
   returning a categorized `UpdateReport`.
+
+### `pkg/doczcore/repo`
+
+The repository tier: the package that makes "the CLI is one call plus
+printing" true. A `Repo` is a root directory and a loaded config, and every
+method is the orchestration one `cmd/` handler performs today with the
+printing removed.
+
+**Context enters here, and only here** (rule R8). Nothing in L0-L2 takes a
+`context.Context`: a bytes-in function neither blocks nor opens anything, so
+there is nothing to cancel. `repo` checks the context between per-type
+iterations, never mid-file, and a cancelled run returns the report completed
+so far together with `ctx.Err()`. What was already written stays written.
+
+**Hooks are how a package that prints nothing still narrates.** `Hooks` is a
+struct of five optional callbacks carried in the context, the
+`net/http/httptrace.ClientTrace` pattern — a struct of funcs rather than an
+interface, so adding an event breaks nobody. `HooksFrom(ctx)` never returns
+nil, so a call site checks the field and not the struct.
+
+```go
+ctx = repo.WithHooks(ctx, &repo.Hooks{
+    ScanStart: func(_, dir string) { logger.Debug("scanning type", "dir", dir) },
+})
+rep, err := r.Update(ctx, types, repo.UpdateOptions{DryRun: dryRun})
+```
+
+**Every failure a caller may branch on is a typed error**, so `cmd/` maps
+them to exit codes with `errors.As` and docz-api maps them to status codes:
+`NotFoundError`, `TypeDisabledError`, `ExistsError`, `InvalidStatusError`,
+`UnknownTypeError`, `WriteError`. Two of them wrap:
+`UnknownTypeError.Unwrap` returns `config.ErrUnknownType` so the frozen v1
+sentinel still answers `errors.Is`, and `WriteError.Unwrap` returns the cause
+so `docwrite.ErrUnsupportedLineEndings` stays reachable while the path comes
+off the struct. `TypeDisabledError` is deliberately distinct from
+`UnknownTypeError`: "you typed something wrong" and "you turned this off"
+have different fixes, which is also why `Scan` on a disabled type is an error
+rather than an empty slice.
+
+Three rules the package keeps that are easy to break by accident:
+
+- **`repo` never imports a type package** (R2). It is in `layer_test.go`'s
+  `corePackages`, so the rule is enforced rather than asserted. The per-type
+  tier — that an IMPL's phases are numbered, that an investigation must
+  answer its question — is the caller's to compose, and `cmd/validate.go`
+  does exactly that.
+- **`Create` and `Update` share one unexported `updateType`.** Two copies of
+  the index-and-ToC pass would drift.
+- **Nothing consults the process working directory.** Every config-relative
+  path resolves under `Repo.Root`.
+
+`Validate` is the repository tier of DESIGN-0015 §4, and `InsertRegions` is
+the migration pass of §6. Neither holds a heuristic: the heading-to-kind map
+comes from `kinds.SpecFromTemplate` over the type's resolved template, and
+the spans come from `kinds.InferRegions`. `InsertRegions` runs `Regions` over
+its own output and refuses to write a malformed result.
 
 ### `pkg/wiki`
 
