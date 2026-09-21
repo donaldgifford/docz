@@ -1345,6 +1345,32 @@ Decision 7).
 > through `test/parity`'s own walker over a tree the suite created, fixed in
 > go1.26.5 while `go.mod` pins 1.26.4. A toolchain bump, not a code change, and
 > it wants the toolchain installed first.
+>
+> **What the CI wiring caught (2026-09-21).** Task 7 put `make parity` into the
+> `test-go` job, and the first PR to run it failed on eleven `investigation`
+> cases — the point of the task, arriving immediately.
+>
+> Neither cause was in Phase 5's code. The fixture's README carried a row dated
+> the day it was hand-written, in the vestigial second index pair issue #99 left
+> there, which the splice never refreshes because it only rewrites the first.
+> The `date` normaliser rewrote that row on the capture day, so the golden
+> recorded the size and digest of a body five bytes shorter than the file on
+> disk; every later day recorded the file as it is. And `today` was computed in
+> the runner's own zone while `run` pins the child to `TZ=UTC`, so the two
+> agreed only where local and UTC name the same day — every CI runner, and a
+> workstation for part of the day. A local `make parity` passed on the capture
+> day and would have failed the next.
+>
+> The date is frozen to 2026-03-04, `today` is `time.Now().UTC()`, the goldens
+> are re-captured from v1.2.2 (only that README's size and digest and three
+> recorded copies of the row moved), and `TestFixturesCarryNoCurrentDate` fails
+> on any fixture file containing today's date — on the day such a date would be
+> introduced. A replay with the parent in `America/New_York`, currently a day
+> behind UTC, is green.
+>
+> Worth recording because the suite was green locally in Phase 0, Phase 1, and
+> every phase since: the bug was latent in the capture, and only running it
+> somewhere with a different clock exposed it.
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
 
