@@ -1,7 +1,7 @@
 ---
 id: IMPL-0018
 title: "v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-09-19
 ---
@@ -1238,33 +1238,76 @@ Decision 7).
       >
       > `docz update` ran at the end, refreshing the five ToCs the new
       > sections invalidated.
-- [ ] Close docz issue #97 (retargeted 2026-09-20 from `update --check` to
+- [x] Close docz issue #97 (retargeted 2026-09-20 from `update --check` to
       `docz validate`: `toc.stale` and `IndexDrift` are the CI gate) with a
       comment naming the beta tag. The claude-skills plugin is not touched
       in this unit (Out of Scope).
-      **deferred — human required:** the issue is already closed (2026-09-20,
-      by the retarget in PR #105), so all that is outstanding is the comment,
-      and it has to name the beta tag that the task below creates. Its last
-      comment already promises exactly that: "Closes when the `cmd/` swap
-      lands as `v2.0.0-beta.1`".
-- [ ] Merge as `dont-release`, then from the merge commit run
+      > Commented 2026-09-21 naming `v2.0.0-beta.1` and the six phase PRs
+      > (#106–#111). The issue was already closed by the retarget in PR #105,
+      > so the comment was all that remained.
+      >
+      > The gate was measured against the **published** beta rather than a
+      > local build, and the exit codes are in the comment: drift is a
+      > warning-tier finding, so plain `docz validate` exits 0 on it and
+      > `--strict` is the drift gate. Writing that down turned up two sharp
+      > edges worth their own issue (**#112**): `docz init` leaves every README
+      > in a state `validate` calls `index.drift`, because the scaffold writes
+      > an empty marker pair while a render always emits the table header — so
+      > a brand-new repository fails `--strict` having done nothing wrong — and
+      > `--format json` counts drift in neither `errors` nor `warnings`, since
+      > it is the separate `index` array. Both predate this unit and neither
+      > belongs to it.
+- [x] Merge as `dont-release`, then from the merge commit run
       `make release TAG=v2.0.0-beta.1`; confirm the pre-release workflow
       built the binaries and marked the release a pre-release; write the
       release notes (the library changelog for Phases 0–5, the `/v2`
       path with the v1 tags keeping the old one, the plan fallback) into
       the GitHub release body with `gh release edit`.
       verify: `gh release view v2.0.0-beta.1 --json isPrerelease,assets`
-      **deferred — human required:** merging a pull request and pushing a tag
-      are the two outward-facing acts in this plan. The branch is ready and
-      `make ci` is green; the release notes still have to be written against
-      whatever the merge commit turns out to be.
-- [ ] Post-tag proof: from a scratch module,
+      > **Deviation from Decision 1's granularity, in the safe direction.**
+      > All six phases were built on one branch before any of them was
+      > reviewed, so the per-phase PRs were carved from it retroactively at the
+      > phase boundaries — the commits were already in phase order, with no
+      > interleaving. #106 (Phase 0), #107 (1), #108 (2), #109 (3), #110 (4),
+      > #111 (5), each `dont-release`, each merged in order, each green.
+      >
+      > Every merge used a **merge commit**, deliberately: a squash or rebase
+      > would have put a new commit on `main` whose content duplicated the
+      > phase just merged, `main` would have stopped being an ancestor of the
+      > branches still waiting, and every later PR's diff would have re-shown
+      > work already landed.
+      >
+      > Tagged `v2.0.0-beta.1` from `e96dc7c`, #111's merge commit. Six assets
+      > (darwin and linux, amd64 and arm64, plus checksums and signature),
+      > `isPrerelease: true` with `v1.2.2` still Latest, and `main` cut nothing
+      > — `v1.2.2` is still the newest tag any of the six merges produced,
+      > which is the whole point of the label. Release notes written over
+      > goreleaser's commit list.
+- [x] Post-tag proof: from a scratch module,
       `go get github.com/donaldgifford/docz/v2@v2.0.0-beta.1` resolves
       through the module proxy and `test/consumer`'s calls compile against
       it without the local replace.
-      **deferred — human required:** blocked on the tag. The proxy cannot
-      resolve a version nobody has pushed.
-- [ ] Status flips with `docz status set`: DESIGN-0014 and DESIGN-0015 →
+      > Done from a scratch module outside the repository, so no `replace`
+      > directive could hide a mistake. `go list -m -versions` shows the proxy
+      > knows `v2.0.0-beta.1`; a program importing `config`, `docparse`,
+      > `docwrite`, `validate`, and `pkg/impl` compiles and runs against the
+      > downloaded copy. `impl.Parse` returned the phase and both tasks from an
+      > **unmarked** fixture, so inference works for a consumer too;
+      > `SetStatusBytes` returned the old status and left its input untouched;
+      > `config.DocTypeNames()` returned five types, which is ADR-0003 visible
+      > from outside the module.
+      >
+      > `go install github.com/donaldgifford/docz/v2/cmd/docz@v2.0.0-beta.1`
+      > also works, and the installed binary refuses `docz create plan` naming
+      > the five remaining types. It reports `docz dev (commit: none)` because
+      > `go install` applies no ldflags — the same reason `version` is not a
+      > parity case, not a version-injection fault.
+      >
+      > One surprise, in the proof rather than the code:
+      > `validate.Options.Type` is a `config.TypeConfig`, not a type name, so
+      > the obvious `validate.Options{Type: "impl"}` does not compile. Worth
+      > knowing before writing the first docz-api call site.
+- [x] Status flips with `docz status set`: DESIGN-0014 and DESIGN-0015 →
       Implemented and this document → Completed (ADR-0002 and ADR-0003
       were Accepted and both designs Approved with the docs PR on
       2026-09-20); note in IMPL-0017's Objective that it now targets the
@@ -1277,14 +1320,14 @@ Decision 7).
       > `docwrite` gained byte cores and the stamp pass now belongs to
       > `repo.Update`.
       >
-      > **This document stays In Progress.** Flipping it to Completed while
-      > the three tasks above are deferred would say the unit shipped when the
-      > tag does not exist. The flip is the last act of the release, after
-      > `gh release view` confirms the pre-release.
+      > **This document stayed In Progress** while the three tasks above were
+      > deferred, because flipping it to Completed would have said the unit
+      > shipped when the tag did not exist. The flip was the last act of the
+      > release, once `gh release view` confirmed the pre-release.
       >
-      > **deferred — human required:** the fourth quarter only. Three of the
-      > four flips are done; `docz status set impl IMPL-0018 Completed` waits
-      > on the tag.
+      > Done 2026-09-21 with `docz status set impl IMPL-0018 Completed`, which
+      > reported `In Progress -> Completed` and rewrote the one line — the
+      > fourth quarter, and the last task in the plan.
 <!--docz:tasks:end-->
 
 <!--docz:criteria:start-->
@@ -1447,10 +1490,16 @@ Decision 7).
 - [x] Consumer proof: `test/consumer` imports every `pkg/` package by the
       end of Phase 5 and compiles against the published beta
       > The first half is done and green: all sixteen packages, each with at
-      > least one real call, through the local `replace`. The second half is
-      > **deferred — human required** with the tag: the module proxy cannot
-      > serve a version nobody has pushed, and dropping the `replace` before
-      > then would break `make test-consumer` on every checkout.
+      > least one real call, through the local `replace`.
+      >
+      > The second half is proven, but from a **scratch module** rather than by
+      > dropping `test/consumer`'s `replace` — which stays, deliberately, since
+      > removing it would make `make test-consumer` depend on the proxy and
+      > break on every checkout between a change and its tag. The scratch
+      > module resolved `v2.0.0-beta.1` through the proxy and compiled and ran
+      > calls into `config`, `docparse`, `docwrite`, `validate`, and `pkg/impl`
+      > with no `replace` in sight; see the Phase 5 task above for what it
+      > returned.
 - [x] Corpus: `docz validate` exits 0 over docz's own `docs/` after
       migration
 <!--docz:testing:end-->
