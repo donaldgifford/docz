@@ -87,7 +87,15 @@ var (
 	questionHeading = regexp.MustCompile(`^(\d{1,3})[.)]\s*(.*)$`)
 
 	// optionBullet matches a lettered option bullet: "a." or "a)".
-	optionBullet = regexp.MustCompile(`^([a-zA-Z])[.)]\s+(.*)$`)
+	//
+	// The letter may be wrapped in emphasis. The fleet writes options both
+	// ways — "- a. Keep pkg/" and "- **a. (Recommendation) Out of scope**" —
+	// and 129 of the corpus's 607 option bullets use the second spelling. An
+	// anchored letter missed all of them, and missed them *silently*: a
+	// question mixing the two reported the plain options and dropped the rest
+	// with no finding, because open-questions.no-options only fires when a
+	// question has none at all.
+	optionBullet = regexp.MustCompile(`^([*_]{0,2})([a-zA-Z])[.)]\s+(.*)$`)
 
 	// resolvedQuote matches the resolution blockquote's opening. The date
 	// and the letter are both optional so a malformed blockquote still
@@ -105,7 +113,18 @@ var (
 
 	// recommendationMarker matches the marker and any qualification inside
 	// its parentheses.
-	recommendationMarker = regexp.MustCompile(`\*\(recommendation[^)]*\)\*`)
+	//
+	// The emphasis is optional and the word is matched case-insensitively,
+	// because the corpus is split almost evenly and the stricter spelling is
+	// the minority: 72 options write "*(recommendation)*" and 95 write a bare
+	// "(Recommendation)", usually inside the option's own bold. Requiring the
+	// stars reported the majority as unrecommended.
+	//
+	// The word must open the parenthesis, so an option whose prose says
+	// "(not the recommendation we took)" is not a recommendation.
+	recommendationMarker = regexp.MustCompile(
+		`(?i)\*{0,2}\((?:recommendation|recommended)[^)]*\)\*{0,2}`,
+	)
 )
 
 // OpenQuestions returns the region's numbered questions with their options
@@ -183,10 +202,19 @@ func optionsIn(folded []foldedItem, after, through int) []Option {
 			continue
 		}
 
-		text := strings.TrimSpace(m[2])
+		text := strings.TrimSpace(m[3])
+
+		// An option whose letter opened with emphasis usually closes it at
+		// the end of the option, so consuming the opener alone would leave
+		// the text ending in a marker that now opens nothing. Only a
+		// matching closer is removed: text that legitimately ends in bold
+		// keeps it.
+		if m[1] != "" {
+			text = strings.TrimSpace(strings.TrimSuffix(text, m[1]))
+		}
 
 		out = append(out, Option{
-			Letter:      strings.ToLower(m[1]),
+			Letter:      strings.ToLower(m[2]),
 			Text:        text,
 			Recommended: recommendationMarker.MatchString(text),
 			Line:        it.Line + bodyOffset,

@@ -140,26 +140,35 @@ func checkReferences(region []byte, at docparse.Region) []Finding {
 	return out
 }
 
-// checkOpenQuestions reports questions numbered with a gap and questions
+// checkOpenQuestions reports questions numbered out of order and questions
 // with no options.
 //
-// Numbering is checked against position rather than against the previous
-// number, so a document that numbers 1, 3, 4 reports one finding on the
-// question that is wrong rather than one on every question after it.
+// Numbering is checked against the previous number rather than against
+// position, because a gap is legitimate and a repeat or a reversal is not. A
+// document that resolves nine of its ten questions and keeps the tenth for
+// its alternatives — which the corpus does — numbers that survivor 10, and
+// against position every such document reported a finding for doing the right
+// thing. What is left is the error worth catching: two questions numbered the
+// same, or a later question numbered lower than an earlier one, either of
+// which makes a reference like "Open Question 4" ambiguous.
 func checkOpenQuestions(region []byte, at docparse.Region) []Finding {
 	var out []Finding
 
-	for i, q := range kinds.OpenQuestions(region) {
-		if q.Number != i+1 {
+	prev := 0
+
+	for _, q := range kinds.OpenQuestions(region) {
+		if q.Number <= prev {
 			out = append(out, Finding{
 				Code:     "open-questions.numbering",
 				Severity: Warning,
 				Line:     at.Start + q.Line,
 				Kind:     kindOpenQuestions,
-				Detail: fmt.Sprintf("question is numbered %d but is the %s",
-					q.Number, ordinal(i+1)),
+				Detail: fmt.Sprintf("question is numbered %d, which does not follow %d",
+					q.Number, prev),
 			})
 		}
+
+		prev = q.Number
 
 		if len(q.Options) == 0 {
 			out = append(out, Finding{
@@ -355,23 +364,4 @@ func truncate(s string) string {
 	}
 
 	return s[:limit] + "…"
-}
-
-// ordinal renders a small number as "first", "second", and so on, falling
-// back to digits. A numbering finding reads better as "is the third" than
-// "is at index 3".
-func ordinal(n int) string {
-	names := []string{
-		"", "first", "second", "third", "fourth", "fifth",
-		"sixth", "seventh", "eighth", "ninth", "tenth",
-	}
-
-	if n > 0 && n < len(names) {
-		return names[n]
-	}
-
-	// Past ten, digits. Every number a numbered-question list reaches takes
-	// "th" except 21, 31, and so on, and a document with thirty-one open
-	// questions has a bigger problem than the suffix.
-	return fmt.Sprintf("%dth item", n)
 }

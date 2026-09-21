@@ -55,25 +55,25 @@ alternative line=325 label="d" title="This ADR — subpackage family under `pkg/
   text="Promote the remaining logic packages into the existing `pkg/doczcore/*` namespace and comm…"
 
 question 1 line=342 title="Package granularity — subpackage family or one flat package?"
-  options=2 [b c] resolved={line=344 date="2026-07-03" choice="a" note="implied by the per-package promotion rule (Decision 1) and the INV-0006 per-package audit."}
+  options=3 [a* b c] resolved={line=344 date="2026-07-03" choice="a" note="implied by the per-package promotion rule (Decision 1) and the INV-0006 per-package audit."}
 
 question 2 line=356 title="Sequencing against the in-flight v0.6.0?"
-  options=2 [b c] resolved={line=358 date="2026-07-03" choice="b" note="amended by fact-check — the premise of (a) was wrong: nothing of the v0.6.0 slate exists…"}
+  options=3 [a* b c] resolved={line=358 date="2026-07-03" choice="b" note="amended by fact-check — the premise of (a) was wrong: nothing of the v0.6.0 slate exists…"}
 
 question 3 line=371 title="How do we treat the CLI-shaped packages (template, index, wiki) at v1.0?"
-  options=3 [b c d] resolved={line=373 date="2026-07-03" choice="" note="none of the drafted options — they stay `internal/` (zero demand, INV-0006), while `docw…"}
+  options=4 [a* b c d] resolved={line=373 date="2026-07-03" choice="" note="none of the drafted options — they stay `internal/` (zero demand, INV-0006), while `docw…"}
 
 question 4 line=389 title="toc vs docparse overlap in the public API?"
-  options=3 [b c d] resolved={line=391 date="2026-07-03" choice="a" note="export-lean: the splice is document machinery (bytes-in content transforms), not CLI prese…"}
+  options=4 [a* b c d] resolved={line=391 date="2026-07-03" choice="a" note="export-lean: the splice is document machinery (bytes-in content transforms), not CLI prese…"}
 
 question 5 line=405 title="What remains in internal/ after the move?"
-  options=2 [b c] resolved={line=407 date="2026-07-03" choice="a" note="strengthened — `internal/` stays *populated* (`template`, `index`, `toc` splice, `wiki`)…"}
+  options=3 [a* b c] resolved={line=407 date="2026-07-03" choice="a" note="strengthened — `internal/` stays *populated* (`template`, `index`, `toc` splice, `wiki`)…"}
 
 question 6 line=418 title="Embedded templates — how public?"
-  options=2 [b c] resolved={line=420 date="2026-07-03" choice="" note="moot — `template` never promotes; the embed stays private behind the `internal/` boundar…"}
+  options=3 [a* b c] resolved={line=420 date="2026-07-03" choice="" note="moot — `template` never promotes; the embed stays private behind the `internal/` boundar…"}
 
 question 7 line=431 title="Post-1.0 compatibility & deprecation policy?"
-  options=2 [b c] resolved={line=433 date="2026-07-03" choice="a" note="simplified — roll forward. Standard semver coverage as drafted; breaking changes ship in…"}
+  options=3 [a* b c] resolved={line=433 date="2026-07-03" choice="a" note="simplified — roll forward. Standard semver coverage as drafted; breaking changes ship in…"}
 
 reference line=469 url=""
   text="**INV-0006** — per-package core requirements audit (docz CLI vs docz-api, docz-site, sdk-booty-sh): the demand evidence behind the revised scope."

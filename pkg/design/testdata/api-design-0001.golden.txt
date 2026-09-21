@@ -25,43 +25,43 @@ non-goal line=149 text="**Building docz-site.** The viewer (nav, reader, client-
 non-goal line=151 text="**Per-repo MkDocs/TechDocs.** docz's existing `wiki` command renders one repo as MkDocs; docz-api is deliberately the complementary cross-repo aggregator, not a replacement for per-repo TechDocs."
 non-goal line=154 text="**Write-back to repos.** docz-api is read-only against GitHub content; it never opens PRs or mutates a source repo."
 
-question 1 line=981 options=2 title="Reconcile the API path shape and versioning with docz-site?"
+question 1 line=981 options=3 title="Reconcile the API path shape and versioning with docz-site?"
   unresolved
 
-question 2 line=996 options=2 title="How is the docz parsing library pinned while building?"
+question 2 line=996 options=3 title="How is the docz parsing library pinned while building?"
   resolved line=998 date="2026-07-01" choice="" note="DESIGN-0007 shipped as docz `v0.5.0`, so the tag exists up front and no prototyping `repla…"
 
-question 3 line=1019 options=2 title="HTTP router / framework?"
+question 3 line=1019 options=3 title="HTTP router / framework?"
   unresolved
 
-question 4 line=1029 options=3 title="Postgres access layer?"
+question 4 line=1029 options=4 title="Postgres access layer?"
   unresolved
 
-question 5 line=1041 options=2 title="Database migration tool?"
+question 5 line=1041 options=3 title="Database migration tool?"
   unresolved
 
-question 6 line=1050 options=2 title="REST or GraphQL for the JSON API?"
+question 6 line=1050 options=3 title="REST or GraphQL for the JSON API?"
   unresolved
 
-question 7 line=1061 options=2 title="Synchronous ingest or a background worker?"
+question 7 line=1061 options=3 title="Synchronous ingest or a background worker?"
   unresolved
 
-question 8 line=1074 options=2 title="Where are sessions stored?"
+question 8 line=1074 options=3 title="Where are sessions stored?"
   unresolved
 
-question 9 line=1085 options=2 title="Webhook retry / idempotency strategy?"
+question 9 line=1085 options=3 title="Webhook retry / idempotency strategy?"
   unresolved
 
-question 10 line=1097 options=2 title="How is Okta/Keycloak group to repo authorization configured?"
+question 10 line=1097 options=3 title="How is Okta/Keycloak group to repo authorization configured?"
   unresolved
 
-question 11 line=1108 options=2 title="Meilisearch API-key scoping for any direct site access?"
+question 11 line=1108 options=3 title="Meilisearch API-key scoping for any direct site access?"
   unresolved
 
-question 12 line=1120 options=2 title="Tag/release version snapshots now, or stay HEAD-only?"
+question 12 line=1120 options=3 title="Tag/release version snapshots now, or stay HEAD-only?"
   unresolved
 
-question 13 line=1132 options=2 title="Multi-org / multi-tenant model?"
+question 13 line=1132 options=3 title="Multi-org / multi-tenant model?"
   unresolved
 
 reference line=1169 url=""

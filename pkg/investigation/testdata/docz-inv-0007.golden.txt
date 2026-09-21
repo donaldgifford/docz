@@ -50,13 +50,13 @@ finding line=251 body=576 bytes title="F6. Globs cannot be expanded by docz in t
 finding line=264 body=398 bytes title="F7. wiki exclude and api additional_docs disagree about examples"
   "`DefaultConfig()` sets `Wiki.Exclude: []string{\"templates\", \"examples\"}`, and the drafted …"
 
-question 1 line=315 options=0 title="Where should the H1/title extractor live?"
+question 1 line=315 options=4 title="Where should the H1/title extractor live?"
   resolved=false
 
-question 2 line=344 options=0 title="Should the path-validation rules be shared between changelog.file and additional_docs?"
+question 2 line=344 options=3 title="Should the path-validation rules be shared between changelog.file and additional_docs?"
   resolved=false
 
-question 3 line=363 options=0 title="Does docz need to expose the URL/route mapping?"
+question 3 line=363 options=3 title="Does docz need to expose the URL/route mapping?"
   resolved=false
 
 decision 1 line=390 question="H1 extractor home" resolution="`docparse.Title(content []byte) string` — new function in `docparse`, returns the first …"
