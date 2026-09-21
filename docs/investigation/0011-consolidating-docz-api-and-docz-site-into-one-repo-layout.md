@@ -26,6 +26,7 @@ created: 2026-09-21
   - [Observation 7: the restructure has a deadline, not a backlog position](#observation-7-the-restructure-has-a-deadline-not-a-backlog-position)
   - [Observation 8: consolidation forces three tooling decisions that are otherwise invisible](#observation-8-consolidation-forces-three-tooling-decisions-that-are-otherwise-invisible)
   - [Observation 9: the contract tests change meaning, and that is worth preserving deliberately](#observation-9-the-contract-tests-change-meaning-and-that-is-worth-preserving-deliberately)
+  - [Observation 10: under cmd/, the directory name is the binary name, and three things already rely on it](#observation-10-under-cmd-the-directory-name-is-the-binary-name-and-three-things-already-rely-on-it)
 - [Open Questions](#open-questions)
   - [1. What is the directory layout?](#1-what-is-the-directory-layout)
   - [2. One module or several?](#2-one-module-or-several)
@@ -338,6 +339,23 @@ The early-warning property is still worth keeping — it is the difference betwe
 convention rather than a mechanism, and the R-clause numbering in DESIGN-0008
 loses its anchor.
 
+### Observation 10: under `cmd/`, the directory name is the binary name, and three things already rely on it
+
+Go names an installed binary after the last element of its package path, so
+`cmd/cli/main.go` produces a binary called `cli` and `cmd/server/main.go` one
+called `server`. Three things in this repository already depend on that
+element being `docz`:
+
+| Thing | How it depends |
+| ----- | -------------- |
+| `.goreleaser.yml` | `main: ./cmd/docz/main.go` |
+| `Makefile` | `PARITY_PKG := $(GO_PACKAGE)/cmd/$(PROJECT_NAME)`, used by `make parity-capture` to install the v1.2.2 binary |
+| `v2.0.0-beta.1` release notes | publish `go install github.com/donaldgifford/docz/v2/cmd/docz@v2.0.0-beta.1` |
+
+goreleaser can rename its output with `builds[].binary`, so a release artefact
+is not the problem. `go install` is: it has no such override, so a descriptive
+directory name is a name the user ends up typing and living with.
+
 <!--docz:findings:end-->
 
 <!--docz:open-questions:start-->
@@ -362,6 +380,42 @@ loses its anchor.
   packages untestable from an external module.
 - d. Other.
 
+> **Resolved 2026-09-21: (b), extended.** `pkg/` stays exactly where it is and
+> the tree grows around it:
+>
+> ```text
+> cmd/docz/main.go       the CLI binary
+> cmd/docz-api/main.go   the server binary
+> pkg/                   the library, unchanged
+> internal/              the server's internals (docz-api's internal/ verbatim)
+> api/                   openapi.yaml, the single copy
+> ui/                    the Bun/React app
+> charts/                docz-api and docz-site, side by side
+> ```
+>
+> `pkg/` exists because the library and its consumers were in different
+> repositories. That stops being the reason it is there, but renaming it buys
+> nothing and costs every import path. **This is the resolution that matters
+> most, because it deletes Observation 7's deadline:** no public path changes,
+> so there is no ADR-0001 amendment to write, nothing that `v2.0.0-beta.1`
+> published becomes a lie, and no risk of the move turning into a v3. The
+> restructure stops existing as a distinct piece of work, which also answers
+> Open Question 7.
+>
+> `cmd/docz` and `cmd/docz-api` rather than `cmd/cli` and `cmd/server`, for
+> Observation 10's reason: under `cmd/`, the directory name *is* the binary
+> name.
+>
+> `internal/` takes the **server's** internals, not the library's. The library
+> stays public — that is ADR-0002's thesis and what the published beta
+> advertises — so nothing moves out of `pkg/`.
+>
+> `charts/` takes both charts side by side rather than one umbrella chart. The
+> pain being solved is that one logical change needs three pull requests in
+> three repositories; two charts in one repository does not have that problem.
+> An umbrella chart stays possible later and is not what ADR-0002 Decision 6's
+> "one chart" wording forecloses on.
+
 ### 2. One module or several?
 
 - a. **Two modules: the root (library + CLI) and `api/`** — `ui/` has no
@@ -378,6 +432,30 @@ loses its anchor.
   gains a version line nobody asked for.
 - d. Other.
 
+> **Resolved 2026-09-21: (b) — one module.** The dependency coupling in
+> Observation 5 is accepted knowingly, against a cost that is being paid today
+> rather than theorised: a change to docz needs a pull request here, then one in
+> docz-api, then one in docz-site, and the spec in Observation 4 is copied by
+> hand between two of them. Multi-module fixes the graph and leaves the
+> three-repository workflow intact for `go.work` to paper over.
+>
+> Consequences to carry into the design rather than discover later:
+>
+> - The module's `go.mod` becomes the union, so `go get
+>   github.com/donaldgifford/docz/v2` resolves a graph with roughly 120
+>   requirements instead of 2. Pruning means consumers still *build* only what
+>   they import, but the library's version line now moves when a server
+>   dependency does.
+> - `make license-check` (whatever it is called after Open Question 6) starts
+>   scanning the service's dependencies, which is more work per run and more
+>   licences to accept.
+> - DESIGN-0014 §7 R8 — the library imports no OpenTelemetry and no logger —
+>   survives as a rule enforced by `pkg/doczcore/layer_test.go` rather than as a
+>   fact about the module graph. That test becomes load-bearing, and should
+>   grow a case naming the server's packages explicitly.
+> - One `go` directive for everything, which forces Open Question 6's toolchain
+>   half.
+
 ### 3. Does `wiki` move under `core/`?
 
 - a. **`core/wiki`** — inside the library, since that is what it is: a
@@ -387,6 +465,11 @@ loses its anchor.
   document type". Keeps the distinction the design argued for, at the cost of a
   top-level directory holding one package.
 - c. Other.
+
+> **Resolved 2026-09-21: moot — (b) by consequence.** Open Question 1 keeps
+> `pkg/`, so there is no `core/` for `wiki` to move into and
+> `pkg/wiki` stays where DESIGN-0014 §2.10 put it. The question only existed
+> because of the `core/` proposal.
 
 ### 4. How is the frozen five's path change recorded?
 
@@ -399,6 +482,10 @@ loses its anchor.
   path. Cheapest, and leaves the one thing a v1 reader might care about
   unwritten.
 - d. Other.
+
+> **Resolved 2026-09-21: moot — (c) by consequence.** Open Question 1 changes no
+> import paths, so the frozen five keep theirs and there is nothing to amend.
+> If a later change does move them, this question comes back unanswered.
 
 ### 5. Does the v2 line stay on `main`, or move to a `v2` branch?
 
@@ -431,6 +518,24 @@ loses its anchor.
   keep honest.
 - d. Other.
 
+> **Resolved 2026-09-21: (b) — `just`, and `go 1.26.5`.** The task runner
+> becomes `just`, matching the two repositories moving in and letting their
+> recipes arrive as files rather than as translations: `justfile` at the root
+> importing `docz.just`, `api.just`, and `ui.just`, so each half keeps its own
+> recipes and the root file is composition. docz-api already splits
+> `docker.just` out this way, so the pattern is imported rather than invented.
+>
+> The toolchain goes to `go 1.26.5`, which one module forces anyway and which
+> closes **GO-2026-4970** as a side effect.
+>
+> The cost is named here so the design does not treat it as free: `make ci`,
+> `make parity`, `make parity-capture`, `make validate`, `make test-consumer`,
+> and `make release TAG=` are referenced by the CI workflow, the release path,
+> `CLAUDE.md`, `DEVELOPMENT.md`, and `CONTRIBUTING.md`. It is mechanical, it
+> touches the harness that proved the v2 line green, and it deserves its own
+> pull request landing before either service moves — so that if something
+> breaks, what broke is the runner and not the migration.
+
 ### 7. In what order do the restructure and the two moves land?
 
 - a. **Restructure first, then `api/`, then `ui/`** — path churn is cheapest
@@ -442,6 +547,18 @@ loses its anchor.
 - c. One design and one unit for all three. Fewer documents; a very large diff
   that mixes a mechanical rename with two migrations.
 - d. Other.
+
+> **Resolved 2026-09-21: the premise is gone.** Open Question 1 removed the
+> restructure, so there is no rename to sequence against. The remaining order
+> is:
+>
+> 1. the `just` migration, on its own, while the tree is still small;
+> 2. docz-api into `internal/` + `cmd/docz-api` + `api/` + `charts/docz-api`,
+>    with the spec deduplicated;
+> 3. docz-site into `ui/` + `charts/docz-site`, with its generated client
+>    reading the one remaining spec.
+>
+> Each is its own design and its own `v2.0.0-beta.N`.
 
 ### 8. Does `config` gain a bytes API in this line?
 
@@ -468,6 +585,19 @@ loses its anchor.
 - b. Supersede both with consolidation designs.
 - c. Leave both untouched; the new designs stand alone.
 - d. Other.
+
+> **Resolved 2026-09-21: (c) — the new designs stand alone.** Consolidation is
+> the goal, and an older design that contradicts it is evidence of what was
+> true when it was written, not an obstacle. DESIGN-0008 and DESIGN-0009 are
+> left as they are; the consolidation designs reference them where useful and
+> do not wait on amendments to either.
+>
+> Two contradictions are therefore accepted rather than resolved: DESIGN-0008
+> describes a service consuming a pinned library, which stops being how it
+> works, and DESIGN-0009 is Draft and will be migrated in that state. The
+> R1–R12 clause numbering keeps its meaning as a list of behaviours the
+> `doczcontract` tests assert, and loses its meaning as a contract against a
+> pin.
 
 ### 10. Does the git history come with them?
 
@@ -497,11 +627,14 @@ motivated it. That is worth knowing before writing the design: the upgrade's
 value is not in adopting the new surface, it is in the one gap Observation 2
 found and in deleting the pin.
 
-The **layout is the expensive, irreversible half**, and it has a deadline
-rather than a priority. Sixteen import paths change; the only importers today
-are in-repo; and after v2.0.0 the same move is a v3. Doing it while
-`v2.0.0-beta.N` is explicitly allowed to break is the difference between a
-rename and a major version.
+The **layout was the expensive half, and the decision made it cheap.** As
+investigated, a restructure changed sixteen import paths and therefore had a
+deadline: before v2.0.0 it is a rename, after it a v3. Open Question 1 resolved
+to keep `pkg/` and grow the tree around it, which removes the path change
+entirely — so the deadline, the ADR-0001 amendment, and the restructure as a
+unit of work all stop existing. That is the single cheapest resolution in this
+document, and it was available only because the thing being added (`api/`,
+`internal/`, `ui/`, `charts/`) does not collide with the thing already there.
 
 The strongest argument for the move itself turned out not to be docz v2 at all:
 a 916-line OpenAPI spec exists byte-identically in both repositories, hand-copied,
@@ -509,45 +642,67 @@ with no sync mechanism, validated in one and consumed in the other. That is a
 correctness problem today, and one repository dissolves it.
 
 The sharpest argument *against* one big module is the dependency asymmetry: 2
-requirements against 120, and a library whose version line would start moving
-whenever a service dependency does. Two modules in one repository keeps both
-properties — one place to change the spec, and a library that stays small.
+requirements against 120, and a library whose version line starts moving
+whenever a service dependency does. **Open Question 2 accepted that knowingly**,
+and the reasoning is sound on its own terms: the coupling is a cost that might
+bite later, while the three-repository lockstep — one logical change, three pull
+requests, plus a spec copied by hand — is a cost being paid now. Multi-module
+would have fixed the graph and left that workflow in place for `go.work` to
+paper over. The trade is real and recorded; what it buys is that DESIGN-0014 §7
+R8 now survives as a test rather than as a fact about the module graph, so
+`layer_test.go` becomes load-bearing.
 
 On the branch question there is nothing to decide so much as something to
 confirm: `main` already **is** the v2 line. A `v2` branch would mean reverting
-`main` to v1 and maintaining the divergence for no reader.
+`main` to v1 and maintaining the divergence for no reader. **This one is still
+open**, along with the `config` bytes API and whether git history comes with the
+moves.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Three documents and three milestones, in this order.
+Seven of the ten open questions were resolved on 2026-09-21, which changes the
+shape of what follows: there is no restructure to plan, and no ADR needed for a
+path change that is no longer happening. What remains is one decision record and
+three units of work.
 
-1. **An ADR for the repository layout and module topology**, resolving Open
-   Questions 1–4, 6, and 10, and carrying the dated ADR-0001 Decision 6
-   amendment for the frozen five's paths. This is an ADR rather than a design
-   because it is a decision with consequences for every future import, and
-   because ADR-0002 Decision 6 explicitly left it unspecified.
-2. **A design and an IMPL for the restructure**, landing before either move,
-   tagged `v2.0.0-beta.2`. Mechanical: directory moves, import rewrites, the
-   `layer_test.go` package lists, `test/consumer`'s imports, and the Makefile's
-   `MODULE_PATH`-derived ldflags. The parity goldens are unaffected — they
-   record CLI behaviour, not import paths — which makes them a useful check
-   that a rename changed nothing.
-3. **A design and an IMPL per move**: docz-api into `api/` with its chart,
-   Dockerfile, and spec, plus the `config` bytes API from Open Question 8, then
-   docz-site into `ui/` with the spec duplication removed and one chart shipping
-   both. Each its own beta.
+1. **An ADR for the consolidated repository**, recording Open Questions 1, 2, 6,
+   and 9: one module, `pkg/` unchanged, `cmd/docz` and `cmd/docz-api`,
+   `internal/` for the server, `api/` for the one spec, `ui/` for the frontend,
+   `charts/` for both charts, `just` as the task runner, `go 1.26.5`. It is
+   still an ADR rather than a design — ADR-0002 Decision 6 left the
+   consolidation unspecified and this is what fills that gap — but it is now a
+   short one, because the expensive option was declined.
+2. **The `just` migration, on its own**, before either service arrives.
+   `justfile` plus `docz.just`, with `api.just` and `ui.just` landing as the
+   services do. It touches the harness that proved this line green — `make ci`,
+   `make parity`, `make validate`, `make test-consumer`, `make release TAG=`,
+   the CI workflow, and three guide documents — so it wants isolating from
+   anything that could be blamed for its breakage.
+3. **docz-api in**, as its own design and IMPL: `internal/` verbatim,
+   `cmd/docz-api/main.go`, `api/openapi.yaml` as the single copy,
+   `charts/docz-api`, the Dockerfile and compose/bake files, the `/v2` import
+   rewrite that is the whole of the v2 upgrade, and the `config` bytes API if
+   Open Question 8 resolves to (a). The `doczcontract` tests come with it and
+   keep their early-warning role by convention.
+4. **docz-site in**, as its own design and IMPL: `ui/`, `charts/docz-site`, its
+   generated client reading the one remaining spec, and a decision on what
+   `orval` runs against now that the spec is a sibling rather than a copy.
 
-Two things to settle before writing any of them, because they change what the
-documents say: Open Question 2 (one module or two) and Open Question 5
-(confirming `main` stays the v2 line).
+Each of 2, 3, and 4 gets its own `v2.0.0-beta.N`.
+
+Three questions are still open and two of them gate the documents above: **Open
+Question 5** (confirming `main` stays the v2 line) and **Open Question 8** (the
+`config` bytes API, which decides whether docz-api's move includes an API
+change). **Open Question 10** (git history) can be answered at the moment of
+the move.
 
 Two follow-ups this investigation surfaced that are not part of the
 consolidation: **GO-2026-4970** is closed for free by the `go 1.26.5` bump that
-Open Question 6 recommends, and DESIGN-0009 should be finished or abandoned
-explicitly rather than migrated while Draft.
+Open Question 6 resolved to, and DESIGN-0009 will be migrated while Draft, which
+Open Question 9 accepts deliberately rather than by oversight.
 
 <!--docz:recommendation:end-->
 
