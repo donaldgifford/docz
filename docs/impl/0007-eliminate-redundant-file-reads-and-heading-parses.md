@@ -40,6 +40,7 @@ created: 2026-05-15
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Fix the three "must-fix" performance findings from INV-0002 Wave 3:
@@ -54,31 +55,40 @@ The fix is architectural at the API boundary, not a micro-optimization.
 Effect: halves the file-read count and parse work on the `update` hot path.
 
 **Implements:** INV-0002 (Wave 3 — Performance worth fixing)
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Cache document bytes on `index.DocEntry` so callers don't re-read (F41)
 - Change `toc.UpdateToC` to return `[]Heading` (F42)
 - Update `cmd/update.go` to use the new APIs and stop re-reading files
 - Add baseline + post-change benchmarks
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Parallelizing the update loop (rejected as premature in INV-0002)
 - Optimizing `Slugify`, `strings.Split`, or other "do-not-touch" items
 - Moving `updateToCs` into `internal/toc` (that's IMPL-0008)
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Baseline benchmarks
 
 Before changing anything, measure the current cost so we can prove the
 change is a win and prevent regressions.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `BenchmarkScanDocuments` in `internal/index/index_test.go`
@@ -105,20 +115,26 @@ BenchmarkUpdateToC/50-18          40365 ns/op     43254 B/op     929 allocs/op
 BenchmarkUpdateToC/200-18        164569 ns/op    177823 B/op    3639 allocs/op
 BenchmarkCmdUpdate/100-18       6575343 ns/op   1697682 B/op   18861 allocs/op
 ```
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - All three benchmarks compile and run
 - Baseline numbers recorded in the doc for future comparison
 - Benchmarks ignored by `go test ./...` (default — no `-bench` flag)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Cache bytes on `DocEntry`
 
 Capture the file bytes during `ScanDocuments` and expose them so callers
 that need the file content don't have to re-read.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `Content []byte` to `index.DocEntry` (after the existing
@@ -133,14 +149,18 @@ that need the file content don't have to re-read.
       `DocEntry`'s doc comment
 - [x] Regression test `TestScanDocuments_PopulatesContent` asserts
       `Content` equals the on-disk bytes byte-for-byte
+<!--docz:tasks:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Refactor `updateToCs` to use cached bytes
 
 Stop re-reading files in `cmd/update.go:updateToCs`. The bytes are already
 on `DocEntry`.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] In `cmd/update.go:updateToCs`, replaced `os.ReadFile(docPath)`
@@ -167,7 +187,9 @@ them once and we reuse the bytes). The dry-run double-parse is
 addressed in Phase 4. The remaining non-dry-run cost is dominated by
 `os.WriteFile` on each touched doc and `index.UpdateReadme`'s splice;
 both are unavoidable at this layer.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - A repo with 1000 docs runs `docz update` with 1000 file reads of doc
@@ -178,14 +200,18 @@ both are unavoidable at this layer.
   for the non-dry-run path — most remaining cost is `os.WriteFile` and
   README splicing, not re-reads)
 - All existing `cmd/update_test.go` tests pass
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Change `UpdateToC` API to return `[]Heading`
 
 Make the heading metadata available to callers without forcing a second
 parse.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Changed `toc.UpdateToC` signature per Decisions §5: returns a
@@ -223,7 +249,9 @@ ParseHeadings twice on the same input, so net dry-run cost on a
 200-heading doc drops from ~280µs (164µs UpdateToC + ~115µs second
 ParseHeadings) to ~177µs — a ~37% improvement on the path that
 actually paid the duplicate-parse cost.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn 'ParseHeadings' .` shows one production call site inside
@@ -235,11 +263,15 @@ actually paid the duplicate-parse cost.
 - `BenchmarkUpdateToC` slightly slower (≈8%) due to the returned
   slice escaping to heap — acceptable trade since the dry-run path
   net-wins ≈37%
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: Verify and ship
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Re-ran all three benchmarks; post-change numbers recorded below
@@ -256,6 +288,7 @@ actually paid the duplicate-parse cost.
 - [x] Open PR with `dont-release` label — PR #43
 - [x] INV-0002 status already `In Progress`; no flip needed until all
       waves merge
+<!--docz:tasks:end-->
 
 Post-change numbers (Apple M5 Max, Go 1.25.7, medians of 3 runs):
 
@@ -291,14 +324,18 @@ and `index.UpdateReadme`'s splice work, neither of which is the
 subject of this wave. The architectural goal — halve the file-read
 count, surface heading metadata in the return value — is met.
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `BenchmarkCmdUpdate/100` ≥30% faster than baseline
 - No golden-file regression
 - No memory leak under repeated invocation (sanity check)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -309,7 +346,9 @@ count, surface heading metadata in the return value — is met.
 | `internal/toc/toc_test.go` | Modify | Update test cases; add benchmark |
 | `cmd/update.go` | Modify | Use cached `Content`; consume returned `headings` |
 | `cmd/update_test.go` | Modify | Add `BenchmarkCmdUpdate`; verify no double-read |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Benchmarks for `ScanDocuments`, `UpdateToC`, `runUpdate` —
@@ -325,7 +364,9 @@ count, surface heading metadata in the return value — is met.
       ~13MB/op B/op — acceptable for the 1000×~2KB synthesized docs
       profile and consistent with the Decisions §1 ~10MB CLI-scale
       ceiling
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved during INV-0002 planning review.
@@ -344,15 +385,20 @@ Resolved during INV-0002 planning review.
 5. **`UpdateToC` return shape:** struct
    `UpdateResult{Updated string; Headings []Heading; Found bool}`.
    Easier to extend without breaking signature.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - Builds on IMPL-0006 (assumes Wave 2 helpers exist; specifically
   `EnabledTypes` simplifies the test setup)
 - Independent of IMPL-0008; can ship before or after
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0002 — Wave 3, findings F41, F42
 - Performance review notes — `cmd/update.go:131` (double parse),
   `cmd/update.go:112` (double read)
+<!--docz:references:end-->

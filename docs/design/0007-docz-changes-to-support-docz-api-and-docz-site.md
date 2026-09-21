@@ -47,6 +47,7 @@ created: 2026-06-23
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 > **Amendment (2026-07-04 — ADR-0001 / IMPL-0014 Phase 3):** Decision 5's
@@ -79,9 +80,11 @@ consumers.
 The work is behavior-preserving for the CLI: no command output changes, no new
 required flags, no config-format change. It is a code-organization change plus a
 new public import surface and a tagged release.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **One source of truth for "what docz docs exist in a tree."** docz-api imports
@@ -101,7 +104,9 @@ new public import surface and a tagged release.
   surface unless there is a concrete consumer.
 - **Acknowledge the semver obligation that promotion creates** and pick a
   module/versioning strategy docz-api can pin against.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - **Designing docz-api or docz-site.** Fetch strategy, Postgres schema, webhook
@@ -116,7 +121,9 @@ new public import surface and a tagged release.
 - **Auto-discovering types from the filesystem.** A type is still whatever
   `.docz.yaml` declares (DESIGN-0006); the public package reads that config, it
   does not invent types.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 INV-0005 Observation 4 ("don't re-implement the parser") laid out three ways the
@@ -160,7 +167,9 @@ One subtlety worth stating up front: `document.Frontmatter.Status` is typed
 `document` already depends on `config`. Any promotion must keep those two
 packages on the same side of the public/internal line, or the typed fields break
 the import graph. This design keeps them together in one public module.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### What becomes public
@@ -474,7 +483,9 @@ every doc's frontmatter + path as one JSON document. Sketch in
 [Data Model](#data-model). Because it serializes the public structs, its JSON
 shape also becomes a compatibility surface (golden-tested), which is a second
 reason to defer it unless a concrete non-Go consumer materializes.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 - **New public package path(s):** `github.com/donaldgifford/docz/pkg/doczcore/config`
@@ -494,7 +505,9 @@ reason to defer it unless a concrete non-Go consumer materializes.
   [the semver obligation](#the-semver-obligation-that-promotion-creates). This is
   the only "breaking-in-the-future-is-now-expensive" consequence, and it is
   intentional.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 No persisted-data, frontmatter, README-marker, or `.docz.yaml` schema changes.
@@ -558,7 +571,9 @@ integer so a future field addition does not silently break a non-Go consumer.
 Raw markdown is intentionally omitted from the default export (it bloats the
 manifest and the Go library already exposes `DocEntry.Content`); a `--content`
 flag could include it if a consumer needs it (open question 6).
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Existing tests move with the code, unchanged.** `internal/config/*_test.go`
@@ -591,7 +606,9 @@ flag could include it if a consumer needs it (open question 6).
   `(type, id)`) so the manifest is diff-stable across runs.
 - **`make ci` unchanged** — lint (`golangci-lint` + `golines`),
   license-check, build, and the full test suite gate the move.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 Behavior-preserving, single-repo, mechanical. Sequencing:
@@ -629,12 +646,14 @@ repo (a cleaner public surface) independent of docz-api's timeline.
 **Rollback:** the move is a pure code relocation behind a single release tag; if
 a problem surfaces, reverting the PR restores the prior `internal/` layout with
 no data or config migration to undo.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 ### 1. What is the public package name/path and shape?
 
-**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
 
 - **a. (Recommended)** `pkg/doczcore/config` + `pkg/doczcore/document` — preserve
   the existing two-package split under a `doczcore` namespace, moving each
@@ -648,7 +667,7 @@ no data or config migration to undo.
 
 ### 2. Move wholesale (update all imports) vs. leave permanent re-export shims?
 
-**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions).
 
 - **a. (Recommended)** Move wholesale and update every in-repo import; no shim
   survives the release. One canonical path, no rot.
@@ -660,8 +679,8 @@ no data or config migration to undo.
 
 ### 3. Add `docz export --json` now, or defer it?
 
-**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped in
-`v0.5.0` without `export`; the library is the sole consumer path so far.
+> **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped in
+> `v0.5.0` without `export`; the library is the sole consumer path so far.
 
 - **a. (Recommended)** Defer. Decision 7 chose the library as primary; ship the
   promotion first and add `export` only when a concrete non-Go consumer appears.
@@ -673,8 +692,8 @@ no data or config migration to undo.
 
 ### 4. Module/versioning strategy?
 
-**Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions). The next
-minor is `v0.5.0` (latest tag today is `v0.4.1`).
+> **Resolved: (a)** — locked 2026-06-30; see [Decisions](#decisions). The next
+> minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 - **a. (Recommended)** Same module, new `pkg/doczcore` path; tag a normal minor
   `vX.Y.0` and let docz-api pin it. Stay in the current major; cut `v1.0.0` only
@@ -688,12 +707,12 @@ minor is `v0.5.0` (latest tag today is `v0.4.1`).
 
 ### 5. How much surface to expose?
 
-**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Read-side
-only: `SetStatus`/`Create` stayed **internal** (`internal/docwrite`), so the
-public surface is read-only (IMPL-0013 Decision 1). **Revised 2026-07-04**
-(ADR-0001 / IMPL-0014 Phase 3): `docwrite` promoted whole to
-`pkg/doczcore/docwrite`; the public write surface is status + checkbox +
-create, by design — see the amendment in [Overview](#overview).
+> **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Read-side
+> only: `SetStatus`/`Create` stayed **internal** (`internal/docwrite`), so the
+> public surface is read-only (IMPL-0013 Decision 1). **Revised 2026-07-04**
+> (ADR-0001 / IMPL-0014 Phase 3): `docwrite` promoted whole to
+> `pkg/doczcore/docwrite`; the public write surface is status + checkbox +
+> create, by design — see the amendment in [Overview](#overview).
 
 - **a. (Recommended)** Minimal: config (`Load`/`Validate`/resolution/
   `EnabledTypes`/`TypeDir`) + document (`ScanDocuments`/`LoadFrontmatter`/
@@ -707,6 +726,11 @@ create, by design — see the amendment in [Overview](#overview).
 
 ### 6. If `docz export` ships, what is the manifest schema shape?
 
+> **Resolved 2026-09-20:** not recorded at approval time. The question is
+> conditional on a command that never shipped — Decision 3 deferred
+> `docz export --json`, and the CLI still has no `export` command — so there is
+> no manifest schema to settle. The options stay for whoever revives `export`.
+
 - **a. (Recommended)** One top-level object `{schema_version, docs_dir, types[],
   documents[]}`, `documents` sorted by `(type, id)`, raw markdown omitted by
   default (opt-in via `--content`).
@@ -716,6 +740,12 @@ create, by design — see the amendment in [Overview](#overview).
 - d. Other.
 
 ### 7. Does docz-api vendor a docz checkout or always consume the library via go.mod?
+
+> **Resolved 2026-09-20:** not recorded at approval time, and not docz's to
+> record — as the [Decisions](#decisions) preamble says, this is docz-api's own
+> consumption model and stays in DESIGN-0008's scope. What this design owed it
+> shipped: a pinnable tag and a published import path, proven from outside the
+> module by `test/consumer/` (question 8).
 
 - **a. (Recommended)** Always consume `pkg/doczcore` as a normal `go.mod`
   dependency pinned to a tag; no vendored source, no shelling out.
@@ -727,9 +757,9 @@ create, by design — see the amendment in [Overview](#overview).
 
 ### 8. Where does the consumer import smoke test live?
 
-**Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped as
-`test/consumer/` (own `go.mod` + local `replace`), wired into `make test-consumer`
-/ `make ci` (IMPL-0013 Decision 2 / Phase 3).
+> **Resolved: (a)** — locked 2026-07-01; see [Decisions](#decisions). Shipped as
+> `test/consumer/` (own `go.mod` + local `replace`), wired into `make test-consumer`
+> / `make ci` (IMPL-0013 Decision 2 / Phase 3).
 
 - **a. (Recommended)** A separate minimal module under `test/consumer/` with its
   own `go.mod`, importing the published-style path — the truest proof an
@@ -739,7 +769,9 @@ create, by design — see the amendment in [Overview](#overview).
 - c. Both — in-repo test for fast feedback, plus a periodic external-module CI
   job.
 - d. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 OQ1/OQ2/OQ4 were locked by user review on 2026-06-30 because DESIGN-0008's
@@ -758,7 +790,9 @@ scope.
 | 3   | `docz export --json`      | (a) defer                                                          | Shipped `v0.5.0` library-only; add `export` only when a concrete non-Go consumer appears                                                            |
 | 5   | Surface to expose         | (a) minimal, read-only — **revised 2026-07-04** by ADR-0001        | Original: `SetStatus`/`Create` kept internal (IMPL-0013 Decision 1). Revised: `docwrite` promoted whole; public write surface = status + checkbox + create (IMPL-0014 Phase 3) — see the Overview amendment |
 | 8   | Consumer smoke test       | (a) separate `test/consumer/` module                              | Own `go.mod` + local `replace`, wired into `make test-consumer` / `make ci`; truest external-import proof (IMPL-0013 Decision 2 / Phase 3)          |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - **INV-0005** — *docz-api and docz-site: centralized cross-repo docz registry
@@ -784,3 +818,4 @@ scope.
     to stay internal), and the sentinels `ErrNoFrontmatter`,
     `ErrStatusFieldMissing`, `ErrUnsupportedLineEndings`
     (`document.go`, `scan.go`, `status.go`).
+<!--docz:references:end-->

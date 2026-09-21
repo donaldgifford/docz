@@ -85,20 +85,21 @@ type DocFindings struct {
 	// path, or for a Templates entry the template file a person would edit,
 	// empty when the template is docz's own embedded one and there is no
 	// file to name.
-	Type, Path string
+	Type string `json:"type"`
+	Path string `json:"path"`
 
 	// Schema is the name the document's schema resolved under: its
 	// frontmatter schema field, or its type name when that field is empty.
 	// Empty means the name resolved nowhere, CodeSchemaUnresolved is in
 	// Findings, and validation ran against an empty schema — which is
 	// well-formedness only, and deliberately still useful.
-	Schema string
+	Schema string `json:"schema"`
 
 	// Findings are the generic tier's, in the order it returned them, with
 	// this tier's own appended after. A consumer that wants them strictly by
 	// line sorts them, because two tiers cannot merge-sort without agreeing
 	// on a tie-break neither of them owns.
-	Findings []validate.Finding
+	Findings []validate.Finding `json:"findings,omitempty"`
 }
 
 // IndexDrift reports a type whose README index table is not what a fresh
@@ -110,30 +111,32 @@ type DocFindings struct {
 // number in a file nobody wrote by hand.
 type IndexDrift struct {
 	// Type is the canonical type name; Path is the repo-relative README.
-	Type, Path string
+	Type string `json:"type"`
+	Path string `json:"path"`
 }
 
 // ValidateReport is everything one Validate call found.
 type ValidateReport struct {
 	// Docs is one entry per document, in type order and then id order — the
 	// order Scan returns them in, so a report reads like the tree.
-	Docs []DocFindings
+	Docs []DocFindings `json:"docs,omitempty"`
 
 	// Templates is one entry per type validated, in the same type order.
 	// Always one per type, even for a type whose template resolves nowhere:
 	// a missing entry would be indistinguishable from a type that was never
 	// reached.
-	Templates []DocFindings
+	Templates []DocFindings `json:"templates,omitempty"`
 
 	// Index is one entry per type whose README drifted. Empty is the healthy
 	// case.
-	Index []IndexDrift
+	Index []IndexDrift `json:"index,omitempty"`
 
 	// Errors and Warnings are the totals over every finding in Docs and
 	// Templates, by severity. ValidateOptions.Strict does not change them:
 	// which total a caller fails on is the caller's policy, and a library
 	// that folded the two would make the other policy unimplementable.
-	Errors, Warnings int
+	Errors   int `json:"errors"`
+	Warnings int `json:"warnings"`
 }
 
 // Validate runs the repository tier of DESIGN-0015 §4 over one or more types.

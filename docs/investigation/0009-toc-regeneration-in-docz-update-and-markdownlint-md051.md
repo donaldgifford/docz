@@ -37,6 +37,7 @@ created: 2026-09-13
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 Does `docz update` (v1.2.2) regenerate the `<!--toc:start-->` /
@@ -49,7 +50,9 @@ left stale, are those cases documented anywhere — in the repo, in
 The practical goal behind the question: keep markdownlint rule
 `MD051/link-fragments` enabled on documentation directories and have
 docz-managed documents pass it without hand-editing generated ToCs.
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 `docz update` does regenerate ToC fences — DESIGN-0003 and IMPL-0003 shipped
@@ -60,7 +63,9 @@ index tables, and a normal run prints nothing about ToCs. Any MD051 failures
 it saw on docz-managed files were more likely caused by anchor-slug
 divergences from GitHub (issue #82 is one) or by files the update pass
 skips silently, not by a missing feature.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 An excerpt from another session (working in a different repo with docz
@@ -82,7 +87,9 @@ an MD051 failure that `docz update` re-creates on every run.
 
 **Triggered by:** the excerpt above; issue #82; DESIGN-0003 (Table of
 Contents Generation).
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Read the code path end to end: `cmd/update.go` (`updateType`,
@@ -107,7 +114,9 @@ Contents Generation).
    reports today and what else a lint gate would trip on.
 5. Check which editor tool actually emits the `<!--toc:start-->` marker
    format, since README and DESIGN-0003 disagree about the plugin name.
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component        | Version / Value                                                           |
@@ -117,7 +126,9 @@ Contents Generation).
 | lint config      | this repo's `.markdownlint.yaml` (MD004/MD007/MD013/MD030/MD033 off, MD051 on) |
 | repro config     | `docz init` defaults: `toc.enabled: true`, `toc.min_headings: 3`, PLAN disabled |
 | skills plugin    | `donaldgifford-claude-skills` docz plugin 1.3.0                           |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Observation 1: `docz update` regenerates ToC fences — the excerpt is wrong
@@ -281,7 +292,9 @@ marker pairs; the splice only ever touches the first, and this repo's
 `docs/investigation/README.md` carries the empty second pair today. Cosmetic
 and unrelated to MD051, but it came out of the same header read and deserves
 its own issue.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** No — the claim is refuted. `docz update` (and `docz create`)
@@ -313,7 +326,9 @@ they were probably what the other session was actually looking at:
 Nowhere in the repo is there a documented reason for *not* regenerating;
 DESIGN-0003 documents the opposite. The gaps are in `--help`, the generated
 config, the skills plugin, and the README's plugin attribution.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 In priority order. Items 1–2 are what closes the loop on the excerpt; 3 is
@@ -462,7 +477,9 @@ markdown-toc.nvim can be configured to produce) and mtoc's default
 - b. Fold into the slug-fix PR.
 - c. Leave it; the splice ignores the second pair so it is cosmetic.
 - d. Other.
+<!--docz:recommendation:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0003: Table of Contents Generation](../design/0003-table-of-contents-generation.md)
@@ -502,3 +519,4 @@ markdown-toc.nvim can be configured to produce) and mtoc's default
 - [markdown-toc.nvim](https://github.com/hedyhli/markdown-toc.nvim) — default
   fences `<!-- mtoc-start -->` / `<!-- mtoc-end -->`, always wrapped as
   `<!-- % -->`
+<!--docz:references:end-->

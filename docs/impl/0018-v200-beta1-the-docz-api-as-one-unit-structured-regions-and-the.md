@@ -53,6 +53,7 @@ created: 2026-09-19
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Build the whole docz API under the `github.com/donaldgifford/docz/v2`
@@ -79,9 +80,12 @@ with `Doc.Inferred` set and one `region.inferred` warning; `docz validate
 DESIGN-0015 (all 9 resolved 2026-09-19) as one unit (DESIGN-0014 Open
 Question 11), under ADR-0002 (Decisions 1–7, R1–R8) and ADR-0003 (plan
 removal on the v2 line).
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Phase 0: module path `/v2`, the parity suite with goldens captured from
@@ -107,7 +111,9 @@ removal on the v2 line).
   closed; the `v2.0.0-beta.1` tag.
 - The external-consumer proof (`test/consumer`) extended to every `pkg/`
   package as each lands.
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Cutting v2.0.0. Every PR here is `dont-release`; `major` is reserved for
@@ -137,6 +143,8 @@ removal on the v2 line).
 - Generics in the type layer (ADR-0002 Open Question 5: no).
 - A CommonMark AST (DESIGN-0015 Open Question 7: hand-rolled walker).
 - Hooks for `pkg/wiki` (DESIGN-0014 Open Question 12: none).
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -157,6 +165,7 @@ v2.0.0: the surface may change between betas", removed at v2.0.0.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 0: Module path, parity goldens, and release mechanics
 
 The three things every later phase depends on: the `/v2` import path that
@@ -165,6 +174,7 @@ before any behaviour-adjacent change lands, and the tag trigger that
 Phase 5 needs to publish a beta. Nothing in this phase changes what the
 CLI does.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Change the `go.mod` module line to `github.com/donaldgifford/docz/v2`
@@ -252,7 +262,9 @@ CLI does.
 - [x] CLAUDE.md: module path in the `test/consumer` bullet; a "Parity
       suite" bullet describing `test/parity/`, the normalisers, the
       permitted deltas, and the rule that goldens come from v1.2.2 only.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes on the `/v2` module path with the `cmd/` test files
@@ -267,9 +279,12 @@ CLI does.
   `.github/workflows/prerelease.yml` exists and lints clean; the
   `pr-semver-bump` finding is written into `DEVELOPMENT.md`.
 - The PR merges with `dont-release` and `main` cuts nothing.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: The type layer — regions, validate, kinds, five type packages, docwrite byte cores, marked templates
 
 Everything here is additive to the frozen packages or an entirely new
@@ -281,6 +296,7 @@ skeletons (the golden-pair tests need them), then `kinds`, `validate`,
 consumer proof. The CLI's only visible change is the marker lines in
 `create` and `template` output, which the parity driver drops.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `pkg/doczcore/docparse/regions.go` with `Role`, `Marker{Kind, Role,
@@ -619,7 +635,9 @@ consumer proof. The CLI's only visible change is the marker lines in
       skeletons; `DEVELOPMENT.md`'s "add a type" walkthrough gains the
       markers-and-skeleton step and the note that a built-in also needs a
       package.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green and the `test/consumer` calls that existed at v1.2.2
@@ -641,9 +659,12 @@ consumer proof. The CLI's only visible change is the marker lines in
   only delta.
 - `make test-consumer` exercises `validate`, `kinds`, and all five type
   packages from outside the module.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Promotions — doctemplate, index, pkg/wiki; schema resolution; internal/ emptied
 
 Three `git mv` promotions that carry their tests with them, plus the
@@ -651,6 +672,7 @@ additions each package needs to stand on its own. `cmd/` only re-points
 its imports; its logic and its tests are untouched until Phase 5. At the
 end of this phase `internal/` no longer exists.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] `git mv internal/template pkg/doczcore/doctemplate` (package
@@ -709,7 +731,9 @@ end of this phase `internal/` no longer exists.
 - [x] CLAUDE.md: bullets for the three promoted packages, the schema
       resolution tiers, and the removal of `internal/`; drop the sentence
       that `internal/template` is not importable from outside the module.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green; `internal/` does not exist; the `cmd/` test files
@@ -722,9 +746,12 @@ end of this phase `internal/` no longer exists.
 - `make test-consumer` covers fifteen `pkg/` packages.
 - `go test ./pkg/doczcore/ -run 'TestLayer'` still passes with the three
   new packages in the graph.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: The repository core — pkg/doczcore/repo with context, Hooks, Validate, InsertRegions
 
 The package that turns the primitives into the operations a consumer
@@ -733,6 +760,7 @@ a typed report, and prints nothing; `cmd/` does not adopt any of it until
 Phase 5, so this phase is invisible to CLI users. `InsertRegions` writes
 what `kinds.InferRegions` finds; no heuristic lives here.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `pkg/doczcore/repo` (`repo.go`, `scan.go`, `create.go`,
@@ -830,7 +858,9 @@ what `kinds.InferRegions` finds; no heuristic lives here.
       verify: `make test-consumer`
 - [x] CLAUDE.md: the `repo` bullet (methods, typed errors, hooks, the
       no-op status rule, the never-imports-`impl` rule).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green and `cmd/` is untouched (no diff under `cmd/`).
@@ -845,9 +875,12 @@ what `kinds.InferRegions` finds; no heuristic lives here.
   the pair validates clean.
 - `make parity` is green with marker lines as the only delta.
 - `make test-consumer` covers `repo`.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Catalogue — ADR-0003 plan removal
 
 The one breaking change to the frozen catalogue, riding the v2 line as
@@ -856,6 +889,7 @@ is final before `cmd/` is re-pointed, and it is the first phase whose CLI
 output differs from v1.2.2 in more than marker lines, which is why it adds
 the fourth permitted delta to the parity suite (Open Question 8).
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Remove the `plan` entry from `allDocTypes` in
@@ -899,7 +933,9 @@ the fourth permitted delta to the parity suite (Open Question 8).
       `DEVELOPMENT.md`'s worked example if it names plan; a release-notes
       paragraph (kept in the PR body under `### RELEASE NOTES` for the
       Phase 5 tag's notes) spelling out the custom-type fallback.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` is green; `config.DocTypeNames()` returns five names and
@@ -910,6 +946,7 @@ the fourth permitted delta to the parity suite (Open Question 8).
   with the `types.plan` normaliser as the fourth permitted delta.
 - README, CLAUDE.md, and `DEVELOPMENT.md` no longer describe plan as a
   built-in; `mkdocs.yml` has no Plans entry.
+<!--docz:criteria:end-->
 
 #### Release notes
 
@@ -950,9 +987,11 @@ A repo that has stopped writing plan documents can set
 `types.plan.enabled: false` and keep the directory as an archive, or drop the
 block and the directory together.
 ```
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: The cmd swap, docz validate, corpus migration, and v2.0.0-beta.1
 
 The validation of everything above: `cmd/` moves onto the API with its
@@ -962,18 +1001,31 @@ the merge commit is tagged `v2.0.0-beta.1` by hand. Any `cmd/` test that
 has to change is a behaviour change and blocks the PR (ADR-0001
 Decision 7).
 
+<!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `Runner` gains `Repo *repo.Repo`; `loadAndValidateConfig` resolves the
+- [x] `Runner` gains `Repo *repo.Repo`; `loadAndValidateConfig` resolves the
       repo root as today, then calls `repo.Open` and sets `Runner.Cfg`
       from `Repo.Cfg` so the print, emit, and format helpers are untouched.
       verify: `go test ./cmd/...`
-- [ ] Wire the context and hooks (DESIGN-0014 §7): `signal.NotifyContext`
+      > `repo.Open` drops validation warnings by design, and `cmd/` has to
+      > print them, so `Cfg.Validate` is called a second time on the
+      > config Open returned. That also keeps a `--docs-dir` override
+      > inside validation, where it was before the swap. `Repo.Cfg` is
+      > then pointed at `Runner.Cfg` so the two are one object rather than
+      > two that start out equal.
+- [x] Wire the context and hooks (DESIGN-0014 §7): `signal.NotifyContext`
       at the top of `Execute`, `repo.WithHooks` mapping `ScanStart`,
       `ScanDone`, `TypeSkipped`, `FileWritten`, and `FileSkipped` onto the
       `r.Logger.Debug` lines `cmd/` emits today, so the existing debug-log
       test pins the mapping from the other side.
-- [ ] Re-point each command per the DESIGN-0014 §4 table: `init` →
+      > `ScanStart` and `ScanDone` keep the exact messages §7 pins. The
+      > other three are reworded to the hook's shape, because no old
+      > message matches them one-to-one — both "config file exists,
+      > skipping" and "readme exists, skipping" are one `FileSkipped` with
+      > reason "already exists". No golden pins any of them: no parity
+      > fixture passes `--verbose`.
+- [x] Re-point each command per the DESIGN-0014 §4 table: `init` →
       `repo.Init` and, when the wiki block is enabled, `wiki.Init`;
       `create` → `repo.Create` then `wiki.UpdateNav` behind `Wiki.AutoUpdate`;
       `update` → `repo.Update`; `list` → `repo.Scan`; `status set` →
@@ -1010,7 +1062,39 @@ Decision 7).
       5. There is no `cfg.Wiki.SiteName` tier — `config.WikiConfig` has no
          such field. The chain is `opts.SiteName` → `filepath.Base(root)` →
          `"my-project"`, so `cmd/` still resolves the git remote.
-- [ ] `docz validate [type] [--strict] [--format text|json]` in
+
+      Landed. No pre-existing `cmd/` test file changed —
+      `git diff --stat HEAD -- 'cmd/*_test.go'` is empty — and `make parity`
+      is green. Six things the swap had to settle:
+
+      1. `updateType`, `Update`, and `statusSet` keep their exact signatures
+         as shims over new ctx-taking methods, because 23 test call sites
+         name them. Every RunE wrapper goes through a new `cmdContext(cmd)`,
+         since the tests also call every wrapper as `runX(nil, args)` and
+         `cmd.Context()` on a nil command panics.
+      2. `repo.InitOptions.Force` no longer reaches `.docz.yaml`. `docz init
+         --force` has never overwritten a config, and a configuration is the
+         file most likely to have been hand-edited and least likely to be
+         reconstructible from defaults. This is a Phase 3 correction; its
+         repo test now pins the preservation.
+      3. The issue-#99 duplicate index marker pair is fixed by `repo.Init`
+         writing `index.Scaffold`, which is visible in `init` output. Handled
+         as a **fifth permitted parity delta** with the `index-pair`
+         normaliser, applied to both sides; without it eight goldens
+         mismatch.
+      4. Routing through repo makes every command respect `enabled`, where
+         `config.ValidateType` never did: `docz list <disabled>` is now an
+         empty listing, and `status set` and the three `template`
+         subcommands error. `update` keeps its silent no-op because cmd
+         resolves the token itself, which also keeps
+         `config.ValidateType`'s error wording.
+      5. `runWikiUpdateNav` survives as the single cmd-level wiki-nav seam
+         that `create` calls, now taking a context, rather than `create`
+         holding a second copy of the nav update.
+      6. `wiki init --force` spends the force in cmd by removing
+         `mkdocs.yml` and calling `wiki.Init` without it, so a hand-edited
+         `docs/index.md` is still preserved (delta 2 above).
+- [x] `docz validate [type] [--strict] [--format text|json]` in
       `cmd/validate.go`: `repo.Validate`, then the per-type tier composed
       in `cmd/` as an explicit five-arm switch on `DocFindings.Schema`
       with the type name as fallback — `impl`, `rfc`, `adr`, `design`,
@@ -1019,46 +1103,150 @@ Decision 7).
       the report verbatim, exit 0 clean, 1 on errors (or warnings under
       `--strict`), 2 for a usage error; command tests pin both formats and
       every exit code.
-- [ ] `docz validate --fix`: after the first report, `repo.InsertRegions`
+      > Three decisions the task left open.
+      >
+      > The per-type tier runs over `report.Docs` only, not `Templates`. A
+      > Templates entry is a template rendered with placeholder metadata so
+      > a sound one reports nothing; running a type's content rules over
+      > comment prose would report a finding on every run of every healthy
+      > repository.
+      >
+      > "The report verbatim" needed a wire shape. `validate.Finding` and
+      > the repo report structs gained json tags, and `validate.Severity`
+      > marshals as `"error"`/`"warning"` rather than as its iota — the same
+      > argument that put yaml-spelled json tags on every config struct
+      > (issue #89, DESIGN-0008 R11), since docz-api serves this too.
+      >
+      > `IndexDrift` is not a Finding, so cmd prints it in the finding line
+      > format under its own `index.drift` code at line 0, and it fails only
+      > under `--strict` alongside warnings. That is what makes the flag the
+      > CI gate issue #97 was retargeted to.
+- [x] `docz validate --fix`: after the first report, `repo.InsertRegions`
       over the documents that reported `region.inferred` or
       `marker.spelling`, print each file written and the kinds inserted,
       re-run `repo.Validate` and the type tier, print the remaining
       findings, and exit on the second report; command tests pin the
       files written, the second report, and that a second `--fix` writes
       nothing.
-- [ ] Migrate docz's own `docs/` in this PR as separate commits (Open
+      > Selection is by **type**, not by document, because that is the
+      > granularity `repo.InsertRegions` works at. Nothing is lost by
+      > widening: the pass never re-marks a document that already carries a
+      > region, so the extra documents in a named type are read and left
+      > alone, and narrowing would mean a second API that could disagree
+      > with the first about what "already marked" means.
+      >
+      > The first report is never printed. Printing findings that the next
+      > line of output has already repaired would be the most confusing
+      > thing this command could do.
+      >
+      > `validate.CodeRegionInferred` and `CodeMarkerSpelling` are now
+      > exported constants. They are the only two codes a consumer matches
+      > in order to *act*, and a typo in one silently turns `--fix` into a
+      > no-op that looks like "nothing to fix".
+- [x] Migrate docz's own `docs/` in this PR as separate commits (Open
       Question 6): run `build/bin/docz validate --fix` and commit the
       mechanical diff on its own, then fix by hand whatever the second
       report lists (sections whose heading was renamed, stale ToCs after
       `docz update`), committing the hand edits separately.
       verify: `build/bin/docz validate` exits 0
-- [ ] Wire `make parity` into `make ci` and the `test-go` CI job after the
+      > Two commits, as specified: the mechanical pass marked 45 documents
+      > (purely additive, `docs/examples/` untouched) and left **56 errors**
+      > and 244 warnings. The hand pass cleared all 56 and `docz validate`
+      > exits 0. Warnings were deliberately left alone — the target is
+      > non-strict, and 217 of the 244 are `references.no-link` on reference
+      > lists that name a document without linking it.
+      >
+      > Only one family was the anticipated "heading was renamed" case.
+      > `region.missing` (20) was mostly older documents that never had the
+      > section: where the prose existed under another heading it is wrapped
+      > in markers verbatim, and only a genuinely absent section got new
+      > text. `design.status.open-question` (31) was a **grammar mismatch,
+      > not missing work**: DESIGN-0010's nine resolutions were written as
+      > plain paragraphs, and `kinds.resolutionIn` only reads a blockquote.
+      > `inv.conclusion.no-answer` (2) was the same shape of problem —
+      > INV-0005 and INV-0007 wrote `**Answer: Yes — …**` with one bold run
+      > around label and value, which is neither spelling `kinds.Field`
+      > accepts. Both are recorded as findings below rather than fixed in
+      > the grammar, which Phase 1 froze.
+      >
+      > Fallout the task did not anticipate: three tests read `docs/` live
+      > and asserted it carried no markers. They now strip the markers back
+      > out instead of freezing a snapshot, so they keep tracking what the
+      > corpus actually looks like.
+- [x] Wire `make parity` into `make ci` and the `test-go` CI job after the
       consumer smoke test; the swapped binary must be green under only the
       permitted deltas. Then add a `validate` target running
       `build/bin/docz validate` non-strict over this repo's `docs/` and
       append it to `make ci` after `parity` (Open Question 7), so warnings
       print and errors fail.
       verify: `make ci`
-- [ ] Extend `test/consumer/doc.go` so it imports every `pkg/` package
+      > `ci` is now `lint test test-consumer parity validate build
+      > license-check`. Both new targets depend on `build`, so the binary
+      > `parity` drives and the one `validate` runs are the working tree's.
+      > In `ci.yml` the two steps go into `test-go` after the consumer smoke
+      > test and before the Codecov upload, which stays last because it is
+      > `continue-on-error`.
+- [x] Extend `test/consumer/doc.go` so it imports every `pkg/` package
       (`config`, `document`, `docparse`, `docwrite`, `toc`, `validate`,
       `kinds`, `doctemplate`, `index`, `repo`, `impl`, `rfc`, `adr`,
       `design`, `investigation`, `wiki`) with one call each.
       verify: `make test-consumer`
-- [ ] ADR-0001 dated amendment (ADR-0002 Open Question 2): the frozen five
+      > Already satisfied when this task came up: Phases 1–3 each added their
+      > own consumer file as they landed, so all sixteen are imported with at
+      > least one real call each and `make test-consumer` is green. Verified
+      > per package rather than taken on trust — the thinnest are `wiki`
+      > (`FilenameTitle`), `design` and `impl` (`Parse`). No edit was needed,
+      > `doc.go` already documents the sixteen.
+- [x] ADR-0001 dated amendment (ADR-0002 Open Question 2): the frozen five
       keep their v1 shapes through the betas, `internal/template` is
       importable as `doctemplate`, and the new packages are experimental
       until v2.0.0; IMPL-0014 Decision 3 note; DESIGN-0013 → Abandoned.
-- [ ] Living docs: CLAUDE.md (architecture bullets for the eleven new
+      > The amendment is a dated blockquote at the head of ADR-0001's
+      > Decision section, above the 2026-07-03 revision note, per the
+      > DESIGN-0007 pattern Open Question 2 chose. Status stays Accepted.
+      > IMPL-0014's note sits under its Decisions table and separates the two
+      > halves of 3(d): keeping `docparse` to facts stands, sending the phase
+      > model out of the module does not.
+      >
+      > DESIGN-0013 was already Abandoned with its pointer to ADR-0002 and
+      > DESIGN-0014, flipped when ADR-0002 landed. Nothing to do.
+- [x] Living docs: CLAUDE.md (architecture bullets for the eleven new
       packages, the `cmd/` swap, `internal/` gone, the parity suite, the
       beta release procedure), README (library section with the `/v2`
       import path and the experimental note, `docz validate` and
       `--fix`, five types), `DEVELOPMENT.md` (add-a-type walkthrough
       with markers and skeleton, release section), and `mkdocs.yml`
       (`pymdownx.superfences` so the design diagrams render).
+      > This task found a gap rather than only refreshing prose: **the
+      > `EXPERIMENTAL` doc comments this plan's own preamble requires had
+      > never been written**, on any of the eleven packages. `go doc` said
+      > nothing about which tier a consumer was importing into, which is the
+      > mechanism ADR-0002 Open Question 1 chose the option for. All eleven
+      > now carry the paragraph; the five frozen packages deliberately do
+      > not. It goes in the **second** paragraph because revive's
+      > `package-comments` and staticcheck's ST1000 both require a package
+      > comment to open with `Package <name>` — a deviation from "opens
+      > with", forced by the linters, and `go doc` shows it immediately
+      > either way.
+      >
+      > `DEVELOPMENT.md`'s add-a-type walkthrough already covered markers and
+      > the skeleton (Phase 4 retargeted it from `plan` to `postmortem`) and
+      > already had the beta release path, so it gained only the two
+      > stability tiers and `make validate`. `.docz.yaml` gets
+      > `pymdownx.superfences` alongside `mkdocs.yml`, or a fresh
+      > `docz wiki init` would drop it again.
+      >
+      > `docz update` ran at the end, refreshing the five ToCs the new
+      > sections invalidated.
 - [ ] Close docz issue #97 (retargeted 2026-09-20 from `update --check` to
       `docz validate`: `toc.stale` and `IndexDrift` are the CI gate) with a
       comment naming the beta tag. The claude-skills plugin is not touched
       in this unit (Out of Scope).
+      **deferred — human required:** the issue is already closed (2026-09-20,
+      by the retarget in PR #105), so all that is outstanding is the comment,
+      and it has to name the beta tag that the task below creates. Its last
+      comment already promises exactly that: "Closes when the `cmd/` swap
+      lands as `v2.0.0-beta.1`".
 - [ ] Merge as `dont-release`, then from the merge commit run
       `make release TAG=v2.0.0-beta.1`; confirm the pre-release workflow
       built the binaries and marked the release a pre-release; write the
@@ -1066,16 +1254,40 @@ Decision 7).
       path with the v1 tags keeping the old one, the plan fallback) into
       the GitHub release body with `gh release edit`.
       verify: `gh release view v2.0.0-beta.1 --json isPrerelease,assets`
+      **deferred — human required:** merging a pull request and pushing a tag
+      are the two outward-facing acts in this plan. The branch is ready and
+      `make ci` is green; the release notes still have to be written against
+      whatever the merge commit turns out to be.
 - [ ] Post-tag proof: from a scratch module,
       `go get github.com/donaldgifford/docz/v2@v2.0.0-beta.1` resolves
       through the module proxy and `test/consumer`'s calls compile against
       it without the local replace.
+      **deferred — human required:** blocked on the tag. The proxy cannot
+      resolve a version nobody has pushed.
 - [ ] Status flips with `docz status set`: DESIGN-0014 and DESIGN-0015 →
       Implemented and this document → Completed (ADR-0002 and ADR-0003
       were Accepted and both designs Approved with the docs PR on
       2026-09-20); note in IMPL-0017's Objective that it now targets the
       v2 line.
+      > Three of the four are done, with `docz status set` rather than an
+      > editor: DESIGN-0014 and DESIGN-0015 are Implemented, and IMPL-0017's
+      > Objective carries a dated note that it targets the v2 line — there is
+      > no `v1.3.0` for it to ship as, since a `/v2` module may not carry a v1
+      > tag. It also names the two things to re-read before starting, because
+      > `docwrite` gained byte cores and the stamp pass now belongs to
+      > `repo.Update`.
+      >
+      > **This document stays In Progress.** Flipping it to Completed while
+      > the three tasks above are deferred would say the unit shipped when the
+      > tag does not exist. The flip is the last act of the release, after
+      > `gh release view` confirms the pre-release.
+      >
+      > **deferred — human required:** the fourth quarter only. Three of the
+      > four flips are done; `docz status set impl IMPL-0018 Completed` waits
+      > on the tag.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci`, now including `make parity`, is green on the swap PR and the
@@ -1095,8 +1307,76 @@ Decision 7).
 - `main` builds a CLI that behaves like v1.2.2 apart from the two new
   commands and the plan removal.
 
+> **Review pass (2026-09-20).** Every phase ends with one (see the preamble
+> above). Phase 5's ran over `git diff a135b10^..HEAD -- '*.go'`, 35 files and
+> about 2 400 insertions, as a style pass against the Uber guide and a security
+> pass over the trust boundaries. Six findings were acted on; all are in this
+> phase's own code.
+>
+> The one that mattered: `docz wiki init --force` spends the force by
+> **unlinking** `mkdocs.yml` before `wiki.Init` writes it back, and
+> `wiki.mkdocs_path` is a config key that `config.Validate` does **not** run
+> through the repo-relative path rules. Before the swap that value reached
+> `os.WriteFile`, where a directory failed; unlinking first deleted it instead.
+> The remove is now guarded on a regular file (`os.Lstat`, so a symlink is not
+> followed), which restores the pre-swap outcome, and two tests pin both sides
+> of the guard. Out-of-root *overwrite* was reachable in v1.2.2 too and is left
+> alone: fixing it means validating `wiki.mkdocs_path`, `docs_dir`, and each
+> type's `dir`, which is a new hard config error and not a permitted parity
+> delta. It wants its own change.
+>
+> Also fixed: a print error outranked the real failure in `init`, `update`, and
+> `create`, so a broken `r.Out` could report "cannot write to stdout" in place
+> of the index write that actually failed — in `create` the update error was
+> dropped entirely. `create` also wrapped an error `repo.Create` had already
+> wrapped. Two `repo` sites reported an absolute path where the package
+> documents repo-relative, which would have put a server's checkout layout into
+> a docz-api error body and made one hook event in a run look unlike the
+> others.
+>
+> **Deviation from the `cmd/` test freeze.** It now holds for every *existing*
+> file — `git diff --stat <pre-swap> -- 'cmd/*_test.go'` lists only additions —
+> but there are two new files rather than the one the criterion above allows:
+> `validate_test.go` for the new command, and `wiki_force_test.go` for the
+> guard. A security fix with no test is worse than a second new file, and the
+> freeze's purpose is that the swap did not edit its own evidence.
+>
+> Not acted on: GO-2026-4970, a stdlib vulnerability `govulncheck` reaches only
+> through `test/parity`'s own walker over a tree the suite created, fixed in
+> go1.26.5 while `go.mod` pins 1.26.4. A toolchain bump, not a code change, and
+> it wants the toolchain installed first.
+>
+> **What the CI wiring caught (2026-09-21).** Task 7 put `make parity` into the
+> `test-go` job, and the first PR to run it failed on eleven `investigation`
+> cases — the point of the task, arriving immediately.
+>
+> Neither cause was in Phase 5's code. The fixture's README carried a row dated
+> the day it was hand-written, in the vestigial second index pair issue #99 left
+> there, which the splice never refreshes because it only rewrites the first.
+> The `date` normaliser rewrote that row on the capture day, so the golden
+> recorded the size and digest of a body five bytes shorter than the file on
+> disk; every later day recorded the file as it is. And `today` was computed in
+> the runner's own zone while `run` pins the child to `TZ=UTC`, so the two
+> agreed only where local and UTC name the same day — every CI runner, and a
+> workstation for part of the day. A local `make parity` passed on the capture
+> day and would have failed the next.
+>
+> The date is frozen to 2026-03-04, `today` is `time.Now().UTC()`, the goldens
+> are re-captured from v1.2.2 (only that README's size and digest and three
+> recorded copies of the row moved), and `TestFixturesCarryNoCurrentDate` fails
+> on any fixture file containing today's date — on the day such a date would be
+> introduced. A replay with the parent in `America/New_York`, currently a day
+> behind UTC, is green.
+>
+> Worth recording because the suite was green locally in Phase 0, Phase 1, and
+> every phase since: the bug was latent in the capture, and only running it
+> somewhere with a different clock exposed it.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
+
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -1131,42 +1411,51 @@ Decision 7).
 | `test/consumer/doc.go` | Modify | Grows with each phase to cover every `pkg/` package |
 | `docs/adr/0001-*.md`, `docs/impl/0014-*.md`, `docs/design/0013-*.md` | Modify | Amendment, note, Abandoned (Phase 5) |
 | `CLAUDE.md`, `README.md`, `DEVELOPMENT.md` | Modify | Per phase; consolidated in Phase 5 |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Parity: `test/parity/` goldens from v1.2.2 replayed against
+- [x] Parity: `test/parity/` goldens from v1.2.2 replayed against
       `build/bin/docz` from Phase 1 on; in `make ci` from Phase 5
-- [ ] `docparse`: region, list-item, and table goldens with a fuzz target
+- [x] `docparse`: region, list-item, and table goldens with a fuzz target
       each; `toc` golden byte-identical after the re-point
-- [ ] `kinds`: a table per reader over corpus cuts; a fuzz target per
+- [x] `kinds`: a table per reader over corpus cuts; a fuzz target per
       reader
-- [ ] `validate`: per-family tables, the catalogue's per-kind rules, golden
+- [x] `validate`: per-family tables, the catalogue's per-kind rules, golden
       pairs over every embedded template and skeleton, the
       template-to-skeleton derivation test
-- [ ] `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation`:
+- [x] `pkg/impl`, `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation`:
       golden fixtures with invariants, `FuzzParse`, `Validate` cases for
       every code, each package parsing its own rendered template and each
       `.orig.md` fixture through inference; heading tables pinned to the
       embedded templates
-- [ ] `docwrite`: existing goldens through the path wrappers; bytes-only
+- [x] `docwrite`: existing goldens through the path wrappers; bytes-only
       tables for `SetStatusBytes`, the uncheck direction, and `Render`
-- [ ] `doctemplate`, `index`, `wiki`: moved tests unchanged; `Splice`
+- [x] `doctemplate`, `index`, `wiki`: moved tests unchanged; `Splice`
       table, `Scaffold` #99 regression, resolution tests, `Init` and
       `UpdateNav` temp-dir tests
-- [ ] `repo`: table tests over temp repos for every method, an error test
+- [x] `repo`: table tests over temp repos for every method, an error test
       per typed error, cancelled-context and hook-sequence tests,
       `InsertRegions` equality with hand-migrated fixtures and idempotence,
       the heuristics parity proof, `ExportTemplate` scaffold validates clean
-- [ ] Layer rules: `go list -deps` walk and the no-telemetry test in
+- [x] Layer rules: `go list -deps` walk and the no-telemetry test in
       `pkg/doczcore`
-- [ ] `cmd/`: test files unchanged through the swap; new tests only for
+- [x] `cmd/`: test files unchanged through the swap; new tests only for
       `validate` (formats, exit codes) and `validate --fix` (files
       written, second report, idempotence)
-- [ ] Consumer proof: `test/consumer` imports every `pkg/` package by the
+- [x] Consumer proof: `test/consumer` imports every `pkg/` package by the
       end of Phase 5 and compiles against the published beta
-- [ ] Corpus: `docz validate` exits 0 over docz's own `docs/` after
+      > The first half is done and green: all sixteen packages, each with at
+      > least one real call, through the local `replace`. The second half is
+      > **deferred — human required** with the tag: the module proxy cannot
+      > serve a version nobody has pushed, and dropping the `replace` before
+      > then would break `make test-consumer` on every checkout.
+- [x] Corpus: `docz validate` exits 0 over docz's own `docs/` after
       migration
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - ADR-0002 and ADR-0003 accepted, DESIGN-0014 and DESIGN-0015 approved,
@@ -1179,7 +1468,9 @@ Decision 7).
   after every phase, go-test for the new test packages.
 - Nothing external: docz-api, docz-site, tempy, and sdk-booty-sh are not
   waited on and do not wait on this.
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -1359,7 +1650,9 @@ that second case true.
 - b. Dispatch on `Type == "impl"` only, as the diagram reads; a custom type
   with `schema: impl` gets the generic tier only until a later beta.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All ten open questions resolved **(a)** on 2026-09-19; 10 generalised
@@ -1380,7 +1673,9 @@ DESIGN-0015 §2/§3/§4/§6 the same day.
 | 10 | Per-type tier dispatch in `docz validate` | An explicit five-arm switch in `cmd/validate.go` on the new `DocFindings.Schema` with the type name as fallback; every built-in has a package (`impl`, `rfc`, `adr`, `design`, `investigation`), a custom type on `schema: <built-in>` gets that arm, one on its own schema gets the generic tier only |
 | — | **Amendment 2026-09-20: documents without markers** | A document with no `docz:` marker parses by inference from its headings (`kinds.InferRegions`; `Doc.Inferred`; one `region.inferred` warning, `region.missing` still an error for an absent heading; markers once present are authoritative); `docz validate --fix` writes what inference found and re-validates, replacing `update --regions` (DESIGN-0015 OQ 4 → c). Phase 1, 3, and 5 tasks updated |
 | — | **Amendment 2026-09-20: claude-skills deferred, #97 retargeted** | The docz skills plugin is not touched and no claude-skills issue is filed in this unit: it serves v1 users and marked templates or five types there would break them before v2 ships; its update is a follow-up after `v2.0.0-beta.1` (Out of Scope; ADR-0003 Decision 5 amendment). docz issue #97 (`update --check`) was retargeted the same day to `docz validate` (`toc.stale`, `IndexDrift`) and is closed by Phase 5 |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0014](../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md)
@@ -1402,3 +1697,4 @@ DESIGN-0015 §2/§3/§4/§6 the same day.
   removal facts
 - `test/parity/README.md` — golden provenance and permitted deltas (created
   in Phase 0)
+<!--docz:references:end-->

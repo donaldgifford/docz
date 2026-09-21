@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -11,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
 
 const formatJSON = "json"
@@ -54,42 +56,64 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 }
 
-func runList(_ *cobra.Command, args []string) error {
-	return getRunner().List(listOpts{status: listStatus, format: listFormat}, args)
+// repoOrOpen returns the Repo this handler orchestrates through.
+//
+// Production sets Runner.Repo in PersistentPreRunE: loadAndValidateConfig
+// calls repo.Open and then points Repo.Cfg back at Runner.Cfg, so for a
+// real invocation this is the identity. cmd tests construct a Runner
+// directly — a bytes.Buffer for Out, a t.TempDir for RepoRoot, no Repo —
+// so the fallback builds one from the two fields that describe a
+// repository anyway: the resolved config and the root its relative paths
+// join under. Building it here rather than dereferencing a nil field is
+// what keeps a test that only cares about formatting from having to know
+// this field exists.
+func (r *Runner) repoOrOpen() *repo.Repo {
+	if r.Repo != nil {
+		return r.Repo
+	}
+	return &repo.Repo{Root: r.RepoRoot, Cfg: &r.Cfg}
+}
+
+func runList(cmd *cobra.Command, args []string) error {
+	return getRunner().List(
+		cmdContext(cmd),
+		listOpts{status: listStatus, format: listFormat},
+		args,
+	)
 }
 
 // List gathers documents across one or all types, applies any status
 // filter, and emits them through r.Out in the requested format.
-func (r *Runner) List(opts listOpts, args []string) error {
-	types := r.Cfg.EnabledTypes()
-	if len(args) > 0 {
-		typeName, err := r.Cfg.ValidateType(args[0])
-		if err != nil {
-			return err
-		}
-		types = []string{typeName}
+//
+// The gathering is repo.List: a nil or empty args slice means every
+// enabled type in EnabledTypes order, and a token is resolved there with
+// the same precedence the rest of the CLI uses, so an alias or an
+// id_prefix still names a type and an unresolvable one still reports the
+// same "unknown document type" line config.ValidateType produced.
+func (r *Runner) List(ctx context.Context, opts listOpts, args []string) error {
+	rp := r.repoOrOpen()
+
+	docs, err := rp.List(ctx, args)
+	if err != nil && !listSkippableErr(err) {
+		return err
 	}
 
+	// Nil rather than an empty slice when nothing matched: `--format json`
+	// has always encoded an empty listing as `null`, and make() here would
+	// silently change that to `[]`.
 	var entries []listEntry
-	for _, typeName := range types {
-		typeDir := r.Cfg.TypeDir(typeName)
-		docs, err := document.ScanDocuments(typeDir)
-		if err != nil {
-			return fmt.Errorf("scanning %s: %w", typeDir, err)
-		}
-		for i := range docs {
-			doc := &docs[i]
-			entries = append(entries, listEntry{
-				ID:      doc.ID,
-				Title:   doc.Title,
-				Status:  string(doc.Status),
-				Date:    doc.Created,
-				Author:  doc.Author,
-				Type:    strings.ToUpper(typeName),
-				File:    doc.Filename,
-				TypeDir: typeDir,
-			})
-		}
+	for i := range docs {
+		doc := &docs[i]
+		entries = append(entries, listEntry{
+			ID:      doc.ID,
+			Title:   doc.Title,
+			Status:  string(doc.Status),
+			Date:    doc.Created,
+			Author:  doc.Author,
+			Type:    strings.ToUpper(doc.Type),
+			File:    doc.Filename,
+			TypeDir: rp.TypeDir(doc.Type),
+		})
 	}
 
 	if opts.status != "" {
@@ -104,6 +128,29 @@ func (r *Runner) List(opts listOpts, args []string) error {
 	default:
 		return outputTable(r.Out, entries)
 	}
+}
+
+// listSkippableErr reports whether a repo.List failure is one `docz list`
+// has never surfaced to the user.
+//
+// A disabled type is the only case. Before the swap the handler resolved
+// its argument with config.ValidateType, which maps a token to a canonical
+// name without consulting Enabled, so `docz list <disabled-type>` scanned
+// the directory anyway. repo draws the distinction the rest of v2 wants —
+// Scan on a disabled type is a TypeDisabledError rather than an empty
+// slice, because the two mean different things — and no method scans past
+// it, so swallowing the error is as close as the API gets: the type
+// contributes no entries and the listing still prints with exit 0, which
+// is byte for byte what the pre-swap handler produced for the dormant
+// block a v1 repo actually carries (no directory was ever scaffolded for
+// it, so there was nothing to list). The one case that does differ is a
+// disabled type whose directory holds documents: those used to appear and
+// now do not. Reporting the error instead would turn a successful
+// invocation into exit 1, which is the larger change of the two.
+func listSkippableErr(err error) bool {
+	var disabled *repo.TypeDisabledError
+
+	return errors.As(err, &disabled)
 }
 
 func filterByStatus(entries []listEntry, status string) []listEntry {

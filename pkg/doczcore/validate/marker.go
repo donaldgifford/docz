@@ -34,7 +34,7 @@ func checkMarkers(content []byte) []Finding {
 	for _, m := range docparse.Markers(content) {
 		if !m.Canonical {
 			out = append(out, Finding{
-				Code:     "marker.spelling",
+				Code:     CodeMarkerSpelling,
 				Severity: Warning,
 				Line:     m.Line,
 				Kind:     m.Kind,

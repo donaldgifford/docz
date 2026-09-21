@@ -37,6 +37,7 @@ created: 2026-05-22
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 What does v1 of docz need to ship — and in what order — to give us a CLI
@@ -51,7 +52,9 @@ browser" preview powered by mdp? Specifically:
 3. Should mdp be linked as a library, vendored, or shelled out from docz?
 4. What's the minimum TUI surface that earns the v1 label — and what
    intentionally waits for v1.x?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 - Bubble Tea v2 is stable enough (v2.0.6, April 2026) and lstk is a
@@ -70,7 +73,9 @@ browser" preview powered by mdp? Specifically:
 - v1 is realistic in **4 IMPL waves**: finish IMPL-0006/0007/0008/0009
   to land the architectural cleanup, then layer the TUI in IMPL-0010
   (preview integration) and IMPL-0011 (full TUI surface).
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 The user wants docz to feel modern: keep the scriptable CLI for CI and
@@ -88,7 +93,9 @@ The existing IMPL-0009 (Runner Pattern and DocType Registry Refactor)
 already calls for evaluating `charmbracelet/fang` and Bubble Tea v2 in
 its Phase 1 DESIGN doc. This investigation supersedes that evaluation
 with a v1-scoped roadmap.
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Confirm current versions of every named dependency via `gh repo
@@ -103,7 +110,9 @@ with a v1-scoped roadmap.
    or a CLI-only operation.
 5. Sketch the package layout and the CLI/TUI handoff.
 6. Phase the work into IMPL docs.
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component | Version / Value | Notes |
@@ -115,7 +124,9 @@ with a v1-scoped roadmap.
 | `localstack/lstk` | v0.9.0 (2026-05-21) | Reference architecture |
 | docz baseline | post-IMPL-0005 merge | INV-0003 outstanding |
 | Go runtime | 1.25.7 | |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Bubble Tea v2 — what changed and what we need
@@ -273,7 +284,9 @@ The decision tree at root command's `RunE`:
 
 Match lstk exactly. Document the env var alongside the flag in
 `--help`.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** Yes, v1 is well-shaped and reachable. The TUI work is real
@@ -299,7 +312,9 @@ The previously-open item was the mdp integration shape; it is now
 resolved. mdp's `pkg/` namespace exists on `main` today, so IMPL-0010
 lands the library-import path directly — no shell-out fallback, no
 mdp-side prerequisite, no coordinated release.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 ### Prerequisites (hard gate)
@@ -400,7 +415,9 @@ Resolved during design review on 2026-05-23.
    user demand; the Bubble Tea side already works on Windows, so the
    work would be confined to the mdp shell-out path and `$EDITOR`
    conventions.
+<!--docz:recommendation:end-->
 
+<!--docz:references:start-->
 ## References
 
 - Bubble Tea v2 — https://github.com/charmbracelet/bubbletea v2.0.6
@@ -414,3 +431,4 @@ Resolved during design review on 2026-05-23.
   surfaces the type list)
 - IMPL-0009 — Runner pattern, DocType registry; Phase 1 DESIGN doc
   evaluated fang/Bubble Tea — superseded by this investigation
+<!--docz:references:end-->

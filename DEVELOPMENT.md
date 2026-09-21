@@ -827,6 +827,34 @@ A `/v2` module may not carry a v1 tag: `go get` rejects the mismatch. That
 is the hard reason every PR after the module move is `dont-release`, not a
 matter of taste.
 
+### The two stability tiers
+
+Not every public package is equally settled, and a consumer has to be able to
+tell which is which from `go doc` alone (ADR-0002 Decision 7, Open Question 1).
+
+**Frozen** — `config`, `document`, `docparse`, `docwrite`, `toc`. Promoted at
+v1.0.0 and carried onto the v2 line in their v1 shapes. Additions only. The one
+breaking change v2 makes to them is `plan` leaving the catalogue `config`
+describes (ADR-0003).
+
+**Experimental** — the eleven the v2 line added: `kinds`, `validate`, `repo`,
+`doctemplate`, `index`, `wiki`, and the five type packages. Each one's doc
+comment carries this paragraph, and the surface may change between
+`v2.0.0-beta.N` tags:
+
+```go
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+```
+
+It sits in the second paragraph rather than the first because `revive`'s
+`package-comments` rule and staticcheck's ST1000 both require a package
+comment to open with `Package <name>`. `go doc` shows it immediately either
+way. **A new public package added before the v2.0.0 cut needs this paragraph**;
+the cut is what removes all of them, and from then on the whole surface is
+contract.
+
 ### What pr-semver-bump v1.7.4 actually does with a beta tag
 
 Read from the action's source at that tag (ADR-0002 Open Question 3),
@@ -934,10 +962,11 @@ appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 | `make test-consumer` | Run the external-module consumer smoke test (separate `go.mod`) |
 | `make parity` | Replay the v1.2.2 parity goldens (`BIN=<path>` to drive another binary) |
 | `make parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
+| `make validate` | Run `docz validate` over this repo's own `docs/`, non-strict |
 | `make lint` | Run golangci-lint |
 | `make lint-fix` | Auto-fix lint issues |
 | `make fmt` | Run gofmt + goimports |
-| `make ci` | Full CI pipeline (lint + test + build + license-check) |
+| `make ci` | lint + test + test-consumer + parity + validate + build + license-check |
 | `make release TAG=vX.Y.Z` | Tag and push a release by hand |
 | `make release-local` | Goreleaser snapshot, nothing published |
 | `make docs-init` | Run `docz init` |

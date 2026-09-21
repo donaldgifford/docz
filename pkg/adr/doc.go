@@ -1,5 +1,9 @@
 // Package adr interprets an ADR document as a typed value.
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // Parse returns a Doc with one field per section of the ADR template, and
 // Validate reports the rules only a typed model can check. Neither touches
 // the filesystem, and neither reads the document's type name (ADR-0002 R7):

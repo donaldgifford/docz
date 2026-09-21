@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/docwrite"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
 
 var (
@@ -44,7 +44,6 @@ Examples:
   docz create design "User Authentication Flow"
   docz create impl "Migrate to gRPC"
   docz create implementation "Migrate to gRPC"
-  docz create plan "Telemetry Pipeline Approach"
   docz create investigation "Can pgvector Handle Concurrent Writes"
   docz create inv "Can pgvector Handle Concurrent Writes"`,
 	Args: cobra.ExactArgs(2),
@@ -59,16 +58,12 @@ func init() {
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-	if cmd != nil {
-		ctx = cmd.Context()
-	}
 	opts := createOpts{
 		status:   createStatus,
 		author:   createAuthor,
 		noUpdate: createNoUpdate,
 	}
-	return getRunner().Create(ctx, opts, args)
+	return getRunner().Create(cmdContext(cmd), opts, args)
 }
 
 // Create runs the `docz create` workflow: validates the document type,
@@ -99,40 +94,69 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		"template", tc.Template,
 	)
 
-	createOpts := docwrite.CreateOptions{
-		Type:         config.DocType(docType),
-		Title:        title,
-		Author:       author,
-		Status:       status,
-		Prefix:       tc.IDPrefix,
-		IDWidth:      tc.IDWidth,
-		DocsDir:      r.Cfg.DocsDir,
-		TypeDir:      tc.Dir,
-		TemplatePath: tc.Template,
-		CreatedAt:    r.Now(),
-	}
+	// The index refresh is asked for here and performed inside Create, so
+	// a created document and `docz update` cannot produce different
+	// READMEs for the same directory — they run the same routine.
+	result, err := r.repoOrOpen().Create(ctx, repo.CreateOptions{
+		Type:   docType,
+		Title:  title,
+		Author: author,
+		Status: status,
+		Now:    r.Now(),
+		Update: !opts.noUpdate && r.Cfg.Index.AutoUpdate,
+	})
 
-	result, err := docwrite.Create(&createOpts)
-	if err != nil {
-		return fmt.Errorf("creating %s document: %w", docType, err)
-	}
-
-	if _, err := fmt.Fprintf(r.Out, "Created %s: %s\n",
-		strings.ToUpper(docType), result.FilePath); err != nil {
+	// A failure with no path means nothing was written. A failure with one
+	// means the document exists and the refresh after it did not, which is
+	// worth saying in that order: the user needs to know the file is there
+	// before hearing that its index is stale.
+	if err != nil && result.FilePath == "" {
 		return err
 	}
 
-	if !opts.noUpdate && r.Cfg.Index.AutoUpdate {
-		if err := r.updateType(docType, false); err != nil {
-			return fmt.Errorf("auto-updating index: %w", err)
+	// Printing runs to the end even if it fails partway, and its error is
+	// kept only when the creation itself succeeded. A write to r.Out that
+	// fails is worth reporting on its own and never worth reporting instead
+	// of the index failure below, which is the one that tells the user their
+	// new document is not in the README yet.
+	//
+	// repo.Create has already wrapped err as "updating <type>: …", so it is
+	// returned as it stands rather than wrapped a second time in words that
+	// say the same thing.
+	if _, perr := fmt.Fprintf(r.Out, "Created %s: %s\n",
+		strings.ToUpper(docType), result.FilePath); perr != nil && err == nil {
+		err = perr
+	}
+
+	if result.Update != nil {
+		if perr := r.printTypeReport(result.Update); perr != nil && err == nil {
+			err = perr
 		}
 	}
 
-	if !opts.noUpdate && r.Cfg.Wiki.AutoUpdate {
-		if _, err := os.Stat(r.Cfg.Wiki.MkDocsPath); err == nil {
-			if err := runWikiUpdateNav(r.Cfg.Wiki.MkDocsPath); err != nil {
-				return fmt.Errorf("auto-updating wiki nav: %w", err)
-			}
+	if err != nil {
+		return err
+	}
+
+	return r.autoUpdateNav(ctx, opts.noUpdate)
+}
+
+// autoUpdateNav rebuilds the MkDocs nav after a creation, when the config
+// asks for it and there is an mkdocs.yml to rebuild.
+//
+// The stat is the condition: a repository that has never run `docz wiki init`
+// has no nav, and creating one as a side effect of `docz create` would be
+// docz deciding on the user's behalf that they wanted a wiki.
+func (r *Runner) autoUpdateNav(ctx context.Context, noUpdate bool) error {
+	if noUpdate || !r.Cfg.Wiki.AutoUpdate {
+		return nil
+	}
+
+	// Absent is the common case and not a failure, so the stat is read the
+	// positive way round: there is an mkdocs.yml, therefore rebuild it.
+	if _, err := os.Stat(r.Cfg.Wiki.MkDocsPath); err == nil {
+		if err := runWikiUpdateNav(ctx, r.Cfg.Wiki.MkDocsPath); err != nil {
+			return fmt.Errorf("auto-updating wiki nav: %w", err)
 		}
 	}
 

@@ -49,6 +49,7 @@ created: 2026-07-03
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement **ADR-0001** as a single `v1.0.0` release: make `config.Load`
@@ -72,9 +73,12 @@ the `docz-v0.6.0-requirements.md` handoff R1–R3).
 > **Numbering note:** earlier docs (ADR-0001's first draft) referred to a
 > planned "IMPL-0014" covering a standalone v0.6.0. That plan was never written;
 > this document takes the IMPL-0014 id and covers the full v1.0.0.
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - **Viper-free `config.Load`** (handoff R1): same exported signature, yaml-only
@@ -100,7 +104,9 @@ the `docz-v0.6.0-requirements.md` handoff R1–R3).
   documented as CLI-support helpers.
 - **Docs + release**: living-doc updates, dated DESIGN-0007 amendment, absorb +
   delete the root handoff file, `major`-labeled PR → `v1.0.0`.
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - **Promoting `template`, `index`, or `wiki`** — they stay `internal/` (ADR-0001
@@ -120,6 +126,8 @@ the `docz-v0.6.0-requirements.md` handoff R1–R3).
   consumer asks; it promotes with its current shape.
 - **`docz export --json`** (still deferred, DESIGN-0007 OQ3a).
 - **Module-path change** — `v1.x` requires no `/vN` suffix (that starts at v2).
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Affected code (verified inventory)
 
@@ -156,12 +164,14 @@ except **Phase 4 depends on Phase 2** (the `docparse` delegation).
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: viper-free `config.Load` (handoff R1)
 
 Swap the config decode engine without moving a single symbol: yaml.v3 decoding
 onto a pre-populated `DefaultConfig()`, preserving every observable behavior the
 tests pin.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Replace the viper path (`mergeConfigFile`, `loadFromFile`, the `viper.New`
@@ -184,7 +194,9 @@ tests pin.
       (documented, not honored — viper was case-insensitive).
 - [x] Draft the release-notes lines: viper removal, case-sensitivity delta, any
       error-wording changes.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - A scratch module importing only `pkg/doczcore/{config,document}` shows **no**
@@ -194,9 +206,12 @@ tests pin.
   produces **zero** golden churn.
 - `cmd/` tests untouched except (at most) pinned error-text updates, each
   flagged in the PR description.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: create `pkg/doczcore/docparse` (handoff R2, revised)
 
 The canonical markdown **fact extractor**: one heading walker and one checkbox
@@ -204,6 +219,7 @@ walker for the whole module — byte-accurate lines, zero interpretation. The
 plan/phase model is deliberately absent (Decisions Q3): sdk-booty-sh's
 `doczwork` builds it on these primitives.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create the package — bytes-in/values-out (ADR-0001 Decision 5):
@@ -226,22 +242,28 @@ plan/phase model is deliberately absent (Decisions Q3): sdk-booty-sh's
       reported `TaskItem.Line` values against the raw file bytes.
 - [x] Package doc comment (stating the facts-not-interpretation contract) +
       goheader license headers.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - Slug parity: `docparse` slugs byte-identical to `internal/toc`'s across toc's
   existing corpus (pre-work for Phase 4's zero-churn guarantee).
 - `TaskItem.Line` values verified against raw bytes (a consumer will write
   through them); golden tests green; the package is **stdlib-only**.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: promote `docwrite` whole + add `CheckTask` (handoff R3)
 
 The write side goes public as one cohesive package: status splice, checkbox
 splice, and document creation — with the template machinery staying private
 behind it.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] `git mv internal/docwrite pkg/doczcore/docwrite` (package name `docwrite`
@@ -263,20 +285,26 @@ behind it.
 - [x] Add the dated amendment to DESIGN-0007: the read-only-public stance is
       revised; the public write surface is status + checkbox + create, by design
       (per ADR-0001).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `grep -rn 'docz/internal/docwrite' --include='*.go'` returns zero.
 - `CheckTask` golden diffs are single-line; `make test` green with zero churn on
   the existing status fixtures; CLI behavior identical.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: promote `toc` as the splice package over `docparse` (ADR-0001 OQ4a)
 
 One public parser: `toc` keeps the marker-splice concern and delegates every
 heading walk to `docparse`. Depends on Phase 2.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] `git mv internal/toc pkg/doczcore/toc`; retire `ParseHeadings`, `Heading`,
@@ -292,21 +320,27 @@ heading walk to `docparse`. Depends on Phase 2.
       to the `docparse` types; assert generated ToC output is **byte-identical**
       on the existing corpus.
 - [x] Package doc comment + license headers.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - Exactly one heading walker in the public API — `go doc ./pkg/doczcore/toc`
   lists no `ParseHeadings`/`Heading`/`AnchorSlug`.
 - `grep -rn 'docz/internal/toc' --include='*.go'` returns zero; zero golden
   churn (ToC output byte-identical); `make test` green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: consumer proof + public-surface hygiene
 
 Prove the whole v1.0 surface from outside the module and make it read like a
 deliberate API before it freezes.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Extend `test/consumer/` to import **all five** subpackages by public path
@@ -331,20 +365,26 @@ deliberate API before it freezes.
 > consumer failed with `use of internal package
 > github.com/donaldgifford/docz/internal/template not allowed`. Both
 > changes reverted; `make test-consumer` green after revert.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` green including the consumer module; every public subpackage is
   exercised by an external importer.
 - The narrowing spot-check fails compilation as expected (recorded once).
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 6: living docs, release, and the v1.0.0 tag
 
 Land the freeze as a pinnable contract and close the loop with the waiting
 consumer.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Update `CLAUDE.md` (architecture bullets: `docwrite`/`toc` new homes,
@@ -363,7 +403,9 @@ consumer.
       goreleaser cut and publish **`v1.0.0`** (merge to `main` is human-gated).
 - [x] Post-tag: flip this IMPL → Completed; notify sdk-booty-sh — its IMPL-0002
       Phase 0/W gate now pins `v1.0.0` (not `v0.6.0`).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - The `v1.0.0` tag exists with a successful goreleaser release; a scratch module
@@ -372,9 +414,12 @@ consumer.
 - No living doc references `internal/docwrite`/`internal/toc` or claims the
   module uses viper; the full golden suite shows zero churn (CLI
   byte-identical).
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File / path                                                   | Action | Description                                                                                           |
@@ -390,7 +435,9 @@ consumer.
 | `docs/design/0007-…`                                          | Modify | dated amendment: write surface = status + checkbox + create                                           |
 | `CLAUDE.md`, `CONTRIBUTING.md`, `DEVELOPMENT.md`, `README.md` | Modify | repoint living-doc references; drop viper mentions                                                    |
 | `docz-v0.6.0-requirements.md` (repo root)                     | Delete | absorbed by Phases 1–3                                                                                |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] **Moved tests pass unchanged except import paths** — `docwrite` status
@@ -407,7 +454,9 @@ consumer.
       (Phase 5).
 - [x] **`make ci` gates every phase** — lint, license-check, build, full suite,
       consumer module.
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **None external.** Self-contained single-repo work; all callers are in-repo
@@ -417,7 +466,9 @@ consumer.
   directives). docz-api continues on `v0.5.0` unaffected (its surface is
   untouched; the consolidation is additive for it).
 - **Tooling:** existing `pr-semver-bump` (label `major`) + goreleaser.
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters are
@@ -498,7 +549,9 @@ consumer.
   purer bytes-in surface, but it re-introduces exactly the split-package layout
   ADR-0001 Decision 1 rejects.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-07-03.
@@ -510,6 +563,19 @@ Resolved by user review on 2026-07-03.
 | 3   | `ParsePlan` phase semantics | (d) drop `ParsePlan` — facts only | `docparse` ships `Headings` + `TaskItems`; the Plan/Phase model moves to sdk-booty-sh `doczwork` (handoff R2 revised) |
 | 4   | `UpdateFiles` publicity     | (a) whole package                 | consistent with the ADR-0001 whole-package rule                                                                       |
 
+> **Note (2026-09-20 — [ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
+> / IMPL-0018):** Decision 3(d) is **superseded**. Dropping the plan model kept
+> `docparse` to facts, and that part stands — `docparse` still reports headings,
+> task items, list items, and tables and interprets none of them. What changed is
+> where interpretation lives: it came back into the module a layer up, as
+> `pkg/doczcore/kinds` plus a package per built-in type, so `pkg/impl` now owns
+> the phase-and-task model this decision sent to sdk-booty-sh's `doczwork`. The
+> reasoning is ADR-0002's: a model every consumer rebuilds by hand is one docz
+> should have shipped, and rebuilding it three times is the evidence. Decisions
+> 1, 2, and 4 are unaffected.
+<!--docz:decisions:end-->
+
+<!--docz:references:start-->
 ## References
 
 - **ADR-0001** — the decision this plan implements (promotion rule, five
@@ -532,3 +598,4 @@ Resolved by user review on 2026-07-03.
   `v1.0.0` tag. Its `doczwork` package additionally takes ownership of the
   Plan/Phase model over the `docparse` primitives (Decisions Q3) — its Phase W
   scope grows by that grouping code.
+<!--docz:references:end-->

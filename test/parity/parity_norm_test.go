@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRootNormalizer(t *testing.T) {
@@ -50,6 +51,46 @@ func TestRootNormalizer_ResolvedForm(t *testing.T) {
 		if got := n.Apply(form + "/docs"); got != "$ROOT/docs" {
 			t.Errorf("Apply(%q) = %q, want $ROOT/docs", form+"/docs", got)
 		}
+	}
+}
+
+// TestFixturesCarryNoCurrentDate guards the one way a fixture can make this
+// suite lie.
+//
+// The date normaliser rewrites today's date to $DATE on both sides, so a
+// checked-in fixture file whose own content happens to be dated today is
+// recorded one way on the day it was authored or captured and read another way
+// on every later day. The failure surfaces as a size and digest mismatch on a
+// file no case touched, which reads like a regression in whatever command the
+// case ran — the investigation fixture carried such a date for exactly this
+// reason, and it went unnoticed until the calendar moved.
+//
+// Fixture dates are data and belong in the past. Nothing here should ever need
+// to be today, so this passes every day rather than only most of them.
+func TestFixturesCarryNoCurrentDate(t *testing.T) {
+	t.Parallel()
+
+	// UTC, matching the zone the driver pins the child to and normalises in.
+	today := time.Now().UTC().Format("2006-01-02")
+
+	err := filepath.WalkDir("fixtures", func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		if strings.Contains(string(body), today) {
+			t.Errorf("%s contains today's date (%s); fixture dates must be fixed and in the past", path, today)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking fixtures: %v", err)
 	}
 }
 
@@ -489,6 +530,87 @@ func TestPlanNormalizer_Idempotent(t *testing.T) {
 
 	once := Normalize(in, PlanNormalizer())
 	if twice := Normalize(once, PlanNormalizer()); twice != once {
+		t.Errorf("a second pass changed the result\nonce:  %q\ntwice: %q", once, twice)
+	}
+}
+
+// TestIndexPairNormalizer covers the fifth permitted delta: a v1 `init` golden
+// carries the duplicate index marker pair of issue #99 and the v2 binary does
+// not, so both sides are collapsed to one pair before comparison.
+func TestIndexPairNormalizer(t *testing.T) {
+	t.Parallel()
+
+	const (
+		begin = "<!-- BEGIN DOCZ AUTO-GENERATED -->"
+		end   = "<!-- END DOCZ AUTO-GENERATED -->"
+	)
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "collapses a duplicate empty pair",
+			in:   "# Investigations\n\n" + begin + "\n" + end + "\n" + begin + "\n" + end + "\n",
+			want: "# Investigations\n\n" + begin + "\n" + end + "\n",
+		},
+		{
+			name: "collapses three pairs down to one",
+			in:   begin + "\n" + end + "\n" + begin + "\n" + end + "\n" + begin + "\n" + end + "\n",
+			want: begin + "\n" + end + "\n",
+		},
+		{
+			name: "leaves a single pair alone",
+			in:   "# RFCs\n\n" + begin + "\n" + end + "\n",
+			want: "# RFCs\n\n" + begin + "\n" + end + "\n",
+		},
+		{
+			// The whole point of requiring the pair to be empty: a spliced
+			// table must still be compared line by line.
+			name: "never collapses a pair with a table in it",
+			in:   begin + "\n| ID |\n| -- |\n" + end + "\n" + begin + "\n" + end + "\n",
+			want: begin + "\n| ID |\n| -- |\n" + end + "\n",
+		},
+		{
+			name: "a blank line between pairs stops the collapse",
+			in:   begin + "\n" + end + "\n\n" + begin + "\n" + end + "\n",
+			want: begin + "\n" + end + "\n\n" + begin + "\n" + end + "\n",
+		},
+		{
+			name: "input with no markers is untouched",
+			in:   "$ docz list\nexit 0\n",
+			want: "$ docz list\nexit 0\n",
+		},
+		{
+			name: "a lone begin with no end is untouched",
+			in:   begin + "\n" + end + "\n" + begin + "\n",
+			want: begin + "\n" + end + "\n" + begin + "\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := Normalize(tt.in, IndexPairNormalizer()); got != tt.want {
+				t.Errorf("IndexPairNormalizer()\ngot:\n%s\nwant:\n%s", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestIndexPairNormalizer_Idempotent pins that a second pass is a no-op, the
+// same contract the plan normaliser keeps.
+func TestIndexPairNormalizer_Idempotent(t *testing.T) {
+	t.Parallel()
+
+	in := "# Investigations\n\n<!-- BEGIN DOCZ AUTO-GENERATED -->\n" +
+		"<!-- END DOCZ AUTO-GENERATED -->\n<!-- BEGIN DOCZ AUTO-GENERATED -->\n" +
+		"<!-- END DOCZ AUTO-GENERATED -->\n"
+
+	once := Normalize(in, IndexPairNormalizer())
+	if twice := Normalize(once, IndexPairNormalizer()); twice != once {
 		t.Errorf("a second pass changed the result\nonce:  %q\ntwice: %q", once, twice)
 	}
 }

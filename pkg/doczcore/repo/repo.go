@@ -1,6 +1,10 @@
 // Package repo turns the docz primitives into the operations a consumer
 // would otherwise copy out of cmd/.
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // A Repo is a root directory and a loaded config. Every method is the
 // orchestration one cmd/ handler performs today with the printing removed:
 // Create, Update, SetStatus, Init, Validate, InsertRegions, Template, and

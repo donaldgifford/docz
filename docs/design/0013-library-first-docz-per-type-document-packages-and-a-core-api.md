@@ -54,6 +54,7 @@ created: 2026-09-13
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 > **Abandoned 2026-09-14 — superseded by
@@ -86,9 +87,11 @@ today with its target home, and fully specifies the first slice —
 `pkg/impl`, a standalone per-type package that parses an IMPL document into a
 `Plan`. Later slices (the repository-operations core, wiki) are shaped and
 sized here and specified in their own IMPLs.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **One library, many shells.** Every operation `docz` performs is reachable
@@ -103,7 +106,9 @@ sized here and specified in their own IMPLs.
 - **`pkg/impl` ships first**, small and concrete, as a beta tempy can pin.
 - **A written rule for the next type.** Adding a typed model for PLAN or RFC
   later is a package that follows this design, not a new design.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Rewriting `cmd/` now. The first release changes no CLI behaviour, output,
@@ -116,7 +121,9 @@ sized here and specified in their own IMPLs.
 - Owning consumer workflow policy: iteration budgets, gates, retries, and
   the deferred/skipped lifecycle belong to the harness (tempy), not to docz.
 - Promoting the embedded template *contents* into the compatibility contract.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 **Where the public surface stands.** ADR-0001 (2026-07-03) froze
@@ -182,7 +189,9 @@ graph TD
 
 Everything a consumer would call to "do what `docz update` does" —
 `updateType` in `cmd/update.go` — is orchestration living in the shell.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### 1. Layers and rules
@@ -592,7 +601,9 @@ Two optional facts would make the next type package trivial and are
 deferred until one exists (OQ 10): `docparse.Sections` (level-2 heading
 spans with body bytes) for the prose-shaped types, and a `document.Kind`
 helper for prefix → type.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 ### First release (Phase A, beta)
@@ -616,7 +627,9 @@ helper for prefix → type.
 | `cmd/` | `update`, `create`, `status set`, `list`, `init` re-pointed at `repo`; no behaviour change, pinned by the existing cmd tests |
 | `pkg/wiki` (OQ 9) | promoted from `internal/wiki` or deferred |
 | `cmd/task` | `docz task list`, `docz task check`, `docz task uncheck` (`<impl-id> [task-id]`) over `impl` + `docwrite` — the CLI's own consumer of the type layer |
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 ```mermaid
@@ -677,7 +690,9 @@ Identity and stability:
 
 No storage; `Plan` is a value computed from bytes and holds no reference to
 the input (the `ParseChangelog` retention lesson: every string is copied).
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Golden fixtures from real docs**, snapshotted under `pkg/impl/testdata/`
@@ -701,7 +716,9 @@ the input (the `ParseChangelog` retention lesson: every string is copied).
   module and reports a task ID and line for a fixture.
 - **Phase B**: the existing `cmd/` tests pin CLI behaviour byte-for-byte
   while `update`/`create`/`status set` move onto `repo`.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 ```mermaid
@@ -752,7 +769,9 @@ Docs touched: ADR-0001 (amendment), IMPL-0014 (Decision 3 note), CLAUDE.md
 (architecture bullet for `pkg/impl` and the layer rules), README (library
 section), mkdocs.yml (`pymdownx.superfences` custom fence so the diagrams
 render in the MkDocs wiki; docz-site and GitHub already render Mermaid v12).
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 ### 1. What does `pkg/impl` ship in its first release?
@@ -936,7 +955,9 @@ API-first invites the question once more.
   line, which is the API-first ordering. *(recommendation)*
 - b. Split `pkg/` into a `docz-core` module with its own version line.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [INV-0010](../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md)
@@ -958,3 +979,4 @@ API-first invites the question once more.
 - sdk-booty-sh `pkg/loop/doczwork`
 - `cmd/{update,create,init,status,wiki,template,list}.go`,
   `internal/{index,template,wiki}`, `pkg/doczcore/*`
+<!--docz:references:end-->

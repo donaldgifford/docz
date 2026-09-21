@@ -1,17 +1,17 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
-	"github.com/donaldgifford/docz/v2/pkg/doczcore/doctemplate"
 	"github.com/donaldgifford/docz/v2/pkg/wiki"
 )
 
@@ -23,8 +23,8 @@ var (
 )
 
 // wikiInitOpts captures the per-invocation flag values for
-// `docz wiki init`. (Phase 3 transition: populated by the wrapper
-// from the package globals above.)
+// `docz wiki init`, populated by the RunE wrapper from the package
+// globals above.
 type wikiInitOpts struct {
 	force           bool
 	siteName        string
@@ -84,42 +84,57 @@ func init() {
 	rootCmd.AddCommand(wikiCmd)
 }
 
-func runWikiInit(_ *cobra.Command, _ []string) error {
-	return getRunner().WikiInit(wikiInitOpts{
+func runWikiInit(cmd *cobra.Command, _ []string) error {
+	return getRunner().WikiInit(cmdContext(cmd), wikiInitOpts{
 		force:           wikiForce,
 		siteName:        wikiSiteName,
 		siteDescription: wikiSiteDescription,
 	})
 }
 
-func runWikiUpdate(_ *cobra.Command, _ []string) error {
-	return getRunner().WikiUpdate(wikiDryRun)
+func runWikiUpdate(cmd *cobra.Command, _ []string) error {
+	return getRunner().WikiUpdate(cmdContext(cmd), wikiDryRun)
 }
 
-// runWikiUpdateNav is the package-level shim retained during the
-// Phase 3 transition so cmd/create.go's auto-wiki-update path keeps
-// compiling without depending on a Runner method symbol.
-func runWikiUpdateNav(mkdocsPath string) error {
-	return getRunner().updateWikiNav(mkdocsPath)
+// runWikiUpdateNav is the package-level shim cmd/create.go's
+// auto-wiki-update path calls, so the nav update has one implementation in
+// this package instead of a second copy there.
+//
+// It takes the creating command's context, so a `docz create` interrupted
+// while rebuilding the nav stops there rather than finishing a write nobody
+// is waiting for.
+func runWikiUpdateNav(ctx context.Context, mkdocsPath string) error {
+	return getRunner().wikiUpdateNav(ctx, mkdocsPath)
 }
 
-// WikiInit auto-runs docz init if needed, writes mkdocs.yml with
-// TechDocs defaults, scaffolds docs/index.md, and populates the nav
-// from the existing docs tree.
-func (r *Runner) WikiInit(opts wikiInitOpts) error {
-	if err := r.ensureDoczInit(); err != nil {
+// WikiInit auto-runs docz init if needed, writes mkdocs.yml with TechDocs
+// defaults and the docs landing page, and populates the nav from the
+// existing docs tree.
+//
+// The writing is wiki.Init's. What stays here is what belongs to the CLI
+// rather than the library:
+//
+//   - Refusing over an mkdocs.yml it was not told to replace. pkg/wiki
+//     reports an existing file as wiki.Skipped and carries on to the
+//     landing page, so the refusal happens before Init runs and not merely
+//     before its report is printed — otherwise a failing `docz wiki init`
+//     would start leaving a docs/index.md behind it.
+//   - Spending --force on mkdocs.yml alone. InitOptions.Force covers both
+//     files Init writes, and docz has never replaced an existing
+//     docs/index.md: that is the half of the pair a person hand-edits.
+//   - Resolving the site name from the git remote (an L4 dependency, the
+//     same way the author name is) and every printed line.
+//
+// wiki.Init deliberately leaves the nav placeholder alone, so the nav pass
+// runs after it and its page count is reported rather than discarded.
+func (r *Runner) WikiInit(ctx context.Context, opts wikiInitOpts) error {
+	if err := r.ensureDoczInit(ctx); err != nil {
 		return fmt.Errorf("ensuring docz init: %w", err)
 	}
 
-	mkdocsPath := r.Cfg.Wiki.MkDocsPath
-
-	if !opts.force {
-		if _, err := os.Stat(mkdocsPath); err == nil {
-			return fmt.Errorf(
-				"%s already exists (use --force to overwrite)",
-				mkdocsPath,
-			)
-		}
+	mkdocsPath := r.wikiMkDocsPath()
+	if err := wikiPrepareMkDocs(mkdocsPath, opts.force); err != nil {
+		return err
 	}
 
 	siteName := opts.siteName
@@ -127,84 +142,171 @@ func (r *Runner) WikiInit(opts wikiInitOpts) error {
 		siteName = r.repoName()
 	}
 
-	siteDesc := opts.siteDescription
-	if siteDesc == "" {
-		siteDesc = "Documentation for " + siteName
-	}
+	report, err := wiki.Init(ctx, r.RepoRoot, &r.Cfg, wiki.InitOptions{
+		SiteName:        siteName,
+		SiteDescription: opts.siteDescription,
+	})
+	if err != nil {
+		// Which file was at stake: an Action left zero is one Init never
+		// reached, so a failure before mkdocs.yml keeps the "writing
+		// <path>" wrapping this command has always used and one after it
+		// keeps "ensuring docs index".
+		if report.MkDocs == 0 {
+			return fmt.Errorf("writing %s: %w", report.MkDocsPath, err)
+		}
 
-	mkdocsCfg := &wiki.MkDocsConfig{
-		SiteName:           siteName,
-		SiteDescription:    siteDesc,
-		DocsDir:            r.Cfg.Wiki.DocsDir,
-		RepoURL:            r.Cfg.Wiki.RepoURL,
-		SiteURL:            r.Cfg.Wiki.SiteURL,
-		Theme:              r.Cfg.Wiki.Theme,
-		Plugins:            r.Cfg.Wiki.Plugins,
-		MarkdownExtensions: r.Cfg.Wiki.MarkdownExtensions,
-	}
-	if err := wiki.CreateMkDocs(mkdocsPath, mkdocsCfg); err != nil {
-		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
-	}
-
-	if _, err := fmt.Fprintf(r.Out, "Created %s\n", mkdocsPath); err != nil {
-		return err
-	}
-
-	if err := r.ensureDocsIndex(siteName); err != nil {
 		return fmt.Errorf("ensuring docs index: %w", err)
 	}
 
-	return r.updateWikiNav(mkdocsPath)
+	// Unreachable via wikiPrepareMkDocs, and kept for the file that appears
+	// between the two calls: Init reports that Skipped rather than failing,
+	// and this command refuses either way.
+	if report.MkDocs == wiki.Skipped {
+		return wikiExistsError(report.MkDocsPath)
+	}
+
+	if _, err := fmt.Fprintf(r.Out, "Created %s\n", report.MkDocsPath); err != nil {
+		return err
+	}
+
+	if report.Index == wiki.Created {
+		if _, err := fmt.Fprintf(r.Out, "Created %s\n", report.IndexPath); err != nil {
+			return err
+		}
+	} else {
+		r.Logger.Debug("docs index exists, skipping", "path", report.IndexPath)
+	}
+
+	return r.wikiUpdateNav(ctx, report.MkDocsPath)
 }
 
-// WikiUpdate refreshes the nav in an existing mkdocs.yml (or prints
-// what it would generate when dryRun is true).
-func (r *Runner) WikiUpdate(dryRun bool) error {
-	mkdocsPath := r.Cfg.Wiki.MkDocsPath
-
-	if _, err := os.Stat(mkdocsPath); errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf(
-			"%s not found (run `docz wiki init` first)",
-			mkdocsPath,
-		)
+// WikiUpdate refreshes the nav in an existing mkdocs.yml, or prints the nav
+// it would write when dryRun is set.
+func (r *Runner) WikiUpdate(ctx context.Context, dryRun bool) error {
+	if !dryRun {
+		return r.wikiUpdateNav(ctx, r.wikiMkDocsPath())
 	}
 
-	if dryRun {
-		return r.updateWikiNavDryRun(mkdocsPath)
+	report, err := wiki.UpdateNav(ctx, r.RepoRoot, &r.Cfg, wiki.NavOptions{DryRun: true})
+	if err != nil {
+		return wikiNavError(report.Path, err)
 	}
 
-	return r.updateWikiNav(mkdocsPath)
+	return r.printNav(report.Entries, "")
 }
 
-// updateWikiNav scans the docs directory and updates the nav in
-// mkdocs.yml.
-func (r *Runner) updateWikiNav(mkdocsPath string) error {
-	data, err := wiki.ReadMkDocs(mkdocsPath)
-	if err != nil {
-		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
-	}
-	existingOrder := wiki.ExistingNavOrder(data)
-	r.logScan(existingOrder)
+// wikiUpdateNav rebuilds the nav in mkdocs.yml through wiki.UpdateNav and
+// prints the single line this command has always printed.
+//
+// mkdocsPath is where the caller believes the file is, which is where
+// UpdateNav resolves it from too; it is passed for the debug narration,
+// while what gets printed is the path the report came back with.
+func (r *Runner) wikiUpdateNav(ctx context.Context, mkdocsPath string) error {
+	r.wikiLogScan(ctx, mkdocsPath)
 
-	entries, err := wiki.BuildNav(
-		r.Cfg.DocsDir,
-		r.Cfg.Wiki.Exclude,
-		r.Cfg.Wiki.NavTitles,
-		existingOrder,
-	)
+	report, err := wiki.UpdateNav(ctx, r.RepoRoot, &r.Cfg, wiki.NavOptions{})
 	if err != nil {
-		return fmt.Errorf("scanning docs: %w", err)
+		return wikiNavError(report.Path, err)
 	}
-	r.logScanResult(entries)
 
-	data["nav"] = wiki.NavToYAML(entries)
-	if err := wiki.WriteMkDocs(mkdocsPath, data); err != nil {
-		return fmt.Errorf("writing %s: %w", mkdocsPath, err)
-	}
+	r.logScanResult(report.Entries)
 
 	_, err = fmt.Fprintf(r.Out, "Updated nav in %s (%d pages)\n",
-		mkdocsPath, wiki.CountPages(entries))
+		report.Path, report.Pages)
+
 	return err
+}
+
+// wikiPrepareMkDocs applies this command's policy to an mkdocs.yml already
+// on disk: refuse it when --force was not passed, remove it when it was.
+//
+// Removing the file rather than handing wiki.Init the force is what keeps
+// --force off the landing page. Init's single Force covers both files it
+// writes, and an existing docs/index.md has always been left alone, so the
+// force is spent here: the file the user asked to replace goes, Init's own
+// absent-then-create path writes it back, and Init runs with Force off so
+// an existing landing page is skipped exactly as before.
+//
+// Only a regular file is removed. `wiki.mkdocs_path` is a config key, so its
+// value can come from a cloned repository, and it is not one of the keys
+// config.Validate runs through the repo-relative path rules — so it may name
+// a directory, a symlink, or something outside the root entirely. Before this
+// command spent the force by unlinking, such a path reached os.WriteFile and
+// failed there; unlinking first would instead delete it. Anything but a
+// regular file is therefore left alone for wiki.Init's own write to reject,
+// which is what it did before the swap.
+//
+// Two smaller differences from that write remain by design, because the force
+// has to be spent somewhere: replacing a regular file gives the new one the
+// package's own mode rather than the old file's, and a failure between the
+// unlink and the write leaves no file where there was one. Both are scoped to
+// a path the user named and asked to have replaced.
+func wikiPrepareMkDocs(mkdocsPath string, force bool) error {
+	if !force {
+		if _, err := os.Stat(mkdocsPath); err == nil {
+			return wikiExistsError(mkdocsPath)
+		}
+
+		return nil
+	}
+
+	// Lstat, not Stat: a symlink is not a regular file, and following one
+	// here would unlink whatever it points at.
+	if info, err := os.Lstat(mkdocsPath); err == nil && !info.Mode().IsRegular() {
+		return nil
+	}
+
+	if err := os.Remove(mkdocsPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("removing %s: %w", mkdocsPath, err)
+	}
+
+	return nil
+}
+
+// wikiExistsError is the refusal `docz wiki init` prints for an mkdocs.yml
+// it was not told to replace.
+func wikiExistsError(path string) error {
+	return fmt.Errorf("%s already exists (use --force to overwrite)", path)
+}
+
+// wikiNavError adds the one thing pkg/wiki leaves to the CLI: the hint that
+// a missing mkdocs.yml is what `docz wiki init` is for. Every other failure
+// UpdateNav returns already names the file it was reading or writing, so it
+// passes through unwrapped.
+func wikiNavError(path string, err error) error {
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("%s not found (run `docz wiki init` first)", path)
+	}
+
+	return err
+}
+
+// wikiMkDocsPath is the mkdocs.yml this run operates on, resolved the way
+// pkg/wiki resolves it: an absolute path (what PersistentPreRunE produces)
+// is used as it stands, a relative one lands under the repo root.
+func (r *Runner) wikiMkDocsPath() string {
+	return r.inRepo(r.Cfg.Wiki.MkDocsPath)
+}
+
+// wikiLogScan narrates the scan wiki.UpdateNav is about to perform.
+//
+// The existing nav order no longer passes through cmd — UpdateNav reads it
+// out of mkdocs.yml itself — so it is read back here only when someone is
+// listening: the whole call is gated on debug logging being enabled, which
+// keeps the --verbose narration as it was and costs a normal run nothing.
+func (r *Runner) wikiLogScan(ctx context.Context, mkdocsPath string) {
+	if !r.Logger.Enabled(ctx, slog.LevelDebug) {
+		return
+	}
+
+	data, err := wiki.ReadMkDocs(mkdocsPath)
+	if err != nil {
+		// Not this function's failure to report: the read that matters is
+		// UpdateNav's, and it reports it.
+		return
+	}
+
+	r.logScan(wiki.ExistingNavOrder(data))
 }
 
 func (r *Runner) logScan(existingOrder []string) {
@@ -224,27 +326,12 @@ func (r *Runner) logScanResult(entries []wiki.NavEntry) {
 	r.debugNav(entries, "")
 }
 
-func (r *Runner) updateWikiNavDryRun(mkdocsPath string) error {
-	data, err := wiki.ReadMkDocs(mkdocsPath)
-	if err != nil {
-		return fmt.Errorf("reading %s: %w", mkdocsPath, err)
-	}
-
-	entries, err := wiki.BuildNav(
-		r.Cfg.DocsDir,
-		r.Cfg.Wiki.Exclude,
-		r.Cfg.Wiki.NavTitles,
-		wiki.ExistingNavOrder(data),
-	)
-	if err != nil {
-		return fmt.Errorf("scanning docs: %w", err)
-	}
-
-	return r.printNav(entries, "")
-}
-
 // ensureDoczInit checks if docz has been initialized and runs init if not.
-func (r *Runner) ensureDoczInit() error {
+//
+// The scaffolding goes through initRepo rather than Init so the context
+// this command was given reaches it: an auto-init is the longest thing
+// `docz wiki init` does, and it is the one a Ctrl-C should be able to stop.
+func (r *Runner) ensureDoczInit(ctx context.Context) error {
 	configExists := false
 	if _, err := os.Stat(r.inRepo(config.ConfigFileName)); err == nil {
 		configExists = true
@@ -261,7 +348,7 @@ func (r *Runner) ensureDoczInit() error {
 	}
 
 	r.Logger.Debug("running docz init")
-	return r.Init(forceInit)
+	return r.initRepo(ctx, forceInit)
 }
 
 func (r *Runner) repoName() string {
@@ -273,59 +360,6 @@ func (r *Runner) repoName() string {
 		return "my-project"
 	}
 	return filepath.Base(dir)
-}
-
-func (r *Runner) ensureDocsIndex(siteName string) error {
-	indexPath := filepath.Join(r.Cfg.DocsDir, config.WikiIndexName)
-
-	if _, err := os.Stat(indexPath); err == nil {
-		r.Logger.Debug("docs index exists, skipping", "path", indexPath)
-		return nil
-	}
-
-	tmplContent, err := doctemplate.ResolveWikiIndex(r.Cfg.DocsDir)
-	if err != nil {
-		return fmt.Errorf("resolving wiki index template: %w", err)
-	}
-
-	enabled := r.Cfg.EnabledTypes()
-	types := make([]doctemplate.WikiIndexType, 0, len(enabled))
-	for _, typeName := range enabled {
-		tc := r.Cfg.Types[typeName]
-		// WikiConfig.NavTitles wins over PluralLabel (Decisions §4
-		// back-compat); PluralLabel is the fallback. Capitalized
-		// typeName is only used as a last-resort label if neither is
-		// configured.
-		navTitle := r.Cfg.Wiki.NavTitles[typeName]
-		if navTitle == "" {
-			navTitle = tc.PluralLabel
-		}
-		if navTitle == "" {
-			navTitle = strings.ToUpper(typeName)
-		}
-		types = append(types, doctemplate.WikiIndexType{
-			Name:     typeName,
-			NavTitle: navTitle,
-			Dir:      tc.Dir,
-		})
-	}
-
-	data := &doctemplate.WikiIndexData{
-		SiteName: siteName,
-		Types:    types,
-	}
-
-	content, err := doctemplate.RenderWikiIndex(tmplContent, data)
-	if err != nil {
-		return fmt.Errorf("rendering wiki index: %w", err)
-	}
-
-	if err := os.WriteFile(indexPath, []byte(content), config.FileMode); err != nil {
-		return fmt.Errorf("writing %s: %w", indexPath, err)
-	}
-
-	_, err = fmt.Fprintf(r.Out, "Created %s\n", indexPath)
-	return err
 }
 
 func (r *Runner) printNav(entries []wiki.NavEntry, indent string) error {

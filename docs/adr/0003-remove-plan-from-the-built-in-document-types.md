@@ -27,6 +27,7 @@ created: 2026-09-14
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:summary:start-->
 ## Summary
 
 `plan` leaves the built-in document type registry: no `PLAN` prefix, no
@@ -37,7 +38,9 @@ block in `.docz.yaml` keeps working as a custom type and only loses
 `docz create plan` until it supplies its own template. The removal ships on
 the v2 line with the API, first in the beta that carries the `cmd/` swap
 (ADR-0002); the v1 line keeps `plan` as it is.
+<!--docz:summary:end-->
 
+<!--docz:context:start-->
 ## Context
 
 docz shipped with six built-in types. PLAN was meant to sit between RFC
@@ -54,7 +57,9 @@ both. ADR-0002 settles the type package's root name as `Doc` regardless, so
 the collision is avoided, but the built-in type itself remains dead weight
 and a standing source of the confusion that made the naming question hard.
 Issue #103 records the facts.
+<!--docz:context:end-->
 
+<!--docz:decision:start-->
 ## Decision
 
 1. **Remove the `plan` registry entry** from `pkg/doczcore/config/doctype.go`.
@@ -141,9 +146,12 @@ stateDiagram-v2
   BuiltInOff --> Custom: v2 line, block kept
   BuiltInOff --> Gone: v2 line, block removed
 ```
+<!--docz:decision:end-->
 
+<!--docz:consequences:start-->
 ## Consequences
 
+<!--docz:positive:start-->
 ### Positive
 
 - **One word, one meaning.** "Plan" no longer names a docz type; the IMPL
@@ -154,7 +162,9 @@ stateDiagram-v2
   uses.
 - **Custom-type support is exercised for real.** The legacy-block fallback
   is the DESIGN-0006 path with a real config on it.
+<!--docz:positive:end-->
 
+<!--docz:negative:start-->
 ### Negative
 
 - **A removal from a frozen catalogue.** `config.DocTypeNames()` and
@@ -166,7 +176,9 @@ stateDiagram-v2
 - **`docz template override plan` can no longer export a starting point.**
   A repo that wants PLAN back writes the template from scratch or copies it
   from git history.
+<!--docz:negative:end-->
 
+<!--docz:neutral:start-->
 ### Neutral
 
 - **Sequencing with #99** (index header scaffolding) touches the same file;
@@ -174,7 +186,10 @@ stateDiagram-v2
 - **The claude-skills plugin** ships its own copy of the templates and
   updates on its own cadence, after v2 (Decision 5 amendment); until then
   its fallback can still produce a PLAN file that the CLI treats as custom.
+<!--docz:neutral:end-->
+<!--docz:consequences:end-->
 
+<!--docz:alternatives:start-->
 ## Alternatives Considered
 
 - **A. Keep it disabled** (status quo since v1.1.1). *Pros:* nothing to do.
@@ -189,7 +204,9 @@ stateDiagram-v2
   use.
 - **D. This ADR.** Remove it, document the custom-type fallback, decide the
   semver treatment explicitly.
+<!--docz:alternatives:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -227,7 +244,9 @@ stateDiagram-v2
   final before `repo` and `doctemplate` are specified against it.
 - c. After the swap, in the following minor.
 - d. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [Issue #103](https://github.com/donaldgifford/docz/issues/103) — facts,
@@ -242,3 +261,4 @@ stateDiagram-v2
   Open Question 2 — where the naming collision was first raised
 - [Issue #99](https://github.com/donaldgifford/docz/issues/99) — the
   `index_plan.md` edit to sequence with
+<!--docz:references:end-->

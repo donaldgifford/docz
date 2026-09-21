@@ -245,14 +245,32 @@ func TestInit_ForceOverwrites(t *testing.T) {
 		t.Fatalf("write %s: %v", readme, err)
 	}
 
+	// The config is the one file Force does not reach, so it is edited too:
+	// a run that overwrote it would be observable here rather than only in
+	// the report.
+	cfgPath := filepath.Join(root, config.ConfigFileName)
+	if err := os.WriteFile(cfgPath, []byte("docs_dir: docs\n"), config.FileMode); err != nil {
+		t.Fatalf("write %s: %v", cfgPath, err)
+	}
+
 	report, err := r.Init(t.Context(), repo.InitOptions{Force: true})
 	if err != nil {
 		t.Fatalf("forced Init: %v", err)
 	}
 
 	for i := range report.Files {
-		if report.Files[i].Action != repo.InitOverwritten {
-			t.Errorf("%s: action = %v, want overwritten", report.Files[i].Path, report.Files[i].Action)
+		want := repo.InitOverwritten
+		if report.Files[i].Path == config.ConfigFileName {
+			// Never overwritten, with or without Force (initConfig): a
+			// configuration is the file most likely to have been edited by
+			// hand and least likely to be reconstructible from defaults, and
+			// `docz init --force` has never replaced one.
+			want = repo.InitSkipped
+		}
+
+		if report.Files[i].Action != want {
+			t.Errorf("%s: action = %v, want %v",
+				report.Files[i].Path, report.Files[i].Action, want)
 		}
 	}
 
@@ -263,6 +281,15 @@ func TestInit_ForceOverwrites(t *testing.T) {
 
 	if string(body) == "mine\n" {
 		t.Error("README was reported overwritten but still holds the edited content")
+	}
+
+	kept, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", cfgPath, err)
+	}
+
+	if string(kept) != "docs_dir: docs\n" {
+		t.Errorf("forced Init rewrote .docz.yaml:\n%s", kept)
 	}
 }
 

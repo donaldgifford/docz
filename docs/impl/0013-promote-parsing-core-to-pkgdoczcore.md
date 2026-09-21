@@ -45,6 +45,7 @@ created: 2026-06-30
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Promote docz's config and frontmatter parsing out of `internal/` into an
@@ -76,9 +77,12 @@ This plan's own implementation questions — write-side surface, consumer-test
 location, `docz export`, release mechanics, and PR strategy — were resolved on
 2026-06-30; see the [Decisions](#decisions) table. The
 [Open Questions](#open-questions) menu is kept for the record.
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Physically moving `internal/config` and `internal/document` to
@@ -97,7 +101,9 @@ location, `docz export`, release mechanics, and PR strategy — were resolved on
 - Updating living docs (CLAUDE.md, CONTRIBUTING.md, DEVELOPMENT.md, README if
   needed) that reference the old internal paths.
 - Cutting and releasing `v0.5.0`.
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - **`docz export --json`** — deferred (DESIGN-0007 OQ3a); Open Question 3 confirms
@@ -108,6 +114,8 @@ location, `docz export`, release mechanics, and PR strategy — were resolved on
 - **Exposing `internal/template` / `index` / `toc` / `wiki`** — CLI output
   concerns stay internal.
 - **docz-api itself** (DESIGN-0008) and **docz-site** (DESIGN-0009).
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Affected code (verified inventory)
 
@@ -149,12 +157,14 @@ checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Move the packages & repoint imports (behavior-preserving move)
 
 The mechanical core: relocate both packages and make the repo build again. No
 logic changes — only on-disk location and import strings. This is the phase that
 must prove "byte-for-byte identical behavior."
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] `git mv internal/config pkg/doczcore/config` (preserve package name
@@ -177,7 +187,9 @@ must prove "byte-for-byte identical behavior."
 - [x] Update `.golangci.yml` goconst exclusion path from
       `internal/config/doctype\.go` to `pkg/doczcore/config/doctype\.go`.
 - [x] `make fmt` + `go build ./...` until the tree compiles clean.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go build ./...` succeeds; `grep -rn 'internal/\(config\|document\)'
@@ -187,15 +199,19 @@ must prove "byte-for-byte identical behavior."
 - `make lint` is green — in particular goconst is still excluded on the moved
   `doctype.go` (confirms the `.golangci.yml` path was updated).
 - No `cmd/` test changed except its import line; the CLI is behavior-identical.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Public-surface hygiene & minimality
 
 Make the newly public packages read like a deliberate API, and resolve what the
 CLI-only write-side symbols do (Open Question 1). Every exported symbol here is a
 future semver constraint (DESIGN-0007), so the surface is trimmed on purpose.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Confirm the write-side (`SetStatus`, `Create`) lives only in
@@ -211,22 +227,28 @@ future semver constraint (DESIGN-0007), so the surface is trimmed on purpose.
       `ErrNoFrontmatter`.
 - [x] Verify the `goheader` license header is present on every moved (and any
       relocated) file.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go doc ./pkg/doczcore/config` and `./pkg/doczcore/document` list exactly the
   intended public surface (write-side handled per Open Question 1).
 - No unintended CLI-private symbol is exported from the public packages.
 - `make ci` (lint + test + build + license-check) is green.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Consumer import smoke test (external-caller proof)
 
 Prove an external module can import the surface by its public path and run the
 real ingest sequence — the test that catches an accidental visibility narrowing
 or a broken `document → config` typed-field link.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add the consumer test per Open Question 2 (separate module under
@@ -241,7 +263,9 @@ or a broken `document → config` typed-field link.
 - [x] Wire the consumer module into `make ci` (a dedicated `go test` invocation,
       since a separate module is outside root `./...`) and CI; add the license
       header to its files.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - The consumer test passes as an external importer (separate module), asserting
@@ -249,13 +273,17 @@ or a broken `document → config` typed-field link.
 - `make ci` runs the consumer module and is green.
 - Temporarily narrowing a promoted symbol's visibility makes this test fail to
   compile (spot-checked once).
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Release, docs, and the v0.5.0 tag
 
 Land the move as a public, pinnable surface and bring the living docs in line.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Update `CLAUDE.md` Architecture bullets: `internal/config` →
@@ -280,7 +308,9 @@ Land the move as a public, pinnable surface and bring the living docs in line.
       record OQ3/OQ5/OQ8 resolutions in its Decisions table once tagged.
       _(Done: PR #66 merged → `v0.5.0` tagged + released 2026-07-01; DESIGN-0007
       flipped to Implemented with OQ3/OQ5/OQ8 all resolved (a).)_
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - The merged PR's `minor` label produces the `v0.5.0` tag and a successful
@@ -291,9 +321,12 @@ Land the move as a public, pinnable surface and bring the living docs in line.
   `pkg/doczcore/config` + `document` (validated by the Phase 3 consumer test
   against the tag, or a manual `go get` spot-check).
 - DESIGN-0007 is marked Implemented with its remaining OQs resolved.
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File / path | Action | Description |
@@ -307,7 +340,9 @@ Land the move as a public, pinnable surface and bring the living docs in line.
 | `test/consumer/{go.mod,consumer_test.go}` | Create | External-import smoke test (Open Question 2) |
 | `Makefile` | Modify | Add the consumer-module test invocation to `ci` |
 | `CLAUDE.md`, `CONTRIBUTING.md`, `DEVELOPMENT.md`, `README.md` | Modify | Repoint living-doc references |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] **Moved tests pass unchanged except import paths** — `config`/`document`
@@ -320,7 +355,9 @@ Land the move as a public, pinnable surface and bring the living docs in line.
       custom type.
 - [x] **`make ci` gates the move** — lint (`golangci-lint` + `golines`),
       license-check, build, full suite, and the consumer module.
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **None external.** This is a self-contained, single-repo relocation; all
@@ -331,7 +368,9 @@ Land the move as a public, pinnable surface and bring the living docs in line.
   for docz-api's *release*, not for starting it.
 - **Tooling:** `goreleaser` (existing `.goreleaser.yml`) for the `v0.5.0`
   release build.
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > **Resolved 2026-06-30** — see the [Decisions](#decisions) table for the chosen
@@ -410,7 +449,9 @@ so this matters.
   the sweep proves too large to land at once. The shim must not survive the
   release (OQ2a).
 - Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-06-30.
@@ -422,7 +463,9 @@ Resolved by user review on 2026-06-30.
 | 3   | `docz export --json`       | (a) deferred                                              | Not in this plan; docz-api does not need it (DESIGN-0008 R8). Revisit only when a concrete non-Go consumer appears        |
 | 4   | `v0.5.0` release mechanism | Label-driven — no manual tag                              | The promotion PR carries the **`minor`** label; on merge the release automation cuts `v0.5.0` and runs goreleaser         |
 | 5   | PR strategy                | (a) single atomic PR, no shim                             | Mechanical, compiler-verified sweep; reverts cleanly as one unit                                                         |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - **DESIGN-0007** — docz changes to support docz-api and docz-site (this plan's
@@ -437,3 +480,4 @@ Resolved by user review on 2026-06-30.
 - **IMPL-0008** — the earlier `internal/index` → `internal/document` move; prior
   art for a compiler-verified, behavior-preserving package relocation in this
   repo.
+<!--docz:references:end-->

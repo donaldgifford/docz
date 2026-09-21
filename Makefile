@@ -45,7 +45,7 @@ COVERAGE_OUT := coverage.out
 
 .PHONY: build
 .PHONY: test test-all test-coverage test-consumer
-.PHONY: parity parity-capture
+.PHONY: parity parity-capture validate
 .PHONY: lint lint-fix fmt clean
 .PHONY: run run-local test-api ci check
 .PHONY: release-check release-local
@@ -113,6 +113,17 @@ parity-capture: ## Capture parity goldens from the $(PARITY_TAG) release binary
 	[ -n "$$tmp" ] && rm -rf "$$tmp" || true
 	@echo "✓ Goldens captured into test/parity/testdata (record provenance in test/parity/README.md)"
 
+## Corpus validation (IMPL-0018 Phase 5)
+
+# Non-strict on purpose (DESIGN-0015, IMPL-0018 Open Question 7): errors fail
+# the build, warnings print and do not. The older hand-written documents carry
+# warnings this repo has not finished paying down, and gating on them would
+# make every unrelated change wait for that work.
+validate: build ## Validate this repository's own docs against their schemas
+	@ $(MAKE) --no-print-directory log-$@
+	@$(BIN) validate
+	@echo "✓ docs/ validates against its schemas"
+
 ## Code Quality
 
 lint: ## Run golangci-lint
@@ -173,7 +184,7 @@ license-report: ## Generate CSV report of all dependency licenses
 
 ## CI/CD
 
-ci: lint test test-consumer build license-check ## Run CI pipeline (lint + test + build + license check)
+ci: lint test test-consumer parity validate build license-check ## Run CI pipeline (lint + test + test-consumer + parity + validate + build + license check)
 	@ $(MAKE) --no-print-directory log-$@
 	@echo "✓ CI pipeline complete"
 

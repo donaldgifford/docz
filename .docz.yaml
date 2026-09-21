@@ -81,6 +81,10 @@ author:
 wiki:
   auto_update: true
   mkdocs_path: mkdocs.yml
+  markdown_extensions:
+    # Mermaid diagrams in the design docs are fenced blocks; without
+    # superfences the published site renders them as literal code.
+    - pymdownx.superfences
   exclude:
     - templates
     - examples

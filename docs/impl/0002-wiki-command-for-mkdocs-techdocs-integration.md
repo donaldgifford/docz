@@ -37,15 +37,19 @@ created: 2026-03-11
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement the `docz wiki` command group that generates and maintains a
 `mkdocs.yml` file compatible with Backstage's TechDocs plugin.
 
 **Implements:** DESIGN-0002
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - `WikiConfig` struct and integration into `Config` / `.docz.yaml`
@@ -57,13 +61,17 @@ Implement the `docz wiki` command group that generates and maintains a
 - Unit tests, integration tests, golden file tests
 - Update `init.go` default config to include `wiki` section with `plan` and
   `investigation` types
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Building or serving MkDocs sites (`mkdocs serve` / `mkdocs build`)
 - MkDocs theme, plugin, or extension management beyond `techdocs-core`
 - Non-markdown content tracking (images, PDFs)
 - Custom MkDocs plugins
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -72,12 +80,14 @@ are checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Configuration and Wiki Package Foundation
 
 Add the `WikiConfig` to the config system and build the core `internal/wiki/`
 package with nav scanning, title extraction, and MkDocs YAML read/write. No
 CLI commands yet — this phase is purely the internal libraries.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `WikiConfig` struct to `internal/config/config.go`:
@@ -143,7 +153,9 @@ CLI commands yet — this phase is purely the internal libraries.
 - [x] Write unit tests for `internal/wiki/mkdocs.go`: YAML round-trip
       preserves unknown fields; nav serialization format matches MkDocs
       expectations; nav order merging preserves existing order and appends new
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go build ./...` succeeds with no errors
@@ -153,14 +165,18 @@ CLI commands yet — this phase is purely the internal libraries.
   filename fallback
 - Nav tree correctly represents a nested directory structure
 - MkDocs YAML read/write preserves all non-nav fields
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: CLI Commands — `wiki init` and `wiki update`
 
 Wire the internal wiki package to Cobra commands and integrate with `docz
 create`.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `cmd/wiki.go`:
@@ -212,7 +228,9 @@ create`.
   - Create a document when `mkdocs.yml` exists → nav is updated
   - Create a document when `mkdocs.yml` doesn't exist → no wiki update
   - Create with `wiki.auto_update: false` → no wiki update
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz wiki init` in an empty directory creates `.docz.yaml`, docs structure,
@@ -225,14 +243,18 @@ create`.
 - `docz wiki update` preserves existing section order and appends new sections
 - `docz create rfc "Title"` auto-updates the nav when `mkdocs.yml` exists
 - All non-nav fields in `mkdocs.yml` are preserved across updates
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Polish, Edge Cases, and CI Readiness
 
 Harden the wiki commands with edge case handling, ensure all tests pass,
 and prepare for merge.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Audit error messages across wiki commands for consistency with existing
@@ -253,7 +275,9 @@ and prepare for merge.
       `wiki update`, compare generated `mkdocs.yml` nav against expected output
 - [x] Update `README.md` with `docz wiki` command documentation
 - [x] Update `DEVELOPMENT.md` if wiki package introduces new patterns
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes with zero errors
@@ -263,9 +287,12 @@ and prepare for merge.
 - `--verbose` output is useful for debugging wiki operations
 - `README.md` documents the wiki commands
 - Golden file tests validate nav output for a representative directory structure
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 Key files that will be created or modified, organized by phase.
@@ -300,7 +327,9 @@ Key files that will be created or modified, organized by phase.
 | `README.md` | Modify | Add wiki command documentation |
 | `DEVELOPMENT.md` | Modify | Document wiki package patterns (if needed) |
 | Various `internal/wiki/*.go` | Modify | Edge case handling, verbose output |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Unit tests for `internal/wiki/titles.go`: frontmatter title extraction,
@@ -317,17 +346,22 @@ Key files that will be created or modified, organized by phase.
       mkdocs.yml present, skipped when absent or disabled
 - [x] Golden file tests for nav output given a representative directory tree
 - [x] Table-driven tests for title extraction edge cases
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - `go.yaml.in/yaml/v3` — already in `go.mod`, used for MkDocs YAML I/O
 - `github.com/spf13/cobra` — already in `go.mod`, used for CLI commands
 - No new external dependencies required
 - `os`, `path/filepath`, `sort`, `strings`, `regexp`, `bufio` from stdlib
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0002: Wiki Command for MkDocs TechDocs Integration](../design/0002-wiki-command-for-mkdocs-techdocs-integration.md)
 - [IMPL-0001: docz CLI Implementation](0001-docz-cli-implementation.md)
 - [Backstage TechDocs](https://backstage.io/docs/features/techdocs/)
 - [MkDocs Configuration](https://www.mkdocs.org/user-guide/configuration/)
+<!--docz:references:end-->

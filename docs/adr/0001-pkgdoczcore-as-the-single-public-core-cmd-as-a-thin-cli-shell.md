@@ -11,6 +11,7 @@ created: 2026-07-03
 
 <!--toc:start-->
 - [Status](#status)
+- [Summary](#summary)
 - [Context](#context)
   - [What the code looks like today (the facts that make this feasible)](#what-the-code-looks-like-today-the-facts-that-make-this-feasible)
   - [The benchmark](#the-benchmark)
@@ -40,6 +41,22 @@ created: 2026-07-03
 Accepted (2026-07-03 — all seven open questions resolved; implemented by
 IMPL-0014)
 
+<!--docz:summary:start-->
+## Summary
+
+Establish `pkg/doczcore` as docz's single public core: any package an external
+consumer requires is promoted **whole** out of `internal/` unless a documented
+reason keeps the machinery private, which makes the frozen surface
+`pkg/doczcore/{config,document,docparse,docwrite,toc}` and leaves `template`,
+`index`, and `wiki` in `internal/` as the CLI's private half. `cmd/` plus
+`internal/` stay the CLI product — cobra wiring, the `Runner`, flags, output
+formatting, and exit codes only — while `pkg/doczcore` becomes the library
+product. All of it ships in a single `v1.0.0`, the first release whose exported
+identifiers under `pkg/doczcore/*` are a semver-governed compatibility
+contract, and it changes no CLI command, output, or exit code.
+<!--docz:summary:end-->
+
+<!--docz:context:start-->
 ## Context
 
 docz began as a single CLI binary with all logic under `internal/`. As external
@@ -100,8 +117,32 @@ the INV-0006 demand audit shows the four-package demand core (`config`,
 `toc` splice on top (export-lean, Decision 2). This ADR does not remove or
 change any capability; it fixes where the public boundary sits and freezes
 the API behind it.
+<!--docz:context:end-->
 
+<!--docz:decision:start-->
 ## Decision
+
+> **Amendment (2026-09-20 — [ADR-0002](0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
+> / IMPL-0018):** this ADR stays **Accepted** and most of it still governs, but
+> three items are superseded in part. Decision 2's retention of `template`,
+> `index`, and `wiki` in `internal/` is **superseded**: they are promoted as
+> `pkg/doczcore/doctemplate`, `pkg/doczcore/index`, and `pkg/wiki`, `internal/`
+> is empty, and `template` is therefore importable as `doctemplate` — so
+> Decision 3's public→internal allowance, while still legal, has nothing left
+> to reach. Decision 4's "`cmd/` + `internal/` are the CLI product" is
+> **superseded**: `cmd/` alone is, and it orchestrates through
+> `pkg/doczcore/repo`. IMPL-0014 Decision 3(d)'s drop of the plan model is
+> **superseded** by `pkg/impl`.
+>
+> Decision 6's freeze is unchanged for the five original packages: the v2 line
+> carries `config`, `document`, `docparse`, `docwrite`, and `toc` forward in
+> their v1 shapes through the betas, with one breaking change to the catalogue
+> they describe — `plan` leaves it
+> ([ADR-0003](0003-remove-plan-from-the-built-in-document-types.md)). The
+> freeze does **not** reach the packages ADR-0002 adds: they are experimental
+> until v2.0.0 proper, may change between betas, and freeze when it ships.
+> Decisions 1, 5, and 7 are kept as written. ADR-0002's "What this supersedes
+> in ADR-0001" table is the item-by-item record.
 
 > Revised 2026-07-03 after the INV-0006 per-package demand audit and design
 > review. The original draft moved *all* `internal/` packages public; the
@@ -194,9 +235,12 @@ All of this ships in the single `v1.0.0` release:
 - **NOT covered:** `cmd/`, any code that remains in `internal/`, `test/`, the
   CLI's stdout/stderr **text** and exit codes (these get a separate, looser
   CLI-stability note), and the **contents/names of embedded templates**.
+<!--docz:decision:end-->
 
+<!--docz:consequences:start-->
 ## Consequences
 
+<!--docz:positive:start-->
 ### Positive
 
 - **One coherent public surface**, designed as a whole rather than accreted
@@ -211,7 +255,9 @@ All of this ships in the single `v1.0.0` release:
   reshaped without a major bump.
 - **An explicit stability guarantee** external consumers can pin — the point of a
   `v1.0.0`.
+<!--docz:positive:end-->
 
+<!--docz:negative:start-->
 ### Negative
 
 - **`Create` and the `toc` splice become contract without a consumer.**
@@ -237,7 +283,9 @@ _The original draft's negatives — freezing CLI-shaped `template`/`index`/
 `wiki` APIs under semver, and the demand mismatch of promoting surface no
 consumer asked for — are resolved by the revised scope rather than accepted:
 those packages stay `internal/` (INV-0006)._
+<!--docz:negative:end-->
 
+<!--docz:neutral:start-->
 ### Neutral
 
 - **Dependency graph barely changes.** With viper removed in this release the
@@ -248,6 +296,8 @@ those packages stay `internal/` (INV-0006)._
 - **Version jump is bookkeeping.** The `major` label drives `v1.0.0` through the
   existing `pr-semver-bump` + goreleaser automation, same mechanism as prior tags.
 - **No CLI behavior change.** This is a relocation + freeze, not a feature change.
+<!--docz:neutral:end-->
+<!--docz:consequences:end-->
 
 ## Corner Cases
 
@@ -295,6 +345,7 @@ those packages stay `internal/` (INV-0006)._
    import paths, so v0.5.0/v0.6.0 consumers are unaffected — the consolidation is
    additive for them.
 
+<!--docz:alternatives:start-->
 ## Alternatives Considered
 
 - **A. Status quo — promote on demand.** Keep `internal/` as the default and
@@ -313,7 +364,9 @@ those packages stay `internal/` (INV-0006)._
   the remaining logic packages into the existing `pkg/doczcore/*` namespace and
   commit to semver at v1.0. Chosen as the base for discussion; the open questions
   below refine it.
+<!--docz:alternatives:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters are
@@ -426,7 +479,9 @@ those packages stay `internal/` (INV-0006)._
   after a documented deprecation window (one minor with `Deprecated:` markers).
 - b. A stricter/looser variant (specify).
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by review on 2026-07-03, grounded in the INV-0006 per-package demand
@@ -444,7 +499,9 @@ carries the implementation plan.
 | —   | CLI-shaped `config` helpers       | keep                                          | `TypesHelp`/`DefaultNavTitles`/`ResolveTypeAlias` stay public (export-lean); documented as CLI-support (INV-0006 Q4a)       |
 | 7   | Post-1.0 compat policy            | (a) simplified — roll forward                 | standard semver coverage; breaking changes = major bump; no mandatory deprecation window (`Deprecated:` markers when practical) |
 | —   | API design principles             | adopted (Decision 5)                          | bytes-in/values-out; no library-defined interfaces; options/result structs; path-writers only on consumer demand            |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - **INV-0006** — per-package core requirements audit (docz CLI vs docz-api,
@@ -461,3 +518,4 @@ carries the implementation plan.
   `sdk-booty-sh` v0.6.0 requirements handoff (loop harness).
 - **Release mechanism** — `pr-semver-bump` (`major` label → `v1.0.0`) + goreleaser,
   same path as prior tags.
+<!--docz:references:end-->

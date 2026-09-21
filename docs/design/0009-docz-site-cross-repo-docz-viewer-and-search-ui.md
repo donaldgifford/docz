@@ -43,6 +43,7 @@ created: 2026-06-23
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 **docz-site** is the web front end that lets a team browse, search, and read
@@ -71,9 +72,11 @@ This document derives from INV-0005 ("docz-api and docz-site: centralized
 cross-repo docz registry and viewer") and honors its locked decisions. It is
 written to seed a brand-new `docz-site` git repository, so it restates the
 essential context rather than assuming the docz or docz-api repos are open.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - **One URL for all docz documents.** Navigate repos → a repo → its doc types →
@@ -94,7 +97,9 @@ essential context rather than assuming the docz or docz-api repos are open.
   end-to-end before building the full navigation, search, and auth.
 - **A responsive layout** — sidebar navigation + content area — that degrades to
   a single column on small screens.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - **Authoring or editing documents.** docz-site is read-only; docs are created
@@ -113,7 +118,9 @@ essential context rather than assuming the docz or docz-api repos are open.
 - **Implementing the authorization policy.** docz-site renders what docz-api
   returns; the policy (GitHub repo access vs. OIDC group claims) lives in
   docz-api.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 The viewer half of INV-0005 settled on a shape that this design fills in. The
@@ -140,7 +147,9 @@ What this design adds on top of INV-0005 is the concrete front-end shape: tech
 stack, information architecture and routes, search UX, the reader pipeline, auth
 and session handling against docz-api, the standard loading/empty/error states,
 and the responsive layout.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### Tech stack proposal
@@ -363,7 +372,9 @@ Breakpoints:
 
 The reader content column is width-capped (~72ch) for readability regardless of
 viewport.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 docz-site is a new app and defines no public API of its own. This section
@@ -463,7 +474,9 @@ function DocReader({ owner, repo, type, docId }: DocReaderProps) {
   );
 }
 ```
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 The site is **essentially stateless** — a thin client with no database. The
@@ -549,7 +562,9 @@ HTML may be memoized per `docId` within a session to avoid re-parsing on
 re-mount; it is never written to durable storage. No localStorage of document
 content (it would duplicate access-scoped data outside docz-api's control); only
 UI preferences (theme, last provider) may be persisted.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Component / unit (Vitest + Testing Library).** Breadcrumbs derive correctly
@@ -575,7 +590,9 @@ UI preferences (theme, last provider) may be persisted.
   keyboard navigation through sidebar, search, facets, and the in-page ToC;
   visible focus states; correct landmark/heading structure in the reader;
   color-contrast on status badges.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 This is a **greenfield repository** with no existing users to migrate; "rollout"
@@ -602,7 +619,9 @@ means the build order, which follows Decision 8 (thin vertical slice first).
 
 Each slice is independently shippable; nothing in a later slice is required for
 an earlier one to be useful.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 Each question is numbered; option `a` is the recommendation, later letters are
@@ -687,7 +706,9 @@ alternatives, and "Other" is free-form for review.
 - c. Render the marker block *and* a generated rail, accepting possible
   duplication.
 - d. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0005 — "docz-api and docz-site: centralized cross-repo docz registry and
@@ -707,3 +728,4 @@ alternatives, and "Other" is free-form for review.
 - DOMPurify — HTML sanitization for the reader's XSS surface (Open Question 5).
 - TanStack Query — client-side request cache / data layer.
 - Playwright — end-to-end testing against a mocked/fixture docz-api.
+<!--docz:references:end-->

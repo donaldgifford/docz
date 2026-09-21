@@ -41,6 +41,7 @@ created: 2026-06-18
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement DESIGN-0006 — make a user-declared custom document type (e.g.
@@ -69,9 +70,12 @@ decisions in that doc's §Decisions table are locked and inherited here
 (notably **6b**: add an explicit per-type `aliases:` field on top of
 implicit `id_prefix` matching). Implementation-level questions not settled
 by the design are recorded in the [Decisions](#decisions) table.
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - New embedded `internal/template/templates/index_default.md` — the generic
@@ -94,7 +98,9 @@ by the design are recorded in the [Decisions](#decisions) table.
 - Tests at every layer (template tiers, index splice, config resolution +
   validation, cmd integration with a real custom type) and an end-to-end
   smoke
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - An explicit per-type `index_template:` config key — Decision 7 defers it
@@ -107,6 +113,8 @@ by the design are recorded in the [Decisions](#decisions) table.
   on `docz init` — the generated fallback removes the need (Decision 7)
 - Per-type custom *status lifecycles* beyond what `TypeConfig.Statuses`
   already supports — unchanged
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -117,6 +125,7 @@ dependency; the output and input axes are otherwise independent.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: `internal/template` — index-header resolution
 
 Add the resolver and the generic fallback template **additively** —
@@ -126,6 +135,7 @@ generic-fallback tier is rendered through `text/template`; type-specific
 embedded headers and disk overrides are returned verbatim (Decision 2),
 which keeps the six built-in headers byte-identical.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `internal/template/templates/index_default.md` as a
@@ -155,7 +165,9 @@ which keeps the six built-in headers byte-identical.
     the output contains the `PluralLabel` and the `docz create <type>` line
   - tier 3 empty label: `IndexHeaderData{PluralLabel: ""}` still yields a
     non-empty, well-formed header
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go build ./...` and `go vet ./...` clean; `make lint` zero issues
@@ -164,9 +176,12 @@ which keeps the six built-in headers byte-identical.
   pre-change `EmbeddedIndexHeader`
 - No change yet to `internal/index` or `cmd/`; `EmbeddedIndexHeader` still
   present and used
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: decouple `internal/index` + wire callers (output axis ships)
 
 Make `internal/index` a pure marker-splicer that receives a resolved header
@@ -176,6 +191,7 @@ frameworks "…"` and `docz update frameworks` succeed end-to-end for a
 custom type (the type already resolves by its canonical name; only the
 header was missing).
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Change `index.UpdateReadme(readmePath, header, tableContent string)`
@@ -216,7 +232,9 @@ header was missing).
 > `internal/config` to `internal/template`'s
 > `TestResolveIndexHeader_EmbeddedBuiltin` (it now reads the embedded FS
 > directly and asserts byte-identity for every registry type).
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz update frameworks` and `docz create frameworks "X"` succeed
@@ -227,9 +245,12 @@ header was missing).
   tier-2 golden guard still passes
 - `go test -race -shuffle=on -count=3 ./internal/index/... ./cmd/...` green
 - `make lint` clean
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: `internal/config` — `TypeConfig.Aliases` + `resolveType` (input axis: single-type)
 
 Add the per-type alias field and the new resolution precedence so a custom
@@ -237,6 +258,7 @@ type resolves by its `id_prefix` or a declared alias on every
 single-`<type>` command (`create`, `update <type>`, `list <type>`,
 `status set`, `template`). Validation of collisions lands in Phase 4.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `Aliases []string` to `TypeConfig`
@@ -271,7 +293,9 @@ single-`<type>` command (`create`, `update <type>`, `list <type>`,
 > `TypeConfig` to 144 bytes, over gocritic's `rangeValCopy` threshold; the
 > two pre-existing value-range loops in `config.go` (`Validate`,
 > `fillTypeFieldDefaults`) were converted the same way in this phase.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz create FW "X"`, `docz list fw`, `docz status set FW FW-0003
@@ -280,14 +304,18 @@ single-`<type>` command (`create`, `update <type>`, `list <type>`,
   regressions); `RFC`/`ADR`/… shorthands now also resolve (Decision 4)
 - `go test -race -shuffle=on -count=3 ./internal/config/... ./cmd/...` green
 - `make lint` clean
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: `internal/config` — `EnabledTypes()` inclusion + `Validate` collisions (input axis: iteration & safety)
 
 Close the no-argument iteration gap and add the guardrails the new
 resolution keys require.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Fix `EnabledTypes()` to include enabled custom types. Built-in types
@@ -325,7 +353,9 @@ resolution keys require.
 > `map[token]owner`, where a token claimed by two different owners is the
 > error. A token claimed twice by the *same* type (e.g. a built-in whose
 > name and `id_prefix` both lower-case to `rfc`) is allowed.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - No-arg `docz update` creates/updates the custom type's README; `docz
@@ -335,11 +365,15 @@ resolution keys require.
   startup (`PersistentPreRunE`) with a clear, actionable message
 - `go test -race -shuffle=on -count=3 ./...` green
 - `make lint` clean
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: verify and ship
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Full `make ci` green (lint + test + build + license-check)
@@ -381,7 +415,9 @@ resolution keys require.
 > markers — so an override added after first generation takes effect on the
 > next regeneration (e.g. after the README is removed), which is the
 > intended marker semantics, not a regression.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` green on the final commit
@@ -391,9 +427,12 @@ resolution keys require.
 - CLAUDE.md mentions custom-type support in the relevant `internal/template`,
   `internal/index`, `internal/config`, and `cmd/` lines
 - Branch ready to merge with the standard squash flow
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -413,7 +452,9 @@ resolution keys require.
 | `docs/design/0006-custom-document-type-support.md` | Modify | Flip `Approved` → `Implemented` on merge |
 | `docs/impl/0012-custom-document-type-support.md` | Modify | Flip `Draft` → `Completed` on merge |
 | `docs/impl/README.md`, `docs/design/README.md` | Modify | Auto-regenerated by `docz update` |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] `internal/template` — tier-1 verbatim (incl. literal `{{`), tier-2
@@ -432,7 +473,9 @@ resolution keys require.
 - [x] `go test -race -shuffle=on -count=3 ./...` green at the end of every
       phase
 - [x] One end-to-end scratch-repo smoke captured in Phase 5
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-06-18. All recommendations accepted.
@@ -449,7 +492,9 @@ authoritative for the design-level choices this plan inherits.
 | 6 | `TypeConfig.Aliases` on built-ins | (a) Yes — union a built-in's `aliases:` with its registry aliases | One code path; lets users add e.g. `r` for `rfc` |
 | 7 | `docz init` template stubs | (a) No — rely on the generated fallback + optional `docs/templates/` overrides | A custom type works with zero scaffolded files; avoids littering the tree (a body template is still required to `create`) |
 | 8 | PR strategy | (a) One PR for all five phases, label `minor` | Cohesive feature, ~<600 LOC; matches the IMPL-0009/0011 single-PR precedent |
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **Blocking:** none. DESIGN-0006 is `Approved`; the IMPL-0009 Runner
@@ -460,7 +505,9 @@ authoritative for the design-level choices this plan inherits.
   precedent)
 - **Roadmap:** follows the v1 sequence after IMPL-0011 (status set);
   unrelated to the rfc-api consumer that drove IMPL-0011
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0006](../design/0006-custom-document-type-support.md) — the design
@@ -481,3 +528,4 @@ authoritative for the design-level choices this plan inherits.
   in resolution tier 2)
 - `cmd/wiki.go:299` — existing `NavTitles → PluralLabel → ToUpper` nav-title
   cascade that custom types reuse once in `EnabledTypes()`
+<!--docz:references:end-->

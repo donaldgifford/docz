@@ -2,6 +2,10 @@
 // directory and splices it between the BEGIN/END markers in each type's
 // README.md.
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // Promoted whole from internal/index (IMPL-0018 Phase 2, DESIGN-0014 §2.6).
 // Scanning lives in pkg/doczcore/document; this package only builds the table
 // and puts it where the markers say. Splice is the whole of it as a pure

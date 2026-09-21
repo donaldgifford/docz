@@ -27,7 +27,7 @@ stays a source-only run and nothing in CI needs a binary until Phase 5 wires
 | go.mod checksum | `h1:YWffd55Zk1BGmaaw1cm4sPaIbnJuzi9wbRaBYtV7EnQ=` |
 | Toolchain | `go1.26.4` |
 | Platform | `darwin/arm64` |
-| Captured | 2026-09-20, IMPL-0018 Phase 0; re-captured the same day in Phase 1 |
+| Captured | 2026-09-20, IMPL-0018 Phase 0; re-captured the same day in Phase 1; re-captured 2026-09-21 in Phase 5 |
 | Cases | 213 across 7 fixtures |
 
 The Phase 1 re-capture changed only the size and digest on each recorded file:
@@ -35,6 +35,26 @@ the `markers` normaliser learned to take a marker's blank line with it, and
 sizes moved onto the normalised body. Every content line of every golden is
 byte-identical to the Phase 0 capture, and the goldens still come from the
 v1.2.2 binary, not from a v2 build.
+
+The Phase 5 re-capture fixed a date the suite could not survive. The
+`investigation` fixture's README carried a row dated 2026-09-20, the day the
+fixture was hand-written, in the vestigial second marker pair that issue #99
+left there — and because the index splice only ever rewrites the *first* pair,
+nothing would ever refresh it. On the capture day the `date` normaliser
+rewrote it to `$DATE`, so the golden recorded the size and digest of a body
+five bytes shorter than the file on disk; on every later day it recorded the
+file as it is. Eleven `investigation` cases failed the moment the calendar
+moved, on a file none of them touched.
+
+Two changes, so it cannot recur. The fixture's date is frozen to 2026-03-04,
+matching the document it names and every other fixture date. And `today` is
+now computed as `time.Now().UTC()`: `run` pins the child to `TZ=UTC` and the
+child is what stamps the date, so computing it in the runner's own zone made
+the two agree only where local and UTC name the same day — every CI runner,
+and a workstation for part of the day. `TestFixturesCarryNoCurrentDate` fails
+on any fixture file containing today's date, which is the day such a date
+would be introduced. Only the `investigation` README's size and digest and the
+three recorded copies of that row differ from the Phase 1 capture.
 
 `make parity-capture` installs the tag into a temporary `GOBIN` rather than
 trusting whatever `docz` is on `PATH`. The installed binary reports
@@ -56,7 +76,8 @@ with the reason in the pull request that does it.
 
 ## Permitted deltas
 
-DESIGN-0014 §4 allows three, and IMPL-0018 Open Question 8 adds a fourth:
+DESIGN-0014 §4 allows three, IMPL-0018 Open Question 8 adds a fourth, and
+Phase 5 adds a fifth:
 
 | Delta | Why | How it is handled |
 | ----- | --- | ----------------- |
@@ -64,6 +85,7 @@ DESIGN-0014 §4 allows three, and IMPL-0018 Open Question 8 adds a fourth:
 | New commands and flags | `docz validate` did not exist in v1.2.2 | No golden covers them; they get their own tests |
 | New findings printed by existing commands | warnings the v1 CLI could not produce | Argued for per case in the PR that adds them |
 | Every trace of the `plan` document type | ADR-0003 removes the built-in on the v2 line | The `plan` normaliser, applied to **both** sides at comparison time |
+| The duplicate index marker pair | repo.Init writes `index.Scaffold`, fixing issue #99 | The `index-pair` normaliser, applied to **both** sides at comparison time |
 
 Anything else that differs is a regression until someone shows otherwise.
 
@@ -91,11 +113,22 @@ Each is named, lives outside the build tag, and has unit tests that run in
   templates' *Implements* and *Triggered by* hints. Every rule is anchored on a
   spelling only the type uses, so `impl: Implementation Plans` and
   `## Testing Plan` are left alone.
+- **index-pair** collapses a repeated, empty index marker pair down to one.
+  Issue #99: two of the embedded index headers end with their own pair and v1's
+  `init` appended another unconditionally, so a new repository got a second pair
+  no splice would ever touch again — the table always fills the first.
+  `repo.Init` writes `index.Scaffold`, which appends a pair only when the header
+  lacks one. Only an empty pair directly following another pair's end is
+  collapsed, so a golden that records a spliced README still compares its table
+  line by line.
 
-**plan is the one normaliser that runs on both sides**, in `runCase` rather
-than in the `norms` list, because the golden is the side carrying the removed
-type: normalising only the captured output would leave every trace as a
-difference. Two consequences follow from that symmetry.
+**plan and index-pair are the two normalisers that run on both sides**, in
+`runCase` rather than in the `norms` list, because the golden is the side
+carrying what they remove — the removed type, and the duplicate pair.
+Normalising only the captured output would leave every trace as a difference.
+They run in that order: plan is what replaces a recorded body's size and
+digest, so it has to see the body list before index-pair edits any body. Two
+consequences follow from that symmetry.
 
 A `stdout` or `stderr` block the pass empties is rewritten to `(empty)`, so a
 legacy fixture whose only stderr was the plan warning matches a run that

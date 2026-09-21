@@ -44,6 +44,7 @@ created: 2026-09-12
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 Add a sixth frontmatter field, `updated: YYYY-MM-DD`, recording the date a
@@ -57,9 +58,11 @@ purpose-built `docwrite.SetUpdated` — the package's first upsert, kept
 deliberately narrow. The commit sha is explicitly out of scope; INV-0008
 Decision 2 already fixed its future shape (`updated_sha:`) so a follow-up
 does not reopen it.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Every docz document in an opted-in repo carries `updated: YYYY-MM-DD`,
@@ -78,7 +81,9 @@ does not reopen it.
   handled, not guessed at.
 - `docwrite` gains exactly one new operation, `SetUpdated`, with the same
   byte-preservation and LF-only contract as `SetStatus`.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - **No commit sha.** Deferred to a follow-up by INV-0008's recommendation;
@@ -93,7 +98,9 @@ does not reopen it.
 - No backfill on the docz-api side; snapshots refresh on each repo's next
   ingest, as with every prior contract addition.
 - Not a change to `toc:` or `index:` behavior beyond the `Updated` column.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 Every docz document carries `id`, `title`, `status`, `author`, `created`.
@@ -132,7 +139,9 @@ Prior art this design leans on:
   where the git work goes.
 - **DESIGN-0008 R7, R10, R11** — the frontmatter column contract and the
   R-series pattern for ratifying a new surface.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### The field
@@ -411,7 +420,9 @@ Added to DESIGN-0008's R-series alongside this release:
 
 `test/consumer` gains a parse assertion for the field and a decode of the
 config block, so the surface is proven importable from outside the module.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 **Public (`pkg/doczcore`, additive, `minor` release):**
@@ -436,7 +447,9 @@ config block, so the surface is proven importable from outside the module.
 **Config:** the `updated:` block above. **Templates:** unchanged.
 **`cmd`-internal:** `GitResolver` grows three methods; `staticGit` becomes
 scriptable; `index.GenerateTable` takes a layout parameter.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 Frontmatter, before and after enabling:
@@ -454,7 +467,9 @@ Config struct addition and its `config_snapshot` JSON shape:
 
 docz-api (follow-up on that side): `documents.updated DATE NULL`, populated
 from the parsed frontmatter on each ingest; no backfill.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **`docwrite`** — golden fixtures under `testdata/golden/updated/`
@@ -489,7 +504,9 @@ from the parsed frontmatter on each ingest; no backfill.
   assert `Shallow` is false. A new pattern in `cmd/`, kept to one file.
 - **`test/consumer`** — R12 proof from outside the module.
 - **`make ci`** green at the end of every IMPL phase.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 1. **Ship as a `minor` release** (new public field, block, and function),
@@ -514,7 +531,9 @@ from the parsed frontmatter on each ingest; no backfill.
    block; bundled templates unchanged (issue #95 scope grows by one section).
 7. **Follow-up, not now:** `updated_sha:` per INV-0008 Decision 2, designed
    around the trailing-commit cost recorded in INV-0008 Observation 6.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 All eight resolved **(a)** on 2026-09-12; see [Decisions](#decisions). The
@@ -674,7 +693,9 @@ prints one `Updated <path>` line per type.
   headings changed, so in every later case it *is* content — and the
   parser has to track a region instead of a line.
 - c. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All eight open questions resolved **(a)** on 2026-09-12.
@@ -689,7 +710,9 @@ All eight open questions resolved **(a)** on 2026-09-12.
 | 6   | `Date` → `Created` rename         | Only in the enabled layout, which re-renders anyway; dormant repos keep `Date` byte-for-byte                                                 |
 | 7   | Normal-run output                 | Silent on success, debug log per document, matching the ToC pass; warnings still print                                                      |
 | 8   | Bookkeeping filter scope          | Only the `updated:` line is bookkeeping; `status:` flips, ToC regeneration, and whitespace all count as changes                             |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [INV-0008](../investigation/0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md)
@@ -710,3 +733,4 @@ All eight open questions resolved **(a)** on 2026-09-12.
 - `cmd/git.go`, `cmd/update.go`, `cmd/create.go`, `cmd/status.go`,
   `pkg/doczcore/docwrite/status.go`, `internal/index/index.go` — the code
   paths this design changes
+<!--docz:references:end-->

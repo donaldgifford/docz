@@ -36,6 +36,7 @@ created: 2026-08-10
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 Add an opt-in `api:` block to `.docz.yaml` that declares what docz-api ingests
@@ -55,9 +56,11 @@ is to be a **validated, semver-governed declaration** that consumers read.
 INV-0007 audited what this costs docz internally: the config half is routine,
 but the feature also needs one genuine addition to the frozen public surface —
 a bytes-in title extractor for documents that have no frontmatter.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Make everything a repo puts under `docs_dir` reachable on docz-site, without
@@ -72,7 +75,9 @@ a bytes-in title extractor for documents that have no frontmatter.
 - Give consumers a supported way to derive a display title for a document with
   no frontmatter, so the H1 rule is defined once in docz rather than
   reimplemented per consumer.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - **No CLI behavior change.** `docz create`/`update`/`list`/`wiki` ignore the
@@ -87,7 +92,9 @@ a bytes-in title extractor for documents that have no frontmatter.
 - **No asset pipeline.** Images and other binaries are out of scope for this
   design (Decision 10).
 - **Not a replacement for `wiki:`.** MkDocs nav generation stays as it is.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 Three things converge here.
@@ -119,7 +126,9 @@ validated it only when enabled, and emitted it default-off from `docz init`.
 the path-hardening rules — control characters, backslashes, absolute paths,
 Windows volume names, `~`, trailing `/`, `..` and non-canonical segments —
 which were expensive to get right and must not be reinvented (INV-0007 F3).
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### The api block
@@ -327,7 +336,9 @@ is `.../examples`, matching how `docs/impl/README.md → .../impl` already works
 One thing left to docz-site: **whether `.md` appears in the URL**
 (`/examples/example1` vs `/examples/example1.md`). docz supplies the path with
 its extension; stripping it is presentation.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 | Change | Surface | Kind |
@@ -380,7 +391,9 @@ rediscover as a bug:
   type page's body (consumption rule 2). Dropping it is the most likely way to
   get this wrong, since it is the one file that both fails `IsDoczFile` and
   lives inside a type directory.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 docz itself stores nothing — the config *is* the model. For consumers, the
@@ -403,7 +416,9 @@ nobody has asked for a curated `docs/` nav.
 
 The landing page is a nullable pointer on the repo record rather than a row in
 this table; it is one per repo and addressed as the repo root.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 Mirrors IMPL-0015's approach for `changelog:`.
@@ -443,7 +458,9 @@ surface is importable exactly as docz-api will import it.
 
 **Parity:** `parity_baseline_test.go` continues to pin lenient unknown-key
 decoding and case-sensitivity; the new block must not disturb either.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 1. **Ship dormant.** `v1.2.0` adds the schema, normalization, validation,
@@ -468,7 +485,9 @@ under `docs_dir`.** A repo with `docs/scratch/` or a stray `docs/TEMP-design.md`
 (this repo had exactly that during IMPL-0015) publishes it unasked. That is the
 cost of not enumerating, and `api.exclude` is the mitigation. Worth a sentence
 in the README and in the generated config's comments.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 **None.** All ten were resolved on 2026-08-10; see **Decisions** below. The
@@ -476,6 +495,11 @@ question that produced Decision 10 is kept here for its alternatives, since a
 future asset design will want them.
 
 ### 10. Should images and other assets be consumed?
+
+> **Resolved 2026-08-10: (a)** — out of scope for docz: no config and no schema
+> change, because assets are not documents. See [Decisions](#decisions) row 10
+> and revision-history item 5, which closed this to keep the design to the
+> config block and `docparse.Title`.
 
 Markdown under `docs_dir` routinely references relative images
 (`![diagram](./images/arch.png)`). If only `.md` is ingested, those render
@@ -501,7 +525,9 @@ today is a question for that repo.
   against, unless docz also grows a `Links` extractor.
 - **d. No asset support.** Images 404. Honest and cheap, but a design doc with
   a broken architecture diagram is a bad first impression of the site.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All ten open questions resolved **(a)** on 2026-08-10, across three rounds of
@@ -554,7 +580,9 @@ records how it got there.
    `.../examples`.
 5. **Decision 10 (assets) closed as out of scope**, keeping this design to the
    config block and `docparse.Title`.
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0007 — the internals audit this design is built on; its three decisions
@@ -569,3 +597,4 @@ records how it got there.
 - ADR-0001 — five-package public core, whole-package promotion, roll-forward
   semver, facts-not-interpretation
 - `.docz.example.yaml` — the drafted `api:` block this design formalizes
+<!--docz:references:end-->

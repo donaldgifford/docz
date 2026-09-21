@@ -291,8 +291,14 @@ func TestInferRegions_OneMarkerIsEnough(t *testing.T) {
 }
 
 // Inference has to work on the corpus, not only on templates. ADR-0002 is a
-// real hand-written document with no region markers, and it is the shape
-// `docz validate --fix` will meet on every repo in the fleet.
+// real hand-written document, and with its markers taken back out it is the
+// shape `docz validate --fix` meets on every repo in the fleet that has not
+// run it yet.
+//
+// The strip is deliberate. IMPL-0018 Phase 5 migrated this repo's own corpus,
+// so there is no longer an unmarked document in `docs/` to point at — and
+// swapping in a frozen snapshot would stop the test from following what
+// people actually write. Un-migrating a real document keeps both.
 func TestInferRegions_OverARealDocument(t *testing.T) {
 	t.Parallel()
 
@@ -306,14 +312,16 @@ func TestInferRegions_OverARealDocument(t *testing.T) {
 		t.Skipf("ADR-0002 not found in this checkout: %v", err)
 	}
 
-	doc, err := os.ReadFile(paths[0])
+	body, err := os.ReadFile(paths[0])
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	doc := []byte(markerLine.ReplaceAllString(string(body), ""))
+
 	regions, inferred := kinds.ResolveRegions(doc, kinds.SpecFromTemplate([]byte(marked)))
 	if !inferred {
-		t.Fatal("ADR-0002 carries region markers; pick another unmarked document")
+		t.Fatal("ADR-0002 still carries region markers after the strip")
 	}
 
 	found := make(map[string]bool, len(regions))

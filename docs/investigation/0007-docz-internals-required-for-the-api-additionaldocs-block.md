@@ -36,6 +36,7 @@ created: 2026-08-10
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 DESIGN-0011 proposes an `api:` block in `.docz.yaml` carrying an index page
@@ -45,7 +46,9 @@ require changes to docz's internals and public surface?**
 
 The working assumption going in was "there is not much we have to do." This
 investigation is a concrete audit of that assumption.
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 Mostly additive. `ChangelogConfig` (DESIGN-0010 / IMPL-0015) is the exact
@@ -57,7 +60,9 @@ follow the same shape and be similarly self-contained.
 **The hypothesis is partly wrong.** The config half is as small as expected;
 the *parsing* half is not, because additional docs are the first documents docz
 would describe that have neither frontmatter nor a docz filename.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 **Triggered by:** DESIGN-0011 (`api:` block), which in turn serves DESIGN-0008
@@ -68,7 +73,9 @@ This matters *now* rather than later because `pkg/doczcore` is frozen under
 semver (ADR-0001): additive changes are a minor bump, but a helper that turns
 out to be needed after the fact is either a second minor release or a
 consumer-side reimplementation that drifts from docz's own behavior.
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Read the drafted `api:` block in `.docz.example.yaml` and enumerate every
@@ -81,7 +88,9 @@ consumer-side reimplementation that drifts from docz's own behavior.
    assumptions that additional docs would violate.
 5. Grep the public packages for the specific capabilities implied (title
    extraction, path validation, filename classification).
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component | Version / Value |
@@ -90,7 +99,9 @@ consumer-side reimplementation that drifts from docz's own behavior.
 | Branch | `docs/design-api-additional-docs` |
 | Precedent | DESIGN-0010 / IMPL-0015 (`changelog:` block) |
 | Consumers | docz-api (DESIGN-0008), docz-site (DESIGN-0009) |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### F1. The config block itself is genuinely small
@@ -258,10 +269,12 @@ doc. Both are defensible — the MkDocs nav and the docz-site surface are
 different products — but a reader will notice one config excluding what the
 other includes. Worth an explicit sentence rather than leaving it as apparent
 inconsistency.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer: No — this is not purely additive config.** The config block is as
+**Answer:** No — this is not purely additive config. The config block is as
 small as hypothesized (F1), but the feature as drafted needs one genuine
 addition to the frozen public surface and one internal refactor:
 
@@ -276,7 +289,9 @@ None of it is breaking, so the whole thing is one **minor** release. But
 shipping the config without the title extractor would push H1 parsing into
 docz-api, which is the duplication ADR-0001 exists to prevent — so they should
 ship together.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 1. **Ship the config block and the title extractor in the same minor release.**
@@ -292,7 +307,9 @@ ship together.
 5. **Add the contract clause** (call it R10) to DESIGN-0008's requirements
    list, in the same form as R1–R9, so docz-api has an explicit acceptance
    criterion rather than an inference from this INV.
+<!--docz:recommendation:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 ### 1. Where should the H1/title extractor live?
@@ -361,7 +378,9 @@ owns that mapping owns a compatibility surface.
   `route:`/`slug:` per file, so no mapping rule is needed at all. Most
   flexible and most verbose; also the only option that must be decided
   *before* the schema ships, since string→object is a breaking change.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All three open questions resolved **(a)** on 2026-08-10.
@@ -411,7 +430,9 @@ enumerating extra files, which changes what two of these findings cost:
 **F2 is unchanged and remains the finding that mattered**: auto-consumption
 increases the number of frontmatter-less documents rather than reducing it, so
 `docparse.Title` is more necessary under the final design, not less.
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - DESIGN-0011 — the `api:` block this investigation supports
@@ -423,3 +444,4 @@ increases the number of frontmatter-less documents rather than reducing it, so
   one-definition-module-wide rule
 - `internal/wiki/titles.go` — the existing, unreachable title logic
 - `pkg/doczcore/docparse/headings.go:11` — the H1 exclusion
+<!--docz:references:end-->

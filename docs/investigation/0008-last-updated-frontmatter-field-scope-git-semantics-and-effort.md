@@ -38,6 +38,7 @@ created: 2026-09-12
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 How much work, and which changes, does it take to add a "last updated"
@@ -54,7 +55,9 @@ Three sub-questions fall out of that:
    current without generating an endless stream of bookkeeping diffs?
 3. **Effort:** what is the phased size of the work, and which parts are
    optional?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 The read side is trivial (one additive struct field). The write side is
@@ -64,7 +67,9 @@ semantics — a value derived from git history cannot describe the commit
 that contains it, so a naive implementation churns. The expected shape of
 the answer is "date is cheap and stable, sha is cheap but inherently one
 commit behind," and the recommendation will lean on that asymmetry.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 Every docz document carries five typed frontmatter fields — `id`, `title`,
@@ -84,7 +89,9 @@ to it.
 
 **Triggered by:** a request to scope the feature ahead of a DESIGN doc; no
 issue yet.
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Map every code path that reads or writes frontmatter: `document.Frontmatter`
@@ -104,7 +111,9 @@ issue yet.
    derive the value itself instead.
 6. Size the phases against comparable past work (IMPL-0011 status set,
    IMPL-0015 changelog block, IMPL-0016 api block).
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 | Component        | Version / Value                                             |
@@ -114,7 +123,9 @@ issue yet.
 | git              | system git; POSIX ERE for `-G` (no PCRE lookahead)          |
 | Repo             | 34 docz documents across 6 type dirs; full (non-shallow) clone |
 | Frontmatter keys | exactly `id`, `title`, `status`, `author`, `created` in all 34 |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Observation 1 — the read side is one additive field
@@ -387,7 +398,9 @@ detection and the backfill walk still need git), landing at **~3–3½ days**.
 Dropping the git-derived path entirely (stamp-on-dirty only, no backfill,
 no filter) is the smallest cut at ~2–2½ days, at the price of never
 populating the 34 existing docs unless someone edits them.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** Yes — feasible and mostly mechanical, at roughly four days, with
@@ -412,7 +425,9 @@ one genuine design decision rather than an implementation risk.
   itself.
 - The field belongs in docz, not downstream: docz-api ingests without a
   checkout and cannot derive it.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 **Do the `updated` date field first; defer the sha to a later follow-up.**
@@ -513,7 +528,9 @@ Open questions as put to review, recommended option first (all resolved
 - b. Defer to a follow-up so the frontmatter change lands alone.
 - c. Only when the block is enabled (column presence keyed on config).
 - d. Other.
+<!--docz:recommendation:end-->
 
+<!--docz:references:start-->
 ## References
 
 - DESIGN-0005 — status set CLI primitive; the byte-preservation contract
@@ -531,3 +548,4 @@ Open questions as put to review, recommended option first (all resolved
 - claude-skills #95 — bundled-template drift, which Phase 2 would extend
 - `cmd/git.go`, `cmd/update.go`, `pkg/doczcore/docwrite/status.go`,
   `pkg/doczcore/document/document.go` — the code paths inventoried
+<!--docz:references:end-->

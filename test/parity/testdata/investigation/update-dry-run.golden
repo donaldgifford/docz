@@ -25,7 +25,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
-| INV-0001 | Evaluate message queue options | Concluded | $DATE | Parity Fixture | [0001-evaluate-message-queue-options.md](0001-evaluate-message-queue-options.md) |
+| INV-0001 | Evaluate message queue options | Concluded | 2026-03-04 | Parity Fixture | [0001-evaluate-message-queue-options.md](0001-evaluate-message-queue-options.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 
 
@@ -36,4 +36,4 @@ Design docs, plans, and implementation docs can reference investigations by ID
 .docz.yaml (776 bytes, 51d3c85c73e5)
 docs/investigation/0001-evaluate-message-queue-options.md (2276 bytes, 695e63cb6610)
 docs/investigation/0002-why-the-nightly-rebuild-flakes.md (4711 bytes, deec902e0c70)
-docs/investigation/README.md (1311 bytes, 3e18035af105)
+docs/investigation/README.md (1316 bytes, a59b0f69ce47)

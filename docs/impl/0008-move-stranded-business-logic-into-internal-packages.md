@@ -59,6 +59,7 @@ created: 2026-05-15
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Move business logic out of `cmd/` into testable `internal/` packages, deduplicate
@@ -75,9 +76,12 @@ This wave is large enough to ship as **two sequential PRs**:
 - **PR B** — Restructure internal packages and rename types (Phases 4–10)
 
 PR A can ship independently; PR B builds on it.
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - Move `writeMkDocsYAML` → `internal/wiki.CreateMkDocs` (F17)
@@ -93,7 +97,9 @@ PR A can ship independently; PR B builds on it.
 - Rename `template.TemplateData` → `template.Data` (F24)
 - Consider renaming `template.WikiIndexType/Data` (F25)
 - Rename `ToCConfig` → `TOCConfig`, field `ToC` → `TOC` (F26)
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Introducing a `Runner` struct or changing how `cmd/` handlers receive
@@ -101,6 +107,8 @@ PR A can ship independently; PR B builds on it.
 - Changing `cmd/` global flags (IMPL-0009)
 - Introducing typed `DocType` / `Status` (IMPL-0009)
 - Adding logger abstraction (IMPL-0009)
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -376,8 +384,10 @@ Drop the stutter and fix the initialism casing.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 11: Verify and ship
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Run `make ci` — green on both PR A branch and PR B branch
@@ -392,16 +402,21 @@ Drop the stutter and fix the initialism casing.
       `dont-release` label — #45 (merged 2026-05-27)
 - [x] Update INV-0002 status — Wave 4 section now lists F11/F13/F17–F26
       against the two PRs
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - [x] Two PRs merged with green CI — PR #44 and PR #45
 - [x] Manual smoke test passes
 - [x] The `cmd/` package contains no business logic — only flag parsing,
       config wiring, and calls into `internal/`
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -417,7 +432,9 @@ Drop the stutter and fix the initialism casing.
 | `internal/template/template.go` | Modify | Rename `TemplateData` → `Data`; rename `Slugify` → `FilenameSlug` |
 | `internal/config/config.go` | Modify | Rename `ToCConfig` → `TOCConfig`; field `ToC` → `TOC` |
 | Tests + golden files | Modify | Mirror all of the above |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Each moved function gets unit tests in its new location (most will
@@ -429,7 +446,9 @@ Drop the stutter and fix the initialism casing.
 - [x] Golden file regen happens exactly once (renames + reorganization
       shouldn't change output) — `testdata/golden/wiki/mkdocs_full.yml`
       added; all others unchanged
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved during INV-0002 planning review.
@@ -455,7 +474,9 @@ Resolved during INV-0002 planning review.
    from fresh main. Simpler, lower merge-conflict risk.
 7. **`UpdateReport` placement:** defined in `internal/toc` alongside
    `UpdateFiles`. Not used by other packages.
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - Builds on IMPL-0006 (`EnabledTypes`, `ValidateType` helpers in use)
@@ -463,9 +484,12 @@ Resolved during INV-0002 planning review.
   `toc.UpdateFiles` bytes)
 - Blocks IMPL-0009 (the Runner refactor expects the slimmer `cmd/` layer
   this wave produces)
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - INV-0002 — Wave 4, findings F11, F13, F17–F26
 - IMPL-0007 — `DocEntry.Content` field is required input for Phase 2
 - Effective Go — package responsibility, doc comment placement
+<!--docz:references:end-->

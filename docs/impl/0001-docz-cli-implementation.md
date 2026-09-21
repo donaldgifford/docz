@@ -45,15 +45,19 @@ created: 2026-02-22
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement the `docz` CLI tool as described in
 [DESIGN-0001](../../docs/design/0001-docz-cli-design.md).
 
 **Implements:** DESIGN-0001
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - All four built-in document types: RFC, ADR, DESIGN, IMPL
@@ -65,7 +69,9 @@ Implement the `docz` CLI tool as described in
 - Auto-generated README index tables with marker-based preservation
 - Template override resolution (explicit config > local file > embedded)
 - Unit tests, integration tests, golden file tests
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - Claude Code plugin / skills (deferred to later phase)
@@ -74,6 +80,8 @@ Implement the `docz` CLI tool as described in
 - Cross-reference linking between documents
 - Git hooks integration
 - Template partials and includes
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -82,12 +90,14 @@ are checked off and its success criteria are met.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Project Foundation
 
 Set up the internal package structure, embedded templates, and configuration
 system. No CLI commands yet beyond the existing root command -- this phase is
 purely the internal libraries that all commands depend on.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Fix `go.mod`: move `cobra` and `viper` from indirect to direct
@@ -130,7 +140,9 @@ purely the internal libraries that all commands depend on.
       inherit from global, both missing returns defaults)
 - [x] Write unit tests for `internal/document/`: frontmatter parsing with
       valid YAML, missing fields, no frontmatter, malformed delimiters
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go build ./...` succeeds with no errors
@@ -140,14 +152,18 @@ purely the internal libraries that all commands depend on.
 - Config loading returns correct defaults when no `.docz.yaml` exists
 - Frontmatter parsing correctly extracts all five fields (id, title, status,
   author, created) from a well-formed document
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: Core Commands -- `init`, `create`, `version`
 
 Wire up the internal packages to the first three Cobra commands. After this
 phase a user can initialize a repo and create documents.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Move `main.go` to `cmd/docz/main.go` to follow the standard Go project
@@ -188,7 +204,9 @@ phase a user can initialize a repo and create documents.
       filename rejection, invalid type rejection
 - [x] Write golden file tests: render each of the four templates with sample
       data and compare against checked-in expected output files
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz init` in an empty directory creates `.docz.yaml` and all four type
@@ -201,14 +219,18 @@ phase a user can initialize a repo and create documents.
 - `docz create adr "Second"` after a first create produces `0002-second.md`
 - `docz create badtype "Title"` exits with a clear error
 - `docz version` prints version and commit hash
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: Index Generation -- `update`
 
 Implement the index/README generation system that reads YAML frontmatter from
 all documents in a type directory and produces an auto-generated table.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Implement `internal/index/index.go`:
@@ -240,7 +262,9 @@ all documents in a type directory and produces an auto-generated table.
       changes; test empty directory produces empty table
 - [x] Write golden file tests for index generation: compare generated README
       output against checked-in expected files for various scenarios
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz update rfc` generates a correct `docs/rfc/README.md` with a table of
@@ -252,14 +276,18 @@ all documents in a type directory and produces an auto-generated table.
 - `docz create rfc "Title"` automatically updates the RFC index
 - `docz create rfc "Title" --no-update` skips the index update
 - `docz update --dry-run` outputs what would change but writes nothing
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Listing and Template Management -- `list`, `template`
 
 Add the remaining read-only commands for listing documents and managing
 templates.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Implement `cmd/list.go`: accept optional `[type]` argument; if no type
@@ -291,7 +319,9 @@ templates.
       location, override fails if file exists
 - [x] Write integration test for `docz config`: verify merged output matches
       expected resolved config
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz list` prints a formatted table of all documents across all types
@@ -303,14 +333,18 @@ templates.
 - `docz template export design ./my-template.md` writes the file
 - `docz template override adr` creates `docs/templates/adr.md`
 - `docz config` prints the fully resolved YAML configuration
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 5: Polish, Error Handling, and CI Readiness
 
 Harden the tool with edge case handling, improve user-facing output, ensure
 the Makefile build pipeline works end-to-end, and prepare for release.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Audit all commands for consistent error messages: invalid arguments,
@@ -338,7 +372,9 @@ the Makefile build pipeline works end-to-end, and prepare for release.
       `internal/` packages (target: >80%)
 - [x] Review and clean up any TODO/FIXME comments left during implementation
 - [x] Verify `go vet ./...` and `golangci-lint run ./...` produce no warnings
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` passes with zero errors
@@ -348,9 +384,12 @@ the Makefile build pipeline works end-to-end, and prepare for release.
 - All error paths produce clear, actionable messages (no raw Go error dumps)
 - `--verbose` flag produces useful debugging output for each command
 - The built binary at `build/bin/docz` runs correctly for all commands
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 Key files that will be created or modified, organized by phase.
@@ -413,7 +452,9 @@ Key files that will be created or modified, organized by phase.
 |------|--------|-------------|
 | `Makefile` | Modify | Update ldflags to target `cmd` package, add docs targets |
 | Various `*.go` | Modify | Error handling hardening, verbose output |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 Tests are distributed across phases but follow a consistent strategy:
@@ -429,13 +470,16 @@ Tests are distributed across phases but follow a consistent strategy:
       stderr) for argument parsing and flag validation
 - [ ] No mocking of external commands except `git config user.name`
       (use env var or test flag to control author in tests)
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - All Go dependencies are already in `go.mod` (cobra, viper, yaml)
 - No new external dependencies required
 - `text/template`, `embed`, `text/tabwriter`, `encoding/json`,
   `encoding/csv`, `testing` (`t.TempDir()`) are all stdlib
+<!--docz:dependencies:end-->
 
 ## Resolved Decisions
 
@@ -474,7 +518,9 @@ Tests are distributed across phases but follow a consistent strategy:
    `docz init --force` or manually add the markers. This prevents `docz` from
    corrupting manually-maintained documentation.
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0001: docz CLI Tool](../design/0001-docz-cli-design.md)
 - [Previous bash scripts](../examples/)
+<!--docz:references:end-->

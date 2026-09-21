@@ -251,7 +251,13 @@ func TestParity(t *testing.T) {
 		t.Fatalf("binary %s: %v", abs, err)
 	}
 
-	today := time.Now().Format("2006-01-02")
+	// UTC, because run() pins the child to TZ=UTC and the child is what
+	// stamps the date this normaliser has to match. Computing it in the
+	// runner's own zone instead makes the two agree only where local and UTC
+	// name the same day: every CI runner (UTC), and a workstation for part of
+	// the day. The rest of the time a capture bakes a literal date into the
+	// goldens and a replay misses one, which is how it was found.
+	today := time.Now().UTC().Format("2006-01-02")
 
 	for _, f := range fixtures() {
 		t.Run(f.name, func(t *testing.T) {
@@ -332,14 +338,19 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 		t.Fatalf("read golden (run `make parity-capture` first): %v", err)
 	}
 
-	// The plan normaliser runs here rather than in norms above, and on both
-	// sides: the golden is the side carrying the removed type, so normalising
-	// only the captured output would leave every one of its traces as a
-	// difference (ADR-0003, IMPL-0018 Open Question 8).
-	plan := PlanNormalizer()
+	// These two run here rather than in norms above, and on both sides,
+	// because the golden is the side carrying what they remove: the removed
+	// `plan` type (ADR-0003, IMPL-0018 Open Question 8) and the duplicate
+	// index marker pair (issue #99). Normalising only the captured output
+	// would leave every trace of either as a difference.
+	//
+	// Order matters. The plan normaliser is what replaces a recorded body's
+	// size and digest, so it has to see the body list before the index pair
+	// normaliser edits any body.
+	both := []Normalizer{PlanNormalizer(), IndexPairNormalizer()}
 
-	want := Normalize(string(raw), plan)
-	got = Normalize(got, plan)
+	want := Normalize(string(raw), both...)
+	got = Normalize(got, both...)
 
 	if got != want {
 		t.Errorf("parity mismatch for %s/%s\n%s", f.name, c.name, firstDiff(want, got))

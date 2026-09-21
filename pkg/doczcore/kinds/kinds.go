@@ -2,6 +2,10 @@
 // shares, so five type packages do not carry five copies of the
 // open-question grammar (DESIGN-0014 §2.12).
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // Every reader takes the bytes of one region — heading included — and
 // returns values. None touches the filesystem, returns an error, or is
 // told which document type it is reading: a region's kind is the only

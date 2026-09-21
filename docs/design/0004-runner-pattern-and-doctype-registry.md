@@ -38,6 +38,7 @@ created: 2026-05-27
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 DESIGN-0004 specifies the architectural shape that IMPL-0009 (Wave 5 of
@@ -49,9 +50,11 @@ internal API boundaries. The refactor eliminates the two systemic
 testability blockers in `docz` today — `cmd/` package-level globals and
 the 6+ scattered DocType definitions — without changing user-visible
 CLI behavior or the YAML config schema.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Define a `Runner` struct that is the single injection surface for
@@ -68,7 +71,9 @@ CLI behavior or the YAML config schema.
   signal at internal API boundaries, with no YAML schema change.
 - Enable `t.Parallel()` on every existing cmd-layer test by removing the
   `os.Chdir`, package-global, and `os.Pipe` patterns blocking it today.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - Adding new user-facing commands or flags (beyond the `--log-format` and
@@ -79,7 +84,9 @@ CLI behavior or the YAML config schema.
 - Internationalization, structured-log shipping, or daemon mode.
 - Changing the `.docz.yaml` schema. Existing config files must continue
   to parse byte-identically.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 `docz` today carries the following testability debts (cross-referenced
@@ -104,7 +111,9 @@ to INV-0002 findings):
 
 IMPL-0009 closes all of these in a single architectural pass. DESIGN-0004
 is the prerequisite gate that locks in shape before code lands.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### A. Runner struct shape and lifecycle
@@ -477,7 +486,9 @@ func TestRunner_Create_GeneratesFile(t *testing.T) {
 
 After Phase 7 (`config.Load(configFile, repoRoot string)`) there is no
 `os.Chdir`, eliminating the final process-wide state mutation.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 | Surface | Before | After |
@@ -496,7 +507,9 @@ After Phase 7 (`config.Load(configFile, repoRoot string)`) there is no
 `.docz.yaml` schema: **unchanged**. All typed-string fields use the same
 YAML tags as today (`yaml:"status"` etc.) and `go.yaml.in/yaml/v3`
 handles the typed-string round trip without a custom unmarshaler.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 No persisted-data schema changes. The in-memory `Config` and
@@ -506,7 +519,9 @@ No persisted-data schema changes. The in-memory `Config` and
 The registry `allDocTypes` is the new in-memory source of truth for
 DocType metadata. All previously hardcoded lookup tables (`typeAliases`,
 `defaultNavTitles`, etc.) are derived at package init.
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 - **Per-handler unit tests:** one focused test per `(*Runner).Xxx`
@@ -523,7 +538,9 @@ DocType metadata. All previously hardcoded lookup tables (`typeAliases`,
 - **YAML back-compat fixtures:** 3–5 real-world `.docz.yaml` files (this
   repo's plus 2–3 synthetic edge cases per Decision §7) parsed in a
   parameterized golden test. Includes the typed-string round trip.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 Per Decision §6: phases 2–11 ship as a **single PR**. DESIGN-0004
@@ -570,6 +587,7 @@ Each commit leaves `make ci` green:
     write the `--quiet` integration test.
 11. Final sweep: `make ci`, add `t.Parallel()` annotations everywhere
     eligible, regenerate any drifted goldens.
+<!--docz:rollout:end-->
 
 ## Decisions Locked or Revised
 
@@ -600,6 +618,7 @@ From IMPL-0009 §Decisions:
    profiled hot path.
 10. ✅ **Locked.** Rollback strategy: revert the single Wave 5 PR.
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 1. **`--log-format=json` test coverage scope.** Do we add a single
@@ -617,7 +636,9 @@ From IMPL-0009 §Decisions:
    (`newCreateCmd(r)` etc.) because `rootCmd` flags do not reset between
    `Execute()` calls. Document this constraint in CONTRIBUTING.md when
    the runner pattern lands.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - IMPL-0009 — Runner Pattern and DocType Registry Refactor
@@ -633,3 +654,4 @@ From IMPL-0009 §Decisions:
 - `charmbracelet/fang` — evaluated and rejected; see §G
 - `charmbracelet/bubbletea` v2 — evaluated and rejected; see §G
 - `localstack/lstk` — pattern reference for per-command options; see §G
+<!--docz:references:end-->

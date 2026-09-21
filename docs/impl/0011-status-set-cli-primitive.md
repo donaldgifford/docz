@@ -38,6 +38,7 @@ created: 2026-06-01
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement DESIGN-0005 — the `docz status set <type> <id> <new-status>`
@@ -55,9 +56,12 @@ existing infrastructure (`Config.ValidateType`, `document.ScanDocuments`,
 `document.LoadFrontmatter`, the IMPL-0009 Runner pattern).
 
 **Implements:** DESIGN-0005 — Status Set CLI Primitive.
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - New `internal/document/status.go` with `SetStatus(path, newStatus
@@ -82,7 +86,9 @@ existing infrastructure (`Config.ValidateType`, `document.ScanDocuments`,
   constructed Runner with `Out: &bytes.Buffer{}` and
   `RepoRoot: t.TempDir()`
 - `docz --help` text update is automatic via Cobra
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - `status get` and `status list-allowed` companion subcommands —
@@ -96,6 +102,8 @@ existing infrastructure (`Config.ValidateType`, `document.ScanDocuments`,
   hard-codes `status:`
 - Windows / CRLF support — Decision 7 rejects non-LF endings
 - Any change to `.docz.yaml` schema or `internal/config`
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -105,12 +113,14 @@ output format, a ship gate.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: Foundation — `internal/document.SetStatus` helper
 
 Build the byte-level mutator and its golden-test suite first. The
 helper is independent of Cobra and `Runner`, so Phase 2 can rely on
 it without re-testing the byte-level invariants.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `internal/document/status.go` with the documented
@@ -151,7 +161,9 @@ it without re-testing the byte-level invariants.
   - File with no frontmatter → `ErrNoFrontmatter`
   - Idempotency proof: calling `SetStatus(p, "Draft")` against a
     file already at `Draft` produces byte-identical output
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `go build ./...` and `go vet ./...` clean
@@ -160,9 +172,12 @@ it without re-testing the byte-level invariants.
 - Six golden fixtures present and byte-validated
 - The helper has no dependency on `cmd/`, `Runner`, or
   `internal/config` (it can be reused outside docz if needed)
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: `cmd/status.go` Cobra wiring + text output
 
 Build the user-visible surface in its minimal form: parent command,
@@ -177,6 +192,7 @@ Per Decision 1 the work is split: Phase 2 lands the parent + subcommand,
 same `runStatusSet`. The flag parsing and validation are written once in
 Phase 2.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Create `cmd/status.go` with `statusCmd` (parent, no `RunE`,
@@ -259,7 +275,9 @@ Phase 2.
 >   returned error (Cobra prints `Error: <message>`) while
 >   `exitCodeFor` in `root.go` selects the code via `errors.Is`. The
 >   handler returns errors; it never writes to `r.Err` itself.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz status set rfc RFC-0001 Accepted` works against this repo
@@ -274,15 +292,19 @@ Phase 2.
 - `go test -race -shuffle=on -count=3 ./cmd/... -run TestStatusSet`
   green
 - `make lint` clean
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: JSON output (`--format=json`)
 
 Layer the JSON path onto the Phase 2 cmd. Phase 2's text helper
 stays untouched; this phase adds a sibling `formatStatusJSON(...)`
 emitter and the test cases that exercise it.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `formatStatusJSON(...)` helper returning a single-line
@@ -312,7 +334,9 @@ emitter and the test cases that exercise it.
 > function — it writes through `r.Out` like `emitStatusText`. The Phase 2
 > `emitStatus` json branch (previously a "not yet implemented" stub) now
 > dispatches to it.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docz status set --format=json rfc RFC-0001 Accepted` emits a
@@ -327,11 +351,15 @@ emitter and the test cases that exercise it.
 - `go test -race ./cmd/... -run TestStatusSet` green for the
   expanded JSON test set
 - `make lint` clean
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: Verify and ship
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Full `make ci` green (lint + test + build + license-check)
@@ -361,7 +389,9 @@ emitter and the test cases that exercise it.
 - [ ] Open the PR with the `dont-release` label so the rfc-api
       Action consuming this can be coordinated with the next docz
       release *(left to the user; not auto-opening a PR)*
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make ci` green on the final commit
@@ -370,9 +400,12 @@ emitter and the test cases that exercise it.
 - CLAUDE.md mentions `status set` in the architecture section
 - Branch is ready to squash-merge with the standard
   `gh pr merge --squash --delete-branch` flow
+<!--docz:criteria:end-->
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -388,7 +421,9 @@ emitter and the test cases that exercise it.
 | `docs/design/0005-status-set-cli-primitive.md` | Modify | Flip status `Approved` → `Implemented` on merge |
 | `docs/impl/0011-status-set-cli-primitive.md` | Modify | Flip status `Draft` → `Completed` on merge |
 | `docs/impl/README.md` | Modify | Auto-regenerated by `docz update` |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] `internal/document/status_test.go` covers every quoting
@@ -403,7 +438,9 @@ emitter and the test cases that exercise it.
       of every phase
 - [x] One end-to-end smoke against this repo's own docs is captured
       in Phase 4's task list
+<!--docz:testing:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved 2026-06-01. All recommendations accepted.
@@ -420,7 +457,9 @@ Resolved 2026-06-01. All recommendations accepted.
 | 8 | Body `**Status:**` line | (a) Don't touch it | Canonical status is frontmatter; mutating prose would force the helper to understand templating conventions |
 | 9 | CLAUDE.md scope | (a) One-line addition pointing at `internal/document.SetStatus` | Matches the existing terse style of the cmd/ architecture bullet |
 | 10 | PR shape | (a) Single PR for all four phases | <500 LOC total; follows IMPL-0009's Wave 5 single-PR precedent |
+<!--docz:decisions:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **Blocking:** none on the docz side. DESIGN-0005 is `Approved`;
@@ -435,7 +474,9 @@ Resolved 2026-06-01. All recommendations accepted.
   and `status list-allowed` if demand materializes (Decision 10
   defers these; the `status` parent verb is established here so
   the follow-ups are one-file additions)
+<!--docz:dependencies:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [DESIGN-0005](../design/0005-status-set-cli-primitive.md) — the
@@ -455,3 +496,4 @@ Resolved 2026-06-01. All recommendations accepted.
   existing `ErrNoFrontmatter` sentinel
 - `internal/config/doctype.go` — `TypeConfig.Statuses` is the
   lifecycle source of truth
+<!--docz:references:end-->

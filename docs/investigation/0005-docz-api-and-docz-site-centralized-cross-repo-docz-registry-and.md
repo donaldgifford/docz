@@ -41,6 +41,7 @@ created: 2026-06-23
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 Can we build a small companion service — **docz-api** — that uses a GitHub App
@@ -53,7 +54,9 @@ docz documents from a single web URL?
 And specifically: does docz's existing structure (`.docz.yaml`, standardized
 directory layout, typed YAML frontmatter, stable IDs) make this materially
 *simpler* than a general system like rfc-api / rfc-site?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 **Yes — and meaningfully simpler than rfc-api.** rfc-api spends most of its
@@ -74,7 +77,9 @@ So docz-api is mostly "fetch → parse known structure → upsert → index → 
 cache," with webhooks driving incremental refresh. The genuinely hard part is
 not docz-specific — it is the same problem rfc-api has: **mapping who-can-see-
 what** from GitHub repo access to site access.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 docz today produces beautifully structured docs *per repo*, and the `wiki`
@@ -88,7 +93,9 @@ shape, and what — if anything — docz itself must expose to support it cleanl
 **Triggered by:** the desire for one URL across all docz repos; relationship to
 the existing per-repo `wiki` (MkDocs/TechDocs) integration and the mdp renderer
 explored in [[0004-v1-release-plan-tui-markdown-preview-and-cli-parity]].
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 This is a **desk / feasibility investigation** (architecture validation), not an
@@ -107,7 +114,9 @@ reached and how a follow-on design would be de-risked:
    out).
 5. Surface the unavoidable risks (visibility/auth, versioning semantics, fetch
    strategy) as Open Questions for the design phase.
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
 ## Environment
 
 Proposed stack (assumed, to be confirmed in design):
@@ -121,7 +130,9 @@ Proposed stack (assumed, to be confirmed in design):
 | Search               | Meilisearch (full-text + faceting)                     |
 | Markdown render      | JS renderer in docz-site (e.g. markdown-it)            |
 | Front end            | docz-site (repos → types → docs nav + search + reader) |
+<!--docz:environment:end-->
 
+<!--docz:findings:start-->
 ## Findings
 
 ### Observation 1 — docz hands the ingester a manifest, not a haystack
@@ -250,10 +261,12 @@ docz-site is deliberately different: it is **cross-repo aggregation + unified
 search + a single URL**. The two are complementary — per-repo TechDocs for deep
 single-project browsing, docz-site for the org-wide index. Worth stating in the
 design so the two features don't appear to overlap.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer: Yes — feasible, and simpler than rfc-api.** Because docz standardizes
+**Answer:** Yes — feasible, and simpler than rfc-api. Because docz standardizes
 location (`.docz.yaml`), structure (typed dirs), and metadata (frontmatter), the
 ingestion side of docz-api is largely mechanical, and the rfc-api/rfc-site
 architecture (GitHub App → Postgres registry → Meilisearch → viewer, refreshed by
@@ -264,7 +277,9 @@ inherent to any cross-repo viewer of private content and not unique to docz. A
 clean implementation also motivates a small, additive docz change: exposing the
 existing config/document parsing as a shared library so the API and CLI never
 diverge (Decision 7).
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 The open questions are resolved (see [Decisions](#decisions)). Next steps:
@@ -283,7 +298,9 @@ The open questions are resolved (see [Decisions](#decisions)). Next steps:
 4. **Build a thin vertical slice first** (Decision 8): one repo onboarded by
    hand → ingest → one type rendered in a bare docz-site, deferring auth and
    webhooks, to prove the fetch→parse→render→serve loop before the full pipeline.
+<!--docz:recommendation:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > **Resolved 2026-06-23** — see the [Decisions](#decisions) table below for the
@@ -357,7 +374,9 @@ alternatives, and "other" is free-form for review.
 - b. Full ingestion pipeline + webhooks first, site second.
 - c. Site/UX prototype first against mocked data.
 - d. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 Resolved by user review on 2026-06-23. Recommendations accepted except
@@ -373,7 +392,9 @@ Decisions 3 and 6, which were adjusted per reviewer guidance.
 | 6 | Auth model | **(a) GitHub default + pluggable OIDC** | GitHub App OAuth is default/preferred; a generic OIDC provider abstraction must also support Okta and Keycloak. All three are required; authorization mapping differs per provider (see Observation 5) |
 | 7 | Doc-list source | (a) Shared `pkg/…` library from docz | Single source of truth; API and CLI never drift |
 | 8 | First deliverable | (a) Thin vertical slice | Prove fetch→parse→render→serve on one repo before the full pipeline |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - docz `.docz.yaml` schema and type model — `internal/config`
@@ -386,3 +407,4 @@ Decisions 3 and 6, which were adjusted per reviewer guidance.
   (considered for server-side rendering but rejected in Decision 3 — it is
   intentionally scoped to single-user neovim/terminal use)
 - Prior art: rfc-api / rfc-site (the general system docz-api simplifies)
+<!--docz:references:end-->

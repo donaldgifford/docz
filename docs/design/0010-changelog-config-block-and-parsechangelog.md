@@ -41,6 +41,7 @@ created: 2026-08-02
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:overview:start-->
 ## Overview
 
 docz gains first-class awareness of a repo's changelog: an opt-in `changelog:`
@@ -53,9 +54,11 @@ and, through it, the docz-site.
 Requirements were derived in docz-api's INV-0005 ("Changelog as a first-class
 docz artifact"); all of its open questions are resolved and this design encodes
 the answers.
+<!--docz:overview:end-->
 
 ## Goals and Non-Goals
 
+<!--docz:goals:start-->
 ### Goals
 
 - Add a `changelog:` config block: `enabled` (default **false**) and `file`
@@ -68,7 +71,9 @@ the answers.
   bump.
 - Ship both in **one additive minor release** — a second release costs a second
   fleet-wide pin dance for no benefit.
+<!--docz:goals:end-->
 
+<!--docz:non-goals:start-->
 ### Non-Goals
 
 - No CLI subcommand (`docz changelog …`) — nothing in the CLI consumes the block
@@ -78,7 +83,9 @@ the answers.
 - No commit→file mapping — that is docz-api "feature 2" (per-document backlinks)
   and depends on data outside the changelog file (GitHub compare API or PR
   joins), designed separately in docz-api.
+<!--docz:non-goals:end-->
 
+<!--docz:background:start-->
 ## Background
 
 - The fleet generates every changelog with **git-cliff** from a shared
@@ -121,7 +128,9 @@ the answers.
 - docz-api today already fetches a hardcoded root `CHANGELOG.md` and caches it
   raw; this design is what lets it become config-driven and eventually
   structured.
+<!--docz:background:end-->
 
+<!--docz:detailed-design:start-->
 ## Detailed Design
 
 ### Config
@@ -225,7 +234,9 @@ Parsing rules:
 - **Stable version identity is the load-bearing contract**: the bare semver
   string is the key docz-api's feature 2 (backlinks) will join on. Normalization
   (bracket strip + `v` trim) must never change meaning.
+<!--docz:detailed-design:end-->
 
+<!--docz:api-changes:start-->
 ## API / Interface Changes
 
 All additive (one minor release, e.g. `v1.1.0`):
@@ -252,12 +263,16 @@ On its pin bump docz-api will add contract tests asserting:
 
 Treat those as frozen once released — changes to any of them are breaking for
 consumers regardless of Go-API compatibility.
+<!--docz:api-changes:end-->
 
+<!--docz:data-model:start-->
 ## Data Model
 
 None — docz holds no state. (docz-api maps the parsed shape onto its own store
 when it builds structured serving; not this repo's concern.)
+<!--docz:data-model:end-->
 
+<!--docz:testing:start-->
 ## Testing Strategy
 
 Table-driven with golden fixtures:
@@ -274,7 +289,9 @@ Table-driven with golden fixtures:
   explicit empty `file: ""` (backfills to default), full block, invalid `file`
   values (absolute, `..`, trailing slash) rejected, leading-`./` normalized,
   unknown sibling keys still tolerated.
+<!--docz:testing:end-->
 
+<!--docz:rollout:start-->
 ## Migration / Rollout Plan
 
 1. Ship config + parser in one additive minor release.
@@ -284,12 +301,14 @@ Table-driven with golden fixtures:
    then builds its feature 1 (config-driven fetch + raw serve endpoint) and
    later feature 2 (backlinks over parsed sections).
 4. No migration inside docz — the block is opt-in and default-off.
+<!--docz:rollout:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 ### 1. Parser package home?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The handoff doc leans toward the doc package; docz's actual v1.0.0 layout has
@@ -309,7 +328,7 @@ three candidate homes with different contract implications.
 
 ### 2. `Date` field type?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 - **a. (Recommended)** Raw string, as specced — no timezone/format opinions;
@@ -322,7 +341,7 @@ three candidate homes with different contract implications.
 
 ### 3. Preamble fidelity?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 - **a. (Recommended)** Verbatim capture, as specced — consumers render it, so
@@ -334,7 +353,7 @@ three candidate homes with different contract implications.
 
 ### 4. Should heading detection be fence-aware?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The spec detects version/group headings by line shape. A fenced code block in
@@ -354,7 +373,7 @@ trimmed-line ` ``` ` toggle).
 
 ### 5. Where does `file` validation live?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The handoff says "`Load`'s existing validation pass", but in docz v1.0.0
@@ -375,7 +394,7 @@ docz-api the same way).
 
 ### 6. Should `docz init` emit the block in generated `.docz.yaml`?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 `docz config` prints the resolved block for free once the field exists. But
@@ -391,7 +410,7 @@ docz-api the same way).
 
 ### 7. Does `file` validation apply when the block is disabled?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The design leans twice on a dormancy guarantee ("repos can add the block …
@@ -414,7 +433,7 @@ debris) would hard-fail config load even though the feature is off.
 
 ### 8. Are nested sub-bullets part of the parent item or their own item?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 The continuation rule ("including continuation lines indented under the
@@ -434,7 +453,7 @@ contract protects) when git-cliff or a human emits a nested list.
 
 ### 9. What happens on duplicate version headings?
 
-**Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
+> **Resolved: (a)** — locked 2026-08-02; see [Decisions](#decisions).
 
 
 Version identity is "the load-bearing contract" (docz-api's backlinks join on
@@ -451,7 +470,9 @@ if the same normalized version appears twice (bad manual edit, re-tag).
 - c. Return an error — treats a malformed-but-parseable file as fatal,
   breaking the "never fail on non-conforming markdown, best-effort" rule.
 - d. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All nine open questions resolved **(a)** on 2026-08-02.
@@ -467,7 +488,9 @@ All nine open questions resolved **(a)** on 2026-08-02.
 | 7   | Validation when disabled        | Validate only when `enabled: true` — a dormant block never fails load, preserving the rollout guarantee                                      |
 | 8   | Nested sub-bullets              | Fold everything indented under a top-level bullet into that item verbatim — one `Items` entry per commit bullet                              |
 | 9   | Duplicate version headings      | Emit both entries verbatim in document order; docz-api's contract pins uniqueness and treats first occurrence as canonical                   |
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - docz-api `INV-0005` — Changelog as a first-class docz artifact (the
@@ -477,3 +500,4 @@ All nine open questions resolved **(a)** on 2026-08-02.
 - docz-api `internal/doczcontract` — the contract-test harness that will pin
   this surface (clause R6)
 - Keep a Changelog 1.1.0; git-cliff + the fleet-shared `cliff.toml`
+<!--docz:references:end-->

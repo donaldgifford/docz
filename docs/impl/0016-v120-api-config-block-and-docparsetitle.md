@@ -50,6 +50,7 @@ created: 2026-08-11
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:objective:start-->
 ## Objective
 
 Implement DESIGN-0011: the opt-in `api:` block in `.docz.yaml` plus the one
@@ -68,9 +69,12 @@ Two things make this smaller than it looks and one makes it larger:
 - But `docparse.Title` adds a function to a **frozen** package, and
   `internal/wiki` already contains a second, subtly different H1 implementation
   that should collapse into it. That is the phase with real design in it.
+<!--docz:objective:end-->
 
+<!--docz:scope:start-->
 ## Scope
 
+<!--docz:in-scope:start-->
 ### In Scope
 
 - `APIConfig` struct, `Config.API`, `DefaultConfig()` entry, `normalizeAPI`,
@@ -82,7 +86,9 @@ Two things make this smaller than it looks and one makes it larger:
 - `api:` block in `internal/template/templates/docz_yaml.tmpl`, dormant
 - Consumer proof in `test/consumer/`
 - README + godoc + `.docz.example.yaml` alignment, and the `v1.2.0` release
+<!--docz:in-scope:end-->
 
+<!--docz:out-of-scope:start-->
 ### Out of Scope
 
 - **Any consumption behavior.** docz does not fetch, walk, glob, or route. The
@@ -92,6 +98,8 @@ Two things make this smaller than it looks and one makes it larger:
 - **Assets/images** (DESIGN-0011 Decision 10).
 - **docz-api and docz-site work.** Separate repos, separate plans.
 - **A `Links` extractor.** Only relevant to the asset design we deferred.
+<!--docz:out-of-scope:end-->
+<!--docz:scope:end-->
 
 ## Implementation Phases
 
@@ -100,12 +108,14 @@ be swapped; Phase 3 depends on both.
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 1: shared path validator + `api:` config block
 
 The config side in `pkg/doczcore/config`. Starts with the extraction so
 `validateAPI` is written against the shared helper rather than retrofitted onto
 it.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Extract the repo-relative path rules out of `validateChangelog` into an
@@ -176,7 +186,9 @@ it.
       rollout handshake IMPL-0015 added for `changelog:`.
 - [x] Godoc on every new exported symbol; `golangci-lint fmt ./...` +
       `make lint` green.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `validateChangelog`'s existing test table passes **unchanged** except for the
@@ -187,6 +199,7 @@ it.
 - Unknown-key leniency and case-sensitivity pins still green.
 - `docz config` prints the resolved `api:` block with no `cmd/` change.
 - `make ci` green.
+<!--docz:criteria:end-->
 
 #### Phase 1 record
 
@@ -225,14 +238,17 @@ Deferred, and Open Question 9 asks for a call on it: **`docs_dir` itself is
 never path-validated.** `docs_dir: ../../etc` and `docs_dir: /etc` both load
 clean today, and `cmd/root.go` joins the value for local writes. That predates
 this feature and touches every existing repo, so it is not a Phase 1 change.
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 2: `docparse.Title`
 
 The one public addition, plus collapsing the duplicate H1 implementation
 INV-0007 F2 found.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `Title(content []byte) string` to `pkg/doczcore/docparse` — new file
@@ -273,7 +289,9 @@ INV-0007 F2 found.
       user-visible behavior change in this release.
 - [x] Update `doc.go` to list `Title` beside `Headings` and `TaskItems`,
       keeping the facts-not-interpretation framing.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `docparse` golden fixtures regenerate to a diff that is **additive only** —
@@ -285,6 +303,7 @@ INV-0007 F2 found.
 - `go doc pkg/doczcore/docparse` shows `Title` with a contract stating the `""`
   case, the fence rule, the setext decision, and the frontmatter decision.
 - `make ci` green.
+<!--docz:criteria:end-->
 
 #### Phase 2 record
 
@@ -330,14 +349,17 @@ Two further notes, documented rather than changed:
 
 `FuzzTitle` was added alongside, matching `document.FuzzParseChangelog`: 24.8M
 executions, no panic and no result that was multi-line or untrimmed.
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 3: consumer proof + living docs
 
 Prove the surface is importable exactly as docz-api will import it, then make
 the repo's own documentation tell the truth.
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Add `test/consumer/consumer_v12_test.go` (Decision 6 — one file per
@@ -363,7 +385,9 @@ the repo's own documentation tell the truth.
       criterion rather than an inference (INV-0007 Recommendation 5).
 - [x] Godoc sweep: read `go doc -all` over `config` and `docparse` as a
       consumer would.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `make test-consumer` green, and demonstrably red if `Config.API` is renamed.
@@ -373,6 +397,7 @@ the repo's own documentation tell the truth.
 - README, `CLAUDE.md`, `.docz.example.yaml`, and DESIGN-0008 all describe the
   same block.
 - `make ci` green.
+<!--docz:criteria:end-->
 
 #### Phase 3 record
 
@@ -388,11 +413,14 @@ the repo's own documentation tell the truth.
   only non-additive line in the whole diff is the reflowed first sentence of
   `docparse`'s package comment. `config` gains `APIConfig` and
   `ErrInvalidAPIPath`, `docparse` gains `Title`, and nothing else moves.
+<!--docz:phase:end-->
 
 ---
 
+<!--docz:phase:start-->
 ### Phase 4: the `v1.2.0` release
 
+<!--docz:tasks:start-->
 #### Tasks
 
 - [x] Open the release PR with the `minor` label. `pr-semver-bump` +
@@ -412,13 +440,16 @@ the repo's own documentation tell the truth.
       and that `v1.1.1` already changed `DefaultConfig()`/`EnabledTypes()` for
       the PLAN default — two consecutive releases touching defaults deserves one
       sentence so anyone bumping from `v1.1.0` sees both.
+<!--docz:tasks:end-->
 
+<!--docz:criteria:start-->
 #### Success Criteria
 
 - `v1.2.0` tagged and published; `go get` from the proxy works.
 - The scratch-module R10 exercise passes against the **published** module, not
   a local `replace`.
 - DESIGN-0011 Implemented, IMPL-0016 Completed.
+<!--docz:criteria:end-->
 
 #### Phase 4 status
 
@@ -451,7 +482,9 @@ repo bumping from `v1.1.0` also crosses, and the R10 pin.
 
 Also outstanding before merge: **Open Question 9** (`docs_dir` is not itself
 path-validated) needs a decision.
+<!--docz:phase:end-->
 
+<!--docz:file-changes:start-->
 ## File Changes
 
 | File | Action | Description |
@@ -471,7 +504,9 @@ path-validated) needs a decision.
 | `CLAUDE.md` | Modify | Architecture map for config + docparse |
 | `.docz.example.yaml` | Modify | Drop the "proposed" header |
 | `docs/design/0008-*.md` | Modify | Add contract clause R10 |
+<!--docz:file-changes:end-->
 
+<!--docz:testing:start-->
 ## Testing Plan
 
 - [x] Config: decode / defaults / normalize / validate-enabled /
@@ -501,7 +536,9 @@ path-validated) needs a decision.
       docz-api's `internal/doczcontract`, a real consumer module pinned to the
       published release (issue #87)
 - [x] `make ci` green at the end of every phase
+<!--docz:testing:end-->
 
+<!--docz:dependencies:start-->
 ## Dependencies
 
 - **DESIGN-0011** — ten decisions recorded, zero open questions
@@ -509,7 +546,9 @@ path-validated) needs a decision.
 - **`v1.1.1`** — merged and tagged (PR #83); this branch is cut from it
 - **ADR-0001** — the additive-only rule that makes this a `minor`
 - No external dependencies; no new modules
+<!--docz:dependencies:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 **None.** All eight were resolved **(a)** on 2026-08-11; see **Decisions**
@@ -695,7 +734,9 @@ not a fix.
 - **d. Defer to its own doc.** It is a pre-existing hole, not one this feature
   opened, and a breaking config change deserves its own DESIGN + a deprecation
   window. Cost: the hole stays open through `v1.2.0`.
+<!--docz:open-questions:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 All eight open questions resolved **(a)** on 2026-08-11. Question 9 was raised
@@ -728,7 +769,9 @@ passes `true`. The alternative — a separate `validateRepoRelativeDir` wrapper 
 buys a cleaner call site at the cost of two functions that must be kept in sync,
 which is the duplication INV-0007 Decision 2 exists to prevent. Flagged here
 because neither open question could settle it alone.
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - DESIGN-0011 — the design this implements; ten decisions, zero open questions
@@ -741,3 +784,4 @@ because neither open question could settle it alone.
 - ADR-0001 — additive-only, roll-forward semver, one definition module-wide
 - IMPL-0014 — the v1.0.0 plan whose per-phase-PR strategy was abandoned
   mid-flight, informing Decision 7
+<!--docz:references:end-->

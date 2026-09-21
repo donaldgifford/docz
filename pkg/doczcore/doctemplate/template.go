@@ -2,6 +2,10 @@
 // that lets a repo override them, and the rendering that turns one into a
 // document.
 //
+// EXPERIMENTAL until v2.0.0: the surface may change between betas
+// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
+// affected; this one is not among them.
+//
 // Promoted whole from internal/template (IMPL-0018 Phase 2, DESIGN-0014 §2.7).
 // The embed.FS stays unexported and the template *contents* are outside the
 // semver contract: they are observable through `docz template show`, and a

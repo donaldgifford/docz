@@ -31,6 +31,7 @@ created: 2026-09-14
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:summary:start-->
 ## Summary
 
 docz is a Go API package. The `docz` CLI is its first consumer, not its
@@ -44,7 +45,9 @@ dropped the plan model, and it lifts ADR-0001's freeze for the new packages
 until v2.0.0 is cut. This work does not cut it: it ships `v2.0.0-beta.N`
 pre-releases, and v2.0.0 proper waits for docz-api and then the UI to move
 into this repo, after the CLI.
+<!--docz:summary:end-->
 
+<!--docz:context:start-->
 ## Context
 
 ADR-0001 (2026-07-03) made `pkg/doczcore/{config,document,docparse,docwrite,toc}`
@@ -73,7 +76,9 @@ API package with the CLI as its first consumer — every command one library
 call plus printing — and that shape is reachable additively from today's
 tree. This ADR records that decision; DESIGN-0014 specifies the API it
 implies.
+<!--docz:context:end-->
 
+<!--docz:decision:start-->
 ## Decision
 
 1. **docz is an API package; the CLI is its first consumer.** The API is
@@ -303,9 +308,12 @@ implies.
 | `.docz.yaml` | unchanged | unchanged |
 | Embedded template contents and names | not contract | not contract (the embed stays unexported inside `doctemplate`) |
 | `internal/` | not contract | empty |
+<!--docz:decision:end-->
 
+<!--docz:consequences:start-->
 ## Consequences
 
+<!--docz:positive:start-->
 ### Positive
 
 - **docz is usable as docz from a program.** A consumer calls
@@ -322,7 +330,9 @@ implies.
 - **The CLI is untouched until the swap.** Every landing before it is
   additive, so `main` behaves as v1.2.2 for CLI users throughout the
   build.
+<!--docz:positive:end-->
 
+<!--docz:negative:start-->
 ### Negative
 
 - **A larger frozen surface at v2.0.0.** `repo`, `index`,
@@ -340,7 +350,9 @@ implies.
 - **`ParsePlan`'s reversal.** IMPL-0014 dropped a plan model for a stated
   reason; reversing it needs the reason to be recorded as changed (two
   consumers, docz's own grammar), not forgotten. Done in Context.
+<!--docz:negative:end-->
 
+<!--docz:neutral:start-->
 ### Neutral
 
 - **No behaviour change for CLI users.** The swap is a relocation; the
@@ -356,7 +368,10 @@ implies.
   gains a tag trigger for them in step 0 so a beta builds binaries (Open
   Question 3). IMPL-0017's `updated:` field retargets to the v2 line,
   after this unit.
+<!--docz:neutral:end-->
+<!--docz:consequences:end-->
 
+<!--docz:alternatives:start-->
 ## Alternatives Considered
 
 - **A. Promote on demand, again.** Ship `pkg/impl` and the two `docwrite`
@@ -380,7 +395,9 @@ implies.
   (Decision 3).
 - **F. This ADR.** API first, layers and rules, one module, standalone type
   packages with `Doc`, primitives versus policy, whole API then swap.
+<!--docz:alternatives:end-->
 
+<!--docz:open-questions:start-->
 ## Open Questions
 
 > Each question is numbered; option `a` is my recommendation, later letters
@@ -523,7 +540,9 @@ API, and `plan` becomes the first type that exists only as a custom type
   that every `Doc` implements, with a `docparse`-backed implementation for
   custom types. Breaks R6, and the methods would exist only to satisfy it.
 - e. Other.
+<!--docz:open-questions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - [ADR-0001](0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md)
@@ -543,3 +562,4 @@ API, and `plan` becomes the first type that exists only as a custom type
 - [Issue #100](https://github.com/donaldgifford/docz/issues/100) — tempy's
   request; [Issue #103](https://github.com/donaldgifford/docz/issues/103) —
   remove the `plan` type
+<!--docz:references:end-->

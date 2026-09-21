@@ -18,6 +18,7 @@ created: 2026-04-02
 - [Hypothesis](#hypothesis)
 - [Context](#context)
 - [Approach](#approach)
+- [Environment](#environment)
 - [Findings](#findings)
   - [Finding 1: ensureDocsIndex() is fully hardcoded](#finding-1-ensuredocsindex-is-fully-hardcoded)
   - [Finding 2: writeMkDocsYAML() hardcodes techdocs-core](#finding-2-writemkdocsyaml-hardcodes-techdocs-core)
@@ -32,18 +33,23 @@ created: 2026-04-02
 - [References](#references)
 <!--toc:end-->
 
+<!--docz:question:start-->
 ## Question
 
 What changes are needed to (1) support a customizable template for the wiki
 `docs/index.md` homepage, (2) allow additional MkDocs plugins from `.docz.yaml`,
 and (3) fix `docz init` ignoring the `enabled: false` type config?
+<!--docz:question:end-->
 
+<!--docz:hypothesis:start-->
 ## Hypothesis
 
 These are three small, related improvements that can be addressed in a single
 branch without a full design doc. The wiki template and plugin changes extend
 the existing `WikiConfig`, and the init fix is a one-line guard.
+<!--docz:hypothesis:end-->
 
+<!--docz:context:start-->
 ## Context
 
 Dogfooding `docz` on its own repository revealed:
@@ -67,7 +73,9 @@ Dogfooding `docz` on its own repository revealed:
    homepage regardless of enabled status.
 
 **Triggered by:** Dogfooding session on the docz repository
+<!--docz:context:end-->
 
+<!--docz:approach:start-->
 ## Approach
 
 1. Audit `cmd/wiki.go` — `ensureDocsIndex()` and `writeMkDocsYAML()` to
@@ -78,7 +86,18 @@ Dogfooding `docz` on its own repository revealed:
 4. Determine the right template approach for `docs/index.md`
 5. Determine the config shape for additional MkDocs plugins
 6. Propose changes and open questions
+<!--docz:approach:end-->
 
+<!--docz:environment:start-->
+## Environment
+
+Not applicable. Every step of the approach was a read of the docz source tree
+at the branch point — `cmd/wiki.go`, `cmd/init.go`, and
+`internal/template/embed.go` — with nothing built, run, or configured, so no
+version or setup detail affects the findings below.
+<!--docz:environment:end-->
+
+<!--docz:findings:start-->
 ## Findings
 
 ### Finding 1: `ensureDocsIndex()` is fully hardcoded
@@ -149,11 +168,15 @@ provides `EmbeddedIndexHeader(typeName)` for type-specific index headers. Adding
 an embedded `wiki_index.md` template would follow the same pattern. The template
 could use `text/template` variables like `{{ .SiteName }}` and a list of enabled
 types.
+<!--docz:findings:end-->
 
+<!--docz:conclusion:start-->
 ## Conclusion
 
 **Answer:** Three targeted changes are needed, all straightforward.
+<!--docz:conclusion:end-->
 
+<!--docz:recommendation:start-->
 ## Recommendation
 
 ### Change 1: Wiki index template
@@ -188,7 +211,9 @@ types.
 - Same guard in `ensureDocsIndex()` type list loop
 - Same guard in `writeDefaultConfig()` — or leave that as-is since it's the
   reference config showing all available types
+<!--docz:recommendation:end-->
 
+<!--docz:decisions:start-->
 ## Decisions
 
 1. **`writeDefaultConfig()` keeps all types in generated `.docz.yaml`.** The
@@ -207,7 +232,9 @@ types.
 5. **Wiki index template variables:** `{{ .SiteName }}` and `{{ .Types }}`
    (slice of structs with `.Name`, `.NavTitle`, `.Dir` for each enabled type).
    Start with these and extend if needed.
+<!--docz:decisions:end-->
 
+<!--docz:references:start-->
 ## References
 
 - `cmd/wiki.go` — `ensureDocsIndex()`, `writeMkDocsYAML()`
@@ -215,3 +242,4 @@ types.
 - `internal/template/embed.go` — template embedding pattern
 - `internal/config/config.go` — `WikiConfig` struct
 - DESIGN-0002: Wiki Command for MkDocs TechDocs Integration
+<!--docz:references:end-->
