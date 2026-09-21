@@ -1,7 +1,7 @@
 ---
 id: INV-0011
 title: "Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-09-21
 ---
@@ -27,6 +27,7 @@ created: 2026-09-21
   - [Observation 8: consolidation forces three tooling decisions that are otherwise invisible](#observation-8-consolidation-forces-three-tooling-decisions-that-are-otherwise-invisible)
   - [Observation 9: the contract tests change meaning, and that is worth preserving deliberately](#observation-9-the-contract-tests-change-meaning-and-that-is-worth-preserving-deliberately)
   - [Observation 10: under cmd/, the directory name is the binary name, and three things already rely on it](#observation-10-under-cmd-the-directory-name-is-the-binary-name-and-three-things-already-rely-on-it)
+  - [Observation 11: all 43 incoming docz documents collide, and the root files collide too](#observation-11-all-43-incoming-docz-documents-collide-and-the-root-files-collide-too)
 - [Open Questions](#open-questions)
   - [1. What is the directory layout?](#1-what-is-the-directory-layout)
   - [2. One module or several?](#2-one-module-or-several)
@@ -356,6 +357,39 @@ goreleaser can rename its output with `builds[].binary`, so a release artefact
 is not the problem. `go install` is: it has no such override, so a descriptive
 directory name is a name the user ends up typing and living with.
 
+### Observation 11: all 43 incoming docz documents collide, and the root files collide too
+
+Added 2026-09-21 while drafting ADR-0004. The inventory above counted Go
+symbols and skipped the thing both repositories have most of.
+
+| Repository | DESIGN | IMPL | INV | Total |
+| ---------- | ------ | ---- | --- | ----- |
+| docz | 0001–0015 | 0001–0018 | 0001–0011 | 44 + 4 ADRs |
+| docz-api | 0001–0005 | 0001–0010 | 0001–0009 | 24 |
+| docz-site | 0001–0006 | 0001–0007 | 0001–0006 | 19 |
+
+**The intersection is total: not one incoming ID is free.** Each of those 43
+documents cross-references others by ID, and docz-api's Go comments cite its
+own IMPL numbers, so renumbering is not a file rename — it is a rewrite of
+every reference in and to the tree. This is the one piece of the move with no
+cheap answer, and it is ADR-0004 Open Question 1.
+
+The root files collide the same way and were equally invisible from a symbol
+inventory: two `Dockerfile`s, two `ct.yaml`s, two `cliff.toml`s, two
+`mise.toml`s, two `renovate.json5`s, two `catalog-info.yaml`s, two `CLAUDE.md`s,
+two `README.md`s, two `deploy/` trees, two `scripts/` directories, plus
+docz-api's `compose.yaml`, `docker-bake.hcl`, and `sqlc.yaml`. docz-site also
+carries a `server/` directory — a TypeScript serving layer, not Go — which
+lands inside `ui/`. ADR-0004 Open Question 2.
+
+One fact checked rather than assumed, because it would have been the expensive
+kind of surprise: **nothing sensitive is in either tracked history.** docz-api's
+`deploy/secrets/github-app.pem` and `deploy/.env.local` exist on disk but are
+matched by `.gitignore` lines 27 and 22 and appear in no commit on any branch,
+and all three repositories are public already. The `.gitignore`s have to merge
+with the trees, though: without those two lines, the first `git add -A` in a
+developer's checkout commits a private key.
+
 <!--docz:findings:end-->
 
 <!--docz:open-questions:start-->
@@ -504,6 +538,12 @@ directory name is a name the user ends up typing and living with.
   with nothing installable.
 - d. Other.
 
+> **Resolved 2026-09-21: (a) — confirmed, nothing to do.** `main` is the v2
+> line and stays it. Each of the three units below gets its own
+> `v2.0.0-beta.N`, and v2.0.0 proper is cut after the UI lands, which is also
+> when the eleven experimental packages freeze. Recorded as ADR-0004
+> Decision 5.
+
 ### 6. Which toolchain and which task runner?
 
 - a. **`go 1.26.5` and `make`** — the bump is required to share a module with
@@ -573,6 +613,19 @@ directory name is a name the user ends up typing and living with.
   `ScanDocuments`.
 - d. Other.
 
+> **Resolved 2026-09-21: (a) — `config.ParseBytes`, shipping with the docz-api
+> move.** The one gap a real consumer was found to have, and additive to a
+> frozen package, so the freeze holds. Not (c): `ScanDocuments` appears only in
+> `doczcontract`'s tests and in no production path (Observation 3), so a wider
+> pass would be designing for a need nothing has demonstrated — the same
+> promotion-on-speculation ADR-0002 exists to stop.
+>
+> Two obligations carried into ADR-0004 Decision 6 rather than left to the
+> implementation: it runs the same normalisation `Load` runs, and a test pins
+> that `Load` of a single-file repository and `ParseBytes` of its bytes agree.
+> Without those the two paths drift and the byte core becomes a second,
+> subtly different config loader.
+
 ### 9. What happens to DESIGN-0008 and DESIGN-0009?
 
 - a. **Both get dated amendments and stay as the service designs; the move and
@@ -607,6 +660,30 @@ directory name is a name the user ends up typing and living with.
 - b. Squash-import each as a single commit, with the old repositories archived
   read-only as the historical record.
 - c. Other.
+
+> **Resolved 2026-09-21: (a) — import with history.** Merge with
+> `--allow-unrelated-histories` after rewriting the incoming paths with
+> `git filter-repo`, so the commits themselves carry target paths and blame
+> lands on the commit that wrote the line rather than on an import commit.
+>
+> Cheaper than this question assumed, for a reason that only became visible
+> once Open Question 1 settled: **docz-api's tree already is the target
+> layout** — `internal/`, `cmd/docz-api/`, `api/`, `charts/docz-api/` — because
+> the layout was derived from it. Only its `docs/` and its root files need
+> rewriting. docz-site is `--to-subdirectory-filter ui` with `charts/docz-site`
+> lifted back out. `git subtree add --prefix=` is *not* the mechanism: it puts
+> an entire incoming repository under one prefix, which is not what either
+> move wants.
+>
+> One thing checked rather than assumed: nothing sensitive is in either
+> tracked history. docz-api's `deploy/secrets/github-app.pem` and
+> `deploy/.env.local` are gitignored and were never committed, and all three
+> repositories are public — so merging history exposes nothing. The
+> `.gitignore`s must merge with the trees, or those files become tracked by
+> accident on the first developer's `git add`.
+>
+> The old repositories are archived read-only after the merge, as a pointer
+> rather than as the record.
 
 <!--docz:open-questions:end-->
 
@@ -652,29 +729,42 @@ paper over. The trade is real and recorded; what it buys is that DESIGN-0014 §7
 R8 now survives as a test rather than as a fact about the module graph, so
 `layer_test.go` becomes load-bearing.
 
-On the branch question there is nothing to decide so much as something to
-confirm: `main` already **is** the v2 line. A `v2` branch would mean reverting
-`main` to v1 and maintaining the divergence for no reader. **This one is still
-open**, along with the `config` bytes API and whether git history comes with the
-moves.
+On the branch question there was nothing to decide so much as something to
+confirm: `main` already **is** the v2 line, and a `v2` branch would mean
+reverting `main` to v1 and maintaining the divergence for no reader. All ten
+questions are resolved as of 2026-09-21 and recorded in ADR-0004.
+
+What the investigation got wrong is worth saying plainly. It inventoried Go
+symbols, dependency graphs, and toolchains, and from that concluded the layout
+was the expensive half and the upgrade nearly free. Both halves held. What it
+missed entirely is Observation 11: the two repositories' **43 docz documents**,
+every one of whose IDs collides with one of docz's own, and the two dozen
+root files that collide the same way. The expensive part of this move is not
+Go code and not import paths — it is the documentation and the scaffolding, the
+two things an API inventory does not look at.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Seven of the ten open questions were resolved on 2026-09-21, which changes the
-shape of what follows: there is no restructure to plan, and no ADR needed for a
-path change that is no longer happening. What remains is one decision record and
+All ten open questions were resolved on 2026-09-21, which changes the shape of
+what follows: there is no restructure to plan, and no ADR needed for a path
+change that is no longer happening. What remains is one decision record and
 three units of work.
 
-1. **An ADR for the consolidated repository**, recording Open Questions 1, 2, 6,
-   and 9: one module, `pkg/` unchanged, `cmd/docz` and `cmd/docz-api`,
-   `internal/` for the server, `api/` for the one spec, `ui/` for the frontend,
-   `charts/` for both charts, `just` as the task runner, `go 1.26.5`. It is
-   still an ADR rather than a design — ADR-0002 Decision 6 left the
-   consolidation unspecified and this is what fills that gap — but it is now a
-   short one, because the expensive option was declined.
+1. **An ADR for the consolidated repository** — written as
+   [ADR-0004](../adr/0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md),
+   recording Open Questions 1, 2, 5, 6, 8, 9, and 10: one module, `pkg/`
+   unchanged, `cmd/docz` and `cmd/docz-api`, `internal/` for the server, `api/`
+   for the one spec, `ui/` for the frontend, `charts/` for both charts, `just`
+   as the task runner, `go 1.26.5`, `config.ParseBytes`, history preserved. It
+   is an ADR rather than a design because ADR-0002 Decision 6 left the
+   consolidation unspecified and this is what fills that gap. It stayed short
+   where this investigation expected length — the expensive layout option was
+   declined — and grew in the place this investigation did not look, carrying
+   four open questions of its own about the incoming documents, the root files,
+   the contract tests, and CI cost.
 2. **The `just` migration, on its own**, before either service arrives.
    `justfile` plus `docz.just`, with `api.just` and `ui.just` landing as the
    services do. It touches the harness that proved this line green — `make ci`,
@@ -684,20 +774,21 @@ three units of work.
 3. **docz-api in**, as its own design and IMPL: `internal/` verbatim,
    `cmd/docz-api/main.go`, `api/openapi.yaml` as the single copy,
    `charts/docz-api`, the Dockerfile and compose/bake files, the `/v2` import
-   rewrite that is the whole of the v2 upgrade, and the `config` bytes API if
-   Open Question 8 resolves to (a). The `doczcontract` tests come with it and
-   keep their early-warning role by convention.
+   rewrite that is the whole of the v2 upgrade, and `config.ParseBytes`. The
+   `doczcontract` tests come with it and keep their early-warning role by
+   convention.
 4. **docz-site in**, as its own design and IMPL: `ui/`, `charts/docz-site`, its
    generated client reading the one remaining spec, and a decision on what
    `orval` runs against now that the spec is a sibling rather than a copy.
 
-Each of 2, 3, and 4 gets its own `v2.0.0-beta.N`.
+Each of 2, 3, and 4 gets its own `v2.0.0-beta.N`, and v2.0.0 proper follows 4 —
+which is also when the eleven experimental packages freeze, so the beta window
+lasts exactly as long as the consolidation does.
 
-Three questions are still open and two of them gate the documents above: **Open
-Question 5** (confirming `main` stays the v2 line) and **Open Question 8** (the
-`config` bytes API, which decides whether docz-api's move includes an API
-change). **Open Question 10** (git history) can be answered at the moment of
-the move.
+The one thing 3 must not inherit from this investigation is its blind spot.
+Observation 11 was added after the fact, and the 43 colliding document IDs are
+the largest single piece of work in either move; a design for 3 that treats
+`docs/` as a directory to copy will discover that during the copy.
 
 Two follow-ups this investigation surfaced that are not part of the
 consolidation: **GO-2026-4970** is closed for free by the `go 1.26.5` bump that
@@ -709,6 +800,9 @@ Open Question 9 accepts deliberately rather than by oversight.
 <!--docz:references:start-->
 ## References
 
+- [ADR-0004](../adr/0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md)
+  — the decision record this investigation recommended, carrying Open Questions
+  1, 2, 5, 6, 8, 9, and 10 as decisions.
 - [ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md)
   — Decision 6 commits to the consolidation and declines to specify it;
   Decision 7 is the experimental-until-v2.0.0 rule this investigation's deadline
