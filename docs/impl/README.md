@@ -48,5 +48,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0015 | v1.1.0 — changelog config block and ParseChangelog | Completed | 2026-08-02 | Donald Gifford | [0015-v110-changelog-config-block-and-parsechangelog.md](0015-v110-changelog-config-block-and-parsechangelog.md) |
 | IMPL-0016 | v1.2.0 — api config block and docparse.Title | Completed | 2026-08-11 | Donald Gifford | [0016-v120-api-config-block-and-docparsetitle.md](0016-v120-api-config-block-and-docparsetitle.md) |
 | IMPL-0017 | v1.3.0 — updated frontmatter field and the docz update stamp pass | Draft | 2026-09-12 | Donald Gifford | [0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md](0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md) |
-| IMPL-0018 | v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap | In Progress | 2026-09-19 | Donald Gifford | [0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md](0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md) |
+| IMPL-0018 | v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap | Completed | 2026-09-19 | Donald Gifford | [0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md](0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md) |
 <!-- END DOCZ AUTO-GENERATED -->
