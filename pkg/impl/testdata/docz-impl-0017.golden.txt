@@ -1,0 +1,160 @@
+id="IMPL-0017" title="v1.3.0 — updated frontmatter field and the docz update stamp pass" status="Draft" inferred=false
+implements=[DESIGN-0012]
+objective="Implement DESIGN-0012: an opt-in `updated:` config block and an `updated: YYYY-MM-DD` fron…"
+in-scope=6 out-of-scope=5
+dependencies="- **DESIGN-0012** — approved; all eight decisions locked 2026-09-12 - **INV-0008** — C…"
+testing=9 references=9 open-questions=8 decisions=8
+progress=0/47
+file-change line=506 file="`pkg/doczcore/docwrite/status.go`" action="Modify" description="`findScalarValue` / `parseScalarValue` generalization; `SetStatus` becomes a wrapper"
+file-change line=507 file="`pkg/doczcore/docwrite/updated.go`" action="Create" description="`SetUpdated`, `ErrUpdatedFieldUnsupported`, `insertFrontmatterLine`"
+file-change line=508 file="`pkg/doczcore/docwrite/updated_test.go`" action="Create" description="Golden harness, error table, `FuzzSetUpdated`"
+file-change line=509 file="`pkg/doczcore/docwrite/testdata/golden/updated/`" action="Create" description="Input/output fixtures"
+file-change line=510 file="`pkg/doczcore/docwrite/doc.go`" action="Modify" description="Four operations, upsert rationale"
+file-change line=511 file="`pkg/doczcore/document/document.go`" action="Modify" description="`Frontmatter.Updated`"
+file-change line=512 file="`pkg/doczcore/document/document_test.go`" action="Modify" description="Field parse cases"
+file-change line=513 file="`pkg/doczcore/config/config.go`" action="Modify" description="`UpdatedConfig`, `Config.Updated`, default"
+file-change line=514 file="`pkg/doczcore/config/config_test.go`, `parity_baseline_test.go`, `json_test.go`" action="Modify" description="Decode / merge / dormancy / parity / shape pin"
+file-change line=515 file="`internal/template/templates/docz_yaml.tmpl`" action="Modify" description="Dormant `updated:` block"
+file-change line=516 file="`.docz.example.yaml`, `.docz.yaml`" action="Modify" description="The block (disabled until Phase 5)"
+file-change line=517 file="`internal/gitlog/gitlog.go` (+ tests, testdata)" action="Create" description="`git log -p` stream parser (Decision 1)"
+file-change line=518 file="`cmd/git.go`" action="Modify" description="`WorkTreeState`, `Change`, grown `GitResolver`, `realGit.Dir`, scriptable `staticGit`"
+file-change line=519 file="`cmd/git_test.go`, `cmd/git_integration_test.go`" action="Modify / Create" description="Stub tests; hermetic real-git test"
+file-change line=520 file="`cmd/root.go`" action="Modify" description="Wire `realGit{Dir: repoRoot}`"
+file-change line=521 file="`cmd/update.go`" action="Modify" description="Once-per-run probe, `stampUpdated`, layout selection"
+file-change line=522 file="`cmd/create.go`, `cmd/status.go`, `cmd/list.go`" action="Modify" description="Command-time stamps; JSON/text/CSV columns"
+file-change line=523 file="`cmd/update_test.go`, `create_test.go`, `status_test.go`, `list_test.go`" action="Modify" description="Convergence table, dormancy proof, guards, shapes"
+file-change line=524 file="`internal/index/index.go` (+ test)" action="Modify" description="`Layout` parameter, enabled header"
+file-change line=525 file="`test/consumer/consumer_v13_test.go`" action="Create" description="R12 proof"
+file-change line=526 file="`README.md`, `CLAUDE.md`" action="Modify" description="Living docs"
+file-change line=527 file="`docs/design/0008-*.md`" action="Modify" description="R12 clause"
+
+phase index=1 token="1" line=113 title="docwrite.SetUpdated"
+  description="The byte-level write primitive, in `pkg/doczcore/docwrite`. Built first because Phases 4 a…"
+  task 1.1 line=122 end=125 checked=false
+    text="go-architect pass on the insert design before coding: confirm the generalized locator's shape, the insertion rules, and that a purpose-named `SetUpdated` (not a generic `SetScalar`) is what ships (DESIGN-0012 §`docwrite.SetUpdated`, ADR-0001 Decision 5)."
+  task 1.2 line=126 end=133 checked=false
+    text="Generalize the status locator: `findStatusValue` becomes `findScalarValue(content []byte, keyRE *regexp.Regexp) (start, end int, value string, err error)`; `parseStatusValue` becomes `parseScalarValue`, returning a **bare** `errUnsupportedShape` / `errFieldMissing` that each caller wraps with its own sentinel so `errors.Is(err, ErrStatusFieldMissing)` keeps working for existing consumers. `statusKeyRE` stays; add `updatedKeyRE = ^updated:[ \\t]*` and `createdKeyRE = ^created:`."
+  task 1.3 line=134 end=136 checked=false
+    text="Rewire `SetStatus` onto the generalized locator. **Behavior and error messages must not change** — the 12 fixtures under `testdata/golden/status/` are the proof and must not be regenerated."
+  task 1.4 line=137 end=143 checked=false
+    text="Add the insert helper: `insertFrontmatterLine(content []byte, blockStart, blockEnd int, afterKeyRE *regexp.Regexp, line string) []byte`. Inserts `line + \"\\n\"` immediately after the first line in the block matching `afterKeyRE` (the `created:` line); when no line matches, appends it as the last line of the block, just before the closing `---`. `frontmatterBounds` already tolerates the one leading blank line; reuse it, do not re-derive the bounds."
+  task 1.5 line=144 end=152 checked=false
+    text="Add `ErrUpdatedFieldUnsupported` and `SetUpdated(path, date string) (old string, err error)`: read; reject CR/CRLF with `ErrUnsupportedLineEndings`; `document.ErrNoFrontmatter` when no block; locate `^updated:` — supported shape → splice the value bytes only (return the old value); unsupported shape → `ErrUpdatedFieldUnsupported` **before any write** (never a duplicate key); absent → insert a bare `updated: <date>` line after `created:` (return `\"\"`). Write with `config.FileMode`; wrap IO errors with the path. No value validation, matching `SetStatus`."
+  task 1.6 line=153 end=160 checked=false
+    text="Golden suite `TestSetUpdated_Golden` mirroring `TestSetStatus_Golden` (`testdata/golden/updated/<case>.input.md` / `.output.md`, `-update` regenerates): `bare`, `double-quoted`, `single-quoted`, `trailing-comment`, `insert-after-created`, `insert-no-created` (goes last in the block), `insert-created-last-line`, `leading-blank-line`, `same-value` (output byte-identical to input), and one fixture per built-in type's real template output so the insert lands where a real document expects it."
+  task 1.7 line=161 end=166 checked=false
+    text="Error-table test: CRLF → `ErrUnsupportedLineEndings`; no frontmatter → `document.ErrNoFrontmatter`; block scalar / flow mapping / flow sequence / anchor / alias → `ErrUpdatedFieldUnsupported` **and the file on disk is byte-identical afterward**; unterminated quote → `ErrUpdatedFieldUnsupported`; unreadable path → wrapped IO error naming the path."
+  task 1.8 line=167 end=173 checked=false
+    text="`FuzzSetUpdated` pinning: never panics; when it returns nil the output contains exactly one `^updated:` line inside the frontmatter block; and when `document.ParseFrontmatter(input)` succeeded, `ParseFrontmatter(output)` succeeds with `Updated == date` and every other field unchanged. If the fuzzer finds a YAML shape where a column-0 insert breaks the parse, **refuse with `ErrUpdatedFieldUnsupported`** rather than weaken the invariant."
+  task 1.9 line=174 end=176 checked=false
+    text="Package doc (`doc.go`): \"three operations\" becomes four; describe the upsert and why it is not a general editor. Godoc on every new exported symbol."
+  task 1.10 line=177 end=177 checked=false
+    text="`make fmt`, `make lint`, `make ci` green; go-review pass on the diff."
+  criterion line=183 executable=true command="git diff --stat pkg/doczcore/docwrite/testdata/golden/status/" text="`git diff --stat pkg/doczcore/docwrite/testdata/golden/status/` is empty after the refacto…"
+  criterion line=186 executable=true command="TestSetStatus_*" text="`TestSetStatus_*` pass unchanged; `TestSetUpdated_Golden`, the error table, and `FuzzSetUp…"
+  criterion line=189 executable=false command="" text="A document written by `SetUpdated` round-trips through `document.ParseFrontmatter` with `U…"
+  criterion line=191 executable=true command="make ci" text="`make ci` green."
+
+phase index=2 token="2" line=198 title="read side and the updated: config block"
+  description="`document.Frontmatter.Updated`, `config.UpdatedConfig`, defaults, the generated-config tem…"
+  task 2.1 line=207 end=211 checked=false
+    text="`document.Frontmatter` gains `Updated string \\`yaml:\"updated\"\\`` with a doc comment stating the `YYYY-MM-DD` raw-string contract and the `\"\"`-means-unknown rule (DESIGN-0012 §The field). `DocEntry` inherits. Tests: present, absent → `\"\"`, quoted, and unknown-key leniency still holds."
+  task 2.2 line=212 end=216 checked=false
+    text="`config.UpdatedConfig{Enabled bool}` with `yaml:\"enabled\" json:\"enabled\"`; `Config.Updated UpdatedConfig` with `yaml:\"updated\" json:\"updated\"`, placed after `API`. `DefaultConfig()` sets `Enabled: false`. No `mapstructure` tags (vestigial post-viper). Nothing to normalize or validate — `Validate()` is untouched."
+  task 2.3 line=217 end=222 checked=false
+    text="Add the block to `internal/template/templates/docz_yaml.tmpl` after `api:`, rendered from `DefaultConfig()` with the DESIGN-0012 §Config comment (needs git history, rewrites every document once). **Do this in the same commit as the struct:** `TestDoczYAMLTemplate_RoundTripsToDefaultConfig` fails the moment a default field has no template line (IMPL-0015 / IMPL-0016 precedent)."
+  task 2.4 line=223 end=225 checked=false
+    text="Add the block to `.docz.example.yaml` with the same comment, and to this repo's `.docz.yaml` as `enabled: false` (enabling is Phase 5's dogfood step)."
+  task 2.5 line=226 end=233 checked=false
+    text="Config tests: decode (full / `enabled` only / absent); defaults; merge (repo `updated.enabled` wins over global); dormancy — a config with the block enabled **and** disabled both pass `Validate()` since there are no rules; `parity_baseline_test.go` case pinning that a dormant `updated:` block now decodes rather than being ignored. Confirm `TestJSONTags_MirrorYAML` and `TestConfigJSON_MarshaledShape` cover the new struct — the shape pin needs its expected JSON extended by one block."
+  task 2.6 line=234 end=237 checked=false
+    text="`docz list`: `listEntry.Updated string \\`json:\"updated,omitempty\"\\`` populated from `doc.Updated`; JSON output only in this phase (the text and CSV columns are layout and land in Phase 4). Test: a doc with the field emits it; one without omits the key."
+  task 2.7 line=238 end=239 checked=false
+    text="Godoc on every new exported symbol; `make fmt`, `make lint`, `make ci` green; go-review pass."
+  criterion line=245 executable=true command="docz config" text="`docz config` prints the resolved `updated:` block with no `cmd/` change."
+  criterion line=246 executable=true command="docz init" text="`docz init` output contains the disabled block with its comment, and round-trips to `Defau…"
+  criterion line=248 executable=true command="TestJSONTags_MirrorYAML" text="`TestJSONTags_MirrorYAML` green with the new struct, and `TestConfigJSON_MarshaledShape` p…"
+  criterion line=250 executable=true command="docz list --format=json" text="`docz list --format=json` on a fixture with `updated:` emits the key; on one without, omit…"
+  criterion line=252 executable=true command="make ci" text="`make ci` green."
+
+phase index=3 token="3" line=259 title="git resolver and the stream parser"
+  description="Everything that talks to git, in `cmd/` — plus the pure `git log -p` stream parser in it…"
+  task 3.1 line=269 end=271 checked=false
+    text="go-architect pass before the new package (Decision 1: `internal/gitlog`): confirm the parser's signature and that it is bytes-in/values-out with no `exec` inside it."
+  task 3.2 line=272 end=281 checked=false
+    text="Stream parser `gitlog.FirstSubstantiveCommit(r io.Reader, ignore *regexp.Regexp) (Commit{SHA, Date string}, ok bool, err error)` over `git log --format=%x00%H%x09%cs -p` output: split on the NUL record marker; for each commit scan patch lines; a line is a *change* when it starts with `+` or `-` and is not a `+++ ` / `--- ` file header; the commit is substantive when any change line's text after the marker does **not** match `ignore` (`^updated:`); return the first substantive commit. Pure-rename commits (no change lines) are skipped. `\\ No newline at end of file` lines are ignored. Truncated input never panics; empty input → `ok == false`."
+  task 3.3 line=282 end=289 checked=false
+    text="Parser tests (parallel, table-driven) on committed fixtures under `testdata/`: a real `git log -p` capture from this repo (DESIGN-0011's two-commit history); synthetic cases — first commit substantive; first commit `updated:`-only → second returned; `updated:`-only insertion (`+updated: …` with no `-` line) skipped; `status:` flip counted as substantive; pure rename skipped; headers and `\\ No newline` ignored; empty; truncated mid-record. `FuzzFirstSubstantiveCommit` pins never-panic."
+  task 3.4 line=290 end=294 checked=false
+    text="`cmd/git.go`: add `WorkTreeState` (`StateUnavailable`, `StateClean`, `StateModified`, `StateUntracked`), `Change{SHA, Date}`, and grow `GitResolver` with `Shallow(ctx) (bool, error)`, `State(ctx, path) WorkTreeState`, `LastChange(ctx, path) (Change, bool, error)`. Doc comments carry the DESIGN-0012 §Git resolver command table."
+  task 3.5 line=295 end=305 checked=false
+    text="`realGit` gains a `Dir string` (the repo root every command runs in) and implements the three methods with `exec.CommandContext`: `rev-parse --is-shallow-repository`; `status --porcelain --untracked-files=all -- <path>` (empty → Clean, `??` → Untracked, else Modified; exit 128 / missing binary → Unavailable); `log --follow --format=%x00%H%x09%cs -p -- <path>` streamed through the parser with early stop (Decision 7: once the parser returns, close the process's stdout and `Wait`, treating the broken-pipe exit as success). Wire `Dir` in `loadAndValidateConfig` where `RepoRoot` is resolved, so `NewRunner`'s default `realGit{}` still means \"cwd\"."
+  task 3.6 line=306 end=310 checked=false
+    text="Route the path handed to git through the same resolution as the file path: git runs in `RepoRoot`, so pass the doc path relative to `RepoRoot` (`filepath.Rel` when the path is absolute). Add one test with `RepoRoot ≠ cwd` — the pre-existing looseness DESIGN-0012 calls out, closed only as far as this feature needs."
+  task 3.7 line=311 end=317 checked=false
+    text="`staticGit` becomes scriptable **without breaking the ~20 existing `staticGit{Name: …}` / `staticGit{}` literals**: add `ShallowFn func() (bool, error)`, `StateFn func(path string) WorkTreeState`, `LastChangeFn func(path string) (Change, bool, error)`, and a `Calls []string` recorder (method name + path) for the dormancy proof. Nil functions return `(false, nil)`, `StateUnavailable`, and `(Change{}, false, nil)`."
+  task 3.8 line=318 end=329 checked=false
+    text="Real-git integration test, one file (`cmd/git_integration_test.go`), guarded by `exec.LookPath(\"git\")` and hermetic: `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1`, `GIT_AUTHOR_DATE` / `GIT_COMMITTER_DATE` pinned with an explicit offset, `-c user.name -c user.email -c commit.gpgsign=false -c init.defaultBranch=main`. Scenarios: `State` classifies clean / modified / untracked (and a file added but not yet committed → Modified); `LastChange` returns the pinned committer date; an `updated:`-only follow-up commit is skipped; `git mv` + a content edit is followed across the rename; `Shallow` is false; and (Decision 3) a `git clone --depth 1 file://…` of that repo reports `Shallow` true, with the update pass run against it printing the single warning and writing nothing."
+  task 3.9 line=330 end=331 checked=false
+    text="Context-cancellation tests for the three new `realGit` methods, matching `TestRealGit_UserName_CtxCancel`."
+  task 3.10 line=332 end=332 checked=false
+    text="Godoc; `make fmt`, `make lint`, `make ci` green; go-review pass."
+  criterion line=338 executable=false command="" text="Parser table + fuzz green in parallel; the captured real-history fixture returns `004491f\xe2…"
+  criterion line=341 executable=false command="" text="Integration test green locally and in the `Test Go` CI job (Ubuntu runner git ≥ 2.21 for…"
+  criterion line=343 executable=false command="" text="Every pre-existing `cmd/` test compiles and passes with the grown interface and stub."
+  criterion line=345 executable=true command="make ci" text="`make ci` green."
+
+phase index=4 token="4" line=352 title="CLI integration"
+  description="The stamp pass, the two command-time stamps, and the enabled-only layouts. This is where D…"
+  task 4.1 line=360 end=365 checked=false
+    text="`Runner.Update`: when `r.Cfg.Updated.Enabled`, probe git **once per invocation**: `State` unavailable → debug log, pass disabled; `Shallow` true → exactly one warning on `r.Err` (`Warning: shallow clone; skipping updated-field pass (clone with full history, e.g. fetch-depth: 0)`), pass disabled. Carry the result into `updateType` as a small `stampGate` value rather than a Runner field."
+  task 4.2 line=366 end=377 checked=false
+    text="`Runner.updateType`: after the ToC pass and before `index.GenerateTable`, call `r.stampUpdated(typeDir, docs, dryRun, gate)` implementing DESIGN-0012 §The stamping model: `State` → today (`r.Now().Format(time.DateOnly)`, the local date — Decision 8) for Modified/Untracked, `LastChange` date for Clean, skip with debug when no history; compare against the scan's parsed `doc.Updated` (cmd owns the no-op short-circuit); on a difference, dry-run prints `Would set updated in <path>: <old|(absent)> -> <want>`, otherwise `docwrite.SetUpdated`. Copy the new value into `docs[i].Updated` so the table rendered next sees it. Silent on success with a debug log per document (Decision 7); write errors are warnings on `r.Err` and the pass continues."
+  task 4.3 line=378 end=383 checked=false
+    text="`index.GenerateTable(docs, heading, layout index.Layout)` with `Layout{Updated bool}`: zero value renders today's header byte-for-byte; `Updated: true` renders `| ID | Title | Status | Created | Updated | Author | Link |` (Decisions 5 and 6). `updateType` passes `Layout{Updated: r.Cfg.Updated.Enabled}`. Existing `TestGenerateTable_*` pass unchanged; add the enabled-layout cases."
+  task 4.4 line=384 end=387 checked=false
+    text="`docz create`: when enabled, after `docwrite.Create`, call `SetUpdated(result.FilePath, today)`; `--no-update` does **not** skip it (creation metadata, not index maintenance). The `Created …` output line is unchanged."
+  task 4.5 line=388 end=392 checked=false
+    text="`docz status set`: when enabled and `res.changed && !opts.dryRun`, call `SetUpdated(docPath, today)` after a successful `SetStatus`; a failure goes through `statusWriteError` (exit 1). `statusResult` and `statusJSON` gain `Updated string \\`json:\"updated,omitempty\"\\``; the text line is unchanged (Decision 4). `--quiet` behavior unchanged."
+  task 4.6 line=393 end=395 checked=false
+    text="`docz list`: `outputTable` and `outputCSV` gain an `UPDATED` column after `DATE` only when enabled (Decision 5 — the three formats agree). JSON is done (Phase 2)."
+  task 4.7 line=396 end=401 checked=false
+    text="cmd tests for the pass with the scripted stub, one subtest per row of DESIGN-0012's convergence table: same-day edit; create-then-clean; status-set-then-clean; commit-without-update (git-derived write); backfill of a multi-doc fixture; day-boundary (one write). Each runs the pass **twice** and asserts the second run writes nothing (file bytes identical, dry-run prints nothing)."
+  task 4.8 line=402 end=405 checked=false
+    text="The dormancy proof: with the block disabled, `docz update`, `create`, and `status set` make **zero** `GitResolver` calls beyond `UserName` (assert `staticGit.Calls`), write no `updated:` line, and render the pre-existing README layout byte-for-byte."
+  task 4.9 line=406 end=410 checked=false
+    text="Guard tests: shallow → one warning, no writes, README still updated; git unavailable → silent skip; write error on one doc → warning, other docs still stamped; `docz update --dry-run` lines pinned; `docz update <type>` stamps only that type; table write-through (the README rendered in the same run shows the new date)."
+  task 4.10 line=411 end=414 checked=false
+    text="`create` / `status set` tests: enabled → `updated:` equals the pinned `Now` date; disabled → absent; `create --no-update` still stamps; `status set --dry-run` and same-value no-op stamp nothing; JSON shape with and without `updated`."
+  task 4.11 line=415 end=416 checked=false
+    text="Godoc; `make fmt`, `make lint`, `make ci` green; go-review pass over the whole phase (the largest diff in the plan)."
+  criterion line=422 executable=false command="" text="All convergence-table subtests green, each proving a zero-write second run."
+  criterion line=424 executable=false command="" text="Dormancy proof green: a disabled repo is byte-identical in every file and every README aft…"
+  criterion line=426 executable=true command="docz update --dry-run" text="`docz update --dry-run` on a fixture prints exactly the pinned lines and nothing else; a r…"
+  criterion line=428 executable=true command="cmd/" text="`cmd/` tests remain serial; `internal/*` and `pkg/*` tests remain parallel."
+  criterion line=429 executable=true command="make ci" text="`make ci` green."
+
+phase index=5 token="5" line=436 title="living docs, consumer contract, release, dogfood"
+  description="Ships `v1.3.0`, then flips statuses and enables the block in this repo."
+  task 5.1 line=443 end=450 checked=false
+    text="README: the Features bullet lists `updated`; the Configuration example gains the block; new `### Updated` subsection after `### API` covering the semantics (edit-time stamp vs committer date, the substantive-commit rule), the one-time backfill diff on enabling, the shallow-clone warning and `fetch-depth: 0`, that `create` / `status set` stamp too, and the `Created` / `Updated` table layout; `docz update` Flags section notes the pass; \"Using docz as a Go Library\" table gains `SetUpdated`; Index Tables section notes the enabled layout."
+  task 5.2 line=451 end=454 checked=false
+    text="CLAUDE.md architecture map: `docwrite` (SetUpdated, upsert rules), `document` (Updated field), `config` (UpdatedConfig, dormancy), `cmd/` (stamp pass, GitResolver growth, stub shape), `internal/index` (Layout), and `internal/gitlog` (Decision 1)."
+  task 5.3 line=455 end=456 checked=false
+    text="DESIGN-0008: add R12 verbatim from DESIGN-0012 §Consumer contract with `v1.3.0` filled in, and extend the \"R10 raises that pin…\" sentence."
+  task 5.4 line=457 end=464 checked=false
+    text="`test/consumer/consumer_v13_test.go` (one file per release): parse a document carrying `updated:` and assert `Frontmatter.Updated`; decode `updated: {enabled: true}` into `config.Config`; call `docwrite.SetUpdated` on a temp file and assert `errors.Is(err, docwrite.ErrUpdatedFieldUnsupported)` on a block-scalar fixture. Verify it goes **red** when `Frontmatter.Updated` is temporarily renamed, then restore — this module sits outside root `./...`, so only `make test-consumer` / `make ci` catches it."
+  task 5.5 line=465 end=469 checked=false
+    text="Open the release PR with the `minor` label carrying Phases 1–5, a `### RELEASE NOTES` section (new field, block, `SetUpdated`, the enabled-only layout, the R12 pin, and that `v1.2.2` already changed `config_snapshot` spellings for anyone bumping from `v1.2.1`). Merge when green; `pr-semver-bump` + goreleaser cut `v1.3.0`."
+  task 5.6 line=470 end=473 checked=false
+    text="After the tag: fix the release body with the extracted notes (`gh release edit`), since goreleaser overwrote them on `v1.2.0` and `v1.2.2`; verify `go list -m github.com/donaldgifford/docz@v1.3.0` resolves from the proxy."
+  task 5.7 line=474 end=481 checked=false
+    text="Post-tag `dont-release` PR (Decision 6 — one bookkeeping PR carrying both the flips and the backfill): flip DESIGN-0012 → Implemented and IMPL-0017 → Completed; set `updated: enabled: true` in this repo's `.docz.yaml`; run `docz update` and commit the backfill (every document gains `updated:`, every README re-renders with the `Created` / `Updated` layout); run `docz update --dry-run` again on the result and confirm it prints nothing — the convergence proof on real history."
+  task 5.8 line=482 end=484 checked=false
+    text="Comment on docz-api #36 with the tag, the R12 text, and the `config_snapshot` key; note on claude-skills #95 that the config and workflow references need the block (templates unchanged)."
+  task 5.9 line=485 end=485 checked=false
+    text="`make ci` green at the end; go-review pass on the docs diff."
+  criterion line=491 executable=true command="v1.3.0" text="`v1.3.0` tagged, published with the real release notes, and resolvable from `proxy.golang.…"
+  criterion line=493 executable=true command="make test-consumer" text="`make test-consumer` green against the promoted surface, and proven red on a rename."
+  criterion line=495 executable=false command="" text="DESIGN-0012 Implemented, IMPL-0017 Completed, this repo enabled and converged (`docz updat…"
+  criterion line=497 executable=false command="" text="docz-api #36 unblocked with everything it needs to start."

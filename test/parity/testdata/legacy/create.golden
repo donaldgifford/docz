@@ -10,11 +10,11 @@ Updated $ROOT/docs/rfc/README.md
 
 === files
 .docz.yaml (1782 bytes, 5f476a5dfcfa)
-docs/adr/0001-drop-the-plan-doc-type.md (1615 bytes, f758bf15ef90)
+docs/adr/0001-drop-the-plan-doc-type.md (1133 bytes, fa34d09a4d3e)
 docs/adr/README.md (1146 bytes, ee1e083b756e)
-docs/rfc/0001-consolidate-the-release-pipeline.md (1700 bytes, fd3f2c80cac7)
-docs/rfc/0002-parity-created-document.md (1313 bytes, 33d3c59618ab)
-docs/rfc/README.md (1421 bytes, c458e16c0f67)
+docs/rfc/0001-consolidate-the-release-pipeline.md (1334 bytes, 75747f949fd3)
+docs/rfc/0002-parity-created-document.md (1308 bytes, e7fff96f8d22)
+docs/rfc/README.md (1416 bytes, df1580e58e84)
 
 === written docs/rfc/0002-parity-created-document.md
 ---

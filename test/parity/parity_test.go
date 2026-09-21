@@ -299,16 +299,17 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 
 	norms := []Normalizer{RootNormalizer(root), DateNormalizer(today), MarkerNormalizer()}
 
+	// Normalised on both sides before the comparison, so a size and digest
+	// recorded beside a body describe the body the golden shows.
+	before = NormalizeFiles(before, norms...)
+	after = NormalizeFiles(after, norms...)
+
 	result := Result{
 		Args:     c.args,
 		ExitCode: code,
 		Stdout:   Normalize(stdout, norms...),
 		Stderr:   Normalize(stderr, norms...),
 		Files:    Changed(before, after),
-	}
-
-	for i := range result.Files {
-		result.Files[i].Body = Normalize(result.Files[i].Body, norms...)
 	}
 
 	got := Format(&result, Deleted(before, after))

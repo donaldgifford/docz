@@ -1,0 +1,102 @@
+id="INV-0010" title="IMPL plan parse and write-back API for doczcore (issue 100)" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-09-13"
+question="Issue #100 asks `pkg/doczcore` for an IMPL plan model — `ParseImpl`, `SetTaskState`, `Se…"
+hypothesis="Feasible as one additive `minor` release, with three costs the issue does not mention: it …"
+context="Issue #100 (opened 2026-09-13) is the docz half of **tempy** — a Temporal- orchestrated …"
+triggered-by="issue #100; tempy DESIGN-0001 / IMPL-0001; ADR-0001;"
+conclusion="**Answer:** Yes — feasible as one additive `minor` release, with the design having to se…"
+answer="Yes — feasible as one additive `minor` release, with the design"
+verdict=yes
+recommendation="1. **Write DESIGN-0013 from this investigation** with the decisions below locked, includin…"
+approach=6 environment=4 findings=9
+open-questions=9 decisions=0 references=8
+
+step line=103 text="Read the issue's API and conventions against tempy DESIGN-0001 (the activities that call e…"
+
+step line=106 text="Inventory what docz already has: `document.ParseFrontmatter`, `docparse.Headings` / `TaskI…"
+
+step line=110 text="Read sdk-booty-sh `doczwork` (`model.go`, `source.go`, fixtures) as the existing consumer-…"
+
+step line=112 text="Survey the real corpus the acceptance tests must run on: the 16 IMPL docs in this repo, do…"
+
+step line=116 text="Check the CLI for any task surface the acceptance bullet could mean."
+
+step line=117 text="Size the work against IMPL-0015 / IMPL-0016 (four phases each)."
+
+component line=125 component="docz" value="`main` at `dd6d853`, latest release v1.2.2; public core `pkg/doczcore/{config,document,docparse,docwrite,toc}` frozen since v1.0.0"
+
+component line=126 component="sdk-booty-sh `doczwork`" value="`~/code/sdk-booty-sh/pkg/loop/doczwork`, pins docz **v1.0.0**"
+
+component line=127 component="tempy" value="`~/code/tempy`, DESIGN-0001 and IMPL-0001 dated 2026-09-13, no Go code against docz yet"
+
+component line=128 component="corpus" value="16 docz IMPL docs (`docs/impl/0001`–`0017`, no 0010), 10 docz-api and 3 sdk-booty-sh IMPL docs, `doczwork` clean/messy fixtures"
+
+finding line=134 body=1172 bytes title="Observation 1: the request reverses a recorded decision, and the reversal is justified"
+  "IMPL-0014 Decision 3(d) dropped `ParsePlan` because every option was \"docz picking a workf…"
+
+finding line=156 body=1627 bytes title="Observation 2: what already exists, and what doczwork already solved"
+  "| Need in #100 | Exists today | Gap | | ------------ | ------------ | --- | | frontmatter …"
+
+finding line=173 body=1632 bytes title="Observation 3: what the corpus says the grammar must tolerate"
+  "Surveyed with `grep`/`awk` over the 16 IMPL docs in this repo: | Fact | Evidence | Consequ…"
+
+finding line=187 body=1648 bytes title="Observation 4: the hand-written markers that \"must parse\" do not match the proposed spelling"
+  "The issue says hand-written markers in existing docs must parse. The corpus has exactly th…"
+
+finding line=224 body=910 bytes title="Observation 5: \"starts with a backticked command\" misclassifies about a tenth of real criteria"
+  "tempy's phase gate runs every `Criterion.Executable` command and treats exit 0 as pass. In…"
+
+finding line=244 body=1433 bytes title="Observation 6: write-back needs more than four splices"
+  "- **Bytes in, bytes out is consistent with ADR-0001.** Decision 5 keeps path-based helpers…"
+
+finding line=268 body=713 bytes title="Observation 7: DiffPlans needs an identity for tasks, and positional IDs are not one"
+  "\"Tasks added, removed, reordered\" cannot be computed from positional IDs alone: after an i…"
+
+finding line=281 body=752 bytes title="Observation 8: there is no CLI task surface to agree with"
+  "The acceptance bullet \"`docz` (CLI) and `ParseImpl` report the same task IDs for the same …"
+
+finding line=294 body=815 bytes title="Observation 9: sizing"
+  "Comparable past work: IMPL-0015 (changelog block + parser, 4 phases, ~26 tasks) and IMPL-0…"
+
+question 1 line=359 options=5 title="Where does the model live, and what are the names?"
+  resolved=false
+
+question 2 line=374 options=3 title="How is the reversal of IMPL-0014 Decision 3(d) recorded?"
+  resolved=false
+
+question 3 line=384 options=4 title="What is a phase, and what is a task?"
+  resolved=false
+
+question 4 line=402 options=4 title="How are continuation lines and verify: handled?"
+  resolved=false
+
+question 5 line=419 options=4 title="Marker grammar, idempotency, and clearing a deferral"
+  resolved=false
+
+question 6 line=434 options=4 title="Criteria classification"
+  resolved=false
+
+question 7 line=448 options=3 title="DiffPlans matching and shape"
+  resolved=false
+
+question 8 line=460 options=4 title="CLI surface in the first release"
+  resolved=false
+
+question 9 line=471 options=3 title="Release sequencing against IMPL-0017"
+  resolved=false
+
+reference line=484 url="https://github.com/donaldgifford/docz/issues/100" text="[Issue #100](https://github.com/donaldgifford/docz/issues/100) — the request"
+
+reference line=485 url="" text="tempy `docs/design/0001-temporal-orchestrated-impl-loop-execution.md` (activities table, p…"
+
+reference line=488 url="" text="sdk-booty-sh `pkg/loop/doczwork/{doc.go,model.go,source.go,model_test.go}`"
+
+reference line=489 url="../adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md" text="[ADR-0001](../adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md) D…"
+
+reference line=491 url="../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md" text="[IMPL-0014](../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md) Decision 3 (`Pa…"
+
+reference line=493 url="../design/0005-status-set-cli-primitive.md" text="[DESIGN-0005](../design/0005-status-set-cli-primitive.md) — byte-preservation contract; …"
+
+reference line=496 url="" text="`pkg/doczcore/docparse/taskitems.go`, `pkg/doczcore/docwrite/{status,checktask}.go`, `pkg/…"
+
+reference line=498 url="" text="docz-api `docs/impl/0004-…md` (`Verify:` lines), `docs/impl/0006-…md` (prefix deferred…"

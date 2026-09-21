@@ -1,0 +1,81 @@
+id="INV-0008" title="Last Updated frontmatter field: scope, git semantics, and effort" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-09-12"
+question="How much work, and which changes, does it take to add a \"last updated\" frontmatter field t…"
+hypothesis="The read side is trivial (one additive struct field). The write side is moderate: `docwrit…"
+context="Every docz document carries five typed frontmatter fields — `id`, `title`, `status`, `au…"
+triggered-by="a request to scope the feature ahead of a DESIGN doc; no"
+conclusion="**Answer:** Yes — feasible and mostly mechanical, at roughly four days, with one genuine…"
+answer="Yes — feasible and mostly mechanical, at roughly four days, with"
+verdict=yes
+recommendation="**Do the `updated` date field first; defer the sha to a later follow-up.** The date is the…"
+approach=6 environment=5 findings=9
+open-questions=0 decisions=0 references=10
+
+step line=97 text="Map every code path that reads or writes frontmatter: `document.Frontmatter` and its consu…"
+
+step line=100 text="Inventory docz's existing git access (`cmd/git.go`) and its test doubles, to see what a \"l…"
+
+step line=102 text="Probe git directly in this repo for the facts an implementation depends on: what `git log …"
+
+step line=107 text="Model the update loop on paper for both \"date\" and \"sha\" and check whether each converges …"
+
+step line=109 text="Check the consumer contract (DESIGN-0008 R7, R10, R11) for what an additive frontmatter fi…"
+
+step line=112 text="Size the phases against comparable past work (IMPL-0011 status set, IMPL-0015 changelog bl…"
+
+component line=121 component="docz" value="`main` at `e359500` (v1.2.2)"
+
+component line=122 component="Go" value="1.26.4 (`go.mod`)"
+
+component line=123 component="git" value="system git; POSIX ERE for `-G` (no PCRE lookahead)"
+
+component line=124 component="Repo" value="34 docz documents across 6 type dirs; full (non-shallow) clone"
+
+component line=125 component="Frontmatter keys" value="exactly `id`, `title`, `status`, `author`, `created` in all 34"
+
+finding line=131 body=1204 bytes title="Observation 1 — the read side is one additive field"
+  "`document.Frontmatter` (`pkg/doczcore/document/document.go`) is a plain yaml/v3 struct wit…"
+
+finding line=151 body=1971 bytes title="Observation 2 — the write side needs a capability docwrite does not have"
+  "`docwrite.SetStatus` (`pkg/doczcore/docwrite/status.go`, 221 lines + 318 of tests + 12 gol…"
+
+finding line=184 body=1195 bytes title="Observation 3 — templates: add the field at birth, or let update insert it"
+  "All six embedded templates share an identical frontmatter block ending in `created: {{ .Da…"
+
+finding line=206 body=869 bytes title="Observation 4 — docz update has a slot for the pass, with one ordering caveat"
+  "`Runner.updateType` (`cmd/update.go`) scans the type dir, runs the ToC pass if `toc.enable…"
+
+finding line=224 body=2807 bytes title="Observation 5 — git access exists but is minimal; extending it is cheap"
+  "`cmd/git.go` defines `GitResolver` with one method, `UserName(ctx)`, backed by `exec.Comma…"
+
+finding line=276 body=3185 bytes title="Observation 6 — the circularity problem, and why date and sha differ"
+  "This is the finding that shapes the recommendation. Write the field from git history and t…"
+
+finding line=338 body=856 bytes title="Observation 7 — configuration shape and defaults"
+  "Turning this on in an existing repo produces a one-time diff on every document (34 files h…"
+
+finding line=359 body=1297 bytes title="Observation 8 — consumer contract: additive, and the consumer cannot compute it alone"
+  "DESIGN-0008 R7 names \"the five typed frontmatter fields\" as docz-api's column contract and…"
+
+finding line=384 body=1560 bytes title="Observation 9 — sizing against comparable past work"
+  "| Phase | Scope | Comparable | Size | | ----- | ------------------------------------------…"
+
+reference line=536 url="" text="DESIGN-0005 — status set CLI primitive; the byte-preservation contract `SetUpdated` must…"
+
+reference line=538 url="" text="ADR-0001 — public core scope; Decision 5's narrow-`docwrite` and bytes-in/values-out rul…"
+
+reference line=540 url="" text="DESIGN-0004 §A / §H — Runner pattern and the `GitResolver` seam"
+
+reference line=541 url="" text="DESIGN-0007 / DESIGN-0008 R7, R10, R11 — the frontmatter column contract and the R-serie…"
+
+reference line=543 url="" text="DESIGN-0008 Decision 1 — checkout-less ingestion (why docz-api cannot derive the value)"
+
+reference line=545 url="" text="DESIGN-0009 — docz-site's `updated_at` in document lists"
+
+reference line=546 url="" text="DESIGN-0010 Decision 7 — the dormancy pattern for opt-in config blocks"
+
+reference line=547 url="" text="IMPL-0011 — `SetStatus` (the closest comparable for Phase 1)"
+
+reference line=548 url="" text="claude-skills #95 — bundled-template drift, which Phase 2 would extend"
+
+reference line=549 url="" text="`cmd/git.go`, `cmd/update.go`, `pkg/doczcore/docwrite/status.go`, `pkg/doczcore/document/d…"

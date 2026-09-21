@@ -1,0 +1,100 @@
+id="INV-0002" title="Architectural Review and Cleanup Opportunities" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-05-15"
+question="What architectural debt, idiomatic-Go gaps, style violations, and performance issues exist…"
+hypothesis="The codebase predates the team's standardized Go style guides and architecture patterns, s…"
+context="The docz codebase (~4,200 LOC across `cmd/` and `internal/`) was written before the team a…"
+triggered-by="Dogfooding pain points; bug pattern of three-way default drift"
+conclusion="**Answer:** Yes — there is significant, well-defined cleanup opportunity. The codebase i…"
+answer="Yes — there is significant, well-defined cleanup opportunity. The"
+verdict=yes
+recommendation="A phased refactor in five waves, ordered by impact-to-effort and by what unblocks subseque…"
+approach=4 environment=6 findings=14
+open-questions=0 decisions=0 references=13
+
+step line=154 text="**Architecture review** (`go-development:go-architect`) — package boundaries, global sta…"
+
+step line=157 text="**Uber Go Style audit** (`go-development:go-style`) — naming, receivers, error wrapping,…"
+
+step line=160 text="**Performance review** (`go-development:go-performance`) — algorithmic complexity, alloc…"
+
+step line=163 text="**Idiomatic Go review** (general-purpose) — error handling pitfalls, stringly-typed code…"
+
+component line=176 component="Go module version" value="1.25.7"
+
+component line=177 component="Codebase size" value="~4,200 LOC (`cmd/` + `internal/`)"
+
+component line=178 component="Built-in document types" value="6 (rfc, adr, design, impl, plan, inv)"
+
+component line=179 component="CLI framework" value="Cobra + Viper"
+
+component line=180 component="Template engine" value="`text/template` with `//go:embed`"
+
+component line=181 component="Current docz version" value="v0.0.10-5-g2272af5"
+
+finding line=190 body=3786 bytes title="Critical: Testability blockers"
+  "#### F1. Package-level globals in `cmd/` prevent parallel testing [multi-agent] **Files:**…"
+
+finding line=272 body=2812 bytes title="Critical: Correctness bugs"
+  "#### F7. Config validation error swallowed at startup [multi-agent] **File:** `cmd/root.go…"
+
+finding line=356 body=822 bytes title="High: Three-way duplication of defaults [multi-agent]"
+  "#### F12. `cmd/init.go:writeDefaultConfig()` hardcodes YAML that duplicates `DefaultConfig…"
+
+finding line=375 body=580 bytes title="High: Library returns user-facing strings"
+  "#### F13. `internal/index` returns user-facing messages as `(msg, err)` [multi-agent] **Fi…"
+
+finding line=390 body=2458 bytes title="High: Domain modeling — DocType scattered"
+  "#### F14. \"Document type\" expressed in 6+ locations with no compile-time enforcement [mult…"
+
+finding line=436 body=1324 bytes title="High: Stranded business logic in cmd/"
+  "#### F17. `cmd/wiki.go:writeMkDocsYAML` is business logic, not command wiring **File:** `c…"
+
+finding line=471 body=1965 bytes title="Medium: Package boundary issues"
+  "#### F20. `internal/index` has three responsibilities **File:** `internal/index/index.go` …"
+
+finding line=525 body=1289 bytes title="Medium: Stutter and naming"
+  "#### F24. `template.TemplateData` stutters with package name [multi-agent] **File:** `inte…"
+
+finding line=564 body=3732 bytes title="Medium: Mechanical / style fixes"
+  "#### F28. `os.IsNotExist(err)` instead of `errors.Is(err, fs.ErrNotExist)` [multi-agent] *…"
+
+finding line=691 body=1043 bytes title="Medium: Duplication patterns"
+  "#### F38. `unknown document type %q (valid types: %s)` error repeated 4 times [multi-agent…"
+
+finding line=725 body=986 bytes title="Medium: Performance — actually worth fixing"
+  "#### F41. Files read twice during `docz update` [multi-agent] **Files:** `cmd/update.go:70…"
+
+finding line=753 body=601 bytes title="Low: Performance — leave alone"
+  "Per the performance review, these were considered and rejected as premature optimization f…"
+
+finding line=769 body=2270 bytes title="Low: Minor cleanups"
+  "#### F43. `Run` vs `RunE` inconsistency **File:** `cmd/version.go:21` uses `Run`; everythi…"
+
+finding line=835 body=974 bytes title="What's already good"
+  "The reviews explicitly called out the following as well-done patterns that should not chan…"
+
+reference line=1006 url="" text="INV-0001: Wiki Init Template and Init Enabled Fix — earlier dogfooding pass that surface…"
+
+reference line=1008 url="" text="PR #30 (`fix/version-and-mkdocs-extensions`) — instance of three-way defaults drift"
+
+reference line=1010 url="" text="PR #31 (`fix/update-skips-disabled-types`) — instance of `ValidTypes()` iteration vs con…"
+
+reference line=1012 url="" text="Uber Go Style Guide — naming, error handling, initialism, defer, named returns"
+
+reference line=1013 url="" text="Effective Go — package layout, interface design, error wrapping"
+
+reference line=1014 url="" text="`cmd/` source — all command files reviewed"
+
+reference line=1015 url="" text="`internal/config/config.go` — config struct, defaults, validation"
+
+reference line=1016 url="" text="`internal/document/{document,create,time}.go` — frontmatter, create, time"
+
+reference line=1017 url="" text="`internal/index/index.go` — scanning, table generation, README splicing"
+
+reference line=1018 url="" text="`internal/template/{template,embed}.go` — template resolution and rendering"
+
+reference line=1019 url="" text="`internal/toc/toc.go` — table-of-contents generation"
+
+reference line=1020 url="" text="`internal/wiki/{wiki,titles,mkdocs}.go` — MkDocs nav generation"
+
+reference line=1021 url="" text="Review agents used: `go-development:go-architect`, `go-development:go-style`, `go-developm…"

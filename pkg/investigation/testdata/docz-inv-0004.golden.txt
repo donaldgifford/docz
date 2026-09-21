@@ -1,0 +1,80 @@
+id="INV-0004" title="v1 Release Plan: TUI, Markdown Preview, and CLI Parity" status="Open" inferred=false
+author="Donald Gifford" created="2026-05-22"
+question="What does v1 of docz need to ship — and in what order — to give us a CLI that also ope…"
+hypothesis="- Bubble Tea v2 is stable enough (v2.0.6, April 2026) and lstk is a proven production refe…"
+context="The user wants docz to feel modern: keep the scriptable CLI for CI and power-use, but pop …"
+triggered-by="Direct user request, 2026-05-22, with named"
+conclusion="**Answer:** Yes, v1 is well-shaped and reachable. The TUI work is real but bounded — abo…"
+answer="Yes, v1 is well-shaped and reachable. The TUI work is real"
+verdict=yes
+recommendation="### Prerequisites (hard gate) **No design or implementation work for v1 starts until IMPL-…"
+approach=6 environment=7 findings=8
+open-questions=0 decisions=0 references=9
+
+step line=101 text="Confirm current versions of every named dependency via `gh repo view`."
+
+step line=103 text="Walk lstk's repo (`internal/ui/`, `internal/ui/components/`, `cmd/root.go`) to extract the…"
+
+step line=105 text="Walk mdp's repo (`internal/server/`, `internal/cli/`) to determine whether the server can …"
+
+step line=108 text="Map each existing docz CLI command (`create`, `list`, `update`, `template`, `wiki`, `confi…"
+
+step line=111 text="Sketch the package layout and the CLI/TUI handoff."
+
+step line=112 text="Phase the work into IMPL docs."
+
+component line=120 component="`charmbracelet/bubbletea`" value="v2.0.6 (2026-04-16)"
+
+component line=121 component="`charmbracelet/bubbles`" value="v2.1.0 (2026-03-26)"
+
+component line=122 component="`charmbracelet/glow`" value="v2.1.2 (2026-04-09)"
+
+component line=123 component="`donaldgifford/mdp`" value="v0.1.8 (2026-04-03)"
+
+component line=124 component="`localstack/lstk`" value="v0.9.0 (2026-05-21)"
+
+component line=125 component="docz baseline" value="post-IMPL-0005 merge"
+
+component line=126 component="Go runtime" value="1.25.7"
+
+finding line=132 body=824 bytes title="Bubble Tea v2 — what changed and what we need"
+  "Bubble Tea v2 is a stable line as of April 2026. The breakage from v1 is manageable and we…"
+
+finding line=150 body=740 bytes title="Bubbles v2 components catalog vs docz workflows"
+  "The components docz will actually use: - `list.Model` — for `docz list` filtered by type…"
+
+finding line=169 body=572 bytes title="Glow / Glamour for in-TUI markdown rendering"
+  "Glow itself is a TUI binary. Its underlying renderer is `github.com/charmbracelet/glamour`…"
+
+finding line=183 body=1193 bytes title="mdp integration approach"
+  "Originally there were three options here (shell out, vendor, public API) because mdp's ser…"
+
+finding line=209 body=1235 bytes title="lstk reference architecture"
+  "lstk's pattern is the one to copy: - `cmd/` holds Cobra commands as today (`root.go`, `sta…"
+
+finding line=236 body=919 bytes title="Mapping docz workflows to TUI screens"
+  "| docz operation | CLI today | TUI v1 plan | |----------------|-----------|-------------| …"
+
+finding line=251 body=934 bytes title="Proposed package layout"
+  "```text cmd/ root.go # Cobra root; RunE decides TUI vs CLI create.go list.go update.go tem…"
+
+finding line=274 body=439 bytes title="TUI vs CLI mode selection"
+  "The decision tree at root command's `RunE`: 1. Subcommand present? → Cobra dispatches no…"
+
+reference line=423 url="" text="Bubble Tea v2 — https://github.com/charmbracelet/bubbletea v2.0.6"
+
+reference line=424 url="" text="Bubbles v2 — https://github.com/charmbracelet/bubbles v2.1.0"
+
+reference line=425 url="" text="Glamour — https://github.com/charmbracelet/glamour (Glow's renderer)"
+
+reference line=426 url="" text="Glow — https://github.com/charmbracelet/glow v2.1.2"
+
+reference line=427 url="" text="mdp — https://github.com/donaldgifford/mdp v0.1.8"
+
+reference line=428 url="" text="localstack/lstk — https://github.com/localstack/lstk v0.9.0"
+
+reference line=429 url="" text="INV-0002 — Architectural review (sets up the cleanup waves)"
+
+reference line=430 url="" text="INV-0003 — Config-listed types semantics (must resolve before TUI surfaces the type list…"
+
+reference line=432 url="" text="IMPL-0009 — Runner pattern, DocType registry; Phase 1 DESIGN doc evaluated fang/Bubble T…"

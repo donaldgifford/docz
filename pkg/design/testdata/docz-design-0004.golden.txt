@@ -1,0 +1,46 @@
+id="DESIGN-0004" title="Runner Pattern and DocType Registry" status="Approved"
+author="Donald Gifford" created="2026-05-27" inferred=false
+goals=6 non-goals=5 open-questions=0 decisions=0 references=8
+overview len=590 excerpt="DESIGN-0004 specifies the architectural shape that IMPL-0009 (Wave 5 of INV-0002) will imp…"
+background len=1260 excerpt="`docz` today carries the following testability debts (cross-referenced to INV-0002 finding…"
+detailed-design len=13794 excerpt="### A. Runner struct shape and lifecycle The exact field set: ```go // cmd/runner.go type …"
+api-changes len=1071 excerpt="| Surface | Before | After | |---------|--------|-------| | `config.Load` | `Load(configFi…"
+data-model len=378 excerpt="No persisted-data schema changes. The in-memory `Config` and `Frontmatter` structs gain ty…"
+testing len=887 excerpt="- **Per-handler unit tests:** one focused test per `(*Runner).Xxx` method, using a struct-…"
+rollout len=2305 excerpt="Per Decision §6: phases 2–11 ship as a **single PR**. DESIGN-0004 (Phase 1) ships separ…"
+
+goal line=60 text="Define a `Runner` struct that is the single injection surface for config, writers, logger, time, and git resolution."
+goal line=62 text="Replace every `runFoo` package-level handler with a method on `*Runner`, allowing tests to construct a Runner with `bytes.Buffer` writers and a fixed `Now`/`Git` instead of mutating package globals."
+goal line=65 text="Add a `log/slog` logger that writes to `Runner.Err` so test buffers capture log output without shared-stderr races."
+goal line=67 text="Consolidate the six built-in doc types into a single `internal/config/doctype.go` registry, derived from a literal `allDocTypes` slice with `DefaultConfig` as a constructor func."
+goal line=70 text="Introduce `type DocType string` and `type Status string` as compile-time signal at internal API boundaries, with no YAML schema change."
+goal line=72 text="Enable `t.Parallel()` on every existing cmd-layer test by removing the `os.Chdir`, package-global, and `os.Pipe` patterns blocking it today."
+non-goal line=79 text="Adding new user-facing commands or flags (beyond the `--log-format` and `--log-level` already in IMPL-0009 scope)."
+non-goal line=81 text="Migrating from Cobra/Viper to another CLI framework."
+non-goal line=82 text="Adopting Bubble Tea, `fang`, or other Charm libraries — explicitly rejected below."
+non-goal line=84 text="Internationalization, structured-log shipping, or daemon mode."
+non-goal line=85 text="Changing the `.docz.yaml` schema. Existing config files must continue to parse byte-identically."
+
+reference line=644 url=""
+  text="IMPL-0009 — Runner Pattern and DocType Registry Refactor (implementation plan this desig…"
+
+reference line=646 url=""
+  text="INV-0002 — Architectural Review and Cleanup Opportunities (findings F1–F6 and F14–F1…"
+
+reference line=648 url=""
+  text="IMPL-0008 — Move Stranded Business Logic Into Internal Packages (provides the slim `cmd/…"
+
+reference line=651 url=""
+  text="`log/slog` package documentation (Go 1.21+) — structured logging API"
+
+reference line=652 url=""
+  text="`go.yaml.in/yaml/v3` — typed-string unmarshal behavior verified for Decision §3 revisio…"
+
+reference line=654 url=""
+  text="`charmbracelet/fang` — evaluated and rejected; see §G"
+
+reference line=655 url=""
+  text="`charmbracelet/bubbletea` v2 — evaluated and rejected; see §G"
+
+reference line=656 url=""
+  text="`localstack/lstk` — pattern reference for per-command options; see §G"

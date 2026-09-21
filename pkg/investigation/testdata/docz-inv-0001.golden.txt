@@ -1,0 +1,46 @@
+id="INV-0001" title="Wiki Init Template and Init Enabled Fix" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-04-02"
+question="What changes are needed to (1) support a customizable template for the wiki `docs/index.md…"
+hypothesis="These are three small, related improvements that can be addressed in a single branch witho…"
+context="Dogfooding `docz` on its own repository revealed: 1. **`docs/index.md` is hardcoded** — …"
+triggered-by="Dogfooding session on the docz repository"
+conclusion="**Answer:** Three targeted changes are needed, all straightforward."
+answer="Three targeted changes are needed, all straightforward."
+verdict=unknown
+recommendation="### Change 1: Wiki index template - Add `internal/template/templates/wiki_index.md` with t…"
+approach=6 environment=0 findings=4
+open-questions=0 decisions=0 references=5
+
+step line=80 text="Audit `cmd/wiki.go` — `ensureDocsIndex()` and `writeMkDocsYAML()` to understand exactly …"
+
+step line=82 text="Audit `cmd/init.go` — `runInit()` to confirm the enabled check is missing"
+
+step line=83 text="Review the existing template system (`internal/template/embed.go`) to understand how index…"
+
+step line=85 text="Determine the right template approach for `docs/index.md`"
+
+step line=86 text="Determine the config shape for additional MkDocs plugins"
+
+step line=87 text="Propose changes and open questions"
+
+finding line=93 body=577 bytes title="Finding 1: ensureDocsIndex() is fully hardcoded"
+  "`cmd/wiki.go:264-296` generates `docs/index.md` inline: ```go var b strings.Builder b.Writ…"
+
+finding line=113 body=432 bytes title="Finding 2: writeMkDocsYAML() hardcodes techdocs-core"
+  "`cmd/wiki.go:246-262`: ```go content := fmt.Sprintf(`site_name: %s site_description: %s pl…"
+
+finding line=134 body=506 bytes title="Finding 3: runInit() skips enabled check"
+  "`cmd/init.go:36-46`: ```go for _, typeName := range config.ValidTypes() { typeDir := appCf…"
+
+finding line=154 body=328 bytes title="Finding 4: Template system already supports wiki-style templates"
+  "The existing `internal/template/embed.go` uses `//go:embed templates/*.md` and provides `E…"
+
+reference line=230 url="" text="`cmd/wiki.go` — `ensureDocsIndex()`, `writeMkDocsYAML()`"
+
+reference line=231 url="" text="`cmd/init.go` — `runInit()`"
+
+reference line=232 url="" text="`internal/template/embed.go` — template embedding pattern"
+
+reference line=233 url="" text="`internal/config/config.go` — `WikiConfig` struct"
+
+reference line=234 url="" text="DESIGN-0002: Wiki Command for MkDocs TechDocs Integration"

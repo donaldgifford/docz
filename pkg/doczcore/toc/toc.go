@@ -6,6 +6,7 @@
 package toc
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
@@ -18,25 +19,46 @@ const (
 )
 
 // parseHeadings walks the headings that belong in a document's ToC:
-// everything after the first EndMarker line (so the ToC region and the
-// preamble above it are excluded), or the whole document when no marker
-// is present. The walk itself is docparse.Headings; only the slice
-// point is toc policy.
-func parseHeadings(content string) []docparse.Heading {
-	off := 0
-	for off < len(content) {
-		next := len(content)
-		line := content[off:]
-		if i := strings.IndexByte(line, '\n'); i >= 0 {
-			line = line[:i]
-			next = off + i + 1
-		}
-		if strings.TrimSpace(line) == EndMarker {
-			return docparse.Headings([]byte(content[next:]))
-		}
-		off = next
+// everything after the ToC region ends (so the ToC itself and the
+// preamble above it are excluded), or the whole document when there is no
+// ToC region. The walk itself is docparse.Headings and the region comes
+// from docparse.Regions; only the slice point is toc policy.
+//
+// Locating the region through the walker rather than scanning for the
+// literal end marker means this agrees with the rest of docz about what a
+// marker is: a lenient spelling is found and canonicalized on write, and
+// a marker inside a fenced block is text, so a document that shows a ToC
+// pair in an example no longer loses every heading above it.
+// tocEnd is the 1-based line of the document's ToC end marker, or 0 when
+// the document has no closed ToC region.
+func parseHeadings(content []byte, tocEnd int) []docparse.Heading {
+	if tocEnd <= 0 {
+		return docparse.Headings(content)
 	}
-	return docparse.Headings([]byte(content))
+
+	return docparse.Headings(linesFrom(content, tocEnd+1))
+}
+
+// linesFrom returns content from the start of the given 1-based line. An
+// out-of-range line yields empty, which is what a ToC region ending on
+// the last line should produce.
+func linesFrom(content []byte, line int) []byte {
+	if line <= 1 {
+		return content
+	}
+
+	off := 0
+
+	for n := 1; n < line; n++ {
+		i := bytes.IndexByte(content[off:], '\n')
+		if i < 0 {
+			return nil
+		}
+
+		off += i + 1
+	}
+
+	return content[off:]
 }
 
 // GenerateToC builds a markdown table of contents from headings. It uses
@@ -96,32 +118,84 @@ type UpdateResult struct {
 // directly instead of walking the same content again — see IMPL-0007
 // Phase 4 / Decisions §5.
 func UpdateToC(content string, minHeadings int) UpdateResult {
-	before, afterBegin, foundBegin := strings.Cut(content, BeginMarker)
-	if !foundBegin {
+	b := []byte(content)
+
+	region, ok := tocRegion(b)
+	if !ok {
 		return UpdateResult{Updated: content}
 	}
 
-	_, afterEnd, foundEnd := strings.Cut(afterBegin, EndMarker)
-	if !foundEnd {
-		return UpdateResult{Updated: content}
-	}
-
-	headings := parseHeadings(content)
+	headings := parseHeadings(b, region.End)
 	toc := GenerateToC(headings, minHeadings)
 
 	var sb strings.Builder
-	sb.WriteString(before)
+
+	sb.Write(linesUpTo(b, region.Start))
 	sb.WriteString(BeginMarker)
 	sb.WriteString("\n")
+
 	if toc != "" {
 		sb.WriteString(toc)
 	}
+
 	sb.WriteString(EndMarker)
-	sb.WriteString(afterEnd)
+	sb.Write(fromLineEnd(b, region.End))
 
 	return UpdateResult{
 		Updated:  sb.String(),
 		Headings: headings,
 		Found:    true,
 	}
+}
+
+// tocRegion returns the document's first closed ToC region. An unclosed
+// one is not a splice target: without an end marker there is no span to
+// replace, and writing one would swallow the rest of the document.
+func tocRegion(content []byte) (docparse.Region, bool) {
+	for _, r := range docparse.Regions(content) {
+		if r.Kind == docparse.TocKind {
+			return r, r.Closed
+		}
+	}
+
+	return docparse.Region{}, false
+}
+
+// linesUpTo returns everything before the given 1-based line.
+func linesUpTo(content []byte, line int) []byte {
+	off := 0
+
+	for n := 1; n < line; n++ {
+		i := bytes.IndexByte(content[off:], '\n')
+		if i < 0 {
+			return content
+		}
+
+		off += i + 1
+	}
+
+	return content[:off]
+}
+
+// fromLineEnd returns content from the newline that terminates the given
+// 1-based line, inclusive, so the caller's own text is followed by the
+// document's original line break. Empty when that line is the last.
+func fromLineEnd(content []byte, line int) []byte {
+	off := 0
+
+	for n := 1; n < line; n++ {
+		i := bytes.IndexByte(content[off:], '\n')
+		if i < 0 {
+			return nil
+		}
+
+		off += i + 1
+	}
+
+	i := bytes.IndexByte(content[off:], '\n')
+	if i < 0 {
+		return nil
+	}
+
+	return content[off+i:]
 }

@@ -1,0 +1,173 @@
+id="IMPL-0001" title="docz CLI Implementation" status="Completed" inferred=false
+implements=[DESIGN-0001]
+objective="Implement the `docz` CLI tool as described in [DESIGN-0001](../../docs/design/0001-docz-cl…"
+in-scope=8 out-of-scope=6
+dependencies="- All Go dependencies are already in `go.mod` (cobra, viper, yaml) - No new external depen…"
+testing=6 references=2 open-questions=0 decisions=0
+progress=50/50
+file-change line=401 file="`go.mod`" action="Modify" description="Fix indirect deps to direct"
+file-change line=402 file="`internal/template/templates/rfc.md`" action="Create" description="Embedded RFC template"
+file-change line=403 file="`internal/template/templates/adr.md`" action="Create" description="Embedded ADR template"
+file-change line=404 file="`internal/template/templates/design.md`" action="Create" description="Embedded DESIGN template"
+file-change line=405 file="`internal/template/templates/impl.md`" action="Create" description="Embedded IMPL template"
+file-change line=406 file="`internal/template/templates/index_rfc.md`" action="Create" description="Default RFC index header"
+file-change line=407 file="`internal/template/templates/index_adr.md`" action="Create" description="Default ADR index header"
+file-change line=408 file="`internal/template/templates/index_design.md`" action="Create" description="Default DESIGN index header"
+file-change line=409 file="`internal/template/templates/index_impl.md`" action="Create" description="Default IMPL index header"
+file-change line=410 file="`internal/template/embed.go`" action="Create" description="`//go:embed` directives and accessors"
+file-change line=411 file="`internal/template/template.go`" action="Create" description="Resolution, rendering, slug generation"
+file-change line=412 file="`internal/template/template_test.go`" action="Create" description="Unit tests"
+file-change line=413 file="`internal/config/config.go`" action="Create" description="Config structs, loading, defaults"
+file-change line=414 file="`internal/config/config_test.go`" action="Create" description="Unit tests"
+file-change line=415 file="`internal/document/document.go`" action="Create" description="Frontmatter struct and parsing"
+file-change line=416 file="`internal/document/document_test.go`" action="Create" description="Unit tests"
+
+phase index=1 token="1" line=94 title="Project Foundation"
+  description="Set up the internal package structure, embedded templates, and configuration system. No CL…"
+  task 1.1 line=103 end=104 checked=true
+    text="Fix `go.mod`: move `cobra` and `viper` from indirect to direct dependencies (run `go mod tidy`)"
+  task 1.2 line=105 end=107 checked=true
+    text="Create directory structure: `internal/config/`, `internal/document/`, `internal/index/`, `internal/template/`, `internal/template/templates/`"
+  task 1.3 line=108 end=110 checked=true
+    text="Write the four default document template files under `internal/template/templates/` (`rfc.md`, `adr.md`, `design.md`, `impl.md`) using the templates defined in DESIGN-0001"
+  task 1.4 line=111 end=113 checked=true
+    text="Write the four default index header template files under `internal/template/templates/` (`index_rfc.md`, `index_adr.md`, `index_design.md`, `index_impl.md`)"
+  task 1.5 line=114 end=116 checked=true
+    text="Implement `internal/template/embed.go`: use `//go:embed templates/*.md` to embed all template files; export functions to retrieve a document template or index header template by type name"
+  task 1.6 line=117 end=119 checked=true
+    text="Implement `internal/template/template.go`: template resolution logic (config path > local override > embedded default), rendering a template with a `TemplateData` struct via `text/template`"
+  task 1.7 line=120 end=121 checked=true
+    text="Define `TemplateData` struct with fields: `Number`, `Title`, `Date`, `Author`, `Status`, `Type`, `Prefix`, `Slug`, `Filename`"
+  task 1.8 line=122 end=124 checked=true
+    text="Implement slug generation: title to kebab-case (lowercase, spaces to hyphens, strip non-alphanumeric except hyphens, trim leading/trailing hyphens)"
+  task 1.9 line=125 end=132 checked=true
+    text="Implement `internal/config/config.go`: define `Config` struct matching the `.docz.yaml` schema from DESIGN-0001, including `TypeConfig` for each document type; implement `Load()` using two separate Viper instances -- one for `~/.docz.yaml` (global), one for repo root `.docz.yaml` (local). Load global first, then deep-merge local on top via `MergeConfigMap`. Deep merge means the repo config overrides only the keys it explicitly sets; unset keys inherit from global. Apply built-in defaults for any keys missing from both files"
+  task 1.10 line=133 end=135 checked=true
+    text="Implement `internal/document/document.go`: define `Frontmatter` struct, implement `ParseFrontmatter(fileContent []byte) (Frontmatter, error)` that splits on `---` delimiters and unmarshals YAML"
+  task 1.11 line=136 end=137 checked=true
+    text="Write unit tests for `internal/template/`: template resolution order, rendering with all placeholder variables, slug generation edge cases"
+  task 1.12 line=138 end=140 checked=true
+    text="Write unit tests for `internal/config/`: default values, loading from file, deep merge behavior (repo config key overrides global, unset keys inherit from global, both missing returns defaults)"
+  task 1.13 line=141 end=142 checked=true
+    text="Write unit tests for `internal/document/`: frontmatter parsing with valid YAML, missing fields, no frontmatter, malformed delimiters"
+  criterion line=148 executable=true command="go build ./..." text="`go build ./...` succeeds with no errors"
+  criterion line=149 executable=true command="go test ./internal/..." text="`go test ./internal/...` passes with all tests green"
+  criterion line=150 executable=false command="" text="Template resolution returns embedded default when no config or local override exists"
+  criterion line=152 executable=false command="" text="Config loading returns correct defaults when no `.docz.yaml` exists"
+  criterion line=153 executable=false command="" text="Frontmatter parsing correctly extracts all five fields (id, title, status, author, created…"
+
+phase index=2 token="2" line=161 title="Core Commands -- init, create, version"
+  description="Wire up the internal packages to the first three Cobra commands. After this phase a user c…"
+  task 2.1 line=169 end=172 checked=true
+    text="Move `main.go` to `cmd/docz/main.go` to follow the standard Go project layout (`cmd/<name>/main.go`). Update the `main` package to import `github.com/donaldgifford/docz/cmd`. The Makefile `build-core` target already points to `./cmd/$(PROJECT_NAME)` so this aligns with it"
+  task 2.2 line=173 end=176 checked=true
+    text="Update `cmd/root.go`: replace boilerplate descriptions with actual docz descriptions; integrate config loading via `internal/config` in `initConfig()`; register `--docs-dir` and `--verbose` persistent flags; remove the placeholder `--toggle` flag"
+  task 2.3 line=177 end=181 checked=true
+    text="Implement `cmd/version.go`: define `var Version` and `var Commit` in the `cmd` package; Makefile ldflags will target `-X github.com/donaldgifford/docz/cmd.Version=...` and `-X github.com/donaldgifford/docz/cmd.Commit=...`; register `version` as subcommand of root that prints these values"
+  task 2.4 line=182 end=187 checked=true
+    text="Implement `cmd/init.go`: create `.docz.yaml` at repo root if it doesn't exist (write default config); create `docs/{rfc,adr,design,impl}/` directories (mkdir -p semantics); write default `README.md` index files into each directory using embedded index header templates with an empty auto-generated table section; skip existing README files unless `--force` is passed; register `--force` flag"
+  task 2.5 line=188 end=191 checked=true
+    text="Implement `internal/document/create.go`: scan target directory for `NNNN-*.md` files to find next ID number; build `TemplateData` from inputs; resolve and render the template; write the output file; return the created file path"
+  task 2.6 line=192 end=196 checked=true
+    text="Implement `cmd/create.go`: accept `<type> <title>` arguments; validate type is one of rfc/adr/design/impl; resolve author from `--author` flag, then config, then `git config user.name`, then \"Unknown\"; call `internal/document` create logic; print confirmation with file path and next-steps hints; register `--status`, `--author`, `--no-update` flags"
+  task 2.7 line=197 end=199 checked=true
+    text="Add author resolution helper: check flag, then config `author.default`, then `git config user.name` (exec `git config user.name` and trim), then fallback string"
+  task 2.8 line=200 end=201 checked=true
+    text="Write integration tests for `docz init`: test directory/file creation, idempotency (safe to run twice), `--force` overwrites READMEs"
+  task 2.9 line=202 end=204 checked=true
+    text="Write integration tests for `docz create`: test file creation with correct filename, frontmatter content, auto-increment IDs, duplicate filename rejection, invalid type rejection"
+  task 2.10 line=205 end=206 checked=true
+    text="Write golden file tests: render each of the four templates with sample data and compare against checked-in expected output files"
+  criterion line=212 executable=true command="docz init" text="`docz init` in an empty directory creates `.docz.yaml` and all four type directories with …"
+  criterion line=214 executable=true command="docz init" text="`docz init` run a second time produces no errors and does not overwrite READMEs"
+  criterion line=216 executable=true command="docz init --force" text="`docz init --force` regenerates README files"
+  criterion line=217 executable=true command="docz create rfc \"Test RFC\"" text="`docz create rfc \"Test RFC\"` produces `docs/rfc/0001-test-rfc.md` with correct frontmatter…"
+  criterion line=219 executable=true command="docz create adr \"Second\"" text="`docz create adr \"Second\"` after a first create produces `0002-second.md`"
+  criterion line=220 executable=true command="docz create badtype \"Title\"" text="`docz create badtype \"Title\"` exits with a clear error"
+  criterion line=221 executable=true command="docz version" text="`docz version` prints version and commit hash"
+
+phase index=3 token="3" line=228 title="Index Generation -- update"
+  description="Implement the index/README generation system that reads YAML frontmatter from all document…"
+  task 3.1 line=236 end=236 checked=true
+    text="Implement `internal/index/index.go`:"
+  task 3.2 line=250 end=253 checked=true
+    text="Implement `cmd/update.go`: accept optional `[type]` argument; if no type given, update all four; for each type, resolve the directory path from config, call `ScanDocuments` and `UpdateReadme`; register `--dry-run` flag that prints what would change without writing"
+  task 3.3 line=254 end=255 checked=true
+    text="Wire `docz create` to automatically call `update` after creating a document (unless `--no-update` is passed)"
+  task 3.4 line=256 end=259 checked=true
+    text="Write unit tests for `internal/index/`: table generation with 0, 1, and multiple documents; README update with existing markers; README without markers is not modified (warning emitted); README creation from scratch when file doesn't exist; preservation of content above the begin marker"
+  task 3.5 line=260 end=262 checked=true
+    text="Write integration tests for `docz update`: create several documents, run update, verify README contents; test `--dry-run` produces no file changes; test empty directory produces empty table"
+  task 3.6 line=263 end=264 checked=true
+    text="Write golden file tests for index generation: compare generated README output against checked-in expected files for various scenarios"
+  criterion line=270 executable=true command="docz update rfc" text="`docz update rfc` generates a correct `docs/rfc/README.md` with a table of all RFC documen…"
+  criterion line=272 executable=true command="docz update" text="`docz update` (no argument) updates all four type directories"
+  criterion line=273 executable=false command="" text="Custom content above the `<!-- BEGIN DOCZ AUTO-GENERATED -->` marker is preserved across u…"
+  criterion line=275 executable=false command="" text="Files without frontmatter are silently skipped (no error output)"
+  criterion line=276 executable=true command="docz create rfc \"Title\"" text="`docz create rfc \"Title\"` automatically updates the RFC index"
+  criterion line=277 executable=true command="docz create rfc \"Title\" --no-update" text="`docz create rfc \"Title\" --no-update` skips the index update"
+  criterion line=278 executable=true command="docz update --dry-run" text="`docz update --dry-run` outputs what would change but writes nothing"
+
+phase index=4 token="4" line=285 title="Listing and Template Management -- list, template"
+  description="Add the remaining read-only commands for listing documents and managing templates."
+  task 4.1 line=293 end=298 checked=true
+    text="Implement `cmd/list.go`: accept optional `[type]` argument; if no type given, list across all four types; use `internal/index.ScanDocuments` to read documents; display as a formatted table to stdout (ID, Title, Status, Date, Author, Type); register `--status` flag to filter by status (case-insensitive match); register `--format` flag supporting `table` (default), `json`, `csv` output"
+  task 4.2 line=299 end=299 checked=true
+    text="Implement table formatter: aligned columns using `text/tabwriter`"
+  task 4.3 line=300 end=300 checked=true
+    text="Implement JSON output: marshal document list as JSON array to stdout"
+  task 4.4 line=301 end=301 checked=true
+    text="Implement CSV output: write CSV with header row to stdout"
+  task 4.5 line=302 end=302 checked=true
+    text="Implement `cmd/template.go` with three subcommands:"
+  task 4.6 line=310 end=311 checked=true
+    text="Implement `cmd/config.go`: print the fully resolved configuration (merged repo + global + defaults) as YAML to stdout"
+  task 4.7 line=312 end=313 checked=true
+    text="Write unit tests for list formatting: table alignment, JSON structure, CSV correctness, status filtering"
+  task 4.8 line=314 end=316 checked=true
+    text="Write integration tests for `docz list`: list with documents present, list with no documents, list filtered by type and status, JSON and CSV output formats"
+  task 4.9 line=317 end=319 checked=true
+    text="Write integration tests for `docz template show/export/override`: verify correct template is printed/written, override creates file in correct location, override fails if file exists"
+  task 4.10 line=320 end=321 checked=true
+    text="Write integration test for `docz config`: verify merged output matches expected resolved config"
+  criterion line=327 executable=true command="docz list" text="`docz list` prints a formatted table of all documents across all types"
+  criterion line=328 executable=true command="docz list rfc" text="`docz list rfc` prints only RFC documents"
+  criterion line=329 executable=true command="docz list --status accepted" text="`docz list --status accepted` filters correctly (case-insensitive)"
+  criterion line=330 executable=true command="docz list --format json" text="`docz list --format json` outputs valid JSON"
+  criterion line=331 executable=true command="docz list --format csv" text="`docz list --format csv` outputs valid CSV with headers"
+  criterion line=332 executable=true command="docz template show rfc" text="`docz template show rfc` prints the RFC template to stdout"
+  criterion line=333 executable=true command="docz template export design ./my-template.md" text="`docz template export design ./my-template.md` writes the file"
+  criterion line=334 executable=true command="docz template override adr" text="`docz template override adr` creates `docs/templates/adr.md`"
+  criterion line=335 executable=true command="docz config" text="`docz config` prints the fully resolved YAML configuration"
+
+phase index=5 token="5" line=342 title="Polish, Error Handling, and CI Readiness"
+  description="Harden the tool with edge case handling, improve user-facing output, ensure the Makefile b…"
+  task 5.1 line=350 end=351 checked=true
+    text="Audit all commands for consistent error messages: invalid arguments, missing directories, permission errors, file-already-exists errors"
+  task 5.2 line=352 end=354 checked=true
+    text="Add `--verbose` flag behavior: when set, print additional context during operations (template resolution path chosen, config file locations checked, files scanned during update)"
+  task 5.3 line=355 end=356 checked=true
+    text="Validate config on load: warn on unknown keys, error on invalid type names, error on empty statuses list"
+  task 5.4 line=357 end=358 checked=true
+    text="Handle edge cases in ID assignment: directories with non-sequential IDs, directories with only non-matching files, empty directories"
+  task 5.5 line=359 end=361 checked=true
+    text="Handle edge cases in slug generation: titles with unicode, titles that are all special characters, very long titles (truncate slug at a reasonable length), empty title after slug conversion"
+  task 5.6 line=362 end=366 checked=true
+    text="Update `Makefile` `build-core` target: update ldflags to target `github.com/donaldgifford/docz/cmd.Version` and `github.com/donaldgifford/docz/cmd.Commit` instead of `main.version` and `main.commit` (build path `./cmd/$(PROJECT_NAME)` is now correct after the `main.go` move in Phase 2)"
+  task 5.7 line=367 end=368 checked=true
+    text="Add `Makefile` targets for docz operations: `make docs-init`, `make docs-update`, etc. as convenience wrappers"
+  task 5.8 line=369 end=370 checked=true
+    text="Ensure `make ci` passes: `lint`, `test`, `build`, `license-check` all succeed"
+  task 5.9 line=371 end=372 checked=true
+    text="Ensure `make test-coverage` reports reasonable coverage across `internal/` packages (target: >80%)"
+  task 5.10 line=373 end=373 checked=true
+    text="Review and clean up any TODO/FIXME comments left during implementation"
+  task 5.11 line=374 end=374 checked=true
+    text="Verify `go vet ./...` and `golangci-lint run ./...` produce no warnings"
+  criterion line=380 executable=true command="make ci" text="`make ci` passes with zero errors"
+  criterion line=381 executable=true command="golangci-lint run ./..." text="`golangci-lint run ./...` produces no warnings"
+  criterion line=382 executable=true command="go vet ./..." text="`go vet ./...` produces no warnings"
+  criterion line=383 executable=false command="" text="Test coverage for `internal/` packages is >80%"
+  criterion line=384 executable=false command="" text="All error paths produce clear, actionable messages (no raw Go error dumps)"
+  criterion line=385 executable=true command="--verbose" text="`--verbose` flag produces useful debugging output for each command"
+  criterion line=386 executable=false command="" text="The built binary at `build/bin/docz` runs correctly for all commands"

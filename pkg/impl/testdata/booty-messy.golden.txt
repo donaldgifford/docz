@@ -1,0 +1,10 @@
+id="IMPL-8002" title="Messy Plan" status="Draft" inferred=false
+implements=[]
+objective="Survive the IMPL-0001-style mess."
+in-scope=0 out-of-scope=0
+dependencies=""
+testing=0 references=0 open-questions=0 decisions=0
+progress=0/0
+
+phase index=1 token="A" line=18 title="Untidy"
+  description="Prose between the heading and the first task, with no Tasks subheading anywhere in the pha…"

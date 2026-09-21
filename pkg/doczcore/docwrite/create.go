@@ -49,8 +49,23 @@ type CreateResult struct {
 	Filename string // Filename only (e.g., "0001-my-doc.md")
 }
 
+// Rendered is a document that has been rendered but not written: the
+// filename it should take and its bytes.
+//
+// The pair exists because the filename is not derivable from the content — it
+// carries the number and the slug — so a consumer that commits through an API
+// rather than to a filesystem needs both (DESIGN-0014 §2.7). docz-api renders
+// here and writes through the GitHub API.
+type Rendered struct {
+	Filename string
+	Content  []byte
+}
+
 // Create generates a new document from a template and writes it to the
 // appropriate directory with an auto-incremented ID.
+//
+// It is NextNumber, then Render, then write. A caller that wants the bytes
+// without the filesystem calls the two directly.
 func Create(opts *CreateOptions) (CreateResult, error) {
 	dir := filepath.Join(opts.DocsDir, opts.TypeDir)
 
@@ -58,18 +73,60 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 		return CreateResult{}, fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
-	number := fmt.Sprintf("%0*d", opts.IDWidth, nextID(dir))
-	slug := doctemplate.FilenameSlug(opts.Title)
-	filename := number + "-" + slug + ".md"
-	filePath := filepath.Join(dir, filename)
+	number, err := NextNumber(dir, opts.IDWidth)
+	if err != nil {
+		return CreateResult{}, err
+	}
+
+	rendered, err := Render(opts, number)
+	if err != nil {
+		return CreateResult{}, err
+	}
+
+	filePath := filepath.Join(dir, rendered.Filename)
 
 	if _, statErr := os.Stat(filePath); statErr == nil {
 		return CreateResult{}, fmt.Errorf("file already exists: %s", filePath)
 	}
 
+	if err := os.WriteFile(filePath, rendered.Content, config.FileMode); err != nil {
+		return CreateResult{}, fmt.Errorf("writing file: %w", err)
+	}
+
+	return CreateResult{
+		FilePath: filePath,
+		Number:   number,
+		Filename: rendered.Filename,
+	}, nil
+}
+
+// NextNumber returns the zero-padded number the next document in dir should
+// take: one past the highest it already holds.
+//
+// This is the one part of creating a document that needs the filesystem, and
+// it is separate so a consumer that keeps its numbering somewhere else — a
+// database, an API listing — can supply its own and still call Render.
+//
+// A missing or unreadable directory starts at 1 rather than failing: a repo's
+// first document of a type is created before the type's directory exists, and
+// Create makes the directory either way.
+func NextNumber(dir string, width int) (string, error) {
+	return fmt.Sprintf("%0*d", width, nextID(dir)), nil
+}
+
+// Render resolves the type's template and renders it with the document's
+// metadata, returning the filename and bytes without touching the filesystem
+// beyond reading the template.
+//
+// The error return is the template resolution and execution, which is the only
+// thing here that can fail.
+func Render(opts *CreateOptions, number string) (Rendered, error) {
+	slug := doctemplate.FilenameSlug(opts.Title)
+	filename := number + "-" + slug + ".md"
+
 	tmplContent, err := doctemplate.Resolve(string(opts.Type), opts.TemplatePath, opts.DocsDir)
 	if err != nil {
-		return CreateResult{}, fmt.Errorf("resolving template: %w", err)
+		return Rendered{}, fmt.Errorf("resolving template: %w", err)
 	}
 
 	createdAt := opts.CreatedAt
@@ -91,18 +148,10 @@ func Create(opts *CreateOptions) (CreateResult, error) {
 
 	rendered, err := doctemplate.Render(tmplContent, &data)
 	if err != nil {
-		return CreateResult{}, fmt.Errorf("rendering template: %w", err)
+		return Rendered{}, fmt.Errorf("rendering template: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, []byte(rendered), config.FileMode); err != nil {
-		return CreateResult{}, fmt.Errorf("writing file: %w", err)
-	}
-
-	return CreateResult{
-		FilePath: filePath,
-		Number:   number,
-		Filename: filename,
-	}, nil
+	return Rendered{Filename: filename, Content: []byte(rendered)}, nil
 }
 
 // nextID scans the directory for existing NNNN-*.md files and returns the

@@ -1,0 +1,47 @@
+# markers
+line=13 kind="toc" role=start canonical=true
+line=16 kind="toc" role=end canonical=true
+line=18 kind="objective" role=start canonical=true
+line=22 kind="objective" role=end canonical=true
+line=24 kind="scope" role=start canonical=true
+line=27 kind="in-scope" role=start canonical=true
+line=31 kind="in-scope" role=end canonical=true
+line=33 kind="out-of-scope" role=start canonical=true
+line=37 kind="out-of-scope" role=end canonical=true
+line=38 kind="scope" role=end canonical=true
+line=44 kind="phase" role=start canonical=true
+line=47 kind="tasks" role=start canonical=true
+line=52 kind="tasks" role=end canonical=true
+line=54 kind="criteria" role=start canonical=true
+line=58 kind="criteria" role=end canonical=true
+line=59 kind="phase" role=end canonical=true
+line=63 kind="phase" role=start canonical=true
+line=66 kind="tasks" role=start canonical=true
+line=70 kind="tasks" role=end canonical=true
+line=72 kind="criteria" role=start canonical=true
+line=76 kind="criteria" role=end canonical=true
+line=77 kind="phase" role=end canonical=true
+line=79 kind="file-changes" role=start canonical=true
+line=85 kind="file-changes" role=end canonical=true
+line=87 kind="testing" role=start canonical=true
+line=91 kind="testing" role=end canonical=true
+line=93 kind="dependencies" role=start canonical=true
+line=97 kind="dependencies" role=end canonical=true
+line=99 kind="references" role=start canonical=true
+line=103 kind="references" role=end canonical=true
+# regions
+kind="toc" start=13 end=16 depth=0 closed=true
+kind="objective" start=18 end=22 depth=0 closed=true
+kind="scope" start=24 end=38 depth=0 closed=true
+kind="in-scope" start=27 end=31 depth=1 closed=true
+kind="out-of-scope" start=33 end=37 depth=1 closed=true
+kind="phase" start=44 end=59 depth=0 closed=true
+kind="tasks" start=47 end=52 depth=1 closed=true
+kind="criteria" start=54 end=58 depth=1 closed=true
+kind="phase" start=63 end=77 depth=0 closed=true
+kind="tasks" start=66 end=70 depth=1 closed=true
+kind="criteria" start=72 end=76 depth=1 closed=true
+kind="file-changes" start=79 end=85 depth=0 closed=true
+kind="testing" start=87 end=91 depth=0 closed=true
+kind="dependencies" start=93 end=97 depth=0 closed=true
+kind="references" start=99 end=103 depth=0 closed=true

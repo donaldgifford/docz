@@ -1,0 +1,67 @@
+id="ADR-0003" title="Remove plan from the built-in document types" status="Accepted" inferred=false
+author="Donald Gifford" created="2026-09-14"
+summary="`plan` leaves the built-in document type registry: no `PLAN` prefix, no `plan` directory, …"
+context="docz shipped with six built-in types. PLAN was meant to sit between RFC (proposal) and IMP…"
+decision="1. **Remove the `plan` registry entry** from `pkg/doczcore/config/doctype.go`. `DocTypeNam…"
+consequences positive=3 negative=3 neutral=2
+alternatives=4 open-questions=2 references=6
+
+positive line=157
+  text="**One word, one meaning.** \"Plan\" no longer names a docz type; the IMPL model's vocabulary (phases, tasks) has no built-in neighbour to collide with."
+
+positive line=160
+  text="**Less to carry.** Two templates, a registry entry, and their tests and goldens go; `docz --help` and the README stop advertising a type nobody uses."
+
+positive line=163
+  text="**Custom-type support is exercised for real.** The legacy-block fallback is the DESIGN-0006 path with a real config on it."
+
+negative line=170
+  text="**A removal from a frozen catalogue.** `config.DocTypeNames()` and `LookupDocType` are v1.0 contract; dropping a value is a breaking change, which is why it rides the v2 line (Open Question 1)."
+
+negative line=173
+  text="**Three fleet repos need a one-line config edit** or they keep a dormant custom type. Harmless, but it shows up in `docz config` output until fixed."
+
+negative line=176
+  text="**`docz template override plan` can no longer export a starting point.** A repo that wants PLAN back writes the template from scratch or copies it from git history."
+
+neutral line=184
+  text="**Sequencing with #99** (index header scaffolding) touches the same file; ordering is a rebase, not a design question."
+
+neutral line=186
+  text="**The claude-skills plugin** ships its own copy of the templates and updates on its own cadence, after v2 (Decision 5 amendment); until then its fallback can still produce a PLAN file that the CLI treats as custom."
+
+alternative line=195 label="a" title="Keep it disabled"
+  text="(status quo since v1.1.1). *Pros:* nothing to do. *Cons:* the confusion, the dead template…"
+
+alternative line=198 label="b" title="Deprecate, then remove in v2."
+  text="Warn on load when `types.plan.enabled` is true for one minor, remove at the next major. *P…"
+
+alternative line=202 label="c" title="Rename the built-in"
+  text="(`roadmap`, `outline`). *Pros:* keeps the slot. *Cons:* renames an unused type; the slot i…"
+
+alternative line=205 label="d" title="This ADR."
+  text="Remove it, document the custom-type fallback, decide the semver treatment explicitly."
+
+question 1 line=215 title="Semver treatment"
+  options=4 [a* b c d] resolved={line=217 date="2026-09-19" choice="c" note="The removal is the breaking change it technically is and rides the v2 line that ships the …"}
+
+question 2 line=231 title="Sequencing against the API work"
+  options=4 [a* b c d] resolved={line=233 date="2026-09-19" choice="a" note="with the v1 line untouched. The removal lands inside the `cmd/` swap, which ships as `v2.0…"}
+
+reference line=252 url="https://github.com/donaldgifford/docz/issues/103"
+  text="[Issue #103](https://github.com/donaldgifford/docz/issues/103) — facts, touch points, acceptance"
+
+reference line=254 url="0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md"
+  text="[ADR-0002](0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md) — the `Doc` root-type convention and the release this removal rides with"
+
+reference line=256 url="../design/0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md"
+  text="[DESIGN-0011](../design/0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md) — PLAN off by default in v1.1.1"
+
+reference line=258 url="../design/0006-custom-document-type-support.md"
+  text="[DESIGN-0006](../design/0006-custom-document-type-support.md) — the custom-type decoding the fallback relies on"
+
+reference line=260 url="../design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md"
+  text="[DESIGN-0013](../design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md) Open Question 2 — where the naming collision was first raised"
+
+reference line=262 url="https://github.com/donaldgifford/docz/issues/99"
+  text="[Issue #99](https://github.com/donaldgifford/docz/issues/99) — the `index_plan.md` edit to sequence with"

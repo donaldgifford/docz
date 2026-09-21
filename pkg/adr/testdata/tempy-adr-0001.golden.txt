@@ -1,0 +1,43 @@
+id="ADR-0001" title="Run the IMPL loop worker as its own repository" status="Proposed" inferred=false
+author="Donald Gifford" created="2026-09-12"
+summary=""
+context="The Temporal worker that executes docz IMPL docs (see DESIGN-0001) could live in one of th…"
+decision="The Temporal worker, its CLI, and its agent runner image live in a dedicated repository, `…"
+consequences positive=4 negative=2 neutral=1
+alternatives=3 open-questions=0 references=2
+
+positive line=72
+  text="One worker version ↔ one task queue ↔ one repository tag. Rollouts, rollbacks, and replay testing map onto git history directly."
+
+positive line=74
+  text="The repository can be moved to the work forge with a change of module path and runner image, nothing else."
+
+positive line=76
+  text="docz keeps its small dependency surface; `doczcore` changes needed by the worker are ordinary versioned releases."
+
+positive line=78
+  text="Same shape as every other tool: engine package, CLI, deployment."
+
+negative line=84
+  text="One more repository to bootstrap (docz config, justfile, CI, release)."
+
+negative line=85
+  text="`doczcore` changes require a release-then-bump cycle rather than an in-place edit. Acceptable; `go.work` covers local development."
+
+neutral line=92
+  text="Shared Temporal worker scaffolding (client setup, interceptors, OTel and Langfuse wiring, search-attribute helpers, git activities) will be duplicated until a second worker exists. It is extracted into a library then, not before."
+
+alternative line=101 label="" title="Inside the homelab repository."
+  text="Rejected: couples workflow versioning to cluster state commits; cannot be lifted to work."
+
+alternative line=103 label="" title="Inside the docz repository next to `docz-api`."
+  text="Rejected: drags a large runtime dependency surface into a tool that must stay light; relea…"
+
+alternative line=106 label="" title="A monorepo of all Temporal workers."
+  text="Deferred: revisit when the SSO/IAM and Wiz workflows exist and the shared-scaffolding libr…"
+
+reference line=113 url=""
+  text="DESIGN-0001 Temporal-orchestrated IMPL loop execution"
+
+reference line=114 url=""
+  text="Homelab Temporal execution-plane RFC"

@@ -1,0 +1,101 @@
+id="DESIGN-0014" title="The docz API as one unit: packages, types, functions, and the cmd swap" status="Approved"
+author="Donald Gifford" created="2026-09-14" inferred=false
+goals=8 non-goals=7 open-questions=12 decisions=0 references=13
+overview len=955 excerpt="ADR-0002 decides that docz is an API package whose first consumer is the CLI, built as one…"
+background len=1879 excerpt="ADR-0002's decisions this design implements: | ADR-0002 | Decision | Where it lands here |…"
+detailed-design len=64370 excerpt="### 1. Module layout and dependency graph ```text github.com/donaldgifford/docz/v2 ├─\xe2…"
+api-changes len=2759 excerpt="| Package | Change | Kind | Frozen from | | ------- | ------ | ---- | ----------- | | `pkg…"
+data-model len=3269 excerpt="```mermaid classDiagram class Repo { Root string Cfg *config.Config Scan(type) []DocEntry …"
+testing len=4193 excerpt="- **`pkg/impl`**: golden fixtures snapshotted under `pkg/impl/testdata/` (never read from …"
+rollout len=5990 excerpt="```mermaid timeline title Build the whole API, then swap — every landing under dont-rele…"
+
+goal line=83 text="**Specify the complete API once.** After this design, building the library is an IMPL with phases, not further design."
+goal line=85 text="**Every CLI command is one library call plus printing.** The swap PR's `cmd/` diff proves the API is complete, and the parity suite (§4) proves it reproduces v1.2.2 byte for byte. That is how the API is validated: the CLI is the real-world test, and no external consumer is part of it."
+goal line=89 text="**Byte cores under every path helper** (ADR-0002 R3), so a no-checkout consumer — the shape tempy and docz-api have — is first-class for mutation as well as reading."
+goal line=92 text="**Every built-in type fully specified as a package** — `pkg/impl` with surface, grammar, and identity rules, and `pkg/rfc`, `pkg/adr`, `pkg/design`, `pkg/investigation` with a field per section — each with `Doc` as the root type, over `pkg/doczcore/kinds`."
+goal line=96 text="**Typed results everywhere; wording nowhere but `cmd/`** (R4)."
+goal line=97 text="**No CLI behaviour change** from the swap (ADR-0001 Decision 7)."
+goal line=98 text="**DESIGN-0015 ships in the same unit.** Region markers, the validator, and `docz validate` are part of the API; a release without them is not this API."
+goal line=101 text="**Traceable, not tracing.** Context enters at L3 and hooks let a consumer instrument the library; docz imports no telemetry and logs nothing (§7)."
+non-goal line=108 text="Typed models for RFC, ADR, DESIGN, or INV. The pattern is fixed (§2.9, §3); each waits for a consumer."
+non-goal line=110 text="A runtime type system or a library-defined interface over type packages (R6)."
+non-goal line=112 text="Consumer policy in docz: deferred/skipped writers, plan diffs, iteration budgets, gates. `Task.Line` and `Task.EndLine` are the hook; the writers are the consumer's (ADR-0002 Decision 5)."
+non-goal line=115 text="New CLI features beyond an optional read-only `docz task list` (ADR-0002 Open Question 4)."
+non-goal line=117 text="Changing `.docz.yaml`, the embedded template contents, or the `NNNN-slug.md` filename convention."
+non-goal line=119 text="The `updated:` field (DESIGN-0012 / IMPL-0017), which retargets to the release after the swap."
+non-goal line=121 text="Telemetry or logging inside the library. The CLI, docz-api, and tempy wire their own over the context and hooks in §7."
+
+question 1 line=1832 options=4 title="Phase and task grammar"
+  resolved line=1834 date="2026-09-19" choice="a" note="after checking the assumptions against `internal/template/templates/impl.md`: the template…"
+
+question 2 line=1853 options=4 title="Continuation folding and verify lines"
+  resolved line=1855 date="2026-09-19" choice="a" note="The worked example in §3 shows the fold, the verify extraction, and the marker removal on…"
+
+question 3 line=1867 options=3 title="Marker parsing on the read side"
+  resolved line=1869 date="2026-09-19" choice="a" note=""
+
+question 4 line=1878 options=4 title="Criteria classification"
+  resolved line=1880 date="2026-09-19" choice="a" note=""
+
+question 5 line=1890 options=4 title="Creation without I/O"
+  resolved line=1892 date="2026-09-19" choice="a" note=""
+
+question 6 line=1905 options=4 title="Resolving a document by ID"
+  resolved line=1907 date="2026-09-19" choice="a" note=""
+
+question 7 line=1919 options=3 title="Where the status no-op short-circuit lives"
+  resolved line=1921 date="2026-09-19" choice="a" note="DESIGN-0005 Decision 8 is superseded for the library path; the CLI's output is unchanged b…"
+
+question 8 line=1935 options=4 title="How much of wiki is orchestration"
+  resolved line=1937 date="2026-09-19" choice="a" note=""
+
+question 9 line=1949 options=4 title="Error shapes in repo"
+  resolved line=1951 date="2026-09-19" choice="b" note="typed errors everywhere. Review rationale: a typed API should deliver all of its benefits,…"
+
+question 10 line=1969 options=3 title="Generic facts for the next type package"
+  resolved line=1971 date="2026-09-19" choice="" note="superseded by DESIGN-0015. The question asked whether to add two helpers ahead of a second…"
+
+question 11 line=1992 options=3 title="Delivery granularity"
+  resolved line=1994 date="2026-09-19" choice="" note="one IMPL covering this design and DESIGN-0015 together, a phase per rollout step with the …"
+
+question 12 line=2005 options=3 title="Hooks for wiki"
+  resolved line=2007 date="2026-09-19" choice="a" note="Hooks would give the wiki almost nothing: `UpdateNav` is one YAML read, a title walk over …"
+
+reference line=2026 url="../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md"
+  text="[ADR-0002](../adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md) — the …"
+
+reference line=2028 url="../adr/0003-remove-plan-from-the-built-in-document-types.md"
+  text="[ADR-0003](../adr/0003-remove-plan-from-the-built-in-document-types.md) — the catalogue …"
+
+reference line=2030 url="../adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md"
+  text="[ADR-0001](../adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md) \xe2…"
+
+reference line=2032 url="0015-structured-regions-and-docz-validate.md"
+  text="[DESIGN-0015](0015-structured-regions-and-docz-validate.md) — structured regions, the va…"
+
+reference line=2035 url="0013-library-first-docz-per-type-document-packages-and-a-core-api.md"
+  text="[DESIGN-0013](0013-library-first-docz-per-type-document-packages-and-a-core-api.md) — Ab…"
+
+reference line=2037 url=""
+  text="`net/http/httptrace` — the hooks-in-context pattern §7 follows"
+
+reference line=2038 url="../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md"
+  text="[INV-0010](../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100…"
+
+reference line=2040 url="0005-status-set-cli-primitive.md"
+  text="[DESIGN-0005](0005-status-set-cli-primitive.md) — byte-preservation contract; [IMPL-0011…"
+
+reference line=2042 url="0006-custom-document-type-support.md"
+  text="[DESIGN-0006](0006-custom-document-type-support.md) — type resolution and custom types; …"
+
+reference line=2045 url="../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md"
+  text="[IMPL-0014](../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md) — the v1.0.0 …"
+
+reference line=2048 url="https://github.com/donaldgifford/docz/issues/100"
+  text="Issues [#100](https://github.com/donaldgifford/docz/issues/100), [#103](https://github.com…"
+
+reference line=2054 url=""
+  text="tempy `docs/design/0001-temporal-orchestrated-impl-loop-execution.md`, `docs/impl/0001-tem…"
+
+reference line=2057 url=""
+  text="`cmd/{update,create,init,status,wiki,template,list}.go`, `internal/{index,template,wiki}`,…"

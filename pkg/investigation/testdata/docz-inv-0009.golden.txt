@@ -1,0 +1,75 @@
+id="INV-0009" title="ToC regeneration in docz update and markdownlint MD051" status="Concluded" inferred=false
+author="Donald Gifford" created="2026-09-13"
+question="Does `docz update` (v1.2.2) regenerate the `` / `` fence in existing documents? If it does…"
+hypothesis="`docz update` does regenerate ToC fences — DESIGN-0003 and IMPL-0003 shipped exactly tha…"
+context="An excerpt from another session (working in a different repo with docz v1.2.2) stated: > `…"
+triggered-by="the excerpt above; issue #82; DESIGN-0003 (Table of"
+conclusion="**Answer:** No — the claim is refuted. `docz update` (and `docz create`) regenerate `` /…"
+answer="No — the claim is refuted. `docz update` (and `docz create`)"
+verdict=no
+recommendation="In priority order. Items 1–2 are what closes the loop on the excerpt; 3 is what actually…"
+approach=5 environment=5 findings=7
+open-questions=0 decisions=0 references=11
+
+step line=95 text="Read the code path end to end: `cmd/update.go` (`updateType`, `runToCUpdate`) → `pkg/doc…"
+
+step line=99 text="Read every place the behaviour is (or should be) documented: DESIGN-0003, IMPL-0003, `READ…"
+
+step line=104 text="Reproduce in a throwaway repo (`git init` + `docz init`, default config) using a build of …"
+
+step line=113 text="Run markdownlint-cli2 over this repo's `docs/**` to measure what MD051 reports today and w…"
+
+step line=115 text="Check which editor tool actually emits the `<!--toc:start-->` marker format, since README …"
+
+component line=124 component="docz" value="`v1.2.2-1-g9c2f11f` (build of `main` at `9c2f11f`; no CLI changes since v1.2.2)"
+
+component line=125 component="markdownlint-cli2" value="0.18.1"
+
+component line=126 component="lint config" value="this repo's `.markdownlint.yaml` (MD004/MD007/MD013/MD030/MD033 off, MD051 on)"
+
+component line=127 component="repro config" value="`docz init` defaults: `toc.enabled: true`, `toc.min_headings: 3`, PLAN disabled"
+
+component line=128 component="skills plugin" value="`donaldgifford-claude-skills` docz plugin 1.3.0"
+
+finding line=134 body=1461 bytes title="Observation 1: docz update regenerates ToC fences — the excerpt is wrong"
+  "A fresh `docz create adr \"Repro stale toc\"` produces a fence populated from the template's…"
+
+finding line=173 body=2005 bytes title="Observation 2: the pass is silent and undocumented where an agent looks"
+  "Every surface the other session would plausibly have consulted says \"README tables\" and no…"
+
+finding line=194 body=2030 bytes title="Observation 3: cases where a fence really is left stale, with no signal"
+  "| # | Condition | Behaviour | Evidence | | - | --------- | --------- | -------- | | 1 | Ma…"
+
+finding line=211 body=1844 bytes title="Observation 4: MD051 fires right after a successful docz update"
+  "Three heading shapes produce a ToC entry whose anchor GitHub (and therefore markdownlint, …"
+
+finding line=250 body=1092 bytes title="Observation 5: the marker format is Marksman's, and README names the wrong plugin"
+  "`README.md` lines 554–555 say the markers \"are compatible with the [markdown-toc.nvim](h…"
+
+finding line=272 body=715 bytes title="Observation 6: nothing gates drift, so MD051 in a downstream CI is the first alarm"
+  "- This repo ships `.markdownlint.yaml` with MD051 enabled but nothing in the `Makefile` or…"
+
+finding line=285 body=515 bytes title="Observation 7 (side finding): doubled index markers in two generated READMEs"
+  "`index_investigation.md` and `index_plan.md` — alone among the embedded index headers \xe2\x80…"
+
+reference line=485 url="../design/0003-table-of-contents-generation.md" text="[DESIGN-0003: Table of Contents Generation](../design/0003-table-of-contents-generation.md…"
+
+reference line=487 url="../impl/0003-table-of-contents-generation.md" text="[IMPL-0003: Table of Contents Generation](../impl/0003-table-of-contents-generation.md) \xe2\x80…"
+
+reference line=489 url="../design/0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md" text="[DESIGN-0012](../design/0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md…"
+
+reference line=491 url="https://github.com/donaldgifford/docz/issues/82" text="[Issue #82](https://github.com/donaldgifford/docz/issues/82) — underscores stripped from…"
+
+reference line=493 url="https://github.com/donaldgifford/docz/issues/94" text="Follow-up issues filed from this investigation: [docz #94](https://github.com/donaldgiffor…"
+
+reference line=508 url="" text="`cmd/update.go` (`updateCmd.Long`, `runToCUpdate`), `pkg/doczcore/toc/toc.go` (`BeginMarke…"
+
+reference line=513 url="" text="`README.md` \"Table of Contents\" section (lines 528–571 at `9c2f11f`)"
+
+reference line=514 url="" text="claude-skills docz plugin 1.3.0: `skills/update/SKILL.md`, `skills/docz/SKILL.md`, `skills…"
+
+reference line=516 url="https://github.com/DavidAnson/markdownlint/blob/main/doc/md051.md" text="[markdownlint MD051/link-fragments](https://github.com/DavidAnson/markdownlint/blob/main/d…"
+
+reference line=517 url="https://github.com/artempyanykh/marksman" text="[Marksman](https://github.com/artempyanykh/marksman) — source of the `<!--toc:start-->` …"
+
+reference line=519 url="https://github.com/hedyhli/markdown-toc.nvim" text="[markdown-toc.nvim](https://github.com/hedyhli/markdown-toc.nvim) — default fences `<!--…"

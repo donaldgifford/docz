@@ -30,14 +30,32 @@ docz/
 │   │   └── changelog.go     # Changelog, ParseChangelog(), ErrNoVersions
 │   ├── docparse/            # markdown fact extractor (stdlib-only)
 │   │   ├── headings.go      # Heading, Headings(), AnchorSlug()
-│   │   └── taskitems.go     # TaskItem, TaskItems()
+│   │   ├── taskitems.go     # TaskItem, TaskItems()
+│   │   ├── listitems.go     # ListItem, ListItems()
+│   │   ├── tables.go        # Table, Tables()
+│   │   ├── title.go         # Title() (ATX + setext H1)
+│   │   └── regions.go       # Marker, Region, Markers(), Regions()
+│   ├── kinds/               # region readers + heading inference
+│   │   ├── kinds.go         # RegionBytes(), Body(), bodyOffset
+│   │   ├── infer.go         # HeadingSpec, InferRegions(), ResolveRegions()
+│   │   ├── shift.go         # Shift* region-line → document-line helpers
+│   │   └── item.go …        # Items/Sections/References/Criteria/… readers
+│   ├── validate/            # generic validator (never fails, returns findings)
+│   │   ├── document.go      # Document(), Options
+│   │   ├── schema.go        # Schema, SchemaFromMarkers()
+│   │   └── kindrule.go      # the 41-kind catalogue
 │   ├── docwrite/            # write side: create + status + checkbox
-│   │   ├── create.go        # Create(), nextID(), document file writing
-│   │   ├── status.go        # SetStatus() byte-level frontmatter mutator
-│   │   └── checktask.go     # CheckTask() checkbox splice
+│   │   ├── create.go        # Create(), NextNumber(), Render()
+│   │   ├── status.go        # SetStatus()/SetStatusBytes() frontmatter mutator
+│   │   └── checktask.go     # CheckTask()/SetTaskState[Bytes]() checkbox splice
 │   └── toc/
 │       ├── toc.go           # GenerateToC(), UpdateToC() (walks via docparse)
 │       └── update.go        # UpdateFiles() batch splice + UpdateReport
+├── pkg/{rfc,adr,design,impl,investigation}/   # one typed reader per built-in
+│   ├── doc.go               # the Doc struct
+│   ├── headings.go          # kind constants + the HeadingSpec table
+│   ├── parse.go             # Parse(doc []byte) (Doc, error)
+│   └── validate.go          # Validate() + the type's Code* constants
 ├── internal/
 │   ├── index/
 │   │   └── index.go         # GenerateTable(), UpdateReadme(), DryRunReadme()
@@ -204,8 +222,84 @@ The module's one markdown fact extractor (stdlib-only, no errors):
 GitHub-compatible anchor slugs (`AnchorSlug()`, duplicate `-1`/`-2`
 suffixes), and 1-based line numbers; `TaskItems()` returns every `- [ ]` /
 `- [x]` checkbox item with text, checked state, raw indent width, and line.
-Both walkers skip fenced code blocks. Facts only — plan/phase
+Every walker skips fenced code blocks. Facts only — plan/phase
 interpretation is left to consumers (ADR-0001).
+
+`ListItems()` and `Tables()` are the other two walkers: bullet and numbered
+list items (`{Text, Ordered, Indent, Line}` — the ordered item's *number* is
+not reported, because markdown renumbers a list from its first value), and GFM
+pipe tables (`{Header, Rows, Line}` — a row may be shorter or longer than the
+header, since padding it would invent content).
+
+`Markers()` and `Regions()` are the region walker (DESIGN-0015 §1).
+`Markers()` reports every `<!--docz:<kind>:start-->` / `:end-->` line in
+document order, *including* stray and non-canonical ones, so validation can
+explain why a region is missing rather than silently skipping the file — which
+is what used to happen to a marker with a stray space in it (INV-0009 F4).
+`Regions()` pairs them with a stack into `{Kind, Start, End, Depth, Closed}`.
+`Start` and `End` are the marker lines themselves, so a region's *content* is
+the lines strictly between them, and an unclosed region still comes back usable
+with `Closed: false`. The legacy ToC and README-index pairs report as the `toc`
+and `index` kinds, so one vocabulary covers every span docz owns.
+
+### `pkg/doczcore/kinds`
+
+The layer between a region *span* and a typed *field*. `RegionBytes(doc, r)`
+cuts a region's bytes; `Body`, `Field`, `Items`, `Sections`, `References`,
+`Criteria`, `Alternatives`, `Decisions`, and `OpenQuestions` each read one
+shape out of them. Same contract as `docparse`: bytes in, values out, no
+errors.
+
+**Every reader's `Line` is 1-based within the region**, counting the region's
+own first line as 1. A caller converts to a document line exactly one way:
+
+```go
+documentLine := region.Start + reader.Line
+```
+
+The seven `Shift*` helpers do that for the type packages, so five packages
+don't carry five chances to be off by one.
+
+`HeadingSpec` is the inference grammar: `InferRegions(doc, spec)` synthesizes
+regions from a document's headings, and `ResolveRegions(doc, spec)` prefers
+real markers and returns whether it had to infer. **Inference is permanent,
+not a migration aid** (DESIGN-0015 §6) — markers, once present, are
+authoritative, and a repo that never runs the fixer keeps working forever.
+`SpecFromTemplate(tmpl)` derives a spec from a marked template, which is what
+binds each type package's heading table to its own template in a test.
+
+### `pkg/doczcore/validate`
+
+`Document(content, opts) []Finding` **never fails**. A document with no
+frontmatter is a document with a *finding*, because a validator that refused
+to look at a broken document would be useless on exactly the documents that
+need it most. Every `Options` field is optional and the zero value still
+yields a useful run: marker well-formedness, frontmatter shape, and the content
+rules of whatever kinds the document happens to carry.
+
+`Schema` is the set of regions a document must carry, read from a marker
+skeleton by `SchemaFromMarkers`. **There is no schema language**, so nothing a
+schema can require is something a document cannot show (DESIGN-0015 §3), and a
+schema only tightens by growing. The `catalogue` in `kindrule.go` holds what is
+known about each of the 41 region kinds — `Singleton` (scoped by *parent*) and
+an optional content `Check`. It is data, not an interface, which is why it grew
+from nine kinds to forty-one without a redesign.
+
+Findings carry a `Code` from a small set of families (`file.*`,
+`frontmatter.*`, `marker.*`, `region.*`, `content.*`, `open-questions.*`,
+`references.*`, `tasks.*`, `toc.*`, `schema.name`). Consumers filter on the
+code, never on the wording.
+
+### `pkg/{rfc,adr,design,impl,investigation}`
+
+One typed reader per built-in type: `Parse` for the model, `Validate` for the
+findings only the model can see. See *Adding a Built-In Document Type* below
+for the four files and the contract each package keeps.
+
+The generic tier and the type tier run side by side and never repeat each
+other. An *absent* alternatives section is `region.missing` from
+`validate.Document`; a section that is present and says nothing is
+`rfc.alternatives.empty` from `rfc.Validate`.
 
 ### `pkg/doczcore/toc`
 
@@ -236,9 +330,15 @@ three files:
 
 ## Adding a Built-In Document Type
 
-Since IMPL-0009 (DocType registry, DESIGN-0004 §E) adding a built-in type is a
-single Go edit plus two embedded templates. The example below walks through
-adding `plan`-style doc.
+Since IMPL-0009 (DocType registry, DESIGN-0004 §E) the config side of a
+built-in type is a single Go edit plus two embedded templates. Since IMPL-0018
+(DESIGN-0014, ADR-0002) a built-in is also a **structured type**, so it needs a
+marker skeleton and a `pkg/<type>` package as well. The example below walks
+through adding a `plan`-style doc.
+
+> A type that only needs a template and an index — no typed reader, no
+> validation rules — is a **custom type**, not a built-in. See *Custom Types via
+> Configuration* below; it is one `.docz.yaml` block and no Go at all.
 
 ### Step 1: Add the document template
 
@@ -260,7 +360,56 @@ with access to all `template.Data` fields:
 The typed-string types render via their underlying value; no template-syntax
 changes are needed when working with `Status` / `Type`.
 
-### Step 2: Add the index header template
+Every section the type's reader will read must be wrapped in a **canonical
+region marker pair** (DESIGN-0015 §1), so a document created by `docz create` is
+marked from birth and never needs migrating:
+
+```markdown
+<!--docz:objective:start-->
+## Objective
+
+<!-- What this plan is for. -->
+<!--docz:objective:end-->
+```
+
+Reuse an existing kind's name wherever the section means the same thing
+(`summary`, `context`, `criteria`, `references`, `open-questions`, `decisions`).
+The grammar is over region kinds and never over type names (ADR-0002 R7), so a
+section that reuses a kind gets that kind's reader and validation rule for
+free. A kind nobody else uses is fine too — an unknown kind is allowed, and
+`validate` then checks only that its markers pair.
+
+### Step 2: Add the marker skeleton
+
+Create `internal/template/templates/schema/plan.md`: the *schema* for the type,
+which is a markdown body of nothing but the template's marker pairs, in the same
+order and nesting, with no headings and no prose.
+
+```markdown
+<!--toc:start-->
+<!--toc:end-->
+<!--docz:objective:start-->
+<!--docz:objective:end-->
+<!--docz:criteria:start-->
+<!--docz:criteria:end-->
+<!--docz:references:start-->
+<!--docz:references:end-->
+```
+
+There is no schema language: a skeleton is read by the same walker as a
+document (`validate.SchemaFromMarkers`), so nothing a schema can require is
+something a document cannot show (DESIGN-0015 §3). Every kind listed is
+required at least once under the same parent; a kind *not* listed is optional
+and still checked by its content rule when present. A schema therefore only
+tightens by growing.
+
+The template and its skeleton must yield the **same** `validate.Schema`, pinned
+by a derivation test, so the pair can only ever be edited together. Documents
+may override the choice of skeleton with a `schema:` frontmatter field; an empty
+or absent field means the document's own type name, which is what every
+built-in template ships.
+
+### Step 3: Add the index header template
 
 Create `internal/template/templates/index_plan.md`. This is written to
 `docs/plan/README.md` by `docz init` and must include the auto-generated
@@ -275,7 +424,7 @@ Description of what plan documents are for.
 <!-- END DOCZ AUTO-GENERATED -->
 ```
 
-### Step 3: Embed pick-up
+### Step 4: Embed pick-up
 
 The `//go:embed templates/*.md` directive in `internal/template/embed.go`
 picks the new files up automatically. The Phase 8 consistency tests in
@@ -284,7 +433,7 @@ picks the new files up automatically. The Phase 8 consistency tests in
 `TestDocTypeRegistry_AllHaveEmbeddedIndexHeader`) fail loudly if either
 template is missing.
 
-### Step 4: Register the type in `pkg/doczcore/config/doctype.go`
+### Step 5: Register the type in `pkg/doczcore/config/doctype.go`
 
 Append one entry to the `allDocTypes` slice. This is the only Go code
 change required — `DefaultConfig().Types`, `Wiki.NavTitles`,
@@ -317,25 +466,70 @@ change required — `DefaultConfig().Types`, `Wiki.NavTitles`,
 yields a fresh `Statuses` slice — a Config that mutates `Statuses` won't
 poison the next caller (DESIGN-0004 §E).
 
-### Step 5: Optionally extend the help string
+### Step 6: Add the type package
+
+A built-in is a structured type, so it also needs `pkg/plan/` — four files,
+the same four every type package has (DESIGN-0014 §2):
+
+| File | Holds |
+|------|-------|
+| `doc.go` | the `Doc` struct, one field per region the type reads, plus any lookups |
+| `headings.go` | the `kind*` constants and `var headings kinds.HeadingSpec`, exported through `Headings()` |
+| `parse.go` | `Parse(doc []byte) (Doc, error)` |
+| `validate.go` | `Validate(doc []byte) []validate.Finding` and its `Code*` constants |
+
+Copy the nearest existing package and change the table. The contract each one
+keeps:
+
+- **`Parse` never touches the filesystem** and fails for exactly two things: no
+  frontmatter, and CR line endings. Everything else a document might be missing
+  leaves its field zero for `validate.Document` to report against the schema — a
+  half-written document is the normal state of a document, and a parser that
+  refused one would be useless during the review it is written for.
+- **`Parse` switches on the region kind, never on the document's type name**
+  (ADR-0002 R7). That is what lets a custom type carrying the same regions parse
+  with a built-in's package.
+- **Line numbers are document lines.** The `kinds` readers number from the start
+  of the region they were handed, so pass every result through the matching
+  `kinds.Shift*` helper rather than adding `region.Start` by hand.
+- **Codes are `<type>.<family>.<rule>`**, declared as exported constants because
+  a consumer filters on them. A document `Parse` rejected yields exactly one
+  `<type>.parse` finding and nothing else, since every other check reads a
+  parsed `Doc`.
+- **Imports stop at L0 plus `kinds` and `validate`.** A type package may import
+  `docparse`, `document`, `config`, `kinds`, and `validate`, and nothing else
+  under `pkg/`. The core must never import a type package;
+  `pkg/doczcore/layer_test.go` fails if it does.
+
+The heading table must equal `kinds.SpecFromTemplate` over the type's embedded
+template, so copy that test too — it is what keeps the table and the template
+from drifting apart. Then add a golden corpus under `pkg/plan/testdata/`:
+real documents snapshotted as `.orig.md` (never read from `docs/` at test time),
+their generated marked `.md` siblings, `.golden.txt` fact files, and a
+`FuzzParse`. See `pkg/impl/golden_test.go` for the harness and any
+`testdata/README.md` for how the corpus is documented.
+
+### Step 7: Optionally extend the help string
 
 `config.TypesHelp` is still a static string. The
 `TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp` test fails if the
 new type's canonical name is missing from the help block — add a line
 for the new type so `docz --help` lists it.
 
-### Step 6: Add golden file test fixtures
+### Step 8: Add golden file test fixtures
 
 Run the template tests with `-update` to generate new golden files:
 
 ```bash
 go test ./internal/template/... -update
+go test ./pkg/plan/... -update      # the corpus fact files from Step 6
 ```
 
-This creates `testdata/golden/plan.md` from a sample render. Review it
-before committing.
+This creates `testdata/golden/plan.md` from a sample render, and the
+`.golden.txt` fact files for each corpus fixture. **Review both before
+committing** — a golden nobody read pins whatever the code happened to do.
 
-### Step 7: Verify
+### Step 9: Verify
 
 ```bash
 make build
@@ -345,6 +539,10 @@ make build
 ./build/bin/docz template show plan
 make ci
 ```
+
+Once `docz validate` lands (IMPL-0018 Phase 5) also run
+`./build/bin/docz validate plan`, which checks a created document against the
+Step 2 skeleton and should report nothing.
 
 ## Custom Types via Configuration
 

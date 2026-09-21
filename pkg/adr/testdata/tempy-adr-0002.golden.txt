@@ -1,0 +1,55 @@
+id="ADR-0002" title="Loop control belongs to the workflow, not the prompt" status="Proposed" inferred=false
+author="Donald Gifford" created="2026-09-12"
+summary=""
+context="IMPL docs are executed today by a single donald-loop (Ralph loop) invocation whose prompt …"
+decision="The workflow owns loop control; the agent owns one task at a time. Concretely: 1. **The wo…"
+consequences positive=4 negative=3 neutral=2
+alternatives=4 open-questions=0 references=3
+
+positive line=92
+  text="Each clause the prompt used to hope for becomes a check with a named failure. Evaluation output feeds the next iteration's prompt, giving the agent precise feedback instead of a re-read of the whole doc."
+
+positive line=95
+  text="Runs survive worker restarts and agent crashes without corrupting the branch, because retries start from a recorded good SHA."
+
+positive line=97
+  text="The prompt shrinks by roughly two thirds and stops changing when the loop semantics change."
+
+positive line=99
+  text="Resume after any interruption, including loss of the Temporal namespace, costs at most one task's iterations."
+
+negative line=106
+  text="A rejected-but-committed iteration is discarded (reset to last good SHA) rather than fixed forward. This wastes tokens when the agent was close. Chosen deliberately: fixing forward lets untracked work accumulate on the branch. Open to revisiting once evaluation feedback proves reliable."
+
+negative line=110
+  text="The IMPL format gains conventions the workflow depends on: positional task IDs, the `verify:` continuation line, executable-vs-assertive success criteria. Agents must be told not to add, remove, or reorder tasks, and the workflow must detect it."
+
+negative line=114
+  text="Mechanical checks run twice — in the runner (agent habit) and on the worker (authoritative). Accepted cost for a trustworthy gate."
+
+neutral line=121
+  text="The manual donald-loop keeps working unchanged; nothing in this decision requires it to be retired."
+
+neutral line=123
+  text="Assertive success criteria still need a human or an explicit `--auto-confirm-criteria` opt-in. The workflow does not pretend to verify what it cannot run."
+
+alternative line=132 label="" title="Keep the full prompt; wrap it in a Temporal activity for durability only."
+  text="Rejected: gains restartability, none of the verification. The 75 iteration cap and agent-a…"
+
+alternative line=135 label="" title="Let the agent drive Temporal (agent calls signals/activities)."
+  text="Rejected: inverts the trust relationship; the component being verified would control the v…"
+
+alternative line=138 label="" title="Fix forward from rejected commits."
+  text="Deferred, see Negative above."
+
+alternative line=139 label="" title="Store task state in a database instead of the doc."
+  text="Rejected: the doc is already the checkpoint humans read and the manual loop uses; two sour…"
+
+reference line=147 url=""
+  text="DESIGN-0001 Temporal-orchestrated IMPL loop execution"
+
+reference line=148 url=""
+  text="`docs/reference/donald-loop-prompt.md` — the prompt being replaced"
+
+reference line=149 url=""
+  text="ADR-0001 Run the IMPL loop worker as its own repository"

@@ -1,0 +1,6 @@
+id="RFC-0001" title="A placeholder title" status="Draft" inferred=false
+author="Test Author" created="2026-09-20"
+summary=""
+problem="### Supporting Data"
+proposal=""
+alternatives=0 risks=0 criteria=0 open-questions=0 references=0

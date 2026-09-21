@@ -1,0 +1,29 @@
+# markers
+line=5 kind="consequences" role=start canonical=true
+line=8 kind="positive" role=start canonical=true
+line=12 kind="positive" role=end canonical=true
+line=14 kind="negative" role=start canonical=true
+line=18 kind="negative" role=end canonical=true
+line=20 kind="neutral" role=start canonical=true
+line=24 kind="neutral" role=end canonical=true
+line=25 kind="consequences" role=end canonical=true
+line=27 kind="phase" role=start canonical=true
+line=30 kind="tasks" role=start canonical=true
+line=32 kind="tasks" role=end canonical=true
+line=33 kind="phase" role=end canonical=true
+line=35 kind="phase" role=start canonical=true
+line=38 kind="tasks" role=start canonical=true
+line=41 kind="tasks" role=start canonical=true
+line=43 kind="tasks" role=end canonical=true
+line=44 kind="tasks" role=end canonical=true
+line=45 kind="phase" role=end canonical=true
+# regions
+kind="consequences" start=5 end=25 depth=0 closed=true
+kind="positive" start=8 end=12 depth=1 closed=true
+kind="negative" start=14 end=18 depth=1 closed=true
+kind="neutral" start=20 end=24 depth=1 closed=true
+kind="phase" start=27 end=33 depth=0 closed=true
+kind="tasks" start=30 end=32 depth=1 closed=true
+kind="phase" start=35 end=45 depth=0 closed=true
+kind="tasks" start=38 end=44 depth=1 closed=true
+kind="tasks" start=41 end=43 depth=2 closed=true

@@ -10,13 +10,13 @@ Warning: config declares non-built-in type "frameworks" (typo?)
 
 === files
 .docz.yaml (1148 bytes, aae68059d6d3)
-docs/adr/0001-keep-frameworks-in-a-register.md (1629 bytes, 920fd815549e)
+docs/adr/0001-keep-frameworks-in-a-register.md (1147 bytes, 18f4df12d792)
 docs/adr/README.md (1167 bytes, 80b1981d1cfe)
-docs/frameworks/0001-adopt-the-internal-auth-framework.md (703 bytes, 6bb35f2f3862)
-docs/frameworks/0002-retire-the-legacy-job-runner.md (2261 bytes, a9e206f0e4d7)
-docs/frameworks/0003-parity-created-document.md (682 bytes, 58afb802c7c8)
-docs/frameworks/README.md (795 bytes, c06e3cda2e73)
-docs/templates/frameworks.md (616 bytes, 3285c201e10e)
+docs/frameworks/0001-adopt-the-internal-auth-framework.md (647 bytes, 7d1eb6c56cf9)
+docs/frameworks/0002-retire-the-legacy-job-runner.md (2205 bytes, 3d21a457244f)
+docs/frameworks/0003-parity-created-document.md (621 bytes, 6b17527bdc05)
+docs/frameworks/README.md (790 bytes, 8e010bf85729)
+docs/templates/frameworks.md (560 bytes, 86e849838d8d)
 
 === written docs/frameworks/0003-parity-created-document.md
 ---

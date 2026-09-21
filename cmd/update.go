@@ -161,10 +161,10 @@ func (r *Runner) runToCUpdate(typeDir string, docs []document.DocEntry, dryRun b
 	}
 
 	files := make([]toc.FileInput, len(docs))
-	for i, doc := range docs {
+	for i := range docs {
 		files[i] = toc.FileInput{
-			Path:    filepath.Join(typeDir, doc.Filename),
-			Content: doc.Content,
+			Path:    filepath.Join(typeDir, docs[i].Filename),
+			Content: docs[i].Content,
 		}
 	}
 

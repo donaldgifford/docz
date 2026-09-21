@@ -10,8 +10,8 @@ Exported adr template to $ROOT/adr.md
 === files
 .docz.yaml (698 bytes, 7f99dbecefa5)
 adr.md (858 bytes, 9eae86b88ea3)
-docs/adr/0001-use-postgresql-for-the-registry-store.md (1645 bytes, fc2adfcd894c)
-docs/adr/0002-vendor-the-markdown-walker.md (7068 bytes, dd4744e01820)
+docs/adr/0001-use-postgresql-for-the-registry-store.md (1163 bytes, 82c3f0197649)
+docs/adr/0002-vendor-the-markdown-walker.md (6586 bytes, 1d7a545b1e1b)
 docs/adr/README.md (1349 bytes, e3d3787df33c)
 
 === written adr.md

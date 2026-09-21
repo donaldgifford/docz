@@ -1,0 +1,8 @@
+# markers
+line=3 kind="tasks" role=end canonical=true
+line=8 kind="summary" role=start canonical=true
+line=12 kind="summary" role=end canonical=true
+line=14 kind="summary" role=end canonical=true
+line=18 kind="references" role=end canonical=true
+# regions
+kind="summary" start=8 end=12 depth=0 closed=true

@@ -1,0 +1,32 @@
+id="DESIGN-0002" title="Wiki Command for MkDocs TechDocs Integration" status="Implemented"
+author="Donald Gifford" created="2026-03-11" inferred=false
+goals=5 non-goals=4 open-questions=0 decisions=0 references=4
+overview len=340 excerpt="Add a `docz wiki` command group that generates and maintains a `mkdocs.yml` file compatibl…"
+background len=1343 excerpt="Backstage's TechDocs plugin reads a `mkdocs.yml` at the repo root to generate documentatio…"
+detailed-design len=0 excerpt=""
+api-changes len=0 excerpt=""
+data-model len=0 excerpt=""
+testing len=433 excerpt="- **Unit tests** for nav generation from a mock directory tree - **Unit tests** for title …"
+rollout len=0 excerpt=""
+
+goal line=67 text="Generate a `mkdocs.yml` that works out of the box with `mkdocs serve` and Backstage TechDocs"
+goal line=69 text="Automatically maintain the `nav:` section as documents are added or removed"
+goal line=70 text="Include all markdown files in the docs directory, not just docz-managed types"
+goal line=71 text="Integrate with the existing `docz create` workflow so the nav stays current"
+goal line=72 text="Support a reasonable default nav structure with zero configuration"
+non-goal line=78 text="Building or serving the MkDocs site (use `mkdocs serve` / `mkdocs build`)"
+non-goal line=79 text="Managing MkDocs themes, plugins, or extensions beyond `techdocs-core`"
+non-goal line=80 text="Supporting non-markdown content (images, PDFs are referenced but not tracked)"
+non-goal line=81 text="Replacing MkDocs as the site generator"
+
+reference line=464 url="https://backstage.io/docs/features/techdocs/"
+  text="[Backstage TechDocs](https://backstage.io/docs/features/techdocs/)"
+
+reference line=465 url="https://www.mkdocs.org/user-guide/configuration/"
+  text="[MkDocs Configuration](https://www.mkdocs.org/user-guide/configuration/)"
+
+reference line=466 url="https://www.mkdocs.org/user-guide/writing-your-docs/#configure-pages-and-navigation"
+  text="[MkDocs Nav](https://www.mkdocs.org/user-guide/writing-your-docs/#configure-pages-and-navi…"
+
+reference line=467 url=""
+  text="DESIGN-0001: docz CLI Tool"

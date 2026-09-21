@@ -10,10 +10,10 @@ Updated $ROOT/docs/rfc/README.md
 
 === files
 .docz.yaml (710 bytes, d449b58824ae)
-docs/rfc/0001-switch-the-ingest-queue-to-nats.md (1695 bytes, 587c4679eeef)
-docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (5160 bytes, 825d376386a0)
-docs/rfc/0003-parity-created-document.md (1313 bytes, 0766448f7e8d)
-docs/rfc/README.md (1630 bytes, 2eae7f547729)
+docs/rfc/0001-switch-the-ingest-queue-to-nats.md (1329 bytes, e3575236c3d0)
+docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (4794 bytes, e21f3f01a5bf)
+docs/rfc/0003-parity-created-document.md (1308 bytes, f9ea04e686c1)
+docs/rfc/README.md (1625 bytes, c832317c3bc6)
 
 === written docs/rfc/0003-parity-created-document.md
 ---

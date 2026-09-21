@@ -36,10 +36,31 @@ type Frontmatter struct {
 	Status  config.Status `yaml:"status"`
 	Author  string        `yaml:"author"`
 	Created string        `yaml:"created"`
+
+	// Schema names the marker skeleton this document claims to follow
+	// (DESIGN-0015 §3). Empty — the common case, and what every built-in
+	// template ships — means the document's own type name, so a document
+	// validates against the baked-in schema without carrying a line for
+	// it. This package only round-trips the field: resolving the name to
+	// a skeleton, and judging whether the name is well-formed, belong to
+	// the validate layer.
+	Schema string `yaml:"schema,omitempty"`
 }
 
 // ErrNoFrontmatter is returned when a file has no YAML frontmatter delimiters.
 var ErrNoFrontmatter = errors.New("no YAML frontmatter found")
+
+// ErrUnsupportedLineEndings reports a document whose bytes use CR or CRLF
+// line endings. docz is LF-only (DESIGN-0005 Decision 7), so every line
+// number in the module counts by LF and every write helper refuses a file
+// with a carriage return in it.
+//
+// It lives here, at the facts layer, because the failure is a fact about
+// bytes rather than about writing them. docwrite.ErrUnsupportedLineEndings
+// is this error, so a caller matching either with errors.Is matches both;
+// a type package's Parse can reject CR without importing the write side,
+// which rule R2 keeps it away from.
+var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
 
 // ParseFrontmatter extracts and parses YAML frontmatter from file content.
 // Frontmatter must be delimited by "---" lines at the start of the file.

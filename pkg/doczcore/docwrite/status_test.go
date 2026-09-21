@@ -33,7 +33,7 @@ func TestSetStatus_Golden(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name      string // fixture stem == built-in type
+		name      string // fixture stem: a built-in type, or "schema"
 		newStatus string
 		wantOld   string
 	}{
@@ -43,6 +43,11 @@ func TestSetStatus_Golden(t *testing.T) {
 		{name: "impl", newStatus: "Completed", wantOld: "Draft"},
 		{name: "plan", newStatus: "Completed", wantOld: "Draft"},
 		{name: "investigation", newStatus: "Concluded", wantOld: "Open"},
+		// A document carrying a `schema:` line (DESIGN-0015 §3). The
+		// fixture names its schema "status" and puts the line above the
+		// real key, so the mutator has to locate `status:` by key and not
+		// by substring.
+		{name: "schema", newStatus: "In Progress", wantOld: "Draft"},
 	}
 
 	for _, tc := range cases {

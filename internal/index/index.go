@@ -62,7 +62,9 @@ func GenerateTable(docs []document.DocEntry, heading string) string {
 	sb.WriteString("| ID | Title | Status | Date | Author | Link |\n")
 	sb.WriteString("|----|-------|--------|------|--------|------|\n")
 
-	for _, doc := range docs {
+	for i := range docs {
+		doc := &docs[i]
+
 		fmt.Fprintf(&sb, "| %s | %s | %s | %s | %s | [%s](%s) |\n",
 			doc.ID, doc.Title, doc.Status, doc.Created, doc.Author,
 			doc.Filename, doc.Filename)

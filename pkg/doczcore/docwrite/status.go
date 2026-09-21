@@ -21,7 +21,12 @@ var ErrStatusFieldMissing = errors.New("no status field in frontmatter")
 // ErrUnsupportedLineEndings is returned by SetStatus and CheckTask when
 // a file uses CR or CRLF line endings. The byte-level mutators only
 // support LF, matching docz's Unix-only stance (DESIGN-0005 Decision 7).
-var ErrUnsupportedLineEndings = errors.New("unsupported line endings (want LF)")
+//
+// It is document.ErrUnsupportedLineEndings, not a second sentinel for the
+// same failure: the refusal is a fact about the bytes, so it belongs at
+// the facts layer where a reader can use it too. Matching either with
+// errors.Is matches both, and the message is unchanged.
+var ErrUnsupportedLineEndings = document.ErrUnsupportedLineEndings
 
 // statusKeyRE matches a frontmatter status line anchored at column 0,
 // consuming the `status:` key and the spacing that precedes the value.
@@ -57,27 +62,48 @@ func SetStatus(path, newStatus string) (oldStatus string, err error) {
 		return "", fmt.Errorf("%s: %w", path, err)
 	}
 
-	// Reject CR/CRLF up front: the line scan below assumes LF, and a
-	// silent rewrite of a CRLF file would corrupt its endings.
-	if bytes.IndexByte(content, '\r') >= 0 {
-		return "", fmt.Errorf("%s: %w", path, ErrUnsupportedLineEndings)
-	}
-
-	start, end, oldStatus, err := findStatusValue(content)
+	out, oldStatus, err := SetStatusBytes(content, newStatus)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", path, err)
 	}
-
-	out := make([]byte, 0, len(content)-(end-start)+len(newStatus))
-	out = append(out, content[:start]...)
-	out = append(out, newStatus...)
-	out = append(out, content[end:]...)
 
 	if err := os.WriteFile(path, out, config.FileMode); err != nil {
 		return "", fmt.Errorf("%s: %w", path, err)
 	}
 
 	return oldStatus, nil
+}
+
+// SetStatusBytes is SetStatus without the filesystem: it returns the rewritten
+// document and the status it replaced, and never reads or writes a file.
+//
+// This is the byte core (DESIGN-0014 §2.7). docz-api holds a document it
+// fetched over the GitHub API and has nowhere to put a temporary file; the
+// path-taking wrapper above is read, core, write. Every byte-preservation
+// guarantee in SetStatus's documentation is this function's, since it is the
+// one that does the splicing.
+//
+// The input is not modified. Errors are bare sentinels, with no path in them:
+// the caller knows where its bytes came from, and the wrapper adds the path it
+// read.
+func SetStatusBytes(doc []byte, newStatus string) (out []byte, oldStatus string, err error) {
+	// Reject CR/CRLF up front: the line scan below assumes LF, and a
+	// silent rewrite of a CRLF file would corrupt its endings.
+	if bytes.IndexByte(doc, '\r') >= 0 {
+		return nil, "", ErrUnsupportedLineEndings
+	}
+
+	start, end, oldStatus, err := findStatusValue(doc)
+	if err != nil {
+		return nil, "", err
+	}
+
+	out = make([]byte, 0, len(doc)-(end-start)+len(newStatus))
+	out = append(out, doc[:start]...)
+	out = append(out, newStatus...)
+	out = append(out, doc[end:]...)
+
+	return out, oldStatus, nil
 }
 
 // findStatusValue locates the byte range [start, end) of the status value

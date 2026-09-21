@@ -1,0 +1,103 @@
+id="ADR-0002" title="docz is an API package whose first consumer is the CLI" status="Accepted" inferred=false
+author="Donald Gifford" created="2026-09-14"
+summary="docz is a Go API package. The `docz` CLI is its first consumer, not its product. Every ope…"
+context="ADR-0001 (2026-07-03) made `pkg/doczcore/{config,document,docparse,docwrite,toc}` the publ…"
+decision="1. **docz is an API package; the CLI is its first consumer.** The API is extracted from wh…"
+consequences positive=6 negative=4 neutral=3
+alternatives=6 open-questions=5 references=8
+
+positive line=319
+  text="**docz is usable as docz from a program.** A consumer calls `repo.Update` or `impl.Parse` instead of copying `cmd/`."
+
+positive line=321
+  text="**One design, built once.** The API is specified as a whole and landed as a whole, so the promotion drip ADR-0001 tried to end actually ends."
+
+positive line=323
+  text="**The CLI becomes the reference consumer** and the forcing function that keeps logic out of the shell; the swap PR's diff *is* the proof."
+
+positive line=325
+  text="**Type packages are additive and isolated.** Adding `pkg/rfc` later is a package that follows R2 and R7, not a redesign; `doczcore` never learns what a phase is."
+
+positive line=328
+  text="**Consumers stay in charge of their workflows.** tempy and sdk-booty-sh keep their policy; docz gives them exact lines to act on."
+
+positive line=330
+  text="**The CLI is untouched until the swap.** Every landing before it is additive, so `main` behaves as v1.2.2 for CLI users throughout the build."
+
+negative line=338
+  text="**A larger frozen surface at v2.0.0.** `repo`, `index`, `doctemplate`, and `wiki` become contract, including shapes ADR-0001 called CLI-flavoured (`index.UpdateOutcome`'s action enum). Mitigated by R4 — enums and reports are typed, wording is not exported — and by the beta window, which lasts until v2.0.0 is cut and in which they may still change."
+
+negative line=344
+  text="**Two contracts in the meantime.** Until v2.0.0, the tree carries a frozen tier and an experimental tier and contributors must know which is which (Open Question 1)."
+
+negative line=347
+  text="**The swap is one large PR.** Every command's tests must pass byte-for-byte on the new code paths. Mitigated by the existing `cmd/` test suite, which already pins output and exit codes."
+
+negative line=350
+  text="**`ParsePlan`'s reversal.** IMPL-0014 dropped a plan model for a stated reason; reversing it needs the reason to be recorded as changed (two consumers, docz's own grammar), not forgotten. Done in Context."
+
+neutral line=358
+  text="**No behaviour change for CLI users.** The swap is a relocation; the release notes are for library consumers."
+
+neutral line=360
+  text="**Dependencies do not change.** The promoted packages are stdlib + `yaml.v3`, like the core."
+
+neutral line=362
+  text="**Release mechanics.** `dont-release` on every PR in this work, the swap included: a `patch` or `minor` label after the module path flips would tag a v1 version on a `/v2` module, which `go get` rejects, and `major` is reserved for v2.0.0 proper. Pre-releases are annotated tags cut by hand (`make release TAG=v2.0.0-beta.N`); goreleaser already marks a suffixed tag as a pre-release (`prerelease: auto`), and `release.yml` gains a tag trigger for them in step 0 so a beta builds binaries (Open Question 3). IMPL-0017's `updated:` field retargets to the v2 line, after this unit."
+
+alternative line=377 label="a" title="Promote on demand, again."
+  text="Ship `pkg/impl` and the two `docwrite` byte cores for tempy and stop (DESIGN-0013 Phase A)…"
+
+alternative line=382 label="b" title="Typed models inside `doczcore`"
+  text="(`pkg/doczcore/impl`). *Pros:* one import root. *Cons:* every consumer of the core compile…"
+
+alternative line=386 label="c" title="A runtime type system"
+  text="(go-cty style, schema-driven types so custom types get models too). *Pros:* uniform. *Cons…"
+
+alternative line=390 label="d" title="Swap `cmd/` incrementally, command by command, releasing as we go."
+  text="*Pros:* smaller PRs. *Cons:* the API is designed around what each command needs in isolati…"
+
+alternative line=394 label="e" title="A separate library module."
+  text="Rejected in ADR-0001 and again here (Decision 3)."
+
+alternative line=396 label="f" title="This ADR."
+  text="API first, layers and rules, one module, standalone type packages with `Doc`, primitives v…"
+
+question 1 line=406 title="How is \"not yet frozen\" signalled on the new packages?"
+  options=3 [a* b c] resolved={line=408 date="2026-09-19" choice="a" note="Low stakes while docz is its own only consumer; the `EXPERIMENTAL` line costs nothing and …"}
+
+question 2 line=422 title="How is ADR-0001's record amended?"
+  options=3 [a* b c] resolved={line=424 date="2026-09-19" choice="a" note=""}
+
+question 3 line=434 title="How are pre-releases cut before v2.0.0?"
+  options=4 [a* b c d] resolved={line=436 date="2026-09-19" choice="b" note="manual `v2.0.0-beta.N` tags; nothing in this work cuts v2.0.0. The swap is tagged `v2.0.0-…"}
+
+question 4 line=461 title="Does the swap ship a first-party consumer of the type layer?"
+  options=5 [a* b c d e] resolved={line=466 date="2026-09-19" choice="e" note="the question was mis-framed. \"First consumer\" does not mean a first-party caller of `pkg/i…"}
+
+question 5 line=489 title="Are document types built on generics?"
+  options=5 [a* b c d e] resolved={line=504 date="2026-09-19" choice="a" note="R7 and Decision 4 restated above; DESIGN-0014 §2.9 notes that `impl.Parse` is keyed on ki…"}
+
+reference line=548 url="0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md"
+  text="[ADR-0001](0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md) — the decisions kept, superseded, and amended above"
+
+reference line=550 url="0003-remove-plan-from-the-built-in-document-types.md"
+  text="[ADR-0003](0003-remove-plan-from-the-built-in-document-types.md) — the `plan` type removal that lands alongside this work"
+
+reference line=552 url="../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md"
+  text="[DESIGN-0014](../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md) — the API this ADR implies, specified as one unit"
+
+reference line=554 url="../design/0015-structured-regions-and-docz-validate.md"
+  text="[DESIGN-0015](../design/0015-structured-regions-and-docz-validate.md) — structured regions and `docz validate`, a requirement of that unit"
+
+reference line=556 url="../design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md"
+  text="[DESIGN-0013](../design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md) — Abandoned; the first-principles working that led here"
+
+reference line=558 url="../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md"
+  text="[INV-0010](../investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md) — consumer demand and corpus facts"
+
+reference line=560 url="../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md"
+  text="[IMPL-0014](../impl/0014-v100-the-five-package-pkgdoczcore-public-core.md) Decision 3(d) — the plan-model drop this ADR reverses"
+
+reference line=562 url="https://github.com/donaldgifford/docz/issues/100"
+  text="[Issue #100](https://github.com/donaldgifford/docz/issues/100) — tempy's request; [Issue #103](https://github.com/donaldgifford/docz/issues/103) — remove the `plan` type"

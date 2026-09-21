@@ -1,0 +1,74 @@
+id="DESIGN-0009" title="docz-site: cross-repo docz viewer and search UI" status="Draft"
+author="Donald Gifford" created="2026-06-23" inferred=false
+goals=6 non-goals=6 open-questions=8 decisions=0 references=9
+overview len=1695 excerpt="**docz-site** is the web front end that lets a team browse, search, and read *all* of thei…"
+background len=1452 excerpt="The viewer half of INV-0005 settled on a shape that this design fills in. The load-bearing…"
+detailed-design len=13107 excerpt="### Tech stack proposal docz-site is a JavaScript/TypeScript single-page application (or S…"
+api-changes len=3708 excerpt="docz-site is a new app and defines no public API of its own. This section describes (1) th…"
+data-model len=2838 excerpt="The site is **essentially stateless** — a thin client with no database. The \"data model\"…"
+testing len=1604 excerpt="- **Component / unit (Vitest + Testing Library).** Breadcrumbs derive correctly from route…"
+rollout len=1496 excerpt="This is a **greenfield repository** with no existing users to migrate; \"rollout\" means the…"
+
+goal line=82 text="**One URL for all docz documents.** Navigate repos → a repo → its doc types → the documents of a type → open and read one document, with breadcrumbs throughout."
+goal line=85 text="**Global search** (Meilisearch-backed, via docz-api) with facets on **repo**, **type**, **status**, and **author**, and cross-repo views that fall out of those facets (e.g. \"all Approved designs across repos\")."
+goal line=88 text="**A faithful document reader.** Fetch raw markdown from docz-api, render it to HTML client-side, **sanitize** the result (it is user content → XSS surface), highlight code, build a table of contents from headings, and show a frontmatter **status badge**."
+goal line=92 text="**Pluggable authentication** (Decision 6) via OIDC/OAuth: **GitHub** (default/preferred), **Okta**, **Keycloak**. The user sees only the repos and docs they are authorized for; **authorization is enforced server-side by docz-api**, and the site reflects it."
+goal line=96 text="**A thin vertical slice first** (Decision 8): render one repo's one type end-to-end before building the full navigation, search, and auth."
+goal line=98 text="**A responsive layout** — sidebar navigation + content area — that degrades to a single column on small screens."
+non-goal line=105 text="**Authoring or editing documents.** docz-site is read-only; docs are created and mutated by the docz CLI in their source repos."
+non-goal line=107 text="**Storing or persisting source data.** No database; the site is a thin client over docz-api. (A bounded client-side query cache is in scope; durable storage is not.)"
+non-goal line=110 text="**Talking to GitHub for content.** Repo content always comes from docz-api. The GitHub App is docz-api's concern (DESIGN-0008); the site only uses GitHub as one *identity* provider."
+non-goal line=113 text="**Server-side markdown rendering** (rejected by Decision 3) and **reusing `mdp`** (its scope is single-user terminal preview)."
+non-goal line=115 text="**Replacing per-repo MkDocs/TechDocs.** docz's per-repo `wiki` output is for deep single-project browsing; docz-site is the org-wide cross-repo index. They are complementary."
+non-goal line=118 text="**Implementing the authorization policy.** docz-site renders what docz-api returns; the policy (GitHub repo access vs. OIDC group claims) lives in docz-api."
+
+question 1 line=630 options=3 title="Which front-end framework?"
+  unresolved
+
+question 2 line=639 options=3 title="Which markdown renderer library?"
+  unresolved
+
+question 3 line=648 options=3 title="SSR or SPA?"
+  unresolved
+
+question 4 line=656 options=3 title="How does the site integrate with Meilisearch search?"
+  unresolved
+
+question 5 line=667 options=3 title="HTML sanitization approach?"
+  unresolved
+
+question 6 line=678 options=3 title="Styling / design-system choice?"
+  unresolved
+
+question 7 line=688 options=3 title="Where does the OIDC/OAuth token exchange happen?"
+  unresolved
+
+question 8 line=699 options=3 title="How should docz's own ToC markers be handled?"
+  unresolved
+
+reference line=714 url=""
+  text="INV-0005 — \"docz-api and docz-site: centralized cross-repo docz registry and viewer\" (so…"
+
+reference line=716 url=""
+  text="DESIGN-0008 — docz-api (the service docz-site consumes: GitHub App ingestion, Postgres r…"
+
+reference line=719 url=""
+  text="DESIGN-0007 — the docz shared parsing library (`pkg/…` extracted from `internal/config…"
+
+reference line=723 url=""
+  text="DESIGN-0006 — custom document type support (why the registry and the site must be **type…"
+
+reference line=725 url=""
+  text="Meilisearch — full-text search + faceting backing docz-api's `/search`."
+
+reference line=726 url=""
+  text="markdown-it / react-markdown / remark — candidate client-side markdown renderers (Open Q…"
+
+reference line=728 url=""
+  text="DOMPurify — HTML sanitization for the reader's XSS surface (Open Question 5)."
+
+reference line=729 url=""
+  text="TanStack Query — client-side request cache / data layer."
+
+reference line=730 url=""
+  text="Playwright — end-to-end testing against a mocked/fixture docz-api."
