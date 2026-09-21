@@ -21,5 +21,5 @@ Design docs, plans, and implementation docs can reference investigations by ID
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
-| INV-0001 | Evaluate message queue options | Concluded | 2026-09-20 | Parity Fixture | [0001-evaluate-message-queue-options.md](0001-evaluate-message-queue-options.md) |
+| INV-0001 | Evaluate message queue options | Concluded | 2026-03-04 | Parity Fixture | [0001-evaluate-message-queue-options.md](0001-evaluate-message-queue-options.md) |
 <!-- END DOCZ AUTO-GENERATED -->

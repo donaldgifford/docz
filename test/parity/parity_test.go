@@ -251,7 +251,13 @@ func TestParity(t *testing.T) {
 		t.Fatalf("binary %s: %v", abs, err)
 	}
 
-	today := time.Now().Format("2006-01-02")
+	// UTC, because run() pins the child to TZ=UTC and the child is what
+	// stamps the date this normaliser has to match. Computing it in the
+	// runner's own zone instead makes the two agree only where local and UTC
+	// name the same day: every CI runner (UTC), and a workstation for part of
+	// the day. The rest of the time a capture bakes a literal date into the
+	// goldens and a replay misses one, which is how it was found.
+	today := time.Now().UTC().Format("2006-01-02")
 
 	for _, f := range fixtures() {
 		t.Run(f.name, func(t *testing.T) {

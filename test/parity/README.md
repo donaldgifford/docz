@@ -27,7 +27,7 @@ stays a source-only run and nothing in CI needs a binary until Phase 5 wires
 | go.mod checksum | `h1:YWffd55Zk1BGmaaw1cm4sPaIbnJuzi9wbRaBYtV7EnQ=` |
 | Toolchain | `go1.26.4` |
 | Platform | `darwin/arm64` |
-| Captured | 2026-09-20, IMPL-0018 Phase 0; re-captured the same day in Phase 1 |
+| Captured | 2026-09-20, IMPL-0018 Phase 0; re-captured the same day in Phase 1; re-captured 2026-09-21 in Phase 5 |
 | Cases | 213 across 7 fixtures |
 
 The Phase 1 re-capture changed only the size and digest on each recorded file:
@@ -35,6 +35,26 @@ the `markers` normaliser learned to take a marker's blank line with it, and
 sizes moved onto the normalised body. Every content line of every golden is
 byte-identical to the Phase 0 capture, and the goldens still come from the
 v1.2.2 binary, not from a v2 build.
+
+The Phase 5 re-capture fixed a date the suite could not survive. The
+`investigation` fixture's README carried a row dated 2026-09-20, the day the
+fixture was hand-written, in the vestigial second marker pair that issue #99
+left there — and because the index splice only ever rewrites the *first* pair,
+nothing would ever refresh it. On the capture day the `date` normaliser
+rewrote it to `$DATE`, so the golden recorded the size and digest of a body
+five bytes shorter than the file on disk; on every later day it recorded the
+file as it is. Eleven `investigation` cases failed the moment the calendar
+moved, on a file none of them touched.
+
+Two changes, so it cannot recur. The fixture's date is frozen to 2026-03-04,
+matching the document it names and every other fixture date. And `today` is
+now computed as `time.Now().UTC()`: `run` pins the child to `TZ=UTC` and the
+child is what stamps the date, so computing it in the runner's own zone made
+the two agree only where local and UTC name the same day — every CI runner,
+and a workstation for part of the day. `TestFixturesCarryNoCurrentDate` fails
+on any fixture file containing today's date, which is the day such a date
+would be introduced. Only the `investigation` README's size and digest and the
+three recorded copies of that row differ from the Phase 1 capture.
 
 `make parity-capture` installs the tag into a temporary `GOBIN` rather than
 trusting whatever `docz` is on `PATH`. The installed binary reports

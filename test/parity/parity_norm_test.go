@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRootNormalizer(t *testing.T) {
@@ -50,6 +51,46 @@ func TestRootNormalizer_ResolvedForm(t *testing.T) {
 		if got := n.Apply(form + "/docs"); got != "$ROOT/docs" {
 			t.Errorf("Apply(%q) = %q, want $ROOT/docs", form+"/docs", got)
 		}
+	}
+}
+
+// TestFixturesCarryNoCurrentDate guards the one way a fixture can make this
+// suite lie.
+//
+// The date normaliser rewrites today's date to $DATE on both sides, so a
+// checked-in fixture file whose own content happens to be dated today is
+// recorded one way on the day it was authored or captured and read another way
+// on every later day. The failure surfaces as a size and digest mismatch on a
+// file no case touched, which reads like a regression in whatever command the
+// case ran — the investigation fixture carried such a date for exactly this
+// reason, and it went unnoticed until the calendar moved.
+//
+// Fixture dates are data and belong in the past. Nothing here should ever need
+// to be today, so this passes every day rather than only most of them.
+func TestFixturesCarryNoCurrentDate(t *testing.T) {
+	t.Parallel()
+
+	// UTC, matching the zone the driver pins the child to and normalises in.
+	today := time.Now().UTC().Format("2006-01-02")
+
+	err := filepath.WalkDir("fixtures", func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		if strings.Contains(string(body), today) {
+			t.Errorf("%s contains today's date (%s); fixture dates must be fixed and in the past", path, today)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking fixtures: %v", err)
 	}
 }
 
