@@ -229,13 +229,43 @@ func TestDocument_CodeFamilies(t *testing.T) {
 
 		// open-questions.*
 		{
-			name: "open-questions.numbering: a gap",
+			name: "open-questions.numbering: a repeat",
+			body: goodFrontmatter +
+				"<!--docz:open-questions:start-->\n## Open Questions\n\n" +
+				"### 1. First?\n\n- a. Yes.\n\n### 1. Also first?\n\n- a. Yes.\n" +
+				"<!--docz:open-questions:end-->\n",
+			wantCode: "open-questions.numbering",
+			wantSev:  validate.Warning,
+		},
+		{
+			name: "open-questions.numbering: a reversal",
+			body: goodFrontmatter +
+				"<!--docz:open-questions:start-->\n## Open Questions\n\n" +
+				"### 2. Second?\n\n- a. Yes.\n\n### 1. First?\n\n- a. Yes.\n" +
+				"<!--docz:open-questions:end-->\n",
+			wantCode: "open-questions.numbering",
+			wantSev:  validate.Warning,
+		},
+		{
+			// A gap is what a document has after it resolves questions and
+			// keeps one for its alternatives, which the corpus does. It used
+			// to be a finding; reporting it told a document off for being
+			// tidy.
+			name: "open-questions: a gap is legitimate",
 			body: goodFrontmatter +
 				"<!--docz:open-questions:start-->\n## Open Questions\n\n" +
 				"### 1. First?\n\n- a. Yes.\n\n### 3. Third?\n\n- a. Yes.\n" +
 				"<!--docz:open-questions:end-->\n",
-			wantCode: "open-questions.numbering",
-			wantSev:  validate.Warning,
+		},
+		{
+			// The spelling 129 of the corpus's 607 option bullets use. The
+			// letter is inside the emphasis, and an anchored match dropped
+			// the option silently.
+			name: "open-questions: an option whose letter is emphasised counts",
+			body: goodFrontmatter +
+				"<!--docz:open-questions:start-->\n## Open Questions\n\n" +
+				"### 1. First?\n\n- **a. (Recommendation) Yes.**\n" +
+				"<!--docz:open-questions:end-->\n",
 		},
 		{
 			name: "open-questions.no-options: a question with none",

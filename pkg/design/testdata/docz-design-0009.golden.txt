@@ -22,28 +22,28 @@ non-goal line=113 text="**Server-side markdown rendering** (rejected by Decision
 non-goal line=115 text="**Replacing per-repo MkDocs/TechDocs.** docz's per-repo `wiki` output is for deep single-project browsing; docz-site is the org-wide cross-repo index. They are complementary."
 non-goal line=118 text="**Implementing the authorization policy.** docz-site renders what docz-api returns; the policy (GitHub repo access vs. OIDC group claims) lives in docz-api."
 
-question 1 line=630 options=3 title="Which front-end framework?"
+question 1 line=630 options=4 title="Which front-end framework?"
   unresolved
 
-question 2 line=639 options=3 title="Which markdown renderer library?"
+question 2 line=639 options=4 title="Which markdown renderer library?"
   unresolved
 
-question 3 line=648 options=3 title="SSR or SPA?"
+question 3 line=648 options=4 title="SSR or SPA?"
   unresolved
 
-question 4 line=656 options=3 title="How does the site integrate with Meilisearch search?"
+question 4 line=656 options=4 title="How does the site integrate with Meilisearch search?"
   unresolved
 
-question 5 line=667 options=3 title="HTML sanitization approach?"
+question 5 line=667 options=4 title="HTML sanitization approach?"
   unresolved
 
-question 6 line=678 options=3 title="Styling / design-system choice?"
+question 6 line=678 options=4 title="Styling / design-system choice?"
   unresolved
 
-question 7 line=688 options=3 title="Where does the OIDC/OAuth token exchange happen?"
+question 7 line=688 options=4 title="Where does the OIDC/OAuth token exchange happen?"
   unresolved
 
-question 8 line=699 options=3 title="How should docz's own ToC markers be handled?"
+question 8 line=699 options=4 title="How should docz's own ToC markers be handled?"
   unresolved
 
 reference line=714 url=""

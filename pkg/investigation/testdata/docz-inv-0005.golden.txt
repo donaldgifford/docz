@@ -53,28 +53,28 @@ finding line=227 body=1703 bytes title="Observation 5 — the hard part is visib
 finding line=257 body=367 bytes title="Observation 6 — why docz-site is not \"just MkDocs per repo\""
   "docz's existing `wiki` integration renders **one repo** as MkDocs/TechDocs. docz-site is d…"
 
-question 1 line=312 options=3 title="How does docz-api fetch repo content?"
+question 1 line=312 options=4 title="How does docz-api fetch repo content?"
   resolved=false
 
-question 2 line=320 options=3 title="Where is markdown rendered to HTML?"
+question 2 line=320 options=4 title="Where is markdown rendered to HTML?"
   resolved=false
 
-question 3 line=328 options=3 title="Which renderer?"
+question 3 line=328 options=4 title="Which renderer?"
   resolved=false
 
-question 4 line=336 options=3 title="What does \"version\" mean for a doc?"
+question 4 line=336 options=4 title="What does \"version\" mean for a doc?"
   resolved=false
 
-question 5 line=344 options=3 title="Which branch(es) are ingested?"
+question 5 line=344 options=4 title="Which branch(es) are ingested?"
   resolved=false
 
-question 6 line=351 options=3 title="What is the visibility / access model?"
+question 6 line=351 options=4 title="What is the visibility / access model?"
   resolved=false
 
-question 7 line=361 options=3 title="How does the API obtain the doc list without re-implementing docz?"
+question 7 line=361 options=4 title="How does the API obtain the doc list without re-implementing docz?"
   resolved=false
 
-question 8 line=370 options=3 title="Scope of the first deliverable?"
+question 8 line=370 options=4 title="Scope of the first deliverable?"
   resolved=false
 
 reference line=400 url="" text="docz `.docz.yaml` schema and type model — `internal/config`"

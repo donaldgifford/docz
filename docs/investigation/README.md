@@ -23,6 +23,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0008 | Last Updated frontmatter field: scope, git semantics, and effort | Concluded | 2026-09-12 | Donald Gifford | [0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md](0008-last-updated-frontmatter-field-scope-git-semantics-and-effort.md) |
 | INV-0009 | ToC regeneration in docz update and markdownlint MD051 | Concluded | 2026-09-13 | Donald Gifford | [0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md](0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md) |
 | INV-0010 | IMPL plan parse and write-back API for doczcore (issue 100) | Concluded | 2026-09-13 | Donald Gifford | [0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md](0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md) |
+| INV-0011 | Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade | Open | 2026-09-21 | Donald Gifford | [0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md](0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
