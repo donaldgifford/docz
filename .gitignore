@@ -79,8 +79,11 @@ coverage/
 test-results/
 playwright-report/
 
-# Generated TS client from api/openapi.yaml (bun run gen-api)
-src/api/__generated__/
+# Generated TS client from api/openapi.yaml (bun run gen-api).
+# Unanchored on purpose: a pattern with a slash in the middle is relative to
+# this file's directory, so the docz-site spelling `src/api/__generated__/`
+# stops matching once the app lives under ui/.
+**/src/api/__generated__/
 
 # Local environment (secrets live here, never in mise.toml)
 .env.local
