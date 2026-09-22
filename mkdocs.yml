@@ -25,6 +25,7 @@ nav:
         - 'DESIGN-0013: Library-first docz: per-type document packages and a core API the CLI can sit on': design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md
         - 'DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap': design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md
         - 'DESIGN-0015: Structured regions and docz validate': design/0015-structured-regions-and-docz-validate.md
+        - 'DESIGN-0016: Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes': design/0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
