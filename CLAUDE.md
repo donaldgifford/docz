@@ -30,9 +30,12 @@ than name: `make release TAG=vX` is `just release vX` (a positional parameter),
 and `make parity BIN=<path>` is `just bin=<path> parity` (a variable override,
 lower-case because just variables are). `just --list` replaces the awk `help`
 target, and the `log-%` banner is gone — just echoes each command it runs, which
-is what the banner was approximating. The CI runner gets `just` from
-`extractions/setup-just`; `mise.toml` arrives with the docz-api move
-(ADR-0004 Open Question 2), not here.
+is what the banner was approximating. `mise.toml` carries `just` for local
+development, and CI installs it with `extractions/setup-just` rather than
+through mise — this repository's CI has never used mise-action, pinning each
+tool with its own action (`setup-go`, `golangci-lint-action`), and matching
+that was the smaller change. `.makefmt.yml`, the `makefmt` tool entry, and
+`checkmake` went with the Makefile.
 
 The eleven packages this repo made public on the v2 line are **experimental
 until v2.0.0 proper ships**: each one's doc comment carries an `EXPERIMENTAL`
