@@ -7,6 +7,8 @@
     "go-development@donaldgifford-claude-skills": true,
     "git-workflow@donaldgifford-claude-skills": true,
     "git-cliff@donaldgifford-claude-skills": true,
+    "docker@donaldgifford-claude-skills": true,
+    "kubebuilder@donaldgifford-claude-skills": true,
     "systems-programming@donaldgifford-claude-skills": true,
     "makefiles@donaldgifford-claude-skills": true,
     "justfile@donaldgifford-claude-skills": true,
@@ -15,42 +17,62 @@
     "shell-scripting@donaldgifford-claude-skills": true,
     "skill-creator@donaldgifford-claude-skills": true,
     "donald-loop@donaldgifford-claude-skills": true,
+    "helm@donaldgifford-claude-skills": true,
+    "typescript@donaldgifford-claude-skills": true,
     "todo-comments@donaldgifford-claude-skills": true,
     "renovate@donaldgifford-claude-skills": true,
     "docz@donaldgifford-claude-skills": true
   },
   "permissions": {
     "allow": [
-      "Bash(git checkout *)",
       "Bash(docz --help)",
       "Bash(docz create *)",
       "Bash(docz list *)",
       "Bash(docz template *)",
       "Bash(docz update *)",
+      "Bash(docz validate *)",
+
       "Bash(git add *)",
-      "Bash(git commit -m ' *)",
-      "Bash(git push *)",
-      "Bash(git pull *)",
+      "Bash(git checkout *)",
       "Bash(git commit *)",
-      "Bash(gh run *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+
+      "Bash(gh api *)",
+      "Bash(gh issue *)",
+      "Bash(gh label *)",
       "Bash(gh pr *)",
       "Bash(gh release *)",
-      "Bash(docker version *)",
-      "Bash(docker buildx *)",
-      "Bash(go version *)",
+      "Bash(gh run *)",
+
+      "Bash(go build *)",
+      "Bash(go doc *)",
+      "Bash(go env *)",
+      "Bash(go get *)",
       "Bash(go list *)",
       "Bash(go mod *)",
-      "Bash(go get *)",
-      "Bash(go doc *)",
-      "Bash(go build *)",
+      "Bash(go run *)",
+      "Bash(go test *)",
+      "Bash(go tool *)",
+      "Bash(go version *)",
       "Bash(go vet *)",
-      "Bash(go env *)",
+
+      "Bash(just *)",
+      "Bash(make *)",
+
+      "Bash(docker buildx *)",
+      "Bash(docker version *)",
+
       "Bash(actionlint *)",
-      "Bash(yamllint *)",
+      "Bash(golangci-lint *)",
       "Bash(markdownlint-cli2 *)",
+      "Bash(npx --yes markdownlint-cli *)",
       "Bash(prettier *)",
-      "WebFetch(domain:github.com)",
-      "Bash(just *)"
+      "Bash(yamllint *)",
+
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
