@@ -28,7 +28,7 @@ README index tables up to date.
 # Build from source
 git clone https://github.com/donaldgifford/docz.git
 cd docz
-make build
+just build
 # Binary: build/bin/docz
 
 # Or install directly
@@ -763,15 +763,15 @@ Semver covers exported identifiers under `pkg/` only; `cmd/`, CLI output
 text, and embedded template contents are not part of the contract. There is
 no `internal/` left. See `go doc` on each package for the full API.
 
-## Makefile Integration
+## Task Runner Integration
 
-After `docz init`, the Makefile in this repository includes convenience targets:
+After `docz init`, `docz.just` in this repository includes convenience recipes:
 
 ```bash
-make docs-init    # docz init
-make docs-update  # docz update (all types)
-make docs-list    # docz list
-make docs-config  # docz config
+just docs-init    # docz init
+just docs-update  # docz update (all types)
+just docs-list    # docz list
+just docs-config  # docz config
 ```
 
 ## Author Resolution

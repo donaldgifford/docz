@@ -27,10 +27,12 @@ yamlfmt = "0.20.0"
 yamllint = "1.37.1"
 # renovate: datasource=npm depName=prettier
 prettier = "3.7.4"
-# renovate: datasource=github-releases depName=donaldgifford/makefmt
-"github:donaldgifford/makefmt" = "latest"
-# renovate: datasource=github-releases depName=mrtazz/checkmake
-checkmake = "latest"
+
+# Task runner — replaced make in ADR-0004 Decision 4. CI installs it with
+# extractions/setup-just rather than through mise, matching how this
+# repository's CI pins every other tool (setup-go, golangci-lint-action).
+# renovate: datasource=github-releases depName=casey/just
+just = "latest"
 
 # tools
 # renovate: datasource=github-releases depName=mikefarah/yq

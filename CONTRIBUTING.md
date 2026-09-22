@@ -20,22 +20,23 @@ Use [GitHub Issues](https://github.com/donaldgifford/docz/issues) for:
 
 - Go 1.22 or later
 - `golangci-lint` (see [installation](https://golangci-lint.run/usage/install/))
-- `make`
+- `just` (see [installation](https://just.systems/man/en/packages.html)) —
+  replaced `make` in ADR-0004; there is no `Makefile` and no shim
 
 ```bash
 git clone https://github.com/donaldgifford/docz.git
 cd docz
 go mod download
-make build   # builds build/bin/docz
-make test    # runs all tests
-make lint    # runs golangci-lint
+just build   # builds build/bin/docz
+just test    # runs all tests
+just lint    # runs golangci-lint
 ```
 
 ### Verify your setup
 
 ```bash
 ./build/bin/docz version
-make ci   # lint + test + build + license-check must all pass
+just ci   # the full gate: lint + test + test-consumer + parity + validate + build + licences
 ```
 
 ## Making Changes
@@ -56,7 +57,7 @@ Types: `feat`, `fix`, `docs`, `chore`, `refactor`
 
 - Keep changes focused. One logical change per PR.
 - Add or update tests for any code you change.
-- Run `make lint` and `make test` before pushing.
+- Run `just lint` and `just test` before pushing.
 
 ### 3. Commit
 
@@ -89,7 +90,7 @@ Push your branch and open a PR against `main`. The PR description should:
 ### Go style
 
 This project follows the [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md)
-and enforces it via `golangci-lint`. Run `make lint` before pushing.
+and enforces it via `golangci-lint`. Run `just lint` before pushing.
 
 Key conventions:
 
@@ -105,8 +106,8 @@ Every exported function in `internal/` must have at least one test. The coverage
 target for `internal/` packages is >80%.
 
 ```bash
-make test              # all tests
-make test-coverage     # tests with coverage report
+just test              # all tests
+just test-coverage     # tests with coverage report
 go test -run TestXxx   # run a specific test
 go test -update        # update golden files
 ```
@@ -114,9 +115,9 @@ go test -update        # update golden files
 ### Linting
 
 ```bash
-make lint        # run golangci-lint (must pass before merging)
-make lint-fix    # auto-fix what can be auto-fixed
-make fmt         # run gofmt + goimports
+just lint        # run golangci-lint (must pass before merging)
+just lint-fix    # auto-fix what can be auto-fixed
+just fmt         # run gofmt + goimports
 ```
 
 ## Adding a New Built-In Document Type
@@ -189,13 +190,16 @@ minor version bump and a note in the changelog.
 
 ## CI
 
-All PRs must pass `make ci`:
+All PRs must pass `just ci`:
 
-```
-lint     → golangci-lint (0 issues)
-test     → go test -race ./... (all green)
-build    → go build ./... (no errors)
-license  → go-licenses check
+```text
+lint           → golangci-lint (0 issues)
+test           → go test -race ./... (all green)
+test-consumer  → the external-module smoke test (test/consumer, own go.mod)
+parity         → replay the v1.2.2 CLI goldens (test/parity)
+validate       → docz validate over this repo's own docs/, non-strict
+build          → go build ./... (no errors)
+license-check  → go-licenses check
 ```
 
 CI runs on every push to a PR branch. Fix failures before requesting review.
