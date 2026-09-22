@@ -42,7 +42,9 @@ for both charts — with `just` as the task runner and `go 1.26.5`. The one API
 change either move needs is an additive `config.ParseBytes`. The 43 incoming
 docz documents are archived verbatim under `docs/archive/` and none are
 renumbered, because their IDs collide wholesale and 757 of their 953
-cross-references are ambiguous across the two namespaces. This fills the gap
+cross-references are ambiguous across the two namespaces; the four that are
+genuinely unfinished get a successor document here that cites the archived
+original rather than replacing it. This fills the gap
 ADR-0002 Decision 6 left open deliberately, and amends it in three places: the
 server is `internal/`'s documented reason to exist, `pkg/` may no longer import
 `internal/`, and two charts ship side by side rather than one.
@@ -275,7 +277,8 @@ this ADR records what has to hold for it to be survivable.
 | docz-api paths already matching the target layout | `internal/`, `cmd/docz-api/`, `api/`, `charts/docz-api/` | this ADR, Decision 7 |
 | docz documents in the incoming repositories | 43 (docz-api 24, docz-site 19), every ID colliding with one of docz's own | INV-0011 Obs 11 |
 | Doc-ID references inside them | 953, of which **757 are ambiguous** across the two namespaces | Open Question 1 |
-| Incoming documents already finished | 34 of 43 (Concluded, Completed, Implemented, Approved) | Open Question 1 |
+| Incoming documents already finished | 34 of 43 by status; **39 of 43** once five stale-Draft IMPLs are measured against their own checkboxes | Open Question 1 |
+| Incoming documents genuinely unfinished | 4 — docz-api INV-0002/INV-0003, docz-site DESIGN-0001/DESIGN-0005 | Open Question 1 |
 | Duplicated root files and directories | 12 files, 2 directories | INV-0011 Obs 11 |
 | Secrets in either repository's tracked history | none; `deploy/secrets/` and `.env.local` are gitignored and appear in no commit | INV-0011 Obs 11 |
 | Repository visibility | all three public | `gh repo view` |
@@ -369,6 +372,12 @@ this ADR records what has to hold for it to be survivable.
 - **`ui/` is invisible to Go tooling.** It has no `go.mod` and no Go files.
 - **The old repositories become read-only archives** after their history is
   merged, rather than the historical record (Decision 7).
+- **Unfinished work is carried by a successor, not a move.** Four documents
+  get one; the archived originals stay put and gain a dated pointer forward,
+  so no reference to them changes meaning. Five more looked unfinished and
+  were measured complete — their status lines are corrected before archiving,
+  which is what keeps the archive an accurate record rather than a snapshot of
+  bookkeeping that fell behind.
 - **CLI behaviour is untouched.** Nothing in this ADR changes a command, a
   flag, an exit code, or `.docz.yaml`, and the parity suite keeps recording
   v1.2.2 behaviour.
@@ -449,12 +458,43 @@ IMPL numbers — resolve in the old namespace.
 > value is as evidence of what was true when it was written.
 >
 > So both trees land verbatim under `docs/archive/api/` and `docs/archive/ui/`,
-> and **nothing is renumbered, promoted, or rewritten** — not even the nine
-> still-live documents, since a hybrid would need a mapping table and would
-> break exactly the references the archive exists to keep valid. Work that
-> continues gets a **new** docz document in this repository's sequence, citing
-> the archived one. Zero renames, zero reference rewrites, and `git log`
+> and **nothing is renumbered or promoted** — not even the still-live
+> documents, since promoting one breaks exactly the references the archive
+> exists to keep valid. Zero renames, zero reference rewrites, and `git log`
 > survives on every file.
+>
+> **Unfinished work gets a successor, not a promotion.** The archived original
+> stays where it is, so every reference to it still resolves; a **new** docz
+> document in this repository's sequence carries the work forward and cites the
+> archived one, and the archived one gets a one-line dated pointer forward —
+> the same supersession habit ADR-0001 and DESIGN-0013 already use here. The
+> archive is then navigable in both directions without a single ID changing.
+>
+> **A status sweep comes first, in the home repositories, before the merge.**
+> Nine documents look live by status; measured against their own checkboxes,
+> five of them are finished and only their status is stale:
+>
+> | Document | Status | Tasks done | Open |
+> | --- | --- | --- | --- |
+> | docz-api IMPL-0001 | Draft | 58 | 1 — `~~(Optional) Cache … in Redis~~`, struck out |
+> | docz-api IMPL-0002 | Draft | 32 | **0** |
+> | docz-api IMPL-0006 | In Progress | 31 | 1 — `**deferred - blocked, no cluster available**` |
+> | docz-site IMPL-0001 | Draft | 69 | **0** |
+> | docz-site IMPL-0002 | Draft | 38 | **0** |
+>
+> Both stragglers are explicitly dispositioned rather than pending, so all five
+> are `docz status set … Completed` before they are archived. Freezing a stale
+> Draft would make the archive claim work is outstanding that shipped a year
+> ago, and would earn five successor documents that have nothing to carry.
+>
+> That leaves **four genuinely unfinished documents**, and they are the only
+> ones that get a successor: docz-api `INV-0002` and `INV-0003` (both Open)
+> and docz-site `DESIGN-0001` (Draft) and `DESIGN-0005` (In Review). Writing
+> them belongs to each move's own IMPL, not to a separate unit.
+>
+> One word to keep honest: "verbatim" means the bodies are untouched. The five
+> status lines and the four dated pointer blocks are the only edits, and they
+> are record-keeping rather than rewriting.
 >
 > Three mechanical consequences for the move's own design. They are not under
 > a type directory, so `docz update` and `docz validate` never see them —

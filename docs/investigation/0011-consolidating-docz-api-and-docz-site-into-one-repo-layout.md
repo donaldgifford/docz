@@ -390,8 +390,18 @@ because a wrong one points at a different *real* document rather than
 dangling.
 
 What makes it moot rather than expensive: **34 of the 43 are finished** —
-Concluded, Completed, Implemented, or Approved. ADR-0004 Open Question 1
-resolved to archive all 43 verbatim and renumber none.
+Concluded, Completed, Implemented, or Approved. And of the nine that look live,
+five are IMPLs whose *status* is stale rather than whose work is outstanding:
+docz-api IMPL-0001/0002/0006 and docz-site IMPL-0001/0002 carry 58/32/31/69/38
+completed tasks against 0, 0, and two explicitly-dispositioned stragglers (one
+struck out as optional, one marked deferred and blocked on a cluster). Only
+four documents are genuinely unfinished — docz-api INV-0002 and INV-0003,
+docz-site DESIGN-0001 and DESIGN-0005.
+
+ADR-0004 Open Question 1 resolved to archive all 43 verbatim, renumber none,
+correct the five stale statuses before the merge, and give each of the four a
+successor document in docz's sequence that cites the archived original rather
+than replacing it.
 
 The root files collide the same way and were equally invisible from a symbol
 inventory: two `Dockerfile`s, two `ct.yaml`s, two `cliff.toml`s, two
