@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0016
 title: "Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes"
-status: Draft
+status: Approved
 author: Donald Gifford
 created: 2026-09-22
 ---
@@ -230,7 +230,7 @@ root namespace; make the arriving halves modules:
 ```just
 import 'docz.just'          # build, test, lint, parity, validate — unchanged
 mod? api 'api.just'         # just api build, just api test-integration
-mod? ui  'ui/ui.just'       # arrives at beta.4; cwd is ui/
+mod? ui  'ui.just'          # arrives at beta.4; cwd is ui/ by its own setting
 
 ci: lint test test-consumer parity validate build license-check \
     api::lint api::test api::helm-lint
@@ -242,7 +242,7 @@ flowchart TD
   R["justfile<br/>(composition + gates)"]
   R -->|"import"| D["docz.just<br/>flat: build · test · lint<br/>parity · validate · release"]
   R -->|"mod?"| A["api.just<br/>namespaced: api::build<br/>api::test-integration · api::helm-*"]
-  R -->|"mod?"| U["ui/ui.just<br/>namespaced: ui::build<br/>cwd = ui/ · lands at beta.4"]
+  R -->|"mod?"| U["ui.just<br/>namespaced: ui::build<br/>set working-directory := ui<br/>lands at beta.4"]
   D --> G["ci · check<br/>span every half"]
   A --> G
   U -.->|beta.4| G
@@ -254,9 +254,11 @@ depending on `api::lint` runs it with the repository root as its working
 directory; and `mod?` means the root `justfile` loads before `api.just` exists,
 which is what lets this land in stages.
 
-`ui/ui.just` gets `cwd = ui/` for free, because a module in a subdirectory runs
-there — correct for a Bun application and worth recording now, since it is the
-reason `ui.just` will live inside `ui/` rather than at the root.
+`ui.just` needs `cwd = ui/` for its Bun commands, and there are two spellings
+that produce it: put the file inside `ui/` (a module in a subdirectory runs
+there) or keep it at the root with `set working-directory := "ui"`. Both were
+verified to print `cwd=ui`. Open Question 1 takes the second, so the three
+task-runner files sit together at the root as ADR-0004 Decision 4 describes.
 
 Two consequences to write down. `api.just` arrives **essentially verbatim**: a
 module has its own variable namespace, so not one of the twelve variables needs
@@ -673,19 +675,25 @@ already correct, and so every phase before it is independently revertible.
 
 | Phase | Lands | Revertible | Gate |
 | --- | --- | --- | --- |
-| 0 | `go 1.26.5`; `.checkmake.ini` deleted; `just` composition reshaped to §2 with `mod?` stubs | yes | `just ci` |
+| 0 | `go 1.26.5`; `.checkmake.ini` deleted; root `justfile` reshaped to `import 'docz.just'` + `mod?` stubs (OQ 1) | yes | `just ci` |
 | 1 | `config.ParseBytes` + its tests, in docz alone | yes | `just ci`, `just test-consumer` |
-| 2 | Status sweep + 2 forward pointers **in docz-api**; then the `filter-repo` clone and the `--allow-unrelated-histories` merge, root files and `.github/` resolved | as one merge commit | `go build ./...` only — imports are still wrong |
-| 3 | Import rewrite (§5); `go mod tidy`; `api.just`; `internal/doczcontract` deleted, its one test relocated; `ParseBytes` call site swapped | yes | `just ci` + `just api::test` |
-| 4 | `layer_test` rule; `docs/archive/api/README.md`; wiki/`api:` excludes per OQ 4; successors for INV-0002 and INV-0003 | yes | `just ci`, `just validate` |
-| 5 | `v2.0.0-beta.3` cut by hand from the merge commit | n/a | `prerelease.yml` |
+| 2 | Status sweep + 2 forward pointers **in docz-api**; `filter-repo` clone (incl. `Dockerfile` → `Dockerfile.api`, OQ 5); `--allow-unrelated-histories` merge; root files, `.github/`, and the `cliff.toml` graft rule (OQ 3) resolved | as one merge commit | **red by decision** (OQ 6): `graft` label skips the Go jobs |
+| 3 | Import rewrite (§5); `go mod tidy`; `api.just`; `internal/doczcontract` deleted, its one test relocated; `ParseBytes` call site swapped; `.golangci.yml` union to a zero baseline (OQ 2), `golines` reflow as its own commit | yes | `just ci` + `just api::test`; `graft` label removed |
+| 4 | `layer_test` rule; `docs/archive/api/{README,CHANGELOG}.md`; `wiki.exclude` + `api.exclude` set together (OQ 4); `prerelease.yml` calls `ghcr.yml`; successors for INV-0002 and INV-0003 | yes | `just ci`, `just validate` |
+| 5 | `v2.0.0-beta.3` cut by hand from the merge commit | n/a | `prerelease.yml`; then verify the published image, the wiki, and the `api:` listing (OQ 4) |
 
 Phase 2 is the only one that cannot be split, and it is deliberately the phase
 with the weakest gate: after an unrelated-histories merge the tree has 44 Go
 files with unresolvable imports, so `go build ./...` failing is the *expected*
 state and Phase 3 is what makes it green. Landing a knowingly-red commit is the
 cost of keeping the graft as one reviewable merge; the alternative is a Phase 2
-that also does the rewrite, which is a PR nobody can read.
+that also does the rewrite, which is a PR nobody can read. Open Question 6
+takes that trade and pins the mechanism: a `graft` label the Go jobs check,
+removed when Phase 3 lands.
+
+**The docz-api repository is not touched between Phases 2 and 5**, other than
+the status sweep and the two forward pointers that Phase 2 opens with. Those
+edits land there first precisely so the clone that follows carries them.
 
 **Rollback.** Before Phase 5 the whole move is `git revert -m 1` of Phase 2's
 merge commit plus the ordinary reverts of 3 and 4. After the beta tag it is a
@@ -708,6 +716,35 @@ not a task here.
 27 names collide and `just` treats either kind as a parse-time error (§2). This
 is the one blocker in ADR-0004 Decision 4 as written, so it has to be answered
 before Phase 0.
+
+> **Resolved 2026-09-22: (a).** The end state is the three files ADR-0004
+> Decision 4 names — `docz.just`, `api.just`, `ui.just` — all at the repository
+> root beside the `justfile`, composed as:
+>
+> ```just
+> import  'docz.just'        # flat: build · test · lint · parity · validate
+> mod? api 'api.just'        # just api build · just api test-integration
+> mod? ui  'ui.just'         # just ui build · set working-directory := "ui"
+> ```
+>
+> Only the *addressing* is asymmetric: `docz.just`'s recipes keep the root
+> namespace so every command PR #118 documented still works, and the two
+> arriving halves are namespaced so none of their 27 colliding names has to be
+> renamed. A module owns its variables, so `api.just` is docz-api's `justfile`
+> under a new name and nothing else.
+>
+> One correction to §2, which had `ui.just` living inside `ui/`. A module in a
+> subdirectory gets that directory as its working directory for free, which is
+> what a Bun application needs — but `set working-directory := "ui"` in a
+> root-level `ui.just` produces **exactly the same `cwd`** (verified on just
+> 1.51.0, both spellings print `cwd=ui`). One declared line is worth keeping the
+> three task-runner files together where a reader finds them, and it is what
+> Decision 4 literally describes.
+>
+> Two settings notes for Phase 0: a module carries its own `set shell`, so
+> `api.just` keeps docz-api's verbatim and the root `justfile` does not have to
+> reach into it; and `mod?` makes both optional, so the root file loads today,
+> before either file exists.
 
 - a. **Flat-import `docz.just`, `mod?` the arriving halves.** `just build`,
   `just test`, `just lint`, `just ci` keep working exactly as PR #118
@@ -736,6 +773,28 @@ before Phase 0.
 is 106 Go files that have never been linted by docz's config, and docz's config
 is tuned for a library (`TestLayerRules` territory — no globals, package
 comments everywhere, `lll` off in favour of `golines`).
+
+> **Resolved 2026-09-22: (a) — one config, union of enabled linters,
+> path-scoped `issues.exclude-rules` for the server's legitimate exceptions.**
+> The split-the-difference option I floated (land two configs, converge later
+> in a follow-up issue) is **declined**: a convergence issue filed against a
+> working two-config setup is an issue that stays open, and the repository
+> would keep two answers to "how is this code linted" indefinitely.
+>
+> The cost lands squarely on Phase 3 and is named so nobody is surprised by it:
+> the first `golangci-lint run ./...` over `internal/` is expected to produce
+> tens to low hundreds of findings, and **Phase 3 is not done until each one is
+> either fixed or excluded with a written reason**. An `exclude-rules` entry
+> with no comment is not an exclusion, it is a deferral.
+>
+> Two consequences for the IMPL. The union is the strict direction, so the
+> baseline is captured *before* any fixing (`golangci-lint run ./... > baseline`
+> on the merge commit) and the phase closes when the count reaches zero — a
+> number to work against beats a judgement call about when it feels clean
+> enough. And `golines` runs as a formatter under golangci-lint here
+> (`.golangci.yml:288`), so the server's 106 files get reflowed on first
+> `just fmt`; that reflow is its own commit, kept out of the findings diff so a
+> reviewer can read each.
 
 - a. **One config, union of enabled linters, with `issues.exclude-rules`
   scoped by path for the server's legitimate exceptions.** One source of truth,
@@ -767,6 +826,20 @@ issue — is a legitimate answer and would be option (e) if you want it.
 a workflow that regenerates the changelog from git history on every push to
 main. After the graft, that history contains both repositories' commits.
 
+> **Resolved 2026-09-22: (a).** docz's `CHANGELOG.md` stays the only one;
+> docz-api's moves to `docs/archive/api/CHANGELOG.md` verbatim, which is what
+> the archive is for — a record of what a separate project released, under the
+> namespace rule that already governs everything else in that directory.
+>
+> The `cliff.toml` rule is a **hard requirement of Phase 2, not a tidiness
+> item**. `changelog-regen.yml` arrives with docz-api and runs on every push to
+> `main`; the first run after the graft sees 161 commits that have never
+> appeared in docz's changelog and, absent a rule, files them under docz's
+> version headings — where `v1.8.2` would mean docz-api's and `v1.2.2` docz's,
+> in one list. The commit-parser therefore skips everything reachable only
+> through the grafted parent, and the IMPL verifies it by running the regen
+> locally against the merge commit before the workflow ever fires on `main`.
+
 - a. **Keep docz's `CHANGELOG.md` as the only one; move docz-api's to
   `docs/archive/api/CHANGELOG.md` verbatim.** The archive already exists for
   exactly this — a record of what a separate project released — and one
@@ -795,6 +868,27 @@ separately: `ghcr.yml`/`ecr.yml` are `workflow_call` only, invoked by
 so **no container is published for a beta today**. `charts/docz-api` would then
 reference an image tag that does not exist.
 
+> **Resolved 2026-09-22: (a).** Both halves.
+>
+> The archive is excluded from `wiki.exclude` **and** `api.exclude`, as a pair
+> and in the same commit. It stays a git-level record — readable in the
+> repository, absent from the rendered wiki and from what docz-api publishes —
+> which is what a read-only archive should mean, and it keeps 43 repeated IDs
+> out of a nav that is already 54 pages. Option (c)'s warning applies to (a)
+> too: the two settings are only correct together, so the IMPL sets them in one
+> change and a test asserts neither lists a path the other does not.
+>
+> `prerelease.yml` gains a job calling `ghcr.yml` with the beta tag, so
+> `v2.0.0-beta.3` produces an image and the chart in the same tag references
+> something real. The ECR arm stays as docz-api has it — gated on
+> `vars.ECR_PUBLISH_ENABLED` — so it remains off until that variable is set and
+> no credential is needed to cut a beta.
+>
+> This is the one resolution that changes what the outside world sees, so it is
+> also the one to check after beta.3 rather than assume: pull the published
+> image by its beta tag, and fetch the wiki and the `api:` listing and confirm
+> neither returns an archived document.
+
 - a. **Exclude the archive from both `wiki.exclude` and `api.exclude`; teach
   `prerelease.yml` to call `ghcr.yml` with the beta tag.** The archive stays a
   git-level record — navigable in the repository, absent from the rendered
@@ -820,6 +914,12 @@ there is no UI, so the rename produces a `.api` suffix with nothing to
 distinguish it from for a whole beta cycle, and `docker-bake.hcl`,
 `compose.yaml`, `ci.yml`'s `docker-build` job, and `deploy/` all name the file.
 
+> **Resolved 2026-09-22: (a) — rename in Phase 2**, in the `filter-repo` pass
+> rather than afterwards, so the history follows the file and `git log
+> Dockerfile.api` reaches back through docz-api's commits. The five referencing
+> sites are updated in the same phase, and `.dockerignore` is checked with them
+> since it is the one that fails quietly rather than loudly.
+
 - a. **Rename now.** It is the decided end state, it is five references, and
   doing it inside a PR that is already touching all five is free. A beta with
   a lonely `.api` suffix is a smaller cost than a rename in the middle of the
@@ -835,6 +935,25 @@ The graft (Phase 2) leaves 44 Go files with unresolvable imports; Phase 3 fixes
 them. So either Phase 2 merges red, or it absorbs the rewrite and becomes a PR
 of roughly 161 grafted commits plus 107 edited import lines plus 20 reconciled
 root files.
+
+> **Resolved 2026-09-22: (a) — merge Phase 2 red**, keeping the graft as one
+> `git revert -m 1`-able merge commit. That property is worth more on the only
+> irreversible step than an unbroken CI history is.
+>
+> The mechanism has to be explicit rather than improvised, because "CI was red
+> and we merged anyway" is a habit and not a decision. Phase 2's PR carries a
+> **`graft` label**; `ci.yml`'s Go jobs (`lint`, `test-go`, `build`) gain
+> `if: !contains(github.event.pull_request.labels.*.name, 'graft')`; and the
+> label is removed the moment Phase 3 lands, which is also what re-arms the
+> jobs. `Check Required Labels` still runs, so `dont-release` is still
+> enforced on that PR.
+>
+> Two guards, since a skipped gate is only acceptable if something else is
+> watching. The label is scoped to this one PR by review, and Phase 3's gate is
+> the full `just ci` **plus** `just api::test` — it does not merely restore
+> green, it is the first time both halves have ever been tested together, and
+> that is the real acceptance of the graft. `main` is knowingly red for the
+> span between two PRs, and no beta is cut from inside it.
 
 - a. **Merge Phase 2 red, with CI's Go jobs skipped by an explicit path/label
   condition and the reason in the PR body.** The graft stays one reviewable
