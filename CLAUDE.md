@@ -25,21 +25,22 @@ is no shim. Most old targets now fail loudly (`No rule to make target 'ci'`),
 but `make build` and `make test` **exit 0 and do nothing**: `build/` and `test/`
 are real directories, so make reads each as an up-to-date target needing no
 rule. Muscle memory gets a silent no-op there, not an error. The root `justfile`
-is composition
-only: `set shell`, the imports, `_default` (which is `just --list`), and the two
-gates `ci` and `check`. Every docz recipe lives in `docz.just`; `api.just` and
-`ui.just` are **optional imports** (`import?`) that start working the moment
-those files land with docz-api and docz-site. Two forms changed shape rather
-than name: `make release TAG=vX` is `just release vX` (a positional parameter),
-and `make parity BIN=<path>` is `just bin=<path> parity` (a variable override,
-lower-case because just variables are). `just --list` replaces the awk `help`
-target, and the `log-%` banner is gone — just echoes each command it runs, which
-is what the banner was approximating. `mise.toml` carries `just` for local
-development, and CI installs it with `extractions/setup-just` rather than
-through mise — this repository's CI has never used mise-action, pinning each
-tool with its own action (`setup-go`, `golangci-lint-action`), and matching
-that was the smaller change. `.makefmt.yml`, the `makefmt` tool entry, and
-`checkmake` went with the Makefile.
+is composition only: `set shell`, the imports, `_default` (which is
+`just --list`), and the two gates `ci` and `check`. Every docz recipe lives in
+`docz.just`; `api.just` and `ui.just` are **optional imports** (`import?`) that
+start working the moment those files land with docz-api and docz-site. Two forms
+changed shape rather than name: `make release TAG=vX` is `just release vX` (a
+positional parameter), and `make parity BIN=<path>` is `just bin=<path> parity`
+(a variable override, lower-case because just variables are). `just --list`
+replaces the awk `help` target, and the `log-%` per-target banner is gone with
+nothing in its place: every recipe line is prefixed `@`, so just echoes nothing,
+and `lint` and `license-check` run silently to completion — the `✓` lines are
+each recipe's own, and `just --dry-run <recipe>` is how you see the commands
+without running them. `mise.toml` carries `just` for local development, and CI
+installs it with `extractions/setup-just` rather than through mise — this
+repository's CI has never used mise-action, pinning each tool with its own action
+(`setup-go`, `golangci-lint-action`), and matching that was the smaller change.
+`.makefmt.yml`, the `makefmt` tool entry, and `checkmake` went with the Makefile.
 
 The eleven packages this repo made public on the v2 line are **experimental
 until v2.0.0 proper ships**: each one's doc comment carries an `EXPERIMENTAL`
