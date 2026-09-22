@@ -30,6 +30,7 @@
       "Bash(docz list *)",
       "Bash(docz template *)",
       "Bash(docz update *)",
+      "Bash(docz validate *)",
 
       "Bash(git add *)",
       "Bash(git checkout *)",
@@ -39,6 +40,7 @@
       "Bash(git push *)",
 
       "Bash(gh api *)",
+      "Bash(gh issue *)",
       "Bash(gh label *)",
       "Bash(gh pr *)",
       "Bash(gh release *)",
