@@ -21,7 +21,11 @@ just ci             # lint + test + test-consumer + parity + validate + build + 
 ```
 
 `just` replaced `make` (ADR-0004 Decision 4) and the `Makefile` is gone — there
-is no shim, so `make <anything>` now fails. The root `justfile` is composition
+is no shim. Most old targets now fail loudly (`No rule to make target 'ci'`),
+but `make build` and `make test` **exit 0 and do nothing**: `build/` and `test/`
+are real directories, so make reads each as an up-to-date target needing no
+rule. Muscle memory gets a silent no-op there, not an error. The root `justfile`
+is composition
 only: `set shell`, the imports, `_default` (which is `just --list`), and the two
 gates `ci` and `check`. Every docz recipe lives in `docz.just`; `api.just` and
 `ui.just` are **optional imports** (`import?`) that start working the moment
