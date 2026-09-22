@@ -793,7 +793,13 @@ three units of work.
    where this investigation expected length — the expensive layout option was
    declined — and grew in the place this investigation did not look, carrying
    four open questions of its own about the incoming documents, the root files,
-   the contract tests, and CI cost.
+   the contract tests, and CI cost. **All four were resolved on 2026-09-22 and
+   the ADR is Accepted**: archive all 43 documents verbatim with successors for
+   the four that are unfinished, one of each root file with the `.gitignore`
+   merge called out as a security task, **delete `internal/doczcontract`** with
+   the pin it guarded (its coverage already lives in `test/consumer` and the
+   packages' own tests), and path-filtered CI with the `api/openapi.yaml` arm
+   running both halves.
 2. **The `just` migration, on its own**, before either service arrives.
    `justfile` plus `docz.just`, with `api.just` and `ui.just` landing as the
    services do. It touches the harness that proved this line green — `make ci`,

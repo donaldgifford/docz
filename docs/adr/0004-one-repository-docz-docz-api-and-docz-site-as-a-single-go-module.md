@@ -1,7 +1,7 @@
 ---
 id: ADR-0004
 title: "One repository: docz, docz-api, and docz-site as a single Go module"
-status: Proposed
+status: Accepted
 author: Donald Gifford
 created: 2026-09-21
 ---
@@ -259,8 +259,10 @@ this ADR records what has to hold for it to be survivable.
    contradictions are therefore accepted deliberately: DESIGN-0008 describes a
    service consuming a pinned library, which stops being how it works, and
    DESIGN-0009 will be migrated while still Draft. DESIGN-0008's R1–R12 keep
-   their meaning as a list of behaviours `doczcontract` asserts and lose their
-   meaning as a contract against a pin (Open Question 3).
+   their meaning as a list of behaviours and lose their meaning as a contract
+   against a pin — and `internal/doczcontract`, the package that asserted them
+   in one place, is deleted with the pin it guarded, its coverage already
+   present in `test/consumer` and the packages' own tests (Open Question 3).
 
 ### Supporting Data
 
@@ -354,7 +356,10 @@ this ADR records what has to hold for it to be survivable.
 - **Root-file reconciliation is a real chore** that the layout diagram hides:
   two `Dockerfile`s, two `ct.yaml`s, two `cliff.toml`s, two `mise.toml`s, two
   `renovate.json5`s, two `catalog-info.yaml`s, two `CLAUDE.md`s, and two
-  `deploy/` and `scripts/` directories. Open Question 2.
+  `deploy/` and `scripts/` directories (Open Question 2). One of them is not
+  cosmetic: if the `.gitignore`s do not merge with the trees, the first
+  `git add -A` in a developer's checkout commits a private key to a public
+  repository.
 - **`node_modules/` lands inside the module tree**, which slows `go` tooling
   that walks directories, and `//go:embed` cannot follow a symlink — so any
   embed of the UI points at the built `dist/` only.
@@ -545,6 +550,19 @@ two `deploy/` trees, two `scripts/` directories, and `docker-bake.hcl` +
 `deploy/secrets/` and `.env.local` are only untracked because docz-api ignores
 them.
 
+> **Resolved 2026-09-22: (a).** One of each at the root, service-scoped where
+> the name allows: `Dockerfile.api` and `Dockerfile.ui` over one
+> `docker-bake.hcl`, one `ct.yaml` covering `charts/`, one `cliff.toml`, one
+> merged `.gitignore`, `deploy/api/` and `deploy/ui/`, and `scripts/` merged by
+> filename. Both repositories' `labels.sh` are **byte-identical** (verified), so
+> that one collapses rather than being reconciled. The two `CLAUDE.md`s fold
+> into this repository's.
+>
+> The `.gitignore` merge is the one item here that is not cosmetic: without
+> docz-api's `deploy/secrets/` and `.env.local` lines, the first `git add -A` in
+> a developer's checkout commits a private key into a public repository. It is
+> listed as a task, not left to the person doing the move to notice.
+
 - a. **One of each at the root, service-scoped where a name allows it:**
   `Dockerfile.api` and `Dockerfile.ui` with one `docker-bake.hcl`, one
   `ct.yaml` covering `charts/`, one `cliff.toml`, one merged `.gitignore`,
@@ -568,11 +586,43 @@ bump fails *there* rather than deep inside `internal/ingest`. In one repository
 there is no pin, so the drift it guards against cannot happen between releases
 (INV-0011 Observation 9).
 
+> **Resolved 2026-09-22: (c) — delete it, and move one test.** Its own package
+> comment is the argument: it "guards docz-api against silent drift in the
+> **pinned** docz parsing library (pinned in `go.mod`)", and "if a future docz
+> bump removes or changes that surface, these tests fail here." Every sentence
+> of its stated purpose is about the pin. Delete the pin and the doc comment
+> describes nothing.
+>
+> That alone would not settle it — a test can outlive its rationale and still
+> earn its keep — so the coverage was measured rather than assumed. All 804
+> lines assert things already asserted elsewhere, in two cases more strongly:
+>
+> | `doczcontract` asserts | Already covered by |
+> | --- | --- |
+> | R11 json tags and the marshaled snapshot shape (`snapshot_test.go`, 253 lines — its largest file) | `pkg/doczcore/config/json_test.go`: three tests, and `TestJSONTags_MirrorYAML` **recursively walks every struct reachable from `Config`** rather than pinning key sets by hand |
+> | `ValidateType`, resolution by name/alias/`id_prefix` | `pkg/doczcore/config/{config,api}_test.go` |
+> | `IsDoczFile`, `ScanDocuments` populating `Content` | `pkg/doczcore/document/scan_test.go` |
+> | R1–R5, R6 (changelog block + `ParseChangelog`), R10 (`api:` block + `docparse.Title`) | `test/consumer`, which exercises the same surface **from outside the module** |
+>
+> The one exception is `TestConfigLoadsFixtureManifest`, which loads docz-api's
+> *own* fixture manifest — an ingest test wearing a contract test's clothes. It
+> moves to the ingest tests, where a failure points at the fixture rather than
+> at the library.
+>
+> What is genuinely lost is the **named** failure: breaking `config.Load`'s
+> normalisation while editing the library will now fail an ingest test rather
+> than something that says "the server depends on this." In one repository that
+> is replaced by something stronger than a pin guard ever was — both halves
+> build and test in the same run, so the break cannot be shipped at all, where a
+> pin guard only spoke at bump time. DESIGN-0008's R1–R12 numbering keeps its
+> meaning as a list of behaviours, now asserted across `test/consumer` and the
+> packages' own tests rather than in one place (Decision 9).
+
 - a. **Keep them, in place and unchanged.** The early-warning property is
   still worth having — "the contract changed" is a better failure than "an
   ingest test failed" — and it now guards against a library change made in the
   same commit rather than against a pin bump. Cheap, and the R1–R12 numbering
-  keeps a home. *(recommendation)*
+  keeps a home. *(recommendation, not taken — see the resolution above)*
 - b. Fold them into `test/consumer`, which already proves the public surface
   importable from outside the module, and delete the duplicate coverage.
   One place for "the library's shape is as promised"; loses the framing that
@@ -585,6 +635,18 @@ there is no pin, so the drift it guards against cannot happen between releases
 The Go jobs are seconds; a Bun install, a Vite build, a Vitest run, and
 Playwright e2e are not. One repository means one `pull_request` trigger over
 both.
+
+> **Resolved 2026-09-22: (a), for now.** Path-filtered jobs: `ui/**` runs the
+> frontend jobs, everything else runs the Go jobs, and a change touching
+> `api/openapi.yaml` runs **both** — that last arm is not an optimisation, it is
+> the drift this consolidation exists to catch, so it is the one path filter that
+> must not be narrowed.
+>
+> "For now" is deliberate: path filtering trades safety for speed, and the trade
+> only holds while the two halves are genuinely independent. The moment a Go
+> change can break the UI other than through the spec — an embed of `ui/dist`,
+> say, or a server-rendered route — (c)'s merge queue becomes the right answer.
+> Revisit at the docz-site move rather than treating this as settled for good.
 
 - a. **Path-filtered jobs.** `ui/**` runs the frontend jobs; everything else
   runs the Go jobs; a change touching `api/openapi.yaml` runs both, because
@@ -613,8 +675,9 @@ both.
 - [ADR-0003](../adr/0003-remove-plan-from-the-built-in-document-types.md)
   — the `plan` removal, a non-event for both services.
 - [DESIGN-0008](../design/0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md)
-  — docz-api as a separate-repo service, and the R1–R12 clauses `doczcontract`
-  asserts. Left as it stands (Decision 9).
+  — docz-api as a separate-repo service, and the R1–R12 clauses
+  `internal/doczcontract` asserted against a pin. Left as it stands
+  (Decision 9); the package goes with the pin (Open Question 3).
 - [DESIGN-0009](../design/0009-docz-site-cross-repo-docz-viewer-and-search-ui.md)
   — docz-site, still Draft, migrating in that state (Decision 9).
 - [DESIGN-0014](../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md)
