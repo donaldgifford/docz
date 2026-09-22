@@ -7,14 +7,14 @@ until a byte comparison backs it. So the goldens here record what the
 build has to reproduce it.
 
 ```bash
-make parity                     # build build/bin/docz, replay the goldens
-make parity BIN=/path/to/docz   # replay against another binary
-make parity-capture             # re-install v1.2.2 and re-capture (rare, see below)
+just parity                     # build build/bin/docz, replay the goldens
+just bin=/path/to/docz parity   # replay against another binary
+just parity-capture             # re-install v1.2.2 and re-capture (rare, see below)
 ```
 
 The driver is a Go test behind the `parity` build tag, so `go test ./...`
 stays a source-only run and nothing in CI needs a binary until Phase 5 wires
-`make parity` into `make ci`.
+`just parity` into `just ci`.
 
 ## Capture provenance
 
@@ -56,7 +56,7 @@ on any fixture file containing today's date, which is the day such a date
 would be introduced. Only the `investigation` README's size and digest and the
 three recorded copies of that row differ from the Phase 1 capture.
 
-`make parity-capture` installs the tag into a temporary `GOBIN` rather than
+`just parity-capture` installs the tag into a temporary `GOBIN` rather than
 trusting whatever `docz` is on `PATH`. The installed binary reports
 `docz dev (commit: none)` because `go install` applies no ldflags; that is
 expected and is why `version` is not one of the recorded cases.
@@ -67,7 +67,7 @@ installing the tag.
 ## The one rule
 
 **Goldens come from v1.2.2 and from nowhere else.** Never re-run
-`make parity-capture` against a v2 build: the suite would then agree with
+`just parity-capture` against a v2 build: the suite would then agree with
 whatever it happens to be measuring, and the only thing it proves is that
 the code equals itself.
 
@@ -92,7 +92,7 @@ Anything else that differs is a regression until someone shows otherwise.
 ## Normalisers
 
 Each is named, lives outside the build tag, and has unit tests that run in
-`make test`:
+`just test`:
 
 - **root** replaces the fixture's temporary root with `$ROOT`. Both the
   `/var/folders/...` and `/private/var/folders/...` spellings are replaced,

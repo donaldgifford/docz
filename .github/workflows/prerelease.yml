@@ -6,7 +6,7 @@
 #
 # Nothing on the v2 line is released by label: every pull request carries
 # `dont-release`, and a beta is cut by pushing the tag yourself
-# (`make release TAG=v2.0.0-beta.1`). This workflow is what turns that tag
+# (`just release v2.0.0-beta.1`). This workflow is what turns that tag
 # into binaries.
 #
 # It deliberately has no bump-version job. release.yml stays on

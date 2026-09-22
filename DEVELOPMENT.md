@@ -648,12 +648,12 @@ committing** — a golden nobody read pins whatever the code happened to do.
 ### Step 9: Verify
 
 ```bash
-make build
+just build
 ./build/bin/docz init --force    # creates docs/postmortem/README.md
 ./build/bin/docz create postmortem "First Postmortem"
 ./build/bin/docz list postmortem
 ./build/bin/docz template show postmortem
-make ci
+just ci
 ```
 
 Once `docz validate` lands (IMPL-0018 Phase 5) also run
@@ -779,12 +779,12 @@ repo config.
 
 Version and commit information are injected at build time via ldflags:
 
-```makefile
--X $(MODULE_PATH)/cmd.Version=$(VERSION)
--X $(MODULE_PATH)/cmd.Commit=$(COMMIT_HASH)
+```just
+-X {{ module_path }}/cmd.Version={{ version }}
+-X {{ module_path }}/cmd.Commit={{ commit_hash }}
 ```
 
-`MODULE_PATH` is `github.com/donaldgifford/docz/v2` — the import path with
+`module_path` is `github.com/donaldgifford/docz/v2` — the import path with
 its major-version suffix. A `-X` flag that names a path no package has is
 ignored without a warning, so the suffix is load-bearing: drop it and
 `docz version` reports `dev` from a release build. v1.x tags keep the
@@ -817,7 +817,7 @@ Nothing on the v2 line is released by label. Every pull request carries
 `dont-release`, and a beta is cut by hand from the merge commit:
 
 ```bash
-make release TAG=v2.0.0-beta.1     # tags and pushes
+just release v2.0.0-beta.1     # tags and pushes
 ```
 
 `.github/workflows/prerelease.yml` fires on `v*-beta.*`, runs goreleaser
@@ -886,7 +886,7 @@ tag it by hand and let `prerelease.yml`'s sibling `release.yml` stay out of
 it:
 
 ```bash
-make release TAG=v2.0.0
+just release v2.0.0
 ```
 
 ### The v1 maintenance branch
@@ -899,7 +899,7 @@ git switch -c v1 v1.2.2
 ```
 
 It keeps the unversioned module path. Release from it by hand
-(`make release TAG=v1.2.3`) for the reason above: the label path would
+(`just release v1.2.3`) for the reason above: the label path would
 compute a v2 version from the repository's highest tag.
 
 ## Testing Patterns
@@ -952,24 +952,24 @@ appCfg = config.DefaultConfig()
 appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 ```
 
-## Makefile Targets
+## Just Recipes
 
-| Target | Description |
+| Recipe | Description |
 |--------|-------------|
-| `make build` | Build the binary to `build/bin/docz` |
-| `make test` | Run all tests |
-| `make test-coverage` | Tests with coverage report |
-| `make test-consumer` | Run the external-module consumer smoke test (separate `go.mod`) |
-| `make parity` | Replay the v1.2.2 parity goldens (`BIN=<path>` to drive another binary) |
-| `make parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
-| `make validate` | Run `docz validate` over this repo's own `docs/`, non-strict |
-| `make lint` | Run golangci-lint |
-| `make lint-fix` | Auto-fix lint issues |
-| `make fmt` | Run gofmt + goimports |
-| `make ci` | lint + test + test-consumer + parity + validate + build + license-check |
-| `make release TAG=vX.Y.Z` | Tag and push a release by hand |
-| `make release-local` | Goreleaser snapshot, nothing published |
-| `make docs-init` | Run `docz init` |
-| `make docs-update` | Run `docz update` |
-| `make docs-list` | Run `docz list` |
-| `make docs-config` | Run `docz config` |
+| `just build` | Build the binary to `build/bin/docz` |
+| `just test` | Run all tests |
+| `just test-coverage` | Tests with coverage report |
+| `just test-consumer` | Run the external-module consumer smoke test (separate `go.mod`) |
+| `just parity` | Replay the v1.2.2 parity goldens (`bin=<path>` to drive another binary) |
+| `just parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
+| `just validate` | Run `docz validate` over this repo's own `docs/`, non-strict |
+| `just lint` | Run golangci-lint |
+| `just lint-fix` | Auto-fix lint issues |
+| `just fmt` | Run gofmt + goimports |
+| `just ci` | lint + test + test-consumer + parity + validate + build + license-check |
+| `just release vX.Y.Z` | Tag and push a release by hand |
+| `just release-local` | Goreleaser snapshot, nothing published |
+| `just docs-init` | Run `docz init` |
+| `just docs-update` | Run `docz update` |
+| `just docs-list` | Run `docz list` |
+| `just docs-config` | Run `docz config` |
