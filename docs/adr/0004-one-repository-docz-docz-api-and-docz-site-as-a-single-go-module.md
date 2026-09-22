@@ -39,7 +39,10 @@ does not happen and its deadline stops existing. The tree grows around `pkg/`
 — `cmd/docz` and `cmd/docz-api` for the two binaries, `internal/` for the
 server, `api/` for the single OpenAPI spec, `ui/` for the frontend, `charts/`
 for both charts — with `just` as the task runner and `go 1.26.5`. The one API
-change either move needs is an additive `config.ParseBytes`. This fills the gap
+change either move needs is an additive `config.ParseBytes`. The 43 incoming
+docz documents are archived verbatim under `docs/archive/` and none are
+renumbered, because their IDs collide wholesale and 757 of their 953
+cross-references are ambiguous across the two namespaces. This fills the gap
 ADR-0002 Decision 6 left open deliberately, and amends it in three places: the
 server is `internal/`'s documented reason to exist, `pkg/` may no longer import
 `internal/`, and two charts ship side by side rather than one.
@@ -113,6 +116,8 @@ this ADR records what has to hold for it to be survivable.
    charts/                docz-api and docz-site, side by side
    test/                  parity and consumer suites (unchanged)
    docs/                  this repository's docz documents
+   docs/archive/api/      docz-api's 24 documents, verbatim
+   docs/archive/ui/       docz-site's 19 documents, verbatim
    ```
 
    `pkg/` exists because the library and its consumers were in different
@@ -269,6 +274,8 @@ this ADR records what has to hold for it to be survivable.
 | `go` directive | docz 1.26.4 (GO-2026-4970 open), docz-api 1.26.5 (fixed) | INV-0011 Obs 8 |
 | docz-api paths already matching the target layout | `internal/`, `cmd/docz-api/`, `api/`, `charts/docz-api/` | this ADR, Decision 7 |
 | docz documents in the incoming repositories | 43 (docz-api 24, docz-site 19), every ID colliding with one of docz's own | INV-0011 Obs 11 |
+| Doc-ID references inside them | 953, of which **757 are ambiguous** across the two namespaces | Open Question 1 |
+| Incoming documents already finished | 34 of 43 (Concluded, Completed, Implemented, Approved) | Open Question 1 |
 | Duplicated root files and directories | 12 files, 2 directories | INV-0011 Obs 11 |
 | Secrets in either repository's tracked history | none; `deploy/secrets/` and `.env.local` are gitignored and appear in no commit | INV-0011 Obs 11 |
 | Repository visibility | all three public | `gh repo view` |
@@ -330,9 +337,17 @@ this ADR records what has to hold for it to be survivable.
   no other change in the diff.
 - **License scanning grows.** `license-check` starts covering the service's
   dependency tree: more work per run and more licences to accept.
-- **43 incoming documents whose IDs all collide** with docz's own, and no
-  cheap renumbering — every cross-reference inside them, and several code
-  comments, cite the old IDs. Open Question 1.
+- **Two document namespaces coexist permanently.** `docs/archive/api/` and
+  `docs/archive/ui/` keep their own ID sequences, so `DESIGN-0003` means one
+  thing in `docs/design/` and another two directories away. A one-line rule in
+  each archive README is all that distinguishes them, and the MkDocs nav will
+  show repeated IDs across its `Archive` and `Design` sections. The
+  alternative was 757 ambiguous references resolved by hand (Open Question 1),
+  and that trade is deliberate.
+- **The archived trees leave docz's own tooling.** Not being under a type
+  directory is what keeps them out of `docz update` and `docz validate`, and
+  it also means their frontmatter, ToCs, and index tables are never checked
+  again. Correct for an archive, and worth knowing before anyone edits one.
 - **Root-file reconciliation is a real chore** that the layout diagram hides:
   two `Dockerfile`s, two `ct.yaml`s, two `cliff.toml`s, two `mise.toml`s, two
   `renovate.json5`s, two `catalog-info.yaml`s, two `CLAUDE.md`s, and two
@@ -410,6 +425,47 @@ IMPL-0001–0018, INV-0001–0011. **Every incoming ID collides**, and each
 document's cross-references — plus code comments in docz-api citing its own
 IMPL numbers — resolve in the old namespace.
 
+> **Resolved 2026-09-22: (a) — archive all 43, renumber none.** The question was
+> whether to recreate the incoming documents in docz's sequence, and the
+> measurement that settled it is the reference load rather than the file count.
+>
+> | | docz-api | docz-site | total |
+> | --- | --- | --- | --- |
+> | Doc-ID references in their documents | 626 | 327 | 953 |
+> | **Ambiguous** — the ID exists in both namespaces | 482 | 275 | **757** |
+> | Unambiguously docz's, must **not** be rewritten | 131 | 15 | 146 |
+> | Resolving in neither namespace | 13 | 37 | 50 |
+>
+> Every ID docz-api owns is also a real docz ID, and its documents already
+> cite both namespaces interchangeably — 42 references to `DESIGN-0011`, which
+> docz-api does not have, mean docz's `api:` block design. So "DESIGN-0003" is
+> resolvable only by reading the sentence around it, which makes the rewrite
+> unscriptable: 757 human decisions whose errors are **silent**, because a
+> wrong one does not dangle, it points at a different real document.
+>
+> The second measurement makes the first one moot. **34 of the 43 are finished
+> records** — Concluded, Completed, Implemented, or Approved — and renumbering
+> a concluded investigation buys nothing: nobody will edit it again, and its
+> value is as evidence of what was true when it was written.
+>
+> So both trees land verbatim under `docs/archive/api/` and `docs/archive/ui/`,
+> and **nothing is renumbered, promoted, or rewritten** — not even the nine
+> still-live documents, since a hybrid would need a mapping table and would
+> break exactly the references the archive exists to keep valid. Work that
+> continues gets a **new** docz document in this repository's sequence, citing
+> the archived one. Zero renames, zero reference rewrites, and `git log`
+> survives on every file.
+>
+> Three mechanical consequences for the move's own design. They are not under
+> a type directory, so `docz update` and `docz validate` never see them —
+> which also means their frontmatter is never validated again, and that is
+> correct for an archive. `wiki.ScanDocs` walks all of `DocsDir`, so they
+> appear in the MkDocs nav under an `Archive` section unless `wiki.exclude`
+> names them; the same is true of `api.exclude` for what docz-api publishes.
+> And each tree needs a `README.md` stating the namespace rule in one line —
+> *inside this directory, an ID means docz-api's* — because that sentence is
+> the only thing keeping 757 references honest.
+
 - a. **Archive them in place under `docs/archive/api/` and `docs/archive/ui/`,
   read-only.** Zero renames, and every cross-reference inside them stays
   valid because the namespace travels with the tree: `INV-0003` inside
@@ -421,16 +477,24 @@ IMPL numbers — resolve in the old namespace.
   IDs that repeat elsewhere in the nav, and that the `api:` block needs an
   `exclude` entry if they should not be published. *(recommendation)*
 - b. Renumber into docz's sequence — docz-api's DESIGN-0001–0005 become
-  DESIGN-0016–0020, and so on — rewriting every cross-reference. One
-  namespace, at the cost of 43 renames, every internal reference rewritten,
-  and every citation in the old repositories' history and in docz-api's code
-  comments pointing at a document that no longer has that number.
+  DESIGN-0016–0020, and so on — rewriting every cross-reference. The
+  cleanest mechanism for it is `docz create` for each and paste the body,
+  since that allocates the ID, the slug, and the index row by construction
+  rather than by `git mv` and `sed`. One namespace, at the cost of 43
+  recreations, **757 ambiguous references resolved by hand**, severed
+  history on every document, and `created:` dates that survive only if the
+  frontmatter is pasted with the body.
 - c. Give the incoming trees custom types with their own prefixes
   (`docs/api-design/` with `id_prefix: ADESIGN`, and so on), so both
   namespaces are live and distinguishable. Keeps them under `docz update`,
   at the cost of six custom type blocks in `.docz.yaml` and prefixes nobody
   writing a new document would choose.
-- d. Other.
+- d. A hybrid: archive the 34 finished records and recreate only the 9 live
+  documents in docz's sequence, with a mapping table in the archive README.
+  Rejected on measurement: the live documents are among the most-referenced
+  in their own trees — docz-api's `INV-0003` is still Open and is its
+  second-most-cited document at 47 references — so promoting them out of the
+  archive breaks precisely the links archiving exists to keep working.
 
 ### 2. How are the root files and the duplicated directories reconciled?
 

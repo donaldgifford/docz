@@ -371,8 +371,27 @@ symbols and skipped the thing both repositories have most of.
 **The intersection is total: not one incoming ID is free.** Each of those 43
 documents cross-references others by ID, and docz-api's Go comments cite its
 own IMPL numbers, so renumbering is not a file rename — it is a rewrite of
-every reference in and to the tree. This is the one piece of the move with no
-cheap answer, and it is ADR-0004 Open Question 1.
+every reference in and to the tree.
+
+Measured 2026-09-22 while resolving ADR-0004 Open Question 1, and the numbers
+are worse than "43 renames" suggests:
+
+| | docz-api | docz-site | total |
+| --- | --- | --- | --- |
+| Doc-ID references in their documents | 626 | 327 | 953 |
+| **Ambiguous** — the ID exists in both namespaces | 482 | 275 | **757** |
+| Unambiguously docz's, must not be rewritten | 131 | 15 | 146 |
+
+The two namespaces are **already** mixed inside these documents: docz-api has
+no `DESIGN-0011`, yet cites it 42 times, meaning docz's `api:` block design.
+So `DESIGN-0003` resolves only by reading the sentence around it, and a
+mechanical rewrite is impossible — 757 judgements whose errors are silent,
+because a wrong one points at a different *real* document rather than
+dangling.
+
+What makes it moot rather than expensive: **34 of the 43 are finished** —
+Concluded, Completed, Implemented, or Approved. ADR-0004 Open Question 1
+resolved to archive all 43 verbatim and renumber none.
 
 The root files collide the same way and were equally invisible from a symbol
 inventory: two `Dockerfile`s, two `ct.yaml`s, two `cliff.toml`s, two
