@@ -278,6 +278,23 @@ linters:
           - gosec
         text: "G706:"
 
+      # G710 (open redirect): the target is the AuthCodeURL of a provider
+      # looked up in the configured registry by an allow-listed name; unknown
+      # names 400 before any redirect, so no request value picks the host.
+      - path: internal/authhttp/endpoints\.go
+        linters:
+          - gosec
+        text: "G710:"
+
+      # G124 (cookie attributes): HttpOnly and SameSite=Lax are always set, and
+      # Secure follows the server's configuration (s.secure) so the session
+      # works over plain HTTP in local development. Lax, not Strict, is required
+      # for the cookie to survive the redirect back from the auth provider.
+      - path: internal/session/store\.go
+        linters:
+          - gosec
+        text: "G124:"
+
     paths:
       - vendor
       - third_party
