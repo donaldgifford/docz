@@ -256,7 +256,7 @@ works for both. See INV-0006 for the details.
 ```bash
 cosign verify \
   --certificate-identity-regexp \
-    '^https://github.com/donaldgifford/docz-api/.+' \
+    '^https://github.com/donaldgifford/docz/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
   ghcr.io/donaldgifford/charts/docz-api:0.8.0
@@ -279,7 +279,7 @@ Or with cosign (v3.x), against the attestation pushed alongside the chart:
 cosign verify-attestation \
   --type slsaprovenance1 \
   --certificate-identity-regexp \
-    '^https://github.com/donaldgifford/docz-api/.github/workflows/.+' \
+    '^https://github.com/donaldgifford/docz/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
   ghcr.io/donaldgifford/charts/docz-api:0.8.0
