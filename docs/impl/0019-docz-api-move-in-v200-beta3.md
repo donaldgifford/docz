@@ -399,9 +399,9 @@ Everything that makes the result enforceable and visible correctly from outside.
 - [x] Write `docs/archive/api/README.md`: one paragraph stating that inside
   this directory an ID means docz-api's, the archive date, and the source
   repository
-- [ ] Add `docs/archive/` to `wiki.exclude` and `api.exclude` in `.docz.yaml`,
+- [x] Add `docs/archive/` to `wiki.exclude` and `api.exclude` in `.docz.yaml`,
   in one commit
-- [ ] Test that `wiki.exclude` and `api.exclude` agree on `docs/archive/`
+- [x] Test that `wiki.exclude` and `api.exclude` agree on `docs/archive/`
 - [ ] `docz wiki update` and confirm no archived page enters `mkdocs.yml`
 - [ ] Add a `publish-image` job to `prerelease.yml` calling `ghcr.yml` with
   `tag: ${{ github.ref_name }}`; ECR stays gated on `vars.ECR_PUBLISH_ENABLED`
