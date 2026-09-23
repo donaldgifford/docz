@@ -111,7 +111,7 @@ packages; release tagging, the licence check, and the gates are the root's;
 the buildx recipes that were `docker.just` are its `[group('docker')]`). Its
 planning documents are archived under `docs/archive/api/` and are **not
 rewritten**: `test/archive` pins both that no tracked file outside `docs/`,
-`testdata/`, and `CHANGELOG.md` names `github.com/donaldgifford/docz-api`, and
+`testdata/`, and `CHANGELOG.md` names docz-api's old module path, and
 that the five archived documents citing it still do (IMPL-0019 Phase 3).
 `internal/ingest` parses a fetched `.docz.yaml` with `config.ParseBytes` — no
 temp dir, no `$HOME` merge — and `internal/doczcontract` is gone: its one
