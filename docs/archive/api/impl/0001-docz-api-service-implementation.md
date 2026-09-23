@@ -1,7 +1,7 @@
 ---
 id: IMPL-0001
 title: "docz-api service implementation"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-06-30
 ---
@@ -10,7 +10,7 @@ created: 2026-06-30
 
 # IMPL 0001: docz-api service implementation
 
-**Status:** Draft **Author:** Donald Gifford **Date:** 2026-06-30
+**Status:** Completed **Author:** Donald Gifford **Date:** 2026-06-30
 
 <!--toc:start-->
 - [Objective](#objective)

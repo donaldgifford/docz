@@ -1,7 +1,7 @@
 ---
 id: IMPL-0002
 title: "OpenAPI contract for docz-api and the docz-site"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-07-08
 ---
@@ -9,7 +9,7 @@ created: 2026-07-08
 
 # IMPL 0002: OpenAPI contract for docz-api and the docz-site
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-07-08
 

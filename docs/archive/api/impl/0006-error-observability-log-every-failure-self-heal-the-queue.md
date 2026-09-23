@@ -1,7 +1,7 @@
 ---
 id: IMPL-0006
 title: "Error observability: log every failure, self-heal the queue, optional no-auth mode"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-08-22
 ---
@@ -9,7 +9,7 @@ created: 2026-08-22
 
 # IMPL 0006: Error observability: log every failure, self-heal the queue, optional no-auth mode
 
-**Status:** Draft
+**Status:** Completed
 **Author:** Donald Gifford
 **Date:** 2026-08-22
 
