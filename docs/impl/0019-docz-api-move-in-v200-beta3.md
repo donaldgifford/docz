@@ -322,15 +322,15 @@ tested together.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Rewrite `github.com/donaldgifford/docz-api/` →
+- [x] Rewrite `github.com/donaldgifford/docz-api/` →
   `github.com/donaldgifford/docz/v2/` in tracked `*.go` files outside
   `docs/archive/` (44 files, 107 lines)
-- [ ] Rewrite `github.com/donaldgifford/docz/pkg/` →
+- [x] Rewrite `github.com/donaldgifford/docz/pkg/` →
   `github.com/donaldgifford/docz/v2/pkg/` (11 files, 20 lines)
-- [ ] Rewrite the module path in the non-Go files: `docker-bake.hcl`
+- [x] Rewrite the module path in the non-Go files: `docker-bake.hcl`
   (including `org.opencontainers.image.source`), `cliff.toml`,
   `.goreleaser.yml`, `catalog-info.yaml`, and the four `charts/docz-api/` files
-- [ ] `go mod tidy`; `go build ./...`
+- [x] `go mod tidy`; `go build ./...`
 - [ ] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
   fix `build-core` to write `build/bin/docz-api`
 - [ ] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
