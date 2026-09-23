@@ -126,10 +126,10 @@ Phase 2's diff is the graft and nothing else.
 - [x] Rewrite the root `justfile` composition: `import 'docz.just'`,
   `mod? api 'api.just'`, `mod? ui 'ui.just'` (replacing the two `import?`
   lines)
-- [ ] Update `CLAUDE.md`'s just paragraph: the two optional files are modules
+- [x] Update `CLAUDE.md`'s just paragraph: the two optional files are modules
   addressed as `just api <recipe>` / `just ui <recipe>`, and `ui.just` will sit
   at the root carrying `set working-directory := "ui"`
-- [ ] Update `DEVELOPMENT.md` and `CONTRIBUTING.md` wherever they describe the
+- [x] Update `DEVELOPMENT.md` and `CONTRIBUTING.md` wherever they describe the
   composition
 - [ ] Create the `graft` label (`gh label create graft`), described as "skips
   the Go CI jobs; DESIGN-0016 OQ 6"

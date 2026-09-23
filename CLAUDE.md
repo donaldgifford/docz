@@ -27,8 +27,13 @@ are real directories, so make reads each as an up-to-date target needing no
 rule. Muscle memory gets a silent no-op there, not an error. The root `justfile`
 is composition only: `set shell`, the imports, `_default` (which is
 `just --list`), and the two gates `ci` and `check`. Every docz recipe lives in
-`docz.just`; `api.just` and `ui.just` are **optional imports** (`import?`) that
-start working the moment those files land with docz-api and docz-site. Two forms
+`docz.just`, imported flat so its recipes own the root namespace. `api.just` and
+`ui.just` are **optional modules** (`mod?`, DESIGN-0016 OQ 1), not imports:
+docz-api's recipes share 27 names with `docz.just` and just rejects a duplicate
+across sibling imports at parse time, so each arriving half is namespaced —
+`just api build`, `just ui build`, and `api::lint` from a root gate — and loads
+the moment its file lands. All three live at the root; `ui.just` will carry
+`set working-directory := "ui"` for its Bun commands. Two forms
 changed shape rather than name: `make release TAG=vX` is `just release vX` (a
 positional parameter), and `make parity BIN=<path>` is `just bin=<path> parity`
 (a variable override, lower-case because just variables are). `just --list`
