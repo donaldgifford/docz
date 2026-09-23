@@ -8,8 +8,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // fakeFetcher returns a fixed snapshot, so the pipeline is exercised with no

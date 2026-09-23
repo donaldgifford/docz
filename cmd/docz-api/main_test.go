@@ -12,8 +12,8 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 
-	"github.com/donaldgifford/docz-api/api"
-	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz/v2/api"
+	"github.com/donaldgifford/docz/v2/internal/config"
 )
 
 // checkersFor builds a single-dependency readiness checker returning err,

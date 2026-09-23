@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // TestPagePrimaryKey pins the page key shape "<repo_id>_p_<16 hex>": stable

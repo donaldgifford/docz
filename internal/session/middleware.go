@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/auth"
 )
 
 // ctxKey is the unexported context key for the resolved Session.

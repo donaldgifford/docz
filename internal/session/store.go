@@ -18,7 +18,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/auth"
 )
 
 const (

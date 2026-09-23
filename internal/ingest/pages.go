@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/store"
 	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
 	doczparse "github.com/donaldgifford/docz/pkg/doczcore/docparse"
 	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"

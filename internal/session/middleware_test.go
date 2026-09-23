@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/auth"
 )
 
 // fakeLookuper resolves one known session id, mirroring Store.Lookup.

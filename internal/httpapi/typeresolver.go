@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // resolveType maps a URL {type} segment to its canonical type name by matching

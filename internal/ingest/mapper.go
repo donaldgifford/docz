@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/store"
 	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
 	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
 )

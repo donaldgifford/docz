@@ -19,7 +19,7 @@ import (
 const serverErrorFloor = 500
 
 // tracerName is the instrumentation scope for the HTTP server spans.
-const tracerName = "github.com/donaldgifford/docz-api/internal/telemetry"
+const tracerName = "github.com/donaldgifford/docz/v2/internal/telemetry"
 
 // unmatchedRoute labels requests that matched no chi route (e.g. a stray path),
 // keeping the metric/trace route label bounded instead of echoing raw URLs.

@@ -24,9 +24,9 @@ import (
 
 	"github.com/google/go-github/v88/github"
 
-	"github.com/donaldgifford/docz-api/internal/queue"
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/queue"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 const (

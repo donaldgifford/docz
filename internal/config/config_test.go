@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz/v2/internal/config"
 )
 
 const testPEM = "-----BEGIN RSA PRIVATE KEY-----\nMIIfakekeybody\n-----END RSA PRIVATE KEY-----\n"

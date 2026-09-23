@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
-	"github.com/donaldgifford/docz-api/internal/session"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/session"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // defaultProvider is used when /auth/login carries no provider query parameter.

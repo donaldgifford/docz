@@ -13,12 +13,12 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/donaldgifford/docz-api/internal/store"
-	"github.com/donaldgifford/docz-api/internal/telemetry"
+	"github.com/donaldgifford/docz/v2/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/telemetry"
 )
 
 // tracer is the instrumentation scope for the ingest worker spans.
-var tracer = otel.Tracer("github.com/donaldgifford/docz-api/internal/queue")
+var tracer = otel.Tracer("github.com/donaldgifford/docz/v2/internal/queue")
 
 // delayedTaskCheckInterval is how often the asynq server forwards scheduled
 // (debounced) and retry tasks to the pending queue. asynq defaults to 5s; 1s

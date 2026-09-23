@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/auth"
 )
 
 var redisURL string

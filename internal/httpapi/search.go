@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/donaldgifford/docz-api/internal/authorize"
-	"github.com/donaldgifford/docz-api/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/search"
 )
 
 // searchDocs handles GET /api/v1/search: full-text query q with optional

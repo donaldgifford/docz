@@ -22,8 +22,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/donaldgifford/docz-api/internal/queue"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/queue"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // redisURL points at the shared Redis container started in TestMain.

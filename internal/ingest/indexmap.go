@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // primaryKey returns the Meilisearch primary key for a document, the composite

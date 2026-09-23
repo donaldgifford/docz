@@ -18,8 +18,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/donaldgifford/docz-api/internal/queue"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/queue"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // testSecret is the shared HMAC secret used across the handler tests.

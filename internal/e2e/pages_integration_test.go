@@ -10,10 +10,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/donaldgifford/docz-api/internal/authorize"
-	"github.com/donaldgifford/docz-api/internal/httpapi"
-	"github.com/donaldgifford/docz-api/internal/ingest"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/httpapi"
+	"github.com/donaldgifford/docz/v2/internal/ingest"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // pageHit is the slice of the search wire shape the pages e2e asserts on.
