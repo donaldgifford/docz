@@ -79,10 +79,14 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
+          # No `type=raw,value=latest` while the v2 line ships betas: it moved
+          # latest on every publish, a v2.0.0-beta.N included. Planned to come
+          # back. metadata-action's default flavor (latest=auto) still tags
+          # latest for a non-prerelease semver, and {{major}}.{{minor}} skips a
+          # prerelease the same way, so a beta gets exactly one tag: 2.0.0-beta.N.
           tags: |
             type=semver,pattern={{version}},value=${{ inputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }}
-            type=raw,value=latest
 
       # bake reads VERSION/COMMIT_SHA/BUILD_DATE from same-named env vars and
       # feeds them to the Dockerfile.api ARGs (-> -ldflags main.version/commit/date).
