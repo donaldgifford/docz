@@ -253,7 +253,7 @@ exists as a module. Phase 3 fixes that.
   guard); `release.yml` absorbs `publish-ghcr`/`publish-ecr` and keeps GPG
   import; `license-check.yml`, `pr-labels.yml`, `labeler.yml` unioned; the ten
   new workflows arrive as they are
-- [ ] Update the four `Dockerfile` references to `Dockerfile.api`
+- [x] Update the four `Dockerfile` references to `Dockerfile.api`
   (`docker-bake.hcl`, `compose.yaml`, `ci.yml` `docker-build`, `deploy/api/`)
   and check `.dockerignore`
 - [ ] `cliff.toml`: add the commit-parser rule that skips commits reachable
