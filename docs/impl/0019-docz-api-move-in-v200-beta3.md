@@ -178,14 +178,14 @@ library rather than inside a 160-commit merge.
 - [x] Add exported `ParseBytes(b []byte) (Config, error)` with the doc comment
   from DESIGN-0016 (reads no file, merges no global config, normalises exactly
   as `Load`, validation is the caller's)
-- [ ] Table-driven `TestParseBytes_MatchesLoad`: `types:` block, explicit
+- [x] Table-driven `TestParseBytes_MatchesLoad`: `types:` block, explicit
   `changelog.file: ""`, `api:` block with a trailing-slash `exclude`, a custom
   type with aliases, and an empty file — each asserting
   `ParseBytes(b) == Load("", dir)` with `t.Setenv("HOME", t.TempDir())`
   (serial, because of `Setenv`)
-- [ ] `TestParseBytes_ReadsNoFilesystem`: a global `~/.docz.yaml` present under
+- [x] `TestParseBytes_ReadsNoFilesystem`: a global `~/.docz.yaml` present under
   a temp `HOME` that would change the result, asserting `ParseBytes` ignores it
-- [ ] `TestParseBytes_DoesNotModifyInput`: the input slice is byte-identical
+- [x] `TestParseBytes_DoesNotModifyInput`: the input slice is byte-identical
   after the call
 - [ ] Add `ParseBytes` to `test/consumer` so the new symbol is proven reachable
   from outside the module
