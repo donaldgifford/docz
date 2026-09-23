@@ -220,10 +220,10 @@ exists as a module. Phase 3 fixes that.
 
 - [ ] **(human)** In docz-api: `docz status set impl IMPL-0001 Completed`,
   `IMPL-0002 Completed`, `IMPL-0006 Completed`, via a PR that does not trigger a
-  release (Open Question 2)
+  release (Open Question 2) — `deferred - human required`
 - [ ] **(human)** In the same docz-api PR: a dated one-line forward pointer at
   the top of `INV-0002` and `INV-0003`, naming the successor IDs this repository
-  will allocate (INV-0012, INV-0013 — reserve them by noting it here)
+  will allocate (INV-0012, INV-0013 — reserve them by noting it here) — `deferred - human required`
 - [ ] Clone docz-api fresh with `git clone --no-local` into a temp directory,
   **after** the sweep PR merges
 - [ ] Run `git filter-repo` with: `docs/` → `docs/archive/api/`, `deploy/` →
