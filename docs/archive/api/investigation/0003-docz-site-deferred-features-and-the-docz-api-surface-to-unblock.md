@@ -7,6 +7,8 @@ created: 2026-07-10
 ---
 <!-- markdownlint-disable-file MD025 MD041 -->
 
+> **2026-09-23:** moving to the docz repository with the rest of docz-api (ADR-0004, DESIGN-0016). This investigation continues there as **INV-0013**; this copy is archived under `docs/archive/api/`.
+
 # INV 0003: docz-site deferred features and the docz-api surface to unblock them
 
 **Status:** Open

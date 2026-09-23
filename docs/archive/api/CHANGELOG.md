@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(impl)* Mark IMPL-0001, 0002, and 0006 Completed ([#43](https://github.com/donaldgifford/docz-api/issues/43))
+- *(investigation)* Point INV-0002 and INV-0003 at their docz successors
 
 ## [0.10.1] - 2026-09-20
 
