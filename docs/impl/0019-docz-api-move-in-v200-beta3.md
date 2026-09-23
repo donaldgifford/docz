@@ -335,7 +335,7 @@ tested together.
   fix `build-core` to write `build/bin/docz-api`
 - [x] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
   updated for `Dockerfile.api`, and delete `docker.just` (Open Question 4)
-- [ ] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
+- [x] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
   gate
 - [ ] Swap `internal/ingest/parse.go`'s `loadConfig` for
   `doczcfg.ParseBytes`; drop the `HOME` neutralisation from ingest tests that
