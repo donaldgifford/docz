@@ -221,16 +221,16 @@ exists as a module. Phase 3 fixes that.
 - [x] **(human)** In docz-api: `docz status set impl IMPL-0001 Completed`,
   `IMPL-0002 Completed`, `IMPL-0006 Completed`, via a PR that does not trigger a
   release (Open Question 2) — done in docz-api #43 (`dont-release`)
-- [ ] **(human)** In the same docz-api PR: a dated one-line forward pointer at
+- [x] **(human)** In the same docz-api PR: a dated one-line forward pointer at
   the top of `INV-0002` and `INV-0003`, naming the successor IDs this repository
-  will allocate (INV-0012, INV-0013 — reserve them by noting it here) — docz-api #44 (`dont-release`), awaiting merge
-- [ ] Clone docz-api fresh with `git clone --no-local` into a temp directory,
+  will allocate (INV-0012, INV-0013 — reserve them by noting it here) — done in docz-api #44 (`dont-release`)
+- [x] Clone docz-api fresh with `git clone --no-local` into a temp directory,
   **after** the sweep PR merges
-- [ ] Run `git filter-repo` with: `docs/` → `docs/archive/api/`, `deploy/` →
+- [x] Run `git filter-repo` with: `docs/` → `docs/archive/api/`, `deploy/` →
   `deploy/api/`, `justfile` → `api.just`, `Dockerfile` → `Dockerfile.api`,
   `CHANGELOG.md` → `docs/archive/api/CHANGELOG.md`, and `scripts/labels.sh`
   dropped (`--invert-paths`)
-- [ ] Record the exact `filter-repo` invocation in this document under
+- [x] Record the exact `filter-repo` invocation in this document under
   Phase 2 notes below (Open Question 3)
 - [ ] `git remote add api-local <clone>`, `git fetch`, and
   `git merge --allow-unrelated-histories api-local/main` on a branch off `main`
@@ -272,7 +272,22 @@ exists as a module. Phase 3 fixes that.
 **Phase 2 notes** (Open Question 3) — the exact commands, filled in as run:
 
 ```bash
-# (recorded during Phase 2)
+# 2026-09-23. docz-api main at 153bdc0 (#44, the forward pointers), 164 commits.
+git clone --no-local https://github.com/donaldgifford/docz-api /tmp/docz-api-graft
+cd /tmp/docz-api-graft
+git filter-repo --force \
+  --invert-paths --path scripts/labels.sh \
+  --path-rename docs/:docs/archive/api/ \
+  --path-rename deploy/:deploy/api/ \
+  --path-rename justfile:api.just \
+  --path-rename Dockerfile:Dockerfile.api \
+  --path-rename CHANGELOG.md:docs/archive/api/CHANGELOG.md
+# rewritten HEAD: 4e9eda6
+
+# in docz, on chore/docz-api-phase-2-graft off main
+git remote add api-local /tmp/docz-api-graft
+git fetch api-local
+git merge --allow-unrelated-histories --no-commit api-local/main
 ```
 
 <!--docz:criteria:start-->
