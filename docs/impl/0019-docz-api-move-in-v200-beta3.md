@@ -403,7 +403,7 @@ Everything that makes the result enforceable and visible correctly from outside.
   in one commit
 - [x] Test that `wiki.exclude` and `api.exclude` agree on `docs/archive/`
 - [x] `docz wiki update` and confirm no archived page enters `mkdocs.yml`
-- [ ] Add a `publish-image` job to `prerelease.yml` calling `ghcr.yml` with
+- [x] Add a `publish-image` job to `prerelease.yml` calling `ghcr.yml` with
   `tag: ${{ github.ref_name }}`; ECR stays gated on `vars.ECR_PUBLISH_ENABLED`
 - [x] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
   grant the `docz` repository write access under "Manage Actions access" —
