@@ -412,7 +412,7 @@ Everything that makes the result enforceable and visible correctly from outside.
 - [x] Create INV-0012 (successor to docz-api INV-0002) and INV-0013 (successor
   to docz-api INV-0003) per Open Question 6, each citing the archived original
   by path
-- [ ] Update `CLAUDE.md`: the Project paragraph (`internal/` is the server's,
+- [x] Update `CLAUDE.md`: the Project paragraph (`internal/` is the server's,
   no longer empty), the layer rule, the `api::` recipes, and the archive
 
 <!--docz:tasks:end-->
