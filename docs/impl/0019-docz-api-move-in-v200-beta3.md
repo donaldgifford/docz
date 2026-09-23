@@ -331,7 +331,7 @@ tested together.
   (including `org.opencontainers.image.source`), `cliff.toml`,
   `.goreleaser.yml`, `catalog-info.yaml`, and the four `charts/docz-api/` files
 - [x] `go mod tidy`; `go build ./...`
-- [ ] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
+- [x] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
   fix `build-core` to write `build/bin/docz-api`
 - [ ] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
   updated for `Dockerfile.api`, and delete `docker.just` (Open Question 4)
