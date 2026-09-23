@@ -17,7 +17,9 @@ just parity         # replay the v1.2.2 CLI goldens against build/bin/docz
 just validate       # docz validate over this repo's own docs/, non-strict
 just lint           # golangci-lint + golines
 just fmt            # gofmt + goimports
-just ci             # lint + test + test-consumer + parity + validate + build + license-check
+just ci             # lint + test + test-consumer + parity + validate + build + license-check + api::{lint,test,helm-lint}
+just api build      # the server binary to build/bin/docz-api (api.just, a module)
+just api test       # the server's packages only: ./cmd/docz-api/... ./internal/... ./api/...
 ```
 
 `just` replaced `make` (ADR-0004 Decision 4) and the `Makefile` is gone — there
@@ -104,12 +106,21 @@ The docz-api server arrived with its full history in IMPL-0019 Phase 2
 (DESIGN-0016, ADR-0004): `cmd/docz-api/` is its binary, `internal/` its
 library code, `api/` its OpenAPI contract, `charts/docz-api/` its Helm chart,
 `deploy/api/` its compose stacks, and `Dockerfile.api` its image. Its recipes
-live in `api.just` and run as `just api <recipe>`. Its planning documents are
-archived under `docs/archive/api/` and are not rewritten. The material below
-is docz-api's own `CLAUDE.md` from that point, headings demoted one level.
-Where it names `make`, a docz-api module path, or a `docs/` path, read `just
-api`, `github.com/donaldgifford/docz/v2/internal/…`, and `docs/archive/api/`
-until Phase 3 finishes the rewrite.
+live in `api.just` and run as `just api <recipe>` (`test`, `lint`, and `fmt` scoped to the server's
+packages; release tagging, the licence check, and the gates are the root's;
+the buildx recipes that were `docker.just` are its `[group('docker')]`). Its
+planning documents are archived under `docs/archive/api/` and are **not
+rewritten**: `test/archive` pins both that no tracked file outside `docs/`,
+`testdata/`, and `CHANGELOG.md` names `github.com/donaldgifford/docz-api`, and
+that the five archived documents citing it still do (IMPL-0019 Phase 3).
+`internal/ingest` parses a fetched `.docz.yaml` with `config.ParseBytes` — no
+temp dir, no `$HOME` merge — and `internal/doczcontract` is gone: its one
+surviving clause is `TestConfigLoadsFixtureManifest` in `internal/ingest`, and
+`pkg/doczcore`'s own tests pin the rest. `.cliffignore` keeps the grafted
+history out of `git-cliff`. The material below is docz-api's own `CLAUDE.md`
+from the graft, headings demoted one level; where it names `make`, the
+`Makefile`, `internal/doczcontract`, or `docs/` paths, read `just api`,
+nothing, nothing, and `docs/archive/api/`.
 
 ### Go-specific conventions
 
