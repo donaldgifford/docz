@@ -30,8 +30,8 @@ name: docz-api
 services:
   docz-api:
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: Dockerfile.api
       args:
         VERSION: ${DOCZ_API_VERSION:-dev}
         COMMIT: ${DOCZ_API_COMMIT:-none}

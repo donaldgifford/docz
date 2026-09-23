@@ -41,9 +41,9 @@ function "tags" {
 
 // Base target with shared configuration.
 target "_common" {
-  dockerfile = "Dockerfile"
+  dockerfile = "Dockerfile.api"
   context    = "."
-  // Build args feed the Dockerfile's VERSION/COMMIT/DATE ARGs, which the
+  // Build args feed Dockerfile.api's VERSION/COMMIT/DATE ARGs, which the
   // build injects via -ldflags into main.version/commit/date. The bake
   // variables (VERSION/COMMIT_SHA/BUILD_DATE) are set by the publish
   // workflows; without this block every image compiled in version=dev.

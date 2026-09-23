@@ -85,7 +85,7 @@ jobs:
             type=raw,value=latest
 
       # bake reads VERSION/COMMIT_SHA/BUILD_DATE from same-named env vars and
-      # feeds them to the Dockerfile ARGs (-> -ldflags main.version/commit/date).
+      # feeds them to the Dockerfile.api ARGs (-> -ldflags main.version/commit/date).
       # metadata-action fixes tags/labels only, not the compiled-in version.
       - name: Compute build metadata
         run: |
