@@ -15,6 +15,11 @@
 #
 # goreleaser's `prerelease: auto` marks the GitHub release as a pre-release
 # on its own, because the tag carries a `-beta.N` suffix.
+#
+# Since IMPL-0019 the tag also publishes docz-api: goreleaser builds both
+# binaries (docz-api's archives carry a syft SBOM), and publish-image pushes
+# ghcr.io/donaldgifford/docz-api:<tag> plus the chart through ghcr.yml. ECR
+# stays behind vars.ECR_PUBLISH_ENABLED, as on release.yml.
 name: Pre-release
 
 on:
@@ -41,6 +46,10 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # docz-api's archives carry an SPDX SBOM (.goreleaser.yml sboms:).
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@v0
+
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v7
@@ -55,3 +64,34 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+
+  # The server's image and chart for the same tag. ghcr.yml's image job runs
+  # because tag is set; its chart job skips a chart version already published.
+  # Caller-job permissions are a hard ceiling for the reusable workflow, so
+  # every permission ghcr.yml declares is granted here.
+  publish-image:
+    name: Publish docz-api to GHCR
+    uses: ./.github/workflows/ghcr.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      tag: ${{ github.ref_name }}
+      dry_run: false
+    secrets: inherit
+
+  publish-ecr:
+    name: Publish docz-api to ECR
+    if: vars.ECR_PUBLISH_ENABLED == 'true'
+    uses: ./.github/workflows/ecr.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      packages: write
+    with:
+      tag: ${{ github.ref_name }}
+      dry_run: false
+    secrets: inherit
