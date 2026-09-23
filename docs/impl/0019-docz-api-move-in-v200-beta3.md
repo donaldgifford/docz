@@ -136,7 +136,7 @@ Phase 2's diff is the graft and nothing else.
 - [x] Add `if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}`
   to `ci.yml`'s `lint`, `test-go`, and `build` jobs, with a comment citing
   DESIGN-0016 OQ 6
-- [ ] Run `govulncheck ./...` and confirm GO-2026-4970 no longer reports
+- [x] Run `govulncheck ./...` and confirm GO-2026-4970 no longer reports
 
 <!--docz:tasks:end-->
 
