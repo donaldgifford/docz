@@ -268,7 +268,7 @@ exists as a module. Phase 3 fixes that.
 - [x] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
   Phase 3)
 - [x] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
-- [ ] Open the PR with `graft` and `dont-release`; the body states that the Go
+- [x] Open the PR with `graft` and `dont-release`; the body states that the Go
   jobs are skipped by decision and cites DESIGN-0016 OQ 6
 - [ ] **(human)** Review and merge the red PR with a merge commit (not squash —
   squashing destroys the graft)
