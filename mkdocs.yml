@@ -25,6 +25,7 @@ nav:
         - 'DESIGN-0013: Library-first docz: per-type document packages and a core API the CLI can sit on': design/0013-library-first-docz-per-type-document-packages-and-a-core-api.md
         - 'DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap': design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md
         - 'DESIGN-0015: Structured regions and docz validate': design/0015-structured-regions-and-docz-validate.md
+        - 'DESIGN-0016: Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes': design/0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -44,6 +45,7 @@ nav:
         - 'IMPL-0016: v1.2.0 — api config block and docparse.Title': impl/0016-v120-api-config-block-and-docparsetitle.md
         - 'IMPL-0017: v1.3.0 — updated frontmatter field and the docz update stamp pass': impl/0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md
         - 'IMPL-0018: v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap': impl/0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md
+        - 'IMPL-0019: docz-api move-in: v2.0.0-beta.3': impl/0019-docz-api-move-in-v200-beta3.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
