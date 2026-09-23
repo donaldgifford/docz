@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+# Local observability stack for docz-api. Runs the monitoring backends only —
+# NOT the service or its data dependencies (Postgres/Redis/Meili). Pair it
+# with the app running either on the host (`just run`) or in containers
+# (`just local-up`); point the app at this stack via
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 and LOG_FORMAT=json.
+#
+# Always-on: prometheus (:9090), grafana (:3000), otel-collector (:4317/:4318),
+# jaeger (:16686), loki (:3100), alloy (:12345).
+# Behind `--profile auth`: keycloak (:8180) for local OIDC login testing.
+#
+# All bind mounts are ./dev/… — relative to this file's directory (deploy/).
+---
+name: docz-api-monitoring
+
+volumes:
+  prom_data: {}
+  grafana_data: {}
+  loki_data: {}
+  keycloak_data: {}
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./dev/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    ports:
+      - "9090:9090"
+    # docz-api runs on the host (or the local-env container network); scrape it
+    # via the docker host gateway.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./dev/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./dev/otel/otel-collector.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - jaeger
+
+  jaeger:
+    # Pinned to the v1 line (v2 restructures the all-in-one CLI/config surface).
+    # In-memory span storage: this is a dev trace backend — traces are inspected
+    # live, not persisted, so badger's on-disk store (which the non-root image
+    # user can't write to a root-owned volume) is unnecessary here.
+    image: jaegertracing/all-in-one:1.76.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      SPAN_STORAGE_TYPE: memory
+    ports:
+      - "16686:16686"
+
+  loki:
+    image: grafana/loki:latest
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+
+  alloy:
+    image: grafana/alloy:latest
+    command:
+      - "run"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "--storage.path=/var/lib/alloy/data"
+      - "/etc/alloy/config.alloy"
+    volumes:
+      - ./dev/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "12345:12345"
+    depends_on:
+      - loki
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.0
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    ports:
+      - "8180:8180"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./dev/keycloak:/opt/keycloak/data/import:ro
+    profiles:
+      - auth

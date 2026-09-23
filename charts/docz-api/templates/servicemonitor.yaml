@@ -1,0 +1,26 @@
+{{- if and .Values.metrics.enabled .Values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "docz-api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz-api.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "docz-api.selectorLabels" . | nindent 6 }}
+      # Scope to the API Service. Every Service in the release carries the
+      # name/instance labels, and the baked Meilisearch Service also has an
+      # http-named port, so without this the operator scraped its /metrics
+      # too (400/401), kept a permanently-down target, and fired DoczAPIDown
+      # on a healthy install. Meilisearch has its own ServiceMonitor.
+      app.kubernetes.io/component: server
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

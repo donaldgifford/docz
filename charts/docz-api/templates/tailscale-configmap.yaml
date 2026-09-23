@@ -1,0 +1,30 @@
+{{- if .Values.tailscale.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "docz-api.fullname" . }}-tailscale-serve-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz-api.labels" . | nindent 4 }}
+data:
+  serve-config.json: |
+    {
+      "TCP": {
+        "443": {
+          "HTTPS": true
+        }
+      },
+      "Web": {
+        "${TS_CERT_DOMAIN}:443": {
+          "Handlers": {
+            "/": {
+              "Proxy": "http://127.0.0.1:{{ .Values.config.port }}"
+            }
+          }
+        }
+      },
+      "AllowFunnel": {
+        "${TS_CERT_DOMAIN}:443": true
+      }
+    }
+{{- end }}

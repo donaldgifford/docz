@@ -20,3 +20,21 @@ spec:
   type: tool
   system: dev-tools
   lifecycle: production
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: docz-api
+  title: docz-api
+  description: A Go API for docz repos
+  annotations:
+    backstage.io/source-location: url:https://github.com/donaldgifford/docz/tree/main/cmd/docz-api
+    github.com/project-slug: "donaldgifford/docz"
+  tags:
+    - go
+  namespace: default
+spec:
+  lifecycle: production
+  type: service
+  owner: donaldgifford
+  system: infrastructure

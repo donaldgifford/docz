@@ -18,12 +18,49 @@ builds:
       - -X github.com/donaldgifford/docz/v2/cmd.Version={{ .Version }}
       - -X github.com/donaldgifford/docz/v2/cmd.Commit={{ .ShortCommit }}
 
+  # docz-api, the server (IMPL-0019 Phase 2). Its ldflags target package
+  # main, which the /v2 module path does not change.
+  - id: docz-api
+    binary: docz-api
+    main: ./cmd/docz-api
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+
+# One archive per binary, so the docz archive keeps the name it has always had.
 archives:
   - id: default
+    ids: [docz]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats: ["tar.gz"]
     files:
       - none*
+  - id: docz-api
+    ids: [docz-api]
+    name_template: "docz-api_{{ .Os }}_{{ .Arch }}"
+    formats: ["tar.gz"]
+    files:
+      - none*
+
+sboms:
+  - id: archives
+    artifacts: archive
+    documents:
+      - "${artifact}.spdx.json"
+    cmd: syft
+    args: ["$artifact", "--output", "spdx-json=$document"]
 
 checksum:
   name_template: 'checksums.txt'
@@ -77,6 +114,7 @@ release:
     # Extract and move to your PATH
     tar -xzf docz_*.tar.gz
     mv docz ~/.local/bin/
+    # the server: docz-api_<os>_<arch>.tar.gz, or ghcr.io/donaldgifford/docz-api
     ```
 
   footer: |

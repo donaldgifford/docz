@@ -88,3 +88,10 @@ playwright-report/
 # Local environment (secrets live here, never in mise.toml)
 .env.local
 .env.*.local
+
+# docz-api (merged in IMPL-0019 Phase 2)
+.idea/
+.vscode/
+coverage.html
+coverage.txt
+.claude/donald-loop.local.md

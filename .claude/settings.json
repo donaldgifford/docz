@@ -59,6 +59,7 @@
       "Bash(go vet *)",
 
       "Bash(just *)",
+      "Bash(just --list)",
       "Bash(make *)",
 
       "Bash(docker buildx *)",

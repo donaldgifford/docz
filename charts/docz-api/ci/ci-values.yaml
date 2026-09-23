@@ -1,0 +1,35 @@
+---
+# CI render/lint values. Overrides the container to a no-op busybox and
+# supplies a dummy for every `required` value so `helm lint`/`helm template`/
+# `ct` pass without real secrets. NOT a deployable config.
+image:
+  repository: busybox
+  tag: latest
+
+command:
+  - sleep
+  - "900"
+
+config:
+  appId: "000000"
+  authRedirectBase: "http://localhost:8080"
+  githubOAuthClientID: "ci-dummy"
+
+secrets:
+  webhookSecret: "ci-dummy"
+  privateKey: "ci-dummy"
+  privateKeyAsFile: false
+  sessionSecret: "ci-dummy"
+  oauthClientSecret: "ci-dummy"
+
+search:
+  meili:
+    # Meilisearch v1.12 rejects a master key < 16 bytes at startup ("production
+    # environment"), so `ct install` needs a >=16-byte dummy (helm lint/template
+    # never run the container, but the kind install does).
+    masterKey: "ci-dummy-master-key-0123456789"
+
+livenessProbe: null
+readinessProbe: null
+
+resources: {}
