@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/donaldgifford/docz/v2/internal/store"
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
-	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	doczdoc "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // createdLayout is the docz frontmatter date format ("2026-01-15").

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
-	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	doczdoc "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // R6 — the docz v1.1.0 changelog surface (upstream DESIGN-0010): the

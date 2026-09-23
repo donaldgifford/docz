@@ -7,8 +7,8 @@ import (
 	"slices"
 	"testing"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
-	doczparse "github.com/donaldgifford/docz/pkg/doczcore/docparse"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	doczparse "github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 )
 
 // R10 — the docz v1.2.0 api surface (upstream DESIGN-0008 clause R10,

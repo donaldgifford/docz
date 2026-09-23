@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // loadPagesConfig loads + validates a .docz.yaml body hermetically, the

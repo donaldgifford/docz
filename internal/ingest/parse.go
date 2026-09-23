@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // loadConfig parses fetched .docz.yaml bytes. doczcfg.Load is filesystem-based

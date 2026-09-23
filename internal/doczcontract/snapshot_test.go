@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 // R11 — the marshaled config shape (upstream DESIGN-0008 clause R11, docz

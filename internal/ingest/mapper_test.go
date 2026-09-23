@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
-	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	doczdoc "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 func TestMapDocType(t *testing.T) {
