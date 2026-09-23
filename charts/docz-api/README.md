@@ -34,7 +34,7 @@ provenance attestations (GitHub artifact attestations, Build L2).
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.8.0 \
+  --version 0.9.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +49,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.8.0 \
+  --version 0.9.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -259,7 +259,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.8.0
+  ghcr.io/donaldgifford/charts/docz-api:0.9.0
 ```
 
 ### Build provenance
@@ -269,7 +269,7 @@ it came from this repository:
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz-api:0.8.0 \
+  oci://ghcr.io/donaldgifford/charts/docz-api:0.9.0 \
   --owner donaldgifford
 ```
 
@@ -282,7 +282,7 @@ cosign verify-attestation \
     '^https://github.com/donaldgifford/docz/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.8.0
+  ghcr.io/donaldgifford/charts/docz-api:0.9.0
 ```
 
 ## Values

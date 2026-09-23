@@ -88,11 +88,13 @@ wiki:
   exclude:
     - templates
     - examples
+    - archive # docz-api's records (IMPL-0019); keep in step with api.exclude
 
 api:
   enabled: true # publish non-docz markdown under docs_dir as docz-api pages
   exclude:
     - examples # mirrors the wiki exclusion
+    - archive # docz-api's records (IMPL-0019); keep in step with wiki.exclude
   additional_docs:
     - CONTRIBUTING.md
     - DEVELOPMENT.md

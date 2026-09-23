@@ -390,27 +390,29 @@ Everything that makes the result enforceable and visible correctly from outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `TestLayerRules_PkgNeverImportsInternal` to
+- [x] Add `TestLayerRules_PkgNeverImportsInternal` to
   `pkg/doczcore/layer_test.go`, walking `go list <modulePath>/pkg/...` and
   failing on any dependency prefixed `modulePath + "/internal/"`
-- [ ] Prove the rule fires: a temporary `pkg/` import of an `internal/` package
-  fails the test (not committed)
-- [ ] Write `docs/archive/api/README.md`: one paragraph stating that inside
+- [x] Prove the rule fires: a temporary `pkg/` import of an `internal/` package
+  fails the test (not committed) — a blank import of `internal/telemetry` in
+  `pkg/doczcore/toc` failed it, reported through every package that reaches toc
+- [x] Write `docs/archive/api/README.md`: one paragraph stating that inside
   this directory an ID means docz-api's, the archive date, and the source
   repository
-- [ ] Add `docs/archive/` to `wiki.exclude` and `api.exclude` in `.docz.yaml`,
+- [x] Add `docs/archive/` to `wiki.exclude` and `api.exclude` in `.docz.yaml`,
   in one commit
-- [ ] Test that `wiki.exclude` and `api.exclude` agree on `docs/archive/`
-- [ ] `docz wiki update` and confirm no archived page enters `mkdocs.yml`
-- [ ] Add a `publish-image` job to `prerelease.yml` calling `ghcr.yml` with
+- [x] Test that `wiki.exclude` and `api.exclude` agree on `docs/archive/`
+- [x] `docz wiki update` and confirm no archived page enters `mkdocs.yml`
+- [x] Add a `publish-image` job to `prerelease.yml` calling `ghcr.yml` with
   `tag: ${{ github.ref_name }}`; ECR stays gated on `vars.ECR_PUBLISH_ENABLED`
-- [ ] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
-  grant the `docz` repository write access under "Manage Actions access"
-- [ ] `charts/docz-api/Chart.yaml`: `version: 0.9.0`, `appVersion: "v2.0.0-beta.3"` (Open Question 5); regenerate its README with `just api helm-docs`
-- [ ] Create INV-0012 (successor to docz-api INV-0002) and INV-0013 (successor
+- [x] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
+  grant the `docz` repository write access under "Manage Actions access" —
+  done 2026-09-23 during Phase 3, when #123's Docker Build push needed it
+- [x] `charts/docz-api/Chart.yaml`: `version: 0.9.0`, `appVersion: "v2.0.0-beta.3"` (Open Question 5); regenerate its README with `just api helm-docs` — **deviation:** `appVersion: "2.0.0-beta.3"`, bare. `ghcr.yml` tags the image with metadata-action's `{{version}}`, which strips the `v`, so the chart's default tag has to match what is published or every default install 404s (the chart's own bare-semver test, written after v0.5.1 did exactly that, caught it). That test now admits a prerelease suffix
+- [x] Create INV-0012 (successor to docz-api INV-0002) and INV-0013 (successor
   to docz-api INV-0003) per Open Question 6, each citing the archived original
   by path
-- [ ] Update `CLAUDE.md`: the Project paragraph (`internal/` is the server's,
+- [x] Update `CLAUDE.md`: the Project paragraph (`internal/` is the server's,
   no longer empty), the layer rule, the `api::` recipes, and the archive
 
 <!--docz:tasks:end-->
