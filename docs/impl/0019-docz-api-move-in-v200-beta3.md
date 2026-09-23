@@ -340,7 +340,7 @@ tested together.
 - [x] Swap `internal/ingest/parse.go`'s `loadConfig` for
   `doczcfg.ParseBytes`; drop the `HOME` neutralisation from ingest tests that
   only needed it for `Load`
-- [ ] Move `TestConfigLoadsFixtureManifest` into `internal/ingest`, then delete
+- [x] Move `TestConfigLoadsFixtureManifest` into `internal/ingest`, then delete
   `internal/doczcontract/`
 - [ ] Capture the lint baseline: `golangci-lint run ./... > /tmp/baseline.txt`
   and record the count in this document
