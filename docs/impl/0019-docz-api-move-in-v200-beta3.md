@@ -337,7 +337,7 @@ tested together.
   updated for `Dockerfile.api`, and delete `docker.just` (Open Question 4)
 - [x] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
   gate
-- [ ] Swap `internal/ingest/parse.go`'s `loadConfig` for
+- [x] Swap `internal/ingest/parse.go`'s `loadConfig` for
   `doczcfg.ParseBytes`; drop the `HOME` neutralisation from ingest tests that
   only needed it for `Load`
 - [ ] Move `TestConfigLoadsFixtureManifest` into `internal/ingest`, then delete
