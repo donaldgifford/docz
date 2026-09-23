@@ -122,7 +122,7 @@ Phase 2's diff is the graft and nothing else.
 
 - [x] Bump `go` to `1.26.5` in `go.mod`, `test/consumer/go.mod`, and
   `mise.toml`; run `go mod tidy` in both modules
-- [ ] Delete `.checkmake.ini`
+- [x] Delete `.checkmake.ini`
 - [ ] Rewrite the root `justfile` composition: `import 'docz.just'`,
   `mod? api 'api.just'`, `mod? ui 'ui.just'` (replacing the two `import?`
   lines)
