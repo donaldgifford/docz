@@ -10,5 +10,5 @@ DESIGN-0016, IMPL-0019), from
 at commit `153bdc0` with their history intact. They are records, not live
 documents: nothing here is renumbered or rewritten, and neither the wiki nor the
 `api:` listing publishes them. Work they left unfinished continues in docz's own
-series — docz-api INV-0002 as [INV-0012](../../investigation/) and INV-0003 as
-[INV-0013](../../investigation/).
+series — docz-api INV-0002 as [INV-0012](../../investigation/0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md) and INV-0003 as
+[INV-0013](../../investigation/0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md).
