@@ -112,6 +112,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(consumer)* Go mod tidy after the merge
 - *(prerelease)* Publish docz-api's image and chart on a beta tag
 - *(chart)* Docz-api chart 0.9.0 for v2.0.0-beta.3
+- *(api)* Stop tagging a beta image as latest
 
 ## [2.0.0-beta.1] - 2026-09-21
 
