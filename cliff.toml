@@ -1,9 +1,11 @@
-# git-cliff configuration for docz-api root CHANGELOG.
+# git-cliff configuration for the docz root CHANGELOG.
 # https://git-cliff.org/docs/configuration
 #
-# Generated for the whole repo. The chart-only changelog is at
-# charts/docz-api/cliff.toml and is invoked with
-# --include-path 'charts/**'.
+# Arrived with docz-api in IMPL-0019 Phase 2 and now governs docz's own
+# CHANGELOG.md. docz-api's grafted history is skipped through .cliffignore
+# (DESIGN-0016 OQ 3); its changelog is archived at
+# docs/archive/api/CHANGELOG.md. The chart-only changelog is at
+# charts/docz-api/cliff.toml and is invoked with --include-path 'charts/**'.
 
 [changelog]
 header = """
@@ -34,7 +36,7 @@ trim = true
 render_always = true
 
 postprocessors = [
-  { pattern = '<REPO>', replace = "https://github.com/donaldgifford/docz-api" },
+  { pattern = '<REPO>', replace = "https://github.com/donaldgifford/docz" },
 ]
 
 [git]
@@ -75,5 +77,5 @@ commit_parsers = [
 ]
 
 link_parsers = [
-  { pattern = "#(\\d+)", href = "https://github.com/donaldgifford/docz-api/issues/$1" },
+  { pattern = "#(\\d+)", href = "https://github.com/donaldgifford/docz/issues/$1" },
 ]

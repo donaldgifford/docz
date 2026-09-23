@@ -1,10 +1,19 @@
+# Changelog
+
+All notable changes to this project are documented here. The format is
+based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
+this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
-### 🐛 Bug Fixes
+### Features
+
+- *(config)* ParseBytes decodes .docz.yaml bytes with Load's normalisation (IMPL-0019 Phase 1)
+
+### Bug Fixes
 
 - *(kinds,validate)* Read the option spellings the corpus actually uses
 
-### 📚 Documentation
+### Documentation
 
 - IMPL-0018 Completed — v2.0.0-beta.1 is released
 - INV-0011 — consolidating docz-api and docz-site into one repo
@@ -13,13 +22,44 @@
 - *(adr-0004)* Resolve OQ 1 — archive all 43 incoming docs, renumber none
 - *(adr-0004)* Successors for unfinished work, and a status sweep first
 - *(adr-0004)* Resolve OQ 2/3/4, delete doczcontract, flip to Accepted
+- Correct the no-shim claim for make build and make test
+- Correct the log-% replacement claim in CLAUDE.md
+- DESIGN-0016 — move docz-api in (internal/, cmd/docz-api, api/, charts/)
+- Resolve DESIGN-0016's six open questions, status Approved
+- IMPL-0019 — docz-api move-in, v2.0.0-beta.3
+- Resolve IMPL-0019's six open questions
+- Describe api and ui as just modules (IMPL-0019 Phase 0)
+- IMPL-0019 Phase 0 govulncheck task checked off
+- IMPL-0019 In Progress; Phase 0 complete
+- Document config.ParseBytes in CLAUDE.md (IMPL-0019 Phase 1)
+- IMPL-0019 Phase 2 docz-api sweep tasks deferred to a human
+- IMPL-0019 Phase 2 status sweep merged, forward pointers in docz-api #44
+- Record IMPL-0019 Phase 2 clone and filter-repo invocation
+- Check off IMPL-0019 Phase 2 graft merge tasks
+- Check off IMPL-0019 Phase 2 Dockerfile references
 
-### ⚙️ Miscellaneous Tasks
+### Testing
+
+- *(config)* Pin ParseBytes to Load and to reading nothing (IMPL-0019 Phase 1)
+- *(consumer)* Prove config.ParseBytes reachable from outside the module (IMPL-0019 Phase 1)
+
+### Miscellaneous Tasks
 
 - Claude settings and gitignore
+- Cover the incoming repos in .gitignore, converge claude settings
+- *(claude)* Allow docz validate and gh issue
+- Replace make with just (ADR-0004 Decision 4)
+- Drop makefmt and checkmake with the Makefile
+- Go 1.26.5 across both modules and mise (IMPL-0019 Phase 0)
+- Delete .checkmake.ini (IMPL-0019 Phase 0)
+- *(just)* Compose api and ui as optional modules (IMPL-0019 Phase 0)
+- Skip the Go jobs on a PR labelled graft (IMPL-0019 Phase 0)
+- Graft docz-api's history into docz (IMPL-0019 Phase 2)
+- *(api)* Point Docker references at Dockerfile.api and deploy/api/
+
 ## [2.0.0-beta.1] - 2026-09-21
 
-### 🚀 Features
+### Features
 
 - *(go.mod)* [**breaking**] Move to the /v2 module path
 - *(docparse)* Add the region marker walker
@@ -49,20 +89,29 @@
 - *(cmd)* Docz validate composes the three tiers
 - *(cmd)* Docz validate --fix marks the regions inference finds
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(kinds)* Number reader lines from the region, not its body
 - *(validate)* Stop reporting toc.missing on an unmarked document with a real ToC
 - *(cmd,repo)* Act on the Phase 5 review pass (IMPL-0018)
 - *(parity)* Compute $DATE in UTC and freeze the fixture date it hid
 
-### 📚 Documentation
+### Refactor
 
-- INV-0008, DESIGN-0012, IMPL-0017 — the updated frontmatter field (#93)
-- INV-0009 — ToC regeneration in docz update and markdownlint MD051 (#101)
-- INV-0010 and DESIGN-0013 — IMPL plan API and a library-first docz (#102)
-- V2 API unit — ADR-0002/0003, DESIGN-0014/0015, IMPL-0018 (#104)
-- Defer the claude-skills plugin update past v2, retarget #97 to docz validate (#105)
+- *(toc)* Locate the ToC region through docparse.Regions
+- *(document)* Move ErrUnsupportedLineEndings to the facts layer
+- *(kinds)* Own the region-to-document line conversion
+- *(doctemplate)* Promote internal/template to pkg/doczcore/doctemplate
+- *(index)* Promote internal/index and add Splice, Scaffold, and the markers
+- *(wiki)* Promote internal/wiki to pkg/wiki, emptying internal/
+
+### Documentation
+
+- INV-0008, DESIGN-0012, IMPL-0017 — the updated frontmatter field ([#93](https://github.com/donaldgifford/docz/issues/93))
+- INV-0009 — ToC regeneration in docz update and markdownlint MD051 ([#101](https://github.com/donaldgifford/docz/issues/101))
+- INV-0010 and DESIGN-0013 — IMPL plan API and a library-first docz ([#102](https://github.com/donaldgifford/docz/issues/102))
+- V2 API unit — ADR-0002/0003, DESIGN-0014/0015, IMPL-0018 ([#104](https://github.com/donaldgifford/docz/issues/104))
+- Defer the claude-skills plugin update past v2, retarget #97 to docz validate ([#105](https://github.com/donaldgifford/docz/issues/105))
 - Spell the /v2 module path in README, DEVELOPMENT, and CLAUDE.md
 - *(claude)* Describe the parity suite in CLAUDE.md
 - Record how pr-semver-bump v1.7.4 treats a beta tag
@@ -79,16 +128,7 @@
 - Record the review-pass behaviour in CLAUDE.md (IMPL-0018 Phase 5)
 - Record the parity date fix and clear the design index drift
 
-### 🚜 Refactor
-
-- *(toc)* Locate the ToC region through docparse.Regions
-- *(document)* Move ErrUnsupportedLineEndings to the facts layer
-- *(kinds)* Own the region-to-document line conversion
-- *(doctemplate)* Promote internal/template to pkg/doczcore/doctemplate
-- *(index)* Promote internal/index and add Splice, Scaffold, and the markers
-- *(wiki)* Promote internal/wiki to pkg/wiki, emptying internal/
-
-### 🧪 Testing
+### Testing
 
 - *(consumer)* Import the /v2 path from the external module
 - *(parity)* Add the seven fixture repositories
@@ -107,106 +147,101 @@
 - *(rfc,adr,design,investigation)* Parse each package's own rendered template
 - *(consumer)* Cover the three promoted packages from outside the module
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
+- Point the version ldflags at the /v2 path
 - Build pre-releases from hand-pushed beta tags
 - Make parity and docz validate part of make ci (IMPL-0018 Phase 5)
 - *(make)* Name test-consumer in the ci target's help line
 
-### 💼 Other
-
-- Point the version ldflags at the /v2 path
 ## [1.2.2] - 2026-08-30
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
-- *(config)* Add json struct tags mirroring .docz.yaml key spellings (#91)
+- *(config)* Add json struct tags mirroring .docz.yaml key spellings ([#91](https://github.com/donaldgifford/docz/issues/91))
 
-### 📚 Documentation
+### Documentation
 
-- Flip DESIGN-0011 to Implemented and IMPL-0016 to Completed (#90)
+- Flip DESIGN-0011 to Implemented and IMPL-0016 to Completed ([#90](https://github.com/donaldgifford/docz/issues/90))
+
 ## [1.2.1] - 2026-08-29
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
-- *(docz)* Dogfood the api block — publish docs pages + contributor guides (#88)
+- *(docz)* Dogfood the api block — publish docs pages + contributor guides ([#88](https://github.com/donaldgifford/docz/issues/88))
+
 ## [1.2.0] - 2026-08-26
 
-### 🚀 Features
+### Features
 
-- V1.2.0 — api config block and docparse.Title (IMPL-0016) (#84)
+- V1.2.0 — api config block and docparse.Title (IMPL-0016) ([#84](https://github.com/donaldgifford/docz/issues/84))
+
 ## [1.1.1] - 2026-08-11
 
-### 🚀 Features
+### Features
 
-- *(template,config)* Prefix-qualified H1s, PLAN off by default, DESIGN-0011/INV-0007 (#83)
+- *(template,config)* Prefix-qualified H1s, PLAN off by default, DESIGN-0011/INV-0007 ([#83](https://github.com/donaldgifford/docz/issues/83))
 
-### 📚 Documentation
+### Documentation
 
-- Mark DESIGN-0010 Implemented and IMPL-0015 Completed (#79)
+- Mark DESIGN-0010 Implemented and IMPL-0015 Completed ([#79](https://github.com/donaldgifford/docz/issues/79))
+
 ## [1.1.0] - 2026-08-03
 
-### 🚀 Features
+### Features
 
-- *(config,document)* V1.1.0 — changelog config block and ParseChangelog (DESIGN-0010/IMPL-0015) (#78)
+- *(config,document)* V1.1.0 — changelog config block and ParseChangelog (DESIGN-0010/IMPL-0015) ([#78](https://github.com/donaldgifford/docz/issues/78))
 
-### 📚 Documentation
+### Documentation
 
-- Flip IMPL-0014 to Completed post-v1.0.0 tag (#72)
+- Flip IMPL-0014 to Completed post-v1.0.0 tag ([#72](https://github.com/donaldgifford/docz/issues/72))
+
 ## [1.0.0] - 2026-07-05
 
-### 🚀 Features
+### Features
 
-- *(config)* Replace viper with yaml.v3 in config.Load (IMPL-0014 Phase 1) (#70)
-- [**breaking**] V1.0.0 — the five-package pkg/doczcore public core (IMPL-0014) (#71)
+- *(config)* Replace viper with yaml.v3 in config.Load (IMPL-0014 Phase 1) ([#70](https://github.com/donaldgifford/docz/issues/70))
+- [**breaking**] V1.0.0 — the five-package pkg/doczcore public core (IMPL-0014) ([#71](https://github.com/donaldgifford/docz/issues/71))
 
-### 📚 Documentation
+### Documentation
 
-- Mark DESIGN-0007 Implemented, resolve OQ3/OQ5/OQ8 (post-v0.5.0) (#67)
-- Mark IMPL-0013 Completed (post-v0.5.0) (#68)
-- Accept ADR-0001 single public core, add INV-0006 + IMPL-0014 (#69)
+- Mark DESIGN-0007 Implemented, resolve OQ3/OQ5/OQ8 (post-v0.5.0) ([#67](https://github.com/donaldgifford/docz/issues/67))
+- Mark IMPL-0013 Completed (post-v0.5.0) ([#68](https://github.com/donaldgifford/docz/issues/68))
+- Accept ADR-0001 single public core, add INV-0006 + IMPL-0014 ([#69](https://github.com/donaldgifford/docz/issues/69))
+
 ## [0.5.0] - 2026-07-01
 
-### 🚀 Features
+### Features
 
-- Promote parsing core to public pkg/doczcore surface (#66)
+- Promote parsing core to public pkg/doczcore surface ([#66](https://github.com/donaldgifford/docz/issues/66))
+
 ## [0.4.1] - 2026-06-24
 
-### 📚 Documentation
+### Documentation
 
-- Mark DESIGN-0006 Implemented and IMPL-0012 Completed (post-merge) (#57)
-- INV-0005 + DESIGN-0007/0008/0009 for docz-api and docz-site (#64)
+- Mark DESIGN-0006 Implemented and IMPL-0012 Completed (post-merge) ([#57](https://github.com/donaldgifford/docz/issues/57))
+- INV-0005 + DESIGN-0007/0008/0009 for docz-api and docz-site ([#64](https://github.com/donaldgifford/docz/issues/64))
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
-- Rm dependabot.yml (#58)
-- Schema store additions (#63)
-- Upgrade Go to 1.26.4, bump CI actions and tooling (#65)
+- Rm dependabot.yml ([#58](https://github.com/donaldgifford/docz/issues/58))
+- Schema store additions ([#63](https://github.com/donaldgifford/docz/issues/63))
+- Upgrade Go to 1.26.4, bump CI actions and tooling ([#65](https://github.com/donaldgifford/docz/issues/65))
+
 ## [0.4.0] - 2026-06-23
 
-### 🚀 Features
+### Features
 
-- Custom document type support (DESIGN-0006 / IMPL-0012) (#56)
+- Custom document type support (DESIGN-0006 / IMPL-0012) ([#56](https://github.com/donaldgifford/docz/issues/56))
+
 ## [0.3.0] - 2026-06-15
 
-### 🚀 Features
+### Features
 
-- *(cmd,config)* IMPL-0009 Runner pattern + DocType registry implementation (phases 2-11) (#49)
-- *(cmd,document)* Docz status set CLI primitive (DESIGN-0005, IMPL-0011) (#53)
+- *(cmd,config)* IMPL-0009 Runner pattern + DocType registry implementation (phases 2-11) ([#49](https://github.com/donaldgifford/docz/issues/49))
+- *(cmd,document)* Docz status set CLI primitive (DESIGN-0005, IMPL-0011) ([#53](https://github.com/donaldgifford/docz/issues/53))
 
-### 📚 Documentation
-
-- *(inv)* INV-0004 mdp integration resolved -- pkg/ now public (#42)
-- *(inv)* INV-0002 Wave 4 status update for IMPL-0008
-- *(impl)* IMPL-0008 Phase 11 partial - check off non-merge tasks
-- *(impl)* Mark IMPL-0008 Completed after PRs #44 and #45 merged
-- *(design)* IMPL-0009 Phase 1 DESIGN-0004 Runner pattern + DocType registry (#47)
-
-### ⚡ Performance
-
-- *(update)* IMPL-0007 eliminate redundant file reads and heading parses (#43)
-
-### 🚜 Refactor
+### Refactor
 
 - *(wiki)* IMPL-0008 Phase 1 move writeMkDocsYAML into internal/wiki
 - *(toc)* IMPL-0008 Phase 2 move updateToCs into internal/toc
@@ -219,16 +254,33 @@
 - *(index)* IMPL-0008 Phase 9 typed UpdateOutcome
 - IMPL-0008 Phase 10 rename TemplateData and ToCConfig
 
-### ⚙️ Miscellaneous Tasks
+### Documentation
+
+- *(inv)* INV-0004 mdp integration resolved -- pkg/ now public ([#42](https://github.com/donaldgifford/docz/issues/42))
+- *(inv)* INV-0002 Wave 4 status update for IMPL-0008
+- *(impl)* IMPL-0008 Phase 11 partial - check off non-merge tasks
+- *(impl)* Mark IMPL-0008 Completed after PRs #44 and #45 merged
+- *(design)* IMPL-0009 Phase 1 DESIGN-0004 Runner pattern + DocType registry ([#47](https://github.com/donaldgifford/docz/issues/47))
+
+### Performance
+
+- *(update)* IMPL-0007 eliminate redundant file reads and heading parses ([#43](https://github.com/donaldgifford/docz/issues/43))
+
+### Miscellaneous Tasks
 
 - Nudge workflow trigger
+
 ## [0.2.0] - 2026-05-25
 
-### 🚀 Features
+### Features
 
-- *(config)* IMPL-0006 correctness and duplication cleanup (#41)
+- *(config)* IMPL-0006 correctness and duplication cleanup ([#41](https://github.com/donaldgifford/docz/issues/41))
 
-### 📚 Documentation
+### Other
+
+- Catalog-info and codeowners
+
+### Documentation
 
 - *(inv)* Add INV-0003 init/update should respect config-listed types
 - *(inv)* Add INV-0004 v1 release plan — TUI, mdp preview, CLI parity
@@ -237,66 +289,66 @@
 - *(impl)* Mark IMPL-0005 as Completed
 - *(inv)* Add IMPL-0006..0009 prerequisite gate to INV-0004
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
 - Add .github/CODEOWNERS
 - Add .github/dependabot.yml
 - Add catalog-info.yaml
 
-### 💼 Other
-
-- Catalog-info and codeowners
 ## [0.1.0] - 2026-05-15
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - Fmt
 
-### 📚 Documentation
-
-- *(inv)* Add INV-0002 architectural review and cleanup opportunities
-- *(impl)* Add IMPL-0005 through IMPL-0009 for INV-0002 cleanup waves
-- *(impl)* Check off IMPL-0005 Phase 4 PR task with PR #36 link
-
-### 🚜 Refactor
+### Refactor
 
 - *(config)* Centralize file modes, filenames, and minHeadings constants
 - Modernize Go stdlib idioms
 - Cobra hygiene and Validate style polish
 
-### 🧪 Testing
+### Documentation
+
+- *(inv)* Add INV-0002 architectural review and cleanup opportunities
+- *(impl)* Add IMPL-0005 through IMPL-0009 for INV-0002 cleanup waves
+- *(impl)* Check off IMPL-0005 Phase 4 PR task with PR #36 link
+
+### Testing
 
 - Add regression tests for time.DateOnly and bytes.NewReader swaps
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
 - *(claude)* Enable additional skills plugins and permissions allowlist
+
 ## [0.0.12] - 2026-04-02
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(update)* Skip disabled types in docz update
+
 ## [0.0.11] - 2026-04-02
 
-### 🚀 Features
+### Features
 
 - *(config)* Add markdown_extensions, docs_dir, repo_url, site_url, theme to WikiConfig
 - *(wiki)* Write docs_dir, repo_url, site_url, theme, markdown_extensions to mkdocs.yml
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(release)* Add ldflags to goreleaser and fix binary name typo
 
-### 📚 Documentation
+### Documentation
 
 - Add markdown_extensions and optional fields to wiki config docs
 
-### 🧪 Testing
+### Testing
 
 - Add tests for markdown_extensions and optional mkdocs fields
+
 ## [0.0.10] - 2026-04-02
 
-### 🚀 Features
+### Features
 
 - *(config)* Add Plugins field to WikiConfig
 - *(init)* Add wiki.plugins to default config
@@ -306,11 +358,11 @@
 - *(template)* Add WikiIndexData, ResolveWikiIndex, RenderWikiIndex
 - *(wiki)* Rewrite ensureDocsIndex to use wiki index template
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(init)* Skip disabled types in docz init
 
-### 📚 Documentation
+### Documentation
 
 - *(inv)* Add INV-0001 wiki init template and init enabled fix
 - *(inv)* Conclude INV-0001 with decisions
@@ -320,13 +372,14 @@
 - Add wiki_index.md and ResolveWikiIndex to DEVELOPMENT.md
 - *(impl)* Mark IMPL-0004 as completed
 
-### 🧪 Testing
+### Testing
 
 - Add tests for init disabled types and wiki plugins
 - Add wiki index template unit and integration tests
+
 ## [0.0.9] - 2026-03-22
 
-### 🚀 Features
+### Features
 
 - *(toc)* Add core ToC package with heading parsing and slug generation
 - *(config)* Add ToCConfig struct with defaults
@@ -334,12 +387,12 @@
 - *(cmd)* Wire ToC generation into docz update
 - *(template)* Add ToC markers to all six document templates
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - All dependabots
 - *(toc)* Fix Slugify doc comment and check off testing plan
 
-### 📚 Documentation
+### Documentation
 
 - *(design)* Add DESIGN-0003 table of contents generation
 - Add ToC feature documentation to README
@@ -348,7 +401,7 @@
 - *(impl)* Mark IMPL-0003 as completed
 - Add note about adding ToC markers to pre-v0.0.8 documents
 
-### 🧪 Testing
+### Testing
 
 - *(toc)* Add unit tests for ToC package
 - *(toc)* Add golden file test for ToC output
@@ -356,25 +409,27 @@
 - *(template)* Regenerate golden files with ToC markers
 - *(cmd)* Add integration tests for ToC in update and create
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
 - Disable dependabot
+
 ## [0.0.8] - 2026-03-14
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(wiki)* Use "Home" title for root index.md in nav
 
-### 📚 Documentation
+### Documentation
 
 - Update README, DEVELOPMENT, design statuses, and add CLAUDE.md
 
-### ⚙️ Miscellaneous Tasks
+### Miscellaneous Tasks
 
 - Initialize docz and wiki for the project
+
 ## [0.0.7] - 2026-03-14
 
-### 🚀 Features
+### Features
 
 - *(config)* Add WikiConfig struct with defaults and wire into config system
 - *(wiki)* Add titles package for nav title extraction
@@ -384,13 +439,13 @@
 - *(cmd)* Wire wiki nav auto-update into docz create
 - *(cmd)* Add verbose output and edge case handling to wiki commands
 
-### 📚 Documentation
+### Documentation
 
 - *(impl)* Add implementation plan for wiki command (DESIGN-0002)
 - Add wiki command documentation to README and DEVELOPMENT
 - *(impl)* Mark IMPL-0002 as completed
 
-### 🧪 Testing
+### Testing
 
 - *(config)* Add wiki config default and round-trip tests
 - *(wiki)* Add unit tests for title extraction functions
@@ -398,39 +453,45 @@
 - *(wiki)* Add unit tests for MkDocs YAML I/O and nav merging
 - *(cmd)* Add integration tests for wiki init, update, and create
 - *(wiki)* Add golden file test for nav output
+
 ## [0.0.6] - 2026-03-11
 
-### 📚 Documentation
+### Documentation
 
 - *(design)* Add wiki command design doc for MkDocs TechDocs integration
 - *(design)* Resolve open questions in wiki command design
+
 ## [0.0.5] - 2026-03-08
 
-### 🚀 Features
+### Features
 
 - *(cmd)* Add type aliases and fix help text for all commands
+
 ## [0.0.4] - 2026-03-08
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(config)* Wire plan type into config and fix docs
+
 ## [0.0.3] - 2026-03-07
 
-### 🚀 Features
+### Features
 
 - *(docs)* Add investigation document type
+
 ## [0.0.2] - 2026-03-07
 
-### 🚀 Features
+### Features
 
 - *(docs)* Add plan template, update impl template, and add project docs
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(templates)* Suppress MD025/MD041 lint errors and add frontmatter to design doc
+
 ## [0.0.1] - 2026-02-24
 
-### 🚀 Features
+### Features
 
 - *(template)* Add embedded default templates for all document types
 - Implement core internal packages for template, config, and document
@@ -440,21 +501,22 @@
 - *(cmd)* Add template and config commands with tests
 - Add Phase 5 polish - verbose flag, config validation, Makefile updates
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 - *(deps)* Move cobra and viper to direct dependencies
 - *(cmd)* Extract json format string to constant
 
-### 📚 Documentation
+### Refactor
+
+- Move main.go to cmd/docz/main.go
+
+### Documentation
 
 - Add design document and example scripts
 - Mark implementation plan as completed
 
-### 🚜 Refactor
-
-- Move main.go to cmd/docz/main.go
-
-### 🧪 Testing
+### Testing
 
 - Add unit tests for template, config, and document packages
 - Add integration and golden file tests for create and templates
+
