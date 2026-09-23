@@ -436,15 +436,20 @@ Everything that makes the result enforceable and visible correctly from outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Local run of `just api test-integration` against `compose.yaml` passes
-  (not in CI, not claimed to be)
-- [ ] `just release-check` and `just api release-check` pass
+- [x] Local run of `just api test-integration` against `compose.yaml` passes
+  (not in CI, not claimed to be) — 2026-09-23 on `main` at `348a3fd`: all 15
+  server packages `ok`, none skipped, via testcontainers-go (Postgres, Redis,
+  Meilisearch)
+- [x] `just release-check` and `just api release-check` pass
 - [ ] **(human)** `just release v2.0.0-beta.3` from the Phase 4 merge commit
-- [ ] **(human)** Confirm `prerelease.yml` produced both binaries and the image
+  (`348a3fd`) — `deferred - human required`
+- [ ] **(human)** Confirm `prerelease.yml` produced both binaries and the image — `deferred - human required`
 - [ ] **(human)** `docker pull ghcr.io/donaldgifford/docz-api:v2.0.0-beta.3`
-  succeeds and `docker run … --version` reports it
+  succeeds and `docker run … --version` reports it — the published tag is
+  **`2.0.0-beta.3`** (metadata-action's `{{version}}` strips the `v`; see the
+  Phase 4 chart note) — `deferred - human required`
 - [ ] **(human)** Confirm the rendered wiki and the `api:` listing return no
-  archived document
+  archived document — `deferred - human required`
 - [ ] Flip IMPL-0019 to `Completed` and DESIGN-0016 to `Implemented`
 
 <!--docz:tasks:end-->
