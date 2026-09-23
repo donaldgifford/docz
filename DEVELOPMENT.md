@@ -1007,10 +1007,10 @@ deploying the full stack to a real host, see
 ### First-time setup
 
 ```sh
-git clone https://github.com/donaldgifford/docz-api.git
-cd docz-api
+git clone https://github.com/donaldgifford/docz.git
+cd docz
 mise trust && mise install   # installs the pinned toolchain
-just                         # prints the task menu — the map of everything below
+just api                     # prints the server's task menu — the map of everything below
 ```
 
 `just` is the single entry point for project automation. Any instruction
