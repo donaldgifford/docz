@@ -232,23 +232,23 @@ exists as a module. Phase 3 fixes that.
   dropped (`--invert-paths`)
 - [x] Record the exact `filter-repo` invocation in this document under
   Phase 2 notes below (Open Question 3)
-- [ ] `git remote add api-local <clone>`, `git fetch`, and
+- [x] `git remote add api-local <clone>`, `git fetch`, and
   `git merge --allow-unrelated-histories api-local/main` on a branch off `main`
-- [ ] Resolve the 20 root-file conflicts per DESIGN-0016 §3: union `go.mod`
+- [x] Resolve the 20 root-file conflicts per DESIGN-0016 §3: union `go.mod`
   requires (drop the `docz` self-requirement), keep ours for `.docz.yaml`,
   `.prettierrc.yaml`, `LICENSE`, `CODEOWNERS`, `licenses-csv.tpl`; union
   `mise.toml`, `.markdownlint.yaml`, `.yamllint.yml`, `.codecov.yml`,
   `renovate.json5`, `catalog-info.yaml` (two components); `.gitignore` gains
   `.idea/`, `.vscode/`, `coverage.html`, `coverage.txt`,
   `.claude/donald-loop.local.md`
-- [ ] Fold docz-api's `CLAUDE.md` server material into ours as a new
+- [x] Fold docz-api's `CLAUDE.md` server material into ours as a new
   `## Server (internal/, cmd/docz-api)` section; fold `README.md` and
   `DEVELOPMENT.md` the same way
-- [ ] Merge `.goreleaser.yml`: two `builds:` entries (`docz`, `docz-api`),
+- [x] Merge `.goreleaser.yml`: two `builds:` entries (`docz`, `docz-api`),
   keep our `signs:`, keep docz-api's syft SBOM
-- [ ] `.claude/settings.json`: add `Bash(just --list)`; drop docz-api's three
+- [x] `.claude/settings.json`: add `Bash(just --list)`; drop docz-api's three
   `make` entries and `Bash(git *)`
-- [ ] Merge `.github/`: `ci.yml` absorbs `changes`, `lint-alerts`, `security`,
+- [x] Merge `.github/`: `ci.yml` absorbs `changes`, `lint-alerts`, `security`,
   `docker-build`, `helm-unittest`, `helm-test` (Go jobs keep the `graft`
   guard); `release.yml` absorbs `publish-ghcr`/`publish-ecr` and keeps GPG
   import; `license-check.yml`, `pr-labels.yml`, `labeler.yml` unioned; the ten
@@ -259,9 +259,9 @@ exists as a module. Phase 3 fixes that.
 - [ ] `cliff.toml`: add the commit-parser rule that skips commits reachable
   only through the grafted parent; run `git-cliff` locally against the merge
   and confirm no docz-api commit appears under a docz version heading
-- [ ] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
+- [x] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
   Phase 3)
-- [ ] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
+- [x] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
 - [ ] Open the PR with `graft` and `dont-release`; the body states that the Go
   jobs are skipped by decision and cites DESIGN-0016 OQ 6
 - [ ] **(human)** Review and merge the red PR with a merge commit (not squash —
