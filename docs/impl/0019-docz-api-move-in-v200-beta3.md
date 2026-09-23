@@ -408,7 +408,7 @@ Everything that makes the result enforceable and visible correctly from outside.
 - [x] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
   grant the `docz` repository write access under "Manage Actions access" —
   done 2026-09-23 during Phase 3, when #123's Docker Build push needed it
-- [ ] `charts/docz-api/Chart.yaml`: `version: 0.9.0`, `appVersion: "v2.0.0-beta.3"` (Open Question 5); regenerate its README with `just api helm-docs`
+- [x] `charts/docz-api/Chart.yaml`: `version: 0.9.0`, `appVersion: "v2.0.0-beta.3"` (Open Question 5); regenerate its README with `just api helm-docs` — **deviation:** `appVersion: "2.0.0-beta.3"`, bare. `ghcr.yml` tags the image with metadata-action's `{{version}}`, which strips the `v`, so the chart's default tag has to match what is published or every default install 404s (the chart's own bare-semver test, written after v0.5.1 did exactly that, caught it). That test now admits a prerelease suffix
 - [ ] Create INV-0012 (successor to docz-api INV-0002) and INV-0013 (successor
   to docz-api INV-0003) per Open Question 6, each citing the archived original
   by path
