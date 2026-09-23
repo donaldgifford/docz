@@ -131,9 +131,9 @@ Phase 2's diff is the graft and nothing else.
   at the root carrying `set working-directory := "ui"`
 - [x] Update `DEVELOPMENT.md` and `CONTRIBUTING.md` wherever they describe the
   composition
-- [ ] Create the `graft` label (`gh label create graft`), described as "skips
+- [x] Create the `graft` label (`gh label create graft`), described as "skips
   the Go CI jobs; DESIGN-0016 OQ 6"
-- [ ] Add `if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}`
+- [x] Add `if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}`
   to `ci.yml`'s `lint`, `test-go`, and `build` jobs, with a comment citing
   DESIGN-0016 OQ 6
 - [ ] Run `govulncheck ./...` and confirm GO-2026-4970 no longer reports
