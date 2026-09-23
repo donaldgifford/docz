@@ -60,6 +60,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Record IMPL-0019 Phase 3 consumer go.sum count
 - CLAUDE.md for IMPL-0019 Phase 3 (api module, archive test, ParseBytes in ingest)
 - Check off IMPL-0019 Phase 3 PR task
+- Name docz-api's old module path in CLAUDE.md without spelling it
 
 ### Styling
 
