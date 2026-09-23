@@ -189,7 +189,7 @@ library rather than inside a 160-commit merge.
   after the call
 - [x] Add `ParseBytes` to `test/consumer` so the new symbol is proven reachable
   from outside the module
-- [ ] Update the `pkg/doczcore/config` entry in `CLAUDE.md` to name
+- [x] Update the `pkg/doczcore/config` entry in `CLAUDE.md` to name
   `ParseBytes` and the shared byte core
 
 <!--docz:tasks:end-->
