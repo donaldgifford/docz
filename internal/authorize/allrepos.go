@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // repoLister is the narrow store surface AllReposAuthorizer needs. *store.Store

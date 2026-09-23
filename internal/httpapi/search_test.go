@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/donaldgifford/docz-api/internal/authorize"
-	"github.com/donaldgifford/docz-api/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/search"
 )
 
 // fakeSearcher captures the SearchParams it receives and returns a canned result.

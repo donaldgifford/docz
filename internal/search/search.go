@@ -19,6 +19,17 @@ const (
 	snippetCropLength = 40
 )
 
+// Index attribute names that more than one list below names: the searchable,
+// filterable, faceted, retrieved, cropped, and highlighted sets overlap.
+const (
+	attrRepo   = "repo"
+	attrType   = "type"
+	attrStatus = "status"
+	attrAuthor = "author"
+	attrSource = "source"
+	attrBody   = "body"
+)
+
 // Body-highlight tags wrapped around matched terms in the snippet.
 const (
 	highlightPreTag  = "<em>"
@@ -26,7 +37,7 @@ const (
 )
 
 // facetNames are the attributes faceted (and returned as counts) on every search.
-var facetNames = []string{"repo", "type", "status", "author", "source"}
+var facetNames = []string{attrRepo, attrType, attrStatus, attrAuthor, attrSource}
 
 // retrieveAttributes are the index attributes Meilisearch returns on a hit.
 // It is the first place a hit field can be dropped: an attribute missing here
@@ -34,8 +45,8 @@ var facetNames = []string{"repo", "type", "status", "author", "source"}
 // test that fakes the searcher can see the difference (INV-0009 F2). A new
 // SearchHit field needs all three — this list, rawHit, and decodeHits.
 var retrieveAttributes = []string{
-	"source", "repo", "doc_id", "type", "title", "path",
-	"status", "author", "created", "updated_at", "body",
+	attrSource, attrRepo, "doc_id", attrType, "title", "path",
+	attrStatus, attrAuthor, "created", "updated_at", attrBody,
 }
 
 // Search runs a full-text query with facet filters and returns hits, facet
@@ -81,9 +92,9 @@ func buildSearchRequest(p *SearchParams) *meilisearch.SearchRequest {
 		Limit:                 limit,
 		Facets:                facetNames,
 		AttributesToRetrieve:  retrieveAttributes,
-		AttributesToCrop:      []string{"body"},
+		AttributesToCrop:      []string{attrBody},
 		CropLength:            snippetCropLength,
-		AttributesToHighlight: []string{"body"},
+		AttributesToHighlight: []string{attrBody},
 		HighlightPreTag:       highlightPreTag,
 		HighlightPostTag:      highlightPostTag,
 	}
@@ -207,11 +218,11 @@ func buildFilter(p *SearchParams) string {
 		parts = append(parts, "repo_id IN ["+strings.Join(ids, ", ")+"]")
 	}
 
-	parts = appendEq(parts, "repo", p.Repo)
-	parts = appendEq(parts, "type", p.Type)
-	parts = appendEq(parts, "status", p.Status)
-	parts = appendEq(parts, "author", p.Author)
-	parts = appendEq(parts, "source", p.Source)
+	parts = appendEq(parts, attrRepo, p.Repo)
+	parts = appendEq(parts, attrType, p.Type)
+	parts = appendEq(parts, attrStatus, p.Status)
+	parts = appendEq(parts, attrAuthor, p.Author)
+	parts = appendEq(parts, attrSource, p.Source)
 
 	return strings.Join(parts, " AND ")
 }

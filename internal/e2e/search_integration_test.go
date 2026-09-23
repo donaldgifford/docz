@@ -16,11 +16,11 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/donaldgifford/docz-api/internal/authorize"
-	"github.com/donaldgifford/docz-api/internal/httpapi"
-	"github.com/donaldgifford/docz-api/internal/ingest"
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/httpapi"
+	"github.com/donaldgifford/docz/v2/internal/ingest"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // startMeili boots a Meilisearch container for one test and returns a Client

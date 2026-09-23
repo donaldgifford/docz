@@ -6,14 +6,13 @@ import (
 	"slices"
 	"testing"
 
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
-// loadPagesConfig loads + validates a .docz.yaml body hermetically, the
+// loadPagesConfig loads + validates a .docz.yaml body, the
 // post-Load shape buildPages consumes (landing backfilled, paths normalized).
 func loadPagesConfig(t *testing.T, yaml string) doczcfg.Config {
 	t.Helper()
-	t.Setenv("HOME", t.TempDir())
 	cfg, err := loadConfig([]byte(yaml))
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)

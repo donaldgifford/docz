@@ -20,9 +20,9 @@ import (
 	"github.com/google/go-github/v88/github"
 	"gopkg.in/yaml.v3"
 
-	"github.com/donaldgifford/docz-api/internal/ingest"
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
-	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/internal/ingest"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	doczdoc "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 const (

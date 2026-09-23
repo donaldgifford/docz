@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/donaldgifford/docz-api/internal/config"
-	"github.com/donaldgifford/docz-api/internal/githubapp"
-	"github.com/donaldgifford/docz-api/internal/ingest"
-	"github.com/donaldgifford/docz-api/internal/queue"
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/config"
+	"github.com/donaldgifford/docz/v2/internal/githubapp"
+	"github.com/donaldgifford/docz/v2/internal/ingest"
+	"github.com/donaldgifford/docz/v2/internal/queue"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // ingestRunner adapts the ingest pipeline to queue.Ingestor. It builds a

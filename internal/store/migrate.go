@@ -8,7 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
 	"github.com/pressly/goose/v3"
 
-	"github.com/donaldgifford/docz-api/internal/store/migrations"
+	"github.com/donaldgifford/docz/v2/internal/store/migrations"
 )
 
 // Migrate applies all pending Up migrations against the database at dsn. It is

@@ -19,15 +19,15 @@ import (
 	"github.com/getkin/kin-openapi/routers/gorillamux"
 	"github.com/go-chi/chi/v5"
 
-	"github.com/donaldgifford/docz-api/api"
-	"github.com/donaldgifford/docz-api/internal/auth"
-	"github.com/donaldgifford/docz-api/internal/authhttp"
-	"github.com/donaldgifford/docz-api/internal/authorize"
-	"github.com/donaldgifford/docz-api/internal/queue"
-	"github.com/donaldgifford/docz-api/internal/search"
-	"github.com/donaldgifford/docz-api/internal/session"
-	"github.com/donaldgifford/docz-api/internal/store"
-	"github.com/donaldgifford/docz-api/internal/webhook"
+	"github.com/donaldgifford/docz/v2/api"
+	"github.com/donaldgifford/docz/v2/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/authhttp"
+	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/queue"
+	"github.com/donaldgifford/docz/v2/internal/search"
+	"github.com/donaldgifford/docz/v2/internal/session"
+	"github.com/donaldgifford/docz/v2/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/webhook"
 )
 
 // This is the OpenAPI contract test: it loads the hand-authored spec

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/donaldgifford/docz-api/internal/authorize"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // errStore fails every read, exercising the handlers' 500 path (serverError).

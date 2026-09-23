@@ -53,7 +53,7 @@ target "_common" {
     DATE    = "${BUILD_DATE}"
   }
   labels = {
-    "org.opencontainers.image.source"      = "https://github.com/donaldgifford/docz-api"
+    "org.opencontainers.image.source"      = "https://github.com/donaldgifford/docz"
     "org.opencontainers.image.revision"    = "${COMMIT_SHA}"
     "org.opencontainers.image.created"     = "${BUILD_DATE}"
     "org.opencontainers.image.version"     = "${VERSION}"

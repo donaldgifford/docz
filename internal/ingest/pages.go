@@ -9,10 +9,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/donaldgifford/docz-api/internal/store"
-	doczcfg "github.com/donaldgifford/docz/pkg/doczcore/config"
-	doczparse "github.com/donaldgifford/docz/pkg/doczcore/docparse"
-	doczdoc "github.com/donaldgifford/docz/pkg/doczcore/document"
+	"github.com/donaldgifford/docz/v2/internal/store"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
+	doczparse "github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
+	doczdoc "github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 )
 
 // buildPages maps fetched blobs to the page rows an enabled api: block

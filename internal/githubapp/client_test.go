@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/go-github/v88/github"
 
-	"github.com/donaldgifford/docz-api/internal/ingest"
+	"github.com/donaldgifford/docz/v2/internal/ingest"
 )
 
 // stubTransport serves canned GitHub API responses keyed off the request path,

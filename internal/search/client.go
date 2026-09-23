@@ -65,8 +65,8 @@ func (c *Client) EnsureIndex(ctx context.Context) error {
 
 	// SearchableAttributes order sets relevance priority: title outranks body.
 	task, err := c.svc.Index(indexUID).UpdateSettingsWithContext(ctx, &meilisearch.Settings{
-		SearchableAttributes: []string{"title", "body"},
-		FilterableAttributes: []string{"repo", "repo_id", "type", "status", "author", "source"},
+		SearchableAttributes: []string{"title", attrBody},
+		FilterableAttributes: []string{attrRepo, "repo_id", attrType, attrStatus, attrAuthor, attrSource},
 		SortableAttributes:   sortableAttributes,
 		RankingRules:         rankingRules,
 	})

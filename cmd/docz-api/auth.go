@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
-	"github.com/donaldgifford/docz-api/internal/config"
+	"github.com/donaldgifford/docz/v2/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/config"
 )
 
 // oidcDiscoveryTimeout bounds OIDC issuer discovery at startup so a

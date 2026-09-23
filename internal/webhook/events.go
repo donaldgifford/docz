@@ -12,8 +12,8 @@ import (
 	"github.com/google/go-github/v88/github"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/donaldgifford/docz-api/internal/queue"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/queue"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // route dispatches a parsed webhook payload to its event handler. Unhandled

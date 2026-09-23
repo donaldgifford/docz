@@ -322,37 +322,49 @@ tested together.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Rewrite `github.com/donaldgifford/docz-api/` →
+- [x] Rewrite `github.com/donaldgifford/docz-api/` →
   `github.com/donaldgifford/docz/v2/` in tracked `*.go` files outside
   `docs/archive/` (44 files, 107 lines)
-- [ ] Rewrite `github.com/donaldgifford/docz/pkg/` →
+- [x] Rewrite `github.com/donaldgifford/docz/pkg/` →
   `github.com/donaldgifford/docz/v2/pkg/` (11 files, 20 lines)
-- [ ] Rewrite the module path in the non-Go files: `docker-bake.hcl`
+- [x] Rewrite the module path in the non-Go files: `docker-bake.hcl`
   (including `org.opencontainers.image.source`), `cliff.toml`,
   `.goreleaser.yml`, `catalog-info.yaml`, and the four `charts/docz-api/` files
-- [ ] `go mod tidy`; `go build ./...`
-- [ ] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
+- [x] `go mod tidy`; `go build ./...`
+- [x] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
   fix `build-core` to write `build/bin/docz-api`
-- [ ] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
+- [x] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
   updated for `Dockerfile.api`, and delete `docker.just` (Open Question 4)
-- [ ] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
+- [x] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
   gate
-- [ ] Swap `internal/ingest/parse.go`'s `loadConfig` for
+- [x] Swap `internal/ingest/parse.go`'s `loadConfig` for
   `doczcfg.ParseBytes`; drop the `HOME` neutralisation from ingest tests that
   only needed it for `Load`
-- [ ] Move `TestConfigLoadsFixtureManifest` into `internal/ingest`, then delete
+- [x] Move `TestConfigLoadsFixtureManifest` into `internal/ingest`, then delete
   `internal/doczcontract/`
-- [ ] Capture the lint baseline: `golangci-lint run ./... > /tmp/baseline.txt`
-  and record the count in this document
-- [ ] Commit the `golines`/`gofumpt` reflow of `internal/` and `cmd/docz-api/`
+- [x] Capture the lint baseline: `golangci-lint run ./... > /tmp/baseline.txt`
+  and record the count in this document — **8 findings** (golangci-lint
+  v2.12.2, after the rewrite and the ParseBytes swap): goconst 4
+  (`internal/search`: `body`, `author`), gosec 3 (G710 open redirect in
+  `internal/authhttp/endpoints.go`, G124 cookie attributes ×2 in
+  `internal/session/store.go`), gofumpt 1 (`internal/ingest/service_test.go`)
+- [x] Commit the `golines`/`gofumpt` reflow of `internal/` and `cmd/docz-api/`
   on its own, before any finding fix
-- [ ] Fix or exclude every finding; each `exclude-rules` entry carries a comment
-  naming the reason (OQ 2 of DESIGN-0016)
-- [ ] Add the archive-spared test: no tracked file outside `docs/archive/`
+- [x] Fix or exclude every finding; each `exclude-rules` entry carries a comment
+  naming the reason (OQ 2 of DESIGN-0016) — goconst fixed with named index
+  attributes in `internal/search`; gosec G710 and G124 excluded by path with
+  their reasons; `golangci-lint run ./...` reports 0
+- [x] Add the archive-spared test: no tracked file outside `docs/archive/`
   names `github.com/donaldgifford/docz-api`, and the five archived documents
-  that did still do
-- [ ] Record `test/consumer/go.sum` line count before (12) and after
-- [ ] Open this PR **without** the `graft` label, so the Go jobs run again
+  that did still do — `test/archive/archive_test.go`. **Scoped:** read
+  literally the rule fails on files that cite the old path on purpose (ADR-0004,
+  DESIGN-0016, INV-0011 and the other records of the move under `docs/`, the
+  fleet snapshots under `pkg/*/testdata/`, and `CHANGELOG.md`'s commit
+  subjects), so it asserts every tracked file outside `docs/`, `testdata/`, and
+  `CHANGELOG.md`; the one stray it found (the clone URL in the folded
+  `DEVELOPMENT.md`) is fixed
+- [x] Record `test/consumer/go.sum` line count before (12) and after — **4** after `go mod tidy` (the server's ~120 requires reach no consumer of `pkg/`; the tidied root also stopped carrying `kr/pretty` and `check.v1` into it)
+- [x] Open this PR **without** the `graft` label, so the Go jobs run again
 
 <!--docz:tasks:end-->
 

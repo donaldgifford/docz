@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 func TestMountPublicRegistersRoutes(t *testing.T) {

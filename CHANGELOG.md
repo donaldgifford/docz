@@ -13,6 +13,13 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(kinds,validate)* Read the option spellings the corpus actually uses
 
+### Refactor
+
+- *(api)* Import docz-api's packages under github.com/donaldgifford/docz/v2
+- *(api)* Import docz's pkg/ under the /v2 module path
+- *(ingest)* Parse .docz.yaml with doczcfg.ParseBytes
+- *(search)* Name the index attributes the attribute lists share
+
 ### Documentation
 
 - IMPL-0018 Completed — v2.0.0-beta.1 is released
@@ -39,11 +46,33 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Check off IMPL-0019 Phase 2 Dockerfile references
 - Check off IMPL-0019 Phase 2 cliff.toml task
 - Check off IMPL-0019 Phase 2 PR task
+- Check off IMPL-0019 Phase 3 rewrite and tidy tasks
+- Check off IMPL-0019 Phase 3 api.just task
+- Check off IMPL-0019 Phase 3 docker.just task
+- Check off IMPL-0019 Phase 3 ci gate task
+- Check off IMPL-0019 Phase 3 ParseBytes swap
+- Check off IMPL-0019 Phase 3 doczcontract task
+- Record IMPL-0019 Phase 3 lint baseline (8 findings)
+- Check off IMPL-0019 Phase 3 reflow task
+- Check off IMPL-0019 Phase 3 lint findings task
+- Clone docz, not docz-api, in the server's first-time setup
+- Check off IMPL-0019 Phase 3 archive-spared test
+- Record IMPL-0019 Phase 3 consumer go.sum count
+- CLAUDE.md for IMPL-0019 Phase 3 (api module, archive test, ParseBytes in ingest)
+- Check off IMPL-0019 Phase 3 PR task
+- Name docz-api's old module path in CLAUDE.md without spelling it
+
+### Styling
+
+- *(api)* Gofumpt/golines reflow of internal/ and cmd/docz-api/
 
 ### Testing
 
 - *(config)* Pin ParseBytes to Load and to reading nothing (IMPL-0019 Phase 1)
 - *(consumer)* Prove config.ParseBytes reachable from outside the module (IMPL-0019 Phase 1)
+- *(ingest)* Keep the fixture-manifest clause, delete internal/doczcontract
+- Pin that the import rewrite spared docz-api's archive
+- Exempt the archive test from its own old-module-path scan
 
 ### Miscellaneous Tasks
 
@@ -60,6 +89,13 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(api)* Point Docker references at Dockerfile.api and deploy/api/
 - *(changelog)* Skip docz-api's grafted history in git-cliff
 - Skip the license check on the graft PR
+- *(api)* Point docz-api's image, chart, and changelog metadata at the docz repo
+- Go mod tidy the merged module
+- *(api)* Load api.just as the root's api module
+- *(api)* Fold docker.just into api.just
+- Run the api module's lint, tests, and chart lint in just ci
+- *(lint)* Exclude two gosec false positives in the server, with reasons
+- *(consumer)* Go mod tidy after the merge
 
 ## [2.0.0-beta.1] - 2026-09-21
 

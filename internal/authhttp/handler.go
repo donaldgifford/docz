@@ -20,9 +20,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/donaldgifford/docz-api/internal/auth"
-	"github.com/donaldgifford/docz-api/internal/session"
-	"github.com/donaldgifford/docz-api/internal/store"
+	"github.com/donaldgifford/docz/v2/internal/auth"
+	"github.com/donaldgifford/docz/v2/internal/session"
+	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
 // userUpserter is the durable-user surface authhttp needs. *store.Store

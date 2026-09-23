@@ -1,34 +1,41 @@
-# docz-api — task runner
+# docz-api — the server's recipes
 #
-# Project automation via just. Use either the Makefile or this justfile —
-# both expose the same target set with equivalent behavior.
+# Loaded by the root justfile as the optional module `api` (DESIGN-0016 OQ 1):
+# run these as `just api <recipe>`, and a root gate reaches one as
+# `api::<recipe>`. The file sits at the repository root, so every path below
+# is root-relative. Release tagging, the licence check, and the ci/check gates
+# are the root's (docz.just and justfile) — the module is one binary, one image,
+# one chart.
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 project_name      := "docz-api"
 project_owner     := "donaldgifford"
-go_package        := "github.com/" + project_owner + "/" + project_name
+go_package        := "github.com/" + project_owner + "/docz/v2"
 build_dir         := "build"
 bin_dir           := build_dir + "/bin"
 coverage_out      := "coverage.out"
-allowed_licenses  := "Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0"
 goimports_local   := "github.com/" + project_owner
 
 # Version info derived from git; falls back to dev when not in a repo or tag-less.
 commit_hash := `git rev-parse --short HEAD 2>/dev/null || echo unknown`
 version     := `git describe --tags --always --dirty 2>/dev/null || echo dev`
 
-# Default: list recipes
+# The server's packages: what test and lint cover here. The root gates cover
+# the whole module.
+server_pkgs       := "./cmd/docz-api/... ./internal/... ./api/..."
+
+# Default: list this module's recipes
 _default:
-    @just --list --unsorted
+    @just --list api --unsorted
 
 # ─── Build ──────────────────────────────────────────────────────────
 
-# Build everything (core)
+# Build the server
 [group('build')]
 build: build-core
 
-# Build the core CLI binary into build/bin/docz-api
+# Build the server binary into build/bin/docz-api
 [group('build')]
 build-core:
     @mkdir -p {{ bin_dir }}
@@ -36,23 +43,20 @@ build-core:
         -o {{ bin_dir }}/{{ project_name }} ./cmd/{{ project_name }}
     @echo "✓ Core binaries built"
 
-# Remove build artifacts and the Go build cache
+# Remove the server binary (the root's `just clean` owns build/ and the cache)
 [group('build')]
 clean:
-    @rm -rf {{ bin_dir }}/
-    @rm -f {{ coverage_out }}
-    @go clean -cache
-    @find . -name "*.test" -delete
-    @echo "✓ Cleaned build artifacts"
+    @rm -f {{ bin_dir }}/{{ project_name }}
+    @echo "✓ Cleaned the docz-api binary"
 
 # ─── Run ────────────────────────────────────────────────────────────
 
-# Build then run the CLI
+# Build then run the server
 [group('run')]
 run: build
     @{{ bin_dir }}/{{ project_name }}
 
-# Build then run the CLI from the local bin
+# Build then run the server from the local bin
 [group('run')]
 run-local: build
     @{{ bin_dir }}/{{ project_name }}
@@ -96,16 +100,16 @@ dev-tunnel:
         if [ -n "$url" ]; then echo "✓ Webhook URL: $url/webhooks/github"; exit 0; fi; \
         sleep 1; \
     done; \
-    echo "✗ Tunnel not up after 10s — check 'just dev-logs' and http://localhost:4040"; exit 1
+    echo "✗ Tunnel not up after 10s — check 'just api dev-logs' and http://localhost:4040"; exit 1
 
 # ─── Local environment (full stack in containers) ─────────────────
 
-local_compose := "docker compose -f deploy/compose.local.yaml --env-file deploy/.env.local"
+local_compose := "docker compose -f deploy/api/compose.local.yaml --env-file deploy/api/.env.local"
 
 # Build + start the full local env: service, deps, ngrok (needs deploy/.env.local)
 [group('local')]
 local-up:
-    @test -f deploy/.env.local || { echo "✗ deploy/.env.local missing — cp deploy/.env.local.example deploy/.env.local and fill it in"; exit 1; }
+    @test -f deploy/api/.env.local || { echo "✗ deploy/api/.env.local missing — cp deploy/api/.env.local.example deploy/api/.env.local and fill it in"; exit 1; }
     @{{ local_compose }} up -d --build --wait
     @for i in 1 2 3 4 5 6 7 8 9 10; do \
         url=$(curl -fsS localhost:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[0].public_url // empty'); \
@@ -138,7 +142,7 @@ local-logs:
 
 # ─── Monitoring stack ───────────────────────────────────────────────
 
-monitor_compose := "docker compose -f deploy/compose.monitoring.yaml"
+monitor_compose := "docker compose -f deploy/api/compose.monitoring.yaml"
 
 # Start the local observability backends (prometheus/grafana/jaeger/loki/otel/alloy)
 [group('monitor')]
@@ -173,6 +177,30 @@ monitor-down:
 monitor-logs:
     @{{ monitor_compose }} --profile auth logs -f
 
+# ─── Docker ─────────────────────────────────────────────────────────
+# Image builds via docker buildx bake; docker-bake.hcl builds Dockerfile.api.
+# Folded in from docker.just (IMPL-0019 OQ 4).
+
+# Local single-arch build via docker buildx bake
+[group('docker')]
+docker-build:
+    @docker buildx bake
+
+# Multi-arch build and push via docker buildx bake
+[group('docker')]
+docker-buildx:
+    @docker buildx bake release
+
+# Push the image (requires prior build)
+[group('docker')]
+docker-push:
+    @docker buildx bake --push
+
+# CI build (linux/amd64 only, for fast PR validation)
+[group('docker')]
+docker-ci:
+    @docker buildx bake ci
+
 # ─── Helm ───────────────────────────────────────────────────────────
 
 # Lint the chart (ci-values supplies the required values with no defaults)
@@ -200,13 +228,9 @@ helm-docs:
 # Run all tests with the race detector
 [group('test')]
 test:
-    @go test -v -race ./...
+    @go test -v -race {{ server_pkgs }}
 
-# Run all tests (core + plugins)
-[group('test')]
-test-all: test
-
-# Run tests for a single package: just test-pkg ./pkg/foo
+# Run tests for a single package: just api test-pkg ./internal/ingest
 [group('test')]
 test-pkg pkg:
     @go test -v -race {{ pkg }}
@@ -214,17 +238,17 @@ test-pkg pkg:
 # Run integration tests (build tag `integration`; needs Docker for testcontainers)
 [group('test')]
 test-integration:
-    @go test -tags=integration -count=1 ./...
+    @go test -tags=integration -count=1 {{ server_pkgs }}
 
 # Run tests with a coverage profile written to coverage.out
 [group('test')]
 test-coverage:
-    @go test -v -race -coverprofile={{ coverage_out }} ./...
+    @go test -v -race -coverprofile={{ coverage_out }} {{ server_pkgs }}
 
 # Run tests and open the HTML coverage report
 [group('test')]
 test-report:
-    @go test -coverprofile={{ coverage_out }} ./...
+    @go test -coverprofile={{ coverage_out }} {{ server_pkgs }}
     @go tool cover -html={{ coverage_out }}
 
 # ─── Lint & format ─────────────────────────────────────────────────
@@ -232,12 +256,12 @@ test-report:
 # Run golangci-lint
 [group('lint')]
 lint:
-    @golangci-lint run ./...
+    @golangci-lint run {{ server_pkgs }}
 
 # Run golangci-lint with --fix
 [group('lint')]
 lint-fix:
-    @golangci-lint run --fix ./...
+    @golangci-lint run --fix {{ server_pkgs }}
 
 # Verify the golangci-lint configuration
 [group('lint')]
@@ -263,8 +287,8 @@ lint-openapi:
 # Format code with gofmt + goimports; canonicalize the OpenAPI spec with yamlfmt
 [group('lint')]
 fmt:
-    @gofmt -s -w .
-    @goimports -w -local {{ goimports_local }} .
+    @gofmt -s -w cmd/docz-api internal api
+    @goimports -w -local {{ goimports_local }} cmd/docz-api internal api
     @yamlfmt api/openapi.yaml api/vacuum-ruleset.yaml
 
 # ─── Codegen ────────────────────────────────────────────────────────
@@ -281,18 +305,6 @@ generate-check:
     @sqlc diff
     @echo "✓ sqlc output is up to date"
 
-# ─── License compliance ─────────────────────────────────────────────
-
-# Check dependency licenses against the allow list
-[group('license')]
-license-check:
-    @go-licenses check ./... --allowed_licenses={{ allowed_licenses }}
-
-# Generate CSV report of all dependency licenses
-[group('license')]
-license-report:
-    @go-licenses report ./... --template=.github/licenses-csv.tpl
-
 # ─── Release ────────────────────────────────────────────────────────
 
 # Validate the goreleaser config
@@ -304,21 +316,3 @@ release-check:
 [group('release')]
 release-local:
     @goreleaser release --snapshot --clean --skip=publish --skip=sign
-
-# Tag and push a new release: just release v0.1.0
-[group('release')]
-release tag:
-    @git tag -a {{ tag }} -m "Release {{ tag }}"
-    @git push origin {{ tag }}
-
-# ─── Composite gates ────────────────────────────────────────────────
-
-# Pre-commit gate: lint + test
-[group('gate')]
-check: lint test
-    @echo "✓ Pre-commit checks passed"
-
-# Full CI gate: lint + test + build + license-check
-[group('gate')]
-ci: lint test build license-check
-    @echo "✓ CI pipeline complete"

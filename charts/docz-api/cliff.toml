@@ -37,7 +37,7 @@ trim = true
 render_always = true
 
 postprocessors = [
-  { pattern = '<REPO>', replace = "https://github.com/donaldgifford/docz-api" },
+  { pattern = '<REPO>', replace = "https://github.com/donaldgifford/docz" },
 ]
 
 [git]
@@ -77,5 +77,5 @@ commit_parsers = [
 ]
 
 link_parsers = [
-  { pattern = "#(\\d+)", href = "https://github.com/donaldgifford/docz-api/issues/$1" },
+  { pattern = "#(\\d+)", href = "https://github.com/donaldgifford/docz/issues/$1" },
 ]
