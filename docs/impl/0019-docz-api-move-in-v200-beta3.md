@@ -396,7 +396,7 @@ Everything that makes the result enforceable and visible correctly from outside.
 - [x] Prove the rule fires: a temporary `pkg/` import of an `internal/` package
   fails the test (not committed) — a blank import of `internal/telemetry` in
   `pkg/doczcore/toc` failed it, reported through every package that reaches toc
-- [ ] Write `docs/archive/api/README.md`: one paragraph stating that inside
+- [x] Write `docs/archive/api/README.md`: one paragraph stating that inside
   this directory an ID means docz-api's, the archive date, and the source
   repository
 - [ ] Add `docs/archive/` to `wiki.exclude` and `api.exclude` in `.docz.yaml`,
