@@ -188,7 +188,6 @@ func TestBuildDocumentsReportsOnlyDoczFilenames(t *testing.T) {
 }
 
 func TestRunMapsCustomTypeAndSkipsMissingFrontmatter(t *testing.T) {
-
 	snap := &RepoSnapshot{
 		HeadSHA:       "head-sha",
 		DefaultBranch: "main",
@@ -284,7 +283,6 @@ func TestRunMapsChangelogFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			snap := &RepoSnapshot{
 				HeadSHA:       "head-sha",
 				DefaultBranch: "main",
@@ -309,7 +307,6 @@ func TestRunMapsChangelogFile(t *testing.T) {
 // three empty, and an invalid enabled block fails the whole ingest through
 // the existing Validate path (no new error path).
 func TestRunMapsAPIBlock(t *testing.T) {
-
 	run := func(t *testing.T, block string, blobs []BlobEntry) (*captureReconciler, error) {
 		t.Helper()
 		snap := &RepoSnapshot{
@@ -363,7 +360,6 @@ func TestRunMapsAPIBlock(t *testing.T) {
 }
 
 func TestRunIndexesUpsertedDocuments(t *testing.T) {
-
 	snap := &RepoSnapshot{
 		HeadSHA:       "head-sha",
 		DefaultBranch: "main",
@@ -399,7 +395,6 @@ func TestRunIndexesUpsertedDocuments(t *testing.T) {
 // lands its classified pages in the search index alongside the docs, each
 // record tagged with its source.
 func TestRunIndexesUpsertedPages(t *testing.T) {
-
 	snap := &RepoSnapshot{
 		HeadSHA:       "head-sha",
 		DefaultBranch: "main",
@@ -441,7 +436,6 @@ func TestRunIndexesUpsertedPages(t *testing.T) {
 }
 
 func TestRunIndexErrorDoesNotFailIngest(t *testing.T) {
-
 	snap := &RepoSnapshot{
 		HeadSHA:       "head-sha",
 		DefaultBranch: "main",
