@@ -210,3 +210,26 @@ func TestLayerRules_TheDetectorWorks(t *testing.T) {
 		t.Error("the dependency walk cannot see Cobra in cmd/, so the layer rules prove nothing")
 	}
 }
+
+// TestLayerRules_PkgNeverImportsInternal keeps the product importable
+// (DESIGN-0016 §7). internal/ is docz-api's server since IMPL-0019; Go already
+// stops a consumer outside the module from importing it, but not a package
+// under pkg/ from doing so, and a pkg/ package that did would drag the
+// server's dependencies into every consumer and make the public surface
+// depend on code with no semver promise. The dependency walk makes it a
+// failure here rather than a surprise in a consumer's go.sum.
+func TestLayerRules_PkgNeverImportsInternal(t *testing.T) {
+	t.Parallel()
+
+	for _, pkg := range listPackages(t) {
+		t.Run(strings.TrimPrefix(pkg, modulePath+"/"), func(t *testing.T) {
+			t.Parallel()
+
+			for _, dep := range deps(t, pkg) {
+				if strings.HasPrefix(dep, modulePath+"/internal/") {
+					t.Errorf("%s imports %s; pkg/ never depends on the server's internal/", pkg, dep)
+				}
+			}
+		})
+	}
+}
