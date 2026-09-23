@@ -218,51 +218,57 @@ exists as a module. Phase 3 fixes that.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] **(human)** In docz-api: `docz status set impl IMPL-0001 Completed`,
+- [x] **(human)** In docz-api: `docz status set impl IMPL-0001 Completed`,
   `IMPL-0002 Completed`, `IMPL-0006 Completed`, via a PR that does not trigger a
-  release (Open Question 2) — `deferred - human required`
-- [ ] **(human)** In the same docz-api PR: a dated one-line forward pointer at
+  release (Open Question 2) — done in docz-api #43 (`dont-release`)
+- [x] **(human)** In the same docz-api PR: a dated one-line forward pointer at
   the top of `INV-0002` and `INV-0003`, naming the successor IDs this repository
-  will allocate (INV-0012, INV-0013 — reserve them by noting it here) — `deferred - human required`
-- [ ] Clone docz-api fresh with `git clone --no-local` into a temp directory,
+  will allocate (INV-0012, INV-0013 — reserve them by noting it here) — done in docz-api #44 (`dont-release`)
+- [x] Clone docz-api fresh with `git clone --no-local` into a temp directory,
   **after** the sweep PR merges
-- [ ] Run `git filter-repo` with: `docs/` → `docs/archive/api/`, `deploy/` →
+- [x] Run `git filter-repo` with: `docs/` → `docs/archive/api/`, `deploy/` →
   `deploy/api/`, `justfile` → `api.just`, `Dockerfile` → `Dockerfile.api`,
   `CHANGELOG.md` → `docs/archive/api/CHANGELOG.md`, and `scripts/labels.sh`
   dropped (`--invert-paths`)
-- [ ] Record the exact `filter-repo` invocation in this document under
+- [x] Record the exact `filter-repo` invocation in this document under
   Phase 2 notes below (Open Question 3)
-- [ ] `git remote add api-local <clone>`, `git fetch`, and
+- [x] `git remote add api-local <clone>`, `git fetch`, and
   `git merge --allow-unrelated-histories api-local/main` on a branch off `main`
-- [ ] Resolve the 20 root-file conflicts per DESIGN-0016 §3: union `go.mod`
+- [x] Resolve the 20 root-file conflicts per DESIGN-0016 §3: union `go.mod`
   requires (drop the `docz` self-requirement), keep ours for `.docz.yaml`,
   `.prettierrc.yaml`, `LICENSE`, `CODEOWNERS`, `licenses-csv.tpl`; union
   `mise.toml`, `.markdownlint.yaml`, `.yamllint.yml`, `.codecov.yml`,
   `renovate.json5`, `catalog-info.yaml` (two components); `.gitignore` gains
   `.idea/`, `.vscode/`, `coverage.html`, `coverage.txt`,
   `.claude/donald-loop.local.md`
-- [ ] Fold docz-api's `CLAUDE.md` server material into ours as a new
+- [x] Fold docz-api's `CLAUDE.md` server material into ours as a new
   `## Server (internal/, cmd/docz-api)` section; fold `README.md` and
   `DEVELOPMENT.md` the same way
-- [ ] Merge `.goreleaser.yml`: two `builds:` entries (`docz`, `docz-api`),
+- [x] Merge `.goreleaser.yml`: two `builds:` entries (`docz`, `docz-api`),
   keep our `signs:`, keep docz-api's syft SBOM
-- [ ] `.claude/settings.json`: add `Bash(just --list)`; drop docz-api's three
+- [x] `.claude/settings.json`: add `Bash(just --list)`; drop docz-api's three
   `make` entries and `Bash(git *)`
-- [ ] Merge `.github/`: `ci.yml` absorbs `changes`, `lint-alerts`, `security`,
+- [x] Merge `.github/`: `ci.yml` absorbs `changes`, `lint-alerts`, `security`,
   `docker-build`, `helm-unittest`, `helm-test` (Go jobs keep the `graft`
   guard); `release.yml` absorbs `publish-ghcr`/`publish-ecr` and keeps GPG
   import; `license-check.yml`, `pr-labels.yml`, `labeler.yml` unioned; the ten
   new workflows arrive as they are
-- [ ] Update the four `Dockerfile` references to `Dockerfile.api`
+- [x] Update the four `Dockerfile` references to `Dockerfile.api`
   (`docker-bake.hcl`, `compose.yaml`, `ci.yml` `docker-build`, `deploy/api/`)
   and check `.dockerignore`
-- [ ] `cliff.toml`: add the commit-parser rule that skips commits reachable
+- [x] `cliff.toml`: add the commit-parser rule that skips commits reachable
   only through the grafted parent; run `git-cliff` locally against the merge
-  and confirm no docz-api commit appears under a docz version heading
-- [ ] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
+  and confirm no docz-api commit appears under a docz version heading —
+  **deviation:** git-cliff's parsers cannot express reachability, so the rule
+  is `.cliffignore` (the 164 SHAs of `git rev-list 9616673^2`), which git-cliff
+  reads natively. A control run without it shows the docz-api commits under
+  `[unreleased]`; with it, none. docz's `CHANGELOG.md` is regenerated under the
+  arriving config, and the imported docz-api tags were deleted locally so they
+  are never pushed
+- [x] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
   Phase 3)
-- [ ] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
-- [ ] Open the PR with `graft` and `dont-release`; the body states that the Go
+- [x] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
+- [x] Open the PR with `graft` and `dont-release`; the body states that the Go
   jobs are skipped by decision and cites DESIGN-0016 OQ 6
 - [ ] **(human)** Review and merge the red PR with a merge commit (not squash —
   squashing destroys the graft)
@@ -272,7 +278,22 @@ exists as a module. Phase 3 fixes that.
 **Phase 2 notes** (Open Question 3) — the exact commands, filled in as run:
 
 ```bash
-# (recorded during Phase 2)
+# 2026-09-23. docz-api main at 153bdc0 (#44, the forward pointers), 164 commits.
+git clone --no-local https://github.com/donaldgifford/docz-api /tmp/docz-api-graft
+cd /tmp/docz-api-graft
+git filter-repo --force \
+  --invert-paths --path scripts/labels.sh \
+  --path-rename docs/:docs/archive/api/ \
+  --path-rename deploy/:deploy/api/ \
+  --path-rename justfile:api.just \
+  --path-rename Dockerfile:Dockerfile.api \
+  --path-rename CHANGELOG.md:docs/archive/api/CHANGELOG.md
+# rewritten HEAD: 4e9eda6
+
+# in docz, on chore/docz-api-phase-2-graft off main
+git remote add api-local /tmp/docz-api-graft
+git fetch api-local
+git merge --allow-unrelated-histories --no-commit api-local/main
 ```
 
 <!--docz:criteria:start-->

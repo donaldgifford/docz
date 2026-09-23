@@ -1,0 +1,33 @@
+---
+docs_dir: docs
+
+types:
+  rfc:
+    enabled: true
+    dir: rfc
+    id_prefix: RFC
+    id_width: 4
+    statuses:
+      - Draft
+      - Accepted
+  investigation:
+    enabled: true
+    dir: investigation
+    id_prefix: INV
+    id_width: 4
+    statuses:
+      - Open
+      - Concluded
+  # A custom (non-built-in) type: proves the type-agnostic contract
+  # (DESIGN-0006 / R4) — addressable by name "frameworks", id_prefix "FW",
+  # and per-type alias "fw".
+  frameworks:
+    enabled: true
+    dir: frameworks
+    id_prefix: FW
+    id_width: 4
+    statuses:
+      - Draft
+      - Adopted
+    aliases:
+      - fw

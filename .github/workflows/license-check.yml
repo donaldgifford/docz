@@ -14,6 +14,10 @@ permissions:
 jobs:
   license-check:
     name: Check Dependency Licenses
+    # go-licenses loads every package, so it fails with the Go build on the
+    # one PR carrying the `graft` label (DESIGN-0016 OQ 6), like the Go jobs
+    # in ci.yml.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

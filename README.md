@@ -782,3 +782,21 @@ just docs-config  # docz config
 2. `author.default` in `.docz.yaml`
 3. `git config user.name`
 4. `"Unknown"`
+
+## docz-api, the server
+
+This repository also carries `docz-api`, the HTTP service that ingests docz
+repositories and serves them to docz-site (ADR-0004, DESIGN-0016). It builds
+from `cmd/docz-api/`, its recipes are a just module, and its image is built from
+`Dockerfile.api`.
+
+```sh
+just api build                # binary at build/bin/docz-api
+just api test                 # race detector
+just api run                  # build + run the binary
+```
+
+The image is distroless and nonroot, published to
+`ghcr.io/donaldgifford/docz-api`; the Helm chart is `charts/docz-api/`. Running
+it locally, with compose, webhooks, and the monitoring stack, is covered in
+[DEVELOPMENT.md](DEVELOPMENT.md#developing-docz-api-the-server).

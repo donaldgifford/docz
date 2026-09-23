@@ -1,0 +1,37 @@
+docz-api {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}".
+
+The container serves everything on one HTTP port: the API, health probes,
+the OpenAPI spec, and Prometheus metrics.
+
+1. Port-forward the service to reach it locally:
+
+     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "docz-api.fullname" . }} 8080:{{ .Values.service.port }}
+
+2. Then browse:
+
+     API:          http://localhost:8080/api/v1
+     Liveness:     http://localhost:8080/healthz
+     Readiness:    http://localhost:8080/readyz
+     OpenAPI spec: http://localhost:8080/openapi.yaml
+{{- if .Values.metrics.enabled }}
+     Metrics:      http://localhost:8080/metrics
+{{- end }}
+
+GitHub webhook receiver (HMAC-verified): POST /webhooks/github
+{{- if .Values.tailscale.enabled }}
+
+Tailscale is enabled — your webhook URL will be:
+
+     https://{{ .Values.tailscale.hostname }}.<your-tailnet>.ts.net/webhooks/github
+
+Check the sidecar status:
+
+     kubectl --namespace {{ .Release.Namespace }} exec -it deploy/{{ include "docz-api.fullname" . }} -c tailscale -- tailscale status
+{{- else }}
+
+To expose the webhook endpoint, front the {{ include "docz-api.fullname" . }}
+service (port {{ .Values.service.port }}) with an Ingress, HTTPRoute, or
+LoadBalancer, then point your GitHub App's webhook URL at:
+
+     https://<your-domain>/webhooks/github
+{{- end }}

@@ -50,3 +50,5 @@ ignore: |-
   node_modules/
   vendor/
   .git/
+  .github/
+  .charts/

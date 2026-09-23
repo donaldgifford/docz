@@ -1,0 +1,510 @@
+package githubapp
+
+import (
+	"encoding/base64"
+	"fmt"
+	"io"
+	"maps"
+	"net/http"
+	"path"
+	"slices"
+	"strings"
+	"testing"
+
+	"github.com/google/go-github/v88/github"
+
+	"github.com/donaldgifford/docz-api/internal/ingest"
+)
+
+// stubTransport serves canned GitHub API responses keyed off the request path,
+// so Fetch can be exercised without a network or a token exchange.
+type stubTransport struct {
+	tree  string
+	blobs map[string]string // blob sha -> base64-encoded content
+}
+
+func (s stubTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	p := r.URL.Path
+	switch {
+	case strings.Contains(p, "/git/ref"):
+		return jsonResponse(`{"ref":"refs/heads/main","object":{"sha":"headsha","type":"commit"}}`), nil
+	case strings.Contains(p, "/git/trees/"):
+		return jsonResponse(s.tree), nil
+	case strings.Contains(p, "/git/blobs/"):
+		sha := path.Base(p)
+		content, ok := s.blobs[sha]
+		if !ok {
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader(`{}`)), Header: jsonHeader()}, nil
+		}
+		return jsonResponse(fmt.Sprintf(`{"sha":%q,"encoding":"base64","content":%q}`, sha, content)), nil
+	default:
+		return jsonResponse(`{"name":"platform","default_branch":"main"}`), nil
+	}
+}
+
+func jsonHeader() http.Header {
+	h := http.Header{}
+	h.Set("Content-Type", "application/json")
+	return h
+}
+
+func jsonResponse(body string) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Header:     jsonHeader(),
+	}
+}
+
+func b64(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
+
+func TestFetchClassifiesAndDecodes(t *testing.T) {
+	const (
+		cfgYAML  = "docs_dir: docs\ntypes:\n  frameworks:\n    enabled: true\n"
+		changelo = "# Changelog\n\n- init\n"
+		docBody  = "---\nid: FW-0001\ntitle: Intro\n---\n\n# Intro\n"
+	)
+	tree := `{"sha":"headsha","truncated":false,"tree":[
+		{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+		{"path":"CHANGELOG.md","type":"blob","sha":"clsha"},
+		{"path":"docs/frameworks","type":"tree","sha":"dirsha"},
+		{"path":"docs/frameworks/0001-intro.md","type":"blob","sha":"docsha"},
+		{"path":"README.md","type":"blob","sha":"readmesha"}
+	]}`
+	stub := stubTransport{
+		tree: tree,
+		blobs: map[string]string{
+			"cfgsha":    b64(cfgYAML),
+			"clsha":     b64(changelo),
+			"docsha":    b64(docBody),
+			"readmesha": b64("# readme"),
+		},
+	}
+	gh, err := github.NewClient(github.WithTransport(stub))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	c := &Client{gh: gh}
+
+	snap, err := c.Fetch(t.Context(), "acme", "platform")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+
+	if snap.HeadSHA != "headsha" || snap.DefaultBranch != "main" {
+		t.Errorf("head/branch = %q/%q, want headsha/main", snap.HeadSHA, snap.DefaultBranch)
+	}
+	if string(snap.ConfigYAML) != cfgYAML {
+		t.Errorf("ConfigYAML = %q, want the decoded .docz.yaml", snap.ConfigYAML)
+	}
+	// The config has no changelog: block, so the changelog is NOT fetched even
+	// though CHANGELOG.md sits in the tree — it is opt-in (IMPL-0005).
+	if snap.ChangelogMD != nil || snap.ChangelogSHA != "" {
+		t.Errorf("changelog = %q / %q, want absent (block not enabled)",
+			snap.ChangelogMD, snap.ChangelogSHA)
+	}
+	// No docs/index.md in the tree: the index pair stays zero with no extra
+	// blob request (an unknown-sha fetch would 404 against the stub).
+	if snap.IndexMD != nil || snap.IndexSHA != "" {
+		t.Errorf("index = %q / %q, want absent (nil / empty)", snap.IndexMD, snap.IndexSHA)
+	}
+	// README.md and the tree entry are excluded; only the docz-convention doc remains.
+	if len(snap.Blobs) != 1 {
+		t.Fatalf("Blobs = %d, want 1 (docz-convention only)", len(snap.Blobs))
+	}
+	got := snap.Blobs[0]
+	if got.Path != "docs/frameworks/0001-intro.md" || got.GitSHA != "docsha" || string(got.Content) != docBody {
+		t.Errorf("blob = %+v, want the decoded intro doc", got)
+	}
+}
+
+func TestFetchRepoIndex(t *testing.T) {
+	const indexBody = "# Platform\n\nRepo home.\n"
+	tests := []struct {
+		name    string
+		cfgYAML string
+		tree    string
+		blobs   map[string]string
+		wantMD  string
+		wantSHA string
+	}{
+		{
+			name:    "present under default docs_dir",
+			cfgYAML: "types:\n  rfc:\n    enabled: true\n",
+			tree: `{"sha":"headsha","truncated":false,"tree":[
+				{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+				{"path":"docs/index.md","type":"blob","sha":"idxsha"}
+			]}`,
+			blobs:   map[string]string{"idxsha": b64(indexBody)},
+			wantMD:  indexBody,
+			wantSHA: "idxsha",
+		},
+		{
+			name:    "custom docs_dir wins over the default location",
+			cfgYAML: "docs_dir: notes\ntypes:\n  rfc:\n    enabled: true\n",
+			tree: `{"sha":"headsha","truncated":false,"tree":[
+				{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+				{"path":"docs/index.md","type":"blob","sha":"decoysha"},
+				{"path":"notes/index.md","type":"blob","sha":"notesidx"}
+			]}`,
+			blobs:   map[string]string{"notesidx": b64(indexBody)},
+			wantMD:  indexBody,
+			wantSHA: "notesidx",
+		},
+		{
+			name:    "index.md as a directory is not a blob match",
+			cfgYAML: "types:\n  rfc:\n    enabled: true\n",
+			tree: `{"sha":"headsha","truncated":false,"tree":[
+				{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+				{"path":"docs/index.md","type":"tree","sha":"dirsha"}
+			]}`,
+			blobs: map[string]string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blobs := map[string]string{"cfgsha": b64(tt.cfgYAML)}
+			maps.Copy(blobs, tt.blobs)
+			gh, err := github.NewClient(github.WithTransport(stubTransport{tree: tt.tree, blobs: blobs}))
+			if err != nil {
+				t.Fatalf("NewClient: %v", err)
+			}
+			c := &Client{gh: gh}
+
+			snap, err := c.Fetch(t.Context(), "acme", "platform")
+			if err != nil {
+				t.Fatalf("Fetch: %v", err)
+			}
+			if string(snap.IndexMD) != tt.wantMD || snap.IndexSHA != tt.wantSHA {
+				t.Errorf("index = %q / %q, want %q / %q",
+					snap.IndexMD, snap.IndexSHA, tt.wantMD, tt.wantSHA)
+			}
+		})
+	}
+}
+
+func TestFetchRepoChangelog(t *testing.T) {
+	const changelogBody = "# Changelog\n\n## [1.0.0] - 2026-01-01\n"
+	// Every case lists the changelog blob in the tree but only supplies its
+	// content when a fetch is expected: the stub 404s on an unknown sha, so a
+	// case that wants "no request" fails loudly if one is made.
+	const tree = `{"sha":"headsha","truncated":false,"tree":[
+		{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+		{"path":"CHANGELOG.md","type":"blob","sha":"rootsha"},
+		{"path":"charts/acme/CHANGELOG.md","type":"blob","sha":"chartsha"}
+	]}`
+	tests := []struct {
+		name    string
+		cfgYAML string
+		blobs   map[string]string
+		wantMD  string
+		wantSHA string
+	}{
+		{
+			name:    "enabled with the default root file",
+			cfgYAML: "changelog:\n  enabled: true\n",
+			blobs:   map[string]string{"rootsha": b64(changelogBody)},
+			wantMD:  changelogBody,
+			wantSHA: "rootsha",
+		},
+		{
+			name:    "enabled with a chart subpath",
+			cfgYAML: "changelog:\n  enabled: true\n  file: charts/acme/CHANGELOG.md\n",
+			blobs:   map[string]string{"chartsha": b64(changelogBody)},
+			wantMD:  changelogBody,
+			wantSHA: "chartsha",
+		},
+		{
+			name:    "explicitly disabled fetches nothing",
+			cfgYAML: "changelog:\n  enabled: false\n  file: CHANGELOG.md\n",
+		},
+		{
+			name:    "absent block fetches nothing",
+			cfgYAML: "types:\n  rfc:\n    enabled: true\n",
+		},
+		{
+			name:    "enabled but the configured file is absent at HEAD",
+			cfgYAML: "changelog:\n  enabled: true\n  file: docs/RELEASES.md\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blobs := map[string]string{"cfgsha": b64(tt.cfgYAML)}
+			maps.Copy(blobs, tt.blobs)
+			gh, err := github.NewClient(github.WithTransport(stubTransport{tree: tree, blobs: blobs}))
+			if err != nil {
+				t.Fatalf("NewClient: %v", err)
+			}
+			c := &Client{gh: gh}
+
+			snap, err := c.Fetch(t.Context(), "acme", "platform")
+			if err != nil {
+				t.Fatalf("Fetch: %v", err)
+			}
+			if string(snap.ChangelogMD) != tt.wantMD || snap.ChangelogSHA != tt.wantSHA {
+				t.Errorf("changelog = %q / %q, want %q / %q",
+					snap.ChangelogMD, snap.ChangelogSHA, tt.wantMD, tt.wantSHA)
+			}
+		})
+	}
+}
+
+func TestChangelogHint(t *testing.T) {
+	tests := []struct {
+		name        string
+		yaml        string
+		wantEnabled bool
+		wantFile    string
+	}{
+		{"absent block is dormant", "docs_dir: docs\n", false, "CHANGELOG.md"},
+		{"enabled without a file uses the docz default", "changelog:\n  enabled: true\n", true, "CHANGELOG.md"},
+		{"explicit file honored", "changelog:\n  enabled: true\n  file: charts/x/CHANGELOG.md\n", true, "charts/x/CHANGELOG.md"},
+		{"empty file falls back to the default", "changelog:\n  enabled: true\n  file: \"\"\n", true, "CHANGELOG.md"},
+		{"leading dot-slash normalized", "changelog:\n  enabled: true\n  file: ./CHANGELOG.md\n", true, "CHANGELOG.md"},
+		{"file without enabled stays dormant", "changelog:\n  file: docs/CL.md\n", false, "docs/CL.md"},
+		{"malformed yaml falls back to the docz defaults", "\t: not yaml", false, "CHANGELOG.md"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enabled, file := changelogHint([]byte(tt.yaml))
+			if enabled != tt.wantEnabled || file != tt.wantFile {
+				t.Errorf("changelogHint(%q) = (%v, %q), want (%v, %q)",
+					tt.yaml, enabled, file, tt.wantEnabled, tt.wantFile)
+			}
+		})
+	}
+}
+
+func TestDocsDirHint(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want string
+	}{
+		{"explicit docs_dir", "docs_dir: notes\n", "notes"},
+		{"trailing slash trimmed", "docs_dir: notes/\n", "notes"},
+		{"missing key falls back to docz default", "types:\n  rfc:\n    enabled: true\n", "docs"},
+		{"empty value falls back to docz default", "docs_dir: \"\"\n", "docs"},
+		{"malformed yaml falls back to docz default", "\t: not yaml", "docs"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := docsDirHint([]byte(tt.yaml)); got != tt.want {
+				t.Errorf("docsDirHint(%q) = %q, want %q", tt.yaml, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAPIHint(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want apiHints
+	}{
+		{"absent block is dormant", "docs_dir: docs\n", apiHints{}},
+		{"malformed yaml falls back to dormant", "\t: not yaml", apiHints{}},
+		{
+			"enabled without fields",
+			"api:\n  enabled: true\n",
+			apiHints{enabled: true},
+		},
+		{
+			"landing page dot-slash normalized",
+			"api:\n  enabled: true\n  landing_page: ./docs/home.md\n",
+			apiHints{enabled: true, landingPage: "docs/home.md"},
+		},
+		{
+			"exclude trailing slash collapsed",
+			"api:\n  enabled: true\n  exclude: [scratch/, drafts]\n",
+			apiHints{enabled: true, exclude: []string{"scratch", "drafts"}},
+		},
+		{
+			"additional docs normalized",
+			"api:\n  enabled: true\n  additional_docs: [./CONTRIBUTING.md, SECURITY.md]\n",
+			apiHints{enabled: true, additionalDocs: []string{"CONTRIBUTING.md", "SECURITY.md"}},
+		},
+		{
+			"fields without enabled stay dormant",
+			"api:\n  landing_page: docs/home.md\n  additional_docs: [CONTRIBUTING.md]\n",
+			apiHints{landingPage: "docs/home.md", additionalDocs: []string{"CONTRIBUTING.md"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := apiHint([]byte(tt.yaml))
+			if got.enabled != tt.want.enabled || got.landingPage != tt.want.landingPage ||
+				!slices.Equal(got.exclude, tt.want.exclude) ||
+				!slices.Equal(got.additionalDocs, tt.want.additionalDocs) {
+				t.Errorf("apiHint(%q) = %+v, want %+v", tt.yaml, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestFetchAPIPages covers the api-block fetch surface (DESIGN-0004): the
+// widened keep-set when enabled, the byte-for-byte dormant invariant, the
+// relocated landing page, and the zero-requests-when-absent additional_docs
+// rule. Like TestFetchRepoChangelog, blobs are withheld from the stub so any
+// unexpected request 404s the fetch loudly.
+func TestFetchAPIPages(t *testing.T) {
+	// The tree carries a docz doc, page candidates (incl. templates — the
+	// fetch keeps them; ingest prunes), a non-md file under docs, files
+	// outside docs, and additional_docs candidates.
+	const tree = `{"sha":"headsha","truncated":false,"tree":[
+		{"path":".docz.yaml","type":"blob","sha":"cfgsha"},
+		{"path":"docs/rfc/0001-intro.md","type":"blob","sha":"docsha"},
+		{"path":"docs/rfc/README.md","type":"blob","sha":"rfcreadmesha"},
+		{"path":"docs/guides/setup.md","type":"blob","sha":"guidesha"},
+		{"path":"docs/templates/rfc.md","type":"blob","sha":"tmplsha"},
+		{"path":"docs/diagram.png","type":"blob","sha":"pngsha"},
+		{"path":"docs/index.md","type":"blob","sha":"idxsha"},
+		{"path":"docs/home.md","type":"blob","sha":"homesha"},
+		{"path":"CONTRIBUTING.md","type":"blob","sha":"contribsha"},
+		{"path":"README.md","type":"blob","sha":"readmesha"}
+	]}`
+
+	run := func(t *testing.T, cfgYAML string, extra map[string]string) *ingest.RepoSnapshot {
+		t.Helper()
+		blobs := map[string]string{"cfgsha": b64(cfgYAML)}
+		maps.Copy(blobs, extra)
+		gh, err := github.NewClient(github.WithTransport(stubTransport{tree: tree, blobs: blobs}))
+		if err != nil {
+			t.Fatalf("NewClient: %v", err)
+		}
+		c := &Client{gh: gh}
+		snap, err := c.Fetch(t.Context(), "acme", "platform")
+		if err != nil {
+			t.Fatalf("Fetch: %v", err)
+		}
+		return snap
+	}
+
+	t.Run("dormant block fetches today's set byte-for-byte", func(t *testing.T) {
+		// Only the config, the docz doc, and docs/index.md may be requested:
+		// every other sha is withheld, so a widened fetch would 404.
+		snap := run(t, "api:\n  enabled: false\n  additional_docs: [CONTRIBUTING.md]\n",
+			map[string]string{"docsha": b64("---\nid: RFC-0001\n---\n"), "idxsha": b64("# Home")})
+		if len(snap.Blobs) != 1 || snap.Blobs[0].Path != "docs/rfc/0001-intro.md" {
+			t.Errorf("dormant Blobs = %+v, want only the docz doc", snap.Blobs)
+		}
+		if snap.IndexSHA != "idxsha" {
+			t.Errorf("IndexSHA = %q, want idxsha (DESIGN-0003 unchanged)", snap.IndexSHA)
+		}
+	})
+
+	t.Run("enabled widens to every md under docs_dir", func(t *testing.T) {
+		snap := run(t, "api:\n  enabled: true\n",
+			map[string]string{
+				"docsha": b64("---\nid: RFC-0001\n---\n"), "rfcreadmesha": b64("# RFCs"),
+				"guidesha": b64("# Setup"), "tmplsha": b64("template"),
+				"homesha": b64("# Home page"), "idxsha": b64("# Home"),
+			})
+		want := []string{
+			"docs/rfc/0001-intro.md", "docs/rfc/README.md", "docs/guides/setup.md",
+			"docs/templates/rfc.md", "docs/home.md", "docs/index.md",
+		}
+		got := make([]string, len(snap.Blobs))
+		for i, b := range snap.Blobs {
+			got[i] = b.Path
+		}
+		slices.Sort(got)
+		slices.Sort(want)
+		if !slices.Equal(got, want) {
+			t.Errorf("enabled Blobs = %v, want %v (every .md under docs, no .png, nothing outside)", got, want)
+		}
+		// Default landing page still resolves docs/index.md.
+		if snap.IndexSHA != "idxsha" {
+			t.Errorf("IndexSHA = %q, want idxsha", snap.IndexSHA)
+		}
+	})
+
+	t.Run("landing override fetches the configured path", func(t *testing.T) {
+		snap := run(t, "api:\n  enabled: true\n  landing_page: docs/home.md\n",
+			map[string]string{
+				"docsha": b64("---\nid: RFC-0001\n---\n"), "rfcreadmesha": b64("# RFCs"),
+				"guidesha": b64("# Setup"), "tmplsha": b64("template"),
+				"homesha": b64("# Home page"), "idxsha": b64("# Home"),
+			})
+		if snap.IndexSHA != "homesha" || string(snap.IndexMD) != "# Home page" {
+			t.Errorf("index = %q / %q, want the configured docs/home.md", snap.IndexMD, snap.IndexSHA)
+		}
+	})
+
+	t.Run("additional docs fetched when present, zero requests when absent or non-markdown", func(t *testing.T) {
+		// README.md is present in the tree but withheld from the stub: a
+		// non-markdown entry ("LICENSE"-style, here the extensionless
+		// README-as-decoy is stood in by listing a present non-md path) must
+		// not be requested at all. The stub 404s any unexpected sha.
+		snap := run(t, "api:\n  enabled: true\n  additional_docs: [CONTRIBUTING.md, MISSING.md, README]\n",
+			map[string]string{
+				"docsha": b64("---\nid: RFC-0001\n---\n"), "rfcreadmesha": b64("# RFCs"),
+				"guidesha": b64("# Setup"), "tmplsha": b64("template"),
+				"homesha": b64("# Home page"), "idxsha": b64("# Home"),
+				"contribsha": b64("# Contributing"),
+			})
+		var contrib bool
+		for _, b := range snap.Blobs {
+			if b.Path == "CONTRIBUTING.md" {
+				contrib = b.GitSHA == "contribsha" && string(b.Content) == "# Contributing"
+			}
+			if b.Path == "MISSING.md" || b.Path == "README" {
+				t.Errorf("%s fetched, want zero requests (absent / non-markdown)", b.Path)
+			}
+		}
+		if !contrib {
+			t.Error("CONTRIBUTING.md not in Blobs, want it fetched via additional_docs")
+		}
+	})
+}
+
+func TestFetchErrorsWithoutConfig(t *testing.T) {
+	tree := `{"sha":"headsha","truncated":false,"tree":[
+		{"path":"docs/frameworks/0001-intro.md","type":"blob","sha":"docsha"}
+	]}`
+	stub := stubTransport{tree: tree, blobs: map[string]string{"docsha": b64("x")}}
+	gh, err := github.NewClient(github.WithTransport(stub))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	c := &Client{gh: gh}
+
+	if _, err := c.Fetch(t.Context(), "acme", "platform"); err == nil {
+		t.Fatal("Fetch without .docz.yaml = nil error, want an error")
+	}
+}
+
+func TestDecodeBlob(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding string
+		content  string
+		want     string
+		wantErr  bool
+	}{
+		{"base64", "base64", base64.StdEncoding.EncodeToString([]byte("hello")), "hello", false},
+		{"base64 wrapped", "base64", "aGVs\nbG8=", "hello", false},
+		{"utf-8", "utf-8", "plain", "plain", false},
+		{"empty encoding", "", "plain", "plain", false},
+		{"unsupported", "latin1", "x", "", true},
+		{"bad base64", "base64", "!!!!", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blob := &github.Blob{Encoding: &tt.encoding, Content: &tt.content}
+			got, err := decodeBlob(blob)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("decodeBlob(%q) = nil error, want error", tt.encoding)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("decodeBlob: %v", err)
+			}
+			if string(got) != tt.want {
+				t.Errorf("decodeBlob = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

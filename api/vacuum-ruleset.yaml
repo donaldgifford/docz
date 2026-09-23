@@ -1,0 +1,20 @@
+---
+# vacuum ruleset for docz-api's OpenAPI contract (IMPL-0002, OQ-7b).
+#
+# Extends vacuum's recommended OpenAPI rules, with a few deliberate disables
+# documented below. `just lint-openapi` runs this ruleset and fails the build
+# on any error- or warning-severity result, so the hand-authored spec stays
+# standards-clean and consistent for downstream tooling.
+extends: [['vacuum:oas', recommended]]
+rules:
+  # docz-api's wire contract uses snake_case JSON keys by design (default_branch,
+  # doc_id, estimated_total_hits, ...). The properties mirror the Go DTO json
+  # tags; renaming to camelCase would break every consumer. Disabled, not fixed.
+  camel-case-properties: false
+  # The schemas mirror internal DTOs and already carry examples on the
+  # identifying fields (repo, doc_id, ...). Mandating an example on every scalar
+  # property (title, git_sha, content_hash, ...) adds no consumer value.
+  oas3-missing-example: false
+  # Several fields share the same short note ("" when unset). The repetition is
+  # intentional and accurate; distinct wording would be noise, not clarity.
+  description-duplication: false

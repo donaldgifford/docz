@@ -6,6 +6,7 @@ go:
   - changed-files:
       - any-glob-to-any-file: "cmd/**.go"
       - any-glob-to-any-file: "pkg/**.go"
+      - any-glob-to-any-file: "internal/**.go"
       - any-glob-to-any-file: "collector/**.go"
       - any-glob-to-any-file: "config/**.go"
       - any-glob-to-any-file: "exporter/**.go"
@@ -15,21 +16,26 @@ dependencies:
       - any-glob-to-any-file: "go.mod"
       - any-glob-to-any-file: "go.sum"
       - any-glob-to-any-file: mise.toml
+      - any-glob-to-any-file: renovate.json5
+      - any-glob-to-any-file: renovate.json
 
 # Add 'Documentation' label to any changes within 'docs' folder or any subfolders
 documentation:
   - changed-files:
       - any-glob-to-any-file: docs/**
       - any-glob-to-any-file: README.md
+      - any-glob-to-any-file: .docz.yaml
 
 ci:
   - changed-files:
       - any-glob-to-any-file: .github/**
+      - any-glob-to-any-file: justfile
       - any-glob-to-any-file: Makefile
 
 repo:
   - changed-files:
       - any-glob-to-any-file: .codecov.yml
+      - any-glob-to-any-file: .codecov.yaml
       - any-glob-to-any-file: .chglog.yml
       - any-glob-to-any-file: .golangci.yml
       - any-glob-to-any-file: .goreleaser.yaml
@@ -43,6 +49,7 @@ repo:
 docker:
   - changed-files:
       - any-glob-to-any-file: Dockerfile
+      - any-glob-to-any-file: Dockerfile.api
       - any-glob-to-any-file: docker-bake.hcl
 
 # Add label to any PR where the head branch name starts with label name or has a label name in the section in the name
