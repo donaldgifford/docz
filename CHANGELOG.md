@@ -37,6 +37,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Record IMPL-0019 Phase 2 clone and filter-repo invocation
 - Check off IMPL-0019 Phase 2 graft merge tasks
 - Check off IMPL-0019 Phase 2 Dockerfile references
+- Check off IMPL-0019 Phase 2 cliff.toml task
+- Check off IMPL-0019 Phase 2 PR task
 
 ### Testing
 
@@ -56,6 +58,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Skip the Go jobs on a PR labelled graft (IMPL-0019 Phase 0)
 - Graft docz-api's history into docz (IMPL-0019 Phase 2)
 - *(api)* Point Docker references at Dockerfile.api and deploy/api/
+- *(changelog)* Skip docz-api's grafted history in git-cliff
+- Skip the license check on the graft PR
 
 ## [2.0.0-beta.1] - 2026-09-21
 
