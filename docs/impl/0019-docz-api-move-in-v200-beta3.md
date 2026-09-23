@@ -354,9 +354,15 @@ tested together.
   naming the reason (OQ 2 of DESIGN-0016) — goconst fixed with named index
   attributes in `internal/search`; gosec G710 and G124 excluded by path with
   their reasons; `golangci-lint run ./...` reports 0
-- [ ] Add the archive-spared test: no tracked file outside `docs/archive/`
+- [x] Add the archive-spared test: no tracked file outside `docs/archive/`
   names `github.com/donaldgifford/docz-api`, and the five archived documents
-  that did still do
+  that did still do — `test/archive/archive_test.go`. **Scoped:** read
+  literally the rule fails on files that cite the old path on purpose (ADR-0004,
+  DESIGN-0016, INV-0011 and the other records of the move under `docs/`, the
+  fleet snapshots under `pkg/*/testdata/`, and `CHANGELOG.md`'s commit
+  subjects), so it asserts every tracked file outside `docs/`, `testdata/`, and
+  `CHANGELOG.md`; the one stray it found (the clone URL in the folded
+  `DEVELOPMENT.md`) is fixed
 - [ ] Record `test/consumer/go.sum` line count before (12) and after
 - [ ] Open this PR **without** the `graft` label, so the Go jobs run again
 
