@@ -1,7 +1,7 @@
 ---
 id: IMPL-0019
 title: "docz-api move-in: v2.0.0-beta.3"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-22
 ---
@@ -120,23 +120,23 @@ Phase 2's diff is the graft and nothing else.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Bump `go` to `1.26.5` in `go.mod`, `test/consumer/go.mod`, and
+- [x] Bump `go` to `1.26.5` in `go.mod`, `test/consumer/go.mod`, and
   `mise.toml`; run `go mod tidy` in both modules
-- [ ] Delete `.checkmake.ini`
-- [ ] Rewrite the root `justfile` composition: `import 'docz.just'`,
+- [x] Delete `.checkmake.ini`
+- [x] Rewrite the root `justfile` composition: `import 'docz.just'`,
   `mod? api 'api.just'`, `mod? ui 'ui.just'` (replacing the two `import?`
   lines)
-- [ ] Update `CLAUDE.md`'s just paragraph: the two optional files are modules
+- [x] Update `CLAUDE.md`'s just paragraph: the two optional files are modules
   addressed as `just api <recipe>` / `just ui <recipe>`, and `ui.just` will sit
   at the root carrying `set working-directory := "ui"`
-- [ ] Update `DEVELOPMENT.md` and `CONTRIBUTING.md` wherever they describe the
+- [x] Update `DEVELOPMENT.md` and `CONTRIBUTING.md` wherever they describe the
   composition
-- [ ] Create the `graft` label (`gh label create graft`), described as "skips
+- [x] Create the `graft` label (`gh label create graft`), described as "skips
   the Go CI jobs; DESIGN-0016 OQ 6"
-- [ ] Add `if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}`
+- [x] Add `if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}`
   to `ci.yml`'s `lint`, `test-go`, and `build` jobs, with a comment citing
   DESIGN-0016 OQ 6
-- [ ] Run `govulncheck ./...` and confirm GO-2026-4970 no longer reports
+- [x] Run `govulncheck ./...` and confirm GO-2026-4970 no longer reports
 
 <!--docz:tasks:end-->
 
@@ -165,28 +165,31 @@ library rather than inside a 160-commit merge.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Split `userListedTypeNames(path)` into a path wrapper over
-  `userListedTypeNamesIn(data []byte) []string`
-- [ ] Split `applyTypesReplaceOnPresence` the same way:
+- [x] Split `userListedTypeNames(path)` into a path wrapper over
+  `userListedTypeNamesIn(data []byte) []string` — *the path form ended up
+  uncalled once `applyTypesReplaceOnPresence(path)` read the file itself, so it
+  was removed rather than kept for the `unused` linter to flag; the path
+  wrapper lives one level up*
+- [x] Split `applyTypesReplaceOnPresence` the same way:
   `applyTypesReplaceOnPresenceIn(cfg, data)` with the path version reading and
   delegating
-- [ ] Extract `parseBytes(data []byte, defaults *Config) (Config, error)` from
+- [x] Extract `parseBytes(data []byte, defaults *Config) (Config, error)` from
   `loadFromFile`'s body; `loadFromFile` becomes `os.ReadFile` + `parseBytes`
-- [ ] Add exported `ParseBytes(b []byte) (Config, error)` with the doc comment
+- [x] Add exported `ParseBytes(b []byte) (Config, error)` with the doc comment
   from DESIGN-0016 (reads no file, merges no global config, normalises exactly
   as `Load`, validation is the caller's)
-- [ ] Table-driven `TestParseBytes_MatchesLoad`: `types:` block, explicit
+- [x] Table-driven `TestParseBytes_MatchesLoad`: `types:` block, explicit
   `changelog.file: ""`, `api:` block with a trailing-slash `exclude`, a custom
   type with aliases, and an empty file — each asserting
   `ParseBytes(b) == Load("", dir)` with `t.Setenv("HOME", t.TempDir())`
   (serial, because of `Setenv`)
-- [ ] `TestParseBytes_ReadsNoFilesystem`: a global `~/.docz.yaml` present under
+- [x] `TestParseBytes_ReadsNoFilesystem`: a global `~/.docz.yaml` present under
   a temp `HOME` that would change the result, asserting `ParseBytes` ignores it
-- [ ] `TestParseBytes_DoesNotModifyInput`: the input slice is byte-identical
+- [x] `TestParseBytes_DoesNotModifyInput`: the input slice is byte-identical
   after the call
-- [ ] Add `ParseBytes` to `test/consumer` so the new symbol is proven reachable
+- [x] Add `ParseBytes` to `test/consumer` so the new symbol is proven reachable
   from outside the module
-- [ ] Update the `pkg/doczcore/config` entry in `CLAUDE.md` to name
+- [x] Update the `pkg/doczcore/config` entry in `CLAUDE.md` to name
   `ParseBytes` and the shared byte core
 
 <!--docz:tasks:end-->
@@ -217,10 +220,10 @@ exists as a module. Phase 3 fixes that.
 
 - [ ] **(human)** In docz-api: `docz status set impl IMPL-0001 Completed`,
   `IMPL-0002 Completed`, `IMPL-0006 Completed`, via a PR that does not trigger a
-  release (Open Question 2)
+  release (Open Question 2) — `deferred - human required`
 - [ ] **(human)** In the same docz-api PR: a dated one-line forward pointer at
   the top of `INV-0002` and `INV-0003`, naming the successor IDs this repository
-  will allocate (INV-0012, INV-0013 — reserve them by noting it here)
+  will allocate (INV-0012, INV-0013 — reserve them by noting it here) — `deferred - human required`
 - [ ] Clone docz-api fresh with `git clone --no-local` into a temp directory,
   **after** the sweep PR merges
 - [ ] Run `git filter-repo` with: `docs/` → `docs/archive/api/`, `deploy/` →

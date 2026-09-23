@@ -8,14 +8,19 @@
 #   api.just    the server, when docz-api moves in
 #   ui.just     the frontend, when docz-site moves in
 #
-# The last two are optional imports, so they start working the moment the
-# file exists and cost nothing until then.
+# docz.just is imported flat, so its recipes own the root namespace
+# (just build, just test, just ci). The other two are optional *modules*
+# (DESIGN-0016 OQ 1): docz-api's recipes share 27 names with docz.just and
+# just refuses duplicate names across sibling imports, so each arriving half
+# gets its own namespace — just api build, just ui build — and root gates
+# reach them as api::lint. `mod?` means neither has to exist yet. ui.just
+# will carry `set working-directory := "ui"` for its Bun commands.
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 import 'docz.just'
-import? 'api.just'
-import? 'ui.just'
+mod? api 'api.just'
+mod? ui 'ui.just'
 
 # Default: list recipes
 _default:

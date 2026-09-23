@@ -695,13 +695,33 @@ func loadFromFile(path string, defaults *Config) (Config, error) {
 	if err != nil {
 		return *defaults, err
 	}
+	return parseBytes(data, defaults)
+}
 
+// ParseBytes decodes one .docz.yaml's bytes onto the defaults. It reads no
+// file and merges no global config, which is the point: a consumer holding
+// bytes it fetched has neither.
+//
+// Normalisation matches Load exactly — the INV-0003 types-replace rule,
+// per-type field defaults, and the changelog and api blocks — so a config
+// parsed from bytes and the same config parsed from a file cannot disagree.
+// It is the same code Load runs for an explicit config file. Validation stays
+// the caller's call, as it is for Load. The input is not modified.
+func ParseBytes(b []byte) (Config, error) {
+	defaults := DefaultConfig()
+	return parseBytes(b, &defaults)
+}
+
+// parseBytes is the single-file decode shared by ParseBytes and
+// loadFromFile: unmarshal onto the defaults, then the same four normalisers
+// Load's merge path runs, keyed on these bytes rather than a path.
+func parseBytes(data []byte, defaults *Config) (Config, error) {
 	cfg := *defaults
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return *defaults, err
 	}
 
-	applyTypesReplaceOnPresence(&cfg, path)
+	applyTypesReplaceOnPresenceIn(&cfg, data)
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
 	normalizeAPI(&cfg)
@@ -774,7 +794,17 @@ func fillTypeFieldDefaults(cfg *Config) {
 // If the file does not exist, cannot be parsed, or has no `types:` key,
 // cfg is left untouched and the merge-based behavior continues.
 func applyTypesReplaceOnPresence(cfg *Config, path string) {
-	listed := userListedTypeNames(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	applyTypesReplaceOnPresenceIn(cfg, data)
+}
+
+// applyTypesReplaceOnPresenceIn is applyTypesReplaceOnPresence over bytes
+// already in hand, for ParseBytes, which has no path to re-read.
+func applyTypesReplaceOnPresenceIn(cfg *Config, data []byte) {
+	listed := userListedTypeNamesIn(data)
 	if listed == nil {
 		return
 	}
@@ -788,17 +818,11 @@ func applyTypesReplaceOnPresence(cfg *Config, path string) {
 	cfg.Types = filtered
 }
 
-// userListedTypeNames returns the keys of the top-level `types:` map in
-// the YAML file at path, or nil if the file is missing, malformed, or
-// has no `types:` key. Parse errors from a malformed file are intentionally
-// swallowed here because mergeConfigFile / loadFromFile already surface
-// them via the main load path; this helper only decides the
-// replace-vs-merge mode for the types map.
-func userListedTypeNames(path string) []string {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
+// userListedTypeNamesIn returns the keys of the top-level `types:` map in
+// data, or nil if it is malformed or has no `types:` key. Parse errors are
+// intentionally swallowed here because the main load paths already surface
+// them; this helper only decides the replace-vs-merge mode for the types map.
+func userListedTypeNamesIn(data []byte) []string {
 	var raw map[string]any
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil

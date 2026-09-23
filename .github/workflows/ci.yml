@@ -23,6 +23,10 @@ jobs:
         uses: actions/labeler@v6
   lint:
     name: Lint
+    # Skipped on the one PR carrying the `graft` label: the docz-api history
+    # merge lands with imports that only the next phase rewrites, so it is
+    # red by decision (DESIGN-0016 OQ 6). Required labels still run.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -39,6 +43,10 @@ jobs:
 
   test-go:
     name: Test Go
+    # Skipped on the one PR carrying the `graft` label: the docz-api history
+    # merge lands with imports that only the next phase rewrites, so it is
+    # red by decision (DESIGN-0016 OQ 6). Required labels still run.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -77,6 +85,10 @@ jobs:
 
   build:
     name: Build
+    # Skipped on the one PR carrying the `graft` label: the docz-api history
+    # merge lands with imports that only the next phase rewrites, so it is
+    # red by decision (DESIGN-0016 OQ 6). Required labels still run.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7

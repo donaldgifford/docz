@@ -126,6 +126,23 @@ func TestExternalConsumerParsesFrontmatterFromBytes(t *testing.T) {
 	}
 }
 
+// TestExternalConsumerParsesConfigFromBytes exercises config.ParseBytes, the
+// no-checkout config path (IMPL-0019 Phase 1): docz-api holds a .docz.yaml it
+// fetched and never wrote to disk, and must get the same normalisation Load
+// applies — here the INV-0003 rule that a types: block replaces the defaults.
+func TestExternalConsumerParsesConfigFromBytes(t *testing.T) {
+	cfg, err := config.ParseBytes([]byte("types:\n  adr:\n    enabled: true\n"))
+	if err != nil {
+		t.Fatalf("config.ParseBytes = %v, want nil", err)
+	}
+	if len(cfg.Types) != 1 {
+		t.Fatalf("config.ParseBytes Types = %d entries, want 1 (types: replaces the defaults)", len(cfg.Types))
+	}
+	if cfg.Types["adr"].IDPrefix != "ADR" {
+		t.Errorf("adr IDPrefix = %q, want the backfilled default %q", cfg.Types["adr"].IDPrefix, "ADR")
+	}
+}
+
 // scanOne scans the single document expected in cfg's type directory and
 // returns it, failing the test if the count is not exactly one.
 func scanOne(t *testing.T, cfg config.Config, root, docType string) document.DocEntry {

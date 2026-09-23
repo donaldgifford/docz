@@ -973,3 +973,12 @@ appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 | `just docs-update` | Run `docz update` |
 | `just docs-list` | Run `docz list` |
 | `just docs-config` | Run `docz config` |
+
+The root `justfile` composes three files. `docz.just` holds every recipe above
+and is imported flat, so its recipes own the root namespace. `api.just` and
+`ui.just` are optional **modules** (`mod?`): the server's recipes share names
+with docz's (`build`, `test`, `lint`, …) and just rejects a duplicate name across
+two imports, so each arriving half is namespaced — `just api build`,
+`just ui build` — and a root gate reaches one as `api::lint` (DESIGN-0016 Open
+Question 1). Neither file exists until its service moves in, and `mod?` means
+the root file loads without them.
