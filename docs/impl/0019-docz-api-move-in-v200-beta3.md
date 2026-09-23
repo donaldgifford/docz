@@ -363,7 +363,7 @@ tested together.
   subjects), so it asserts every tracked file outside `docs/`, `testdata/`, and
   `CHANGELOG.md`; the one stray it found (the clone URL in the folded
   `DEVELOPMENT.md`) is fixed
-- [ ] Record `test/consumer/go.sum` line count before (12) and after
+- [x] Record `test/consumer/go.sum` line count before (12) and after — **4** after `go mod tidy` (the server's ~120 requires reach no consumer of `pkg/`; the tidied root also stopped carrying `kr/pretty` and `check.v1` into it)
 - [ ] Open this PR **without** the `graft` label, so the Go jobs run again
 
 <!--docz:tasks:end-->
