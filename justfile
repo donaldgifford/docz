@@ -28,9 +28,10 @@ _default:
 
 # ─── Composite gates ───────────────────────────────────────────────
 
-# Full CI gate: lint + test + consumer + parity + validate + build + licences
+# Full CI gate: lint + test + consumer + parity + validate + build + licences,
+# then the server's lint, tests, and chart lint from the api module
 [group('gate')]
-ci: lint test test-consumer parity validate build license-check
+ci: lint test test-consumer parity validate build license-check api::lint api::test api::helm-lint
     @echo "✓ CI pipeline complete"
 
 # Pre-commit gate: lint + test
