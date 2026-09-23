@@ -187,7 +187,7 @@ library rather than inside a 160-commit merge.
   a temp `HOME` that would change the result, asserting `ParseBytes` ignores it
 - [x] `TestParseBytes_DoesNotModifyInput`: the input slice is byte-identical
   after the call
-- [ ] Add `ParseBytes` to `test/consumer` so the new symbol is proven reachable
+- [x] Add `ParseBytes` to `test/consumer` so the new symbol is proven reachable
   from outside the module
 - [ ] Update the `pkg/doczcore/config` entry in `CLAUDE.md` to name
   `ParseBytes` and the shared byte core
