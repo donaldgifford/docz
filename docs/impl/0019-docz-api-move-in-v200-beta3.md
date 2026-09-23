@@ -256,9 +256,15 @@ exists as a module. Phase 3 fixes that.
 - [x] Update the four `Dockerfile` references to `Dockerfile.api`
   (`docker-bake.hcl`, `compose.yaml`, `ci.yml` `docker-build`, `deploy/api/`)
   and check `.dockerignore`
-- [ ] `cliff.toml`: add the commit-parser rule that skips commits reachable
+- [x] `cliff.toml`: add the commit-parser rule that skips commits reachable
   only through the grafted parent; run `git-cliff` locally against the merge
-  and confirm no docz-api commit appears under a docz version heading
+  and confirm no docz-api commit appears under a docz version heading —
+  **deviation:** git-cliff's parsers cannot express reachability, so the rule
+  is `.cliffignore` (the 164 SHAs of `git rev-list 9616673^2`), which git-cliff
+  reads natively. A control run without it shows the docz-api commits under
+  `[unreleased]`; with it, none. docz's `CHANGELOG.md` is regenerated under the
+  arriving config, and the imported docz-api tags were deleted locally so they
+  are never pushed
 - [x] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
   Phase 3)
 - [x] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
