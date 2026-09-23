@@ -165,14 +165,17 @@ library rather than inside a 160-commit merge.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Split `userListedTypeNames(path)` into a path wrapper over
-  `userListedTypeNamesIn(data []byte) []string`
-- [ ] Split `applyTypesReplaceOnPresence` the same way:
+- [x] Split `userListedTypeNames(path)` into a path wrapper over
+  `userListedTypeNamesIn(data []byte) []string` — *the path form ended up
+  uncalled once `applyTypesReplaceOnPresence(path)` read the file itself, so it
+  was removed rather than kept for the `unused` linter to flag; the path
+  wrapper lives one level up*
+- [x] Split `applyTypesReplaceOnPresence` the same way:
   `applyTypesReplaceOnPresenceIn(cfg, data)` with the path version reading and
   delegating
-- [ ] Extract `parseBytes(data []byte, defaults *Config) (Config, error)` from
+- [x] Extract `parseBytes(data []byte, defaults *Config) (Config, error)` from
   `loadFromFile`'s body; `loadFromFile` becomes `os.ReadFile` + `parseBytes`
-- [ ] Add exported `ParseBytes(b []byte) (Config, error)` with the doc comment
+- [x] Add exported `ParseBytes(b []byte) (Config, error)` with the doc comment
   from DESIGN-0016 (reads no file, merges no global config, normalises exactly
   as `Load`, validation is the caller's)
 - [ ] Table-driven `TestParseBytes_MatchesLoad`: `types:` block, explicit
