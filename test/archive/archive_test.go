@@ -29,10 +29,12 @@ var archivedCiters = []string{
 // mayCite reports whether a tracked path is allowed to name the old module
 // path: documentation under docs/ (the records of the move itself, as well as
 // the archive), snapshot fixtures under a testdata/ directory, and the
-// generated CHANGELOG.md, whose entries quote commit subjects. Everything else
-// is source or configuration, which is what the rewrite was for.
+// generated CHANGELOG.md, whose entries quote commit subjects, and this test,
+// which has to spell the path to look for it. Everything else is source or
+// configuration, which is what the rewrite was for.
 func mayCite(path string) bool {
 	return strings.HasPrefix(path, "docs/") ||
+		strings.HasPrefix(path, "test/archive/") ||
 		strings.Contains("/"+path, "/testdata/") ||
 		path == "CHANGELOG.md"
 }
