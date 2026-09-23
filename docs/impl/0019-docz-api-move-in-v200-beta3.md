@@ -350,8 +350,10 @@ tested together.
   `internal/session/store.go`), gofumpt 1 (`internal/ingest/service_test.go`)
 - [x] Commit the `golines`/`gofumpt` reflow of `internal/` and `cmd/docz-api/`
   on its own, before any finding fix
-- [ ] Fix or exclude every finding; each `exclude-rules` entry carries a comment
-  naming the reason (OQ 2 of DESIGN-0016)
+- [x] Fix or exclude every finding; each `exclude-rules` entry carries a comment
+  naming the reason (OQ 2 of DESIGN-0016) — goconst fixed with named index
+  attributes in `internal/search`; gosec G710 and G124 excluded by path with
+  their reasons; `golangci-lint run ./...` reports 0
 - [ ] Add the archive-spared test: no tracked file outside `docs/archive/`
   names `github.com/donaldgifford/docz-api`, and the five archived documents
   that did still do
