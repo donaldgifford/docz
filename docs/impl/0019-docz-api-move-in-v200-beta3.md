@@ -228,7 +228,7 @@ exists as a module. Phase 3 fixes that.
   `CHANGELOG.md` → `docs/archive/api/CHANGELOG.md`, and `scripts/labels.sh`
   dropped (`--invert-paths`)
 - [ ] Record the exact `filter-repo` invocation in this document under
-  Phase 2 notes (Open Question 3)
+  Phase 2 notes below (Open Question 3)
 - [ ] `git remote add api-local <clone>`, `git fetch`, and
   `git merge --allow-unrelated-histories api-local/main` on a branch off `main`
 - [ ] Resolve the 20 root-file conflicts per DESIGN-0016 §3: union `go.mod`
@@ -258,13 +258,19 @@ exists as a module. Phase 3 fixes that.
   and confirm no docz-api commit appears under a docz version heading
 - [ ] Merge `.golangci.yml` as the union of enabled linters (findings fixed in
   Phase 3)
-- [ ] `docker.just` disposition per Open Question 4
+- [ ] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
 - [ ] Open the PR with `graft` and `dont-release`; the body states that the Go
   jobs are skipped by decision and cites DESIGN-0016 OQ 6
 - [ ] **(human)** Review and merge the red PR with a merge commit (not squash —
   squashing destroys the graft)
 
 <!--docz:tasks:end-->
+
+**Phase 2 notes** (Open Question 3) — the exact commands, filled in as run:
+
+```bash
+# (recorded during Phase 2)
+```
 
 <!--docz:criteria:start-->
 #### Success Criteria
@@ -302,8 +308,9 @@ tested together.
   `.goreleaser.yml`, `catalog-info.yaml`, and the four `charts/docz-api/` files
 - [ ] `go mod tidy`; `go build ./...`
 - [ ] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
-  fix `build-core` to write `build/bin/docz-api`, and point any `docker.just`
-  references at the Open Question 4 outcome
+  fix `build-core` to write `build/bin/docz-api`
+- [ ] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
+  updated for `Dockerfile.api`, and delete `docker.just` (Open Question 4)
 - [ ] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
   gate
 - [ ] Swap `internal/ingest/parse.go`'s `loadConfig` for
@@ -363,7 +370,7 @@ Everything that makes the result enforceable and visible correctly from outside.
   `tag: ${{ github.ref_name }}`; ECR stays gated on `vars.ECR_PUBLISH_ENABLED`
 - [ ] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
   grant the `docz` repository write access under "Manage Actions access"
-- [ ] Update `charts/docz-api` per Open Question 5
+- [ ] `charts/docz-api/Chart.yaml`: `version: 0.9.0`, `appVersion: "v2.0.0-beta.3"` (Open Question 5); regenerate its README with `just api helm-docs`
 - [ ] Create INV-0012 (successor to docz-api INV-0002) and INV-0013 (successor
   to docz-api INV-0003) per Open Question 6, each citing the archived original
   by path
@@ -482,6 +489,9 @@ Everything that makes the result enforceable and visible correctly from outside.
 
 ### 1. How are the six phases branched?
 
+
+> **Resolved 2026-09-22: (a).** One branch per phase, each cut from `main` after the previous phase merges, merged with a merge commit. Phase 0 branches after PR #119 (this document and DESIGN-0016) merges.
+
 - a. **One branch per phase, each cut from `main` after the previous phase
   merges** — the IMPL-0018 shape (#106–#111). Every PR diffs against real
   `main`, and a merged phase can't orphan the next. Costs waiting on each merge.
@@ -499,6 +509,9 @@ docz-api releases through `pr-semver-bump` on every merge to `main`, so a
 docs-only PR there would publish a `v0.10.2` nobody wants the day before the
 repository stops being where docz-api is built.
 
+
+> **Resolved 2026-09-22: (a).** A normal PR in docz-api carrying the label its `pr-semver-bump` treats as no-release, so `bump-version` reports skipped and `release.yml`'s `release` and `publish-*` jobs do not run.
+
 - a. **A PR in docz-api labelled with whatever its `pr-semver-bump` treats as
   no-release** (its `release.yml` skips when `bump-version` reports skipped),
   merged normally. Keeps docz-api's own rule that `main` only changes through a
@@ -512,6 +525,9 @@ repository stops being where docz-api is built.
 - d. Other.
 
 ### 3. Where does the exact graft invocation live?
+
+
+> **Resolved 2026-09-22: (a).** In this document: the Phase 2 notes block below the Phase 2 tasks holds the exact commands as run, so docz-site's IMPL can copy them with its own renames.
 
 - a. **In this document, as a Phase 2 notes block with the exact commands**,
   filled in as they are run. The record lives beside the plan, and docz-site's
@@ -529,6 +545,9 @@ Nothing references it today, and its four recipes (`docker-build`,
 `docker-buildx`, `docker-push`, `docker-ci`) name `Dockerfile`, which becomes
 `Dockerfile.api`.
 
+
+> **Resolved 2026-09-22: (a).** Its four recipes fold into `api.just` under `[group('docker')]`, updated for `Dockerfile.api`, and `docker.just` is deleted in Phase 3.
+
 - a. **Fold its four recipes into `api.just` under a `[group('docker')]`**,
   updated for `Dockerfile.api` and `docker-bake.hcl`. They become
   `just api docker-build`, reachable for the first time. *(recommendation)*
@@ -543,6 +562,9 @@ Nothing references it today, and its four recipes (`docker-build`,
 docz-api's last tag is `v0.10.1`, `Chart.yaml` is `version: 0.8.0`,
 `appVersion: "0.10.0"`. After the move the image is tagged from this
 repository's tags, so the next image is `v2.0.0-beta.3`.
+
+
+> **Resolved 2026-09-22: (a).** Image tags follow the repository tag (`v2.0.0-beta.3`); `charts/docz-api` keeps its own semver and goes `0.8.0` → `0.9.0` with `appVersion: "v2.0.0-beta.3"`.
 
 - a. **Image tags follow the repository tag (`v2.0.0-beta.3`); the chart keeps
   its own semver and bumps minor (`0.9.0`) with `appVersion: "v2.0.0-beta.3"`.**
@@ -560,6 +582,9 @@ repository's tags, so the next image is `v2.0.0-beta.3`.
 Both are about docz-site — INV-0002 auto-generating the OpenAPI client, INV-0003
 the docz-site features blocked on the API surface — and DESIGN-0016 places the
 successors in Phase 4.
+
+
+> **Resolved 2026-09-22: (a).** Phase 4, as DESIGN-0016 says: INV-0012 and INV-0013, each stating what was still open and citing the archived original by path.
 
 - a. **Phase 4, as DESIGN-0016 says**, each a short successor that states what
   was still open and cites the archived original. They become the entry point
