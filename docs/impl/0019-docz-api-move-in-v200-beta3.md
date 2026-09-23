@@ -342,8 +342,12 @@ tested together.
   only needed it for `Load`
 - [x] Move `TestConfigLoadsFixtureManifest` into `internal/ingest`, then delete
   `internal/doczcontract/`
-- [ ] Capture the lint baseline: `golangci-lint run ./... > /tmp/baseline.txt`
-  and record the count in this document
+- [x] Capture the lint baseline: `golangci-lint run ./... > /tmp/baseline.txt`
+  and record the count in this document — **8 findings** (golangci-lint
+  v2.12.2, after the rewrite and the ParseBytes swap): goconst 4
+  (`internal/search`: `body`, `author`), gosec 3 (G710 open redirect in
+  `internal/authhttp/endpoints.go`, G124 cookie attributes ×2 in
+  `internal/session/store.go`), gofumpt 1 (`internal/ingest/service_test.go`)
 - [ ] Commit the `golines`/`gofumpt` reflow of `internal/` and `cmd/docz-api/`
   on its own, before any finding fix
 - [ ] Fix or exclude every finding; each `exclude-rules` entry carries a comment
