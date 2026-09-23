@@ -61,6 +61,18 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - CLAUDE.md for IMPL-0019 Phase 3 (api module, archive test, ParseBytes in ingest)
 - Check off IMPL-0019 Phase 3 PR task
 - Name docz-api's old module path in CLAUDE.md without spelling it
+- Check off IMPL-0019 Phase 4 layer rule and GHCR access
+- *(archive)* Say what an ID means inside docs/archive/api/
+- Check off IMPL-0019 Phase 4 archive README
+- *(config)* Keep docs/archive/ out of the wiki and the api listing
+- Check off IMPL-0019 Phase 4 exclude tasks
+- Check off IMPL-0019 Phase 4 wiki nav check (0 archive pages, 55 total)
+- Check off IMPL-0019 Phase 4 publish-image task
+- Check off IMPL-0019 Phase 4 chart task
+- *(investigation)* INV-0012 and INV-0013, successors to docz-api INV-0002 and INV-0003
+- Check off IMPL-0019 Phase 4 successor investigations
+- CLAUDE.md for IMPL-0019 Phase 4 (internal/ is the server's, layer rule, archive, beta publishing)
+- Check off IMPL-0019 Phase 4 CLAUDE.md task
 
 ### Styling
 
@@ -73,6 +85,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ingest)* Keep the fixture-manifest clause, delete internal/doczcontract
 - Pin that the import rewrite spared docz-api's archive
 - Exempt the archive test from its own old-module-path scan
+- *(layer)* Pkg/ never imports the server's internal/
+- Wiki.exclude and api.exclude agree on docs/archive/
 
 ### Miscellaneous Tasks
 
@@ -96,6 +110,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Run the api module's lint, tests, and chart lint in just ci
 - *(lint)* Exclude two gosec false positives in the server, with reasons
 - *(consumer)* Go mod tidy after the merge
+- *(prerelease)* Publish docz-api's image and chart on a beta tag
+- *(chart)* Docz-api chart 0.9.0 for v2.0.0-beta.3
 
 ## [2.0.0-beta.1] - 2026-09-21
 
