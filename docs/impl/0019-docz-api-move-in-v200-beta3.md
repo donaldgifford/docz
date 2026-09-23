@@ -348,7 +348,7 @@ tested together.
   (`internal/search`: `body`, `author`), gosec 3 (G710 open redirect in
   `internal/authhttp/endpoints.go`, G124 cookie attributes ×2 in
   `internal/session/store.go`), gofumpt 1 (`internal/ingest/service_test.go`)
-- [ ] Commit the `golines`/`gofumpt` reflow of `internal/` and `cmd/docz-api/`
+- [x] Commit the `golines`/`gofumpt` reflow of `internal/` and `cmd/docz-api/`
   on its own, before any finding fix
 - [ ] Fix or exclude every finding; each `exclude-rules` entry carries a comment
   naming the reason (OQ 2 of DESIGN-0016)
