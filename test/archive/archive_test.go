@@ -10,8 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 )
 
 const oldModule = "github.com/donaldgifford/docz-api"
@@ -80,5 +83,36 @@ func TestRewriteSparedTheArchive(t *testing.T) {
 		if !bytes.Contains(body, []byte(oldModule)) {
 			t.Errorf("%s no longer names %s: the archive was rewritten", rel, oldModule)
 		}
+	}
+}
+
+// TestExcludesAgreeOnArchive pins that the wiki and the api: listing hide the
+// archive together (IMPL-0019 Phase 4). The two lists are separate keys with
+// separate matching rules — wiki.exclude names a directory, api.exclude a
+// path prefix, both under docs_dir — so an edit to one is easy to make without
+// the other, and the failure is silent: archived docz-api pages, with IDs that
+// collide with docz's own, published beside them.
+func TestExcludesAgreeOnArchive(t *testing.T) {
+	t.Parallel()
+	root := repoRoot(t)
+
+	raw, err := os.ReadFile(filepath.Join(root, config.ConfigFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.ParseBytes(raw)
+	if err != nil {
+		t.Fatalf("ParseBytes: %v", err)
+	}
+
+	const archive = "archive"
+	if _, err := os.Stat(filepath.Join(root, cfg.DocsDir, archive)); err != nil {
+		t.Fatalf("%s/%s: %v", cfg.DocsDir, archive, err)
+	}
+	if !slices.Contains(cfg.Wiki.Exclude, archive) {
+		t.Errorf("wiki.exclude = %v, want it to contain %q", cfg.Wiki.Exclude, archive)
+	}
+	if !slices.Contains(cfg.API.Exclude, archive) {
+		t.Errorf("api.exclude = %v, want it to contain %q", cfg.API.Exclude, archive)
 	}
 }
