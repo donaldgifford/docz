@@ -333,7 +333,7 @@ tested together.
 - [x] `go mod tidy`; `go build ./...`
 - [x] `api.just`: confirm it loads as a module (`just --list` shows `api ...`),
   fix `build-core` to write `build/bin/docz-api`
-- [ ] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
+- [x] Fold `docker.just`'s four recipes into `api.just` under `[group('docker')]`,
   updated for `Dockerfile.api`, and delete `docker.just` (Open Question 4)
 - [ ] Wire `api::lint`, `api::test`, and `api::helm-lint` into the root `ci`
   gate
