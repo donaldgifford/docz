@@ -7,7 +7,7 @@
 // version; the replace is what resolves it.
 module doczconsumer
 
-go 1.26.4
+go 1.26.5
 
 require github.com/donaldgifford/docz/v2 v2.0.0
 
