@@ -1,7 +1,7 @@
 ---
 id: IMPL-0019
 title: "docz-api move-in: v2.0.0-beta.3"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-22
 ---
