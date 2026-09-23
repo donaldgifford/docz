@@ -390,11 +390,12 @@ Everything that makes the result enforceable and visible correctly from outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `TestLayerRules_PkgNeverImportsInternal` to
+- [x] Add `TestLayerRules_PkgNeverImportsInternal` to
   `pkg/doczcore/layer_test.go`, walking `go list <modulePath>/pkg/...` and
   failing on any dependency prefixed `modulePath + "/internal/"`
-- [ ] Prove the rule fires: a temporary `pkg/` import of an `internal/` package
-  fails the test (not committed)
+- [x] Prove the rule fires: a temporary `pkg/` import of an `internal/` package
+  fails the test (not committed) — a blank import of `internal/telemetry` in
+  `pkg/doczcore/toc` failed it, reported through every package that reaches toc
 - [ ] Write `docs/archive/api/README.md`: one paragraph stating that inside
   this directory an ID means docz-api's, the archive date, and the source
   repository
@@ -404,8 +405,9 @@ Everything that makes the result enforceable and visible correctly from outside.
 - [ ] `docz wiki update` and confirm no archived page enters `mkdocs.yml`
 - [ ] Add a `publish-image` job to `prerelease.yml` calling `ghcr.yml` with
   `tag: ${{ github.ref_name }}`; ECR stays gated on `vars.ECR_PUBLISH_ENABLED`
-- [ ] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
-  grant the `docz` repository write access under "Manage Actions access"
+- [x] **(human)** In GitHub package settings for `ghcr.io/donaldgifford/docz-api`,
+  grant the `docz` repository write access under "Manage Actions access" —
+  done 2026-09-23 during Phase 3, when #123's Docker Build push needed it
 - [ ] `charts/docz-api/Chart.yaml`: `version: 0.9.0`, `appVersion: "v2.0.0-beta.3"` (Open Question 5); regenerate its README with `just api helm-docs`
 - [ ] Create INV-0012 (successor to docz-api INV-0002) and INV-0013 (successor
   to docz-api INV-0003) per Open Question 6, each citing the archived original
