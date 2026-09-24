@@ -5,6 +5,7 @@
     "github>donaldgifford/renovate-config:go",
     "github>donaldgifford/renovate-config:docker",
     "github>donaldgifford/renovate-config:mise",
-    "github>donaldgifford/renovate-config:ci"
+    "github>donaldgifford/renovate-config:ci",
+    "github>donaldgifford/renovate-config:node"
   ]
 }
