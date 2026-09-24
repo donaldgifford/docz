@@ -13,7 +13,11 @@ in `pkg/doczcore/layer_test.go`, the fifth layer rule). docz-api's planning
 records are archived under `docs/archive/api/`, where an ID means docz-api's;
 `wiki.exclude` and `api.exclude` both carry `archive` so neither the wiki nor
 the `api:` listing publishes them (pinned together by `test/archive`), and
-work they left open continues as INV-0012 and INV-0013.
+work they left open continues as INV-0012 and INV-0013. Since IMPL-0020 it
+also holds **docz-site**, the frontend (DESIGN-0017): `ui/` is its Bun/Vite/React
+project, `charts/docz-site/` its chart, `deploy/ui/` its compose stacks, and
+`Dockerfile.ui` its image, with its records archived under `docs/archive/ui/`
+on the same rule. See "Frontend (`ui/`)" below and `ui/CLAUDE.md`.
 
 ## Build & Test
 
@@ -25,9 +29,10 @@ just parity         # replay the v1.2.2 CLI goldens against build/bin/docz
 just validate       # docz validate over this repo's own docs/, non-strict
 just lint           # golangci-lint + golines
 just fmt            # gofmt + goimports
-just ci             # lint + test + test-consumer + parity + validate + build + license-check + api::{lint,test,helm-lint}
+just ci             # lint + test + test-consumer + parity + validate + build + license-check + api::{lint,test,helm-lint} + the ui:: chain
 just api build      # the server binary to build/bin/docz-api (api.just, a module)
 just api test       # the server's packages only: ./cmd/docz-api/... ./internal/... ./api/...
+just ui ci          # the frontend's CI parity: install, gen-api, lint, fmt-check, typecheck, test, build, bundle-budget, gen-api-check
 ```
 
 `just` replaced `make` (ADR-0004 Decision 4) and the `Makefile` is gone — there
@@ -113,6 +118,51 @@ bare-semver test says so.
 - `pkg/doczcore/toc/` — **public, semver-governed** ToC splice package, promoted from `internal/toc` (IMPL-0014 Phase 4). Owns only the marker-splice concern: its old walker (`ParseHeadings`/`Heading`/`AnchorSlug`) is retired and every heading walk delegates to `docparse.Headings` via unexported `parseHeadings`, which slices past the first `<!--toc:end-->` line (that skip is toc policy, not a markdown fact) — pinned byte-identical by the golden fixture. `GenerateToC([]docparse.Heading, minHeadings)` builds the list; `UpdateToC` returns `UpdateResult{Updated, Headings []docparse.Heading, Found}` so callers (e.g. `docz update --dry-run`) reuse the parsed headings without a second walk. `UpdateFiles([]FileInput, minHeadings, dryRun)` (update.go) walks a list of in-memory docs, performs the ToC splice + optional write-back, and returns a categorized `UpdateReport` (Updated / Unchanged / WouldUpdate / Skipped / WriteErrors); cmd/ owns all user-facing formatting
 - `pkg/doczcore/repo/` — **public, semver-governed** repository tier (IMPL-0018 Phase 3, DESIGN-0014 §2.8), the package that makes "the CLI is one call plus printing" true. `Repo{Root, Cfg}` with **both fields exported** and a struct literal as valid as `Open(ctx, root, configFile)` — docz-api already holds a validated config per request and should not have to re-read it from disk to get the operations; `Open` is `config.Load` + `Validate` so a consumer gets **one** error site instead of five. Pure path helpers `Path`/`TypeDir`/`ReadmePath`/`RelPath`; `RelPath` treats a `..` result as failure even though `filepath.Rel` succeeded, because `../../etc/passwd` reads as a path inside the repo until you count the segments. **Every path the package reports is repo-relative** — the `Entry`/report fields, each `WriteError.Path`, and every hook event — which the Phase 5 review pass found two sites breaking: `InsertRegions`'s `FileWritten` and `writeIndex`'s error plus its two hooks fired absolute, so `docz validate --fix --verbose` logged a different shape from `docz init --verbose` and an index write failure would have put a server's checkout layout into a docz-api error body. Reads: `Scan(ctx, typeName)`, `List(ctx, types)`, `Find(ctx, id)`, `FindIn(ctx, typeName, id)` → `Entry{DocEntry, Type, Path}` with `Path` **repo-relative** (the form every consumer reports). `Find` derives the type from the id prefix, so a consumer holding `IMPL-0018` out of a commit message never says which directory to search; an id with no `-` is `UnknownTypeError` rather than a guess. Writes: `Create`, `Update(ctx, types, UpdateOptions)`, `SetStatus`, `Init`, `Template`, `ExportTemplate`, `Validate`, `InsertRegions`. **`Create` and `Update` share one unexported `updateType`**, so the two index/ToC paths cannot drift; `TypeReport.ToC` is a `*toc.UpdateReport` where nil means "ToC disabled" and non-nil-and-empty means "ran, nothing to do", and every report carries an `Elapsed` per type — the profiling data a consumer wants with no callback wired. **Typed errors everywhere** (errors.go, DESIGN-0014 OQ 9): `NotFoundError{Type,ID}`, `TypeDisabledError{Type}`, `ExistsError{Path}`, `InvalidStatusError{Type,Status,Allowed}`, `UnknownTypeError{Token,Valid}` (**`Unwrap` → `config.ErrUnknownType`**, so the frozen v1 sentinel still answers `errors.Is`), `WriteError{Path,Err}` (unwraps to the cause, so `docwrite.ErrUnsupportedLineEndings` stays reachable while the path comes off the struct). `TypeDisabledError` is deliberately **not** `UnknownTypeError`: "you typed something wrong" and "you turned this off" have different fixes, and `Scan` on a disabled type is this error rather than an empty slice — returning `nil, nil` is what made the two indistinguishable. **Hooks** (hooks.go, DESIGN-0014 §7): `Hooks{ScanStart, ScanDone, TypeSkipped, FileWritten, FileSkipped}` carried in the context via `WithHooks`/`HooksFrom` (the `httptrace.ClientTrace` pattern — a struct of funcs, not an interface, R6), `FileKind`, `SkipReason`, both with a `String()`. This is how a package that prints nothing (R4) still narrates; the five events are exactly the debug lines `cmd/` emits today, so the Phase 5 swap wires them one-to-one. `HooksFrom` never returns nil and `WithHooks(ctx, nil)` clears inherited hooks. **Context enters here** (R8): checked between per-type iterations, never mid-file, and a cancelled run returns the report completed so far with `ctx.Err()` — what was written stays written. `SetStatus` holds the **no-op short-circuit** (DESIGN-0014 OQ 7): `Old == New` returns `Changed: false` without writing, and lookup happens **before** status validation so the two failures keep cmd's exit codes (1 for not-found, 2 for an invalid status). `Init` writes each README as **`index.Scaffold(header)` and nothing more**, which is the issue #99 fix on the `docz init` path. `ExportTemplate` with an empty dest is `docz template override`, and for a custom type whose template resolves nowhere it **scaffolds the generic pair** (template + schema) and returns `Scaffolded: true` — gated on the empty dest, since a schema written beside `/tmp/out.md` resolves for nobody. `Validate` is DESIGN-0015 §4's repository tier: per type the rendered template against its schema, then each document against the schema it names, schemas **cached by name for the run**, plus `toc.stale` and `IndexDrift`. It adds the schema resolver's **third tier** — the type's own template read for its markers when the name is the type's own — which `doctemplate.ResolveSchema` does not have and without which every custom-type document reports `schema.unresolved`. A type whose template resolves nowhere is one `template.unresolved` finding and the run continues (issue #92) rather than aborting every other type. `opts.Strict` is the **caller's** failure threshold and does not change the counts. `InsertRegions` is DESIGN-0015 §6: a document with any `docz:` region is never given more, non-canonical spellings are rewritten and counted in `Fixed`, and everything else gets markers around what `kinds.InferRegions` found. **No heuristic lives here** — `InferRegions` already trims trailing blank lines and a trailing thematic break and re-cuts a parent to its last child, so the pass is arithmetic plus the write; it runs `Regions` over its own output and refuses to write a malformed result (`ErrMalformedOutput`). Canonicalisation runs on **both** branches, not only the already-marked one the flowchart shows, because a non-canonical legacy `toc` marker would otherwise make the second run rewrite the spelling and idempotence is the stronger promise. All **38** `.orig.md` fixtures across the five type packages reproduce their hand-migrated siblings byte-for-byte and a second run is a no-op, docz's own corpus migrates cleanly, and a test-only heading locator over every IMPL fixture yields the same task IDs `impl.Parse` does — the proof that licenses deleting the heuristics. **`repo` never imports a type package** (R2) and is in `layer_test.go`'s `corePackages`, so the rule is enforced rather than asserted; the per-type tier is composed by `cmd/validate.go`, which is the only place in the repo that switches on a document's type name to pick a validator. `Repo` holds no logger and prints nothing.
 - `pkg/wiki/` — **public, semver-governed** MkDocs / Backstage TechDocs integration, promoted whole from `internal/wiki` (IMPL-0018 Phase 2, DESIGN-0014 §2.10). A **sibling** of the type packages rather than a member of `pkg/doczcore`, because it is an integration, not core and not a document type. `orchestrate.go` holds the two **operations** — the orchestration `cmd/wiki.go` used to compose inline, so a consumer gets the operation and not just the primitives. `Init(ctx, root, cfg, InitOptions) (InitReport, error)` writes `mkdocs.yml` (at `cfg.Wiki.MkDocsPath`) and the docs landing page (`<DocsDir>/index.md`, rendered from `doctemplate.ResolveWikiIndex`): each file is created when absent, `Skipped` when present, `Overwritten` when present and `InitOptions.Force` is set, and `InitReport{MkDocsPath, MkDocs, IndexPath, Index}` reports both paths plus an `Action` (`Created`/`Skipped`/`Overwritten`, with a `String()` so two consumers can't word the same run differently) for each — the paths are filled before any work, so a report returned alongside an error still says which files were at stake and a zero `Action` means that file was never reached. A file already present is **not** an error at this layer; refusing over a skipped `mkdocs.yml` is `docz wiki init`'s policy. `Init` deliberately does **not** touch the nav — `CreateMkDocs` leaves the `nav: - Home: index.md` placeholder and the caller calls `UpdateNav` next, which keeps the page count in `NavReport` instead of discarded. `UpdateNav(ctx, root, cfg, NavOptions) (NavReport, error)` rebuilds the `nav:` key from the documents under `cfg.DocsDir`, preserving every other key and the existing top-level section order (it reads `ExistingNavOrder` back out of the file even on a dry run, since that ordering is the one behaviour a user notices); `NavReport{Path, Entries, Pages, Written}` returns the `[]NavEntry` tree rather than rendered YAML, so the indented tree `docz wiki update --dry-run` prints is the *caller's* rendering. A missing `mkdocs.yml` surfaces as the read error wrapping `fs.ErrNotExist`; "run `docz wiki init` first" is cmd's wording. Both operations resolve config-relative paths under `root` via unexported `underRoot` (the same rule as `cmd.Runner.inRepo`, so neither calls `os.Getwd`) and check `ctx` between steps, returning the report so far with `ctx.Err()` and leaving already-written files written. Three things stay in `cmd/` on purpose: deriving the site name from the git remote (an L4 dependency, like the author name — `InitOptions.SiteName` arrives resolved, and the package's own fallback reaches no further than `filepath.Base(root)` then `"my-project"`), the `.docz.yaml` precondition, and all printing/logging. The **primitives** stay exported for a different composition: `CreateMkDocs(path, *MkDocsConfig)` builds the initial `mkdocs.yml` (cmd/ no longer constructs YAML strings inline), `ScanDocs`/`BuildNav`/`SortEntries`/`CountPages`, `ReadMkDocs`/`WriteMkDocs`/`NavToYAML`/`MergeNavOrder`, and `DirTitle`/`DocTitle`/`FilenameTitle`. `DocTitle` resolves a nav title as frontmatter `ID: Title` → `docparse.Title` → `FilenameTitle`; the local `firstH1` it used to call is gone (IMPL-0016 Phase 2), which made the H1 scan fence-aware, markdown-stripping, setext-capable, and no longer confused by a mid-document `---`
+
+## Frontend (`ui/`)
+
+docz-site arrived with its full history in IMPL-0020 Phase 2 (DESIGN-0017,
+ADR-0004). Its own conventions — Bun, orval, MSW, Playwright, the server
+bundle, the chart — are in **`ui/CLAUDE.md`**; this section is only what
+the move changed about the repository.
+
+- **`ui/go.mod` fences the npm tree.** It is a stub
+  (`module github.com/donaldgifford/docz/v2/ui`) with no Go in it, and it
+  exists because `ui/node_modules` ships stray `.go` files (flatted's) that
+  the root module's `./...` would otherwise walk into and fail to build. A
+  nested `go.mod` ends the root module at `ui/`, so `go test ./...`,
+  golangci-lint, and go-licenses need no exclusion. `TestUIModuleFence` in
+  `test/archive` pins it exists and that `go list` stops there; the ui CI job,
+  the one place `node_modules` is populated, proves it still works.
+- **One spec, four readers.** `api/openapi.yaml` is the only copy: docz-api
+  embeds it (`api/spec.go`) and serves it at `GET /openapi.yaml`, the
+  contract test in `internal/httpapi` reads the same embed, `api::lint-openapi`
+  runs vacuum over it, and orval generates the client from it
+  (`ui/orval.config.ts` → `../api/openapi.yaml`). The vendored
+  `ui/api/openapi.yaml` and docz-site's `spec-drift.yml` are gone, so a spec
+  change that breaks the client fails the same PR in `typecheck` or
+  `gen-api-check`.
+- **The image sees the spec through a named context.** `Dockerfile.ui` builds
+  with context `ui/` and gets the spec from bake's `contexts = { spec = "api" }`
+  via `COPY --from=spec openapi.yaml /api/openapi.yaml`, laid out so orval's
+  `../api/openapi.yaml` resolves inside the stage. Only the spec crosses the
+  boundary; `.dockerignore` excludes `ui` from the api image's root context.
+- **Two components publish from one tag.** Bake has `-api` and `-ui` target
+  families, and `ghcr.yml`/`ecr.yml` take a `component` input (`api`|`ui`)
+  resolved in one table. `prerelease.yml` and `release.yml` each call the pair
+  twice, so a `v*-beta.*` tag pushes `docz-api` and `docz-site` images and
+  both charts. **Each GHCR package needs its own Actions access grant** for
+  this repository (`docz-site` and `charts/docz-site` are separate from
+  docz-api's two); without one the push fails `403 write_package`. The chart
+  is bumped once per release, before the tag, and its `appVersion` is bare
+  semver like docz-api's.
+- **CI stays path-filtered** (ADR-0004 OQ 4, revisited as DESIGN-0017 OQ 7).
+  The `ui` and `ui-e2e` jobs run on `ui/**`, `Dockerfile.ui`, and
+  `api/openapi.yaml`, so a spec change runs both halves; the Go jobs are
+  unfiltered. **Revisit the filter the moment a Go change can break the UI
+  other than through the spec** — an `//go:embed` of `ui/dist`, a shared
+  generated file, a Go test that reads `ui/`. Until then the UI reaches the
+  server only over the specced HTTP surface.
 
 ## Server (internal/, cmd/docz-api)
 

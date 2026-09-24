@@ -576,7 +576,7 @@ What the outside world sees at beta.4, and the notes the next person needs.
   jobs. Add the same pair to `release.yml`. Done; `release.yml`'s pair is
   `publish-ghcr-ui`/`publish-ecr-ui`, matching its own api job names, and
   `just api lint-actions` is clean
-- [ ] Root `CLAUDE.md`: a "Frontend (`ui/`)" section pointing at
+- [x] Root `CLAUDE.md`: a "Frontend (`ui/`)" section pointing at
   `ui/CLAUDE.md`, covering `ui/go.mod` and why it exists, the single spec
   and its four readers, the named `spec` build context, two-component
   publishing and the per-package GHCR grant, and the path-filter revisit
