@@ -40,6 +40,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
 
       # JavaScript/TypeScript needs no build step; CodeQL extracts the source.
       - name: Autobuild
