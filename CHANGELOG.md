@@ -5,6 +5,14 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Documentation
+
+- IMPL-0019 Phase 5 integration and release checks pass; tag deferred to a human
+- IMPL-0019 Phase 5 beta.3 released and verified
+- Complete IMPL-0019 and implement DESIGN-0016
+
+## [2.0.0-beta.3] - 2026-09-23
+
 ### Features
 
 - *(config)* ParseBytes decodes .docz.yaml bytes with Load's normalisation (IMPL-0019 Phase 1)
