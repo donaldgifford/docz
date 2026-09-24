@@ -10,6 +10,6 @@ version: 0.1.10
 # (docker/metadata-action strips the "v"). They must match or a
 # defaults-only `helm install` hits ImagePullBackOff.
 appVersion: "0.10.0"
-home: https://github.com/donaldgifford/docz-site
+home: https://github.com/donaldgifford/docz/tree/main/ui
 maintainers:
   - name: donaldgifford

@@ -499,7 +499,7 @@ image build, the fixtures, the local stacks, and the URLs.
   earlier run existed, and against it `just ui local-up` built, went
   healthy, and served `/healthz` 200 on :8090. The site's build now
   reads `../../ui` with the `spec` context
-- [ ] Rewrite `github.com/donaldgifford/docz-site` → the monorepo (`…/docz`,
+- [x] Rewrite `github.com/donaldgifford/docz-site` → the monorepo (`…/docz`,
   `…/docz/tree/main/ui` where a path is meant) in `ui/README.md`,
   `ui/CLAUDE.md`, `ui/CONTRIBUTING.md`, `charts/docz-site/Chart.yaml`
   `home:`, `charts/docz-site/README.md.gotmpl` (then
@@ -512,7 +512,13 @@ image build, the fixtures, the local stacks, and the URLs.
   docz-api's old repository (both chart READMEs, `ui/README.md`,
   `ui/CLAUDE.md`, and the `docz-api-rfc-0001.md` fixture with the
   `doc.test.tsx` assertion that reads it). `test-go` is not path-filtered,
-  so the graft PR would have been red without them
+  so the graft PR would have been red without them. The docz-site half:
+  `Chart.yaml` `home:` → `…/docz/tree/main/ui`; `cliff.toml`'s `<REPO>`
+  and issue links → `…/docz`, and its usage comment's `--include-path` →
+  `charts/docz-site/**`; `ui/CONTRIBUTING.md`'s issues link, clone
+  instructions, and quick start (`just ui …`). `ui/README.md`,
+  `ui/CLAUDE.md`, and the chart README template named no docz-site URL,
+  so `just ui helm-docs` changed nothing
 - [ ] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
   `docs/`, `testdata/`, `CHANGELOG.md`, and `test/archive/` names
   `github.com/donaldgifford/docz-site`
