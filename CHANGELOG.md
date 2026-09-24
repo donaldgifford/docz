@@ -5,6 +5,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(ui)* Generate the client from the one spec at api/openapi.yaml
+
 ### Bug Fixes
 
 - *(ui)* Clear trivy's two HIGH advisories in bun.lock
@@ -28,10 +32,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* IMPL-0020 Phase 2 local gates pass
 - *(impl)* IMPL-0020 Phase 2 PR opened ([#130](https://github.com/donaldgifford/docz/issues/130))
 - *(impl)* Record the IMPL-0020 Phase 2 CI fixes
+- *(impl)* Record the IMPL-0020 Phase 3 spec drift drill
+- *(impl)* Record the IMPL-0020 Phase 3 ui image probe
+- *(ui)* Point docz-site's repository URLs at the monorepo
 
 ### Testing
 
 - *(ui)* Snapshot the archived fixtures into src/mocks/content
+- *(archive)* Pin the docz-site URL sweep and the ui/ module fence
 
 ### Miscellaneous Tasks
 
@@ -52,6 +60,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ui)* Install prettier for the format check
 - *(trufflehog)* Exclude the exclude file's own history
 - *(codeql)* Ignore two non-production ui files, with reasons
+- *(ui)* Feed the spec to Dockerfile.ui as a named build context
+- *(docker)* Add the -ui bake family for docz-site
+- *(docker)* Bake both images when docker or ui changed
+- *(just)* Add ui docker-build, the no-bake spelling of dev-ui
+- *(deploy)* Build both images from this repository in deploy/ui
+- *(deploy)* Build the local site from ui/ against the api local stack
 
 ## [2.0.0-beta.3] - 2026-09-23
 
