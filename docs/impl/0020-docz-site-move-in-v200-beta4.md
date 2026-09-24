@@ -622,8 +622,13 @@ What the outside world sees at beta.4, and the notes the next person needs.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `just release-check` and `just api release-check` pass
-- [ ] `docker buildx bake ci` builds both images locally
+- [x] `just release-check` and `just api release-check` pass. Both
+  validate `.goreleaser.yml`, run on the Phase 4 branch
+- [x] `docker buildx bake ci` builds both images locally.
+  Built for `linux/arm64` (`--set '*.platform=linux/arm64'`): the
+  `linux/amd64` half of `ci-ui` dies with exit 132, SIGILL, because Bun
+  needs CPU instructions the emulator on an Apple-silicon workstation lacks.
+  The CI `Docker Build` job bakes the `ci` group and passed on #132
 - [ ] **(human)** `just release v2.0.0-beta.4` from **Phase 4's merge
   commit**, the last commit that changes a workflow. A tag runs the
   workflows as they exist in the tagged commit (IMPL-0019 Phase 5)
@@ -640,8 +645,10 @@ What the outside world sees at beta.4, and the notes the next person needs.
   `/healthz`, and point it at a docz-api to confirm the proxy (`/api/v1/repos`
   through the site). Upgrading an existing docz-site release to chart
   `0.2.0` needs no values change
-- [ ] Closing notes below: amend ADR-0004's two claims that DESIGN-0017's
-  Background disproved (the "no `go.mod`" line and the successor count)
+- [x] Closing notes below: amend ADR-0004's two claims that DESIGN-0017's
+  Background disproved (the "no `go.mod`" line and the successor count). Amended
+  in place as dated corrections beside each claim (Consequences, Neutral,
+  and Open Question 1's resolution), leaving the original words as the record
 - [ ] `docz status set impl IMPL-0020 Completed` and
   `docz status set design DESIGN-0017 Implemented`, then `docz update`
 - [ ] File the follow-ups as issues: archive the docz-site repository

@@ -375,6 +375,11 @@ this ADR records what has to hold for it to be survivable.
   reaches them only through whatever a repository's `.docz.yaml` declares
   (ADR-0003, INV-0011 Obs 3).
 - **`ui/` is invisible to Go tooling.** It has no `go.mod` and no Go files.
+  *Corrected 2026-09-24 (DESIGN-0017 Background, IMPL-0020):* after
+  `bun install`, `ui/node_modules` holds a Go file (npm's `flatted` ships
+  `golang/pkg/flatted/flatted.go`), and the root module's `./...` lists it
+  as a package. The invisibility is real but it is made, not found: a stub
+  `ui/go.mod` ends the root module at `ui/`, and `TestUIModuleFence` pins it.
 - **The old repositories become read-only archives** after their history is
   merged, rather than the historical record (Decision 7).
 - **Unfinished work is carried by a successor, not a move.** Four documents
@@ -383,6 +388,11 @@ this ADR records what has to hold for it to be survivable.
   were measured complete — their status lines are corrected before archiving,
   which is what keeps the archive an accurate record rather than a snapshot of
   bookkeeping that fell behind.
+  *Corrected 2026-09-24 (DESIGN-0017 Background and OQ 9):* **two** documents
+  got a successor, not four — docz-api `INV-0002` and `INV-0003`, carried as
+  INV-0012 and INV-0013. docz-site `DESIGN-0001` and `DESIGN-0005` had every
+  open question resolved and had shipped, so they joined the stale-status
+  group and were archived as Implemented.
 - **CLI behaviour is untouched.** Nothing in this ADR changes a command, a
   flag, an exit code, or `.docz.yaml`, and the parity suite keeps recording
   v1.2.2 behaviour.
@@ -496,6 +506,10 @@ IMPL numbers — resolve in the old namespace.
 > ones that get a successor: docz-api `INV-0002` and `INV-0003` (both Open)
 > and docz-site `DESIGN-0001` (Draft) and `DESIGN-0005` (In Review). Writing
 > them belongs to each move's own IMPL, not to a separate unit.
+>
+> *Corrected 2026-09-24:* the docz-site two were measured complete too
+> (DESIGN-0017 OQ 9), so only the docz-api pair got successors. See
+> Consequences, Neutral.
 >
 > One word to keep honest: "verbatim" means the bodies are untouched. The five
 > status lines and the four dated pointer blocks are the only edits, and they
