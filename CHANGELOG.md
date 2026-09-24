@@ -10,6 +10,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - IMPL-0019 Phase 5 integration and release checks pass; tag deferred to a human
 - IMPL-0019 Phase 5 beta.3 released and verified
 - Complete IMPL-0019 and implement DESIGN-0016
+- *(design)* DESIGN-0017 move docz-site in as ui/
+- *(design)* Resolve DESIGN-0017 open questions, all (a)
+- *(design)* DESIGN-0017 §7 — Go jobs are unfiltered, drop the spec output
+- *(impl)* IMPL-0020 docz-site move-in, v2.0.0-beta.4
+- Resolve IMPL-0020 open questions (all a); approve DESIGN-0017
 
 ## [2.0.0-beta.3] - 2026-09-23
 
