@@ -484,7 +484,7 @@ image build, the fixtures, the local stacks, and the URLs.
   imports broke `just ui test` (52 files, every one importing
   `fixtures.ts`), and the graft PR's `ui` job has to be green. After the
   swap, 686 vitest tests and 16 Playwright specs pass
-- [ ] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
+- [x] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
   `dockerfile: Dockerfile.api`, and the site from `../../ui` with
   `additional_contexts: { spec: ../../api }`. `docker compose config` is valid
 - [ ] `deploy/ui/compose.local.yaml`: run `just api local-up` and read the
