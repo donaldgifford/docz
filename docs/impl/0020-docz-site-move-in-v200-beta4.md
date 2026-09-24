@@ -298,15 +298,17 @@ no Go file arrives, the vendored spec keeps orval working, and
   placeholder Postgres DSN in docz's own history (none in `ui/`). The four
   paths are excluded in `.github/trufflehog-exclude.txt`, each with its
   reason, and the re-scan finds nothing
-- [ ] `ci.yml`: a `ui` job (`needs: changes`, `if: needs.changes.outputs.ui == 'true'`,
+- [x] `ci.yml`: a `ui` job (`needs: changes`, `if: needs.changes.outputs.ui == 'true'`,
   `defaults.run.working-directory: ui`, `oven-sh/setup-bun` pinned to
   1.3.14, `extractions/setup-just`) running `bun install --frozen-lockfile`,
   then `just ui` `gen-api`, `lint`, `fmt-check`, `typecheck`, `test`,
   `test-server` (before `build`: the server tests assume no `dist/`), `build`,
   `bundle-budget`, and `gen-api-check`, one step each. Then
   the fence check (Open Question 3). A `ui-e2e` job does the same install
-  plus `bunx playwright install --with-deps chromium` and `just ui e2e`
-- [ ] `ci.yml` `helm-unittest`: loop over `charts/*/` instead of naming
+  plus `bunx playwright install --with-deps chromium` and `just ui e2e`.
+  `ui-e2e` also runs `just ui gen-api` first: the generated client is
+  gitignored and the MSW preview build imports it
+- [x] `ci.yml` `helm-unittest`: loop over `charts/*/` instead of naming
   `charts/docz-api`
 - [ ] `ui.just`: `set working-directory := "ui"`; helm recipes →
   `../charts/docz-site`; `local-up`/`local-down` →
