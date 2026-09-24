@@ -284,6 +284,13 @@ jobs:
       - name: Lint
         run: just ui lint
 
+      # package.json's format:check calls a global prettier, which docz-site's
+      # CI got from mise. Pinned to mise.toml's version.
+      - name: Install prettier
+        run: |
+          bun add --global prettier@3.7.4
+          echo "${HOME}/.bun/bin" >> "${GITHUB_PATH}"
+
       - name: Format check
         run: just ui fmt-check
 
