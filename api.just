@@ -178,28 +178,29 @@ monitor-logs:
     @{{ monitor_compose }} --profile auth logs -f
 
 # ─── Docker ─────────────────────────────────────────────────────────
-# Image builds via docker buildx bake; docker-bake.hcl builds Dockerfile.api.
-# Folded in from docker.just (IMPL-0019 OQ 4).
+# Image builds via docker buildx bake; docker-bake.hcl builds Dockerfile.api
+# through the -api target family (IMPL-0020 Phase 0). Folded in from
+# docker.just (IMPL-0019 OQ 4).
 
 # Local single-arch build via docker buildx bake
 [group('docker')]
 docker-build:
-    @docker buildx bake
+    @docker buildx bake dev-api
 
 # Multi-arch build and push via docker buildx bake
 [group('docker')]
 docker-buildx:
-    @docker buildx bake release
+    @docker buildx bake release-api
 
 # Push the image (requires prior build)
 [group('docker')]
 docker-push:
-    @docker buildx bake --push
+    @docker buildx bake --push dev-api
 
 # CI build (linux/amd64 only, for fast PR validation)
 [group('docker')]
 docker-ci:
-    @docker buildx bake ci
+    @docker buildx bake ci-api
 
 # ─── Helm ───────────────────────────────────────────────────────────
 

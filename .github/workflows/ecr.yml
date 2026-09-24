@@ -2,18 +2,25 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: Publish to ECR
 
-# Called from release.yml after bump-version. Also dispatchable for ad-hoc
-# republishes. Two jobs:
-#   image — push container image when `tag` is supplied
-#   chart — push Helm chart; idempotent via `helm pull` precheck
+# Called from prerelease.yml / release.yml once per component. Also
+# dispatchable for ad-hoc republishes. Four jobs:
+#   resolve  — map `component` to the image repo, bake target, and chart
+#   aws-auth — OIDC + ECR registry hostname
+#   image    — push container image when `tag` is supplied
+#   chart    — push Helm chart; idempotent via `helm pull` precheck
 #
 # Operator prep (one-time, outside this workflow):
-#   - IAM role with GitHub OIDC trust policy for repo:donaldgifford/docz-api:*
-#   - ECR repos: docz-api (image), docz-api (chart)
+#   - IAM role with GitHub OIDC trust policy for repo:donaldgifford/docz:*
+#   - ECR repos, one image and one chart per component (see the resolve job)
 #   - Repo secrets: ECR_AWS_ACCOUNT_ID, ECR_REGION, ECR_ROLE_ARN
 on:
   workflow_call:
     inputs:
+      component:
+        description: 'Component to publish (api or ui); the resolve job maps it to names.'
+        type: string
+        required: false
+        default: 'api'
       tag:
         description: 'Image tag to publish (e.g. v1.8.2). Empty = skip image push.'
         type: string
@@ -26,6 +33,11 @@ on:
         default: false
   workflow_dispatch:
     inputs:
+      component:
+        description: 'Component to publish (api or ui); the resolve job maps it to names.'
+        type: choice
+        options: [api, ui]
+        default: 'api'
       tag:
         description: 'Image tag to publish (e.g. v1.8.2). Leave empty to skip image push.'
         type: string
@@ -43,12 +55,39 @@ permissions:
   # attestations: write — required by actions/attest-build-provenance.
   attestations: write
 
-env:
-  IMAGE_NAME: docz-api
-  CHART_NAME: docz-api
-  CHART_REPO: docz-api
-
 jobs:
+  # The one place a component's names live (DESIGN-0017 §8). The image job
+  # and the chart job read only these outputs. In ECR the chart repository
+  # is named for the chart, so CHART_REPO is CHART_NAME.
+  resolve:
+    name: Resolve component
+    runs-on: ubuntu-latest
+    outputs:
+      image_name: ${{ steps.resolve.outputs.image_name }}
+      bake_target: ${{ steps.resolve.outputs.bake_target }}
+      chart_name: ${{ steps.resolve.outputs.chart_name }}
+      chart_dir: ${{ steps.resolve.outputs.chart_dir }}
+    steps:
+      - name: Resolve component
+        id: resolve
+        env:
+          COMPONENT: ${{ inputs.component }}
+        # component | image name | bake target | chart name | chart dir
+        run: |
+          case "${COMPONENT}" in
+            api) row="docz-api  release-api docz-api  charts/docz-api" ;;
+            ui)  row="docz-site release-ui  docz-site charts/docz-site" ;;
+            *)   echo "ERROR: unknown component '${COMPONENT}' (want api or ui)"; exit 1 ;;
+          esac
+          read -r image_name bake_target chart_name chart_dir <<< "${row}"
+          {
+            echo "image_name=${image_name}"
+            echo "bake_target=${bake_target}"
+            echo "chart_name=${chart_name}"
+            echo "chart_dir=${chart_dir}"
+          } >> "$GITHUB_OUTPUT"
+          echo "component=${COMPONENT} -> ${image_name}, ${bake_target}, ${chart_dir}"
+
   # Fetches an ECR auth token via OIDC and exposes it (masked) to the
   # downstream SLSA reusable workflows. Token is valid ~12h.
   aws-auth:
@@ -61,7 +100,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.ECR_ROLE_ARN }}
-          role-session-name: github-actions-docz-api-publish
+          role-session-name: github-actions-docz-publish
           aws-region: ${{ secrets.ECR_REGION }}
 
       - name: Compute registry hostname
@@ -79,8 +118,11 @@ jobs:
   image:
     name: Publish image
     runs-on: ubuntu-latest
-    needs: aws-auth
+    needs: [resolve, aws-auth]
     if: inputs.tag != ''
+    env:
+      IMAGE_NAME: ${{ needs.resolve.outputs.image_name }}
+      BAKE_TARGET: ${{ needs.resolve.outputs.bake_target }}
     outputs:
       digest: ${{ steps.digest.outputs.digest }}
       published: ${{ steps.digest.outputs.published }}
@@ -98,7 +140,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.ECR_ROLE_ARN }}
-          role-session-name: github-actions-docz-api-image
+          role-session-name: github-actions-docz-image
           aws-region: ${{ secrets.ECR_REGION }}
 
       - uses: aws-actions/amazon-ecr-login@v2
@@ -134,7 +176,7 @@ jobs:
         if: inputs.dry_run != true
         uses: docker/bake-action@v7
         with:
-          targets: release
+          targets: ${{ env.BAKE_TARGET }}
           source: .
           files: |
             docker-bake.hcl
@@ -153,7 +195,7 @@ jobs:
         env:
           BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
         run: |
-          digest=$(jq -r '.release."containerimage.digest"' <<< "${BAKE_METADATA}")
+          digest=$(jq -r --arg t "${BAKE_TARGET}" '.[$t]."containerimage.digest"' <<< "${BAKE_METADATA}")
           if [ -z "${digest}" ] || [ "${digest}" = "null" ]; then
             echo "ERROR: failed to capture image digest from bake metadata"
             exit 1
@@ -197,7 +239,11 @@ jobs:
   chart:
     name: Publish chart
     runs-on: ubuntu-latest
-    needs: aws-auth
+    needs: [resolve, aws-auth]
+    env:
+      CHART_NAME: ${{ needs.resolve.outputs.chart_name }}
+      CHART_REPO: ${{ needs.resolve.outputs.chart_name }}
+      CHART_DIR: ${{ needs.resolve.outputs.chart_dir }}
     outputs:
       chart_version: ${{ steps.version.outputs.chart_version }}
       digest: ${{ steps.push.outputs.digest }}
@@ -214,7 +260,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.ECR_ROLE_ARN }}
-          role-session-name: github-actions-docz-api
+          role-session-name: github-actions-docz-chart
           aws-region: ${{ secrets.ECR_REGION }}
 
       - uses: aws-actions/amazon-ecr-login@v2
@@ -222,15 +268,17 @@ jobs:
 
       - uses: orhun/git-cliff-action@v4
         with:
-          config: charts/docz-api/cliff.toml
-          args: --include-path "charts/**" --output charts/docz-api/CHANGELOG.md
+          # Scoped to this component's chart: with two charts, "charts/**"
+          # listed each chart's commits in the other's changelog.
+          config: ${{ env.CHART_DIR }}/cliff.toml
+          args: --include-path "${{ env.CHART_DIR }}/**" --output ${{ env.CHART_DIR }}/CHANGELOG.md
         env:
-          OUTPUT: charts/docz-api/CHANGELOG.md
+          OUTPUT: ${{ env.CHART_DIR }}/CHANGELOG.md
 
       - name: Read chart version
         id: version
         run: |
-          chart_version=$(yq '.version' charts/docz-api/Chart.yaml)
+          chart_version=$(yq '.version' "${CHART_DIR}/Chart.yaml")
           echo "chart_version=${chart_version}" >> "$GITHUB_OUTPUT"
           echo "Chart version: ${chart_version}"
 
@@ -259,7 +307,7 @@ jobs:
 
       - name: Package chart
         if: steps.idempotency.outputs.exists != 'true'
-        run: helm package charts/docz-api
+        run: helm package "${CHART_DIR}"
 
       - name: Upload chart artifact (dispatch only)
         if: |

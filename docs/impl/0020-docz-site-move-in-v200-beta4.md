@@ -139,34 +139,43 @@ already knows about two components and has been exercised with one.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `.dockerignore`: add `ui/`, so `Dockerfile.api`'s repository-root
+- [x] `.dockerignore`: add `ui/`, so `Dockerfile.api`'s repository-root
   context never uploads `ui/node_modules/`
-- [ ] `docker-bake.hcl`: rename `_common` → `_common_api` and the targets to
+- [x] `docker-bake.hcl`: rename `_common` → `_common_api` and the targets to
   `dev-api`, `ci-api`, `release-api`, with `IMAGE_NAME` scoped per target;
   add `group "default" { targets = ["dev-api"] }` and
   `group "ci" { targets = ["ci-api"] }` so the bare `docker buildx bake` and
   `docker buildx bake ci` spellings keep working
-- [ ] `api.just`: update the bake recipes (`docker buildx bake release` →
+- [x] `api.just`: update the bake recipes (`docker buildx bake release` →
   `release-api`, and so on); `just --dry-run api <recipe>` shows each
   resolved command
-- [ ] `ghcr.yml` and `ecr.yml`: add a `component` input (`api`|`ui`, default
+- [x] `ghcr.yml` and `ecr.yml`: add a `component` input (`api`|`ui`, default
   `api` so a bare `workflow_dispatch` behaves as today). A first step resolves
   it to `IMAGE_REPO`, `BAKE_TARGET`, `CHART_NAME`, and `CHART_DIR` from one
   table, as in DESIGN-0017 §8. Every hardcoded `docz-api`, `charts/docz-api`,
   and `targets: release` reads from those values
-- [ ] Chart-changelog step: `--include-path "charts/**"` →
+- [x] Chart-changelog step: `--include-path "charts/**"` →
   `"${CHART_DIR}/**"`, with the config at `${CHART_DIR}/cliff.toml`
-- [ ] `prerelease.yml` and `release.yml`: pass `component: api` to both
+- [x] `prerelease.yml` and `release.yml`: pass `component: api` to both
   publish calls
-- [ ] `ci.yml` `changes`: add the `ui` output (`ui/**`, `api/openapi.yaml`,
+- [x] `ci.yml` `changes`: add the `ui` output (`ui/**`, `api/openapi.yaml`,
   `Dockerfile.ui`). No job reads it until Phase 2
-- [ ] `mise.toml`: `bun = "1.3.14"`, `node = "24.14.0"`
-- [ ] `renovate.json5`: add `github>donaldgifford/renovate-config:node`
-- [ ] `just api lint-actions` clean
-- [ ] Prove the parameterised publish without a tag (Open Question 2):
+- [x] `mise.toml`: `bun = "1.3.14"`, `node = "24.14.0"`
+- [x] `renovate.json5`: add `github>donaldgifford/renovate-config:node`
+- [x] `just api lint-actions` clean
+- [x] Prove the parameterised publish without a tag (Open Question 2):
   `gh workflow run ghcr.yml --ref <branch> -f component=api -f tag=v0.0.0-phase0 -f dry_run=true`,
   and the same for `ecr.yml` if `ECR_PUBLISH_ENABLED` is set. Record the run
-  URLs here
+  URLs here.
+  Run with `-f tag=v2.0.0-beta.3` rather than `v0.0.0-phase0`, because the
+  image job checks out `inputs.tag` and a tag that does not exist fails the
+  checkout before `dry_run` can skip anything:
+  [run 35950181641](https://github.com/donaldgifford/docz/actions/runs/35950181641),
+  all three jobs green. The resolve job logged
+  `component=api -> donaldgifford/docz-api, release-api, charts/docz-api`;
+  the image job skipped bake and pushed nothing; the chart job found chart
+  0.9.0 already published and took the `helm pull` skip path. `ecr.yml` was
+  not run: `ECR_PUBLISH_ENABLED` is not set
 
 <!--docz:tasks:end-->
 

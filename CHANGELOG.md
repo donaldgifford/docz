@@ -15,6 +15,19 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* DESIGN-0017 §7 — Go jobs are unfiltered, drop the spec output
 - *(impl)* IMPL-0020 docz-site move-in, v2.0.0-beta.4
 - Resolve IMPL-0020 open questions (all a); approve DESIGN-0017
+- *(impl)* IMPL-0020 lint-actions is clean after the publish changes
+- *(impl)* Record the IMPL-0020 Phase 0 publish dry run
+
+### Miscellaneous Tasks
+
+- *(docker)* Keep ui/ out of the docz-api build context
+- *(docker)* Split bake targets per component (-api)
+- *(just)* Point the api bake recipes at the -api targets
+- *(publish)* Parameterise ghcr.yml and ecr.yml by component
+- *(release)* Pass component: api to both publish calls
+- Add the ui path-filter output
+- *(mise)* Pin bun 1.3.14 and node 24.14.0 for ui/
+- *(renovate)* Extend the node preset for ui/
 
 ## [2.0.0-beta.3] - 2026-09-23
 

@@ -96,6 +96,7 @@ jobs:
       id-token: write
       attestations: write
     with:
+      component: api
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
     secrets: inherit
@@ -120,6 +121,7 @@ jobs:
       attestations: write
       packages: write
     with:
+      component: api
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
     secrets: inherit
