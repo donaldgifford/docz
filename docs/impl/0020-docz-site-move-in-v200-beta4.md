@@ -651,9 +651,11 @@ What the outside world sees at beta.4, and the notes the next person needs.
   and Open Question 1's resolution), leaving the original words as the record
 - [ ] `docz status set impl IMPL-0020 Completed` and
   `docz status set design DESIGN-0017 Implemented`, then `docz update`
-- [ ] File the follow-ups as issues: archive the docz-site repository
+- [x] File the follow-ups as issues: archive the docz-site repository
   read-only with a README pointing at `ui/`; a Bun licence check; v2.0.0
-  proper with `latest` restored for both images
+  proper with `latest` restored for both images. Filed as #133 (archive
+  docz-site, which also covers closing its PR #33), #134 (Bun licence check),
+  and #135 (`latest` for both images at v2.0.0)
 
 <!--docz:tasks:end-->
 
