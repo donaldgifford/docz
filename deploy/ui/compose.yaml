@@ -6,14 +6,16 @@
 # cookie is first-party.
 #
 # This is a reference manifest for a small single-host deployment, in
-# the same spirit as docz-api's deploy/compose.yaml (which documents the
-# api-side env store and secrets in detail — read it first). Adapt image
-# tags, resource limits, and secret sourcing to your environment.
+# the same spirit as docz-api's deploy/api/compose.yaml (which documents
+# the api-side env store and secrets in detail — read it first). Adapt
+# image tags, resource limits, and secret sourcing to your environment.
+# Both images build from this repository (IMPL-0020): the site from ui/
+# with docz-api's spec as the named context `spec`, docz-api from the root.
 #
-# Usage:
-#   cp .env.production.example .env.production   # docz-api env store
+# Usage (paths relative to deploy/ui/):
+#   cp ../api/.env.production.example .env.production   # docz-api env store
 #   mkdir -p secrets && cp /path/to/app.pem secrets/github-app.pem
-#   docker compose -f deploy/compose.yaml up -d --build
+#   docker compose -f deploy/ui/compose.yaml up -d --build
 #   open http://localhost:8080
 ---
 name: docz
@@ -21,8 +23,10 @@ name: docz
 services:
   docz-site:
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: ../../ui
+      dockerfile: ../Dockerfile.ui
+      additional_contexts:
+        spec: ../../api
     image: docz-site:${DOCZ_SITE_TAG:-latest}
     restart: unless-stopped
     environment:
@@ -33,11 +37,11 @@ services:
     depends_on:
       - docz-api
 
-  # Built from the sibling checkout; swap for a registry image in CI.
+  # Built from this repository; swap for a registry image in CI.
   docz-api:
     build:
-      context: ../../docz-api
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: Dockerfile.api
     image: docz-api:${DOCZ_API_TAG:-latest}
     restart: unless-stopped
     env_file:

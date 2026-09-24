@@ -2,7 +2,7 @@
 #
 # PR gate for the generated API client. The output dir is gitignored, so
 # there is no committed copy to `git diff` — instead: snapshot what's on
-# disk, regenerate from the vendored spec, and fail if they differ. That
+# disk, regenerate from ../api/openapi.yaml, and fail if they differ. That
 # catches a spec or orval-config edit whose regenerated client wasn't
 # picked up, and nondeterministic generation in CI (where a prior
 # `bun run gen-api` provides the snapshot).

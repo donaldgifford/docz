@@ -93,6 +93,12 @@ e2e:
 preview:
     bun run preview
 
+# Build the image without bake: context ui/, with docz-api's spec as the
+# named context the Dockerfile copies (DESIGN-0017 OQ 3). The bake spelling,
+# from the repository root, is `docker buildx bake dev-ui`.
+docker-build:
+    docker build -f ../Dockerfile.ui --build-context spec=../api -t donaldgifford/docz-site:dev .
+
 local_compose := "docker compose -f ../deploy/ui/compose.local.yaml"
 
 # Build + start docz-site (:8090) against the running docz-api local stack

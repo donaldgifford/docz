@@ -6,15 +6,16 @@ issues, propose changes, and submit pull requests.
 ## Quick start
 
 ```bash
-mise install                      # toolchain pinned in mise.toml
-just lint                         # lint
+mise install                      # toolchain pinned in the root mise.toml
+just ui install                   # bun install, in ui/
+just ui lint                      # lint
 ```
 
-`just --list` enumerates every recipe.
+`just ui` enumerates the frontend's recipes; `just --list` shows the root's.
 
 ## Reporting Issues
 
-Use [GitHub Issues](https://github.com/donaldgifford/docz-site/issues) for:
+Use [GitHub Issues](https://github.com/donaldgifford/docz/issues) for:
 
 - **Bug reports** — include the `docz version` output, the command you ran, and
   the error you saw
@@ -33,9 +34,10 @@ Use [GitHub Issues](https://github.com/donaldgifford/docz-site/issues) for:
 - `just`
 
 ```bash
-git clone https://github.com/donaldgifford/docz-site.git
-cd docz-site
-just lint    # runs linters
+git clone https://github.com/donaldgifford/docz.git
+cd docz
+just ui install    # the frontend lives in ui/; its recipes are `just ui <recipe>`
+just ui lint
 ```
 
 ## Making Changes

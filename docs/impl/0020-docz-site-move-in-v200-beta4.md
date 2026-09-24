@@ -426,27 +426,54 @@ image build, the fixtures, the local stacks, and the URLs.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/orval.config.ts`: `input: "../api/openapi.yaml"`. Run
+- [x] `ui/orval.config.ts`: `input: "../api/openapi.yaml"`. Run
   `just ui gen-api-check` with `ui/api/` still present and again after
   deleting it. Both pass, which proves the swap is byte-neutral
-  (DESIGN-0017 §4)
-- [ ] Delete `ui/api/`
-- [ ] Drift drill, recorded here and not kept: on a scratch branch, remove
+  (DESIGN-0017 §4). The two files were byte-identical, and
+  `gen-api-check` printed `generated client is current.` both times
+- [x] Delete `ui/api/`
+- [x] Drift drill, recorded here and not kept: on a scratch branch, remove
   a response field the UI reads from `api/openapi.yaml`. `just ui typecheck`
-  fails, and the contract test fails. Record both outputs
-- [ ] `Dockerfile.ui`: `COPY --from=spec openapi.yaml` to the path that makes
-  orval's `../api/openapi.yaml` resolve in the build stage (DESIGN-0017 OQ 3)
-- [ ] `docker-bake.hcl`: `_common_ui` (image `donaldgifford/docz-site`,
+  fails, and the contract test fails. Record both outputs. Run in the
+  working tree and reverted (`git diff api/openapi.yaml` empty afterwards)
+  rather than on a branch: `author` removed from `Document`'s `properties`
+  and `required`, then `just ui gen-api`.
+  `just ui typecheck` exited 2 with eight `TS2339`/`TS2353` errors, the
+  reader among them:
+  `src/routes/doc.tsx(132,20): error TS2339: Property 'author' does not exist on type 'Document'.`
+  `go test ./internal/httpapi -run Contract` failed `TestOpenAPIContract`
+  on `listDocs` and `getDoc`:
+  `response body doesn't match schema: Error at "/docs/0": property "author" is unsupported`.
+  After the revert, `gen-api` and `typecheck` pass again
+- [x] `Dockerfile.ui`: `COPY --from=spec openapi.yaml` to the path that makes
+  orval's `../api/openapi.yaml` resolve in the build stage (DESIGN-0017 OQ 3).
+  That path is `/api/openapi.yaml`, not the `/app/api/` DESIGN-0017 §8
+  names: `WORKDIR` is `/app`, so `../api` is `/api`
+- [x] `docker-bake.hcl`: `_common_ui` (image `donaldgifford/docz-site`,
   `context = "ui"`, `dockerfile = "../Dockerfile.ui"`,
   `contexts = { spec = "api" }`), with `dev-ui`, `ci-ui`, and `release-ui`;
-  `group "ci"` gains `ci-ui`
-- [ ] `ci.yml` `docker-build`: run when `docker` **or** `ui` changed
-- [ ] `ui.just`: a `docker-build` recipe spelling
+  `group "ci"` gains `ci-ui`. The metadata sink split too:
+  `docker-metadata-action` became `docker-metadata-action-api` and
+  `-ui`, and `ghcr.yml`/`ecr.yml` pass `bake-target:
+  docker-metadata-action-<component>` to metadata-action. With one shared
+  sink, `release-ui` inherited docz-api's default tags. `group "default"`
+  builds `dev-api` and `dev-ui`
+- [x] `ci.yml` `docker-build`: run when `docker` **or** `ui` changed. The PR
+  step's `*.output=type=registry` narrowed to `ci-api.output`, so `ci-ui`
+  stays cache-only until the Phase 4 GHCR grant, and each `ci-` target
+  took its own gha cache `scope` in the bake file in place of the
+  workflow's `*.cache-*` overrides
+- [x] `ui.just`: a `docker-build` recipe spelling
   `docker build -f ../Dockerfile.ui --build-context spec=../api .`
-- [ ] `docker buildx bake dev-ui`, then run the image with `DOCZ_API_URL`
+- [x] `docker buildx bake dev-ui`, then run the image with `DOCZ_API_URL`
   pointed at nothing: `/healthz` returns 200, `/readyz` behaves as the
   site's CLAUDE.md says (it never calls docz-api), and `/` serves
-  `index.html` with `window.__DOCZ_CONFIG__` injected
+  `index.html` with `window.__DOCZ_CONFIG__` injected. Run with
+  `DOCZ_API_URL=http://127.0.0.1:1`: `/healthz` 200 `ok`; `/readyz` 200
+  `{"status":"ready","checks":{"dist":"ok","config":"ok"}}`, so it never
+  called the unreachable API; `/` 200 with
+  `__DOCZ_CONFIG__={"authProviders":["github"],"nav":[],"mermaidLayout":"elk"}`.
+  `just ui docker-build` builds the same image without bake
 - [x] MSW fixtures (DESIGN-0017 OQ 4): copy the seven archived files that
   `ui/src/mocks/fixtures.ts` imports into `ui/src/mocks/content/`
   (`docz-site-changelog.md`, `docz-site-design-0001.md`,
@@ -457,14 +484,22 @@ image build, the fixtures, the local stacks, and the URLs.
   imports broke `just ui test` (52 files, every one importing
   `fixtures.ts`), and the graft PR's `ui` job has to be green. After the
   swap, 686 vitest tests and 16 Playwright specs pass
-- [ ] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
+- [x] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
   `dockerfile: Dockerfile.api`, and the site from `../../ui` with
   `additional_contexts: { spec: ../../api }`. `docker compose config` is valid
-- [ ] `deploy/ui/compose.local.yaml`: run `just api local-up` and read the
+- [x] `deploy/ui/compose.local.yaml`: run `just api local-up` and read the
   network name it creates. If it is no longer `docz-api-local_default`,
   pin `name:` in the api local stack rather than renaming the site's
-  reference. `just ui local-up` then starts
-- [ ] Rewrite `github.com/donaldgifford/docz-site` → the monorepo (`…/docz`,
+  reference. `just ui local-up` then starts. The name was read from the
+  api stack's compose file rather than a live run: it pins
+  `name: docz-api-local` and declares no networks, so the default network
+  is still `docz-api-local_default` and nothing needed pinning.
+  `just api local-up` could not run here without `deploy/api/.env.local`,
+  which needs real GitHub App values. A network by that name from an
+  earlier run existed, and against it `just ui local-up` built, went
+  healthy, and served `/healthz` 200 on :8090. The site's build now
+  reads `../../ui` with the `spec` context
+- [x] Rewrite `github.com/donaldgifford/docz-site` → the monorepo (`…/docz`,
   `…/docz/tree/main/ui` where a path is meant) in `ui/README.md`,
   `ui/CLAUDE.md`, `ui/CONTRIBUTING.md`, `charts/docz-site/Chart.yaml`
   `home:`, `charts/docz-site/README.md.gotmpl` (then
@@ -477,11 +512,21 @@ image build, the fixtures, the local stacks, and the URLs.
   docz-api's old repository (both chart READMEs, `ui/README.md`,
   `ui/CLAUDE.md`, and the `docz-api-rfc-0001.md` fixture with the
   `doc.test.tsx` assertion that reads it). `test-go` is not path-filtered,
-  so the graft PR would have been red without them
-- [ ] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
+  so the graft PR would have been red without them. The docz-site half:
+  `Chart.yaml` `home:` → `…/docz/tree/main/ui`; `cliff.toml`'s `<REPO>`
+  and issue links → `…/docz`, and its usage comment's `--include-path` →
+  `charts/docz-site/**`; `ui/CONTRIBUTING.md`'s issues link, clone
+  instructions, and quick start (`just ui …`). `ui/README.md`,
+  `ui/CLAUDE.md`, and the chart README template named no docz-site URL,
+  so `just ui helm-docs` changed nothing
+- [x] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
   `docs/`, `testdata/`, `CHANGELOG.md`, and `test/archive/` names
-  `github.com/donaldgifford/docz-site`
-- [ ] `test/archive`: the fence test (Open Question 3)
+  `github.com/donaldgifford/docz-site`. One more exemption than listed:
+  `ui/src/mocks/content/`, whose snapshots of the archived changelog and
+  specimen keep their links to the old repository's issues, as the
+  archive under `docs/` does (`test/archive/site_test.go`)
+- [x] `test/archive`: the fence test (Open Question 3). `TestUIModuleFence`;
+  with `ui/go.mod` moved aside it fails by name
 
 <!--docz:tasks:end-->
 

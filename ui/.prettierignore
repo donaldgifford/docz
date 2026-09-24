@@ -9,11 +9,8 @@ playwright-report
 bun.lock
 *.md
 
-# Generated TS client from api/openapi.yaml — never hand-edit, never format.
+# Generated TS client from ../api/openapi.yaml — never hand-edit, never format.
 src/api/__generated__
-
-# Vendored OpenAPI spec — sourced from docz-api; format upstream.
-api/openapi.yaml
 
 # Design mockup — visual source of truth, not project code.
 mockup.html

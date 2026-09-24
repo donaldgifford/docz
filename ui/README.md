@@ -214,10 +214,11 @@ container joined to docz-api's local development stack.
 
 ## How it fits together
 
-- `api/openapi.yaml` — vendored copy of docz-api's spec. `just gen-api`
-  regenerates the typed TanStack Query client into
-  `src/api/__generated__/` (gitignored). A scheduled workflow watches
-  upstream for spec drift.
+- `../api/openapi.yaml` — docz-api's spec, at the repository root and
+  read in place: `just ui gen-api` regenerates the typed TanStack Query
+  client into `src/api/__generated__/` (gitignored). A spec change that
+  breaks the client fails the same pull request's `ui` job, so there is
+  no vendored copy and no drift workflow.
 - `src/app/` — router (library-mode react-router) and app shell;
   `src/routes/` — one lazy module per route.
 - `src/markdown/` — the only place markdown is rendered: remark/rehype
