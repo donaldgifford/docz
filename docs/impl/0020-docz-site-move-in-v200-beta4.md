@@ -330,7 +330,7 @@ no Go file arrives, the vendored spec keeps orval working, and
   which fails on this workstation alone (go-licenses cannot read a stdlib
   under the module-cache toolchain `GOTOOLCHAIN=auto` fetched) and passes
   in CI's `Check Dependency Licenses`
-- [ ] Open the PR with `dont-release`; the body lists the folds and cites
+- [x] Open the PR with `dont-release`; the body lists the folds and cites
   DESIGN-0017 §2 and §6
 - [ ] **(human)** Review and merge **with a merge commit** (squashing destroys
   the graft)
