@@ -321,7 +321,7 @@ describe("relative link resolution in the reader", () => {
       screen.getByRole("link", { name: "the vendored spec on GitHub" }),
     ).toHaveAttribute(
       "href",
-      "https://github.com/donaldgifford/docz-api/blob/main/api/openapi.yaml",
+      "https://github.com/donaldgifford/docz/blob/main/api/openapi.yaml",
     );
   });
 });

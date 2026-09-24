@@ -442,7 +442,14 @@ image build, the fixtures, the local stacks, and the URLs.
   `home:`, `charts/docz-site/README.md.gotmpl` (then
   `just ui helm-docs`), and `charts/docz-site/cliff.toml`. Also retarget
   `ui/README.md`'s links to docz-api, which now points at this repository.
-  The demo-org slug `donaldgifford/docz-site` in fixtures and e2e specs stays
+  The demo-org slug `donaldgifford/docz-site` in fixtures and e2e specs stays.
+  The docz-api half landed early, in Phase 2: IMPL-0019's
+  `TestRewriteLeftNoOldModulePath` flags any tracked file outside `docs/`
+  naming `github.com/donaldgifford/docz-api`, and six arriving files linked
+  docz-api's old repository (both chart READMEs, `ui/README.md`,
+  `ui/CLAUDE.md`, and the `docz-api-rfc-0001.md` fixture with the
+  `doc.test.tsx` assertion that reads it). `test-go` is not path-filtered,
+  so the graft PR would have been red without them
 - [ ] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
   `docs/`, `testdata/`, `CHANGELOG.md`, and `test/archive/` names
   `github.com/donaldgifford/docz-site`

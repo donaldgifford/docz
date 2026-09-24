@@ -35,4 +35,4 @@ untouched.
 - [docz-api registry design](../design/0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md#goals)
 - [OpenAPI contract design](../design/0002-openapi-contract-for-docz-api-and-the-docz-site.md)
 - [an ADR docz-api never ingested](../adr/0001-not-ingested.md)
-- [the vendored spec on GitHub](https://github.com/donaldgifford/docz-api/blob/main/api/openapi.yaml)
+- [the vendored spec on GitHub](https://github.com/donaldgifford/docz/blob/main/api/openapi.yaml)

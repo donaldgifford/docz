@@ -4,7 +4,7 @@ Guidance for Claude Code when working in docz-site.
 
 ## What this is
 
-Web UI for [docz-api](https://github.com/donaldgifford/docz-api) — a
+Web UI for [docz-api](https://github.com/donaldgifford/docz) — a
 cross-repo docz reader, search directory, and repo pages. Vite + React 19
 SPA, no SSR. The authoritative docs:
 

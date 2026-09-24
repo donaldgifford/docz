@@ -5,7 +5,7 @@ Helm chart for docz-site
 ## What this deploys
 
 `docz-site` is the web UI for
-[docz-api](https://github.com/donaldgifford/docz-api) — a cross-repo docz
+[docz-api](https://github.com/donaldgifford/docz) — a cross-repo docz
 reader, search directory, and repo pages. It ships as a single-page app
 served by a small Bun process that also reverse-proxies the API surface
 (`/api`, `/auth`, `/webhooks`, `/openapi.yaml`) to docz-api, so the browser
@@ -40,7 +40,7 @@ helm install docz-site \
 - Helm 3.14+ or 4.x (OCI support)
 - A reachable **docz-api** in the cluster (or elsewhere) for
   `config.doczApiUrl` to point at. Deploy it with the
-  [docz-api chart](https://github.com/donaldgifford/docz-api/tree/main/charts/docz-api).
+  [docz-api chart](https://github.com/donaldgifford/docz/tree/main/charts/docz-api).
 
 ## Configuration
 

@@ -1,6 +1,6 @@
 # docz-site
 
-Web UI for [docz-api](https://github.com/donaldgifford/docz-api) — a
+Web UI for [docz-api](https://github.com/donaldgifford/docz) — a
 cross-repo reader, search directory, and repo pages for docz-managed
 documentation (RFCs, ADRs, designs, guides, and friends) ingested from
 GitHub repos.
