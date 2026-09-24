@@ -445,8 +445,10 @@ image build, the fixtures, the local stacks, and the URLs.
   on `listDocs` and `getDoc`:
   `response body doesn't match schema: Error at "/docs/0": property "author" is unsupported`.
   After the revert, `gen-api` and `typecheck` pass again
-- [ ] `Dockerfile.ui`: `COPY --from=spec openapi.yaml` to the path that makes
-  orval's `../api/openapi.yaml` resolve in the build stage (DESIGN-0017 OQ 3)
+- [x] `Dockerfile.ui`: `COPY --from=spec openapi.yaml` to the path that makes
+  orval's `../api/openapi.yaml` resolve in the build stage (DESIGN-0017 OQ 3).
+  That path is `/api/openapi.yaml`, not the `/app/api/` DESIGN-0017 §8
+  names: `WORKDIR` is `/app`, so `../api` is `/api`
 - [ ] `docker-bake.hcl`: `_common_ui` (image `donaldgifford/docz-site`,
   `context = "ui"`, `dockerfile = "../Dockerfile.ui"`,
   `contexts = { spec = "api" }`), with `dev-ui`, `ci-ui`, and `release-ui`;
