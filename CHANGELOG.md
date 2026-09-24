@@ -5,6 +5,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Bug Fixes
+
+- *(ui)* Clear trivy's two HIGH advisories in bun.lock
+- Stop quoting placeholder DSNs and a docz-api URL in new files
+
 ### Documentation
 
 - IMPL-0019 Phase 5 integration and release checks pass; tag deferred to a human
@@ -43,6 +48,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Add the ui and ui-e2e jobs; helm-unittest walks every chart
 - *(just)* Run ui.just from ui/ and point it at the moved chart and stack
 - *(just)* Root ci gate runs the ui chain
+- *(ui)* Install prettier for the format check
 
 ## [2.0.0-beta.3] - 2026-09-23
 
