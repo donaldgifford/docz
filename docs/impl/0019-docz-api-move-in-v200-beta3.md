@@ -1,7 +1,7 @@
 ---
 id: IMPL-0019
 title: "docz-api move-in: v2.0.0-beta.3"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-09-22
 ---
@@ -458,8 +458,11 @@ Everything that makes the result enforceable and visible correctly from outside.
   b5350ec…)` — the published tag is **`2.0.0-beta.3`** (metadata-action's
   `{{version}}` strips the `v`; see the Phase 4 chart note)
 - [ ] **(human)** Confirm the rendered wiki and the `api:` listing return no
-  archived document — `deferred - human required`
-- [ ] Flip IMPL-0019 to `Completed` and DESIGN-0016 to `Implemented`
+  archived document — the wiki half holds (neither `docz wiki update --dry-run`
+  nor `mkdocs.yml` names `archive`); the docz-site check is deferred to a later
+  pass, since archived pages indexed by #121's ingest predate #124's exclude —
+  `deferred - human required`
+- [x] Flip IMPL-0019 to `Completed` and DESIGN-0016 to `Implemented`
 
 <!--docz:tasks:end-->
 

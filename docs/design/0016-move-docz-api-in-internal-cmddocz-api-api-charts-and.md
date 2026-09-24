@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0016
 title: "Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-22
 ---
