@@ -146,7 +146,7 @@ already knows about two components and has been exercised with one.
   add `group "default" { targets = ["dev-api"] }` and
   `group "ci" { targets = ["ci-api"] }` so the bare `docker buildx bake` and
   `docker buildx bake ci` spellings keep working
-- [ ] `api.just`: update the bake recipes (`docker buildx bake release` →
+- [x] `api.just`: update the bake recipes (`docker buildx bake release` →
   `release-api`, and so on); `just --dry-run api <recipe>` shows each
   resolved command
 - [ ] `ghcr.yml` and `ecr.yml`: add a `component` input (`api`|`ui`, default
