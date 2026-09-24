@@ -123,6 +123,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
+          # docker-bake.hcl's release-<component> inherits its tags from
+          # this target; the component was validated by the resolve job.
+          bake-target: docker-metadata-action-${{ inputs.component }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}
           # No `type=raw,value=latest` while the v2 line ships betas: it moved
           # latest on every publish, a v2.0.0-beta.N included. Planned to come

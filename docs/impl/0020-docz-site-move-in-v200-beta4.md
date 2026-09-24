@@ -449,10 +449,15 @@ image build, the fixtures, the local stacks, and the URLs.
   orval's `../api/openapi.yaml` resolve in the build stage (DESIGN-0017 OQ 3).
   That path is `/api/openapi.yaml`, not the `/app/api/` DESIGN-0017 §8
   names: `WORKDIR` is `/app`, so `../api` is `/api`
-- [ ] `docker-bake.hcl`: `_common_ui` (image `donaldgifford/docz-site`,
+- [x] `docker-bake.hcl`: `_common_ui` (image `donaldgifford/docz-site`,
   `context = "ui"`, `dockerfile = "../Dockerfile.ui"`,
   `contexts = { spec = "api" }`), with `dev-ui`, `ci-ui`, and `release-ui`;
-  `group "ci"` gains `ci-ui`
+  `group "ci"` gains `ci-ui`. The metadata sink split too:
+  `docker-metadata-action` became `docker-metadata-action-api` and
+  `-ui`, and `ghcr.yml`/`ecr.yml` pass `bake-target:
+  docker-metadata-action-<component>` to metadata-action. With one shared
+  sink, `release-ui` inherited docz-api's default tags. `group "default"`
+  builds `dev-api` and `dev-ui`
 - [ ] `ci.yml` `docker-build`: run when `docker` **or** `ui` changed
 - [ ] `ui.just`: a `docker-build` recipe spelling
   `docker build -f ../Dockerfile.ui --build-context spec=../api .`
