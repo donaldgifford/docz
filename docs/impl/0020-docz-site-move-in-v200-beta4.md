@@ -206,23 +206,25 @@ history (ADR-0004 OQ 1, DESIGN-0017 §9).
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] **(human)** In docz-site, on a branch: `docz status set impl IMPL-0001 Completed`,
+- [x] **(human)** In docz-site, on a branch: `docz status set impl IMPL-0001 Completed`,
   `docz status set impl IMPL-0002 Completed`,
   `docz status set design DESIGN-0001 Implemented`,
   `docz status set design DESIGN-0005 Implemented`, then `docz update`
-  so the README indexes follow
-- [ ] **(human)** Open it as a PR labelled `dont-release` (Open Question 5)
+  so the README indexes follow. Done in docz-site PR #39 (`chore/move`)
+- [x] **(human)** Open it as a PR labelled `dont-release` (Open Question 5)
   and merge it. docz-site's `pr-semver-bump` lists `dont-release` in
-  `noop-labels`
-- [ ] Confirm the merge cut no tag and published no image: `git ls-remote --tags`
+  `noop-labels`. docz-site #39, merged as `f17ba51`
+- [x] Confirm the merge cut no tag and published no image: `git ls-remote --tags`
   unchanged at 13, and the `publish-ghcr` chart job, which runs even on
   `dont-release`, skipped on its `helm pull` idempotency check because
-  `Chart.yaml` is unchanged at `0.1.10`
+  `Chart.yaml` is unchanged at `0.1.10`. Confirmed: 13 tags, unchanged. The Release run published no image, and its chart job logged
+  `Chart 0.1.10 already published, skipping.`
 - [ ] **(human)** Close docz-site PR #33 with a comment that the move to
   `donaldgifford/docz` supersedes it, and that a JavaScript licence check
   is a follow-up there
-- [ ] Record docz-site's `main` SHA after the sweep and its auto-sync
-  changelog commit settle. Phase 2 clones exactly that SHA
+- [x] Record docz-site's `main` SHA after the sweep and its auto-sync
+  changelog commit settle. Phase 2 clones exactly that SHA: **`f1203c91d1a9f69ccdae140d9eabc3185f1bce8f`** (`chore(changelog): Auto-sync`
+  after #39). The four documents read Completed/Implemented at that SHA
 
 <!--docz:tasks:end-->
 
