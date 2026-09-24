@@ -376,6 +376,28 @@ The merge was committed on its own, with only the conflict resolved, and
 the folds below are separate commits on top of it, so the merge commit is
 the graft and nothing else.
 
+"Green on arrival" held for the Go half but not the UI half. The first CI
+run on #130 failed five ways, each fixed in its own commit on the branch:
+
+- `test/archive` rejected six arriving files linking docz-api's old
+  repository, then a seventh (the specimen snapshot's autolink). Locally it
+  had passed on a cached result: the test reads files through `git grep`,
+  which Go's test cache cannot see, so rerun it with `-count=1`
+- The MSW fixtures imported seven files the graft moved; they were
+  snapshotted into `ui/src/mocks/content/` (Phase 3's fixture task, pulled
+  forward)
+- `just ui fmt-check` calls a global `prettier` that docz-site's CI got
+  from mise; the `ui` job now installs prettier 3.7.4 with bun
+- Trivy found two HIGH advisories in `ui/bun.lock`: `react-router` went to
+  `^8.3.0`, and `lodash-es` took an override to `^4.18.0`, since
+  `@chevrotain/gast` pins 4.17.23 exactly
+- Trufflehog reported the exclude file itself, whose first version quoted
+  the DSNs it excludes; it describes them now and excludes its own path.
+  CI runs trufflehog 3.97.8, not the 3.95.9 of the local scan
+- CodeQL's new `javascript-typescript` analysis raised two alerts on
+  non-production files (`ui/mockup.html`, `ui/public/mockServiceWorker.js`),
+  ignored by path in `.github/codeql/codeql-config.yml` with a reason each
+
 <!--docz:criteria:start-->
 #### Success Criteria
 
