@@ -5,16 +5,16 @@
 # them and defines the gates that span them.
 #
 #   docz.just   the library and the CLI
-#   api.just    the server, when docz-api moves in
-#   ui.just     the frontend, when docz-site moves in
+#   api.just    the server (docz-api, IMPL-0019)
+#   ui.just     the frontend (docz-site, IMPL-0020)
 #
 # docz.just is imported flat, so its recipes own the root namespace
 # (just build, just test, just ci). The other two are optional *modules*
 # (DESIGN-0016 OQ 1): docz-api's recipes share 27 names with docz.just and
 # just refuses duplicate names across sibling imports, so each arriving half
 # gets its own namespace — just api build, just ui build — and root gates
-# reach them as api::lint. `mod?` means neither has to exist yet. ui.just
-# will carry `set working-directory := "ui"` for its Bun commands.
+# reach them as api::lint. ui.just carries `set working-directory := "ui"`
+# for its Bun commands.
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
@@ -29,9 +29,11 @@ _default:
 # ─── Composite gates ───────────────────────────────────────────────
 
 # Full CI gate: lint + test + consumer + parity + validate + build + licences,
-# then the server's lint, tests, and chart lint from the api module
+# then the server's lint, tests, and chart lint from the api module, then the
+# frontend's chain from the ui module (DESIGN-0017 OQ 6). ui::e2e stays out:
+# it needs Playwright's browsers, and CI runs it as its own job.
 [group('gate')]
-ci: lint test test-consumer parity validate build license-check api::lint api::test api::helm-lint
+ci: lint test test-consumer parity validate build license-check api::lint api::test api::helm-lint ui::install ui::gen-api ui::lint ui::fmt-check ui::typecheck ui::test ui::test-server ui::build ui::bundle-budget ui::gen-api-check
     @echo "✓ CI pipeline complete"
 
 # Pre-commit gate: lint + test

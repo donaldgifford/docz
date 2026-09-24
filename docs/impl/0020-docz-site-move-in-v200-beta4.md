@@ -316,7 +316,7 @@ no Go file arrives, the vendored spec keeps orval working, and
   `default` became `just --list ui`: `ui/` has no justfile of its own, so
   the inherited bare `just --list` climbed to the root's and listed that.
   `helm-docs` searches `../charts/docz-site` only, not both charts
-- [ ] Root `justfile` `ci`: append `ui::install ui::gen-api ui::lint
+- [x] Root `justfile` `ci`: append `ui::install ui::gen-api ui::lint
   ui::fmt-check ui::typecheck ui::test ui::test-server ui::build
   ui::bundle-budget ui::gen-api-check` (DESIGN-0017 OQ 6)
 - [ ] Commit the merge, then append `git rev-list <merge>^2` to
