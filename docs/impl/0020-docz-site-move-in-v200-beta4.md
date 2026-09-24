@@ -326,7 +326,10 @@ no Go file arrives, the vendored spec keeps orval working, and
   The `[unreleased]` section was 166 lines in the control run, docz-site's
   `feat(scaffold)`… onward among them, and 39 with the list, holding no
   docz-site subject
-- [ ] `just ci` and `just ui ci` locally
+- [x] `just ci` and `just ui ci` locally. Every recipe passes but `license-check`,
+  which fails on this workstation alone (go-licenses cannot read a stdlib
+  under the module-cache toolchain `GOTOOLCHAIN=auto` fetched) and passes
+  in CI's `Check Dependency Licenses`
 - [ ] Open the PR with `dont-release`; the body lists the folds and cites
   DESIGN-0017 §2 and §6
 - [ ] **(human)** Review and merge **with a merge commit** (squashing destroys
