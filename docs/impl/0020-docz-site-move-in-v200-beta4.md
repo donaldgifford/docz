@@ -163,10 +163,19 @@ already knows about two components and has been exercised with one.
 - [x] `mise.toml`: `bun = "1.3.14"`, `node = "24.14.0"`
 - [x] `renovate.json5`: add `github>donaldgifford/renovate-config:node`
 - [x] `just api lint-actions` clean
-- [ ] Prove the parameterised publish without a tag (Open Question 2):
+- [x] Prove the parameterised publish without a tag (Open Question 2):
   `gh workflow run ghcr.yml --ref <branch> -f component=api -f tag=v0.0.0-phase0 -f dry_run=true`,
   and the same for `ecr.yml` if `ECR_PUBLISH_ENABLED` is set. Record the run
-  URLs here
+  URLs here.
+  Run with `-f tag=v2.0.0-beta.3` rather than `v0.0.0-phase0`, because the
+  image job checks out `inputs.tag` and a tag that does not exist fails the
+  checkout before `dry_run` can skip anything:
+  [run 35950181641](https://github.com/donaldgifford/docz/actions/runs/35950181641),
+  all three jobs green. The resolve job logged
+  `component=api -> donaldgifford/docz-api, release-api, charts/docz-api`;
+  the image job skipped bake and pushed nothing; the chart job found chart
+  0.9.0 already published and took the `helm pull` skip path. `ecr.yml` was
+  not run: `ECR_PUBLISH_ENABLED` is not set
 
 <!--docz:tasks:end-->
 
