@@ -9,10 +9,6 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Confirm both chart publishes and close out IMPL-0007 ([#37](https://github.com/donaldgifford/docz-site/issues/37))
 
-### Miscellaneous Tasks
-
-- Bumps
-
 ## [0.10.0] - 2026-09-20
 
 ### Features
