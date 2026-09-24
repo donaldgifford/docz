@@ -569,7 +569,7 @@ What the outside world sees at beta.4, and the notes the next person needs.
   `just ui helm-docs`. The chart's bare-semver unit test passes. The
   chart had no such test, only an exact-tag assertion; the shape test was
   added from `charts/docz-api`'s. 49 helm-unittest tests pass
-- [ ] Update the chart-bump rule in `ui/CLAUDE.md` per Open Question 6
+- [x] Update the chart-bump rule in `ui/CLAUDE.md` per Open Question 6
 - [ ] `prerelease.yml`: add `publish-image-ui` (`ghcr.yml`, `component: ui`,
   `tag: ${{ github.ref_name }}`) and `publish-ecr-ui` (gated on
   `vars.ECR_PUBLISH_ENABLED`), with the same permissions ceiling as the api
