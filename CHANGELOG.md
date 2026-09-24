@@ -5,6 +5,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Documentation
+
+- *(impl)* Record the v2.0.0-beta.4 release checks for IMPL-0020
+- IMPL-0020 Completed, DESIGN-0017 Implemented
+
+## [2.0.0-beta.4] - 2026-09-24
+
 ### Features
 
 - *(ui)* Generate the client from the one spec at api/openapi.yaml
