@@ -274,13 +274,17 @@ no Go file arrives, the vendored spec keeps orval working, and
   comment saying it exists only to keep `node_modules` out of the root
   module's `./...` (DESIGN-0017 §3). Verify with a real `just ui install`
   followed by `go list ./... | grep -c /ui/` printing `0`
-- [ ] Fold the repository-level files per DESIGN-0017 §6, then delete them
+- [x] Fold the repository-level files per DESIGN-0017 §6, then delete them
   from `ui/`: `mise.toml` and `renovate.json5` (already done in Phase 0),
   `catalog-info.yaml` (a third `Component`, `docz-site`, source
   `…/tree/main/ui`), `.claude/settings.json` (union of `allow`), and drop
   `.codecov.yml`, `.docz.yaml`, `cliff.toml`, `.yamllint.yml`,
-  `.yamlfmt.yml`, `LICENSE`, and `.forge-lock.hcl`
-- [ ] Keep in `ui/` (DESIGN-0017 OQ 1): `CLAUDE.md`, `README.md`,
+  `.yamlfmt.yml`, `LICENSE`, and `.forge-lock.hcl`. The `allow` union
+  added nothing: four of docz-site's five extra entries (`git commit -m ' *`,
+  `make lint *`, `make lint-md *`, `make test *`) are already covered by
+  ours, and the fifth, a blanket `Bash(git *)`, was left out on purpose
+  because it would auto-approve `git push --force` and `git reset --hard`
+- [x] Keep in `ui/` (DESIGN-0017 OQ 1): `CLAUDE.md`, `README.md`,
   `CONTRIBUTING.md`, `.markdownlint.yaml`, `.gitignore`, `.dockerignore`,
   `.prettierrc.yaml`, `.prettierignore`, and every JS tool config
 - [ ] Fold `ui/.github/` and delete it whole, `spec-drift.yml` included,
