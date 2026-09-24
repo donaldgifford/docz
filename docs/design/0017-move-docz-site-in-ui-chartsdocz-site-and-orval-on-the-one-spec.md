@@ -773,6 +773,12 @@ site's conventions and traps) and `CONTRIBUTING.md`/`README.md` (the site's
 quickstart). docz-api's CLAUDE.md was folded into the root file under a
 demoted heading, which made the root file very long.
 
+> **Resolved 2026-09-23: (a).** `ui/CLAUDE.md`, `ui/README.md`, and
+> `ui/CONTRIBUTING.md` stay in `ui/` with their repository URLs corrected, and
+> the root CLAUDE.md gains a short "Frontend (`ui/`)" section pointing at
+> them. Everything else follows §6: project-level configs stay in `ui/`, and
+> repository-level files merge into the root copies and leave `ui/`.
+
 - a. **Keep `ui/CLAUDE.md`, `ui/README.md`, and `ui/CONTRIBUTING.md` in
   `ui/`**, with repository URLs corrected, and add a short "Frontend (`ui/`)"
   pointer section to the root CLAUDE.md. Claude Code loads a nested
@@ -793,6 +799,12 @@ demoted heading, which made the root file very long.
 
 §3: after `bun install`, `go ./...` lists npm's `flatted` as a package of
 `github.com/donaldgifford/docz/v2`, and every Go recipe uses `./...`.
+
+> **Resolved 2026-09-23: (a).** A stub `ui/go.mod` with a comment saying it
+> exists only to fence off `node_modules`. `TestNoPackageUnderUI` pins the
+> property, not the file, and runs after a `bun install` so `flatted` is
+> really there. The IMPL records ADR-0004's "has no `go.mod`" line as
+> corrected, the way DESIGN-0016's Background corrected four of its claims.
 
 - a. **A stub `ui/go.mod`** (`module github.com/donaldgifford/docz/v2/ui` plus
   a comment saying it exists only to fence off `node_modules`). A nested
@@ -815,6 +827,11 @@ demoted heading, which made the root file very long.
 
 `bun run gen-api` runs inside the build stage, and after §4 its input is
 `../api/openapi.yaml`, outside the site's old build context.
+
+> **Resolved 2026-09-23: (a).** The context stays `ui/`, bake passes
+> `contexts = { spec = "api" }`, and `Dockerfile.ui` copies the spec from
+> the named context. `ui.just` owns the `docker build --build-context
+> spec=api` spelling, so nobody has to remember it.
 
 - a. **Named build context.** Context stays `ui/`, bake passes
   `contexts = { spec = "api" }`, and `Dockerfile.ui` does
@@ -844,6 +861,11 @@ build that Playwright's `webServer` runs (`build:msw && preview:msw`), not
 in production. "Always current" also stops meaning anything: the archive is
 frozen, and the root `CHANGELOG.md` is no longer the site's.
 
+> **Resolved 2026-09-23: (a).** The seven archived fixtures are
+> snapshotted into `ui/src/mocks/content/` beside the docz-api ones, and
+> `README.md` stays a live import. The fixture comment's "always current"
+> is reworded to say what the files are now: test data.
+
 - a. **Snapshot them into `ui/src/mocks/content/`** (the directory already
   exists for this purpose) and point the imports there, beside the five
   docz-api fixtures that already live there. The fixtures become what they
@@ -861,6 +883,11 @@ frozen, and the root `CHANGELOG.md` is no longer the site's.
 
 Both hardcode `IMAGE_REPO: donaldgifford/docz-api`, `CHART_NAME: docz-api`,
 and the `release` bake target.
+
+> **Resolved 2026-09-23: (a).** One `component` input on `ghcr.yml` and
+> `ecr.yml`, resolved to image repo, bake target, and chart directory in a
+> first step. Lands in Phase 0 against `api` alone, so the next docz-api
+> publish proves the refactor before `ui` depends on it.
 
 - a. **One workflow, a `component` input** (`api`|`ui`) resolved to image
   repo, bake target, and chart directory in a first step, and called once per
@@ -882,6 +909,11 @@ and the `release` bake target.
 Today `ci` spans the library, the CLI, and the server. Adding `ui::` means
 every contributor running `just ci` needs Bun installed and a `just ui install`.
 
+> **Resolved 2026-09-23: (a).** Root `ci` gains the fast ui gates (`install`,
+> `gen-api`, `lint`, `fmt-check`, `typecheck`, `test`, `test-server`, `build`,
+> `bundle-budget`, `gen-api-check`). `e2e` stays in `just ui ci` and its own
+> CI job. `mise install` provides Bun once §6 adds it to `mise.toml`.
+
 - a. **Yes, the fast gates**: `ui::install ui::gen-api ui::lint
   ui::fmt-check ui::typecheck ui::test ui::test-server ui::build
   ui::bundle-budget ui::gen-api-check`. Not `e2e`, which needs Playwright
@@ -901,6 +933,11 @@ every contributor running `just ci` needs Bun installed and a `just ui install`.
 It resolved to path-filtered jobs "for now", to be revisited here, and named
 the trigger: a Go change that can break the UI other than through the spec.
 
+> **Resolved 2026-09-23: (a).** Path filtering stays, and the `spec` arm
+> runs both halves. The revisit condition (anything that lets a Go change
+> break the UI other than through the spec, such as an embed of `ui/dist`)
+> is written into CLAUDE.md beside the CI description.
+
 - a. **Keep path filtering, with the `spec` arm running both halves** (§7).
   The trigger has not arrived: nothing embeds `ui/dist`, and the UI reaches
   the server only over the specced HTTP surface. Record the revisit
@@ -918,6 +955,11 @@ the trigger: a Go change that can break the UI other than through the spec.
 docz-site's last release is `v0.10.0`, and its chart is `0.1.10` with
 `appVersion: "0.10.0"`. IMPL-0019 resolved the same question for docz-api:
 the image follows the repository tag, and the chart keeps its own semver.
+
+> **Resolved 2026-09-23: (a).** The image is tagged from the repository tag
+> (`2.0.0-beta.4`, bare), and `charts/docz-site` goes `0.1.10` → `0.2.0` with
+> `appVersion: "2.0.0-beta.4"`. This matches docz-api (IMPL-0019 Open
+> Question 5 and its bare-`appVersion` deviation).
 
 - a. **Same as docz-api.** The image is tagged from the repository tag,
   `2.0.0-beta.4` (bare, since metadata-action's `{{version}}` strips the `v`).
@@ -938,6 +980,11 @@ the image follows the repository tag, and the chart keeps its own semver.
 ADR-0004 Open Question 1 listed them as two of the four genuinely unfinished
 documents that each get a successor. Measured (Background): both have every
 open question resolved, and both shipped.
+
+> **Resolved 2026-09-23: (a).** No successors. docz-site IMPL-0001/0002 go to
+> `Completed` and DESIGN-0001/0005 to `Implemented` in docz-site before the
+> clone, and the IMPL's closing notes amend ADR-0004's count: two
+> documents got successors, both on the docz-api side.
 
 - a. **No. Sweep them to `Implemented` with the two IMPLs**, and amend
   ADR-0004's count in the IMPL's closing notes, as DESIGN-0016's Background
