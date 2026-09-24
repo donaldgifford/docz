@@ -319,10 +319,13 @@ no Go file arrives, the vendored spec keeps orval working, and
 - [x] Root `justfile` `ci`: append `ui::install ui::gen-api ui::lint
   ui::fmt-check ui::typecheck ui::test ui::test-server ui::build
   ui::bundle-budget ui::gen-api-check` (DESIGN-0017 OQ 6)
-- [ ] Commit the merge, then append `git rev-list <merge>^2` to
+- [x] Commit the merge, then append `git rev-list <merge>^2` to
   `.cliffignore`. Run `git-cliff` locally twice: a control run without the
   new lines shows docz-site commits under `[unreleased]`, and with them it
-  shows none. Regenerate `CHANGELOG.md`
+  shows none. Regenerate `CHANGELOG.md`. Merge `3630665`, 150 SHAs appended.
+  The `[unreleased]` section was 166 lines in the control run, docz-site's
+  `feat(scaffold)`… onward among them, and 39 with the list, holding no
+  docz-site subject
 - [ ] `just ci` and `just ui ci` locally
 - [ ] Open the PR with `dont-release`; the body lists the folds and cites
   DESIGN-0017 §2 and §6

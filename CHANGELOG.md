@@ -17,6 +17,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Resolve IMPL-0020 open questions (all a); approve DESIGN-0017
 - *(impl)* IMPL-0020 lint-actions is clean after the publish changes
 - *(impl)* Record the IMPL-0020 Phase 0 publish dry run
+- *(impl)* Record IMPL-0020 Phase 1 — docz-site sweep merged at f1203c9
+- *(impl)* Record the IMPL-0020 Phase 2 graft commands
 
 ### Miscellaneous Tasks
 
@@ -28,6 +30,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Add the ui path-filter output
 - *(mise)* Pin bun 1.3.14 and node 24.14.0 for ui/
 - *(renovate)* Extend the node preset for ui/
+- *(ui)* Fence ui/ off from the root Go module
+- *(ui)* Fold docz-site's repository-level files into the root
+- Fold docz-site's .github into the root and delete ui/.github
+- Add the ui and ui-e2e jobs; helm-unittest walks every chart
+- *(just)* Run ui.just from ui/ and point it at the moved chart and stack
+- *(just)* Root ci gate runs the ui chain
 
 ## [2.0.0-beta.3] - 2026-09-23
 
