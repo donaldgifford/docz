@@ -582,9 +582,12 @@ What the outside world sees at beta.4, and the notes the next person needs.
   publishing and the per-package GHCR grant, and the path-filter revisit
   condition (DESIGN-0017 OQ 7). Build & Test gains `just ui ci`. The opening
   paragraph names `ui/`
-- [ ] `README.md`, `DEVELOPMENT.md`, and `CONTRIBUTING.md`: a frontend
+- [x] `README.md`, `DEVELOPMENT.md`, and `CONTRIBUTING.md`: a frontend
   section (Bun via `mise install`, `just ui install`, `just ui dev`,
-  `just ui ci`) and the two-chart note
+  `just ui ci`) and the two-chart note. `ui/README.md` had kept
+  docz-site's bare `just dev`-style recipes and `deploy/` paths, which fail
+  from `ui/` now that the justfile is the root's `ui` module; they are
+  `just ui …` and `deploy/{api,ui}/` there too
 - [ ] INV-0012: fill in Findings and Conclusion (**Answer:** confirmed,
   generation straight from `api/openapi.yaml` per DESIGN-0017 §4, with
   the typecheck and `gen-api-check` arms), then
