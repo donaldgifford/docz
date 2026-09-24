@@ -9,3 +9,6 @@ dist
 .claude
 build
 test
+# The frontend builds from its own context (Dockerfile.ui, context ui/);
+# without this, ui/node_modules/ rides along into every docz-api build.
+ui
