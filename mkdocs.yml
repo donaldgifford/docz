@@ -26,6 +26,7 @@ nav:
         - 'DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap': design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md
         - 'DESIGN-0015: Structured regions and docz validate': design/0015-structured-regions-and-docz-validate.md
         - 'DESIGN-0016: Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes': design/0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md
+        - 'DESIGN-0017: Move docz-site in: ui/, charts/docz-site, and orval on the one spec': design/0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -59,6 +60,8 @@ nav:
         - 'INV-0009: ToC regeneration in docz update and markdownlint MD051': investigation/0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md
         - 'INV-0010: IMPL plan parse and write-back API for doczcore (issue 100)': investigation/0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md
         - 'INV-0011: Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade': investigation/0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md
+        - 'INV-0012: docz-site consumes the OpenAPI contract from the same repository': investigation/0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md
+        - 'INV-0013: docz-site deferred features after the move: link graph, lifecycle, labels': investigation/0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md
     - RFCs:
         - Overview: rfc/README.md
 plugins:
