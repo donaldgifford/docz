@@ -1,9 +1,14 @@
-// docker-bake.hcl — multi-arch build pipeline for docz-api.
+// docker-bake.hcl — multi-arch build pipeline for the repository's images.
 //
-// Targets:
-//   - default: local single-arch build (used by `docker buildx bake`)
-//   - ci:      linux/amd64 build + push of `:dev-ci` for PR validation
-//   - release: multi-arch build + push to GHCR (CI only, gated on tag)
+// One target family per component (DESIGN-0017 §8): `-api` builds docz-api
+// from Dockerfile.api. Each family has three targets:
+//   - dev-<c>:     local single-arch build, loaded into the Docker daemon
+//   - ci-<c>:      multi-arch validation build, cache only, no push
+//   - release-<c>: multi-arch build + push (CI only, gated on tag)
+//
+// Groups keep the component-free spellings working: `default` (a bare
+// `docker buildx bake`) and `ci` (CI's docker-build job) build every
+// component's dev/ci target.
 //
 // CI workflow consumes this via docker/bake-action@v6 with the `targets`
 // input. The release workflow merges in tag-derived image refs from
@@ -13,7 +18,9 @@ variable "REGISTRY" {
   default = "ghcr.io"
 }
 
-variable "IMAGE_NAME" {
+// Image name per component. Not IMAGE_NAME: ecr.yml exports an env var of
+// that name, and bake reads same-named env vars into variables.
+variable "API_IMAGE" {
   default = "donaldgifford/docz-api"
 }
 
@@ -30,17 +37,25 @@ variable "BUILD_DATE" {
 }
 
 function "tags" {
-  params = [version]
+  params = [image, version]
   result = version == "dev" ? [
-    "${REGISTRY}/${IMAGE_NAME}:dev",
+    "${REGISTRY}/${image}:dev",
     ] : [
-    "${REGISTRY}/${IMAGE_NAME}:${version}",
-    "${REGISTRY}/${IMAGE_NAME}:latest",
+    "${REGISTRY}/${image}:${version}",
+    "${REGISTRY}/${image}:latest",
   ]
 }
 
-// Base target with shared configuration.
-target "_common" {
+group "default" {
+  targets = ["dev-api"]
+}
+
+group "ci" {
+  targets = ["ci-api"]
+}
+
+// Base target for docz-api.
+target "_common_api" {
   dockerfile = "Dockerfile.api"
   context    = "."
   // Build args feed Dockerfile.api's VERSION/COMMIT/DATE ARGs, which the
@@ -63,16 +78,16 @@ target "_common" {
 }
 
 // Local development build — single-arch, loads into Docker daemon.
-target "dev" {
-  inherits = ["_common"]
-  tags     = tags("dev")
+target "dev-api" {
+  inherits = ["_common_api"]
+  tags     = tags(API_IMAGE, "dev")
   output   = ["type=docker"]
 }
 
 // CI validation build — multi-arch, no push.
-target "ci" {
-  inherits   = ["_common"]
-  tags       = tags(VERSION)
+target "ci-api" {
+  inherits   = ["_common_api"]
+  tags       = tags(API_IMAGE, VERSION)
   platforms  = ["linux/amd64", "linux/arm64"]
   output     = ["type=cacheonly"]
   cache-from = ["type=gha"]
@@ -82,13 +97,13 @@ target "ci" {
 // Populated by docker/metadata-action in CI with computed tags and labels.
 // Default tags are used for local `make docker-push`; CI overrides via bake file merge.
 target "docker-metadata-action" {
-  tags = tags(VERSION)
+  tags = tags(API_IMAGE, VERSION)
 }
 
 // Release build — multi-arch, pushes to registry.
 // Tags are inherited from docker-metadata-action (overridden by metadata-action in CI).
-target "release" {
-  inherits   = ["_common", "docker-metadata-action"]
+target "release-api" {
+  inherits   = ["_common_api", "docker-metadata-action"]
   platforms  = ["linux/amd64", "linux/arm64"]
   output     = ["type=registry"]
   cache-from = ["type=gha"]

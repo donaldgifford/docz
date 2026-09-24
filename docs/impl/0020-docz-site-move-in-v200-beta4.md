@@ -141,7 +141,7 @@ already knows about two components and has been exercised with one.
 
 - [x] `.dockerignore`: add `ui/`, so `Dockerfile.api`'s repository-root
   context never uploads `ui/node_modules/`
-- [ ] `docker-bake.hcl`: rename `_common` → `_common_api` and the targets to
+- [x] `docker-bake.hcl`: rename `_common` → `_common_api` and the targets to
   `dev-api`, `ci-api`, `release-api`, with `IMAGE_NAME` scoped per target;
   add `group "default" { targets = ["dev-api"] }` and
   `group "ci" { targets = ["ci-api"] }` so the bare `docker buildx bake` and
