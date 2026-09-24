@@ -435,34 +435,30 @@ to revisit at this move. The condition it set for revisiting was "the
 moment a Go change can break the UI other than through the spec". It has not
 arrived: the UI reaches the server only through HTTP described by the spec,
 and nothing embeds `ui/dist`. So the filter stays (Open Question 7), and
-`changes` grows two outputs:
+`changes` grows one output:
 
 ```yaml
 ui:
   - 'ui/**'
   - 'api/openapi.yaml'      # the drift the consolidation exists to catch
   - 'Dockerfile.ui'
-spec:
-  - 'api/openapi.yaml'
 ```
 
 ```mermaid
 flowchart LR
-  PR["pull request"] --> CH["changes<br/>dorny/paths-filter"]
-  CH -->|"go"| GO["lint · test-go · security · build"]
+  PR["pull request"] -->|"every PR, unfiltered"| GO["lint · test-go · security · build<br/>incl. the kin-openapi contract test"]
+  PR --> CH["changes<br/>dorny/paths-filter"]
   CH -->|"ui"| UI["ui: install · gen-api · lint · fmt-check<br/>typecheck · test · test-server · build<br/>bundle-budget · gen-api-check"]
   CH -->|"ui"| E2E["ui-e2e: playwright chromium + axe"]
   CH -->|"docker or ui"| DB["docker-build: bake api + ui"]
   CH -->|"helm"| H["helm-unittest · helm-test<br/>charts/docz-api + charts/docz-site"]
-  CH -->|"spec"| GO
-  CH -->|"spec"| UI
 ```
 
-The `spec` → Go arm matters because the kin-openapi contract test lives in
-`internal/httpapi`, and a spec-only change matches none of the `go` globs.
-Today a spec-only PR runs **no** contract test. That gap predates this move,
-and it is closed here because this is the first time the spec has two
-consumers.
+The Go jobs are not path-filtered at all. `lint`, `test-go`, `security`, and
+`build` run on every pull request, so a spec-only change already runs the
+kin-openapi contract test in `internal/httpapi`, and needs no filter to do so.
+The one arm this move adds is `api/openapi.yaml` in the `ui` filter. Without
+it, a spec change that breaks the client would pass CI.
 
 The `ui` job mirrors the rest of `ci.yml`. It pins its tools with their own
 actions (`oven-sh/setup-bun` at 1.3.14, `extractions/setup-just`) instead of
@@ -726,7 +722,7 @@ work, so the numbering starts where the graft does.
 
 | Phase | Lands | Revertible | Gate |
 | --- | --- | --- | --- |
-| 0 | `ui/`-shaped root edits that are safe before `ui/` exists: `.dockerignore` excludes `ui/`; `ghcr.yml`/`ecr.yml` gain the `component` input, called with `api` (OQ 5); the chart-changelog include-path fix; `mise.toml` gains bun and node; `changes` gains `ui`/`spec`, with `spec` → Go jobs live immediately | yes | `just ci`; the next docz-api publish is unchanged |
+| 0 | `ui/`-shaped root edits that are safe before `ui/` exists: `.dockerignore` excludes `ui/`; `ghcr.yml`/`ecr.yml` gain the `component` input, called with `api` (OQ 5); the chart-changelog include-path fix; `mise.toml` gains bun and node; `changes` gains the `ui` output (no job reads it until Phase 2) | yes | `just ci`; the next docz-api publish is unchanged |
 | 1 | **In docz-site:** status sweep of four documents (§9, OQ 9); close PR #33 as superseded | n/a (other repo) | `docz validate` there |
 | 2 | `filter-repo` clone, `--no-tags` fetch, `--allow-unrelated-histories` merge (§2); `ui/go.mod` (§3, OQ 2); `ui/.github/` and repository-level files folded (§6); `ui.just` edits (§5); `.cliffignore` appended; `ui` + `ui-e2e` jobs; CodeQL gains `javascript-typescript` | as one merge commit | **green**: `just ci`, `just ui ci`, all CI jobs |
 | 3 | orval input → `../api/openapi.yaml`; `ui/api/` and `spec-drift.yml` deleted (§4); `Dockerfile.ui` named spec context + bake `-ui` targets (OQ 3); MSW fixtures (OQ 4); `deploy/ui/` contexts (§10); repository URLs rewritten; `test/archive` gains both new tests | yes | `just ci`, `just ui ci`, `docker buildx bake ci-ui` |
@@ -933,12 +929,14 @@ every contributor running `just ci` needs Bun installed and a `just ui install`.
 It resolved to path-filtered jobs "for now", to be revisited here, and named
 the trigger: a Go change that can break the UI other than through the spec.
 
-> **Resolved 2026-09-23: (a).** Path filtering stays, and the `spec` arm
-> runs both halves. The revisit condition (anything that lets a Go change
+> **Resolved 2026-09-23: (a).** Path filtering stays, and a spec change runs
+> both halves: the Go jobs are unfiltered, and the `ui` filter includes
+> `api/openapi.yaml` (§7, corrected 2026-09-23: the Go jobs were never
+> path-filtered, so no separate `spec` output is needed). The revisit condition (anything that lets a Go change
 > break the UI other than through the spec, such as an embed of `ui/dist`)
 > is written into CLAUDE.md beside the CI description.
 
-- a. **Keep path filtering, with the `spec` arm running both halves** (§7).
+- a. **Keep path filtering, with a spec change running both halves** (§7).
   The trigger has not arrived: nothing embeds `ui/dist`, and the UI reaches
   the server only over the specced HTTP surface. Record the revisit
   condition again, this time in CLAUDE.md where the next person to add an
