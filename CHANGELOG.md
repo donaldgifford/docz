@@ -43,6 +43,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - A frontend section in README, DEVELOPMENT, and CONTRIBUTING
 - *(inv)* Conclude INV-0012, the client generates from the one spec
 - *(inv)* INV-0012's answer opens with a verdict validate can read
+- *(adr)* Correct ADR-0004's two claims DESIGN-0017 disproved
+- *(impl)* Record the IMPL-0020 follow-up issues and local release checks
 
 ### Testing
 
