@@ -820,8 +820,11 @@ Nothing on the v2 line is released by label. Every pull request carries
 just release v2.0.0-beta.1     # tags and pushes
 ```
 
-`.github/workflows/prerelease.yml` fires on `v*-beta.*`, runs goreleaser
-only, and `prerelease: auto` marks the GitHub release from the suffix.
+`.github/workflows/prerelease.yml` fires on `v*-beta.*`, runs goreleaser,
+and `prerelease: auto` marks the GitHub release from the suffix. The same tag
+publishes both images and both charts: `ghcr.yml` runs once with
+`component: api` (docz-api) and once with `component: ui` (docz-site), and
+each chart is skipped when its version is already published.
 
 A `/v2` module may not carry a v1 tag: `go get` rejects the mismatch. That
 is the hard reason every PR after the module move is `dont-release`, not a
@@ -1284,3 +1287,50 @@ docz update           # regenerate the README index tables after edits
 - CI (GitHub Actions) runs lint, tests with coverage, security scans
   (govulncheck/Trivy/CodeQL), license checks, and a goreleaser snapshot build on
   every PR.
+
+## Developing docz-site, the frontend
+
+docz-site is the web UI over docz-api, moved into `ui/` by IMPL-0020
+(DESIGN-0017). Its day-to-day guide is [ui/README.md](ui/README.md) and its
+conventions are in `ui/CLAUDE.md`; what follows is how it sits in this
+repository.
+
+### Setup
+
+Bun and Node are pinned in `mise.toml`, so `mise install` provides them. Every
+recipe is in the `ui` just module and runs with `ui/` as its working
+directory:
+
+```sh
+just ui install     # bun install
+just ui dev         # Vite dev server, proxying /api, /auth, /openapi.yaml to :8080
+just ui dev-msw     # the same app against MSW fixtures, no docz-api needed
+just ui ci          # install, gen-api, lint, fmt-check, typecheck, test,
+                    # test-server, build, bundle-budget, gen-api-check
+just ui e2e         # Playwright; kept out of just ci, as in CI
+```
+
+`just ci` at the root runs the whole `ui::` chain after the Go and api gates.
+
+### The one spec
+
+orval generates the client from `../api/openapi.yaml`, the file docz-api
+embeds and serves; there is no vendored copy. After changing the spec, run
+`just ui gen-api` and `just ui typecheck`. A spec change that breaks the
+client fails the same pull request.
+
+### `ui/go.mod`
+
+`ui/go.mod` is a stub module with no Go in it. It is there because
+`ui/node_modules` contains stray `.go` files that the root module's `./...`
+would otherwise try to build. Do not delete it; `TestUIModuleFence` in
+`test/archive` fails if you do.
+
+### Images and charts
+
+`docker buildx bake dev-ui` (or `just ui docker-build`) builds the image with
+`ui/` as its context and the spec passed in as a named `spec` context. The
+chart is `charts/docz-site/`, next to `charts/docz-api/`; `just ui helm-lint`,
+`just ui helm-unittest`, and `just ui helm-docs` are its recipes. Its
+`appVersion` is bare semver, and its `version` is bumped once per release,
+before the tag.

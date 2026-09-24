@@ -24,7 +24,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0009 | ToC regeneration in docz update and markdownlint MD051 | Concluded | 2026-09-13 | Donald Gifford | [0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md](0009-toc-regeneration-in-docz-update-and-markdownlint-md051.md) |
 | INV-0010 | IMPL plan parse and write-back API for doczcore (issue 100) | Concluded | 2026-09-13 | Donald Gifford | [0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md](0010-impl-plan-parse-and-write-back-api-for-doczcore-issue-100.md) |
 | INV-0011 | Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade | Concluded | 2026-09-21 | Donald Gifford | [0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md](0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md) |
-| INV-0012 | docz-site consumes the OpenAPI contract from the same repository | Open | 2026-09-23 | Donald Gifford | [0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md](0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md) |
+| INV-0012 | docz-site consumes the OpenAPI contract from the same repository | Concluded | 2026-09-23 | Donald Gifford | [0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md](0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md) |
 | INV-0013 | docz-site deferred features after the move: link graph, lifecycle, labels | Open | 2026-09-23 | Donald Gifford | [0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md](0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->

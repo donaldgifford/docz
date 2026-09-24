@@ -800,3 +800,23 @@ The image is distroless and nonroot, published to
 `ghcr.io/donaldgifford/docz-api`; the Helm chart is `charts/docz-api/`. Running
 it locally, with compose, webhooks, and the monitoring stack, is covered in
 [DEVELOPMENT.md](DEVELOPMENT.md#developing-docz-api-the-server).
+
+## docz-site, the frontend
+
+docz-site, the web UI that reads docz-api, lives in `ui/` (ADR-0004,
+DESIGN-0017). It is a Bun, Vite, and React project whose recipes are the
+`ui` just module; its image is built from `Dockerfile.ui`.
+
+```sh
+mise install                  # pinned toolchain, Bun and Node included
+just ui install               # dependencies
+just ui dev                   # dev server, proxied to a docz-api on :8080
+just ui dev-msw               # the same app against mock fixtures, no docz-api needed
+just ui ci                    # everything the ui CI job runs
+```
+
+Its typed client is generated from the same `api/openapi.yaml` docz-api
+serves, so there is one spec. The image is published to
+`ghcr.io/donaldgifford/docz-site`, and the repository has **two charts**:
+`charts/docz-api/` and `charts/docz-site/`, published from the same tag.
+[ui/README.md](ui/README.md) covers the rest.

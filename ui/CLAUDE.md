@@ -540,11 +540,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   password's value (a REDACTED placeholder still matches — drop the
   password component entirely), and a purge means rewriting branch
   history.
-- Changing anything under `charts/` requires bumping `Chart.yaml`'s
-  `version` in the SAME PR. `ghcr.yml`'s chart job reads that value and
-  runs a `helm pull` idempotency precheck, so a chart change without a
-  bump publishes NOTHING and the run is still all-green — the only
-  signal is `SLSA provenance (chart)` showing `skipped`. `appVersion`
+- Bump `charts/docz-site/Chart.yaml`'s `version` once per release,
+  before the tag that should publish it — not in every PR that touches
+  the chart (IMPL-0020 Open Question 6, matching `charts/docz-api`).
+  Charts publish only from a `v*-beta.*` tag here, never on merge, and
+  `ghcr.yml`'s chart job runs a `helm pull` idempotency precheck, so a
+  tag cut with an unbumped chart publishes NO chart and the run is still
+  all-green: the chart summary shows `Already published: true`. `appVersion`
   tracks the app release and must be BARE semver (metadata-action
   strips the `v`); `tests/deployment_test.yaml` pins the image tag to
   it, so the two move together. `charts/` is in `.prettierignore` — do

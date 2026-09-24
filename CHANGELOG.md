@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Features
 
 - *(ui)* Generate the client from the one spec at api/openapi.yaml
+- *(chart)* Docz-site chart 0.2.0 at appVersion 2.0.0-beta.4
 
 ### Bug Fixes
 
@@ -35,6 +36,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Record the IMPL-0020 Phase 3 spec drift drill
 - *(impl)* Record the IMPL-0020 Phase 3 ui image probe
 - *(ui)* Point docz-site's repository URLs at the monorepo
+- *(archive)* State the docz-site namespace rule and index both trees
+- *(impl)* The archive excludes already cover docs/archive/ui
+- *(ui)* Bump the docz-site chart once per release, before the tag
+- *(claude)* A Frontend section for ui/
+- A frontend section in README, DEVELOPMENT, and CONTRIBUTING
+- *(inv)* Conclude INV-0012, the client generates from the one spec
+- *(inv)* INV-0012's answer opens with a verdict validate can read
+- *(adr)* Correct ADR-0004's two claims DESIGN-0017 disproved
+- *(impl)* Record the IMPL-0020 follow-up issues and local release checks
 
 ### Testing
 
@@ -66,6 +76,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(just)* Add ui docker-build, the no-bake spelling of dev-ui
 - *(deploy)* Build both images from this repository in deploy/ui
 - *(deploy)* Build the local site from ui/ against the api local stack
+- *(release)* Publish docz-site's image and chart from the same tag
 
 ## [2.0.0-beta.3] - 2026-09-23
 

@@ -28,7 +28,7 @@ The chart is published as an OCI artifact to GHCR:
 ```bash
 helm install docz-site \
   oci://ghcr.io/donaldgifford/charts/docz-site \
-  --version 0.1.10 \
+  --version 0.2.0 \
   --namespace docz-site \
   --create-namespace \
   --set config.doczApiUrl=http://docz-api:8080

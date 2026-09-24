@@ -125,3 +125,37 @@ jobs:
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
     secrets: inherit
+
+  # docz-site's pair (IMPL-0020): the same reusable workflows with
+  # component: ui and the same permissions ceiling as publish-ghcr and
+  # publish-ecr above, whose comments apply here unchanged.
+  publish-ghcr-ui:
+    name: Publish docz-site to GHCR
+    needs: bump-version
+    uses: ./.github/workflows/ghcr.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      component: ui
+      tag: ${{ needs.bump-version.outputs.tag }}
+      dry_run: false
+    secrets: inherit
+
+  publish-ecr-ui:
+    name: Publish docz-site to ECR
+    needs: bump-version
+    if: vars.ECR_PUBLISH_ENABLED == 'true'
+    uses: ./.github/workflows/ecr.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      packages: write
+    with:
+      component: ui
+      tag: ${{ needs.bump-version.outputs.tag }}
+      dry_run: false
+    secrets: inherit

@@ -555,31 +555,40 @@ What the outside world sees at beta.4, and the notes the next person needs.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `docs/archive/ui/README.md`: the namespace rule in one line (*inside
+- [x] `docs/archive/ui/README.md`: the namespace rule in one line (*inside
   this directory, an ID means docz-site's*), mirroring
   `docs/archive/api/README.md`. Add `docs/archive/README.md` listing both
   trees
-- [ ] Confirm `wiki.exclude` and `api.exclude` already hide
+- [x] Confirm `wiki.exclude` and `api.exclude` already hide
   `docs/archive/ui/` with no edit: `TestExcludesAgreeOnArchive` passes
-  unchanged, and `docz wiki update --dry-run` names no `archive` path
-- [ ] `charts/docz-site/Chart.yaml`: `version: 0.2.0`,
+  unchanged, and `docz wiki update --dry-run` names no `archive` path.
+  Both held with no config edit: the test passes as written and the dry
+  run's nav has zero `archive` lines
+- [x] `charts/docz-site/Chart.yaml`: `version: 0.2.0`,
   `appVersion: "2.0.0-beta.4"` (bare; DESIGN-0017 OQ 8). Regenerate with
-  `just ui helm-docs`. The chart's bare-semver unit test passes
-- [ ] Update the chart-bump rule in `ui/CLAUDE.md` per Open Question 6
-- [ ] `prerelease.yml`: add `publish-image-ui` (`ghcr.yml`, `component: ui`,
+  `just ui helm-docs`. The chart's bare-semver unit test passes. The
+  chart had no such test, only an exact-tag assertion; the shape test was
+  added from `charts/docz-api`'s. 49 helm-unittest tests pass
+- [x] Update the chart-bump rule in `ui/CLAUDE.md` per Open Question 6
+- [x] `prerelease.yml`: add `publish-image-ui` (`ghcr.yml`, `component: ui`,
   `tag: ${{ github.ref_name }}`) and `publish-ecr-ui` (gated on
   `vars.ECR_PUBLISH_ENABLED`), with the same permissions ceiling as the api
-  jobs. Add the same pair to `release.yml`
-- [ ] Root `CLAUDE.md`: a "Frontend (`ui/`)" section pointing at
+  jobs. Add the same pair to `release.yml`. Done; `release.yml`'s pair is
+  `publish-ghcr-ui`/`publish-ecr-ui`, matching its own api job names, and
+  `just api lint-actions` is clean
+- [x] Root `CLAUDE.md`: a "Frontend (`ui/`)" section pointing at
   `ui/CLAUDE.md`, covering `ui/go.mod` and why it exists, the single spec
   and its four readers, the named `spec` build context, two-component
   publishing and the per-package GHCR grant, and the path-filter revisit
   condition (DESIGN-0017 OQ 7). Build & Test gains `just ui ci`. The opening
   paragraph names `ui/`
-- [ ] `README.md`, `DEVELOPMENT.md`, and `CONTRIBUTING.md`: a frontend
+- [x] `README.md`, `DEVELOPMENT.md`, and `CONTRIBUTING.md`: a frontend
   section (Bun via `mise install`, `just ui install`, `just ui dev`,
-  `just ui ci`) and the two-chart note
-- [ ] INV-0012: fill in Findings and Conclusion (**Answer:** confirmed,
+  `just ui ci`) and the two-chart note. `ui/README.md` had kept
+  docz-site's bare `just dev`-style recipes and `deploy/` paths, which fail
+  from `ui/` now that the justfile is the root's `ui` module; they are
+  `just ui …` and `deploy/{api,ui}/` there too
+- [x] INV-0012: fill in Findings and Conclusion (**Answer:** confirmed,
   generation straight from `api/openapi.yaml` per DESIGN-0017 §4, with
   the typecheck and `gen-api-check` arms), then
   `docz status set investigation INV-0012 Concluded`
@@ -587,7 +596,8 @@ What the outside world sees at beta.4, and the notes the next person needs.
   add `donaldgifford/docz` with **Write**. Do the same for
   `charts/docz-site`. Both are separate grants from docz-api's (IMPL-0019
   Phase 5: the chart publish failed `403 write_package` without one)
-- [ ] `just validate`, `just api lint-actions`
+- [x] `just validate`, `just api lint-actions`. Both clean; the INV-0012
+  verdict opens with "Yes" because `inv.conclusion.verdict` reads one
 
 <!--docz:tasks:end-->
 
@@ -612,8 +622,13 @@ What the outside world sees at beta.4, and the notes the next person needs.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `just release-check` and `just api release-check` pass
-- [ ] `docker buildx bake ci` builds both images locally
+- [x] `just release-check` and `just api release-check` pass. Both
+  validate `.goreleaser.yml`, run on the Phase 4 branch
+- [x] `docker buildx bake ci` builds both images locally.
+  Built for `linux/arm64` (`--set '*.platform=linux/arm64'`): the
+  `linux/amd64` half of `ci-ui` dies with exit 132, SIGILL, because Bun
+  needs CPU instructions the emulator on an Apple-silicon workstation lacks.
+  The CI `Docker Build` job bakes the `ci` group and passed on #132
 - [ ] **(human)** `just release v2.0.0-beta.4` from **Phase 4's merge
   commit**, the last commit that changes a workflow. A tag runs the
   workflows as they exist in the tagged commit (IMPL-0019 Phase 5)
@@ -630,13 +645,17 @@ What the outside world sees at beta.4, and the notes the next person needs.
   `/healthz`, and point it at a docz-api to confirm the proxy (`/api/v1/repos`
   through the site). Upgrading an existing docz-site release to chart
   `0.2.0` needs no values change
-- [ ] Closing notes below: amend ADR-0004's two claims that DESIGN-0017's
-  Background disproved (the "no `go.mod`" line and the successor count)
+- [x] Closing notes below: amend ADR-0004's two claims that DESIGN-0017's
+  Background disproved (the "no `go.mod`" line and the successor count). Amended
+  in place as dated corrections beside each claim (Consequences, Neutral,
+  and Open Question 1's resolution), leaving the original words as the record
 - [ ] `docz status set impl IMPL-0020 Completed` and
   `docz status set design DESIGN-0017 Implemented`, then `docz update`
-- [ ] File the follow-ups as issues: archive the docz-site repository
+- [x] File the follow-ups as issues: archive the docz-site repository
   read-only with a README pointing at `ui/`; a Bun licence check; v2.0.0
-  proper with `latest` restored for both images
+  proper with `latest` restored for both images. Filed as #133 (archive
+  docz-site, which also covers closing its PR #33), #134 (Bun licence check),
+  and #135 (`latest` for both images at v2.0.0)
 
 <!--docz:tasks:end-->
 

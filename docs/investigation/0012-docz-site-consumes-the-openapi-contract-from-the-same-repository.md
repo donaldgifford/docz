@@ -1,7 +1,7 @@
 ---
 id: INV-0012
 title: "docz-site consumes the OpenAPI contract from the same repository"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-09-23
 ---
@@ -78,30 +78,64 @@ two repositories. After the move there is one, and docz-site is next to arrive
 | Component | Version / Value                                   |
 | --------- | ------------------------------------------------- |
 | Spec      | `api/openapi.yaml` (docz-api, moved in IMPL-0019) |
-| Site      | docz-site, not yet moved                          |
+| Site      | docz-site at `ui/`, moved in IMPL-0020            |
+| Generator | orval, `ui/orval.config.ts`                       |
 
 <!--docz:environment:end-->
 
 <!--docz:findings:start-->
 ## Findings
 
-Not started: this successor records what was still open when docz-api's
-investigation was archived. The work begins with the docz-site move.
+Worked through in IMPL-0020 Phase 3, against the design in DESIGN-0017 §4.
+
+1. **Before the move** docz-site kept a hand-copied `api/openapi.yaml`, orval
+   read `./api/openapi.yaml` into `src/api/__generated__/` (gitignored, never
+   committed), and `spec-drift.yml` curled docz-api's `main` copy and diffed
+   it against the vendored one, on pull requests and weekly. It was
+   informational by design: a pull request got a warning annotation and never
+   failed, and a scheduled run opened a tracking issue. So drift was noticed
+   only after the server change had merged, and the site was never blocked
+   by it.
+2. **The swap is byte-neutral.** At the move, the vendored file and
+   `api/openapi.yaml` were byte-identical. With orval's input pointed at
+   `../api/openapi.yaml`, `just ui gen-api-check` printed `generated client
+   is current.` with `ui/api/` still present and again after deleting it, so
+   the generated client did not change by a byte. `ui/api/` and
+   `spec-drift.yml` are gone.
+3. **Drift now fails in the pull request that causes it**, and in both halves.
+   The drill removed `author` from `Document` in `api/openapi.yaml`:
+   `just ui typecheck` exited 2 with eight `TS2339`/`TS2353` errors, including
+   `src/routes/doc.tsx(132,20): error TS2339: Property 'author' does not exist
+   on type 'Document'.`, and the server's `TestOpenAPIContract` failed on
+   `listDocs` and `getDoc` with `property "author" is unsupported`. The change
+   was reverted rather than kept.
+4. **CI wiring.** The Go jobs are unfiltered, and the `ui` job's path filter
+   includes `api/openapi.yaml`, so a spec change always runs both the contract
+   test and the site's `typecheck` and `gen-api-check` (DESIGN-0017 OQ 7).
+   The image build sees the same file through bake's named `spec` context, so
+   the published image is generated from the spec it ships beside.
 
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive — not yet investigated. This successor carries the
-question forward; the verdict comes with the docz-site move.
+**Answer:** Yes, the hypothesis holds. docz-site generates its client straight from
+`api/openapi.yaml` (DESIGN-0017 §4), so there is no vendored copy left to
+drift. Three checks keep the client and the served spec in agreement: the
+server's kin-openapi contract test pins the spec to the handlers, the site's
+`typecheck` fails when a spec change breaks code that reads the client, and
+`gen-api-check` fails when the generated client is stale. The drill in
+IMPL-0020 Phase 3 showed the first two failing on the same one-field change.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Take this up in the design for the docz-site move, before `ui/` lands.
+Nothing further. Keep `api/openapi.yaml` in the `ui` path filter for as long as
+CI is path-filtered, since that arm is what runs the site's checks on a spec
+change.
 
 <!--docz:recommendation:end-->
 
@@ -116,5 +150,7 @@ Take this up in the design for the docz-site move, before `ui/` lands.
 - [ADR-0004](../adr/0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md)
 - [DESIGN-0016](../design/0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md)
 - [IMPL-0019](../impl/0019-docz-api-move-in-v200-beta3.md)
+- [DESIGN-0017](../design/0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md)
+- [IMPL-0020](../impl/0020-docz-site-move-in-v200-beta4.md)
 
 <!--docz:references:end-->

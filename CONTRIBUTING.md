@@ -32,6 +32,16 @@ just test    # runs all tests
 just lint    # runs golangci-lint
 ```
 
+The frontend in `ui/` (docz-site) also needs Bun and Node, both pinned in
+`mise.toml`. Skip this if you are not touching `ui/`:
+
+```bash
+mise install      # bun, node, just, and the linters at their pinned versions
+just ui install   # the frontend's dependencies
+just ui dev       # dev server, proxied to a docz-api on :8080
+just ui ci        # the frontend's CI gate
+```
+
 ### Verify your setup
 
 ```bash
@@ -200,7 +210,15 @@ parity         → replay the v1.2.2 CLI goldens (test/parity)
 validate       → docz validate over this repo's own docs/, non-strict
 build          → go build ./... (no errors)
 license-check  → go-licenses check
+api::*         → the server's lint, tests, and chart lint
+ui::*          → the frontend's install, client generation, lint, format,
+                 typecheck, tests, build, bundle budget, and client drift check
 ```
+
+In CI the `ui` and `ui-e2e` jobs run only when `ui/`, `Dockerfile.ui`, or
+`api/openapi.yaml` changed, so a spec change always runs both halves. There are
+two Helm charts, `charts/docz-api/` and `charts/docz-site/`; bump a chart's
+`version` once per release, before the tag that should publish it.
 
 CI runs on every push to a PR branch. Fix failures before requesting review.
 
