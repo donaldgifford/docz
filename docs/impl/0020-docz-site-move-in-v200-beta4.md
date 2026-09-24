@@ -432,9 +432,19 @@ image build, the fixtures, the local stacks, and the URLs.
   (DESIGN-0017 §4). The two files were byte-identical, and
   `gen-api-check` printed `generated client is current.` both times
 - [x] Delete `ui/api/`
-- [ ] Drift drill, recorded here and not kept: on a scratch branch, remove
+- [x] Drift drill, recorded here and not kept: on a scratch branch, remove
   a response field the UI reads from `api/openapi.yaml`. `just ui typecheck`
-  fails, and the contract test fails. Record both outputs
+  fails, and the contract test fails. Record both outputs. Run in the
+  working tree and reverted (`git diff api/openapi.yaml` empty afterwards)
+  rather than on a branch: `author` removed from `Document`'s `properties`
+  and `required`, then `just ui gen-api`.
+  `just ui typecheck` exited 2 with eight `TS2339`/`TS2353` errors, the
+  reader among them:
+  `src/routes/doc.tsx(132,20): error TS2339: Property 'author' does not exist on type 'Document'.`
+  `go test ./internal/httpapi -run Contract` failed `TestOpenAPIContract`
+  on `listDocs` and `getDoc`:
+  `response body doesn't match schema: Error at "/docs/0": property "author" is unsupported`.
+  After the revert, `gen-api` and `typecheck` pass again
 - [ ] `Dockerfile.ui`: `COPY --from=spec openapi.yaml` to the path that makes
   orval's `../api/openapi.yaml` resolve in the build stage (DESIGN-0017 OQ 3)
 - [ ] `docker-bake.hcl`: `_common_ui` (image `donaldgifford/docz-site`,
