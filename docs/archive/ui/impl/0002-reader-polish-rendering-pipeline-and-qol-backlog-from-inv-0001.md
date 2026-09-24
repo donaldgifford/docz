@@ -1,7 +1,7 @@
 ---
 id: IMPL-0002
 title: "Reader polish: rendering pipeline and QoL backlog from INV-0001"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-07-12
 ---

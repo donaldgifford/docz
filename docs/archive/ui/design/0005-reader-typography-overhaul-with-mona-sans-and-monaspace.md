@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0005
 title: "Reader typography overhaul with Mona Sans and Monaspace"
-status: In Review
+status: Implemented
 author: Donald Gifford
 created: 2026-09-08
 ---

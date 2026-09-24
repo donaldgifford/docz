@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0001
 title: "docz-site: cross-repo docz reader and search UI"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-07-09
 ---

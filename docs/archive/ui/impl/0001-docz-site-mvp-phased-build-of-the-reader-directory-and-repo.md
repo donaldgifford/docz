@@ -1,7 +1,7 @@
 ---
 id: IMPL-0001
 title: "docz-site MVP: phased build of the reader, directory, and repo pages"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-07-10
 ---
