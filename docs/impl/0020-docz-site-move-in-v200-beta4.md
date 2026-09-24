@@ -422,13 +422,16 @@ image build, the fixtures, the local stacks, and the URLs.
   pointed at nothing: `/healthz` returns 200, `/readyz` behaves as the
   site's CLAUDE.md says (it never calls docz-api), and `/` serves
   `index.html` with `window.__DOCZ_CONFIG__` injected
-- [ ] MSW fixtures (DESIGN-0017 OQ 4): copy the seven archived files that
+- [x] MSW fixtures (DESIGN-0017 OQ 4): copy the seven archived files that
   `ui/src/mocks/fixtures.ts` imports into `ui/src/mocks/content/`
   (`docz-site-changelog.md`, `docz-site-design-0001.md`,
   `docz-site-design-index.md`, `docz-site-guides-markdown-specimen.md`,
   `docz-site-impl-0001.md`, `docz-site-impl-index.md`, `docz-site-input.md`),
   repoint the imports, keep `README.md` live, and reword the "always current"
-  comment. `just ui e2e` passes
+  comment. `just ui e2e` passes. Done in Phase 2, not here: the seven
+  imports broke `just ui test` (52 files, every one importing
+  `fixtures.ts`), and the graft PR's `ui` job has to be green. After the
+  swap, 686 vitest tests and 16 Playwright specs pass
 - [ ] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
   `dockerfile: Dockerfile.api`, and the site from `../../ui` with
   `additional_contexts: { spec: ../../api }`. `docker compose config` is valid

@@ -1,0 +1,42 @@
+# Implementation Plans
+
+This directory contains implementation plans with concrete tasks and milestones.
+
+## What are Implementation Plans?
+
+Implementation plans describe **the concrete steps to build a feature or system**.
+Each plan includes:
+
+- **Objective**: What is being implemented and which RFC/design it implements
+- **Scope**: What is in and out of scope
+- **Implementation Steps**: Ordered tasks with checkboxes
+- **File Changes**: Key files that will be created or modified
+- **Testing Plan**: How the implementation will be validated
+
+## Creating a New Implementation Plan
+
+```bash
+docz create impl "Your Implementation Title"
+```
+
+## Implementation Status
+
+- **Draft**: Plan is being written
+- **In Progress**: Implementation is underway
+- **Completed**: Implementation is finished
+- **Paused**: Work is temporarily stopped
+- **Cancelled**: Plan was abandoned
+
+<!-- BEGIN DOCZ AUTO-GENERATED -->
+## All Implementation Plans
+
+| ID | Title | Status | Date | Author | Link |
+|----|-------|--------|------|--------|------|
+| IMPL-0001 | docz-site MVP: phased build of the reader, directory, and repo pages | Draft | 2026-07-10 | Donald Gifford | [0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md](0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md) |
+| IMPL-0002 | Reader polish: rendering pipeline and QoL backlog from INV-0001 | Draft | 2026-07-12 | Donald Gifford | [0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md](0002-reader-polish-rendering-pipeline-and-qol-backlog-from-inv-0001.md) |
+| IMPL-0003 | Nav pins, changelog page, and doc link resolution | Completed | 2026-08-11 | Donald Gifford | [0003-nav-pins-changelog-page-and-doc-link-resolution.md](0003-nav-pins-changelog-page-and-doc-link-resolution.md) |
+| IMPL-0004 | No-auth mode and session-unavailable handling | Completed | 2026-08-27 | Donald Gifford | [0004-no-auth-mode-and-session-unavailable-handling.md](0004-no-auth-mode-and-session-unavailable-handling.md) |
+| IMPL-0005 | Render non-docz pages: reader, nav, and search surfaces | Completed | 2026-08-30 | Donald Gifford | [0005-render-non-docz-pages-reader-nav-and-search-surfaces.md](0005-render-non-docz-pages-reader-nav-and-search-surfaces.md) |
+| IMPL-0006 | Mermaid v12 and docz-api spec 1.5.0 adoption | Completed | 2026-09-14 | Donald Gifford | [0006-mermaid-v12-and-docz-api-spec-150-adoption.md](0006-mermaid-v12-and-docz-api-spec-150-adoption.md) |
+| IMPL-0007 | Server observability — logs and probes, then metrics and traces | Completed | 2026-09-18 | Donald Gifford | [0007-server-observability-logs-and-probes-then-metrics-and-traces.md](0007-server-observability-logs-and-probes-then-metrics-and-traces.md) |
+<!-- END DOCZ AUTO-GENERATED -->

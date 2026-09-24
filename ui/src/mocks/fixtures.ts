@@ -6,20 +6,22 @@
  * through (return undefined) for anything outside the demo org, letting
  * orval's faker handlers answer.
  *
- * docz-site docs are ?raw imports of the actual files (always current);
- * docz-api docs are snapshots under src/mocks/content/ (the originals
- * live outside this repo).
+ * Every document is a snapshot under src/mocks/content/: test data the
+ * UI owns. docz-site's own docs were live ?raw imports until the move into
+ * donaldgifford/docz (IMPL-0020), which froze them in docs/archive/ui/;
+ * they were copied here rather than imported from a read-only archive.
+ * README.md is the one live import left.
  */
 import { http, HttpResponse } from "msw";
 
-import doczSiteChangelog from "../../CHANGELOG.md?raw";
+import doczSiteChangelog from "./content/docz-site-changelog.md?raw";
 import doczSiteReadme from "../../README.md?raw";
-import doczSiteDesign0001 from "../../docs/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md?raw";
-import doczSiteDesignIndex from "../../docs/design/README.md?raw";
-import doczSiteGuideSpecimen from "../../docs/guides/markdown-specimen.md?raw";
-import doczSiteImpl0001 from "../../docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md?raw";
-import doczSiteImplIndex from "../../docs/impl/README.md?raw";
-import doczSiteInput from "../../docs/input.md?raw";
+import doczSiteDesign0001 from "./content/docz-site-design-0001.md?raw";
+import doczSiteDesignIndex from "./content/docz-site-design-index.md?raw";
+import doczSiteGuideSpecimen from "./content/docz-site-guides-markdown-specimen.md?raw";
+import doczSiteImpl0001 from "./content/docz-site-impl-0001.md?raw";
+import doczSiteImplIndex from "./content/docz-site-impl-index.md?raw";
+import doczSiteInput from "./content/docz-site-input.md?raw";
 import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
 import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
 import doczApiIndex from "./content/docz-api-index.md?raw";
@@ -291,7 +293,7 @@ export const DEMO_PAGES: Record<string, Page[]> = {
       path: "guides/local-dev.md",
       raw: doczSiteGuideLocalDev,
     }),
-    // The rendering kitchen sink (?raw — always current): every
+    // The rendering kitchen sink (a snapshot, like the rest): every
     // construct the pipeline handles, on one page, for design review
     // and the axe sweeps. Keep this list sorted by path.
     makePage({
@@ -443,8 +445,8 @@ export const demoOrgHandlers = [
     return HttpResponse.json(page);
   }),
 
-  // getRepoChangelog (spec 1.2.0): docz-site serves its real
-  // CHANGELOG.md (?raw — always current); docz-api exercises the
+  // getRepoChangelog (spec 1.2.0): docz-site serves a snapshot of its
+  // pre-move CHANGELOG.md; docz-api exercises the
   // empty-but-present "" shape. Everything else 404s DETERMINISTICALLY
   // — never fall through to faker, which would fabricate changelogs
   // for repos whose snapshot never opted in.
