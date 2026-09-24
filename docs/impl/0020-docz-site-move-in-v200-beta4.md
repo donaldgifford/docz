@@ -206,23 +206,25 @@ history (ADR-0004 OQ 1, DESIGN-0017 §9).
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] **(human)** In docz-site, on a branch: `docz status set impl IMPL-0001 Completed`,
+- [x] **(human)** In docz-site, on a branch: `docz status set impl IMPL-0001 Completed`,
   `docz status set impl IMPL-0002 Completed`,
   `docz status set design DESIGN-0001 Implemented`,
   `docz status set design DESIGN-0005 Implemented`, then `docz update`
-  so the README indexes follow
-- [ ] **(human)** Open it as a PR labelled `dont-release` (Open Question 5)
+  so the README indexes follow. Done in docz-site PR #39 (`chore/move`)
+- [x] **(human)** Open it as a PR labelled `dont-release` (Open Question 5)
   and merge it. docz-site's `pr-semver-bump` lists `dont-release` in
-  `noop-labels`
-- [ ] Confirm the merge cut no tag and published no image: `git ls-remote --tags`
+  `noop-labels`. docz-site #39, merged as `f17ba51`
+- [x] Confirm the merge cut no tag and published no image: `git ls-remote --tags`
   unchanged at 13, and the `publish-ghcr` chart job, which runs even on
   `dont-release`, skipped on its `helm pull` idempotency check because
-  `Chart.yaml` is unchanged at `0.1.10`
+  `Chart.yaml` is unchanged at `0.1.10`. Confirmed: 13 tags, unchanged. The Release run published no image, and its chart job logged
+  `Chart 0.1.10 already published, skipping.`
 - [ ] **(human)** Close docz-site PR #33 with a comment that the move to
   `donaldgifford/docz` supersedes it, and that a JavaScript licence check
   is a follow-up there
-- [ ] Record docz-site's `main` SHA after the sweep and its auto-sync
-  changelog commit settle. Phase 2 clones exactly that SHA
+- [x] Record docz-site's `main` SHA after the sweep and its auto-sync
+  changelog commit settle. Phase 2 clones exactly that SHA: **`f1203c91d1a9f69ccdae140d9eabc3185f1bce8f`** (`chore(changelog): Auto-sync`
+  after #39). The four documents read Completed/Implemented at that SHA
 
 <!--docz:tasks:end-->
 
@@ -249,66 +251,86 @@ no Go file arrives, the vendored spec keeps orval working, and
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `git clone --no-local https://github.com/donaldgifford/docz-site /tmp/docz-site-graft`
+- [x] `git clone --no-local https://github.com/donaldgifford/docz-site /tmp/docz-site-graft`
   at the Phase 1 SHA
-- [ ] Run `git filter-repo`, dropping `scripts/labels.sh` (byte-identical
+- [x] Run `git filter-repo`, dropping `scripts/labels.sh` (byte-identical
   to ours) and `ct.yaml` (identical bar one blank line) with `--invert-paths`,
   then `--path-rename` in order: `:ui/`, `ui/docs/:docs/archive/ui/`,
   `ui/CHANGELOG.md:docs/archive/ui/CHANGELOG.md`,
   `ui/charts/docz-site/:charts/docz-site/`, `ui/Dockerfile:Dockerfile.ui`,
   `ui/deploy/:deploy/ui/`, `ui/justfile:ui.just`. Record the exact
   invocation in the Phase 2 notes below
-- [ ] Verify the rewrite before merging:
+- [x] Verify the rewrite before merging:
   `git ls-tree --name-only HEAD` lists exactly `Dockerfile.ui`, `charts`,
   `deploy`, `docs`, `ui`, and `ui.just`, and `git ls-tree -r --name-only HEAD charts`
   holds only `charts/docz-site/` plus `charts/.yamllint.yml`
-- [ ] `git remote add site-local /tmp/docz-site-graft`,
+- [x] `git remote add site-local /tmp/docz-site-graft`,
   `git fetch --no-tags site-local`, then on a branch off `main`
   `git merge --allow-unrelated-histories --no-commit site-local/main`.
   `git tag | wc -l` is unchanged afterwards
-- [ ] Resolve `charts/.yamllint.yml` as the union of both (the only expected
+- [x] Resolve `charts/.yamllint.yml` as the union of both (the only expected
   conflict; hashes `2be451f` and `e423206` differ)
-- [ ] Add `ui/go.mod`: `module github.com/donaldgifford/docz/v2/ui`, with a
+- [x] Add `ui/go.mod`: `module github.com/donaldgifford/docz/v2/ui`, with a
   comment saying it exists only to keep `node_modules` out of the root
   module's `./...` (DESIGN-0017 §3). Verify with a real `just ui install`
   followed by `go list ./... | grep -c /ui/` printing `0`
-- [ ] Fold the repository-level files per DESIGN-0017 §6, then delete them
+- [x] Fold the repository-level files per DESIGN-0017 §6, then delete them
   from `ui/`: `mise.toml` and `renovate.json5` (already done in Phase 0),
   `catalog-info.yaml` (a third `Component`, `docz-site`, source
   `…/tree/main/ui`), `.claude/settings.json` (union of `allow`), and drop
   `.codecov.yml`, `.docz.yaml`, `cliff.toml`, `.yamllint.yml`,
-  `.yamlfmt.yml`, `LICENSE`, and `.forge-lock.hcl`
-- [ ] Keep in `ui/` (DESIGN-0017 OQ 1): `CLAUDE.md`, `README.md`,
+  `.yamlfmt.yml`, `LICENSE`, and `.forge-lock.hcl`. The `allow` union
+  added nothing: four of docz-site's five extra entries (`git commit -m ' *`,
+  `make lint *`, `make lint-md *`, `make test *`) are already covered by
+  ours, and the fifth, a blanket `Bash(git *)`, was left out on purpose
+  because it would auto-approve `git push --force` and `git reset --hard`
+- [x] Keep in `ui/` (DESIGN-0017 OQ 1): `CLAUDE.md`, `README.md`,
   `CONTRIBUTING.md`, `.markdownlint.yaml`, `.gitignore`, `.dockerignore`,
   `.prettierrc.yaml`, `.prettierignore`, and every JS tool config
-- [ ] Fold `ui/.github/` and delete it whole, `spec-drift.yml` included,
+- [x] Fold `ui/.github/` and delete it whole, `spec-drift.yml` included,
   since nothing under `ui/.github/` runs: `ci.yml` becomes the `ui` and
   `ui-e2e` jobs below; CodeQL's matrix gains `javascript-typescript` with
   `security-extended`; root `labeler.yml` gains a `ui` rule on `ui/**`;
   trufflehog per Open Question 4. `ghcr.yml`, `release.yml`, `changelog*.yml`,
-  `pr-labels.yml`, `labeler.yml`, `actionlint.yml`, and `CODEOWNERS` drop
-- [ ] `ci.yml`: a `ui` job (`needs: changes`, `if: needs.changes.outputs.ui == 'true'`,
+  `pr-labels.yml`, `labeler.yml`, `actionlint.yml`, and `CODEOWNERS` drop.
+  Trufflehog: the local `--results=verified,unknown` scan over the merged
+  history (trufflehog 3.95.9) found 0 verified and 7 unknown, every one a
+  placeholder Postgres DSN in docz's own history (none in `ui/`). The four
+  paths are excluded in `.github/trufflehog-exclude.txt`, each with its
+  reason, and the re-scan finds nothing
+- [x] `ci.yml`: a `ui` job (`needs: changes`, `if: needs.changes.outputs.ui == 'true'`,
   `defaults.run.working-directory: ui`, `oven-sh/setup-bun` pinned to
   1.3.14, `extractions/setup-just`) running `bun install --frozen-lockfile`,
   then `just ui` `gen-api`, `lint`, `fmt-check`, `typecheck`, `test`,
   `test-server` (before `build`: the server tests assume no `dist/`), `build`,
   `bundle-budget`, and `gen-api-check`, one step each. Then
   the fence check (Open Question 3). A `ui-e2e` job does the same install
-  plus `bunx playwright install --with-deps chromium` and `just ui e2e`
-- [ ] `ci.yml` `helm-unittest`: loop over `charts/*/` instead of naming
+  plus `bunx playwright install --with-deps chromium` and `just ui e2e`.
+  `ui-e2e` also runs `just ui gen-api` first: the generated client is
+  gitignored and the MSW preview build imports it
+- [x] `ci.yml` `helm-unittest`: loop over `charts/*/` instead of naming
   `charts/docz-api`
-- [ ] `ui.just`: `set working-directory := "ui"`; helm recipes →
+- [x] `ui.just`: `set working-directory := "ui"`; helm recipes →
   `../charts/docz-site`; `local-up`/`local-down` →
-  `../deploy/ui/compose.local.yaml`, with the hint naming `just api local-up`
-- [ ] Root `justfile` `ci`: append `ui::install ui::gen-api ui::lint
+  `../deploy/ui/compose.local.yaml`, with the hint naming `just api local-up`.
+  `default` became `just --list ui`: `ui/` has no justfile of its own, so
+  the inherited bare `just --list` climbed to the root's and listed that.
+  `helm-docs` searches `../charts/docz-site` only, not both charts
+- [x] Root `justfile` `ci`: append `ui::install ui::gen-api ui::lint
   ui::fmt-check ui::typecheck ui::test ui::test-server ui::build
   ui::bundle-budget ui::gen-api-check` (DESIGN-0017 OQ 6)
-- [ ] Commit the merge, then append `git rev-list <merge>^2` to
+- [x] Commit the merge, then append `git rev-list <merge>^2` to
   `.cliffignore`. Run `git-cliff` locally twice: a control run without the
   new lines shows docz-site commits under `[unreleased]`, and with them it
-  shows none. Regenerate `CHANGELOG.md`
-- [ ] `just ci` and `just ui ci` locally
-- [ ] Open the PR with `dont-release`; the body lists the folds and cites
+  shows none. Regenerate `CHANGELOG.md`. Merge `3630665`, 150 SHAs appended.
+  The `[unreleased]` section was 166 lines in the control run, docz-site's
+  `feat(scaffold)`… onward among them, and 39 with the list, holding no
+  docz-site subject
+- [x] `just ci` and `just ui ci` locally. Every recipe passes but `license-check`,
+  which fails on this workstation alone (go-licenses cannot read a stdlib
+  under the module-cache toolchain `GOTOOLCHAIN=auto` fetched) and passes
+  in CI's `Check Dependency Licenses`
+- [x] Open the PR with `dont-release`; the body lists the folds and cites
   DESIGN-0017 §2 and §6
 - [ ] **(human)** Review and merge **with a merge commit** (squashing destroys
   the graft)
@@ -318,8 +340,63 @@ no Go file arrives, the vendored spec keeps orval working, and
 **Phase 2 notes**, the exact commands, filled in as run:
 
 ```bash
-# (to be recorded)
+git clone --no-local https://github.com/donaldgifford/docz-site /tmp/docz-site-graft
+cd /tmp/docz-site-graft
+git checkout -B main f1203c91d1a9f69ccdae140d9eabc3185f1bce8f
+
+# Two passes: the drop, then the renames (applied in order).
+git filter-repo --force --refs main --invert-paths \
+  --path scripts/labels.sh --path ct.yaml
+git filter-repo --force --refs main \
+  --path-rename :ui/ \
+  --path-rename ui/docs/:docs/archive/ui/ \
+  --path-rename ui/CHANGELOG.md:docs/archive/ui/CHANGELOG.md \
+  --path-rename ui/charts/docz-site/:charts/docz-site/ \
+  --path-rename ui/charts/.yamllint.yml:charts/.yamllint.yml \
+  --path-rename ui/Dockerfile:Dockerfile.ui \
+  --path-rename ui/deploy/:deploy/ui/ \
+  --path-rename ui/justfile:ui.just
+# -> 150 commits, rewritten tip 9458076735e23b0b9f7a001bbbddf42e71b7e9a3
+
+cd ~/code/docz   # on feat/docz-site-graft, cut from main after #129
+git remote add site-local /tmp/docz-site-graft
+git fetch --no-tags site-local
+git merge --allow-unrelated-histories --no-commit site-local/main
+# one conflict, charts/.yamllint.yml: union of the two ignore lists
+git commit    # 3630665; git tag | wc -l is 26 before and after
 ```
+
+The list above lacked one rename: docz-site's `charts/.yamllint.yml` sits
+beside `charts/docz-site/`, not inside it, so without
+`ui/charts/.yamllint.yml:charts/.yamllint.yml` it landed at
+`ui/charts/.yamllint.yml` and the expected conflict never happened. The
+first attempt was thrown away and re-cloned. `ct.yaml` differed from ours
+by one line, a stray helm-testsuite `$schema` comment, not a blank line.
+The merge was committed on its own, with only the conflict resolved, and
+the folds below are separate commits on top of it, so the merge commit is
+the graft and nothing else.
+
+"Green on arrival" held for the Go half but not the UI half. The first CI
+run on #130 failed five ways, each fixed in its own commit on the branch:
+
+- `test/archive` rejected six arriving files linking docz-api's old
+  repository, then a seventh (the specimen snapshot's autolink). Locally it
+  had passed on a cached result: the test reads files through `git grep`,
+  which Go's test cache cannot see, so rerun it with `-count=1`
+- The MSW fixtures imported seven files the graft moved; they were
+  snapshotted into `ui/src/mocks/content/` (Phase 3's fixture task, pulled
+  forward)
+- `just ui fmt-check` calls a global `prettier` that docz-site's CI got
+  from mise; the `ui` job now installs prettier 3.7.4 with bun
+- Trivy found two HIGH advisories in `ui/bun.lock`: `react-router` went to
+  `^8.3.0`, and `lodash-es` took an override to `^4.18.0`, since
+  `@chevrotain/gast` pins 4.17.23 exactly
+- Trufflehog reported the exclude file itself, whose first version quoted
+  the DSNs it excludes; it describes them now and excludes its own path.
+  CI runs trufflehog 3.97.8, not the 3.95.9 of the local scan
+- CodeQL's new `javascript-typescript` analysis raised two alerts on
+  non-production files (`ui/mockup.html`, `ui/public/mockServiceWorker.js`),
+  ignored by path in `.github/codeql/codeql-config.yml` with a reason each
 
 <!--docz:criteria:start-->
 #### Success Criteria
@@ -370,13 +447,16 @@ image build, the fixtures, the local stacks, and the URLs.
   pointed at nothing: `/healthz` returns 200, `/readyz` behaves as the
   site's CLAUDE.md says (it never calls docz-api), and `/` serves
   `index.html` with `window.__DOCZ_CONFIG__` injected
-- [ ] MSW fixtures (DESIGN-0017 OQ 4): copy the seven archived files that
+- [x] MSW fixtures (DESIGN-0017 OQ 4): copy the seven archived files that
   `ui/src/mocks/fixtures.ts` imports into `ui/src/mocks/content/`
   (`docz-site-changelog.md`, `docz-site-design-0001.md`,
   `docz-site-design-index.md`, `docz-site-guides-markdown-specimen.md`,
   `docz-site-impl-0001.md`, `docz-site-impl-index.md`, `docz-site-input.md`),
   repoint the imports, keep `README.md` live, and reword the "always current"
-  comment. `just ui e2e` passes
+  comment. `just ui e2e` passes. Done in Phase 2, not here: the seven
+  imports broke `just ui test` (52 files, every one importing
+  `fixtures.ts`), and the graft PR's `ui` job has to be green. After the
+  swap, 686 vitest tests and 16 Playwright specs pass
 - [ ] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
   `dockerfile: Dockerfile.api`, and the site from `../../ui` with
   `additional_contexts: { spec: ../../api }`. `docker compose config` is valid
@@ -390,7 +470,14 @@ image build, the fixtures, the local stacks, and the URLs.
   `home:`, `charts/docz-site/README.md.gotmpl` (then
   `just ui helm-docs`), and `charts/docz-site/cliff.toml`. Also retarget
   `ui/README.md`'s links to docz-api, which now points at this repository.
-  The demo-org slug `donaldgifford/docz-site` in fixtures and e2e specs stays
+  The demo-org slug `donaldgifford/docz-site` in fixtures and e2e specs stays.
+  The docz-api half landed early, in Phase 2: IMPL-0019's
+  `TestRewriteLeftNoOldModulePath` flags any tracked file outside `docs/`
+  naming `github.com/donaldgifford/docz-api`, and six arriving files linked
+  docz-api's old repository (both chart READMEs, `ui/README.md`,
+  `ui/CLAUDE.md`, and the `docz-api-rfc-0001.md` fixture with the
+  `doc.test.tsx` assertion that reads it). `test-go` is not path-filtered,
+  so the graft PR would have been red without them
 - [ ] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
   `docs/`, `testdata/`, `CHANGELOG.md`, and `test/archive/` names
   `github.com/donaldgifford/docz-site`

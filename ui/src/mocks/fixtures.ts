@@ -1,0 +1,669 @@
+/*
+ * Curated "demo org" fixtures: real docz markdown served through MSW so
+ * rendering truth (frontmatter, toc markers, tables, fenced code) is
+ * exercised alongside the faker handlers' shape coverage. Layered FIRST
+ * in both the test server and the dev-msw worker — resolvers fall
+ * through (return undefined) for anything outside the demo org, letting
+ * orval's faker handlers answer.
+ *
+ * Every document is a snapshot under src/mocks/content/: test data the
+ * UI owns. docz-site's own docs were live ?raw imports until the move into
+ * donaldgifford/docz (IMPL-0020), which froze them in docs/archive/ui/;
+ * they were copied here rather than imported from a read-only archive.
+ * README.md is the one live import left.
+ */
+import { http, HttpResponse } from "msw";
+
+import doczSiteChangelog from "./content/docz-site-changelog.md?raw";
+import doczSiteReadme from "../../README.md?raw";
+import doczSiteDesign0001 from "./content/docz-site-design-0001.md?raw";
+import doczSiteDesignIndex from "./content/docz-site-design-index.md?raw";
+import doczSiteGuideSpecimen from "./content/docz-site-guides-markdown-specimen.md?raw";
+import doczSiteImpl0001 from "./content/docz-site-impl-0001.md?raw";
+import doczSiteImplIndex from "./content/docz-site-impl-index.md?raw";
+import doczSiteInput from "./content/docz-site-input.md?raw";
+import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
+import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
+import doczApiIndex from "./content/docz-api-index.md?raw";
+import doczApiRfc0001 from "./content/docz-api-rfc-0001.md?raw";
+import doczSiteGuideLocalDev from "./content/docz-site-guides-local-dev.md?raw";
+
+import { resolveDocType } from "@/lib/docTypes";
+
+import type {
+  DocType,
+  Document,
+  Page,
+  RepoDetail,
+  RepoSummary,
+  SearchHit,
+} from "@/api/__generated__/docz-api.schemas";
+
+function frontmatterField(raw: string, key: string): string {
+  const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw)?.[1] ?? "";
+  const line = new RegExp(`^${key}:\\s*(.*)$`, "m").exec(fm)?.[1] ?? "";
+  return line.trim().replace(/^"(.*)"$/, "$1");
+}
+
+interface FixtureDocInput {
+  repo: string;
+  type: string;
+  path: string;
+  raw: string;
+  updatedAt: string;
+}
+
+function makeDoc(input: FixtureDocInput): Document {
+  const docId = frontmatterField(input.raw, "id");
+  return {
+    repo: input.repo,
+    doc_id: docId,
+    type: input.type,
+    title: frontmatterField(input.raw, "title"),
+    status: frontmatterField(input.raw, "status"),
+    author: frontmatterField(input.raw, "author"),
+    created: frontmatterField(input.raw, "created"),
+    path: input.path,
+    git_sha: `fixture-sha-${docId.toLowerCase()}`,
+    content_hash: `fixture-hash-${docId.toLowerCase()}`,
+    updated_at: input.updatedAt,
+    raw_md: input.raw,
+  };
+}
+
+const DESIGN_STATUSES = [
+  "Draft",
+  "In Review",
+  "Approved",
+  "Implemented",
+  "Abandoned",
+];
+const IMPL_STATUSES = [
+  "Draft",
+  "In Progress",
+  "Completed",
+  "Paused",
+  "Cancelled",
+];
+const INVESTIGATION_STATUSES = [
+  "Open",
+  "In Progress",
+  "Concluded",
+  "Inconclusive",
+  "Abandoned",
+];
+
+// Real type declarations from the repos' .docz.yaml files.
+//
+// docz-api marshals empty Go slices as JSON null even though the spec
+// says array (see src/lib/wire.ts) — some types here mirror that wire
+// shape so the suites exercise it; the cast is the spec's lie, not ours.
+const WIRE_NULL_ALIASES = null as unknown as string[];
+const DEMO_TYPES: Record<string, DocType[]> = {
+  "donaldgifford/docz-site": [
+    {
+      name: "design",
+      dir: "design",
+      id_prefix: "DESIGN",
+      plural_label: "Designs",
+      statuses: DESIGN_STATUSES,
+      aliases: WIRE_NULL_ALIASES,
+    },
+    {
+      name: "impl",
+      dir: "impl",
+      id_prefix: "IMPL",
+      plural_label: "Implementation Plans",
+      statuses: IMPL_STATUSES,
+      aliases: [],
+    },
+    {
+      name: "investigation",
+      dir: "investigation",
+      id_prefix: "INV",
+      plural_label: "Investigations",
+      statuses: INVESTIGATION_STATUSES,
+      aliases: ["inv"],
+    },
+  ],
+  "donaldgifford/docz-api": [
+    {
+      name: "design",
+      dir: "design",
+      id_prefix: "DESIGN",
+      plural_label: "Designs",
+      statuses: DESIGN_STATUSES,
+      aliases: WIRE_NULL_ALIASES,
+    },
+    {
+      name: "rfc",
+      dir: "rfc",
+      id_prefix: "RFC",
+      plural_label: "RFCs",
+      statuses: ["Draft", "Proposed", "Accepted", "Rejected", "Superseded"],
+      aliases: WIRE_NULL_ALIASES,
+    },
+  ],
+};
+
+export const DEMO_DOCS: Document[] = [
+  makeDoc({
+    repo: "donaldgifford/docz-site",
+    type: "design",
+    path: "docs/design/0001-docz-site-cross-repo-docz-reader-and-search-ui.md",
+    raw: doczSiteDesign0001,
+    updatedAt: "2026-07-10T18:00:00Z",
+  }),
+  makeDoc({
+    repo: "donaldgifford/docz-site",
+    type: "impl",
+    path: "docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md",
+    raw: doczSiteImpl0001,
+    updatedAt: "2026-07-11T09:00:00Z",
+  }),
+  makeDoc({
+    repo: "donaldgifford/docz-api",
+    type: "design",
+    path: "docs/design/0001-docz-api-cross-repo-docz-registry-and-ingestion-service.md",
+    raw: doczApiDesign0001,
+    updatedAt: "2026-07-02T12:00:00Z",
+  }),
+  makeDoc({
+    repo: "donaldgifford/docz-api",
+    type: "design",
+    path: "docs/design/0002-openapi-contract-for-docz-api-and-the-docz-site.md",
+    raw: doczApiDesign0002,
+    updatedAt: "2026-07-06T15:30:00Z",
+  }),
+  // A References footer of GitHub-style relative links — the demo
+  // content for relative-link resolution (DESIGN-0002 Component 2).
+  makeDoc({
+    repo: "donaldgifford/docz-api",
+    type: "rfc",
+    path: "docs/rfc/0001-relative-doc-links-resolve-in-rendered-bodies.md",
+    raw: doczApiRfc0001,
+    updatedAt: "2026-08-02T10:00:00Z",
+  }),
+];
+
+/** First ATX h1, or a title-cased basename/dirname — the docparse.Title
+ *  fallback shape (docz-api applies it at ingest; fixtures mirror it). */
+function pageTitle(raw: string, publishedPath: string): string {
+  const h1 = /^#\s+(.+?)\s*$/m.exec(raw)?.[1];
+  if (h1 !== undefined && h1 !== "") {
+    return h1;
+  }
+  const base = publishedPath.split("/").at(-1) ?? publishedPath;
+  const stem = base.replace(/\.md$/i, "");
+  return stem.charAt(0).toUpperCase() + stem.slice(1);
+}
+
+interface FixturePageInput {
+  repo: string;
+  /** Published path — the addressing key (extensionless = directory page). */
+  path: string;
+  raw: string;
+}
+
+function makePage(input: FixturePageInput): Page {
+  const slug = input.path.replaceAll("/", "-").replace(/\.md$/i, "");
+  return {
+    repo: input.repo,
+    path: input.path,
+    title: pageTitle(input.raw, input.path),
+    raw_md: input.raw,
+    git_sha: `fixture-page-sha-${slug}`,
+  };
+}
+
+/** The `sort` values spec 1.5.0 accepts; anything else is a 400. */
+const SORTS = new Set([
+  "updated_at:desc",
+  "updated_at:asc",
+  "created:desc",
+  "created:asc",
+]);
+
+/**
+ * Order hits the way Meilisearch does for a `sort` request.
+ *
+ * The quirk worth reproducing: **a record with no value for the sort
+ * key goes last in BOTH directions.** Meilisearch treats an empty value
+ * as absent rather than as the lexicographic minimum, so `created:asc`
+ * still puts page hits — which carry no authored date — after every
+ * document. A fixture that sorted `""` to the front would disagree with
+ * the real API in exactly the case the UI cares about, and every test
+ * built on it would inherit that.
+ *
+ * Both keys are lexicographically ordered in their wire format
+ * (`YYYY-MM-DD` and RFC3339 UTC), so string compare is the real order.
+ */
+function sortHits(hits: SearchHit[], sort: string | null): SearchHit[] {
+  if (sort === null) {
+    return hits;
+  }
+  const [key, direction] = sort.split(":");
+  const valueOf = (hit: SearchHit) =>
+    key === "created" ? hit.created : hit.updated_at;
+  const sign = direction === "asc" ? 1 : -1;
+  return [...hits].sort((a, b) => {
+    const left = valueOf(a);
+    const right = valueOf(b);
+    if (left === right) return 0;
+    if (left === "") return 1;
+    if (right === "") return -1;
+    return left < right ? -sign : sign;
+  });
+}
+
+/*
+ * Page SEARCH HITS carry `updated_at` from spec 1.5.0, but the `Page`
+ * schema itself does not (repo/path/title/raw_md/git_sha), so the stamp
+ * lives here rather than on the record.
+ *
+ * One value per repo is the realistic shape, not a shortcut: docz-api
+ * stamps every record in a repository at onboard, and one reconcile is
+ * one transaction, so the pages of a repo genuinely share a stamp to
+ * the microsecond until their content changes.
+ */
+const PAGE_INGESTED_AT: Readonly<Record<string, string>> = {
+  "donaldgifford/docz-site": "2026-08-30T17:04:00Z",
+  "donaldgifford/docz-api": "2026-08-30T17:04:00Z",
+};
+
+// The docz-site repo dogfoods the api: block (OQ-2a): its real docz
+// index READMEs publish as directory pages (extensionless), docs/input.md
+// as a file page, a snapshot as the nested file page, and the root
+// README.md rides additional_docs. docz-api stays non-opted — its pages
+// list is deterministically empty and its snapshot has no api: block.
+export const DEMO_PAGES: Record<string, Page[]> = {
+  "donaldgifford/docz-site": [
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "README.md",
+      raw: doczSiteReadme,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "design",
+      raw: doczSiteDesignIndex,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "guides/local-dev.md",
+      raw: doczSiteGuideLocalDev,
+    }),
+    // The rendering kitchen sink (a snapshot, like the rest): every
+    // construct the pipeline handles, on one page, for design review
+    // and the axe sweeps. Keep this list sorted by path.
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "guides/markdown-specimen.md",
+      raw: doczSiteGuideSpecimen,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "impl",
+      raw: doczSiteImplIndex,
+    }),
+    makePage({
+      repo: "donaldgifford/docz-site",
+      path: "input.md",
+      raw: doczSiteInput,
+    }),
+  ],
+  "donaldgifford/docz-api": [],
+};
+
+const DEMO_REPOS: RepoSummary[] = Object.keys(DEMO_TYPES).map((repo) => ({
+  repo,
+  default_branch: "main",
+  docs_dir: "docs",
+  last_synced_sha: `fixture-head-${repo.split("/")[1] ?? repo}`,
+}));
+
+function repoKey(owner: string, name: string): string {
+  return `${owner}/${name}`;
+}
+
+/** Strip raw_md — only the single-document endpoint carries it. */
+function summary(doc: Document): Document {
+  const { raw_md, ...rest } = doc;
+  void raw_md;
+  return rest;
+}
+
+function snippetFor(doc: { raw_md?: string | null }, q: string): string {
+  const body = (doc.raw_md ?? "").replace(/[#>`|-]/g, " ");
+  const lower = body.toLowerCase();
+  const at = q === "" ? -1 : lower.indexOf(q.toLowerCase());
+  if (at === -1) {
+    return body.slice(0, 140).trim();
+  }
+  const start = Math.max(0, at - 60);
+  const before = body.slice(start, at);
+  const match = body.slice(at, at + q.length);
+  const after = body.slice(at + q.length, at + q.length + 80);
+  return `${before}<em>${match}</em>${after}`.trim();
+}
+
+type Params = Record<string, string | readonly string[] | undefined>;
+
+function str(value: Params[string]): string {
+  return typeof value === "string" ? value : "";
+}
+
+function intParam(url: URL, key: string, fallback: number): number {
+  const raw = url.searchParams.get(key);
+  if (raw === null) {
+    return fallback;
+  }
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+export const demoOrgHandlers = [
+  http.get("*/api/v1/repos", () => HttpResponse.json({ repos: DEMO_REPOS })),
+
+  http.get("*/api/v1/repos/:owner/:name", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    const types = DEMO_TYPES[key];
+    if (types === undefined) {
+      return undefined; // outside the demo org — faker answers
+    }
+    const detail: RepoDetail = {
+      repo: key,
+      default_branch: "main",
+      docs_dir: "docs",
+      last_synced_sha: `fixture-head-${str(params.name)}`,
+      // Both demo repos opt into the changelog: block (spec 1.2.0) so
+      // the RepoNav row's config_snapshot gate is exercised; faker
+      // repos get random snapshots without it, keeping the row hidden.
+      // Only docz-site opts into the api: block (DESIGN-0004) — its
+      // `exclude: null` mirrors the real nil-slice marshal (the arr()
+      // path); docz-api's absent block keeps every pages surface dark.
+      config_snapshot: {
+        docs_dir: "docs",
+        changelog: { enabled: true, file: "CHANGELOG.md" },
+        ...(key === "donaldgifford/docz-site"
+          ? {
+              api: {
+                enabled: true,
+                landing_page: "docs/index.md",
+                exclude: null,
+                additional_docs: ["README.md"],
+              },
+            }
+          : {}),
+      },
+      types,
+    };
+    return HttpResponse.json(detail);
+  }),
+
+  // listRepoPages (spec 1.3.0, DESIGN-0004): demo repos answer
+  // deterministically — docz-site's dogfooded set, docz-api's empty
+  // list (non-opted repos are 200 [], never 404). Outside the demo
+  // org, faker answers.
+  http.get("*/api/v1/repos/:owner/:name/pages", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    const pages = DEMO_PAGES[key];
+    if (pages === undefined) {
+      return undefined;
+    }
+    return HttpResponse.json({
+      pages: pages.map(({ path, title, git_sha }) => ({
+        path,
+        title,
+        git_sha,
+      })),
+    });
+  }),
+
+  // getRepoPage: published paths contain "/", and the client sends the
+  // whole path percent-encoded as ONE segment — derive it from the URL
+  // rather than MSW params so both spellings resolve identically.
+  http.get("*/api/v1/repos/:owner/:name/pages/*", ({ params, request }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    const pages = DEMO_PAGES[key];
+    if (pages === undefined) {
+      return undefined;
+    }
+    const marker = "/pages/";
+    const pathname = new URL(request.url).pathname;
+    const encoded = pathname.slice(pathname.indexOf(marker) + marker.length);
+    let requested: string;
+    try {
+      requested = decodeURIComponent(encoded);
+    } catch {
+      return HttpResponse.json({ error: "page not found" }, { status: 404 });
+    }
+    const page = pages.find((candidate) => candidate.path === requested);
+    if (page === undefined) {
+      return HttpResponse.json({ error: "page not found" }, { status: 404 });
+    }
+    return HttpResponse.json(page);
+  }),
+
+  // getRepoChangelog (spec 1.2.0): docz-site serves a snapshot of its
+  // pre-move CHANGELOG.md; docz-api exercises the
+  // empty-but-present "" shape. Everything else 404s DETERMINISTICALLY
+  // — never fall through to faker, which would fabricate changelogs
+  // for repos whose snapshot never opted in.
+  http.get("*/api/v1/repos/:owner/:name/changelog", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    if (key === "donaldgifford/docz-site") {
+      return HttpResponse.json({
+        repo: key,
+        changelog_md: doczSiteChangelog,
+        changelog_sha: "fixture-changelog-sha-docz-site",
+      });
+    }
+    if (key === "donaldgifford/docz-api") {
+      return HttpResponse.json({
+        repo: key,
+        changelog_md: "",
+        changelog_sha: "fixture-changelog-sha-docz-api",
+      });
+    }
+    return HttpResponse.json({ error: "changelog not found" }, { status: 404 });
+  }),
+
+  // getRepoIndex (spec 1.1.0, DESIGN-0003): docz-api has a curated
+  // index.md; docz-site 404s to exercise the generated-home fallback.
+  http.get("*/api/v1/repos/:owner/:name/index", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    if (DEMO_TYPES[key] === undefined) {
+      return undefined;
+    }
+    if (key === "donaldgifford/docz-api") {
+      return HttpResponse.json({
+        repo: key,
+        index_md: doczApiIndex,
+        index_sha: "fixture-index-sha-docz-api",
+      });
+    }
+    return HttpResponse.json({ error: "index not found" }, { status: 404 });
+  }),
+
+  http.get("*/api/v1/repos/:owner/:name/types", ({ params }) => {
+    const types = DEMO_TYPES[repoKey(str(params.owner), str(params.name))];
+    if (types === undefined) {
+      return undefined;
+    }
+    return HttpResponse.json({ types });
+  }),
+
+  // `{type}` resolves by canonical name, id_prefix, or alias, exactly
+  // like docz-api's path resolution; unknown types 404.
+  http.get("*/api/v1/repos/:owner/:name/types/:type/docs", ({ params }) => {
+    const key = repoKey(str(params.owner), str(params.name));
+    const types = DEMO_TYPES[key];
+    if (types === undefined) {
+      return undefined;
+    }
+    const docType = resolveDocType(types, str(params.type));
+    if (docType === undefined) {
+      return HttpResponse.json({ error: "type not found" }, { status: 404 });
+    }
+    const docs = DEMO_DOCS.filter(
+      (doc) => doc.repo === key && doc.type === docType.name,
+    ).map(summary);
+    return HttpResponse.json({ docs });
+  }),
+
+  http.get(
+    "*/api/v1/repos/:owner/:name/types/:type/docs/:docId",
+    ({ params }) => {
+      const key = repoKey(str(params.owner), str(params.name));
+      const types = DEMO_TYPES[key];
+      if (types === undefined) {
+        return undefined;
+      }
+      const docType = resolveDocType(types, str(params.type));
+      if (docType === undefined) {
+        return HttpResponse.json({ error: "type not found" }, { status: 404 });
+      }
+      const doc = DEMO_DOCS.find(
+        (candidate) =>
+          candidate.repo === key &&
+          candidate.type === docType.name &&
+          candidate.doc_id.toLowerCase() === str(params.docId).toLowerCase(),
+      );
+      if (doc === undefined) {
+        return HttpResponse.json({ error: "doc not found" }, { status: 404 });
+      }
+      return HttpResponse.json(doc);
+    },
+  ),
+
+  http.get("*/api/v1/search", ({ request }) => {
+    const url = new URL(request.url);
+    const q = url.searchParams.get("q") ?? "";
+    const repo = url.searchParams.get("repo");
+    const type = url.searchParams.get("type");
+    const status = url.searchParams.get("status");
+    const author = url.searchParams.get("author");
+    const source = url.searchParams.get("source");
+    const sort = url.searchParams.get("sort");
+
+    // The operation's only 4xx (spec 1.5.0). Filter values are NOT
+    // validated upstream — an unknown facet value just matches nothing
+    // — so `sort` is the one parameter that can be wrong.
+    if (sort !== null && !SORTS.has(sort)) {
+      return HttpResponse.json({ error: "invalid sort" }, { status: 400 });
+    }
+
+    const matches = DEMO_DOCS.filter((doc) => {
+      if (source === "page") return false;
+      if (repo !== null && doc.repo !== repo) return false;
+      if (type !== null && doc.type !== type) return false;
+      if (status !== null && doc.status !== status) return false;
+      if (author !== null && doc.author !== author) return false;
+      if (q === "") return true;
+      const haystack = `${doc.title}\n${doc.raw_md ?? ""}`.toLowerCase();
+      return haystack.includes(q.toLowerCase());
+    });
+
+    // Pages ride the same index (spec 1.4.1): doc-only filters drop
+    // them, q matches title+body, and doc-only hit fields are "".
+    const pageMatches =
+      type !== null || status !== null || author !== null || source === "doc"
+        ? []
+        : Object.values(DEMO_PAGES)
+            .flat()
+            .filter((page) => {
+              if (repo !== null && page.repo !== repo) return false;
+              if (q === "") return true;
+              const haystack = `${page.title}\n${page.raw_md}`.toLowerCase();
+              return haystack.includes(q.toLowerCase());
+            });
+
+    // Facets and the estimated total cover the whole filtered set (as
+    // Meilisearch does); only `hits` is the offset/limit window.
+    const offset = intParam(url, "offset", 0);
+    const limit = intParam(url, "limit", 20);
+    /*
+     * Spec 1.5.0 dates both record kinds: docs forward their own
+     * `updated_at` and frontmatter `created`; pages carry the repo's
+     * onboard stamp and an empty `created`, because a published page
+     * has no authored date.
+     */
+    const allHits: SearchHit[] = [
+      ...matches.map((doc) => ({
+        source: "doc" as const,
+        repo: doc.repo,
+        doc_id: doc.doc_id,
+        type: doc.type,
+        title: doc.title,
+        path: doc.path,
+        status: doc.status,
+        author: doc.author,
+        created: doc.created,
+        snippet: snippetFor(doc, q),
+        updated_at: doc.updated_at,
+      })),
+      ...pageMatches.map((page) => ({
+        source: "page" as const,
+        repo: page.repo,
+        doc_id: "",
+        type: "",
+        title: page.title,
+        path: page.path,
+        status: "",
+        author: "",
+        created: "",
+        snippet: snippetFor(page, q),
+        updated_at: PAGE_INGESTED_AT[page.repo] ?? "",
+      })),
+    ];
+    const hits = sortHits(allHits, sort).slice(offset, offset + limit);
+
+    const facet = (key: (doc: Document) => string) =>
+      Object.fromEntries(
+        Object.entries(
+          matches.reduce<Record<string, number>>((acc, doc) => {
+            acc[key(doc)] = (acc[key(doc)] ?? 0) + 1;
+            return acc;
+          }, {}),
+        ),
+      );
+    // The repo facet spans docs AND pages; source counts omit zeros
+    // (facets never carry zero-hit keys).
+    const repoFacet = facet((doc) => doc.repo);
+    for (const page of pageMatches) {
+      repoFacet[page.repo] = (repoFacet[page.repo] ?? 0) + 1;
+    }
+    const sourceFacet: Record<string, number> = {};
+    if (matches.length > 0) sourceFacet.doc = matches.length;
+    if (pageMatches.length > 0) sourceFacet.page = pageMatches.length;
+
+    return HttpResponse.json({
+      query: q,
+      estimated_total_hits: allHits.length,
+      hits,
+      facets: {
+        repo: repoFacet,
+        type: facet((doc) => doc.type),
+        status: facet((doc) => doc.status),
+        author: facet((doc) => doc.author),
+        source: sourceFacet,
+      },
+    });
+  }),
+
+  // Deterministic demo identity — the faker handler's random strings
+  // would make the topbar avatar/initial flicker between runs.
+  http.get("*/api/v1/auth/session", () =>
+    HttpResponse.json({
+      provider: "github",
+      subject: "1138",
+      login: "donaldgifford",
+      email: "donald@demo.docz",
+    }),
+  ),
+
+  http.post("*/api/v1/auth/logout", () =>
+    HttpResponse.json({ status: "signed out" }),
+  ),
+];

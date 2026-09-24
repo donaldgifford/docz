@@ -15,10 +15,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@main
+        # No floating v3 tag exists upstream — pin the full release tag
+        # (Renovate keeps it current). Carried over from docz-site.
+        uses: trufflesecurity/trufflehog@v3.95.9
         with:
-          # Fail only on verified (live) secrets. Unverified/unknown results are
-          # dominated by placeholder dev DSNs in .env.example, deploy/compose.yaml
-          # and test fixtures (e.g. postgres://docz:secret@localhost) — not real
-          # credentials, so scanning verified-only avoids false-positive failures.
-          extra_args: --results=verified
+          # verified,unknown: a credential-shaped string trufflehog cannot
+          # verify fails the job too (IMPL-0020 Open Question 4, docz-site's
+          # rule kept). The known placeholder DSNs in history are excluded by
+          # path, each with its reason, in .github/trufflehog-exclude.txt.
+          extra_args: >-
+            --results=verified,unknown
+            --exclude-paths=.github/trufflehog-exclude.txt

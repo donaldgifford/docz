@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+dist-msw
+
+# Playwright
+test-results
+playwright-report
+e2e
+
+# Git
+.git
+.gitignore
+
+# Environment files (use runtime config instead)
+.env*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Testing
+coverage
+# Server suites are not runtime code and never belong in the build
+# context (the server ships as a bundle; see Dockerfile).
+server/*.test.ts
+
+# Misc
+README.md

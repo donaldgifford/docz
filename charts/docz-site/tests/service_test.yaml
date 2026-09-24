@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: service
+templates:
+  - templates/service.yaml
+tests:
+  - it: should create a ClusterIP service by default
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP
+
+  - it: should expose a single http port
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1
+      - contains:
+          path: spec.ports
+          content:
+            port: 80
+            targetPort: http
+            protocol: TCP
+            name: http
+
+  - it: should use a custom service port when set
+    set:
+      service:
+        port: 8080
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            port: 8080
+            targetPort: http
+            protocol: TCP
+            name: http
+
+  - it: should use selector labels
+    asserts:
+      - isSubset:
+          path: spec.selector
+          content:
+            app.kubernetes.io/name: docz-site
+            app.kubernetes.io/instance: RELEASE-NAME

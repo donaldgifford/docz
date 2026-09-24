@@ -5,6 +5,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Bug Fixes
+
+- *(ui)* Clear trivy's two HIGH advisories in bun.lock
+- Stop quoting placeholder DSNs and a docz-api URL in new files
+
 ### Documentation
 
 - IMPL-0019 Phase 5 integration and release checks pass; tag deferred to a human
@@ -17,6 +22,16 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Resolve IMPL-0020 open questions (all a); approve DESIGN-0017
 - *(impl)* IMPL-0020 lint-actions is clean after the publish changes
 - *(impl)* Record the IMPL-0020 Phase 0 publish dry run
+- *(impl)* Record IMPL-0020 Phase 1 — docz-site sweep merged at f1203c9
+- *(impl)* Record the IMPL-0020 Phase 2 graft commands
+- *(ui)* Retarget links to docz-api's old repository at docz
+- *(impl)* IMPL-0020 Phase 2 local gates pass
+- *(impl)* IMPL-0020 Phase 2 PR opened ([#130](https://github.com/donaldgifford/docz/issues/130))
+- *(impl)* Record the IMPL-0020 Phase 2 CI fixes
+
+### Testing
+
+- *(ui)* Snapshot the archived fixtures into src/mocks/content
 
 ### Miscellaneous Tasks
 
@@ -28,6 +43,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Add the ui path-filter output
 - *(mise)* Pin bun 1.3.14 and node 24.14.0 for ui/
 - *(renovate)* Extend the node preset for ui/
+- *(ui)* Fence ui/ off from the root Go module
+- *(ui)* Fold docz-site's repository-level files into the root
+- Fold docz-site's .github into the root and delete ui/.github
+- Add the ui and ui-e2e jobs; helm-unittest walks every chart
+- *(just)* Run ui.just from ui/ and point it at the moved chart and stack
+- *(just)* Root ci gate runs the ui chain
+- *(ui)* Install prettier for the format check
+- *(trufflehog)* Exclude the exclude file's own history
+- *(codeql)* Ignore two non-production ui files, with reasons
 
 ## [2.0.0-beta.3] - 2026-09-23
 

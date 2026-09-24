@@ -1,0 +1,157 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.description" . }}
+
+## What this deploys
+
+`docz-site` is the web UI for
+[docz-api](https://github.com/donaldgifford/docz) — a cross-repo docz
+reader, search directory, and repo pages. It ships as a single-page app
+served by a small Bun process that also reverse-proxies the API surface
+(`/api`, `/auth`, `/webhooks`, `/openapi.yaml`) to docz-api, so the browser
+and API share **one origin**: no CORS, and the httpOnly `docz_session`
+cookie is first-party. Everything is served on a single HTTP port
+(`config.port`, default `8080`), including the `/healthz` probe endpoint.
+
+The chart renders a `Deployment`, a `Service`, and a `ServiceAccount`, with
+optional `Ingress`, Gateway API `HTTPRoute`, and `HorizontalPodAutoscaler`.
+The site holds **no secrets** — authentication is entirely docz-api's, over
+the session cookie — so there is no Secret in this chart.
+
+The image runs on a read-only rootfs as the `oven/bun` image's non-root
+`bun` user (UID/GID 1000).
+
+## Installation
+
+The chart is published as an OCI artifact to GHCR:
+
+```bash
+helm install docz-site \
+  oci://ghcr.io/donaldgifford/charts/docz-site \
+  --version {{ template "chart.version" . }} \
+  --namespace docz-site \
+  --create-namespace \
+  --set config.doczApiUrl=http://docz-api:8080
+```
+
+## Prerequisites
+
+- Kubernetes 1.28+
+- Helm 3.14+ or 4.x (OCI support)
+- A reachable **docz-api** in the cluster (or elsewhere) for
+  `config.doczApiUrl` to point at. Deploy it with the
+  [docz-api chart](https://github.com/donaldgifford/docz/tree/main/charts/docz-api).
+
+## Configuration
+
+Minimal `values.yaml`:
+
+```yaml
+config:
+  # In-cluster docz-api Service. Required — the API proxy 502s without it.
+  doczApiUrl: "http://docz-api:8080"
+```
+
+### The API proxy contract
+
+`config.doczApiUrl` is the single required value. The site process proxies
+`/api`, `/auth`, `/webhooks`, and `/openapi.yaml` to it verbatim (OAuth 302s
+are passed through, not followed server-side). Point it at the in-cluster
+docz-api `Service` so the two share an origin.
+
+### Login providers
+
+`config.authProviders` (comma-separated: `github`, `okta`, `keycloak`)
+chooses the login buttons shown on `/login`. The server injects it into the
+SPA at runtime (whitelist-validated), so one image serves any combo — no
+rebuild. It must match docz-api's own `AUTH_PROVIDERS`, and docz-api owns
+the actual OAuth/OIDC exchange plus the GitHub App ingest ("machine
+identity"), which is independent of the login provider. Empty or unknown
+values fall back to `github`.
+
+```yaml
+config:
+  authProviders: "keycloak,github" # Keycloak login; GitHub App ingest is docz-api's
+```
+
+### Nav pins
+
+`config.navLinks` pins up to six deployment-chosen links into the site
+topbar (between Repos and the session menu). The list renders into
+`DOCZ_NAV_LINKS` as JSON and the server whitelist-validates every entry
+(short label charset, same-origin app-path hrefs); invalid entries
+degrade to fewer or no pins — never a broken page. Leave it empty for a
+pin-free topbar.
+
+```yaml
+config:
+  navLinks:
+    - label: "RFCs"
+      href: "/donaldgifford/rfcs"
+    - label: "Team Docs"
+      href: "/donaldgifford/docs/docs"
+```
+
+### Observability
+
+Logging is structured JSON on stdout by default. `config.logLevel`
+takes `debug`, `info`, `warn`, or `error`; `debug` adds a line per
+request plus the proxied `/auth/*` flow, which is the level to reach
+for when troubleshooting an Okta or Keycloak login. Credential-bearing
+values (`code`, `state`, cookies) are redacted at every level.
+
+The probes are deliberately split, because Kubernetes responds to them
+differently. `livenessProbe` stays on `/healthz`, which is
+unconditional — a failing liveness probe **restarts** the container,
+and restarting cannot fix a broken image. `readinessProbe` points at
+`/readyz`, which verifies the built assets are servable and the runtime
+config validated — a failing readiness probe **holds traffic**, so a
+bad deploy stalls the rollout and the previous ReplicaSet keeps
+serving. `/readyz` makes no call to docz-api by design: gating
+readiness on the API would evict every pod from the Service the moment
+it blipped.
+
+`metrics.enabled` (default `true`) exposes Prometheus metrics on
+`/metrics`. When disabled the endpoint returns an explicit `404`
+rather than falling through to the SPA, so a scraper is told the
+endpoint is absent instead of being handed `index.html` with a `200`.
+Set `serviceMonitor.enabled: true` for a Prometheus Operator
+`ServiceMonitor` — it is gated on **both** flags.
+
+```yaml
+metrics:
+  enabled: true
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  labels:
+    release: kube-prometheus-stack
+```
+
+Alongside the four `docz_site_*` instruments, `prom-client`'s default
+process and runtime metrics are exported. One caveat worth knowing
+before you build dashboards: **`nodejs_gc_duration_seconds` is declared
+but never samples**, because the server runs on Bun rather than Node
+and Bun does not emit the GC performance entries that metric is fed
+from. A stock Node.js dashboard will show empty GC panels. Every other
+`nodejs_*` metric (event-loop lag, heap size, handles) does report.
+
+## Exposure
+
+The site is a `ClusterIP` Service by default. Front it with one of:
+
+- **Ingress** — set `ingress.enabled: true` with `ingress.hosts` (and
+  `ingress.tls` for HTTPS).
+- **Gateway API HTTPRoute** — set `httpRoute.enabled: true` with
+  `httpRoute.parentRefs` and `httpRoute.hostnames`; an empty `rules` list
+  renders a default rule to the Service.
+
+## Scaling
+
+Enable `autoscaling.enabled: true` for a `HorizontalPodAutoscaler` (CPU
+target by default; add `autoscaling.targetMemoryUtilizationPercentage` for a
+memory metric). The SPA server is stateless, so horizontal scaling is safe.
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}
