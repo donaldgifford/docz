@@ -81,7 +81,7 @@ Dense chip run, the shape of a decisions list: `fetcher.ts` throws
   it is a broken href by design: [package.json](../../package.json).
 - A root-absolute app path is left alone: [the directory](/?type=design).
 - An in-page anchor: [back to headings](#headings).
-- A bare autolink: <https://github.com/donaldgifford/docz-api>.
+- A bare autolink: <https://github.com/donaldgifford/docz>.
 
 ## Lists
 

@@ -2,12 +2,14 @@
 # with --results=verified,unknown (IMPL-0020 Open Question 4), so a
 # credential-shaped string it cannot verify fails the job. Each entry below
 # is a placeholder DSN, never a real credential, with the reason beside it.
+# The DSNs are described rather than quoted: quoting them here is itself a
+# finding.
 #
-# postgres://docz:secret@db:5432 — the example stack in docz-api's
+# A placeholder Postgres DSN (user docz, host db) — the example stack in docz-api's
 # DESIGN-0001, quoted in its archived copy, in docz's DESIGN-0008, and in
 # the pkg/design golden corpus that snapshots it.
 ^docs/archive/api/design/0001-docz-api-cross-repo-docz-registry-and-ingestion-service\.md$
 ^docs/design/0008-docz-api-cross-repo-docz-registry-and-ingestion-service\.md$
 ^pkg/design/testdata/api-design-0001(\.orig)?\.md$
-# postgres://u:p@db:5432 — a config parsing test's fixture.
+# A placeholder Postgres DSN (user u, host db) — a config parsing test's fixture.
 ^internal/config/config_test\.go$
