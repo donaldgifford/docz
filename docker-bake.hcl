@@ -91,14 +91,15 @@ target "dev-api" {
   output   = ["type=docker"]
 }
 
-// CI validation build — multi-arch, no push.
+// CI validation build — multi-arch, no push. Each ci target has its own gha
+// cache scope, so the two images do not overwrite each other's cache.
 target "ci-api" {
   inherits   = ["_common_api"]
   tags       = tags(API_IMAGE, VERSION)
   platforms  = ["linux/amd64", "linux/arm64"]
   output     = ["type=cacheonly"]
-  cache-from = ["type=gha"]
-  cache-to   = ["type=gha,mode=max"]
+  cache-from = ["type=gha,scope=ci-api"]
+  cache-to   = ["type=gha,mode=max,scope=ci-api"]
 }
 
 // Populated by docker/metadata-action in CI with computed tags and labels.
@@ -149,8 +150,8 @@ target "ci-ui" {
   tags       = tags(UI_IMAGE, VERSION)
   platforms  = ["linux/amd64", "linux/arm64"]
   output     = ["type=cacheonly"]
-  cache-from = ["type=gha"]
-  cache-to   = ["type=gha,mode=max"]
+  cache-from = ["type=gha,scope=ci-ui"]
+  cache-to   = ["type=gha,mode=max,scope=ci-ui"]
 }
 
 target "docker-metadata-action-ui" {

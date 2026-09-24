@@ -458,7 +458,11 @@ image build, the fixtures, the local stacks, and the URLs.
   docker-metadata-action-<component>` to metadata-action. With one shared
   sink, `release-ui` inherited docz-api's default tags. `group "default"`
   builds `dev-api` and `dev-ui`
-- [ ] `ci.yml` `docker-build`: run when `docker` **or** `ui` changed
+- [x] `ci.yml` `docker-build`: run when `docker` **or** `ui` changed. The PR
+  step's `*.output=type=registry` narrowed to `ci-api.output`, so `ci-ui`
+  stays cache-only until the Phase 4 GHCR grant, and each `ci-` target
+  took its own gha cache `scope` in the bake file in place of the
+  workflow's `*.cache-*` overrides
 - [ ] `ui.just`: a `docker-build` recipe spelling
   `docker build -f ../Dockerfile.ui --build-context spec=../api .`
 - [ ] `docker buildx bake dev-ui`, then run the image with `DOCZ_API_URL`
