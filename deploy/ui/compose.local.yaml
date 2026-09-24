@@ -1,0 +1,31 @@
+# Local build/run of JUST docz-site against an already-running docz-api
+# local stack (docz-api/deploy/compose.local.yaml — project
+# `docz-api-local`). Joins that stack's network so the proxy reaches
+# the api by service name; publishes :8090 to stay clear of docz-api's
+# :8080. Iterate with `just local-up` (rebuilds the image and recreates
+# the container on change) and stop with `just local-down`.
+#
+# Cookie note: docz-api's AUTH_REDIRECT_BASE points at :8080, but
+# cookies ignore ports — a session minted there is sent to :8090 too.
+---
+name: docz-site-local
+
+services:
+  docz-site:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: docz-site:local
+    container_name: docz-site-local
+    restart: unless-stopped
+    environment:
+      DOCZ_API_URL: http://docz-api:8080
+    ports:
+      - "8090:8080"
+    networks:
+      - docz-api-local
+
+networks:
+  docz-api-local:
+    external: true
+    name: docz-api-local_default

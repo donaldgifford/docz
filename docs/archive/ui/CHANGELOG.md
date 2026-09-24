@@ -1,0 +1,223 @@
+# Changelog
+
+All notable changes to this project are documented here. The format is
+based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
+this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Documentation
+
+- Confirm both chart publishes and close out IMPL-0007 ([#37](https://github.com/donaldgifford/docz-site/issues/37))
+
+## [0.10.0] - 2026-09-20
+
+### Features
+
+- *(server)* Prometheus metrics and OpenTelemetry tracing ([#36](https://github.com/donaldgifford/docz-site/issues/36))
+
+## [0.9.0] - 2026-09-20
+
+### Features
+
+- *(server)* Structured logging, split probes, and a route error boundary ([#35](https://github.com/donaldgifford/docz-site/issues/35))
+
+### Bug Fixes
+
+- *(chart)* Bump chart to 0.1.8 and appVersion to 0.8.0 ([#32](https://github.com/donaldgifford/docz-site/issues/32))
+
+### Documentation
+
+- INV-0006, DESIGN-0006, and IMPL-0007 for server observability ([#34](https://github.com/donaldgifford/docz-site/issues/34))
+
+## [0.8.0] - 2026-09-15
+
+### Features
+
+- Adopt docz-api spec 1.5.0 and mermaid 12 ([#31](https://github.com/donaldgifford/docz-site/issues/31))
+
+## [0.7.1] - 2026-09-11
+
+### Bug Fixes
+
+- *(reader)* Stop the scroll spy turning its own file binary ([#28](https://github.com/donaldgifford/docz-site/issues/28))
+
+## [0.7.0] - 2026-09-11
+
+### Features
+
+- *(reader)* DESIGN-0005 typography overhaul — serif article, status-led directory ([#27](https://github.com/donaldgifford/docz-site/issues/27))
+
+### Documentation
+
+- IMPL-0005 close-out — statuses and index tables ([#24](https://github.com/donaldgifford/docz-site/issues/24))
+- Tick IMPL-0005 testing-plan summary boxes ([#25](https://github.com/donaldgifford/docz-site/issues/25))
+
+## [0.6.0] - 2026-08-30
+
+### Features
+
+- Render non-docz pages — reader, nav, and search surfaces (IMPL-0005) ([#23](https://github.com/donaldgifford/docz-site/issues/23))
+
+### Documentation
+
+- DESIGN-0004 — render non-docz pages from the docz v1.2.0 api block ([#22](https://github.com/donaldgifford/docz-site/issues/22))
+
+## [0.5.0] - 2026-08-28
+
+### Features
+
+- No-auth (none) mode and session-unavailable 503 handling ([#20](https://github.com/donaldgifford/docz-site/issues/20))
+
+### Documentation
+
+- DESIGN-0003 + IMPL-0004 — no-auth mode and session-unavailable handling ([#19](https://github.com/donaldgifford/docz-site/issues/19))
+
+## [0.4.0] - 2026-08-11
+
+### Features
+
+- *(shell)* Deployment nav pins and docs-type curation (IMPL-0003 Phase 3) ([#15](https://github.com/donaldgifford/docz-site/issues/15))
+
+## [0.3.0] - 2026-08-11
+
+### Features
+
+- *(reader)* Relative doc links resolve in rendered bodies (IMPL-0003 Phase 2) ([#14](https://github.com/donaldgifford/docz-site/issues/14))
+
+## [0.2.0] - 2026-08-11
+
+### Features
+
+- *(changelog)* Repo changelog page (IMPL-0003 Phase 1) ([#13](https://github.com/donaldgifford/docz-site/issues/13))
+
+### Documentation
+
+- INV-0002–0005, DESIGN-0002, and IMPL-0003 ([#12](https://github.com/donaldgifford/docz-site/issues/12))
+
+## [0.1.2] - 2026-07-23
+
+### Features
+
+- *(auth)* Runtime-configurable login providers via DOCZ_AUTH_PROVIDERS ([#11](https://github.com/donaldgifford/docz-site/issues/11))
+
+## [0.1.1] - 2026-07-16
+
+### Bug Fixes
+
+- *(chart)* Align appVersion with the bare-semver image tag
+
+## [0.1.0] - 2026-07-16
+
+### Features
+
+- *(scaffold)* Add Vite + React 19 + strict TS project scaffold
+- *(theme)* Port mockup :root tokens into Tailwind v4 @theme
+- *(theme)* Self-host IBM Plex + Source Serif 4 via @fontsource
+- *(shell)* App shell topbar + lazy createBrowserRouter route table
+- *(api)* TanStack Query provider and typed fetch mutator
+- *(api)* Vendor docz-api openapi.yaml at info.version 1.0.0
+- *(api)* Orval config generating react-query client from vendored spec
+- *(ci)* Add gen-api-check.sh drift gate for the generated client
+- *(dev)* MSW-backed dev mode for just dev-msw
+- *(markdown)* Preprocess raw_md — strip frontmatter and docz toc block
+- *(markdown)* Sanitize schema — GitHub default with pinned code classes
+- *(markdown)* Unified sanitizing pipeline with ToC collection and Shiki
+- *(colors)* Type/status color system — curated map, FNV-1a fallback
+- *(components)* TypeBadge, StatusBadge, StatusPill per mockup styles
+- *(reader)* Doc route with four fetch states and pipeline rendering
+- *(reader)* Center column header and doc-prose styles
+- *(reader)* Right rail — ToC, trimmed metadata, formats list
+- *(reader)* Position-only lifecycle rail from listTypes statuses
+- *(mocks)* Curated demo-org fixtures layered over faker handlers
+- *(directory)* Typed URL search-param helper with round-trip tests
+- *(directory)* URL-bound search directory with debounced query
+- *(directory)* Repo picker, type chips, result count, clear filters
+- *(directory)* Load-more pagination windowed by URL offset
+- *(directory)* Contextual empty states completing the four-state matrix
+- *(search)* Inert snippet renderer honoring only `<em>` match markers
+- *(palette)* Cmdk command palette with grouped results and preview
+- *(shell)* Topbar search affordance opens the command palette
+- *(api)* Re-vendor docz-api spec 1.1.0 with getRepoIndex
+- *(repos)* Facts hook and /repos grid backed by search facets
+- *(repos)* Shared TechDocs-style repo nav
+- *(repos)* Repo home rendering index.md with generated fallback
+- *(repos)* Synthesized README-style type pages in a shared frame
+- *(reader)* Mount the reader inside the three-column portal
+- *(responsive)* Full-screen palette and repo-nav drawer on narrow viewports
+- *(xrefs)* Link sibling doc ids in rendered markdown bodies
+- *(a11y)* Axe sweep, badge contrast gate, and keyboard fixes
+- *(perf)* Bundle-size budget in CI and hover prefetch for doc links
+- *(e2e)* Playwright journeys and full-rule axe against an MSW preview build
+- *(deploy)* Multi-stage Dockerfile, Bun static server, same-origin compose stack
+- *(auth)* /login provider selection page
+- *(auth)* 401 redirects to /login with destination stash and restore
+- *(auth)* Session-backed avatar menu with logout
+- *(auth)* Remember last-used provider in localStorage
+- *(repo-nav)* Collapsible per-type doc drawers
+- *(session-menu)* Hide the topbar Sign in link on /login
+- *(palette)* Prefetch the highlighted hit's doc
+- *(markdown)* Codeblock chrome — language badge and fence-meta caption
+- *(markdown)* GitHub alert callouts as styled admonitions
+- *(markdown)* Render mermaid fences as lazy, token-themed diagrams
+- *(reader)* Metadata table header, ToC-first rail, lifecycle drawer
+- *(palette)* Lead the empty query with recently-opened docs
+- *(reader)* Copy-link affordance on section headings
+- *(chart)* Add docz-site Helm chart
+
+### Bug Fixes
+
+- *(ci)* Unbreak PR checks — bash shell, changelog, trufflehog pin
+- *(ci)* Format phase-1 files and redact fixture DSN example
+- *(api)* Tolerate JSON null where docz-api marshals empty Go slices
+- *(a11y)* Make scrollable code blocks keyboard-focusable named regions
+- *(markdown)* Eliminate exponential backtracking in leading-h1 regex
+- *(theme)* Style doc-prose h1 and stabilize the viewport gutter
+- *(bundle-budget)* Measure the eager import closure, not just index-*.js
+
+### Documentation
+
+- *(impl)* Add inherited-workflow pruning and dependabot removal to phase 0
+- *(readme)* Rewrite quickstart for the docz-site stack
+- *(impl)* Clarify rfc-site sweep criterion to exclude self-references
+- *(impl)* Record Phase 1 verification note
+- *(claude)* Record fixtures layout and phase-1 CI lessons
+- *(readme)* Add test, build, and deploy sections; close Phase 4 sweep
+- *(impl)* Record Phase 4 success-criteria verification
+- *(impl)* Verify Phase 5 acceptance criteria against the live stack
+- *(impl)* Check off the completed testing-plan items
+- *(claude)* Note nav drawer + doc-prose h1 guidance
+- *(inv)* INV-0001 — reader UX polish, root causes and QoL backlog
+- *(inv)* Add reader metadata-header item to the QoL backlog
+- *(inv)* Record RFC rendering gaps — alerts, mermaid, code chrome
+- *(inv)* Map rfc-site prior art onto the rendering backlog
+- *(impl)* IMPL-0002 — phased plan for the INV-0001 reader-polish backlog
+- *(impl)* Record IMPL-0002 open-question answers (all a)
+- README refresh, changelog regen, INV-0001 concluded
+
+### Testing
+
+- *(scaffold)* Vitest + Testing Library + MSW jsdom suite with smoke test
+- *(markdown)* XSS gate — 22 hostile payloads, benign suite, slug stability
+- *(reader)* Pin pipeline memoization per (doc_id, content_hash)
+- *(reader)* Four-state matrix, metadata omission, lifecycle, ToC anchors
+- *(phase-2)* Close out component-test coverage and verify criteria
+- *(phase-3)* Four-state coverage for repo pages and criteria verification
+- *(auth)* E2e login loop with a mocked provider callback
+- *(palette)* Prove the prefetched hit opens without a second getDoc
+
+### Miscellaneous Tasks
+
+- Initial import of design docs, impl plan, mockup, and scaffold [skip ci]
+- *(sweep)* Remove rfc-site template scaffold
+- *(sweep)* Remove superseded docz-site-mockup3.html
+- *(sweep)* Prune Go-specific workflows, retarget CodeQL to TypeScript
+- *(sweep)* Remove dependabot in favor of renovate
+- *(scaffold)* Rewrite package.json as docz-site with core deps
+- *(spec)* Add informational OpenAPI spec-drift workflow
+- *(lint)* ESLint flat config + Prettier normalization
+- *(tooling)* Rewrite mise.toml and justfile for the docz-site stack
+- Add ci.yml running the just ci chain via mise
+- Untrack session-local Claude loop state
+- *(deploy)* Local compose + just targets for the site container
+- *(chart)* Lint/test the chart in CI and publish to GHCR
+

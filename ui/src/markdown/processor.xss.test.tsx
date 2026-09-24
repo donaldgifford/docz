@@ -1,0 +1,381 @@
+/*
+ * The XSS gate for the reader pipeline. Every payload below must come
+ * out neutralized — no executable element, no event handler, no
+ * scriptable URL — while the benign suite proves sanitization doesn't
+ * maim real docz markdown. This suite gates CI; if a schema or
+ * pipeline change breaks it, the change is wrong, not the test.
+ */
+import { render, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { _resetMermaidBlock } from "@/markdown/mermaid-block";
+import { renderMarkdown } from "@/markdown/processor";
+
+// Controllable mermaid mock: jsdom can't run the real renderer, so
+// these tests pin OUR handling of its output/failure; the real
+// strict-mode render is exercised in e2e.
+const mermaidMock = vi.hoisted(() => ({
+  initialize: vi.fn(),
+  render: vi.fn(),
+}));
+vi.mock("mermaid", () => ({ default: mermaidMock }));
+
+async function renderToDom(md: string): Promise<HTMLElement> {
+  const { content } = await renderMarkdown(md);
+  const { container } = render(<>{content}</>);
+  return container;
+}
+
+const FORBIDDEN_ELEMENTS =
+  "script, iframe, object, embed, svg, foreignObject, math, style, form, link, meta, base";
+
+const URL_ATTRIBUTES = ["href", "src", "xlink:href", "action", "formaction"];
+
+function assertNeutralized(container: HTMLElement): void {
+  const forbidden = [...container.querySelectorAll(FORBIDDEN_ELEMENTS)].filter(
+    // The mermaid figure's svg is the ONE sanctioned svg — generated
+    // by mermaid.render (strict mode), never document HTML. Anything
+    // nested inside it (script etc.) still matches the selector and
+    // still fails here.
+    (el) =>
+      !(
+        el.tagName.toLowerCase() === "svg" &&
+        el.closest(".mermaid-figure") !== null
+      ),
+  );
+  expect(forbidden).toHaveLength(0);
+
+  for (const el of container.querySelectorAll("*")) {
+    for (const attr of el.attributes) {
+      expect(attr.name, `${el.tagName} carries ${attr.name}`).not.toMatch(
+        /^on/i,
+      );
+      if (attr.name === "style") {
+        // Shiki inlines token colors AFTER sanitize (trusted,
+        // generated); document-supplied style must never survive
+        // anywhere else.
+        expect(
+          el.closest("pre.shiki"),
+          `${el.tagName} carries style outside a Shiki block`,
+        ).not.toBeNull();
+      }
+      if (URL_ATTRIBUTES.includes(attr.name)) {
+        expect(
+          attr.value.trim().toLowerCase(),
+          `${el.tagName} ${attr.name} keeps a scriptable URL`,
+        ).not.toMatch(/^(javascript|data|vbscript):/);
+      }
+    }
+  }
+}
+
+describe("XSS payloads are neutralized", () => {
+  it.each([
+    ["inline script", "<script>alert(1)</script>"],
+    ["remote script", '<script src="https://evil.example/x.js"></script>'],
+    ["img onerror", '<img src="x" onerror="alert(1)">'],
+    ["javascript: markdown link", "[click me](javascript:alert(1))"],
+    [
+      "javascript: markdown link, entity-encoded",
+      "[click me](javascript&#58;alert(1))",
+    ],
+    ["javascript: raw anchor", '<a href="javascript:alert(1)">x</a>'],
+    ["javascript: mixed case", '<a href="JaVaScRiPt:alert(1)">x</a>'],
+    ["javascript: with whitespace", '<a href=" \tjavascript:alert(1)">x</a>'],
+    ["onclick handler", '<div onclick="alert(1)">content</div>'],
+    [
+      "onmouseover on a benign link",
+      '<a href="https://ok.example" onmouseover="alert(1)">x</a>',
+    ],
+    ["iframe", '<iframe src="https://evil.example"></iframe>'],
+    ["object", '<object data="https://evil.example/x.swf"></object>'],
+    ["embed", '<embed src="https://evil.example/x.swf">'],
+    ["svg onload", "<svg onload=alert(1)><circle r=1 /></svg>"],
+    [
+      "svg foreignObject smuggling",
+      "<svg><foreignObject><script>alert(1)</script></foreignObject></svg>",
+    ],
+    [
+      "mathml xlink",
+      '<math><mi xlink:href="javascript:alert(1)">x</mi></math>',
+    ],
+    ["data: markdown link", "[x](data:text/html,<script>alert(1)</script>)"],
+    [
+      "data: image",
+      '<img src="data:image/svg+xml;base64,PHN2Zy9vbmxvYWQ9YWxlcnQoMSk+">',
+    ],
+    ["vbscript: anchor", '<a href="vbscript:msgbox(1)">x</a>'],
+    [
+      "style attribute payload",
+      "<div style=\"background:url('javascript:alert(1)')\">x</div>",
+    ],
+    [
+      "form with formaction",
+      '<form action="https://evil.example"><button formaction="javascript:alert(1)">go</button></form>',
+    ],
+    [
+      "payload nested in benign markdown",
+      '# Title\n\nSome text.\n\n<img src=x onerror=alert(1)>\n\n- list\n- items\n\n<a href="javascript:alert(1)">deep link</a>\n',
+    ],
+  ])("neutralizes %s", async (_name, payload) => {
+    assertNeutralized(await renderToDom(payload));
+  });
+});
+
+describe("code fence meta stays inert", () => {
+  it("drops captions whose meta fails the schema charset", async () => {
+    const container = await renderToDom(
+      '```go "><img src=x onerror=alert(1)>\nx := 1\n```',
+    );
+    assertNeutralized(container);
+    // The caption is gone; the highlighted block itself survives.
+    expect(container.querySelector(".codeblock-header .caption")).toBeNull();
+    expect(container.querySelector("pre.shiki")).not.toBeNull();
+  });
+
+  it("renders charset-passing meta as text, never markup", async () => {
+    const container = await renderToDom("```go onclick=alert(1)\nx := 1\n```");
+    assertNeutralized(container);
+    const caption = container.querySelector(".codeblock-header .caption");
+    expect(caption?.textContent).toBe("onclick=alert(1)");
+  });
+
+  it("gives forged raw-HTML pre attributes no chrome", async () => {
+    const container = await renderToDom(
+      '<pre data-language="go" data-caption="forged"><code>x</code></pre>',
+    );
+    assertNeutralized(container);
+    // sanitize strips data-* from document HTML, so the wrapper and
+    // the language-aware region label never fire for forged markup.
+    expect(container.querySelector(".codeblock")).toBeNull();
+    expect(container.querySelector("pre")?.getAttribute("aria-label")).toBe(
+      "code block",
+    );
+  });
+});
+
+describe("admonition classes stay inert", () => {
+  it("neutralizes payloads inside an alert body", async () => {
+    const container = await renderToDom(
+      '> [!WARNING]\n> <img src=x onerror=alert(1)> and <a href="javascript:alert(1)">x</a>',
+    );
+    assertNeutralized(container);
+    // The admonition itself still renders around the neutralized body.
+    expect(container.querySelector("div.admonition.warning")).not.toBeNull();
+  });
+
+  it("strips class tokens outside the admonition whitelist", async () => {
+    const container = await renderToDom(
+      '<div class="admonition caution topbar sr-only">forged</div>\n\n<span class="anything-else">x</span>',
+    );
+    assertNeutralized(container);
+    const div = container.querySelector("div");
+    // Whitelisted tokens survive as inert styling; the rest are gone.
+    expect(div?.className).toBe("admonition caution");
+    // No whitelisted token → the class list survives empty at most.
+    expect(container.querySelector("span")?.className ?? "").toBe("");
+  });
+});
+
+describe("mermaid blocks stay inert", () => {
+  beforeEach(() => {
+    _resetMermaidBlock();
+    mermaidMock.render.mockReset();
+  });
+
+  it("keeps hostile mermaid source as text when rendering fails", async () => {
+    mermaidMock.render.mockRejectedValue(new Error("strict refused"));
+    const container = await renderToDom(
+      '```mermaid\nflowchart TD\n  A["<img src=x onerror=alert(1)>"] --> B\n```',
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector('[data-mermaid-fallback="failed"]'),
+      ).not.toBeNull();
+    });
+    assertNeutralized(container);
+    // The payload is fallback TEXT, not an element.
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toContain('A["<img src=x');
+  });
+
+  it("injects only mermaid's rendered SVG, nothing from the source", async () => {
+    // Strict-mode mermaid encodes label HTML; mimic that output shape.
+    mermaidMock.render.mockResolvedValue({
+      svg: "<svg><text>A: &lt;img src=x onerror=alert(1)&gt;</text></svg>",
+    });
+    const container = await renderToDom(
+      "```mermaid\nflowchart TD\n  A --> B\n```",
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector("figure.mermaid-figure svg"),
+      ).not.toBeNull();
+    });
+    assertNeutralized(container);
+    expect(container.querySelector("figure.mermaid-figure img")).toBeNull();
+  });
+});
+
+describe("relative link resolution stays inert", () => {
+  // The resolver active, as in the reader: hostile hrefs must come out
+  // either untouched (miss) or as the map's API-built route — never as
+  // an attacker-chosen target.
+  const BY_PATH = new Map([
+    ["docs/adr/0013-scoped-test-ids.md", "/acme/mods/adr/ADR-0013"],
+    // A published page's RECONSTRUCTED source path (DESIGN-0004) —
+    // page targets ride the same whitelist as docs.
+    ["docs/guides/local-dev.md", "/acme/mods/pages/guides/local-dev.md"],
+  ]);
+  const LINKS = { base: "docs/rfc/RFC-0001.md", byPath: BY_PATH };
+
+  async function renderWithLinks(md: string): Promise<HTMLElement> {
+    const { content } = await renderMarkdown(md, { links: LINKS });
+    const { container } = render(<>{content}</>);
+    return container;
+  }
+
+  it.each([
+    ["traversal past the repo root", "[x](../../../../etc/passwd)"],
+    ["percent-encoded traversal", "[x](%2e%2e/%2e%2e/%2e%2e/etc/passwd)"],
+    ["encoded-slash traversal", "[x](..%2F..%2F..%2Fetc%2Fpasswd)"],
+    ["root-absolute path", "[x](/docs/adr/0013-scoped-test-ids.md)"],
+    ["protocol-relative URL", "[x](//evil.example/docs.md)"],
+    ["scheme smuggled as a path", "[x](javascript:alert(1))"],
+    [
+      "traversal past the root toward a page target",
+      "[x](../../../docs/guides/local-dev.md)",
+    ],
+    ["root-absolute page target", "[x](/docs/guides/local-dev.md)"],
+    [
+      "encoded traversal toward a page target",
+      "[x](..%2F..%2F..%2Fdocs%2Fguides%2Flocal-dev.md)",
+    ],
+  ])("never resolves %s", async (_name, payload) => {
+    const container = await renderWithLinks(payload);
+    assertNeutralized(container);
+    // Whatever survived sanitize, the resolver added nothing: no
+    // data-xref, so no router Link and no app route was emitted.
+    expect(container.querySelector("a[data-xref]")).toBeNull();
+  });
+
+  it("emits only the map's href on a hit, fragment inert", async () => {
+    // A hit becomes a router Link (data-xref) — give it a router.
+    const { content } = await renderMarkdown(
+      '[x](../adr/0013-scoped-test-ids.md#"><script>alert(1)</script>)',
+      { links: LINKS },
+    );
+    const { container } = render(<MemoryRouter>{content}</MemoryRouter>);
+    assertNeutralized(container);
+    // The map's route prefix survives verbatim; the router Link
+    // percent-encodes the hostile fragment on top of attribute escaping.
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "/acme/mods/adr/ADR-0013#%22%3E%3Cscript%3Ealert(1)%3C/script%3E",
+    );
+    expect(container.querySelector("script")).toBeNull();
+  });
+
+  it("emits only the map's href on a page-target hit, fragment inert", async () => {
+    const { content } = await renderMarkdown(
+      '[x](../guides/local-dev.md#"><script>alert(1)</script>)',
+      { links: LINKS },
+    );
+    const { container } = render(<MemoryRouter>{content}</MemoryRouter>);
+    assertNeutralized(container);
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "/acme/mods/pages/guides/local-dev.md#%22%3E%3Cscript%3Ealert(1)%3C/script%3E",
+    );
+    expect(container.querySelector("script")).toBeNull();
+  });
+
+  it("resolves nothing when the index is empty", async () => {
+    const { content } = await renderMarkdown(
+      "[x](../adr/0013-scoped-test-ids.md)",
+      { links: { base: "docs/rfc/RFC-0001.md", byPath: new Map() } },
+    );
+    const { container } = render(<>{content}</>);
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "../adr/0013-scoped-test-ids.md",
+    );
+  });
+});
+
+describe("benign markdown survives sanitization", () => {
+  it("keeps GFM tables", async () => {
+    const container = await renderToDom(
+      ["| col a | col b |", "| ----- | ----- |", "| 1     | 2     |"].join(
+        "\n",
+      ),
+    );
+    expect(container.querySelector("table")).not.toBeNull();
+    expect(container.querySelectorAll("td")).toHaveLength(2);
+  });
+
+  it("keeps fenced code with highlighting", async () => {
+    const container = await renderToDom("```yaml\nkey: value\n```");
+    expect(container.querySelector("pre.shiki code")).not.toBeNull();
+    expect(container.textContent).toContain("key: value");
+  });
+
+  it("keeps footnotes with working anchors", async () => {
+    const container = await renderToDom("Claim.[^n]\n\n[^n]: Evidence.");
+    const ref = container.querySelector('a[href^="#"]');
+    const target = ref?.getAttribute("href")?.slice(1) ?? "";
+    expect(container.querySelector(`[id="${target}"]`)).not.toBeNull();
+  });
+
+  it("keeps https images with alt text", async () => {
+    const container = await renderToDom(
+      "![diagram](https://example.com/d.png)",
+    );
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("src")).toBe("https://example.com/d.png");
+    expect(img?.getAttribute("alt")).toBe("diagram");
+  });
+
+  it("keeps blockquotes, task lists, and strikethrough", async () => {
+    const container = await renderToDom(
+      ["> quoted wisdom", "", "- [x] done", "- [ ] todo", "", "~~gone~~"].join(
+        "\n",
+      ),
+    );
+    expect(container.querySelector("blockquote")).not.toBeNull();
+    expect(container.querySelectorAll('input[type="checkbox"]')).toHaveLength(
+      2,
+    );
+    expect(container.querySelector("del")).not.toBeNull();
+  });
+
+  it("keeps https links", async () => {
+    const container = await renderToDom("[docs](https://example.com/docs)");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "https://example.com/docs",
+    );
+  });
+});
+
+describe("slug stability", () => {
+  const doc = [
+    "# Doc Title",
+    "## Getting Started",
+    "### Install & Run",
+    "## Getting Started",
+    "## über section",
+  ].join("\n\n");
+
+  it("produces deterministic, repeat-safe ids", async () => {
+    const first = await renderMarkdown(doc);
+    const second = await renderMarkdown(doc);
+
+    expect(first.toc).toEqual(second.toc);
+    expect(first.toc.map((entry) => entry.id)).toEqual([
+      "getting-started",
+      "install--run",
+      "getting-started-1",
+      "über-section",
+    ]);
+  });
+});

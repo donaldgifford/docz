@@ -1,0 +1,58 @@
+# mise — tool version management for docz-site.
+#
+# Install:  https://mise.jdx.dev/getting-started.html
+# Activate: `mise install` (one-time per checkout) — or `mise trust` first
+#           if mise warns about an untrusted config.
+#
+# Versions here are the source of truth for local development and CI
+# (workflows run tools through jdx/mise-action).
+#
+# Stack reference: Vite + React 19 + react-router (library mode) +
+# TanStack Query + orval, with Bun as runtime + package manager.
+
+[env]
+# Auto-load project-local environment variables from `.env.local` when
+# `cd`'ing into this directory. `.env.local` is gitignored — keep
+# secrets there, never in `mise.toml` (this repo is public).
+_.file = ".env.local"
+
+[tools]
+# Bun is the runtime + package manager
+bun = "1.3.14"
+# Node kept for tool compat (some eslint/vitest plugins still expect
+# node on PATH). Drop once everything is confirmed Bun-native.
+node = "24.14.0"
+
+# Formatters and linters
+# renovate: datasource=github-releases depName=DavidAnson/markdownlint-cli2
+markdownlint-cli2 = "0.18.1"
+# renovate: datasource=github-releases depName=google/yamlfmt
+yamlfmt = "0.20.0"
+# renovate: datasource=github-tags depName=adrienverge/yamllint
+yamllint = "1.37.1"
+# renovate: datasource=npm depName=prettier
+prettier = "3.7.4"
+# renovate: datasource=github-releases depName=orhun/git-cliff
+git-cliff = "latest"
+# renovate: datasource=github-releases depName=rhysd/actionlint
+actionlint = "latest"
+# renovate: datasource=github-releases depName=casey/just
+just = "latest"
+
+# Repo utilities
+# renovate: datasource=github-releases depName=mikefarah/yq
+yq = "4.48.1"
+# renovate: datasource=github-releases depName=jqlang/jq
+jq = "latest"
+# renovate: datasource=github-releases depName=donaldgifford/docz
+"github:donaldgifford/docz" = "latest"
+
+# Helm chart tooling (chart lives in charts/docz-site)
+# renovate: datasource=github-releases depName=helm/helm
+helm = "4.2.2"
+# renovate: datasource=github-releases depName=helm/chart-testing
+helm-ct = "latest"
+# renovate: datasource=github-releases depName=norwoodj/helm-docs
+helm-docs = "latest"
+# renovate: datasource=github-releases depName=sigstore/cosign
+cosign = "latest"

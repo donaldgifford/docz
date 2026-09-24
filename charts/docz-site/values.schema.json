@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "docz-site Helm chart values",
+  "description": "Guardrail schema for the docz-site chart. Constrains the handful of values that break the deployment when wrong (listen port, proxy target, service type) at helm install/upgrade/template time. Permissive elsewhere (additionalProperties) — it does not police the whole value surface.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "config": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "port": { "type": "integer" },
+        "doczApiUrl": { "type": "string" },
+        "authProviders": { "type": "string" },
+        "mermaidLayout": {
+          "description": "Diagram layout engine. Constrained because the server falls back to elk on anything it does not recognize, so a typo here would otherwise be invisible — diagrams would simply keep rendering the default.",
+          "type": "string",
+          "enum": ["dagre", "elk"]
+        },
+        "navLinks": {
+          "description": "Topbar nav pins rendered into DOCZ_NAV_LINKS as JSON.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "href"],
+            "properties": {
+              "label": { "type": "string" },
+              "href": { "type": "string" }
+            }
+          }
+        },
+        "logLevel": {
+          "description": "Log verbosity. Constrained because the server falls back to info on anything it does not recognize, so a typo here would otherwise be invisible — the deployment would simply keep logging at the default.",
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"]
+        },
+        "logFormat": {
+          "description": "Log output format: json for one object per line into an aggregator, text for readable local runs.",
+          "type": "string",
+          "enum": ["json", "text"]
+        }
+      }
+    },
+    "otel": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "endpoint": {
+          "description": "OTLP/HTTP traces endpoint. Empty means tracing is off. Constrained to absolute http(s) URLs because this decides where request telemetry is sent — the server treats anything else as unset rather than guessing.",
+          "type": "string",
+          "pattern": "^$|^https?://"
+        },
+        "serviceName": { "type": "string" },
+        "sampleRate": {
+          "description": "Head sample rate. The server clamps out-of-range values, but a schema rejection at install time is a better signal than a silent clamp.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "description": "Kubernetes Service type.",
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"]
+        },
+        "port": { "type": "integer" }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "httpRoute": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    }
+  }
+}

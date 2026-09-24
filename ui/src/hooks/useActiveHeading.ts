@@ -1,0 +1,74 @@
+import { useEffect, useState } from "react";
+
+/*
+ * Scroll spy for the reader's "On this page" rail: which heading the
+ * reader is currently under.
+ *
+ * IntersectionObserver rather than a scroll listener — the callback
+ * only runs when a heading crosses the band, so scrolling itself stays
+ * free. The band is the top slice of the viewport: the top margin
+ * clears the sticky topbar and the -70% bottom margin keeps a heading
+ * current until the next one climbs into that slice. When no heading is
+ * in the band (a long section is filling the screen) the previous
+ * heading stays active, which is what makes the rail track reading
+ * position instead of flickering to nothing.
+ *
+ * Returns undefined where IntersectionObserver is missing (jsdom) or
+ * before the first heading enters — both render as no active row.
+ */
+
+/*
+ * NUL joins the ids into the effect key: no HTML id can contain one, so
+ * the join/split round trip is lossless. It MUST stay written as an
+ * escape. As a raw 0x00 byte in the source, which is how this first
+ * shipped, git classifies the whole file as binary, so it loses its
+ * diff, its blame, and any three-way merge while every test still
+ * passes. src/test/no-control-bytes.test.ts guards that now.
+ */
+const SEP = "\u0000";
+
+export function useActiveHeading(ids: readonly string[]): string | undefined {
+  const [activeId, setActiveId] = useState<string>();
+  // Effects can't depend on a fresh array identity; the joined ids are
+  // a stable primitive over the same content.
+  const key = ids.join(SEP);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const headingIds = key === "" ? [] : key.split(SEP);
+    const elements = headingIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (elements.length === 0) {
+      return;
+    }
+
+    const inBand = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            inBand.add(entry.target.id);
+          } else {
+            inBand.delete(entry.target.id);
+          }
+        }
+        const current = headingIds.find((id) => inBand.has(id));
+        if (current !== undefined) {
+          setActiveId(current);
+        }
+      },
+      { rootMargin: "-80px 0px -70% 0px" },
+    );
+    for (const el of elements) {
+      observer.observe(el);
+    }
+    return () => {
+      observer.disconnect();
+    };
+  }, [key]);
+
+  return activeId;
+}

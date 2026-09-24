@@ -1,0 +1,22 @@
+---
+# $schema=https://www.schemastore.org/github-action.json
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Secret Scanning
+        # No floating v3 tag exists upstream — pin the full release tag
+        # (Renovate keeps it current).
+        uses: trufflesecurity/trufflehog@v3.95.9
+        with:
+          extra_args: --results=verified,unknown

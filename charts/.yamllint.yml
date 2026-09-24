@@ -18,3 +18,4 @@ rules:
   empty-values: disable
 ignore: |-
   charts/docz-api/templates/
+  charts/docz-site/templates/

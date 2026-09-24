@@ -1,0 +1,121 @@
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+
+import { useGetSession } from "@/api/__generated__/docz-api";
+import { CommandPalette } from "@/components/command-palette";
+import { SessionMenu } from "@/components/session-menu";
+import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
+import { enabledNavLinks } from "@/lib/navLinks";
+
+function navLinkClass({ isActive }: { isActive: boolean }): string {
+  return isActive
+    ? "text-fg-primary"
+    : "text-fg-tertiary hover:text-fg-primary";
+}
+
+/**
+ * The other half of SessionRequiredRedirect's stash: docz-api's OAuth
+ * callback always lands on "/", so when the shell finds a stashed
+ * destination there it probes getSession and, only once authenticated,
+ * replaces "/" with the stash. A signed-out visit leaves the stash
+ * alone (the probe 401s) — it restores on the next successful login.
+ */
+function RestoreAfterLogin() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const armed = location.pathname === "/" && peekReturnTo() !== null;
+  const session = useGetSession({ query: { enabled: armed } });
+  const authenticated = armed && session.data?.status === 200;
+
+  useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
+    const returnTo = takeReturnTo();
+    if (returnTo !== null) {
+      void navigate(returnTo, { replace: true });
+    }
+  }, [authenticated, navigate]);
+
+  return null;
+}
+
+export function AppShell() {
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  // Deployment-chosen pins (DESIGN-0002 Component 1) — validated by
+  // navLinks.ts, so every href is a same-origin app path. Read per
+  // render (cheap, ≤6 entries) so tests can vary the injected config.
+  const pins = enabledNavLinks();
+  return (
+    <>
+      <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-[rgba(12,16,23,0.88)] px-5 backdrop-blur-[10px]">
+        <Link to="/" className="flex items-center gap-[0.55rem]">
+          <span
+            aria-hidden
+            className="grid size-[22px] place-items-center bg-accent font-mono text-[14px] font-bold text-bg-base"
+          >
+            D
+          </span>
+          <span className="font-mono text-[14px] font-semibold tracking-[0.01em]">
+            docz
+          </span>
+          <span className="font-mono text-[14px] text-fg-muted">· reader</span>
+        </Link>
+
+        {/* Search affordance: opens the ⌘K palette. Hidden on narrow
+            viewports like the mockup. */}
+        <button
+          type="button"
+          onClick={() => {
+            setPaletteOpen(true);
+          }}
+          className="ml-4 hidden min-w-[260px] cursor-pointer items-center gap-2 border border-border-default px-[0.7rem] py-[0.3rem] text-[13.5px] text-fg-tertiary hover:border-border-strong min-[720px]:flex"
+        >
+          <svg
+            aria-hidden
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <span>Search docs, rfcs, authors…</span>
+          <span aria-hidden className="ml-auto flex gap-[3px]">
+            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[12px] text-fg-tertiary">
+              ⌘
+            </kbd>
+            <kbd className="min-w-4 border border-border-default px-1 text-center font-mono text-[12px] text-fg-tertiary">
+              K
+            </kbd>
+          </span>
+        </button>
+
+        <nav className="ml-auto flex items-center gap-[1.4rem] font-mono text-[14px]">
+          <NavLink to="/" end className={navLinkClass}>
+            Directory
+          </NavLink>
+          <NavLink to="/repos" className={navLinkClass}>
+            Repos
+          </NavLink>
+          {pins.map((pin) => (
+            <NavLink
+              key={`${pin.label}|${pin.href}`}
+              to={pin.href}
+              className={navLinkClass}
+            >
+              {pin.label}
+            </NavLink>
+          ))}
+          <SessionMenu />
+        </nav>
+      </header>
+      <RestoreAfterLogin />
+      <Outlet />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    </>
+  );
+}
