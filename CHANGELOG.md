@@ -49,6 +49,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(just)* Run ui.just from ui/ and point it at the moved chart and stack
 - *(just)* Root ci gate runs the ui chain
 - *(ui)* Install prettier for the format check
+- *(trufflehog)* Exclude the exclude file's own history
+- *(codeql)* Ignore two non-production ui files, with reasons
 
 ## [2.0.0-beta.3] - 2026-09-23
 
