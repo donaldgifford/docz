@@ -1,7 +1,7 @@
 ---
 id: IMPL-0020
 title: "docz-site move-in: v2.0.0-beta.4"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-09-23
 ---
@@ -669,7 +669,7 @@ What the outside world sees at beta.4, and the notes the next person needs.
   Background disproved (the "no `go.mod`" line and the successor count). Amended
   in place as dated corrections beside each claim (Consequences, Neutral,
   and Open Question 1's resolution), leaving the original words as the record
-- [ ] `docz status set impl IMPL-0020 Completed` and
+- [x] `docz status set impl IMPL-0020 Completed` and
   `docz status set design DESIGN-0017 Implemented`, then `docz update`
 - [x] File the follow-ups as issues: archive the docz-site repository
   read-only with a README pointing at `ui/`; a Bun licence check; v2.0.0

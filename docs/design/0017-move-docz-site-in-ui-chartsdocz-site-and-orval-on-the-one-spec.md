@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0017
 title: "Move docz-site in: ui/, charts/docz-site, and orval on the one spec"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-23
 ---
