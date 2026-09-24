@@ -487,10 +487,18 @@ image build, the fixtures, the local stacks, and the URLs.
 - [x] `deploy/ui/compose.yaml`: docz-api builds from `context: ../..`,
   `dockerfile: Dockerfile.api`, and the site from `../../ui` with
   `additional_contexts: { spec: ../../api }`. `docker compose config` is valid
-- [ ] `deploy/ui/compose.local.yaml`: run `just api local-up` and read the
+- [x] `deploy/ui/compose.local.yaml`: run `just api local-up` and read the
   network name it creates. If it is no longer `docz-api-local_default`,
   pin `name:` in the api local stack rather than renaming the site's
-  reference. `just ui local-up` then starts
+  reference. `just ui local-up` then starts. The name was read from the
+  api stack's compose file rather than a live run: it pins
+  `name: docz-api-local` and declares no networks, so the default network
+  is still `docz-api-local_default` and nothing needed pinning.
+  `just api local-up` could not run here without `deploy/api/.env.local`,
+  which needs real GitHub App values. A network by that name from an
+  earlier run existed, and against it `just ui local-up` built, went
+  healthy, and served `/healthz` 200 on :8090. The site's build now
+  reads `../../ui` with the `spec` context
 - [ ] Rewrite `github.com/donaldgifford/docz-site` → the monorepo (`…/docz`,
   `…/docz/tree/main/ui` where a path is meant) in `ui/README.md`,
   `ui/CLAUDE.md`, `ui/CONTRIBUTING.md`, `charts/docz-site/Chart.yaml`
