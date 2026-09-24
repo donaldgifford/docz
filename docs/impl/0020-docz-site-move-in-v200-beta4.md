@@ -287,12 +287,17 @@ no Go file arrives, the vendored spec keeps orval working, and
 - [x] Keep in `ui/` (DESIGN-0017 OQ 1): `CLAUDE.md`, `README.md`,
   `CONTRIBUTING.md`, `.markdownlint.yaml`, `.gitignore`, `.dockerignore`,
   `.prettierrc.yaml`, `.prettierignore`, and every JS tool config
-- [ ] Fold `ui/.github/` and delete it whole, `spec-drift.yml` included,
+- [x] Fold `ui/.github/` and delete it whole, `spec-drift.yml` included,
   since nothing under `ui/.github/` runs: `ci.yml` becomes the `ui` and
   `ui-e2e` jobs below; CodeQL's matrix gains `javascript-typescript` with
   `security-extended`; root `labeler.yml` gains a `ui` rule on `ui/**`;
   trufflehog per Open Question 4. `ghcr.yml`, `release.yml`, `changelog*.yml`,
-  `pr-labels.yml`, `labeler.yml`, `actionlint.yml`, and `CODEOWNERS` drop
+  `pr-labels.yml`, `labeler.yml`, `actionlint.yml`, and `CODEOWNERS` drop.
+  Trufflehog: the local `--results=verified,unknown` scan over the merged
+  history (trufflehog 3.95.9) found 0 verified and 7 unknown, every one a
+  placeholder Postgres DSN in docz's own history (none in `ui/`). The four
+  paths are excluded in `.github/trufflehog-exclude.txt`, each with its
+  reason, and the re-scan finds nothing
 - [ ] `ci.yml`: a `ui` job (`needs: changes`, `if: needs.changes.outputs.ui == 'true'`,
   `defaults.run.working-directory: ui`, `oven-sh/setup-bun` pinned to
   1.3.14, `extractions/setup-just`) running `bun install --frozen-lockfile`,
