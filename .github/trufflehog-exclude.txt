@@ -13,3 +13,6 @@
 ^pkg/design/testdata/api-design-0001(\.orig)?\.md$
 # A placeholder Postgres DSN (user u, host db) — a config parsing test's fixture.
 ^internal/config/config_test\.go$
+# This file. Its first version quoted the two DSNs above, and a scan over
+# history still reads that commit.
+^\.github/trufflehog-exclude\.txt$
