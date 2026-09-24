@@ -426,11 +426,12 @@ image build, the fixtures, the local stacks, and the URLs.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/orval.config.ts`: `input: "../api/openapi.yaml"`. Run
+- [x] `ui/orval.config.ts`: `input: "../api/openapi.yaml"`. Run
   `just ui gen-api-check` with `ui/api/` still present and again after
   deleting it. Both pass, which proves the swap is byte-neutral
-  (DESIGN-0017 §4)
-- [ ] Delete `ui/api/`
+  (DESIGN-0017 §4). The two files were byte-identical, and
+  `gen-api-check` printed `generated client is current.` both times
+- [x] Delete `ui/api/`
 - [ ] Drift drill, recorded here and not kept: on a scratch branch, remove
   a response field the UI reads from `api/openapi.yaml`. `just ui typecheck`
   fails, and the contract test fails. Record both outputs
