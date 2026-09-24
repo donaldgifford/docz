@@ -20,6 +20,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Record IMPL-0020 Phase 1 — docz-site sweep merged at f1203c9
 - *(impl)* Record the IMPL-0020 Phase 2 graft commands
 - *(ui)* Retarget links to docz-api's old repository at docz
+- *(impl)* IMPL-0020 Phase 2 local gates pass
 
 ### Testing
 
