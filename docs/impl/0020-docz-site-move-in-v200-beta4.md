@@ -519,10 +519,14 @@ image build, the fixtures, the local stacks, and the URLs.
   instructions, and quick start (`just ui …`). `ui/README.md`,
   `ui/CLAUDE.md`, and the chart README template named no docz-site URL,
   so `just ui helm-docs` changed nothing
-- [ ] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
+- [x] `test/archive`: `TestSiteRepositoryURLGone`. No tracked file outside
   `docs/`, `testdata/`, `CHANGELOG.md`, and `test/archive/` names
-  `github.com/donaldgifford/docz-site`
-- [ ] `test/archive`: the fence test (Open Question 3)
+  `github.com/donaldgifford/docz-site`. One more exemption than listed:
+  `ui/src/mocks/content/`, whose snapshots of the archived changelog and
+  specimen keep their links to the old repository's issues, as the
+  archive under `docs/` does (`test/archive/site_test.go`)
+- [x] `test/archive`: the fence test (Open Question 3). `TestUIModuleFence`;
+  with `ui/go.mod` moved aside it fails by name
 
 <!--docz:tasks:end-->
 
