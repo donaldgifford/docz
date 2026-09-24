@@ -120,7 +120,7 @@ Worked through in IMPL-0020 Phase 3, against the design in DESIGN-0017 §4.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Confirmed. docz-site generates its client straight from
+**Answer:** Yes, the hypothesis holds. docz-site generates its client straight from
 `api/openapi.yaml` (DESIGN-0017 §4), so there is no vendored copy left to
 drift. Three checks keep the client and the served spec in agreement: the
 server's kin-openapi contract test pins the spec to the handlers, the site's

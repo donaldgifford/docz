@@ -596,7 +596,8 @@ What the outside world sees at beta.4, and the notes the next person needs.
   add `donaldgifford/docz` with **Write**. Do the same for
   `charts/docz-site`. Both are separate grants from docz-api's (IMPL-0019
   Phase 5: the chart publish failed `403 write_package` without one)
-- [ ] `just validate`, `just api lint-actions`
+- [x] `just validate`, `just api lint-actions`. Both clean; the INV-0012
+  verdict opens with "Yes" because `inv.conclusion.verdict` reads one
 
 <!--docz:tasks:end-->
 
