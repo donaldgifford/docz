@@ -570,10 +570,12 @@ What the outside world sees at beta.4, and the notes the next person needs.
   chart had no such test, only an exact-tag assertion; the shape test was
   added from `charts/docz-api`'s. 49 helm-unittest tests pass
 - [x] Update the chart-bump rule in `ui/CLAUDE.md` per Open Question 6
-- [ ] `prerelease.yml`: add `publish-image-ui` (`ghcr.yml`, `component: ui`,
+- [x] `prerelease.yml`: add `publish-image-ui` (`ghcr.yml`, `component: ui`,
   `tag: ${{ github.ref_name }}`) and `publish-ecr-ui` (gated on
   `vars.ECR_PUBLISH_ENABLED`), with the same permissions ceiling as the api
-  jobs. Add the same pair to `release.yml`
+  jobs. Add the same pair to `release.yml`. Done; `release.yml`'s pair is
+  `publish-ghcr-ui`/`publish-ecr-ui`, matching its own api job names, and
+  `just api lint-actions` is clean
 - [ ] Root `CLAUDE.md`: a "Frontend (`ui/`)" section pointing at
   `ui/CLAUDE.md`, covering `ui/go.mod` and why it exists, the single spec
   and its four readers, the named `spec` build context, two-component

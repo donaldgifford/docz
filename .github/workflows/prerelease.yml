@@ -19,7 +19,9 @@
 # Since IMPL-0019 the tag also publishes docz-api: goreleaser builds both
 # binaries (docz-api's archives carry a syft SBOM), and publish-image pushes
 # ghcr.io/donaldgifford/docz-api:<tag> plus the chart through ghcr.yml. ECR
-# stays behind vars.ECR_PUBLISH_ENABLED, as on release.yml.
+# stays behind vars.ECR_PUBLISH_ENABLED, as on release.yml. Since IMPL-0020
+# publish-image-ui does the same for ghcr.io/donaldgifford/docz-site and its
+# chart; each GHCR package needs its own Actions access grant for this repo.
 name: Pre-release
 
 on:
@@ -94,6 +96,37 @@ jobs:
       packages: write
     with:
       component: api
+      tag: ${{ github.ref_name }}
+      dry_run: false
+    secrets: inherit
+
+  # docz-site's image and chart for the same tag (IMPL-0020): the same pair
+  # of reusable workflows with component: ui, and the same ceiling.
+  publish-image-ui:
+    name: Publish docz-site to GHCR
+    uses: ./.github/workflows/ghcr.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      component: ui
+      tag: ${{ github.ref_name }}
+      dry_run: false
+    secrets: inherit
+
+  publish-ecr-ui:
+    name: Publish docz-site to ECR
+    if: vars.ECR_PUBLISH_ENABLED == 'true'
+    uses: ./.github/workflows/ecr.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      packages: write
+    with:
+      component: ui
       tag: ${{ github.ref_name }}
       dry_run: false
     secrets: inherit
