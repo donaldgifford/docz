@@ -48,5 +48,5 @@ docz create design "Your Design Title"
 | DESIGN-0014 | The docz API as one unit: packages, types, functions, and the cmd swap | Implemented | 2026-09-14 | Donald Gifford | [0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md](0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md) |
 | DESIGN-0015 | Structured regions and docz validate | Implemented | 2026-09-19 | Donald Gifford | [0015-structured-regions-and-docz-validate.md](0015-structured-regions-and-docz-validate.md) |
 | DESIGN-0016 | Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes | Implemented | 2026-09-22 | Donald Gifford | [0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md](0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md) |
-| DESIGN-0017 | Move docz-site in: ui/, charts/docz-site, and orval on the one spec | Draft | 2026-09-23 | Donald Gifford | [0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md](0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md) |
+| DESIGN-0017 | Move docz-site in: ui/, charts/docz-site, and orval on the one spec | Approved | 2026-09-23 | Donald Gifford | [0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md](0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md) |
 <!-- END DOCZ AUTO-GENERATED -->

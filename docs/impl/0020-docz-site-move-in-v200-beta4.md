@@ -57,7 +57,7 @@ archived verbatim under `docs/archive/ui/`. orval then reads
 fenced off from Go tooling, and both images and both charts publish from
 one hand-cut `v2.0.0-beta.4`. Six phases, one PR each.
 
-**Implements:** DESIGN-0017 (all nine open questions resolved (a)), which
+**Implements:** DESIGN-0017 (Approved; all nine open questions resolved (a)), which
 implements ADR-0004 Decisions 2, 4, 7, and 8 for the frontend half.
 
 Tasks marked **(human)** need a person: a commit to another repository, a
@@ -591,6 +591,11 @@ What the outside world sees at beta.4, and the notes the next person needs.
 
 ### 1. How are the six phases branched?
 
+> **Resolved 2026-09-23: (a).** One branch per phase, each cut from `main` after the
+> previous phase merges, merged with a merge commit. Phases 0 and 1 may run in
+> parallel. Phase 0 branches after the PR carrying DESIGN-0017 and this
+> document merges.
+
 - a. **One branch per phase, each cut from `main` after the previous phase
   merges**, with merge commits, as IMPL-0018 and IMPL-0019 did (#106–#111,
   #120–#124). Every PR diffs against real `main`, and a merged phase cannot
@@ -611,6 +616,11 @@ publishes happen only on a beta tag, and the next one is beta.4, which
 also introduces `ui`. `ghcr.yml`'s `dry_run` skips the bake step entirely,
 so it proves input resolution, metadata, and chart packaging, but not that
 the bake target names are right.
+
+> **Resolved 2026-09-23: (a).** A `workflow_dispatch` dry run of `ghcr.yml` with
+> `component=api` (and `ecr.yml` if enabled) proves resolution and chart
+> packaging, and CI's `docker-build` job proves the renamed bake targets. Both
+> run URLs are recorded in Phase 0.
 
 - a. **Both halves of the proof, from two places.** A `workflow_dispatch`
   dry run of `ghcr.yml` with `component=api` proves resolution and chart
@@ -634,6 +644,10 @@ package under `ui/`, even with `node_modules` populated"), not just the
 file. But `just test` runs where `ui/node_modules` usually does not exist,
 and CI's Go jobs never install the UI, so a Go test alone would pass
 vacuously.
+
+> **Resolved 2026-09-23: (a).** A Go test in `test/archive` asserts `ui/go.mod`
+> exists and `go list` returns nothing under `ui/`, and the `ui` CI job runs
+> `go list ./... | grep /ui/` after `bun install` and fails on a match.
 
 - a. **Two checks, one per half.** A Go test in `test/archive` asserts that
   `ui/go.mod` exists and that `go list <modulePath>/...` returns nothing
@@ -659,6 +673,10 @@ strings trufflehog could not verify either way, so it catches more and is
 noisier. docz-api's test fixtures (fake PEMs, HMAC secrets) are the likely
 noise.
 
+> **Resolved 2026-09-23: (a).** `--results=verified,unknown` repository-wide,
+> landed in Phase 2 after a local scan of the full merged history. Every
+> finding is fixed or excluded with a written reason in the same PR.
+
 - a. **Adopt `verified,unknown` in Phase 2**, after running it locally over
   the full merged history first. Any finding is fixed or excluded with a
   written reason in the same PR. The site's CLAUDE.md already treats an
@@ -674,6 +692,10 @@ noise.
 docz-site releases through `pr-semver-bump` on every merge to `main`. Its
 `publish-ghcr` chart job also runs on `dont-release`, deliberately, so that
 chart-only changes can ship.
+
+> **Resolved 2026-09-23: (a).** A docz-site PR labelled `dont-release`. Phase 1
+> confirms from the run that no tag or image was cut and that the chart job
+> skipped on `helm pull`.
 
 - a. **A PR labelled `dont-release`**, which `pr-semver-bump` lists in its
   `noop-labels`, so no tag and no image. The chart job still runs and
@@ -693,6 +715,10 @@ touches `charts/`, because there the chart published on every merge to
 `main` and an unbumped change silently never shipped. Here charts publish
 only from a beta tag, and `ct.yaml` has `check-version-increment: false`.
 Phase 3 touches the chart (URLs) and Phase 4 bumps it.
+
+> **Resolved 2026-09-23: (a).** One bump per release: `charts/docz-site` goes to
+> `0.2.0` once, in Phase 4, and `ui/CLAUDE.md`'s rule is rewritten to "bump
+> before the tag that should publish it", matching `charts/docz-api`.
 
 - a. **One bump per release, not per PR.** `charts/docz-site` goes to
   `0.2.0` once, in Phase 4, and `ui/CLAUDE.md`'s rule is rewritten to say
