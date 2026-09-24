@@ -270,7 +270,7 @@ no Go file arrives, the vendored spec keeps orval working, and
   `git tag | wc -l` is unchanged afterwards
 - [x] Resolve `charts/.yamllint.yml` as the union of both (the only expected
   conflict; hashes `2be451f` and `e423206` differ)
-- [ ] Add `ui/go.mod`: `module github.com/donaldgifford/docz/v2/ui`, with a
+- [x] Add `ui/go.mod`: `module github.com/donaldgifford/docz/v2/ui`, with a
   comment saying it exists only to keep `node_modules` out of the root
   module's `./...` (DESIGN-0017 §3). Verify with a real `just ui install`
   followed by `go list ./... | grep -c /ui/` printing `0`
