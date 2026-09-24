@@ -465,10 +465,15 @@ image build, the fixtures, the local stacks, and the URLs.
   workflow's `*.cache-*` overrides
 - [x] `ui.just`: a `docker-build` recipe spelling
   `docker build -f ../Dockerfile.ui --build-context spec=../api .`
-- [ ] `docker buildx bake dev-ui`, then run the image with `DOCZ_API_URL`
+- [x] `docker buildx bake dev-ui`, then run the image with `DOCZ_API_URL`
   pointed at nothing: `/healthz` returns 200, `/readyz` behaves as the
   site's CLAUDE.md says (it never calls docz-api), and `/` serves
-  `index.html` with `window.__DOCZ_CONFIG__` injected
+  `index.html` with `window.__DOCZ_CONFIG__` injected. Run with
+  `DOCZ_API_URL=http://127.0.0.1:1`: `/healthz` 200 `ok`; `/readyz` 200
+  `{"status":"ready","checks":{"dist":"ok","config":"ok"}}`, so it never
+  called the unreachable API; `/` 200 with
+  `__DOCZ_CONFIG__={"authProviders":["github"],"nav":[],"mermaidLayout":"elk"}`.
+  `just ui docker-build` builds the same image without bake
 - [x] MSW fixtures (DESIGN-0017 OQ 4): copy the seven archived files that
   `ui/src/mocks/fixtures.ts` imports into `ui/src/mocks/content/`
   (`docz-site-changelog.md`, `docz-site-design-0001.md`,
