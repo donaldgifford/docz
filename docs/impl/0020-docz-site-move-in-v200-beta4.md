@@ -162,7 +162,7 @@ already knows about two components and has been exercised with one.
   `Dockerfile.ui`). No job reads it until Phase 2
 - [x] `mise.toml`: `bun = "1.3.14"`, `node = "24.14.0"`
 - [x] `renovate.json5`: add `github>donaldgifford/renovate-config:node`
-- [ ] `just api lint-actions` clean
+- [x] `just api lint-actions` clean
 - [ ] Prove the parameterised publish without a tag (Open Question 2):
   `gh workflow run ghcr.yml --ref <branch> -f component=api -f tag=v0.0.0-phase0 -f dry_run=true`,
   and the same for `ecr.yml` if `ECR_PUBLISH_ENABLED` is set. Record the run
