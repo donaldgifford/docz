@@ -158,7 +158,7 @@ already knows about two components and has been exercised with one.
   `"${CHART_DIR}/**"`, with the config at `${CHART_DIR}/cliff.toml`
 - [x] `prerelease.yml` and `release.yml`: pass `component: api` to both
   publish calls
-- [ ] `ci.yml` `changes`: add the `ui` output (`ui/**`, `api/openapi.yaml`,
+- [x] `ci.yml` `changes`: add the `ui` output (`ui/**`, `api/openapi.yaml`,
   `Dockerfile.ui`). No job reads it until Phase 2
 - [ ] `mise.toml`: `bun = "1.3.14"`, `node = "24.14.0"`
 - [ ] `renovate.json5`: add `github>donaldgifford/renovate-config:node`

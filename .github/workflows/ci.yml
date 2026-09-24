@@ -24,6 +24,7 @@ jobs:
       helm: ${{ steps.filter.outputs.helm }}
       workflows: ${{ steps.filter.outputs.workflows }}
       alerts: ${{ steps.filter.outputs.alerts }}
+      ui: ${{ steps.filter.outputs.ui }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -44,6 +45,12 @@ jobs:
               - '.github/workflows/**'
             alerts:
               - 'contrib/prometheus/**'
+            # No job reads this until the ui jobs land (IMPL-0020 Phase 2).
+            # The spec is here because orval generates the ui client from it.
+            ui:
+              - 'ui/**'
+              - 'api/openapi.yaml'
+              - 'Dockerfile.ui'
 
   labeler:
     permissions:
