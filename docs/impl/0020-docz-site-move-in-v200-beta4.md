@@ -555,7 +555,7 @@ What the outside world sees at beta.4, and the notes the next person needs.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `docs/archive/ui/README.md`: the namespace rule in one line (*inside
+- [x] `docs/archive/ui/README.md`: the namespace rule in one line (*inside
   this directory, an ID means docz-site's*), mirroring
   `docs/archive/api/README.md`. Add `docs/archive/README.md` listing both
   trees
