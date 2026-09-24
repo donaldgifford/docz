@@ -78,6 +78,7 @@ jobs:
       id-token: write
       attestations: write
     with:
+      component: api
       tag: ${{ github.ref_name }}
       dry_run: false
     secrets: inherit
@@ -92,6 +93,7 @@ jobs:
       attestations: write
       packages: write
     with:
+      component: api
       tag: ${{ github.ref_name }}
       dry_run: false
     secrets: inherit
