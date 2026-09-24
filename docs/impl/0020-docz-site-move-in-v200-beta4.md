@@ -559,9 +559,11 @@ What the outside world sees at beta.4, and the notes the next person needs.
   this directory, an ID means docz-site's*), mirroring
   `docs/archive/api/README.md`. Add `docs/archive/README.md` listing both
   trees
-- [ ] Confirm `wiki.exclude` and `api.exclude` already hide
+- [x] Confirm `wiki.exclude` and `api.exclude` already hide
   `docs/archive/ui/` with no edit: `TestExcludesAgreeOnArchive` passes
-  unchanged, and `docz wiki update --dry-run` names no `archive` path
+  unchanged, and `docz wiki update --dry-run` names no `archive` path.
+  Both held with no config edit: the test passes as written and the dry
+  run's nav has zero `archive` lines
 - [ ] `charts/docz-site/Chart.yaml`: `version: 0.2.0`,
   `appVersion: "2.0.0-beta.4"` (bare; DESIGN-0017 OQ 8). Regenerate with
   `just ui helm-docs`. The chart's bare-semver unit test passes
