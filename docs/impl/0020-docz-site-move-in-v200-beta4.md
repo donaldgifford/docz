@@ -463,7 +463,7 @@ image build, the fixtures, the local stacks, and the URLs.
   stays cache-only until the Phase 4 GHCR grant, and each `ci-` target
   took its own gha cache `scope` in the bake file in place of the
   workflow's `*.cache-*` overrides
-- [ ] `ui.just`: a `docker-build` recipe spelling
+- [x] `ui.just`: a `docker-build` recipe spelling
   `docker build -f ../Dockerfile.ui --build-context spec=../api .`
 - [ ] `docker buildx bake dev-ui`, then run the image with `DOCZ_API_URL`
   pointed at nothing: `/healthz` returns 200, `/readyz` behaves as the
