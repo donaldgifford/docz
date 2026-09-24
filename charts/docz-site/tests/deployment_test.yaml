@@ -32,7 +32,18 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-site:0.10.0"
+          value: "ghcr.io/donaldgifford/docz-site:2.0.0-beta.4"
+
+  # The default tag must be pullable, and the publish workflow tags bare
+  # semver (metadata-action's {{version}} strips the "v" from the git tag).
+  # Assert the shape, not just the value, so a bump cannot reintroduce a
+  # v-prefixed appVersion. A prerelease suffix is allowed: the v2 betas
+  # publish 2.0.0-beta.N (IMPL-0020 Phase 4), mirroring charts/docz-api.
+  - it: should default to a bare-semver tag, never v-prefixed
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: '^ghcr\.io/donaldgifford/docz-site:\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$'
 
   - it: should use custom image tag when set
     set:

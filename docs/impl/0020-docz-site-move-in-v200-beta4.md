@@ -564,9 +564,11 @@ What the outside world sees at beta.4, and the notes the next person needs.
   unchanged, and `docz wiki update --dry-run` names no `archive` path.
   Both held with no config edit: the test passes as written and the dry
   run's nav has zero `archive` lines
-- [ ] `charts/docz-site/Chart.yaml`: `version: 0.2.0`,
+- [x] `charts/docz-site/Chart.yaml`: `version: 0.2.0`,
   `appVersion: "2.0.0-beta.4"` (bare; DESIGN-0017 OQ 8). Regenerate with
-  `just ui helm-docs`. The chart's bare-semver unit test passes
+  `just ui helm-docs`. The chart's bare-semver unit test passes. The
+  chart had no such test, only an exact-tag assertion; the shape test was
+  added from `charts/docz-api`'s. 49 helm-unittest tests pass
 - [ ] Update the chart-bump rule in `ui/CLAUDE.md` per Open Question 6
 - [ ] `prerelease.yml`: add `publish-image-ui` (`ghcr.yml`, `component: ui`,
   `tag: ${{ github.ref_name }}`) and `publish-ecr-ui` (gated on
