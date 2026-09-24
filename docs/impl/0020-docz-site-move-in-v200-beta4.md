@@ -149,14 +149,14 @@ already knows about two components and has been exercised with one.
 - [x] `api.just`: update the bake recipes (`docker buildx bake release` →
   `release-api`, and so on); `just --dry-run api <recipe>` shows each
   resolved command
-- [ ] `ghcr.yml` and `ecr.yml`: add a `component` input (`api`|`ui`, default
+- [x] `ghcr.yml` and `ecr.yml`: add a `component` input (`api`|`ui`, default
   `api` so a bare `workflow_dispatch` behaves as today). A first step resolves
   it to `IMAGE_REPO`, `BAKE_TARGET`, `CHART_NAME`, and `CHART_DIR` from one
   table, as in DESIGN-0017 §8. Every hardcoded `docz-api`, `charts/docz-api`,
   and `targets: release` reads from those values
-- [ ] Chart-changelog step: `--include-path "charts/**"` →
+- [x] Chart-changelog step: `--include-path "charts/**"` →
   `"${CHART_DIR}/**"`, with the config at `${CHART_DIR}/cliff.toml`
-- [ ] `prerelease.yml` and `release.yml`: pass `component: api` to both
+- [x] `prerelease.yml` and `release.yml`: pass `component: api` to both
   publish calls
 - [ ] `ci.yml` `changes`: add the `ui` output (`ui/**`, `api/openapi.yaml`,
   `Dockerfile.ui`). No job reads it until Phase 2
