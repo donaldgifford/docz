@@ -1,7 +1,7 @@
 ---
 id: IMPL-0019
 title: "docz-api move-in: v2.0.0-beta.3"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-09-22
 ---
@@ -270,8 +270,8 @@ exists as a module. Phase 3 fixes that.
 - [x] Leave `docker.just` in place for Phase 3 to fold into `api.just` (Open Question 4)
 - [x] Open the PR with `graft` and `dont-release`; the body states that the Go
   jobs are skipped by decision and cites DESIGN-0016 OQ 6
-- [ ] **(human)** Review and merge the red PR with a merge commit (not squash —
-  squashing destroys the graft)
+- [x] **(human)** Review and merge the red PR with a merge commit (not squash —
+  squashing destroys the graft) — #121, merged as a merge commit
 
 <!--docz:tasks:end-->
 
@@ -436,16 +436,33 @@ Everything that makes the result enforceable and visible correctly from outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Local run of `just api test-integration` against `compose.yaml` passes
-  (not in CI, not claimed to be)
-- [ ] `just release-check` and `just api release-check` pass
-- [ ] **(human)** `just release v2.0.0-beta.3` from the Phase 4 merge commit
-- [ ] **(human)** Confirm `prerelease.yml` produced both binaries and the image
-- [ ] **(human)** `docker pull ghcr.io/donaldgifford/docz-api:v2.0.0-beta.3`
-  succeeds and `docker run … --version` reports it
+- [x] Local run of `just api test-integration` against `compose.yaml` passes
+  (not in CI, not claimed to be) — 2026-09-23 on `main` at `348a3fd`: all 15
+  server packages `ok`, none skipped, via testcontainers-go (Postgres, Redis,
+  Meilisearch)
+- [x] `just release-check` and `just api release-check` pass
+- [x] **(human)** `just release v2.0.0-beta.3` — cut from `b5350ec` (#125's
+  merge), not the Phase 4 merge commit `348a3fd`: a tag push runs the workflows
+  as they exist in the tagged commit, and `348a3fd`'s `ghcr.yml` still tagged
+  every image `latest`, so a beta would have become `latest`. #125 dropped
+  `type=raw,value=latest` from `ghcr.yml` and `ecr.yml` until v2.0.0 proper
+- [x] **(human)** Confirm `prerelease.yml` produced both binaries and the image —
+  run 35874668420: the release is a pre-release carrying `docz_*` and
+  `docz-api_*` archives for darwin/linux × amd64/arm64 with SBOMs and a signed
+  `checksums.txt`; the image and chart `0.9.0` pushed. The chart job first
+  failed `403 write_package` — `charts/docz-api` is its own GHCR package and
+  needed its own Actions-access grant, as the image had in Phase 2 — and
+  passed on rerun
+- [x] **(human)** `docker pull ghcr.io/donaldgifford/docz-api:2.0.0-beta.3`
+  succeeds and `docker run … -version` reports `docz-api v2.0.0-beta.3 (commit
+  b5350ec…)` — the published tag is **`2.0.0-beta.3`** (metadata-action's
+  `{{version}}` strips the `v`; see the Phase 4 chart note)
 - [ ] **(human)** Confirm the rendered wiki and the `api:` listing return no
-  archived document
-- [ ] Flip IMPL-0019 to `Completed` and DESIGN-0016 to `Implemented`
+  archived document — the wiki half holds (neither `docz wiki update --dry-run`
+  nor `mkdocs.yml` names `archive`); the docz-site check is deferred to a later
+  pass, since archived pages indexed by #121's ingest predate #124's exclude —
+  `deferred - human required`
+- [x] Flip IMPL-0019 to `Completed` and DESIGN-0016 to `Implemented`
 
 <!--docz:tasks:end-->
 
@@ -492,15 +509,15 @@ Everything that makes the result enforceable and visible correctly from outside.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] `ParseBytes` ≡ `Load` table test, `HOME` neutralised (Phase 1)
-- [ ] `ParseBytes` reads no filesystem and does not modify its input (Phase 1)
-- [ ] `ParseBytes` reachable from `test/consumer` (Phase 1)
-- [ ] `TestConfigLoadsFixtureManifest` relocated to ingest (Phase 3)
-- [ ] Import rewrite spared the archive (Phase 3)
-- [ ] `TestLayerRules_PkgNeverImportsInternal`, proven to fire (Phase 4)
-- [ ] `wiki.exclude` / `api.exclude` agreement (Phase 4)
-- [ ] `just parity` zero diffs at the end of every phase
-- [ ] `just api test-integration` locally before the tag (Phase 5)
+- [x] `ParseBytes` ≡ `Load` table test, `HOME` neutralised (Phase 1)
+- [x] `ParseBytes` reads no filesystem and does not modify its input (Phase 1)
+- [x] `ParseBytes` reachable from `test/consumer` (Phase 1)
+- [x] `TestConfigLoadsFixtureManifest` relocated to ingest (Phase 3)
+- [x] Import rewrite spared the archive (Phase 3)
+- [x] `TestLayerRules_PkgNeverImportsInternal`, proven to fire (Phase 4)
+- [x] `wiki.exclude` / `api.exclude` agreement (Phase 4)
+- [x] `just parity` zero diffs at the end of every phase
+- [x] `just api test-integration` locally before the tag (Phase 5)
 
 <!--docz:testing:end-->
 

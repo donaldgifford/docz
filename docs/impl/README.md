@@ -49,5 +49,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0016 | v1.2.0 — api config block and docparse.Title | Completed | 2026-08-11 | Donald Gifford | [0016-v120-api-config-block-and-docparsetitle.md](0016-v120-api-config-block-and-docparsetitle.md) |
 | IMPL-0017 | v1.3.0 — updated frontmatter field and the docz update stamp pass | Draft | 2026-09-12 | Donald Gifford | [0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md](0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md) |
 | IMPL-0018 | v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap | Completed | 2026-09-19 | Donald Gifford | [0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md](0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md) |
-| IMPL-0019 | docz-api move-in: v2.0.0-beta.3 | In Progress | 2026-09-22 | Donald Gifford | [0019-docz-api-move-in-v200-beta3.md](0019-docz-api-move-in-v200-beta3.md) |
+| IMPL-0019 | docz-api move-in: v2.0.0-beta.3 | Completed | 2026-09-22 | Donald Gifford | [0019-docz-api-move-in-v200-beta3.md](0019-docz-api-move-in-v200-beta3.md) |
 <!-- END DOCZ AUTO-GENERATED -->
