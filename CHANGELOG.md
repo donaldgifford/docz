@@ -27,6 +27,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ui)* Retarget links to docz-api's old repository at docz
 - *(impl)* IMPL-0020 Phase 2 local gates pass
 - *(impl)* IMPL-0020 Phase 2 PR opened ([#130](https://github.com/donaldgifford/docz/issues/130))
+- *(impl)* Record the IMPL-0020 Phase 2 CI fixes
 
 ### Testing
 
