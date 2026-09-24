@@ -5,8 +5,15 @@
 # bash, not zsh — CI runners don't ship zsh.
 set shell := ["bash", "-cu"]
 
+# A module of the root justfile (`mod? ui 'ui.just'`), invoked as
+# `just ui <recipe>`. Bun, orval, Vite, Playwright, and bundle-budget.ts all
+# resolve paths from the cwd, so every recipe runs in ui/.
+set working-directory := "ui"
+
+# Lists this module's recipes. ui/ has no justfile of its own, so a bare
+# `just --list` here would climb to the root's.
 default:
-    @just --list
+    @just --list ui
 
 # Install dependencies
 install:
@@ -86,11 +93,11 @@ e2e:
 preview:
     bun run preview
 
-local_compose := "docker compose -f deploy/compose.local.yaml"
+local_compose := "docker compose -f ../deploy/ui/compose.local.yaml"
 
 # Build + start docz-site (:8090) against the running docz-api local stack
 local-up:
-    @docker network inspect docz-api-local_default >/dev/null 2>&1 || { echo "✗ docz-api local stack not running — run 'just local-up' in ../docz-api first"; exit 1; }
+    @docker network inspect docz-api-local_default >/dev/null 2>&1 || { echo "✗ docz-api local stack not running — run 'just api local-up' first"; exit 1; }
     @{{ local_compose }} up -d --build --wait
     @echo "✓ docz-site up at http://localhost:8090 (proxying to docz-api-local)"
 
@@ -103,19 +110,19 @@ local-down:
 
 # Lint the chart (ci-values supplies the required values with no defaults)
 helm-lint:
-    @helm lint charts/docz-site -f charts/docz-site/ci/ci-values.yaml
+    @helm lint ../charts/docz-site -f ../charts/docz-site/ci/ci-values.yaml
 
 # Render the chart with the ci values (fast "does it template" check)
 helm-template:
-    @helm template docz-site charts/docz-site -f charts/docz-site/ci/ci-values.yaml
+    @helm template docz-site ../charts/docz-site -f ../charts/docz-site/ci/ci-values.yaml
 
 # Run the chart's helm-unittest suite (needs the helm-unittest plugin)
 helm-unittest:
-    @helm unittest charts/docz-site
+    @helm unittest ../charts/docz-site
 
 # Regenerate the chart README from README.md.gotmpl + values.yaml
 helm-docs:
-    @helm-docs --chart-search-root=charts
+    @helm-docs --chart-search-root=../charts/docz-site
 
 # CI parity: everything the ci workflow runs, in order
 ci: gen-api lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check

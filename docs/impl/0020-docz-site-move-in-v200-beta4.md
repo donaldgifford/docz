@@ -310,9 +310,12 @@ no Go file arrives, the vendored spec keeps orval working, and
   gitignored and the MSW preview build imports it
 - [x] `ci.yml` `helm-unittest`: loop over `charts/*/` instead of naming
   `charts/docz-api`
-- [ ] `ui.just`: `set working-directory := "ui"`; helm recipes →
+- [x] `ui.just`: `set working-directory := "ui"`; helm recipes →
   `../charts/docz-site`; `local-up`/`local-down` →
-  `../deploy/ui/compose.local.yaml`, with the hint naming `just api local-up`
+  `../deploy/ui/compose.local.yaml`, with the hint naming `just api local-up`.
+  `default` became `just --list ui`: `ui/` has no justfile of its own, so
+  the inherited bare `just --list` climbed to the root's and listed that.
+  `helm-docs` searches `../charts/docz-site` only, not both charts
 - [ ] Root `justfile` `ci`: append `ui::install ui::gen-api ui::lint
   ui::fmt-check ui::typecheck ui::test ui::test-server ui::build
   ui::bundle-budget ui::gen-api-check` (DESIGN-0017 OQ 6)
