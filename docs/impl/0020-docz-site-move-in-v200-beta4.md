@@ -251,24 +251,24 @@ no Go file arrives, the vendored spec keeps orval working, and
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `git clone --no-local https://github.com/donaldgifford/docz-site /tmp/docz-site-graft`
+- [x] `git clone --no-local https://github.com/donaldgifford/docz-site /tmp/docz-site-graft`
   at the Phase 1 SHA
-- [ ] Run `git filter-repo`, dropping `scripts/labels.sh` (byte-identical
+- [x] Run `git filter-repo`, dropping `scripts/labels.sh` (byte-identical
   to ours) and `ct.yaml` (identical bar one blank line) with `--invert-paths`,
   then `--path-rename` in order: `:ui/`, `ui/docs/:docs/archive/ui/`,
   `ui/CHANGELOG.md:docs/archive/ui/CHANGELOG.md`,
   `ui/charts/docz-site/:charts/docz-site/`, `ui/Dockerfile:Dockerfile.ui`,
   `ui/deploy/:deploy/ui/`, `ui/justfile:ui.just`. Record the exact
   invocation in the Phase 2 notes below
-- [ ] Verify the rewrite before merging:
+- [x] Verify the rewrite before merging:
   `git ls-tree --name-only HEAD` lists exactly `Dockerfile.ui`, `charts`,
   `deploy`, `docs`, `ui`, and `ui.just`, and `git ls-tree -r --name-only HEAD charts`
   holds only `charts/docz-site/` plus `charts/.yamllint.yml`
-- [ ] `git remote add site-local /tmp/docz-site-graft`,
+- [x] `git remote add site-local /tmp/docz-site-graft`,
   `git fetch --no-tags site-local`, then on a branch off `main`
   `git merge --allow-unrelated-histories --no-commit site-local/main`.
   `git tag | wc -l` is unchanged afterwards
-- [ ] Resolve `charts/.yamllint.yml` as the union of both (the only expected
+- [x] Resolve `charts/.yamllint.yml` as the union of both (the only expected
   conflict; hashes `2be451f` and `e423206` differ)
 - [ ] Add `ui/go.mod`: `module github.com/donaldgifford/docz/v2/ui`, with a
   comment saying it exists only to keep `node_modules` out of the root
@@ -320,8 +320,41 @@ no Go file arrives, the vendored spec keeps orval working, and
 **Phase 2 notes**, the exact commands, filled in as run:
 
 ```bash
-# (to be recorded)
+git clone --no-local https://github.com/donaldgifford/docz-site /tmp/docz-site-graft
+cd /tmp/docz-site-graft
+git checkout -B main f1203c91d1a9f69ccdae140d9eabc3185f1bce8f
+
+# Two passes: the drop, then the renames (applied in order).
+git filter-repo --force --refs main --invert-paths \
+  --path scripts/labels.sh --path ct.yaml
+git filter-repo --force --refs main \
+  --path-rename :ui/ \
+  --path-rename ui/docs/:docs/archive/ui/ \
+  --path-rename ui/CHANGELOG.md:docs/archive/ui/CHANGELOG.md \
+  --path-rename ui/charts/docz-site/:charts/docz-site/ \
+  --path-rename ui/charts/.yamllint.yml:charts/.yamllint.yml \
+  --path-rename ui/Dockerfile:Dockerfile.ui \
+  --path-rename ui/deploy/:deploy/ui/ \
+  --path-rename ui/justfile:ui.just
+# -> 150 commits, rewritten tip 9458076735e23b0b9f7a001bbbddf42e71b7e9a3
+
+cd ~/code/docz   # on feat/docz-site-graft, cut from main after #129
+git remote add site-local /tmp/docz-site-graft
+git fetch --no-tags site-local
+git merge --allow-unrelated-histories --no-commit site-local/main
+# one conflict, charts/.yamllint.yml: union of the two ignore lists
+git commit    # 3630665; git tag | wc -l is 26 before and after
 ```
+
+The list above lacked one rename: docz-site's `charts/.yamllint.yml` sits
+beside `charts/docz-site/`, not inside it, so without
+`ui/charts/.yamllint.yml:charts/.yamllint.yml` it landed at
+`ui/charts/.yamllint.yml` and the expected conflict never happened. The
+first attempt was thrown away and re-cloned. `ct.yaml` differed from ours
+by one line, a stray helm-testsuite `$schema` comment, not a blank line.
+The merge was committed on its own, with only the conflict resolved, and
+the folds below are separate commits on top of it, so the merge commit is
+the graft and nothing else.
 
 <!--docz:criteria:start-->
 #### Success Criteria
