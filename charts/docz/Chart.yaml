@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/chart.json
+apiVersion: v2
+name: docz
+description: Helm chart for docz — docz-api, docz-site, and their backends in one release
+type: application
+version: 0.1.0
+# The default tag for BOTH images (docz-api and docz-site), not the git tag.
+# docker/metadata-action publishes bare semver (`type=semver,pattern={{version}}`
+# strips the "v"), so a `v`-prefixed appVersion renders an image ref that does
+# not exist. Guarded by tests/chart/version_test.yaml.
+appVersion: "2.0.0-beta.5"
+home: https://github.com/donaldgifford/docz
+sources:
+  - https://github.com/donaldgifford/docz
+maintainers:
+  - name: donaldgifford

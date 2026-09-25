@@ -160,11 +160,12 @@ suites to it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `charts/docz/Chart.yaml`: `name: docz`, `version: 0.1.0`,
+- [x] `charts/docz/Chart.yaml`: `name: docz`, `version: 0.1.0`,
   `appVersion: "2.0.0-beta.5"` (bare), `type: application`, a description,
   `home`, `sources`, and a `maintainers` entry copied from
   `charts/docz-api/Chart.yaml`. Add a `kubeVersion` only if docz-api's chart
   has one
+  Done; `charts/docz-api` has no `kubeVersion`, so none is set.
 - [ ] `charts/docz/.helmignore`, copied from `charts/docz-api/`, with
   `tests/` and `ci/` still ignored
 - [ ] `templates/_helpers.tpl` (DESIGN-0018 §2, §6):
