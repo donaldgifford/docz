@@ -797,7 +797,8 @@ just api run                  # build + run the binary
 ```
 
 The image is distroless and nonroot, published to
-`ghcr.io/donaldgifford/docz-api`; the Helm chart is `charts/docz-api/`. Running
+`ghcr.io/donaldgifford/docz-api`; the Helm chart is `charts/docz/`, which
+deploys the API, the site, and the API's backends together. Running
 it locally, with compose, webhooks, and the monitoring stack, is covered in
 [DEVELOPMENT.md](DEVELOPMENT.md#developing-docz-api-the-server).
 
@@ -817,6 +818,7 @@ just ui ci                    # everything the ui CI job runs
 
 Its typed client is generated from the same `api/openapi.yaml` docz-api
 serves, so there is one spec. The image is published to
-`ghcr.io/donaldgifford/docz-site`, and the repository has **two charts**:
-`charts/docz-api/` and `charts/docz-site/`, published from the same tag.
+`ghcr.io/donaldgifford/docz-site`, and both images deploy with **one chart**,
+[`charts/docz/`](charts/docz/README.md), published from the same tag as
+`oci://ghcr.io/donaldgifford/charts/docz`.
 [ui/README.md](ui/README.md) covers the rest.

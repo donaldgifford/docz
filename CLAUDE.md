@@ -15,9 +15,13 @@ records are archived under `docs/archive/api/`, where an ID means docz-api's;
 the `api:` listing publishes them (pinned together by `test/archive`), and
 work they left open continues as INV-0012 and INV-0013. Since IMPL-0020 it
 also holds **docz-site**, the frontend (DESIGN-0017): `ui/` is its Bun/Vite/React
-project, `charts/docz-site/` its chart, `deploy/ui/` its compose stacks, and
+project, `charts/docz-site/` its (now deprecated) chart, `deploy/ui/` its compose stacks, and
 `Dockerfile.ui` its image, with its records archived under `docs/archive/ui/`
-on the same rule. See "Frontend (`ui/`)" below and `ui/CLAUDE.md`.
+on the same rule. See "Frontend (`ui/`)" below and `ui/CLAUDE.md`. Since
+IMPL-0021 both deploy with **one Helm chart**, `charts/docz` (DESIGN-0018):
+the API, the site, and the API's backends in one release, with
+`charts/docz-api` and `charts/docz-site` kept only as their deprecated final
+versions. See "Helm chart (`charts/docz`)" below.
 
 ## Build & Test
 
@@ -33,6 +37,7 @@ just ci             # lint + test + test-consumer + parity + validate + build + 
 just api build      # the server binary to build/bin/docz-api (api.just, a module)
 just api test       # the server's packages only: ./cmd/docz-api/... ./internal/... ./api/...
 just ui ci          # the frontend's CI parity: install, gen-api, lint, fmt-check, typecheck, test, build, bundle-budget, gen-api-check
+just chart lint     # charts/docz: helm lint with ci/ci-values.yaml (chart.just, a module; also template, unittest, docs)
 ```
 
 `just` replaced `make` (ADR-0004 Decision 4) and the `Makefile` is gone — there
@@ -47,7 +52,10 @@ is composition only: `set shell`, the imports, `_default` (which is
 docz-api's recipes share 27 names with `docz.just` and just rejects a duplicate
 across sibling imports at parse time, so each arriving half is namespaced —
 `just api build`, `just ui build`, and `api::lint` from a root gate — and loads
-the moment its file lands. All three live at the root; `ui.just` will carry
+the moment its file lands. `chart.just` (IMPL-0021) is a third module of the
+same kind, for `charts/docz`: `just chart lint|template|unittest|docs`, with
+`chart::lint` in the `ci` gate beside `api::helm-lint` until the old charts are
+deleted at v2.0.0. All four live at the root; `ui.just` will carry
 `set working-directory := "ui"` for its Bun commands. Two forms
 changed shape rather than name: `make release TAG=vX` is `just release vX` (a
 positional parameter), and `make parity BIN=<path>` is `just bin=<path> parity`
@@ -147,15 +155,19 @@ the move changed about the repository.
   via `COPY --from=spec openapi.yaml /api/openapi.yaml`, laid out so orval's
   `../api/openapi.yaml` resolves inside the stage. Only the spec crosses the
   boundary; `.dockerignore` excludes `ui` from the api image's root context.
-- **Two components publish from one tag.** Bake has `-api` and `-ui` target
-  families, and `ghcr.yml`/`ecr.yml` take a `component` input (`api`|`ui`)
-  resolved in one table. `prerelease.yml` and `release.yml` each call the pair
-  twice, so a `v*-beta.*` tag pushes `docz-api` and `docz-site` images and
-  both charts. **Each GHCR package needs its own Actions access grant** for
-  this repository (`docz-site` and `charts/docz-site` are separate from
-  docz-api's two); without one the push fails `403 write_package`. The chart
-  is bumped once per release, before the tag, and its `appVersion` is bare
-  semver like docz-api's.
+- **Three components publish from one tag.** Bake has `-api` and `-ui` target
+  families, and `ghcr.yml`/`ecr.yml` take a `component` input
+  (`api`|`ui`|`chart`) resolved in one table. `chart` is `charts/docz` alone,
+  with `-` for the image fields, so it is called with no tag and the image job
+  skips. `prerelease.yml` calls each component, so a `v*-beta.*` tag pushes the
+  `docz-api` and `docz-site` images and the `docz` chart. **Charts publish
+  only from a tag**: the `chart` job is gated on a `publish_chart` input that
+  `release.yml`'s merge-to-main calls set to `false` (IMPL-0021 OQ 2).
+  **Each GHCR package needs its own Actions access grant** for this repository
+  (`docz-site`, `docz-api`, and `charts/docz` each need one); without it the
+  push fails `403 write_package`, and granting it after the first 403 and
+  re-running the job is the expected path. `charts/docz` is bumped once per
+  release, before the tag, and its `appVersion` is bare semver.
 - **CI stays path-filtered** (ADR-0004 OQ 4, revisited as DESIGN-0017 OQ 7).
   The `ui` and `ui-e2e` jobs run on `ui/**`, `Dockerfile.ui`, and
   `api/openapi.yaml`, so a spec change runs both halves; the Go jobs are
@@ -164,11 +176,51 @@ the move changed about the repository.
   generated file, a Go test that reads `ui/`. Until then the UI reaches the
   server only over the specced HTTP surface.
 
+## Helm chart (`charts/docz`)
+
+One chart deploys everything (IMPL-0021, DESIGN-0018): `api.*` and `site.*`
+are the two workloads, and `store`, `queue`, and `search` are the API's
+backends, unchanged from docz-api's chart. `auth`, `otel`, `metrics`,
+`serviceMonitor`, `prometheusRule`, and `extraLabels` are shared at the top
+level. `chart.just` drives it, and its README is the operator's guide.
+
+- **Names and selectors.** Every object is `<fullname>-<role>` (api, site,
+  postgres, postgres-pooler, valkey, meilisearch, test), and the role is
+  `app.kubernetes.io/component`, which is in **every** selector, Deployment
+  `matchLabels` included. It is safe there because the chart takes new
+  installs only (DESIGN-0018 OQ 3c); there is no in-place upgrade from the old
+  charts. The workload helpers take `dict "ctx" $ "component" "api"` and read
+  `index .ctx.Values .component`, so `docz.hpa`, `docz.ingress`, and
+  `docz.httpRoute` serve both workloads as one-line includes.
+- **`extraLabels`** reaches metadata and pod templates, never a selector, a
+  `volumeClaimTemplate`, or CNPG `inheritedMetadata`, and a key the chart sets
+  fails the render.
+- **Wiring.** `DOCZ_API_URL` derives from `docz.api.internalUrl` unless
+  `site.config.doczApiUrl` is set. `auth.providers` feeds both `AUTH_PROVIDERS`
+  and `DOCZ_AUTH_PROVIDERS`, except with `none`: docz-site's whitelist has no
+  `none`, and its `/readyz` fails on it, so the site's variable is omitted.
+  `otel.endpoint` is one collector URL rendered two ways, because the runtimes
+  read it differently: `host:port` for the API's
+  `otlptracehttp.WithEndpoint`, and the full `/v1/traces` URL for the site's
+  exporter.
+- **Edges.** There is one Ingress and one HTTPRoute per workload, each routed
+  to its own Service. No Tailscale is in the chart:
+  `deploy/tailscale-operator.md` is the only Tailscale documentation, and a
+  single shared route is a follow-up (DESIGN-0018 Rollout step 7).
+- **Tests.** `tests/api/` and `tests/site/` are the old charts' suites ported;
+  `tests/chart/` covers what only a merged chart has (wiring, selectors,
+  edges, extraLabels, no Tailscale, versions). helm-unittest runs with
+  `-f 'tests/**/*_test.yaml'`. The `.helmignore` anchors `/tests/` and `/ci/`,
+  because an unanchored `tests/` also drops `templates/tests/`: the old
+  charts never packaged their `helm test` hook. The ci-values therefore run
+  busybox `httpd` serving `/healthz`, since `ct install` now runs the hook.
+
 ## Server (internal/, cmd/docz-api)
 
 The docz-api server arrived with its full history in IMPL-0019 Phase 2
 (DESIGN-0016, ADR-0004): `cmd/docz-api/` is its binary, `internal/` its
-library code, `api/` its OpenAPI contract, `charts/docz-api/` its Helm chart,
+library code, `api/` its OpenAPI contract, `charts/docz` its Helm chart (shared
+with the site since IMPL-0021; `charts/docz-api/` is the deprecated final),
 `deploy/api/` its compose stacks, and `Dockerfile.api` its image. Its recipes
 live in `api.just` and run as `just api <recipe>` (`test`, `lint`, and `fmt` scoped to the server's
 packages; release tagging, the licence check, and the gates are the root's;
@@ -1023,6 +1075,12 @@ index/changelog precedents:
   `additional_docs: [DEVELOPMENT.md]`).
 
 ### Helm chart + publish pipeline (INV-0004 / IMPL-0004)
+
+> **Superseded for the chart by `charts/docz`** (IMPL-0021, DESIGN-0018; see
+> "Helm chart (`charts/docz`)" above). `charts/docz-api` is **deprecated**:
+> 0.10.0 is its final version, and it is deleted at v2.0.0. What follows is
+> its history. The publish-pipeline, monitoring, and `contrib/` conventions
+> still hold.
 
 The `charts/docz-api/` Helm chart, the container/chart publish workflows
 (`ghcr.yml`/`ecr.yml` called from `release.yml`), the local monitoring stack

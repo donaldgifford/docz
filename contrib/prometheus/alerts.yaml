@@ -3,7 +3,7 @@
 # Prometheus alerting rules for docz-api.
 #
 # This is the SAME alert pack as the Helm chart's PrometheusRule
-# (charts/docz-api/templates/prometheusrule.yaml), in two formats:
+# (charts/docz/templates/api-prometheusrule.yaml), in two formats:
 #   - chart users get these via `prometheusRule.enabled=true`;
 #   - vanilla-Prometheus users add THIS file to `rule_files` directly.
 # Keep the five shared alerts (DoczAPIDown, DoczAPIHighErrorRate,

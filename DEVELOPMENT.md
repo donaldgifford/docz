@@ -1329,8 +1329,9 @@ would otherwise try to build. Do not delete it; `TestUIModuleFence` in
 ### Images and charts
 
 `docker buildx bake dev-ui` (or `just ui docker-build`) builds the image with
-`ui/` as its context and the spec passed in as a named `spec` context. The
-chart is `charts/docz-site/`, next to `charts/docz-api/`; `just ui helm-lint`,
-`just ui helm-unittest`, and `just ui helm-docs` are its recipes. Its
-`appVersion` is bare semver, and its `version` is bumped once per release,
-before the tag.
+`ui/` as its context and the spec passed in as a named `spec` context. Both
+images deploy with one chart, `charts/docz/`; `just chart lint`,
+`just chart unittest`, and `just chart docs` are its recipes. Its `appVersion`
+is bare semver, and its `version` is bumped once per release, before the tag.
+`charts/docz-site/` and `charts/docz-api/` are deprecated finals, kept until
+v2.0.0 with their `just ui helm-*` and `just api helm-*` recipes.

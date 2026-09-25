@@ -4,8 +4,9 @@
 # Arrived with docz-api in IMPL-0019 Phase 2 and now governs docz's own
 # CHANGELOG.md. docz-api's grafted history is skipped through .cliffignore
 # (DESIGN-0016 OQ 3); its changelog is archived at
-# docs/archive/api/CHANGELOG.md. The chart-only changelog is at
-# charts/docz-api/cliff.toml and is invoked with --include-path 'charts/**'.
+# docs/archive/api/CHANGELOG.md. Each chart has its own changelog config,
+# charts/<chart>/cliff.toml (charts/docz/cliff.toml for the current chart),
+# which the publish workflow invokes with --include-path 'charts/<chart>/**'.
 
 [changelog]
 header = """

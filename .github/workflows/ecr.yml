@@ -11,7 +11,8 @@ name: Publish to ECR
 #
 # Operator prep (one-time, outside this workflow):
 #   - IAM role with GitHub OIDC trust policy for repo:donaldgifford/docz:*
-#   - ECR repos, one image and one chart per component (see the resolve job)
+#   - ECR repos, one image and one chart per component (see the resolve job);
+#     the chart component needs only a `docz` chart repository
 #   - Repo secrets: ECR_AWS_ACCOUNT_ID, ECR_REGION, ECR_ROLE_ARN
 on:
   workflow_call:

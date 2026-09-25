@@ -112,43 +112,11 @@ For **local development** the webhook URL can be an ngrok tunnel to your machine
 [DEVELOPMENT.md](../DEVELOPMENT.md#receiving-github-webhooks-locally-ngrok).
 
 For a **Kubernetes / homelab** deployment with the `docz` chart
-(`charts/docz`, which replaces `charts/docz-api`), the chart has no Tailscale
-in it. Put a Tailscale operator Ingress with Funnel in front of the API, as
-described in [`../tailscale-operator.md`](../tailscale-operator.md).
-
-The rest of this section applies to the deprecated `charts/docz-api` only.
-Expose docz-api behind its **own** Tailscale Funnel node. That chart ships a
-Tailscale sidecar
-(`tailscale.enabled=true`) that joins the tailnet as a separate node, so
-docz-api gets its **own** MagicDNS hostname (`tailscale.hostname`, default
-`docz-api`) and its webhook lives at
-`https://docz-api.<tailnet>.ts.net/webhooks/github`. Each app runs its own
-sidecar and therefore its own Funnel hostname, so the shared `/webhooks/github`
-path never collides with a sibling service — there is no need to override the
-path. Enable Funnel for the node's tag in your tailnet ACLs and supply a
-Tailscale auth key via `tailscale.authKeySecret`.
-
-Three things that produce a **TLS EOF** on every webhook delivery if missed:
-
-1. **Funnel must be permitted in the tailnet policy** — a `nodeAttrs` entry
-   granting the `funnel` attribute to the node's tag, and HTTPS certificates
-   enabled for the tailnet (the serve config resolves `${TS_CERT_DOMAIN}`).
-   Without it tailscaled refuses to serve and the public ingress drops
-   connections.
-2. **Node state must persist.** `tailscale.persistState` (default `true`,
-   chart ≥ 0.4.0) stores tailscaled's node key in a Secret via
-   `TS_KUBE_SECRET`. With ephemeral state the key is regenerated on every
-   restart, the old node keeps the `docz-api` hostname, the new one becomes
-   `docz-api-1`, and the Funnel DNS record is left pointing at a dead node.
-   Requires `tailscale.rbac.create` (the default).
-3. **The namespace's Pod Security level.** The sidecar satisfies `restricted`
-   as of chart 0.4.0; earlier charts set no `allowPrivilegeEscalation` or
-   capability drop, so a `restricted`-enforcing namespace rejected the pod
-   outright — which looks like a Funnel outage, because nothing is running.
-
-Diagnose with `tailscale status` / `tailscale funnel status` in the sidecar: a
-node named `docz-api-1` (or higher) is the state problem, an empty funnel
-status is the ACL one.
+(`charts/docz`), GitHub needs a public path to the API's `/webhooks/github`.
+Give it one through `api.ingress` or `api.httpRoute`, which route only to the
+API's Service. The chart itself carries no Tailscale. To use the Tailscale
+operator with Funnel as that public path, see
+[`../tailscale-operator.md`](../tailscale-operator.md).
 
 ### Repository permissions
 
@@ -272,13 +240,13 @@ Okta-specific things to get right:
    uses). Also confirm the user's email is **verified** in Okta — the service
    drops an email the issuer marks `email_verified:false`.
 
-On Kubernetes the Helm chart wires the same variables from
-`config.authProviders`, `config.oktaIssuer`, `config.oktaClientID` and
-`secrets.oktaClientSecret` (Secret key `okta-client-secret`); only the enabled
-providers' env and Secret keys are rendered. To source the client secret from a
-secret manager, set `secrets.create=false` and point `secrets.existingSecret` at
-a Secret you populate however you like — see
-[the chart README](../charts/docz-api/README.md).
+On Kubernetes the `docz` Helm chart wires the same variables from
+`auth.providers`, `api.config.oktaIssuer`, `api.config.oktaClientID` and
+`api.secrets.oktaClientSecret` (Secret key `okta-client-secret`); only the
+enabled providers' env and Secret keys are rendered. To source the client
+secret from a secret manager, set `api.secrets.create=false` and point
+`api.secrets.existingSecret` at a Secret you populate however you like — see
+[the chart README](../../charts/docz/README.md).
 
 For local development you usually run **Keycloak** instead of a hosted Okta
 tenant (same OIDC code path); see

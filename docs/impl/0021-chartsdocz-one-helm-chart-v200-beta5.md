@@ -591,7 +591,7 @@ first phase that touches the old charts and the workflows.
   - regenerate with `just api helm-docs` and `just ui helm-docs`;
   - each chart's bare-semver unit test still passes.
   Done. docz-api is now 0.10.0 and docz-site 0.3.0; both are `appVersion: "2.0.0-beta.5"` and `deprecated: true`, and each description starts with "DEPRECATED: use oci://…/docz" so `helm search` shows it. Each NOTES opens with the deprecation block (docz-api's adds the Tailscale line), and each README opens with a `[!WARNING]` notice. Both were regenerated with `just api helm-docs` and `just ui helm-docs`. The default-tag tests were bumped to beta.5, and unittest passes all 145 (96 + 49), bare-semver tests included.
-- [ ] Repository docs name `charts/docz`:
+- [x] Repository docs name `charts/docz`:
   - `CLAUDE.md`:
     - the opening paragraph, the Build & Test block (`just chart …`), and
       the justfile paragraph (a third module);
@@ -610,6 +610,7 @@ first phase that touches the old charts and the workflows.
     short paragraph saying that GitHub needs a public path to the API's
     `/webhooks/github` through `api.ingress` or `api.httpRoute`, with a
     link to `deploy/tailscale-operator.md` (Open Question 8).
+  Done. CLAUDE.md: the opening paragraph; the Build & Test `just chart lint` line; the justfile paragraph (a third module, with `chart::lint` in `ci`); the publish bullet, now "Three components publish from one tag" with the `chart` row and tag-only charts; the server intro; a deprecation note on the docz-api "Helm chart + publish pipeline" section; and a new "Helm chart (`charts/docz`)" section. Also updated: README.md (both mentions), DEVELOPMENT.md, CONTRIBUTING.md, ui/CLAUDE.md (chart-bump rule, tag-only publishing, `version_test`), the `cliff.toml`, `mise.toml`, and `contrib/prometheus/alerts.yaml` comments, the `ecr.yml` operator-prep comment, and `charts/.yamllint.yml` (ignores `charts/docz/templates/`). In `deploy/api/README.md` the sidecar text and its three failure modes are gone, replaced by a paragraph on `api.ingress`/`api.httpRoute` with a link to the operator guide; its Okta paragraph now names the new value paths and links the new chart README. The references left are the just recipes and workflow rows for the deprecated charts (still live until v2.0.0), their deprecation notes, archived docs, and test fixtures.
 - [ ] `just api lint-actions`, `just validate`, `just ci`, and CI green,
   including `ct lint` on all three charts
 
