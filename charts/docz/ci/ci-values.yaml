@@ -1,0 +1,6 @@
+# CI render/lint values. Overrides each workload's container to a no-op
+# busybox and supplies a dummy for every `required` value so `helm lint`,
+# `helm template`, and `ct install` pass without real secrets. NOT a
+# deployable config.
+auth:
+  providers: "github"

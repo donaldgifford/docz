@@ -191,7 +191,7 @@ suites to it.
   (`additionalProperties: true`), with `extraLabels` as a string map whose
   values match the Kubernetes label-value pattern (≤63 characters) and
   `auth.providers` matching comma-separated `github|okta|keycloak|none`
-- [ ] `ci/ci-values.yaml`, starting with the top-level keys only. Phases 2
+- [x] `ci/ci-values.yaml`, starting with the top-level keys only. Phases 2
   and 3 add each workload's busybox override and dummies
 - [ ] `cliff.toml`, copied from `charts/docz-site/cliff.toml` with the
   header naming `docz`. Add `CHANGELOG.md` with that header and no entries,
