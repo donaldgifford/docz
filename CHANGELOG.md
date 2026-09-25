@@ -14,6 +14,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* DESIGN-0018, one Helm chart for docz
 - *(design)* Resolve DESIGN-0018 open questions
 - *(design)* DESIGN-0018 uses an empty extraLabels map for tracking
+- *(impl)* IMPL-0021, charts/docz and v2.0.0-beta.5
 
 ## [2.0.0-beta.4] - 2026-09-24
 
