@@ -55,6 +55,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Close IMPL-0021 Phase 4 gates
 - *(impl)* Close IMPL-0021 Phase 3 gates
 - Name charts/docz as the chart
+- *(impl)* Close IMPL-0021 Phase 5 gates
+- *(impl)* Record IMPL-0021 follow-up issues
 
 ### Testing
 
