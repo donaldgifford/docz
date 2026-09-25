@@ -1,7 +1,7 @@
 ---
 id: INV-0014
 title: "Consolidate the docz-api and docz-site Helm charts into one chart"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-09-25
 ---
@@ -203,19 +203,22 @@ docz-api's baked Postgres volume makes that expensive (Observation 4). The
 templates are similar enough that combining them is routine work
 (Observation 3).
 
-What this investigation does not settle is the shape. The questions below
-cover it, and the status stays Open until they are answered.
+The three questions under Recommendation were resolved on 2026-09-25: a
+single merged chart (1b), the two published charts deprecated (2a), and new
+installs only, with no migration path (3c).
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Answer the three questions below, then write a DESIGN for the chosen shape
-and an IMPL whose last phase ships the chart in a beta. Separately, and
-regardless of this decision: bump `charts/docz-api` to `appVersion:
-2.0.0-beta.4` before the next tag, so a defaults install stops pairing
-mismatched versions.
+Write a DESIGN for one merged chart, `charts/docz`, with `api:` and `site:`
+value blocks, and an IMPL whose last phase publishes it in a beta alongside
+final, deprecation-noted versions of `charts/docz-api` and
+`charts/docz-site`. Existing releases are not migrated: consolidation is for
+new installs, before v2.0.0. Separately: bump `charts/docz-api` to
+`appVersion: 2.0.0-beta.4` before the next tag, so a defaults install stops
+pairing mismatched versions while both charts are still published.
 
 ### 1. What shape does one chart take?
 
@@ -234,6 +237,10 @@ mismatched versions.
   cheapest option, but the duplication stays.
 - d. Other.
 
+> **Resolved 2026-09-25: (b).** One merged chart, not an umbrella. The
+> templates and all 145 tests are rewritten against component-scoped
+> values, and the `component` selector label goes on both workloads.
+
 ### 2. What happens to the two published charts?
 
 - a. **Deprecate them.** Publish a final version of each whose `NOTES.txt`
@@ -244,6 +251,10 @@ mismatched versions.
   three GHCR grants.
 - c. Delete them immediately.
 - d. Other.
+
+> **Resolved 2026-09-25: (a).** A final version of each carries a
+> deprecation note pointing at `charts/docz`, and publishing stops at
+> v2.0.0.
 
 ### 3. How does an existing release move over?
 
@@ -258,6 +269,10 @@ mismatched versions.
 - c. No migration path: consolidation is for new installs only, before
   v2.0.0.
 - d. Other.
+
+> **Resolved 2026-09-25: (c).** New installs only. No migration is
+> documented or tested, so Observation 4's Postgres cost does not arise;
+> the deprecation note in question 2 says so.
 
 <!--docz:recommendation:end-->
 
