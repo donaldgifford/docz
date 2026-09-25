@@ -407,13 +407,14 @@ list, and one front door.
 - [x] `ci/ci-values.yaml` `site:` block: busybox with `sleep`, and no
   `doczApiUrl`, so the derived path is what CI installs
   Done. As with the API, the stand-in is busybox `httpd` serving `/healthz` from an emptyDir rather than `sleep`, because `ct install` runs the helm test hook. No `doczApiUrl` is set.
-- [ ] Port the six docz-site suites to `tests/site/`:
+- [x] Port the six docz-site suites to `tests/site/`:
   - `deployment`, `httproute`, `ingress`, `service`, `serviceaccount`,
     `servicemonitor`;
   - the `doczApiUrl`-required assertion becomes an "unset derives" and a
     "set overrides" pair, which moves to `tests/chart/wiring_test.yaml`;
   - httproute and ingress assertions render `site-*.yaml` and expect
     `<fullname>-site`.
+  Done: 48 tests in 6 suites, all passing. That is docz-site's 49 minus "should fail render when doczApiUrl is unset", which is replaced by the derive/override pair in `tests/chart/wiring_test.yaml`. Together `tests/api/` and `tests/site/` hold 136 tests, short of the 139 in the criterion by the two Tailscale sidecar tests (see Phase 2) and the one moved test.
 - [ ] New suites under `tests/chart/`, from DESIGN-0018's Testing Strategy:
   - `wiring_test.yaml`:
     - the URL is derived, or overridden when set;
