@@ -369,13 +369,14 @@ list, and one front door.
   `site-hpa.yaml` (the `docz.hpa` include), and `site-servicemonitor.yaml`,
   from `charts/docz-site/templates/`, with component `site` throughout
   Done. The four templates were converted from docz-site with `conv.py`; `site-hpa.yaml` is the one-line `docz.hpa` include. The container is named `docz-site`, the image comes from `docz.image`, and pod labels come from `docz.podLabels`.
-- [ ] Wiring (DESIGN-0018 §4):
+- [x] Wiring (DESIGN-0018 §4):
   - `DOCZ_API_URL` = `site.config.doczApiUrl`, or else
     `docz.api.internalUrl`, with no `required`;
   - `AUTH_PROVIDERS` and `DOCZ_AUTH_PROVIDERS` both come from
     `auth.providers`;
   - the `OTEL_*` env in both Deployments is gated on `otel.endpoint`, with
     each workload's own `OTEL_SERVICE_NAME`.
+  Done in the site-deployment commit and the otel-endpoint commit. `DOCZ_API_URL` renders `http://docz-api.<ns>.svc.cluster.local:80` for release `docz`. Both provider variables come from `auth.providers`. The `OTEL_*` variables are gated on `otel.endpoint` in both Deployments, with the endpoint derived per runtime (see the values task).
 - [ ] `api.config.authRedirectBase`: keep the `required` unless
   `docz.api.authDisabled`, and reword its values comment to say it is the
   **site's** public URL (DESIGN-0018 OQ 17)
