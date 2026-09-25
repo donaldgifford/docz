@@ -532,7 +532,8 @@ the chart runs the real images.
   - `helm test docz` → `TEST SUITE: docz-test-connection … Phase: Succeeded`.
 
   Record the output here
-- [ ] `just chart docs` leaves no diff; `just validate`; `just ci`
+- [x] `just chart docs` leaves no diff; `just validate`; `just ci`
+  All three are green. `just chart docs` leaves the tree clean; `just validate` passes (its non-strict warnings are pre-existing, in INV-0014); `just ci` ends with "✓ CI pipeline complete".
 
 <!--docz:tasks:end-->
 
