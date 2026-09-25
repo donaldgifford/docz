@@ -611,8 +611,9 @@ first phase that touches the old charts and the workflows.
     `/webhooks/github` through `api.ingress` or `api.httpRoute`, with a
     link to `deploy/tailscale-operator.md` (Open Question 8).
   Done. CLAUDE.md: the opening paragraph; the Build & Test `just chart lint` line; the justfile paragraph (a third module, with `chart::lint` in `ci`); the publish bullet, now "Three components publish from one tag" with the `chart` row and tag-only charts; the server intro; a deprecation note on the docz-api "Helm chart + publish pipeline" section; and a new "Helm chart (`charts/docz`)" section. Also updated: README.md (both mentions), DEVELOPMENT.md, CONTRIBUTING.md, ui/CLAUDE.md (chart-bump rule, tag-only publishing, `version_test`), the `cliff.toml`, `mise.toml`, and `contrib/prometheus/alerts.yaml` comments, the `ecr.yml` operator-prep comment, and `charts/.yamllint.yml` (ignores `charts/docz/templates/`). In `deploy/api/README.md` the sidecar text and its three failure modes are gone, replaced by a paragraph on `api.ingress`/`api.httpRoute` with a link to the operator guide; its Okta paragraph now names the new value paths and links the new chart README. The references left are the just recipes and workflow rows for the deprecated charts (still live until v2.0.0), their deprecation notes, archived docs, and test fixtures.
-- [ ] `just api lint-actions`, `just validate`, `just ci`, and CI green,
+- [x] `just api lint-actions`, `just validate`, `just ci`, and CI green,
   including `ct lint` on all three charts
+  All green. Locally: actionlint is clean, `just validate` passes, `just ci` ends with "✓ CI pipeline complete", and `ct lint --all` lints docz 0.1.0, docz-api 0.10.0, and docz-site 0.3.0 successfully. On PR #137, run 36129665152 passed every check, including Helm Chart Test (`ct lint` + `ct install`, 5m1s), Helm Unit Tests, Lint, Test Go, UI, UI e2e, and changelog `check`. Docker Build, the image build, which these changes do not touch, was still running when this was recorded.
 
 <!--docz:tasks:end-->
 
