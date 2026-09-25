@@ -24,6 +24,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Bug Fixes
 
 - *(chart)* Anchor charts/docz helmignore so the test hook ships
+- *(chart)* Omit the site's DOCZ_AUTH_PROVIDERS when auth is none
 
 ### Refactor
 
@@ -47,6 +48,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Record IMPL-0021 site wiring
 - *(impl)* Verify authRedirectBase wording for IMPL-0021
 - *(impl)* Record IMPL-0021 site and edge render parity
+- *(chart)* Charts/docz README
+- *(deploy)* Tailscale operator guide for GitHub webhooks
+- *(impl)* Record IMPL-0021 schema rejections
+- *(impl)* Close IMPL-0021 Phase 4 gates
 
 ### Testing
 
