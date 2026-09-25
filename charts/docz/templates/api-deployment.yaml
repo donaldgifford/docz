@@ -176,7 +176,7 @@ spec:
             {{- if .Values.otel.endpoint }}
             # Tracing is on for both workloads or for neither (DESIGN-0018 §4).
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: {{ .Values.otel.endpoint | quote }}
+              value: {{ include "docz.otel.apiEndpoint" . | quote }}
             - name: OTEL_SERVICE_NAME
               value: {{ .Values.api.otel.serviceName | default "docz-api" | quote }}
             {{- with .Values.otel.sampleRate }}

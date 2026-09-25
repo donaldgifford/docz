@@ -360,10 +360,11 @@ list, and one front door.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `values.yaml` `site:` block: docz-site's per-workload keys, `config`
+- [x] `values.yaml` `site:` block: docz-site's per-workload keys, `config`
   (`port`, `doczApiUrl: ""`, `mermaidLayout`, `navLinks`, `logLevel`,
   `logFormat`), and `otel.serviceName: docz-site`. There is no `enabled`
   key (DESIGN-0018 OQ 5)
+  Done. The block was script-built from docz-site values with comments kept. `authProviders` is dropped because `auth.providers` feeds both. The `doczApiUrl` comment now describes the derived default. `otel` holds only `serviceName`. Both old values schemas were carried into `values.schema.json` (the backend `mode` enums, the api config enums, and the site config enums), after Phase 1 had left them permissive. Finding: the shared `otel.endpoint` cannot go to both runtimes verbatim. docz-api passes it to `otlptracehttp.WithEndpoint` (bare `host:port`); docz-site uses it as the exporter `url` (full `…/v1/traces`). `docz.otel.apiEndpoint` and `docz.otel.siteEndpoint` derive each form from one value, and either old spelling is accepted.
 - [ ] `site-deployment.yaml`, `site-service.yaml`, `site-serviceaccount.yaml`,
   `site-hpa.yaml` (the `docz.hpa` include), and `site-servicemonitor.yaml`,
   from `charts/docz-site/templates/`, with component `site` throughout

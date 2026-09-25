@@ -33,11 +33,16 @@ auth:
   providers: "github"
 
 otel:
-  # -- OTLP/HTTP collector endpoint, host:port or URL
-  # (OTEL_EXPORTER_OTLP_ENDPOINT). Empty → tracing off in both workloads.
-  # Each workload names its own spans with `<workload>.otel.serviceName`.
+  # -- OTLP/HTTP collector, as `http://host:4318` or bare `host:4318`.
+  # Empty turns tracing off in both workloads. The two runtimes read
+  # OTEL_EXPORTER_OTLP_ENDPOINT differently: the API wants `host:port`,
+  # while the site wants the full traces URL. The chart derives each form
+  # from this one value. A URL that already has a path goes to the site
+  # verbatim. The API always exports over plain HTTP. Each workload names
+  # its spans with `<workload>.otel.serviceName`.
   endpoint: ""
-  # -- Trace sample rate 0.0–1.0 (OTEL_SAMPLE_RATE), for both workloads.
+  # -- Trace head-sample rate, 0.0–1.0, for both workloads (the API reads
+  # OTEL_SAMPLE_RATE and the site OTEL_TRACES_SAMPLER_ARG).
   sampleRate: 1
 
 # -- Prometheus metrics, served on each workload's HTTP port.
@@ -299,7 +304,203 @@ api:
   affinity: {}
 
 # -- docz-site: the frontend. Always installed.
-site: {}
+site:
+  # -- Number of replicas
+  replicaCount: 1
+
+  # -- Number of old ReplicaSets retained for rollback. Defaults to 3 to
+  # keep the kubectl `get rs` view tidy; bump if you need more rollback
+  # headroom. Kubernetes default is 10.
+  revisionHistoryLimit: 3
+
+  image:
+    # -- Container image repository
+    repository: ghcr.io/donaldgifford/docz-site
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Overrides the image tag (default: chart appVersion)
+    tag: ""
+
+  serviceAccount:
+    # -- Create a ServiceAccount
+    create: true
+    # -- Annotations for the ServiceAccount
+    annotations: {}
+    # -- Override the ServiceAccount name
+    name: ""
+
+  # -- Pod annotations
+  podAnnotations: {}
+
+  # -- Pod labels
+  podLabels: {}
+
+  # -- Pod security context. Defaults match the `oven/bun` runtime image,
+  # whose `bun` user is UID/GID 1000, and drop to a RuntimeDefault seccomp
+  # profile.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- Container security context. The static server reads `dist/` and
+  # proxies; it writes nothing to disk, so the rootfs is mounted read-only.
+  securityContext:
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port. Targets the container's single `http` port, which
+    # serves the SPA, /healthz, and the same-origin API proxy.
+    port: 80
+
+  # -- Container resource requests and limits
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+  # -- Liveness probe. Stays on /healthz, which is unconditional: a
+  # failing liveness probe RESTARTS the container, and restarting cannot
+  # fix a broken image or mount — that is just CrashLoopBackOff.
+  livenessProbe:
+    # @default -- See values.yaml
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 15
+
+  # -- Readiness probe. Points at /readyz, which verifies the dist/ is
+  # servable and the runtime config validated — a failing readiness probe
+  # HOLDS TRAFFIC, so a bad deploy stalls the rollout and the previous
+  # ReplicaSet keeps serving. /readyz makes no call to docz-api by
+  # design: gating readiness on the API would evict every pod from the
+  # Service when the API blipped.
+  readinessProbe:
+    # @default -- See values.yaml
+    httpGet:
+      path: /readyz
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+  # -- docz-site runtime configuration. The site is a static SPA served by
+  # a small Bun process that also reverse-proxies the API surface, so the
+  # browser and API share one origin (no CORS, first-party session cookie).
+  config:
+    # -- Container HTTP listen port (drives the PORT env var and the
+    # Service targetPort). The SPA, /healthz, /readyz, and the API proxy
+    # are all served here.
+    port: 8080
+    # -- Absolute base URL of the docz-api the site proxies to
+    # (DOCZ_API_URL). Empty derives this release's own API Service,
+    # http://<fullname>-api.<namespace>.svc.cluster.local:<api.service.port>;
+    # set it only to point the site at an API outside this release.
+    doczApiUrl: ""
+    # -- Diagram layout engine (DOCZ_MERMAID_LAYOUT): `elk` or `dagre`.
+    # mermaid 12 made ELK the default and so is it here; `dagre` restores
+    # the pre-12 layout without rebuilding the image. Injected into the
+    # SPA at runtime and whitelist-validated at both ends, so anything
+    # unrecognized falls back to `elk` — the values schema constrains it
+    # to the two names so a typo fails at install rather than silently
+    # rendering the default.
+    mermaidLayout: "elk"
+    # -- Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}`
+    # links rendered between Repos and the session menu. Injected into
+    # the SPA at runtime as JSON, whitelist-validated by the server
+    # (short label charset, same-origin app-path hrefs, cap 6); invalid
+    # entries degrade to fewer/no pins, never a broken page. Empty →
+    # no pins and the env var is omitted.
+    navLinks: []
+    # -- Log verbosity (DOCZ_LOG_LEVEL): `debug`, `info`, `warn`, or
+    # `error`. `debug` adds a line per request plus the proxied `/auth/*`
+    # flow — the level to reach for when troubleshooting an Okta or
+    # Keycloak login. Credential-bearing values (`code`, `state`,
+    # cookies) are redacted at every level, enforced by a test. The
+    # values schema constrains this to the four names so a typo fails at
+    # install; at runtime an unrecognized level falls back to `info`,
+    # never to something noisier.
+    logLevel: "info"
+    # -- Log output format (DOCZ_LOG_FORMAT): `json` (one object per
+    # line, for a log aggregator) or `text` (readable, for local runs).
+    logFormat: "json"
+
+  # -- Tracing for the site. The endpoint and sample rate are the shared
+  # top-level `otel` block; one sampled request traces across both
+  # workloads, since the site injects `traceparent` on the proxy hop.
+  otel:
+    # -- Service name reported on spans (OTEL_SERVICE_NAME).
+    serviceName: "docz-site"
+
+  # -- Horizontal Pod Autoscaler. Off by default.
+  autoscaling:
+    # -- Enable a HorizontalPodAutoscaler
+    enabled: false
+    # -- Minimum replicas
+    minReplicas: 1
+    # -- Maximum replicas
+    maxReplicas: 3
+    # -- Target average CPU utilization (percent)
+    targetCPUUtilizationPercentage: 80
+    # -- Target average memory utilization (percent). Unset → no memory metric.
+    targetMemoryUtilizationPercentage: 0
+
+  # -- Ingress (networking.k8s.io/v1). Off by default.
+  ingress:
+    # -- Enable an Ingress
+    enabled: false
+    # -- IngressClass name
+    className: ""
+    # -- Ingress annotations
+    annotations: {}
+    # -- Ingress hosts. Each entry: {host, paths: [{path, pathType}]}.
+    hosts: []
+    # -- TLS blocks. Each entry: {secretName, hosts: []}.
+    tls: []
+
+  # -- Gateway API HTTPRoute. Off by default.
+  httpRoute:
+    # -- Enable an HTTPRoute
+    enabled: false
+    # -- HTTPRoute annotations
+    annotations: {}
+    # -- parentRefs (Gateways) this route attaches to.
+    parentRefs: []
+    # -- Hostnames matched by this route.
+    hostnames: []
+    # -- Route rules. Empty → the template renders a default rule to the
+    # service.
+    rules: []
+
+  # -- Additional environment variables
+  extraEnv: []
+
+  # -- Additional volumes
+  extraVolumes: []
+
+  # -- Additional volume mounts
+  extraVolumeMounts: []
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity rules
+  affinity: {}
 
 # -- Persistent state store (Postgres). See DESIGN-0012 §Backend modes.
 store:

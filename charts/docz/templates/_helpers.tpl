@@ -166,3 +166,26 @@ spec:
     {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+The one otel.endpoint in the form each runtime reads (DESIGN-0018 §4). The
+API's otlptracehttp.WithEndpoint takes a bare host:port. The site's exporter
+takes the full traces URL. Either spelling of the value works: a bare
+host:port is taken as http, and a URL with a path reaches the site
+unchanged. Root context.
+*/}}
+{{- define "docz.otel.apiEndpoint" -}}
+{{- $e := .Values.otel.endpoint }}
+{{- if contains "://" $e }}{{ (urlParse $e).host }}{{ else }}{{ $e }}{{ end }}
+{{- end }}
+
+{{- define "docz.otel.siteEndpoint" -}}
+{{- $e := .Values.otel.endpoint }}
+{{- if not (contains "://" $e) }}
+{{- printf "http://%s/v1/traces" $e }}
+{{- else if not (trimAll "/" (urlParse $e).path) }}
+{{- printf "%s/v1/traces" (trimSuffix "/" $e) }}
+{{- else }}
+{{- $e }}
+{{- end }}
+{{- end }}

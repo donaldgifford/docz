@@ -29,35 +29,340 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "endpoint": { "type": "string" },
-        "sampleRate": { "type": ["number", "string"] }
+        "endpoint": {
+          "type": "string"
+        },
+        "sampleRate": {
+          "type": [
+            "number",
+            "string"
+          ]
+        }
       }
     },
     "metrics": {
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "enabled": { "type": "boolean" }
+        "enabled": {
+          "type": "boolean"
+        }
       }
     },
     "serviceMonitor": {
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "enabled": { "type": "boolean" },
-        "interval": { "type": "string" },
-        "labels": { "type": "object" }
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "object"
+        }
       }
     },
     "prometheusRule": {
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "enabled": { "type": "boolean" },
-        "labels": { "type": "object" }
+        "enabled": {
+          "type": "boolean"
+        },
+        "labels": {
+          "type": "object"
+        }
       }
     },
-    "api": { "type": "object", "additionalProperties": true },
-    "site": { "type": "object", "additionalProperties": true }
+    "api": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "appId": {
+              "type": "string"
+            },
+            "port": {
+              "type": "integer"
+            },
+            "logLevel": {
+              "description": "Log level.",
+              "type": "string",
+              "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+              ]
+            },
+            "logFormat": {
+              "description": "Log output format.",
+              "type": "string",
+              "enum": [
+                "text",
+                "json"
+              ]
+            },
+            "authRedirectBase": {
+              "type": "string"
+            },
+            "githubOAuthClientID": {
+              "type": "string"
+            },
+            "oktaIssuer": {
+              "type": "string"
+            },
+            "oktaClientID": {
+              "type": "string"
+            },
+            "oktaScopes": {
+              "type": "string"
+            },
+            "keycloakIssuer": {
+              "type": "string"
+            },
+            "keycloakClientID": {
+              "type": "string"
+            },
+            "keycloakScopes": {
+              "type": "string"
+            },
+            "githubApiBase": {
+              "type": "string"
+            },
+            "sessionTTL": {
+              "type": "string"
+            },
+            "ingestDebounce": {
+              "type": "string"
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "create": {
+              "type": "boolean"
+            },
+            "existingSecret": {
+              "type": "string"
+            },
+            "privateKeyAsFile": {
+              "type": "boolean"
+            },
+            "oauthClientSecret": {
+              "type": "string"
+            },
+            "oktaClientSecret": {
+              "type": "string"
+            },
+            "keycloakClientSecret": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "port": {
+              "type": "integer"
+            },
+            "doczApiUrl": {
+              "description": "Empty derives the in-release API Service URL.",
+              "type": "string",
+              "pattern": "^$|^https?://"
+            },
+            "mermaidLayout": {
+              "description": "Diagram layout engine. Constrained because the server falls back to elk on anything it does not recognize, so a typo here would otherwise be invisible — diagrams would simply keep rendering the default.",
+              "type": "string",
+              "enum": [
+                "dagre",
+                "elk"
+              ]
+            },
+            "navLinks": {
+              "description": "Topbar nav pins rendered into DOCZ_NAV_LINKS as JSON.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "label",
+                  "href"
+                ],
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "href": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "logLevel": {
+              "description": "Log verbosity. Constrained because the server falls back to info on anything it does not recognize, so a typo here would otherwise be invisible — the deployment would simply keep logging at the default.",
+              "type": "string",
+              "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+              ]
+            },
+            "logFormat": {
+              "description": "Log output format: json for one object per line into an aggregator, text for readable local runs.",
+              "type": "string",
+              "enum": [
+                "json",
+                "text"
+              ]
+            }
+          }
+        },
+        "service": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "type": {
+              "description": "Kubernetes Service type.",
+              "type": "string",
+              "enum": [
+                "ClusterIP",
+                "NodePort",
+                "LoadBalancer",
+                "ExternalName"
+              ]
+            },
+            "port": {
+              "type": "integer"
+            }
+          }
+        },
+        "autoscaling": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "ingress": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "httpRoute": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "store": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "description": "Persistent state store backend. Only \"postgres\" is supported.",
+          "type": "string",
+          "enum": [
+            "postgres"
+          ]
+        },
+        "postgres": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "description": "Source of the Postgres deployment.",
+              "type": "string",
+              "enum": [
+                "baked",
+                "cnpg",
+                "external"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "queue": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "description": "Work queue backend. Only \"valkey\" is supported.",
+          "type": "string",
+          "enum": [
+            "valkey"
+          ]
+        },
+        "valkey": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "description": "Source of the Valkey deployment.",
+              "type": "string",
+              "enum": [
+                "baked",
+                "external"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "search": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "meili": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "description": "Source of the Meilisearch deployment.",
+              "type": "string",
+              "enum": [
+                "baked",
+                "external"
+              ]
+            },
+            "masterKey": {
+              "type": "string"
+            },
+            "existingSecret": {
+              "type": "string"
+            },
+            "existingSecretKey": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
   }
 }
