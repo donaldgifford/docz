@@ -187,7 +187,7 @@ suites to it.
 
   Each key gets a `# --` helm-docs comment. The `# yaml-language-server`
   modeline points at `values.schema.json`
-- [ ] `values.schema.json` skeleton, permissive
+- [x] `values.schema.json` skeleton, permissive
   (`additionalProperties: true`), with `extraLabels` as a string map whose
   values match the Kubernetes label-value pattern (≤63 characters) and
   `auth.providers` matching comma-separated `github|okta|keycloak|none`

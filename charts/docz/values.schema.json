@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "docz Helm chart values",
+  "description": "Guardrail schema for the docz chart (DESIGN-0018 §8). Enforces the values that break an install when wrong, at helm install/upgrade/template time, rather than at the API server or as a CrashLoopBackOff. Permissive elsewhere (additionalProperties).",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "extraLabels": {
+      "description": "Tracking labels on every object and pod template. Values must be valid Kubernetes label values.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 63,
+        "pattern": "^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$"
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "providers": {
+          "description": "Comma-separated login providers, or `none` alone.",
+          "type": "string",
+          "pattern": "^\\s*(github|okta|keycloak|none)\\s*(,\\s*(github|okta|keycloak|none)\\s*)*$"
+        }
+      }
+    },
+    "otel": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "endpoint": { "type": "string" },
+        "sampleRate": { "type": ["number", "string"] }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "serviceMonitor": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "interval": { "type": "string" },
+        "labels": { "type": "object" }
+      }
+    },
+    "prometheusRule": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "labels": { "type": "object" }
+      }
+    },
+    "api": { "type": "object", "additionalProperties": true },
+    "site": { "type": "object", "additionalProperties": true }
+  }
+}
