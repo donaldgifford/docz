@@ -168,6 +168,13 @@ suites to it.
   Done; `charts/docz-api` has no `kubeVersion`, so none is set.
 - [x] `charts/docz/.helmignore`, copied from `charts/docz-api/`, with
   `tests/` and `ci/` still ignored
+  Anchored as `/tests/` and `/ci/`. The unanchored `tests/` both old charts
+  carry also matches `templates/tests/`, so **neither old chart has ever
+  shipped its `helm test` hook**. That is why CI's `ct install` logs say
+  `TEST SUITE: None` (Open Question 6). With the anchor, `charts/docz`
+  ships its hook, `ct install` runs it, and `ci/ci-values.yaml` has to
+  serve `/healthz` (Phases 2 and 3). `helm package` confirms the root
+  `tests/` and `ci/` are still excluded
 - [x] `templates/_helpers.tpl` (DESIGN-0018 §2, §6):
   - `docz.name`, `docz.fullname`, and `docz.chart`;
   - `docz.componentFullname`, `docz.selectorLabels`, `docz.labels`,
