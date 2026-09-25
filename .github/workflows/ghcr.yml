@@ -11,7 +11,7 @@ on:
   workflow_call:
     inputs:
       component:
-        description: 'Component to publish (api or ui); the resolve job maps it to names.'
+        description: 'Component to publish (api, ui, or chart); the resolve job maps it to names. chart is charts/docz alone: it has no image, so pass no tag.'
         type: string
         required: false
         default: 'api'
@@ -28,9 +28,9 @@ on:
   workflow_dispatch:
     inputs:
       component:
-        description: 'Component to publish (api or ui); the resolve job maps it to names.'
+        description: 'Component to publish (api, ui, or chart); the resolve job maps it to names. chart is charts/docz alone: it has no image, so pass no tag.'
         type: choice
-        options: [api, ui]
+        options: [api, ui, chart]
         default: 'api'
       tag:
         description: 'Image tag to publish (e.g. v1.8.2). Leave empty to skip image push.'
@@ -76,7 +76,11 @@ jobs:
           case "${COMPONENT}" in
             api) row="donaldgifford/docz-api  release-api docz-api  charts/docz-api" ;;
             ui)  row="donaldgifford/docz-site release-ui  docz-site charts/docz-site" ;;
-            *)   echo "ERROR: unknown component '${COMPONENT}' (want api or ui)"; exit 1 ;;
+            # charts/docz ships both images, so it has no image of its own:
+            # `-` fills the fields read -r needs, and the image job already
+            # skips when no tag is passed (IMPL-0021 OQ 3).
+            chart) row="-                       -           docz      charts/docz" ;;
+            *)     echo "ERROR: unknown component '${COMPONENT}' (want api, ui, or chart)"; exit 1 ;;
           esac
           read -r image_repo bake_target chart_name chart_dir <<< "${row}"
           {

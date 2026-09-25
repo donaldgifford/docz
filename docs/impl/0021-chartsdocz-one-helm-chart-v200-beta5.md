@@ -561,12 +561,13 @@ first phase that touches the old charts and the workflows.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ghcr.yml` and `ecr.yml` `resolve`: add
+- [x] `ghcr.yml` and `ecr.yml` `resolve`: add
   `chart) row="- - docz charts/docz"`, where `-` fills the image and bake
   fields `read -r` needs (Open Question 3). Add `chart` to the
   `workflow_dispatch` choice list and to both `component` descriptions.
   The `image` job already skips when `tag` is empty, so a chart-only call
   passes no tag and needs no new gate
+  Done. The `chart` row added to both resolve tables is `-` / `-` / `docz` / `charts/docz`. `chart` joins the dispatch choice list, and both `component` descriptions now say chart takes no tag. actionlint is clean.
 - [ ] Publish on merge (Open Question 2). Add a `publish_chart` boolean input
   to `ghcr.yml` and `ecr.yml`, default `true`, gating the `chart` job, and
   pass `false` from `release.yml`'s four existing calls. Charts then publish
