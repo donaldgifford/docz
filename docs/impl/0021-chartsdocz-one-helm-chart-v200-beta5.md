@@ -228,9 +228,10 @@ suites to it.
   header block
 - [x] Root `ci` gate: add `chart::lint` next to `api::helm-lint` (Open
   Question 7)
-- [ ] `ci.yml` `helm-unittest`: pass `-f 'tests/**/*_test.yaml'` inside the
+- [x] `ci.yml` `helm-unittest`: pass `-f 'tests/**/*_test.yaml'` inside the
   `for chart in charts/*/` loop. Confirm the flat old charts still find
   their suites through the glob: 96 and 49 tests, unchanged
+  Done. Locally the loop finds 96 (`docz-api`), 49 (`docz-site`), and 6 (`docz`).
 - [ ] `just api lint-actions` clean; `just chart lint`, `just chart unittest`,
   and `just ci` pass
 

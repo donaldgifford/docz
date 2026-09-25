@@ -380,10 +380,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: helm plugin install --verify=false https://github.com/helm-unittest/helm-unittest
       - name: Run helm-unittest
-        # Every chart under charts/ (docz-api and docz-site).
+        # Every chart under charts/. charts/docz keeps its suites in
+        # tests/{api,site,chart}/, which the default glob (tests/*_test.yaml)
+        # misses; `**` also matches zero directories, so the old charts'
+        # flat tests/ are still found.
         run: |
           for chart in charts/*/; do
-            helm unittest "${chart}"
+            helm unittest -f 'tests/**/*_test.yaml' "${chart}"
           done
 
   helm-test:
