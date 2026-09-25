@@ -288,11 +288,12 @@ along with its 90 non-Tailscale tests.
   uses `docz.selectorLabels`, **including `spec.selector.matchLabels`**
   (DESIGN-0018 OQ 11). The undocumented `command` value becomes
   `api.command`, still used only by `ci-values.yaml`
-- [ ] Backend templates with unchanged file names:
+- [x] Backend templates with unchanged file names:
   - `store-postgres{,-secret}`;
   - `store-cnpg-{cluster,pooler,pooler-service}`;
   - `queue-valkey{,-secret}`;
   - `search-meili{,-secret,-servicemonitor}`.
+  Done. Each backend passes its role (`postgres`, `postgres-pooler`, `valkey`, `meilisearch`) to the shared helpers in place of the extra `component:` line, pod templates use `docz.podLabels`, and no `volumeClaimTemplates` or CNPG `inheritedMetadata` gets labels.
 
   Each pod template gets `extraLabels`. `volumeClaimTemplates` and CNPG
   `inheritedMetadata` must **not** get it (DESIGN-0018 §2)

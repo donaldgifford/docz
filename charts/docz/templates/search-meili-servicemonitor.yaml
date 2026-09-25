@@ -1,0 +1,32 @@
+{{- if and .Values.metrics.enabled .Values.serviceMonitor.enabled (eq .Values.search.meili.mode "baked") -}}
+# Scrapes the baked Meilisearch's /metrics. This is its own ServiceMonitor
+# rather than a second endpoint on the docz-api one because the two scrapes
+# differ in auth: Meilisearch gates /metrics behind the master key (401
+# without it), so this scrape carries a bearer token the API scrape must
+# not. The route itself is switched on by MEILI_EXPERIMENTAL_ENABLE_METRICS
+# in search-meili.yaml. The `job` label is the Service name,
+# <release>-docz-api-meilisearch, so it never matches the API's alerts.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "docz.api.meiliFullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz.labels" (dict "ctx" . "component" "meilisearch") | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "docz.selectorLabels" (dict "ctx" . "component" "meilisearch") | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ include "docz.api.searchSecretName" . }}
+          key: {{ include "docz.api.searchSecretKey" . }}
+{{- end }}
