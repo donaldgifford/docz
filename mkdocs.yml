@@ -63,6 +63,7 @@ nav:
         - 'INV-0011: Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade': investigation/0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md
         - 'INV-0012: docz-site consumes the OpenAPI contract from the same repository': investigation/0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md
         - 'INV-0013: docz-site deferred features after the move: link graph, lifecycle, labels': investigation/0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md
+        - 'INV-0014: Consolidate the docz-api and docz-site Helm charts into one chart': investigation/0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md
     - RFCs:
         - Overview: rfc/README.md
 plugins:
