@@ -189,3 +189,105 @@ unchanged. Root context.
 {{- $e }}
 {{- end }}
 {{- end }}
+
+{{/*
+A workload's Ingress and HTTPRoute, one pair per workload, each routed to that
+workload's own Service and port (DESIGN-0018 §5). An HTTPRoute with no `rules`
+renders one default rule to the Service.
+*/}}
+{{- define "docz.ingress" -}}
+{{- $w := index .ctx.Values .component }}
+{{- if $w.ingress.enabled }}
+{{- $name := include "docz.componentFullname" . }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "docz.labels" . | nindent 4 }}
+  {{- with $w.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $w.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if $w.ingress.tls }}
+  tls:
+    {{- range $w.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range $w.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- with .pathType }}
+            pathType: {{ . }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ $name }}
+                port:
+                  number: {{ $w.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "docz.httpRoute" -}}
+{{- $w := index .ctx.Values .component }}
+{{- if $w.httpRoute.enabled }}
+{{- $name := include "docz.componentFullname" . }}
+{{- $port := $w.service.port }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "docz.labels" . | nindent 4 }}
+  {{- with $w.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    {{- with $w.httpRoute.parentRefs }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $w.httpRoute.hostnames }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- if $w.httpRoute.rules }}
+    {{- range $w.httpRoute.rules }}
+    {{- with .matches }}
+    - matches:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .filters }}
+      filters:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+      backendRefs:
+        - name: {{ $name }}
+          port: {{ $port }}
+          weight: 1
+    {{- end }}
+    {{- else }}
+    - backendRefs:
+        - name: {{ $name }}
+          port: {{ $port }}
+          weight: 1
+    {{- end }}
+{{- end }}
+{{- end }}

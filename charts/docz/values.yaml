@@ -285,6 +285,33 @@ api:
     # -- Target average memory utilization (percent). Unset → no memory metric.
     targetMemoryUtilizationPercentage: 0
 
+  # -- Ingress (networking.k8s.io/v1). Off by default.
+  ingress:
+    # -- Enable an Ingress
+    enabled: false
+    # -- IngressClass name
+    className: ""
+    # -- Ingress annotations
+    annotations: {}
+    # -- Ingress hosts. Each entry: {host, paths: [{path, pathType}]}.
+    hosts: []
+    # -- TLS blocks. Each entry: {secretName, hosts: []}.
+    tls: []
+
+  # -- Gateway API HTTPRoute. Off by default.
+  httpRoute:
+    # -- Enable an HTTPRoute
+    enabled: false
+    # -- HTTPRoute annotations
+    annotations: {}
+    # -- parentRefs (Gateways) this route attaches to.
+    parentRefs: []
+    # -- Hostnames matched by this route.
+    hostnames: []
+    # -- Route rules. Empty → the template renders a default rule to the
+    # service.
+    rules: []
+
   # -- Additional environment variables
   extraEnv: []
 

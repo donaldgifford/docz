@@ -381,7 +381,7 @@ list, and one front door.
   `docz.api.authDisabled`, and reword its values comment to say it is the
   **site's** public URL (DESIGN-0018 OQ 17)
   Done. The `required` sits under `if not (docz.api.authDisabled)`, and the values comment names it as the site's public URL. Both were in place from the Phase 2 values port; this pass only verified them.
-- [ ] Edges, one pair per workload (DESIGN-0018 §5, OQ 8 revised):
+- [x] Edges, one pair per workload (DESIGN-0018 §5, OQ 8 revised):
   - `docz.ingress` and `docz.httpRoute` helpers (`dict ctx component`),
     ported from the two charts' identical templates;
   - `api-ingress.yaml`, `api-httproute.yaml`, `site-ingress.yaml`, and
@@ -391,6 +391,7 @@ list, and one front door.
     `values.yaml`, with the old charts' shapes and defaults (disabled);
   - an empty `rules` renders the default rule for both. docz-site did this
     already; docz-api's route had no rules at all.
+  Done. The `docz.ingress` and `docz.httpRoute` helpers (`dict ctx component`) are in `_helpers.tpl`, and the four `{api,site}-{ingress,httproute}.yaml` files are one-line includes. `api.ingress` and `api.httpRoute` were added with docz-api's shapes and defaults; `site.*` came with the site block. An empty `rules` now renders the default rule for the API as well.
 - [ ] `templates/tests/test-connection.yaml`: one hook pod with two
   containers, each `wget`ting one Service's `/healthz`, and the `docz.labels`
   of component `test`
