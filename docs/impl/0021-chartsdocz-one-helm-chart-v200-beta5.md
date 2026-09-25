@@ -493,7 +493,7 @@ the chart runs the real images.
 
   The README does not mention Tailscale beyond that one line. Regenerate
   with `just chart docs`
-- [ ] `deploy/tailscale-operator.md` (DESIGN-0018 §5, OQ 9), the one file
+- [x] `deploy/tailscale-operator.md` (DESIGN-0018 §5, OQ 9), the one file
   that describes the operator. It says that the Tailscale operator works in
   front of docz-api, and that how the operator itself behaves is the
   operator's own documentation. It covers:
@@ -505,6 +505,7 @@ the chart runs the real images.
     `deploy/api/README.md` whose absence shows as a TLS EOF on every
     delivery: Funnel granted to the proxy's tag in `nodeAttrs`, and HTTPS
     certificates enabled.
+  Done. The guide covers: the `api.ingress` values (`className: tailscale`, the `tailscale.com/funnel` annotation, and a `tls.hosts` MagicDNS name, with the path limited to `/webhooks/github`); the webhook URL; the two tailnet-policy settings that otherwise cause TLS EOF (`nodeAttrs` Funnel for `tag:k8s`, and HTTPS certificates); diagnosis; and a pointer to the single-route follow-up. It is linked from the chart README and from `deploy/api/README.md`, whose sidecar section is now marked as applying only to the deprecated chart. The Ingress shape has not been exercised against a live operator; that belongs to the Rollout step 7 follow-up.
 
   Link it from the chart README's edges section and from
   `deploy/api/README.md`

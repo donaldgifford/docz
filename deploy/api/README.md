@@ -111,8 +111,14 @@ For **local development** the webhook URL can be an ngrok tunnel to your machine
 — `just dev-tunnel` prints it; see
 [DEVELOPMENT.md](../DEVELOPMENT.md#receiving-github-webhooks-locally-ngrok).
 
-For a **Kubernetes / homelab** deployment, expose docz-api behind its **own**
-Tailscale Funnel node. The Helm chart ships a Tailscale sidecar
+For a **Kubernetes / homelab** deployment with the `docz` chart
+(`charts/docz`, which replaces `charts/docz-api`), the chart has no Tailscale
+in it. Put a Tailscale operator Ingress with Funnel in front of the API, as
+described in [`../tailscale-operator.md`](../tailscale-operator.md).
+
+The rest of this section applies to the deprecated `charts/docz-api` only.
+Expose docz-api behind its **own** Tailscale Funnel node. That chart ships a
+Tailscale sidecar
 (`tailscale.enabled=true`) that joins the tailnet as a separate node, so
 docz-api gets its **own** MagicDNS hostname (`tailscale.hostname`, default
 `docz-api`) and its webhook lives at

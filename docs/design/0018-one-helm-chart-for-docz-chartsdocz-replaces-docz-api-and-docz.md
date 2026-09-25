@@ -438,7 +438,13 @@ flowchart LR
   string. With `none`, the site shows no providers, which is what the API
   serves.
 - **Tracing** is on for both workloads or for neither. Each workload keeps
-  its own `OTEL_SERVICE_NAME`, so traces still name the hop.
+  its own `OTEL_SERVICE_NAME`, so traces still name the hop. The two
+  runtimes read `OTEL_EXPORTER_OTLP_ENDPOINT` differently. The API passes
+  it to `otlptracehttp.WithEndpoint`, which takes a bare `host:port`; the
+  site uses it as its exporter's full `…/v1/traces` URL. So `otel.endpoint`
+  is the collector's base URL, and the chart derives each form from it
+  (`docz.otel.apiEndpoint`, `docz.otel.siteEndpoint`). This was found while
+  implementing IMPL-0021 Phase 3.
 - **`AUTH_REDIRECT_BASE`** stays `api.config.authRedirectBase`, required
   unless `auth.providers` is `none` (OQ 17). Its comment now says it must be
   the site's public URL, because the site proxies `/auth/callback`.
