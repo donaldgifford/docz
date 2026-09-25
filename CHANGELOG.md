@@ -15,6 +15,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Resolve DESIGN-0018 open questions
 - *(design)* DESIGN-0018 uses an empty extraLabels map for tracking
 - *(impl)* IMPL-0021, charts/docz and v2.0.0-beta.5
+- Resolve IMPL-0021 open questions and amend DESIGN-0018
 
 ## [2.0.0-beta.4] - 2026-09-24
 
