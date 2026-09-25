@@ -477,7 +477,7 @@ the chart runs the real images.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `README.md.gotmpl` prose (DESIGN-0018 §8), with these sections:
+- [x] `README.md.gotmpl` prose (DESIGN-0018 §8), with these sections:
   - Install: `helm install docz oci://ghcr.io/donaldgifford/charts/docz`
     and the values every install needs;
   - The two edges: `api.*` and `site.*` each take an Ingress and an
@@ -489,6 +489,7 @@ the chart runs the real images.
   - Observability;
   - "Coming from docz-api or docz-site": the DESIGN-0018 Data Model tables,
     "no in-place upgrade", and "the Tailscale sidecar is gone".
+  Done. The README covers: What this deploys; Installation, with a minimal values file and prerequisites; The two edges, with the authRedirectBase note and the operator-guide link; Login providers, `none`, and Secrets; Backend modes; `extraLabels`; Observability, including the per-runtime OTel endpoint; "Coming from docz-api or docz-site", with both Data Model tables, "no in-place upgrade", and "the Tailscale sidecar is gone"; and Verifying the chart. Tailscale appears only in the edges-section link and the migration section, as the task asks. It was regenerated with `just chart docs`.
 
   The README does not mention Tailscale beyond that one line. Regenerate
   with `just chart docs`
