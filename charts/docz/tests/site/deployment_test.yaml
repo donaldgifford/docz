@@ -1,0 +1,340 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+suite: deployment
+templates:
+  - templates/site-deployment.yaml
+set:
+  site:
+    config:
+      doczApiUrl: "http://docz-api:8080"
+tests:
+  - it: should set replica count
+    set:
+      site:
+        replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should default revisionHistoryLimit to 3
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 3
+
+  - it: should override revisionHistoryLimit from values
+    set:
+      site:
+        revisionHistoryLimit: 10
+    asserts:
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 10
+
+  - it: should use default image tag from appVersion
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/donaldgifford/docz-site:2.0.0-beta.5"
+
+  # The default tag must be pullable, and the publish workflow tags bare
+  # semver (metadata-action's {{version}} strips the "v" from the git tag).
+  # Assert the shape, not just the value, so a bump cannot reintroduce a
+  # v-prefixed appVersion. A prerelease suffix is allowed: the v2 betas
+  # publish 2.0.0-beta.N (IMPL-0020 Phase 4), mirroring charts/docz-api.
+  - it: should default to a bare-semver tag, never v-prefixed
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: '^ghcr\.io/donaldgifford/docz-site:\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$'
+
+  - it: should use custom image tag when set
+    set:
+      site:
+        image:
+          tag: "v1.0.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/donaldgifford/docz-site:v1.0.0"
+
+  - it: should expose a single http container port from config.port
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].ports
+          count: 1
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8080
+            name: http
+            protocol: TCP
+
+  # The split matters: liveness failing RESTARTS the container, readiness
+  # failing HOLDS TRAFFIC. A broken dist/ must stall the rollout, not
+  # CrashLoopBackOff, so the two probes must never share a path again.
+  - it: should probe /healthz for liveness and /readyz for readiness
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /readyz
+
+  - it: should set the PORT and DOCZ_API_URL env vars
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PORT
+            value: "8080"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_API_URL
+            value: "http://docz-api:8080"
+
+  - it: should default DOCZ_AUTH_PROVIDERS to github and honor overrides
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+            value: "github"
+
+  - it: should set DOCZ_AUTH_PROVIDERS from auth.providers
+    set:
+      auth:
+        providers: "keycloak,github"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+            value: "keycloak,github"
+
+  - it: should default DOCZ_MERMAID_LAYOUT to elk
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_MERMAID_LAYOUT
+            value: "elk"
+
+  - it: should set DOCZ_MERMAID_LAYOUT from config.mermaidLayout
+    set:
+      site:
+        config:
+          mermaidLayout: "dagre"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_MERMAID_LAYOUT
+            value: "dagre"
+
+  - it: should default DOCZ_LOG_LEVEL to info and DOCZ_LOG_FORMAT to json
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_LEVEL
+            value: "info"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_FORMAT
+            value: "json"
+
+  - it: should set the log env from config.logLevel and config.logFormat
+    set:
+      site:
+        config:
+          logLevel: "debug"
+          logFormat: "text"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_LEVEL
+            value: "debug"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_LOG_FORMAT
+            value: "text"
+
+  - it: should default DOCZ_METRICS_ENABLED to true and follow metrics.enabled
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_METRICS_ENABLED
+            value: "true"
+
+  - it: should set DOCZ_METRICS_ENABLED false when metrics are disabled
+    set:
+      metrics:
+        enabled: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_METRICS_ENABLED
+            value: "false"
+
+  # Unset is what turns tracing off, so an empty endpoint must omit the
+  # env entirely rather than set it to "".
+  - it: should omit every OTEL_ env var by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+          any: true
+
+  - it: should wire the OTEL env when an endpoint is configured
+    set:
+      otel:
+        endpoint: "http://otel-collector:4318/v1/traces"
+        sampleRate: 0.1
+      site:
+        otel:
+          serviceName: "docz-site-staging"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://otel-collector:4318/v1/traces"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "docz-site-staging"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_TRACES_SAMPLER_ARG
+            value: "0.1"
+
+  - it: should reject a log level outside the schema enum
+    set:
+      site:
+        config:
+          logLevel: "trace"
+    asserts:
+      - failedTemplate: {}
+
+  - it: should omit DOCZ_NAV_LINKS by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_NAV_LINKS
+          any: true
+
+  - it: should render config.navLinks into DOCZ_NAV_LINKS as JSON
+    set:
+      site:
+        config:
+          navLinks:
+            - label: "RFCs"
+              href: "/donaldgifford/rfcs"
+            - label: "Team Docs"
+              href: "/donaldgifford/docs/docs"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_NAV_LINKS
+            value: '[{"href":"/donaldgifford/rfcs","label":"RFCs"},{"href":"/donaldgifford/docs/docs","label":"Team Docs"}]'
+
+  - it: should run as the oven/bun non-root uid 1000
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1000
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 1000
+
+  - it: should harden the container security context
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: should append extra env vars
+    set:
+      site:
+        extraEnv:
+          - name: EXTRA
+            value: "value"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: EXTRA
+            value: "value"
+
+  - it: should set resource requests and limits
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 25m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 128Mi
+
+  - it: should support extraVolumes and extraVolumeMounts
+    set:
+      site:
+        extraVolumes:
+          - name: extra-vol
+            emptyDir: {}
+        extraVolumeMounts:
+          - name: extra-vol
+            mountPath: /extra
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: extra-vol
+            emptyDir: {}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra-vol
+            mountPath: /extra
+
+  - it: should not render a volumes block without extraVolumes
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+
+  - it: should support nodeSelector
+    set:
+      site:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            kubernetes.io/arch: amd64

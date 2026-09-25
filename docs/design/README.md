@@ -49,4 +49,5 @@ docz create design "Your Design Title"
 | DESIGN-0015 | Structured regions and docz validate | Implemented | 2026-09-19 | Donald Gifford | [0015-structured-regions-and-docz-validate.md](0015-structured-regions-and-docz-validate.md) |
 | DESIGN-0016 | Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes | Implemented | 2026-09-22 | Donald Gifford | [0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md](0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md) |
 | DESIGN-0017 | Move docz-site in: ui/, charts/docz-site, and orval on the one spec | Implemented | 2026-09-23 | Donald Gifford | [0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md](0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md) |
+| DESIGN-0018 | One Helm chart for docz: charts/docz replaces docz-api and docz-site | Draft | 2026-09-25 | Donald Gifford | [0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md](0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md) |
 <!-- END DOCZ AUTO-GENERATED -->

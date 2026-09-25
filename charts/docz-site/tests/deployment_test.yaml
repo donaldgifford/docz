@@ -32,7 +32,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/donaldgifford/docz-site:2.0.0-beta.4"
+          value: "ghcr.io/donaldgifford/docz-site:2.0.0-beta.5"
 
   # The default tag must be pullable, and the publish workflow tags bare
   # semver (metadata-action's {{version}} strips the "v" from the git tag).

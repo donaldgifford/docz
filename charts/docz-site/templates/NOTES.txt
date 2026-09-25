@@ -1,3 +1,10 @@
+DEPRECATED: this is the final version of the docz-site chart. docz-api,
+docz-site, and their backends now ship as one chart:
+
+     oci://ghcr.io/donaldgifford/charts/docz
+
+There is no in-place upgrade from this chart: install docz as a new release.
+
 docz-site {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}".
 
 The container serves the single-page app and, on the same origin, reverse-

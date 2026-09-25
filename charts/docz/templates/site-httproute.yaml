@@ -1,0 +1,1 @@
+{{- include "docz.httpRoute" (dict "ctx" . "component" "site") }}

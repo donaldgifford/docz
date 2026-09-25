@@ -1,0 +1,293 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+## What this deploys
+
+One release runs all of docz's server side:
+
+- **docz-api** (`api.*`) ingests [docz](https://github.com/donaldgifford/docz)
+  documentation from GitHub repositories, driven by GitHub App webhooks. It
+  serves a read and full-text-search API. Everything is on one HTTP port:
+  `/api/v1`, `/webhooks/github`, `/auth/*`, `/healthz`, `/readyz`,
+  `/metrics`, and `/openapi.yaml`.
+- **docz-site** (`site.*`) is the web UI. It is a small Bun process that
+  serves the single-page app and reverse-proxies `/api`, `/auth`, `/webhooks`,
+  and `/openapi.yaml` to the API, so the browser sees one origin and the
+  session cookie is first-party.
+- **The API's three backing services**, each baked (run by the chart),
+  delegated to an operator, or pointed at an external instance: Postgres
+  (`store.*`), Valkey (`queue.*`), and Meilisearch (`search.*`).
+
+Every object is named `<release>-docz-<role>`, and the role is also its
+`app.kubernetes.io/component` label, which is in every selector. For release
+`docz` the roles give `docz-api`, `docz-site`, `docz-postgres`, `docz-valkey`,
+and `docz-meilisearch`. Both images default their tag to the chart's
+`appVersion`, so one chart version pins one API and one site.
+
+The site finds the API by itself. With `site.config.doczApiUrl` empty (the
+default), it uses this release's API Service:
+`http://<release>-docz-api.<namespace>.svc.cluster.local:<api.service.port>`.
+Set it only to point the site at an API outside the release.
+
+## Installation
+
+The chart is published as an OCI artifact to GHCR, signed with cosign keyless
+and carrying a SLSA v1 build provenance attestation (GitHub artifact
+attestations, Build L2).
+
+```bash
+helm install docz oci://ghcr.io/donaldgifford/charts/docz \
+  --version {{ template "chart.version" . }} \
+  --namespace docz \
+  --create-namespace \
+  -f values.yaml
+```
+
+Every install needs a GitHub App, a login provider (or `none`; see
+[Login providers](#login-providers)), and a Meilisearch master key if
+Meilisearch is baked. A minimal all-baked `values.yaml`:
+
+```yaml
+auth:
+  providers: "github"
+
+api:
+  config:
+    appId: "YOUR_APP_ID"
+    # The SITE's public URL. See "The two edges".
+    authRedirectBase: "https://docz.example.com"
+    githubOAuthClientID: "YOUR_OAUTH_CLIENT_ID"
+  secrets:
+    webhookSecret: "YOUR_WEBHOOK_SECRET"
+    sessionSecret: "A_RANDOM_32B_SECRET"
+    oauthClientSecret: "YOUR_OAUTH_CLIENT_SECRET"
+    privateKey: |
+      -----BEGIN RSA PRIVATE KEY-----
+      YOUR_PRIVATE_KEY
+      -----END RSA PRIVATE KEY-----
+
+search:
+  meili:
+    masterKey: "A_RANDOM_MEILI_MASTER_KEY"  # at least 16 bytes
+```
+
+### Prerequisites
+
+- Kubernetes 1.28+ and Helm 3.14+ or 4.x (OCI support)
+- A [GitHub App](https://docs.github.com/en/apps/creating-github-apps) with
+  Contents (Read) and Metadata (Read), subscribed to `push` and `release`,
+  with a generated private key and webhook secret
+- For login, an OAuth client (the GitHub App's own or a separate OAuth app),
+  or an Okta or Keycloak OIDC **confidential** client
+
+## The two edges
+
+The two workloads are exposed separately. `api.ingress`, `api.httpRoute`,
+`site.ingress`, and `site.httpRoute` are all off by default. Each one renders
+as `<release>-docz-api` or `<release>-docz-site` and sends traffic only to its
+own workload's Service and port. An HTTPRoute with no `rules` gets one
+default rule to its Service.
+
+The usual shape:
+
+- **The site** on an internal network: people use the UI, and the site
+  proxies their API calls, so they never need the API's own edge.
+- **The API** where GitHub can reach `/webhooks/github`, and where internal
+  clients can reach `/api/v1` directly if they need to.
+
+```yaml
+site:
+  httpRoute:
+    enabled: true
+    parentRefs: [{name: internal-gateway, namespace: gateway}]
+    hostnames: [docz.example.com]
+api:
+  httpRoute:
+    enabled: true
+    parentRefs: [{name: webhook-gateway, namespace: gateway}]
+    hostnames: [docz-api.example.com]
+```
+
+**`api.config.authRedirectBase` is the site's public URL**, not the API's.
+The login provider redirects the browser to
+`<authRedirectBase>/auth/callback`, and the site proxies that to the API.
+Register the same URL as the provider's redirect URI.
+
+To take GitHub webhooks through a Tailscale operator Ingress on the API, see
+[`deploy/tailscale-operator.md`](https://github.com/donaldgifford/docz/blob/main/deploy/tailscale-operator.md).
+
+## Login providers
+
+`auth.providers` is one comma-separated list of `github`, `okta`, and
+`keycloak`. It becomes the API's `AUTH_PROVIDERS` and the site's
+`DOCZ_AUTH_PROVIDERS`, so the login page offers exactly what the API accepts.
+Each enabled provider adds its own env and `Secret` key, and its values are
+`required` at render time:
+
+| Provider | Values | Secret key |
+|----------|--------|------------|
+| `github` | `api.config.githubOAuthClientID` | `oauth-client-secret` |
+| `okta` | `api.config.oktaIssuer`, `api.config.oktaClientID` | `okta-client-secret` |
+| `keycloak` | `api.config.keycloakIssuer`, `api.config.keycloakClientID` | `keycloak-client-secret` |
+
+Okta and Keycloak share one OIDC code path. The client must be
+**confidential** (authorization-code grant with a client secret). Copy the
+issuer verbatim from the provider's `.well-known/openid-configuration`:
+discovery runs at startup, so a wrong issuer fails the boot.
+
+### `none`: first setup without login
+
+`auth.providers: "none"` removes login, so a first install can prove
+ingestion works before any login credentials exist. With `none`, the
+redirect base, the session secret, and the provider credentials are not
+needed, and the chart renders none of them. `none` must be the only entry.
+
+**This leaves the read API open to anyone who can reach the site or the API
+Service.** Every request is served as an anonymous identity, and
+`/auth/login` and `/auth/callback` are not mounted. Do not expose a `none`
+install on a public endpoint. To turn login on, set `auth.providers`, supply
+the provider's values and secrets, and upgrade. Nothing else changes.
+
+### Secrets
+
+With `api.secrets.create: true` (the default), the chart renders one `Secret`
+from `api.secrets.*`. To manage it with a secret manager (1Password Operator,
+External Secrets, sealed-secrets, or `kubectl create secret`), set
+`api.secrets.create: false` and `api.secrets.existingSecret: <name>`. The
+chart references that Secret by key only:
+
+| Key | Required |
+|-----|----------|
+| `app-id`, `webhook-secret`, `private-key` | always |
+| `session-secret` | unless `auth.providers` is `none` |
+| `oauth-client-secret` / `okta-client-secret` / `keycloak-client-secret` | when that provider is enabled |
+
+The GitHub App private key is mounted as a file by default
+(`api.secrets.privateKeyAsFile: true`). The backing-service DSNs live in
+their own secrets, per backend mode.
+
+## Backend modes
+
+Each backing service is independent. Baked is the default and brings
+everything up with no operator.
+
+| Service | `mode` | Renders |
+|---------|--------|---------|
+| **Postgres** (`store.postgres.mode`) | `baked` (default) | A single-pod `StatefulSet`, a headless `Service`, and a `Secret` whose generated password is preserved across upgrades. |
+| | `cnpg` | A [CloudNativePG](https://cloudnative-pg.io/) `Cluster` (and an optional `Pooler`). `DATABASE_URL` reads the CNPG `<name>-app` secret's `uri` key. Requires the operator. |
+| | `external` | Nothing. `DATABASE_URL` comes from `store.external.existingSecret`. |
+| **Valkey** (`queue.valkey.mode`) | `baked` (default) | A single-pod `StatefulSet`, a `Service`, and a `Secret`. |
+| | `external` | Nothing. `REDIS_URL` comes from `queue.external.existingSecret`. |
+| **Meilisearch** (`search.meili.mode`) | `baked` (default) | A single-pod `StatefulSet`, a headless `Service`, and a `Secret`. Needs `search.meili.masterKey` or `search.meili.existingSecret`. |
+| | `external` | Nothing. `MEILI_HOST` is `search.meili.host`, and `MEILI_API_KEY` comes from `search.meili.external.existingSecret`. |
+
+The baked shapes are sized for a homelab or a small cluster. For production,
+run Postgres through CNPG or a managed service, and point Valkey and
+Meilisearch at managed instances.
+
+## `extraLabels`
+
+`extraLabels` is a map of labels added to every object's metadata and to
+every pod template, for tracking (an owner, a cost centre). It is empty by
+default. It never reaches a selector, a `volumeClaimTemplate`, or CNPG's
+`inheritedMetadata`, so adding or changing one never breaks an upgrade. A
+key the chart sets itself (`app.kubernetes.io/*`, `helm.sh/chart`) fails
+the render instead of replacing a label a selector depends on.
+
+```yaml
+extraLabels:
+  owner: lab
+```
+
+## Observability
+
+- **Probes.** Both workloads use `/healthz` for liveness. The API's `/readyz`
+  checks Postgres, Valkey, and Meilisearch and names the one that is down.
+  The site's `/readyz` checks only itself and never calls the API, so an API
+  outage does not remove the UI from its Service.
+- **The GitHub App is checked at startup, not by a probe.** Only a 401 or an
+  unparseable private key fails the API's boot; anything else warns and
+  continues, since GitHub is not a serving dependency.
+- **Metrics.** `metrics.enabled` (default `true`) serves `/metrics` on both
+  workloads. `serviceMonitor.enabled` renders one ServiceMonitor per
+  workload, plus one for a baked Meilisearch, which scrapes with the
+  **master key** as its bearer token. Enabling that scrape means trusting
+  the Prometheus namespace with the master key.
+- **Alerts.** `prometheusRule.enabled` renders the API's starter pack:
+  `DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
+  `DoczAPIIngestFailures`, and `DoczAPISlowIngest`.
+- **Tracing.** Set `otel.endpoint` to an OTLP/HTTP collector
+  (`http://collector:4318`) to trace both workloads, or leave it empty to
+  trace neither. The chart gives each runtime the form it reads: `host:port`
+  for the API, and the `/v1/traces` URL for the site. The site forwards
+  `traceparent` on the proxy hop, so one sampled request is one trace across
+  both. Spans are named by `api.otel.serviceName` and
+  `site.otel.serviceName`.
+
+`helm test <release>` checks both Services' `/healthz`.
+
+## Coming from docz-api or docz-site
+
+`charts/docz` replaces the `docz-api` and `docz-site` charts, whose final
+versions are marked deprecated. **There is no in-place upgrade**: object
+names and selectors differ, so install `docz` as a new release, move the
+data you need, and then uninstall the old ones. Values move as follows.
+Anything not listed moves under the workload's block unchanged, so
+docz-api's `resources` becomes `api.resources`.
+
+| `docz-api` key | `docz` key |
+| --- | --- |
+| `replicaCount`, `revisionHistoryLimit`, `image`, `serviceAccount`, `pod*`, `securityContext`, `service`, `resources`, `*Probe`, `extra*`, `nodeSelector`, `tolerations`, `affinity` | `api.<same>` |
+| `imagePullSecrets`, `nameOverride`, `fullnameOverride` | top level, shared |
+| `config.authProviders` | `auth.providers` |
+| `config.*` (every other key) | `api.config.*` |
+| `otel.endpoint`, `otel.sampleRate` | `otel.endpoint`, `otel.sampleRate` |
+| `otel.serviceName` | `api.otel.serviceName` |
+| `secrets.*`, `autoscaling.*` | `api.secrets.*`, `api.autoscaling.*` |
+| `metrics`, `serviceMonitor`, `prometheusRule` | top level, shared |
+| `store`, `queue`, `search` | top level, unchanged |
+| `ingress`, `httpRoute` | `api.ingress`, `api.httpRoute` |
+| `tailscale.*` | removed |
+
+| `docz-site` key | `docz` key |
+| --- | --- |
+| per-workload keys, as above | `site.<same>` |
+| `config.authProviders` | `auth.providers` |
+| `config.doczApiUrl` | `site.config.doczApiUrl`, now optional |
+| `config.*` (every other key) | `site.config.*` |
+| `otel.endpoint`, `otel.sampleRate` | `otel.*` |
+| `otel.serviceName` | `site.otel.serviceName` |
+| `metrics`, `serviceMonitor` | top level, shared |
+| `ingress`, `httpRoute` | `site.ingress`, `site.httpRoute` |
+
+The backing services are renamed from `<release>-docz-api-<service>` to
+`<release>-docz-<service>`. The Tailscale sidecar is gone; see
+[`deploy/tailscale-operator.md`](https://github.com/donaldgifford/docz/blob/main/deploy/tailscale-operator.md).
+
+## Verifying the chart
+
+```bash
+cosign verify \
+  --certificate-identity-regexp '^https://github.com/donaldgifford/docz/.+' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  ghcr.io/donaldgifford/charts/docz:{{ template "chart.version" . }}
+
+gh attestation verify \
+  oci://ghcr.io/donaldgifford/charts/docz:{{ template "chart.version" . }} \
+  --owner donaldgifford
+```
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}

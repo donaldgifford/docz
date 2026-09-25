@@ -1,0 +1,242 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "docz.componentFullname" (dict "ctx" . "component" "api") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz.labels" (dict "ctx" . "component" "api") | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  revisionHistoryLimit: {{ .Values.api.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "docz.selectorLabels" (dict "ctx" . "component" "api") | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.api.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "docz.podLabels" (dict "ctx" . "component" "api") | nindent 8 }}
+        {{- with .Values.api.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "docz.serviceAccountName" (dict "ctx" . "component" "api") }}
+      terminationGracePeriodSeconds: 60
+      {{- with .Values.api.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: docz-api
+          image: {{ include "docz.image" (dict "ctx" . "component" "api") | quote }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          {{- with .Values.api.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.api.config.port }}
+              name: http
+              protocol: TCP
+          env:
+            - name: HTTP_ADDR
+              value: ":{{ .Values.api.config.port }}"
+            - name: GITHUB_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: app-id
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: webhook-secret
+            {{- if .Values.api.secrets.privateKeyAsFile }}
+            - name: GITHUB_APP_PRIVATE_KEY
+              value: /etc/docz-api/private-key/private-key.pem
+            {{- else }}
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: private-key
+            {{- end }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.storeSecretName" . }}
+                  key: {{ include "docz.api.storeSecretKey" . }}
+            {{- if eq .Values.queue.valkey.mode "external" }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.queueSecretName" . }}
+                  key: {{ include "docz.api.queueSecretKey" . }}
+            {{- else if .Values.queue.valkey.existingSecret }}
+            # baked Valkey with an external password Secret: inject the raw
+            # password, then build the DSN from it via $(VAR) interpolation
+            # (VALKEY_PASSWORD must precede REDIS_URL for expansion).
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.valkeyPasswordSecretName" . }}
+                  key: {{ include "docz.api.valkeyPasswordSecretKey" . }}
+            - name: REDIS_URL
+              value: {{ include "docz.api.valkeyBakedDsn" . | quote }}
+            {{- else }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.queueSecretName" . }}
+                  key: {{ include "docz.api.queueSecretKey" . }}
+            {{- end }}
+            - name: MEILI_HOST
+              value: {{ include "docz.api.meiliHost" . | quote }}
+            - name: MEILI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.searchSecretName" . }}
+                  key: {{ include "docz.api.searchSecretKey" . }}
+            {{- if not (include "docz.api.authDisabled" .) }}
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: session-secret
+            - name: AUTH_REDIRECT_BASE
+              value: {{ required "api.config.authRedirectBase is required" .Values.api.config.authRedirectBase | quote }}
+            {{- end }}
+            - name: AUTH_PROVIDERS
+              value: {{ .Values.auth.providers | quote }}
+            {{- $providers := include "docz.api.authProviders" . | fromJsonArray }}
+            {{- if has "github" $providers }}
+            - name: GITHUB_OAUTH_CLIENT_ID
+              value: {{ required "api.config.githubOAuthClientID is required when github is in auth.providers" .Values.api.config.githubOAuthClientID | quote }}
+            - name: GITHUB_OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: oauth-client-secret
+            {{- end }}
+            {{- if has "okta" $providers }}
+            - name: OKTA_ISSUER
+              value: {{ required "api.config.oktaIssuer is required when okta is in auth.providers" .Values.api.config.oktaIssuer | quote }}
+            - name: OKTA_CLIENT_ID
+              value: {{ required "api.config.oktaClientID is required when okta is in auth.providers" .Values.api.config.oktaClientID | quote }}
+            - name: OKTA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: okta-client-secret
+            {{- with .Values.api.config.oktaScopes }}
+            - name: OKTA_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if has "keycloak" $providers }}
+            - name: KEYCLOAK_ISSUER
+              value: {{ required "api.config.keycloakIssuer is required when keycloak is in auth.providers" .Values.api.config.keycloakIssuer | quote }}
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ required "api.config.keycloakClientID is required when keycloak is in auth.providers" .Values.api.config.keycloakClientID | quote }}
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: keycloak-client-secret
+            {{- with .Values.api.config.keycloakScopes }}
+            - name: KEYCLOAK_SCOPES
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            - name: LOG_LEVEL
+              value: {{ .Values.api.config.logLevel | quote }}
+            - name: LOG_FORMAT
+              value: {{ .Values.api.config.logFormat | quote }}
+            - name: METRICS_ENABLED
+              value: {{ .Values.metrics.enabled | quote }}
+            {{- with .Values.api.config.githubApiBase }}
+            - name: GITHUB_API_BASE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.api.config.sessionTTL }}
+            - name: SESSION_TTL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.api.config.ingestDebounce }}
+            - name: INGEST_DEBOUNCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.otel.endpoint }}
+            # Tracing is on for both workloads or for neither (DESIGN-0018 §4).
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ include "docz.otel.apiEndpoint" . | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.api.otel.serviceName | default "docz-api" | quote }}
+            {{- with .Values.otel.sampleRate }}
+            - name: OTEL_SAMPLE_RATE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.api.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.api.secrets.privateKeyAsFile .Values.api.extraVolumeMounts }}
+          volumeMounts:
+            {{- if .Values.api.secrets.privateKeyAsFile }}
+            - name: github-private-key
+              mountPath: /etc/docz-api/private-key
+              readOnly: true
+            {{- end }}
+            {{- with .Values.api.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.api.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if or .Values.api.secrets.privateKeyAsFile .Values.api.extraVolumes }}
+      volumes:
+        {{- if .Values.api.secrets.privateKeyAsFile }}
+        - name: github-private-key
+          secret:
+            secretName: {{ include "docz.api.secretName" . }}
+            items:
+              - key: private-key
+                path: private-key.pem
+        {{- end }}
+        {{- with .Values.api.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: shared helpers (names and labels)
+templates:
+  - templates/api-deployment.yaml
+set:
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
+tests:
+  - it: a release named docz keeps the bare chart name
+    release:
+      name: docz
+    asserts:
+      # The bare fullname surfaces as the baked Postgres Secret's prefix.
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "DATABASE_URL")].valueFrom.secretKeyRef.name
+          value: docz-postgres
+      - equal:
+          path: metadata.name
+          value: docz-api
+
+  - it: another release name is prefixed onto the chart name
+    release:
+      name: prod
+    asserts:
+      # The bare fullname surfaces as the baked Postgres Secret's prefix.
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "DATABASE_URL")].valueFrom.secretKeyRef.name
+          value: prod-docz-postgres
+      - equal:
+          path: metadata.name
+          value: prod-docz-api
+
+  - it: fullnameOverride replaces the prefix
+    set:
+      fullnameOverride: lab
+    asserts:
+      - equal:
+          path: metadata.name
+          value: lab-api
+
+  - it: labels carry the role and no extraLabels by default
+    release:
+      name: docz
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: api
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: docz
+      - notExists:
+          path: metadata.labels.owner
+
+  - it: extraLabels are appended
+    set:
+      extraLabels:
+        owner: lab
+    asserts:
+      - equal:
+          path: metadata.labels.owner
+          value: lab
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+      - notExists:
+          path: spec.selector.matchLabels.owner
+
+  - it: an extraLabels key the chart sets fails the render
+    set:
+      extraLabels:
+        app.kubernetes.io/name: other
+    asserts:
+      - failedTemplate:
+          errorPattern: 'extraLabels: "app.kubernetes.io/name" is set by the chart'
+
+  - it: a colliding component key fails the render too
+    set:
+      extraLabels:
+        app.kubernetes.io/component: other
+    asserts:
+      - failedTemplate:
+          errorPattern: 'extraLabels: "app.kubernetes.io/component" is set by the chart'

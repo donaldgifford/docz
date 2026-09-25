@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+# The chart carries no Tailscale (IMPL-0021 OQ 8): exposure is the operator's
+# choice, documented in deploy/tailscale-operator.md. docz-api's sidecar
+# lived in the pod spec (a container, its state volume, its env, and a
+# Secret), so every name and image there is checked in every backend mode,
+# and so is NOTES. helm-unittest has no whole-document regex, so the fields
+# the sidecar used are what these assertions cover.
+suite: no Tailscale
+templates:
+  - templates/api-deployment.yaml
+  - templates/site-deployment.yaml
+  - templates/store-postgres.yaml
+  - templates/queue-valkey.yaml
+  - templates/search-meili.yaml
+  - templates/NOTES.txt
+set:
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
+  search:
+    meili:
+      masterKey: "ci-dummy-master-key-0123456789"
+tests:
+  - it: renders no Tailscale container, volume, or env in baked mode
+    documentSelector:
+      path: spec.template.spec.containers
+      matchMany: true
+      skipEmptyTemplates: true
+    asserts: &podspec
+      - notMatchRegex:
+          path: spec.template.spec.containers[*].name
+          pattern: (?i)tailscale
+      - notMatchRegex:
+          path: spec.template.spec.containers[*].image
+          pattern: (?i)tailscale
+      - notMatchRegex:
+          path: spec.template.spec.containers[*].env[*].name
+          pattern: (?i)(tailscale|^TS_)
+      - notMatchRegex:
+          path: spec.template.spec.volumes[*].name
+          pattern: (?i)tailscale
+
+  - it: renders no Tailscale container, volume, or env in CNPG mode
+    set:
+      store:
+        postgres:
+          mode: cnpg
+    documentSelector:
+      path: spec.template.spec.containers
+      matchMany: true
+      skipEmptyTemplates: true
+    asserts: *podspec
+
+  - it: renders no Tailscale container, volume, or env in external mode
+    set:
+      store:
+        postgres:
+          mode: external
+        external:
+          existingSecret: pg
+      queue:
+        valkey:
+          mode: external
+        external:
+          existingSecret: vk
+      search:
+        meili:
+          mode: external
+          host: "http://meili:7700"
+          external:
+            existingSecret: ms
+    documentSelector:
+      path: spec.template.spec.containers
+      matchMany: true
+      skipEmptyTemplates: true
+    asserts: *podspec
+
+  - it: NOTES never mention Tailscale
+    template: templates/NOTES.txt
+    asserts:
+      - notMatchRegexRaw:
+          pattern: (?i)tailscale

@@ -26,6 +26,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0011 | Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade | Concluded | 2026-09-21 | Donald Gifford | [0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md](0011-consolidating-docz-api-and-docz-site-into-one-repo-layout.md) |
 | INV-0012 | docz-site consumes the OpenAPI contract from the same repository | Concluded | 2026-09-23 | Donald Gifford | [0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md](0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md) |
 | INV-0013 | docz-site deferred features after the move: link graph, lifecycle, labels | Open | 2026-09-23 | Donald Gifford | [0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md](0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md) |
+| INV-0014 | Consolidate the docz-api and docz-site Helm charts into one chart | Concluded | 2026-09-25 | Donald Gifford | [0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md](0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

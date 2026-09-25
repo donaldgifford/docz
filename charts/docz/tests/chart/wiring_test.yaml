@@ -1,0 +1,181 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+# The three things that tie the two workloads together (DESIGN-0018 §4): the
+# site's API URL, one provider list, and one tracing switch.
+suite: wiring between the site and the API
+templates:
+  - templates/api-deployment.yaml
+  - templates/site-deployment.yaml
+release:
+  name: docz
+  namespace: default
+set:
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
+tests:
+  - it: derives DOCZ_API_URL from this release's API Service when unset
+    template: templates/site-deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_API_URL
+            value: "http://docz-api.default.svc.cluster.local:80"
+
+  - it: follows the API Service port and the namespace
+    template: templates/site-deployment.yaml
+    release:
+      namespace: lab
+    set:
+      api:
+        service:
+          port: 8080
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_API_URL
+            value: "http://docz-api.lab.svc.cluster.local:8080"
+
+  - it: an explicit site.config.doczApiUrl overrides the derived URL
+    template: templates/site-deployment.yaml
+    set:
+      site:
+        config:
+          doczApiUrl: "https://api.example.com"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_API_URL
+            value: "https://api.example.com"
+
+  - it: one auth.providers value reaches the API's AUTH_PROVIDERS
+    template: templates/api-deployment.yaml
+    set:
+      auth:
+        providers: "none"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AUTH_PROVIDERS
+            value: "none"
+
+  - it: the same auth.providers value reaches the site's DOCZ_AUTH_PROVIDERS
+    template: templates/site-deployment.yaml
+    set:
+      auth:
+        providers: "github,keycloak"
+      api:
+        config:
+          keycloakIssuer: "https://kc.example.com/realms/docz"
+          keycloakClientID: "docz"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+            value: "github,keycloak"
+
+  - it: none leaves DOCZ_AUTH_PROVIDERS off the site
+    # docz-site's whitelist has no "none", and its /readyz fails on a value
+    # it cannot honour (found by the IMPL-0021 Phase 4 real install).
+    template: templates/site-deployment.yaml
+    set:
+      auth:
+        providers: "none"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+          any: true
+
+  - it: an empty otel.endpoint leaves every OTEL_ variable off both workloads
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SAMPLE_RATE
+          any: true
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_TRACES_SAMPLER_ARG
+          any: true
+
+  - it: a collector URL reaches the API as host:port
+    template: templates/api-deployment.yaml
+    set:
+      otel:
+        endpoint: "http://otel-collector:4318"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "otel-collector:4318"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "docz-api"
+
+  - it: a collector URL reaches the site as its traces URL
+    template: templates/site-deployment.yaml
+    set:
+      otel:
+        endpoint: "http://otel-collector:4318/"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://otel-collector:4318/v1/traces"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "docz-site"
+
+  - it: a bare host:port reaches the API unchanged and the site as http
+    set:
+      otel:
+        endpoint: "otel-collector:4318"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "otel-collector:4318"
+        template: templates/api-deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "http://otel-collector:4318/v1/traces"
+        template: templates/site-deployment.yaml
+
+  - it: a URL with a path reaches the site verbatim
+    template: templates/site-deployment.yaml
+    set:
+      otel:
+        endpoint: "https://collector.example.com/otlp/v1/traces"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: "https://collector.example.com/otlp/v1/traces"

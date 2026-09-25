@@ -99,6 +99,7 @@ jobs:
       component: api
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
+      publish_chart: false
     secrets: inherit
 
   publish-ecr:
@@ -124,6 +125,7 @@ jobs:
       component: api
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
+      publish_chart: false
     secrets: inherit
 
   # docz-site's pair (IMPL-0020): the same reusable workflows with
@@ -142,6 +144,7 @@ jobs:
       component: ui
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
+      publish_chart: false
     secrets: inherit
 
   publish-ecr-ui:
@@ -158,4 +161,5 @@ jobs:
       component: ui
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
+      publish_chart: false
     secrets: inherit

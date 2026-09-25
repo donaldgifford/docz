@@ -1,0 +1,20 @@
+{{- /* helm test: one pod, one container per workload, each fetching its own
+Service's /healthz. Pod labels carry component `test`, so no workload
+selector can match this pod. */ -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "docz.fullname" . }}-test-connection"
+  labels:
+    {{- include "docz.labels" (dict "ctx" . "component" "test") | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    {{- range list "api" "site" }}
+    - name: wget-{{ . }}
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "docz.componentFullname" (dict "ctx" $ "component" .) }}:{{ (index $.Values .).service.port }}/healthz']
+    {{- end }}
+  restartPolicy: Never

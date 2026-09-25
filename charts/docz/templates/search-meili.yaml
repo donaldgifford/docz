@@ -1,0 +1,90 @@
+{{- if eq .Values.search.meili.mode "baked" -}}
+---
+# Baked single-pod Meilisearch for full-text search. Mirrors the baked
+# Postgres/Valkey pattern; production deployments can point at an
+# external Meilisearch via search.meili.mode=external.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "docz.api.meiliFullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz.labels" (dict "ctx" . "component" "meilisearch") | nindent 4 }}
+spec:
+  serviceName: {{ include "docz.api.meiliFullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "docz.selectorLabels" (dict "ctx" . "component" "meilisearch") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "docz.podLabels" (dict "ctx" . "component" "meilisearch") | nindent 8 }}
+    spec:
+      containers:
+        - name: meilisearch
+          image: {{ .Values.search.meili.image | quote }}
+          ports:
+            - containerPort: 7700
+              name: http
+          env:
+            - name: MEILI_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.searchSecretName" . }}
+                  key: {{ include "docz.api.searchSecretKey" . }}
+            - name: MEILI_ENV
+              value: production
+            - name: MEILI_NO_ANALYTICS
+              value: "true"
+            {{- if .Values.metrics.enabled }}
+            # /metrics is an experimental route, off unless asked for. It is
+            # gated by the master key like every route but /health, so the
+            # ServiceMonitor in search-meili-servicemonitor.yaml scrapes it
+            # with a bearer token.
+            - name: MEILI_EXPERIMENTAL_ENABLE_METRICS
+              value: "true"
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /meili_data
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- with .Values.search.meili.storageClassName }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.search.meili.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "docz.api.meiliFullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz.labels" (dict "ctx" . "component" "meilisearch") | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: 7700
+      targetPort: http
+      name: http
+  selector:
+    {{- include "docz.selectorLabels" (dict "ctx" . "component" "meilisearch") | nindent 4 }}
+{{- end }}

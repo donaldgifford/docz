@@ -5,10 +5,80 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(chart)* Charts/docz Chart.yaml
+- *(chart)* Shared helpers for charts/docz
+- *(chart)* Charts/docz values skeleton
+- *(chart)* Charts/docz values schema skeleton
+- *(chart)* Port docz-api dependency helpers to charts/docz
+- *(chart)* Api block and backends in charts/docz values
+- *(chart)* API workload templates in charts/docz
+- *(chart)* Backend templates in charts/docz
+- *(chart)* Site values block and one otel endpoint for both
+- *(chart)* Site workload templates in charts/docz
+- *(chart)* One Ingress and HTTPRoute pair per workload
+- *(chart)* One helm test hook for both workloads
+- *(chart)* Charts/docz NOTES for both workloads
+- *(chart)* [**breaking**] Deprecate charts/docz-api and charts/docz-site
+
+### Bug Fixes
+
+- *(chart)* Anchor charts/docz helmignore so the test hook ships
+- *(chart)* Omit the site's DOCZ_AUTH_PROVIDERS when auth is none
+
+### Refactor
+
+- *(chart)* Shared docz.hpa helper
+
 ### Documentation
 
 - *(impl)* Record the v2.0.0-beta.4 release checks for IMPL-0020
 - IMPL-0020 Completed, DESIGN-0017 Implemented
+- *(inv)* INV-0014, consolidating the docz-api and docz-site charts
+- *(inv)* Conclude INV-0014, one merged chart for new installs
+- *(design)* DESIGN-0018, one Helm chart for docz
+- *(design)* Resolve DESIGN-0018 open questions
+- *(design)* DESIGN-0018 uses an empty extraLabels map for tracking
+- *(impl)* IMPL-0021, charts/docz and v2.0.0-beta.5
+- Resolve IMPL-0021 open questions and amend DESIGN-0018
+- *(chart)* Charts/docz README template
+- *(impl)* IMPL-0021 Phase 1 gates pass
+- *(impl)* Record IMPL-0021 API render parity
+- *(impl)* Close IMPL-0021 Phase 2 gates
+- *(impl)* Record IMPL-0021 site wiring
+- *(impl)* Verify authRedirectBase wording for IMPL-0021
+- *(impl)* Record IMPL-0021 site and edge render parity
+- *(chart)* Charts/docz README
+- *(deploy)* Tailscale operator guide for GitHub webhooks
+- *(impl)* Record IMPL-0021 schema rejections
+- *(impl)* Close IMPL-0021 Phase 4 gates
+- *(impl)* Close IMPL-0021 Phase 3 gates
+- Name charts/docz as the chart
+- *(impl)* Close IMPL-0021 Phase 5 gates
+- *(impl)* Record IMPL-0021 follow-up issues
+
+### Testing
+
+- *(chart)* Charts/docz ci-values skeleton
+- *(chart)* Pin charts/docz naming and label helpers
+- *(chart)* Charts/docz ci-values for the API
+- *(chart)* Port docz-api suites to charts/docz
+- *(chart)* Point the helpers suite at api-deployment
+- *(chart)* Charts/docz ci-values for the site
+- *(chart)* Port docz-site suites to charts/docz
+- *(chart)* Rename a ported site test to auth.providers
+- *(chart)* Wiring, selector, edge, extraLabels, Tailscale, version suites
+
+### Miscellaneous Tasks
+
+- *(chart)* Charts/docz .helmignore
+- *(chart)* Chart.just module for charts/docz
+- Chart::lint in the root ci gate
+- Helm-unittest finds suites in subdirectories
+- *(publish)* A chart component for charts/docz
+- *(publish)* Charts publish from tags, not from merges
+- *(prerelease)* Publish charts/docz from the beta tag
 
 ## [2.0.0-beta.4] - 2026-09-24
 

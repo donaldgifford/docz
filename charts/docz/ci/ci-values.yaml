@@ -1,0 +1,64 @@
+# CI render/lint values. Overrides each workload's container to a no-op
+# busybox and supplies a dummy for every `required` value so `helm lint`,
+# `helm template`, and `ct install` pass without real secrets. NOT a
+# deployable config.
+#
+# Each stand-in serves `/healthz` from busybox httpd so the chart's
+# `helm test` hook, which `ct install` runs, has something to reach. The
+# rootfs is read-only, so the file lives on an emptyDir.
+auth:
+  providers: "github"
+
+api:
+  image:
+    repository: busybox
+    tag: latest
+  command:
+    - sh
+    - -c
+    - echo ok > /www/healthz && exec httpd -f -p 8080 -h /www
+  extraVolumes:
+    - name: www
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: www
+      mountPath: /www
+  config:
+    appId: "000000"
+    authRedirectBase: "http://localhost:8080"
+    githubOAuthClientID: "ci-dummy"
+  secrets:
+    webhookSecret: "ci-dummy"
+    privateKey: "ci-dummy"
+    privateKeyAsFile: false
+    sessionSecret: "ci-dummy"
+    oauthClientSecret: "ci-dummy"
+  livenessProbe: null
+  readinessProbe: null
+  resources: {}
+
+# No doczApiUrl: CI installs the derived in-release API URL.
+site:
+  image:
+    repository: busybox
+    tag: latest
+  command:
+    - sh
+    - -c
+    - echo ok > /www/healthz && exec httpd -f -p 8080 -h /www
+  extraVolumes:
+    - name: www
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: www
+      mountPath: /www
+  livenessProbe: null
+  readinessProbe: null
+  resources: {}
+
+search:
+  meili:
+    # Meilisearch v1.12 rejects a master key < 16 bytes at startup ("production
+    # environment"), so `ct install` needs a >=16-byte dummy (helm lint/template
+    # never run the container, but the kind install does).
+    masterKey: "ci-dummy-master-key-0123456789"

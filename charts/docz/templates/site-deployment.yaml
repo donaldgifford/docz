@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "docz.componentFullname" (dict "ctx" . "component" "site") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "docz.labels" (dict "ctx" . "component" "site") | nindent 4 }}
+spec:
+  replicas: {{ .Values.site.replicaCount }}
+  revisionHistoryLimit: {{ .Values.site.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "docz.selectorLabels" (dict "ctx" . "component" "site") | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.site.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "docz.podLabels" (dict "ctx" . "component" "site") | nindent 8 }}
+        {{- with .Values.site.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "docz.serviceAccountName" (dict "ctx" . "component" "site") }}
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.site.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: docz-site
+          image: {{ include "docz.image" (dict "ctx" . "component" "site") | quote }}
+          imagePullPolicy: {{ .Values.site.image.pullPolicy }}
+          {{- with .Values.site.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.site.config.port }}
+              name: http
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.site.config.port | quote }}
+            # Derived from this release's API Service unless overridden
+            # (DESIGN-0018 §4).
+            - name: DOCZ_API_URL
+              value: {{ .Values.site.config.doczApiUrl | default (include "docz.api.internalUrl" .) | quote }}
+            {{- if not (include "docz.api.authDisabled" .) }}
+            {{- /* The site's whitelist has no "none": its /readyz reports
+                   an unrecognised value as a deployment mistake and holds
+                   traffic. With login off, the API serves an anonymous
+                   session and the login page is never reached, so the
+                   variable is simply omitted. */}}
+            - name: DOCZ_AUTH_PROVIDERS
+              value: {{ .Values.auth.providers | quote }}
+            {{- end }}
+            - name: DOCZ_MERMAID_LAYOUT
+              value: {{ .Values.site.config.mermaidLayout | quote }}
+            - name: DOCZ_LOG_LEVEL
+              value: {{ .Values.site.config.logLevel | quote }}
+            - name: DOCZ_LOG_FORMAT
+              value: {{ .Values.site.config.logFormat | quote }}
+            - name: DOCZ_METRICS_ENABLED
+              value: {{ .Values.metrics.enabled | quote }}
+            {{- if .Values.otel.endpoint }}
+            {{- /* Omitted entirely when empty: unset is what turns
+                   tracing off, so an empty string must not be set.
+                   On for both workloads or for neither (DESIGN-0018 §4). */}}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ include "docz.otel.siteEndpoint" . | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.site.otel.serviceName | default "docz-site" | quote }}
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: {{ .Values.otel.sampleRate | quote }}
+            {{- end }}
+            {{- with .Values.site.config.navLinks }}
+            - name: DOCZ_NAV_LINKS
+              value: {{ toJson . | quote }}
+            {{- end }}
+            {{- with .Values.site.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.site.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.site.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.site.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.site.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.site.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.site.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.site.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.site.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.site.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

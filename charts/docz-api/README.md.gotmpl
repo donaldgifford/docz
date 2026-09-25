@@ -1,5 +1,14 @@
 {{ template "chart.header" . }}
 
+> [!WARNING]
+> **Deprecated.** This is the final version of the `docz-api` chart.
+> docz-api, docz-site, and their backends now ship as one chart,
+> `oci://ghcr.io/donaldgifford/charts/docz`
+> ([`charts/docz`](https://github.com/donaldgifford/docz/tree/main/charts/docz)).
+> There is no in-place upgrade: install `docz` as a new release. The
+> Tailscale sidecar does not carry over; see
+> [`deploy/tailscale-operator.md`](https://github.com/donaldgifford/docz/blob/main/deploy/tailscale-operator.md).
+
 {{ template "chart.description" . }}
 
 ## What this deploys
