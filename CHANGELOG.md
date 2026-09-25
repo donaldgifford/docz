@@ -12,6 +12,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0014, consolidating the docz-api and docz-site charts
 - *(inv)* Conclude INV-0014, one merged chart for new installs
 - *(design)* DESIGN-0018, one Helm chart for docz
+- *(design)* Resolve DESIGN-0018 open questions
 
 ## [2.0.0-beta.4] - 2026-09-24
 
