@@ -5,6 +5,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Documentation
+
+- *(impl)* Complete IMPL-0021 with v2.0.0-beta.5
+
+## [2.0.0-beta.5] - 2026-09-25
+
 ### Features
 
 - *(chart)* Charts/docz Chart.yaml
