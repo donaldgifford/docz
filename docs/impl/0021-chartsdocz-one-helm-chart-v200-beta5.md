@@ -299,10 +299,11 @@ along with its 90 non-Tailscale tests.
   `inheritedMetadata` must **not** get it (DESIGN-0018 §2)
 - [x] Share the HPA: extract `docz.hpa` (`dict ctx component`) now, so the
   site's HPA in Phase 3 is a one-line include
-- [ ] `ci/ci-values.yaml` `api:` block: busybox with `command: [sleep, "900"]`,
+- [x] `ci/ci-values.yaml` `api:` block: busybox with `command: [sleep, "900"]`,
   `config.appId`, `authRedirectBase`, `githubOAuthClientID`, dummy secrets
   with `privateKeyAsFile: false`, nulled probes, empty resources. Keep the
   ≥16-byte `search.meili.masterKey`
+  Done, with one change: the stand-in runs busybox `httpd` serving `/healthz` from an emptyDir in place of `sleep`, because the anchored `.helmignore` (Phase 1) means `ct install` now runs the `helm test` hook.
 - [ ] Port the nine suites to `tests/api/`:
   - `backend_shapes`, `deployment_env`, `deployment`, `prometheusrule`,
     `search-meili-servicemonitor`, `secret`, `service`, `serviceaccount`,
