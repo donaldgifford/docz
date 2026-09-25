@@ -37,6 +37,25 @@ api:
   readinessProbe: null
   resources: {}
 
+# No doczApiUrl: CI installs the derived in-release API URL.
+site:
+  image:
+    repository: busybox
+    tag: latest
+  command:
+    - sh
+    - -c
+    - echo ok > /www/healthz && exec httpd -f -p 8080 -h /www
+  extraVolumes:
+    - name: www
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: www
+      mountPath: /www
+  livenessProbe: null
+  readinessProbe: null
+  resources: {}
+
 search:
   meili:
     # Meilisearch v1.12 rejects a master key < 16 bytes at startup ("production

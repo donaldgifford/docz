@@ -404,8 +404,9 @@ list, and one front door.
     NOTES;
   - a reminder that `authRedirectBase` must be the site's URL.
   Done. For each workload NOTES shows its Ingress URLs or HTTPRoute hostnames, or else a port-forward. It also shows the API URL (marked when derived), the `none` warning (docz-api's NOTES had none to carry over, so it is new wording), and the authRedirectBase reminder. The Ingress URL line fixes a bug from docz-site, which printed a path's `.host` (always empty).
-- [ ] `ci/ci-values.yaml` `site:` block: busybox with `sleep`, and no
+- [x] `ci/ci-values.yaml` `site:` block: busybox with `sleep`, and no
   `doczApiUrl`, so the derived path is what CI installs
+  Done. As with the API, the stand-in is busybox `httpd` serving `/healthz` from an emptyDir rather than `sleep`, because `ct install` runs the helm test hook. No `doczApiUrl` is set.
 - [ ] Port the six docz-site suites to `tests/site/`:
   - `deployment`, `httproute`, `ingress`, `service`, `serviceaccount`,
     `servicemonitor`;
