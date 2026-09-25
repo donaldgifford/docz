@@ -51,4 +51,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0018 | v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap | Completed | 2026-09-19 | Donald Gifford | [0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md](0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md) |
 | IMPL-0019 | docz-api move-in: v2.0.0-beta.3 | Completed | 2026-09-22 | Donald Gifford | [0019-docz-api-move-in-v200-beta3.md](0019-docz-api-move-in-v200-beta3.md) |
 | IMPL-0020 | docz-site move-in: v2.0.0-beta.4 | Completed | 2026-09-23 | Donald Gifford | [0020-docz-site-move-in-v200-beta4.md](0020-docz-site-move-in-v200-beta4.md) |
+| IMPL-0021 | charts/docz: one Helm chart, v2.0.0-beta.5 | Draft | 2026-09-25 | Donald Gifford | [0021-chartsdocz-one-helm-chart-v200-beta5.md](0021-chartsdocz-one-helm-chart-v200-beta5.md) |
 <!-- END DOCZ AUTO-GENERATED -->
