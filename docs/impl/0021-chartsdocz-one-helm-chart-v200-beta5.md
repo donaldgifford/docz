@@ -25,7 +25,7 @@ created: 2026-09-25
   - [Phase 3: The site, the wiring, and the edge](#phase-3-the-site-the-wiring-and-the-edge)
     - [Tasks](#tasks-2)
     - [Success Criteria](#success-criteria-2)
-  - [Phase 4: README, the Tailscale guide, and a real install](#phase-4-readme-the-tailscale-guide-and-a-real-install)
+  - [Phase 4: README, the operator guide, and a real install](#phase-4-readme-the-operator-guide-and-a-real-install)
     - [Tasks](#tasks-3)
     - [Success Criteria](#success-criteria-3)
   - [Phase 5: Publishing, the deprecated finals, and the docs](#phase-5-publishing-the-deprecated-finals-and-the-docs)
@@ -57,7 +57,10 @@ Build `charts/docz`, a single chart that installs docz-api, docz-site, and
 their baked Postgres, Valkey, and Meilisearch. Publish it signed from
 `v2.0.0-beta.5`, and ship the final deprecated versions of
 `charts/docz-api` (0.10.0) and `charts/docz-site` (0.3.0) in the same
-release. There are six phases, one PR each (Open Question 1).
+release. There are six phases, all in **one PR** from
+`feat/helm-chart-migrations`, the branch that already carries INV-0014,
+DESIGN-0018, and this plan (Open Question 1). Each numbered task is its own
+commit, and the PR's merge commit is the one Phase 6 tags.
 
 **Implements:** DESIGN-0018 (Draft; all seventeen open questions resolved),
 which implements INV-0014's resolutions 1b, 2a, and 3c.
@@ -90,12 +93,13 @@ New `tests/chart/` suites are counted on top of the floor, never toward it.
   - names, the role label in every selector, and `extraLabels` (§2);
   - values (§3);
   - derived `DOCZ_API_URL`, one `auth.providers`, shared `otel` (§4);
-  - one edge to the site (§5);
+  - one Ingress and one HTTPRoute per workload (§5);
   - helpers (§6);
   - template port (§7);
   - schema, README, CHANGELOG, and `cliff.toml` (§8).
-- The README section "Exposing docz with the Tailscale operator"
-  (DESIGN-0018 §5, OQ 9)
+- `deploy/tailscale-operator.md`, the one file that mentions Tailscale:
+  the operator in front of docz-api through `api.ingress` (DESIGN-0018 §5,
+  OQ 9)
 - Porting the 15 suites and adding the `tests/chart/` suites (DESIGN-0018
   Testing Strategy)
 - A one-time render-parity check against the old charts, recorded in this
@@ -123,6 +127,10 @@ New `tests/chart/` suites are counted on top of the floor, never toward it.
 - A site alert (DESIGN-0018 OQ 16). Phase 6 files it as an issue
 - Enabling ECR publishing
 - Making `ct install` run the `helm test` hook in CI (Open Question 6)
+- A single-route option (one HTTPRoute to the site, serving both workloads
+  through its proxy), and testing the Tailscale operator against the chart.
+  Phase 6 files both as one follow-up (DESIGN-0018 §5)
+- Any Tailscale template, value, or README section
 
 <!--docz:out-of-scope:end-->
 <!--docz:scope:end-->
@@ -131,11 +139,14 @@ New `tests/chart/` suites are counted on top of the floor, never toward it.
 
 Each phase builds on the previous one. A phase is complete when all its tasks
 are checked off and its success criteria are met. Phases are strictly
-sequential, and every PR carries `dont-release`.
+sequential commits on one branch, and the one PR carries `dont-release`.
+Push after each phase, so CI's helm jobs run against every phase and not
+only the last.
 
 The old charts are **not touched** until Phase 5. Until then CI lints,
-unit-tests, and `ct install`s all three charts side by side, and nothing
-published changes.
+unit-tests, and `ct install`s all three charts side by side. Nothing
+publishes before the tag, because Phase 5 also stops `release.yml`
+publishing charts on merge (Open Question 2).
 
 ---
 
@@ -343,15 +354,22 @@ list, and one front door.
 - [ ] `api.config.authRedirectBase`: keep the `required` unless
   `docz.api.authDisabled`, and reword its values comment to say it is the
   **site's** public URL (DESIGN-0018 OQ 17)
-- [ ] `ingress.yaml` and `httproute.yaml` (DESIGN-0018 §5): one of each,
-  backend `<fullname>-site` on `site.service.port`. The HTTPRoute renders
-  docz-site's default rule when `rules` is empty
+- [ ] Edges, one pair per workload (DESIGN-0018 §5, OQ 8 revised):
+  - `docz.ingress` and `docz.httpRoute` helpers (`dict ctx component`),
+    ported from the two charts' identical templates;
+  - `api-ingress.yaml`, `api-httproute.yaml`, `site-ingress.yaml`, and
+    `site-httproute.yaml` as one-line includes, each named
+    `<fullname>-<component>` and routed to its own Service and port;
+  - `ingress` and `httpRoute` blocks under both `api:` and `site:` in
+    `values.yaml`, with the old charts' shapes and defaults (disabled);
+  - an empty `rules` renders the default rule for both. docz-site did this
+    already; docz-api's route had no rules at all.
 - [ ] `templates/tests/test-connection.yaml`: one hook pod with two
   containers, each `wget`ting one Service's `/healthz`, and the `docz.labels`
   of component `test`
 - [ ] `NOTES.txt`:
-  - the front-door URL (Ingress host, HTTPRoute hostname, or the
-    port-forward to `<fullname>-site`);
+  - each workload's URL (its Ingress host or HTTPRoute hostname, or else a
+    port-forward to its Service);
   - the derived or overridden API URL;
   - a warning when `auth.providers` is `none`, carried over from docz-api's
     NOTES;
@@ -363,7 +381,8 @@ list, and one front door.
     `servicemonitor`;
   - the `doczApiUrl`-required assertion becomes an "unset derives" and a
     "set overrides" pair, which moves to `tests/chart/wiring_test.yaml`;
-  - httproute and ingress assertions retarget `<fullname>-site`.
+  - httproute and ingress assertions render `site-*.yaml` and expect
+    `<fullname>-site`.
 - [ ] New suites under `tests/chart/`, from DESIGN-0018's Testing Strategy:
   - `wiring_test.yaml`:
     - the URL is derived, or overridden when set;
@@ -374,22 +393,27 @@ list, and one front door.
     - no two workloads share one;
     - no selector carries an `extraLabels` key.
   - `edge_test.yaml`:
-    - Ingress and HTTPRoute send traffic to the site Service;
-    - the default HTTPRoute rule is present.
+    - each workload's Ingress and HTTPRoute send traffic to that workload's
+      Service and port, and to no other;
+    - enabling one workload's edge renders nothing for the other;
+    - an empty `rules` renders the default rule for both;
+    - `api.ingress.className: tailscale` renders as given, which is the
+      only edge setting the operator guide needs.
   - `extralabels_test.yaml`, with every optional template enabled:
     - `extraLabels` is on every object and pod template;
     - it is absent from `volumeClaimTemplates` and CNPG
       `inheritedMetadata`;
     - a collision fails the render;
     - the empty default adds nothing.
-  - `notailscale_test.yaml`: across baked, CNPG, and external, no document
-    `matchRegex`es `(?i)tailscale`.
+  - `notailscale_test.yaml`: with default values, across baked, CNPG, and
+    external, no document `matchRegex`es `(?i)tailscale`.
   - `version_test.yaml`: both images default to `.Chart.AppVersion`, which
     is bare semver.
-- [ ] Render parity, site half: diff `charts/docz-site` against
-  `charts/docz` on the same basis as Phase 2. The only differences allowed
-  are names, labels, `DOCZ_API_URL`, and the edge target. Record the result
-  here
+- [ ] Render parity, site half and both edges: diff `charts/docz-site`
+  against `charts/docz` on the same basis as Phase 2, with each chart's
+  Ingress and HTTPRoute enabled. Diff docz-api's edges the same way. The
+  only differences allowed are names, labels, `DOCZ_API_URL`, and the API
+  HTTPRoute's new default rule. Record the result here
 - [ ] `just chart lint`, `just chart unittest`, `just ci`, and CI's
   `Helm Chart Test` (`ct install` on kind) green on the PR
 
@@ -411,7 +435,7 @@ list, and one front door.
 ---
 
 <!--docz:phase:start-->
-### Phase 4: README, the Tailscale guide, and a real install
+### Phase 4: README, the operator guide, and a real install
 
 Phase 4 covers what a person installing the chart reads, and the one time
 the chart runs the real images.
@@ -422,34 +446,33 @@ the chart runs the real images.
 - [ ] `README.md.gotmpl` prose (DESIGN-0018 §8), with these sections:
   - Install: `helm install docz oci://ghcr.io/donaldgifford/charts/docz`
     and the values every install needs;
-  - The edge;
+  - The two edges: `api.*` and `site.*` each take an Ingress and an
+    HTTPRoute, and `authRedirectBase` is the site's URL;
   - Backend modes (baked, CNPG, external), adapted from docz-api's
     README;
   - Login providers, and `none` with its exposure warning;
   - `extraLabels`;
   - Observability;
-  - "Exposing docz with the Tailscale operator";
-  - "Coming from docz-api or docz-site".
+  - "Coming from docz-api or docz-site": the DESIGN-0018 Data Model tables,
+    "no in-place upgrade", and "the Tailscale sidecar is gone".
 
-  Regenerate with `just chart docs`
-- [ ] The Tailscale operator section (DESIGN-0018 §5) covers:
-  - the operator as a once-per-cluster prerequisite, with a link to its
-    docs;
-  - the `ingress:` values from the design;
-  - the resulting `https://docz.<tailnet>.ts.net` for `authRedirectBase`,
-    and `/webhooks/github` for the GitHub App;
-  - Funnel exposing the whole site.
+  The README does not mention Tailscale beyond that one line. Regenerate
+  with `just chart docs`
+- [ ] `deploy/tailscale-operator.md` (DESIGN-0018 §5, OQ 9), the one file
+  that describes the operator. It says that the Tailscale operator works in
+  front of docz-api, and that how the operator itself behaves is the
+  operator's own documentation. It covers:
+  - the `api.ingress` values: `className: tailscale`, the operator's Funnel
+    annotation, and a tailnet host;
+  - the resulting GitHub App webhook URL,
+    `https://<host>.<tailnet>.ts.net/webhooks/github`;
+  - the two tailnet-policy settings carried over from
+    `deploy/api/README.md` whose absence shows as a TLS EOF on every
+    delivery: Funnel granted to the proxy's tag in `nodeAttrs`, and HTTPS
+    certificates enabled.
 
-  It also carries over the two failure modes from `deploy/api/README.md`
-  that still apply to the operator's proxy:
-  - Funnel must be granted to the proxy's tag in the tailnet policy
-    (`nodeAttrs`);
-  - HTTPS certificates must be enabled.
-
-  Both show up as a TLS EOF on every webhook delivery
-- [ ] "Coming from docz-api or docz-site": the DESIGN-0018 Data Model tables,
-  "no in-place upgrade", and "the Tailscale sidecar is gone; see the
-  operator section"
+  Link it from the chart README's edges section and from
+  `deploy/api/README.md`
 - [ ] `values.schema.json` completed under the new paths:
   - the three backend `mode` enums;
   - both workloads' `logLevel`/`logFormat`;
@@ -468,9 +491,6 @@ the chart runs the real images.
   - `helm test docz` passes both `/healthz` checks.
 
   Record the output here
-- [ ] **(human, optional)** On a cluster with the Tailscale operator,
-  follow the README section once and record whether `/healthz` answers at
-  the tailnet name. This is not a gate (DESIGN-0018 Testing Strategy)
 - [ ] `just chart docs` leaves no diff; `just validate`; `just ci`
 
 <!--docz:tasks:end-->
@@ -524,13 +544,6 @@ first phase that touches the old charts and the workflows.
   - each `README.md.gotmpl` opens with the same notice;
   - regenerate with `just api helm-docs` and `just ui helm-docs`;
   - each chart's bare-semver unit test still passes.
-- [ ] **(human)** GHCR → Packages: `charts/docz` does not exist until its
-  first push, so grant `donaldgifford/docz` **Write** on it as soon as the
-  tag's first attempt creates it, then re-run the failed job. The
-  alternative is a one-off `workflow_dispatch` of `ghcr.yml` with
-  `component: chart` and `dry_run: false` from this branch after merge,
-  which creates the package so the grant can precede the tag (Open
-  Question 5)
 - [ ] Repository docs name `charts/docz`:
   - `CLAUDE.md`:
     - the opening paragraph, the Build & Test block (`just chart …`), and
@@ -545,10 +558,11 @@ first phase that touches the old charts and the workflows.
   - the comments in `cliff.toml`, `mise.toml`, and
     `contrib/prometheus/alerts.yaml`, which point at
     `charts/docz/templates/api-prometheusrule.yaml`;
-  - `deploy/api/README.md`'s Kubernetes webhook section: replace it with
-    the operator approach and a link to the chart README, keeping one
-    line saying the sidecar and its three failure modes apply only to the
-    deprecated `docz-api` chart (Open Question 8).
+  - `deploy/api/README.md`'s Kubernetes webhook section: remove the
+    Tailscale sidecar text and its three failure modes entirely. Leave a
+    short paragraph saying that GitHub needs a public path to the API's
+    `/webhooks/github` through `api.ingress` or `api.httpRoute`, with a
+    link to `deploy/tailscale-operator.md` (Open Question 8).
 - [ ] `just api lint-actions`, `just validate`, `just ci`, and CI green,
   including `ct lint` on all three charts
 
@@ -557,8 +571,9 @@ first phase that touches the old charts and the workflows.
 <!--docz:criteria:start-->
 #### Success Criteria
 
-- actionlint is clean, and a merge to `main` publishes **no** chart. Check
-  the merge's `release.yml` run: every `chart` job is skipped
+- actionlint is clean, and `release.yml` passes `publish_chart: false` on
+  every call, so merging the PR publishes no chart. After the merge, check
+  its `release.yml` run: every `chart` job is skipped
 - Both old charts carry `deprecated: true`, a bumped version, and
   `appVersion: 2.0.0-beta.5`, and still pass their unit tests
 - No tracked file outside `docs/`, `CHANGELOG.md`, and the old charts
@@ -575,9 +590,18 @@ first phase that touches the old charts and the workflows.
 <!--docz:tasks:start-->
 #### Tasks
 
+- [ ] **(human)** Review and merge the PR **with a merge commit**. After the
+  merge, confirm that its `release.yml` run skipped every `chart` job
+  (Phase 5's criterion)
 - [ ] `just release-check` and `just api release-check` pass on `main`
-- [ ] **(human)** `just release v2.0.0-beta.5` from **Phase 5's merge
+- [ ] **(human)** `just release v2.0.0-beta.5` from **the PR's merge
   commit**, the last commit that changes a workflow
+- [ ] **(human)** The GHCR grant (Open Question 5). The tag's
+  `publish-chart` run creates `charts/docz` in GHCR and fails
+  `403 write_package`. Then go to GHCR → Packages → `charts/docz` → Manage
+  Actions access, add `donaldgifford/docz` with **Write**, and re-run the
+  failed job. The chart job is idempotent, and nothing else in the run
+  depends on it
 - [ ] Check the `prerelease.yml` run:
   - the release is a pre-release with the `docz_*` and `docz-api_*`
     archives;
@@ -597,6 +621,12 @@ first phase that touches the old charts and the workflows.
   --version 0.1.0` with Phase 4's values. `/api/v1/repos` answers through
   the site, and `helm test docz` passes
 - [ ] File the follow-ups as issues:
+  - a single-route option: one HTTPRoute (or Ingress) to the site that
+    serves both workloads through the site's proxy, as an alternative to
+    the two per-workload edges. Include testing the Tailscale operator
+    against the chart, both through `api.ingress` as
+    `deploy/tailscale-operator.md` describes and through the single route
+    (DESIGN-0018 §5, rollout step 7);
   - a `DoczSiteDown` / proxy-error alert (DESIGN-0018 OQ 16);
   - at v2.0.0: delete `charts/docz-api/` and `charts/docz-site/`, their
     resolve-row chart columns, `api.just`'s and `ui.just`'s `helm-*`
@@ -635,10 +665,11 @@ first phase that touches the old charts and the workflows.
 | `charts/docz/templates/api-*.yaml` (7) | Create | 2 | API workload |
 | `charts/docz/templates/{store,queue,search}-*.yaml` (10) | Create | 2 | Backends |
 | `charts/docz/templates/site-*.yaml` (5) | Create | 3 | Site workload |
-| `charts/docz/templates/{ingress,httproute}.yaml` | Create | 3 | One edge |
+| `charts/docz/templates/{api,site}-{ingress,httproute}.yaml` | Create | 3 | One edge pair per workload, over `docz.ingress`/`docz.httpRoute` |
 | `charts/docz/templates/NOTES.txt`, `tests/test-connection.yaml` | Create | 3 | |
 | `charts/docz/tests/{api,site,chart}/*_test.yaml` | Create | 1–3 | 15 ported, 7 new suites |
-| `charts/docz/README.md.gotmpl`, `README.md` | Create | 1, 4 | Incl. the Tailscale operator section |
+| `charts/docz/README.md.gotmpl`, `README.md` | Create | 1, 4 | No Tailscale section |
+| `deploy/tailscale-operator.md` | Create | 4 | The operator in front of docz-api |
 | `chart.just` | Create | 1 | `just chart lint/template/unittest/docs` |
 | `justfile` | Modify | 1 | `mod? chart`, `chart::lint` in `ci` |
 | `.github/workflows/ci.yml` | Modify | 1 | Unittest glob |
@@ -648,7 +679,7 @@ first phase that touches the old charts and the workflows.
 | `charts/docz-api/{Chart.yaml,templates/NOTES.txt,README.md.gotmpl,README.md}` | Modify | 5 | 0.10.0, deprecated |
 | `charts/docz-site/{Chart.yaml,templates/NOTES.txt,README.md.gotmpl,README.md}` | Modify | 5 | 0.3.0, deprecated |
 | `CLAUDE.md`, `README.md`, `DEVELOPMENT.md`, `CONTRIBUTING.md`, `ui/CLAUDE.md` | Modify | 5 | Name `charts/docz` |
-| `deploy/api/README.md` | Modify | 5 | Operator in place of the sidecar |
+| `deploy/api/README.md` | Modify | 5 | Sidecar section removed; link to the operator guide |
 | `cliff.toml`, `mise.toml`, `contrib/prometheus/alerts.yaml` | Modify | 5 | Comments |
 
 <!--docz:file-changes:end-->
@@ -681,8 +712,8 @@ first phase that touches the old charts and the workflows.
 - The `helm-unittest` plugin locally, with `-f` glob support (current
   releases have it)
 - A kind or homelab cluster for Phase 4's real-image install and Phase 6's
-  install from GHCR, and optionally the Tailscale operator for the guide
-- GHCR package settings access for the `charts/docz` grant (Phase 5 or 6)
+  install from GHCR
+- GHCR package settings access for the `charts/docz` grant (Phase 6)
 - Nothing else pending on `main`. #112, the fix slate, and GO-2026-4970 are
   independent and may land before or after
 
@@ -693,6 +724,7 @@ first phase that touches the old charts and the workflows.
 
 > Each question is numbered. Option `a` is my recommendation, the later
 > letters are alternatives, and the last is "other" for your own answer.
+> All nine were resolved on 2026-09-25.
 
 ### 1. How many PRs?
 
@@ -703,6 +735,11 @@ first phase that touches the old charts and the workflows.
   docs). There are fewer merges, but the first PR is a whole new chart.
 - c. One PR for Phases 1–5.
 - d. Other.
+
+> **Resolved 2026-09-25: (d).** One PR for all six phases, from
+> `feat/helm-chart-migrations`, which already carries INV-0014, DESIGN-0018,
+> and this plan. Each task is a commit, and the PR's merge commit is the one
+> Phase 6 tags.
 
 ### 2. Should a merge to `main` publish charts?
 
@@ -724,6 +761,9 @@ publish only from a tag".
   v2.0.0 proper, when `release.yml` becomes the real release path again.
 - d. Other.
 
+> **Resolved 2026-09-25: (a).** Charts publish only from a tag.
+> DESIGN-0018 §9 is amended to match.
+
 ### 3. How does the resolve table express a chart-only row?
 
 - a. **`-` placeholders in the image and bake fields, with no new gate.**
@@ -733,6 +773,8 @@ publish only from a tag".
   well. This is belt and braces, but it is a second condition to keep in
   step.
 - c. Other.
+
+> **Resolved 2026-09-25: (a).** `-` placeholders, no new gate.
 
 ### 4. How is the render-parity check run and kept?
 
@@ -744,6 +786,9 @@ publish only from a tag".
   deletes the old charts.
 - c. Skip it, and rely on the ported unit tests.
 - d. Other.
+
+> **Resolved 2026-09-25: (a).** A throwaway script, with the result
+> recorded in Phases 2 and 3.
 
 ### 5. When is the `charts/docz` GHCR grant made?
 
@@ -760,6 +805,9 @@ A package's Actions access can only be granted once the package exists.
   workstation), grant, then tag.
 - d. Other.
 
+> **Resolved 2026-09-25: (a).** After the tag's first push creates the
+> package; then re-run the failed job (Phase 6).
+
 ### 6. Does CI run the `helm test` hook?
 
 CI's `ct install` logs show `TEST SUITE: None` for the existing charts, and
@@ -772,6 +820,8 @@ with busybox `sleep` containers a `/healthz` check could not pass anyway.
   with a lightweight HTTP stub in place of busybox.
 - c. Other.
 
+> **Resolved 2026-09-25: (a).** Proven by hand in Phases 4 and 6.
+
 ### 7. Does the root `ci` gate keep linting the old charts?
 
 - a. **Yes, until v2.0.0: `chart::lint` joins `api::helm-lint`.** The old
@@ -780,6 +830,9 @@ with busybox `sleep` containers a `/healthz` check could not pass anyway.
 - b. Replace `api::helm-lint` with `chart::lint` now, as DESIGN-0018 §10
   words it, and rely on CI's `ct lint` for the old charts.
 - c. Other.
+
+> **Resolved 2026-09-25: (a).** `chart::lint` joins `api::helm-lint`
+> until v2.0.0. DESIGN-0018 §10 is amended to match.
 
 ### 8. What happens to the sidecar docs in `deploy/api/README.md`?
 
@@ -792,6 +845,12 @@ with busybox `sleep` containers a `/healthz` check could not pass anyway.
   section, since `docz-api` 0.10.0 still ships the sidecar.
 - c. Other.
 
+> **Resolved 2026-09-25: (c).** Remove all Tailscale from
+> `deploy/api/README.md`, sidecar and failure modes alike. How the operator
+> works is the operator's business. `deploy/tailscale-operator.md` is the one
+> file that says it works in front of docz-api (Phase 4). Testing it, and
+> a single-route option, is a follow-up (Phase 6).
+
 ### 9. What `appVersion` do the deprecated finals carry?
 
 - a. **`2.0.0-beta.5`**, the release they publish in. This ends INV-0014's
@@ -800,6 +859,8 @@ with busybox `sleep` containers a `/healthz` check could not pass anyway.
   `2.0.0-beta.4`) and change only `deprecated`. That is the smallest diff,
   but it ships a known-stale default.
 - c. Other.
+
+> **Resolved 2026-09-25: (a).** `2.0.0-beta.5`.
 
 <!--docz:open-questions:end-->
 
