@@ -574,10 +574,11 @@ first phase that touches the old charts and the workflows.
   only from a `v*-beta.*` tag, which is what `ui/CLAUDE.md` already claims
   and #132 showed was untrue
   Done. `publish_chart` (boolean, default true) is added to both trigger blocks of `ghcr.yml` and `ecr.yml` and gates each `chart` job. `release.yml`'s four calls pass `false`. No other job depends on `chart`. actionlint is clean.
-- [ ] `prerelease.yml`: add `publish-chart` (`ghcr.yml`, `component: chart`,
+- [x] `prerelease.yml`: add `publish-chart` (`ghcr.yml`, `component: chart`,
   no `tag`) and `publish-ecr-chart` (gated on `vars.ECR_PUBLISH_ENABLED`),
   with the same permissions ceiling as the existing four jobs. `release.yml`
   gets no chart job
+  Done. `publish-chart` (GHCR) and `publish-ecr-chart` (gated on `vars.ECR_PUBLISH_ENABLED`) are added with `component: chart`, no tag, and the same four-permission ceiling. The header comment names charts/docz and tag-only chart publishing. `release.yml` is unchanged apart from `publish_chart: false`.
 - [ ] Deprecated finals (DESIGN-0018 §11):
   - `charts/docz-api/Chart.yaml`: `version: 0.10.0`,
     `appVersion: "2.0.0-beta.5"`, `deprecated: true`;

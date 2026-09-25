@@ -22,6 +22,9 @@
 # stays behind vars.ECR_PUBLISH_ENABLED, as on release.yml. Since IMPL-0020
 # publish-image-ui does the same for ghcr.io/donaldgifford/docz-site and its
 # chart; each GHCR package needs its own Actions access grant for this repo.
+# Since IMPL-0021 publish-chart pushes charts/docz, the one chart for both,
+# as ghcr.io/donaldgifford/charts/docz. Charts publish only from this tag:
+# release.yml passes publish_chart: false.
 name: Pre-release
 
 on:
@@ -128,5 +131,36 @@ jobs:
     with:
       component: ui
       tag: ${{ github.ref_name }}
+      dry_run: false
+    secrets: inherit
+
+  # charts/docz (IMPL-0021): one chart for both images, with no image of its
+  # own, so no tag is passed and the image job skips. Same ceiling as above.
+  # The chart's GHCR package needs its own Actions access grant for this
+  # repository; the first push fails 403 write_package until it has one.
+  publish-chart:
+    name: Publish charts/docz to GHCR
+    uses: ./.github/workflows/ghcr.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      component: chart
+      dry_run: false
+    secrets: inherit
+
+  publish-ecr-chart:
+    name: Publish charts/docz to ECR
+    if: vars.ECR_PUBLISH_ENABLED == 'true'
+    uses: ./.github/workflows/ecr.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      packages: write
+    with:
+      component: chart
       dry_run: false
     secrets: inherit
