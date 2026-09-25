@@ -262,7 +262,7 @@ along with its 90 non-Tailscale tests.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `templates/_api.tpl`: the 16 helpers from DESIGN-0018 §6, renamed
+- [x] `templates/_api.tpl`: the 16 helpers from DESIGN-0018 §6, renamed
   `docz-api.X` → `docz.api.X`. Rewrite `.Values.config.authProviders` →
   `.Values.auth.providers` and every fullname call → `docz.fullname`, and
   prefix each backend's name as DESIGN-0018 §2's table says
@@ -270,6 +270,7 @@ along with its 90 non-Tailscale tests.
   `docz.api.internalUrl`
   (`http://<fullname>-api.<ns>.svc.cluster.local:<api.service.port>`).
   `tailscaleStateSecret` is not ported
+  Done: 16 ported plus `internalUrl`; `docz.api.secretName` names `<fullname>-api`.
 - [ ] `values.yaml` `api:` block: docz-api's per-workload keys, `config`
   (without `authProviders`), `otel.serviceName`, `secrets`, `autoscaling`,
   and the extras, with their current defaults and comments. `store`, `queue`,
