@@ -313,8 +313,9 @@ along with its 90 non-Tailscale tests.
   - where a test cannot survive, delete it and name it with its reason in
     the commit body (DESIGN-0018 Testing Strategy).
   Done: 88 tests in 9 suites, all passing. That is 96 minus the six in `tailscale_test.yaml` minus the two Tailscale sidecar tests in `deployment_test.yaml`. The criterion below assumed 90 because it did not count the two in `deployment_test`. One assertion was flipped rather than deleted: `deployment_test` "should stamp component=api" now expects `api` in `spec.selector.matchLabels`, replacing the old `notExists` (DESIGN-0018 OQ 11). The `errorMessage` expectations were reworded to the new value paths (`api.config.*`, `api.secrets.*`, `auth.providers`).
-- [ ] Delete Phase 1's throwaway helper template, if there was one, and
+- [x] Delete Phase 1's throwaway helper template, if there was one, and
   repoint `tests/chart/helpers_test.yaml` at `api-deployment.yaml`
+  Done: the probe is deleted. `helpers_test.yaml` now renders `api-deployment.yaml`, reads the fullname from the baked Postgres Secret reference, and adds checks that extraLabels reach the pod template and never reach the selector.
 - [ ] Render parity, API half (Open Question 4): render `charts/docz-api` and
   `charts/docz` in four cases:
   - each chart's `ci-values`;

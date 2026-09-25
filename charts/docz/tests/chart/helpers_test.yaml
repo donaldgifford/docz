@@ -1,17 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: shared helpers (names and labels)
 templates:
-  - templates/tests/helpers-probe.yaml
+  - templates/api-deployment.yaml
 set:
-  helpersProbe: true
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
 tests:
   - it: a release named docz keeps the bare chart name
     release:
       name: docz
     asserts:
+      # The bare fullname surfaces as the baked Postgres Secret's prefix.
       - equal:
-          path: data.fullname
-          value: docz
+          path: spec.template.spec.containers[0].env[?(@.name == "DATABASE_URL")].valueFrom.secretKeyRef.name
+          value: docz-postgres
       - equal:
           path: metadata.name
           value: docz-api
@@ -20,9 +24,10 @@ tests:
     release:
       name: prod
     asserts:
+      # The bare fullname surfaces as the baked Postgres Secret's prefix.
       - equal:
-          path: data.fullname
-          value: prod-docz
+          path: spec.template.spec.containers[0].env[?(@.name == "DATABASE_URL")].valueFrom.secretKeyRef.name
+          value: prod-docz-postgres
       - equal:
           path: metadata.name
           value: prod-docz-api
@@ -56,6 +61,11 @@ tests:
       - equal:
           path: metadata.labels.owner
           value: lab
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+      - notExists:
+          path: spec.selector.matchLabels.owner
 
   - it: an extraLabels key the chart sets fails the render
     set:
