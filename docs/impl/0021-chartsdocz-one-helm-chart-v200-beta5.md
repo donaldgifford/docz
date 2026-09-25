@@ -316,12 +316,13 @@ along with its 90 non-Tailscale tests.
 - [x] Delete Phase 1's throwaway helper template, if there was one, and
   repoint `tests/chart/helpers_test.yaml` at `api-deployment.yaml`
   Done: the probe is deleted. `helpers_test.yaml` now renders `api-deployment.yaml`, reads the fullname from the baked Postgres Secret reference, and adds checks that extraLabels reach the pod template and never reach the selector.
-- [ ] Render parity, API half (Open Question 4): render `charts/docz-api` and
+- [x] Render parity, API half (Open Question 4): render `charts/docz-api` and
   `charts/docz` in four cases:
   - each chart's `ci-values`;
   - a CNPG case;
   - an all-external case;
   - `auth.providers: none`.
+  Done, with no differences. A throwaway script rendered both charts from the same effective values in four cases: `ci-values`, CNPG with metrics, all-external, and `none`. Values were translated to the new layout (workload keys under `api:`, `authProviders` to `auth.providers`), backend names were normalised to §2, and the image tag was normalised to beta.5. It compared every Deployment and StatefulSet (containers with image, env, volumeMounts, and ports, plus volumes, initContainers, serviceAccountName, and replicas), each Secret key set, and each Service port list. The object sets matched and nothing differed. `dyff` is not installed, so the comparison used a Python diff over `yq`-equivalent JSON.
 
   Normalise names to §2 and diff container specs, env, volumes, and Secret
   keys with `dyff between` or `diff <(yq -P … | sort)`. Record in this task
