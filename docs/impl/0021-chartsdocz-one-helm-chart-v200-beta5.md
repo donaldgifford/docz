@@ -166,7 +166,7 @@ suites to it.
   `charts/docz-api/Chart.yaml`. Add a `kubeVersion` only if docz-api's chart
   has one
   Done; `charts/docz-api` has no `kubeVersion`, so none is set.
-- [ ] `charts/docz/.helmignore`, copied from `charts/docz-api/`, with
+- [x] `charts/docz/.helmignore`, copied from `charts/docz-api/`, with
   `tests/` and `ci/` still ignored
 - [ ] `templates/_helpers.tpl` (DESIGN-0018 §2, §6):
   - `docz.name`, `docz.fullname`, and `docz.chart`;
