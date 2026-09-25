@@ -1,0 +1,48 @@
+docz {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}".
+
+Two workloads, one release:
+
+  - docz-site: the web UI. It also reverse-proxies /api, /auth, /webhooks,
+    and /openapi.yaml to the API, so the browser sees a single origin.
+  - docz-api:  the server. It serves the API, the GitHub webhook receiver
+    (POST /webhooks/github), health probes, the OpenAPI spec, and metrics.
+
+The site reaches the API at:
+
+     {{ .Values.site.config.doczApiUrl | default (include "docz.api.internalUrl" .) }}{{ if not .Values.site.config.doczApiUrl }}  (derived from this release){{ end }}
+{{- range list "site" "api" }}
+{{- $w := index $.Values . }}
+{{- $name := include "docz.componentFullname" (dict "ctx" $ "component" .) }}
+
+docz-{{ . }}:
+{{- if $w.ingress.enabled }}
+  Exposed via Ingress at:
+{{- range $w.ingress.hosts }}
+{{- $host := .host }}
+{{- range .paths }}
+     http{{ if $w.ingress.tls }}s{{ end }}://{{ $host }}{{ .path }}
+{{- end }}
+{{- end }}
+{{- else if $w.httpRoute.enabled }}
+  Exposed via an HTTPRoute on hostnames:
+{{- range $w.httpRoute.hostnames }}
+     {{ . }}
+{{- end }}
+{{- else }}
+  Not exposed. To reach it locally:
+
+     kubectl --namespace {{ $.Release.Namespace }} port-forward svc/{{ $name }} 8080:{{ $w.service.port }}
+
+  To expose it, set {{ . }}.ingress or {{ . }}.httpRoute.
+{{- end }}
+{{- end }}
+{{- if include "docz.api.authDisabled" . }}
+
+WARNING: auth.providers is "none", so login is off. The read API is open to
+anyone who can reach the site or the API Service.
+{{- else }}
+
+api.config.authRedirectBase must be the SITE's public URL
+({{ .Values.api.config.authRedirectBase }}). The provider redirects the browser
+to <authRedirectBase>/auth/callback, and the site proxies that to the API.
+{{- end }}

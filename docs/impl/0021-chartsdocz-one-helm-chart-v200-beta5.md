@@ -396,13 +396,14 @@ list, and one front door.
   containers, each `wget`ting one Service's `/healthz`, and the `docz.labels`
   of component `test`
   Done. One hook Pod `<fullname>-test-connection` with component `test` has containers `wget-api` and `wget-site`, each fetching its own Service's `/healthz`.
-- [ ] `NOTES.txt`:
+- [x] `NOTES.txt`:
   - each workload's URL (its Ingress host or HTTPRoute hostname, or else a
     port-forward to its Service);
   - the derived or overridden API URL;
   - a warning when `auth.providers` is `none`, carried over from docz-api's
     NOTES;
   - a reminder that `authRedirectBase` must be the site's URL.
+  Done. For each workload NOTES shows its Ingress URLs or HTTPRoute hostnames, or else a port-forward. It also shows the API URL (marked when derived), the `none` warning (docz-api's NOTES had none to carry over, so it is new wording), and the authRedirectBase reminder. The Ingress URL line fixes a bug from docz-site, which printed a path's `.host` (always empty).
 - [ ] `ci/ci-values.yaml` `site:` block: busybox with `sleep`, and no
   `doczApiUrl`, so the derived path is what CI installs
 - [ ] Port the six docz-site suites to `tests/site/`:
