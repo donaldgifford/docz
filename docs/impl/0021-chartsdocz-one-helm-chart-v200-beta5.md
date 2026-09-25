@@ -232,8 +232,9 @@ suites to it.
   `for chart in charts/*/` loop. Confirm the flat old charts still find
   their suites through the glob: 96 and 49 tests, unchanged
   Done. Locally the loop finds 96 (`docz-api`), 49 (`docz-site`), and 6 (`docz`).
-- [ ] `just api lint-actions` clean; `just chart lint`, `just chart unittest`,
+- [x] `just api lint-actions` clean; `just chart lint`, `just chart unittest`,
   and `just ci` pass
+  All clean; `just ci` ends `✓ CI pipeline complete` with `✓ charts/docz lints` in its output.
 
 <!--docz:tasks:end-->
 
