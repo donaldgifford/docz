@@ -669,7 +669,7 @@ first phase that touches the old charts and the workflows.
 - [ ] **(human)** `helm install docz oci://ghcr.io/donaldgifford/charts/docz
   --version 0.1.0` with Phase 4's values. `/api/v1/repos` answers through
   the site, and `helm test docz` passes
-- [ ] File the follow-ups as issues:
+- [x] File the follow-ups as issues:
   - a single-route option: one HTTPRoute (or Ingress) to the site that
     serves both workloads through the site's proxy, as an alternative to
     the two per-workload edges. Include testing the Tailscale operator
@@ -682,6 +682,7 @@ first phase that touches the old charts and the workflows.
     recipes, and `api::helm-lint` from the `ci` gate, and bump
     `charts/docz` to 1.0.0 (DESIGN-0018 §11). Add both items to #135's
     v2.0.0 list, or file one issue for them
+  Done: #138 (single-route option, plus testing the Tailscale operator through `api.ingress` and through the single route), #139 (`DoczSiteDown` and proxy-error alerts), and #140 (v2.0.0: delete the old charts, their resolve columns and recipes, and `api::helm-lint`; bump `charts/docz` to 1.0.0). #135 has a comment cross-linking #140.
 - [ ] `docz status set impl IMPL-0021 Completed` and
   `docz status set design DESIGN-0018 Implemented`, then `docz update`
 
