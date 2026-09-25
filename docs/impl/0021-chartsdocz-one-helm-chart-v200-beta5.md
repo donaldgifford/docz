@@ -271,10 +271,11 @@ along with its 90 non-Tailscale tests.
   (`http://<fullname>-api.<ns>.svc.cluster.local:<api.service.port>`).
   `tailscaleStateSecret` is not ported
   Done: 16 ported plus `internalUrl`; `docz.api.secretName` names `<fullname>-api`.
-- [ ] `values.yaml` `api:` block: docz-api's per-workload keys, `config`
+- [x] `values.yaml` `api:` block: docz-api's per-workload keys, `config`
   (without `authProviders`), `otel.serviceName`, `secrets`, `autoscaling`,
   and the extras, with their current defaults and comments. `store`, `queue`,
   and `search` are copied to the top level **verbatim** (DESIGN-0018 OQ 3)
+  Done by script from `charts/docz-api/values.yaml`, keeping every comment; `config.authProviders` and the OTel endpoint/sample rate are dropped (shared), and provider comments name `auth.providers`.
 - [ ] Workload templates, from `charts/docz-api/templates/`:
   - `api-deployment.yaml`, without the Tailscale container, its volumes,
     and the `TS_*` env;
