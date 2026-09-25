@@ -168,7 +168,7 @@ suites to it.
   Done; `charts/docz-api` has no `kubeVersion`, so none is set.
 - [x] `charts/docz/.helmignore`, copied from `charts/docz-api/`, with
   `tests/` and `ci/` still ignored
-- [ ] `templates/_helpers.tpl` (DESIGN-0018 §2, §6):
+- [x] `templates/_helpers.tpl` (DESIGN-0018 §2, §6):
   - `docz.name`, `docz.fullname`, and `docz.chart`;
   - `docz.componentFullname`, `docz.selectorLabels`, `docz.labels`,
     `docz.serviceAccountName`, and `docz.image`, each over
@@ -176,6 +176,7 @@ suites to it.
   - `docz.selectorLabels` `required`s the component;
   - `docz.labels` appends `extraLabels` and `fail`s on a key the chart
     itself sets, naming the key.
+  Done, plus `docz.extraLabels` (the collision check, shared) and `docz.podLabels` (selector labels + `extraLabels` for pod templates).
 - [ ] `values.yaml` skeleton in DESIGN-0018 §3's order:
   - `nameOverride`, `fullnameOverride`, `imagePullSecrets`;
   - `extraLabels: {}`, `auth`, `otel`, `metrics`, `serviceMonitor`,
