@@ -20,6 +20,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(chart)* One Ingress and HTTPRoute pair per workload
 - *(chart)* One helm test hook for both workloads
 - *(chart)* Charts/docz NOTES for both workloads
+- *(chart)* [**breaking**] Deprecate charts/docz-api and charts/docz-site
 
 ### Bug Fixes
 
@@ -52,6 +53,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(deploy)* Tailscale operator guide for GitHub webhooks
 - *(impl)* Record IMPL-0021 schema rejections
 - *(impl)* Close IMPL-0021 Phase 4 gates
+- *(impl)* Close IMPL-0021 Phase 3 gates
+- Name charts/docz as the chart
 
 ### Testing
 
@@ -71,6 +74,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(chart)* Chart.just module for charts/docz
 - Chart::lint in the root ci gate
 - Helm-unittest finds suites in subdirectories
+- *(publish)* A chart component for charts/docz
+- *(publish)* Charts publish from tags, not from merges
+- *(prerelease)* Publish charts/docz from the beta tag
 
 ## [2.0.0-beta.4] - 2026-09-24
 
