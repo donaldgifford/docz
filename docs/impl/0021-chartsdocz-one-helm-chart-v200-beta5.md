@@ -226,7 +226,7 @@ suites to it.
   A header comment explains why the chart is its own module. Add
   `mod? chart 'chart.just'` to the root `justfile`, and list it in the
   header block
-- [ ] Root `ci` gate: add `chart::lint` next to `api::helm-lint` (Open
+- [x] Root `ci` gate: add `chart::lint` next to `api::helm-lint` (Open
   Question 7)
 - [ ] `ci.yml` `helm-unittest`: pass `-f 'tests/**/*_test.yaml'` inside the
   `for chart in charts/*/` loop. Confirm the flat old charts still find

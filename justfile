@@ -31,11 +31,13 @@ _default:
 # ─── Composite gates ───────────────────────────────────────────────
 
 # Full CI gate: lint + test + consumer + parity + validate + build + licences,
-# then the server's lint, tests, and chart lint from the api module, then the
-# frontend's chain from the ui module (DESIGN-0017 OQ 6). ui::e2e stays out:
+# then the server's lint, tests, and chart lint from the api module, the
+# charts/docz lint from the chart module (beside api::helm-lint until v2.0.0
+# deletes the old charts, IMPL-0021 OQ 7), then the frontend's chain from the
+# ui module (DESIGN-0017 OQ 6). ui::e2e stays out:
 # it needs Playwright's browsers, and CI runs it as its own job.
 [group('gate')]
-ci: lint test test-consumer parity validate build license-check api::lint api::test api::helm-lint ui::install ui::gen-api ui::lint ui::fmt-check ui::typecheck ui::test ui::test-server ui::build ui::bundle-budget ui::gen-api-check
+ci: lint test test-consumer parity validate build license-check api::lint api::test api::helm-lint chart::lint ui::install ui::gen-api ui::lint ui::fmt-check ui::typecheck ui::test ui::test-server ui::build ui::bundle-budget ui::gen-api-check
     @echo "✓ CI pipeline complete"
 
 # Pre-commit gate: lint + test
