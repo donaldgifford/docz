@@ -96,9 +96,9 @@ which the chart documents but does not template (OQ 9).
 - **Wiring derived, not typed.** The site's `DOCZ_API_URL` comes from the
   release's own API Service. The login-provider list and the tracing
   endpoint are each set once and reach both workloads.
-- **Labelled for ownership.** Every resource the chart renders carries a
-  `component` label (default `docz`) and an `owner` label (default `lab`),
-  so a cluster's inventory can find everything docz installed.
+- **A tracking hook.** A top-level `extraLabels` map, empty by default,
+  is added to every resource the chart renders, and can never break an
+  install or upgrade (§2).
 - **Feature parity, less the sidecar.** Everything `charts/docz-api` 0.9.0
   and `charts/docz-site` 0.2.0 can render, the new chart can render, except
   the Tailscale sidecar:
@@ -233,38 +233,35 @@ called `docz` renders `docz`, and a release called `prod` renders
 | Ingress / HTTPRoute | `<fullname>` | `site` |
 | `helm test` hook pod | `<fullname>-test-connection` | `test` |
 
-**Two kinds of label, two jobs.** Every resource carries two sets:
+Every resource carries the Kubernetes recommended labels, which say what it
+is within the release: `helm.sh/chart`, `app.kubernetes.io/name: docz`,
+`instance`, `version`, `managed-by`, and `app.kubernetes.io/component`
+naming its role from the table above.
 
-1. **The Kubernetes recommended labels**, which say what a resource *is*
-   within the release: `helm.sh/chart`, `app.kubernetes.io/name: docz`,
-   `instance`, `version`, `managed-by`, and `app.kubernetes.io/component`
-   naming its role from the table above.
-2. **The ownership labels**, which say *whose* it is in the cluster:
-   `component` (default `docz`) and `owner` (default `lab`), from the
-   top-level `labels` block (§3). Every key in that block is rendered, so a
-   site can add its own (`team`, `cost-center`) without a chart change.
+**`extraLabels`** is a small tracking hook, empty by default. It is a
+top-level map (§3) whose keys are appended to every object's
+`metadata.labels` and to each Deployment's and StatefulSet's pod template,
+so a cluster can tag everything docz installed (`owner: lab`, say) without a
+chart change. It is kept deliberately inert, so setting or changing it can
+never break an install or an upgrade:
 
-"Every resource" is meant literally. The ownership labels go on each
-object's own `metadata.labels` **and** on everything a controller creates
-from it, because that is where an inventory query lands:
-
-- each Deployment's and StatefulSet's pod template;
-- each StatefulSet's `volumeClaimTemplates`, so the PVCs carry them;
-- the CNPG `Cluster`'s `spec.inheritedMetadata.labels`, so the pods, PVCs,
-  and Services CNPG creates carry them;
-- the `helm test` hook pod.
-
-A test (§ Testing) renders every template in several modes and fails on any
-object, or any of the nested templates above, missing either label.
+- it is **never in a selector**, because `matchLabels` is immutable;
+- it is **not on `volumeClaimTemplates`**, because a StatefulSet's claim
+  templates are immutable too, and a changed label there fails
+  `helm upgrade`;
+- it is **not passed to CNPG's `inheritedMetadata`**, so what the operator
+  creates stays the operator's business;
+- it renders after the recommended labels and is **not allowed to override
+  them**: a key that collides with one the chart sets fails the render with
+  a message naming the key, rather than silently rewriting a label a
+  selector depends on.
 
 **Selectors use the recommended labels only.** Both Deployments'
 `spec.selector.matchLabels`, every Service's `selector`, and every
 ServiceMonitor's `matchLabels` select on `name` + `instance` +
 `app.kubernetes.io/component`, which keeps the six workloads apart
-(Background fact 2). The ownership labels stay **out** of every selector,
-because `matchLabels` is immutable and a changed `owner` must not make the
-next `helm upgrade` fail. `docz.selectorLabels` takes the role as an
-argument, so a selector without one does not render:
+(Background fact 2). `docz.selectorLabels` takes the role as an argument,
+so a selector without one does not render:
 
 ```yaml
 {{- define "docz.selectorLabels" -}}
@@ -278,25 +275,23 @@ helm.sh/chart: {{ include "docz.chart" .ctx }}
 {{ include "docz.selectorLabels" . }}
 app.kubernetes.io/version: {{ .ctx.Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .ctx.Release.Service }}
-{{ include "docz.ownerLabels" .ctx }}
+{{- with .ctx.Values.extraLabels }}
+{{ toYaml . }}
 {{- end }}
-
-{{- define "docz.ownerLabels" -}}
-{{- toYaml .Values.labels }}
 {{- end }}
 ```
 
 A template calls `include "docz.labels" (dict "ctx" $ "component" "api")`
-for its own metadata, and `include "docz.ownerLabels" $` next to
-`docz.selectorLabels` in a pod template, where the recommended set is
-already selector plus pod labels. `docz.componentFullname` takes the same
-`dict`.
+for its own metadata, and a pod template adds `extraLabels` beside
+`docz.selectorLabels` and the workload's `podLabels`. The collision check
+lives in `docz.labels`, so it runs wherever the labels do.
+`docz.componentFullname` takes the same `dict`.
 
 ### 3. Values
 
 The values file has five kinds of block:
 
-- **ownership labels** (`labels`): rendered onto every resource;
+- **tracking labels** (`extraLabels`): empty, appended to every resource;
 - **one block per workload** (`api`, `site`): everything that is about one
   Deployment;
 - **backing services** (`store`, `queue`, `search`): top level, keeping their
@@ -310,9 +305,7 @@ nameOverride: ""
 fullnameOverride: ""
 imagePullSecrets: []
 
-labels:                          # on every resource, never in a selector (§2)
-  component: docz
-  owner: lab
+extraLabels: {}                  # every resource's metadata + pod templates; never a selector (§2)
 
 auth:
   providers: "github"            # → AUTH_PROVIDERS (api) and DOCZ_AUTH_PROVIDERS (site)
@@ -494,8 +487,8 @@ upgrade that changes its annotations is a README fix, not a chart release.
 
 - `docz.name`, `docz.fullname`, `docz.chart`;
 - `docz.componentFullname` (`dict ctx component`);
-- `docz.labels` and `docz.selectorLabels` (`dict ctx component`), and
-  `docz.ownerLabels` (`ctx`) (§2);
+- `docz.labels` and `docz.selectorLabels` (`dict ctx component`), with
+  `extraLabels` and its collision check in `docz.labels` (§2);
 - `docz.serviceAccountName` (`dict ctx component`), which reads
   `.Values.<component>.serviceAccount`;
 - `docz.image` (`dict ctx component`), which renders
@@ -535,7 +528,7 @@ into the shared set.
 | both `httproute.yaml` | one `httproute.yaml`, docz-site's default-rule behaviour |
 | `docz-api/templates/secret.yaml` | `api-secret.yaml`, keys unchanged |
 | `docz-api/templates/prometheusrule.yaml` | `api-prometheusrule.yaml`; `up{job=…}` names `<fullname>-api` |
-| `store-*`, `queue-*`, `search-*` | same names, helpers renamed, ownership labels on pod and PVC templates and CNPG `inheritedMetadata` |
+| `store-*`, `queue-*`, `search-*` | same names, helpers renamed, `extraLabels` on objects and pod templates only |
 | `tailscale-configmap.yaml`, `tailscale-rbac.yaml` | removed; README section instead (§5) |
 | both `NOTES.txt` | one; prints the front-door URL, and what is still required |
 | both `templates/tests/test-connection.yaml` | one hook pod that `wget`s both Services' `/healthz` |
@@ -547,16 +540,16 @@ into the shared set.
   also keeps every existing enum: the three backend `mode`s, both workloads'
   `logLevel`/`logFormat`, and `site.config.mermaidLayout`. `auth.providers`
   gets a pattern that allows only `github`, `okta`, `keycloak`, and `none`,
-  comma-separated. `labels` is an object of strings whose values must be
-  valid label values (≤63 characters, the label-value pattern), so a bad
-  owner fails at render rather than at the API server.
+  comma-separated. `extraLabels` is an object of strings whose values must
+  be valid label values (≤63 characters, the label-value pattern), so a bad
+  value fails at render rather than at the API server.
 - **`README.md`** is generated by `helm-docs` from `README.md.gotmpl`. The
   template is written fresh:
   - install;
   - the edge;
   - backend modes;
   - login providers;
-  - labels;
+  - `extraLabels`;
   - "Exposing docz with the Tailscale operator" (§5);
   - "Coming from docz-api or docz-site", which points at the Data Model
     table and says no in-place upgrade exists and the sidecar is gone.
@@ -644,7 +637,7 @@ containers' interface does not change.
 | Install | two `helm install`s, site after API | `helm install docz oci://ghcr.io/donaldgifford/charts/docz` |
 | Chart address | `charts/docz-api`, `charts/docz-site` | `charts/docz`; the old two deprecated |
 | Resource names | `<release>-docz-api`, `<release>-docz-site`, `<release>-docz-api-postgres`… | `<fullname>-api`, `<fullname>-site`, `<fullname>-postgres`… (§2) |
-| Labels | recommended set; `component: server` on API pods only | recommended set with a role on every object, plus `component: docz` and `owner: lab` everywhere |
+| Labels | recommended set; `component: server` on API pods only | recommended set with a role on every object, plus optional `extraLabels` |
 | Partial install | either chart alone | both workloads, always |
 | `DOCZ_API_URL` | required, hand-written | derived; override optional |
 | Login providers | set twice, must match | `auth.providers`, once |
@@ -676,7 +669,7 @@ block unchanged: for example, docz-api's `resources` becomes
 | `store`, `queue`, `search` | top level, unchanged |
 | `tailscale.*` | removed; see the README's Tailscale operator section |
 | `ingress`, `httpRoute` | top level, targets the site |
-| — | `labels` (new: `component`, `owner`) |
+| — | `extraLabels` (new, empty) |
 
 | `charts/docz-site` key | `charts/docz` key |
 | --- | --- |
@@ -714,16 +707,17 @@ passes. Such tests include:
   - `auth.providers` reaches both `AUTH_PROVIDERS` and `DOCZ_AUTH_PROVIDERS`;
   - an empty `otel.endpoint` omits the tracing variables from both
     workloads;
-- **labels**, run over every template in the default (all baked), CNPG,
-  and all-external modes with the ServiceMonitors, PrometheusRule, HPAs,
-  Ingress, and HTTPRoute all enabled:
-  - every object carries `component: docz` and `owner: lab`;
-  - so does every pod template, `volumeClaimTemplates` entry, and the CNPG
-    `inheritedMetadata`;
-  - overriding `labels.owner` and adding a key both show up everywhere;
+- **extraLabels**, with a key set and every optional template enabled:
+  - every object's `metadata.labels` and every pod template carry it;
+  - no selector, `volumeClaimTemplates` entry, or CNPG `inheritedMetadata`
+    does;
+  - a key colliding with a chart-set label (`app.kubernetes.io/name`)
+    fails the render;
+  - with the default (empty) map, every object's labels are exactly the
+    recommended set, so an install that never sets it sees nothing;
 - **selectors**: every Deployment `matchLabels`, Service `selector`, and
   ServiceMonitor `matchLabels` carries an `app.kubernetes.io/component`, no
-  two workloads share one, and none contains `component` or `owner`;
+  two workloads share one, and none contains an `extraLabels` key;
 - **edge**: Ingress and HTTPRoute send traffic to the site Service, and an
   empty `httpRoute.rules` yields the default rule;
 - **nothing Tailscale**: no rendered object in any mode contains `tailscale`
@@ -930,7 +924,7 @@ about the repository and the registry:
 - c. Other.
 
 > **Resolved 2026-09-25: (a).** `app.kubernetes.io/component` is in every
-> selector. The ownership labels (`component`, `owner`) are not; see §2.
+> selector. `extraLabels` is not; see §2.
 
 ### 12. How does the chart publish?
 
