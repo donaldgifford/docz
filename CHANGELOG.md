@@ -5,6 +5,25 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(chart)* Charts/docz Chart.yaml
+- *(chart)* Shared helpers for charts/docz
+- *(chart)* Charts/docz values skeleton
+- *(chart)* Charts/docz values schema skeleton
+- *(chart)* Port docz-api dependency helpers to charts/docz
+- *(chart)* Api block and backends in charts/docz values
+- *(chart)* API workload templates in charts/docz
+- *(chart)* Backend templates in charts/docz
+
+### Bug Fixes
+
+- *(chart)* Anchor charts/docz helmignore so the test hook ships
+
+### Refactor
+
+- *(chart)* Shared docz.hpa helper
+
 ### Documentation
 
 - *(impl)* Record the v2.0.0-beta.4 release checks for IMPL-0020
@@ -16,6 +35,25 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* DESIGN-0018 uses an empty extraLabels map for tracking
 - *(impl)* IMPL-0021, charts/docz and v2.0.0-beta.5
 - Resolve IMPL-0021 open questions and amend DESIGN-0018
+- *(chart)* Charts/docz README template
+- *(impl)* IMPL-0021 Phase 1 gates pass
+- *(impl)* Record IMPL-0021 API render parity
+- *(impl)* Close IMPL-0021 Phase 2 gates
+
+### Testing
+
+- *(chart)* Charts/docz ci-values skeleton
+- *(chart)* Pin charts/docz naming and label helpers
+- *(chart)* Charts/docz ci-values for the API
+- *(chart)* Port docz-api suites to charts/docz
+- *(chart)* Point the helpers suite at api-deployment
+
+### Miscellaneous Tasks
+
+- *(chart)* Charts/docz .helmignore
+- *(chart)* Chart.just module for charts/docz
+- Chart::lint in the root ci gate
+- Helm-unittest finds suites in subdirectories
 
 ## [2.0.0-beta.4] - 2026-09-24
 
