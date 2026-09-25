@@ -297,7 +297,7 @@ along with its 90 non-Tailscale tests.
 
   Each pod template gets `extraLabels`. `volumeClaimTemplates` and CNPG
   `inheritedMetadata` must **not** get it (DESIGN-0018 §2)
-- [ ] Share the HPA: extract `docz.hpa` (`dict ctx component`) now, so the
+- [x] Share the HPA: extract `docz.hpa` (`dict ctx component`) now, so the
   site's HPA in Phase 3 is a one-line include
 - [ ] `ci/ci-values.yaml` `api:` block: busybox with `command: [sleep, "900"]`,
   `config.appId`, `authRedirectBase`, `githubOAuthClientID`, dummy secrets

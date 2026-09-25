@@ -126,3 +126,43 @@ appVersion, so a single bump moves both (DESIGN-0018 Goals).
 {{- $image := (index .ctx.Values .component).image }}
 {{- printf "%s:%s" $image.repository (default .ctx.Chart.AppVersion $image.tag) }}
 {{- end }}
+
+{{/*
+A workload's HorizontalPodAutoscaler, shared so api-hpa.yaml and
+site-hpa.yaml are one-line includes that cannot drift apart.
+*/}}
+{{- define "docz.hpa" -}}
+{{- $as := (index .ctx.Values .component).autoscaling }}
+{{- if $as.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "docz.componentFullname" . }}
+  labels:
+    {{- include "docz.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "docz.componentFullname" . }}
+  minReplicas: {{ $as.minReplicas }}
+  maxReplicas: {{ $as.maxReplicas }}
+  metrics:
+    {{- if $as.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $as.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $as.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $as.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- end }}
