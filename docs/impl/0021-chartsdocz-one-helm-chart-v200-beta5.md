@@ -177,12 +177,13 @@ suites to it.
   - `docz.labels` appends `extraLabels` and `fail`s on a key the chart
     itself sets, naming the key.
   Done, plus `docz.extraLabels` (the collision check, shared) and `docz.podLabels` (selector labels + `extraLabels` for pod templates).
-- [ ] `values.yaml` skeleton in DESIGN-0018 §3's order:
+- [x] `values.yaml` skeleton in DESIGN-0018 §3's order:
   - `nameOverride`, `fullnameOverride`, `imagePullSecrets`;
   - `extraLabels: {}`, `auth`, `otel`, `metrics`, `serviceMonitor`,
     `prometheusRule`;
   - empty `api:` and `site:` blocks;
   - `ingress` and `httpRoute`.
+  Done, without top-level `ingress`/`httpRoute`: DESIGN-0018 OQ 8 (revised) puts one pair under each of `api:` and `site:`, which Phase 3 adds.
 
   Each key gets a `# --` helm-docs comment. The `# yaml-language-server`
   modeline points at `values.schema.json`
