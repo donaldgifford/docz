@@ -365,9 +365,10 @@ list, and one front door.
   `logFormat`), and `otel.serviceName: docz-site`. There is no `enabled`
   key (DESIGN-0018 OQ 5)
   Done. The block was script-built from docz-site values with comments kept. `authProviders` is dropped because `auth.providers` feeds both. The `doczApiUrl` comment now describes the derived default. `otel` holds only `serviceName`. Both old values schemas were carried into `values.schema.json` (the backend `mode` enums, the api config enums, and the site config enums), after Phase 1 had left them permissive. Finding: the shared `otel.endpoint` cannot go to both runtimes verbatim. docz-api passes it to `otlptracehttp.WithEndpoint` (bare `host:port`); docz-site uses it as the exporter `url` (full `…/v1/traces`). `docz.otel.apiEndpoint` and `docz.otel.siteEndpoint` derive each form from one value, and either old spelling is accepted.
-- [ ] `site-deployment.yaml`, `site-service.yaml`, `site-serviceaccount.yaml`,
+- [x] `site-deployment.yaml`, `site-service.yaml`, `site-serviceaccount.yaml`,
   `site-hpa.yaml` (the `docz.hpa` include), and `site-servicemonitor.yaml`,
   from `charts/docz-site/templates/`, with component `site` throughout
+  Done. The four templates were converted from docz-site with `conv.py`; `site-hpa.yaml` is the one-line `docz.hpa` include. The container is named `docz-site`, the image comes from `docz.image`, and pod labels come from `docz.podLabels`.
 - [ ] Wiring (DESIGN-0018 §4):
   - `DOCZ_API_URL` = `site.config.doczApiUrl`, or else
     `docz.api.internalUrl`, with no `required`;
