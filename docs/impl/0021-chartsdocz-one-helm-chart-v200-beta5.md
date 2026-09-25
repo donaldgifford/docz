@@ -509,10 +509,11 @@ the chart runs the real images.
 
   Link it from the chart README's edges section and from
   `deploy/api/README.md`
-- [ ] `values.schema.json` completed under the new paths:
+- [x] `values.schema.json` completed under the new paths:
   - the three backend `mode` enums;
   - both workloads' `logLevel`/`logFormat`;
   - `site.config.mermaidLayout`.
+  Done. The schema was carried over in the Phase 3 values commit. `helm template` rejects all eight probes: `store.postgres.mode=memory`, `api.config.logLevel=trace`, `queue.valkey.mode=cnpg`, `search.meili.mode=x`, `site.config.logLevel=trace`, both `logFormat=xml`, and `site.config.mermaidLayout=foo`. Each fails with "value must be one of …" at its path.
 
   Prove it rejects `store.postgres.mode=memory` and
   `api.config.logLevel=trace` with `helm template`
