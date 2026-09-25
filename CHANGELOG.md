@@ -13,6 +13,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* Conclude INV-0014, one merged chart for new installs
 - *(design)* DESIGN-0018, one Helm chart for docz
 - *(design)* Resolve DESIGN-0018 open questions
+- *(design)* DESIGN-0018 uses an empty extraLabels map for tracking
 
 ## [2.0.0-beta.4] - 2026-09-24
 
