@@ -328,7 +328,8 @@ along with its 90 non-Tailscale tests.
   keys with `dyff between` or `diff <(yq -P … | sort)`. Record in this task
   every difference other than names, labels, and the Tailscale removal,
   with its cause. There should be none
-- [ ] `just chart lint`, `just chart unittest`, `just ci`
+- [x] `just chart lint`, `just chart unittest`, `just ci`
+  All three are green: lint passes, unittest passes 94 tests (88 API + 6 helpers), and `just ci` ends with "✓ CI pipeline complete". The first criterion below is met at 88 tests rather than 90; see the porting task for why.
 
 <!--docz:tasks:end-->
 
