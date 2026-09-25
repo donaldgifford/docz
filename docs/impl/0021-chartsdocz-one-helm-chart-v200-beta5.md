@@ -517,7 +517,7 @@ the chart runs the real images.
 
   Prove it rejects `store.postgres.mode=memory` and
   `api.config.logLevel=trace` with `helm template`
-- [ ] **(human)** Real-image install on a kind (or homelab) cluster with
+- [x] **(human)** Real-image install on a kind (or homelab) cluster with
   `auth.providers: none` and `api.config.githubApiBase: http://127.0.0.1:1`.
   The unreachable API base makes the boot self-check warn and continue
   rather than fail on a dummy App key, because only a 401 is fatal (see
@@ -526,6 +526,10 @@ the chart runs the real images.
     `curl -fsS localhost:8080/api/v1/repos` returns `{"repos":[]}` through
     the site's proxy, which closes IMPL-0020's open round trip;
   - `helm test docz` passes both `/healthz` checks.
+  Done by the agent on a throwaway local kind cluster (`docz-impl0021`, deleted afterwards). The images were overridden to `2.0.0-beta.4`, since beta.5 is not published until Phase 6. Values: `auth.providers: none`, `api.config.githubApiBase: http://127.0.0.1:1`, and a generated dummy RSA key. **It found a bug:** the site stayed unready, because its `/readyz` logs `readyz.fail … "invalid":"DOCZ_AUTH_PROVIDERS"`. docz-site's whitelist has no `none`, which DESIGN-0018 §4 assumed it had. The fix: the chart omits `DOCZ_AUTH_PROVIDERS` from the site when auth is disabled, and `wiring_test` pins it. After `helm upgrade` the output was:
+  - API: `WARN could not verify github app credentials at startup; continuing` … `connection refused`, then `auth disabled (AUTH_PROVIDERS=none)`, `http server listening`. The API restarted 3 times while `docz-postgres` DNS came up, which the old chart did too.
+  - `port-forward svc/docz-site` + `curl /api/v1/repos` → `{"repos":[]}`; `/` → 200; `/api/v1/auth/session` → `{"provider":"none","subject":"anonymous","login":"anonymous"}`.
+  - `helm test docz` → `TEST SUITE: docz-test-connection … Phase: Succeeded`.
 
   Record the output here
 - [ ] `just chart docs` leaves no diff; `just validate`; `just ci`

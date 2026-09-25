@@ -67,13 +67,31 @@ tests:
     template: templates/site-deployment.yaml
     set:
       auth:
-        providers: "none"
+        providers: "github,keycloak"
+      api:
+        config:
+          keycloakIssuer: "https://kc.example.com/realms/docz"
+          keycloakClientID: "docz"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: DOCZ_AUTH_PROVIDERS
-            value: "none"
+            value: "github,keycloak"
+
+  - it: none leaves DOCZ_AUTH_PROVIDERS off the site
+    # docz-site's whitelist has no "none", and its /readyz fails on a value
+    # it cannot honour (found by the IMPL-0021 Phase 4 real install).
+    template: templates/site-deployment.yaml
+    set:
+      auth:
+        providers: "none"
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_AUTH_PROVIDERS
+          any: true
 
   - it: an empty otel.endpoint leaves every OTEL_ variable off both workloads
     asserts:

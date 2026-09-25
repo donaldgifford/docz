@@ -52,8 +52,15 @@ spec:
             # (DESIGN-0018 §4).
             - name: DOCZ_API_URL
               value: {{ .Values.site.config.doczApiUrl | default (include "docz.api.internalUrl" .) | quote }}
+            {{- if not (include "docz.api.authDisabled" .) }}
+            {{- /* The site's whitelist has no "none": its /readyz reports
+                   an unrecognised value as a deployment mistake and holds
+                   traffic. With login off, the API serves an anonymous
+                   session and the login page is never reached, so the
+                   variable is simply omitted. */}}
             - name: DOCZ_AUTH_PROVIDERS
               value: {{ .Values.auth.providers | quote }}
+            {{- end }}
             - name: DOCZ_MERMAID_LAYOUT
               value: {{ .Values.site.config.mermaidLayout | quote }}
             - name: DOCZ_LOG_LEVEL

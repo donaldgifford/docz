@@ -435,8 +435,11 @@ flowchart LR
   pointed at an API outside the release while the in-release API still runs.
 - **Login providers** are one list. `docz.api.authProviders` and
   `docz.api.authDisabled` read `auth.providers`, and the site gets the same
-  string. With `none`, the site shows no providers, which is what the API
-  serves.
+  string, except with `none`. docz-site's whitelist has no `none`, and its
+  `/readyz` fails on a value it cannot honour, so with `none` the chart
+  omits `DOCZ_AUTH_PROVIDERS` from the site. The API then serves an
+  anonymous session, so the site's login page is never reached. The IMPL-0021
+  Phase 4 real install found this.
 - **Tracing** is on for both workloads or for neither. Each workload keeps
   its own `OTEL_SERVICE_NAME`, so traces still name the hop. The two
   runtimes read `OTEL_EXPORTER_OTLP_ENDPOINT` differently. The API passes
