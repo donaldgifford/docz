@@ -193,7 +193,7 @@ suites to it.
   `auth.providers` matching comma-separated `github|okta|keycloak|none`
 - [x] `ci/ci-values.yaml`, starting with the top-level keys only. Phases 2
   and 3 add each workload's busybox override and dummies
-- [ ] `cliff.toml`, copied from `charts/docz-site/cliff.toml` with the
+- [x] `cliff.toml`, copied from `charts/docz-site/cliff.toml` with the
   header naming `docz`. Add `CHANGELOG.md` with that header and no entries,
   since `ghcr.yml`'s git-cliff step rewrites it at publish
 - [ ] `README.md.gotmpl`: a title, a badges line, and the helm-docs values
