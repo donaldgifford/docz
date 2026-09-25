@@ -448,8 +448,9 @@ list, and one front door.
   only differences allowed are names, labels, `DOCZ_API_URL`, and the API
   HTTPRoute's new default rule. Record the result here
   Done. The only difference is the one allowed. On the same basis as Phase 2, both charts were rendered from the same effective values. For the site, that was docz-site's `ci-values` (with `doczApiUrl` set, so DOCZ_API_URL matches too), once plain and once with Ingress (className, annotations, hosts, TLS) and HTTPRoute (parentRefs, hostnames, rules) enabled. The comparison covered the Deployment container spec, volumes, SA, and pod securityContext, plus the Ingress and HTTPRoute specs and annotations: no difference. docz-api's edges were rendered the same way: the Ingress and an HTTPRoute with explicit rules are identical. With empty `rules`, the API HTTPRoute gains its new default rule (`backendRefs: [{name: <fullname>-api, port: 80, weight: 1}]`, where the old chart rendered `rules: null`). That is the allowed difference.
-- [ ] `just chart lint`, `just chart unittest`, `just ci`, and CI's
+- [x] `just chart lint`, `just chart unittest`, `just ci`, and CI's
   `Helm Chart Test` (`ct install` on kind) green on the PR
+  All green. Locally, `just chart lint`, `just chart unittest`, and `just ci` pass. On PR #137, run 36128292752 (the Phase 3 push) passed Helm Chart Test (`ct install` of `charts/docz` on kind, with the helm test hook) in 2m41s, and passed Helm Unit Tests.
 
 <!--docz:tasks:end-->
 
