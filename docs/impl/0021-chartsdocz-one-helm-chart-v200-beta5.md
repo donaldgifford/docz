@@ -276,12 +276,13 @@ along with its 90 non-Tailscale tests.
   and the extras, with their current defaults and comments. `store`, `queue`,
   and `search` are copied to the top level **verbatim** (DESIGN-0018 OQ 3)
   Done by script from `charts/docz-api/values.yaml`, keeping every comment; `config.authProviders` and the OTel endpoint/sample rate are dropped (shared), and provider comments name `auth.providers`.
-- [ ] Workload templates, from `charts/docz-api/templates/`:
+- [x] Workload templates, from `charts/docz-api/templates/`:
   - `api-deployment.yaml`, without the Tailscale container, its volumes,
     and the `TS_*` env;
   - `api-service.yaml`, `api-serviceaccount.yaml`, `api-secret.yaml`,
     `api-hpa.yaml`, `api-servicemonitor.yaml`,
     `api-prometheusrule.yaml` (`up{job="<fullname>-api"}`).
+  Done. The container is named `docz-api`, and `volumes:` is now omitted when empty. `OTEL_SERVICE_NAME` is gated on `otel.endpoint` with the other tracing vars, so an install without tracing carries none (DESIGN-0018 §4). The old `component: server` lines are gone: the role label comes from `docz.selectorLabels`.
 
   Every object uses `docz.labels` with component `api`, and every selector
   uses `docz.selectorLabels`, **including `spec.selector.matchLabels`**
