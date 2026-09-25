@@ -7,20 +7,22 @@
 #   docz.just   the library and the CLI
 #   api.just    the server (docz-api, IMPL-0019)
 #   ui.just     the frontend (docz-site, IMPL-0020)
+#   chart.just  charts/docz, the one Helm chart for both (IMPL-0021)
 #
 # docz.just is imported flat, so its recipes own the root namespace
-# (just build, just test, just ci). The other two are optional *modules*
+# (just build, just test, just ci). The other three are optional *modules*
 # (DESIGN-0016 OQ 1): docz-api's recipes share 27 names with docz.just and
 # just refuses duplicate names across sibling imports, so each arriving half
-# gets its own namespace — just api build, just ui build — and root gates
-# reach them as api::lint. ui.just carries `set working-directory := "ui"`
-# for its Bun commands.
+# gets its own namespace — just api build, just ui build, just chart lint —
+# and root gates reach them as api::lint. ui.just carries
+# `set working-directory := "ui"` for its Bun commands.
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 import 'docz.just'
 mod? api 'api.just'
 mod? ui 'ui.just'
+mod? chart 'chart.just'
 
 # Default: list recipes
 _default:

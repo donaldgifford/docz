@@ -217,7 +217,7 @@ suites to it.
 
   If a throwaway template is needed to reach the helpers, Phase 2 deletes
   it once real templates exist
-- [ ] `chart.just` (DESIGN-0018 §10, OQ 13) with `[group('helm')]` recipes:
+- [x] `chart.just` (DESIGN-0018 §10, OQ 13) with `[group('helm')]` recipes:
   - `lint`: `helm lint charts/docz -f charts/docz/ci/ci-values.yaml`;
   - `template`;
   - `unittest`: `helm unittest -f 'tests/**/*_test.yaml' charts/docz`;
