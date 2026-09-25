@@ -377,9 +377,10 @@ list, and one front door.
   - the `OTEL_*` env in both Deployments is gated on `otel.endpoint`, with
     each workload's own `OTEL_SERVICE_NAME`.
   Done in the site-deployment commit and the otel-endpoint commit. `DOCZ_API_URL` renders `http://docz-api.<ns>.svc.cluster.local:80` for release `docz`. Both provider variables come from `auth.providers`. The `OTEL_*` variables are gated on `otel.endpoint` in both Deployments, with the endpoint derived per runtime (see the values task).
-- [ ] `api.config.authRedirectBase`: keep the `required` unless
+- [x] `api.config.authRedirectBase`: keep the `required` unless
   `docz.api.authDisabled`, and reword its values comment to say it is the
   **site's** public URL (DESIGN-0018 OQ 17)
+  Done. The `required` sits under `if not (docz.api.authDisabled)`, and the values comment names it as the site's public URL. Both were in place from the Phase 2 values port; this pass only verified them.
 - [ ] Edges, one pair per workload (DESIGN-0018 §5, OQ 8 revised):
   - `docz.ingress` and `docz.httpRoute` helpers (`dict ctx component`),
     ported from the two charts' identical templates;
