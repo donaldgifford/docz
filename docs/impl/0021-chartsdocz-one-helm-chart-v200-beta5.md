@@ -392,9 +392,10 @@ list, and one front door.
   - an empty `rules` renders the default rule for both. docz-site did this
     already; docz-api's route had no rules at all.
   Done. The `docz.ingress` and `docz.httpRoute` helpers (`dict ctx component`) are in `_helpers.tpl`, and the four `{api,site}-{ingress,httproute}.yaml` files are one-line includes. `api.ingress` and `api.httpRoute` were added with docz-api's shapes and defaults; `site.*` came with the site block. An empty `rules` now renders the default rule for the API as well.
-- [ ] `templates/tests/test-connection.yaml`: one hook pod with two
+- [x] `templates/tests/test-connection.yaml`: one hook pod with two
   containers, each `wget`ting one Service's `/healthz`, and the `docz.labels`
   of component `test`
+  Done. One hook Pod `<fullname>-test-connection` with component `test` has containers `wget-api` and `wget-site`, each fetching its own Service's `/healthz`.
 - [ ] `NOTES.txt`:
   - each workload's URL (its Ingress host or HTTPRoute hostname, or else a
     port-forward to its Service);
