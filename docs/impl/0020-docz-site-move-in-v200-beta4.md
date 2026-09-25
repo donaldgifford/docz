@@ -1,7 +1,7 @@
 ---
 id: IMPL-0020
 title: "docz-site move-in: v2.0.0-beta.4"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-09-23
 ---
@@ -221,7 +221,7 @@ history (ADR-0004 OQ 1, DESIGN-0017 §9).
   `Chart 0.1.10 already published, skipping.`
 - [ ] **(human)** Close docz-site PR #33 with a comment that the move to
   `donaldgifford/docz` supersedes it, and that a JavaScript licence check
-  is a follow-up there
+  is a follow-up there. Still open at the beta.4 tag; carried by #133
 - [x] Record docz-site's `main` SHA after the sweep and its auto-sync
   changelog commit settle. Phase 2 clones exactly that SHA: **`f1203c91d1a9f69ccdae140d9eabc3185f1bce8f`** (`chore(changelog): Auto-sync`
   after #39). The four documents read Completed/Implemented at that SHA
@@ -332,8 +332,9 @@ no Go file arrives, the vendored spec keeps orval working, and
   in CI's `Check Dependency Licenses`
 - [x] Open the PR with `dont-release`; the body lists the folds and cites
   DESIGN-0017 §2 and §6
-- [ ] **(human)** Review and merge **with a merge commit** (squashing destroys
-  the graft)
+- [x] **(human)** Review and merge **with a merge commit** (squashing destroys
+  the graft). Merged as #130
+  (`f1f5eeb`), graft merge `3630665` intact
 
 <!--docz:tasks:end-->
 
@@ -592,10 +593,11 @@ What the outside world sees at beta.4, and the notes the next person needs.
   generation straight from `api/openapi.yaml` per DESIGN-0017 §4, with
   the typecheck and `gen-api-check` arms), then
   `docz status set investigation INV-0012 Concluded`
-- [ ] **(human)** GHCR → Packages → `docz-site` → Manage Actions access:
+- [x] **(human)** GHCR → Packages → `docz-site` → Manage Actions access:
   add `donaldgifford/docz` with **Write**. Do the same for
   `charts/docz-site`. Both are separate grants from docz-api's (IMPL-0019
-  Phase 5: the chart publish failed `403 write_package` without one)
+  Phase 5: the chart publish failed `403 write_package` without one). Both granted
+  before the tag; the publish run needed no retry
 - [x] `just validate`, `just api lint-actions`. Both clean; the INV-0012
   verdict opens with "Yes" because `inv.conclusion.verdict` reads one
 
@@ -629,27 +631,45 @@ What the outside world sees at beta.4, and the notes the next person needs.
   `linux/amd64` half of `ci-ui` dies with exit 132, SIGILL, because Bun
   needs CPU instructions the emulator on an Apple-silicon workstation lacks.
   The CI `Docker Build` job bakes the `ci` group and passed on #132
-- [ ] **(human)** `just release v2.0.0-beta.4` from **Phase 4's merge
+- [x] **(human)** `just release v2.0.0-beta.4` from **Phase 4's merge
   commit**, the last commit that changes a workflow. A tag runs the
-  workflows as they exist in the tagged commit (IMPL-0019 Phase 5)
-- [ ] Confirm `prerelease.yml`: the GitHub release is a pre-release carrying
+  workflows as they exist in the tagged commit (IMPL-0019 Phase 5). Tagged
+  `c690c48` (#132's merge); run 36017974151, all jobs green, both ECR jobs
+  skipped behind `vars.ECR_PUBLISH_ENABLED`
+- [x] Confirm `prerelease.yml`: the GitHub release is a pre-release carrying
   the `docz_*` and `docz-api_*` archives; `publish-image` pushed
   `docz-api:2.0.0-beta.4` (chart `docz-api` `0.9.0` skipped as already
   published); `publish-image-ui` pushed `docz-site:2.0.0-beta.4` and chart
-  `docz-site` `0.2.0`
-- [ ] `cosign tree ghcr.io/donaldgifford/docz-site:2.0.0-beta.4` shows a
+  `docz-site` `0.2.0`. Confirmed:
+  a pre-release with `docz_*` and `docz-api_*` archives for darwin/linux ×
+  amd64/arm64, each with an SPDX SBOM, plus a signed `checksums.txt`. Both
+  images pushed (`docz-site@sha256:31b4b758…`, `docz-api@sha256:c0816712…`,
+  linux/amd64 + linux/arm64), and neither package has a `latest` tag. One
+  difference from the plan: the `docz-site` chart job **skipped** 0.2.0 as
+  already published, because `release.yml`'s new `publish-ghcr-ui` job
+  published it on #132's merge to `main`. The chart is identical either
+  way, since its `Chart.yaml` has not changed since that merge
+- [x] `cosign tree ghcr.io/donaldgifford/docz-site:2.0.0-beta.4` shows a
   signature and SLSA provenance. `helm show chart
   oci://ghcr.io/donaldgifford/charts/docz-site --version 0.2.0` reports
-  `appVersion: 2.0.0-beta.4`
+  `appVersion: 2.0.0-beta.4`. Both
+  images show a `sigstore.dev/cosign/sign/v1` signature and a
+  `slsa.dev/provenance/v1` attestation through OCI referrers, and
+  `helm show chart` reports `version: 0.2.0`, `appVersion: 2.0.0-beta.4`
 - [ ] **(human)** `docker run` the published docz-site image, confirm
   `/healthz`, and point it at a docz-api to confirm the proxy (`/api/v1/repos`
   through the site). Upgrading an existing docz-site release to chart
-  `0.2.0` needs no values change
+  `0.2.0` needs no values change. Partly run: the published image started with
+  `DOCZ_API_URL` pointed at an unused port, `/healthz` returned 200, and
+  `/api/v1/repos` returned 502 `upstream unreachable`, with a
+  `proxy.error` log naming the configured target. So the proxy forwards
+  to where it is told. The round trip against a live docz-api is still
+  open
 - [x] Closing notes below: amend ADR-0004's two claims that DESIGN-0017's
   Background disproved (the "no `go.mod`" line and the successor count). Amended
   in place as dated corrections beside each claim (Consequences, Neutral,
   and Open Question 1's resolution), leaving the original words as the record
-- [ ] `docz status set impl IMPL-0020 Completed` and
+- [x] `docz status set impl IMPL-0020 Completed` and
   `docz status set design DESIGN-0017 Implemented`, then `docz update`
 - [x] File the follow-ups as issues: archive the docz-site repository
   read-only with a README pointing at `ui/`; a Bun licence check; v2.0.0
@@ -711,19 +731,19 @@ What the outside world sees at beta.4, and the notes the next person needs.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Phase 0's parameterised `ghcr.yml` dry run resolves `component=api`
+- [x] Phase 0's parameterised `ghcr.yml` dry run resolves `component=api`
   exactly as the hardcoded version did (Phase 0)
-- [ ] The graft's history follows the renames, and no tag or changelog entry
+- [x] The graft's history follows the renames, and no tag or changelog entry
   leaks (Phase 2)
-- [ ] `go list ./...` lists nothing under `ui/` with `node_modules`
+- [x] `go list ./...` lists nothing under `ui/` with `node_modules`
   populated, locally and in CI (Phases 2–3)
-- [ ] orval's swap to `../api/openapi.yaml` is byte-neutral (Phase 3)
-- [ ] A spec change that breaks the client fails `just ui typecheck`, drilled
+- [x] orval's swap to `../api/openapi.yaml` is byte-neutral (Phase 3)
+- [x] A spec change that breaks the client fails `just ui typecheck`, drilled
   once (Phase 3)
-- [ ] The ui image builds from bake and serves its probes (Phase 3)
-- [ ] `TestSiteRepositoryURLGone` and `TestExcludesAgreeOnArchive` (Phases 3–4)
-- [ ] `just parity` zero diffs at the end of every phase
-- [ ] Published images signed with provenance, charts at the right
+- [x] The ui image builds from bake and serves its probes (Phase 3)
+- [x] `TestSiteRepositoryURLGone` and `TestExcludesAgreeOnArchive` (Phases 3–4)
+- [x] `just parity` zero diffs at the end of every phase
+- [x] Published images signed with provenance, charts at the right
   `appVersion` (Phase 5)
 
 <!--docz:testing:end-->
