@@ -15,6 +15,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(chart)* Api block and backends in charts/docz values
 - *(chart)* API workload templates in charts/docz
 - *(chart)* Backend templates in charts/docz
+- *(chart)* Site values block and one otel endpoint for both
+- *(chart)* Site workload templates in charts/docz
+- *(chart)* One Ingress and HTTPRoute pair per workload
+- *(chart)* One helm test hook for both workloads
+- *(chart)* Charts/docz NOTES for both workloads
 
 ### Bug Fixes
 
@@ -39,6 +44,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* IMPL-0021 Phase 1 gates pass
 - *(impl)* Record IMPL-0021 API render parity
 - *(impl)* Close IMPL-0021 Phase 2 gates
+- *(impl)* Record IMPL-0021 site wiring
+- *(impl)* Verify authRedirectBase wording for IMPL-0021
+- *(impl)* Record IMPL-0021 site and edge render parity
 
 ### Testing
 
@@ -47,6 +55,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(chart)* Charts/docz ci-values for the API
 - *(chart)* Port docz-api suites to charts/docz
 - *(chart)* Point the helpers suite at api-deployment
+- *(chart)* Charts/docz ci-values for the site
+- *(chart)* Port docz-site suites to charts/docz
+- *(chart)* Rename a ported site test to auth.providers
+- *(chart)* Wiring, selector, edge, extraLabels, Tailscale, version suites
 
 ### Miscellaneous Tasks
 
