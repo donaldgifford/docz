@@ -1,6 +1,15 @@
 # docz-api
 
-Helm chart for docz-api
+> [!WARNING]
+> **Deprecated.** This is the final version of the `docz-api` chart.
+> docz-api, docz-site, and their backends now ship as one chart,
+> `oci://ghcr.io/donaldgifford/charts/docz`
+> ([`charts/docz`](https://github.com/donaldgifford/docz/tree/main/charts/docz)).
+> There is no in-place upgrade: install `docz` as a new release. The
+> Tailscale sidecar does not carry over; see
+> [`deploy/tailscale-operator.md`](https://github.com/donaldgifford/docz/blob/main/deploy/tailscale-operator.md).
+
+DEPRECATED: use oci://ghcr.io/donaldgifford/charts/docz. Helm chart for docz-api
 
 ## What this deploys
 
@@ -34,7 +43,7 @@ provenance attestations (GitHub artifact attestations, Build L2).
 ```bash
 helm install docz-api \
   oci://ghcr.io/donaldgifford/charts/docz-api \
-  --version 0.9.0 \
+  --version 0.10.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -49,7 +58,7 @@ aws ecr get-login-password --region <region> | \
 
 helm install docz-api \
   oci://<account>.dkr.ecr.<region>.amazonaws.com/docz-api \
-  --version 0.9.0 \
+  --version 0.10.0 \
   --namespace docz-api \
   --create-namespace \
   -f values.yaml
@@ -259,7 +268,7 @@ cosign verify \
     '^https://github.com/donaldgifford/docz/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.9.0
+  ghcr.io/donaldgifford/charts/docz-api:0.10.0
 ```
 
 ### Build provenance
@@ -269,7 +278,7 @@ it came from this repository:
 
 ```bash
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz-api:0.9.0 \
+  oci://ghcr.io/donaldgifford/charts/docz-api:0.10.0 \
   --owner donaldgifford
 ```
 
@@ -282,7 +291,7 @@ cosign verify-attestation \
     '^https://github.com/donaldgifford/docz/.github/workflows/.+' \
   --certificate-oidc-issuer \
     'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz-api:0.9.0
+  ghcr.io/donaldgifford/charts/docz-api:0.10.0
 ```
 
 ## Values

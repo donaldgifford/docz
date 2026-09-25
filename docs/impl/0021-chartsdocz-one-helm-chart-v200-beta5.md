@@ -579,7 +579,7 @@ first phase that touches the old charts and the workflows.
   with the same permissions ceiling as the existing four jobs. `release.yml`
   gets no chart job
   Done. `publish-chart` (GHCR) and `publish-ecr-chart` (gated on `vars.ECR_PUBLISH_ENABLED`) are added with `component: chart`, no tag, and the same four-permission ceiling. The header comment names charts/docz and tag-only chart publishing. `release.yml` is unchanged apart from `publish_chart: false`.
-- [ ] Deprecated finals (DESIGN-0018 §11):
+- [x] Deprecated finals (DESIGN-0018 §11):
   - `charts/docz-api/Chart.yaml`: `version: 0.10.0`,
     `appVersion: "2.0.0-beta.5"`, `deprecated: true`;
   - `charts/docz-site/Chart.yaml`: `version: 0.3.0`, the same
@@ -590,6 +590,7 @@ first phase that touches the old charts and the workflows.
   - each `README.md.gotmpl` opens with the same notice;
   - regenerate with `just api helm-docs` and `just ui helm-docs`;
   - each chart's bare-semver unit test still passes.
+  Done. docz-api is now 0.10.0 and docz-site 0.3.0; both are `appVersion: "2.0.0-beta.5"` and `deprecated: true`, and each description starts with "DEPRECATED: use oci://…/docz" so `helm search` shows it. Each NOTES opens with the deprecation block (docz-api's adds the Tailscale line), and each README opens with a `[!WARNING]` notice. Both were regenerated with `just api helm-docs` and `just ui helm-docs`. The default-tag tests were bumped to beta.5, and unittest passes all 145 (96 + 49), bare-semver tests included.
 - [ ] Repository docs name `charts/docz`:
   - `CLAUDE.md`:
     - the opening paragraph, the Build & Test block (`just chart …`), and

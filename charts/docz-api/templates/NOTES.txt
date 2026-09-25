@@ -1,3 +1,11 @@
+DEPRECATED: this is the final version of the docz-api chart. docz-api,
+docz-site, and their backends now ship as one chart:
+
+     oci://ghcr.io/donaldgifford/charts/docz
+
+There is no in-place upgrade from this chart: install docz as a new release.
+The Tailscale sidecar does not carry over; see deploy/tailscale-operator.md.
+
 docz-api {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}".
 
 The container serves everything on one HTTP port: the API, health probes,

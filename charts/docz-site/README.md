@@ -1,6 +1,13 @@
 # docz-site
 
-Helm chart for docz-site
+> [!WARNING]
+> **Deprecated.** This is the final version of the `docz-site` chart.
+> docz-api, docz-site, and their backends now ship as one chart,
+> `oci://ghcr.io/donaldgifford/charts/docz`
+> ([`charts/docz`](https://github.com/donaldgifford/docz/tree/main/charts/docz)).
+> There is no in-place upgrade: install `docz` as a new release.
+
+DEPRECATED: use oci://ghcr.io/donaldgifford/charts/docz. Helm chart for docz-site
 
 ## What this deploys
 
@@ -28,7 +35,7 @@ The chart is published as an OCI artifact to GHCR:
 ```bash
 helm install docz-site \
   oci://ghcr.io/donaldgifford/charts/docz-site \
-  --version 0.2.0 \
+  --version 0.3.0 \
   --namespace docz-site \
   --create-namespace \
   --set config.doczApiUrl=http://docz-api:8080

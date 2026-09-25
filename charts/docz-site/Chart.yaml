@@ -2,14 +2,16 @@
 # yaml-language-server: $schema=https://www.schemastore.org/chart.json
 apiVersion: v2
 name: docz-site
-description: Helm chart for docz-site
+description: "DEPRECATED: use oci://ghcr.io/donaldgifford/charts/docz. Helm chart for docz-site"
 type: application
-version: 0.2.0
+version: 0.3.0
 # No "v" prefix: appVersion is the default image tag (image.tag ||
 # .Chart.AppVersion), and the published image tag is bare semver
 # (docker/metadata-action strips the "v"). They must match or a
 # defaults-only `helm install` hits ImagePullBackOff.
-appVersion: "2.0.0-beta.4"
+appVersion: "2.0.0-beta.5"
+# Final version (IMPL-0021): charts/docz replaces this chart.
+deprecated: true
 home: https://github.com/donaldgifford/docz/tree/main/ui
 maintainers:
   - name: donaldgifford
