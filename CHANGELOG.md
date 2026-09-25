@@ -9,6 +9,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(impl)* Record the v2.0.0-beta.4 release checks for IMPL-0020
 - IMPL-0020 Completed, DESIGN-0017 Implemented
+- *(inv)* INV-0014, consolidating the docz-api and docz-site charts
+- *(inv)* Conclude INV-0014, one merged chart for new installs
+- *(design)* DESIGN-0018, one Helm chart for docz
 
 ## [2.0.0-beta.4] - 2026-09-24
 
