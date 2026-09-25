@@ -26,6 +26,11 @@ on:
         type: string
         required: false
         default: ''
+      publish_chart:
+        description: 'Publish this component''s chart. release.yml passes false, so charts publish only from a tag.'
+        type: boolean
+        required: false
+        default: true
       dry_run:
         description: 'Package but do not push.'
         type: boolean
@@ -43,6 +48,11 @@ on:
         type: string
         required: false
         default: ''
+      publish_chart:
+        description: 'Publish this component''s chart. release.yml passes false, so charts publish only from a tag.'
+        type: boolean
+        required: false
+        default: true
       dry_run:
         description: 'Package but do not push.'
         type: boolean
@@ -246,6 +256,9 @@ jobs:
   chart:
     name: Publish chart
     runs-on: ubuntu-latest
+    # Off for release.yml's merge-to-main calls (IMPL-0021 OQ 2): a chart
+    # version publishes from a v*-beta.* tag, never from a merge.
+    if: inputs.publish_chart
     needs: [resolve, aws-auth]
     env:
       CHART_NAME: ${{ needs.resolve.outputs.chart_name }}

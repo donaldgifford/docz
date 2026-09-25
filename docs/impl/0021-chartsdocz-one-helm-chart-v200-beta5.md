@@ -568,11 +568,12 @@ first phase that touches the old charts and the workflows.
   The `image` job already skips when `tag` is empty, so a chart-only call
   passes no tag and needs no new gate
   Done. The `chart` row added to both resolve tables is `-` / `-` / `docz` / `charts/docz`. `chart` joins the dispatch choice list, and both `component` descriptions now say chart takes no tag. actionlint is clean.
-- [ ] Publish on merge (Open Question 2). Add a `publish_chart` boolean input
+- [x] Publish on merge (Open Question 2). Add a `publish_chart` boolean input
   to `ghcr.yml` and `ecr.yml`, default `true`, gating the `chart` job, and
   pass `false` from `release.yml`'s four existing calls. Charts then publish
   only from a `v*-beta.*` tag, which is what `ui/CLAUDE.md` already claims
   and #132 showed was untrue
+  Done. `publish_chart` (boolean, default true) is added to both trigger blocks of `ghcr.yml` and `ecr.yml` and gates each `chart` job. `release.yml`'s four calls pass `false`. No other job depends on `chart`. actionlint is clean.
 - [ ] `prerelease.yml`: add `publish-chart` (`ghcr.yml`, `component: chart`,
   no `tag`) and `publish-ecr-chart` (gated on `vars.ECR_PUBLISH_ENABLED`),
   with the same permissions ceiling as the existing four jobs. `release.yml`
