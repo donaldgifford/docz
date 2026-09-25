@@ -103,7 +103,7 @@ tests:
             name: DOCZ_AUTH_PROVIDERS
             value: "github"
 
-  - it: should set DOCZ_AUTH_PROVIDERS from config.authProviders
+  - it: should set DOCZ_AUTH_PROVIDERS from auth.providers
     set:
       auth:
         providers: "keycloak,github"
