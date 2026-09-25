@@ -304,7 +304,7 @@ along with its 90 non-Tailscale tests.
   with `privateKeyAsFile: false`, nulled probes, empty resources. Keep the
   ≥16-byte `search.meili.masterKey`
   Done, with one change: the stand-in runs busybox `httpd` serving `/healthz` from an emptyDir in place of `sleep`, because the anchored `.helmignore` (Phase 1) means `ct install` now runs the `helm test` hook.
-- [ ] Port the nine suites to `tests/api/`:
+- [x] Port the nine suites to `tests/api/`:
   - `backend_shapes`, `deployment_env`, `deployment`, `prometheusrule`,
     `search-meili-servicemonitor`, `secret`, `service`, `serviceaccount`,
     `servicemonitor`;
@@ -312,6 +312,7 @@ along with its 90 non-Tailscale tests.
   - keep every assertion;
   - where a test cannot survive, delete it and name it with its reason in
     the commit body (DESIGN-0018 Testing Strategy).
+  Done: 88 tests in 9 suites, all passing. That is 96 minus the six in `tailscale_test.yaml` minus the two Tailscale sidecar tests in `deployment_test.yaml`. The criterion below assumed 90 because it did not count the two in `deployment_test`. One assertion was flipped rather than deleted: `deployment_test` "should stamp component=api" now expects `api` in `spec.selector.matchLabels`, replacing the old `notExists` (DESIGN-0018 OQ 11). The `errorMessage` expectations were reworded to the new value paths (`api.config.*`, `api.secrets.*`, `auth.providers`).
 - [ ] Delete Phase 1's throwaway helper template, if there was one, and
   repoint `tests/chart/helpers_test.yaml` at `api-deployment.yaml`
 - [ ] Render parity, API half (Open Question 4): render `charts/docz-api` and
