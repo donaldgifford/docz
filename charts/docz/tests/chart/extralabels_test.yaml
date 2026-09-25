@@ -1,0 +1,183 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+# extraLabels: on every object's metadata and every pod template, and nowhere
+# a label would be immutable or owned by someone else (DESIGN-0018 §2).
+suite: extraLabels
+templates:
+  - templates/api-deployment.yaml
+  - templates/api-hpa.yaml
+  - templates/api-httproute.yaml
+  - templates/api-ingress.yaml
+  - templates/api-prometheusrule.yaml
+  - templates/api-secret.yaml
+  - templates/api-service.yaml
+  - templates/api-serviceaccount.yaml
+  - templates/api-servicemonitor.yaml
+  - templates/site-deployment.yaml
+  - templates/site-hpa.yaml
+  - templates/site-httproute.yaml
+  - templates/site-ingress.yaml
+  - templates/site-service.yaml
+  - templates/site-serviceaccount.yaml
+  - templates/site-servicemonitor.yaml
+  - templates/store-postgres.yaml
+  - templates/store-postgres-secret.yaml
+  - templates/store-cnpg-cluster.yaml
+  - templates/store-cnpg-pooler.yaml
+  - templates/store-cnpg-pooler-service.yaml
+  - templates/queue-valkey.yaml
+  - templates/queue-valkey-secret.yaml
+  - templates/search-meili.yaml
+  - templates/search-meili-secret.yaml
+  - templates/search-meili-servicemonitor.yaml
+  - templates/tests/test-connection.yaml
+set:
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
+      appId: "000000"
+    secrets:
+      webhookSecret: "x"
+      privateKey: "x"
+      sessionSecret: "x"
+      oauthClientSecret: "x"
+    autoscaling:
+      enabled: true
+    ingress:
+      enabled: true
+    httpRoute:
+      enabled: true
+  site:
+    autoscaling:
+      enabled: true
+    ingress:
+      enabled: true
+    httpRoute:
+      enabled: true
+  search:
+    meili:
+      masterKey: "ci-dummy-master-key-0123456789"
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true
+tests:
+  - it: the empty default adds nothing
+    documentSelector:
+      path: metadata.name
+      matchMany: true
+      skipEmptyTemplates: true
+    asserts:
+      - notExists:
+          path: metadata.labels.owner
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: Helm
+
+  - it: every object carries extraLabels in baked mode
+    documentSelector:
+      path: metadata.name
+      matchMany: true
+      skipEmptyTemplates: true
+    set:
+      extraLabels:
+        owner: lab
+    asserts:
+      - equal:
+          path: metadata.labels.owner
+          value: lab
+
+  - it: every object carries extraLabels in CNPG mode, pooler included
+    documentSelector:
+      path: metadata.name
+      matchMany: true
+      skipEmptyTemplates: true
+    set:
+      extraLabels:
+        owner: lab
+      store:
+        postgres:
+          mode: cnpg
+          cnpg:
+            pooler:
+              enabled: true
+              service:
+                enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels.owner
+          value: lab
+
+  - it: every pod template carries extraLabels
+    set:
+      extraLabels:
+        owner: lab
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+        template: templates/api-deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+        template: templates/site-deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+        template: templates/store-postgres.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+        template: templates/queue-valkey.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - equal:
+          path: spec.template.metadata.labels.owner
+          value: lab
+        template: templates/search-meili.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+
+  - it: stays out of volumeClaimTemplates
+    set:
+      extraLabels:
+        owner: lab
+    asserts:
+      - notExists:
+          path: spec.volumeClaimTemplates[0].metadata.labels.owner
+        template: templates/store-postgres.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - notExists:
+          path: spec.volumeClaimTemplates[0].metadata.labels.owner
+        template: templates/queue-valkey.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - notExists:
+          path: spec.volumeClaimTemplates[0].metadata.labels.owner
+        template: templates/search-meili.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+
+  - it: stays out of CNPG inheritedMetadata
+    set:
+      extraLabels:
+        owner: lab
+      store:
+        postgres:
+          mode: cnpg
+    asserts:
+      - notExists:
+          path: spec.inheritedMetadata.labels.owner
+        template: templates/store-cnpg-cluster.yaml
+
+  # A colliding key fails the render: pinned in helpers_test.yaml, which
+  # renders a single template so the failure has one place to surface.

@@ -1,0 +1,182 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+# Every selector carries a role, no two workloads share one, and extraLabels
+# never reaches a selector (DESIGN-0018 §2). The API, the site, and the three
+# baked backends share name and instance, so the component alone keeps each
+# Service and ServiceMonitor on its own pods.
+suite: selectors
+templates:
+  - templates/api-deployment.yaml
+  - templates/api-service.yaml
+  - templates/api-servicemonitor.yaml
+  - templates/site-deployment.yaml
+  - templates/site-service.yaml
+  - templates/site-servicemonitor.yaml
+  - templates/store-postgres.yaml
+  - templates/queue-valkey.yaml
+  - templates/search-meili.yaml
+  - templates/search-meili-servicemonitor.yaml
+set:
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
+  search:
+    meili:
+      masterKey: "ci-dummy-master-key-0123456789"
+  serviceMonitor:
+    enabled: true
+  extraLabels:
+    owner: lab
+tests:
+  - it: the API Deployment and Service select role api
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: api
+        template: templates/api-deployment.yaml
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: api
+        template: templates/api-service.yaml
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: api
+        template: templates/api-servicemonitor.yaml
+
+  - it: the site Deployment and Service select role site
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: site
+        template: templates/site-deployment.yaml
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: site
+        template: templates/site-service.yaml
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: site
+        template: templates/site-servicemonitor.yaml
+
+  - it: each baked backend selects its own role
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: postgres
+        template: templates/store-postgres.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: postgres
+        template: templates/store-postgres.yaml
+        documentSelector:
+          path: kind
+          value: Service
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: valkey
+        template: templates/queue-valkey.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: valkey
+        template: templates/queue-valkey.yaml
+        documentSelector:
+          path: kind
+          value: Service
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: meilisearch
+        template: templates/search-meili.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: meilisearch
+        template: templates/search-meili.yaml
+        documentSelector:
+          path: kind
+          value: Service
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: meilisearch
+        template: templates/search-meili-servicemonitor.yaml
+
+  - it: every Deployment and StatefulSet pod template carries its selector
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: api
+        template: templates/api-deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: site
+        template: templates/site-deployment.yaml
+
+  - it: no Deployment or StatefulSet selector carries an extraLabels key
+    asserts:
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/api-deployment.yaml
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/site-deployment.yaml
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/store-postgres.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/queue-valkey.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/search-meili.yaml
+        documentSelector:
+          path: kind
+          value: StatefulSet
+
+  - it: no Service or ServiceMonitor selector carries an extraLabels key
+    asserts:
+      - notExists:
+          path: spec.selector.owner
+        template: templates/api-service.yaml
+      - notExists:
+          path: spec.selector.owner
+        template: templates/site-service.yaml
+      - notExists:
+          path: spec.selector.owner
+        template: templates/store-postgres.yaml
+        documentSelector:
+          path: kind
+          value: Service
+      - notExists:
+          path: spec.selector.owner
+        template: templates/queue-valkey.yaml
+        documentSelector:
+          path: kind
+          value: Service
+      - notExists:
+          path: spec.selector.owner
+        template: templates/search-meili.yaml
+        documentSelector:
+          path: kind
+          value: Service
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/api-servicemonitor.yaml
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/site-servicemonitor.yaml
+      - notExists:
+          path: spec.selector.matchLabels.owner
+        template: templates/search-meili-servicemonitor.yaml

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json
+# Both images default to the one appVersion, so a single bump moves both, and
+# that appVersion is bare semver: metadata-action's {{version}} strips the
+# `v` from the git tag, so a `v`-prefixed default 404s on pull.
+suite: image versions
+templates:
+  - templates/api-deployment.yaml
+  - templates/site-deployment.yaml
+set:
+  api:
+    config:
+      authRedirectBase: "https://docz.example.com"
+      githubOAuthClientID: "gh-client-id"
+tests:
+  - it: the API image defaults to the chart appVersion
+    chart:
+      appVersion: 2.0.0-beta.99
+    template: templates/api-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/donaldgifford/docz-api:2.0.0-beta.99
+
+  - it: the site image defaults to the same appVersion
+    chart:
+      appVersion: 2.0.0-beta.99
+    template: templates/site-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/donaldgifford/docz-site:2.0.0-beta.99
+
+  - it: the shipped appVersion is bare semver for both images
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: '^ghcr\.io/donaldgifford/docz-(api|site):\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$'
+
+  - it: a tag override moves only its own workload
+    chart:
+      appVersion: 2.0.0-beta.99
+    set:
+      site:
+        image:
+          tag: "9.9.9"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/donaldgifford/docz-site:9.9.9
+        template: templates/site-deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/donaldgifford/docz-api:2.0.0-beta.99
+        template: templates/api-deployment.yaml

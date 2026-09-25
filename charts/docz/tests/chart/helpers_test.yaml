@@ -74,3 +74,11 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: 'extraLabels: "app.kubernetes.io/name" is set by the chart'
+
+  - it: a colliding component key fails the render too
+    set:
+      extraLabels:
+        app.kubernetes.io/component: other
+    asserts:
+      - failedTemplate:
+          errorPattern: 'extraLabels: "app.kubernetes.io/component" is set by the chart'

@@ -415,7 +415,7 @@ list, and one front door.
   - httproute and ingress assertions render `site-*.yaml` and expect
     `<fullname>-site`.
   Done: 48 tests in 6 suites, all passing. That is docz-site's 49 minus "should fail render when doczApiUrl is unset", which is replaced by the derive/override pair in `tests/chart/wiring_test.yaml`. Together `tests/api/` and `tests/site/` hold 136 tests, short of the 139 in the criterion by the two Tailscale sidecar tests (see Phase 2) and the one moved test.
-- [ ] New suites under `tests/chart/`, from DESIGN-0018's Testing Strategy:
+- [x] New suites under `tests/chart/`, from DESIGN-0018's Testing Strategy:
   - `wiring_test.yaml`:
     - the URL is derived, or overridden when set;
     - one `auth.providers` value reaches both env vars;
@@ -441,6 +441,7 @@ list, and one front door.
     external, no document `matchRegex`es `(?i)tailscale`.
   - `version_test.yaml`: both images default to `.Chart.AppVersion`, which
     is bare semver.
+  Done. Six suites with 38 tests between them. `wiring_test` (10) covers derive and override, port and namespace following, both provider variables, the OTEL variables absent when the endpoint is empty, and the per-runtime endpoint forms. `selectors_test` (6) checks every selector's role and keeps `extraLabels` out of selectors. `edge_test` (7) covers per-workload routing, isolation between edges, the default rules, and `className: tailscale`. `extralabels_test` (6) checks every object in baked and CNPG modes, pod templates, VCTs, and `inheritedMetadata`. `notailscale_test` (4) and `version_test` (4) complete the set. Deviations: (a) the collision test lives in `helpers_test.yaml`, because with many templates helm stops at whichever fails first; (b) helm-unittest has no whole-document regex, so `notailscale_test` covers the pod-spec fields the sidecar used (container name and image, env names, volume names) plus a raw check on NOTES, each verified by a mutation run. `wiring_test` and `notailscale_test` were also mutation-checked.
 - [ ] Render parity, site half and both edges: diff `charts/docz-site`
   against `charts/docz` on the same basis as Phase 2, with each chart's
   Ingress and HTTPRoute enabled. Diff docz-api's edges the same way. The
