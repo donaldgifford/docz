@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0018
 title: "One Helm chart for docz: charts/docz replaces docz-api and docz-site"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-09-25
 ---
@@ -949,12 +949,12 @@ about the repository and the registry:
   straight to the API and skipping the proxy hop.
 - d. Other.
 
-> **Revised 2026-09-25: (b).** One edge per workload, `api.ingress`/
-> `api.httpRoute` and `site.ingress`/`site.httpRoute`, matching how the two
-> charts run today: the site on internal networks, and the API with its own
-> route and firewall rules, plus the Tailscale operator for GitHub's
-> webhooks (§5). A single-route option is a follow-up, tested together with
-> the operator.
+> **Resolved 2026-09-25: (b), revised.** One edge per workload,
+> `api.ingress`/`api.httpRoute` and `site.ingress`/`site.httpRoute`,
+> matching how the two charts run today: the site on internal networks, and
+> the API with its own route and firewall rules, plus the Tailscale operator
+> for GitHub's webhooks (§5). A single-route option is a follow-up, tested
+> together with the operator.
 >
 > *Superseded answer:* (a). One edge, to the site. With OQ 5 resolved
 > as (c) the site is always there, so the "API when the site is off" half
@@ -970,9 +970,9 @@ about the repository and the registry:
 - c. Per-workload sidecars (`api.tailscale`, `site.tailscale`).
 - d. Other.
 
-> **Revised 2026-09-25: (d), narrowed.** No Tailscale anywhere in the
-> chart: no templates, values, helpers, or README section. How the operator
-> behaves is the operator's business, and `deploy/tailscale-operator.md`
+> **Resolved 2026-09-25: (d), revised and narrowed.** No Tailscale
+> anywhere in the chart: no templates, values, helpers, or README section.
+> How the operator behaves is the operator's business, and `deploy/tailscale-operator.md`
 > records that it works in front of docz-api through `api.ingress` (§5).
 >
 > *Superseded wording:* (d). No sidecar. The chart carries no Tailscale

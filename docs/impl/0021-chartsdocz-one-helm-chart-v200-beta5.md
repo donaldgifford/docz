@@ -1,7 +1,7 @@
 ---
 id: IMPL-0021
 title: "charts/docz: one Helm chart, v2.0.0-beta.5"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-09-25
 ---
@@ -639,36 +639,43 @@ first phase that touches the old charts and the workflows.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] **(human)** Review and merge the PR **with a merge commit**. After the
+- [x] **(human)** Review and merge the PR **with a merge commit**. After the
   merge, confirm that its `release.yml` run skipped every `chart` job
   (Phase 5's criterion)
-- [ ] `just release-check` and `just api release-check` pass on `main`
-- [ ] **(human)** `just release v2.0.0-beta.5` from **the PR's merge
+  Done: #137 merged with merge commit `e41203e`. Its `release.yml` run (36138952395) skipped both `Publish chart` jobs, along with the image, ECR, and Release jobs.
+- [x] `just release-check` and `just api release-check` pass on `main`
+  Done: both pass on `main` at `e41203e`.
+- [x] **(human)** `just release v2.0.0-beta.5` from **the PR's merge
   commit**, the last commit that changes a workflow
-- [ ] **(human)** The GHCR grant (Open Question 5). The tag's
+  Done: `v2.0.0-beta.5` points at `e41203e`, the #137 merge commit.
+- [x] **(human)** The GHCR grant (Open Question 5). The tag's
   `publish-chart` run creates `charts/docz` in GHCR and fails
   `403 write_package`. Then go to GHCR → Packages → `charts/docz` → Manage
   Actions access, add `donaldgifford/docz` with **Write**, and re-run the
   failed job. The chart job is idempotent, and nothing else in the run
   depends on it
-- [ ] Check the `prerelease.yml` run:
+  Not needed: the tag's `publish-chart` run (36142221288) pushed `charts/docz` without a 403, so no grant had to be added before the push succeeded.
+- [x] Check the `prerelease.yml` run:
   - the release is a pre-release with the `docz_*` and `docz-api_*`
     archives;
   - both images are pushed as `2.0.0-beta.5`, with no `latest`;
   - `publish-chart` pushed `docz` 0.1.0;
   - the api and ui jobs pushed `docz-api` 0.10.0 and `docz-site` 0.3.0;
   - both ECR jobs are skipped.
-- [ ] Check the charts. Each of `docz` 0.1.0, `docz-api` 0.10.0, and
+  Done: run 36142221288 succeeded. The release is a pre-release with the `docz_*` and `docz-api_*` archives, their SPDX SBOMs, and signed checksums. Both images are at `2.0.0-beta.5`; their `latest` tags are older digests that differ from beta.5 (and beta.4), so this release did not move `latest`. All three charts were pushed, and the three ECR jobs were skipped.
+- [x] Check the charts. Each of `docz` 0.1.0, `docz-api` 0.10.0, and
   `docz-site` 0.3.0 must show a signature and SLSA provenance, and report
   the bare `appVersion`, with `deprecated: true` on the last two:
+  Done: all three show a cosign signature and SLSA v1 provenance through OCI referrers, and report `appVersion: 2.0.0-beta.5`. `docz-api` 0.10.0 and `docz-site` 0.3.0 carry `deprecated: true`, and `docz` 0.1.0 does not.
 
   ```sh
   helm show chart oci://ghcr.io/donaldgifford/charts/<name> --version <v>
   cosign tree ghcr.io/donaldgifford/charts/<name>:<v>
   ```
-- [ ] **(human)** `helm install docz oci://ghcr.io/donaldgifford/charts/docz
+- [x] **(human)** `helm install docz oci://ghcr.io/donaldgifford/charts/docz
   --version 0.1.0` with Phase 4's values. `/api/v1/repos` answers through
   the site, and `helm test docz` passes
+  Done by the agent on a throwaway kind cluster (`docz-beta5`, deleted afterwards). Chart 0.1.0 was pulled from GHCR (digest `sha256:a29a3259…`) with Phase 4's values and no image override, so both workloads ran `2.0.0-beta.5`. All five pods were ready, `/api/v1/repos` returned `{"repos":[]}` 200 through the site's Service, and `helm test docz` succeeded.
 - [x] File the follow-ups as issues:
   - a single-route option: one HTTPRoute (or Ingress) to the site that
     serves both workloads through the site's proxy, as an alternative to
@@ -683,8 +690,9 @@ first phase that touches the old charts and the workflows.
     `charts/docz` to 1.0.0 (DESIGN-0018 §11). Add both items to #135's
     v2.0.0 list, or file one issue for them
   Done: #138 (single-route option, plus testing the Tailscale operator through `api.ingress` and through the single route), #139 (`DoczSiteDown` and proxy-error alerts), and #140 (v2.0.0: delete the old charts, their resolve columns and recipes, and `api::helm-lint`; bump `charts/docz` to 1.0.0). #135 has a comment cross-linking #140.
-- [ ] `docz status set impl IMPL-0021 Completed` and
+- [x] `docz status set impl IMPL-0021 Completed` and
   `docz status set design DESIGN-0018 Implemented`, then `docz update`
+  Done: IMPL-0021 is Completed and DESIGN-0018 is Implemented, and the indexes were regenerated.
 
 <!--docz:tasks:end-->
 
@@ -737,19 +745,19 @@ first phase that touches the old charts and the workflows.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] helm-unittest: at least 139 ported tests across `tests/api/` (9 suites)
+- [x] helm-unittest: at least 139 ported tests across `tests/api/` (9 suites)
   and `tests/site/` (6), plus the seven `tests/chart/` suites, all run by
   `just chart unittest` and CI's loop
-- [ ] The old charts' suites keep passing unchanged through Phase 4, and with
+- [x] The old charts' suites keep passing unchanged through Phase 4, and with
   only the deprecation edits in Phase 5
-- [ ] Render parity against both old charts in four value cases, recorded in
+- [x] Render parity against both old charts in four value cases, recorded in
   Phases 2 and 3 (Open Question 4)
-- [ ] `ct lint` and `ct install` on kind for `charts/docz`, with the derived
+- [x] `ct lint` and `ct install` on kind for `charts/docz`, with the derived
   API URL
-- [ ] A real-image install with `helm test` and the proxy round trip
+- [x] A real-image install with `helm test` and the proxy round trip
   (Phase 4), repeated from the published chart (Phase 6)
-- [ ] Schema rejection of an unknown backend mode and log level
-- [ ] Publishing: no chart publishes on merge (Phase 5), and all three publish,
+- [x] Schema rejection of an unknown backend mode and log level
+- [x] Publishing: no chart publishes on merge (Phase 5), and all three publish,
   signed and attested, from the tag (Phase 6)
 
 <!--docz:testing:end-->
