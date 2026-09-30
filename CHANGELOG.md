@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(impl)* Complete IMPL-0021 with v2.0.0-beta.5
+- *(design)* Add DESIGN-0019 runbook built-in type
 
 ## [2.0.0-beta.5] - 2026-09-25
 
