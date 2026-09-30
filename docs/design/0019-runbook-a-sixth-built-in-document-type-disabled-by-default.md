@@ -45,6 +45,7 @@ created: 2026-09-30
   - [11. How does docz --help show a disabled built-in?](#11-how-does-docz---help-show-a-disabled-built-in)
   - [12. Does docz-site get more than a colour and a blurb in this release?](#12-does-docz-site-get-more-than-a-colour-and-a-blurb-in-this-release)
   - [13. Is there an ADR?](#13-is-there-an-adr)
+  - [14. How is docz-api version skew handled?](#14-how-is-docz-api-version-skew-handled)
 - [References](#references)
 <!--toc:end-->
 
@@ -92,6 +93,11 @@ structured type (ADR-0002).
   - heading inference works for unmarked documents;
   - `Parse` never touches the filesystem;
   - `cmd/validate.go` composes its per-type tier.
+- **An enabled runbook is a first-class type in docz-api and docz-site.**
+  A repo that turns it on gets a "Runbooks" type in the API
+  (`/api/v1/repos/{owner}/{name}/types`), its documents listed, served,
+  and searchable under the `runbook` facet, and a curated entry in
+  docz-site's type navigation. An end-to-end test proves it (§8).
 - It ships in `v2.0.0-beta.6`, as one IMPL and one PR, with the permitted
   parity delta documented.
 <!--docz:goals:end-->
@@ -582,20 +588,73 @@ are never re-captured (Open Question 9).
 
 ### 8. docz-api and docz-site
 
-- **docz-api** needs no code. Ingest, the type resolver, and search facets
-  are generic over `EnabledTypes()`, and `api/openapi.yaml` has no type
-  enum. An enabled runbook is ingested and served as a type like any
-  custom type is today.
-- **docz-site** needs three small edits in `ui/`:
-  - add `runbook` to `CURATED_TYPES` (`src/lib/colors.ts`), with a
-    `--color-t-runbook` token in `src/theme/tokens.css`;
-  - add a `TYPE_BLURBS` entry (`src/lib/docTypes.ts`). The same edit drops
-    the stale `plan` blurb;
-  - update `src/lib/colors.test.ts`, which uses `runbook` as its example of
-    an **uncurated** type. It switches to `postmortem`.
+When a repo enables runbook, it shows up as a type in both, with no
+per-type code in either. The path is the one every type already takes:
 
-  A step-aware view (copy-command buttons, step anchors) is a follow-up.
-  Since the ui CI jobs are path-filtered on `ui/**`, the edit runs them.
+```mermaid
+sequenceDiagram
+  participant GH as GitHub repo
+  participant API as docz-api (ingest)
+  participant DB as Postgres + Meilisearch
+  participant Site as docz-site
+  GH->>API: push touching .docz.yaml or docs/ (webhook)
+  API->>GH: fetch .docz.yaml + docz-convention blobs
+  API->>API: config.ParseBytes → EnabledTypes() includes runbook
+  API->>DB: doc_types row "runbook" (Runbooks, RUNBOOK, rb)<br/>documents rows for docs/runbook/*.md, indexed with type=runbook
+  Site->>API: GET /repos/{o}/{n} → types[]
+  API-->>Site: … runbook …
+  Site->>Site: type nav entry "Runbooks",<br/>curated colour + blurb, list + document pages
+```
+
+| Stage | Code | Why no change is needed |
+| ----- | ---- | ----------------------- |
+| Fetch | `internal/githubapp` `classifyTree` | keeps every blob matching `document.IsDoczFile`, whatever its directory |
+| Type registration | `internal/ingest` `buildDocTypes` | maps every `cfg.EnabledTypes()` entry to a `doc_types` row |
+| Document assignment | `internal/ingest` `buildDocuments` | matches each blob's directory against every enabled type's dir |
+| Resolution | `internal/httpapi` `resolveType` | name, `id_prefix`, or alias from the stored row, so `/types/rb/docs` and `/types/RUNBOOK/docs` resolve |
+| Search | `internal/search` | `type` is a generic facet value |
+| Contract | `api/openapi.yaml` | `type` is a free string; there is no enum to extend |
+| Site navigation | `ui/src/components/repo-nav.tsx` | renders the repo's `types[]` from the API |
+| Site labels | `ui/src/lib/docTypes.ts` | falls back to "`<plural_label>` for this repository" |
+
+**What does change in `ui/`** is presentation, so a runbook looks like a
+built-in rather than an unknown custom type:
+
+- add `runbook` to `CURATED_TYPES` (`src/lib/colors.ts`), with a
+  `--color-t-runbook` token in `src/theme/tokens.css`;
+- add a `TYPE_BLURBS` entry (`src/lib/docTypes.ts`), dropping the stale
+  `plan` blurb in the same edit;
+- update `src/lib/colors.test.ts`, which uses `runbook` as its example of
+  an **uncurated** type. It switches to `postmortem`.
+
+A step-aware view (copy-command buttons, step anchors) is a follow-up
+(Open Question 12). The ui CI jobs are path-filtered on `ui/**`, so the
+edit runs them.
+
+**Version skew is the one real risk.** A partial `types.runbook` block
+gets its missing fields (`dir`, `id_prefix`, `statuses`, …) from the
+**registry** at load time (`fillTypeFieldDefaults`). A docz-api older than
+beta.6 has no runbook entry, so it reads the same block as a custom type
+with nothing filled in. The rule is therefore: **upgrade docz-api to
+beta.6 before any repo enables runbook with a short block.** A repo whose
+block spells every field (as the `.docz.yaml` a beta.6 `docz init`
+generates does) is safe against any version. docz and docz-api release
+from one tag, so this is a deploy-order note in the release notes and the
+chart's NOTES, not a code change.
+
+**Proof.** An ingest test in `internal/ingest` (unit, fake fetcher) and
+the real-Postgres e2e test (`internal/e2e`, `//go:build integration`)
+onboard a fixture repo whose `.docz.yaml` enables runbook with the short
+block, and assert:
+
+- the `doc_types` row carries `runbook` / `Runbooks` / `RUNBOOK` / `rb`;
+- `GET /api/v1/repos/{o}/{n}/types` lists it;
+- `GET …/types/rb/docs` lists the runbook and `GET …/docs/RUNBOOK-0001`
+  serves it;
+- search with `type=runbook` returns it.
+
+docz-site's MSW mocks gain a runbook type so a component test pins the nav
+entry, colour, and blurb.
 
 ### 9. Documentation
 
@@ -649,7 +708,8 @@ No commands or flags are added.
 **Config:** the generated `.docz.yaml` gains a `types.runbook` block with
 `enabled: false`, and a `wiki.nav_titles.runbook`.
 
-**HTTP API:** unchanged.
+**HTTP API:** no spec change. A repo that enables runbook serves it
+through the existing type endpoints, so `info.version` is not bumped.
 <!--docz:api-changes:end-->
 
 <!--docz:data-model:start-->
@@ -709,10 +769,14 @@ and needs no migration.
   These are new test files, because `cmd/*_test.go` is not edited to fit.
 - **Parity.** The `runbook` normaliser has unit tests in `just test`, and
   `just parity` stays green against the unchanged v1.2.2 goldens.
+- **docz-api.** The ingest unit test and the `internal/e2e` integration
+  test in §8: an enabled runbook becomes a type, its documents are served
+  by name, prefix, and alias, and search finds them under `type=runbook`.
 - **Consumer.** `test/consumer` imports `pkg/runbook` and parses an inline
   fixture.
 - **UI.** `bun test` covers the curated colour and blurb, with the colour
-  test moved to `postmortem`.
+  test moved to `postmortem`, and a mocked repo with a runbook type pins
+  the nav entry.
 <!--docz:testing:end-->
 
 <!--docz:rollout:start-->
@@ -731,17 +795,23 @@ and needs no migration.
 
 Existing repositories need nothing. Their `.docz.yaml` is never rewritten,
 so they see no `runbook` block until they add one, and `docz config` shows
-the default (disabled) block through the merge. A repository that wants
-runbooks adds:
+the default (disabled) block through the merge. How a repository turns runbooks on depends on whether its `.docz.yaml`
+has a `types:` block, because a `types:` block **replaces** the defaults
+with exactly the types it lists (INV-0003):
 
-```yaml
-types:
-  runbook:
-    enabled: true
-```
+- **It has one** (every repo `docz init` scaffolded does): add `runbook`
+  to it. A short `runbook: {enabled: true}` gets every other field from
+  the registry.
+- **It has none:** adding a `types:` block that lists only `runbook`
+  would switch off the other five. Either list all six, or copy the full
+  `types:` block a beta.6 `docz init` generates and flip the flag.
 
-It adds the block to its existing `types:` map if it has one; otherwise
-this is enough. It then runs `docz update`.
+Then run `docz update` to create `docs/runbook/` and its README. The
+README and `docz_yaml.tmpl` preamble both say this, and the
+`docz create` error (§2) names the flag.
+
+docz-api must be on beta.6 before a repo enables runbook with a short
+block (§8).
 
 Rollback: revert the PR. No stored data depends on the type, because
 docz-api ingests runbooks only for repositories that enabled them.
@@ -880,6 +950,18 @@ docz-api ingests runbooks only for repositories that enabled them.
   catalogue addition as a decision alongside ADR-0003's removal.
 - c. Amend ADR-0003 with a note.
 - d. Other.
+### 14. How is docz-api version skew handled?
+
+- a. **A deploy-order note.** docz-api goes to beta.6 before a repo
+  enables runbook with a short block. It goes in the release notes, the
+  `charts/docz` NOTES, and the README's enable instructions. docz and
+  docz-api ship from one tag, so the window is one deploy.
+- b. Recommend only full blocks in the docs, so a short block never
+  reaches an old docz-api, at the cost of a longer enable snippet.
+- c. Teach older docz-api nothing, but have `docz validate` warn when a
+  `types.runbook` block omits `dir` or `id_prefix`.
+- d. Other.
+
 <!--docz:open-questions:end-->
 
 <!--docz:references:start-->
