@@ -28,6 +28,7 @@ nav:
         - 'DESIGN-0016: Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes': design/0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md
         - 'DESIGN-0017: Move docz-site in: ui/, charts/docz-site, and orval on the one spec': design/0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md
         - 'DESIGN-0018: One Helm chart for docz: charts/docz replaces docz-api and docz-site': design/0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md
+        - 'DESIGN-0019: Runbook: a sixth built-in document type, disabled by default': design/0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
