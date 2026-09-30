@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0019
 title: "Runbook: a sixth built-in document type, disabled by default"
-status: Draft
+status: Approved
 author: Donald Gifford
 created: 2026-09-30
 ---
@@ -236,7 +236,7 @@ flowchart TD
 | ------- | ------------------ | ------- |
 | `docz init` generated `.docz.yaml` | `runbook:` block, `enabled: false` | same file, user flips the flag |
 | `docz init` / `docz update` | no `docs/runbook/`, no README | directory + index README |
-| `docz create runbook` / `rb` / `RUNBOOK` | error naming the flag to set (below) | new `RUNBOOK-0001-<slug>.md` |
+| `docz create runbook` / `rb` / `RUNBOOK` | error naming the flag to set (below) | new `docs/runbook/0001-<slug>.md` (ID `RUNBOOK-0001`) |
 | `docz list`, `docz validate` | not listed / not validated | listed / validated with `runbook.Validate` |
 | `docz --help` | listed, suffixed `(disabled by default)` (OQ 11) | listed |
 | `docz template show runbook` | works (shows the embedded template) | works |
@@ -583,12 +583,13 @@ never is (Open Question 6).
 
 ### 5. The kind catalogue
 
-The following entries are added to `pkg/doczcore/validate/kindrule.go`. The
-count in the file's comment goes from forty-one to fifty.
+The following nine entries are added to `pkg/doczcore/validate/kindrule.go`,
+and the count in the file's comment is corrected to match the map (it says
+forty-one today, and the map should be counted, not trusted).
 
 | Kind | Singleton | Check |
 | ---- | --------- | ----- |
-| `last-verified` | yes | new `checkTable` over `date/pr/commit/verified-by` columns |
+| `last-verified` | yes | `checkTable` over the `date/pr/commit/verified by` columns |
 | `when` | yes | `checkItems` |
 | `prerequisites` | yes | `checkItems` |
 | `procedure` | no | — (well-formedness only; `runbook.Validate` owns its rules) |
@@ -598,9 +599,9 @@ count in the file's comment goes from forty-one to fifty.
 | `scenario` | no | — |
 | `escalation` | yes | `checkTable` over `who/when/how` columns |
 
-`checkTable` is the `file-changes` column check generalised to take its
-column names, so `file-changes`, `last-verified`, and `escalation` share
-one implementation.
+`checkTable(region, at, kind, columns...)` already exists and already
+serves `risks`, `environment`, and `file-changes`, so the two new table
+kinds are one-line wrappers over it.
 
 `overview` and `references` already exist. `steps` is generic enough to be
 reused by a custom type, which is the point of the catalogue being keyed by
@@ -827,8 +828,7 @@ and needs no migration.
   - `FuzzParse`;
   - `headings_test.go` pinning `Headings()` to the template.
 - **`validate`.** Tests for each new catalogue kind, for `checkSteps`, and
-  for `checkTable` over all three tables it now serves (`file-changes`
-  unchanged, `last-verified`, `escalation`).
+  for the two new `checkTable` wrappers (`last-verified`, `escalation`).
 - **Last Verified.** Table tests for each `runbook.last-verified.*` code:
   the empty template row is nil and clean, a filled row parses into
   `Verification`, `Verified by` splits on commas, a bad date or commit is
