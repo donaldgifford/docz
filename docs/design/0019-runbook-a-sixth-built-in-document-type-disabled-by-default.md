@@ -84,6 +84,10 @@ structured type (ADR-0002).
 - Steps are addressable. `Step.ID` is `<procedure token>.<n>[.<m>…]`, so a
   consumer can link to or display step `2.3.1` the way it addresses IMPL
   task `2.3` today.
+- A runbook says who last ran it and against what. A **Last Verified**
+  table at the top records the date, the PR, the commit, and who verified
+  it, with a one- or two-sentence note. It is part of the body, so no
+  type's frontmatter changes (§3).
 - A command a step runs is part of the step. The fenced code block under a
   step is `Step.Commands`, so docz-site or a future CLI command can show or
   copy it without a markdown parser of its own.
@@ -116,8 +120,8 @@ structured type (ADR-0002).
   docz does not read Prometheus rules or PagerDuty services to check the
   names.
 - **Freshness enforcement.** A runbook records when it was last verified,
-  but validation stays time-independent, as every docz rule is today
-  (Open Question 6).
+  but validation stays time-independent, as every docz rule is today. No
+  rule says a verification is "too old" (Open Question 6).
 - **A docz-site procedure view.** docz-site renders runbooks as markdown
   with a curated colour and blurb. A step-aware view is a follow-up.
 - **Turning it on in anybody's repository** except, possibly, this one
@@ -276,6 +280,17 @@ excerpt below shows its structure, with prose trimmed:
 <!--toc:start-->
 <!--toc:end-->
 
+<!--docz:last-verified:start-->
+## Last Verified
+
+| Date | PR | Commit | Verified by |
+| ---- | -- | ------ | ----------- |
+|      |    |        |             |
+
+**Notes:** <!-- one or two sentences: what was run, and anything that differed -->
+
+<!--docz:last-verified:end-->
+
 <!--docz:overview:start-->
 ## Overview
 
@@ -283,7 +298,6 @@ excerpt below shows its structure, with prose trimmed:
 
 **Service:** <!-- the service, tool, or system -->
 **Owner:** <!-- team or person -->
-**Last verified:** <!-- YYYY-MM-DD, the last time someone ran it end to end -->
 
 <!--docz:overview:end-->
 
@@ -376,7 +390,8 @@ The regions nest like this:
 
 ```mermaid
 flowchart LR
-  doc[RUNBOOK doc] --> overview
+  doc[RUNBOOK doc] --> lastverified["last-verified"]
+  doc --> overview
   doc --> when
   doc --> prerequisites
   doc --> procedure["procedure ×N"]
@@ -403,6 +418,25 @@ Two notes on the grammar:
   document, the same way `Phase 3: …` does. `TestInferenceEqualsMarkers`
   pins this.
 
+**The Last Verified table** sits first, under the title, because it is
+the first thing a person about to run the runbook needs to know. It has
+exactly one data row, the most recent verification:
+
+| Column | Holds | Example |
+| ------ | ----- | ------- |
+| Date | the day it was run end to end, `YYYY-MM-DD` | `2026-09-25` |
+| PR | the pull request that recorded the verification (or that the run was for), as `#N` or a URL | `#141` |
+| Commit | the commit it was verified against, 7–40 hex characters | `e41203e` |
+| Verified by | one or more people, comma-separated handles or names | `@donaldgifford, @alice` |
+
+`**Notes:**` below the table is one or two sentences: what was run and
+anything that differed from the written steps. Re-verifying **replaces**
+the row rather than appending one. The history is in git, and a table
+that grows a row per run turns the top of the runbook into a log. The
+data model does not depend on this date or any other: frontmatter stays
+the same five keys for every type, and there is no `last_updated` field
+to reuse (docz-api's `updated_at` is ingest time, not an authored date).
+
 The schema skeleton `schema/runbook.md` lists each region once, since a
 schema is a set and not a count. Which regions a document **must** carry is
 Open Question 7. The recommendation is that every region in the template is
@@ -426,7 +460,8 @@ classDiagram
     ID, Title, Status, Author, Created
     Inferred bool
     Overview string
-    Service, Owner, LastVerified string
+    Service, Owner string
+    LastVerified *Verification
     When []kinds.Item
     Prerequisites []kinds.Item
     Procedures []Procedure
@@ -463,6 +498,14 @@ classDiagram
     Children []Step
     Line, EndLine int
   }
+  class Verification {
+    Date string
+    PR string
+    Commit string
+    VerifiedBy []string
+    Notes string
+    Line int
+  }
   class Command {
     Lang string
     Body string
@@ -475,6 +518,7 @@ classDiagram
   Doc --> Procedure
   Doc --> Scenario
   Doc --> Contact
+  Doc --> Verification
   Procedure --> Step
   Scenario --> Step
   Step --> Step : Children
@@ -525,18 +569,26 @@ linked to.
 | `runbook.scenario.no-symptom` | warning | the scenario heading carries only the placeholder |
 | `runbook.scenario.no-steps` | error | a scenario with no steps |
 | `runbook.overview.no-owner` | warning | `**Owner:**` is missing or empty |
+| `runbook.last-verified.bad-date` | error | the Date cell is filled but is not `YYYY-MM-DD` |
+| `runbook.last-verified.bad-pr` | warning | the PR cell is filled but is neither `#N` nor a URL |
+| `runbook.last-verified.bad-commit` | error | the Commit cell is filled but is not 7–40 hex characters |
+| `runbook.last-verified.no-verifier` | error | a row with a date but an empty Verified by |
+| `runbook.last-verified.extra-rows` | warning | more than one data row; the first is read, and re-verifying replaces it |
+| `runbook.last-verified.missing` | warning | status `Active` with no filled row: an active runbook nobody has run |
 | `runbook.status.no-procedure` | error | status `Active` with neither a procedure nor a scenario |
 
-Nothing reads the clock, so `**Last verified:**` is parsed and reported on
-`Doc.LastVerified` but never judged (Open Question 6).
+`Doc.LastVerified` is nil while the row is still the template's empty
+one. Nothing reads the clock: the date's *shape* is checked and its *age*
+never is (Open Question 6).
 
 ### 5. The kind catalogue
 
 The following entries are added to `pkg/doczcore/validate/kindrule.go`. The
-count in the file's comment goes from forty-one to forty-nine.
+count in the file's comment goes from forty-one to fifty.
 
 | Kind | Singleton | Check |
 | ---- | --------- | ----- |
+| `last-verified` | yes | new `checkTable` over `date/pr/commit/verified-by` columns |
 | `when` | yes | `checkItems` |
 | `prerequisites` | yes | `checkItems` |
 | `procedure` | no | — (well-formedness only; `runbook.Validate` owns its rules) |
@@ -544,7 +596,11 @@ count in the file's comment goes from forty-one to forty-nine.
 | `verification` | yes, per parent | `checkItems` |
 | `rollback` | yes, per parent | none: prose ("Not applicable") is an answer |
 | `scenario` | no | — |
-| `escalation` | yes | new `checkTable` over `who/when/how` columns, the `file-changes` check generalised |
+| `escalation` | yes | `checkTable` over `who/when/how` columns |
+
+`checkTable` is the `file-changes` column check generalised to take its
+column names, so `file-changes`, `last-verified`, and `escalation` share
+one implementation.
 
 `overview` and `references` already exist. `steps` is generic enough to be
 reused by a custom type, which is the point of the catalogue being keyed by
@@ -675,6 +731,12 @@ which is `just release`, the GHCR grant, the prerelease checks, and the
 `cosign tree` and `helm show chart` verification IMPL-0021 Phase 6 just did
 by hand. It becomes the first corpus fixture as `.orig.md` plus its marked
 sibling, and it is a runbook this repository needs anyway.
+
+Its Last Verified row can be filled truthfully from day one, because the
+procedure was run end to end for `v2.0.0-beta.5`: date `2026-09-25`, PR
+`#137`, commit `e41203e`, verified by the maintainer. The beta.6 release
+then re-verifies it and replaces the row, which is the first real use of
+the table.
 <!--docz:detailed-design:end-->
 
 <!--docz:api-changes:start-->
@@ -718,10 +780,15 @@ through the existing type endpoints, so `info.version` is not bumped.
 Frontmatter is unchanged. A runbook carries the same five keys as every
 other type, plus the optional `schema:`.
 
-The runbook-specific metadata (service, owner, last verified) lives in
-**body fields** under Overview, read with `kinds.Field`. This keeps
-`document.Frontmatter`, which is frozen at v1, untouched, and it keeps the
-metadata visible where a person reads it (Open Question 6).
+The runbook-specific metadata lives in the **body**:
+- service and owner are fields under Overview, read with `kinds.Field`;
+- the last verification is the one-row `last-verified` table plus its
+  `**Notes:**` field, read with `docparse.Tables`.
+
+This keeps `document.Frontmatter`, which is frozen at v1, the same for
+every type, and it keeps the metadata where a person reads it (Open
+Question 6). docz-api serves it as part of the document body; exposing
+it as structured fields is a follow-up.
 
 docz-api stores a runbook as a row in `documents` with `type = 'runbook'`,
 and needs no migration.
@@ -759,8 +826,14 @@ and needs no migration.
   - the `.orig.md` inference invariant;
   - `FuzzParse`;
   - `headings_test.go` pinning `Headings()` to the template.
-- **`validate`.** Tests for each new catalogue kind and for the two new
-  checks.
+- **`validate`.** Tests for each new catalogue kind, for `checkSteps`, and
+  for `checkTable` over all three tables it now serves (`file-changes`
+  unchanged, `last-verified`, `escalation`).
+- **Last Verified.** Table tests for each `runbook.last-verified.*` code:
+  the empty template row is nil and clean, a filled row parses into
+  `Verification`, `Verified by` splits on commas, a bad date or commit is
+  an error, a second row is a warning, and `Active` with no row is a
+  warning.
 - **cmd.**
   - `docz create runbook` on a default config exits 1 with the flag named;
   - enabled, it creates `RUNBOOK-0001-*.md`;
@@ -813,6 +886,18 @@ README and `docz_yaml.tmpl` preamble both say this, and the
 docz-api must be on beta.6 before a repo enables runbook with a short
 block (§8).
 
+**Follow-ups**, filed as issues when the IMPL is drafted:
+
+- **One ADR per built-in type** (Open Question 13). Each records what the
+  type is for, why it is built in, and its structure, starting with
+  runbook and back-filling rfc, adr, design, impl, and investigation.
+- **A step-aware docz-site view** (Open Question 12): step anchors,
+  copy-command buttons, procedure navigation, and the Last Verified row
+  shown as a badge.
+- **Runbook metadata as structured API fields**: owner, service, and last
+  verification served beside the body, so docz-site and search can
+  filter on them without parsing markdown.
+
 Rollback: revert the PR. No stored data depends on the type, because
 docz-api ingests runbooks only for repositories that enabled them.
 <!--docz:rollout:end-->
@@ -829,12 +914,16 @@ docz-api ingests runbooks only for repositories that enabled them.
 - c. `RUN` / `runbook`.
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 2. Which aliases?
 
 - a. **`rb`**, for `docz create rb`. It matches `inv` for investigation.
 - b. None. The name alone is used.
 - c. `rb` and `runbooks`.
 - d. Other.
+
+> **Resolved 2026-09-30: (a).**
 
 ### 3. Are steps ordered lists or checkboxes?
 
@@ -849,6 +938,8 @@ docz-api ingests runbooks only for repositories that enabled them.
   ("I have access to X").
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 4. One type for onboarding and troubleshooting, or two?
 
 - a. **One type, `runbook`, with both procedures and scenarios** in the
@@ -860,6 +951,8 @@ docz-api ingests runbooks only for repositories that enabled them.
 - c. Two built-ins, `runbook` (procedures) and `playbook` (scenarios).
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 5. Which statuses?
 
 - a. **Draft, Active, Needs Review, Deprecated.** "Needs Review" is the
@@ -869,6 +962,8 @@ docz-api ingests runbooks only for repositories that enabled them.
 - c. Draft, Active, Deprecated, with staleness carried only by
   `Last verified`.
 - d. Other.
+
+> **Resolved 2026-09-30: (a).**
 
 ### 6. Where does "last verified" live, and is it enforced?
 
@@ -880,6 +975,13 @@ docz-api ingests runbooks only for repositories that enabled them.
 - c. The body field plus a `runbook.overview.stale` warning past 180 days,
   which makes validation depend on the date it runs.
 - d. Other.
+
+> **Resolved 2026-09-30: (d).** No frontmatter key: a `last_verified`
+> key would only mean something for one type, and frontmatter stays the
+> same for all of them. docz has no `last_updated` field to reuse either.
+> A runbook opens with a **Last Verified** table (Date, PR, Commit,
+> Verified by) holding one row, plus a one- or two-sentence `**Notes:**`
+> field. The shape of each cell is validated, never its age (§3, §4).
 
 ### 7. Which regions does the schema require?
 
@@ -894,6 +996,8 @@ docz-api ingests runbooks only for repositories that enabled them.
   selected with `schema:`.
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 8. How are a step's commands modelled?
 
 - a. **The fenced code block under a step is `Step.Commands`**, with its
@@ -903,6 +1007,8 @@ docz-api ingests runbooks only for repositories that enabled them.
 - b. Only inline code in the step text, with no block association.
 - c. Commands are not modelled, and a step is text only.
 - d. Other.
+
+> **Resolved 2026-09-30: (a).**
 
 ### 9. How does parity absorb the new config block?
 
@@ -914,6 +1020,8 @@ docz-api ingests runbooks only for repositories that enabled them.
   only.
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 10. Does this repository enable runbooks and write the first one?
 
 - a. **Yes. Enable the type here and write `RUNBOOK-0001: Cut a v2 beta
@@ -924,6 +1032,8 @@ docz-api ingests runbooks only for repositories that enabled them.
 - c. Enable it, but write a synthetic example runbook.
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 11. How does `docz --help` show a disabled built-in?
 
 - a. **Listed with ` (disabled by default)`**, so the type is discoverable
@@ -933,6 +1043,8 @@ docz-api ingests runbooks only for repositories that enabled them.
   not today.
 - d. Other.
 
+> **Resolved 2026-09-30: (a).**
+
 ### 12. Does docz-site get more than a colour and a blurb in this release?
 
 - a. **No. Colour, blurb, and the colour-test fix only.** A step-aware view
@@ -940,6 +1052,8 @@ docz-api ingests runbooks only for repositories that enabled them.
 - b. Add step anchors now, so `#step-2-3` links work.
 - c. Nothing in `ui/`, so a runbook renders as an uncurated type.
 - d. Other.
+
+> **Resolved 2026-09-30: (a).**
 
 ### 13. Is there an ADR?
 
@@ -950,6 +1064,12 @@ docz-api ingests runbooks only for repositories that enabled them.
   catalogue addition as a decision alongside ADR-0003's removal.
 - c. Amend ADR-0003 with a note.
 - d. Other.
+
+> **Resolved 2026-09-30: (d).** No ADR for runbook alone. The better
+> record is **one ADR per built-in type**, stating what each type is for
+> and why it is built in. That is a follow-up (see Migration / Rollout
+> Plan), and this design stays the record for runbook until it lands.
+
 ### 14. How is docz-api version skew handled?
 
 - a. **A deploy-order note.** docz-api goes to beta.6 before a repo
@@ -961,6 +1081,8 @@ docz-api ingests runbooks only for repositories that enabled them.
 - c. Teach older docz-api nothing, but have `docz validate` warn when a
   `types.runbook` block omits `dir` or `id_prefix`.
 - d. Other.
+
+> **Resolved 2026-09-30: (a).**
 
 <!--docz:open-questions:end-->
 
