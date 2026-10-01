@@ -272,7 +272,7 @@ runbook's regions are checked for shape before any typed reader exists.
   | `escalation` | yes | `checkTable` |
   Done. `steps` is added here without a check, and `checkSteps` arrives in the next task.
 
-- [ ] `checkSteps`: a region whose list items are all unordered is
+- [x] `checkSteps`: a region whose list items are all unordered is
   `steps.not-ordered` (error). One with no list items at all returns
   nothing, because an empty region is incomplete, not malformed. That
   follows `checkTable`'s rule for a region with no table

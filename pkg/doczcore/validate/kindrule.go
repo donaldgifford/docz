@@ -122,7 +122,7 @@ var catalogue = map[string]KindRule{
 	"when":          {Singleton: true, Check: checkItems},
 	"prerequisites": {Singleton: true, Check: checkItems},
 	"procedure":     {Singleton: false},
-	"steps":         {Singleton: true},
+	"steps":         {Singleton: true, Check: checkSteps},
 	"verification":  {Singleton: true, Check: checkItems},
 	"rollback":      {Singleton: true},
 	"scenario":      {Singleton: false},
@@ -302,6 +302,36 @@ func checkOrderedList(region []byte, at docparse.Region) []Finding {
 	}
 
 	return nil
+}
+
+// checkSteps reports a runbook steps region whose list has no numbered item
+// at all. A runbook is followed in order, again and again, and a bullet list
+// does not say what that order is (DESIGN-0019 OQ 3). It is an error, unlike
+// an investigation's approach, because steps are addressed by number: a
+// list with no numbered item gives the runbook package no step to report.
+//
+// Bullets beside numbered steps are notes and pass, and a region with no
+// list at all is incomplete rather than malformed, as checkTable treats a
+// region with no table.
+func checkSteps(region []byte, at docparse.Region) []Finding {
+	items := docparse.ListItems(region)
+	if len(items) == 0 {
+		return nil
+	}
+
+	for _, item := range items {
+		if item.Ordered {
+			return nil
+		}
+	}
+
+	return []Finding{{
+		Code:     "steps.not-ordered",
+		Severity: Error,
+		Line:     at.Start + items[0].Line,
+		Kind:     "steps",
+		Detail:   "steps are a bullet list; number them so they can be followed and addressed",
+	}}
 }
 
 func checkRisksTable(region []byte, at docparse.Region) []Finding {
