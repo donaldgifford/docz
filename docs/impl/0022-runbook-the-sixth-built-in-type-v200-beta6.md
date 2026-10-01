@@ -661,7 +661,8 @@ six, and says how to enable the one that is off.
   disabled. Name the Phase 1 lesson: the registry entry, three embedded
   files, and a parity normaliser land together
   Done: CONTRIBUTING's template paths were stale (internal/template) and now name pkg/doczcore/doctemplate and the schema skeleton.
-- [ ] `docs/index.md`: link the Runbooks README
+- [x] `docs/index.md`: link the Runbooks README
+  Done.
 - [ ] `just validate` and `just ci` pass, and `git-cliff` regenerates the
   changelog
 
