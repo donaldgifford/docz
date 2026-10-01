@@ -412,7 +412,7 @@ type package plus `walk.go`, following `pkg/impl`.
   This runs from the test only, because `pkg/runbook` may not import
   `doctemplate` (R2)
   Done.
-- [ ] `walk.go`, the step grammar from DESIGN-0019 §4 rules 1–6:
+- [x] `walk.go`, the step grammar from DESIGN-0019 §4 rules 1–6:
   - ordered items become steps;
   - children are the indented ordered items;
   - continuation lines fold into `Text`;
@@ -428,6 +428,7 @@ type package plus `walk.go`, following `pkg/impl`.
 
   Build it on `docparse.ListItems` plus the fence-aware line walk
   `impl/walk.go` uses.
+  Done: a single pass with a stack of open steps; an Expected line folds its own continuations.
 - [ ] `parse.go`: `Parse(doc []byte) (Doc, error)`. It fails only for no
   frontmatter and for CR line endings. It resolves regions with
   `kinds.ResolveRegions` and sets `Inferred`. It switches on region kind,
