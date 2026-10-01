@@ -663,8 +663,9 @@ six, and says how to enable the one that is off.
   Done: CONTRIBUTING's template paths were stale (internal/template) and now name pkg/doczcore/doctemplate and the schema skeleton.
 - [x] `docs/index.md`: link the Runbooks README
   Done.
-- [ ] `just validate` and `just ci` pass, and `git-cliff` regenerates the
+- [x] `just validate` and `just ci` pass, and `git-cliff` regenerates the
   changelog
+  Done.
 
 <!--docz:tasks:end-->
 
