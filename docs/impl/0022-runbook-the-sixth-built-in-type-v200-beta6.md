@@ -1,7 +1,7 @@
 ---
 id: IMPL-0022
 title: "Runbook: the sixth built-in type (v2.0.0-beta.6)"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-09-30
 ---
@@ -314,8 +314,9 @@ its own assumptions. That is how the other five type packages were built.
   `enabled: true`, using the short block. Then run `docz update`, which
   creates `docs/runbook/README.md` and adds Runbooks to the wiki nav
 - [ ] `docz create runbook "Cut a v2 beta release"` → RUNBOOK-0001. Write
-  it from IMPL-0021 Phase 6 and CLAUDE.md's release notes. It has two
-  procedures, Prepare and Tag and verify, and two scenarios:
+  it from IMPL-0021 Phase 6 and CLAUDE.md's release notes. It has three
+  procedures, Prepare, Tag and verify, and Install and smoke-test, and two
+  scenarios:
   - **Prepare** covers the chart bump, bare `appVersion`, and
     `just release-check` on `main`.
   - **Tag and verify** covers:
@@ -323,8 +324,9 @@ its own assumptions. That is how the other five type packages were built.
     - watching `prerelease.yml`;
     - checking the pre-release and archives;
     - image tags with no `latest`;
-    - `helm show chart` and `cosign tree` per chart;
-    - the OCI install on kind with `helm test`.
+    - `helm show chart` and `cosign tree` per chart.
+  - **Install and smoke-test** is the OCI install on kind with `helm test`.
+    It is optional for a beta (Open Question 7).
   - **The first `charts/<name>` push fails `403 write_package`**. The fix
     is the Actions access grant plus a job re-run.
   - **A `v`-prefixed `appVersion` 404s on pull.**
@@ -635,8 +637,11 @@ six, and says how to enable the one that is off.
 <!--docz:phase:start-->
 ### Phase 8: v2.0.0-beta.6
 
-This phase cuts the release by following RUNBOOK-0001, which is its own
-end-to-end verification, and closes out.
+This phase cuts the release by following RUNBOOK-0001's first two
+procedures and closes out. It checks that the artifacts are published and
+signed, and it does not run an install. The whole beta is tested by
+swapping a running 1.x environment to it after this release, before
+v2.0.0 is cut (Open Question 7).
 
 <!--docz:tasks:start-->
 #### Tasks
@@ -659,24 +664,22 @@ end-to-end verification, and closes out.
   - `docz` 0.2.0 signed and attested with a bare `appVersion`;
   - the deprecated charts skipped;
   - ECR skipped.
-- [ ] Follow RUNBOOK-0001's install steps: `charts/docz` 0.2.0 from OCI on
-  kind. Then:
-  - a repo fixture with runbook enabled is onboarded through `-onboard`,
-    or the fixture ingest from Phase 6 is re-run against the release;
-  - `/api/v1/repos/{o}/{n}/types` through the site lists runbook;
-  - `helm test` passes.
-
-  The fixture choice is Open Question 7.
 - [ ] Replace RUNBOOK-0001's Last Verified row with this run, including
-  its date, PR, merge commit, and verifier, and a note on anything the
-  steps got wrong. Fix those steps in the same change. This is the table's
+  its date, PR, merge commit, and verifier. The note says that Install and
+  smoke-test was not run, and records anything the steps got wrong. Fix those steps in the same change. This is the table's
   first real use
 - [ ] File the follow-ups as issues:
   - a step-aware docz-site view: step anchors, copy-command buttons,
     procedure navigation, and a Last Verified badge;
   - runbook metadata as structured API fields: owner, service, and last
     verification;
-  - one ADR per built-in type, starting with runbook.
+  - one ADR per built-in type, starting with runbook;
+  - **v2.0.0 acceptance: swap a running 1.x environment to the latest
+    beta and test the whole product.** That includes a repository with
+    runbook enabled appearing in docz-api and docz-site. It runs
+    RUNBOOK-0001's Install and smoke-test against a real cluster, and it
+    gates the v2.0.0 cut. Check first whether #135 or #140 already tracks
+    it, and link rather than duplicate.
 - [ ] `docz status set impl IMPL-0022 Completed` and
   `docz status set design DESIGN-0019 Implemented`, then `docz update`.
   This goes through a branch and PR, since `main` is protected
@@ -688,8 +691,6 @@ end-to-end verification, and closes out.
 
 - `v2.0.0-beta.6` is published: binaries, both images, and `charts/docz`
   0.2.0, signed and attested
-- A repository that enables runbook sees it in docz, docz-api, and
-  docz-site from the published artifacts
 - RUNBOOK-0001 carries a Last Verified row for the beta.6 run
 - IMPL-0022 is Completed and DESIGN-0019 Implemented, with the follow-ups
   filed
@@ -743,8 +744,9 @@ end-to-end verification, and closes out.
 - [ ] docz-api: the ingest unit test, the resolver case, and the
   real-Postgres e2e test
 - [ ] docz-site: the colour, blurb, and nav tests, and CI's ui jobs
-- [ ] The published beta.6 chart installs on kind, and an enabled runbook
-  reaches the site (Phase 8)
+- [ ] The published beta.6 artifacts verify: binaries, images, and
+  `charts/docz` 0.2.0, signed and attested (Phase 8). The installed,
+  whole-product test is the v2.0.0 environment swap, a follow-up
 
 <!--docz:testing:end-->
 
@@ -753,7 +755,7 @@ end-to-end verification, and closes out.
 
 - DESIGN-0019's resolved open questions. This plan follows them and
   re-opens none
-- A kind cluster and Docker for Phase 6's e2e and Phase 8's install
+- Docker for Phase 6's e2e test (testcontainers)
 - `v2.0.0-beta.5`'s release path, unchanged: `prerelease.yml`, the
   idempotent chart publish, and the GHCR grants that are already in place
 
@@ -764,6 +766,7 @@ end-to-end verification, and closes out.
 
 > Each question is numbered. Option `a` is my recommendation, the later
 > letters are alternatives, and the last is "other" for your own answer.
+> All eight were resolved on 2026-10-01.
 
 ### 1. What goes in the first corpus?
 
@@ -781,6 +784,8 @@ end-to-end verification, and closes out.
 - c. Synthetic fixtures only, with no runbooks written in this repo yet.
 - d. Other.
 
+> **Resolved 2026-10-01: (a).**
+
 ### 2. Is `Verification.Date` a string or a `time.Time`?
 
 - a. **A string**, as the `Created` frontmatter field is in every `Doc`.
@@ -790,6 +795,8 @@ end-to-end verification, and closes out.
   consumer gets a typed value and a bad date silently becomes zero.
 - c. Both: `Date string` plus a `Time() (time.Time, bool)` method.
 - d. Other.
+
+> **Resolved 2026-10-01: (a).**
 
 ### 3. What if `Scenario:` does not generalise to a prefix rule?
 
@@ -805,6 +812,8 @@ end-to-end verification, and closes out.
   it in the template-derivation test.
 - d. Other.
 
+> **Resolved 2026-10-01: (a).**
+
 ### 4. How are rollback steps addressed?
 
 - a. **`<token>.R<n>`**, so procedure 2's first rollback step is `2.R1`.
@@ -814,6 +823,8 @@ end-to-end verification, and closes out.
   shifts every time a forward step is added.
 - c. No IDs. Rollback steps are text only.
 - d. Other.
+
+> **Resolved 2026-10-01: (a).**
 
 ### 5. How far does the docz-api e2e test go?
 
@@ -825,12 +836,16 @@ end-to-end verification, and closes out.
 - c. Unit tests only (ingest + resolver), with no e2e.
 - d. Other.
 
+> **Resolved 2026-10-01: (a).**
+
 ### 6. What version does `charts/docz` take?
 
 - a. **0.2.0.** A new `appVersion` with new user-facing behaviour is a
   minor bump on a 0.x chart, and the NOTES text changes.
 - b. 0.1.1, since the chart's templates barely change.
 - c. Other.
+
+> **Resolved 2026-10-01: (a).**
 
 ### 7. How does the Phase 8 install prove a runbook reaches the site?
 
@@ -843,6 +858,15 @@ end-to-end verification, and closes out.
 - c. Seed Postgres directly with a runbook row.
 - d. Other.
 
+> **Resolved 2026-10-01: (d).** No install test at the release. Phase 8
+> checks only that the artifacts are published, signed, and attested.
+> Phase 6's e2e test already proves an enabled runbook reaches the API from
+> the same commit. The whole beta, including runbook in docz-site, is
+> tested after the release by swapping a running 1.x environment to it.
+> That is part of v2.0.0 acceptance and is filed as a follow-up.
+> RUNBOOK-0001 keeps the install as its own procedure, which is skipped
+> for a beta.
+
 ### 8. Does Phase 3 enable runbook before the typed reader exists?
 
 - a. **Yes.** It is enabled and written in Phase 3, validated by the
@@ -854,6 +878,9 @@ end-to-end verification, and closes out.
 - c. Move the runbooks to after Phase 5 and build the reader against
   synthetic fixtures only.
 - d. Other.
+
+> **Resolved 2026-10-01: (a).**
+
 <!--docz:open-questions:end-->
 
 <!--docz:references:start-->
