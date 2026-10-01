@@ -513,8 +513,9 @@ outside.
   types.%s.enabled: true in .docz.yaml`. The exit code stays 1. It names
   the canonical type, so `docz create rb` says `types.runbook`
   Done.
-- [ ] `cmd/init.go`: the Long help says "the enabled built-in types"
+- [x] `cmd/init.go`: the Long help says "the enabled built-in types"
   instead of "all five"
+  Done: it also names the key that turns runbook on.
 - [ ] New `cmd/runbook_test.go`, since existing `cmd/*_test.go` files are
   not edited to fit:
   - `docz create runbook` on a default config exits 1 with the flag named;
