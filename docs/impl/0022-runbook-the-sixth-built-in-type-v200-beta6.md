@@ -187,7 +187,7 @@ beyond the generic tier yet.
   (`doctemplate/schema_test.go`, `validate/schema_test.go`) proves template
   ≡ skeleton
   Done. The skeleton lists `steps` twice, once under procedure and once under scenario, because a schema is a set of (kind, parent) pairs. `validate`'s `checkParents` assumed one parent per kind, so it now accepts any parent the schema lists for that kind, and names all of them in the message. Two `families_test.go` cases pin this.
-- [ ] `pkg/doczcore/doctemplate/golden_test.go`: add runbook to the `Data`
+- [x] `pkg/doczcore/doctemplate/golden_test.go`: add runbook to the `Data`
   map, then regenerate `testdata/golden/runbook.md` with `-update`
 - [ ] `docz_yaml.tmpl`: the preamble says six built-in types, and adds the
   two lines from DESIGN-0019 §2 on enabling runbook. It also warns that a
