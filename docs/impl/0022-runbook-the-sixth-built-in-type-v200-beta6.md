@@ -598,12 +598,13 @@ a first-class type, and gives the site a curated colour and blurb for it.
   document to a mocked repo, and add a component or route test pinning the
   "Runbooks" nav entry and its blurb
   Done: a small dedicated runbook fixture (a copy of RUNBOOK-0001 matched the palette's queries); five suites' fixture counts moved by one document.
-- [ ] Version skew (DESIGN-0019 OQ 14):
+- [x] Version skew (DESIGN-0019 OQ 14):
   - `charts/docz/templates/NOTES.txt` adds one line: enable runbook in a
     repo only after this release is deployed;
   - `charts/docz/README.md.gotmpl` gets a sentence to the same effect,
     regenerated with `just chart docs`;
   - the chart's NOTES test, if one pins the text, is updated.
+  Done: no chart test pins the NOTES text beyond the no-Tailscale check, which still passes.
 - [ ] `just api test`, `just ui ci`, `just chart unittest`, and `just ci`
   pass, and CI's `ui` and `ui-e2e` jobs pass on the pushed phase
 

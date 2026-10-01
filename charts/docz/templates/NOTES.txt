@@ -46,3 +46,8 @@ api.config.authRedirectBase must be the SITE's public URL
 ({{ .Values.api.config.authRedirectBase }}). The provider redirects the browser
 to <authRedirectBase>/auth/callback, and the site proxies that to the API.
 {{- end }}
+
+Runbooks: enable the runbook document type in a repository
+(types.runbook.enabled: true in .docz.yaml) only once this release is
+deployed. An older docz-api has no runbook defaults to fill that short
+block from.
