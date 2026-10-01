@@ -221,7 +221,8 @@ beyond the generic tier yet.
   nav title" as a permitted delta, with the reasoning in DESIGN-0019 §7
   Verify: `just parity`
   Done. `just parity` replays all 213 goldens clean, and `TestRunbookNormalizer` has four cases.
-- [ ] `just ci` passes
+- [x] `just ci` passes
+  Done. `just ci` passes, including lint, test, the consumer module, parity, validate, build, the licence check, the api and ui chains, and `chart::lint`. `docz template show runbook` works in a default-config repo. In this repo it waits for Phase 3, because the `types:` block here does not list runbook yet.
 
 <!--docz:tasks:end-->
 
