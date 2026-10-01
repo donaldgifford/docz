@@ -15,6 +15,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(doctemplate)* Explain enabling runbook in the generated config
 - *(validate)* Add the runbook region kinds to the catalogue
 - *(validate)* Require runbook steps to be numbered
+- *(runbook)* Add the runbook Doc model and its lookups
+- *(runbook)* Add the runbook heading table, pinned to the template
+- *(runbook)* Add the step grammar walker
+- *(runbook)* Add runbook.Parse
+- *(runbook)* Add runbook.Validate and its codes
 
 ### Documentation
 
@@ -31,6 +36,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(runbook)* Add RUNBOOK-0001 Cut a v2 beta release
 - *(runbook)* Add RUNBOOK-0002 docz-api webhook deliveries fail
 - *(impl)* Close IMPL-0022 Phase 3
+- *(impl)* Close IMPL-0022 Phase 4
 
 ### Testing
 
@@ -39,6 +45,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(repo)* Count enabled types in Init's README check
 - *(parity)* Normalise the runbook built-in's config traces
 - *(validate)* Cover the runbook region kinds
+- *(runbook)* Add the runbook corpus and its goldens
+- *(runbook)* Cover the step grammar, Last Verified, and every code
+- *(core)* Forbid pkg/runbook to the core and migrate its corpus
 
 ### Miscellaneous Tasks
 
