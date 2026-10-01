@@ -5,6 +5,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(config)* Register runbook as a disabled built-in type
+- *(config)* Mark disabled built-ins in TypesHelp
+- *(doctemplate)* Add the runbook body template
+- *(doctemplate)* Add the runbook README index header
+- *(doctemplate)* Add the runbook schema skeleton
+- *(doctemplate)* Explain enabling runbook in the generated config
+- *(validate)* Add the runbook region kinds to the catalogue
+- *(validate)* Require runbook steps to be numbered
+
 ### Documentation
 
 - *(impl)* Complete IMPL-0021 with v2.0.0-beta.5
@@ -13,6 +24,25 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Resolve DESIGN-0019 open questions
 - *(impl)* Add IMPL-0022 runbook built-in type
 - *(impl)* Resolve IMPL-0022 open questions
+- *(impl)* Close IMPL-0022 Phase 1
+- *(impl)* Correct the template show criterion for a disabled type
+- *(validate)* Count fifty kinds in the catalogue comments
+- *(impl)* Close IMPL-0022 Phase 2
+- *(runbook)* Add RUNBOOK-0001 Cut a v2 beta release
+- *(runbook)* Add RUNBOOK-0002 docz-api webhook deliveries fail
+- *(impl)* Close IMPL-0022 Phase 3
+
+### Testing
+
+- *(doctemplate)* Add the runbook template golden
+- *(config)* Cover runbook as the disabled built-in
+- *(repo)* Count enabled types in Init's README check
+- *(parity)* Normalise the runbook built-in's config traces
+- *(validate)* Cover the runbook region kinds
+
+### Miscellaneous Tasks
+
+- *(config)* Enable runbooks in this repository
 
 ## [2.0.0-beta.5] - 2026-09-25
 
