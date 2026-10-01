@@ -109,8 +109,8 @@ Each is named, lives outside the build tag, and has unit tests that run in
   traces: the `plan:` block under `types:`, the `plan: Plans` entry under
   `wiki.nav_titles`, the `config declares non-built-in type "plan"` warning a
   repo keeping its block now gets on every command, the comment preamble of a
-  generated `.docz.yaml` (v2 rewrote it to say five built-in types and to
-  explain the fallback), and the `PLAN-XXXX` placeholder in the IMPL and INV
+  generated `.docz.yaml` (v2 rewrote it to list its own built-in types and
+  to explain the fallback), and the `PLAN-XXXX` placeholder in the IMPL and INV
   templates' *Implements* and *Triggered by* hints. Every rule is anchored on a
   spelling only the type uses, so `impl: Implementation Plans` and
   `## Testing Plan` are left alone.

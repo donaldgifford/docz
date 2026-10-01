@@ -160,11 +160,23 @@ embedded templates:
    },
    ```
 
-2. Add the document template at `internal/template/templates/<TemplateName>.md`
-3. Add the index header at `internal/template/templates/index_<TemplateName>.md`
+2. Add the document template at `pkg/doczcore/doctemplate/templates/<TemplateName>.md`,
+   with every section wrapped in a `<!--docz:<kind>:start-->` / `:end-->` pair
+3. Add the index header at `pkg/doczcore/doctemplate/templates/index_<TemplateName>.md`
+   and the marker skeleton at `pkg/doczcore/doctemplate/templates/schema/<TemplateName>.md`
 4. Optionally extend the help string in `config.TypesHelp` (the
    `TestDocTypeRegistry_DocTypeNamesMatchesTypesHelp` test will fail
    loudly if you forget)
+
+A built-in can ship **disabled**: set `Enabled: false` in its
+`DefaultConfig`. `runbook` is the worked example (DESIGN-0019). Its block is in
+every generated `.docz.yaml`, switched off, and a repository opts in. Whichever
+way the flag is set, a new built-in changes the generated `.docz.yaml` and
+`mkdocs.yml`. So the registry entry, the three embedded files, and a
+normaliser in `test/parity/parity.go` (see `RunbookNormalizer`) land
+together, or `just parity` fails against the v1.2.2 goldens. A built-in is
+also a structured type with a `pkg/<type>` reader; DEVELOPMENT.md's *Adding a
+Built-In Document Type* walks through the rest.
 
 `DefaultConfig().Types`, `Wiki.NavTitles`, `DocTypeNames()`, the
 `typeAliases` map, `Config.EnabledTypes()`, and the `valid types` error

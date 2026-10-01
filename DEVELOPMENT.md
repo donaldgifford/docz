@@ -66,7 +66,7 @@ docz/
 │       ├── create.go …      # Create/Update/SetStatus/Init/Template/Export
 │       ├── validate.go      # Validate(), ValidateReport, DocFindings
 │       └── regions.go       # InsertRegions() — the migration write
-├── pkg/{rfc,adr,design,impl,investigation}/   # one typed reader per built-in
+├── pkg/{rfc,adr,design,impl,investigation,runbook}/   # one typed reader per built-in
 │   ├── doc.go               # the Doc struct
 │   ├── headings.go          # kind constants + the HeadingSpec table
 │   ├── parse.go             # Parse(doc []byte) (Doc, error)
@@ -287,8 +287,8 @@ own first line as 1. A caller converts to a document line exactly one way:
 documentLine := region.Start + reader.Line
 ```
 
-The seven `Shift*` helpers do that for the type packages, so five packages
-don't carry five chances to be off by one.
+The seven `Shift*` helpers do that for the type packages, so six packages
+don't carry six chances to be off by one.
 
 `HeadingSpec` is the inference grammar: `InferRegions(doc, spec)` synthesizes
 regions from a document's headings, and `ResolveRegions(doc, spec)` prefers
@@ -311,16 +311,18 @@ rules of whatever kinds the document happens to carry.
 skeleton by `SchemaFromMarkers`. **There is no schema language**, so nothing a
 schema can require is something a document cannot show (DESIGN-0015 §3), and a
 schema only tightens by growing. The `catalogue` in `kindrule.go` holds what is
-known about each of the 41 region kinds — `Singleton` (scoped by *parent*) and
+known about each of the 50 region kinds — `Singleton` (scoped by *parent*) and
 an optional content `Check`. It is data, not an interface, which is why it grew
-from nine kinds to forty-one without a redesign.
+from nine kinds to forty-one without a redesign, and to fifty when runbook
+arrived. A kind may have more than one parent: runbook's `steps` sits in both a
+procedure and a scenario.
 
 Findings carry a `Code` from a small set of families (`file.*`,
 `frontmatter.*`, `marker.*`, `region.*`, `content.*`, `open-questions.*`,
-`references.*`, `tasks.*`, `toc.*`, `schema.name`). Consumers filter on the
+`references.*`, `steps.*`, `tasks.*`, `toc.*`, `schema.name`). Consumers filter on the
 code, never on the wording.
 
-### `pkg/{rfc,adr,design,impl,investigation}`
+### `pkg/{rfc,adr,design,impl,investigation,runbook}`
 
 One typed reader per built-in type: `Parse` for the model, `Validate` for the
 findings only the model can see. See *Adding a Built-In Document Type* below
@@ -450,6 +452,19 @@ built-in type is a single Go edit plus two embedded templates. Since IMPL-0018
 (DESIGN-0014, ADR-0002) a built-in is also a **structured type**, so it needs a
 marker skeleton and a `pkg/<type>` package as well. The example below walks
 through adding a `postmortem` type.
+
+> **The worked example is `runbook`** (DESIGN-0019, IMPL-0022), the one
+> built-in that **ships disabled**. Its registry entry sets `Enabled: false`
+> in `DefaultConfig`, so the generated `.docz.yaml` carries its block switched
+> off, `EnabledTypes()` and `repo.Init` skip it, and `TypesHelp()` adds
+> "(disabled by default)". The lesson from its first phase: **the registry
+> entry, its three embedded files (template, marker skeleton, index header),
+> and a parity normaliser land together.** The registry entry alone fails the
+> template tests. The templates alone are unreachable. Both without the
+> normaliser fail `just parity`, because every generated `.docz.yaml` and
+> `mkdocs.yml` gains a block the v1.2.2 goldens never had. `RunbookNormalizer`
+> in `test/parity/parity.go` is the pattern: it drops the new type's config
+> block and nav title on **both** sides, since goldens are never re-captured.
 
 > A type that only needs a template and an index — no typed reader, no
 > validation rules — is a **custom type**, not a built-in. See *Custom Types via
@@ -840,8 +855,8 @@ v1.0.0 and carried onto the v2 line in their v1 shapes. Additions only. The one
 breaking change v2 makes to them is `plan` leaving the catalogue `config`
 describes (ADR-0003).
 
-**Experimental** — the eleven the v2 line added: `kinds`, `validate`, `repo`,
-`doctemplate`, `index`, `wiki`, and the five type packages. Each one's doc
+**Experimental** — the twelve the v2 line added: `kinds`, `validate`, `repo`,
+`doctemplate`, `index`, `wiki`, and the six type packages. Each one's doc
 comment carries this paragraph, and the surface may change between
 `v2.0.0-beta.N` tags:
 

@@ -379,7 +379,7 @@ var recordedFile = regexp.MustCompile(`^(\S+) \(\d+ bytes, [0-9a-f]+\)$`)
 //   - the "non-built-in type" warning, which a repo keeping its `types.plan`
 //     block now gets on every command because plan is a custom type there;
 //   - the comment preamble of a generated `.docz.yaml`, which v2 rewrote to
-//     say five built-in types instead of six and to explain the fallback.
+//     list v2's built-in types rather than v1's and to explain the fallback.
 //
 // A fifth trace is the `PLAN-XXXX` placeholder in the IMPL and INV templates'
 // "Implements" and "Triggered by" hints, which name an id prefix docz can no

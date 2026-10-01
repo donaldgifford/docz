@@ -655,11 +655,12 @@ six, and says how to enable the one that is off.
   - the parity paragraph's new `runbook` normaliser;
   - the consumer module's seventeen packages.
   Done: also the experimental-package count (twelve) and the alias row docz-api now stores.
-- [ ] `DEVELOPMENT.md` (`:69`, `:290-325`, the "Adding a Built-In
+- [x] `DEVELOPMENT.md` (`:69`, `:290-325`, the "Adding a Built-In
   Document Type" walkthrough, `:844-850`) and `CONTRIBUTING.md`
   (`:133-145`): runbook is the worked example of a built-in that ships
   disabled. Name the Phase 1 lesson: the registry entry, three embedded
   files, and a parity normaliser land together
+  Done: CONTRIBUTING's template paths were stale (internal/template) and now name pkg/doczcore/doctemplate and the schema skeleton.
 - [ ] `docs/index.md`: link the Runbooks README
 - [ ] `just validate` and `just ci` pass, and `git-cliff` regenerates the
   changelog
