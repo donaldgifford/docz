@@ -469,11 +469,12 @@ type package plus `walk.go`, following `pkg/impl`.
   - `FuzzParse`, pinning no panic, and that every `Step.Line` is within
     the input.
   Done: parse_test, validate_test (one case per code, plus the rendered template has no errors), and FuzzParse, run for 45s clean.
-- [ ] `pkg/doczcore/layer_test.go`: add `/pkg/runbook` to `forbidden`.
+- [x] `pkg/doczcore/layer_test.go`: add `/pkg/runbook` to `forbidden`.
   `pkg/doczcore/repo/migration_test.go`: add runbook to
   `migrationTypePackages` and `migrationCorpusTypes`, so
   `InsertRegions` reproduces the marked corpus byte for byte and a
   second run is a no-op
+  Done: the migration repo turns runbook on, since InsertRegions over a disabled type is an error.
 - [ ] `just ci` passes
 
 <!--docz:tasks:end-->

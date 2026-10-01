@@ -78,6 +78,7 @@ func TestLayerRules_CoreNeverImportsATypePackage(t *testing.T) {
 		modulePath + "/pkg/adr",
 		modulePath + "/pkg/design",
 		modulePath + "/pkg/investigation",
+		modulePath + "/pkg/runbook",
 		modulePath + "/pkg/wiki",
 	}
 
