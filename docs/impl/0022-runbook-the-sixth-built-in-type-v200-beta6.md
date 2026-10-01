@@ -287,14 +287,16 @@ runbook's regions are checked for shape before any typed reader exists.
     scenario is clean, while two in one procedure is
     `region.duplicate-singleton`.
   Done, in `validate/runbook_kinds_test.go`.
-- [ ] `document_test.go`'s rendered-template check passes for runbook with
+- [x] `document_test.go`'s rendered-template check passes for runbook with
   zero findings, with and without inference, and `kinds/infer_test.go`'s
   `TestInferenceEqualsMarkers` passes. That requires `SpecFromTemplate` to
   generalise `Procedure 1:` and `Scenario:` to prefix rules. If
   `placeholderHeading` does not match `### Scenario: <!-- … -->`, which has
   no token, fix it in `kinds/infer.go` and pin the fix with a case
   (Open Question 3)
-- [ ] `just ci` passes
+  Done; it passes for runbook. The `infer.go` fix for Open Question 3 landed in Phase 1 with the template (see Phase 1, the template task), together with a pinning test.
+- [x] `just ci` passes
+  Done.
 
 <!--docz:tasks:end-->
 
