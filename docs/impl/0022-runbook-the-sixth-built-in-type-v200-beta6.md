@@ -605,8 +605,9 @@ a first-class type, and gives the site a curated colour and blurb for it.
     regenerated with `just chart docs`;
   - the chart's NOTES test, if one pins the text, is updated.
   Done: no chart test pins the NOTES text beyond the no-Tailscale check, which still passes.
-- [ ] `just api test`, `just ui ci`, `just chart unittest`, and `just ci`
+- [x] `just api test`, `just ui ci`, `just chart unittest`, and `just ci`
   pass, and CI's `ui` and `ui-e2e` jobs pass on the pushed phase
+  Done: CI's UI and UI e2e jobs pass on #143.
 
 <!--docz:tasks:end-->
 
