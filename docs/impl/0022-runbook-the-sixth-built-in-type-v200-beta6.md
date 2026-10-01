@@ -406,11 +406,12 @@ type package plus `walk.go`, following `pkg/impl`.
   receivers as `impl.Doc` has. `Verification.Date` is a string
   (Open Question 2).
   Done: plus a Notes field on Verification for the line under the table.
-- [ ] `headings.go`: the `kind*` constants and the `headings`
+- [x] `headings.go`: the `kind*` constants and the `headings`
   `kinds.HeadingSpec`, exported through `Headings()`. `headings_test.go`
   pins it equal to `kinds.SpecFromTemplate` over the embedded template.
   This runs from the test only, because `pkg/runbook` may not import
   `doctemplate` (R2)
+  Done.
 - [ ] `walk.go`, the step grammar from DESIGN-0019 §4 rules 1–6:
   - ordered items become steps;
   - children are the indented ordered items;
