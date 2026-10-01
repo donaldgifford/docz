@@ -155,6 +155,28 @@ var allDocTypes = []DocTypeDef{
 		TemplateName:    "investigation",
 		HelpDescription: "Research spikes — validate theories and errors",
 	},
+	{
+		// runbook is the one built-in that ships disabled (DESIGN-0019): the
+		// generated .docz.yaml carries its block with enabled: false, and a
+		// repository opts in by flipping the flag.
+		Name:    "runbook",
+		Aliases: []string{"rb"},
+		DefaultConfig: func() TypeConfig {
+			return TypeConfig{
+				Enabled:     false,
+				Dir:         "runbook",
+				IDPrefix:    "RUNBOOK",
+				IDWidth:     4,
+				Statuses:    []string{"Draft", "Active", "Needs Review", "Deprecated"},
+				StatusField: "status",
+				PluralLabel: "Runbooks",
+			}
+		},
+		NavTitle:        "Runbooks",
+		PluralLabel:     "Runbooks",
+		TemplateName:    "runbook",
+		HelpDescription: "Runbooks — onboarding, operations, and troubleshooting procedures",
+	},
 }
 
 // AllDocTypes returns a shallow copy of the registry so callers can

@@ -150,7 +150,7 @@ beyond the generic tier yet.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/config/doctype.go`: append the `runbook` entry exactly
+- [x] `pkg/doczcore/config/doctype.go`: append the `runbook` entry exactly
   as DESIGN-0019 §1 gives it:
   - `Enabled: false`;
   - `rb` as the alias;
