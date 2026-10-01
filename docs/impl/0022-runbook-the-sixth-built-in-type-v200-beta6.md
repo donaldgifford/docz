@@ -475,7 +475,8 @@ type package plus `walk.go`, following `pkg/impl`.
   `InsertRegions` reproduces the marked corpus byte for byte and a
   second run is a no-op
   Done: the migration repo turns runbook on, since InsertRegions over a disabled type is an error.
-- [ ] `just ci` passes
+- [x] `just ci` passes
+  Done.
 
 <!--docz:tasks:end-->
 
