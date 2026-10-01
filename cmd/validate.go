@@ -19,6 +19,7 @@ import (
 	"github.com/donaldgifford/docz/v2/pkg/impl"
 	"github.com/donaldgifford/docz/v2/pkg/investigation"
 	"github.com/donaldgifford/docz/v2/pkg/rfc"
+	"github.com/donaldgifford/docz/v2/pkg/runbook"
 )
 
 // codeIndexDrift is the code `docz validate` prints for a drifted README
@@ -349,6 +350,8 @@ func typeValidator(schema, typeName string) func([]byte) []validate.Finding {
 		return impl.Validate
 	case "investigation":
 		return investigation.Validate
+	case "runbook":
+		return runbook.Validate
 	default:
 		return nil
 	}

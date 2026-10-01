@@ -505,8 +505,9 @@ outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `cmd/validate.go`: `typeValidator` gains `case "runbook": return
+- [x] `cmd/validate.go`: `typeValidator` gains `case "runbook": return
   runbook.Validate`, the sixth arm
+  Done.
 - [ ] `cmd/create.go`: the disabled-type error becomes
   `document type %q is disabled in configuration; set
   types.%s.enabled: true in .docz.yaml`. The exit code stays 1. It names
