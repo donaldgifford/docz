@@ -583,9 +583,10 @@ a first-class type, and gives the site a curated colour and blurb for it.
   fixture helpers make it cheap, it also checks that search with
   `type=runbook` returns it (Open Question 5)
   Done against real Postgres; the search half (Open Question 5) is skipped, since this harness has no Meilisearch and adding one is not cheap.
-- [ ] `ui/src/lib/colors.ts`: add `runbook` to `CURATED_TYPES`.
+- [x] `ui/src/lib/colors.ts`: add `runbook` to `CURATED_TYPES`.
   `ui/src/theme/tokens.css`: add `--color-t-runbook` in both themes, in
   a hue the other curated types do not use
+  Done: `rb` maps too, as `inv` does. tokens.css defines one theme, so the token is added once.
 - [ ] `ui/src/lib/docTypes.ts`: add the `runbook` blurb and remove the
   stale `plan` one
 - [ ] `ui/src/lib/colors.test.ts`: switch the uncurated-type example from

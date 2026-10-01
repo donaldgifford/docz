@@ -94,6 +94,9 @@
   --color-t-policy: #bb9af7;
   --color-t-framework: #73daca;
   --color-t-working: #ff9e64;
+  /* DESIGN-0019: the sixth built-in, disabled by default. Pink-magenta,
+     a hue no other curated type uses. */
+  --color-t-runbook: #ff79c6;
   /* DESIGN-0002 OQ-6b: the plain-documentation type (DOCS-XXXX from
      INV-0003), pre-curated so its badge never falls into the hash
      palette. Colors are never runtime-configurable (DESIGN-0001). */

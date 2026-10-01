@@ -13,6 +13,8 @@ const CURATED_TYPES: Readonly<Record<string, string | undefined>> = {
   impl: "impl",
   investigation: "investigation",
   inv: "investigation",
+  runbook: "runbook",
+  rb: "runbook",
   mandate: "mandate",
   guide: "guide",
   principle: "principle",
