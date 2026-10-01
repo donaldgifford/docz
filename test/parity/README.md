@@ -77,7 +77,7 @@ with the reason in the pull request that does it.
 ## Permitted deltas
 
 DESIGN-0014 §4 allows three, IMPL-0018 Open Question 8 adds a fourth, and
-Phase 5 adds a fifth:
+Phase 5 adds a fifth, and DESIGN-0019 a sixth:
 
 | Delta | Why | How it is handled |
 | ----- | --- | ----------------- |
@@ -86,6 +86,7 @@ Phase 5 adds a fifth:
 | New findings printed by existing commands | warnings the v1 CLI could not produce | Argued for per case in the PR that adds them |
 | Every trace of the `plan` document type | ADR-0003 removes the built-in on the v2 line | The `plan` normaliser, applied to **both** sides at comparison time |
 | The duplicate index marker pair | repo.Init writes `index.Scaffold`, fixing issue #99 | The `index-pair` normaliser, applied to **both** sides at comparison time |
+| A new built-in type's config block and nav title | DESIGN-0019 adds `runbook`, disabled by default | The `runbook` normaliser, applied to **both** sides at comparison time |
 
 Anything else that differs is a regression until someone shows otherwise.
 
@@ -122,12 +123,23 @@ Each is named, lives outside the build tag, and has unit tests that run in
   collapsed, so a golden that records a spliced README still compares its table
   line by line.
 
-**plan and index-pair are the two normalisers that run on both sides**, in
-`runCase` rather than in the `norms` list, because the golden is the side
-carrying what they remove — the removed type, and the duplicate pair.
-Normalising only the captured output would leave every trace as a difference.
-They run in that order: plan is what replaces a recorded body's size and
-digest, so it has to see the body list before index-pair edits any body. Two
+- **runbook** removes the two traces the runbook built-in (DESIGN-0019) leaves
+  on a v1.2.2 case: its `runbook:` block under `types:` in a generated
+  `.docz.yaml` (the seven `init-empty` goldens), and its `runbook: Runbooks`
+  entry under `wiki.nav_titles`, which `docz config` prints for every fixture
+  because nav titles merge with the defaults even when `types:` replaces them
+  (the seven `config` goldens). The type ships disabled, so it creates no
+  directory or README and no other case changes. A custom label for the same
+  key is kept.
+
+**plan, runbook, and index-pair are the three normalisers that run on both
+sides**, in `runCase` rather than in the `norms` list. plan and index-pair
+remove what the golden carries (the removed type and the duplicate pair), so
+normalising only the captured output would leave every trace as a
+difference. runbook removes what v2 carries, a no-op on the golden, and runs
+on both sides so the rule is symmetric. They run in that order: plan is what
+replaces a recorded body's size and digest, so it has to see the body list
+before runbook or index-pair edits any body. Two
 consequences follow from that symmetry.
 
 A `stdout` or `stderr` block the pass empties is rewritten to `(empty)`, so a

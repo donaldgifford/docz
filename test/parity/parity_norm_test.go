@@ -614,3 +614,51 @@ func TestIndexPairNormalizer_Idempotent(t *testing.T) {
 		t.Errorf("a second pass changed the result\nonce:  %q\ntwice: %q", once, twice)
 	}
 }
+
+func TestRunbookNormalizer(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "drops the runbook block under types, with its trailing blank",
+			// runbook sorts last of the six, so its block sits between rfc's
+			// and the next top-level key; dropping it with the blank after it
+			// leaves exactly the one blank line v1.2.2 has there.
+			in: "types:\n  rfc:\n    dir: rfc\n\n" +
+				"  runbook:\n    enabled: false\n    dir: runbook\n\n" +
+				"wiki:\n",
+			want: "types:\n  rfc:\n    dir: rfc\n\nwiki:\n",
+		},
+		{
+			name: "drops the nav title entry",
+			in:   "  nav_titles:\n    rfc: RFCs\n    runbook: Runbooks\n",
+			want: "  nav_titles:\n    rfc: RFCs\n",
+		},
+		{
+			name: "keeps a custom label for the same key",
+			// A repository that names its runbooks something else wrote that
+			// itself; only the built-in default is the permitted delta.
+			in:   "    runbook: Playbooks\n",
+			want: "    runbook: Playbooks\n",
+		},
+		{
+			name: "is a no-op on a v1.2.2 golden",
+			in:   "types:\n  adr:\n    dir: adr\n  rfc:\n    dir: rfc\n",
+			want: "types:\n  adr:\n    dir: adr\n  rfc:\n    dir: rfc\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := Normalize(tt.in, RunbookNormalizer()); got != tt.want {
+				t.Errorf("RunbookNormalizer()\ngot:\n%q\nwant:\n%q", got, tt.want)
+			}
+		})
+	}
+}

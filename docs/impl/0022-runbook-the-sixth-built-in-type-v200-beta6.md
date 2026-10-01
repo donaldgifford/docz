@@ -212,7 +212,7 @@ beyond the generic tier yet.
   for runbook. Add a case that enables runbook and sees `docs/runbook/`
   and its README created. The default case sees neither
   Done. `TestInit_ExactlyOneMarkerPair` turns runbook on so every built-in's header is still checked, and counts `EnabledTypes()`. `TestInit_RunbookOnlyWhenEnabled` covers both cases.
-- [ ] Parity: add `RunbookNormalizer()` to `test/parity/parity.go`,
+- [x] Parity: add `RunbookNormalizer()` to `test/parity/parity.go`,
   following `PlanNormalizer()`. It drops the `runbook:` key and its
   indented body under `types:`, and the `runbook:` line under
   `nav_titles`. It runs on both sides (`parity_test.go`'s `both` list),
@@ -220,6 +220,7 @@ beyond the generic tier yet.
   `test/parity/README.md` lists "a new built-in type's config block and
   nav title" as a permitted delta, with the reasoning in DESIGN-0019 §7
   Verify: `just parity`
+  Done. `just parity` replays all 213 goldens clean, and `TestRunbookNormalizer` has four cases.
 - [ ] `just ci` passes
 
 <!--docz:tasks:end-->

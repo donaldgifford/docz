@@ -341,13 +341,15 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 	// These two run here rather than in norms above, and on both sides,
 	// because the golden is the side carrying what they remove: the removed
 	// `plan` type (ADR-0003, IMPL-0018 Open Question 8) and the duplicate
-	// index marker pair (issue #99). Normalising only the captured output
+	// index marker pair (issue #99). The runbook normaliser is the other way
+	// round -- v2 carries the trace -- and runs here for symmetry
+	// (DESIGN-0019 §7). Normalising only the captured output
 	// would leave every trace of either as a difference.
 	//
 	// Order matters. The plan normaliser is what replaces a recorded body's
 	// size and digest, so it has to see the body list before the index pair
 	// normaliser edits any body.
-	both := []Normalizer{PlanNormalizer(), IndexPairNormalizer()}
+	both := []Normalizer{PlanNormalizer(), RunbookNormalizer(), IndexPairNormalizer()}
 
 	want := Normalize(string(raw), both...)
 	got = Normalize(got, both...)
