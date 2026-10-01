@@ -717,7 +717,7 @@ v2.0.0 is cut (Open Question 7).
   its date, PR, merge commit, and verifier. The note says that Install and
   smoke-test was not run, and records anything the steps got wrong. Fix those steps in the same change. This is the table's
   first real use
-- [ ] File the follow-ups as issues:
+- [x] File the follow-ups as issues:
   - a step-aware docz-site view: step anchors, copy-command buttons,
     procedure navigation, and a Last Verified badge;
   - runbook metadata as structured API fields: owner, service, and last
@@ -729,6 +729,7 @@ v2.0.0 is cut (Open Question 7).
     RUNBOOK-0001's Install and smoke-test against a real cluster, and it
     gates the v2.0.0 cut. Check first whether #135 or #140 already tracks
     it, and link rather than duplicate.
+  Done: #144 step-aware site view, #145 structured API fields, #146 an ADR per type, #147 the v2.0.0 environment-swap acceptance. Neither #135 nor #140 tracked the swap, so #147 links both.
 - [ ] `docz status set impl IMPL-0022 Completed` and
   `docz status set design DESIGN-0019 Implemented`, then `docz update`.
   This goes through a branch and PR, since `main` is protected
