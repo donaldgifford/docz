@@ -75,6 +75,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Miscellaneous Tasks
 
 - *(config)* Enable runbooks in this repository
+- *(chart)* Bump charts/docz to 0.2.0 for 2.0.0-beta.6
 
 ## [2.0.0-beta.5] - 2026-09-25
 
