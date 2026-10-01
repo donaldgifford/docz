@@ -530,9 +530,10 @@ outside.
   located by `lineOf`. Update `test/consumer/doc.go`'s count to seventeen
   `pkg/` packages
   Done.
-- [ ] `docz validate` on this repository runs the typed tier over both
+- [x] `docz validate` on this repository runs the typed tier over both
   runbooks with no errors. Fix the runbooks rather than the rules if it
   finds something real
+  Done: zero findings for docs/runbook/, --strict included.
 - [ ] `just ci` passes
 
 <!--docz:tasks:end-->
