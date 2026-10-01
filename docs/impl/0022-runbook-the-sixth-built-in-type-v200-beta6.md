@@ -788,23 +788,32 @@ v2.0.0 is cut (Open Question 7).
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Registry-looping tests cover runbook with no per-test edits beyond
+- [x] Registry-looping tests cover runbook with no per-test edits beyond
   the counts and lists Phase 1 names
-- [ ] Template ≡ skeleton, the rendered template is clean, inference
+  — Done: Phase 1, `just test` green
+- [x] Template ≡ skeleton, the rendered template is clean, inference
   equals markers, and render equals create, all for runbook
-- [ ] `just parity` passes against the unchanged v1.2.2 goldens, with the
+  — Done: Phase 2 derivation and render tests
+- [x] `just parity` passes against the unchanged v1.2.2 goldens, with the
   `runbook` normaliser unit-tested
-- [ ] `pkg/runbook`: grammar tables, Last Verified tables, one test per
+  — Done: Phase 1 normaliser, replayed by `just ci`
+- [x] `pkg/runbook`: grammar tables, Last Verified tables, one test per
   code, corpus goldens, the inference invariant, and `FuzzParse`
-- [ ] `InsertRegions` migrates the runbook corpus byte for byte, and the
+  — Done: Phase 3, `FuzzParse` 45s clean
+- [x] `InsertRegions` migrates the runbook corpus byte for byte, and the
   second run is a no-op
-- [ ] `cmd/runbook_test.go`, and `just test-consumer` with `pkg/runbook`
-- [ ] docz-api: the ingest unit test, the resolver case, and the
+  — Done: Phase 4, `migration_test.go`
+- [x] `cmd/runbook_test.go`, and `just test-consumer` with `pkg/runbook`
+  — Done: Phase 5
+- [x] docz-api: the ingest unit test, the resolver case, and the
   real-Postgres e2e test
-- [ ] docz-site: the colour, blurb, and nav tests, and CI's ui jobs
+  — Done: Phase 6, the e2e green in CI on #143
+- [x] docz-site: the colour, blurb, and nav tests, and CI's ui jobs
+  — Done: Phase 7, ui and ui-e2e green on #143
 - [ ] The published beta.6 artifacts verify: binaries, images, and
   `charts/docz` 0.2.0, signed and attested (Phase 8). The installed,
   whole-product test is the v2.0.0 environment swap, a follow-up
+  — deferred - human required: blocked on the beta.6 tag
 
 <!--docz:testing:end-->
 
