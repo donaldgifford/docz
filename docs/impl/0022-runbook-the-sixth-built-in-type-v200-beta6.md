@@ -429,7 +429,7 @@ type package plus `walk.go`, following `pkg/impl`.
   Build it on `docparse.ListItems` plus the fence-aware line walk
   `impl/walk.go` uses.
   Done: a single pass with a stack of open steps; an Expected line folds its own continuations.
-- [ ] `parse.go`: `Parse(doc []byte) (Doc, error)`. It fails only for no
+- [x] `parse.go`: `Parse(doc []byte) (Doc, error)`. It fails only for no
   frontmatter and for CR line endings. It resolves regions with
   `kinds.ResolveRegions` and sets `Inferred`. It switches on region kind,
   never on the type name. It reads:
@@ -441,6 +441,7 @@ type package plus `walk.go`, following `pkg/impl`.
 
   Lines are shifted to document lines with the `kinds.Shift*` helpers. Two
   procedures claiming one token return `*DuplicateProcedureError`.
+  Done: wrapped bold fields (Notes, Likely cause) fold their continuation lines, which kinds.Field alone does not.
 - [ ] `validate.go`: `Validate(doc []byte) []validate.Finding`, with the
   `Code*` constants for every code in DESIGN-0019 §4's table, including
   the six `runbook.last-verified.*` codes. Exactly one `runbook.parse`
