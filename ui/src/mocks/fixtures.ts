@@ -22,6 +22,7 @@ import doczSiteGuideSpecimen from "./content/docz-site-guides-markdown-specimen.
 import doczSiteImpl0001 from "./content/docz-site-impl-0001.md?raw";
 import doczSiteImplIndex from "./content/docz-site-impl-index.md?raw";
 import doczSiteInput from "./content/docz-site-input.md?raw";
+import doczSiteRunbook0001 from "./content/docz-site-runbook-0001.md?raw";
 import doczApiDesign0001 from "./content/docz-api-design-0001.md?raw";
 import doczApiDesign0002 from "./content/docz-api-design-0002.md?raw";
 import doczApiIndex from "./content/docz-api-index.md?raw";
@@ -125,6 +126,16 @@ const DEMO_TYPES: Record<string, DocType[]> = {
       statuses: INVESTIGATION_STATUSES,
       aliases: ["inv"],
     },
+    // The built-in that ships disabled (DESIGN-0019), as a repo that
+    // enabled it serves it: the registry alias rides along on the row.
+    {
+      name: "runbook",
+      dir: "runbook",
+      id_prefix: "RUNBOOK",
+      plural_label: "Runbooks",
+      statuses: ["Draft", "Active", "Needs Review", "Deprecated"],
+      aliases: ["rb"],
+    },
   ],
   "donaldgifford/docz-api": [
     {
@@ -160,6 +171,13 @@ export const DEMO_DOCS: Document[] = [
     path: "docs/impl/0001-docz-site-mvp-phased-build-of-the-reader-directory-and-repo.md",
     raw: doczSiteImpl0001,
     updatedAt: "2026-07-11T09:00:00Z",
+  }),
+  makeDoc({
+    repo: "donaldgifford/docz-site",
+    type: "runbook",
+    path: "docs/runbook/0001-cut-a-v2-beta-release.md",
+    raw: doczSiteRunbook0001,
+    updatedAt: "2026-09-25T12:00:00Z",
   }),
   makeDoc({
     repo: "donaldgifford/docz-api",

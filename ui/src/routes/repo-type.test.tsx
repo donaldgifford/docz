@@ -60,6 +60,30 @@ describe("repo type page", () => {
     ).toBeInTheDocument();
   });
 
+  it("serves an enabled runbook under its own nav entry and blurb", async () => {
+    // "rb" is the runbook type's registry alias (DESIGN-0019).
+    mountAt("/donaldgifford/docz-site/rb");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Runbooks" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /procedures for onboarding, operating, and troubleshooting/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "RUNBOOK-0001" }),
+    ).toHaveAttribute("href", "/donaldgifford/docz-site/runbook/RUNBOOK-0001");
+
+    // The repo nav lists the type beside the others, with its document.
+    const nav = screen.getAllByRole("navigation", {
+      name: "donaldgifford/docz-site navigation",
+    })[0];
+    expect(nav).toHaveTextContent(/runbook\s*1/);
+    expect(nav).toHaveTextContent("RUNBOOK-0001 · Rotate the session secret");
+  });
+
   it("shows the docz-create empty state for a type with zero docs", async () => {
     // The fixtures serve RFC-0001 — force the zero-doc shape here.
     server.use(

@@ -26,8 +26,8 @@ describe("useRepoFacts", () => {
       expect(result.current.facts).toBeDefined();
     });
     expect(result.current.facts).toEqual({
-      total: 2,
-      typeCounts: { design: 1, impl: 1 },
+      total: 3,
+      typeCounts: { design: 1, impl: 1, runbook: 1 },
     });
   });
 });

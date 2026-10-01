@@ -594,9 +594,10 @@ a first-class type, and gives the site a curated colour and blurb for it.
   `runbook` to `postmortem`, and add a case pinning runbook's curated
   token
   Done.
-- [ ] `ui/src/mocks/fixtures.ts`: add a runbook type and one runbook
+- [x] `ui/src/mocks/fixtures.ts`: add a runbook type and one runbook
   document to a mocked repo, and add a component or route test pinning the
   "Runbooks" nav entry and its blurb
+  Done: a small dedicated runbook fixture (a copy of RUNBOOK-0001 matched the palette's queries); five suites' fixture counts moved by one document.
 - [ ] Version skew (DESIGN-0019 OQ 14):
   - `charts/docz/templates/NOTES.txt` adds one line: enable runbook in a
     repo only after this release is deployed;
