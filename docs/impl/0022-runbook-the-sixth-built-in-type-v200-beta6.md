@@ -516,13 +516,14 @@ outside.
 - [x] `cmd/init.go`: the Long help says "the enabled built-in types"
   instead of "all five"
   Done: it also names the key that turns runbook on.
-- [ ] New `cmd/runbook_test.go`, since existing `cmd/*_test.go` files are
+- [x] New `cmd/runbook_test.go`, since existing `cmd/*_test.go` files are
   not edited to fit:
   - `docz create runbook` on a default config exits 1 with the flag named;
   - enabled, it creates `docs/runbook/0001-*.md` and updates the README;
   - `docz create rb` and `RUNBOOK` resolve;
   - `docz validate` reports a `runbook.*` finding for a broken runbook;
   - `docz list runbook` lists it.
+  Done.
 - [ ] `test/consumer/consumer_v2_test.go`: add a `pkg/runbook` case. It
   runs `Parse` over an inline fixture carrying a procedure, a scenario, a
   command, and a filled Last Verified row, then `Validate`, with lines
