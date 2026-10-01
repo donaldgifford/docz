@@ -56,6 +56,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Close IMPL-0022 Phase 7
 - *(impl)* Record the IMPL-0022 follow-up issues
 - *(impl)* Defer IMPL-0022's release steps to the human-cut tag
+- *(impl)* Close IMPL-0022 Phase 6
+- *(impl)* Record #143 green in IMPL-0022
 
 ### Testing
 
