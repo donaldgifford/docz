@@ -634,7 +634,7 @@ six, and says how to enable the one that is off.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `README.md`:
+- [x] `README.md`:
   - the type count (`:10`) and the types table;
   - a RUNBOOK section, placed with the other five, covering the Last
     Verified table, procedures and scenarios, ordered steps, and how to
@@ -643,6 +643,7 @@ six, and says how to enable the one that is off.
   - the sample config and `nav_titles`;
   - the package table gains `pkg/runbook`;
   - the version-skew note.
+  Done: the RUNBOOK section carries the enable instructions and the version-skew note.
 - [ ] `CLAUDE.md`:
   - "Five built-in doc types" becomes six, with runbook disabled by
     default;
