@@ -20,6 +20,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(runbook)* Add the step grammar walker
 - *(runbook)* Add runbook.Parse
 - *(runbook)* Add runbook.Validate and its codes
+- *(validate)* Run the runbook typed tier in docz validate
+- *(create)* Name the config key that enables a disabled type
 
 ### Documentation
 
@@ -37,6 +39,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(runbook)* Add RUNBOOK-0002 docz-api webhook deliveries fail
 - *(impl)* Close IMPL-0022 Phase 3
 - *(impl)* Close IMPL-0022 Phase 4
+- *(init)* Describe the enabled built-in types in init's help
+- *(impl)* Record the typed tier over this repository's runbooks
+- *(impl)* Close IMPL-0022 Phase 5
 
 ### Testing
 
@@ -48,6 +53,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(runbook)* Add the runbook corpus and its goldens
 - *(runbook)* Cover the step grammar, Last Verified, and every code
 - *(core)* Forbid pkg/runbook to the core and migrate its corpus
+- *(cmd)* Cover runbook create, validate, and list
+- *(consumer)* Import and exercise pkg/runbook from outside
 
 ### Miscellaneous Tasks
 
