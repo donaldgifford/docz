@@ -644,7 +644,7 @@ six, and says how to enable the one that is off.
   - the package table gains `pkg/runbook`;
   - the version-skew note.
   Done: the RUNBOOK section carries the enable instructions and the version-skew note.
-- [ ] `CLAUDE.md`:
+- [x] `CLAUDE.md`:
   - "Five built-in doc types" becomes six, with runbook disabled by
     default;
   - the aliases line;
@@ -654,6 +654,7 @@ six, and says how to enable the one that is off.
   - the catalogue kind count;
   - the parity paragraph's new `runbook` normaliser;
   - the consumer module's seventeen packages.
+  Done: also the experimental-package count (twelve) and the alias row docz-api now stores.
 - [ ] `DEVELOPMENT.md` (`:69`, `:290-325`, the "Adding a Built-In
   Document Type" walkthrough, `:844-850`) and `CONTRIBUTING.md`
   (`:133-145`): runbook is the worked example of a built-in that ships
