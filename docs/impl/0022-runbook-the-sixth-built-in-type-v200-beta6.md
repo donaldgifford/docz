@@ -189,11 +189,12 @@ beyond the generic tier yet.
   Done. The skeleton lists `steps` twice, once under procedure and once under scenario, because a schema is a set of (kind, parent) pairs. `validate`'s `checkParents` assumed one parent per kind, so it now accepts any parent the schema lists for that kind, and names all of them in the message. Two `families_test.go` cases pin this.
 - [x] `pkg/doczcore/doctemplate/golden_test.go`: add runbook to the `Data`
   map, then regenerate `testdata/golden/runbook.md` with `-update`
-- [ ] `docz_yaml.tmpl`: the preamble says six built-in types, and adds the
+- [x] `docz_yaml.tmpl`: the preamble says six built-in types, and adds the
   two lines from DESIGN-0019 §2 on enabling runbook. It also warns that a
   `types:` block listing only runbook switches the other five off
   (DESIGN-0019 Migration). `parity_baseline_test.go`'s round trip still
   passes, and the rendered file carries `runbook:` with `enabled: false`
+  Done. `docz init` in an empty directory writes `runbook:` with `enabled: false`, and creates `adr design impl investigation rfc` under `docs/`, with no `runbook`.
 - [ ] Config tests:
   - `config_test.go`: `disabledByDefault` becomes `{"runbook": true}`,
     both `len(cfg.Types) != 5` checks become 6, and `TestDocTypeNames`
