@@ -456,7 +456,7 @@ type package plus `walk.go`, following `pkg/impl`.
   - `.golden.txt` fact files are generated with `-update`;
   - `testdata/README.md` records what the corpus taught.
   Done: the generated marked copies differ from docs/runbook only in blank lines before end markers; the README records why.
-- [ ] Tests:
+- [x] Tests:
   - table tests for the step grammar: nesting three deep, two commands
     under one step, `Expected`, bullets as prose, continuation lines,
     rollback IDs, and scenario IDs;
@@ -468,6 +468,7 @@ type package plus `walk.go`, following `pkg/impl`.
     and the shifted lines;
   - `FuzzParse`, pinning no panic, and that every `Step.Line` is within
     the input.
+  Done: parse_test, validate_test (one case per code, plus the rendered template has no errors), and FuzzParse, run for 45s clean.
 - [ ] `pkg/doczcore/layer_test.go`: add `/pkg/runbook` to `forbidden`.
   `pkg/doczcore/repo/migration_test.go`: add runbook to
   `migrationTypePackages` and `migrationCorpusTypes`, so
