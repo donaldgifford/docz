@@ -396,7 +396,7 @@ type package plus `walk.go`, following `pkg/impl`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/runbook/doc.go`: the package comment with the `EXPERIMENTAL`
+- [x] `pkg/runbook/doc.go`: the package comment with the `EXPERIMENTAL`
   paragraph, and these types from the DESIGN-0019 §4 class diagram:
   - `Doc`, `Procedure`, `Scenario`, `Step`;
   - `Command`, `Contact`, `Verification`;
@@ -405,6 +405,7 @@ type package plus `walk.go`, following `pkg/impl`.
   Add the lookups `Procedure(token)`, `Step(id)`, and `Steps()`, with value
   receivers as `impl.Doc` has. `Verification.Date` is a string
   (Open Question 2).
+  Done: plus a Notes field on Verification for the line under the table.
 - [ ] `headings.go`: the `kind*` constants and the `headings`
   `kinds.HeadingSpec`, exported through `Headings()`. `headings_test.go`
   pins it equal to `kinds.SpecFromTemplate` over the embedded template.
