@@ -22,6 +22,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(runbook)* Add runbook.Validate and its codes
 - *(validate)* Run the runbook typed tier in docz validate
 - *(create)* Name the config key that enables a disabled type
+- *(ui)* Give the runbook type a curated colour
+- *(ui)* Add the runbook blurb and drop the removed plan type's
+
+### Bug Fixes
+
+- *(ingest)* Store built-in registry aliases on the doc_types row
 
 ### Documentation
 
@@ -42,6 +48,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(init)* Describe the enabled built-in types in init's help
 - *(impl)* Record the typed tier over this repository's runbooks
 - *(impl)* Close IMPL-0022 Phase 5
+- *(chart)* Enable runbooks only after this release is deployed
+- *(readme)* Document runbook, the sixth built-in type
+- *(claude)* Describe the runbook type and pkg/runbook
+- Make runbook the worked example of a built-in that ships disabled
+- *(index)* Link the Runbooks README
+- *(impl)* Close IMPL-0022 Phase 7
 
 ### Testing
 
@@ -55,6 +67,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(core)* Forbid pkg/runbook to the core and migrate its corpus
 - *(cmd)* Cover runbook create, validate, and list
 - *(consumer)* Import and exercise pkg/runbook from outside
+- *(httpapi)* Resolve the runbook type by name, prefix, and alias
+- *(e2e)* Serve an enabled runbook type end to end
+- *(ui)* Pin runbook's curated colour and hash postmortem instead
+- *(ui)* Mock an enabled runbook and pin its nav entry and blurb
 
 ### Miscellaneous Tasks
 
