@@ -12,6 +12,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Make runbook a first-class type in docz-api and docz-site
 - *(design)* Resolve DESIGN-0019 open questions
 - *(impl)* Add IMPL-0022 runbook built-in type
+- *(impl)* Resolve IMPL-0022 open questions
 
 ## [2.0.0-beta.5] - 2026-09-25
 
