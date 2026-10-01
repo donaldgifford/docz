@@ -364,10 +364,12 @@ its own assumptions. That is how the other five type packages were built.
 
   It has one procedure, "Redeliver and confirm".
   Done: troubleshooting-first, five scenarios and one procedure; Last Verified row left blank until it is run.
-- [ ] `docz validate` on the repository is clean for both runbooks, with
+- [x] `docz validate` on the repository is clean for both runbooks, with
   no errors. The generic tier and the Phase 2 kinds run, and the typed
   tier arrives in Phase 5
-- [ ] `just ci` and `just validate` pass
+  Done: zero findings for docs/runbook/ even under --strict.
+- [x] `just ci` and `just validate` pass
+  Done.
 
 <!--docz:tasks:end-->
 
