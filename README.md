@@ -7,7 +7,7 @@ README index tables up to date.
 
 ## Features
 
-- **Five built-in document types:** RFC, ADR, DESIGN, IMPL, INV
+- **Six built-in document types:** RFC, ADR, DESIGN, IMPL, INV, and RUNBOOK (disabled by default)
 - **Custom document types:** define your own types in `.docz.yaml` — own prefix, statuses, aliases, and templates — invoked by name, alias, or `id_prefix`
 - **Auto-incremented IDs:** documents are numbered sequentially within their type directory
 - **YAML frontmatter:** every document carries structured metadata (id, title, status, author, created)
@@ -55,7 +55,8 @@ This creates:
 - `docs/investigation/README.md`
 
 Types with `enabled: false` in `.docz.yaml` are skipped — no directory or
-README is created for them.
+README is created for them. That includes `runbook`, which ships disabled;
+see [RUNBOOK](#runbook--runbook) to turn it on.
 
 ### Create your first document
 
@@ -224,9 +225,49 @@ docs/investigation/
 └── 0001-can-pgvector-handle-concurrent-writes.md
 ```
 
+### RUNBOOK — Runbook
+
+Step-by-step procedures for onboarding, operating, and troubleshooting a
+service or tool. A runbook is **disabled by default**: every generated
+`.docz.yaml` carries its block with `enabled: false`, and a repository opts in.
+
+A runbook opens with a **Last Verified** table, one row recording the last
+end-to-end run: Date, PR, Commit, and Verified by, plus a one- or two-sentence
+`**Notes:**` line. Re-verifying replaces the row, and git keeps the history.
+Then come **procedures** (`### Procedure 1: Rotate`), each with steps,
+verification, and rollback, and **scenarios** (`### Scenario: <the symptom>`),
+each with `**Alert:**`, `**Likely cause:**`, and steps.
+
+Steps are an **ordered list**. Number them, nest sub-steps under them, put a
+step's command in a fenced block beneath it, and say what it should show on an
+`**Expected:**` line. `docz validate` reports a steps section written as
+bullets. Steps have stable IDs: `2.3` is the third step of procedure 2,
+`2.3.1` its first sub-step, `S1.2` a scenario's second step, and `2.R1` a
+rollback step.
+
+```
+docs/runbook/
+└── 0001-rotate-the-webhook-secret.md
+```
+
+**Enabling it.** How you turn runbooks on depends on whether `.docz.yaml` has
+a `types:` block, because a `types:` block keeps exactly the types it lists:
+
+- **It has one** (every repo `docz init` scaffolded does): add
+  `runbook: {enabled: true}` to it. The short block gets every other field
+  from docz's defaults.
+- **It has none:** a `types:` block listing only `runbook` would switch off the
+  other five. List all six, or copy the full `types:` block a current
+  `docz init` generates and flip the flag.
+
+Then run `docz update` to create `docs/runbook/` and its README. If you run
+docz-api, deploy `v2.0.0-beta.6` or later **before** a repository enables
+runbooks: an older docz-api has no runbook defaults to fill the short block
+from.
+
 ## Custom Document Types
 
-Beyond the five built-ins, you can define your own document types entirely in
+Beyond the six built-ins, you can define your own document types entirely in
 `.docz.yaml` — no rebuild required. Add an entry under `types:` with a unique
 `id_prefix` and a directory:
 
@@ -356,6 +397,16 @@ types:
       - Concluded
       - Inconclusive
       - Abandoned
+  runbook:
+    enabled: false           # the one built-in that ships off
+    dir: runbook
+    id_prefix: RUNBOOK
+    id_width: 4
+    statuses:
+      - Draft
+      - Active
+      - Needs Review
+      - Deprecated
 
 wiki:
   auto_update: true
@@ -374,6 +425,7 @@ wiki:
     design: "Design"
     impl: "Implementation Plans"
     investigation: "Investigations"
+    runbook: "Runbooks"
   # docs_dir: docs           # override MkDocs docs_dir
   # repo_url: https://github.com/org/repo
   # site_url: https://example.com/docs
@@ -716,7 +768,7 @@ Only enabled types (those with `enabled: true` in config) are included.
 ## Using docz as a Go Library
 
 Since v1.0.0 the parsing and writing core has been a public, semver-governed
-Go API. On the v2 line that surface is the whole of docz: sixteen packages
+Go API. On the v2 line that surface is the whole of docz: seventeen packages
 under `pkg/`, and every `docz` command is one call into them plus printing:
 
 ```bash
@@ -746,6 +798,7 @@ whole-repository operations. A layer imports only the layers beneath it.
 | `pkg/design` | A design doc as a typed value: overview, goals, detailed design, decisions, and open questions with their options (`Parse`, `Validate`) |
 | `pkg/impl` | An implementation plan as a typed value: phases, tasks with byte-accurate lines to hand straight back to `docwrite`, and per-phase acceptance criteria (`Parse`, `Validate`) |
 | `pkg/investigation` | An investigation as a typed value: question, approach, findings, and a conclusion whose answer is also read as a `Verdict` (`Parse`, `Validate`) |
+| `pkg/runbook` | A runbook as a typed value: the Last Verified row, procedures and scenarios, and ordered steps with stable IDs, their commands, and what each should show (`Parse`, `Validate`) |
 | `pkg/doczcore/doctemplate` | Template and schema resolution (config path → repo override → embedded) and rendering (`Resolve`, `ResolveSchema`, `Render`) |
 | `pkg/doczcore/index` | The README index table and the splice between its markers, the latter as a pure function (`GenerateTable`, `Splice`, `UpdateReadme`) |
 | `pkg/doczcore/repo` | Whole-repository operations with typed reports and typed errors — what each `docz` command is one call to (`Open`, `Create`, `Update`, `Validate`, `Find`) |
@@ -754,7 +807,7 @@ whole-repository operations. A layer imports only the layers beneath it.
 > **Stability.** The five packages promoted at v1.0.0 — `config`, `document`,
 > `docparse`, `docwrite`, and `toc` — are **frozen** and take additions only
 > (ADR-0001 Decision 6); the one break the v2 line makes to them is `plan`
-> leaving `DocTypeNames()` (ADR-0003). The other eleven are
+> leaving `DocTypeNames()` (ADR-0003). The other twelve are
 > **experimental until v2.0.0 proper ships** (ADR-0002 Decision 7) and may
 > change between `v2.0.0-beta.N` tags. Pin a beta exactly if you depend on
 > them.

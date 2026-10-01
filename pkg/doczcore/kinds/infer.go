@@ -2,6 +2,7 @@ package kinds
 
 import (
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -24,7 +25,10 @@ type HeadingRule struct {
 	// Prefix matches a heading that names a token — the IMPL template's
 	// "### Phase 1: <!-- Foundation -->" generalises to the prefix
 	// "phase", which matches "Phase 1: Foundation", "Phase 2:", and
-	// "Phase A: Groundwork" alike. A rule sets Text or Prefix, never both.
+	// "Phase A: Groundwork" alike. A prefix ending in a colon names no
+	// token: the runbook template's "### Scenario: <!-- the symptom -->"
+	// generalises to "scenario:", which matches any heading starting
+	// "Scenario:". A rule sets Text or Prefix, never both.
 	Prefix string
 
 	// Parent is the kind a matching heading nests under, or "" at the top
@@ -51,8 +55,10 @@ var sharedDefaults = HeadingSpec{
 
 // placeholderHeading matches a template heading that names a token it
 // expects the author to replace: everything before the last space, then a
-// token, then a colon.
-var placeholderHeading = regexp.MustCompile(`^(.*\S)\s+\S+:\s*$`)
+// token, then a colon ("Phase 1:"). A single word and a colon
+// ("Scenario:") is a placeholder too: the text after the colon is the
+// author's, and the word is the prefix. Exactly one group matches.
+var placeholderHeading = regexp.MustCompile(`^(?:(.*\S)\s+\S+|(\S+)):\s*$`)
 
 // SpecFromTemplate derives a heading spec from a template that carries
 // region markers: the first heading inside each region becomes that kind's
@@ -73,10 +79,17 @@ func SpecFromTemplate(tmpl []byte) HeadingSpec {
 
 	var spec HeadingSpec
 
-	seen := make(map[string]bool, len(regions))
+	// A kind gets one rule per parent, not one rule: a runbook's steps sit
+	// under both a procedure and a scenario, and each needs a rule that
+	// matches inside its own parent's span.
+	type kindParent struct{ kind, parent string }
+
+	seen := make(map[kindParent]bool, len(regions))
+	seenKind := make(map[string]bool, len(regions))
 
 	for i, r := range regions {
-		if seen[r.Kind] {
+		key := kindParent{r.Kind, parentKind(regions, i)}
+		if seen[key] {
 			continue
 		}
 
@@ -85,14 +98,18 @@ func SpecFromTemplate(tmpl []byte) HeadingSpec {
 			continue
 		}
 
-		seen[r.Kind] = true
+		seen[key] = true
+		seenKind[r.Kind] = true
 
-		rule := HeadingRule{Kind: r.Kind, Level: h.Level, Parent: parentKind(regions, i)}
+		rule := HeadingRule{Kind: r.Kind, Level: h.Level, Parent: key.parent}
 
 		folded := headingText(h)
 		if m := placeholderHeading.FindStringSubmatch(folded); m != nil &&
 			strings.Contains(h.Text, "<!--") {
 			rule.Prefix = strings.TrimSpace(m[1])
+			if m[2] != "" {
+				rule.Prefix = m[2] + ":"
+			}
 		} else {
 			rule.Text = folded
 		}
@@ -101,7 +118,7 @@ func SpecFromTemplate(tmpl []byte) HeadingSpec {
 	}
 
 	for _, d := range sharedDefaults {
-		if !seen[d.Kind] {
+		if !seenKind[d.Kind] {
 			spec = append(spec, d)
 		}
 	}
@@ -265,6 +282,12 @@ func matchRule(spec HeadingSpec, h docparse.Heading) (HeadingRule, bool) {
 			continue
 		}
 
+		// A colon-terminated prefix names no token: what follows is the
+		// author's text, and the prefix alone is the match.
+		if strings.HasSuffix(r.Prefix, ":") {
+			return r, true
+		}
+
 		// The prefix is a whole word: "Phases: overview" is not a phase.
 		if rest != "" && !strings.ContainsAny(rest[:1], " \t") {
 			continue
@@ -351,19 +374,16 @@ func isThematicBreak(trimmed string) bool {
 // where the next level-2 heading starts, so the two agree with the marked
 // template.
 func nest(regions []docparse.Region, spec HeadingSpec) []docparse.Region {
-	parentOf := make(map[string]string, len(spec))
-	for _, r := range spec {
-		parentOf[r.Kind] = r.Parent
-	}
+	parents, topLevel := parentLinks(spec)
 
 	for i := range regions {
-		parent := parentOf[regions[i].Kind]
-		if parent == "" {
+		kindParents := parents[regions[i].Kind]
+		if len(kindParents) == 0 {
 			continue
 		}
 
 		for j := range regions {
-			if regions[j].Kind != parent {
+			if !slices.Contains(kindParents, regions[j].Kind) {
 				continue
 			}
 
@@ -386,7 +406,7 @@ func nest(regions []docparse.Region, spec HeadingSpec) []docparse.Region {
 	out := make([]docparse.Region, 0, len(regions))
 
 	for _, r := range regions {
-		if parentOf[r.Kind] != "" && r.Depth == 0 {
+		if len(parents[r.Kind]) > 0 && !topLevel[r.Kind] && r.Depth == 0 {
 			continue
 		}
 
@@ -396,30 +416,57 @@ func nest(regions []docparse.Region, spec HeadingSpec) []docparse.Region {
 	return out
 }
 
+// parentLinks returns each kind's parent kinds and whether any rule lets the
+// kind stand at the top level. A kind may have several parents — a
+// runbook's steps nest under a procedure and under a scenario — so the
+// links are a list per kind rather than a single field.
+func parentLinks(spec HeadingSpec) (parents map[string][]string, topLevel map[string]bool) {
+	parents = make(map[string][]string, len(spec))
+	topLevel = make(map[string]bool, len(spec))
+
+	for _, r := range spec {
+		if r.Parent == "" {
+			topLevel[r.Kind] = true
+
+			continue
+		}
+
+		if !slices.Contains(parents[r.Kind], r.Parent) {
+			parents[r.Kind] = append(parents[r.Kind], r.Parent)
+		}
+	}
+
+	return parents, topLevel
+}
+
 // descends reports whether kind is ancestor, or nests inside it through the
 // spec's parent links.
 //
 // Walked rather than looked up one level, so a spec that nests three deep
-// behaves. The loop is bounded by the spec's length because a cycle in the
-// parent links — which a hand-written table could have — must not hang a
-// parse.
+// behaves, and every parent of a kind is followed. Each kind is visited
+// once, because a cycle in the parent links — which a hand-written table
+// could have — must not hang a parse.
 func descends(spec HeadingSpec, kind, ancestor string) bool {
-	parentOf := make(map[string]string, len(spec))
-	for _, r := range spec {
-		parentOf[r.Kind] = r.Parent
-	}
+	parents, _ := parentLinks(spec)
 
-	for range len(spec) + 1 {
-		if kind == ancestor {
+	seen := make(map[string]bool, len(parents))
+	stack := []string{kind}
+
+	for len(stack) > 0 {
+		k := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if k == ancestor {
 			return true
 		}
 
-		parent, ok := parentOf[kind]
-		if !ok || parent == "" {
-			return false
+		if seen[k] {
+			continue
 		}
 
-		kind = parent
+		seen[k] = true
+
+		stack = append(stack, parents[k]...)
 	}
 
 	return false

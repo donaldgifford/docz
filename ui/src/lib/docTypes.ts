@@ -31,9 +31,10 @@ const TYPE_BLURBS: Record<string, string> = {
   design:
     "System and component designs — the shape of a solution before it is built.",
   impl: "Concrete steps to build a feature or system, with ordered tasks and milestones.",
-  plan: "Higher-level planning and sequencing across multiple pieces of work.",
   investigation:
     "Explorations of a problem space — a menu of options to review, not a decision.",
+  runbook:
+    "Step-by-step procedures for onboarding, operating, and troubleshooting a service.",
   principle: "The values everything else instantiates. Changed only by RFC.",
   mandate:
     "Non-negotiable properties every system must satisfy, each enforced by tooling.",

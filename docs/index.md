@@ -10,3 +10,4 @@ Welcome to the documentation for docz.
 - [Implementation Plans](impl/README.md)
 - [Plans](plan/README.md)
 - [Investigations](investigation/README.md)
+- [Runbooks](runbook/README.md)

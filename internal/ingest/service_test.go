@@ -451,3 +451,73 @@ func TestRunIndexErrorDoesNotFailIngest(t *testing.T) {
 		t.Fatalf("Run should tolerate an index failure, got: %v", err)
 	}
 }
+
+const runbookDoc = `---
+id: RUNBOOK-0001
+title: Rotate The Webhook Secret
+status: Active
+author: Test Author
+created: 2026-09-25
+---
+
+# RUNBOOK-0001: Rotate The Webhook Secret
+`
+
+// TestRunMapsRunbookType pins DESIGN-0019 §8: a repo that enables runbook with
+// the short block gets a first-class type, filled from docz's registry, and a
+// repo that leaves it off gets neither the type nor its documents. The
+// registry alias reaches the row, because the API resolves {type} from the
+// row alone.
+func TestRunMapsRunbookType(t *testing.T) {
+	blobs := []BlobEntry{
+		{Path: "docs/runbook/0001-rotate.md", GitSHA: "r1", Content: []byte(runbookDoc)},
+	}
+
+	run := func(t *testing.T, config string) *store.ReconcileInput {
+		t.Helper()
+
+		snap := &RepoSnapshot{HeadSHA: "h", DefaultBranch: "main", ConfigYAML: []byte(config), Blobs: blobs}
+		rec := &captureReconciler{}
+
+		if _, err := NewService(rec, fakeFetcher{snap: snap}, nil).Run(t.Context(), 42, "acme", "ops"); err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+
+		return rec.in
+	}
+
+	t.Run("enabled with the short block", func(t *testing.T) {
+		in := run(t, "docs_dir: docs\ntypes:\n  runbook:\n    enabled: true\n")
+
+		if len(in.DocTypes) != 1 {
+			t.Fatalf("DocTypes = %+v, want runbook alone", in.DocTypes)
+		}
+
+		dt := in.DocTypes[0]
+		if dt.Name != "runbook" || dt.PluralLabel != "Runbooks" || dt.IDPrefix != "RUNBOOK" || dt.Dir != "runbook" {
+			t.Errorf("DocType = %+v", dt)
+		}
+
+		if string(dt.Aliases) != `["rb"]` {
+			t.Errorf("Aliases = %s, want [\"rb\"]", dt.Aliases)
+		}
+
+		if len(in.Documents) != 1 || in.Documents[0].Type != "runbook" || in.Documents[0].DocID != "RUNBOOK-0001" {
+			t.Errorf("Documents = %+v, want RUNBOOK-0001 of type runbook", in.Documents)
+		}
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		in := run(t, "docs_dir: docs\ntypes:\n  adr:\n    enabled: true\n  runbook:\n    enabled: false\n")
+
+		for _, dt := range in.DocTypes {
+			if dt.Name == "runbook" {
+				t.Errorf("a disabled runbook produced a type: %+v", dt)
+			}
+		}
+
+		if len(in.Documents) != 0 {
+			t.Errorf("a disabled runbook produced documents: %+v", in.Documents)
+		}
+	})
+}

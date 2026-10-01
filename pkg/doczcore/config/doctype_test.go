@@ -139,6 +139,9 @@ func TestDocTypeRegistry_LookupDocTypeResolvesCanonicalAndAliases(t *testing.T) 
 		{"IMPL", "impl"},
 		{"inv", "investigation"},
 		{"INVESTIGATION", "investigation"},
+		{"runbook", "runbook"},
+		{"rb", "runbook"},
+		{"RB", "runbook"},
 	}
 	for _, c := range cases {
 		dt, ok := config.LookupDocType(c.input)

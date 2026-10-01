@@ -28,6 +28,7 @@ nav:
         - 'DESIGN-0016: Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes': design/0016-move-docz-api-in-internal-cmddocz-api-api-charts-and.md
         - 'DESIGN-0017: Move docz-site in: ui/, charts/docz-site, and orval on the one spec': design/0017-move-docz-site-in-ui-chartsdocz-site-and-orval-on-the-one-spec.md
         - 'DESIGN-0018: One Helm chart for docz: charts/docz replaces docz-api and docz-site': design/0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md
+        - 'DESIGN-0019: Runbook: a sixth built-in document type, disabled by default': design/0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -50,6 +51,7 @@ nav:
         - 'IMPL-0019: docz-api move-in: v2.0.0-beta.3': impl/0019-docz-api-move-in-v200-beta3.md
         - 'IMPL-0020: docz-site move-in: v2.0.0-beta.4': impl/0020-docz-site-move-in-v200-beta4.md
         - 'IMPL-0021: charts/docz: one Helm chart, v2.0.0-beta.5': impl/0021-chartsdocz-one-helm-chart-v200-beta5.md
+        - 'IMPL-0022: Runbook: the sixth built-in type (v2.0.0-beta.6)': impl/0022-runbook-the-sixth-built-in-type-v200-beta6.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
@@ -68,6 +70,10 @@ nav:
         - 'INV-0014: Consolidate the docz-api and docz-site Helm charts into one chart': investigation/0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md
     - RFCs:
         - Overview: rfc/README.md
+    - Runbooks:
+        - Overview: runbook/README.md
+        - 'RUNBOOK-0001: Cut a v2 beta release': runbook/0001-cut-a-v2-beta-release.md
+        - 'RUNBOOK-0002: docz-api webhook deliveries fail': runbook/0002-docz-api-webhook-deliveries-fail.md
 plugins:
     - techdocs-core
 site_description: Documentation for docz

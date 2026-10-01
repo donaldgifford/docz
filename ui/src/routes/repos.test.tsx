@@ -31,9 +31,10 @@ describe("repos grid", () => {
       name: /donaldgifford\/docz-site/,
     });
     await waitFor(() => {
-      expect(siteCard.textContent).toContain("docs: 2");
+      expect(siteCard.textContent).toContain("docs: 3");
     });
     expect(siteCard.textContent).toContain("1 design");
+    expect(siteCard.textContent).toContain("1 runbook");
     expect(siteCard.textContent).toContain("1 impl");
     expect(siteCard.textContent).toContain("main");
     expect(siteCard).toHaveAttribute("href", "/donaldgifford/docz-site");

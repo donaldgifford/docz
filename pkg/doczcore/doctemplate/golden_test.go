@@ -31,6 +31,7 @@ func TestGoldenTemplates(t *testing.T) {
 		"design":        withOverrides(&data, "design", "DESIGN", "Draft"),
 		"impl":          withOverrides(&data, "impl", "IMPL", "Draft"),
 		"investigation": withOverrides(&data, "investigation", "INV", "Open"),
+		"runbook":       withOverrides(&data, "runbook", "RUNBOOK", "Draft"),
 	}
 
 	for typeName, td := range types {

@@ -1,6 +1,6 @@
 # docz
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-beta.5](https://img.shields.io/badge/AppVersion-2.0.0--beta.5-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0-beta.6](https://img.shields.io/badge/AppVersion-2.0.0--beta.6-informational?style=flat-square)
 
 Helm chart for docz — docz-api, docz-site, and their backends in one release
 
@@ -34,6 +34,11 @@ default), it uses this release's API Service:
 `http://<release>-docz-api.<namespace>.svc.cluster.local:<api.service.port>`.
 Set it only to point the site at an API outside the release.
 
+Deploy this chart before any repository enables the runbook document type
+(`types.runbook.enabled: true` in its `.docz.yaml`). The runbook type is
+built in from `2.0.0-beta.6`, and an older docz-api has no runbook defaults
+to fill that short block from.
+
 ## Installation
 
 The chart is published as an OCI artifact to GHCR, signed with cosign keyless
@@ -42,7 +47,7 @@ attestations, Build L2).
 
 ```bash
 helm install docz oci://ghcr.io/donaldgifford/charts/docz \
-  --version 0.1.0 \
+  --version 0.2.0 \
   --namespace docz \
   --create-namespace \
   -f values.yaml
@@ -275,10 +280,10 @@ The backing services are renamed from `<release>-docz-api-<service>` to
 cosign verify \
   --certificate-identity-regexp '^https://github.com/donaldgifford/docz/.+' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz:0.1.0
+  ghcr.io/donaldgifford/charts/docz:0.2.0
 
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz:0.1.0 \
+  oci://ghcr.io/donaldgifford/charts/docz:0.2.0 \
   --owner donaldgifford
 ```
 

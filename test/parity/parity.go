@@ -379,7 +379,7 @@ var recordedFile = regexp.MustCompile(`^(\S+) \(\d+ bytes, [0-9a-f]+\)$`)
 //   - the "non-built-in type" warning, which a repo keeping its `types.plan`
 //     block now gets on every command because plan is a custom type there;
 //   - the comment preamble of a generated `.docz.yaml`, which v2 rewrote to
-//     say five built-in types instead of six and to explain the fallback.
+//     list v2's built-in types rather than v1's and to explain the fallback.
 //
 // A fifth trace is the `PLAN-XXXX` placeholder in the IMPL and INV templates'
 // "Implements" and "Triggered by" hints, which name an id prefix docz can no
@@ -458,6 +458,56 @@ func dropPlanTraces(lines []string) (kept []string, bodies map[string]bool) {
 	}
 
 	return kept, bodies
+}
+
+// runbookNavTitle matches the wiki nav-title entry the runbook built-in
+// contributes, anchored on its exact label.
+var runbookNavTitle = regexp.MustCompile(`^[ \t]+runbook: Runbooks[ \t]*$`)
+
+// runbookTypeKey matches the `runbook:` key of a type block, capturing its
+// indent so the block's more-deeply-indented body can be dropped with it.
+var runbookTypeKey = regexp.MustCompile(`^([ \t]+)runbook:[ \t]*$`)
+
+// RunbookNormalizer removes the two traces the runbook built-in leaves on a
+// v1.2.2 case: its `runbook:` block under `types:` in a generated
+// `.docz.yaml`, and its `runbook: Runbooks` entry under `wiki.nav_titles`,
+// which `docz config` prints for every repository because nav titles merge
+// with the defaults even when `types:` replaces them (DESIGN-0019 §7).
+//
+// The sixth permitted delta, and an additive one: v1.2.2 never had the type,
+// so the golden never carries either trace and this is a no-op on that
+// side. It runs on both sides anyway, beside PlanNormalizer, so the rule is
+// symmetric and a golden that somehow did carry the block would not be
+// compared one-sidedly. The type ships disabled, so it creates no directory
+// or README and touches no other case.
+//
+// Size and digest need no handling here. Every file whose body carries the
+// block is a recorded body, and PlanNormalizer, which runs first, has
+// already replaced those with placeholders.
+func RunbookNormalizer() Normalizer {
+	return Normalizer{
+		Name: "runbook",
+		Apply: func(s string) string {
+			lines := strings.Split(s, "\n")
+			kept := make([]string, 0, len(lines))
+
+			for i := 0; i < len(lines); i++ {
+				if runbookNavTitle.MatchString(lines[i]) {
+					continue
+				}
+
+				if m := runbookTypeKey.FindStringSubmatch(lines[i]); m != nil {
+					i = skipIndentedUnder(lines, i, len(m[1]))
+
+					continue
+				}
+
+				kept = append(kept, lines[i])
+			}
+
+			return strings.Join(kept, "\n")
+		},
+	}
 }
 
 // The index README's auto-generated marker lines, as the whole line. Compared

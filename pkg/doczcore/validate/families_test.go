@@ -194,6 +194,34 @@ func TestDocument_CodeFamilies(t *testing.T) {
 			wantSev:  validate.Error,
 		},
 		{
+			name: "region.wrong-parent: steps outside both of its parents",
+			body: goodFrontmatter +
+				"<!--docz:steps:start-->\n#### Steps\n\n1. a\n<!--docz:steps:end-->\n",
+			opts: validate.Options{Schema: validate.Schema{Regions: []validate.SchemaRegion{
+				{Kind: "steps", Parent: "procedure"},
+				{Kind: "steps", Parent: "scenario"},
+			}}},
+			wantCode: "region.wrong-parent",
+			wantSev:  validate.Error,
+		},
+		{
+			name: "region.wrong-parent: steps under either parent is in place",
+			body: goodFrontmatter +
+				"<!--docz:procedure:start-->\n### Procedure 1: x\n\n" +
+				"<!--docz:steps:start-->\n#### Steps\n\n1. a\n<!--docz:steps:end-->\n" +
+				"<!--docz:procedure:end-->\n" +
+				"<!--docz:scenario:start-->\n### Scenario: x\n\n" +
+				"<!--docz:steps:start-->\n#### Steps\n\n1. a\n<!--docz:steps:end-->\n" +
+				"<!--docz:scenario:end-->\n",
+			opts: validate.Options{Schema: validate.Schema{Regions: []validate.SchemaRegion{
+				{Kind: "procedure"},
+				{Kind: "scenario"},
+				{Kind: "steps", Parent: "procedure"},
+				{Kind: "steps", Parent: "scenario"},
+			}}},
+			notCodes: []string{"region.wrong-parent"},
+		},
+		{
 			name: "region.inferred: an unmarked document with a heading spec",
 			body: goodFrontmatter + "## Summary\n\ntext\n",
 			opts: validate.Options{

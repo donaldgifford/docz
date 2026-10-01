@@ -18,7 +18,7 @@ import (
 // The corpus proofs for the migration pass (IMPL-0018 Phase 3, task 11).
 //
 // InsertRegions is the one writer of region markers outside the templates, and
-// the documents it will run over already exist: the five type packages each
+// the documents it will run over already exist: the six type packages each
 // carry a snapshot corpus of real fleet documents paired with the marked copy a
 // person reviewed, and this repository's own docs/ tree is the largest single
 // body of unmarked documents docz has. Three things are proven here.
@@ -39,7 +39,7 @@ import (
 // round-trip is a finding about the pass, not a fixture to regenerate.
 
 // migrationTypePackages maps each type package's directory name to the docz
-// type its documents belong to. They happen to agree for four of the five;
+// type its documents belong to. They happen to agree for five of the six;
 // pkg/investigation is spelled out rather than derived so the pair is stated
 // once rather than guessed at each use.
 var migrationTypePackages = map[string]string{
@@ -48,6 +48,7 @@ var migrationTypePackages = map[string]string{
 	"design":        "design",
 	"impl":          "impl",
 	"investigation": "investigation",
+	"runbook":       "runbook",
 }
 
 // migrationRepoRoot is this repository's root as seen from this package's
@@ -105,12 +106,27 @@ func migrationReadFixture(t *testing.T, pkgName, filename string) []byte {
 // The filename is synthesized rather than taken from the fixture because
 // document.ScanDocuments only sees files matching the docz convention, and a
 // fixture is named after where it came from.
+// migrationRepo is a fixture repository with every built-in enabled. The
+// runbook type is disabled by default (DESIGN-0019), and a pass over a
+// disabled type is an error rather than an empty run.
+func migrationRepo(t *testing.T) *Repo {
+	t.Helper()
+
+	r := regionsFixtureRepo(t)
+
+	rb := r.Cfg.Types["runbook"]
+	rb.Enabled = true
+	r.Cfg.Types["runbook"] = rb
+
+	return r
+}
+
 func migrationMigrate(
 	t *testing.T, typeName string, body []byte,
 ) (InsertRegionsReport, []byte, *Repo, string) {
 	t.Helper()
 
-	r := regionsFixtureRepo(t)
+	r := migrationRepo(t)
 	path := regionsPutDoc(t, r, typeName, "0001-fixture.md", string(body))
 
 	report, err := r.InsertRegions(t.Context(), []string{typeName}, InsertRegionsOptions{})
@@ -177,7 +193,7 @@ func migrationFirstDifference(got, want string) string {
 }
 
 // TestMigrationFixtureEquality is proof 1: the pass reproduces every
-// hand-reviewed pair in the five type packages byte for byte.
+// hand-reviewed pair in the six type packages byte for byte.
 //
 // The .md sibling of each .orig.md is the spans inference found, written out as
 // markers and nothing else: no heading added, no prose moved, no blank line
@@ -220,7 +236,7 @@ func TestMigrationFixtureEquality(t *testing.T) {
 // documents. docs/rfc and docs/plan are omitted because this repository has
 // none, and a subtest that scanned an empty directory would pass without
 // proving anything.
-var migrationCorpusTypes = []string{"adr", "design", "impl", "investigation"}
+var migrationCorpusTypes = []string{"adr", "design", "impl", "investigation", "runbook"}
 
 // migrationMarkerLine matches a whole region-marker line including its
 // newline, so removing one leaves the document's own lines untouched.
@@ -243,7 +259,7 @@ var migrationMarkerLine = regexp.MustCompile(
 func migrationSnapshotCorpus(t *testing.T) *Repo {
 	t.Helper()
 
-	r := regionsFixtureRepo(t)
+	r := migrationRepo(t)
 
 	for _, typeName := range migrationCorpusTypes {
 		src := filepath.Join(migrationRepoRoot, "docs", typeName)

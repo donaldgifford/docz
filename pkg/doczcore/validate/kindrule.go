@@ -14,7 +14,8 @@ import (
 //
 // The catalogue is data, not an interface. Adding a kind is one map entry,
 // which is the whole reason it grew from nine kinds to forty-one without a
-// redesign when every built-in became a structured type.
+// redesign when every built-in became a structured type, and to fifty when
+// runbook joined them.
 type KindRule struct {
 	// Singleton is true when a document may hold only one region of this
 	// kind under a given parent. Scoping by parent is what lets an ADR have
@@ -39,7 +40,8 @@ const (
 	kindTasks         = "tasks"
 )
 
-// catalogue is the forty-one-kind catalogue of DESIGN-0015 §2.
+// catalogue is the kind catalogue of DESIGN-0015 §2, fifty kinds since
+// runbook's nine (DESIGN-0019 §5).
 //
 // A kind absent from it is well-formedness only: validate checks that its
 // markers pair and nothing more. That is deliberate — an unknown kind is
@@ -115,6 +117,18 @@ var catalogue = map[string]KindRule{
 	kindTasks:      {Singleton: true, Check: checkTasks},
 	"file-changes": {Singleton: true, Check: checkFileChangesTable},
 	"dependencies": {Singleton: true},
+
+	// runbook (DESIGN-0019 §5). A procedure and a scenario each hold one
+	// steps region, which Singleton's scoping by parent already allows.
+	"last-verified": {Singleton: true, Check: checkLastVerifiedTable},
+	"when":          {Singleton: true, Check: checkItems},
+	"prerequisites": {Singleton: true, Check: checkItems},
+	"procedure":     {Singleton: false},
+	"steps":         {Singleton: true, Check: checkSteps},
+	"verification":  {Singleton: true, Check: checkItems},
+	"rollback":      {Singleton: true},
+	"scenario":      {Singleton: false},
+	"escalation":    {Singleton: true, Check: checkEscalationTable},
 }
 
 // checkReferences reports a top-level bullet with no markdown link. The
@@ -292,6 +306,36 @@ func checkOrderedList(region []byte, at docparse.Region) []Finding {
 	return nil
 }
 
+// checkSteps reports a runbook steps region whose list has no numbered item
+// at all. A runbook is followed in order, again and again, and a bullet list
+// does not say what that order is (DESIGN-0019 OQ 3). It is an error, unlike
+// an investigation's approach, because steps are addressed by number: a
+// list with no numbered item gives the runbook package no step to report.
+//
+// Bullets beside numbered steps are notes and pass, and a region with no
+// list at all is incomplete rather than malformed, as checkTable treats a
+// region with no table.
+func checkSteps(region []byte, at docparse.Region) []Finding {
+	items := docparse.ListItems(region)
+	if len(items) == 0 {
+		return nil
+	}
+
+	for _, item := range items {
+		if item.Ordered {
+			return nil
+		}
+	}
+
+	return []Finding{{
+		Code:     "steps.not-ordered",
+		Severity: Error,
+		Line:     at.Start + items[0].Line,
+		Kind:     "steps",
+		Detail:   "steps are a bullet list; number them so they can be followed and addressed",
+	}}
+}
+
 func checkRisksTable(region []byte, at docparse.Region) []Finding {
 	return checkTable(region, at, "risks", "risk", "mitigation")
 }
@@ -302,6 +346,14 @@ func checkEnvironmentTable(region []byte, at docparse.Region) []Finding {
 
 func checkFileChangesTable(region []byte, at docparse.Region) []Finding {
 	return checkTable(region, at, "file-changes", "file", "action", "description")
+}
+
+func checkLastVerifiedTable(region []byte, at docparse.Region) []Finding {
+	return checkTable(region, at, "last-verified", "date", "pr", "commit", "verified by")
+}
+
+func checkEscalationTable(region []byte, at docparse.Region) []Finding {
+	return checkTable(region, at, "escalation", "who", "when", "how")
 }
 
 // checkTable reports a region the catalogue says holds a table that either

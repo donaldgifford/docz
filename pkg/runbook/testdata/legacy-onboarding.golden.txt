@@ -1,0 +1,24 @@
+id="RUNBOOK-0003" title="Onboard a repository to docz-api" status="Active" inferred=false
+overview="Adds a repository to docz-api without waiting for the GitHub App's installation event."
+service="docz-api" owner="Platform team"
+last-verified line=16 date="2025-11-12" pr="#41" commit="9f2c1ab" by=["@jane" "@sam"]
+  notes="Onboarded `acme/widgets` by hand while the App install was broken."
+when=1 prerequisites=2 references=1
+contact line=118 who="Platform on-call" when="The onboard flag fails twice" how="#platform in Slack"
+
+procedure index=1 token="1" line=49 title="Onboard by hand"
+  description="Written before the template, so its steps are headings." verification=1
+  step 1.R1 line=76 end=76
+    text="Delete the repository row; the next install event re-adds it."
+
+procedure index=2 token="2" line=81 title="Re-index search"
+  description="" verification=0
+
+scenario index=1 line=94 symptom="The onboard flag exits with \"repo not found\""
+  alert="none"
+  likely-cause="the App is not installed on the repository"
+  step S1.1 line=103 end=107
+    text="Diagnose: list the installation's repositories."
+    command line=105 lang="sh" body="gh api /installation/repositories --jq '.repositories[].full_name'"
+  step S1.2 line=109 end=109
+    text="Resolve: add the repository to the installation, then retry Procedure 1."

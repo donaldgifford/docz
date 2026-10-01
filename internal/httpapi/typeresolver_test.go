@@ -11,6 +11,8 @@ func TestResolveType(t *testing.T) {
 	types := []store.DocType{
 		{Name: "frameworks", IDPrefix: "FW", Aliases: json.RawMessage(`["framework"]`)},
 		{Name: "rfc", IDPrefix: "RFC", Aliases: json.RawMessage(`[]`)},
+		// The row ingest writes for an enabled runbook, registry alias included.
+		{Name: "runbook", IDPrefix: "RUNBOOK", Aliases: json.RawMessage(`["rb"]`)},
 	}
 	tests := []struct {
 		input    string
@@ -23,6 +25,10 @@ func TestResolveType(t *testing.T) {
 		{"fw", "frameworks", true, "id_prefix case-insensitive"},
 		{"framework", "frameworks", true, "alias"},
 		{"rfc", "rfc", true, "second type name"},
+		{"runbook", "runbook", true, "runbook name"},
+		{"RUNBOOK", "runbook", true, "runbook id_prefix"},
+		{"rb", "runbook", true, "runbook registry alias"},
+		{"RB", "runbook", true, "runbook alias case-insensitive"},
 		{"bogus", "", false, "unknown"},
 	}
 	for _, tt := range tests {

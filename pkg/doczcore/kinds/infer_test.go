@@ -360,3 +360,72 @@ func TestInferRegions_OverARealDocument(t *testing.T) {
 		}
 	}
 }
+
+// A runbook's steps sit under a procedure and under a scenario, and the
+// scenario heading names no token. Both shapes come from the template, so
+// they are pinned here against a hand-built template rather than through
+// the runbook one, which a later edit could reshape.
+func TestSpecFromTemplate_BareWordPlaceholdersAndTwoParents(t *testing.T) {
+	t.Parallel()
+
+	tmpl := []byte(strings.Join([]string{
+		"<!--docz:procedure:start-->",
+		"### Procedure 1: <!-- name -->",
+		"<!--docz:steps:start-->",
+		"#### Steps",
+		"<!--docz:steps:end-->",
+		"<!--docz:procedure:end-->",
+		"<!--docz:scenario:start-->",
+		"### Scenario: <!-- the symptom -->",
+		"<!--docz:steps:start-->",
+		"#### Steps",
+		"<!--docz:steps:end-->",
+		"<!--docz:scenario:end-->",
+		"",
+	}, "\n"))
+
+	spec := kinds.SpecFromTemplate(tmpl)
+
+	want := map[kinds.HeadingRule]bool{
+		{Kind: "procedure", Level: 3, Prefix: "procedure"}:            true,
+		{Kind: "steps", Level: 4, Text: "steps", Parent: "procedure"}: true,
+		{Kind: "scenario", Level: 3, Prefix: "scenario:"}:             true,
+		{Kind: "steps", Level: 4, Text: "steps", Parent: "scenario"}:  true,
+	}
+
+	for _, r := range spec {
+		delete(want, r)
+	}
+
+	for r := range want {
+		t.Errorf("SpecFromTemplate is missing %+v; got %+v", r, spec)
+	}
+
+	doc := []byte(strings.Join([]string{
+		"### Procedure A: Rotate the key",
+		"",
+		"#### Steps",
+		"",
+		"1. one",
+		"",
+		"### Scenario: Webhooks return 401",
+		"",
+		"#### Steps",
+		"",
+		"1. two",
+		"",
+		"### Scenarios: not one",
+		"",
+	}, "\n"))
+
+	regions := kinds.InferRegions(doc, spec)
+	if got, want := kindsOf(regions), "procedure steps scenario steps"; got != want {
+		t.Fatalf("InferRegions = %q, want %q", got, want)
+	}
+
+	for i, depth := range []int{0, 1, 0, 1} {
+		if regions[i].Depth != depth {
+			t.Errorf("region %d (%s): depth %d, want %d", i, regions[i].Kind, regions[i].Depth, depth)
+		}
+	}
+}

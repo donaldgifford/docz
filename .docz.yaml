@@ -70,6 +70,11 @@ types:
       - Abandoned
     status_field: "status"
 
+  # Ships disabled (DESIGN-0019); the short block takes every other field
+  # from the built-in defaults.
+  runbook:
+    enabled: true
+
 index:
   auto_update: true
   preserve_header: true

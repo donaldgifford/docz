@@ -187,7 +187,7 @@ type Config struct {
 // registry in doctype.go so adding a new doc type is a single-file edit.
 //
 // Every built-in type is present in Types, but not every one is enabled:
-// "plan" ships with Enabled false. Callers that want the effective set
+// "runbook" ships with Enabled false (DESIGN-0019). Callers that want the effective set
 // should use Config.EnabledTypes rather than ranging over Types.
 func DefaultConfig() Config {
 	return Config{
@@ -398,7 +398,7 @@ func (c *Config) resolveType(name string) (string, bool) {
 // commands (docz update / init / list / wiki) scaffold and iterate them.
 //
 // Note this is narrower than DocTypeNames: a built-in may ship disabled
-// ("plan" does), so the default result is a subset of the registry.
+// ("runbook" does), so the default result is a subset of the registry.
 func (c *Config) EnabledTypes() []string {
 	enabled := make([]string, 0, len(c.Types))
 	builtin := make(map[string]bool, len(DocTypeNames()))
@@ -436,7 +436,9 @@ func ResolveTypeAlias(name string) string {
 // TypesHelp returns a formatted help string listing all valid types
 // with aliases. The body is derived from the DocType registry —
 // adding a new entry to `allDocTypes` with a `HelpDescription` is
-// the only step required to surface it in `docz --help`.
+// the only step required to surface it in `docz --help`. A type that
+// ships disabled is still listed, suffixed "(disabled by default)", so the
+// reason `docz create <type>` refuses it is on the same screen.
 func TypesHelp() string {
 	const nameColWidth = 17
 
@@ -453,6 +455,9 @@ func TypesHelp() string {
 			b.WriteString(" (alias: ")
 			b.WriteString(strings.Join(dt.Aliases, ", "))
 			b.WriteByte(')')
+		}
+		if !dt.DefaultConfig().Enabled {
+			b.WriteString(" (disabled by default)")
 		}
 	}
 	return b.String()

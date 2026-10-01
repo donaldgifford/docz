@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/donaldgifford/docz/v2/internal/store"
@@ -18,12 +19,17 @@ const createdLayout = "2006-01-02"
 // mapDocType converts one doczcfg.TypeConfig into a store.DocTypeInput. name is
 // the canonical type name (the key in cfg.Types). Statuses and Aliases become
 // JSONB payloads.
+//
+// Aliases are the type's own plus, for a built-in, the registry's: `rb`,
+// `inv`, and `implementation` live in docz's registry rather than in
+// .docz.yaml, and the API resolves a {type} token from the stored row alone,
+// so a registry alias left off the row is one the API cannot serve.
 func mapDocType(name string, tc *doczcfg.TypeConfig) (store.DocTypeInput, error) {
 	statuses, err := json.Marshal(tc.Statuses)
 	if err != nil {
 		return store.DocTypeInput{}, fmt.Errorf("marshal statuses for type %q: %w", name, err)
 	}
-	aliases, err := json.Marshal(tc.Aliases)
+	aliases, err := json.Marshal(typeAliases(name, tc.Aliases))
 	if err != nil {
 		return store.DocTypeInput{}, fmt.Errorf("marshal aliases for type %q: %w", name, err)
 	}
@@ -35,6 +41,25 @@ func mapDocType(name string, tc *doczcfg.TypeConfig) (store.DocTypeInput, error)
 		Statuses:    statuses,
 		Aliases:     aliases,
 	}, nil
+}
+
+// typeAliases is a built-in's registry aliases followed by the type's own,
+// without repeats. A type with neither keeps the nil it had, so a custom
+// type's row is unchanged.
+func typeAliases(name string, own []string) []string {
+	def, ok := doczcfg.LookupDocType(name)
+	if !ok || def.Name != name || len(def.Aliases) == 0 {
+		return own
+	}
+
+	out := slices.Clone(def.Aliases)
+	for _, a := range own {
+		if !slices.Contains(out, a) {
+			out = append(out, a)
+		}
+	}
+
+	return out
 }
 
 // mapDocument converts a fetched blob and its parsed frontmatter into a

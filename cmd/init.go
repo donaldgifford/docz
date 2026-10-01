@@ -19,8 +19,9 @@ directory structure with default README index files for each document type.
 
 If .docz.yaml already exists and declares a top-level "types:" block,
 only the types listed there are scaffolded. Omit the "types:" block (or
-delete .docz.yaml entirely and let init regenerate it) to scaffold all
-five built-in types.
+delete .docz.yaml entirely and let init regenerate it) to scaffold the
+enabled built-in types. The runbook type is built in but disabled by
+default; set types.runbook.enabled: true to scaffold it.
 
 Existing README files are not overwritten unless --force is passed.
 An existing .docz.yaml is never overwritten, with or without --force.`,

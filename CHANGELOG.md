@@ -5,9 +5,82 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(config)* Register runbook as a disabled built-in type
+- *(config)* Mark disabled built-ins in TypesHelp
+- *(doctemplate)* Add the runbook body template
+- *(doctemplate)* Add the runbook README index header
+- *(doctemplate)* Add the runbook schema skeleton
+- *(doctemplate)* Explain enabling runbook in the generated config
+- *(validate)* Add the runbook region kinds to the catalogue
+- *(validate)* Require runbook steps to be numbered
+- *(runbook)* Add the runbook Doc model and its lookups
+- *(runbook)* Add the runbook heading table, pinned to the template
+- *(runbook)* Add the step grammar walker
+- *(runbook)* Add runbook.Parse
+- *(runbook)* Add runbook.Validate and its codes
+- *(validate)* Run the runbook typed tier in docz validate
+- *(create)* Name the config key that enables a disabled type
+- *(ui)* Give the runbook type a curated colour
+- *(ui)* Add the runbook blurb and drop the removed plan type's
+
+### Bug Fixes
+
+- *(ingest)* Store built-in registry aliases on the doc_types row
+
 ### Documentation
 
 - *(impl)* Complete IMPL-0021 with v2.0.0-beta.5
+- *(design)* Add DESIGN-0019 runbook built-in type
+- *(design)* Make runbook a first-class type in docz-api and docz-site
+- *(design)* Resolve DESIGN-0019 open questions
+- *(impl)* Add IMPL-0022 runbook built-in type
+- *(impl)* Resolve IMPL-0022 open questions
+- *(impl)* Close IMPL-0022 Phase 1
+- *(impl)* Correct the template show criterion for a disabled type
+- *(validate)* Count fifty kinds in the catalogue comments
+- *(impl)* Close IMPL-0022 Phase 2
+- *(runbook)* Add RUNBOOK-0001 Cut a v2 beta release
+- *(runbook)* Add RUNBOOK-0002 docz-api webhook deliveries fail
+- *(impl)* Close IMPL-0022 Phase 3
+- *(impl)* Close IMPL-0022 Phase 4
+- *(init)* Describe the enabled built-in types in init's help
+- *(impl)* Record the typed tier over this repository's runbooks
+- *(impl)* Close IMPL-0022 Phase 5
+- *(chart)* Enable runbooks only after this release is deployed
+- *(readme)* Document runbook, the sixth built-in type
+- *(claude)* Describe the runbook type and pkg/runbook
+- Make runbook the worked example of a built-in that ships disabled
+- *(index)* Link the Runbooks README
+- *(impl)* Close IMPL-0022 Phase 7
+- *(impl)* Record the IMPL-0022 follow-up issues
+- *(impl)* Defer IMPL-0022's release steps to the human-cut tag
+- *(impl)* Close IMPL-0022 Phase 6
+- *(impl)* Record #143 green in IMPL-0022
+- *(impl)* Check off IMPL-0022's testing plan
+
+### Testing
+
+- *(doctemplate)* Add the runbook template golden
+- *(config)* Cover runbook as the disabled built-in
+- *(repo)* Count enabled types in Init's README check
+- *(parity)* Normalise the runbook built-in's config traces
+- *(validate)* Cover the runbook region kinds
+- *(runbook)* Add the runbook corpus and its goldens
+- *(runbook)* Cover the step grammar, Last Verified, and every code
+- *(core)* Forbid pkg/runbook to the core and migrate its corpus
+- *(cmd)* Cover runbook create, validate, and list
+- *(consumer)* Import and exercise pkg/runbook from outside
+- *(httpapi)* Resolve the runbook type by name, prefix, and alias
+- *(e2e)* Serve an enabled runbook type end to end
+- *(ui)* Pin runbook's curated colour and hash postmortem instead
+- *(ui)* Mock an enabled runbook and pin its nav entry and blurb
+
+### Miscellaneous Tasks
+
+- *(config)* Enable runbooks in this repository
+- *(chart)* Bump charts/docz to 0.2.0 for 2.0.0-beta.6
 
 ## [2.0.0-beta.5] - 2026-09-25
 

@@ -7,8 +7,14 @@
 # About the `types:` block:
 #   If you include `types:`, docz uses ONLY the types you list. Omitting a
 #   type opts it out of scaffolding and updates. Remove the `types:` block
-#   entirely to keep all five built-in types (rfc, adr, design, impl,
-#   investigation).
+#   entirely to keep all six built-in types (rfc, adr, design, impl,
+#   investigation, runbook) at their defaults.
+#
+#   `runbook` ships disabled. Set `types.runbook.enabled: true` to scaffold
+#   docs/runbook/ and use `docz create runbook` (alias: rb). A short
+#   `runbook: {enabled: true}` gets every other field from the defaults,
+#   but a `types:` block that lists ONLY runbook switches the other five
+#   off: add it to this block rather than replacing the block with it.
 #
 #   `plan` was a built-in through v1 and is not one in v2 (ADR-0003). A repo
 #   that still wants it keeps its `types.plan` block, which now declares a

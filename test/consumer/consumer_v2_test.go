@@ -25,6 +25,7 @@ import (
 	"github.com/donaldgifford/docz/v2/pkg/impl"
 	"github.com/donaldgifford/docz/v2/pkg/investigation"
 	"github.com/donaldgifford/docz/v2/pkg/rfc"
+	"github.com/donaldgifford/docz/v2/pkg/runbook"
 )
 
 // The fixtures. Each is the smallest document that still carries the shape
@@ -415,6 +416,99 @@ func TestExternalConsumerParsesImpl(t *testing.T) {
 	}
 	if n := len(phase.Criteria); n != 1 {
 		t.Errorf("len(Criteria) = %d, want 1", n)
+	}
+}
+
+const runbookFixture = `---
+id: RUNBOOK-0001
+title: Rotate The Webhook Secret
+status: Active
+author: Consumer Test
+created: 2026-09-20
+---
+
+# RUNBOOK-0001: Rotate The Webhook Secret
+
+<!--docz:last-verified:start-->
+## Last Verified
+
+| Date | PR | Commit | Verified by |
+| ---- | -- | ------ | ----------- |
+| 2026-09-25 | #137 | e41203e | @ops, @dev |
+
+**Notes:** Rotated on staging.
+<!--docz:last-verified:end-->
+
+<!--docz:procedure:start-->
+### Procedure 1: Rotate
+
+<!--docz:steps:start-->
+#### Steps
+
+1. Set the new secret.
+
+   ` + "```sh" + `
+   kubectl rollout restart deploy/docz-api
+   ` + "```" + `
+
+   **Expected:** the rollout completes
+   1. Check the pods.
+<!--docz:steps:end-->
+<!--docz:procedure:end-->
+
+<!--docz:scenario:start-->
+### Scenario: Deliveries are answered 401
+
+**Alert:** none
+
+<!--docz:steps:start-->
+#### Steps
+
+1. Diagnose: read the logs.
+<!--docz:steps:end-->
+<!--docz:scenario:end-->
+`
+
+// TestExternalConsumerParsesRunbook covers the step grammar from outside:
+// IDs built from the procedure's token and the scenario's index, a command
+// under a step, and the Last Verified row read into a typed value.
+func TestExternalConsumerParsesRunbook(t *testing.T) {
+	doc, err := runbook.Parse([]byte(runbookFixture))
+	if err != nil {
+		t.Fatalf("runbook.Parse() = %v, want nil", err)
+	}
+
+	v := doc.LastVerified
+	if v == nil || v.Date != "2026-09-25" || v.Commit != "e41203e" || len(v.VerifiedBy) != 2 {
+		t.Fatalf("LastVerified = %+v, want the filled row with two verifiers", v)
+	}
+
+	step, ok := doc.Step("1.1")
+	if !ok {
+		t.Fatal("Step(1.1) not found")
+	}
+	if want := lineOf(t, runbookFixture, "1. Set the new secret."); step.Line != want {
+		t.Errorf("Step(1.1).Line = %d, want %d", step.Line, want)
+	}
+	if len(step.Commands) != 1 || step.Commands[0].Lang != "sh" {
+		t.Errorf("Step(1.1).Commands = %+v, want one sh command", step.Commands)
+	}
+	if want := lineOf(t, runbookFixture, "```sh"); step.Commands[0].Line != want {
+		t.Errorf("Commands[0].Line = %d, want %d", step.Commands[0].Line, want)
+	}
+	if step.Expected != "the rollout completes" {
+		t.Errorf("Step(1.1).Expected = %q", step.Expected)
+	}
+	if _, ok := doc.Step("1.1.1"); !ok {
+		t.Error("Step(1.1.1), the nested sub-step, not found")
+	}
+	if _, ok := doc.Step("S1.1"); !ok {
+		t.Error("Step(S1.1), the scenario's step, not found")
+	}
+
+	// A filled, well-formed runbook has nothing for the typed tier to say.
+	if findings := runbook.Validate([]byte(runbookFixture)); len(findings) != 0 {
+		t.Errorf("runbook.Validate() = %v, want none", findings)
 	}
 }
 

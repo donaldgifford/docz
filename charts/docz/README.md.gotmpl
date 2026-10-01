@@ -36,6 +36,11 @@ default), it uses this release's API Service:
 `http://<release>-docz-api.<namespace>.svc.cluster.local:<api.service.port>`.
 Set it only to point the site at an API outside the release.
 
+Deploy this chart before any repository enables the runbook document type
+(`types.runbook.enabled: true` in its `.docz.yaml`). The runbook type is
+built in from `2.0.0-beta.6`, and an older docz-api has no runbook defaults
+to fill that short block from.
+
 ## Installation
 
 The chart is published as an OCI artifact to GHCR, signed with cosign keyless
