@@ -3,6 +3,7 @@ package repo_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -24,7 +25,8 @@ const initTestCustomType = "frameworks"
 // withCustom adds the custom type, which is the tier-3 rendered header. The
 // issue #99 reach over a header that ends with its own pair comes from
 // investigation, an enabled built-in -- index_plan.md was the other one and
-// went away with the type (ADR-0003).
+// went away with the type (ADR-0003). runbook ships disabled (DESIGN-0019),
+// so a test that wants every built-in's header enables it itself.
 func initTestRepo(t *testing.T, withCustom bool) (*repo.Repo, string) {
 	t.Helper()
 
@@ -158,6 +160,11 @@ func TestInit_ExactlyOneMarkerPair(t *testing.T) {
 
 	r, root := initTestRepo(t, true)
 
+	// runbook ships disabled; switch it on so its header is checked too.
+	runbook := r.Cfg.Types["runbook"]
+	runbook.Enabled = true
+	r.Cfg.Types["runbook"] = runbook
+
 	report, err := r.Init(t.Context(), repo.InitOptions{})
 	if err != nil {
 		t.Fatalf("Init: %v", err)
@@ -187,9 +194,10 @@ func TestInit_ExactlyOneMarkerPair(t *testing.T) {
 		}
 	}
 
-	// Every built-in plus the custom type, so a header that grows its own pair
-	// later cannot slip past by being on a type the loop never reached.
-	if want := len(config.DocTypeNames()) + 1; seen != want {
+	// Every enabled type -- here every built-in plus the custom type -- so a
+	// header that grows its own pair later cannot slip past by being on a type
+	// the loop never reached.
+	if want := len(r.Cfg.EnabledTypes()); seen != want {
 		t.Errorf("checked %d READMEs, want %d", seen, want)
 	}
 }
@@ -386,5 +394,35 @@ func TestInit_FiresHooks(t *testing.T) {
 
 	if !slices.Equal(skipped, initTestWantFiles(r.Cfg)) {
 		t.Errorf("FileSkipped saw\n%v\nwant\n%v", skipped, initTestWantFiles(r.Cfg))
+	}
+}
+
+// runbook ships disabled, so a default Init leaves no trace of it; enabled,
+// it is scaffolded like any other type.
+func TestInit_RunbookOnlyWhenEnabled(t *testing.T) {
+	t.Parallel()
+
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%v", enabled), func(t *testing.T) {
+			t.Parallel()
+
+			r, root := initTestRepo(t, false)
+
+			runbook := r.Cfg.Types["runbook"]
+			runbook.Enabled = enabled
+			r.Cfg.Types["runbook"] = runbook
+
+			if _, err := r.Init(t.Context(), repo.InitOptions{}); err != nil {
+				t.Fatalf("Init: %v", err)
+			}
+
+			readme := filepath.Join(root, "docs", "runbook", config.IndexFileName)
+
+			_, err := os.Stat(readme)
+			if got := err == nil; got != enabled {
+				t.Errorf("docs/runbook/%s exists = %v, want %v (stat: %v)",
+					config.IndexFileName, got, enabled, err)
+			}
+		})
 	}
 }

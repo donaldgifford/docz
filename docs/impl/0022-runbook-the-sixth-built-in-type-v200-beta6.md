@@ -207,10 +207,11 @@ beyond the generic tier yet.
     {enabled: true}}` loads with runbook's `dir`, `id_prefix`, and
     statuses filled from the registry.
   Done. The short-block fixture lists `rfc` as `enabled: true`, because `rfc: {}` decodes as disabled. The `DefaultConfigYAML` test lives in `doctemplate/promoted_test.go`, which is where that function is.
-- [ ] `pkg/doczcore/repo/init_test.go:192`: count `EnabledTypes()` rather
+- [x] `pkg/doczcore/repo/init_test.go:192`: count `EnabledTypes()` rather
   than `DocTypeNames()`. The `plan` comment at `:23-27` gets rewritten
   for runbook. Add a case that enables runbook and sees `docs/runbook/`
   and its README created. The default case sees neither
+  Done. `TestInit_ExactlyOneMarkerPair` turns runbook on so every built-in's header is still checked, and counts `EnabledTypes()`. `TestInit_RunbookOnlyWhenEnabled` covers both cases.
 - [ ] Parity: add `RunbookNormalizer()` to `test/parity/parity.go`,
   following `PlanNormalizer()`. It drops the `runbook:` key and its
   indented body under `types:`, and the `runbook:` line under
