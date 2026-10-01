@@ -1,7 +1,7 @@
 ---
 id: IMPL-0022
 title: "Runbook: the sixth built-in type (v2.0.0-beta.6)"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-09-30
 ---
@@ -703,27 +703,32 @@ v2.0.0 is cut (Open Question 7).
   Done: the shipped-tag assertions live in tests/{api,site}/deployment_test.yaml. ghcr.yml's chart component is charts/docz alone, so the deprecated charts are never pushed, and charts/docz has the helm-pull idempotency check.
 - [x] Open the PR with `dont-release`, and push. CI is green
   Done: #143, labelled dont-release, every check green on ebb6572.
-- [ ] **(human)** Merge the PR **with a merge commit**
-  deferred - human required: merge #143 with a merge commit once it is marked ready.
-- [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
+- [x] **(human)** Merge the PR **with a merge commit**
+  Done: #143 merged as 58ed6be.
+- [x] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
   `just api release-check` pass
-  deferred - human required: blocked on the merge. Both release checks already pass on the branch head (`1 configuration file(s) validated`, twice).
-- [ ] **(human)** `just release v2.0.0-beta.6` from the PR's merge
+  Done: both validate on 58ed6be.
+- [x] **(human)** `just release v2.0.0-beta.6` from the PR's merge
   commit
-  deferred - human required: the tag is cut by hand from the merge commit.
-- [ ] Follow RUNBOOK-0001 Procedure 2's verification steps, recording each
+  Done: the tag points at 58ed6be.
+- [x] Follow RUNBOOK-0001 Procedure 2's verification steps, recording each
   result here:
   - the pre-release and its archives;
   - both images at `2.0.0-beta.6`, with `latest` not moved;
   - `docz` 0.2.0 signed and attested with a bare `appVersion`;
   - the deprecated charts skipped;
   - ECR skipped.
-  deferred - human required: blocked on the tag.
-- [ ] Replace RUNBOOK-0001's Last Verified row with this run, including
+  Done, prerelease run 36866811640:
+  - every job succeeded, with the three ECR jobs and the chart component's image job skipped;
+  - the release is `prerelease=true` with the four `docz_*` and four `docz-api_*` archives, each with an `.spdx.json`, and `checksums.txt` with its `.sig`;
+  - `docz-api:2.0.0-beta.6` is `sha256:cd7b09aa…` against `latest` `sha256:ab1915af…`, and `docz-site:2.0.0-beta.6` is `sha256:b5a65108…` against `latest` `sha256:7c1569a3…`, both signed and attested;
+  - `docz` 0.2.0 carries `appVersion: 2.0.0-beta.6`, a signature, and SLSA provenance;
+  - the docz-api and docz-site chart jobs logged `Chart 0.10.0 already published` and `Chart 0.3.0 already published`.
+- [x] Replace RUNBOOK-0001's Last Verified row with this run, including
   its date, PR, merge commit, and verifier. The note says that Install and
   smoke-test was not run, and records anything the steps got wrong. Fix those steps in the same change. This is the table's
   first real use
-  deferred - human required: blocked on the beta.6 run, which is what the row records.
+  Done: 2026-10-01, #143, 58ed6be, @donaldgifford. The steps needed no fixes.
 - [x] File the follow-ups as issues:
   - a step-aware docz-site view: step anchors, copy-command buttons,
     procedure navigation, and a Last Verified badge;
@@ -737,10 +742,10 @@ v2.0.0 is cut (Open Question 7).
     gates the v2.0.0 cut. Check first whether #135 or #140 already tracks
     it, and link rather than duplicate.
   Done: #144 step-aware site view, #145 structured API fields, #146 an ADR per type, #147 the v2.0.0 environment-swap acceptance. Neither #135 nor #140 tracked the swap, so #147 links both.
-- [ ] `docz status set impl IMPL-0022 Completed` and
+- [x] `docz status set impl IMPL-0022 Completed` and
   `docz status set design DESIGN-0019 Implemented`, then `docz update`.
   This goes through a branch and PR, since `main` is protected
-  deferred - human required: blocked on the release; flip both once beta.6 is verified.
+  Done: on `docs/close-impl-0022`.
 
 <!--docz:tasks:end-->
 
@@ -810,10 +815,10 @@ v2.0.0 is cut (Open Question 7).
   — Done: Phase 6, the e2e green in CI on #143
 - [x] docz-site: the colour, blurb, and nav tests, and CI's ui jobs
   — Done: Phase 7, ui and ui-e2e green on #143
-- [ ] The published beta.6 artifacts verify: binaries, images, and
+- [x] The published beta.6 artifacts verify: binaries, images, and
   `charts/docz` 0.2.0, signed and attested (Phase 8). The installed,
   whole-product test is the v2.0.0 environment swap, a follow-up
-  — deferred - human required: blocked on the beta.6 tag
+  — Done: Phase 8's Procedure 2 run
 
 <!--docz:testing:end-->
 

@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0019
 title: "Runbook: a sixth built-in document type, disabled by default"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-09-30
 ---

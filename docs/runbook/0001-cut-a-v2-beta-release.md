@@ -42,11 +42,13 @@ created: 2026-10-01
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-| 2026-09-25 | #137 | e41203e | @donaldgifford |
+| 2026-10-01 | #143 | 58ed6be | @donaldgifford |
 
-**Notes:** Run end to end for `v2.0.0-beta.5`, install included. The
-`charts/docz` push did not fail with a 403, so that scenario was not
-exercised.
+**Notes:** Procedures 1 and 2 run for `v2.0.0-beta.6`; Install and
+smoke-test was not run, since the installed test is the v2.0.0
+environment swap (#147). The steps needed no fixes. The deprecated
+charts' publish jobs report success because the idempotency check skips
+inside the job, so read their logs for `already published`.
 
 <!--docz:last-verified:end-->
 
