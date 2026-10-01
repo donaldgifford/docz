@@ -694,11 +694,12 @@ v2.0.0 is cut (Open Question 7).
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `charts/docz/Chart.yaml`: `version: 0.2.0`, `appVersion:
+- [x] `charts/docz/Chart.yaml`: `version: 0.2.0`, `appVersion:
   "2.0.0-beta.6"` (bare), with the chart CHANGELOG and README regenerated
   and the chart's version test updated (Open Question 6). `charts/docz-api`
   and `charts/docz-site` stay at their deprecated finals, and the publish
   job's idempotency check skips them
+  Done: the shipped-tag assertions live in tests/{api,site}/deployment_test.yaml. ghcr.yml's chart component is charts/docz alone, so the deprecated charts are never pushed, and charts/docz has the helm-pull idempotency check.
 - [ ] Open the PR with `dont-release`, and push. CI is green
 - [ ] **(human)** Merge the PR **with a merge commit**
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
