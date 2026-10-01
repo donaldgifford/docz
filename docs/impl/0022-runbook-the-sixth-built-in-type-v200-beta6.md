@@ -222,7 +222,7 @@ beyond the generic tier yet.
   Verify: `just parity`
   Done. `just parity` replays all 213 goldens clean, and `TestRunbookNormalizer` has four cases.
 - [x] `just ci` passes
-  Done. `just ci` passes, including lint, test, the consumer module, parity, validate, build, the licence check, the api and ui chains, and `chart::lint`. `docz template show runbook` works in a default-config repo. In this repo it waits for Phase 3, because the `types:` block here does not list runbook yet.
+  Done. `just ci` passes, including lint, test, the consumer module, parity, validate, build, the licence check, the api and ui chains, and `chart::lint`. **Criterion correction:** `docz template show runbook` does not print the template while runbook is disabled. It says `document type "runbook" is disabled`, because all three `template` subcommands reject a disabled type, and existing cmd tests pin that (CLAUDE.md, Architecture). The behaviour is left as it is and the criterion below is amended. Once the type is enabled, which happens in this repo in Phase 3, the template prints.
 
 <!--docz:tasks:end-->
 
@@ -233,8 +233,10 @@ beyond the generic tier yet.
   config does not contain it
 - `docz init` in an empty directory writes a `.docz.yaml` with a
   `runbook:` block at `enabled: false` and creates no `docs/runbook/`
-- `docz template show runbook` prints the template, and `docz --help`
-  lists runbook with `(disabled by default)`
+- `docz --help` lists runbook with `(disabled by default)`. `docz
+  template show runbook` prints the template once the type is enabled; while
+  it is disabled it refuses, as every `template` subcommand does for a
+  disabled type (amended in Phase 1)
 - `just parity` passes against the unchanged v1.2.2 goldens
 - `just ci` passes
 

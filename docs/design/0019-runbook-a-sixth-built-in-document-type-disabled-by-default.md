@@ -239,7 +239,7 @@ flowchart TD
 | `docz create runbook` / `rb` / `RUNBOOK` | error naming the flag to set (below) | new `docs/runbook/0001-<slug>.md` (ID `RUNBOOK-0001`) |
 | `docz list`, `docz validate` | not listed / not validated | listed / validated with `runbook.Validate` |
 | `docz --help` | listed, suffixed `(disabled by default)` (OQ 11) | listed |
-| `docz template show runbook` | works (shows the embedded template) | works |
+| `docz template show runbook` | refuses: the type is disabled (every `template` subcommand does) | shows the template |
 | wiki nav | absent; `nav_titles` still carries `runbook: Runbooks` | "Runbooks" section |
 | docz-api ingest | files under `docs/runbook/` are not documents | documents of type `runbook` |
 
