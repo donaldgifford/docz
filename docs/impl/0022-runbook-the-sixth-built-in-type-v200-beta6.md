@@ -572,8 +572,9 @@ a first-class type, and gives the site a curated colour and blurb for it.
     `runbook`;
   - a disabled runbook produces neither.
   Done: it found that mapDocType stored only .docz.yaml aliases, never the registry's, so `rb` (and `inv`, `implementation`) never reached the row; the mapper now merges them.
-- [ ] `internal/httpapi`: a `typeresolver_test.go` case resolving `rb`,
+- [x] `internal/httpapi`: a `typeresolver_test.go` case resolving `rb`,
   `RUNBOOK`, and `runbook` to the canonical type from a stored row
+  Done.
 - [ ] `internal/e2e/onboard_integration_test.go`: add
   `TestE2ERunbookType` (`//go:build integration`, real Postgres). It
   onboards a fixture with an enabled runbook, then asserts `GET
