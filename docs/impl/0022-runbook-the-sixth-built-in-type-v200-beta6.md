@@ -524,11 +524,12 @@ outside.
   - `docz validate` reports a `runbook.*` finding for a broken runbook;
   - `docz list runbook` lists it.
   Done.
-- [ ] `test/consumer/consumer_v2_test.go`: add a `pkg/runbook` case. It
+- [x] `test/consumer/consumer_v2_test.go`: add a `pkg/runbook` case. It
   runs `Parse` over an inline fixture carrying a procedure, a scenario, a
   command, and a filled Last Verified row, then `Validate`, with lines
   located by `lineOf`. Update `test/consumer/doc.go`'s count to seventeen
   `pkg/` packages
+  Done.
 - [ ] `docz validate` on this repository runs the typed tier over both
   runbooks with no errors. Fix the runbooks rather than the rules if it
   finds something real
