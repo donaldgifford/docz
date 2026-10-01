@@ -701,7 +701,8 @@ v2.0.0 is cut (Open Question 7).
   and `charts/docz-site` stay at their deprecated finals, and the publish
   job's idempotency check skips them
   Done: the shipped-tag assertions live in tests/{api,site}/deployment_test.yaml. ghcr.yml's chart component is charts/docz alone, so the deprecated charts are never pushed, and charts/docz has the helm-pull idempotency check.
-- [ ] Open the PR with `dont-release`, and push. CI is green
+- [x] Open the PR with `dont-release`, and push. CI is green
+  Done: #143, labelled dont-release, every check green on ebb6572.
 - [ ] **(human)** Merge the PR **with a merge commit**
   deferred - human required: merge #143 with a merge commit once it is marked ready.
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
