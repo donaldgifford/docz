@@ -41,4 +41,5 @@ Runbooks ship disabled. Turn them on with `types.runbook.enabled: true` in
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
 | RUNBOOK-0001 | Cut a v2 beta release | Active | 2026-10-01 | Donald Gifford | [0001-cut-a-v2-beta-release.md](0001-cut-a-v2-beta-release.md) |
+| RUNBOOK-0002 | docz-api webhook deliveries fail | Draft | 2026-10-01 | Donald Gifford | [0002-docz-api-webhook-deliveries-fail.md](0002-docz-api-webhook-deliveries-fail.md) |
 <!-- END DOCZ AUTO-GENERATED -->

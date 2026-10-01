@@ -351,7 +351,7 @@ its own assumptions. That is how the other five type packages were built.
   is the `v2.0.0-beta.5` run: `2026-09-25`, `#137`, `e41203e`, the
   maintainer.
   Done: `docs/runbook/0001-cut-a-v2-beta-release.md`, status Active. It has the three procedures per Open Question 7, so Install and smoke-test is its own optional procedure, and the two scenarios. Its Last Verified row is the beta.5 run. The wiki nav now has a Runbooks section.
-- [ ] `docz create runbook "docz-api webhook deliveries fail"` →
+- [x] `docz create runbook "docz-api webhook deliveries fail"` →
   RUNBOOK-0002 (Open Question 1). It is troubleshooting-first, with
   scenarios from `deploy/tailscale-operator.md` and INV-0007:
   - TLS EOF, caused by the Funnel `nodeAttrs` grant or by HTTPS
@@ -363,6 +363,7 @@ its own assumptions. That is how the other five type packages were built.
   - a retry-exhausted task blocking a repo.
 
   It has one procedure, "Redeliver and confirm".
+  Done: troubleshooting-first, five scenarios and one procedure; Last Verified row left blank until it is run.
 - [ ] `docz validate` on the repository is clean for both runbooks, with
   no errors. The generic tier and the Phase 2 kinds run, and the typed
   tier arrives in Phase 5
