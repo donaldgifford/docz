@@ -2,7 +2,9 @@ package validate
 
 import (
 	"fmt"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
@@ -141,17 +143,21 @@ func parentStart(regions []docparse.Region, i int) int {
 // IMPL's tasks region outside a phase belongs to no phase, so its tasks are
 // attributed to nothing, and a consumer counting progress silently loses
 // them.
+//
+// A kind may belong under more than one parent — a runbook's steps sit in a
+// procedure and in a scenario — so a region is in the right place when the
+// schema lists its kind under the parent it was found in.
 func checkParents(present map[SchemaRegion][]docparse.Region, schema Schema) []Finding {
-	wantParent := make(map[string]string, len(schema.Regions))
+	wantParents := make(map[string][]string, len(schema.Regions))
 	for _, want := range schema.Regions {
-		wantParent[want.Kind] = want.Parent
+		wantParents[want.Kind] = append(wantParents[want.Kind], want.Parent)
 	}
 
 	var out []Finding
 
 	for entry, found := range present {
-		want, known := wantParent[entry.Kind]
-		if !known || want == entry.Parent {
+		wants, known := wantParents[entry.Kind]
+		if !known || slices.Contains(wants, entry.Parent) {
 			continue
 		}
 
@@ -162,7 +168,7 @@ func checkParents(present map[SchemaRegion][]docparse.Region, schema Schema) []F
 				Line:     r.Start,
 				Kind:     entry.Kind,
 				Detail: fmt.Sprintf("%q belongs%s, but this one is%s",
-					entry.Kind, inside(want), inside(entry.Parent)),
+					entry.Kind, insideAny(wants), inside(entry.Parent)),
 			})
 		}
 	}
@@ -170,6 +176,21 @@ func checkParents(present map[SchemaRegion][]docparse.Region, schema Schema) []F
 	sortFindings(out)
 
 	return out
+}
+
+// insideAny renders the parents a kind may sit under: one reads as inside,
+// several as "inside one of".
+func insideAny(parents []string) string {
+	if len(parents) == 1 {
+		return inside(parents[0])
+	}
+
+	quoted := make([]string, len(parents))
+	for i, p := range parents {
+		quoted[i] = strconv.Quote(p)
+	}
+
+	return " inside one of " + strings.Join(quoted, ", ")
 }
 
 // inside renders a parent kind for a message, or "at the top level".
