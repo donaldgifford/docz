@@ -115,6 +115,18 @@ var catalogue = map[string]KindRule{
 	kindTasks:      {Singleton: true, Check: checkTasks},
 	"file-changes": {Singleton: true, Check: checkFileChangesTable},
 	"dependencies": {Singleton: true},
+
+	// runbook (DESIGN-0019 §5). A procedure and a scenario each hold one
+	// steps region, which Singleton's scoping by parent already allows.
+	"last-verified": {Singleton: true, Check: checkLastVerifiedTable},
+	"when":          {Singleton: true, Check: checkItems},
+	"prerequisites": {Singleton: true, Check: checkItems},
+	"procedure":     {Singleton: false},
+	"steps":         {Singleton: true},
+	"verification":  {Singleton: true, Check: checkItems},
+	"rollback":      {Singleton: true},
+	"scenario":      {Singleton: false},
+	"escalation":    {Singleton: true, Check: checkEscalationTable},
 }
 
 // checkReferences reports a top-level bullet with no markdown link. The
@@ -302,6 +314,14 @@ func checkEnvironmentTable(region []byte, at docparse.Region) []Finding {
 
 func checkFileChangesTable(region []byte, at docparse.Region) []Finding {
 	return checkTable(region, at, "file-changes", "file", "action", "description")
+}
+
+func checkLastVerifiedTable(region []byte, at docparse.Region) []Finding {
+	return checkTable(region, at, "last-verified", "date", "pr", "commit", "verified by")
+}
+
+func checkEscalationTable(region []byte, at docparse.Region) []Finding {
+	return checkTable(region, at, "escalation", "who", "when", "how")
 }
 
 // checkTable reports a region the catalogue says holds a table that either

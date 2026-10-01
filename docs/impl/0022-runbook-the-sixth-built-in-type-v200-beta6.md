@@ -254,7 +254,7 @@ runbook's regions are checked for shape before any typed reader exists.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/validate/kindrule.go`: add the catalogue entries from
+- [x] `pkg/doczcore/validate/kindrule.go`: add the catalogue entries from
   DESIGN-0019 §5. The two table kinds are wrappers over the existing
   `checkTable`: `last-verified` over `date`, `pr`, `commit`, and
   `verified by`, and `escalation` over `who`, `when`, and `how`.
@@ -270,6 +270,7 @@ runbook's regions are checked for shape before any typed reader exists.
   | `rollback` | yes, per parent | none |
   | `scenario` | no | none |
   | `escalation` | yes | `checkTable` |
+  Done. `steps` is added here without a check, and `checkSteps` arrives in the next task.
 
 - [ ] `checkSteps`: a region whose list items are all unordered is
   `steps.not-ordered` (error). One with no list items at all returns
