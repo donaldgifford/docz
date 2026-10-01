@@ -702,10 +702,13 @@ v2.0.0 is cut (Open Question 7).
   Done: the shipped-tag assertions live in tests/{api,site}/deployment_test.yaml. ghcr.yml's chart component is charts/docz alone, so the deprecated charts are never pushed, and charts/docz has the helm-pull idempotency check.
 - [ ] Open the PR with `dont-release`, and push. CI is green
 - [ ] **(human)** Merge the PR **with a merge commit**
+  deferred - human required: merge #143 with a merge commit once it is marked ready.
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
   `just api release-check` pass
+  deferred - human required: blocked on the merge. Both release checks already pass on the branch head (`1 configuration file(s) validated`, twice).
 - [ ] **(human)** `just release v2.0.0-beta.6` from the PR's merge
   commit
+  deferred - human required: the tag is cut by hand from the merge commit.
 - [ ] Follow RUNBOOK-0001 Procedure 2's verification steps, recording each
   result here:
   - the pre-release and its archives;
@@ -713,10 +716,12 @@ v2.0.0 is cut (Open Question 7).
   - `docz` 0.2.0 signed and attested with a bare `appVersion`;
   - the deprecated charts skipped;
   - ECR skipped.
+  deferred - human required: blocked on the tag.
 - [ ] Replace RUNBOOK-0001's Last Verified row with this run, including
   its date, PR, merge commit, and verifier. The note says that Install and
   smoke-test was not run, and records anything the steps got wrong. Fix those steps in the same change. This is the table's
   first real use
+  deferred - human required: blocked on the beta.6 run, which is what the row records.
 - [x] File the follow-ups as issues:
   - a step-aware docz-site view: step anchors, copy-command buttons,
     procedure navigation, and a Last Verified badge;
@@ -733,6 +738,7 @@ v2.0.0 is cut (Open Question 7).
 - [ ] `docz status set impl IMPL-0022 Completed` and
   `docz status set design DESIGN-0019 Implemented`, then `docz update`.
   This goes through a branch and PR, since `main` is protected
+  deferred - human required: blocked on the release; flip both once beta.6 is verified.
 
 <!--docz:tasks:end-->
 
