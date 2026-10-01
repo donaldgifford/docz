@@ -163,7 +163,7 @@ beyond the generic tier yet.
 - [x] `TypesHelp()` appends ` (disabled by default)` after the aliases of
   any entry whose `DefaultConfig().Enabled` is false (DESIGN-0019 OQ 11).
   `TestTypesHelp` asserts the suffix on runbook and on no other line.
-- [ ] `pkg/doczcore/doctemplate/templates/runbook.md`: the body template
+- [x] `pkg/doczcore/doctemplate/templates/runbook.md`: the body template
   from DESIGN-0019 §3. It has these regions:
   - `last-verified` first, with the four-column table, one empty row, and
     `**Notes:**`;
@@ -178,6 +178,7 @@ beyond the generic tier yet.
   Placeholder headings are `### Procedure 1: <!-- … -->` and
   `### Scenario: <!-- … -->`. The file has the
   `markdownlint-disable-file MD025 MD041` line after the frontmatter.
+  Done. Inference needed two changes in `kinds/infer.go`, made here because Phase 1's template tests need them. A kind now gets one rule per parent, since `steps` sits under both procedure and scenario. A bare `Word:` placeholder generalises to a colon-terminated prefix (`scenario:`), per Open Question 3. `nest` and `descends` follow every parent of a kind. A test in `kinds/infer_test.go` pins both.
 - [ ] `templates/index_runbook.md`: the README index header, in the same
   form as `index_impl.md`, with exactly one index marker pair
   (`index/splice_test.go`)
