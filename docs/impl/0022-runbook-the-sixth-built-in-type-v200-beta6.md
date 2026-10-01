@@ -442,10 +442,11 @@ type package plus `walk.go`, following `pkg/impl`.
   Lines are shifted to document lines with the `kinds.Shift*` helpers. Two
   procedures claiming one token return `*DuplicateProcedureError`.
   Done: wrapped bold fields (Notes, Likely cause) fold their continuation lines, which kinds.Field alone does not.
-- [ ] `validate.go`: `Validate(doc []byte) []validate.Finding`, with the
+- [x] `validate.go`: `Validate(doc []byte) []validate.Finding`, with the
   `Code*` constants for every code in DESIGN-0019 §4's table, including
   the six `runbook.last-verified.*` codes. Exactly one `runbook.parse`
   finding when `Parse` fails. No rule reads the clock
+  Done: runbook.step.empty reads the item as written, so the template's comment placeholder is not an empty step.
 - [ ] Corpus, `pkg/runbook/testdata/`:
   - RUNBOOK-0001 and RUNBOOK-0002 are snapshotted as `.orig.md` with
     markers stripped, plus their marked `.md`;
