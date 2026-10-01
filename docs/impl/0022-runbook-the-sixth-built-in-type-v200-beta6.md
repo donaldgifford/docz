@@ -195,7 +195,7 @@ beyond the generic tier yet.
   (DESIGN-0019 Migration). `parity_baseline_test.go`'s round trip still
   passes, and the rendered file carries `runbook:` with `enabled: false`
   Done. `docz init` in an empty directory writes `runbook:` with `enabled: false`, and creates `adr design impl investigation rfc` under `docs/`, with no `runbook`.
-- [ ] Config tests:
+- [x] Config tests:
   - `config_test.go`: `disabledByDefault` becomes `{"runbook": true}`,
     both `len(cfg.Types) != 5` checks become 6, and `TestDocTypeNames`
     gains `runbook` last;
@@ -206,6 +206,7 @@ beyond the generic tier yet.
   - a new test pins the short-block rule. `types: {rfc: {}, runbook:
     {enabled: true}}` loads with runbook's `dir`, `id_prefix`, and
     statuses filled from the registry.
+  Done. The short-block fixture lists `rfc` as `enabled: true`, because `rfc: {}` decodes as disabled. The `DefaultConfigYAML` test lives in `doctemplate/promoted_test.go`, which is where that function is.
 - [ ] `pkg/doczcore/repo/init_test.go:192`: count `EnabledTypes()` rather
   than `DocTypeNames()`. The `plan` comment at `:23-27` gets rewritten
   for runbook. Add a case that enables runbook and sees `docs/runbook/`

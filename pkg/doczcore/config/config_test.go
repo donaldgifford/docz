@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -17,9 +18,9 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
 
-	// plan is the one built-in that ships disabled: it sits between RFC
-	// and IMPL, a slot most repos fill with DESIGN + IMPL instead.
-	disabledByDefault := map[string]bool{"plan": true}
+	// runbook is the one built-in that ships disabled (DESIGN-0019): a
+	// repository opts in, so the generated config carries it switched off.
+	disabledByDefault := map[string]bool{"runbook": true}
 
 	for _, typeName := range DocTypeNames() {
 		tc, ok := cfg.Types[typeName]
@@ -96,7 +97,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestDocTypeNames(t *testing.T) {
 	t.Parallel()
 	types := DocTypeNames()
-	want := []string{"rfc", "adr", "design", "impl", "investigation"}
+	want := []string{"rfc", "adr", "design", "impl", "investigation", "runbook"}
 	if len(types) != len(want) {
 		t.Fatalf("DocTypeNames() has %d elements, want %d", len(types), len(want))
 	}
@@ -146,8 +147,8 @@ func TestLoad_NoConfigFiles(t *testing.T) {
 	if cfg.DocsDir != "docs" {
 		t.Errorf("DocsDir = %q, want %q", cfg.DocsDir, "docs")
 	}
-	if len(cfg.Types) != 5 {
-		t.Errorf("expected 5 types, got %d", len(cfg.Types))
+	if len(cfg.Types) != 6 {
+		t.Errorf("expected 6 types, got %d", len(cfg.Types))
 	}
 }
 
@@ -179,8 +180,8 @@ author:
 		t.Error("Author.FromGit should be false")
 	}
 	// Types should still have defaults.
-	if len(cfg.Types) != 5 {
-		t.Errorf("expected 5 types, got %d", len(cfg.Types))
+	if len(cfg.Types) != 6 {
+		t.Errorf("expected 6 types, got %d", len(cfg.Types))
 	}
 }
 
@@ -757,5 +758,47 @@ func TestMergeMaps_APIBlock(t *testing.T) {
 	if want := []string{"GLOBAL.md"}; !reflect.DeepEqual(cfg.API.AdditionalDocs, want) {
 		t.Errorf("API.AdditionalDocs = %q, want %q — an unnamed sibling survives",
 			cfg.API.AdditionalDocs, want)
+	}
+}
+
+// A built-in that ships disabled is in the defaults but not in the effective
+// set: present so the generated config shows it, absent so nothing
+// scaffolds, lists, or ingests it until a repository opts in.
+func TestEnabledTypes_SkipsTheDisabledBuiltIn(t *testing.T) {
+	t.Parallel()
+
+	cfg := DefaultConfig()
+	if _, ok := cfg.Types["runbook"]; !ok {
+		t.Fatal(`DefaultConfig().Types has no "runbook" entry`)
+	}
+
+	if slices.Contains(cfg.EnabledTypes(), "runbook") {
+		t.Errorf("EnabledTypes() = %v, want runbook excluded by default", cfg.EnabledTypes())
+	}
+}
+
+// A short block is enough to turn runbook on: every field it omits comes
+// from the registry, the same as for any built-in. Listing rfc beside it
+// matters, because a types: block keeps only what it lists (INV-0003).
+func TestParseBytes_ShortRunbookBlockFillsFromRegistry(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := ParseBytes([]byte("types:\n  rfc:\n    enabled: true\n  runbook:\n    enabled: true\n"))
+	if err != nil {
+		t.Fatalf("ParseBytes: %v", err)
+	}
+
+	if got, want := cfg.EnabledTypes(), []string{"rfc", "runbook"}; !slices.Equal(got, want) {
+		t.Errorf("EnabledTypes() = %v, want %v", got, want)
+	}
+
+	tc := cfg.Types["runbook"]
+	if tc.Dir != "runbook" || tc.IDPrefix != "RUNBOOK" || tc.IDWidth != 4 {
+		t.Errorf("runbook = dir %q, prefix %q, width %d; want registry defaults",
+			tc.Dir, tc.IDPrefix, tc.IDWidth)
+	}
+
+	if want := []string{"Draft", "Active", "Needs Review", "Deprecated"}; !slices.Equal(tc.Statuses, want) {
+		t.Errorf("runbook statuses = %v, want %v", tc.Statuses, want)
 	}
 }

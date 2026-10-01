@@ -136,3 +136,28 @@ func TestDefaultConfigYAML_RendersOverTheDefaults(t *testing.T) {
 			cfg.DocsDir, config.DefaultConfig().DocsDir)
 	}
 }
+
+// The generated config is where a user discovers the disabled built-in, so
+// it must carry runbook's block switched off rather than leave it out.
+func TestDefaultConfigYAML_CarriesTheDisabledRunbook(t *testing.T) {
+	t.Parallel()
+
+	got, err := DefaultConfigYAML()
+	if err != nil {
+		t.Fatalf("DefaultConfigYAML() = %v, want nil", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal([]byte(got), &cfg); err != nil {
+		t.Fatalf("the rendered config does not parse: %v", err)
+	}
+
+	tc, ok := cfg.Types["runbook"]
+	if !ok {
+		t.Fatalf("the rendered config has no types.runbook block:\n%s", got)
+	}
+
+	if tc.Enabled {
+		t.Error("types.runbook.enabled = true, want false")
+	}
+}
