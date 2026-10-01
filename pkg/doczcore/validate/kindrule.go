@@ -14,7 +14,8 @@ import (
 //
 // The catalogue is data, not an interface. Adding a kind is one map entry,
 // which is the whole reason it grew from nine kinds to forty-one without a
-// redesign when every built-in became a structured type.
+// redesign when every built-in became a structured type, and to fifty when
+// runbook joined them.
 type KindRule struct {
 	// Singleton is true when a document may hold only one region of this
 	// kind under a given parent. Scoping by parent is what lets an ADR have
@@ -39,7 +40,8 @@ const (
 	kindTasks         = "tasks"
 )
 
-// catalogue is the forty-one-kind catalogue of DESIGN-0015 §2.
+// catalogue is the kind catalogue of DESIGN-0015 §2, fifty kinds since
+// runbook's nine (DESIGN-0019 §5).
 //
 // A kind absent from it is well-formedness only: validate checks that its
 // markers pair and nothing more. That is deliberate — an unknown kind is

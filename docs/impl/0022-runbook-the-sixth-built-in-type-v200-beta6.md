@@ -276,8 +276,9 @@ runbook's regions are checked for shape before any typed reader exists.
   `steps.not-ordered` (error). One with no list items at all returns
   nothing, because an empty region is incomplete, not malformed. That
   follows `checkTable`'s rule for a region with no table
-- [ ] Correct the kind count in the file's two comments (`:16`, `:42`) to
+- [x] Correct the kind count in the file's two comments (`:16`, `:42`) to
   the number of keys in the map, counted rather than incremented
+  Done. Counting the map's keys with `go/ast` gives 50. The old comments' 41 was accurate before runbook's nine were added, so both comments now say fifty.
 - [ ] `validate` tests:
   - one case per new kind;
   - `checkSteps` with ordered, unordered, mixed, nested, and empty regions;
