@@ -279,13 +279,14 @@ runbook's regions are checked for shape before any typed reader exists.
 - [x] Correct the kind count in the file's two comments (`:16`, `:42`) to
   the number of keys in the map, counted rather than incremented
   Done. Counting the map's keys with `go/ast` gives 50. The old comments' 41 was accurate before runbook's nine were added, so both comments now say fifty.
-- [ ] `validate` tests:
+- [x] `validate` tests:
   - one case per new kind;
   - `checkSteps` with ordered, unordered, mixed, nested, and empty regions;
   - the two table wrappers with right, missing, and reordered columns;
   - a singleton case proving one `steps` per procedure and one per
     scenario is clean, while two in one procedure is
     `region.duplicate-singleton`.
+  Done, in `validate/runbook_kinds_test.go`.
 - [ ] `document_test.go`'s rendered-template check passes for runbook with
   zero findings, with and without inference, and `kinds/infer_test.go`'s
   `TestInferenceEqualsMarkers` passes. That requires `SpecFromTemplate` to
