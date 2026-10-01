@@ -179,7 +179,7 @@ beyond the generic tier yet.
   `### Scenario: <!-- … -->`. The file has the
   `markdownlint-disable-file MD025 MD041` line after the frontmatter.
   Done. Inference needed two changes in `kinds/infer.go`, made here because Phase 1's template tests need them. A kind now gets one rule per parent, since `steps` sits under both procedure and scenario. A bare `Word:` placeholder generalises to a colon-terminated prefix (`scenario:`), per Open Question 3. `nest` and `descends` follow every parent of a kind. A test in `kinds/infer_test.go` pins both.
-- [ ] `templates/index_runbook.md`: the README index header, in the same
+- [x] `templates/index_runbook.md`: the README index header, in the same
   form as `index_impl.md`, with exactly one index marker pair
   (`index/splice_test.go`)
 - [ ] `templates/schema/runbook.md`: the marker skeleton, with each
