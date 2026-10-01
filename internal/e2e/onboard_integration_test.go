@@ -384,6 +384,65 @@ func TestE2ERepoChangelogServeAndDisable(t *testing.T) {
 	}
 }
 
+// TestE2ERunbookType pins DESIGN-0019 §8 against a real Postgres: a repo that
+// enables runbook with the short block serves it as a type, addressable by
+// name, prefix, and the registry alias, with its documents behind it.
+func TestE2ERunbookType(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // hermetic doczcfg.Load
+
+	snap := &ingest.RepoSnapshot{
+		HeadSHA:       "head-rb",
+		DefaultBranch: "main",
+		ConfigYAML:    []byte("docs_dir: docs\ntypes:\n  runbook:\n    enabled: true\n"),
+		Blobs: []ingest.BlobEntry{
+			{Path: "docs/runbook/0001-rotate.md", GitSHA: "rb1", Content: doc("RUNBOOK-0001", "Rotate", "# Rotate")},
+		},
+	}
+	if res := onboard(t, "runbooks", 904, snap); res.DocsUpserted != 1 || res.TypesUpserted != 1 {
+		t.Fatalf("onboard result = %+v, want 1 doc / 1 type", res)
+	}
+
+	var types struct {
+		Types []struct {
+			Name        string   `json:"name"`
+			PluralLabel string   `json:"plural_label"`
+			Aliases     []string `json:"aliases"`
+		} `json:"types"`
+	}
+	if code := getJSON(t, "/api/v1/repos/acme/runbooks/types", &types); code != http.StatusOK {
+		t.Fatalf("list types status = %d", code)
+	}
+	if len(types.Types) != 1 || types.Types[0].Name != "runbook" || types.Types[0].PluralLabel != "Runbooks" {
+		t.Errorf("types = %+v, want runbook / Runbooks", types.Types)
+	}
+
+	for _, seg := range []string{"runbook", "RUNBOOK", "rb"} {
+		var body struct {
+			Docs []struct {
+				DocID string `json:"doc_id"`
+			} `json:"docs"`
+		}
+		if code := getJSON(t, "/api/v1/repos/acme/runbooks/types/"+seg+"/docs", &body); code != http.StatusOK {
+			t.Fatalf("via %q: status = %d", seg, code)
+		}
+		if len(body.Docs) != 1 || body.Docs[0].DocID != "RUNBOOK-0001" {
+			t.Errorf("via %q: docs = %+v, want RUNBOOK-0001", seg, body.Docs)
+		}
+	}
+
+	var one struct {
+		DocID string `json:"doc_id"`
+		Type  string `json:"type"`
+		RawMD string `json:"raw_md"`
+	}
+	if code := getJSON(t, "/api/v1/repos/acme/runbooks/types/rb/docs/RUNBOOK-0001", &one); code != http.StatusOK {
+		t.Fatalf("get doc status = %d", code)
+	}
+	if one.Type != "runbook" || one.RawMD == "" {
+		t.Errorf("doc = %+v, want type runbook with its markdown", one)
+	}
+}
+
 func mapKeys(m map[string]json.RawMessage) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {

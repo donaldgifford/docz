@@ -575,13 +575,14 @@ a first-class type, and gives the site a curated colour and blurb for it.
 - [x] `internal/httpapi`: a `typeresolver_test.go` case resolving `rb`,
   `RUNBOOK`, and `runbook` to the canonical type from a stored row
   Done.
-- [ ] `internal/e2e/onboard_integration_test.go`: add
+- [x] `internal/e2e/onboard_integration_test.go`: add
   `TestE2ERunbookType` (`//go:build integration`, real Postgres). It
   onboards a fixture with an enabled runbook, then asserts `GET
   …/types` lists it and `GET …/types/rb/docs` lists the document. It also
   checks that `GET …/docs/RUNBOOK-0001` serves it. If the search e2e
   fixture helpers make it cheap, it also checks that search with
   `type=runbook` returns it (Open Question 5)
+  Done against real Postgres; the search half (Open Question 5) is skipped, since this harness has no Meilisearch and adding one is not cheap.
 - [ ] `ui/src/lib/colors.ts`: add `runbook` to `CURATED_TYPES`.
   `ui/src/theme/tokens.css`: add `--color-t-runbook` in both themes, in
   a hue the other curated types do not use
