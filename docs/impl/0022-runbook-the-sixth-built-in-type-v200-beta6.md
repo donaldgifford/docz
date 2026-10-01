@@ -328,7 +328,7 @@ its own assumptions. That is how the other five type packages were built.
   `enabled: true`, using the short block. Then run `docz update`, which
   creates `docs/runbook/README.md` and adds Runbooks to the wiki nav
   Done. `docz update` created `docs/runbook/README.md`. The wiki nav gains its Runbooks section with the first runbook, because a directory that holds only a README adds no nav pages.
-- [ ] `docz create runbook "Cut a v2 beta release"` → RUNBOOK-0001. Write
+- [x] `docz create runbook "Cut a v2 beta release"` → RUNBOOK-0001. Write
   it from IMPL-0021 Phase 6 and CLAUDE.md's release notes. It has three
   procedures, Prepare, Tag and verify, and Install and smoke-test, and two
   scenarios:
@@ -350,6 +350,7 @@ its own assumptions. That is how the other five type packages were built.
   `**Expected:**` line where the output is checkable. Its Last Verified row
   is the `v2.0.0-beta.5` run: `2026-09-25`, `#137`, `e41203e`, the
   maintainer.
+  Done: `docs/runbook/0001-cut-a-v2-beta-release.md`, status Active. It has the three procedures per Open Question 7, so Install and smoke-test is its own optional procedure, and the two scenarios. Its Last Verified row is the beta.5 run. The wiki nav now has a Runbooks section.
 - [ ] `docz create runbook "docz-api webhook deliveries fail"` →
   RUNBOOK-0002 (Open Question 1). It is troubleshooting-first, with
   scenarios from `deploy/tailscale-operator.md` and INV-0007:

@@ -40,4 +40,5 @@ Runbooks ship disabled. Turn them on with `types.runbook.enabled: true` in
 
 | ID | Title | Status | Date | Author | Link |
 |----|-------|--------|------|--------|------|
+| RUNBOOK-0001 | Cut a v2 beta release | Active | 2026-10-01 | Donald Gifford | [0001-cut-a-v2-beta-release.md](0001-cut-a-v2-beta-release.md) |
 <!-- END DOCZ AUTO-GENERATED -->

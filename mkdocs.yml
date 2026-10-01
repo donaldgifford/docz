@@ -70,6 +70,9 @@ nav:
         - 'INV-0014: Consolidate the docz-api and docz-site Helm charts into one chart': investigation/0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md
     - RFCs:
         - Overview: rfc/README.md
+    - Runbooks:
+        - Overview: runbook/README.md
+        - 'RUNBOOK-0001: Cut a v2 beta release': runbook/0001-cut-a-v2-beta-release.md
 plugins:
     - techdocs-core
 site_description: Documentation for docz
