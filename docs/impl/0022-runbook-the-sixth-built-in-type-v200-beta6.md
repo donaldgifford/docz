@@ -562,7 +562,7 @@ a first-class type, and gives the site a curated colour and blurb for it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/ingest/service_test.go`: add
+- [x] `internal/ingest/service_test.go`: add
   `TestRunMapsRunbookType`. It uses the fake fetcher over a
   `.docz.yaml` whose `types:` enables runbook with the **short** block,
   and asserts:
@@ -571,6 +571,7 @@ a first-class type, and gives the site a curated colour and blurb for it.
   - a `docs/runbook/0001-*.md` blob becomes a document of type
     `runbook`;
   - a disabled runbook produces neither.
+  Done: it found that mapDocType stored only .docz.yaml aliases, never the registry's, so `rb` (and `inv`, `implementation`) never reached the row; the mapper now merges them.
 - [ ] `internal/httpapi`: a `typeresolver_test.go` case resolving `rb`,
   `RUNBOOK`, and `runbook` to the canonical type from a stored row
 - [ ] `internal/e2e/onboard_integration_test.go`: add
