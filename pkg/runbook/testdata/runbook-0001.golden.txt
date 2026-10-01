@@ -1,0 +1,104 @@
+id="RUNBOOK-0001" title="Cut a v2 beta release" status="Active" inferred=false
+overview="This runbook cuts a `v2.0.0-beta.N` release of docz, docz-api, docz-site, and the `charts/…"
+service="docz release pipeline (`prerelease.yml`, `ghcr.yml`, goreleaser)" owner="@donaldgifford"
+last-verified line=45 date="2026-09-25" pr="#137" commit="e41203e" by=["@donaldgifford"]
+  notes="Run end to end for `v2.0.0-beta.5`, install included. The `charts/docz` push did not fail …"
+when=2 prerequisites=5 references=3
+contact line=402 who="@donaldgifford" when="Any publish job fails for a reason not listed here" how="GitHub issue on `donaldgifford/docz`"
+
+procedure index=1 token="1" line=92 title="Prepare"
+  description="Get `main` into the state the tag will record: the chart bumped and the release configurat…" verification=2
+  step 1.1 line=100 end=109
+    text="Before the PR merges, bump `charts/docz/Chart.yaml`: raise `version`, and set `appVersion`…"
+    expected="`appVersion: \"2.0.0-beta.N\"`; the unit tests pass"
+    command line=104 lang="sh" body="just chart docs just chart unittest"
+  step 1.2 line=111 end=119
+    text="Once the PR is merged, check out the merge commit on `main`."
+    expected="both commands print the same SHA"
+    command line=113 lang="sh" body="git checkout main && git pull --ff-only --no-tags origin main gh pr view <PR> --json merge…"
+  step 1.3 line=121 end=129
+    text="Confirm the merge's own `release.yml` run published no chart."
+    expected="every `Publish chart` job is `skipped`"
+    command line=123 lang="sh" body="gh run list --workflow release.yml --commit \"$(git rev-parse HEAD)\" \\ --json databaseId -q…"
+  step 1.4 line=131 end=138
+    text="Validate the release configuration for both binaries."
+    expected="`1 configuration file(s) validated`, twice"
+    command line=133 lang="sh" body="just release-check just api release-check"
+  step 1.R1 line=154 end=155
+    text="Nothing has been published yet. Fix forward on a branch and merge again."
+
+procedure index=2 token="2" line=161 title="Tag and verify"
+  description="Push the tag, let `prerelease.yml` publish, and check every artifact it was supposed to pr…" verification=3
+  step 2.1 line=169 end=175
+    text="Tag the merge commit and push the tag."
+    expected="the tag appears with `git ls-remote --tags origin 'v2.0.0-beta.N'`"
+    command line=171 lang="sh" body="just release v2.0.0-beta.N"
+  step 2.2 line=177 end=186
+    text="Watch the pre-release run to the end."
+    expected="every job `success`, except the ECR jobs and the chart component's image job, which are `s…"
+    command line=179 lang="sh" body="run=$(gh run list --workflow prerelease.yml -L 1 --json databaseId -q '.[0].databaseId') g…"
+  step 2.3 line=188 end=195
+    text="Check the GitHub release."
+    expected="`prerelease=true`, the `docz_*` and `docz-api_*` archives with their `.spdx.json` SBOMs, a…"
+    command line=190 lang="sh" body="gh release view v2.0.0-beta.N --json isPrerelease,assets -q '\"prerelease=\\(.isPrerelease)\"…"
+  step 2.4 line=197 end=211
+    text="Check both images. The tag is bare semver, and `latest` must not have moved to this releas…"
+    expected="each image's `latest` digest differs from its beta digest"
+    step 2.4.1 line=199 end=206
+      text="Inspect the new tag on each image."
+      command line=201 lang="sh" body="for img in docz-api docz-site; do docker buildx imagetools inspect \"ghcr.io/donaldgifford/…"
+    step 2.4.2 line=208 end=209
+      text="Inspect `latest` the same way. Write `${img}`, not `$img`: zsh reads `$img:l` as a lower-c…"
+  step 2.5 line=213 end=226
+    text="Check each chart's metadata and supply-chain artifacts."
+    expected="a bare `appVersion: 2.0.0-beta.N`, plus both a signature and SLSA provenance. A chart whos…"
+    command line=215 lang="sh" body="for c in docz:<version>; do helm show chart \"oci://ghcr.io/donaldgifford/charts/${c%%:*}\" …"
+  step 2.R1 line=242 end=242
+    text="Do not delete or move the tag: a consumer may already have pulled it."
+  step 2.R2 line=243 end=247
+    text="Mark the GitHub release as broken in its notes."
+    command line=245 lang="sh" body="gh release edit v2.0.0-beta.N --notes \"Broken: see v2.0.0-beta.N+1\""
+  step 2.R3 line=249 end=249
+    text="Fix forward and cut the next beta with this runbook."
+
+procedure index=3 token="3" line=255 title="Install and smoke-test"
+  description="Install the published chart on a throwaway kind cluster and check that the site reaches th…" verification=1
+  step 3.1 line=265 end=288
+    text="Create a cluster and a values file with login off and a dummy GitHub App key. Never leave …"
+    command line=268 lang="sh" body="kind create cluster --name docz-beta --wait 2m openssl genrsa -out /tmp/dummy.pem 2048 cat…"
+  step 3.2 line=290 end=300
+    text="Install the chart from OCI with no image override, so the chart's own `appVersion` picks t…"
+    expected="`STATUS: deployed`; every pod ready on the `2.0.0-beta.N` images"
+    command line=293 lang="sh" body="helm install docz oci://ghcr.io/donaldgifford/charts/docz --version <version> \\ --kube-con…"
+  step 3.3 line=302 end=312
+    text="Query the API through the site's Service, then run the chart's test hook."
+    expected="`{\"repos\":[]} 200`, and the test suite `Succeeded`"
+    command line=305 lang="sh" body="kubectl --context kind-docz-beta -n docz port-forward svc/docz-site 18080:80 & curl -s -w …"
+  step 3.4 line=314 end=318
+    text="Delete the cluster."
+    command line=316 lang="sh" body="kind delete cluster --name docz-beta"
+  step 3.R1 line=332 end=332
+    text="Not applicable: the cluster is throwaway. Delete it."
+
+scenario index=1 line=340 symptom="A chart push fails with 403 write_package"
+  alert="none; the `Publish chart` job fails"
+  likely-cause="the GHCR package is new and this repository has no Actions access to it yet"
+  step S1.1 line=350 end=356
+    text="Confirm the failure is the access grant, not a token or login problem."
+    expected="a `403` naming `write_package`"
+    command line=352 lang="sh" body="gh run view <run> --log-failed | grep -i 'write_package\\|403'"
+  step S1.2 line=358 end=360
+    text="In GitHub, open Packages, then `charts/<name>`, then Package settings, then Manage Actions…"
+  step S1.3 line=361 end=366
+    text="Re-run only the failed job. The chart job is idempotent, and nothing else in the run depen…"
+    command line=364 lang="sh" body="gh run rerun <run> --failed"
+
+scenario index=2 line=372 symptom="Pods fail to pull the image after install"
+  alert="none; pods sit in `ImagePullBackOff`"
+  likely-cause="a `v`-prefixed `appVersion`. The image tag is bare semver (`2.0.0-beta.N`), because the pu…"
+  step S2.1 line=383 end=389
+    text="Read the chart's `appVersion`."
+    expected="no leading `v`"
+    command line=385 lang="sh" body="helm show chart oci://ghcr.io/donaldgifford/charts/docz --version <version> | grep appVers…"
+  step S2.2 line=391 end=392
+    text="If it has one, fix `charts/docz/Chart.yaml`, bump the chart `version`, and cut the next be…"

@@ -447,7 +447,7 @@ type package plus `walk.go`, following `pkg/impl`.
   the six `runbook.last-verified.*` codes. Exactly one `runbook.parse`
   finding when `Parse` fails. No rule reads the clock
   Done: runbook.step.empty reads the item as written, so the template's comment placeholder is not an empty step.
-- [ ] Corpus, `pkg/runbook/testdata/`:
+- [x] Corpus, `pkg/runbook/testdata/`:
   - RUNBOOK-0001 and RUNBOOK-0002 are snapshotted as `.orig.md` with
     markers stripped, plus their marked `.md`;
   - one hand-written legacy runbook (`legacy-onboarding.orig.md`, no
@@ -455,6 +455,7 @@ type package plus `walk.go`, following `pkg/impl`.
     the `steps.not-ordered` path (Open Question 1);
   - `.golden.txt` fact files are generated with `-update`;
   - `testdata/README.md` records what the corpus taught.
+  Done: the generated marked copies differ from docs/runbook only in blank lines before end markers; the README records why.
 - [ ] Tests:
   - table tests for the step grammar: nesting three deep, two commands
     under one step, `Expected`, bullets as prose, continuation lines,
