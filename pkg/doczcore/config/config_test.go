@@ -378,14 +378,22 @@ func TestResolveTypeAlias(t *testing.T) {
 func TestTypesHelp(t *testing.T) {
 	t.Parallel()
 	help := TypesHelp()
-	for _, typeName := range []string{"rfc", "adr", "design", "impl", "plan", "investigation"} {
+	for _, typeName := range []string{"rfc", "adr", "design", "impl", "investigation", "runbook"} {
 		if !strings.Contains(help, typeName) {
 			t.Errorf("TypesHelp() missing type %q", typeName)
 		}
 	}
-	for _, alias := range []string{"implementation", "inv"} {
+	for _, alias := range []string{"implementation", "inv", "rb"} {
 		if !strings.Contains(help, alias) {
 			t.Errorf("TypesHelp() missing alias %q", alias)
+		}
+	}
+
+	const suffix = "(disabled by default)"
+	for _, line := range strings.Split(help, "\n")[1:] {
+		name := strings.Fields(line)[0]
+		if got, want := strings.HasSuffix(line, suffix), name == "runbook"; got != want {
+			t.Errorf("TypesHelp() line %q: suffix %q present = %v, want %v", line, suffix, got, want)
 		}
 	}
 }

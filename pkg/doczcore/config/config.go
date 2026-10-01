@@ -436,7 +436,9 @@ func ResolveTypeAlias(name string) string {
 // TypesHelp returns a formatted help string listing all valid types
 // with aliases. The body is derived from the DocType registry —
 // adding a new entry to `allDocTypes` with a `HelpDescription` is
-// the only step required to surface it in `docz --help`.
+// the only step required to surface it in `docz --help`. A type that
+// ships disabled is still listed, suffixed "(disabled by default)", so the
+// reason `docz create <type>` refuses it is on the same screen.
 func TypesHelp() string {
 	const nameColWidth = 17
 
@@ -453,6 +455,9 @@ func TypesHelp() string {
 			b.WriteString(" (alias: ")
 			b.WriteString(strings.Join(dt.Aliases, ", "))
 			b.WriteByte(')')
+		}
+		if !dt.DefaultConfig().Enabled {
+			b.WriteString(" (disabled by default)")
 		}
 	}
 	return b.String()

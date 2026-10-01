@@ -160,7 +160,7 @@ beyond the generic tier yet.
 
   Fix the stale `plan` comments in `config.go` (`:184-191`, `:401`) so
   they name runbook as the disabled built-in.
-- [ ] `TypesHelp()` appends ` (disabled by default)` after the aliases of
+- [x] `TypesHelp()` appends ` (disabled by default)` after the aliases of
   any entry whose `DefaultConfig().Enabled` is false (DESIGN-0019 OQ 11).
   `TestTypesHelp` asserts the suffix on runbook and on no other line.
 - [ ] `pkg/doczcore/doctemplate/templates/runbook.md`: the body template
