@@ -590,9 +590,10 @@ a first-class type, and gives the site a curated colour and blurb for it.
 - [x] `ui/src/lib/docTypes.ts`: add the `runbook` blurb and remove the
   stale `plan` one
   Done. The `plan` mentions left in ui/ are prose ("Implementation Plans", "build plan"), not the type.
-- [ ] `ui/src/lib/colors.test.ts`: switch the uncurated-type example from
+- [x] `ui/src/lib/colors.test.ts`: switch the uncurated-type example from
   `runbook` to `postmortem`, and add a case pinning runbook's curated
   token
+  Done.
 - [ ] `ui/src/mocks/fixtures.ts`: add a runbook type and one runbook
   document to a mocked repo, and add a component or route test pinning the
   "Runbooks" nav entry and its blurb
