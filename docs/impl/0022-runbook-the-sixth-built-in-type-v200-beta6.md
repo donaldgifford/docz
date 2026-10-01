@@ -324,9 +324,10 @@ its own assumptions. That is how the other five type packages were built.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `.docz.yaml`: add `runbook` to the existing `types:` block with
+- [x] `.docz.yaml`: add `runbook` to the existing `types:` block with
   `enabled: true`, using the short block. Then run `docz update`, which
   creates `docs/runbook/README.md` and adds Runbooks to the wiki nav
+  Done. `docz update` created `docs/runbook/README.md`. The wiki nav gains its Runbooks section with the first runbook, because a directory that holds only a README adds no nav pages.
 - [ ] `docz create runbook "Cut a v2 beta release"` → RUNBOOK-0001. Write
   it from IMPL-0021 Phase 6 and CLAUDE.md's release notes. It has three
   procedures, Prepare, Tag and verify, and Install and smoke-test, and two
