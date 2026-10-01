@@ -508,10 +508,11 @@ outside.
 - [x] `cmd/validate.go`: `typeValidator` gains `case "runbook": return
   runbook.Validate`, the sixth arm
   Done.
-- [ ] `cmd/create.go`: the disabled-type error becomes
+- [x] `cmd/create.go`: the disabled-type error becomes
   `document type %q is disabled in configuration; set
   types.%s.enabled: true in .docz.yaml`. The exit code stays 1. It names
   the canonical type, so `docz create rb` says `types.runbook`
+  Done.
 - [ ] `cmd/init.go`: the Long help says "the enabled built-in types"
   instead of "all five"
 - [ ] New `cmd/runbook_test.go`, since existing `cmd/*_test.go` files are

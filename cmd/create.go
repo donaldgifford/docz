@@ -79,7 +79,9 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 
 	tc := r.Cfg.Types[docType]
 	if !tc.Enabled {
-		return fmt.Errorf("document type %q is disabled in configuration", docType)
+		return fmt.Errorf(
+			"document type %q is disabled in configuration; set types.%s.enabled: true in .docz.yaml",
+			docType, docType)
 	}
 
 	author := r.resolveAuthor(ctx, opts.author)
