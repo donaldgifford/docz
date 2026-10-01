@@ -534,7 +534,8 @@ outside.
   runbooks with no errors. Fix the runbooks rather than the rules if it
   finds something real
   Done: zero findings for docs/runbook/, --strict included.
-- [ ] `just ci` passes
+- [x] `just ci` passes
+  Done.
 
 <!--docz:tasks:end-->
 
