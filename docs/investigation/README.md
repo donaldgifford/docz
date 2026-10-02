@@ -27,6 +27,11 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0012 | docz-site consumes the OpenAPI contract from the same repository | Concluded | 2026-09-23 | Donald Gifford | [0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md](0012-docz-site-consumes-the-openapi-contract-from-the-same-repository.md) |
 | INV-0013 | docz-site deferred features after the move: link graph, lifecycle, labels | Open | 2026-09-23 | Donald Gifford | [0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md](0013-docz-site-deferred-features-after-the-move-link-graph-lifecycle.md) |
 | INV-0014 | Consolidate the docz-api and docz-site Helm charts into one chart | Concluded | 2026-09-25 | Donald Gifford | [0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md](0014-consolidate-the-docz-api-and-docz-site-helm-charts-into-one.md) |
+| INV-0015 | v2.0.0 acceptance: swap a running 1.x environment to the latest beta | Open | 2026-10-02 | Donald Gifford | [0015-v200-acceptance-swap-a-running-1x-environment-to-the-latest-beta.md](0015-v200-acceptance-swap-a-running-1x-environment-to-the-latest-beta.md) |
+| INV-0016 | One ADR per built-in document type | Open | 2026-10-02 | Donald Gifford | [0016-one-adr-per-built-in-document-type.md](0016-one-adr-per-built-in-document-type.md) |
+| INV-0017 | docz-api: serve runbook metadata as structured fields | Open | 2026-10-02 | Donald Gifford | [0017-docz-api-serve-runbook-metadata-as-structured-fields.md](0017-docz-api-serve-runbook-metadata-as-structured-fields.md) |
+| INV-0018 | docz-site: a step-aware runbook view | Open | 2026-10-02 | Donald Gifford | [0018-docz-site-a-step-aware-runbook-view.md](0018-docz-site-a-step-aware-runbook-view.md) |
+| INV-0019 | docz-api sync to external documentation services: Confluence and Notion | Open | 2026-10-02 | Donald Gifford | [0019-docz-api-sync-to-external-documentation-services-confluence-and.md](0019-docz-api-sync-to-external-documentation-services-confluence-and.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

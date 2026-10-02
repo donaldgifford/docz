@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(impl)* Close IMPL-0022 after the v2.0.0-beta.6 run
+- *(inv)* Stage five open issues as investigations
 
 ## [2.0.0-beta.6] - 2026-10-01
 
