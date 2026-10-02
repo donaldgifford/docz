@@ -24,6 +24,12 @@ created: 2026-10-02
   - [Observation 5: what docz markdown has to convert](#observation-5-what-docz-markdown-has-to-convert)
   - [Observation 6: where it lives in this repository](#observation-6-where-it-lives-in-this-repository)
   - [Observation 7: identity, idempotence, and direction](#observation-7-identity-idempotence-and-direction)
+  - [Observation 8: the libraries, read rather than searched](#observation-8-the-libraries-read-rather-than-searched)
+  - [Observation 9: what the corpus actually contains](#observation-9-what-the-corpus-actually-contains)
+  - [Observation 10: the one hard failure class is raw HTML, not markdown](#observation-10-the-one-hard-failure-class-is-raw-html-not-markdown)
+  - [Observation 11: what the prototype got wrong, for the next pass](#observation-11-what-the-prototype-got-wrong-for-the-next-pass)
+  - [Observation 12: Notion's Go converters bring a second parser](#observation-12-notions-go-converters-bring-a-second-parser)
+  - [Observation 13: the prototype's shape is the package's shape](#observation-13-the-prototypes-shape-is-the-packages-shape)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. What is the first target and format?](#1-what-is-the-first-target-and-format)
@@ -105,10 +111,12 @@ into, and suggests starting with a CLI command.
 
 | Component | Version / Value |
 | --------- | --------------- |
-| Confluence | Cloud REST API v2, `POST /wiki/api/v2/pages`; body `representation: storage` (XHTML) or `atlas_doc_format` (ADF JSON); v1 Content API deprecated |
-| Go client | `github.com/ctreminiom/go-atlassian/v2`, v2.12.0 at the time of the survey |
-| Markdown → Confluence | `kovetskiy/mark`, Go, Apache-2.0, about 1.1k stars, goldmark-based; last push to the original about May 2025; active forks `mrueg/mark`, `rfizzle/mark` |
-| Notion | public API, 100 blocks per append request; `jomei/notionapi` v1.13.3 (2024-12), `dstotijn/go-notion` v0.11.0 (2023-02, pre-1.0); `brittonhayes/notionmd` markdown → blocks; `wiremind/markdown-to-notionapi` CLI |
+| Confluence | Cloud REST API v2, `POST /wiki/api/v2/pages`; body `representation: storage` (XHTML) or `atlas_doc_format` (ADF JSON); v1 Content API deprecated, its content-property endpoint still current |
+| Go client | `github.com/ctreminiom/go-atlassian/v2` v2.12.0 (verified 2026-10-02): 5 direct requires; `confluence/v2.New(httpClient, site)`; `Page.Create/Update/Get`; `PropertyService.Create/Get(ctx, contentID, …)` |
+| Markdown parser | `github.com/yuin/goldmark` v1.8.6, **zero dependencies** (its `go.mod` is the module line and `go 1.22`) |
+| Markdown → Confluence | `kovetskiy/mark`: master at 2026-03-20, pseudo-versions only (no semver tags), `go 1.25.0`, **50 requires** including `chromedp` (headless Chrome, for mermaid); `markdown.CompileMarkdown` and its per-node renderers are exported |
+| Notion | public API, 100 blocks per append request; `jomei/notionapi` v1.13.3 (no direct deps), `dstotijn/go-notion` v0.11.0 (`go-cmp` only, pre-1.0); `brittonhayes/notionmd` v0.9.0 on `go-notion` **and `gomarkdown/markdown`**; `wiremind/markdown-to-notionapi` CLI |
+| Prototype | `/tmp/inv0019/main.go`, 585 lines (renderer about 250, the rest a census and an XML check); goldmark HTML renderer with ten node overrides; run over `docs/` (134 files, archive included) in 0.45 s wall |
 | docz | `v2.0.0-beta.6`; `pkg/doczcore/docparse` is stdlib-only and extracts facts; nothing in `pkg/` renders markdown |
 
 <!--docz:environment:end-->
@@ -116,8 +124,10 @@ into, and suggests starting with a CLI command.
 <!--docz:findings:start-->
 ## Findings
 
-The findings are a survey; the prototype in Approach step 5 is what turns
-them into a verdict.
+Observations 1 to 7 are the survey. Observations 8 to 13 are from running
+the prototype in Approach step 5 on 2026-10-02, up to and not including the
+push to a Confluence space, which needs a scratch Cloud site and an API
+token this run did not have.
 
 ### Observation 1: Confluence accepts two body formats, and storage is the portable one
 
@@ -148,11 +158,11 @@ no, and it does not matter: storage format needs no schema, only a renderer.
 extensions, renders storage format, creates or updates the page through the
 REST API, and uploads attachments; it binds a file to a page with HTML
 comments at the top of the file (`<!-- Space: -->`, `<!-- Parent: -->`,
-`<!-- Title: -->`) and renders mermaid to images. The original slowed in 2025
-and forks carry on. It is an existence proof that the conversion is tractable
-in Go, a reference for how each construct maps, and possibly a dependency if
-its renderer is importable; otherwise its approach is what to copy, not its
-binary to shell out to.
+`<!-- Title: -->`) and renders mermaid to images. The original is still
+moving (master is at 2026-03-20) and forks carry on beside it. It is an
+existence proof that the conversion is tractable in Go, a reference for how
+each construct maps, and possibly a dependency if its renderer is
+importable; Observation 8 checks that.
 
 ### Observation 4: Notion is a second target with a different shape
 
@@ -205,30 +215,156 @@ is overwritten on the next run, and the page should say so in a banner.
 Detecting remote edits (compare the page's version or hash before writing)
 is possible and worth deciding on.
 
+### Observation 8: the libraries, read rather than searched
+
+`go-atlassian` v2.12.0 has five direct requires. Its v2 page surface is
+`Page.Create(ctx, *PageCreatePayloadScheme{SpaceID, Status, Title,
+ParentID, Body *PageBodyRepresentationScheme{Representation, Value}})`,
+`Page.Update(ctx, pageID, *PageUpdatePayloadScheme)`, and
+`Page.Get(ctx, pageID, format, draft, version)`; authentication is basic
+(email and API token) or bearer. Content properties are on the v1
+`PropertyService` (`Create`, `Get`, `Gets` by content id), and a page keeps
+one id across v1 and v2, so Observation 7's docz-id and hash properties are
+one call each. `goldmark` v1.8.6 has no dependencies at all.
+
+`mark` is importable: `markdown.CompileMarkdown(markdown, stdlib, path,
+cfg) (string, []Attachment, error)` and its per-node renderers
+(`NewConfluenceFencedCodeBlockRenderer`, `NewConfluenceBlockQuoteRenderer`,
+`GHAlertsBlockQuoteClassifier`, …) are exported from top-level packages
+with no `internal/`. But its `go.mod` lists 50 modules, among them
+`chromedp` for rendering mermaid in a headless Chrome, it has no semver tags
+(pseudo-versions only), and it finds pages by space and title through a CQL
+search. That is the wrong weight for a `pkg/` package a library consumer
+would import, and the title keying is what Observation 7 argues against. Its
+renderer is about 1.5k lines, which also sizes the work of writing one.
+
+### Observation 9: what the corpus actually contains
+
+The prototype parsed every markdown file under `docs/`, archive included:
+134 documents, 3.2 MB in, 4.1 MB of storage format out.
+
+| Construct | Count | Converter's job |
+| --------- | ----- | --------------- |
+| Headings | 3,180 (h2 1,135, h3 1,381, h4 510, h5 19, h6 1) | `<hN>` as is |
+| Tables | 323 | `<table>` as is |
+| Task lists | 258, with 1,810 items | `ac:task-list` / `ac:task` |
+| Ordered lists | 222, of which 3 nested under another ordered list (the runbooks) | `<ol>` as is |
+| Bullet lists | 2,195 | `<ul>` as is |
+| Fenced code | 438 in 24 languages: go 117, mermaid 56, text 44, yaml 41, sh/bash 57, markdown 24, ts 17, json 15, sql 7, others under 5 | `code` macro; **mermaid is 13 % of fences** |
+| Indented code | 6 | `code` macro |
+| HTML comments | 2,384 blocks and 6 inline | dropped: the region markers and the ToC pair |
+| Raw HTML, other | 1 block (`<details>`), 63 inline | see Observation 10 |
+| Links | 2,945 in-page anchors, 240 external, 357 relative to another document, 18 relative to source files, 5 unresolved | resolver for the 357; a repository blob URL for the 18; anchors are Observation 11 |
+| GitHub alerts | 6 (one of each kind, plus one) | panel macros |
+| Plain blockquotes | 254 | `<blockquote>` as is |
+| Images | 2 (one remote, one local) | `ac:image` |
+| Footnotes, strikethrough, autolinks | 2, 3, 40 | HTML as is |
+
+So the shape the hypothesis guessed is right, with one correction in
+emphasis: tables and task lists are everywhere, alerts and images are rare,
+and mermaid is common enough that its rendering decides whether a sync is
+useful.
+
+### Observation 10: the one hard failure class is raw HTML, not markdown
+
+On the first pass 129 of 134 outputs were well-formed XML (checked with
+`encoding/xml` after declaring the `ac:` and `ri:` prefixes). All five
+failures were raw HTML passed through as written: `<br>` without a close in
+a table (39 of them in one archived IMPL), and angle-bracket placeholders in
+prose that goldmark reads as inline tags — `<status>`, `<type>`,
+`<impl-id>`, `<path>`, `<old>`, `<new>`. Markdown forgives these; XML does
+not. Allowing a short list (`br` rewritten self-closing, `kbd`, `sub`,
+`sup`, `span`, `details`, `summary`) and escaping everything else made it
+134 of 134 — and escaping is what the authors meant, since `<status>` in
+prose is a placeholder, not markup. docz-site reaches the same answer from
+the other side: its sanitizer strips what it does not allow.
+
+### Observation 11: what the prototype got wrong, for the next pass
+
+- **The ToC body survives.** Dropping the `<!--toc:…-->` comments leaves the
+  list of anchor links between them as an ordinary list at the top of the
+  page. The converter has to drop the span, or replace it with Confluence's
+  `toc` macro, which is what `docz update` would want anyway.
+- **In-page anchors are untested.** 2,945 links are `#fragment`s, most of
+  them in the ToC blocks; the rest are cross-references within a document.
+  Confluence does not use markdown's heading slugs, so these either become
+  the `anchor` macro beside each heading or follow whatever heading anchors
+  the Cloud editor generates. This needs the live push to settle.
+- **Mermaid.** 56 fences. The prototype kept them as code blocks, which is
+  readable but not a diagram. The choices are rendering to an attachment at
+  sync time (`mark` runs headless Chrome; a remote renderer such as kroki is
+  the lighter way), or leaving them as code. Notion renders `mermaid` code
+  blocks itself.
+- **Alert bodies keep their `[!NOTE]` marker.** The prototype opened the
+  right panel macro but did not cut the marker text; `mark`'s
+  `GHAlertsBlockQuoteClassifier` shows how.
+- **Source-file links.** 18 relative links point at `.go`, `.ts`, `.yaml`
+  files. The resolver needs a second rule mapping a repository path to its
+  blob URL at the ingested commit, which docz-api has (`git_sha`).
+- **Five broken links in the corpus**, found because the resolver treats a
+  missing target as unresolved: `docs/index.md` still links
+  `plan/README.md` (gone since ADR-0003); DESIGN-0016 links DESIGN-0015 by a
+  filename that was renamed; `docs/examples/README.md` links a
+  `docs/MIGRATION.md` that does not exist, twice; and an archived docz-api
+  IMPL links a sibling by a path that moved in the graft. `docz validate`
+  does not check link targets; a sync would, as a side effect, and so could
+  the site's link graph (INV-0013).
+
+### Observation 12: Notion's Go converters bring a second parser
+
+`notionmd` v0.9.0 converts markdown to Notion blocks on top of `go-notion`
+and `gomarkdown/markdown`, a different markdown parser from goldmark. A docz
+converter that used it would parse every document twice with two grammars.
+The better shape is the one the hypothesis gave: one goldmark parse, and a
+Notion block mapper as a second renderer over the same AST. `jomei/notionapi`
+has no direct dependencies; `go-notion` has one. Both lag the current Notion
+API version, which is a risk to note in the Notion phase, not now.
+
+### Observation 13: the prototype's shape is the package's shape
+
+The renderer is the goldmark HTML renderer with ten overrides registered at
+a higher priority: fenced and indented code, HTML block and inline HTML,
+link, image, blockquote, list, list item, and task checkbox. The link
+override takes a resolver callback and never knows the page tree. Frontmatter
+is cut before parsing, as `document.ParseFrontmatter` would cut it. That is
+about 250 lines, with no state across documents, and it converted the whole
+corpus in under half a second. Everything the census needed beyond that was
+the AST walk.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Yes, provisionally. Confluence Cloud accepts storage format
-through a maintained Go client (Observation 1), no ADF generator is needed
-(Observation 2), and a Go tool already proves the conversion
-(Observation 3). The open cost is fidelity on docz's constructs
-(Observation 5), which the prototype measures, and the one real design
-question is where the converter and its drivers live (Observation 6).
-Notion follows as a second renderer (Observation 4). The investigation
-concludes when the prototype has run and the questions below are resolved.
+**Answer:** Yes. Confluence Cloud accepts storage format through a
+maintained, light Go client (Observations 1 and 8), no ADF generator is
+needed (Observation 2), and a 250-line goldmark renderer converted all 134
+documents under `docs/` to well-formed storage format in under half a second
+(Observations 9, 10, 13). The corpus is tables, task lists, and code
+(Observation 9); the only construct that broke was raw HTML, and escaping
+fixed it (Observation 10). What is left is not feasibility: it is the live
+push to a Confluence space, which settles in-page anchors and shows how the
+macros render; a decision on mermaid, which is 13 % of all fences
+(Observation 11); and the questions below, which choose the shape. Notion
+follows as a second renderer over the same parse (Observations 4 and 12).
+
+The investigation stays open for the push and the questions. The three
+broken links Observation 11 turned up in live documents are worth fixing on
+their own.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Prototype against Confluence Cloud in storage format with a goldmark
-renderer in `pkg/export/confluence`, driven first by a `docz export
-confluence` command over a checkout, then by a post-ingest job in docz-api
-once the output is right. Key pages by a content property carrying the docz
-id and hash. Treat Notion as the second renderer over the same shape.
+Take the prototype's renderer into `pkg/export/confluence`, with the ToC
+span, alert markers, raw-HTML allow-list, and source-file links from
+Observation 11 fixed, and drive it first by a `docz export confluence`
+command over a checkout, then by a post-ingest job in docz-api once a live
+push has settled anchors and mermaid. Key pages by a content property
+carrying the docz id and hash. Treat Notion as the second renderer over the
+same parse. Before any of that, fix the three broken links in live
+documents.
 
 ### 1. What is the first target and format?
 
@@ -245,7 +381,9 @@ id and hash. Treat Notion as the second renderer over the same shape.
   treats differently: code to the `code` macro, task items to a task list,
   alerts to panels, mermaid to an attachment, relative links through the
   resolver. *(recommendation)*
-- b. Import `mark`'s renderer as a library, if its packages allow it.
+- b. Import `mark`'s renderer as a library. Its packages allow it
+  (Observation 8), but they bring 50 modules and headless Chrome into
+  `pkg/`, with no semver tag to pin.
 - c. Shell out to the `mark` binary with generated header comments.
 - d. Other.
 
