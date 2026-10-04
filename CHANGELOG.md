@@ -10,6 +10,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Close IMPL-0022 after the v2.0.0-beta.6 run
 - *(inv)* Stage five open issues as investigations
 - *(inv)* Run INV-0019's prototype over the corpus
+- *(inv)* INV-0019 covers the free scratch site and Jira linking
 
 ## [2.0.0-beta.6] - 2026-10-01
 
