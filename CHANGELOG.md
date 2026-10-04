@@ -13,6 +13,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0019 covers the free scratch site and Jira linking
 - *(inv)* INV-0019 widens to Jira and Linear work items on the free-plan floor
 - *(inv)* INV-0019 maps a DESIGN to a Jira story, drops Notion, defers Linear
+- *(inv)* INV-0019 records the live Confluence push and Jira projection
 
 ## [2.0.0-beta.6] - 2026-10-01
 
