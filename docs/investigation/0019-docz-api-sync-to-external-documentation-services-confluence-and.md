@@ -32,6 +32,9 @@ created: 2026-10-02
   - [Observation 13: the prototype's shape is the package's shape](#observation-13-the-prototypes-shape-is-the-packages-shape)
   - [Observation 14: a free Cloud site is enough for the push](#observation-14-a-free-cloud-site-is-enough-for-the-push)
   - [Observation 15: Jira is a link target, not a page target](#observation-15-jira-is-a-link-target-not-a-page-target)
+  - [Observation 16: a DESIGN is a Jira epic and its IMPLs are its work, from fields docz already parses](#observation-16-a-design-is-a-jira-epic-and-its-impls-are-its-work-from-fields-docz-already-parses)
+  - [Observation 17: Linear is the cheapest target, and its free plan shapes the mapping](#observation-17-linear-is-the-cheapest-target-and-its-free-plan-shapes-the-mapping)
+  - [Observation 18: the free plan as the floor](#observation-18-the-free-plan-as-the-floor)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. What is the first target and format?](#1-what-is-the-first-target-and-format)
@@ -42,6 +45,8 @@ created: 2026-10-02
   - [6. What happens to a page edited in Confluence?](#6-what-happens-to-a-page-edited-in-confluence)
   - [7. Notion](#7-notion)
   - [8. Jira](#8-jira)
+  - [9. Linear](#9-linear)
+  - [10. Is the free plan the floor?](#10-is-the-free-plan-the-floor)
 - [References](#references)
 <!--toc:end-->
 
@@ -52,7 +57,11 @@ Can the documents docz-api indexes be synced, all or per repository, to an
 external documentation service — Confluence first, Notion second — and what
 would that take: which API and body format, which Go libraries exist, what in
 docz markdown has to be converted, and where the capability belongs between
-a `docz` CLI command, a `pkg/` package, and docz-api?
+a `docz` CLI command, a `pkg/` package, and docz-api? Review on
+2026-10-04 widened it: can the same mechanism project a DESIGN and the IMPLs
+that implement it into work items in Jira or Linear, so a team gets docz's
+types there without defining them, and does every part of this work on each
+service's free plan?
 
 <!--docz:question:end-->
 
@@ -70,6 +79,12 @@ idempotently. The issue's sequence, a CLI command for testing before
 auto-sync in the API, matches the repository's layering: the converter is a
 `pkg/` package with bytes in and bytes out, the CLI drives it over a
 checkout, and docz-api drives the same code from its store after an ingest.
+
+For the work items: yes, and more cheaply than the pages, because the
+projection reads fields the type packages already parse (`design.Doc`,
+`impl.Doc.Implements`, `impl.Phase`, `impl.Task`) rather than rendering a
+body, and both trackers accept the shapes docz has. The free plan is a floor
+that shapes the mapping rather than blocks it, with Notion the exception.
 
 <!--docz:hypothesis:end-->
 
@@ -106,6 +121,10 @@ into, and suggests starting with a CLI command.
    task lists, code, mermaid, alerts, and cross-links.
 6. Decide the converter, its home, the opt-in and mapping, page identity,
    and the conflict policy, then write a DESIGN.
+7. Map a DESIGN and the IMPLs that implement it onto Jira's issue hierarchy
+   and onto Linear's, from the fields `pkg/design` and `pkg/impl` parse, and
+   find what each service's free plan allows and forbids.
+8. Tabulate the free plan of all four services as the support floor.
 
 <!--docz:approach:end-->
 
@@ -123,6 +142,9 @@ into, and suggests starting with a CLI command.
 | docz | `v2.0.0-beta.6`; `pkg/doczcore/docparse` is stdlib-only and extracts facts; nothing in `pkg/` renders markdown |
 | Scratch site | Confluence Cloud **Free** plan: 10 users, 2 GB, REST v1 and v2, API tokens (basic auth); or the Cloud Developer Bundle (`go.atlassian.com/cloud-dev`), 5 users; either is one `.atlassian.net` site with Jira pre-linked (verified 2026-10-04) |
 | Jira | Cloud REST v3 remote issue links, `/rest/api/3/issue/{key}/remotelink`, in `go-atlassian` v2.12.0 as `RemoteLinkService`; the `jira` macro in storage format for the page side |
+| Jira work items | v3 `Issue.Create`, `Issue.Transitions`, `Issue.Move`, `Issue.Property.Set`, `Issue.SearchADF` (JQL) in the same client; description is ADF (`CommentNodeScheme`) on v3, a wiki-markup string on v2, capped at 32,767 characters either way, of serialised JSON on v3; `parent` sets an Epic's child and a Sub-task's parent alike (Epic Link removed from the API 2025-06-13). **Free**: 10 users, company-managed projects, custom workflows, issue types, and fields; every user is an admin |
+| Linear | GraphQL only, `api.linear.app/graphql`, personal API key or OAuth; 2,500 requests and 3,000,000 complexity points an hour per user on every plan; **Free**: unlimited members, 2 teams, 250 non-archived issues, 10 MB uploads, every member an admin; issue descriptions and documents are markdown; official SDK is TypeScript, no official Go client (verified 2026-10-04) |
+| Corpus for the projection | 19 DESIGNs: median 39 KB, largest 99 KB, 11 over 32 KB; 21 IMPLs: median 26 KB, largest 101 KB, 7 over 32 KB; 127 phases (at most 11 in one), 1,084 checkbox lines; 20 of 21 IMPLs carry `**Implements:**` (14 a DESIGN, 6 an INV) |
 
 <!--docz:environment:end-->
 
@@ -134,7 +156,9 @@ the prototype in Approach step 5 on 2026-10-02, up to and not including the
 push to a Confluence space, which needs a scratch Cloud site and an API
 token this run did not have. Observations 14 and 15 were added on
 2026-10-04 for two review questions: whether a free site exists for that
-push, and where Jira fits.
+push, and where Jira fits. Observations 16 to 18 followed the same day,
+when review widened the scope to work items in Jira and Linear with the
+free plan as the floor.
 
 ### Observation 1: Confluence accepts two body formats, and storage is the portable one
 
@@ -382,9 +406,10 @@ question 7; a team on Free Notion is not a sync target at all.
 
 ### Observation 15: Jira is a link target, not a page target
 
-Jira has no page body to render into, so it is not a third service beside
-Confluence and Notion. What #142's "eventually" can mean is linking, and
-there are two directions, both reachable with what is already in hand.
+Jira has no page body to render into, so it is not a page target like
+Confluence and Notion. It can be a link target, which this observation
+covers, and a work-item target, which Observation 16 does. Linking has two
+directions, both reachable with what is already in hand.
 
 **Page to issue.** The Jira issues macro in storage format is
 `<ac:structured-macro ac:name="jira">` with `key`, `serverId`, and `server`
@@ -417,8 +442,143 @@ a set of project keys declared in the `sync:` block, below which a bare key
 or an issue URL is a Jira reference and everything else is a docz id, or a
 frontmatter field. docz has no structured issue field today (issues appear
 in prose as `#142`), so this would be a type-neutral frontmatter addition
-rather than anything in a type package, and it is a follow-up (question 8),
-not part of the first converter.
+rather than anything in a type package, and it belongs with the work-item
+question (question 8), not in the first converter.
+
+### Observation 16: a DESIGN is a Jira epic and its IMPLs are its work, from fields docz already parses
+
+The idea from review is a projection rather than a page: a DESIGN becomes a
+story, each IMPL that implements it becomes work under that story, and a
+team gets docz's types in Jira without defining them there. Three things
+make it cheap. The link is already parsed: `impl.Doc.Implements` reads the
+template's `**Implements:**` field, and 20 of the 21 IMPLs here carry it
+(14 name a DESIGN, 6 an INV). The structure is already parsed:
+`impl.Phase{Token, Title, Tasks, Criteria}` and `impl.Task{ID, Text,
+Checked, Verify}` are the shapes a tracker wants, and `design.Doc{Overview,
+Goals, NonGoals, OpenQuestions}` is the shape of a story's description. And
+the client is the one Confluence already brings: `go-atlassian`'s v3 client
+has `Issue.Create`, `Issue.Transitions` and `Issue.Move`,
+`Issue.Property.Set`, and `Issue.SearchADF` over JQL.
+
+Jira's vocabulary bends the mapping. Its hierarchy is Epic above Story,
+Task, and Bug, which sit at one level, with Sub-task below them, and a
+sub-task cannot have children. So "a task in the story" is a Sub-task, and a
+DESIGN-as-Story leaves phases nowhere to go but the description. A DESIGN as
+an **Epic** uses the whole ladder: each IMPL a Story under it, each phase a
+Sub-task, each task a checkbox in that sub-task's description, and the
+IMPL's status visible as the issue's. Both parents are one field now:
+`parent` sets an Epic's child and a Sub-task's parent alike, since the Epic
+Link field left the REST API on 2025-06-13. Nothing here is custom: Epic,
+Story, Task, and Sub-task are the default types, and Jira Free allows
+company-managed projects, custom workflows, issue types, and fields in any
+case, because every Free user is a Jira admin.
+
+The description is the constraint. Jira caps a description at 32,767
+characters, and on the v3 API that is the length of the serialised ADF JSON,
+not of the visible text, with `CONTENT_LIMIT_EXCEEDED` on breach and a side
+effect that burns an issue number. 11 of the 19 DESIGNs here exceed that as
+raw markdown (median 39 KB, largest 99 KB), and 7 of the 21 IMPLs do,
+before JSON roughly doubles them. So the full body never goes into Jira: the
+epic carries the Overview, the Goals and Non-Goals, the open questions, and
+a link to the document on docz-site or its Confluence page; the IMPL's story
+carries its Objective, its phase list, and the same link. The parsed fields
+make that a selection, not a truncation. What does go in has to be ADF: the
+v2 API takes a wiki-markup string instead, but wiki markup has no
+checkboxes, while ADF's `taskList` renders as real ones, so a phase's tasks
+are tasks only over v3. ADF is then a third renderer output beside storage
+format and Notion blocks, over the same goldmark walk, and the subset needed
+(paragraph, heading, bullet and ordered lists, task list, code block, table,
+link and code marks) is small; `go-atlassian`'s `CommentNodeScheme` is a
+generic node tree that carries it, so Observation 2's verdict that no Go ADF
+generator is worth building on costs nothing here.
+
+Status is a mapping, not a field. docz statuses are per type and per
+repository; Jira statuses are per workflow and change by transition
+(`Issue.Transitions` lists what is allowed, `Issue.Move` takes one). The
+`sync:` block names the transition for each docz status that should move an
+issue (Implemented and Completed to Done, Abandoned and Cancelled to Done
+with a Won't Do resolution, In Progress to In Progress), and a phase's
+sub-task moves to Done when every task is checked. The direction stays
+one-way: git is the source, and an epic closed in Jira reopens on the next
+run unless the policy says otherwise. The reverse, a sub-task closed in Jira
+checking the docz task through `docwrite.SetTaskStateBytes` and a commit, is
+possible and is a question, not a plan.
+
+Identity needs a label, not only a property. Issue properties can hold the
+docz id and content hash (32 KB a value), but JQL cannot search a property
+set over REST unless an app has declared it in a `jiraEntityProperties`
+index, which an API token cannot do. A label `docz-IMPL-0018` is
+exact-match searchable (`labels = docz-IMPL-0018`) on every plan with no
+app, so the label finds the issue and the property carries the hash.
+Observation 15's grammar collision applies with more force here: a Jira
+project keyed `IMPL` or `INV` on the same site would make `IMPL-0018` a real
+issue key, so the sync never puts a bare docz id where Jira resolves keys,
+and the declared project keys are the only Jira references docz recognises.
+
+The scale is small: this repository is 19 epics, 21 stories, and 127 sub-tasks,
+about 170 issues, well inside the burst limits, and the Free plan has no
+issue cap.
+
+### Observation 17: Linear is the cheapest target, and its free plan shapes the mapping
+
+Linear is a work tracker with one API, GraphQL at `api.linear.app/graphql`,
+authenticated by a personal API key or OAuth. Its rate limits do not vary by
+plan: 2,500 requests and 3,000,000 complexity points an hour per user,
+10,000 points a query. The Free plan has unlimited members, 2 teams, 250
+non-archived issues (Done and Canceled count, sub-issues count, archived do
+not), 10 MB uploads, and every member an admin; issues, projects, cycles,
+initiatives, documents, the API, and webhooks are all on it. Sub-initiatives
+are Enterprise and team initiatives Business, and neither is needed.
+
+Two things make it the cheapest target. It is markdown-native:
+`IssueCreateInput.description` and `Document.content` are markdown strings,
+and the editor renders tables, task lists, `mermaid` fences as diagrams, and
+`+++` collapsible sections, so there is no renderer, only the docz-specific
+pass that drops markers and the ToC and rewrites links. That makes it the
+first target where mermaid, 13 % of the corpus's fences, renders without a
+decision (Observation 11). What is not documented is whether markdown
+supplied through the API renders tables and mermaid as the editor does when
+they are pasted; that is a live check. And there is nothing to depend on:
+Linear's official SDK is TypeScript, the Go clients are community-generated,
+and a client for the handful of mutations a sync needs is `net/http` and
+`encoding/json`, so it is the only target with zero dependencies.
+
+The hierarchy is Initiative, Project, Milestone, Issue, Sub-issue, and an
+issue cannot attach to an initiative directly. The natural projection is a
+DESIGN as a **Project** with a Document carrying the full body (no size cap
+is documented) and each IMPL an Issue in the project. Phases could be
+sub-issues or milestones and tasks a checklist, and this is where the free
+plan bites: this repository alone is 21 IMPLs and 127 phases, 148 issues against
+a cap of 250 shared by the whole workspace, so phases as sub-issues spend
+the Free plan on one repository. Phases as headings with checklists inside
+one issue per IMPL (21 issues) fit, and a team on Basic can switch to
+sub-issues. The floor decides the default.
+
+Identity is better than in Jira: every create input takes a client-supplied
+`id` in UUID v4 format, so an id derived from the repository and the docz id
+(a hash with the version and variant bits set) makes creation idempotent and
+lookup by `issue(id:)` exact, with no label and no property. What a retried
+create with an existing id returns is undocumented and is a live check.
+Status maps by workflow state *type* (backlog, unstarted, started,
+completed, canceled), which every team's states carry, so the mapping is
+stable across teams where Jira's needs a transition per workflow. An
+`Attachment` carries the link back to docz-site.
+
+### Observation 18: the free plan as the floor
+
+| Service | Free plan | API on Free | What the floor does to the sync |
+| ------- | --------- | ----------- | ------------------------------- |
+| Confluence | 10 users, 2 GB, no page permissions, lowest rate tier | v1 and v2, API token | Nothing: 134 pages once, then only changes |
+| Jira | 10 users, every user an admin, custom workflows and types | v2 and v3, the same token as Confluence | Nothing: no issue cap, about 170 issues for this repository |
+| Linear | unlimited members, 2 teams, 250 non-archived issues | GraphQL, the same limits as paid | One issue per IMPL; phases as checklists, not sub-issues |
+| Notion | one member unlimited; two or more members 1,000 lifetime blocks over the API | yes, 180 requests a minute | Fails for a team: 134 documents are tens of thousands of blocks |
+
+Three of the four meet the floor as they are. Notion does not for any
+workspace with two members, and the limit is lifetime, so a team cannot
+work around it by deleting. "Anyone can use it free" therefore holds for
+Confluence, Jira, and Linear, and for Notion only as a personal workspace;
+that is a reason to place Notion last and to say so in its documentation,
+not to drop it.
 
 <!--docz:findings:end-->
 
@@ -442,6 +602,13 @@ a page target, reachable in both directions with the client already chosen
 (Observations 4 and 12), tested against a single-member workspace
 (Observation 14).
 
+The widened question holds too. A DESIGN and the IMPLs that implement it
+project onto Jira's Epic, Story, and Sub-task ladder and onto Linear's
+Project and Issue from fields `pkg/design` and `pkg/impl` already parse, with
+no body rendering for Linear and a small ADF subset for Jira (Observations
+16 and 17). The free plans of Confluence, Jira, and Linear carry the whole
+feature; Notion's does not for a team (Observation 18).
+
 The investigation stays open for the push and the questions. The three
 broken links Observation 11 turned up in live documents are worth fixing on
 their own.
@@ -459,7 +626,11 @@ push has settled anchors and mermaid. Key pages by a content property
 carrying the docz id and hash. Treat Notion as the second renderer over the
 same parse. Before any of that, fix the three broken links in live
 documents. Create the scratch site on the Free plan rather than the
-developer bundle, and keep Jira out of the first converter (question 8).
+developer bundle. Order the targets by cost: Confluence pages (the
+prototype), then Linear work items (no renderer, no dependencies), then Jira
+work items (an ADF subset over the client Confluence already brings), then
+Notion pages. Make the free plan the floor and let it set the defaults: one
+Linear issue per IMPL, and Notion documented as personal-workspace only.
 
 ### 1. What is the first target and format?
 
@@ -487,7 +658,11 @@ developer bundle, and keep Jira out of the first converter (question 8).
 - a. **`pkg/export/confluence` as a pure converter; `docz export
   confluence --space --parent` in the CLI to test over a checkout; then a
   docz-api post-ingest sync job on the asynq queue**, the sequence the
-  issue proposes. *(recommendation)*
+  issue proposes. The work-item targets add `pkg/export/jira` and
+  `pkg/export/linear` over one type-aware projection that reads
+  `design.Doc` and `impl.Doc`; export packages are siblings of the type
+  packages, like `pkg/wiki`, and may import them where the core may not.
+  *(recommendation)*
 - b. docz-api only, no CLI.
 - c. A separate tool outside this repository.
 - d. Other.
@@ -523,26 +698,51 @@ developer bundle, and keep Jira out of the first converter (question 8).
 - a. **After Confluence**, as `pkg/export/notion` over the same converter
   shape, using the block limit and native mermaid noted above, and tested
   against a single-member Free workspace, since a Free workspace with more
-  members is capped at 1,000 blocks through the API (Observation 14).
-  *(recommendation)*
+  members is capped at 1,000 blocks through the API (Observation 14), and
+  last of the four targets, because its free plan fails the floor for a
+  team (Observation 18). *(recommendation)*
 - b. In parallel with Confluence.
 - c. Not planned.
 - d. Other.
 
 ### 8. Jira
 
-- a. **Linking only, as a follow-up after the first converter**: an
-  explicit reference, either a `jira:` list in frontmatter or a declared
-  project-key set in the `sync:` block, rendered as the Jira macro on the
-  Confluence page and written as a remote issue link on the issue, and never
-  inferred from `KEY-123` patterns in prose (Observation 15).
+- a. **A work-item target, after Confluence and Linear: a DESIGN is an
+  Epic, each IMPL that implements it a Story under it, each phase a
+  Sub-task, each task an ADF checkbox.** The full body stays on docz-site or
+  Confluence and the issue carries the parsed summary fields; statuses move
+  by configured transitions; a `docz-<id>` label finds the issue and an
+  issue property carries the hash; project keys are declared and nothing is
+  inferred from `KEY-123` patterns (Observations 15 and 16).
   *(recommendation)*
-- b. Remote issue links to docz-site only, with no Confluence macro, so a
-  repository that never syncs to Confluence gets the same linking.
-- c. Pattern-based auto-linking with the enabled types' `id_prefix` values
-  as a deny-list.
-- d. Not planned.
-- e. Other.
+- b. The literal reading: a DESIGN as a Story and each IMPL a Sub-task of
+  it, with phases flattened into the description.
+- c. Links only: the Jira macro on the Confluence page and remote issue
+  links on the issue, no work items.
+- d. Two-way as well: a Sub-task closed in Jira checks the docz task through
+  docz-api and a commit.
+- e. Not planned.
+- f. Other.
+
+### 9. Linear
+
+- a. **The second target, before Jira: a DESIGN is a Project with a Document
+  carrying the full body, each IMPL an Issue in it, phases as headed
+  checklists on Free and sub-issues where the plan allows, ids derived from
+  the docz id, status by state type, a stdlib GraphQL client**
+  (Observation 17). *(recommendation)*
+- b. Phases as sub-issues always, accepting the Free cap.
+- c. Not planned.
+- d. Other.
+
+### 10. Is the free plan the floor?
+
+- a. **Yes: every feature works on each service's free plan, the defaults
+  are what the free plan allows, and Notion is documented as
+  personal-workspace only** (Observation 18). *(recommendation)*
+- b. Free for Confluence, Jira, and Linear; Notion paid only.
+- c. No floor; each target assumes a paid plan where that is simpler.
+- d. Other.
 
 <!--docz:recommendation:end-->
 
@@ -567,6 +767,18 @@ developer bundle, and keep Jira out of the first converter (question 8).
   [Confluence Cloud rate limiting](https://developer.atlassian.com/cloud/confluence/rate-limiting/),
   [Cloud Developer Bundle sign-up](https://developer.atlassian.com/cloud/confluence/getting-set-up-with-ace/)
   (`go.atlassian.com/cloud-dev`)
+- Jira work items: [the Free Jira Cloud plan](https://support.atlassian.com/jira-cloud-administration/docs/what-is-the-free-jira-cloud-plan/),
+  [Epic Link and Parent Link removal](https://community.atlassian.com/forums/Jira-Cloud-Admins-articles/The-fields-quot-Epic-Link-quot-and-quot-Parent-Link-quot-will-be/ba-p/2995787),
+  [entity properties and JQL](https://developer.atlassian.com/cloud/jira/platform/jira-entity-properties/),
+  [description limit, `CONTENT_LIMIT_EXCEEDED`](https://jira.atlassian.com/browse/JRACLOUD-78553)
+- Linear: [GraphQL getting started](https://linear.app/developers/graphql),
+  [rate limiting](https://linear.app/developers/rate-limiting),
+  [billing and plans](https://linear.app/docs/billing-and-plans),
+  [conceptual model](https://linear.app/docs/conceptual-model),
+  [editor markdown](https://linear.app/docs/editor),
+  [documents](https://linear.app/docs/documents)
+- [`pkg/design/doc.go`](../../pkg/design/doc.go) and
+  [`pkg/impl/doc.go`](../../pkg/impl/doc.go): the fields the projection reads
 - Jira: [remote issue links](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-remote-links/),
   [Jira issues macro](https://confluence.atlassian.com/doc/jira-issues-macro-139380.html),
   [the System Jira application link](https://support.atlassian.com/confluence/kb/how-to-check-which-application-link-the-jira-macro-repair-should-be-mapped-after-an-import/)
