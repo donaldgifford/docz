@@ -35,6 +35,8 @@ created: 2026-10-02
   - [Observation 16: a DESIGN is a Jira story and its IMPLs' phases are its sub-tasks, from fields docz already parses](#observation-16-a-design-is-a-jira-story-and-its-impls-phases-are-its-sub-tasks-from-fields-docz-already-parses)
   - [Observation 17: Linear is the cheapest target, and its free plan shapes the mapping](#observation-17-linear-is-the-cheapest-target-and-its-free-plan-shapes-the-mapping)
   - [Observation 18: the free plan as the floor](#observation-18-the-free-plan-as-the-floor)
+  - [Observation 19: the Confluence push, live](#observation-19-the-confluence-push-live)
+  - [Observation 20: the Jira projection, live](#observation-20-the-jira-projection-live)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. What is the first target and format?](#1-what-is-the-first-target-and-format)
@@ -47,6 +49,7 @@ created: 2026-10-02
   - [8. Jira](#8-jira)
   - [9. Linear](#9-linear)
   - [10. Is the free plan the floor?](#10-is-the-free-plan-the-floor)
+  - [11. Mermaid in Confluence](#11-mermaid-in-confluence)
 - [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
@@ -139,7 +142,8 @@ into, and suggests starting with a CLI command.
 | Markdown parser | `github.com/yuin/goldmark` v1.8.6, **zero dependencies** (its `go.mod` is the module line and `go 1.22`) |
 | Markdown → Confluence | `kovetskiy/mark`: master at 2026-03-20, pseudo-versions only (no semver tags), `go 1.25.0`, **50 requires** including `chromedp` (headless Chrome, for mermaid); `markdown.CompileMarkdown` and its per-node renderers are exported |
 | Notion | public API, 100 blocks per append request; `jomei/notionapi` v1.13.3 (no direct deps), `dstotijn/go-notion` v0.11.0 (`go-cmp` only, pre-1.0); `brittonhayes/notionmd` v0.9.0 on `go-notion` **and `gomarkdown/markdown`**; `wiremind/markdown-to-notionapi` CLI |
-| Prototype | `/tmp/inv0019/main.go`, 585 lines (renderer about 250, the rest a census and an XML check); goldmark HTML renderer with ten node overrides; run over `docs/` (134 files, archive included) in 0.45 s wall |
+| Prototype | `/tmp/inv0019/`, five files, 1,437 lines: `render.go` (storage format, goldmark with eleven node overrides), `adf.go` (the ADF subset), `confluence.go` (v2 pages, v1 properties, a CQL probe, `export_view` read-back), `jira.go` (story, sub-tasks, labels, properties, transitions), `main.go`; `-mode render\|confluence\|jira`. The first build (585 lines, census and XML check) ran over `docs/` in 0.45 s and was lost with `/tmp` |
+| Scratch site (live) | `dgifford06.atlassian.net`, Free plan, created 2026-10-04; Confluence space `DOCZ` (id 98334), five pages under a `docz` parent; Jira project `DOCZ`, company-managed, nine issues; one unscoped API token over basic auth, kept outside the repository |
 | docz | `v2.0.0-beta.6`; `pkg/doczcore/docparse` is stdlib-only and extracts facts; nothing in `pkg/` renders markdown |
 | Scratch site | Confluence Cloud **Free** plan: 10 users, 2 GB, REST v1 and v2, API tokens (basic auth); or the Cloud Developer Bundle (`go.atlassian.com/cloud-dev`), 5 users; either is one `.atlassian.net` site with Jira pre-linked (verified 2026-10-04) |
 | Jira | Cloud REST v3 remote issue links, `/rest/api/3/issue/{key}/remotelink`, in `go-atlassian` v2.12.0 as `RemoteLinkService`; the `jira` macro in storage format for the page side |
@@ -159,7 +163,9 @@ token this run did not have. Observations 14 and 15 were added on
 2026-10-04 for two review questions: whether a free site exists for that
 push, and where Jira fits. Observations 16 to 18 followed the same day,
 when review widened the scope to work items in Jira and Linear with the
-free plan as the floor.
+free plan as the floor. Observations 19 and 20 are the live runs of the
+same day against the Free site, Approach step 5 and the Jira half of
+step 7.
 
 ### Observation 1: Confluence accepts two body formats, and storage is the portable one
 
@@ -606,6 +612,97 @@ Confluence, Jira, and Linear, and for Notion only as a personal workspace;
 that is a reason to place Notion last and to say so in its documentation,
 not to drop it.
 
+### Observation 19: the Confluence push, live
+
+Approach step 5 ran on 2026-10-04 against a Free Cloud site (space `DOCZ`),
+with the prototype rebuilt around a push and an unscoped API token over
+basic auth. Four documents went up under a `docz` parent page: RUNBOOK-0001,
+IMPL-0022, DESIGN-0019, and docz-site's archived markdown specimen, chosen
+because it carries every construct the corpus has (seven alerts, in-page
+links, a `<details>` block), plus a five-line test page for anchors and
+alerts.
+
+What rendered, read back through the `export_view` body: every code fence is
+a code panel (17 on RUNBOOK-0001, 18 on the specimen), every task list is a
+Confluence task list (nine on IMPL-0022, 70 items, all complete), every
+table is a table, the ToC region became the `toc` macro, and the alert kinds
+became `info`, `tip`, `note`, and `warning` panels. Mermaid is a code panel
+showing its source, by choice (question 11). Nothing came back as an unknown
+macro, and four pages with their properties took under ten seconds.
+
+What the push settled that the desk review could not:
+
+- **Page identity is the title; the property is metadata.** The v2 pages
+  endpoint finds a page by title immediately after creation, and the second
+  run reported all four pages unchanged from the `docz` content property's
+  hash with no write. CQL cannot search a property set over REST
+  (`content.property[docz].id = …` is `400 invalid payload`, the app-index
+  rule Observation 16 found for Jira), and CQL by title lags its index: no
+  result right after creation, one a minute later. So the lookup is the v2
+  endpoint by title, the property carries the id and hash, and a store that
+  remembers the page id beats both (question 5).
+- **Cross-page links by title are lazy.** IMPL-0022's `ri:page` link to
+  DESIGN-0019 was written before that page existed and showed as a broken
+  `createlink`; once DESIGN-0019 was created it resolved with no rewrite.
+  Creation order does not matter.
+- **In-page anchors work, with one trap.** Confluence Cloud gives a heading
+  the id `<title><heading>` with spaces removed
+  (`TEST-0001:Anchorsandalerts-Sectiontwo`), and a link to it has to be an
+  `<a href="#…">` carrying that id: the storage-format `ac:anchor` form
+  rendered as `href="#Section two"`, which matches nothing. The trap is
+  docz's own title scheme. `ID: Title` puts a colon in the id,
+  `href="#TEST-0001:…"` reads as a URL scheme, and the sanitizer drops the
+  href silently. Percent-encoding the colon survives the sanitizer and
+  decodes to the id, and every in-page link on the test page and the
+  specimen now matches a heading id in the view HTML. Whether the browser
+  scrolls is the one thing the API cannot show; it is the click to make on
+  the test page.
+- **Raw HTML needs a block-level allow-list.** The specimen's `<details>`
+  block arrives as two HTML blocks, the opening tag with its `<summary>` and
+  then the closing tag, and a per-tag rule passed the second while escaping
+  the first, which was malformed XML. The rule is now per block: pass it when
+  every tag in it is allowed, else escape it whole.
+- **goldmark splits the alert marker.** `[!NOTE]` parses as `[` and `!NOTE]`
+  because the bracket opens a link candidate, so matching the first text node
+  found no alerts on the first push. Joining the first line's text nodes
+  finds all five kinds, and the marker is cut from the AST before either
+  renderer walks it.
+
+Sizes: 12 KB of RUNBOOK-0001 became 14 KB of storage format and 19 KB of
+export HTML; 46 KB of DESIGN-0019 became 55 KB and 70 KB.
+
+### Observation 20: the Jira projection, live
+
+DESIGN-0019 and IMPL-0022 went into project `DOCZ` the same afternoon
+through `go-atlassian`'s v3 client, as Observation 16 describes: one Story
+for the DESIGN (`DOCZ-1`), eight Sub-tasks for IMPL-0022's phases (`DOCZ-2`
+to `DOCZ-9`), each task an ADF `taskItem` with its state from
+`impl.Task.Checked`, a `docz-<id>` label per issue, and a `docz` issue
+property carrying id, hash, phase, and counts. `impl.Doc.Implements` named
+DESIGN-0019, so the link was read, not configured. The second run found every
+issue by label and updated it in place: nine issues before, nine after. The
+DESIGN is Implemented and every IMPL-0022 task is checked, so the run moved
+all nine to Done through `Issue.Transitions` and `Issue.Move`, and left the
+story's `parent` unset, as designed.
+
+The description budget held. The story's ADF is 16,699 bytes of the 32,767
+allowed with the Overview, Goals, Non-goals, five open questions with their
+resolutions, and the IMPL's objective and phase list; the largest sub-task is
+13,377 bytes. It reads as a summary of the design that links to the document
+for the rest, which is what a story should be.
+
+Two things the run corrected. `go-atlassian` v2.12.0's `Issue.Search.Post`
+calls `POST /rest/api/3/search`, which Cloud has removed ("The requested API
+has been removed. Please migrate to the /rest/api/3/search/jql API",
+CHANGE-2046); the client's `SearchJQL` method calls the new endpoint and
+works, so the library is current but a consumer has to pick the right method,
+and Observation 8's point about a dependency's freshness stands. And JQL
+`issue.property[docz].id = "DESIGN-0019"` returned no error and no match,
+the app-index rule from Observation 16 confirmed in the field, while
+`labels = docz-DESIGN-0019` found `DOCZ-1` at once. A transition to a status
+the issue already holds is accepted and costs a call, so a real sync reads
+the status before moving.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -617,12 +714,15 @@ needed (Observation 2), and a 250-line goldmark renderer converted all 134
 documents under `docs/` to well-formed storage format in under half a second
 (Observations 9, 10, 13). The corpus is tables, task lists, and code
 (Observation 9); the only construct that broke was raw HTML, and escaping
-fixed it (Observation 10). What is left is not feasibility: it is the live
-push to a Confluence space, which settles in-page anchors and shows how the
-macros render; a decision on mermaid, which is 13 % of all fences
-(Observation 11); and the questions below, which choose the shape. The push
-is not blocked by cost: the Free plan carries the API in full, and one free
-site covers Jira as well (Observation 14). Jira is a link target rather than
+fixed it (Observation 10). The live push has run (Observation 19): the
+macros render, in-page anchors work once the colon in docz's titles is
+encoded, the title is the lookup and the property the metadata, and the only
+renderer bugs were a per-tag HTML rule and goldmark's split of the alert
+marker. The Jira projection has run too (Observation 20): one story, eight
+sub-tasks, idempotent, all moved to Done, 17 KB of ADF for the largest
+description. What is left is the mermaid decision, 13 % of all fences
+(Observation 11, question 11), and the questions below, which choose the
+shape. The Free plan carried all of it (Observation 14). Jira is a link target rather than
 a page target, reachable in both directions with the client already chosen
 (Observation 15).
 
@@ -636,7 +736,7 @@ Notion: its free plan fails the floor for any team (Observation 18), and a
 target that cannot be tested for free is out. Jira is the second target
 after Confluence pages, and the two share one client and one credential.
 
-The investigation stays open for the push and the questions. The three
+The investigation stays open for the questions. The three
 broken links Observation 11 turned up in live documents are worth fixing on
 their own.
 
@@ -648,9 +748,9 @@ their own.
 Take the prototype's renderer into `pkg/export/confluence`, with the ToC
 span, alert markers, raw-HTML allow-list, and source-file links from
 Observation 11 fixed, and drive it first by a `docz export confluence`
-command over a checkout, then by a post-ingest job in docz-api once a live
-push has settled anchors and mermaid. Key pages by a content property
-carrying the docz id and hash. Before any of that, fix the three broken
+command over a checkout, then by a post-ingest job in docz-api. Find pages
+by title through the v2 endpoint, carry the docz id and hash in a content
+property, and remember the page id in docz-api's store. Before any of that, fix the three broken
 links in live documents. Create the scratch site on the Free plan rather
 than the developer bundle. Two targets: Confluence pages (the prototype),
 then Jira work items with a DESIGN as a story and its IMPLs' phases as
@@ -658,6 +758,8 @@ sub-tasks, over the client Confluence already brings. Linear is deferred
 and Notion dropped (Decisions). The free plan is the floor.
 
 ### 1. What is the first target and format?
+
+Evidence: Observation 19, four pages live in storage format.
 
 - a. **Confluence Cloud, storage format.** Portable to Data Center, needed
   for macros anyway, no double-encoded JSON. *(recommendation)*
@@ -703,6 +805,9 @@ and Notion dropped (Decisions). The free plan is the floor.
 - c. Other.
 
 ### 5. How is a page identified across runs?
+
+Evidence: Observation 19. The v2 pages endpoint finds by title at once; a
+content property cannot be searched without an app; CQL lags.
 
 - a. **Title `ID: Title` plus Confluence content properties carrying the
   docz id and content hash**, and the page id stored on the document row in
@@ -771,6 +876,19 @@ and Notion dropped (Decisions). The free plan is the floor.
 - b. Free for Confluence, Jira, and Linear; Notion paid only.
 - c. No floor; each target assumes a paid plan where that is simpler.
 - d. Other.
+
+### 11. Mermaid in Confluence
+
+- a. **A code panel with the source first**, as the live run did, with
+  rendering to an attached image as a follow-up behind a flag: Confluence
+  Cloud has no native mermaid, a local renderer means headless Chrome (the
+  weight Observation 8 refused in `mark`), and a hosted renderer such as
+  kroki sends diagram source to a third party, which an enterprise floor
+  cannot assume. *(recommendation)*
+- b. Render to SVG at sync time with a bundled headless browser and attach it.
+- c. Render through a hosted service (kroki, mermaid.ink) and attach it.
+- d. A Marketplace mermaid app on the Confluence side, outside the free floor.
+- e. Other.
 
 <!--docz:recommendation:end-->
 
