@@ -30,6 +30,8 @@ created: 2026-10-02
   - [Observation 11: what the prototype got wrong, for the next pass](#observation-11-what-the-prototype-got-wrong-for-the-next-pass)
   - [Observation 12: Notion's Go converters bring a second parser](#observation-12-notions-go-converters-bring-a-second-parser)
   - [Observation 13: the prototype's shape is the package's shape](#observation-13-the-prototypes-shape-is-the-packages-shape)
+  - [Observation 14: a free Cloud site is enough for the push](#observation-14-a-free-cloud-site-is-enough-for-the-push)
+  - [Observation 15: Jira is a link target, not a page target](#observation-15-jira-is-a-link-target-not-a-page-target)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. What is the first target and format?](#1-what-is-the-first-target-and-format)
@@ -39,6 +41,7 @@ created: 2026-10-02
   - [5. How is a page identified across runs?](#5-how-is-a-page-identified-across-runs)
   - [6. What happens to a page edited in Confluence?](#6-what-happens-to-a-page-edited-in-confluence)
   - [7. Notion](#7-notion)
+  - [8. Jira](#8-jira)
 - [References](#references)
 <!--toc:end-->
 
@@ -118,6 +121,8 @@ into, and suggests starting with a CLI command.
 | Notion | public API, 100 blocks per append request; `jomei/notionapi` v1.13.3 (no direct deps), `dstotijn/go-notion` v0.11.0 (`go-cmp` only, pre-1.0); `brittonhayes/notionmd` v0.9.0 on `go-notion` **and `gomarkdown/markdown`**; `wiremind/markdown-to-notionapi` CLI |
 | Prototype | `/tmp/inv0019/main.go`, 585 lines (renderer about 250, the rest a census and an XML check); goldmark HTML renderer with ten node overrides; run over `docs/` (134 files, archive included) in 0.45 s wall |
 | docz | `v2.0.0-beta.6`; `pkg/doczcore/docparse` is stdlib-only and extracts facts; nothing in `pkg/` renders markdown |
+| Scratch site | Confluence Cloud **Free** plan: 10 users, 2 GB, REST v1 and v2, API tokens (basic auth); or the Cloud Developer Bundle (`go.atlassian.com/cloud-dev`), 5 users; either is one `.atlassian.net` site with Jira pre-linked (verified 2026-10-04) |
+| Jira | Cloud REST v3 remote issue links, `/rest/api/3/issue/{key}/remotelink`, in `go-atlassian` v2.12.0 as `RemoteLinkService`; the `jira` macro in storage format for the page side |
 
 <!--docz:environment:end-->
 
@@ -127,7 +132,9 @@ into, and suggests starting with a CLI command.
 Observations 1 to 7 are the survey. Observations 8 to 13 are from running
 the prototype in Approach step 5 on 2026-10-02, up to and not including the
 push to a Confluence space, which needs a scratch Cloud site and an API
-token this run did not have.
+token this run did not have. Observations 14 and 15 were added on
+2026-10-04 for two review questions: whether a free site exists for that
+push, and where Jira fits.
 
 ### Observation 1: Confluence accepts two body formats, and storage is the portable one
 
@@ -331,6 +338,88 @@ about 250 lines, with no state across documents, and it converted the whole
 corpus in under half a second. Everything the census needed beyond that was
 the AST walk.
 
+### Observation 14: a free Cloud site is enough for the push
+
+Approach step 5 needs a Confluence site nobody has to pay for, and there
+are two, both checked on 2026-10-04.
+
+The **Free plan** is a product, not a trial: up to 10 users, 2 GB of
+attachment storage, unlimited pages and spaces, and the REST API, v1 and v2
+alike, with the same authentication as every paid plan. An API token is
+minted per Atlassian account and sent as basic auth (email and token), which
+is the shape `go-atlassian` takes. What Free lacks is space and page
+permissions, audit logs, and any support beyond the community forums, and it
+sits in the lowest rate-limit tier: the per-tenant pool for apps is 65,000
+points an hour with no per-user scaling, while API-token traffic stays under
+the older burst limits. None of that touches a sync that writes 134 pages
+once and then only what changed. Atlassian caps an API token's life at a
+year (since January 2025), so whatever holds the credential (question 4)
+rotates it.
+
+The **Cloud Developer Bundle** (`go.atlassian.com/cloud-dev`) provisions a
+free development site with Confluence and every Jira product, 5 users each,
+meant for building apps. It is the same `.atlassian.net` tenancy with the
+same API, so it would serve too. The reports against it are that signing up
+while not signed in to an Atlassian account yields a 7-day Standard trial
+instead, and one 2020 report of a bundle site being downgraded to Free
+mid-development. The Free plan is the better scratch site here: it is the
+plan a small team would actually run the sync against, so its rate-limit
+tier and its missing permissions are the real conditions rather than a
+developer-program approximation.
+
+Either way one site carries Jira and Confluence already linked (the
+"System Jira" application link), which is what Observation 15 needs.
+
+Notion has the same answer with one trap. The API is on every plan at 180
+requests a minute per connection on Free (600 on Business and Enterprise),
+and a first sync of this corpus at 100 blocks per append is a few hundred
+requests, so a few minutes. But from 2026-09-08 a Free workspace with two or
+more members is capped at 1,000 lifetime blocks through the API: the write
+that crosses the line fails `403 restricted_resource`, and deleting blocks
+does not restore capacity. 134 documents are tens of thousands of blocks. A
+single-member Free workspace has no cap and is the scratch target for
+question 7; a team on Free Notion is not a sync target at all.
+
+### Observation 15: Jira is a link target, not a page target
+
+Jira has no page body to render into, so it is not a third service beside
+Confluence and Notion. What #142's "eventually" can mean is linking, and
+there are two directions, both reachable with what is already in hand.
+
+**Page to issue.** The Jira issues macro in storage format is
+`<ac:structured-macro ac:name="jira">` with `key`, `serverId`, and `server`
+parameters; `serverId` is the application link's UUID, one per site, read
+once from any page that already carries the macro. On a single Cloud site
+the link exists from the start and must not be created by hand (a second,
+manual link breaks the automatic one). When the page renders the macro,
+Confluence writes the back-link on the issue itself, so one macro gives both
+directions. In the prototype this is a `LinkResolver` case: a link whose
+target is an issue URL on the configured site becomes the macro instead of
+an anchor.
+
+**Issue to document, without Confluence.** Jira remote issue links
+(`POST /rest/api/3/issue/{key}/remotelink`) attach any URL to an issue with
+a title, summary, and icon, and `globalId` makes the call an upsert. The URL
+can be the docz-site page for the document, so a repository that never syncs
+to Confluence can still have `IMPL-0018` appear on `PROJ-12`. `go-atlassian`
+v2.12.0 already ships `RemoteLinkService` (`Gets`, `Get`, `Create`,
+`Update`, `DeleteByID`, `DeleteByGlobalID` in
+`jira/internal/remote_link_impl.go`), so Jira adds no dependency beyond the
+one Confluence brings.
+
+**The trap is the grammar.** A Jira issue key is a project key and a
+number, `PROJ-12`, and every docz id matches it: `RFC-0001`, `IMPL-0018`,
+`RUNBOOK-0001`, `INV-0019`. Auto-linking by pattern over document text,
+which is how Jira-Confluence integrations usually find issues, would send
+every docz cross-reference to Jira, and a Jira project keyed `INV` would
+collide outright. So Jira references in docz documents have to be explicit:
+a set of project keys declared in the `sync:` block, below which a bare key
+or an issue URL is a Jira reference and everything else is a docz id, or a
+frontmatter field. docz has no structured issue field today (issues appear
+in prose as `#142`), so this would be a type-neutral frontmatter addition
+rather than anything in a type package, and it is a follow-up (question 8),
+not part of the first converter.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -345,8 +434,13 @@ documents under `docs/` to well-formed storage format in under half a second
 fixed it (Observation 10). What is left is not feasibility: it is the live
 push to a Confluence space, which settles in-page anchors and shows how the
 macros render; a decision on mermaid, which is 13 % of all fences
-(Observation 11); and the questions below, which choose the shape. Notion
-follows as a second renderer over the same parse (Observations 4 and 12).
+(Observation 11); and the questions below, which choose the shape. The push
+is not blocked by cost: the Free plan carries the API in full, and one free
+site covers Jira as well (Observation 14). Jira is a link target rather than
+a page target, reachable in both directions with the client already chosen
+(Observation 15). Notion follows as a second renderer over the same parse
+(Observations 4 and 12), tested against a single-member workspace
+(Observation 14).
 
 The investigation stays open for the push and the questions. The three
 broken links Observation 11 turned up in live documents are worth fixing on
@@ -364,7 +458,8 @@ command over a checkout, then by a post-ingest job in docz-api once a live
 push has settled anchors and mermaid. Key pages by a content property
 carrying the docz id and hash. Treat Notion as the second renderer over the
 same parse. Before any of that, fix the three broken links in live
-documents.
+documents. Create the scratch site on the Free plan rather than the
+developer bundle, and keep Jira out of the first converter (question 8).
 
 ### 1. What is the first target and format?
 
@@ -402,7 +497,8 @@ documents.
 - a. **A `sync:` block in `.docz.yaml`** naming the service, space, and
   parent page per repository, dormant unless enabled, with the credentials
   in docz-api's environment like every other secret. The CLI takes the same
-  block and its own token flag. *(recommendation)*
+  block and its own token flag. An Atlassian API token lives at most a
+  year, so it is a rotated secret. *(recommendation)*
 - b. Server-side configuration per repository, nothing in the repository.
 - c. Other.
 
@@ -425,11 +521,28 @@ documents.
 ### 7. Notion
 
 - a. **After Confluence**, as `pkg/export/notion` over the same converter
-  shape, using the block limit and native mermaid noted above.
+  shape, using the block limit and native mermaid noted above, and tested
+  against a single-member Free workspace, since a Free workspace with more
+  members is capped at 1,000 blocks through the API (Observation 14).
   *(recommendation)*
 - b. In parallel with Confluence.
 - c. Not planned.
 - d. Other.
+
+### 8. Jira
+
+- a. **Linking only, as a follow-up after the first converter**: an
+  explicit reference, either a `jira:` list in frontmatter or a declared
+  project-key set in the `sync:` block, rendered as the Jira macro on the
+  Confluence page and written as a remote issue link on the issue, and never
+  inferred from `KEY-123` patterns in prose (Observation 15).
+  *(recommendation)*
+- b. Remote issue links to docz-site only, with no Confluence macro, so a
+  repository that never syncs to Confluence gets the same linking.
+- c. Pattern-based auto-linking with the enabled types' `id_prefix` values
+  as a deny-list.
+- d. Not planned.
+- e. Other.
 
 <!--docz:recommendation:end-->
 
@@ -450,6 +563,15 @@ documents.
   [dstotijn/go-notion](https://github.com/dstotijn/go-notion),
   [brittonhayes/notionmd](https://github.com/brittonhayes/notionmd),
   [wiremind/markdown-to-notionapi](https://github.com/wiremind/markdown-to-notionapi)
+- Atlassian plans and site: [Confluence Free and Standard](https://www.atlassian.com/software/confluence/standard),
+  [Confluence Cloud rate limiting](https://developer.atlassian.com/cloud/confluence/rate-limiting/),
+  [Cloud Developer Bundle sign-up](https://developer.atlassian.com/cloud/confluence/getting-set-up-with-ace/)
+  (`go.atlassian.com/cloud-dev`)
+- Jira: [remote issue links](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-remote-links/),
+  [Jira issues macro](https://confluence.atlassian.com/doc/jira-issues-macro-139380.html),
+  [the System Jira application link](https://support.atlassian.com/confluence/kb/how-to-check-which-application-link-the-jira-macro-repair-should-be-mapped-after-an-import/)
+- Notion plans: [request limits](https://developers.notion.com/reference/request-limits),
+  [workspace block limits](https://developers.notion.com/reference/workspace-block-limits)
 - [ADR-0001](../adr/0001-pkgdoczcore-as-the-single-public-core-cmd-as-a-thin-cli-shell.md)
   and [ADR-0004](../adr/0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md):
   the layering a converter has to respect
