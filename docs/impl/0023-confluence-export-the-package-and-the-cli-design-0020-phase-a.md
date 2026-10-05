@@ -714,7 +714,7 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `charts/docz/Chart.yaml`: `version: 0.2.1`, `appVersion:
+- [x] `charts/docz/Chart.yaml`: `version: 0.2.1`, `appVersion:
   "2.0.0-beta.7"` (bare), with the chart CHANGELOG and README regenerated
   and the version test updated (Open Question 7)
 - [ ] Open the PR with `dont-release` and push; CI is green
