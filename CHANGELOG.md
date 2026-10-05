@@ -18,6 +18,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0019 reads the Mermaid Chart macro back and writes it from the sync
 - *(inv)* INV-0019 settles on the Atlassian Labs mermaid viewer
 - *(inv)* INV-0019 writes the mermaid viewer macro from the sync
+- *(inv)* INV-0019 folds the mermaid source under the rendered diagram
 
 ## [2.0.0-beta.6] - 2026-10-01
 
