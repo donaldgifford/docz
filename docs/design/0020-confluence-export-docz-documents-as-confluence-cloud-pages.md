@@ -996,29 +996,23 @@ reopened here:
 This design's own, resolved 2026-10-05:
 
 11. **goldmark alone is allow-listed under `pkg/export/`; the Confluence
-    client is our own on `net/http`** (question 1).
+    client is our own on `net/http`**, question 1.
 12. **A child page per type, carrying the README index, with the
-    documents beneath** (question 2).
-13. **The rendered body is what is hashed** (question 3).
-14. **An `info` banner at the top of every page names the source**
-    (question 4).
-15. **The ToC region becomes the `toc` macro** (question 5).
+    documents beneath**, question 2.
+13. **The rendered body is what is hashed**, question 3.
+14. **An `info` banner at the top of every page names the source**, question 4.
+15. **The ToC region becomes the `toc` macro**, question 5.
 16. **Scoped API tokens are the preferred kind and must be supported; the
-    client goes through Atlassian's gateway for both kinds** (question 6,
-    (c)).
+    client goes through Atlassian's gateway for both kinds**, question 6 (c).
 17. **A relative link to something not exported goes to the repository's
-    blob URL** (question 7).
-18. **Remote images inline, local images as links; attachments later**
-    (question 8).
-19. **Orphaned pages are moved under `Archive`, never deleted**
-    (question 9, (c)).
-20. **The viewer's extension key is built in and overridable**
-    (question 10).
-21. **One Atlassian site per docz-api deployment** (question 11).
+    blob URL**, question 7.
+18. **Remote images inline, local images as links; attachments later**, question 8.
+19. **Orphaned pages are moved under `Archive`, never deleted**, question 9 (c).
+20. **The viewer's extension key is built in and overridable**, question 10.
+21. **One Atlassian site per docz-api deployment**, question 11.
 22. **A bare export covers the configured types; `api_pages` adds the
-    `api:` block's pages** (question 12).
-23. **A skipped page is a warning; `--strict` makes it a failure**
-    (question 13).
+    `api:` block's pages**, question 12.
+23. **A skipped page is a warning; `--strict` makes it a failure**, question 13.
 
 <!--docz:decisions:end-->
 
