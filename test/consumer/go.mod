@@ -11,6 +11,9 @@ go 1.26.5
 
 require github.com/donaldgifford/docz/v2 v2.0.0
 
-require go.yaml.in/yaml/v3 v3.0.4 // indirect
+require (
+	github.com/yuin/goldmark v1.8.6 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
+)
 
 replace github.com/donaldgifford/docz/v2 => ../..

@@ -10,8 +10,8 @@
 // packages pkg/rfc, pkg/adr, pkg/design, pkg/impl, and pkg/investigation.
 // Phase 2 adds the three promotions that emptied internal/:
 // pkg/doczcore/doctemplate, pkg/doczcore/index, and pkg/wiki. Phase 3 adds
-// pkg/doczcore/repo, the repository tier, and IMPL-0022 adds pkg/runbook.
-// Seventeen pkg/ packages in all.
+// pkg/doczcore/repo, the repository tier, IMPL-0022 adds pkg/runbook, and
+// IMPL-0023 adds pkg/export/confluence. Eighteen pkg/ packages in all.
 //
 // repo is the one that decides whether the v2 claim holds. Every other file
 // here proves a primitive is reachable; repo proves the operation is, so a

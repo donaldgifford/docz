@@ -532,11 +532,11 @@ and the consumer module proves the package is reachable from outside.
   each exit code, `--out`, `--strict`, `--dry-run`, a disabled block,
   missing credentials with the fake asserting zero calls, and `--verbose`
   reaching the logger
-- [ ] `test/consumer/consumer_v2_export_test.go`: `Render` over an inline
+- [x] `test/consumer/consumer_v2_export_test.go`: `Render` over an inline
   document and `Export` over `repoFixture` against a minimal fake `Client`
   defined in the test, asserting one `Created` per document;
   `test/consumer/doc.go` counts eighteen `pkg/` packages
-- [ ] `docz --help` lists `export`; `just parity` is green with no change,
+- [x] `docz --help` lists `export`; `just parity` is green with no change,
   since a new command is a permitted delta; `just ci` passes
 
 <!--docz:tasks:end-->
