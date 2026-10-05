@@ -21,6 +21,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0019 folds the mermaid source under the rendered diagram
 - *(inv)* INV-0019 keeps the table layout attribute and drops page-width properties
 - *(inv)* INV-0019 resolves its remaining questions and concludes
+- *(inv)* INV-0019 status Concluded
 
 ## [2.0.0-beta.6] - 2026-10-01
 
