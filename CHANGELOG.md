@@ -56,6 +56,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design-0020)* Amend §3, §5, and §6 with what IMPL-0023 settled
 - *(impl-0023)* Phase 7 complete
 - *(impl-0023)* Record Phase 8's filed follow-ups and the steps left for a person
+- *(impl-0023)* Record PR #153's CI result
 
 ### Testing
 
