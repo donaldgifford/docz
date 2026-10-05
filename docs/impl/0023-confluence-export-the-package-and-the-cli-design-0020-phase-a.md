@@ -675,7 +675,7 @@ run on purpose, so the words describe behaviour that has been seen.
   token and which scopes, that the Mermaid diagrams viewer must be
   installed on the site, and what `--force` does; the package table gains
   `pkg/export/confluence`
-- [ ] `CLAUDE.md`: a `pkg/export/confluence/` paragraph (renderer, client
+- [x] `CLAUDE.md`: a `pkg/export/confluence/` paragraph (renderer, client
   through the gateway, `Export`, hooks, typed errors, the full-export-only
   archive rule, the fixed `local-id` placeholder); the `config` paragraph's
   `SyncConfig`; the `cmd/` paragraph's `export.go` and `RemoteURL`; the
