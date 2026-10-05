@@ -277,7 +277,7 @@ opened a file or a socket.
   a cross-document link with a fragment, an unresolved link, a remote and
   a local image, a `<details>` block, a `<status>` placeholder in prose,
   and a footnote
-- [ ] `corpus_test.go`: every `.orig.md` under
+- [x] `corpus_test.go`: every `.orig.md` under
   `pkg/{rfc,adr,design,impl,investigation,runbook}/testdata/` (38) and
   each embedded template rendered through `doctemplate.Resolve` must come
   back well-formed with zero unresolved in-page anchors. The test reads
