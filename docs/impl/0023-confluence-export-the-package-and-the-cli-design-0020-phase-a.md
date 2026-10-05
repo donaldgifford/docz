@@ -571,15 +571,24 @@ release run.
   `write:page:confluence` and put it in `~/.config/docz/atlassian.env`
   as `ATLASSIAN_API_TOKEN`, keeping the unscoped one under another name
   for the comparison run
+  - **Deferred - human required** (2026-10-05): the token is minted in
+    the Atlassian account. Every run below used the unscoped token
 - [ ] Confirm the scope list: a `--dry-run` with the scoped token either
   reads every page or returns a `403` naming the missing scope. Record
   the final list here and correct DESIGN-0020 §5 and the README if it
   differs
+  - **Deferred - human required**: waits on the scoped token above
 - [x] `.docz.yaml`: enable the block (Open Question 6) with the scratch
   site, space `DOCZ`, parent `docz`, `api_pages: true`, and `exclude:
   [examples, archive]` in step with `api.exclude`
 - [ ] The `docs:` PR fixing DESIGN-0019's nested fence and the three
   broken links has merged, so the link report below is a clean baseline
+  - PR [#152](https://github.com/donaldgifford/docz/pull/152) fixes the
+    fence and four broken links (`docs/index.md`'s plan entry, DESIGN-0016's
+    DESIGN-0015 slug, `DEVELOPMENT.md`'s `deploy/README.md`); an offline
+    `--dry-run --out` over it reports no unresolved link. **Merging is
+    deferred - human required**; until then the runs below report the six
+    links it fixes
 - [ ] First full run: every document, both type index pages per enabled
   type, and the two additional docs are `Created` or, for the prototype's
   pages that carry its `{id, hash}` property shape, `Skipped` and then
@@ -590,17 +599,50 @@ release run.
   page's index table links to the pages beneath it; the banner names the
   source and links to GitHub; a `[!NOTE]` renders as a panel; an IMPL's
   task list renders with its checkboxes
-- [ ] Second run: every page `Unchanged`, and `--verbose` shows one
+  - Done 2026-10-05, unscoped token: `81 pages: 72 created, 4 skipped, 5
+    archived`. The four skips were the prototype's parent and its
+    DESIGN-0019, IMPL-0022, and RUNBOOK-0001 pages. That run found two bugs,
+    fixed with tests before going on. The prototype's `{id, hash}` property
+    read as "edited in Confluence (expected v-1)". The orphan pass also
+    archived the skipped pages along with the prototype's `Markdown rendering
+    specimen` and `TEST-0001` pages. `--force` then adopted the four
+    (`4 updated, 72 unchanged`), moving the three documents back out of
+    Archive. The two prototype test pages stay under Archive (parent page
+    65860)
+  - **The browser checks are deferred - human required**: wide tables,
+    diagrams, anchors, cross-page links, banner, panels, task lists
+- [x] Second run: every page `Unchanged`, and `--verbose` shows one
   `FindPage` and one `Property` request per page and no `POST` or `PUT`
-- [ ] Edit one page in Confluence; a run reports it `Skipped` with both
+  - Done: `76 pages: 76 unchanged`, and `--verbose` logged 161 GETs: one
+    `GET /pages` (the title lookup) and one `GET /properties` per page, seven
+    `children` lists, `tenant_info` once, and `spaces` once. There were no
+    `POST` and no `PUT`. The run before this one found that the parent was
+    rewritten every run, because Confluence files it under the space homepage.
+    It also found the orphan pass reading the property of every page it had
+    just written. Both are fixed with tests
+- [x] Edit one page in Confluence; a run reports it `Skipped` with both
   versions; `--force` reports it `Updated` and the edit is gone
-- [ ] Add a scratch document on the branch, run, see it `Created`; delete
+  - Done: a hand edit to ADR-0001 (page 426032) through the API gave
+    `skipped ... edited in Confluence (v2, expected v1); use --force`, and
+    `--strict` exited 1. `--force` gave `updated ... v3`, and the page body no
+    longer holds the edit
+- [x] Add a scratch document on the branch, run, see it `Created`; delete
   it, run, see it `Archived` under `Archive`; restore it, run, see it
   `Updated` and back under its type page
+  - Done with INV-0020 (page 492210, never committed). It was created at v1,
+    archived under Archive after the file was removed, then updated to v3 and
+    back under Investigations after it was restored. The scratch file is now
+    removed, and its page sits under Archive
 - [ ] The whole first-run check repeated with the unscoped token, with no
   difference in the report
+  - **Deferred - human required**: needs the scoped token for the other
+    half of the comparison
 - [ ] Anything the eye finds goes back into Phases 2 to 5 as a task with
   a test before this phase is called done
+  - The runs found three bugs, each fixed with a test: a foreign property
+    was never edited or archived, the parent page stays where it is, and the
+    orphan pass skips known pages. The browser pass is deferred with the
+    first run's checks
 
 <!--docz:tasks:end-->
 
