@@ -28,6 +28,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Number DESIGN-0020's own decisions as its questions
 - *(impl)* IMPL-0023, Confluence export Phase A, and approve DESIGN-0020
 - *(impl)* Resolve IMPL-0023 open questions
+- Fix DESIGN-0019's nested fence and four broken links
 
 ## [2.0.0-beta.6] - 2026-10-01
 
