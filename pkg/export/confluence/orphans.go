@@ -63,7 +63,7 @@ func (r *exportRun) orphan(ctx context.Context, child *Page) {
 		return
 	}
 
-	if prop == nil || r.plan.keys[stored.ID] {
+	if prop == nil || !stored.valid() || r.plan.keys[stored.ID] || r.plan.titles[child.Title] {
 		return
 	}
 

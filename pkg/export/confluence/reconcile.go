@@ -17,6 +17,14 @@ type pageProperty struct {
 	Docz    string `json:"docz"`
 }
 
+// valid reports whether a property is one docz export wrote: it names a
+// document and a page version. Another tool's property under the same key,
+// or one that does not decode, is not, and the page it is on is treated as
+// somebody else's: skipped without --force and never archived.
+func (p *pageProperty) valid() bool {
+	return p.ID != "" && p.Version > 0
+}
+
 // reconcile renders one item and brings its page in line, following the
 // §3 flowchart: create, skip, leave unchanged, or update. An error fails
 // the page; the result carries what was known when it did.
@@ -51,23 +59,36 @@ func (r *exportRun) reconcile(ctx context.Context, it *item, parentID string) (P
 		return res, err
 	}
 
-	switch {
-	case prop == nil && !r.opts.Force:
-		res.Action, res.Reason = Skipped, "not docz's page"
-
-		return res, nil
-	case prop != nil && stored.Version != page.Version && !r.opts.Force:
-		res.Action = Skipped
-		res.Reason = fmt.Sprintf("edited in Confluence (v%d, expected v%d)", page.Version, stored.Version)
-
-		return res, nil
-	case prop != nil && stored.Hash == rendered.Hash && page.ParentID == parentID:
-		res.Action = Unchanged
+	if action, reason := decide(prop, &stored, page, rendered.Hash, parentID, r.opts.Force); action != Updated {
+		res.Action, res.Reason = action, reason
 
 		return res, nil
 	}
 
 	return r.update(ctx, it, &rendered, page, prop, parentID, res)
+}
+
+// decide is the §3 flowchart for a page that exists: Skipped with a reason,
+// Unchanged, or Updated, which the caller then writes.
+func decide(prop *Property, stored *pageProperty, page *Page, hash, parentID string, force bool) (Action, string) {
+	switch {
+	case force:
+		if prop != nil && stored.valid() && stored.Hash == hash && page.ParentID == parentID && stored.Version == page.Version {
+			return Unchanged, ""
+		}
+
+		return Updated, ""
+	case prop == nil:
+		return Skipped, "not docz's page"
+	case !stored.valid():
+		return Skipped, "its docz property was not written by docz export"
+	case stored.Version != page.Version:
+		return Skipped, fmt.Sprintf("edited in Confluence (v%d, expected v%d)", page.Version, stored.Version)
+	case stored.Hash == hash && page.ParentID == parentID:
+		return Unchanged, ""
+	default:
+		return Updated, ""
+	}
 }
 
 // sourceURL asks the caller's resolver where a page's own source is
@@ -81,7 +102,7 @@ func (r *exportRun) sourceURL(source string) string {
 }
 
 // property reads a page's docz property. A property whose value does not
-// decode is reported present with a zero value, so it reads as edited.
+// decode is reported present with a zero value, which valid rejects.
 func (r *exportRun) property(ctx context.Context, pageID string) (*Property, pageProperty, error) {
 	var stored pageProperty
 
@@ -91,7 +112,7 @@ func (r *exportRun) property(ctx context.Context, pageID string) (*Property, pag
 	}
 
 	if err := json.Unmarshal(prop.Value, &stored); err != nil {
-		stored = pageProperty{Version: -1}
+		stored = pageProperty{}
 	}
 
 	return prop, stored, nil

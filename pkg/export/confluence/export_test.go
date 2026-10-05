@@ -472,3 +472,65 @@ func TestExport_HooksAndBannerLink(t *testing.T) {
 		t.Errorf("the banner does not link the source:\n%s", body)
 	}
 }
+
+func TestExport_ForeignPropertyIsSkippedAndNeverArchived(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+	export(t, rp, c, ExportOptions{})
+
+	// A page another tool marked with a docz property of its own shape: a
+	// document of ours by title, and one that is nobody's document.
+	for _, title := range []string{rfc1, "Specimen"} {
+		pg := c.byTitle(title)
+		if pg == nil {
+			created, err := c.CreatePage(t.Context(), &NewPage{
+				SpaceID: "space-DOCZ", ParentID: c.byTitle("docz").ID, Title: title, Body: []byte("<p/>"),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			pg = c.byTitle(created.Title)
+		}
+
+		pg.props[propertyKey] = &Property{ID: "x", Key: propertyKey, Value: []byte(`{"id":"` + title + `","hash":"abc"}`), Version: 1}
+	}
+
+	appendDoc(t, rp, "docs/rfc/0001-first-proposal.md", "\nChanged.\n")
+
+	rep := export(t, rp, c, ExportOptions{})
+	if res := rep.Pages[2]; res.Action != Skipped || res.Reason != "its docz property was not written by docz export" {
+		t.Errorf("got %s %q", res.Action, res.Reason)
+	}
+
+	if n := rep.Count(Archived); n != 0 {
+		t.Errorf("archived %d pages with a foreign property:\n%s", n, actions(&rep))
+	}
+
+	rep = export(t, rp, c, ExportOptions{Force: true})
+	if res := rep.Pages[2]; res.Action != Updated {
+		t.Errorf("under force: %s", res.Action)
+	}
+
+	if c.byTitle(archiveTitle) != nil {
+		t.Error("Archive was created")
+	}
+}
+
+func TestExport_SkippedPageIsNeverArchived(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+	export(t, rp, c, ExportOptions{})
+
+	// A valid docz property naming an id that is no longer exported, on a
+	// page whose title this run still writes: the title wins.
+	pg := c.byTitle(rfc2)
+	pg.props[propertyKey].Value = []byte(`{"id":"RFC-0999","source":"x","hash":"h","version":1,"docz":"t"}`)
+
+	rep := export(t, rp, c, ExportOptions{})
+	if n := rep.Count(Archived); n != 0 {
+		t.Errorf("archived a page this run writes:\n%s", actions(&rep))
+	}
+}

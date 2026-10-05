@@ -27,6 +27,9 @@ type plan struct {
 	// keys are the property ids every page of a full export carries; a
 	// docz page under the tree whose id is not here is an orphan.
 	keys map[string]bool
+	// titles are the page titles of everything a full export writes. A
+	// page holding one is never an orphan, whatever its property says.
+	titles map[string]bool
 	// targets maps a repository-relative slash path to the page it is
 	// exported as, over everything a full export would write.
 	targets map[string]target
@@ -71,6 +74,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 	p := &plan{
 		full:    len(opts.Types) == 0 && len(opts.IDs) == 0,
 		keys:    make(map[string]bool),
+		titles:  make(map[string]bool),
 		targets: make(map[string]target),
 		render:  renderOptions(sync),
 	}
@@ -135,6 +139,7 @@ func (p *plan) add(it item) { //nolint:gocritic // the item is stored by value
 // writing it, so a narrowed run still links to pages a full run wrote.
 func (p *plan) addTarget(it item) { //nolint:gocritic // read once, by value like add
 	p.keys[it.key] = true
+	p.titles[it.title] = true
 
 	if it.source != "" {
 		p.targets[it.source] = target{title: it.title, headings: headingText(it.src)}
