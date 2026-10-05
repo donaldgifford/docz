@@ -274,7 +274,7 @@ explanation:
 The body template is `pkg/doczcore/doctemplate/templates/runbook.md`. The
 excerpt below shows its structure, with prose trimmed:
 
-```markdown
+````markdown
 # {{ .Prefix }}-{{ .Number }}: {{ .Title }}
 
 <!--toc:start-->
@@ -384,7 +384,7 @@ excerpt below shows its structure, with prose trimmed:
 ## References
 
 <!--docz:references:end-->
-```
+````
 
 The regions nest like this:
 

@@ -995,7 +995,7 @@ root files.
 - [DESIGN-0014](../design/0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md)
   — §2.7 (the byte-core shape `ParseBytes` follows), §7 R8 (no telemetry under
   `pkg/`, now enforced by §7's new test).
-- [DESIGN-0015](../design/0015-structured-regions-schemas-and-the-three-tier-validator.md)
+- [DESIGN-0015](../design/0015-structured-regions-and-docz-validate.md)
   — why documents created from here are marked from birth, which is why this
   file was recreated with the v2 binary rather than the v1.2.2 one on `PATH`.
 - [IMPL-0018](../impl/0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md)
