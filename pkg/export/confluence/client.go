@@ -18,7 +18,9 @@ type Client interface {
 	// CreatePage creates a page and returns it.
 	CreatePage(ctx context.Context, p *NewPage) (*Page, error)
 	// UpdatePage writes a new version of a page, moving it under
-	// p.ParentID, and returns it.
+	// p.ParentID, and returns it. A nil p.Body is a move: the page keeps
+	// its current body, and a zero p.Version or empty p.Title means the
+	// current one plus one and the current title.
 	UpdatePage(ctx context.Context, id string, p *PageUpdate) (*Page, error)
 	// Property returns the page's content property named key, or nil.
 	Property(ctx context.Context, pageID, key string) (*Property, error)

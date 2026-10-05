@@ -212,6 +212,15 @@ func TestHTTPClient_Endpoints(t *testing.T) {
 			want: want,
 		},
 		{
+			name: "move_page",
+			reply: `{"id":"42","title":"RFC-0001: X","parentId":"7","spaceId":"9","version":{"number":3},` +
+				`"body":{"storage":{"value":"<p>kept</p>"}},"_links":{"webui":"/spaces/DOCZ/pages/42"}}`,
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return h.UpdatePage(ctx, "42", &PageUpdate{ParentID: "8", Message: "archived"})
+			},
+			want: want,
+		},
+		{
 			name:  "property",
 			reply: `{"results":[{"id":"p1","key":"docz","value":{"hash":"abc"},"version":{"number":2}}]}`,
 			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.Property(ctx, "42", "docz") },
@@ -478,7 +487,7 @@ func TestHTTPClient_Errors(t *testing.T) {
 
 			f := newFake(t, status(tt.code, nil))
 
-			_, err := f.client(nil).UpdatePage(t.Context(), "42", &PageUpdate{Title: "RFC-0001: X", Version: 4})
+			_, err := f.client(nil).UpdatePage(t.Context(), "42", &PageUpdate{Title: "RFC-0001: X", Body: []byte("<p/>"), Version: 4})
 			tt.check(t, err)
 
 			if err != nil && strings.Contains(fmt.Sprintf("%v %+v %#v", err, err, err), testToken) {

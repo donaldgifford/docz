@@ -271,7 +271,12 @@ type (
 		ParentID string     `json:"parentId"`
 		SpaceID  string     `json:"spaceId"`
 		Version  apiVersion `json:"version"`
-		Links    struct {
+		Body     struct {
+			Storage struct {
+				Value string `json:"value"`
+			} `json:"storage"`
+		} `json:"body"`
+		Links struct {
 			WebUI string `json:"webui"`
 		} `json:"_links"`
 	}
@@ -369,6 +374,13 @@ func (h *HTTPClient) CreatePage(ctx context.Context, p *NewPage) (*Page, error) 
 
 // UpdatePage implements Client.
 func (h *HTTPClient) UpdatePage(ctx context.Context, id string, p *PageUpdate) (*Page, error) {
+	if p.Body == nil {
+		var err error
+		if p, err = h.currentBody(ctx, id, p); err != nil {
+			return nil, err
+		}
+	}
+
 	req := apiPageWrite{
 		ID:       id,
 		Status:   statusCurrent,
@@ -392,6 +404,28 @@ func (h *HTTPClient) UpdatePage(ctx context.Context, id string, p *PageUpdate) (
 	}
 
 	return h.page(&out), nil
+}
+
+// currentBody fills a move's body, version, and title from the page as it
+// is, since the v2 update needs all three.
+func (h *HTTPClient) currentBody(ctx context.Context, id string, p *PageUpdate) (*PageUpdate, error) {
+	var cur apiPage
+	if err := h.do(ctx, "get page", http.MethodGet, "/wiki/api/v2/pages/"+url.PathEscape(id)+"?body-format=storage", nil, &cur); err != nil {
+		return nil, err
+	}
+
+	out := *p
+	out.Body = []byte(cur.Body.Storage.Value)
+
+	if out.Version == 0 {
+		out.Version = cur.Version.Number + 1
+	}
+
+	if out.Title == "" {
+		out.Title = cur.Title
+	}
+
+	return &out, nil
 }
 
 // Property implements Client.
