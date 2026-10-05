@@ -491,7 +491,7 @@ and the consumer module proves the package is reachable from outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `cmd/git.go`: `GitResolver` gains `RemoteURL(ctx) string`, from
+- [x] `cmd/git.go`: `GitResolver` gains `RemoteURL(ctx) string`, from
   `git remote get-url origin` normalised to `https://github.com/<o>/<r>`
   from both the SSH and the HTTPS spellings with `.git` dropped, and
   `DefaultBranch(ctx) string` from `git symbolic-ref --short

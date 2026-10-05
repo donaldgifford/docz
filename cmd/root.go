@@ -182,6 +182,7 @@ func loadAndValidateConfig(cmd *cobra.Command, _ []string) error {
 	appCfg = *rp.Cfg
 	r := NewRunner(rp.Cfg)
 	r.RepoRoot = root
+	r.Git = realGit{Dir: root}
 
 	// Point the Repo back at the Runner's copy so there is one config
 	// rather than two that merely start out equal. A handler that adjusts
