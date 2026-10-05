@@ -675,13 +675,21 @@ What the push settled that the desk review could not:
   (`POST /wiki/api/v2/pages/{id}/properties`; a value already present
   needs a PUT with a bumped version), and `<table data-layout="full-width">`
   in the storage body came back unchanged in both the stored and the
-  exported view. The renderer now writes the attribute on every table and
-  the push sets the pair on every page it creates. To learn which of the
-  two the eye needs, the three pushed pages carry one each: RUNBOOK-0001 the
-  properties alone, IMPL-0022 the attribute alone, the specimen both, and
-  the test page both through the prototype. Neither page width nor table
-  layout is in the storage-format documentation; the attribute is what the
-  editor emits, and the properties are what the community found.
+  exported view. To learn which of the two the eye needs, the three pushed
+  pages carried one each, RUNBOOK-0001 the properties alone, IMPL-0022 the
+  attribute alone, the specimen both, and review's verdict was clear: **the
+  attribute alone is right**, and the properties are wrong for a document
+  page. `content-appearance-*: full-width` widens the whole page and
+  left-aligns every block, which is what RUNBOOK-0001 showed, and since the
+  push had set the pair on every page it touched that day, DESIGN-0019 and
+  the test page went left-aligned too. The push no longer sets them and
+  removed them from the pages it had (a `DELETE` on each property, which
+  the v2 endpoint accepts); every table keeps `data-layout="full-width"`,
+  which widens the table past the content column and leaves the page
+  centred. `wide`, the editor's middle value, was not tried. Neither page
+  width nor table layout is in the storage-format documentation; the
+  attribute is what the editor emits, and the properties are what the
+  community found.
 - **Raw HTML needs a block-level allow-list.** The specimen's `<details>`
   block arrives as two HTML blocks, the opening tag with its `<summary>` and
   then the closing tag, and a per-tag rule passed the second while escaping
