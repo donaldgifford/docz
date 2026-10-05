@@ -773,6 +773,7 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 
 > Each question is numbered. Option `a` is my recommendation, the later
 > letters are alternatives, and the last is "other" for your own answer.
+> All ten were resolved on 2026-10-05.
 
 ### 1. Where do the hooks live?
 
@@ -786,6 +787,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 - c. A callback field on `ExportOptions`, with no context plumbing
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 2. What is `exclude` relative to?
 
 - a. **`docs_dir`, exactly as `api.exclude` is** (`templates/` and
@@ -797,6 +800,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   except the `api:` additional docs, which have their own list
 - c. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 3. Where does the property's `docz` version come from?
 
 - a. **`ExportOptions.Version`, set by `cmd/` from the binary's ldflags
@@ -806,6 +811,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   gets the module version for free. It reports `(devel)` for a local
   build and the module version rather than the binary's
 - c. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 ### 4. Is there an offline render?
 
@@ -820,6 +827,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   enough
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 5. How does a page without frontmatter get its title?
 
 - a. **`RenderOptions.Title` overrides, and `Export` sets it for the type
@@ -833,6 +842,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   the index header could title the page anything
 - c. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 6. Does this repository enable the block?
 
 - a. **Yes, in `.docz.yaml`, against the scratch site's DOCZ space, with
@@ -845,6 +856,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   repository's file, so the block has to land there eventually
 - c. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 7. Does Phase A ship as its own beta?
 
 - a. **Yes, `v2.0.0-beta.7`, with `charts/docz` 0.2.1 (an `appVersion`
@@ -852,6 +865,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   is how a consumer gets it
 - b. No tag until Phase B lands, and both ship in one beta
 - c. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 ### 8. Which remotes get blob URLs?
 
@@ -866,6 +881,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   substituted), so any host works and nothing is inferred from the remote
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 9. What does the live test look like?
 
 - a. **A `//go:build live` test that round-trips one page under a `docz
@@ -878,6 +895,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 - c. No live test file; Phase 6's manual run is the only live proof
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 10. What happens after a failed request?
 
 - a. **That page is `Failed` and the run continues**; `Export` returns the
@@ -887,6 +906,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 - b. Stop at the first failure, as the design's exit-code paragraph can be
   read, leaving later pages untouched
 - c. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 <!--docz:open-questions:end-->
 
