@@ -1,7 +1,7 @@
 ---
 id: INV-0019
 title: "docz-api sync to external documentation services: Confluence and Notion"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-02
 ---

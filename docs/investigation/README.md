@@ -31,7 +31,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0016 | One ADR per built-in document type | Open | 2026-10-02 | Donald Gifford | [0016-one-adr-per-built-in-document-type.md](0016-one-adr-per-built-in-document-type.md) |
 | INV-0017 | docz-api: serve runbook metadata as structured fields | Open | 2026-10-02 | Donald Gifford | [0017-docz-api-serve-runbook-metadata-as-structured-fields.md](0017-docz-api-serve-runbook-metadata-as-structured-fields.md) |
 | INV-0018 | docz-site: a step-aware runbook view | Open | 2026-10-02 | Donald Gifford | [0018-docz-site-a-step-aware-runbook-view.md](0018-docz-site-a-step-aware-runbook-view.md) |
-| INV-0019 | docz-api sync to external documentation services: Confluence and Notion | Open | 2026-10-02 | Donald Gifford | [0019-docz-api-sync-to-external-documentation-services-confluence-and.md](0019-docz-api-sync-to-external-documentation-services-confluence-and.md) |
+| INV-0019 | docz-api sync to external documentation services: Confluence and Notion | Concluded | 2026-10-02 | Donald Gifford | [0019-docz-api-sync-to-external-documentation-services-confluence-and.md](0019-docz-api-sync-to-external-documentation-services-confluence-and.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
