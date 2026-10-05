@@ -26,6 +26,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Resolve DESIGN-0020 open questions
 - *(design)* Reword DESIGN-0020's decisions list for MD029
 - *(design)* Number DESIGN-0020's own decisions as its questions
+- *(impl)* IMPL-0023, Confluence export Phase A, and approve DESIGN-0020
 
 ## [2.0.0-beta.6] - 2026-10-01
 
