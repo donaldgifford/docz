@@ -1,0 +1,10 @@
+PUT /pages/42/properties/p1
+{
+  "key": "docz",
+  "value": {
+    "hash": "def"
+  },
+  "version": {
+    "number": 3
+  }
+}

@@ -348,7 +348,7 @@ token kinds work through one base URL, and a rate limit is retried.
   retries up to three times before returning a `RequestError`; a `429`
   with no header backs off two seconds doubling. The wait is a `time.Timer`
   select against `ctx.Done()`, so cancellation does not sleep
-- [ ] `httpclient_test.go` against `httptest.NewServer`: the cloud id is
+- [x] `httpclient_test.go` against `httptest.NewServer`: the cloud id is
   requested exactly once across many calls and the gateway host receives
   everything after it; each endpoint's method, path, query, and JSON body
   against a golden; each response decoded; children paginated across
