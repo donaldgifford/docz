@@ -339,7 +339,7 @@ token kinds work through one base URL, and a rate limit is retried.
   `PUT /pages/{id}/properties[/{propertyId}]` (the update carries
   `version.number + 1`), and `GET /pages/{id}/children` following
   `_links.next` cursors until exhausted
-- [ ] `errors.go`: `AuthError{Status}` for 401 and 403, `ConflictError{Title,
+- [x] `errors.go`: `AuthError{Status}` for 401 and 403, `ConflictError{Title,
   Have, Want int}` for a 409 on a stale version, `RequestError{Op, Status
   int, Body string}` for everything else with `Body` cut to 512 bytes, and
   `MalformedError` from Phase 2. No error, log, or report ever carries the
