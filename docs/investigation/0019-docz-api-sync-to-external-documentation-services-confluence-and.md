@@ -37,6 +37,7 @@ created: 2026-10-02
   - [Observation 18: the free plan as the floor](#observation-18-the-free-plan-as-the-floor)
   - [Observation 19: the Confluence push, live](#observation-19-the-confluence-push-live)
   - [Observation 20: the Jira projection, live](#observation-20-the-jira-projection-live)
+  - [Observation 21: the mermaid apps, chosen before their storage is known](#observation-21-the-mermaid-apps-chosen-before-their-storage-is-known)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. What is the first target and format?](#1-what-is-the-first-target-and-format)
@@ -129,6 +130,8 @@ into, and suggests starting with a CLI command.
    and onto Linear's, from the fields `pkg/design` and `pkg/impl` parse, and
    find what each service's free plan allows and forbids.
 8. Tabulate the free plan of all four services as the support floor.
+9. Fix what the eye found on the live pages that the API could not: wide
+   tables, and mermaid through the Marketplace apps the review chose.
 
 <!--docz:approach:end-->
 
@@ -144,6 +147,7 @@ into, and suggests starting with a CLI command.
 | Notion | public API, 100 blocks per append request; `jomei/notionapi` v1.13.3 (no direct deps), `dstotijn/go-notion` v0.11.0 (`go-cmp` only, pre-1.0); `brittonhayes/notionmd` v0.9.0 on `go-notion` **and `gomarkdown/markdown`**; `wiremind/markdown-to-notionapi` CLI |
 | Prototype | `/tmp/inv0019/`, five files, 1,437 lines: `render.go` (storage format, goldmark with eleven node overrides), `adf.go` (the ADF subset), `confluence.go` (v2 pages, v1 properties, a CQL probe, `export_view` read-back), `jira.go` (story, sub-tasks, labels, properties, transitions), `main.go`; `-mode render\|confluence\|jira`. The first build (585 lines, census and XML check) ran over `docs/` in 0.45 s and was lost with `/tmp` |
 | Scratch site (live) | `dgifford06.atlassian.net`, Free plan, created 2026-10-04; Confluence space `DOCZ` (id 98334), five pages under a `docz` parent; Jira project `DOCZ`, company-managed, nine issues; one unscoped API token over basic auth, kept outside the repository |
+| Mermaid apps | `Mermaid Chart for Confluence` (key `mermaid-chart-app-for-confluence`, listing 1234056) and `Mermaid for Jira` (key `mermaid-chart-app-for-jira`, listing 1234810), both by Mermaid Chart Inc, both listed free, installed on the scratch site 2026-10-05; the Marketplace lists 50 cloud apps matching `mermaid` |
 | docz | `v2.0.0-beta.6`; `pkg/doczcore/docparse` is stdlib-only and extracts facts; nothing in `pkg/` renders markdown |
 | Scratch site | Confluence Cloud **Free** plan: 10 users, 2 GB, REST v1 and v2, API tokens (basic auth); or the Cloud Developer Bundle (`go.atlassian.com/cloud-dev`), 5 users; either is one `.atlassian.net` site with Jira pre-linked (verified 2026-10-04) |
 | Jira | Cloud REST v3 remote issue links, `/rest/api/3/issue/{key}/remotelink`, in `go-atlassian` v2.12.0 as `RemoteLinkService`; the `jira` macro in storage format for the page side |
@@ -657,6 +661,25 @@ What the push settled that the desk review could not:
   specimen now matches a heading id in the view HTML. Whether the browser
   scrolls is the one thing the API cannot show; it is the click to make on
   the test page.
+- **A wide table needs two things the body does not carry.** Visual review
+  on 2026-10-05 found the wide tables clamped to the content column, which
+  the `export_view` counts could not see. Confluence Cloud reads page width
+  from two content properties, `content-appearance-draft` and
+  `content-appearance-published`, and a page created over REST has neither,
+  so it renders narrow; and the editor's own serialisation of a table
+  carries `data-layout` (`default`, `wide`, or `full-width`), without which
+  a table is clamped to the column even on a full-width page. Both took
+  over the API: the v2 properties endpoint accepted the pair
+  (`POST /wiki/api/v2/pages/{id}/properties`; a value already present
+  needs a PUT with a bumped version), and `<table data-layout="full-width">`
+  in the storage body came back unchanged in both the stored and the
+  exported view. The renderer now writes the attribute on every table and
+  the push sets the pair on every page it creates. To learn which of the
+  two the eye needs, the three pushed pages carry one each: RUNBOOK-0001 the
+  properties alone, IMPL-0022 the attribute alone, the specimen both, and
+  the test page both through the prototype. Neither page width nor table
+  layout is in the storage-format documentation; the attribute is what the
+  editor emits, and the properties are what the community found.
 - **Raw HTML needs a block-level allow-list.** The specimen's `<details>`
   block arrives as two HTML blocks, the opening tag with its `<summary>` and
   then the closing tag, and a per-tag rule passed the second while escaping
@@ -703,6 +726,45 @@ the app-index rule from Observation 16 confirmed in the field, while
 the issue already holds is accepted and costs a call, so a real sync reads
 the status before moving.
 
+### Observation 21: the mermaid apps, chosen before their storage is known
+
+Visual review of the live pages chose question 11's Marketplace option over
+the code panel and installed the two official Mermaid Chart apps on the
+scratch site (Environment). What the listings and the API say before a
+diagram exists:
+
+- **Both are listed free**, so they sit inside the floor question 10 set;
+  the paid tiers are Mermaid Chart's own account (Plus, Pro), which the
+  Confluence app does not require: its built-in editor works without an
+  account and an account adds sync with mermaidchart.com. The Jira app's
+  listing says the opposite, that it needs a Mermaid Chart account and
+  keeps diagrams in the vendor's central storage, and that it moved to
+  Forge in its 2.0.0 (November 2025). The Marketplace lists 50 cloud apps
+  matching `mermaid`; the official vendor is the one reason to choose these
+  two, since nothing else distinguishes them from the API's side yet.
+- **Neither listing nor the vendor's documentation says how a diagram is
+  stored**, which is the only thing a sync cares about. The docs pages for
+  both apps are one paragraph and a download link. Installing them changed
+  nothing the API can see: Jira has no field whose name mentions mermaid,
+  DOCZ-1 carries only the `docz` property, and no page in the space uses a
+  macro named `mermaid`, `mermaid-chart`, `mermaidchart`, or the app key
+  (CQL `macro =`, four probes, zero results).
+- **The question is whether REST can write what the app renders.** A Forge
+  macro is stored as an `ac:adf-extension` whose parameters the app
+  defines. If the mermaid source is one of them, the renderer emits it in
+  place of the code panel and the sync owns the diagram like any other
+  region. If the source lives in the app's own Forge storage or at
+  mermaidchart.com under a diagram id, the API cannot put it there, the
+  macro would reference a diagram nobody created, and the code panel stays
+  the fallback for a synced page, with the app serving hand-made diagrams
+  only. The Jira listing's wording points at the second shape for Jira; the
+  Confluence app's built-in editor leaves the first possible.
+- **One specimen settles it.** The way to learn the representation is to
+  insert one diagram by hand with each app, on TEST-0001 and on DOCZ-1, and
+  read the page's storage body and the issue's properties back. That is a
+  UI action the API cannot take, so it is the one step of this
+  investigation that waits on a person.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -720,9 +782,12 @@ encoded, the title is the lookup and the property the metadata, and the only
 renderer bugs were a per-tag HTML rule and goldmark's split of the alert
 marker. The Jira projection has run too (Observation 20): one story, eight
 sub-tasks, idempotent, all moved to Done, 17 KB of ADF for the largest
-description. What is left is the mermaid decision, 13 % of all fences
-(Observation 11, question 11), and the questions below, which choose the
-shape. The Free plan carried all of it (Observation 14). Jira is a link target rather than
+description. The review of those pages found the wide tables clamped, which two
+API-settable things fix (Observation 19), and sent mermaid, 13 % of all
+fences (Observation 11), to the official Mermaid Chart apps (question 11,
+Observation 21); whether the API can write what they render waits on one
+hand-inserted specimen. What is left is the questions below, which choose
+the shape. The Free plan carried all of it (Observation 14). Jira is a link target rather than
 a page target, reachable in both directions with the client already chosen
 (Observation 15).
 
@@ -800,7 +865,12 @@ Evidence: Observation 19, four pages live in storage format.
   parent page per repository, dormant unless enabled, with the credentials
   in docz-api's environment like every other secret. The CLI takes the same
   block and its own token flag. An Atlassian API token lives at most a
-  year, so it is a rotated secret. *(recommendation)*
+  year, so it is a rotated secret. The live runs used an **unscoped**
+  token over basic auth against the site URL; Atlassian's scoped tokens,
+  the kind its token page offers first, are documented against
+  `api.atlassian.com/ex/{jira|confluence}/{cloudId}` instead, so the
+  design has to say which kind it takes, or take both and pick the base
+  URL from the kind. *(recommendation)*
 - b. Server-side configuration per repository, nothing in the repository.
 - c. Other.
 
@@ -879,15 +949,19 @@ content property cannot be searched without an app; CQL lags.
 
 ### 11. Mermaid in Confluence
 
-- a. **A code panel with the source first**, as the live run did, with
-  rendering to an attached image as a follow-up behind a flag: Confluence
-  Cloud has no native mermaid, a local renderer means headless Chrome (the
-  weight Observation 8 refused in `mark`), and a hosted renderer such as
-  kroki sends diagram source to a third party, which an enterprise floor
-  cannot assume. *(recommendation)*
-- b. Render to SVG at sync time with a bundled headless browser and attach it.
-- c. Render through a hosted service (kroki, mermaid.ink) and attach it.
-- d. A Marketplace mermaid app on the Confluence side, outside the free floor.
+- a. **The official Mermaid Chart apps**, `Mermaid Chart for Confluence`
+  and `Mermaid for Jira`, both listed free and so inside the floor,
+  rendering the source the sync writes, with the code panel as the fallback
+  wherever the app's storage turns out to be unreachable over REST
+  (Observation 21). *(chosen in review)*
+- b. A code panel with the source, as the live run did: Confluence Cloud
+  has no native mermaid, and this is what a page gets with no app
+  installed.
+- c. Render to SVG at sync time with a bundled headless browser and attach
+  it (the weight Observation 8 refused in `mark`).
+- d. Render through a hosted service (kroki, mermaid.ink) and attach it,
+  which sends diagram source to a third party an enterprise floor cannot
+  assume.
 - e. Other.
 
 <!--docz:recommendation:end-->
@@ -895,15 +969,16 @@ content property cannot be searched without an app; CQL lags.
 <!--docz:decisions:start-->
 ## Decisions
 
-Resolved by user review on 2026-10-04. Questions 1 to 6 and 8 stay open;
-the same review reshaped question 8's recommendation (a DESIGN is a story,
-not an epic), which waits on the live Jira run.
+Resolved by user review on 2026-10-04 and 2026-10-05. Questions 1 to 6
+and 8 stay open; the first review reshaped question 8's recommendation (a
+DESIGN is a story, not an epic), which the live Jira run then carried out.
 
 | # | Question | Choice | Notes |
 | --- | --- | --- | --- |
 | 7 | Notion | (c) not planned | its free plan caps a team's workspace at 1,000 lifetime blocks over the API (Observation 18), so it cannot be tested for free; Observations 4, 12, and 14 stay as the record |
 | 9 | Linear | (d) deferred | no official Go client and no experience with it here; Observation 17 stays as the record, and the projection is the one Jira uses |
 | 10 | Is the free plan the floor? | (a) yes | every feature works on each service's free plan and the free plan sets the defaults; a target that cannot be tested free is out |
+| 11 | Mermaid in Confluence | (a) the Mermaid Chart apps | chosen 2026-10-05 after visual review of the live pages, both listed free; how each stores a diagram and whether REST can write it are open until a hand-inserted specimen is read back (Observation 21), and the code panel stays the fallback |
 
 <!--docz:decisions:end-->
 
