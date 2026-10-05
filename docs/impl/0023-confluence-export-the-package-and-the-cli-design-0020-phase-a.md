@@ -686,7 +686,7 @@ run on purpose, so the words describe behaviour that has been seen.
 - [x] DESIGN-0020: amend §3 with the full-export-only archive rule, §6
   with `AuthError` as exit `2`, and §5 if Phase 6 changed the scope list,
   each as a dated note rather than a rewrite
-- [ ] `just validate` and `just ci` pass, and `git-cliff` regenerates the
+- [x] `just validate` and `just ci` pass, and `git-cliff` regenerates the
   changelog
 
 <!--docz:tasks:end-->
