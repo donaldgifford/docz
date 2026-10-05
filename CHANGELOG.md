@@ -16,6 +16,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0019 records the live Confluence push and Jira projection
 - *(inv)* INV-0019 fixes wide tables and chooses the Mermaid Chart apps
 - *(inv)* INV-0019 reads the Mermaid Chart macro back and writes it from the sync
+- *(inv)* INV-0019 settles on the Atlassian Labs mermaid viewer
 
 ## [2.0.0-beta.6] - 2026-10-01
 
