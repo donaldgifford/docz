@@ -355,7 +355,7 @@ token kinds work through one base URL, and a rate limit is retried.
   three pages; 401 → `AuthError`; 429 twice then 200 → success with two
   waits observed through a fake clock; 429 four times → `RequestError`;
   409 → `ConflictError`; a context cancelled mid-wait returns `ctx.Err()`
-- [ ] `live_test.go` behind `//go:build live` (Open Question 9): reads
+- [x] `live_test.go` behind `//go:build live` (Open Question 9): reads
   `ATLASSIAN_SITE`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, and
   `DOCZ_LIVE_SPACE` from the environment, resolves the space, and round
   trips one page and its property under a parent titled `docz live`. A
