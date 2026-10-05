@@ -8,6 +8,20 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(impl)* Close IMPL-0022 after the v2.0.0-beta.6 run
+- *(inv)* Stage five open issues as investigations
+- *(inv)* Run INV-0019's prototype over the corpus
+- *(inv)* INV-0019 covers the free scratch site and Jira linking
+- *(inv)* INV-0019 widens to Jira and Linear work items on the free-plan floor
+- *(inv)* INV-0019 maps a DESIGN to a Jira story, drops Notion, defers Linear
+- *(inv)* INV-0019 records the live Confluence push and Jira projection
+- *(inv)* INV-0019 fixes wide tables and chooses the Mermaid Chart apps
+- *(inv)* INV-0019 reads the Mermaid Chart macro back and writes it from the sync
+- *(inv)* INV-0019 settles on the Atlassian Labs mermaid viewer
+- *(inv)* INV-0019 writes the mermaid viewer macro from the sync
+- *(inv)* INV-0019 folds the mermaid source under the rendered diagram
+- *(inv)* INV-0019 keeps the table layout attribute and drops page-width properties
+- *(inv)* INV-0019 resolves its remaining questions and concludes
+- *(inv)* INV-0019 status Concluded
 
 ## [2.0.0-beta.6] - 2026-10-01
 
