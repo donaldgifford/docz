@@ -33,7 +33,7 @@ func (r *exportRun) reconcile(ctx context.Context, it *item, parentID string) (P
 		return res, err
 	}
 
-	res.Title, res.Links = rendered.Title, rendered.Links
+	res.Title, res.Links, res.Body = rendered.Title, rendered.Links, rendered.Body
 
 	page, err := r.opts.Client.FindPage(ctx, r.spaceID, rendered.Title)
 	if err != nil {

@@ -79,11 +79,11 @@ type RenderOptions struct {
 // Link is a relative link or image the resolver could not place.
 type Link struct {
 	// Href is the destination as written.
-	Href string
+	Href string `json:"href"`
 	// Text is the link text, or the image's alt text.
-	Text string
+	Text string `json:"text"`
 	// Line is the 1-based line in the document.
-	Line int
+	Line int `json:"line"`
 }
 
 // Rendered is one page's storage-format body and what is known about it.

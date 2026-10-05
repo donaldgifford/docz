@@ -45,10 +45,10 @@ type Report struct {
 	// Pages holds one result per page in export order: the parent, then
 	// each type page followed by its documents, then additional docs, then
 	// orphans.
-	Pages []PageResult
+	Pages []PageResult `json:"pages"`
 	// DryRun reports that no page was written; each Action is what the
 	// page would have had done to it.
-	DryRun bool
+	DryRun bool `json:"dry_run"`
 }
 
 // Count returns how many pages took action a.
@@ -67,22 +67,26 @@ func (r *Report) Count(a Action) int {
 // PageResult is what happened to one page.
 type PageResult struct {
 	// ID is the document id; empty for the parent, type, and api pages.
-	ID string
+	ID string `json:"id,omitempty"`
 	// Title is the page title.
-	Title string
+	Title string `json:"title"`
 	// Source is the repository-relative file the page was rendered from;
 	// empty for a parent page with no landing page.
-	Source string
-	Action Action
+	Source string `json:"source,omitempty"`
+	Action Action `json:"action"`
 	// PageID, URL, and Version describe the page after the action; empty
 	// for a page a dry run would create.
-	PageID  string
-	URL     string
-	Version int
+	PageID  string `json:"page_id,omitempty"`
+	URL     string `json:"url,omitempty"`
+	Version int    `json:"version,omitempty"`
 	// Reason says why a page was Skipped or Failed.
-	Reason string
+	Reason string `json:"reason,omitempty"`
 	// Links are the relative links nothing could place.
-	Links []Link
+	Links []Link `json:"unresolved_links,omitempty"`
+	// Body is the rendered storage format, for a caller that keeps a copy
+	// (docz export confluence --out). Empty for an archived page, which is
+	// moved and never rendered. Not part of the JSON report.
+	Body []byte `json:"-"`
 }
 
 // Action is what an export did to one page.
@@ -117,6 +121,12 @@ func (a Action) String() string {
 	default:
 		return fmt.Sprintf("Action(%d)", int(a))
 	}
+}
+
+// MarshalText writes the action as its name, so a JSON report reads
+// "created" rather than 1.
+func (a Action) MarshalText() ([]byte, error) {
+	return []byte(a.String()), nil
 }
 
 // Export renders and reconciles every selected document under the
