@@ -446,7 +446,7 @@ flowchart and the report says what happened to each page.
 - [x] Context is checked between pages, never mid-page; a cancelled run
   returns the report so far with `ctx.Err()`, and what was written stays
   written
-- [ ] `fake_test.go`: an in-memory `Client` holding pages by id with
+- [x] `fake_test.go`: an in-memory `Client` holding pages by id with
   titles, parents, versions, bodies, properties, and a request log, plus
   a `fail` switch for one operation. `export_test.go` drives `Export` over
   a `t.TempDir()` repository created through `repo.Init` and `Create`
