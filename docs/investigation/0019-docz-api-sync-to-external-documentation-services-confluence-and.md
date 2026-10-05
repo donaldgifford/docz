@@ -39,6 +39,7 @@ created: 2026-10-02
   - [Observation 20: the Jira projection, live](#observation-20-the-jira-projection-live)
   - [Observation 21: the mermaid apps, chosen before their storage is known](#observation-21-the-mermaid-apps-chosen-before-their-storage-is-known)
   - [Observation 22: the Confluence app keeps the source in the macro, and the sync writes it](#observation-22-the-confluence-app-keeps-the-source-in-the-macro-and-the-sync-writes-it)
+  - [Observation 23: the Atlassian Labs viewer draws the code panel the sync already writes](#observation-23-the-atlassian-labs-viewer-draws-the-code-panel-the-sync-already-writes)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. What is the first target and format?](#1-what-is-the-first-target-and-format)
@@ -148,7 +149,7 @@ into, and suggests starting with a CLI command.
 | Notion | public API, 100 blocks per append request; `jomei/notionapi` v1.13.3 (no direct deps), `dstotijn/go-notion` v0.11.0 (`go-cmp` only, pre-1.0); `brittonhayes/notionmd` v0.9.0 on `go-notion` **and `gomarkdown/markdown`**; `wiremind/markdown-to-notionapi` CLI |
 | Prototype | `/tmp/inv0019/`, five files, 1,437 lines: `render.go` (storage format, goldmark with eleven node overrides), `adf.go` (the ADF subset), `confluence.go` (v2 pages, v1 properties, a CQL probe, `export_view` read-back), `jira.go` (story, sub-tasks, labels, properties, transitions), `main.go`; `-mode render\|confluence\|jira`. The first build (585 lines, census and XML check) ran over `docs/` in 0.45 s and was lost with `/tmp` |
 | Scratch site (live) | `dgifford06.atlassian.net`, Free plan, created 2026-10-04; Confluence space `DOCZ` (id 98334), five pages under a `docz` parent; Jira project `DOCZ`, company-managed, nine issues; one unscoped API token over basic auth, kept outside the repository |
-| Mermaid apps | `Mermaid Chart for Confluence` (key `mermaid-chart-app-for-confluence`, listing 1234056) and `Mermaid for Jira` (key `mermaid-chart-app-for-jira`, listing 1234810), both by Mermaid Chart Inc, both listed free, installed on the scratch site 2026-10-05; the Marketplace lists 50 cloud apps matching `mermaid`. The Confluence app is a Connect app with a `mermaid` structured macro whose `diagramCode` parameter holds the source (Observation 22, specimen in the prototype's `testdocs/`) |
+| Mermaid apps | `Mermaid Chart for Confluence` (key `mermaid-chart-app-for-confluence`, listing 1234056) and `Mermaid for Jira` (key `mermaid-chart-app-for-jira`, listing 1234810), both by Mermaid Chart Inc, both listed free, installed on the scratch site 2026-10-05; the Marketplace lists 50 cloud apps matching `mermaid`. The Confluence app is a Connect app with a `mermaid` structured macro whose `diagramCode` parameter holds the source (Observation 22, specimen in the prototype's `testdocs/`); uninstalled 2026-10-05 in favour of **Mermaid diagrams viewer** (Atlassian Labs, listing 1232887, key `com.atlassian.confluence.plugins.mermaid-diagrams-viewer`, Forge, Apache-2.0, `github.com/atlassian-labs/mermaid-diagrams-viewer`, version 2.81.0, 7,532 installs), which draws from a code block on the page (Observation 23) |
 | docz | `v2.0.0-beta.6`; `pkg/doczcore/docparse` is stdlib-only and extracts facts; nothing in `pkg/` renders markdown |
 | Scratch site | Confluence Cloud **Free** plan: 10 users, 2 GB, REST v1 and v2, API tokens (basic auth); or the Cloud Developer Bundle (`go.atlassian.com/cloud-dev`), 5 users; either is one `.atlassian.net` site with Jira pre-linked (verified 2026-10-04) |
 | Jira | Cloud REST v3 remote issue links, `/rest/api/3/issue/{key}/remotelink`, in `go-atlassian` v2.12.0 as `RemoteLinkService`; the `jira` macro in storage format for the page side |
@@ -823,12 +824,70 @@ closed by the diagram's own closer. GitHub reads the document the same way. The 
 outer fence in DESIGN-0019, not a cleverer sync; it joins the three broken
 links of Observation 11 as a document fix worth its own change.
 
-The Jira app is not read back yet. Its listing (Observation 21) describes
-the other shape, an account and the vendor's storage, and a Jira issue
-description has no slot for an app's macro in any case, so the
-projection's descriptions keep mermaid as a code block whatever the app
-does; it would matter for diagrams attached to an issue by hand. A specimen
-on DOCZ-1 would say which surface the app adds and whether REST reaches it.
+The Jira app was never read back and went with its sibling when review
+moved to the viewer (Observation 23). Its listing (Observation 21)
+describes the other shape, an account and the vendor's storage, and a Jira
+issue description has no slot for an app's macro in any case, so the
+projection's descriptions keep mermaid as a code block whatever app a site
+installs.
+
+### Observation 23: the Atlassian Labs viewer draws the code panel the sync already writes
+
+Review then chose **Mermaid diagrams viewer** over the Mermaid Chart app
+and uninstalled the latter. What follows is read from the viewer's source
+(`atlassian-labs/mermaid-diagrams-viewer`, Apache-2.0), which is a better
+record than any listing:
+
+- **A Forge app with one macro and one scope.** `app/manifest.yml` declares
+  a `macro` module with key `mermaid-diagram`, title "Mermaid diagram", a
+  custom UI, and the single scope `read:page:confluence`; the listing adds
+  that it stores and egresses nothing. The UI fetches the page's own ADF
+  over the Forge bridge (`/wiki/api/v2/pages/{id}?body-format=atlas_doc_format`,
+  the draft while editing) and renders with `mermaid.js` in the browser,
+  so no diagram source leaves the site. That removes the vendor-hosted
+  viewer Observation 22 recorded against the Mermaid Chart app.
+- **It draws from a code block, chosen by order or by index.** The macro's
+  only setting is `index`, a position among *all* code blocks on the page.
+  Without it (the default, "Auto detect") the app walks the ADF once,
+  collects every `mermaid-diagram` extension and every code block that
+  looks like mermaid, meaning `attrs.language` is `mermaid` or
+  `mermaid.detectType` accepts the text, and pairs the n-th macro with the
+  n-th such block in document order, retrying for thirty seconds while a
+  freshly inserted macro is not yet in the saved body. A macro with no
+  partner shows "Can't find codeblock to render automatically".
+- **So the sync's mermaid output is the code panel it writes today plus one
+  macro after it.** The renderer now emits each mermaid fence as a `code`
+  macro with `language` set to `mermaid` (it used to map it to `none`) and
+  the viewer macro directly after it; order does the pairing, and the
+  source stays readable as code on a site without the app, which is the
+  fallback question 11 wants for free. Explicit `index` was rejected: it
+  counts every code block on the page, so a reader pasting one block above
+  a diagram would shift every index below it, while order-pairing moves
+  only if the pasted block looks like mermaid. The two re-pushed pages
+  carry the panels again; the macro waits on its storage form.
+- **A Forge macro's storage form carries an environment id the manifest
+  does not.** It is an `ac:adf-extension` whose `extension-key` is
+  `<app-id>/<environment-id>/static/mermaid-diagram`, and while the app id
+  is in the manifest (`23392b90-4271-4239-98ca-a3e96c663cbb`), the
+  production environment id is only visible in a macro the editor has
+  saved. The prototype emits the extension when
+  `MERMAID_VIEWER_EXTENSION_KEY` names it, and the key is read from one
+  specimen inserted on TEST-0001, the same step Observation 22 took.
+- **Uninstalling an app orphans its macros.** After the Mermaid Chart app
+  was removed, every `mermaid` macro the push had written rendered as
+  Confluence's `unknown-macro` placeholder with nothing of the diagram
+  left, until the re-push replaced them. The viewer's failure mode is the
+  opposite: remove it and the code panel still shows the source. For a
+  sync that writes pages other people read, that asymmetry is a reason on
+  its own.
+- **Pricing on the Marketplace is per user tier, and the first tier is
+  free.** Of the 50 cloud apps matching `mermaid`, 10 are listed free and
+  the rest paid through Atlassian, but every paid one checked prices its
+  up-to-10-users tier at $0.00, with charges beginning at 15 users ($34.50
+  to $105 a month on the three sampled). On a Free-plan site, which caps
+  at 10 users, a paid app costs nothing; the free floor of question 10
+  therefore does not constrain the choice of app, only an enterprise's
+  bill.
 
 <!--docz:findings:end-->
 
@@ -849,10 +908,12 @@ marker. The Jira projection has run too (Observation 20): one story, eight
 sub-tasks, idempotent, all moved to Done, 17 KB of ADF for the largest
 description. The review of those pages found the wide tables clamped, which two
 API-settable things fix (Observation 19), and sent mermaid, 13 % of all
-fences (Observation 11), to the official Mermaid Chart apps (question 11,
-Observation 21); the Confluence app's macro carries the source and the
-push writes it (Observation 22), while the Jira app waits on its specimen.
-What is left is the questions below, which choose the shape. The Free plan carried all of it (Observation 14). Jira is a link target rather than
+fences (Observation 11), to a Marketplace app (question 11): the Mermaid Chart app proved the
+source can live in a macro the push writes (Observation 22), and review
+then settled on Atlassian Labs' viewer, which draws from the code panel
+the sync writes anyway, in the browser, with the source still readable
+where the app is absent (Observation 23). What is left is the questions
+below, which choose the shape. The Free plan carried all of it (Observation 14). Jira is a link target rather than
 a page target, reachable in both directions with the client already chosen
 (Observation 15).
 
@@ -1014,13 +1075,14 @@ content property cannot be searched without an app; CQL lags.
 
 ### 11. Mermaid in Confluence
 
-- a. **The official Mermaid Chart apps**, `Mermaid Chart for Confluence`
-  and `Mermaid for Jira`, both listed free and so inside the floor,
-  rendering the source the sync writes: the Confluence app's macro carries
-  it in a parameter and the push writes it (Observation 22), with the code
-  panel as the fallback for a site without the app. The trade is that the
-  viewer is the vendor's, loaded from the vendor's host in the browser.
-  *(chosen in review)*
+- a. **A Marketplace app that draws from the code panel the sync writes**:
+  Atlassian Labs' Mermaid diagrams viewer (Observation 23), free, Forge,
+  read-only page scope, rendering in the browser, paired with the panel by
+  order. The sync writes the code panel with `language: mermaid` and one
+  viewer macro after it; on a site without the app the panel stands alone,
+  which is the fallback for free. Review first chose the Mermaid Chart apps
+  (Observation 22: the source in the macro, but a vendor-hosted viewer and
+  nothing left when the app is removed) and then this. *(chosen in review)*
 - b. A code panel with the source, as the live run did: Confluence Cloud
   has no native mermaid, and this is what a page gets with no app
   installed.
@@ -1045,7 +1107,7 @@ DESIGN is a story, not an epic), which the live Jira run then carried out.
 | 7 | Notion | (c) not planned | its free plan caps a team's workspace at 1,000 lifetime blocks over the API (Observation 18), so it cannot be tested for free; Observations 4, 12, and 14 stay as the record |
 | 9 | Linear | (d) deferred | no official Go client and no experience with it here; Observation 17 stays as the record, and the projection is the one Jira uses |
 | 10 | Is the free plan the floor? | (a) yes | every feature works on each service's free plan and the free plan sets the defaults; a target that cannot be tested free is out |
-| 11 | Mermaid in Confluence | (a) the Mermaid Chart apps | chosen 2026-10-05 after visual review of the live pages, both listed free; the Confluence app's macro carries the source and the sync writes it (Observation 22), the Jira app is unverified, the viewer is vendor-hosted, and the code panel stays the fallback for a site without the app |
+| 11 | Mermaid in Confluence | (a) Atlassian Labs' Mermaid diagrams viewer | chosen 2026-10-05 after the Mermaid Chart app was tried first (Observation 22) and uninstalled: the viewer draws from the code panel the sync writes, renders in the browser with no egress, and leaves the source readable without it (Observation 23); the macro's storage form waits on one specimen for its environment id; Mermaid for Jira is dropped with its sibling, and a Jira description keeps mermaid as a code block |
 
 <!--docz:decisions:end-->
 
