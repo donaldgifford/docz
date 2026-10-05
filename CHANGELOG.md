@@ -23,6 +23,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0019 resolves its remaining questions and concludes
 - *(inv)* INV-0019 status Concluded
 - *(design)* DESIGN-0020, Confluence export of docz documents
+- *(design)* Resolve DESIGN-0020 open questions
 
 ## [2.0.0-beta.6] - 2026-10-01
 
