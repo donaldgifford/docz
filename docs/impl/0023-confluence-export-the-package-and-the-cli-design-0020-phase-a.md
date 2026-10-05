@@ -718,6 +718,13 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   "2.0.0-beta.7"` (bare), with the chart CHANGELOG and README regenerated
   and the version test updated (Open Question 7)
 - [ ] Open the PR with `dont-release` and push; CI is green
+  - PR [#153](https://github.com/donaldgifford/docz/pull/153) is open with
+    `dont-release`. Every check passes except Security Scan, where
+    govulncheck reports GO-2026-6505 (otel exporter and sdk v1.44.0, fixed
+    in v1.45.0) and GO-2026-6218 (`net/url` in Go 1.26.5, fixed in 1.26.6).
+    Both are on `main` too; this branch introduces neither. **Deferred -
+    human required**: a `chore(deps)` bump of otel and the Go toolchain is
+    a separate decision
 - [ ] **(human)** Merge the PR **with a merge commit**
   - **Deferred - human required**: PR [#153](https://github.com/donaldgifford/docz/pull/153)
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
