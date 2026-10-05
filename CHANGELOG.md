@@ -55,6 +55,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(development)* Pkg/export/confluence and just export-live
 - *(design-0020)* Amend §3, §5, and §6 with what IMPL-0023 settled
 - *(impl-0023)* Phase 7 complete
+- *(impl-0023)* Record Phase 8's filed follow-ups and the steps left for a person
 
 ### Testing
 
@@ -72,6 +73,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Goldmark, allowed under pkg/export/ only
 - Enable sync.confluence for this repository
+- *(chart)* Bump charts/docz to 0.2.1 for 2.0.0-beta.7
 
 ## [2.0.0-beta.6] - 2026-10-01
 
