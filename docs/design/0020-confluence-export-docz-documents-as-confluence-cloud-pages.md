@@ -97,8 +97,8 @@ second delivery, sketched here and designed in its own phase.
 - Notion and Linear (INV-0019 decisions 7 and 9).
 - Rendering mermaid to an image at sync time, with a headless browser or a
   hosted renderer.
-- Deleting Confluence pages. Orphans are reported, not removed (open
-  question 9).
+- Deleting Confluence pages. Orphans move under an `Archive` page and are
+  never deleted (question 9, resolved (c)).
 - A general markdown-to-Confluence tool. The renderer handles what docz
   documents contain (INV-0019 Observation 9) and escapes the rest.
 - The docz-api job's full design, store schema, and UI surface. This
@@ -149,7 +149,7 @@ The prototype that proved it is 1,570 lines of Go kept outside the
 repository (`render.go`, `confluence.go`, `main.go`, plus the Jira half).
 Its renderer is the starting point for `pkg/export/confluence`; its client
 is replaced, since the three places it fell back to raw HTTP say more about
-the client library than about the prototype (open question 1).
+the client library than about the prototype (question 1, resolved (a)).
 
 <!--docz:background:end-->
 
@@ -208,7 +208,7 @@ markdown renderer needs a markdown parser. The allow-list gains goldmark
 sees the exception where the rule lives. The Confluence client is written
 on `net/http` and `encoding/json`: the surface is nine endpoints, and the
 prototype's `go-atlassian` client had to be bypassed for three of them
-(open question 1).
+(question 1, resolved (a)).
 
 ### 2. The renderer
 
@@ -225,20 +225,21 @@ which storage format accepts as is.
 
 | Markdown | Storage format | Note |
 | -------- | -------------- | ---- |
+| (page top) | `info` panel: "Generated from `<source>` in `<owner/repo>` by docz. Edit the markdown; changes made here are kept until the next forced sync.", with the source linked | question 4, resolved (a); `RenderOptions.Source` and `SourceURL` supply the path and the link, and a render given neither writes no banner |
 | H1 | dropped | the page title carries it; `Title` is `ID: Title` from frontmatter, with `docparse.Title` as the fallback for a document without an id |
 | H2–H6 | `<hN>` | Confluence assigns the anchor id `<TitleNoSpaces>-<HeadingNoSpaces>` |
 | Fenced or indented code | `code` macro, `language` parameter | `sh`/`shell`/`zsh`/`console` → `bash`, `yml` → `yaml`, unknown → `none`; `]]>` in a body is split across two CDATA sections |
 | ```` ```mermaid ```` | viewer macro, then an `expand` titled "Diagram source" holding a `code` macro with `language` `mermaid` | §4; without the viewer, the `code` macro alone |
-| `<!--toc:start-->`…`<!--toc:end-->` | `toc` macro | the whole span, body included (Observation 11); open question 5 |
+| `<!--toc:start-->`…`<!--toc:end-->` | `toc` macro | the whole span, body included (Observation 11); question 5, resolved (a) |
 | `<!--docz:…-->` and other comments | dropped | region markers are docz's, not the reader's |
 | Other raw HTML block | passed when every tag in the block is allowed, else escaped whole | allow-list `br` (rewritten `<br/>`), `kbd`, `sub`, `sup`, `span`, `details`, `summary`; Observation 10 and 19 |
 | Inline raw HTML | same rule per node | `<status>` in prose is a placeholder and is escaped |
 | Link, in-page `#fragment` | `<a href="#<TitleNoSpaces>-<HeadingNoSpaces>">` | the slug is mapped back to its heading text through `docparse.Headings`; `:` in the title is written `%3A`, since a raw colon reads as a URL scheme and the sanitizer drops the href |
 | Link, relative to another exported document | `<ac:link><ri:page ri:content-title="ID: Title"/></ac:link>`, with a fragment appended when the source has one | resolved lazily by Confluence, so order does not matter |
-| Link, relative to anything else | `<a href>` to the repository's blob URL | open question 7 |
+| Link, relative to anything else | `<a href>` to the repository's blob URL | question 7, resolved (a) |
 | Link, absolute | `<a href>` as is | |
 | Image, remote | `<ac:image><ri:url ri:value="…"/></ac:image>` | |
-| Image, local | `<a href>` to the blob URL | open question 8 |
+| Image, local | `<a href>` to the blob URL | question 8, resolved (a) |
 | Blockquote with `[!NOTE]` / `[!TIP]` / `[!IMPORTANT]` / `[!WARNING]` / `[!CAUTION]` | `info` / `tip` / `note` / `warning` / `warning` panel macro with `ac:rich-text-body` | the marker is cut from the AST before rendering; goldmark splits `[!NOTE]` into `[` and `!NOTE]`, so the first line's text nodes are joined before matching |
 | Other blockquote | `<blockquote>` | |
 | Task list | `<ac:task-list><ac:task><ac:task-status>complete\|incomplete</ac:task-status><ac:task-body>…` | a list is a task list when its first item carries a checkbox |
@@ -280,8 +281,27 @@ knows neither.
 
 One page per document, titled `ID: Title`, under a parent page in the
 configured space. The parent is named in the `sync:` block by title and
-created when absent. Open question 2 decides whether documents sit flat
-under it or under a child page per type.
+created when absent. Beneath it sits one child page per exported type,
+titled with the type's nav title and carrying the type's README index
+rendered as its body, and each type's documents sit under their type page
+(question 2, resolved (a)). The index table's links resolve through the
+resolver to the pages below it, so the tree reads the way `docs/` and the
+wiki nav do. With `api_pages` on (§5; question 12, resolved (a)) the
+`api:` block's landing page becomes the parent page's own body and its
+additional docs sit directly under the parent. Orphans go under an
+`Archive` child of the parent, created when first needed.
+
+```text
+docz                              parent; body = docs/index.md when api_pages is on
+├── Design documents              type page; body = docs/design/README.md
+│   ├── DESIGN-0019: Runbook: a sixth built-in document type …
+│   └── DESIGN-0020: Confluence export: docz documents as …
+├── Implementation plans
+│   └── IMPL-0022: Runbook: the sixth built-in type …
+├── DEVELOPMENT.md                additional doc, api_pages only
+└── Archive                       orphans, moved here and never deleted
+    └── RFC-0001: An early proposal
+```
 
 A page's identity across runs is its title plus a content property named
 `docz`:
@@ -296,7 +316,8 @@ A page's identity across runs is its title plus a content property named
 }
 ```
 
-`hash` is the digest of the rendered body (open question 3), `version` is
+`hash` is the digest of the rendered body (question 3, resolved (a), so a
+renderer fix re-pushes exactly the pages it alters), `version` is
 the page version the sync last wrote, and `docz` is the version of the tool
 that wrote it. The title is the lookup (`GET /wiki/api/v2/pages?space-id=…&title=…`
 finds a page immediately after creation), the property is the metadata,
@@ -335,7 +356,18 @@ property (created, or deleted and recreated, since the v1 property endpoint
 has no upsert). The v2 pages endpoint sets the page body, title, parent,
 and version message `docz sync <id> <hash-prefix>` in one call. Confluence
 assigns `ac:macro-id` and `ac:local-id` on save; the renderer never writes
-them except the viewer macro's own `local-id` (§4).
+them except the viewer macro's own `local-id` (§4). An update always
+writes the expected parent id as well as the body, so a page is put where
+the tree says it belongs even if somebody moved it.
+
+After the documents come the orphans (question 9, resolved (c)). Every
+page under the parent or a type page that carries a `docz` property whose
+`id` is not in the export set is moved under `Archive` with its body and
+property untouched and reported as `archived`. Nothing is ever deleted;
+that is a person's call from the Confluence side. A page without the
+property is not the sync's and is never moved. Titles are unique within a
+space, so a document that returns to the repository is found by title in
+`Archive` and its next update moves it back under its type page.
 
 ### 4. Mermaid through the viewer
 
@@ -378,7 +410,7 @@ Confluence keeps it and the viewer reads it back as `parameters.localId`.
 The extension key is the app's production key, which is the app's and not
 the site's: a Forge app has one production environment that every
 installation shares, so the key ships as the default and the `sync:` block
-can override it (open question 10). With the viewer disabled in config the
+can override it (question 10, resolved (a)). With the viewer disabled in config the
 fence is a plain `code` macro with `language` `mermaid`, open, since on a
 site without the app a collapsed expand would hide the only thing there
 is to see.
@@ -404,6 +436,7 @@ sync:
     parent: docz                          # parent page title under the space root
     types: []                             # subset of enabled types; empty = all
     exclude: []                           # repo-relative path prefixes, as api.exclude
+    api_pages: false                      # also export the api: block's landing page and additional docs
     mermaid:
       viewer: auto                        # auto | off | <extension key>
 ```
@@ -416,6 +449,7 @@ sync:
 | `parent` | | required; non-empty |
 | `types` | all enabled types | each a token an enabled type resolves from, through `Config.resolutionTokens()` |
 | `exclude` | `[]` | the repo-relative path rules of `paths.go`, trailing `/` collapsed as `normalizeAPI` does |
+| `api_pages` | `false` | may be `true` only when the `api:` block is enabled; the landing page becomes the parent page's body and `additional_docs` sit under the parent (question 12) |
 | `mermaid.viewer` | `auto` | `auto`, `off`, or a key matching `<uuid>/<uuid>/static/<module>` |
 
 `SyncConfig` and `ConfluenceSyncConfig` join `config.Config` with `yaml`
@@ -427,10 +461,25 @@ other opt-in blocks, which the parity suite absorbs the way it absorbed
 `runbook` (a sixth normaliser, or the fifth widened).
 
 Credentials never enter `.docz.yaml`. The CLI and docz-api both read
-`ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` from the environment (open
-question 6); the token is an unscoped Atlassian API token used as basic
-auth against `site`, which is what the live runs used. A missing credential
-is a configuration error (exit 2) before any request is made.
+`ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` from the environment, and a
+**scoped API token is the preferred kind** (question 6, resolved (c)).
+Atlassian accepts a scoped token only through its gateway,
+`https://api.atlassian.com/ex/confluence/{cloudId}/wiki/api/v2/…`, never
+against the site URL, while an unscoped token works on both. Verified
+2026-10-05 on the scratch site: the unscoped token every live run used
+answers `GET /wiki/api/v2/spaces` through the gateway with the same body
+it returns from the site. So the client has **one path**: it resolves the
+site's cloud id once from the unauthenticated
+`GET https://<site>/_edge/tenant_info` and sends every request through the
+gateway, and which kind of token is in the environment is the operator's
+choice and not the client's concern. `site` stays in the block because the
+cloud id and the page URLs in the report come from it. The scopes a token
+needs are `read:space:confluence`, `read:page:confluence`, and
+`write:page:confluence` (a page's content properties are governed by the
+page scopes); the IMPL confirms the list by creating one, since a scoped
+token's `403` names the scope it lacks. The unscoped kind stays supported
+for a site whose admin has not turned scoped tokens on. A missing
+credential is a configuration error (exit 2) before any request is made.
 
 ### 6. The command
 
@@ -442,7 +491,7 @@ docz export confluence [<id>|<path>...] [flags]
   --dry-run          report what would happen; no request writes anything
   --out <dir>        also write each rendered page as <dir>/<id>.xhtml
   --format text|json report format (default text)
-  --strict           exit 1 when any page was skipped (open question 13)
+  --strict           exit 1 when any page was skipped (question 13, resolved (a))
 ```
 
 With no arguments it exports every document of the configured types, as
@@ -482,6 +531,8 @@ sequenceDiagram
       X-->>X: warning
     end
   end
+  X->>K: Children(parent), Children(type pages)
+  X->>K: UpdatePage(orphan, ParentID = Archive)
   X-->>C: Report
   C-->>U: one line per page, totals, exit code
 ```
@@ -494,7 +545,8 @@ updated    RUNBOOK-0001: Cut a v2 beta release                   v3  https://…
 unchanged  IMPL-0022: Runbook: the sixth built-in type …
 skipped    DESIGN-0019: Runbook: a sixth built-in …              edited in Confluence (v6, expected v5); use --force
   unresolved link: docs/index.md -> plan/README.md
-5 pages: 1 created, 1 updated, 2 unchanged, 1 skipped
+archived   RFC-0001: An early proposal                          moved under Archive
+6 pages: 1 created, 1 updated, 2 unchanged, 1 skipped, 1 archived
 ```
 
 Exit codes follow `docz validate`: `0` when every page was written,
@@ -522,11 +574,13 @@ design fixes and the rest left to its own phase:
   and never by title; the content property is still written so a page
   explains itself.
 - **Credentials.** `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN` in the
-  server's environment, one Atlassian site per deployment, with each
-  repository choosing its space and parent (open question 11).
+  server's environment, a scoped token by preference, one Atlassian site
+  per deployment, with each repository choosing its space and parent
+  (question 11, resolved (a)).
 - **Policy.** The server never forces. A skipped page is reported in the
   ingest log and surfaced later on docz-site; `--force` stays a thing a
-  person does from a checkout.
+  person does from a checkout. Orphans are archived as the CLI archives
+  them, since the move is reversible.
 
 What phase B designs on its own: the store migration and sqlc queries, the
 task's retry and failure logging (IMPL-0006's standard), the API surface
@@ -563,9 +617,11 @@ every v2-line package):
 func Render(src []byte, opts RenderOptions) (Rendered, error)
 
 type RenderOptions struct {
-    Resolve  LinkResolver // nil: every relative link is unresolved
-    Mermaid  MermaidMode  // MermaidViewer (default) or MermaidCode
-    ViewerKey string      // empty: the built-in production key
+    Resolve   LinkResolver // nil: every relative link is unresolved
+    Mermaid   MermaidMode  // MermaidViewer (default) or MermaidCode
+    ViewerKey string       // empty: the built-in production key
+    Source    string       // repo-relative path named by the banner; empty: no banner
+    SourceURL string       // where Source is browsable; empty: the banner names the path only
 }
 
 type Rendered struct {
@@ -584,8 +640,14 @@ type Client interface {
     UpdatePage(ctx context.Context, id string, p PageUpdate) (*Page, error)
     Property(ctx context.Context, pageID, key string) (*Property, error)
     SetProperty(ctx context.Context, pageID string, p Property) error
+    Children(ctx context.Context, parentID string) ([]Page, error) // for orphans
 }
 
+// NewHTTPClient speaks to site through Atlassian's gateway: it resolves
+// the cloud id from <site>/_edge/tenant_info on first use and sends every
+// request to api.atlassian.com/ex/confluence/<cloudId>, which accepts
+// scoped and unscoped tokens alike. PageUpdate carries ParentID, so one
+// call moves a page and rewrites it.
 func NewHTTPClient(site, email, token string) *HTTPClient
 
 // Export renders and reconciles every selected document and returns what
@@ -607,7 +669,7 @@ type Report struct {
 
 type PageResult struct {
     ID, Title, Source string
-    Action            Action // Created, Updated, Unchanged, Skipped, Failed
+    Action            Action // Created, Updated, Unchanged, Skipped, Archived, Failed
     PageID, URL       string
     Version           int
     Reason            string // Skipped and Failed: why
@@ -627,7 +689,9 @@ logger; hooks carry the narration.
 disabled.
 
 **`cmd/`**: `export.go` with the `export` parent command and the
-`confluence` subcommand (§6); `hooks.go` maps the new hook. The
+`confluence` subcommand (§6); `hooks.go` maps the new hook; `GitResolver`
+gains `RemoteURL(ctx)` beside `UserName`, the origin the blob URLs and the
+banner link are built from (question 7). The
 `cmd/*_test.go` freeze of ADR-0001 Decision 7 does not apply to a new
 file.
 
@@ -646,7 +710,9 @@ No repository state. Everything the CLI needs across runs lives on the
 Confluence page: its title, and the `docz` content property (§3) with
 `id`, `source`, `hash`, `version`, and `docz`. A page without the property
 is not the sync's; a page whose version differs from the property's was
-edited in Confluence.
+edited in Confluence. An orphan keeps its property under `Archive`, and
+because titles are unique within a space a document that returns is found
+there by title and moved back by its next update.
 
 Phase B adds a docz-api table, designed there: `(repo_id, doc_id) →
 page_id, version, hash, synced_at`, so the server keys pages by id and
@@ -681,10 +747,13 @@ the viewer reads.
   error.
 - **Reconcile against a fake.** An `httptest`-free fake `Client` drives
   `Export` through create, unchanged, update, both skips, adoption under
-  `--force`, dry run, a cancelled context mid-run, and a failing request;
+  `--force`, an orphan moved under `Archive` and back when its document
+  returns, `api_pages` on and off, dry run, a cancelled context mid-run,
+  and a failing request;
   the report is asserted action by action.
-- **`HTTPClient` against `httptest`.** Each endpoint's request shape and
-  the response decoding, `401` → `AuthError`, `429` → retry then fail,
+- **`HTTPClient` against `httptest`.** The cloud id resolved once from
+  `_edge/tenant_info` and every request sent to the gateway host, each
+  endpoint's request shape and the response decoding, `401` → `AuthError`, `429` → retry then fail,
   `409` on a stale version → `ConflictError`.
 - **`cmd/export_test.go`.** A `Runner` with a fake client reaches the
   command's printing and exit codes; no network in `just test`.
@@ -706,7 +775,9 @@ Decision 3: the CLI first, on its own, then docz-api.
    docs. Acceptance: this repository's `docs/` exports to the scratch site
    with every page well-formed, mermaid drawn, tables wide, anchors
    clicking, a second run all `unchanged`, an edit in Confluence skipped
-   and then overwritten under `--force`. Ships in a `v2.0.0-beta.N`.
+   and then overwritten under `--force`, a deleted document's page under
+   `Archive`, and the whole run repeated with a scoped token. Ships in a
+   `v2.0.0-beta.N`.
 2. **Validation on the scratch site** for a few days of real use: edits,
    renames, new documents, a type disabled, the three broken links fixed.
    Anything the eye finds goes back into Phase A before Phase B starts.
@@ -742,6 +813,8 @@ are adopted on the first `--force` run, then tracked normally.
   export, and docz-api is in-module so gains nothing by it.
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 2. How are pages arranged under the parent?
 
 - a. **A child page per exported type, titled with the type's nav title
@@ -755,6 +828,8 @@ are adopted on the first `--force` run, then tracked normally.
 - c. Mirror `docs_dir` exactly, including non-type directories.
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 3. What is hashed for the unchanged check?
 
 - a. **The rendered body.** A renderer fix or a resolver change then
@@ -767,6 +842,8 @@ are adopted on the first `--force` run, then tracked normally.
 - c. Both, and either difference writes.
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 4. Does the page say where it came from?
 
 - a. **An `info` panel at the top: "Generated from `<source>` in
@@ -777,6 +854,8 @@ are adopted on the first `--force` run, then tracked normally.
 - c. A one-line footer instead.
 - d. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 5. What becomes of the ToC region?
 
 - a. **The `toc` macro, where the document has a ToC region.** Faithful to
@@ -785,6 +864,8 @@ are adopted on the first `--force` run, then tracked normally.
 - b. Drop the region: Confluence readers use the page's own navigation and a
   second list of headings at the top is noise.
 - c. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 ### 6. Where do credentials come from, and which token kind?
 
@@ -802,6 +883,8 @@ are adopted on the first `--force` run, then tracked normally.
   test for a kind nobody has asked for yet.
 - d. Other.
 
+> **Resolved 2026-10-05: (c).** Scoped tokens are preferred and must be supported; the client goes through the gateway for both kinds (§5).
+
 ### 7. Where does a relative link go when its target is not exported?
 
 - a. **To the repository's blob URL at the default branch**, derived from
@@ -811,6 +894,8 @@ are adopted on the first `--force` run, then tracked normally.
 - b. Rendered as text with the path, no link.
 - c. Left as the relative href, which Confluence shows as a dead link.
 - d. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 ### 8. Images
 
@@ -822,6 +907,8 @@ are adopted on the first `--force` run, then tracked normally.
   `ri:attachment`.
 - c. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 9. Pages the sync wrote for documents that no longer exist
 
 - a. **Report them, never delete.** Pages under the parent carrying a
@@ -831,6 +918,8 @@ are adopted on the first `--force` run, then tracked normally.
 - b. Delete them, as the store's reconcile deletes absent documents.
 - c. Move them under an `Archive` child page.
 - d. Other.
+
+> **Resolved 2026-10-05: (c).** Orphans move under an `Archive` child page; nothing is deleted (§3).
 
 ### 10. Where does the viewer's extension key live?
 
@@ -843,6 +932,8 @@ are adopted on the first `--force` run, then tracked normally.
   identifier.
 - c. Other.
 
+> **Resolved 2026-10-05: (a).**
+
 ### 11. docz-api: one Atlassian site or many?
 
 - a. **One site per docz-api deployment, credentials in its environment;
@@ -852,6 +943,8 @@ are adopted on the first `--force` run, then tracked normally.
 - b. Per-repository credentials in a server-side secret store, so
   repositories on one docz-api can target different sites.
 - c. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 ### 12. What does a bare `docz export confluence` export?
 
@@ -863,6 +956,8 @@ are adopted on the first `--force` run, then tracked normally.
   home under the parent.
 - c. Other.
 
+> **Resolved 2026-10-05: (a).** Default (a); `sync.confluence.api_pages` includes the `api:` block's landing page and additional docs (§5).
+
 ### 13. Is a skipped page a failure?
 
 - a. **No: exit `0` with the warning, and `--strict` turns any skip into
@@ -870,6 +965,8 @@ are adopted on the first `--force` run, then tracked normally.
   information, not an error, and a CI job that wants to know can ask.
 - b. Always exit `1` when anything was skipped.
 - c. Other.
+
+> **Resolved 2026-10-05: (a).**
 
 <!--docz:open-questions:end-->
 
@@ -896,8 +993,32 @@ reopened here:
 10. **Mermaid through Atlassian Labs' Mermaid diagrams viewer, source folded
     beneath the diagram** (decision 11).
 
-The open questions above are this design's own and are recorded here as
-they are resolved.
+This design's own, resolved 2026-10-05:
+
+11. **goldmark alone is allow-listed under `pkg/export/`; the Confluence
+    client is our own on `net/http`** (question 1).
+12. **A child page per type, carrying the README index, with the
+    documents beneath** (question 2).
+13. **The rendered body is what is hashed** (question 3).
+14. **An `info` banner at the top of every page names the source**
+    (question 4).
+15. **The ToC region becomes the `toc` macro** (question 5).
+16. **Scoped API tokens are the preferred kind and must be supported; the
+    client goes through Atlassian's gateway for both kinds** (question 6,
+    (c)).
+17. **A relative link to something not exported goes to the repository's
+    blob URL** (question 7).
+18. **Remote images inline, local images as links; attachments later**
+    (question 8).
+19. **Orphaned pages are moved under `Archive`, never deleted**
+    (question 9, (c)).
+20. **The viewer's extension key is built in and overridable**
+    (question 10).
+21. **One Atlassian site per docz-api deployment** (question 11).
+22. **A bare export covers the configured types; `api_pages` adds the
+    `api:` block's pages** (question 12).
+23. **A skipped page is a warning; `--strict` makes it a failure**
+    (question 13).
 
 <!--docz:decisions:end-->
 
