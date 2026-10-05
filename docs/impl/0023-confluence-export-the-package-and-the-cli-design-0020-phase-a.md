@@ -575,7 +575,7 @@ release run.
   reads every page or returns a `403` naming the missing scope. Record
   the final list here and correct DESIGN-0020 §5 and the README if it
   differs
-- [ ] `.docz.yaml`: enable the block (Open Question 6) with the scratch
+- [x] `.docz.yaml`: enable the block (Open Question 6) with the scratch
   site, space `DOCZ`, parent `docz`, `api_pages: true`, and `exclude:
   [examples, archive]` in step with `api.exclude`
 - [ ] The `docs:` PR fixing DESIGN-0019's nested fence and the three
