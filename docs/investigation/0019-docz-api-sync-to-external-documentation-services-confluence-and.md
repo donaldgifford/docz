@@ -975,9 +975,13 @@ Notion: its free plan fails the floor for any team (Observation 18), and a
 target that cannot be tested for free is out. Jira is the second target
 after Confluence pages, and the two share one client and one credential.
 
-The investigation stays open for the questions. The three
-broken links Observation 11 turned up in live documents are worth fixing on
-their own.
+Review resolved every question (Decisions), and the investigation
+concludes. Next are two DESIGNs, one each: Confluence pages first, shipped
+as the `docz export confluence` command and validated over a checkout
+before the docz-api job follows as a second delivery, with pages never
+overwritten without `--force`; then Jira work items on their own. The
+three broken links Observation 11 turned up and DESIGN-0019's nested fence
+(Observation 22) are worth fixing on their own.
 
 <!--docz:conclusion:end-->
 
@@ -987,13 +991,15 @@ their own.
 Take the prototype's renderer into `pkg/export/confluence`, with the ToC
 span, alert markers, raw-HTML allow-list, and source-file links from
 Observation 11 fixed, and drive it first by a `docz export confluence`
-command over a checkout, then by a post-ingest job in docz-api. Find pages
-by title through the v2 endpoint, carry the docz id and hash in a content
-property, and remember the page id in docz-api's store. Before any of that, fix the three broken
+command over a checkout, delivered and validated on its own, then by a
+post-ingest job in docz-api as a second delivery. Find pages by title
+through the v2 endpoint, carry the docz id and hash in a content property,
+remember the page id in docz-api's store, and never overwrite a page whose
+version moved without `--force`. Before any of that, fix the three broken
 links in live documents. Create the scratch site on the Free plan rather
-than the developer bundle. Two targets: Confluence pages (the prototype),
-then Jira work items with a DESIGN as a story and its IMPLs' phases as
-sub-tasks, over the client Confluence already brings. Linear is deferred
+than the developer bundle. Two targets, each with its own DESIGN: Confluence
+pages (the prototype), then Jira work items with a DESIGN as a story and
+its IMPLs' phases as sub-tasks, over the client Confluence already brings. Linear is deferred
 and Notion dropped (Decisions). The free plan is the floor.
 
 ### 1. What is the first target and format?
@@ -1146,13 +1152,23 @@ content property cannot be searched without an app; CQL lags.
 <!--docz:decisions:start-->
 ## Decisions
 
-Resolved by user review on 2026-10-04 and 2026-10-05. Questions 1 to 6
-and 8 stay open; the first review reshaped question 8's recommendation (a
-DESIGN is a story, not an epic), which the live Jira run then carried out.
+Resolved by user review on 2026-10-04 and 2026-10-05; every question is
+now resolved. The first review reshaped question 8's recommendation (a
+DESIGN is a story, not an epic), which the live Jira run then carried out,
+and the last added two things no option carried: the CLI ships first as
+its own delivery (3), and a page is never overwritten without `--force`
+(6).
 
 | # | Question | Choice | Notes |
 | --- | --- | --- | --- |
+| 1 | First target and format | (a) Confluence Cloud, storage format | four pages live in storage format (Observation 19); portable to Data Center and needed for the macros anyway |
+| 2 | How the body is rendered | (a) goldmark with a storage-format renderer of our own | the prototype's `render.go`, with mermaid as a code panel plus the viewer macro (decision 11) rather than an attachment |
+| 3 | Where it lives, and in what order | (a) `pkg/export/confluence`, then `docz export confluence`, then the docz-api job | **the CLI is delivered and validated first, on its own**, because a checkout is the quickest way to test; the docz-api sync is a second delivery after it, not built alongside |
+| 4 | Opt-in and credentials | (a) a `sync:` block in `.docz.yaml`, credentials in the environment | the token kind is for the DESIGN; the live runs used an unscoped token against the site URL |
+| 5 | Page identity across runs | (a) title plus a content property with the docz id and hash, page id stored in docz-api | Observation 19: the v2 endpoint finds by title at once, CQL lags, a property cannot be searched |
+| 6 | A page edited in Confluence | (c) other: never overwritten by default | a page whose version moved since the last sync is skipped with a warning, and overwritten only under a `--force` flag; content flows one way, from the docz markdown to Confluence, never back; whether an in-place edit can keep Confluence-side comments is a later question |
 | 7 | Notion | (c) not planned | its free plan caps a team's workspace at 1,000 lifetime blocks over the API (Observation 18), so it cannot be tested for free; Observations 4, 12, and 14 stay as the record |
+| 8 | Jira | (a) a DESIGN is a Story, each phase of its IMPLs a Sub-task, each task a checkbox | **its own DESIGN, done separately from the Confluence one**; Observation 20's live projection is the evidence |
 | 9 | Linear | (d) deferred | no official Go client and no experience with it here; Observation 17 stays as the record, and the projection is the one Jira uses |
 | 10 | Is the free plan the floor? | (a) yes | every feature works on each service's free plan and the free plan sets the defaults; a target that cannot be tested free is out |
 | 11 | Mermaid in Confluence | (a) Atlassian Labs' Mermaid diagrams viewer | chosen 2026-10-05 after the Mermaid Chart app was tried first (Observation 22) and uninstalled: the viewer draws from the code panel the sync writes, renders in the browser with no egress, and leaves the source readable without it (Observation 23); the macro's storage form came from a hand-inserted specimen's version history and the sync writes it with five attributes and a fresh local id; Mermaid for Jira is dropped with its sibling, and a Jira description keeps mermaid as a code block |
