@@ -526,7 +526,7 @@ and the consumer module proves the package is reachable from outside.
   `Request` to debug lines, installed with
   `cmd.SetContext(confluence.WithHooks(…))`, so `--verbose` narrates each
   request and each page
-- [ ] `cmd/export_test.go` (new; the frozen files are untouched): a
+- [x] `cmd/export_test.go` (new; the frozen files are untouched): a
   `Runner` with a fake `Client` injected through a package-level seam in
   the `runner` style, covering text and JSON output against goldens,
   each exit code, `--out`, `--strict`, `--dry-run`, a disabled block,

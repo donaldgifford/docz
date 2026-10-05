@@ -1,0 +1,53 @@
+{
+  "pages": [
+    {
+      "title": "docz",
+      "action": "created",
+      "page_id": "1",
+      "url": "https://example.atlassian.net/wiki/pages/1",
+      "version": 1
+    },
+    {
+      "title": "RFCs",
+      "source": "docs/rfc/README.md",
+      "action": "created",
+      "page_id": "2",
+      "url": "https://example.atlassian.net/wiki/pages/2",
+      "version": 1
+    },
+    {
+      "id": "RFC-0001",
+      "title": "RFC-0001: First proposal",
+      "source": "docs/rfc/0001-first-proposal.md",
+      "action": "created",
+      "page_id": "3",
+      "url": "https://example.atlassian.net/wiki/pages/3",
+      "version": 1
+    },
+    {
+      "title": "ADRs",
+      "source": "docs/adr/README.md",
+      "action": "created",
+      "page_id": "4",
+      "url": "https://example.atlassian.net/wiki/pages/4",
+      "version": 1
+    },
+    {
+      "id": "ADR-0001",
+      "title": "ADR-0001: A decision",
+      "source": "docs/adr/0001-a-decision.md",
+      "action": "created",
+      "page_id": "5",
+      "url": "https://example.atlassian.net/wiki/pages/5",
+      "version": 1,
+      "unresolved_links": [
+        {
+          "href": "0009-missing.md",
+          "text": "nothing",
+          "line": 92
+        }
+      ]
+    }
+  ],
+  "dry_run": false
+}
