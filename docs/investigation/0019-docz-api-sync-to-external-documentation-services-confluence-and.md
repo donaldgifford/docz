@@ -891,12 +891,28 @@ record than any listing:
   code panel and no diagram, and the page in the browser is the proof. CQL
   cannot find it either (`macro = "mermaid-diagram"` returns nothing),
   where the Connect macro was searchable by name.
-- **One macro draws one block.** Review tried two mermaid code blocks and
+- **One macro draws one block, and the two lists are zipped by index, so
+  the block's position is free.** Review tried two mermaid code blocks and
   one macro on auto detect: the macro drew the first block and the second
   stayed a code panel, which is the n-th-with-n-th rule exactly. The sync
-  writes one macro per fence, directly after it, so the pairing is one to
-  one by construction; a reader adding a diagram by hand adds a block and a
-  macro, as the app's own instructions say.
+  writes one macro per fence, so the pairing is one to one by
+  construction; a reader adding a diagram by hand adds a block and a macro,
+  as the app's own instructions say. Review confirmed in the browser that
+  the pairs the push wrote render, one on TEST-0001 and three on
+  DESIGN-0019.
+- **The source need not sit in the open beside its diagram.** Review found
+  a code panel followed by the same thing drawn "slightly annoying", and
+  the app's README already says the block can be "hidden inside expand or
+  placed at the end of the page": because the app collects the macros and
+  the mermaid-looking blocks as two lists and pairs them by index, a block
+  inside an `expand` still counts, wherever it sits. The renderer now
+  writes the viewer macro first and the code panel beneath it inside a
+  collapsed `expand` titled "Diagram source", and Confluence stored it so,
+  with the ADF `codeBlock` nested in an `expand` node with its `language`
+  intact (one on TEST-0001, three on DESIGN-0019). The fold happens only
+  when the extension key is configured, because on a site without the app
+  a collapsed expand would hide the source that is the whole fallback; with
+  no key the panel stays open as before.
 - **Uninstalling an app orphans its macros.** After the Mermaid Chart app
   was removed, every `mermaid` macro the push had written rendered as
   Confluence's `unknown-macro` placeholder with nothing of the diagram
