@@ -123,3 +123,33 @@ api:
 {{- range .API.AdditionalDocs }}
     - {{ . }}
 {{- end }}
+
+# Export targets for `docz export confluence` (DESIGN-0020). Off by
+# default and never validated until enabled. Credentials come from the
+# environment, never from this file: ATLASSIAN_EMAIL and
+# ATLASSIAN_API_TOKEN. A scoped API token is preferred and needs
+# read:space:confluence, read:page:confluence, and write:page:confluence.
+sync:
+  confluence:
+    enabled: {{ .Sync.Confluence.Enabled }}
+    # The Cloud site, e.g. https://example.atlassian.net.
+    site:{{ with .Sync.Confluence.Site }} {{ . }}{{ end }}
+    # The space key, and the title of the page everything sits beneath.
+    space:{{ with .Sync.Confluence.Space }} {{ . }}{{ end }}
+    parent:{{ with .Sync.Confluence.Parent }} {{ . }}{{ end }}
+    # Types to export; empty exports every enabled type.
+    types:
+{{- range .Sync.Confluence.Types }}
+      - {{ . }}
+{{- end }}
+    # Path prefixes under docs_dir that are never exported.
+    exclude:
+{{- range .Sync.Confluence.Exclude }}
+      - {{ . }}
+{{- end }}
+    # Also export the api: block's landing page and additional docs.
+    api_pages: {{ .Sync.Confluence.APIPages }}
+    mermaid:
+      # auto (the Mermaid diagrams viewer), off (a code panel), or an
+      # extension key.
+      viewer: {{ .Sync.Confluence.Mermaid.Viewer }}

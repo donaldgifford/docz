@@ -164,7 +164,7 @@ different.
 - [x] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `sync`
   object with its nested `confluence` and `mermaid`;
   `TestJSONTags_MirrorYAML` passes without edits, which is the point of it
-- [ ] `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl`: a `sync:` block
+- [x] `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl`: a `sync:` block
   after `api:`, disabled, with a comment per field, the two credential
   variables named (`ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`), and the three
   scopes a token needs. `parity_baseline_test.go`'s round trip and
