@@ -53,6 +53,7 @@ nav:
         - 'IMPL-0020: docz-site move-in: v2.0.0-beta.4': impl/0020-docz-site-move-in-v200-beta4.md
         - 'IMPL-0021: charts/docz: one Helm chart, v2.0.0-beta.5': impl/0021-chartsdocz-one-helm-chart-v200-beta5.md
         - 'IMPL-0022: Runbook: the sixth built-in type (v2.0.0-beta.6)': impl/0022-runbook-the-sixth-built-in-type-v200-beta6.md
+        - 'IMPL-0023: Confluence export: the package and the CLI (DESIGN-0020 Phase A)': impl/0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
