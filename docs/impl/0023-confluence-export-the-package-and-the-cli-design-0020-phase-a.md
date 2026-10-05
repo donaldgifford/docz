@@ -186,7 +186,7 @@ different.
   including the negative case of goldmark named from a core package. The
   rule that the core never imports a type package gains `pkg/export/...`
   to its forbidden set, so `corePackages` stays as it is
-- [ ] `docz config` prints the block; `docz init` in a `t.TempDir()`
+- [x] `docz config` prints the block; `docz init` in a `t.TempDir()`
   writes it disabled (`cmd/init_test.go` is frozen, so this goes in a new
   `cmd/export_test.go` file that Phase 5 extends)
 
