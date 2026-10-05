@@ -282,12 +282,13 @@ opened a file or a socket.
   each embedded template rendered through `doctemplate.Resolve` must come
   back well-formed with zero unresolved in-page anchors. The test reads
   the snapshots, never `docs/`
-- [ ] `invariants_test.go` and `FuzzRender`: the input is unmodified, two
+- [x] `invariants_test.go` and `FuzzRender`: the input is unmodified, two
   renders of one input match byte for byte after the `local-id`
   placeholders are restored, `Hash` is equal across the two, and the fuzz
   target pins never-panic and well-formed-or-error over the goldens as
   seeds, run for thirty seconds locally and recorded here
-- [ ] `go vet`, `just lint`, and `just fmt` are clean; no non-test file in
+  Done: `FuzzRender` ran 30s clean, 5.2M executions, on 2026-10-05.
+- [x] `go vet`, `just lint`, and `just fmt` are clean; no non-test file in
   the package imports `os`, `io/fs`, or `net`
 
 <!--docz:tasks:end-->
