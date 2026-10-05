@@ -643,6 +643,7 @@ release run.
     was never edited or archived, the parent page stays where it is, and the
     orphan pass skips known pages. The browser pass is deferred with the
     first run's checks
+  - **Deferred - human required**: what the browser pass finds
 
 <!--docz:tasks:end-->
 
@@ -722,8 +723,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
     `dont-release`. Every check passes except Security Scan, where
     govulncheck reports GO-2026-6505 (otel exporter and sdk v1.44.0, fixed
     in v1.45.0) and GO-2026-6218 (`net/url` in Go 1.26.5, fixed in 1.26.6).
-    Both are on `main` too; this branch introduces neither. **Deferred -
-    human required**: a `chore(deps)` bump of otel and the Go toolchain is
+    Both are on `main` too; this branch introduces neither. **Deferred - human required**: a
+    `chore(deps)` bump of otel and the Go toolchain is
     a separate decision
 - [ ] **(human)** Merge the PR **with a merge commit**
   - **Deferred - human required**: PR [#153](https://github.com/donaldgifford/docz/pull/153)
@@ -794,21 +795,23 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Config: one case per validation rule, dormancy, `ParseBytes` ≡
+- [x] Config: one case per validation rule, dormancy, `ParseBytes` ≡
   `Load`, the JSON shape, and the parity normaliser (Phase 1)
-- [ ] Renderer goldens for every §2 row, the 38-fixture and seven-template
+- [x] Renderer goldens for every §2 row, the 38-fixture and seven-template
   corpus, the invariants, and `FuzzRender` (Phase 2)
-- [ ] `HTTPClient` against `httptest`: request shapes, decoding,
+- [x] `HTTPClient` against `httptest`: request shapes, decoding,
   pagination, the cloud id fetched once, 401, 409, and 429 (Phase 3)
-- [ ] `Export` against the fake through every flowchart arm, the orphan
+- [x] `Export` against the fake through every flowchart arm, the orphan
   rules, `api_pages`, `DryRun`, cancellation, and a failing request
   (Phase 4)
-- [ ] `cmd/export_test.go` output goldens and exit codes, and `just
+- [x] `cmd/export_test.go` output goldens and exit codes, and `just
   test-consumer` with the new package (Phase 5)
 - [ ] The live run over this repository, recorded in Phase 6, with both
   token kinds
+  - **Deferred - human required**: the unscoped half is recorded in Phase 6; the scoped half waits on the token
 - [ ] `just ci` green on the PR, and the published beta.7 artifacts
   verified by RUNBOOK-0001 Procedure 2 (Phase 8)
+  - **Deferred - human required**: govulncheck's two advisories from `main`, and the release
 
 <!--docz:testing:end-->
 
