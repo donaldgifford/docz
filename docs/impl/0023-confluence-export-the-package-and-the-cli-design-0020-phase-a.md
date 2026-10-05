@@ -324,14 +324,14 @@ token kinds work through one base URL, and a rate limit is retried.
   Title, Body}`, `PageUpdate{Title, ParentID, Body, Version int, Message}`,
   `Property{ID, Key, Value json.RawMessage, Version int}`. A missing page
   or property is `(nil, nil)`, not an error
-- [ ] `httpclient.go`: `NewHTTPClient(site, email, token string)
+- [x] `httpclient.go`: `NewHTTPClient(site, email, token string)
   *HTTPClient` with a functional `WithHTTPClient(*http.Client)` for tests.
   The cloud id is resolved once, lazily, from
   `GET <site>/_edge/tenant_info` (unauthenticated; the error is memoised so
   a bad site fails every call the same way), and every request goes to
   `https://api.atlassian.com/ex/confluence/<cloudId>/wiki/api/v2/…` with
   basic auth. `WebURL` is `<site>/wiki` joined with `_links.webui`
-- [ ] The endpoints, each a method of its own: `GET /spaces?keys=`,
+- [x] The endpoints, each a method of its own: `GET /spaces?keys=`,
   `GET /pages?space-id=&title=` (version and parent come back; the body
   is never fetched), `POST /pages` with `status: current` and a storage
   body, `PUT /pages/{id}` with `parentId`, the body, and `version{number,
@@ -344,7 +344,7 @@ token kinds work through one base URL, and a rate limit is retried.
   int, Body string}` for everything else with `Body` cut to 512 bytes, and
   `MalformedError` from Phase 2. No error, log, or report ever carries the
   `Authorization` header or the token
-- [ ] A `429` honours `Retry-After` (seconds or an HTTP date), waits, and
+- [x] A `429` honours `Retry-After` (seconds or an HTTP date), waits, and
   retries up to three times before returning a `RequestError`; a `429`
   with no header backs off two seconds doubling. The wait is a `time.Timer`
   select against `ctx.Done()`, so cancellation does not sleep
