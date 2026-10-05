@@ -22,6 +22,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv)* INV-0019 keeps the table layout attribute and drops page-width properties
 - *(inv)* INV-0019 resolves its remaining questions and concludes
 - *(inv)* INV-0019 status Concluded
+- *(design)* DESIGN-0020, Confluence export of docz documents
+- *(design)* Resolve DESIGN-0020 open questions
+- *(design)* Reword DESIGN-0020's decisions list for MD029
+- *(design)* Number DESIGN-0020's own decisions as its questions
 
 ## [2.0.0-beta.6] - 2026-10-01
 
