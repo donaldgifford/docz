@@ -53,4 +53,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0020 | docz-site move-in: v2.0.0-beta.4 | Completed | 2026-09-23 | Donald Gifford | [0020-docz-site-move-in-v200-beta4.md](0020-docz-site-move-in-v200-beta4.md) |
 | IMPL-0021 | charts/docz: one Helm chart, v2.0.0-beta.5 | Completed | 2026-09-25 | Donald Gifford | [0021-chartsdocz-one-helm-chart-v200-beta5.md](0021-chartsdocz-one-helm-chart-v200-beta5.md) |
 | IMPL-0022 | Runbook: the sixth built-in type (v2.0.0-beta.6) | Completed | 2026-09-30 | Donald Gifford | [0022-runbook-the-sixth-built-in-type-v200-beta6.md](0022-runbook-the-sixth-built-in-type-v200-beta6.md) |
+| IMPL-0023 | Confluence export: the package and the CLI (DESIGN-0020 Phase A) | Draft | 2026-10-05 | Donald Gifford | [0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md](0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md) |
 <!-- END DOCZ AUTO-GENERATED -->
