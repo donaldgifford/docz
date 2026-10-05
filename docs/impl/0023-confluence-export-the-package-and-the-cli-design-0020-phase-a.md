@@ -395,7 +395,7 @@ flowchart and the report says what happened to each page.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `export.go`: `Export(ctx, rp *repo.Repo, opts ExportOptions)
+- [x] `export.go`: `Export(ctx, rp *repo.Repo, opts ExportOptions)
   (Report, error)` with `ExportOptions{Client, Types, IDs, Force, DryRun,
   Resolve LinkResolver, Version string}` (Open Question 3 for `Version`),
   `Report{Pages []PageResult, DryRun bool}`, `PageResult{ID, Title,
@@ -403,7 +403,7 @@ flowchart and the report says what happened to each page.
   with `Created`, `Updated`, `Unchanged`, `Skipped`, `Archived`, `Failed`
   and a `String()`. A block that is absent or disabled is a `ConfigError`
   before any request
-- [ ] The tree, in this order: the space id; the parent page found by
+- [x] The tree, in this order: the space id; the parent page found by
   title or created (its body is the rendered `api:` landing page when
   `api_pages` is on, else one paragraph naming the repository); one type
   page per exported type, titled with the type's nav title, body the
@@ -412,12 +412,12 @@ flowchart and the report says what happened to each page.
   the `api:` additional docs under the parent when `api_pages` is on.
   `Types` and `IDs` narrow the document set; an id resolves through
   `rp.Find`, and an unknown one is `repo.NotFoundError` passed up
-- [ ] The resolver: `Export` builds the export set (repository-relative
+- [x] The resolver: `Export` builds the export set (repository-relative
   path → page title) first and resolves every relative link against it
   before falling back to `opts.Resolve`, so a caller supplies only the
   rule for what is *not* exported (the blob URL) and the index pages'
   links land on the pages beneath them
-- [ ] The per-page reconcile exactly as the §3 flowchart: find by title;
+- [x] The per-page reconcile exactly as the §3 flowchart: find by title;
   no page → create; page with no `docz` property → skip `not docz's page`
   unless `Force`, which adopts it; property whose `version` differs from
   the page's → skip `edited in Confluence (v<have>, expected v<want>)`
@@ -426,16 +426,16 @@ flowchart and the report says what happened to each page.
   expected parent id. Every create and update is followed by the property
   `{id, source, hash, version, docz}`, created or updated through its own
   version
-- [ ] Orphans, **only on a full export** (no `Types`, no `IDs`): the
+- [x] Orphans, **only on a full export** (no `Types`, no `IDs`): the
   children of the parent and of every type page that carry a `docz`
   property whose `id` is not in the export set are moved under an
   `Archive` child of the parent (created when first needed) and reported
   `Archived`. A narrowed run never archives, because a partial set would
   orphan everything outside it. DESIGN-0020 §3 does not say this and is
   amended in Phase 7
-- [ ] `DryRun`: every read happens, no write does, and the report carries
+- [x] `DryRun`: every read happens, no write does, and the report carries
   the action each page *would* take with `Report.DryRun` set
-- [ ] A failed request fails that page (`Failed`, with the reason) and the
+- [x] A failed request fails that page (`Failed`, with the reason) and the
   run continues to the next; `Export` returns the report and an error
   wrapping the first failure once the loop ends (Open Question 10)
 - [x] `hooks.go` (Open Question 1): `Hooks{PageDone func(PageResult),
@@ -443,7 +443,7 @@ flowchart and the report says what happened to each page.
   by `WithHooks`/`HooksFrom` in `repo`'s shape, with `HooksFrom` never
   nil. `HTTPClient` fires `Request` after each response; `Export` fires
   `PageDone` after each page
-- [ ] Context is checked between pages, never mid-page; a cancelled run
+- [x] Context is checked between pages, never mid-page; a cancelled run
   returns the report so far with `ctx.Err()`, and what was written stays
   written
 - [ ] `fake_test.go`: an in-memory `Client` holding pages by id with
@@ -460,7 +460,7 @@ flowchart and the report says what happened to each page.
   explicit ids; `DryRun` with no writes; a cancelled context after the
   first page; one failing update → `Failed`, the rest written, the error
   returned
-- [ ] `golangci-lint` clean, including `funlen` on `Export` (split the tree
+- [x] `golangci-lint` clean, including `funlen` on `Export` (split the tree
   build, the reconcile, and the orphan pass into their own functions from
   the start)
 
