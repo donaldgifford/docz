@@ -180,6 +180,7 @@ type Config struct {
 	TOC       TOCConfig             `mapstructure:"toc"      yaml:"toc"       json:"toc"`
 	Changelog ChangelogConfig       `                        yaml:"changelog" json:"changelog"`
 	API       APIConfig             `                        yaml:"api"       json:"api"`
+	Sync      SyncConfig            `                        yaml:"sync"      json:"sync"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -221,6 +222,12 @@ func DefaultConfig() Config {
 		// config is distinguishable from an absent key.
 		API: APIConfig{
 			Enabled: false,
+		},
+		// Dormant until a repository opts in (DESIGN-0020).
+		Sync: SyncConfig{
+			Confluence: ConfluenceSyncConfig{
+				Mermaid: MermaidSyncConfig{Viewer: MermaidViewerAuto},
+			},
 		},
 	}
 }
@@ -282,6 +289,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
 	normalizeAPI(&cfg)
+	normalizeSync(&cfg)
 
 	return cfg, nil
 }
@@ -496,6 +504,10 @@ func (c *Config) Validate() ([]string, error) {
 	}
 
 	if err := c.validateAPI(); err != nil {
+		return warnings, err
+	}
+
+	if err := c.validateSync(); err != nil {
 		return warnings, err
 	}
 
@@ -730,6 +742,7 @@ func parseBytes(data []byte, defaults *Config) (Config, error) {
 	fillTypeFieldDefaults(&cfg)
 	normalizeChangelog(&cfg)
 	normalizeAPI(&cfg)
+	normalizeSync(&cfg)
 
 	return cfg, nil
 }

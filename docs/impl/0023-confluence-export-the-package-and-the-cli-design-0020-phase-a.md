@@ -132,7 +132,7 @@ different.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/config/sync.go`: `SyncConfig{Confluence
+- [x] `pkg/doczcore/config/sync.go`: `SyncConfig{Confluence
   ConfluenceSyncConfig}` and `ConfluenceSyncConfig{Enabled, Site, Space,
   Parent, Types []string, Exclude []string, APIPages bool, Mermaid
   MermaidSyncConfig}` with `MermaidSyncConfig{Viewer string}`. Every
@@ -140,12 +140,12 @@ different.
   (`sync`, `confluence`, `enabled`, `site`, `space`, `parent`, `types`,
   `exclude`, `api_pages`, `mermaid`, `viewer`). `Config.Sync` sits after
   `API`, and `DefaultConfig()` sets `Mermaid.Viewer` to `auto`
-- [ ] `normalizeSync(cfg *Config)` on both `Load` paths, right after
+- [x] `normalizeSync(cfg *Config)` on both `Load` paths, right after
   `normalizeAPI` (`config.go:284` and `:732`, and therefore `ParseBytes`):
   trims one trailing `/` from `site`, runs each `exclude` entry through
   `normalizeExcludePrefix`, and backfills an empty `viewer` to `auto`. It
   never rejects
-- [ ] `validateSync()` from `Validate()` after `validateAPI`, **only when
+- [x] `validateSync()` from `Validate()` after `validateAPI`, **only when
   enabled** (the DESIGN-0010 dormancy rule), wrapping a new
   `ErrInvalidSync`:
   - `site` parses with `url.Parse`, scheme `https`, non-empty host, no
@@ -157,11 +157,11 @@ different.
   - `api_pages: true` requires `API.Enabled`;
   - `viewer` is `auto`, `off`, or matches
     `^[0-9a-f-]{36}/[0-9a-f-]{36}/static/[a-z0-9-]+$`
-- [ ] `sync_test.go`: a dormant block with every field wrong loads and
+- [x] `sync_test.go`: a dormant block with every field wrong loads and
   validates; one case per rule above; `ParseBytes` and both `Load` paths
   agree on a block (`parsebytes_test.go`'s pattern); a `types:` entry
   naming a disabled built-in (`runbook` on defaults) is rejected
-- [ ] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `sync`
+- [x] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `sync`
   object with its nested `confluence` and `mermaid`;
   `TestJSONTags_MirrorYAML` passes without edits, which is the point of it
 - [ ] `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl`: a `sync:` block

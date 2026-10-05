@@ -61,7 +61,7 @@ func TestDoczYAMLTemplate_EmitsEveryTopLevelBlock(t *testing.T) {
 	// a template line should fail here.
 	for _, key := range []string{
 		"docs_dir:", "types:", "index:", "author:",
-		"wiki:", "toc:", "changelog:", "api:",
+		"wiki:", "toc:", "changelog:", "api:", "sync:",
 	} {
 		if !strings.Contains(rendered, "\n"+key) && !strings.HasPrefix(rendered, key) {
 			t.Errorf("rendered .docz.yaml is missing the %q block:\n%s", key, rendered)
@@ -72,6 +72,16 @@ func TestDoczYAMLTemplate_EmitsEveryTopLevelBlock(t *testing.T) {
 	// so are invisible to the round-trip comparison.
 	for _, key := range []string{
 		"  enabled:", "  landing_page:", "  exclude:", "  additional_docs:",
+	} {
+		if !strings.Contains(rendered, key) {
+			t.Errorf("rendered .docz.yaml is missing %q:\n%s", key, rendered)
+		}
+	}
+
+	// The sync block's keys, for the same reason.
+	for _, key := range []string{
+		"  confluence:", "    site:", "    space:", "    parent:", "    types:",
+		"    api_pages:", "    mermaid:", "      viewer: auto",
 	} {
 		if !strings.Contains(rendered, key) {
 			t.Errorf("rendered .docz.yaml is missing %q:\n%s", key, rendered)

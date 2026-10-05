@@ -111,6 +111,18 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
 			Exclude:        []string{"examples"},
 			AdditionalDocs: []string{"CONTRIBUTING.md"},
 		},
+		Sync: config.SyncConfig{
+			Confluence: config.ConfluenceSyncConfig{
+				Enabled:  true,
+				Site:     "https://example.atlassian.net",
+				Space:    "DOCZ",
+				Parent:   "docz",
+				Types:    []string{"design"},
+				Exclude:  []string{"archive"},
+				APIPages: true,
+				Mermaid:  config.MermaidSyncConfig{Viewer: "auto"},
+			},
+		},
 	}
 
 	got, err := json.MarshalIndent(cfg, "", "  ")
@@ -183,6 +195,24 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
     "additional_docs": [
       "CONTRIBUTING.md"
     ]
+  },
+  "sync": {
+    "confluence": {
+      "enabled": true,
+      "site": "https://example.atlassian.net",
+      "space": "DOCZ",
+      "parent": "docz",
+      "types": [
+        "design"
+      ],
+      "exclude": [
+        "archive"
+      ],
+      "api_pages": true,
+      "mermaid": {
+        "viewer": "auto"
+      }
+    }
   }
 }`
 	if string(got) != want {
