@@ -681,7 +681,7 @@ run on purpose, so the words describe behaviour that has been seen.
   `SyncConfig`; the `cmd/` paragraph's `export.go` and `RemoteURL`; the
   parity paragraph's `sync` normaliser; the consumer module's eighteen
   packages; the layer-rule sentence on the scoped allow-list
-- [ ] `DEVELOPMENT.md`: the package in the layout section and
+- [x] `DEVELOPMENT.md`: the package in the layout section and
   `just export-live` beside the other local recipes
 - [ ] DESIGN-0020: amend §3 with the full-export-only archive rule, §6
   with `AuthError` as exit `2`, and §5 if Phase 6 changed the scope list,

@@ -71,6 +71,11 @@ docz/
 │   ├── headings.go          # kind constants + the HeadingSpec table
 │   ├── parse.go             # Parse(doc []byte) (Doc, error)
 │   └── validate.go          # Validate() + the type's Code* constants
+├── pkg/export/confluence/    # Confluence Cloud export (IMPL-0023): Render, the gateway client, Export
+│   ├── render.go nodes.go links.go macros.go   # markdown -> storage format, pure
+│   ├── httpclient.go client.go errors.go       # the v2 REST client through api.atlassian.com
+│   ├── export.go plan.go reconcile.go orphans.go  # the page tree and its reconcile
+│   └── live_test.go         # //go:build live; just export-live
 ├── pkg/wiki/                # MkDocs / TechDocs integration (not core, not a type)
 │   ├── orchestrate.go       # Action, Init(), UpdateNav(), InitReport, NavReport
 │   ├── titles.go            # DirTitle(), DocTitle(), FilenameTitle()
@@ -444,6 +449,34 @@ different composition:
 - **`mkdocs.go`** — MkDocs YAML I/O: `ReadMkDocs()`/`WriteMkDocs()` preserve
   non-nav fields. `NavToYAML()` converts `[]NavEntry` to MkDocs nav format.
   `MergeNavOrder()` preserves existing section order when updating.
+
+### `pkg/export/confluence`
+
+The Confluence export, an integration above the core like `pkg/wiki` and the
+one package allowed goldmark (DESIGN-0020, IMPL-0023):
+
+- **`render.go`, `nodes.go`, `links.go`, `macros.go`** — `Render` turns one
+  document into storage format with no I/O. The node renderer overrides
+  goldmark's HTML for headings, fences, tables, lists, task items,
+  blockquote alerts, links, and images. The output is checked well-formed
+  and hashed before the viewer macros' placeholder ids become UUIDs.
+- **`client.go`, `httpclient.go`, `errors.go`** — the `Client` interface and
+  `HTTPClient`, which sends every request through
+  `api.atlassian.com/ex/confluence/<cloudId>` so scoped and unscoped tokens
+  share one path. Typed errors never carry the token.
+- **`export.go`, `plan.go`, `reconcile.go`, `orphans.go`** — `Export` plans
+  the page tree, reconciles each page against its `docz` content property,
+  and on a full run moves orphans under `Archive`. The decision is
+  `decide()` in `reconcile.go`.
+- **`hooks.go`** — `Hooks{PageDone, Request}` in the context. `cmd/hooks.go`
+  maps them to `--verbose` lines.
+
+Tests drive `Export` through `fake_test.go`'s in-memory space and the client
+through `httptest`. `just export-live` exercises a real site from
+`~/.config/docz/atlassian.env` (`ATLASSIAN_SITE`, `ATLASSIAN_EMAIL`,
+`ATLASSIAN_API_TOKEN`, `CONFLUENCE_SPACE_KEY`), and running
+`docz export confluence` itself over this repository is the end-to-end check
+IMPL-0023 Phase 6 records.
 
 ## Adding a Built-In Document Type
 
@@ -981,6 +1014,7 @@ appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 | `just parity` | Replay the v1.2.2 parity goldens (`bin=<path>` to drive another binary) |
 | `just parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
 | `just validate` | Run `docz validate` over this repo's own `docs/`, non-strict |
+| `just export-live` | Round trip one page and its property on the Confluence site in `~/.config/docz/atlassian.env` (`//go:build live`; never in CI) |
 | `just lint` | Run golangci-lint |
 | `just lint-fix` | Auto-fix lint issues |
 | `just fmt` | Run gofmt + goimports |
