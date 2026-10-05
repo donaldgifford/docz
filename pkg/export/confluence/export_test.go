@@ -534,3 +534,23 @@ func TestExport_SkippedPageIsNeverArchived(t *testing.T) {
 		t.Errorf("archived a page this run writes:\n%s", actions(&rep))
 	}
 }
+
+func TestExport_ParentPageStaysWhereItIs(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+	export(t, rp, c, ExportOptions{})
+
+	// Somebody files the parent under the space homepage.
+	c.byTitle("docz").ParentID = "homepage"
+	c.takeWrites()
+
+	rep := export(t, rp, c, ExportOptions{})
+	if res := rep.Pages[0]; res.Action != Unchanged {
+		t.Errorf("parent: %s; want unchanged where it is", res.Action)
+	}
+
+	if w := c.takeWrites(); len(w) != 0 {
+		t.Errorf("wrote %v", w)
+	}
+}

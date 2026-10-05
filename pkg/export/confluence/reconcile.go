@@ -54,6 +54,13 @@ func (r *exportRun) reconcile(ctx context.Context, it *item, parentID string) (P
 
 	res.PageID, res.URL, res.Version = page.ID, page.WebURL, page.Version
 
+	// The parent page stays wherever it is: docz places what is beneath it,
+	// not the page itself, and Confluence files a page created with no
+	// parent under the space's homepage rather than at the root.
+	if it.parent < 0 {
+		parentID = page.ParentID
+	}
+
 	prop, stored, err := r.property(ctx, page.ID)
 	if err != nil {
 		return res, err

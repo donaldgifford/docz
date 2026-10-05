@@ -52,7 +52,9 @@ func (r *exportRun) containers() []string {
 
 // orphan archives one child page when it is docz's and no longer exported.
 func (r *exportRun) orphan(ctx context.Context, child *Page) {
-	if child.Title == archiveTitle {
+	// A page this run writes, or Archive itself, is never an orphan, and
+	// knowing that by title saves a property request per page.
+	if child.Title == archiveTitle || r.plan.titles[child.Title] {
 		return
 	}
 
@@ -63,7 +65,7 @@ func (r *exportRun) orphan(ctx context.Context, child *Page) {
 		return
 	}
 
-	if prop == nil || !stored.valid() || r.plan.keys[stored.ID] || r.plan.titles[child.Title] {
+	if prop == nil || !stored.valid() || r.plan.keys[stored.ID] {
 		return
 	}
 
