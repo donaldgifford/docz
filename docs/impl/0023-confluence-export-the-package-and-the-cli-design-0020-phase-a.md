@@ -683,7 +683,7 @@ run on purpose, so the words describe behaviour that has been seen.
   packages; the layer-rule sentence on the scoped allow-list
 - [x] `DEVELOPMENT.md`: the package in the layout section and
   `just export-live` beside the other local recipes
-- [ ] DESIGN-0020: amend §3 with the full-export-only archive rule, §6
+- [x] DESIGN-0020: amend §3 with the full-export-only archive rule, §6
   with `AuthError` as exit `2`, and §5 if Phase 6 changed the scope list,
   each as a dated note rather than a rewrite
 - [ ] `just validate` and `just ci` pass, and `git-cliff` regenerates the

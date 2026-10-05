@@ -369,6 +369,22 @@ property is not the sync's and is never moved. Titles are unique within a
 space, so a document that returns to the repository is found by title in
 `Archive` and its next update moves it back under its type page.
 
+> **Amended 2026-10-05 (IMPL-0023).** Three rules the implementation and
+> its live run added:
+>
+> - **Orphans are archived only on a full export**, one with no `--type`
+>   and no ids. A narrowed run's set is partial, and everything outside it
+>   would read as an orphan.
+> - **A property docz export did not write is treated like no property.**
+>   It must name an `id` and a `version`. The INV-0019 prototype's
+>   `{id, hash}` property does not, so its page is skipped without
+>   `--force`, adopted with it, and never archived. A page whose title the
+>   run writes is never an orphan either.
+> - **The parent page stays where it is.** Confluence files a page created
+>   with no parent under the space homepage, so requiring the parent at
+>   the root rewrote it on every run. The reconcile places what is beneath
+>   the parent, not the parent itself.
+
 ### 4. Mermaid through the viewer
 
 Decision 11 chose Atlassian Labs' Mermaid diagrams viewer. For each
@@ -481,6 +497,12 @@ token's `403` names the scope it lacks. The unscoped kind stays supported
 for a site whose admin has not turned scoped tokens on. A missing
 credential is a configuration error (exit 2) before any request is made.
 
+> **Amended 2026-10-05 (IMPL-0023).** `exclude` is relative to `docs_dir`,
+> like `api.exclude`, not to the repository root (IMPL-0023 Open Question
+> 2). The scope list above is unconfirmed: every Phase 6 run used the
+> unscoped token, and the scoped-token run waits on a token being created.
+> Correct this paragraph if that run finds a different list.
+
 ### 6. The command
 
 ```text
@@ -557,6 +579,14 @@ credentials missing, an unknown type, an id that resolves to nothing.
 `--verbose` narrates through the `repo.Hooks` pattern: `Export` fires a
 hook per page with the action taken, and `cmd/hooks.go` maps it to a slog
 debug line.
+
+> **Amended 2026-10-05 (IMPL-0023).** A credential Confluence rejects
+> (`AuthError`, a 401 or 403) exits `2`, not `1`, because its fix is
+> configuration. Without credentials, `--dry-run --out <dir>` renders
+> offline: every page reports as created and its body lands in the
+> directory (IMPL-0023 Open Question 4). A link to a file that does not
+> exist in the checkout is reported unresolved rather than given a blob
+> URL that would 404.
 
 ### 7. The docz-api job (phase B, sketched)
 
