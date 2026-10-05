@@ -719,21 +719,28 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   and the version test updated (Open Question 7)
 - [ ] Open the PR with `dont-release` and push; CI is green
 - [ ] **(human)** Merge the PR **with a merge commit**
+  - **Deferred - human required**: PR [#153](https://github.com/donaldgifford/docz/pull/153)
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
   `just api release-check` pass
+  - **Deferred - human required**: runs on `main` after the merge
 - [ ] **(human)** `just release v2.0.0-beta.7` from the merge commit
+  - **Deferred - human required**
 - [ ] Follow RUNBOOK-0001 Procedure 2's verification steps and record each
   result here: the pre-release and its archives, both images at
   `2.0.0-beta.7` with `latest` not moved, `docz` 0.2.1 signed and attested
   with a bare `appVersion`, the deprecated charts skipped, ECR skipped
+  - **Deferred - human required**: needs the published tag
 - [ ] Replace RUNBOOK-0001's Last Verified row with this run
-- [ ] File the follow-ups as issues: Phase B (the docz-api job, its own
+  - **Deferred - human required**: needs the release run above
+- [x] File the follow-ups as issues: Phase B (the docz-api job, its own
   DESIGN); the Jira DESIGN (INV-0019 decision 8); page attachments for
   local images; `--prune`; an in-place update that keeps Confluence-side
   comments. Link rather than duplicate where #142 already covers one
+  - Filed 2026-10-05: Phase B [#154](https://github.com/donaldgifford/docz/issues/154), Jira [#155](https://github.com/donaldgifford/docz/issues/155), image attachments [#156](https://github.com/donaldgifford/docz/issues/156), `--prune` [#157](https://github.com/donaldgifford/docz/issues/157), comment-preserving updates [#158](https://github.com/donaldgifford/docz/issues/158). #142 is closed and covered none of them
 - [ ] `docz status set impl IMPL-0023 Completed` and
   `docz status set design DESIGN-0020 Implemented`, then `docz update`,
   through a branch and PR
+  - **Deferred - human required**: only true once the beta ships
 
 <!--docz:tasks:end-->
 
