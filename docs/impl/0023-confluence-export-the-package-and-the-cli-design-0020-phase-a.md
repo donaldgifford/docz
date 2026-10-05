@@ -317,7 +317,7 @@ token kinds work through one base URL, and a rate limit is retried.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `client.go`: the `Client` interface of DESIGN-0020's API changes
+- [x] `client.go`: the `Client` interface of DESIGN-0020's API changes
   (`SpaceID`, `FindPage`, `CreatePage`, `UpdatePage`, `Property`,
   `SetProperty`, `Children`) and its value types: `Page{ID, Title,
   ParentID, SpaceID, Version int, WebURL}`, `NewPage{SpaceID, ParentID,
