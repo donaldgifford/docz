@@ -376,6 +376,9 @@ token kinds work through one base URL, and a rate limit is retried.
   test, and none contains the token
 - `just export-live` passes against the scratch site with both the scoped
   and the unscoped token
+- Status 2026-10-05: `just export-live` passes with the unscoped token.
+  The scoped-token run is **deferred - human required**: it needs a scoped
+  token minted in the Atlassian account, which Phase 6 asks for
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
@@ -435,7 +438,7 @@ flowchart and the report says what happened to each page.
 - [ ] A failed request fails that page (`Failed`, with the reason) and the
   run continues to the next; `Export` returns the report and an error
   wrapping the first failure once the loop ends (Open Question 10)
-- [ ] `hooks.go` (Open Question 1): `Hooks{PageDone func(PageResult),
+- [x] `hooks.go` (Open Question 1): `Hooks{PageDone func(PageResult),
   Request func(method, path string, status int)}` carried in the context
   by `WithHooks`/`HooksFrom` in `repo`'s shape, with `HooksFrom` never
   nil. `HTTPClient` fires `Request` after each response; `Export` fires
