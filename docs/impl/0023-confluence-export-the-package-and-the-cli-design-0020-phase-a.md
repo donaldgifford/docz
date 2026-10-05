@@ -498,7 +498,7 @@ and the consumer module proves the package is reachable from outside.
   refs/remotes/origin/HEAD` with `main` as the fallback. `staticGit` gains
   both. A remote that is not GitHub-shaped yields `""` and every
   unexported link stays unresolved (Open Question 8)
-- [ ] `cmd/export.go`: an `export` parent command and the `confluence`
+- [x] `cmd/export.go`: an `export` parent command and the `confluence`
   subcommand with the DESIGN-0020 §6 flags (`--type` repeatable,
   `--force`, `--dry-run`, `--out`, `--format text|json`, `--strict`), the
   Long help naming the block, the variables, and the scopes.
@@ -509,20 +509,20 @@ and the consumer module proves the package is reachable from outside.
   `Version` from the binary's version, installs the hooks, and calls
   `(*Runner).ExportConfluence(ctx, opts)`, which is `confluence.Export`
   plus printing
-- [ ] `--out <dir>`: each page's body written as `<dir>/<id>.xhtml`
+- [x] `--out <dir>`: each page's body written as `<dir>/<id>.xhtml`
   alongside the run (and, with `--dry-run`, as the way to inspect a render
   without a write; Open Question 4 decides whether that needs credentials)
-- [ ] The text report in the §6 shape: one line per page with the action,
+- [x] The text report in the §6 shape: one line per page with the action,
   title, version, and URL, an indented `unresolved link:` line per link,
   and the totals line; `--format json` marshals the `Report` with
   snake_case field names
-- [ ] Exit codes: `0` for a run with no `Failed` page (skips included);
+- [x] Exit codes: `0` for a run with no `Failed` page (skips included);
   `1` when any page `Failed`, or under `--strict` when any was `Skipped`;
   `2` for `ConfigError`, `AuthError`, missing credentials, an unknown
   `--type`, or an id that resolves to nothing. `AuthError` is `2` and not
   `1` because its fix is configuration, which this task records in the
   design's exit-code paragraph (Phase 7)
-- [ ] `cmd/hooks.go`: `(*Runner).exportHooks()` maps `PageDone` and
+- [x] `cmd/hooks.go`: `(*Runner).exportHooks()` maps `PageDone` and
   `Request` to debug lines, installed with
   `cmd.SetContext(confluence.WithHooks(…))`, so `--verbose` narrates each
   request and each page
