@@ -510,6 +510,59 @@ func RunbookNormalizer() Normalizer {
 	}
 }
 
+// syncKey matches the top-level `sync:` key that opens the block.
+var syncKey = regexp.MustCompile(`^sync:[ \t]*$`)
+
+// SyncNormalizer removes the `sync:` block (DESIGN-0020, IMPL-0023) from a
+// generated `.docz.yaml` and from `docz config` output: the key, its
+// indented body, and the comment run and blank line that introduce it in
+// the template.
+//
+// The seventh permitted delta, additive like RunbookNormalizer: v1.2.2 never
+// wrote the block, so this is a no-op on the golden side and runs on both
+// sides for symmetry. The block is dormant by default, so it changes nothing
+// else a case observes.
+func SyncNormalizer() Normalizer {
+	return Normalizer{
+		Name: "sync",
+		Apply: func(s string) string {
+			lines := strings.Split(s, "\n")
+			kept := make([]string, 0, len(lines))
+
+			for i := 0; i < len(lines); i++ {
+				if !syncKey.MatchString(lines[i]) {
+					kept = append(kept, lines[i])
+
+					continue
+				}
+
+				kept = dropTrailingComments(kept)
+
+				for i+1 < len(lines) && strings.HasPrefix(lines[i+1], " ") {
+					i++
+				}
+			}
+
+			return strings.Join(kept, "\n")
+		},
+	}
+}
+
+// dropTrailingComments removes a run of `#` comment lines from the end of
+// kept, and the one blank line that separates it from what precedes it.
+func dropTrailingComments(kept []string) []string {
+	n := len(kept)
+	for n > 0 && strings.HasPrefix(kept[n-1], "#") {
+		n--
+	}
+
+	if n < len(kept) && n > 0 && strings.TrimSpace(kept[n-1]) == "" {
+		n--
+	}
+
+	return kept[:n]
+}
+
 // The index README's auto-generated marker lines, as the whole line. Compared
 // by equality rather than by pattern because these two spellings are the only
 // ones index.UpdateReadme will splice into.

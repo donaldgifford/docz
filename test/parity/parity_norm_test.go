@@ -662,3 +662,45 @@ func TestRunbookNormalizer(t *testing.T) {
 		})
 	}
 }
+
+func TestSyncNormalizer(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "drops the generated block with its comments and blank",
+			in: "api:\n  additional_docs:\n\n# Export targets.\n# Credentials.\n" +
+				"sync:\n  confluence:\n    enabled: false\n    mermaid:\n      viewer: auto\n",
+			want: "api:\n  additional_docs:\n",
+		},
+		{
+			name: "drops a docz config block followed by another key",
+			in:   "api:\n  enabled: false\nsync:\n  confluence:\n    enabled: false\nnext: 1\n",
+			want: "api:\n  enabled: false\nnext: 1\n",
+		},
+		{
+			name: "leaves an indented sync key alone",
+			in:   "types:\n  sync:\n    dir: sync\n",
+			want: "types:\n  sync:\n    dir: sync\n",
+		},
+		{
+			name: "is a no-op on a v1.2.2 golden",
+			in:   "api:\n  enabled: false\n",
+			want: "api:\n  enabled: false\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := Normalize(tt.in, SyncNormalizer()); got != tt.want {
+				t.Errorf("SyncNormalizer()\ngot:\n%q\nwant:\n%q", got, tt.want)
+			}
+		})
+	}
+}

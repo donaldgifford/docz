@@ -170,7 +170,7 @@ different.
   scopes a token needs. `parity_baseline_test.go`'s round trip and
   `doctemplate/promoted_test.go`'s `DefaultConfigYAML` test pass; the
   rendered file carries `sync:` with `enabled: false`
-- [ ] `test/parity/parity.go`: a `sync` normaliser that drops the `sync:`
+- [x] `test/parity/parity.go`: a `sync` normaliser that drops the `sync:`
   block `docz init` now writes, applied on both sides in `runCase` beside
   `runbook` (the golden was captured from v1.2.2, which never wrote one).
   Unit tests in `parity_norm_test.go` in the shape of

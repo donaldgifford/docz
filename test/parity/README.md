@@ -87,6 +87,7 @@ Phase 5 adds a fifth, and DESIGN-0019 a sixth:
 | Every trace of the `plan` document type | ADR-0003 removes the built-in on the v2 line | The `plan` normaliser, applied to **both** sides at comparison time |
 | The duplicate index marker pair | repo.Init writes `index.Scaffold`, fixing issue #99 | The `index-pair` normaliser, applied to **both** sides at comparison time |
 | A new built-in type's config block and nav title | DESIGN-0019 adds `runbook`, disabled by default | The `runbook` normaliser, applied to **both** sides at comparison time |
+| A new opt-in config block | DESIGN-0020 adds `sync:`, disabled by default | The `sync` normaliser, applied to **both** sides at comparison time |
 
 Anything else that differs is a regression until someone shows otherwise.
 
@@ -131,13 +132,18 @@ Each is named, lives outside the build tag, and has unit tests that run in
   (the seven `config` goldens). The type ships disabled, so it creates no
   directory or README and no other case changes. A custom label for the same
   key is kept.
+- **sync** removes the top-level `sync:` block (DESIGN-0020, IMPL-0023) from a
+  generated `.docz.yaml` and from `docz config` output, with the comment run
+  and blank line that introduce it in the template. The block is dormant by
+  default, so nothing else a case observes changes. An indented `sync:` key,
+  such as a custom type named `sync`, is kept.
 
-**plan, runbook, and index-pair are the three normalisers that run on both
-sides**, in `runCase` rather than in the `norms` list. plan and index-pair
+**plan, runbook, sync, and index-pair are the four normalisers that run on
+both sides**, in `runCase` rather than in the `norms` list. plan and index-pair
 remove what the golden carries (the removed type and the duplicate pair), so
 normalising only the captured output would leave every trace as a
-difference. runbook removes what v2 carries, a no-op on the golden, and runs
-on both sides so the rule is symmetric. They run in that order: plan is what
+difference. runbook and sync remove what v2 carries, a no-op on the golden,
+and run on both sides so the rule is symmetric. They run in that order: plan is what
 replaces a recorded body's size and digest, so it has to see the body list
 before runbook or index-pair edits any body. Two
 consequences follow from that symmetry.
