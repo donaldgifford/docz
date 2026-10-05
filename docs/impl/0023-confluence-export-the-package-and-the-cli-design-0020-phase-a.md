@@ -669,7 +669,7 @@ run on purpose, so the words describe behaviour that has been seen.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `README.md`: a `docz export confluence` row in the Commands table, a
+- [x] `README.md`: a `docz export confluence` row in the Commands table, a
   flags section beside `docz validate`'s, a `Sync` subsection under
   Configuration with the block, the two variables, how to create a scoped
   token and which scopes, that the Mermaid diagrams viewer must be

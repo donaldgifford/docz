@@ -98,6 +98,7 @@ docz update --dry-run  # preview changes without writing
 | `docz update [type]` | Regenerate README index tables |
 | `docz list [type]` | List documents, optionally filtered by type |
 | `docz validate [type]` | Check documents against their schema and report drift |
+| `docz export confluence [id\|path...]` | Export documents to Confluence Cloud as pages ([Sync](#sync)) |
 | `docz template show <type>` | Print the resolved template to stdout |
 | `docz template export <type> [path]` | Write the resolved template to a file |
 | `docz template override <type>` | Copy the template into the local overrides directory |
@@ -148,6 +149,17 @@ docz update --dry-run  # preview changes without writing
 | `--strict` | Fail on warnings and index drift as well as errors |
 | `--format <fmt>` | Output format: `text` (default), `json` |
 | `--fix` | Mark the regions inference finds, then report what is left |
+
+### `docz export confluence` Flags
+
+| Flag | Description |
+|------|-------------|
+| `--type <name>` | Export one type; repeatable (default: `sync.confluence.types`, else every enabled type) |
+| `--force` | Overwrite pages edited in Confluence and adopt pages docz did not create |
+| `--dry-run` | Make every read and no write; report what each page would have done |
+| `--out <dir>` | Also write each rendered page to `<dir>/<id>.xhtml` |
+| `--format <fmt>` | Output format: `text` (default), `json` |
+| `--strict` | Exit 1 when any page was skipped |
 
 ### `docz wiki init` Flags
 
@@ -507,6 +519,91 @@ segment would collide with a document type's route. Failures wrap
 Files listed in `additional_docs` have no frontmatter to take a title from, so
 consumers derive one from the document's H1 via `doczcore/docparse.Title`.
 
+### Sync
+
+The `sync:` block points `docz export confluence` at a Confluence Cloud
+space. Like `api:` it is **off by default**, and a disabled block is never
+validated:
+
+```yaml
+sync:
+  confluence:
+    enabled: true
+    site: https://example.atlassian.net   # the Cloud site; not a secret
+    space: DOCZ                           # space key
+    parent: docz                          # the page everything goes under
+    types: []                             # empty: every enabled type
+    exclude: [examples]                   # prefixes under docs_dir, as api.exclude
+    api_pages: false                      # also export the api: landing page and additional_docs
+    mermaid:
+      viewer: auto                        # auto | off | <extension key>
+```
+
+The export builds one tree under the parent page:
+
+- **The parent page** carries the `api:` landing page as its body when
+  `api_pages` is on, otherwise one line naming the repository. It stays
+  wherever it is in the space.
+- **A page per type**, titled with the type's nav title, carries that type's
+  README index. Its table links to the pages beneath it.
+- **One page per document**, titled `ID: Title`, sits under its type page.
+  A banner names the source file and links to it on GitHub.
+- **The `additional_docs`** sit directly under the parent when `api_pages`
+  is on.
+
+A relative link to another exported file becomes a link to its page. A link
+to any other file that exists becomes a GitHub blob URL at the default
+branch. A link nothing can place prints as an `unresolved link:` line.
+
+Credentials come from the environment and never from the file:
+
+```bash
+export ATLASSIAN_EMAIL=you@example.com
+export ATLASSIAN_API_TOKEN=…   # never commit this
+docz export confluence --dry-run
+docz export confluence
+```
+
+Prefer a **scoped API token**. Create one at
+<https://id.atlassian.com/manage-profile/security/api-tokens> with "Create
+API token with scopes", choose Confluence, and grant these three scopes:
+
+- `read:space:confluence`
+- `read:page:confluence`
+- `write:page:confluence`
+
+Every request goes through Atlassian's gateway
+(`api.atlassian.com/ex/confluence/<cloudId>`), which accepts both scoped and
+unscoped tokens. An unscoped token therefore works too. A token Atlassian
+rejects exits 2, with the response body, which for a scoped token names the
+scope it lacks.
+
+Mermaid fences render through Atlassian Labs' **Mermaid diagrams viewer**
+app, which a site admin must install from the Marketplace. Each diagram
+draws from its source, kept beneath it in a collapsed "Diagram source"
+expand. On a site without the app, set `mermaid.viewer: off` and the
+fences export as plain code blocks instead.
+
+Each page carries a `docz` content property recording the document id, its
+source, the hash of its rendered body, and the page version docz wrote. On
+every run a page takes one of these actions:
+
+- **Unchanged:** the hash and the parent match, so nothing is written.
+- **Updated:** the document changed, so a new version is written.
+- **Skipped:** somebody edited the page in Confluence since docz wrote it,
+  or the page has the right title but docz did not create it. `--force`
+  overwrites the edit, or adopts the page. A skip exits 0 unless `--strict`
+  is set.
+- **Archived:** a full run (no `--type`, no ids) found a page whose
+  document is gone, and moved it under an `Archive` child of the parent.
+  Nothing is ever deleted. A document that comes back is moved back.
+
+Content only flows out: nothing in Confluence is read back into the
+repository. Exit codes are 0 when no page failed, 1 when a page failed (the
+rest are still written), and 2 for configuration problems. Those include a
+disabled block, missing or rejected credentials, an unknown type, and an id
+that matches nothing.
+
 ## Template System
 
 Templates are resolved in this order:
@@ -768,7 +865,7 @@ Only enabled types (those with `enabled: true` in config) are included.
 ## Using docz as a Go Library
 
 Since v1.0.0 the parsing and writing core has been a public, semver-governed
-Go API. On the v2 line that surface is the whole of docz: seventeen packages
+Go API. On the v2 line that surface is the whole of docz: eighteen packages
 under `pkg/`, and every `docz` command is one call into them plus printing:
 
 ```bash
@@ -803,11 +900,12 @@ whole-repository operations. A layer imports only the layers beneath it.
 | `pkg/doczcore/index` | The README index table and the splice between its markers, the latter as a pure function (`GenerateTable`, `Splice`, `UpdateReadme`) |
 | `pkg/doczcore/repo` | Whole-repository operations with typed reports and typed errors — what each `docz` command is one call to (`Open`, `Create`, `Update`, `Validate`, `Find`) |
 | `pkg/wiki` | MkDocs / Backstage TechDocs integration: write `mkdocs.yml`, then rebuild its nav from the docs tree (`Init`, `UpdateNav`) |
+| `pkg/export/confluence` | Confluence Cloud export: a document to storage format with no I/O, a v2 REST client through Atlassian's gateway, and the page-tree reconcile `docz export confluence` is one call to (`Render`, `NewHTTPClient`, `Export`). The one package allowed a third-party markdown parser, goldmark |
 
 > **Stability.** The five packages promoted at v1.0.0 — `config`, `document`,
 > `docparse`, `docwrite`, and `toc` — are **frozen** and take additions only
 > (ADR-0001 Decision 6); the one break the v2 line makes to them is `plan`
-> leaving `DocTypeNames()` (ADR-0003). The other twelve are
+> leaving `DocTypeNames()` (ADR-0003). The other thirteen are
 > **experimental until v2.0.0 proper ships** (ADR-0002 Decision 7) and may
 > change between `v2.0.0-beta.N` tags. Pin a beta exactly if you depend on
 > them.
