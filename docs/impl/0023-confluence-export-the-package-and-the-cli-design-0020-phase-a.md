@@ -218,12 +218,12 @@ opened a file or a socket.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/export/confluence/doc.go`: the package comment with the
+- [x] `pkg/export/confluence/doc.go`: the package comment with the
   EXPERIMENTAL paragraph every v2-line package carries (ADR-0002 Decision
   7), the layering statement (a sibling of `pkg/wiki`, imports the core,
   never imported by it), and the one-paragraph description of what a page
   is
-- [ ] `render.go`: `Render(src []byte, opts RenderOptions) (Rendered,
+- [x] `render.go`: `Render(src []byte, opts RenderOptions) (Rendered,
   error)` with `RenderOptions{Resolve LinkResolver, Mermaid MermaidMode,
   ViewerKey, Source, SourceURL, Title string}`, `Rendered{ID, Title,
   Body, Hash, Links}`, `Link{Href, Text, Line}`, `LinkTarget`,
@@ -235,7 +235,7 @@ opened a file or a socket.
   and no `opts.Title` is `document.ErrNoFrontmatter` wrapped (Open Question
   5). CR line endings are rejected the way the type packages reject them.
   `Render` clones its input and never modifies it
-- [ ] `nodes.go`: the goldmark node renderer ported from the prototype's
+- [x] `nodes.go`: the goldmark node renderer ported from the prototype's
   `render.go` (`storage.RegisterFuncs` and its twelve functions), one
   function per §2 row: heading (H1 dropped, H2–H6 passed), fenced and
   indented code to the `code` macro with the language map (`sh`, `shell`,
@@ -247,14 +247,14 @@ opened a file or a socket.
   cut from the AST, task lists to `ac:task-list`, images to `ac:image`
   with `ri:url` for a remote source and a link for a local one, and every
   `<!--…-->` comment dropped
-- [ ] `links.go`: in-page `#slug` links mapped back to heading text through
+- [x] `links.go`: in-page `#slug` links mapped back to heading text through
   `docparse.Headings` over the body and written as
   `#<TitleNoSpaces>-<HeadingNoSpaces>` with `:` as `%3A`; relative links
   through `opts.Resolve`, written as `ac:link`/`ri:page` for a `PageTitle`
   (fragment appended) and `<a href>` for a `URL`; a zero `LinkTarget`
   writes the text alone and appends to `Rendered.Links`; absolute links
   and autolinks pass through
-- [ ] `macros.go`: the `toc` macro for a `<!--toc:start-->`…`<!--toc:end-->`
+- [x] `macros.go`: the `toc` macro for a `<!--toc:start-->`…`<!--toc:end-->`
   span (located with `docparse.Regions` kind `toc`, body dropped), the
   viewer macro and `expand` pair for a mermaid fence in `MermaidViewer`
   mode or the open `code` macro in `MermaidCode`, and the `info` banner
@@ -263,12 +263,12 @@ opened a file or a socket.
   the body is hashed, and then each placeholder is replaced with a
   `crypto/rand` UUID v4, so `Hash` is stable across runs and two macros on
   one page never share an id
-- [ ] `wellformed.go`: the body wrapped in a root element declaring the
+- [x] `wellformed.go`: the body wrapped in a root element declaring the
   `ac` and `ri` namespaces and decoded with `encoding/xml` in strict mode;
   a failure is `*MalformedError{Line, Err}` and `Render` returns it with
   no body. This is the check that turned the prototype's five failures
   into findings rather than pushes
-- [ ] Goldens under `testdata/render/<case>.md` with `.xhtml` siblings,
+- [x] Goldens under `testdata/render/<case>.md` with `.xhtml` siblings,
   regenerated with `-update`, one case per §2 row and the specimen the
   prototype used: the banner with and without a URL, every language in
   the map, `]]>` in a code body, mermaid in both modes, two mermaid fences
