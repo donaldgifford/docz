@@ -175,11 +175,11 @@ different.
   `runbook` (the golden was captured from v1.2.2, which never wrote one).
   Unit tests in `parity_norm_test.go` in the shape of
   `TestRunbookNormalizer`; `test/parity/README.md` lists the delta
-- [ ] `go get github.com/yuin/goldmark@v1.8.6` as a direct require (the
+- [x] `go get github.com/yuin/goldmark@v1.8.6` as a direct require (the
   version the prototype proved), `go mod edit -fmt`, and go.sum settled
   with targeted `go get`, never a bare `go mod tidy`. `just license-check`
   passes: goldmark is MIT
-- [ ] `pkg/doczcore/layer_test.go`: `TestLayerRules_ThirdPartyDependencies`
+- [x] `pkg/doczcore/layer_test.go`: `TestLayerRules_ThirdPartyDependencies`
   takes its allow-list as module → package-prefix: `go.yaml.in/yaml/v3`
   for every package, `github.com/yuin/goldmark` for packages under
   `pkg/export/` only. The matcher is a function with its own table test,
