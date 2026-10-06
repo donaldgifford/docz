@@ -377,8 +377,8 @@ token kinds work through one base URL, and a rate limit is retried.
 - `just export-live` passes against the scratch site with both the scoped
   and the unscoped token
 - Status 2026-10-05: `just export-live` passes with the unscoped token.
-  The scoped-token run is **deferred - human required**: it needs a scoped
-  token minted in the Atlassian account, which Phase 6 asks for
+  2026-10-06: it passes with the scoped token too (round trip on page
+  458753)
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
@@ -566,30 +566,35 @@ release run.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] **(human)** Create a **scoped** API token with
+- [x] **(human)** Create a **scoped** API token with
   `read:space:confluence`, `read:page:confluence`, and
   `write:page:confluence` and put it in `~/.config/docz/atlassian.env`
   as `ATLASSIAN_API_TOKEN`, keeping the unscoped one under another name
   for the comparison run
-  - **Deferred - human required** (2026-10-05): the token is minted in
-    the Atlassian account. Every run below used the unscoped token
-- [ ] Confirm the scope list: a `--dry-run` with the scoped token either
+  - Done 2026-10-06. The runs on 2026-10-05 used the unscoped token; the
+    runs recorded on 2026-10-06 below used the scoped one
+- [x] Confirm the scope list: a `--dry-run` with the scoped token either
   reads every page or returns a `403` naming the missing scope. Record
   the final list here and correct DESIGN-0020 §5 and the README if it
   differs
-  - **Deferred - human required**: waits on the scoped token above
+  - Done 2026-10-06: the list holds, so DESIGN-0020 §5 and the README
+    stand. A `--dry-run` read all 76 pages with no `403`, including the
+    orphan pass's `children` lists, so `read:space:confluence` and
+    `read:page:confluence` cover every read. The live run then updated six
+    pages and wrote their properties, and the run after it reported `76
+    pages: 76 unchanged`, so `write:page:confluence` covers page and property
+    writes
 - [x] `.docz.yaml`: enable the block (Open Question 6) with the scratch
   site, space `DOCZ`, parent `docz`, `api_pages: true`, and `exclude:
   [examples, archive]` in step with `api.exclude`
-- [ ] The `docs:` PR fixing DESIGN-0019's nested fence and the three
+- [x] The `docs:` PR fixing DESIGN-0019's nested fence and the three
   broken links has merged, so the link report below is a clean baseline
   - PR [#152](https://github.com/donaldgifford/docz/pull/152) fixes the
     fence and four broken links (`docs/index.md`'s plan entry, DESIGN-0016's
     DESIGN-0015 slug, `DEVELOPMENT.md`'s `deploy/README.md`); an offline
-    `--dry-run --out` over it reports no unresolved link. **Merging is
-    deferred - human required**; until then the runs below report the six
-    links it fixes
-- [ ] First full run: every document, both type index pages per enabled
+    `--dry-run --out` over it reports no unresolved link. Merged
+    2026-10-06; the scoped-token runs report no unresolved link
+- [x] First full run: every document, both type index pages per enabled
   type, and the two additional docs are `Created` or, for the prototype's
   pages that carry its `{id, hash}` property shape, `Skipped` and then
   adopted under `--force`. In the browser: RUNBOOK-0001's tables are wide
@@ -609,8 +614,14 @@ release run.
     (`4 updated, 72 unchanged`), moving the three documents back out of
     Archive. The two prototype test pages stay under Archive (parent page
     65860)
-  - **The browser checks are deferred - human required**: wide tables,
-    diagrams, anchors, cross-page links, banner, panels, task lists
+  - Browser checks done 2026-10-06, all passing: RUNBOOK-0001's tables are
+    wide with the page centred, DESIGN-0019's four and DESIGN-0020's three
+    diagrams draw with the source folded beneath, an INV-0019 anchor
+    scrolls, a cross-document link opens the right page, a type page's index
+    links to its pages, the banner names the source and links to GitHub, a
+    `[!NOTE]` is a panel, and an IMPL's tasks are checkboxes. Archive holds
+    only the two prototype test pages and INV-0020's, and the two additional
+    docs sit under the parent
 - [x] Second run: every page `Unchanged`, and `--verbose` shows one
   `FindPage` and one `Property` request per page and no `POST` or `PUT`
   - Done: `76 pages: 76 unchanged`, and `--verbose` logged 161 GETs: one
@@ -633,17 +644,21 @@ release run.
     archived under Archive after the file was removed, then updated to v3 and
     back under Investigations after it was restored. The scratch file is now
     removed, and its page sits under Archive
-- [ ] The whole first-run check repeated with the unscoped token, with no
+- [x] The whole first-run check repeated with the unscoped token, with no
   difference in the report
-  - **Deferred - human required**: needs the scoped token for the other
-    half of the comparison
-- [ ] Anything the eye finds goes back into Phases 2 to 5 as a task with
+  - Done 2026-10-06 with the scoped token against the unscoped baseline.
+    After `main` brought in PR #152, the dry run and the live run each
+    reported `76 pages: 6 updated, 70 unchanged`: the parent, DESIGN-0016,
+    DESIGN-0019, DESIGN-0020, IMPL-0023, and the Development Guide, whose
+    sources had changed. The next run reported `76 pages: 76 unchanged`, as
+    the unscoped token's second run did. No request was refused
+- [x] Anything the eye finds goes back into Phases 2 to 5 as a task with
   a test before this phase is called done
   - The runs found three bugs, each fixed with a test: a foreign property
     was never edited or archived, the parent page stays where it is, and the
     orphan pass skips known pages. The browser pass is deferred with the
     first run's checks
-  - **Deferred - human required**: what the browser pass finds
+  - The browser pass on 2026-10-06 found nothing
 
 <!--docz:tasks:end-->
 
@@ -806,9 +821,9 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   (Phase 4)
 - [x] `cmd/export_test.go` output goldens and exit codes, and `just
   test-consumer` with the new package (Phase 5)
-- [ ] The live run over this repository, recorded in Phase 6, with both
+- [x] The live run over this repository, recorded in Phase 6, with both
   token kinds
-  - **Deferred - human required**: the unscoped half is recorded in Phase 6; the scoped half waits on the token
+  - Done: the unscoped runs on 2026-10-05 and the scoped runs on 2026-10-06
 - [ ] `just ci` green on the PR, and the published beta.7 artifacts
   verified by RUNBOOK-0001 Procedure 2 (Phase 8)
   - **Deferred - human required**: govulncheck's two advisories from `main`, and the release
