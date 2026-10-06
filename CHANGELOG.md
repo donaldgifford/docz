@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - Record v2.0.0-beta.7 and close IMPL-0023
+- Add a temporary README line to check CI path filtering
 
 ### Miscellaneous Tasks
 

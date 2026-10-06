@@ -973,3 +973,5 @@ serves, so there is one spec. The image is published to
 [`charts/docz/`](charts/docz/README.md), published from the same tag as
 `oci://ghcr.io/donaldgifford/charts/docz`.
 [ui/README.md](ui/README.md) covers the rest.
+
+<!-- Temporary: checks that a docs-only PR skips the Go jobs (#160). Remove in the next follow-up. -->
