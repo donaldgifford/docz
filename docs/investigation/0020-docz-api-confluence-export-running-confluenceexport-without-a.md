@@ -23,18 +23,21 @@ created: 2026-10-06
   - [Observation 4: a server needs its own answer to credentials](#observation-4-a-server-needs-its-own-answer-to-credentials)
   - [Observation 5: the queue already has the shape a job needs](#observation-5-the-queue-already-has-the-shape-a-job-needs)
   - [Observation 6: links and the banner need the repository, not a remote](#observation-6-links-and-the-banner-need-the-repository-not-a-remote)
+  - [Observation 7: titles are unique across the whole space, and folders need their own scopes](#observation-7-titles-are-unique-across-the-whole-space-and-folders-need-their-own-scopes)
+  - [Observation 8: overwriting a page body orphans its inline comments](#observation-8-overwriting-a-page-body-orphans-its-inline-comments)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. How does Export get its inputs without a checkout?](#1-how-does-export-get-its-inputs-without-a-checkout)
   - [2. Where do the inputs come from?](#2-where-do-the-inputs-come-from)
   - [3. What triggers an export?](#3-what-triggers-an-export)
   - [4. Whose credentials, and where may they write?](#4-whose-credentials-and-where-may-they-write)
-  - [5. Can repositories share a space?](#5-can-repositories-share-a-space)
+  - [5. How do repositories share a space?](#5-how-do-repositories-share-a-space)
   - [6. Is a table of page ids needed, and what is it for?](#6-is-a-table-of-page-ids-needed-and-what-is-it-for)
   - [7. What does the API expose?](#7-what-does-the-api-expose)
   - [8. How does docz-site show it?](#8-how-does-docz-site-show-it)
-  - [9. When does the server use --force, and what counts as failure?](#9-when-does-the-server-use---force-and-what-counts-as-failure)
+  - [9. How does the server treat edits made in Confluence?](#9-how-does-the-server-treat-edits-made-in-confluence)
   - [10. How are links to files it does not export resolved?](#10-how-are-links-to-files-it-does-not-export-resolved)
+  - [11. How are comments kept when a page is overwritten?](#11-how-are-comments-kept-when-a-page-is-overwritten)
 - [References](#references)
 <!--toc:end-->
 
@@ -151,7 +154,8 @@ The `docz` property then confirms it is docz's page. Two consequences:
   titles to be unique within a space. Two repositories that both have
   `ADR-0001`, or both have a "Design" type page, or both need an
   `Archive` page, would collide. A CLI user picks their own space and never
-  meets this. A server syncing many repositories will.
+  meets this. A server syncing many repositories will. Observation 7
+  confirms the rule on the scratch site.
 
 `PageResult` already reports `PageID`, `URL`, and `Version` for each
 document, which is what a table keyed by id would store.
@@ -189,6 +193,39 @@ name, and default branch of every repository, so the URL is easy to build.
 What it does not know is whether an arbitrary file exists: it fetches only
 `.docz.yaml`, the type directories, and the `api:` files, not the full tree.
 
+### Observation 7: titles are unique across the whole space, and folders need their own scopes
+
+Tested on the scratch site on 2026-10-06 with the scoped token from
+IMPL-0023 (`read:space`, `read:page`, `write:page`):
+
+| Request | Result |
+| ------- | ------ |
+| Create a page `INV-0020 duplicate title test` under the `docz` page | `200`, page 459490 |
+| Create a second page with the same title, under the first page | `400`: "A page already exists with the same TITLE in this space" |
+| Create a folder under the `docz` page (`POST /folders`) | `401`: "scope does not match" |
+| Delete page 459490 | `401`: deleting needs `delete:page:confluence` |
+
+So the uniqueness rule is space-wide, not per parent. Putting each repository
+under its own container does not by itself let two repositories share a
+space: every title still has to differ. Folders are a separate content type
+with their own scopes (`read:folder:confluence`, `write:folder:confluence`),
+which the Phase A token lacks. The test page could not be deleted, so it was
+moved under `Archive`, the way the exporter archives orphans.
+
+### Observation 8: overwriting a page body orphans its inline comments
+
+The direction for Phase B is that docz is always the source of truth, as it
+is for the API, so the server overwrites edits made in Confluence. It never
+deletes a page: orphans are archived, as Phase A already does. A page's
+footer comments are attached to the page and survive a new body. Inline
+comments do not: Confluence anchors each one inside the body with an
+`ac:inline-comment-marker` element. A body written fresh from markdown has
+no markers, so every inline comment on the page loses its anchor. Keeping
+them means carrying each marker into the new body where its anchored text
+still appears. That is issue
+[#158](https://github.com/donaldgifford/docz/issues/158), filed as a
+follow-up to Phase A; for Phase B it is a prerequisite.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -201,10 +238,12 @@ which can be regenerated from the document rows (Observation 2). The queue
 needs only a second task type modelled on ingest (Observation 5).
 
 Two decisions Phase A never faced are what the DESIGN mostly has to settle.
-Titles are unique per space, so repositories cannot share a space without a
-rule for it (Observation 3). A server-wide credential needs an allow-list of
-sites and spaces, because repository owners choose where their pages go
-(Observation 4).
+Titles are unique across a whole space, so repositories can share one only
+if every title names its repository (Observations 3 and 7). A server-wide
+credential needs an allow-list of sites and spaces, because repository
+owners choose where their pages go (Observation 4). And because docz always
+wins, the server overwrites Confluence edits, so inline comments survive
+only if their anchors are carried into the new body (Observation 8, #158).
 
 <!--docz:conclusion:end-->
 
@@ -212,6 +251,15 @@ sites and spaces, because repository owners choose where their pages go
 ## Recommendation
 
 Resolve the questions below, then write the DESIGN from them.
+
+**Direction given on 2026-10-06:** each repository's `.docz.yaml` names the
+space. Many repositories can share one space, each under its own container
+named after the repository by default (for this repository,
+`<space>/docz/`), with `docs_dir` rendered inside it. The sync is one-way:
+docz in the repository is always the source of truth, as it is for the API.
+Confluence edits are overwritten, but comments must not be lost, and pages
+are archived, never deleted. Questions 5, 9, and 11 are written to that
+direction.
 
 ### 1. How does Export get its inputs without a checkout?
 
@@ -258,25 +306,39 @@ Resolve the questions below, then write the DESIGN from them.
 - **(a) One server-wide Atlassian account**, set as `CONFLUENCE_EMAIL` and
   `CONFLUENCE_API_TOKEN` (a `config.Secret`), plus an allow-list,
   `CONFLUENCE_ALLOWED`, of the site and space pairs the server will write
-  to. A repository whose `sync.confluence` names anything else is skipped,
-  and the skip is logged and shown in the API. *(recommendation)*
+  to. Any number of repositories may use an allowed space (Question 5). A
+  repository whose `sync.confluence` names anything else is skipped, and the
+  skip is logged and shown in the API. *(recommendation)*
 - (b) Per-installation credentials stored encrypted in Postgres. This needs
   an admin API and key management docz-api does not have.
 - (c) The (a) account with no allow-list. This lets any installed
   repository write into any space the token can reach.
 - (d) Other.
 
-### 5. Can repositories share a space?
+### 5. How do repositories share a space?
 
-- **(a) No: one space per repository.** The allow-list maps each space to at
-  most one repository, so titles never collide, and Phase A's titles and
-  archive rules apply unchanged. *(recommendation)*
-- (b) Yes, with every title prefixed by the repository (`owner/name:
-  ADR-0001: …`). This changes Phase A's titles for docz-api pages only, and
-  each repository needs its own type pages and Archive.
-- (c) Yes, in one shared tree with the repository as an extra level. This
-  still needs (b)'s prefixes, because titles are unique across the whole
-  space.
+Many repositories per space, each under a container named after the
+repository, is settled. Because titles are unique across the space
+(Observation 7), the questions are what the container is and how titles
+name their repository.
+
+- **(a) The container is a page, and every title carries the repository
+  name.** The container page defaults to the repository's name (this is
+  Phase A's `sync.confluence.parent`, now defaulted) and its body is the
+  landing page, as today. Every page beneath it is titled
+  `<repo>: <Phase A title>`, so `docz: ADR-0001: …`, `docz: Design`, and
+  `docz: Archive`. That needs no new scope. A new
+  `sync.confluence.title_prefix` key carries the prefix: docz-api defaults
+  it to the repository name, and the CLI defaults it to empty, so Phase A
+  output is unchanged. A CLI user writing into a shared space sets it to
+  match. *(recommendation)*
+- (b) As (a), but the container is a Confluence folder. A folder reads more
+  naturally in the space's tree, but it needs `read:folder:confluence` and
+  `write:folder:confluence`, a second `Client` resource, and somewhere else
+  for the landing page, since a folder has no body.
+- (c) Titles carry the repository as a suffix (`ADR-0001: … (docz)`) instead
+  of a prefix. Titles sort by document id, but the repository is easy to
+  miss in a long title.
 - (d) Other.
 
 ### 6. Is a table of page ids needed, and what is it for?
@@ -311,14 +373,23 @@ Resolve the questions below, then write the DESIGN from them.
 - (c) Nothing in Phase B.
 - (d) Other.
 
-### 9. When does the server use `--force`, and what counts as failure?
+### 9. How does the server treat edits made in Confluence?
 
-- **(a) Never force.** A page edited in Confluence stays Skipped and is
-  shown in the API. A failed page fails the task, so asynq retries it with
-  backoff, which is safe because unchanged pages are no-ops. Skipped pages do
-  not fail the task. *(recommendation)*
-- (b) Force on a schedule (say nightly), overwriting Confluence edits.
-- (c) Never force, and never fail the task. Results are only recorded.
+One-way sync with docz winning is settled. A page is never deleted; an
+orphan is archived, as in Phase A.
+
+- **(a) Always overwrite, as if under `--force`, and record the overwrite.**
+  The page's last-written version comes from the `docz` property as today.
+  When it has moved, the server still writes, and the run's result for that
+  page says it overwrote a Confluence edit (version N, expected M). Comments
+  are carried over per Question 11. A failed page fails the task, so asynq
+  retries it with backoff, which is safe because unchanged pages are no-ops.
+  The CLI keeps its default of skipping edited pages, with `--force` to
+  overwrite. *(recommendation)*
+- (b) As (a), and the CLI changes too, so docz always wins everywhere and
+  `--force` only affects pages whose `docz` property is missing or foreign.
+- (c) Skip edited pages, as the CLI does, and report them. This keeps
+  Confluence edits, which contradicts the one-way direction.
 - (d) Other.
 
 ### 10. How are links to files it does not export resolved?
@@ -329,6 +400,25 @@ Resolve the questions below, then write the DESIGN from them.
 - (b) Only for paths seen in the ingest tree listing. This needs the full
   tree, which ingest does not fetch.
 - (c) Left unresolved and reported, as Phase A does with no remote.
+- (d) Other.
+
+### 11. How are comments kept when a page is overwritten?
+
+Footer comments survive any new body (Observation 8). Inline comments are
+the question.
+
+- **(a) Carry each inline comment's anchor into the new body.** Before
+  writing, read the current body, collect each `ac:inline-comment-marker`
+  and the text it wraps, and wrap the same text in the new body when it
+  appears there exactly once. A comment whose text is gone, or is
+  ambiguous, loses its anchor, and the run reports it. This is issue #158,
+  built into `pkg/export/confluence` so the CLI gets it too, and it lands
+  before the server job. *(recommendation)*
+- (b) As (a), but a page with an inline comment whose text is gone is
+  skipped and reported instead of overwritten, until someone resolves the
+  comment.
+- (c) Do not carry anchors. Inline comments are orphaned on every changed
+  page, and only footer comments survive.
 - (d) Other.
 
 <!--docz:recommendation:end-->
