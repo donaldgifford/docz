@@ -13,6 +13,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv-0020)* Docz-api Confluence export without a checkout
 - *(inv-0020)* Shared spaces, one-way sync, and the title test
 - *(inv-0020)* Folder tests, decisions, and conclusion
+- *(inv-0020)* Folder children list with the hierarchical-content scope
 
 ### Miscellaneous Tasks
 
