@@ -66,6 +66,12 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
 
+      # Not for signing (the checksums are GPG-signed): goreleaser-action
+      # uses cosign, when it is on PATH, to verify the signature on the
+      # GoReleaser download it fetches, and skips that check without it.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:

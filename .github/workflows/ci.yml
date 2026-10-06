@@ -20,6 +20,7 @@ jobs:
       pull-requests: read
     outputs:
       go: ${{ steps.filter.outputs.go }}
+      docs: ${{ steps.filter.outputs.docs }}
       docker: ${{ steps.filter.outputs.docker }}
       helm: ${{ steps.filter.outputs.helm }}
       workflows: ${{ steps.filter.outputs.workflows }}
@@ -31,10 +32,29 @@ jobs:
         id: filter
         with:
           filters: |
+            # Everything that can change what the Go jobs build or test, not
+            # just .go files: the embedded templates and schemas under pkg/,
+            # every testdata/ and golden, the parity fixtures under test/, the
+            # spec api/ embeds, and the recipes and tool config the jobs run.
             go:
               - '**/*.go'
-              - 'go.mod'
-              - 'go.sum'
+              - '**/go.mod'
+              - '**/go.sum'
+              - 'pkg/**'
+              - 'cmd/**'
+              - 'internal/**'
+              - 'api/**'
+              - 'test/**'
+              - 'justfile'
+              - '*.just'
+              - '.golangci.yml'
+              - '.goreleaser.yml'
+              - 'mise.toml'
+              - 'sqlc.yaml'
+              - '.github/workflows/ci.yml'
+            docs:
+              - 'docs/**'
+              - '.docz.yaml'
             docker:
               - 'Dockerfile.api'
               - 'docker-bake.hcl'
@@ -63,10 +83,17 @@ jobs:
         uses: actions/labeler@v6
   lint:
     name: Lint
+    # Path-filtered on pull requests: a PR that touches no Go input (a docs
+    # or chart change, which on the v2 line still carries dont-release) skips
+    # it. Every push to main runs it, so main is always fully checked.
     # Skipped on the one PR carrying the `graft` label: the docz-api history
     # merge lands with imports that only the next phase rewrites, so it is
     # red by decision (DESIGN-0016 OQ 6). Required labels still run.
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
+    needs: changes
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'graft') && (
+        github.event_name == 'push' ||
+        needs.changes.outputs.go == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -101,10 +128,17 @@ jobs:
 
   test-go:
     name: Test Go
+    # Path-filtered on pull requests: a PR that touches no Go input (a docs
+    # or chart change, which on the v2 line still carries dont-release) skips
+    # it. Every push to main runs it, so main is always fully checked.
     # Skipped on the one PR carrying the `graft` label: the docz-api history
     # merge lands with imports that only the next phase rewrites, so it is
     # red by decision (DESIGN-0016 OQ 6). Required labels still run.
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
+    needs: changes
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'graft') && (
+        github.event_name == 'push' ||
+        needs.changes.outputs.go == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -129,10 +163,6 @@ jobs:
       - name: Replay functional parity goldens
         run: just parity
 
-      # Non-strict: an error in docz's own corpus fails, a warning prints.
-      - name: Validate this repository's docs
-        run: just validate
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7
         with:
@@ -141,12 +171,49 @@ jobs:
           slug: donaldgifford/docz
         continue-on-error: true
 
+  docs:
+    name: Docs and repository checks
+    # Runs on every PR, because some Go tests read the real tree rather
+    # than fixtures: pkg/doczcore/repo's migration test runs InsertRegions
+    # over this repository's docs/, and test/archive scans every tracked
+    # file and reads .docz.yaml. A docs-only PR can break either one, and
+    # it skips Test Go, so they run here. Both are quick, and so is the
+    # docz build validate needs.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+
+      # Non-strict: an error in docz's own corpus fails, a warning prints.
+      - name: Validate this repository's docs
+        run: just validate
+
+      - name: Run the tests that read the real tree
+        run: go test ./pkg/doczcore/repo/... ./test/archive/...
+
   security:
     name: Security Scan
+    # Trivy scans every lockfile, ui/'s included, so ui changes run it too.
+    # Path-filtered on pull requests: a PR that touches no Go input (a docs
+    # or chart change, which on the v2 line still carries dont-release) skips
+    # it. Every push to main runs it, so main is always fully checked.
     # Skipped on the one PR carrying the `graft` label: the docz-api history
     # merge lands with imports that only the next phase rewrites, so it is
     # red by decision (DESIGN-0016 OQ 6). Required labels still run.
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
+    needs: changes
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'graft') && (
+        github.event_name == 'push' ||
+        needs.changes.outputs.go == 'true' ||
+        needs.changes.outputs.ui == 'true')
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -181,10 +248,17 @@ jobs:
 
   build:
     name: Build
+    # Path-filtered on pull requests: a PR that touches no Go input (a docs
+    # or chart change, which on the v2 line still carries dont-release) skips
+    # it. Every push to main runs it, so main is always fully checked.
     # Skipped on the one PR carrying the `graft` label: the docz-api history
     # merge lands with imports that only the next phase rewrites, so it is
     # red by decision (DESIGN-0016 OQ 6). Required labels still run.
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'graft') }}
+    needs: changes
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'graft') && (
+        github.event_name == 'push' ||
+        needs.changes.outputs.go == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -193,6 +267,12 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+
+      # goreleaser-action checks the GoReleaser download against its
+      # checksums either way; with cosign on PATH it also verifies the
+      # signature on those checksums, and without it it skips that.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
 
       - name: Verify builds for all platforms
         uses: goreleaser/goreleaser-action@v7
