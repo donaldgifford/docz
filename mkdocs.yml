@@ -75,6 +75,7 @@ nav:
         - 'INV-0017: docz-api: serve runbook metadata as structured fields': investigation/0017-docz-api-serve-runbook-metadata-as-structured-fields.md
         - 'INV-0018: docz-site: a step-aware runbook view': investigation/0018-docz-site-a-step-aware-runbook-view.md
         - 'INV-0019: docz-api sync to external documentation services: Confluence and Notion': investigation/0019-docz-api-sync-to-external-documentation-services-confluence-and.md
+        - 'INV-0020: docz-api Confluence export: running confluence.Export without a checkout': investigation/0020-docz-api-confluence-export-running-confluenceexport-without-a.md
     - RFCs:
         - Overview: rfc/README.md
     - Runbooks:
