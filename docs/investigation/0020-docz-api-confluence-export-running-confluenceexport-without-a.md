@@ -241,7 +241,8 @@ Retested on 2026-10-06 with a token that adds the folder scopes
 | Create a page inside the folder | `200`; the page's `parentType` is `folder` |
 | `POST` then `GET /folders/{id}/properties` | `200`: folders carry content properties |
 | `GET /pages/{id}/children` | `200`, as in Phase A |
-| `GET /folders/{id}/direct-children`, `/descendants`, `GET /pages/{id}/direct-children` | `401`: "scope does not match" |
+| `GET /folders/{id}/direct-children`, `/descendants`, `GET /pages/{id}/direct-children` | `401` with that token; `200` after the hierarchical-content read scope was added. A page's `direct-children` lists folders as well as pages |
+| `GET /folders/{id}/children` | `401` with both tokens; the v2 API has no such route for folders |
 | `DELETE /pages/{id}`, `DELETE /folders/{id}` | `204` |
 
 So a folder can be the container. It can carry a `docz` property, so docz
@@ -249,12 +250,13 @@ can recognise a folder it made, and pages can live inside it. Folder titles
 are unique per space as page titles are, so two repositories with the same
 name under different owners would collide on the folder title. Pages inside
 a folder still need their titles prefixed with the repository name
-(Observation 7). The one gap is listing a folder's children: the v2
-endpoints that can return folder children ask for a scope the token lacks,
-probably `read:hierarchical-content:confluence`. This is unconfirmed. Phase
-A's `/pages/{id}/children` lists only pages, so the archive pass over a
-folder needs one of these endpoints or a CQL search by ancestor. The test
-folder and pages were deleted afterwards.
+(Observation 7). Listing a folder's contents needs the hierarchical-content
+read scope (`read:hierarchical-content:confluence`). With it,
+`/folders/{id}/direct-children` lists the folder's pages, and a page's
+`direct-children` includes folders. Phase A's `/pages/{id}/children` returns
+pages only. So the `Client`'s `Children` moves to `direct-children`, which
+serves the archive pass over a folder and finds an existing repository
+folder under its parent. The test folders and pages were deleted afterwards.
 
 <!--docz:findings:end-->
 
@@ -309,9 +311,11 @@ Decided on 2026-10-06:
 | 10 | (a) |
 | 11 | (a), built as #158. It is larger work and lands before the server job |
 
-Listing a folder's children needs one more scope, probably
-`read:hierarchical-content:confluence`. The DESIGN confirms it or uses a CQL
-search instead (Observation 9).
+A token for Phase B needs the Phase A scopes, plus the folder scopes
+(`read:folder:confluence`, `write:folder:confluence`) and
+`read:hierarchical-content:confluence` to list a folder's children
+(Observation 9). Delete scopes are not needed, because nothing is ever
+deleted.
 
 ### 1. How does Export get its inputs without a checkout?
 
