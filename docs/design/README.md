@@ -52,4 +52,5 @@ docz create design "Your Design Title"
 | DESIGN-0018 | One Helm chart for docz: charts/docz replaces docz-api and docz-site | Implemented | 2026-09-25 | Donald Gifford | [0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md](0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md) |
 | DESIGN-0019 | Runbook: a sixth built-in document type, disabled by default | Implemented | 2026-09-30 | Donald Gifford | [0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md](0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md) |
 | DESIGN-0020 | Confluence export: docz documents as Confluence Cloud pages | Implemented | 2026-10-05 | Donald Gifford | [0020-confluence-export-docz-documents-as-confluence-cloud-pages.md](0020-confluence-export-docz-documents-as-confluence-cloud-pages.md) |
+| DESIGN-0021 | Confluence export from docz-api: per-repository folders in shared spaces | Draft | 2026-10-06 | Donald Gifford | [0021-confluence-export-from-docz-api-per-repository-folders-in.md](0021-confluence-export-from-docz-api-per-repository-folders-in.md) |
 <!-- END DOCZ AUTO-GENERATED -->
