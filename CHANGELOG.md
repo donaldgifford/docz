@@ -62,6 +62,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0023)* Tick the testing plan and mark what waits on a person
 - Fix DESIGN-0019's nested fence and four broken links
 - *(impl-0023)* Record the scoped-token runs and the browser pass
+- *(impl-0023)* Record the dependency bump and the green CI run
 
 ### Testing
 
