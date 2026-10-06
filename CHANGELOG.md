@@ -5,6 +5,28 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(config)* The dormant sync.confluence block
+- *(doctemplate)* Write the sync block disabled in .docz.yaml
+- *(export/confluence)* Render a docz document to storage format
+- *(export/confluence)* The Client interface and its value types
+- *(export/confluence)* Typed client errors
+- *(export/confluence)* The Confluence v2 client through the Atlassian gateway
+- *(export/confluence)* Hooks carried in the context
+- *(export/confluence)* A nil-body update moves a page
+- *(export/confluence)* Export, the reconcile
+- *(cmd)* GitResolver reads the GitHub remote and default branch
+- *(export/confluence)* A JSON-shaped report carrying each rendered body
+- *(cmd)* Docz export confluence
+
+### Bug Fixes
+
+- *(export/confluence)* A foreign docz property is never edited or archived
+- *(export/confluence)* Leave the parent page where it is, and skip known pages when hunting orphans
+- *(otel)* Bump to 1.45.0
+- *(deps)* Bump otlptracehttp to v1.45.0 and Go to 1.26.6
+
 ### Documentation
 
 - *(impl)* Close IMPL-0022 after the v2.0.0-beta.6 run
@@ -28,7 +50,37 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Number DESIGN-0020's own decisions as its questions
 - *(impl)* IMPL-0023, Confluence export Phase A, and approve DESIGN-0020
 - *(impl)* Resolve IMPL-0023 open questions
+- *(export/confluence)* The package comment covers the client and Export
+- *(impl-0023)* Record Phase 6's live runs
+- *(readme)* Docz export confluence, its flags, and the sync block
+- *(claude)* Pkg/export/confluence, the sync block, the export command, and the sync normaliser
+- *(development)* Pkg/export/confluence and just export-live
+- *(design-0020)* Amend §3, §5, and §6 with what IMPL-0023 settled
+- *(impl-0023)* Phase 7 complete
+- *(impl-0023)* Record Phase 8's filed follow-ups and the steps left for a person
+- *(impl-0023)* Record PR #153's CI result
+- *(impl-0023)* Tick the testing plan and mark what waits on a person
 - Fix DESIGN-0019's nested fence and four broken links
+- *(impl-0023)* Record the scoped-token runs and the browser pass
+- *(impl-0023)* Record the dependency bump and the green CI run
+
+### Testing
+
+- *(parity)* A sync normaliser for the new config block
+- *(cmd)* Docz init and docz config carry the sync block
+- *(export/confluence)* Render the fleet corpus and every template
+- *(export/confluence)* Render invariants and FuzzRender
+- *(export/confluence)* Request shapes, decoding, errors, and retries
+- *(export/confluence)* A live round trip behind the live tag
+- *(export/confluence)* Drive every reconcile arm through a fake client
+- *(cmd)* Docz export confluence against a fake client
+- *(consumer)* Pkg/export/confluence from outside the module
+
+### Miscellaneous Tasks
+
+- Goldmark, allowed under pkg/export/ only
+- Enable sync.confluence for this repository
+- *(chart)* Bump charts/docz to 0.2.1 for 2.0.0-beta.7
 
 ## [2.0.0-beta.6] - 2026-10-01
 

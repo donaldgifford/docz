@@ -95,6 +95,12 @@ func TestLayerRules_CoreNeverImportsATypePackage(t *testing.T) {
 					}
 				}
 
+				// An exporter is an integration above the core, like the
+				// wiki (DESIGN-0020 §1).
+				if strings.HasPrefix(dep, modulePath+"/pkg/export/") {
+					t.Errorf("%s imports %s; the core never imports an exporter", pkg, dep)
+				}
+
 				// cmd/ is the CLI shell. A core package reaching into it
 				// would make the library depend on its own first consumer.
 				if strings.HasPrefix(dep, modulePath+"/cmd") {
@@ -152,10 +158,6 @@ func TestLayerRules_NoTelemetryUnderPkg(t *testing.T) {
 func TestLayerRules_ThirdPartyDependencies(t *testing.T) {
 	t.Parallel()
 
-	allowed := map[string]bool{
-		"go.yaml.in/yaml/v3": true,
-	}
-
 	for _, pkg := range listPackages(t) {
 		for _, dep := range deps(t, pkg) {
 			// A stdlib path has no dot in its first segment; anything in this
@@ -165,25 +167,63 @@ func TestLayerRules_ThirdPartyDependencies(t *testing.T) {
 				continue
 			}
 
-			if allowed[dep] {
-				continue
-			}
-
-			// Allow a subpackage of an allowed module.
-			ok := false
-
-			for module := range allowed {
-				if strings.HasPrefix(dep, module+"/") {
-					ok = true
-
-					break
-				}
-			}
-
-			if !ok {
+			if !thirdPartyAllowed(pkg, dep) {
 				t.Errorf("%s depends on %s, which is not in the allow-list", pkg, dep)
 			}
 		}
+	}
+}
+
+// thirdPartyAllowed maps each allowed module to the package prefix that may
+// import it. yaml.v3 is the core's one dependency and may appear anywhere;
+// goldmark is the markdown parser the Confluence renderer needs (DESIGN-0020
+// §1) and is allowed under pkg/export/ only, so the core stays where it is
+// and the exception sits where the rule lives.
+var thirdPartyAllowList = map[string]string{
+	"go.yaml.in/yaml/v3":       modulePath + "/pkg/",
+	"github.com/yuin/goldmark": modulePath + "/pkg/export/",
+}
+
+// thirdPartyAllowed reports whether pkg may depend on dep: dep is an allowed
+// module or a subpackage of one, and pkg sits under that module's prefix.
+func thirdPartyAllowed(pkg, dep string) bool {
+	for module, prefix := range thirdPartyAllowList {
+		if dep != module && !strings.HasPrefix(dep, module+"/") {
+			continue
+		}
+
+		return strings.HasPrefix(pkg+"/", prefix)
+	}
+
+	return false
+}
+
+func TestThirdPartyAllowed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		pkg, dep string
+		want     bool
+	}{
+		{"pkg/doczcore/config", "go.yaml.in/yaml/v3", true},
+		{"pkg/export/confluence", "go.yaml.in/yaml/v3", true},
+		{"pkg/export/confluence", "github.com/yuin/goldmark", true},
+		{"pkg/export/confluence", "github.com/yuin/goldmark/extension", true},
+		{"pkg/doczcore/repo", "github.com/yuin/goldmark", false},
+		{"pkg/wiki", "github.com/yuin/goldmark/ast", false},
+		{"pkg/exporter", "github.com/yuin/goldmark", false},
+		{"pkg/export/confluence", "github.com/yuin/goldmarkish", false},
+		{"pkg/doczcore/config", "github.com/spf13/cobra", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.pkg+"->"+tt.dep, func(t *testing.T) {
+			t.Parallel()
+
+			if got := thirdPartyAllowed(modulePath+"/"+tt.pkg, tt.dep); got != tt.want {
+				t.Errorf("thirdPartyAllowed(%s, %s) = %v, want %v", tt.pkg, tt.dep, got, tt.want)
+			}
+		})
 	}
 }
 

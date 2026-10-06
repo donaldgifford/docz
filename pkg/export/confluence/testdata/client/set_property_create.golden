@@ -1,0 +1,7 @@
+POST /pages/42/properties
+{
+  "key": "docz",
+  "value": {
+    "hash": "abc"
+  }
+}

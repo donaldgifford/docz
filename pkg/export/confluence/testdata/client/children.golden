@@ -1,0 +1,3 @@
+GET /pages/7/children?limit=250
+GET /pages/7/children?limit=250&cursor=c2
+GET /pages/7/children?limit=250&cursor=c3

@@ -1,0 +1,11 @@
+POST /pages
+{
+  "spaceId": "9",
+  "status": "current",
+  "title": "RFC-0001: X",
+  "parentId": "7",
+  "body": {
+    "representation": "storage",
+    "value": "\u003cp\u003ex\u003c/p\u003e"
+  }
+}

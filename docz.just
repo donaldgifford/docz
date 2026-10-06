@@ -101,6 +101,23 @@ test-report:
 test-consumer:
     @cd test/consumer && go test ./...
 
+# ─── Confluence export, live (IMPL-0023 Open Question 9) ───────────
+
+# Round trip a page against the real site in ~/.config/docz/atlassian.env
+[group('test')]
+export-live:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    env_file="${DOCZ_ATLASSIAN_ENV:-$HOME/.config/docz/atlassian.env}"
+    if [ ! -r "$env_file" ]; then
+        echo "no credentials at $env_file" >&2
+        exit 2
+    fi
+    set -a; source "$env_file"; set +a
+    export DOCZ_LIVE_SPACE="${DOCZ_LIVE_SPACE:-${CONFLUENCE_SPACE_KEY:-}}"
+    go test -tags live -count=1 -run TestLive -v ./pkg/export/confluence/
+    echo "✓ Confluence live round trip"
+
 # ─── Functional parity (IMPL-0018 Phase 0) ─────────────────────────
 
 # The release the goldens are captured from. Goldens come from this tag and

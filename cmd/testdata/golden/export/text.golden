@@ -1,0 +1,7 @@
+created    docz  v1  https://example.atlassian.net/wiki/pages/1
+created    RFCs  v1  https://example.atlassian.net/wiki/pages/2
+created    RFC-0001: First proposal  v1  https://example.atlassian.net/wiki/pages/3
+created    ADRs  v1  https://example.atlassian.net/wiki/pages/4
+created    ADR-0001: A decision  v1  https://example.atlassian.net/wiki/pages/5
+  unresolved link: docs/adr/0001-a-decision.md:92 -> 0009-missing.md
+5 pages: 5 created

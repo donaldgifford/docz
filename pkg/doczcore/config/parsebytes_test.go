@@ -34,6 +34,11 @@ var parseBytesCases = []struct {
 			"    aliases: [fw, framework]\n",
 	},
 	{
+		name: "sync block normalizes site, exclude, and viewer",
+		yaml: "sync:\n  confluence:\n    enabled: true\n    site: https://x.atlassian.net/\n" +
+			"    space: DOCZ\n    parent: docz\n    exclude: [archive/]\n",
+	},
+	{
 		name: "empty file",
 		yaml: "",
 	},

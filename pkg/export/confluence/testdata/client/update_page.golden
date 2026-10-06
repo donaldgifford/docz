@@ -1,0 +1,15 @@
+PUT /pages/42
+{
+  "id": "42",
+  "status": "current",
+  "title": "RFC-0001: X",
+  "parentId": "7",
+  "body": {
+    "representation": "storage",
+    "value": "\u003cp\u003ey\u003c/p\u003e"
+  },
+  "version": {
+    "number": 3,
+    "message": "docz export"
+  }
+}

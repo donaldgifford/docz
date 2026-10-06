@@ -103,3 +103,13 @@ api:
   additional_docs:
     - CONTRIBUTING.md
     - DEVELOPMENT.md
+sync:
+  confluence:
+    enabled: true # docz export confluence (IMPL-0023); credentials come from the environment
+    site: https://dgifford06.atlassian.net
+    space: DOCZ
+    parent: docz
+    api_pages: true # the api: landing page and additional docs ride along
+    exclude:
+      - examples # in step with api.exclude
+      - archive

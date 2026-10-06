@@ -2,11 +2,15 @@
 
 Changes to the `docz` Helm chart only. For application-level
 changes, see the root [CHANGELOG.md](../../CHANGELOG.md).
-## [unreleased]
+## [2.0.0-beta.6] - 2026-10-01
 
 ### Documentation
 
 - *(chart)* Enable runbooks only after this release is deployed
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump charts/docz to 0.2.0 for 2.0.0-beta.6
 
 ## [2.0.0-beta.5] - 2026-09-25
 

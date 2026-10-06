@@ -1,0 +1,42 @@
+title: TEST-0001: Anchors and alerts
+unresolved: docs/design/0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md#1-the-problem (DESIGN-0019) line 19
+---
+<p>See <a href="#TEST-0001%3AAnchorsandalerts-Sectiontwo">Section two</a> and <a href="#TEST-0001%3AAnchorsandalerts-Asub-headingwithcode">the sub-heading</a> below.</p>
+<ac:structured-macro ac:name="info"><ac:rich-text-body><p>A note alert with <code>code</code> and <strong>strong</strong>.</p>
+</ac:rich-text-body></ac:structured-macro>
+<ac:structured-macro ac:name="warning"><ac:rich-text-body><p>A warning alert.</p>
+</ac:rich-text-body></ac:structured-macro>
+<h2>Section one</h2>
+<p>Text with a link to DESIGN-0019 in the pushed set.</p>
+<h2>Section two</h2>
+<h3>A sub-heading with <code>code</code></h3>
+<ac:task-list>
+<ac:task><ac:task-status>incomplete</ac:task-status><ac:task-body>an open task</ac:task-body></ac:task>
+<ac:task><ac:task-status>complete</ac:task-status><ac:task-body>a done task</ac:task-body></ac:task>
+</ac:task-list>
+<ac:adf-extension><ac:adf-node type="extension"><ac:adf-attribute key="extension-type">com.atlassian.ecosystem</ac:adf-attribute><ac:adf-attribute key="extension-key">23392b90-4271-4239-98ca-a3e96c663cbb/63d4d207-ac2f-4273-865c-0240d37f044a/static/mermaid-diagram</ac:adf-attribute><ac:adf-attribute key="parameters"><ac:adf-parameter key="local-id">LOCAL-ID</ac:adf-parameter><ac:adf-parameter key="extension-id">ari:cloud:ecosystem::extension/23392b90-4271-4239-98ca-a3e96c663cbb/63d4d207-ac2f-4273-865c-0240d37f044a/static/mermaid-diagram</ac:adf-parameter><ac:adf-parameter key="extension-title">Mermaid diagram</ac:adf-parameter></ac:adf-attribute><ac:adf-attribute key="text">Mermaid diagram</ac:adf-attribute><ac:adf-attribute key="layout">default</ac:adf-attribute><ac:adf-attribute key="local-id">LOCAL-ID</ac:adf-attribute></ac:adf-node><ac:adf-fallback><p>Mermaid diagram</p></ac:adf-fallback></ac:adf-extension>
+<ac:structured-macro ac:name="expand"><ac:parameter ac:name="title">Diagram source</ac:parameter><ac:rich-text-body><ac:structured-macro ac:name="code"><ac:parameter ac:name="language">mermaid</ac:parameter><ac:plain-text-body><![CDATA[flowchart LR
+  a --> b
+]]></ac:plain-text-body></ac:structured-macro>
+</ac:rich-text-body></ac:structured-macro>
+<h2>Wide table</h2>
+<table data-layout="full-width">
+<thead>
+<tr>
+<th>Date</th>
+<th>PR</th>
+<th>Commit</th>
+<th>Verified by</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-10-05</td>
+<td><a href="https://github.com/donaldgifford/docz/pull/149">#149</a></td>
+<td><code>989c773</code></td>
+<td>Donald Gifford</td>
+<td>A five-column row with enough text in the last cell that the table has to be wider than Confluence's default content column to show it on one line without wrapping every cell.</td>
+</tr>
+</tbody>
+</table>

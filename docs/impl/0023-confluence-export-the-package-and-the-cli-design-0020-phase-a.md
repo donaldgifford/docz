@@ -132,7 +132,7 @@ different.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/config/sync.go`: `SyncConfig{Confluence
+- [x] `pkg/doczcore/config/sync.go`: `SyncConfig{Confluence
   ConfluenceSyncConfig}` and `ConfluenceSyncConfig{Enabled, Site, Space,
   Parent, Types []string, Exclude []string, APIPages bool, Mermaid
   MermaidSyncConfig}` with `MermaidSyncConfig{Viewer string}`. Every
@@ -140,12 +140,12 @@ different.
   (`sync`, `confluence`, `enabled`, `site`, `space`, `parent`, `types`,
   `exclude`, `api_pages`, `mermaid`, `viewer`). `Config.Sync` sits after
   `API`, and `DefaultConfig()` sets `Mermaid.Viewer` to `auto`
-- [ ] `normalizeSync(cfg *Config)` on both `Load` paths, right after
+- [x] `normalizeSync(cfg *Config)` on both `Load` paths, right after
   `normalizeAPI` (`config.go:284` and `:732`, and therefore `ParseBytes`):
   trims one trailing `/` from `site`, runs each `exclude` entry through
   `normalizeExcludePrefix`, and backfills an empty `viewer` to `auto`. It
   never rejects
-- [ ] `validateSync()` from `Validate()` after `validateAPI`, **only when
+- [x] `validateSync()` from `Validate()` after `validateAPI`, **only when
   enabled** (the DESIGN-0010 dormancy rule), wrapping a new
   `ErrInvalidSync`:
   - `site` parses with `url.Parse`, scheme `https`, non-empty host, no
@@ -157,36 +157,36 @@ different.
   - `api_pages: true` requires `API.Enabled`;
   - `viewer` is `auto`, `off`, or matches
     `^[0-9a-f-]{36}/[0-9a-f-]{36}/static/[a-z0-9-]+$`
-- [ ] `sync_test.go`: a dormant block with every field wrong loads and
+- [x] `sync_test.go`: a dormant block with every field wrong loads and
   validates; one case per rule above; `ParseBytes` and both `Load` paths
   agree on a block (`parsebytes_test.go`'s pattern); a `types:` entry
   naming a disabled built-in (`runbook` on defaults) is rejected
-- [ ] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `sync`
+- [x] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `sync`
   object with its nested `confluence` and `mermaid`;
   `TestJSONTags_MirrorYAML` passes without edits, which is the point of it
-- [ ] `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl`: a `sync:` block
+- [x] `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl`: a `sync:` block
   after `api:`, disabled, with a comment per field, the two credential
   variables named (`ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`), and the three
   scopes a token needs. `parity_baseline_test.go`'s round trip and
   `doctemplate/promoted_test.go`'s `DefaultConfigYAML` test pass; the
   rendered file carries `sync:` with `enabled: false`
-- [ ] `test/parity/parity.go`: a `sync` normaliser that drops the `sync:`
+- [x] `test/parity/parity.go`: a `sync` normaliser that drops the `sync:`
   block `docz init` now writes, applied on both sides in `runCase` beside
   `runbook` (the golden was captured from v1.2.2, which never wrote one).
   Unit tests in `parity_norm_test.go` in the shape of
   `TestRunbookNormalizer`; `test/parity/README.md` lists the delta
-- [ ] `go get github.com/yuin/goldmark@v1.8.6` as a direct require (the
+- [x] `go get github.com/yuin/goldmark@v1.8.6` as a direct require (the
   version the prototype proved), `go mod edit -fmt`, and go.sum settled
   with targeted `go get`, never a bare `go mod tidy`. `just license-check`
   passes: goldmark is MIT
-- [ ] `pkg/doczcore/layer_test.go`: `TestLayerRules_ThirdPartyDependencies`
+- [x] `pkg/doczcore/layer_test.go`: `TestLayerRules_ThirdPartyDependencies`
   takes its allow-list as module → package-prefix: `go.yaml.in/yaml/v3`
   for every package, `github.com/yuin/goldmark` for packages under
   `pkg/export/` only. The matcher is a function with its own table test,
   including the negative case of goldmark named from a core package. The
   rule that the core never imports a type package gains `pkg/export/...`
   to its forbidden set, so `corePackages` stays as it is
-- [ ] `docz config` prints the block; `docz init` in a `t.TempDir()`
+- [x] `docz config` prints the block; `docz init` in a `t.TempDir()`
   writes it disabled (`cmd/init_test.go` is frozen, so this goes in a new
   `cmd/export_test.go` file that Phase 5 extends)
 
@@ -218,12 +218,12 @@ opened a file or a socket.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/export/confluence/doc.go`: the package comment with the
+- [x] `pkg/export/confluence/doc.go`: the package comment with the
   EXPERIMENTAL paragraph every v2-line package carries (ADR-0002 Decision
   7), the layering statement (a sibling of `pkg/wiki`, imports the core,
   never imported by it), and the one-paragraph description of what a page
   is
-- [ ] `render.go`: `Render(src []byte, opts RenderOptions) (Rendered,
+- [x] `render.go`: `Render(src []byte, opts RenderOptions) (Rendered,
   error)` with `RenderOptions{Resolve LinkResolver, Mermaid MermaidMode,
   ViewerKey, Source, SourceURL, Title string}`, `Rendered{ID, Title,
   Body, Hash, Links}`, `Link{Href, Text, Line}`, `LinkTarget`,
@@ -235,7 +235,7 @@ opened a file or a socket.
   and no `opts.Title` is `document.ErrNoFrontmatter` wrapped (Open Question
   5). CR line endings are rejected the way the type packages reject them.
   `Render` clones its input and never modifies it
-- [ ] `nodes.go`: the goldmark node renderer ported from the prototype's
+- [x] `nodes.go`: the goldmark node renderer ported from the prototype's
   `render.go` (`storage.RegisterFuncs` and its twelve functions), one
   function per §2 row: heading (H1 dropped, H2–H6 passed), fenced and
   indented code to the `code` macro with the language map (`sh`, `shell`,
@@ -247,14 +247,14 @@ opened a file or a socket.
   cut from the AST, task lists to `ac:task-list`, images to `ac:image`
   with `ri:url` for a remote source and a link for a local one, and every
   `<!--…-->` comment dropped
-- [ ] `links.go`: in-page `#slug` links mapped back to heading text through
+- [x] `links.go`: in-page `#slug` links mapped back to heading text through
   `docparse.Headings` over the body and written as
   `#<TitleNoSpaces>-<HeadingNoSpaces>` with `:` as `%3A`; relative links
   through `opts.Resolve`, written as `ac:link`/`ri:page` for a `PageTitle`
   (fragment appended) and `<a href>` for a `URL`; a zero `LinkTarget`
   writes the text alone and appends to `Rendered.Links`; absolute links
   and autolinks pass through
-- [ ] `macros.go`: the `toc` macro for a `<!--toc:start-->`…`<!--toc:end-->`
+- [x] `macros.go`: the `toc` macro for a `<!--toc:start-->`…`<!--toc:end-->`
   span (located with `docparse.Regions` kind `toc`, body dropped), the
   viewer macro and `expand` pair for a mermaid fence in `MermaidViewer`
   mode or the open `code` macro in `MermaidCode`, and the `info` banner
@@ -263,12 +263,12 @@ opened a file or a socket.
   the body is hashed, and then each placeholder is replaced with a
   `crypto/rand` UUID v4, so `Hash` is stable across runs and two macros on
   one page never share an id
-- [ ] `wellformed.go`: the body wrapped in a root element declaring the
+- [x] `wellformed.go`: the body wrapped in a root element declaring the
   `ac` and `ri` namespaces and decoded with `encoding/xml` in strict mode;
   a failure is `*MalformedError{Line, Err}` and `Render` returns it with
   no body. This is the check that turned the prototype's five failures
   into findings rather than pushes
-- [ ] Goldens under `testdata/render/<case>.md` with `.xhtml` siblings,
+- [x] Goldens under `testdata/render/<case>.md` with `.xhtml` siblings,
   regenerated with `-update`, one case per §2 row and the specimen the
   prototype used: the banner with and without a URL, every language in
   the map, `]]>` in a code body, mermaid in both modes, two mermaid fences
@@ -277,17 +277,18 @@ opened a file or a socket.
   a cross-document link with a fragment, an unresolved link, a remote and
   a local image, a `<details>` block, a `<status>` placeholder in prose,
   and a footnote
-- [ ] `corpus_test.go`: every `.orig.md` under
+- [x] `corpus_test.go`: every `.orig.md` under
   `pkg/{rfc,adr,design,impl,investigation,runbook}/testdata/` (38) and
   each embedded template rendered through `doctemplate.Resolve` must come
   back well-formed with zero unresolved in-page anchors. The test reads
   the snapshots, never `docs/`
-- [ ] `invariants_test.go` and `FuzzRender`: the input is unmodified, two
+- [x] `invariants_test.go` and `FuzzRender`: the input is unmodified, two
   renders of one input match byte for byte after the `local-id`
   placeholders are restored, `Hash` is equal across the two, and the fuzz
   target pins never-panic and well-formed-or-error over the goldens as
   seeds, run for thirty seconds locally and recorded here
-- [ ] `go vet`, `just lint`, and `just fmt` are clean; no non-test file in
+  Done: `FuzzRender` ran 30s clean, 5.2M executions, on 2026-10-05.
+- [x] `go vet`, `just lint`, and `just fmt` are clean; no non-test file in
   the package imports `os`, `io/fs`, or `net`
 
 <!--docz:tasks:end-->
@@ -316,21 +317,21 @@ token kinds work through one base URL, and a rate limit is retried.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `client.go`: the `Client` interface of DESIGN-0020's API changes
+- [x] `client.go`: the `Client` interface of DESIGN-0020's API changes
   (`SpaceID`, `FindPage`, `CreatePage`, `UpdatePage`, `Property`,
   `SetProperty`, `Children`) and its value types: `Page{ID, Title,
   ParentID, SpaceID, Version int, WebURL}`, `NewPage{SpaceID, ParentID,
   Title, Body}`, `PageUpdate{Title, ParentID, Body, Version int, Message}`,
   `Property{ID, Key, Value json.RawMessage, Version int}`. A missing page
   or property is `(nil, nil)`, not an error
-- [ ] `httpclient.go`: `NewHTTPClient(site, email, token string)
+- [x] `httpclient.go`: `NewHTTPClient(site, email, token string)
   *HTTPClient` with a functional `WithHTTPClient(*http.Client)` for tests.
   The cloud id is resolved once, lazily, from
   `GET <site>/_edge/tenant_info` (unauthenticated; the error is memoised so
   a bad site fails every call the same way), and every request goes to
   `https://api.atlassian.com/ex/confluence/<cloudId>/wiki/api/v2/…` with
   basic auth. `WebURL` is `<site>/wiki` joined with `_links.webui`
-- [ ] The endpoints, each a method of its own: `GET /spaces?keys=`,
+- [x] The endpoints, each a method of its own: `GET /spaces?keys=`,
   `GET /pages?space-id=&title=` (version and parent come back; the body
   is never fetched), `POST /pages` with `status: current` and a storage
   body, `PUT /pages/{id}` with `parentId`, the body, and `version{number,
@@ -338,23 +339,23 @@ token kinds work through one base URL, and a rate limit is retried.
   `PUT /pages/{id}/properties[/{propertyId}]` (the update carries
   `version.number + 1`), and `GET /pages/{id}/children` following
   `_links.next` cursors until exhausted
-- [ ] `errors.go`: `AuthError{Status}` for 401 and 403, `ConflictError{Title,
+- [x] `errors.go`: `AuthError{Status}` for 401 and 403, `ConflictError{Title,
   Have, Want int}` for a 409 on a stale version, `RequestError{Op, Status
   int, Body string}` for everything else with `Body` cut to 512 bytes, and
   `MalformedError` from Phase 2. No error, log, or report ever carries the
   `Authorization` header or the token
-- [ ] A `429` honours `Retry-After` (seconds or an HTTP date), waits, and
+- [x] A `429` honours `Retry-After` (seconds or an HTTP date), waits, and
   retries up to three times before returning a `RequestError`; a `429`
   with no header backs off two seconds doubling. The wait is a `time.Timer`
   select against `ctx.Done()`, so cancellation does not sleep
-- [ ] `httpclient_test.go` against `httptest.NewServer`: the cloud id is
+- [x] `httpclient_test.go` against `httptest.NewServer`: the cloud id is
   requested exactly once across many calls and the gateway host receives
   everything after it; each endpoint's method, path, query, and JSON body
   against a golden; each response decoded; children paginated across
   three pages; 401 → `AuthError`; 429 twice then 200 → success with two
   waits observed through a fake clock; 429 four times → `RequestError`;
   409 → `ConflictError`; a context cancelled mid-wait returns `ctx.Err()`
-- [ ] `live_test.go` behind `//go:build live` (Open Question 9): reads
+- [x] `live_test.go` behind `//go:build live` (Open Question 9): reads
   `ATLASSIAN_SITE`, `ATLASSIAN_EMAIL`, `ATLASSIAN_API_TOKEN`, and
   `DOCZ_LIVE_SPACE` from the environment, resolves the space, and round
   trips one page and its property under a parent titled `docz live`. A
@@ -375,6 +376,9 @@ token kinds work through one base URL, and a rate limit is retried.
   test, and none contains the token
 - `just export-live` passes against the scratch site with both the scoped
   and the unscoped token
+- Status 2026-10-05: `just export-live` passes with the unscoped token.
+  2026-10-06: it passes with the scoped token too (round trip on page
+  458753)
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
@@ -391,7 +395,7 @@ flowchart and the report says what happened to each page.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `export.go`: `Export(ctx, rp *repo.Repo, opts ExportOptions)
+- [x] `export.go`: `Export(ctx, rp *repo.Repo, opts ExportOptions)
   (Report, error)` with `ExportOptions{Client, Types, IDs, Force, DryRun,
   Resolve LinkResolver, Version string}` (Open Question 3 for `Version`),
   `Report{Pages []PageResult, DryRun bool}`, `PageResult{ID, Title,
@@ -399,7 +403,7 @@ flowchart and the report says what happened to each page.
   with `Created`, `Updated`, `Unchanged`, `Skipped`, `Archived`, `Failed`
   and a `String()`. A block that is absent or disabled is a `ConfigError`
   before any request
-- [ ] The tree, in this order: the space id; the parent page found by
+- [x] The tree, in this order: the space id; the parent page found by
   title or created (its body is the rendered `api:` landing page when
   `api_pages` is on, else one paragraph naming the repository); one type
   page per exported type, titled with the type's nav title, body the
@@ -408,12 +412,12 @@ flowchart and the report says what happened to each page.
   the `api:` additional docs under the parent when `api_pages` is on.
   `Types` and `IDs` narrow the document set; an id resolves through
   `rp.Find`, and an unknown one is `repo.NotFoundError` passed up
-- [ ] The resolver: `Export` builds the export set (repository-relative
+- [x] The resolver: `Export` builds the export set (repository-relative
   path → page title) first and resolves every relative link against it
   before falling back to `opts.Resolve`, so a caller supplies only the
   rule for what is *not* exported (the blob URL) and the index pages'
   links land on the pages beneath them
-- [ ] The per-page reconcile exactly as the §3 flowchart: find by title;
+- [x] The per-page reconcile exactly as the §3 flowchart: find by title;
   no page → create; page with no `docz` property → skip `not docz's page`
   unless `Force`, which adopts it; property whose `version` differs from
   the page's → skip `edited in Confluence (v<have>, expected v<want>)`
@@ -422,27 +426,27 @@ flowchart and the report says what happened to each page.
   expected parent id. Every create and update is followed by the property
   `{id, source, hash, version, docz}`, created or updated through its own
   version
-- [ ] Orphans, **only on a full export** (no `Types`, no `IDs`): the
+- [x] Orphans, **only on a full export** (no `Types`, no `IDs`): the
   children of the parent and of every type page that carry a `docz`
   property whose `id` is not in the export set are moved under an
   `Archive` child of the parent (created when first needed) and reported
   `Archived`. A narrowed run never archives, because a partial set would
   orphan everything outside it. DESIGN-0020 §3 does not say this and is
   amended in Phase 7
-- [ ] `DryRun`: every read happens, no write does, and the report carries
+- [x] `DryRun`: every read happens, no write does, and the report carries
   the action each page *would* take with `Report.DryRun` set
-- [ ] A failed request fails that page (`Failed`, with the reason) and the
+- [x] A failed request fails that page (`Failed`, with the reason) and the
   run continues to the next; `Export` returns the report and an error
   wrapping the first failure once the loop ends (Open Question 10)
-- [ ] `hooks.go` (Open Question 1): `Hooks{PageDone func(PageResult),
+- [x] `hooks.go` (Open Question 1): `Hooks{PageDone func(PageResult),
   Request func(method, path string, status int)}` carried in the context
   by `WithHooks`/`HooksFrom` in `repo`'s shape, with `HooksFrom` never
   nil. `HTTPClient` fires `Request` after each response; `Export` fires
   `PageDone` after each page
-- [ ] Context is checked between pages, never mid-page; a cancelled run
+- [x] Context is checked between pages, never mid-page; a cancelled run
   returns the report so far with `ctx.Err()`, and what was written stays
   written
-- [ ] `fake_test.go`: an in-memory `Client` holding pages by id with
+- [x] `fake_test.go`: an in-memory `Client` holding pages by id with
   titles, parents, versions, bodies, properties, and a request log, plus
   a `fail` switch for one operation. `export_test.go` drives `Export` over
   a `t.TempDir()` repository created through `repo.Init` and `Create`
@@ -456,7 +460,7 @@ flowchart and the report says what happened to each page.
   explicit ids; `DryRun` with no writes; a cancelled context after the
   first page; one failing update → `Failed`, the rest written, the error
   returned
-- [ ] `golangci-lint` clean, including `funlen` on `Export` (split the tree
+- [x] `golangci-lint` clean, including `funlen` on `Export` (split the tree
   build, the reconcile, and the orphan pass into their own functions from
   the start)
 
@@ -487,14 +491,14 @@ and the consumer module proves the package is reachable from outside.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `cmd/git.go`: `GitResolver` gains `RemoteURL(ctx) string`, from
+- [x] `cmd/git.go`: `GitResolver` gains `RemoteURL(ctx) string`, from
   `git remote get-url origin` normalised to `https://github.com/<o>/<r>`
   from both the SSH and the HTTPS spellings with `.git` dropped, and
   `DefaultBranch(ctx) string` from `git symbolic-ref --short
   refs/remotes/origin/HEAD` with `main` as the fallback. `staticGit` gains
   both. A remote that is not GitHub-shaped yields `""` and every
   unexported link stays unresolved (Open Question 8)
-- [ ] `cmd/export.go`: an `export` parent command and the `confluence`
+- [x] `cmd/export.go`: an `export` parent command and the `confluence`
   subcommand with the DESIGN-0020 §6 flags (`--type` repeatable,
   `--force`, `--dry-run`, `--out`, `--format text|json`, `--strict`), the
   Long help naming the block, the variables, and the scopes.
@@ -505,34 +509,34 @@ and the consumer module proves the package is reachable from outside.
   `Version` from the binary's version, installs the hooks, and calls
   `(*Runner).ExportConfluence(ctx, opts)`, which is `confluence.Export`
   plus printing
-- [ ] `--out <dir>`: each page's body written as `<dir>/<id>.xhtml`
+- [x] `--out <dir>`: each page's body written as `<dir>/<id>.xhtml`
   alongside the run (and, with `--dry-run`, as the way to inspect a render
   without a write; Open Question 4 decides whether that needs credentials)
-- [ ] The text report in the §6 shape: one line per page with the action,
+- [x] The text report in the §6 shape: one line per page with the action,
   title, version, and URL, an indented `unresolved link:` line per link,
   and the totals line; `--format json` marshals the `Report` with
   snake_case field names
-- [ ] Exit codes: `0` for a run with no `Failed` page (skips included);
+- [x] Exit codes: `0` for a run with no `Failed` page (skips included);
   `1` when any page `Failed`, or under `--strict` when any was `Skipped`;
   `2` for `ConfigError`, `AuthError`, missing credentials, an unknown
   `--type`, or an id that resolves to nothing. `AuthError` is `2` and not
   `1` because its fix is configuration, which this task records in the
   design's exit-code paragraph (Phase 7)
-- [ ] `cmd/hooks.go`: `(*Runner).exportHooks()` maps `PageDone` and
+- [x] `cmd/hooks.go`: `(*Runner).exportHooks()` maps `PageDone` and
   `Request` to debug lines, installed with
   `cmd.SetContext(confluence.WithHooks(…))`, so `--verbose` narrates each
   request and each page
-- [ ] `cmd/export_test.go` (new; the frozen files are untouched): a
+- [x] `cmd/export_test.go` (new; the frozen files are untouched): a
   `Runner` with a fake `Client` injected through a package-level seam in
   the `runner` style, covering text and JSON output against goldens,
   each exit code, `--out`, `--strict`, `--dry-run`, a disabled block,
   missing credentials with the fake asserting zero calls, and `--verbose`
   reaching the logger
-- [ ] `test/consumer/consumer_v2_export_test.go`: `Render` over an inline
+- [x] `test/consumer/consumer_v2_export_test.go`: `Render` over an inline
   document and `Export` over `repoFixture` against a minimal fake `Client`
   defined in the test, asserting one `Created` per document;
   `test/consumer/doc.go` counts eighteen `pkg/` packages
-- [ ] `docz --help` lists `export`; `just parity` is green with no change,
+- [x] `docz --help` lists `export`; `just parity` is green with no change,
   since a new command is a permitted delta; `just ci` passes
 
 <!--docz:tasks:end-->
@@ -562,21 +566,35 @@ release run.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] **(human)** Create a **scoped** API token with
+- [x] **(human)** Create a **scoped** API token with
   `read:space:confluence`, `read:page:confluence`, and
   `write:page:confluence` and put it in `~/.config/docz/atlassian.env`
   as `ATLASSIAN_API_TOKEN`, keeping the unscoped one under another name
   for the comparison run
-- [ ] Confirm the scope list: a `--dry-run` with the scoped token either
+  - Done 2026-10-06. The runs on 2026-10-05 used the unscoped token; the
+    runs recorded on 2026-10-06 below used the scoped one
+- [x] Confirm the scope list: a `--dry-run` with the scoped token either
   reads every page or returns a `403` naming the missing scope. Record
   the final list here and correct DESIGN-0020 §5 and the README if it
   differs
-- [ ] `.docz.yaml`: enable the block (Open Question 6) with the scratch
+  - Done 2026-10-06: the list holds, so DESIGN-0020 §5 and the README
+    stand. A `--dry-run` read all 76 pages with no `403`, including the
+    orphan pass's `children` lists, so `read:space:confluence` and
+    `read:page:confluence` cover every read. The live run then updated six
+    pages and wrote their properties, and the run after it reported `76
+    pages: 76 unchanged`, so `write:page:confluence` covers page and property
+    writes
+- [x] `.docz.yaml`: enable the block (Open Question 6) with the scratch
   site, space `DOCZ`, parent `docz`, `api_pages: true`, and `exclude:
   [examples, archive]` in step with `api.exclude`
-- [ ] The `docs:` PR fixing DESIGN-0019's nested fence and the three
+- [x] The `docs:` PR fixing DESIGN-0019's nested fence and the three
   broken links has merged, so the link report below is a clean baseline
-- [ ] First full run: every document, both type index pages per enabled
+  - PR [#152](https://github.com/donaldgifford/docz/pull/152) fixes the
+    fence and four broken links (`docs/index.md`'s plan entry, DESIGN-0016's
+    DESIGN-0015 slug, `DEVELOPMENT.md`'s `deploy/README.md`); an offline
+    `--dry-run --out` over it reports no unresolved link. Merged
+    2026-10-06; the scoped-token runs report no unresolved link
+- [x] First full run: every document, both type index pages per enabled
   type, and the two additional docs are `Created` or, for the prototype's
   pages that carry its `{id, hash}` property shape, `Skipped` and then
   adopted under `--force`. In the browser: RUNBOOK-0001's tables are wide
@@ -586,17 +604,61 @@ release run.
   page's index table links to the pages beneath it; the banner names the
   source and links to GitHub; a `[!NOTE]` renders as a panel; an IMPL's
   task list renders with its checkboxes
-- [ ] Second run: every page `Unchanged`, and `--verbose` shows one
+  - Done 2026-10-05, unscoped token: `81 pages: 72 created, 4 skipped, 5
+    archived`. The four skips were the prototype's parent and its
+    DESIGN-0019, IMPL-0022, and RUNBOOK-0001 pages. That run found two bugs,
+    fixed with tests before going on. The prototype's `{id, hash}` property
+    read as "edited in Confluence (expected v-1)". The orphan pass also
+    archived the skipped pages along with the prototype's `Markdown rendering
+    specimen` and `TEST-0001` pages. `--force` then adopted the four
+    (`4 updated, 72 unchanged`), moving the three documents back out of
+    Archive. The two prototype test pages stay under Archive (parent page
+    65860)
+  - Browser checks done 2026-10-06, all passing: RUNBOOK-0001's tables are
+    wide with the page centred, DESIGN-0019's four and DESIGN-0020's three
+    diagrams draw with the source folded beneath, an INV-0019 anchor
+    scrolls, a cross-document link opens the right page, a type page's index
+    links to its pages, the banner names the source and links to GitHub, a
+    `[!NOTE]` is a panel, and an IMPL's tasks are checkboxes. Archive holds
+    only the two prototype test pages and INV-0020's, and the two additional
+    docs sit under the parent
+- [x] Second run: every page `Unchanged`, and `--verbose` shows one
   `FindPage` and one `Property` request per page and no `POST` or `PUT`
-- [ ] Edit one page in Confluence; a run reports it `Skipped` with both
+  - Done: `76 pages: 76 unchanged`, and `--verbose` logged 161 GETs: one
+    `GET /pages` (the title lookup) and one `GET /properties` per page, seven
+    `children` lists, `tenant_info` once, and `spaces` once. There were no
+    `POST` and no `PUT`. The run before this one found that the parent was
+    rewritten every run, because Confluence files it under the space homepage.
+    It also found the orphan pass reading the property of every page it had
+    just written. Both are fixed with tests
+- [x] Edit one page in Confluence; a run reports it `Skipped` with both
   versions; `--force` reports it `Updated` and the edit is gone
-- [ ] Add a scratch document on the branch, run, see it `Created`; delete
+  - Done: a hand edit to ADR-0001 (page 426032) through the API gave
+    `skipped ... edited in Confluence (v2, expected v1); use --force`, and
+    `--strict` exited 1. `--force` gave `updated ... v3`, and the page body no
+    longer holds the edit
+- [x] Add a scratch document on the branch, run, see it `Created`; delete
   it, run, see it `Archived` under `Archive`; restore it, run, see it
   `Updated` and back under its type page
-- [ ] The whole first-run check repeated with the unscoped token, with no
+  - Done with INV-0020 (page 492210, never committed). It was created at v1,
+    archived under Archive after the file was removed, then updated to v3 and
+    back under Investigations after it was restored. The scratch file is now
+    removed, and its page sits under Archive
+- [x] The whole first-run check repeated with the unscoped token, with no
   difference in the report
-- [ ] Anything the eye finds goes back into Phases 2 to 5 as a task with
+  - Done 2026-10-06 with the scoped token against the unscoped baseline.
+    After `main` brought in PR #152, the dry run and the live run each
+    reported `76 pages: 6 updated, 70 unchanged`: the parent, DESIGN-0016,
+    DESIGN-0019, DESIGN-0020, IMPL-0023, and the Development Guide, whose
+    sources had changed. The next run reported `76 pages: 76 unchanged`, as
+    the unscoped token's second run did. No request was refused
+- [x] Anything the eye finds goes back into Phases 2 to 5 as a task with
   a test before this phase is called done
+  - The runs found three bugs, each fixed with a test: a foreign property
+    was never edited or archived, the parent page stays where it is, and the
+    orphan pass skips known pages. The browser pass is deferred with the
+    first run's checks
+  - The browser pass on 2026-10-06 found nothing
 
 <!--docz:tasks:end-->
 
@@ -623,24 +685,24 @@ run on purpose, so the words describe behaviour that has been seen.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `README.md`: a `docz export confluence` row in the Commands table, a
+- [x] `README.md`: a `docz export confluence` row in the Commands table, a
   flags section beside `docz validate`'s, a `Sync` subsection under
   Configuration with the block, the two variables, how to create a scoped
   token and which scopes, that the Mermaid diagrams viewer must be
   installed on the site, and what `--force` does; the package table gains
   `pkg/export/confluence`
-- [ ] `CLAUDE.md`: a `pkg/export/confluence/` paragraph (renderer, client
+- [x] `CLAUDE.md`: a `pkg/export/confluence/` paragraph (renderer, client
   through the gateway, `Export`, hooks, typed errors, the full-export-only
   archive rule, the fixed `local-id` placeholder); the `config` paragraph's
   `SyncConfig`; the `cmd/` paragraph's `export.go` and `RemoteURL`; the
   parity paragraph's `sync` normaliser; the consumer module's eighteen
   packages; the layer-rule sentence on the scoped allow-list
-- [ ] `DEVELOPMENT.md`: the package in the layout section and
+- [x] `DEVELOPMENT.md`: the package in the layout section and
   `just export-live` beside the other local recipes
-- [ ] DESIGN-0020: amend §3 with the full-export-only archive rule, §6
+- [x] DESIGN-0020: amend §3 with the full-export-only archive rule, §6
   with `AuthError` as exit `2`, and §5 if Phase 6 changed the scope list,
   each as a dated note rather than a rewrite
-- [ ] `just validate` and `just ci` pass, and `git-cliff` regenerates the
+- [x] `just validate` and `just ci` pass, and `git-cliff` regenerates the
   changelog
 
 <!--docz:tasks:end-->
@@ -668,26 +730,41 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `charts/docz/Chart.yaml`: `version: 0.2.1`, `appVersion:
+- [x] `charts/docz/Chart.yaml`: `version: 0.2.1`, `appVersion:
   "2.0.0-beta.7"` (bare), with the chart CHANGELOG and README regenerated
   and the version test updated (Open Question 7)
-- [ ] Open the PR with `dont-release` and push; CI is green
+- [x] Open the PR with `dont-release` and push; CI is green
+  - PR [#153](https://github.com/donaldgifford/docz/pull/153) is open with
+    `dont-release`. Security Scan failed on advisories already on `main`:
+    GO-2026-6505 in the otel exporter, and GO-2026-6218, -6091, -6090, and
+    -6089 in Go 1.26.5's `net/url`, `html/template`, `crypto/tls`, and
+    `net/http`. On 2026-10-06 the branch bumped otel to v1.45.0 (the
+    `otlptracehttp` exporter included) and Go to 1.26.6 in all three
+    `go.mod` files, `mise.toml`, and `Dockerfile.api`. Every check passes on
+    `aa2dd50`
 - [ ] **(human)** Merge the PR **with a merge commit**
+  - **Deferred - human required**: PR [#153](https://github.com/donaldgifford/docz/pull/153)
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
   `just api release-check` pass
+  - **Deferred - human required**: runs on `main` after the merge
 - [ ] **(human)** `just release v2.0.0-beta.7` from the merge commit
+  - **Deferred - human required**
 - [ ] Follow RUNBOOK-0001 Procedure 2's verification steps and record each
   result here: the pre-release and its archives, both images at
   `2.0.0-beta.7` with `latest` not moved, `docz` 0.2.1 signed and attested
   with a bare `appVersion`, the deprecated charts skipped, ECR skipped
+  - **Deferred - human required**: needs the published tag
 - [ ] Replace RUNBOOK-0001's Last Verified row with this run
-- [ ] File the follow-ups as issues: Phase B (the docz-api job, its own
+  - **Deferred - human required**: needs the release run above
+- [x] File the follow-ups as issues: Phase B (the docz-api job, its own
   DESIGN); the Jira DESIGN (INV-0019 decision 8); page attachments for
   local images; `--prune`; an in-place update that keeps Confluence-side
   comments. Link rather than duplicate where #142 already covers one
+  - Filed 2026-10-05: Phase B [#154](https://github.com/donaldgifford/docz/issues/154), Jira [#155](https://github.com/donaldgifford/docz/issues/155), image attachments [#156](https://github.com/donaldgifford/docz/issues/156), `--prune` [#157](https://github.com/donaldgifford/docz/issues/157), comment-preserving updates [#158](https://github.com/donaldgifford/docz/issues/158). #142 is closed and covered none of them
 - [ ] `docz status set impl IMPL-0023 Completed` and
   `docz status set design DESIGN-0020 Implemented`, then `docz update`,
   through a branch and PR
+  - **Deferred - human required**: only true once the beta ships
 
 <!--docz:tasks:end-->
 
@@ -734,21 +811,24 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Config: one case per validation rule, dormancy, `ParseBytes` ≡
+- [x] Config: one case per validation rule, dormancy, `ParseBytes` ≡
   `Load`, the JSON shape, and the parity normaliser (Phase 1)
-- [ ] Renderer goldens for every §2 row, the 38-fixture and seven-template
+- [x] Renderer goldens for every §2 row, the 38-fixture and seven-template
   corpus, the invariants, and `FuzzRender` (Phase 2)
-- [ ] `HTTPClient` against `httptest`: request shapes, decoding,
+- [x] `HTTPClient` against `httptest`: request shapes, decoding,
   pagination, the cloud id fetched once, 401, 409, and 429 (Phase 3)
-- [ ] `Export` against the fake through every flowchart arm, the orphan
+- [x] `Export` against the fake through every flowchart arm, the orphan
   rules, `api_pages`, `DryRun`, cancellation, and a failing request
   (Phase 4)
-- [ ] `cmd/export_test.go` output goldens and exit codes, and `just
+- [x] `cmd/export_test.go` output goldens and exit codes, and `just
   test-consumer` with the new package (Phase 5)
-- [ ] The live run over this repository, recorded in Phase 6, with both
+- [x] The live run over this repository, recorded in Phase 6, with both
   token kinds
+  - Done: the unscoped runs on 2026-10-05 and the scoped runs on 2026-10-06
 - [ ] `just ci` green on the PR, and the published beta.7 artifacts
   verified by RUNBOOK-0001 Procedure 2 (Phase 8)
+  - CI is green on `aa2dd50` (2026-10-06). **Deferred - human required**:
+    the release and RUNBOOK-0001 Procedure 2
 
 <!--docz:testing:end-->
 

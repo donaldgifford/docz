@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
+	"github.com/donaldgifford/docz/v2/pkg/export/confluence"
 )
 
 // hooks returns the repo.Hooks that narrate an operation onto this
@@ -41,6 +42,20 @@ func (r *Runner) hooks() *repo.Hooks {
 		},
 		FileSkipped: func(path string, reason repo.SkipReason) {
 			r.Logger.Debug("file skipped", "path", path, "reason", reason.String())
+		},
+	}
+}
+
+// exportHooks narrates a Confluence export onto the logger at debug level:
+// one line per HTTP response and one per page. The request line carries the
+// method, path, and status and nothing else, so no credential can reach it.
+func (r *Runner) exportHooks() *confluence.Hooks {
+	return &confluence.Hooks{
+		Request: func(method, path string, status int) {
+			r.Logger.Debug("confluence request", "method", method, "path", path, "status", status)
+		},
+		PageDone: func(p confluence.PageResult) {
+			r.Logger.Debug("page done", "title", p.Title, "action", p.Action.String(), "page_id", p.PageID, "version", p.Version)
 		},
 	}
 }
