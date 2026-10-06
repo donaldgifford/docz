@@ -45,6 +45,7 @@ created: 2026-10-06
   - [11. If adding an inline comment bumps a page's version, what counts as an edit?](#11-if-adding-an-inline-comment-bumps-a-pages-version-what-counts-as-an-edit)
   - [12. How does the operator say where the server may write?](#12-how-does-the-operator-say-where-the-server-may-write)
   - [13. What happens to a repository's pages when its block is disabled or the App is uninstalled?](#13-what-happens-to-a-repositorys-pages-when-its-block-is-disabled-or-the-app-is-uninstalled)
+- [Decisions](#decisions)
 - [References](#references)
 <!--toc:end-->
 
@@ -53,9 +54,11 @@ created: 2026-10-06
 
 docz-api exports every repository that opts in to Confluence Cloud. It runs
 the export as a queue job after each ingest, with no checkout, from the rows
-Postgres already holds. Many repositories can share one space: each one gets
-a Confluence folder named after it, with its `docs_dir` rendered inside, and
-every page title in it starts with the folder's name. The sync is one-way.
+Postgres already holds. Each repository names its own space, and spaces are
+not assigned one to a repository: a space may hold one repository or
+several. Each repository gets a Confluence folder named after it, with its
+`docs_dir` rendered inside, and every page title in it starts with the
+folder's name, so repositories can share a space when that is wanted. The sync is one-way.
 The repository is the source of truth, Confluence edits are overwritten, inline
 comments are carried across the overwrite, and pages are archived, never
 deleted. This is Phase B of DESIGN-0020 (issue #154), and it follows the
@@ -71,9 +74,11 @@ decisions recorded in INV-0020.
 - docz-api runs `confluence.Export` for every repository whose `.docz.yaml`
   enables `sync.confluence` and names a space the server allows, without a
   checkout.
-- Many repositories share one space. Each gets a folder holding a home page,
-  its type pages, its documents, its additional docs, and its own `Archive`.
-  No title collides with another repository's.
+- Each repository chooses its space. One space may hold one repository or
+  many, and a deployment may write to any number of allowed spaces. Each
+  repository gets a folder holding a home page, its type pages, its
+  documents, its additional docs, and its own `Archive`, and no title
+  collides with another repository's in the same space.
 - Exports run after a successful ingest, coalesced per repository and
   retried like ingest. An export failure never fails an ingest.
 - The server overwrites edits made in Confluence, keeps inline comments
@@ -191,8 +196,13 @@ it.
 
 ### 2. The space layout
 
-Each repository's pages live in one Confluence folder. With
-`layout: folder`, the default (question 1):
+Each repository's pages live in one Confluence folder in the space its
+`.docz.yaml` names. Sharing a space is a capability, not a requirement: ten
+repositories may point at one space, each may have its own, or any mix, and
+the layout is the same either way. A repository alone in its space still
+gets its folder and prefixed titles, so another can join that space later
+without anything being renamed. With `layout: folder`, the default
+(question 1), a space holding two repositories looks like this:
 
 ```text
 DOCZ (space)
@@ -505,8 +515,11 @@ API reports every repository's sync as `disabled on this server`. When it
 is set, `CONFLUENCE_SITE` and a non-empty `CONFLUENCE_SPACES` are required,
 and `Load` reports a missing one with the other configuration errors.
 
-A repository whose `sync.confluence.site` is not `CONFLUENCE_SITE`, or
-whose `space` is not in the list, is `refused`. That is recorded with the
+`CONFLUENCE_SPACES` lists every space the server may write to, not one
+space per repository: any number of repositories may name any space in the
+list, and a deployment may serve several spaces at once. A repository whose
+`sync.confluence.site` is not `CONFLUENCE_SITE`, or whose `space` is not in
+the list, is `refused`. That is recorded with the
 reason, logged at warn, and not retried. The repository's owners chose the
 space in their `.docz.yaml`. The operator chooses which spaces the server
 lends its credential to, and a repository cannot widen that.
@@ -827,7 +840,7 @@ in.
    docz-site link.
 5. **Chart and operations.** The chart values and alert, `contrib/`, and a
    runbook procedure for granting a space. Then a live server run with two
-   repositories sharing the `DOCZ` space.
+   repositories sharing the `DOCZ` space and a third in a space of its own.
 
 **This repository's own block.** `.docz.yaml` sets `parent: docz` today,
 and its 76 pages sit under the `docz` page on the scratch site. Phase 1
@@ -867,6 +880,8 @@ that repository's exports; its pages stay, and its sync reports
   repository the server syncs.
 - d. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 2. What does a reader see when they open the repository's folder?
 
 - a. **A home page inside the folder, titled with the folder's name, as
@@ -880,6 +895,8 @@ that repository's exports; its pages stay, and its sync reports
 - c. No home page: the folder lists the type pages directly, and the
   landing page is exported only as an additional doc.
 - d. Other.
+
+> **Resolved 2026-10-06: (a).**
 
 ### 3. Does the server's overwrite also adopt pages docz did not write?
 
@@ -896,6 +913,8 @@ that repository's exports; its pages stay, and its sync reports
   nobody else should be writing there.
 - d. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 4. Does the CLI read through `fs.FS` as well?
 
 - a. **Yes: a nil `FS` is `os.DirFS(rp.Root)`, so there is one planning
@@ -905,6 +924,8 @@ that repository's exports; its pages stay, and its sync reports
 - b. No: `FS` is a second path taken only when set, and the CLI keeps
   `rp.List`. Lower risk to the CLI, but two planners that can drift.
 - c. Other.
+
+> **Resolved 2026-10-06: (a).**
 
 ### 5. When is an export enqueued?
 
@@ -919,6 +940,8 @@ that repository's exports; its pages stay, and its sync reports
   edits are reverted even in a quiet repository.
 - d. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 6. What happens to an ingest that commits while its repository's export is running?
 
 - a. **The running export compares the head SHA it exported with
@@ -930,6 +953,8 @@ that repository's exports; its pages stay, and its sync reports
 - c. Make the task id include the head SHA, so each ingest enqueues its
   own export, and serialise exports per repository with a Redis lock.
 - d. Other.
+
+> **Resolved 2026-10-06: (a).**
 
 ### 7. What happens when two repositories want the same folder title?
 
@@ -946,6 +971,8 @@ that repository's exports; its pages stay, and its sync reports
   name depends on which exported first.
 - d. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 8. What are the server's credential variables called?
 
 - a. **`CONFLUENCE_SITE`, `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`,
@@ -958,6 +985,8 @@ that repository's exports; its pages stay, and its sync reports
   Jira later.
 - c. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 9. Which failed runs are retried?
 
 - a. **By cause, per the table in §5:** transient request failures retry,
@@ -967,6 +996,8 @@ that repository's exports; its pages stay, and its sync reports
   401 or a malformed document is retried five times to the same result.
 - c. Never retry; the next ingest is the retry.
 - d. Other.
+
+> **Resolved 2026-10-06: (a).**
 
 ### 10. Is #158 (inline comments) built under this design?
 
@@ -980,6 +1011,8 @@ that repository's exports; its pages stay, and its sync reports
 - c. Ship the server job without it and accept orphaned inline comments
   until #158 lands.
 - d. Other.
+
+> **Resolved 2026-10-06: (a).**
 
 ### 11. If adding an inline comment bumps a page's version, what counts as an edit?
 
@@ -996,6 +1029,8 @@ this question closes.
   read for every page whose version moved.
 - c. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 12. How does the operator say where the server may write?
 
 - a. **One site, `CONFLUENCE_SITE`, and a list of space keys,
@@ -1009,6 +1044,8 @@ this question closes.
   decision 4 rejected.
 - d. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 ### 13. What happens to a repository's pages when its block is disabled or the App is uninstalled?
 
 - a. **Nothing.** The pages stay where they are, their properties still
@@ -1019,7 +1056,32 @@ this question closes.
   folder, so active and inactive repositories are told apart in the tree.
 - c. Other.
 
+> **Resolved 2026-10-06: (a).**
+
 <!--docz:open-questions:end-->
+
+<!--docz:decisions:start-->
+## Decisions
+
+Resolved 2026-10-06, numbered as the questions above:
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | Layout selection | (a) An explicit `layout` key, `folder` by default, honoured the same by the CLI and the server |
+| 2 | The folder's home page | (a) A home page titled with the folder's name as the folder's first child |
+| 3 | Server overwrite vs adoption | (a) A separate `Overwrite` option for the server; `Force` alone adopts |
+| 4 | CLI reads through `fs.FS` | (a) The CLI reads through `os.DirFS`, one planning path |
+| 5 | When an export is enqueued | (a) An export after every successful ingest of an enabled repository |
+| 6 | Ingest during a running export | (a) The export re-runs while the repository's head SHA moves, at most three times |
+| 7 | Folder title collisions | (a) The folder defaults to the repository name; another repository's folder is a `ConfigError` |
+| 8 | Credential variable names | (a) `CONFLUENCE_SITE`, `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`, `CONFLUENCE_SPACES` |
+| 9 | Retry policy | (a) Retries by cause, per §5 |
+| 10 | #158 under this design | (a) #158 is built under this design, before the server job |
+| 11 | Inline comments and the page version | (a) A version bump is an edit, whatever caused it |
+| 12 | The allow-list's shape | (a) One site and a list of allowed spaces |
+| 13 | Disabled or uninstalled repositories | (a) Nothing happens to a disabled or uninstalled repository's pages |
+
+<!--docz:decisions:end-->
 
 <!--docz:references:start-->
 ## References
