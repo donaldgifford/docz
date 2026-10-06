@@ -42,9 +42,9 @@ created: 2026-10-01
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-| 2026-10-01 | #143 | 58ed6be | @donaldgifford |
+| 2026-10-06 | #153 | 8e18d11 | @donaldgifford |
 
-**Notes:** Procedures 1 and 2 run for `v2.0.0-beta.6`; Install and
+**Notes:** Procedures 1 and 2 run for `v2.0.0-beta.7`; Install and
 smoke-test was not run, since the installed test is the v2.0.0
 environment swap (#147). The steps needed no fixes. The deprecated
 charts' publish jobs report success because the idempotency check skips

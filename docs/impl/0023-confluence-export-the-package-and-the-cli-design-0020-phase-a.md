@@ -1,7 +1,7 @@
 ---
 id: IMPL-0023
 title: "Confluence export: the package and the CLI (DESIGN-0020 Phase A)"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-10-05
 ---
@@ -742,29 +742,37 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
     `otlptracehttp` exporter included) and Go to 1.26.6 in all three
     `go.mod` files, `mise.toml`, and `Dockerfile.api`. Every check passes on
     `aa2dd50`
-- [ ] **(human)** Merge the PR **with a merge commit**
-  - **Deferred - human required**: PR [#153](https://github.com/donaldgifford/docz/pull/153)
-- [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
+- [x] **(human)** Merge the PR **with a merge commit**
+  - PR [#153](https://github.com/donaldgifford/docz/pull/153) merged as
+    `8e18d11` on 2026-10-06
+- [x] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
   `just api release-check` pass
-  - **Deferred - human required**: runs on `main` after the merge
-- [ ] **(human)** `just release v2.0.0-beta.7` from the merge commit
-  - **Deferred - human required**
-- [ ] Follow RUNBOOK-0001 Procedure 2's verification steps and record each
+  - Both pass on `8e18d11`
+- [x] **(human)** `just release v2.0.0-beta.7` from the merge commit
+  - The annotated tag points at `8e18d11`
+- [x] Follow RUNBOOK-0001 Procedure 2's verification steps and record each
   result here: the pre-release and its archives, both images at
   `2.0.0-beta.7` with `latest` not moved, `docz` 0.2.1 signed and attested
   with a bare `appVersion`, the deprecated charts skipped, ECR skipped
-  - **Deferred - human required**: needs the published tag
-- [ ] Replace RUNBOOK-0001's Last Verified row with this run
-  - **Deferred - human required**: needs the release run above
+  - Done 2026-10-06. `prerelease.yml` run 37453263399 succeeded, with
+    only the three ECR jobs and the chart component's image job skipped.
+    The release is `prerelease=true` with the eight `docz_*` and
+    `docz-api_*` archives, each with its `.spdx.json`, and `checksums.txt`
+    with its `.sig`. `docz-api:2.0.0-beta.7` is `sha256:a24b0866…` and
+    `docz-site:2.0.0-beta.7` is `sha256:6ddf608e…`, and neither `latest`
+    moved. `charts/docz` 0.2.1 has a bare `appVersion: 2.0.0-beta.7`, a
+    cosign signature, and SLSA provenance. The deprecated `docz-api` 0.10.0
+    and `docz-site` 0.3.0 chart jobs logged `already published, skipping`
+- [x] Replace RUNBOOK-0001's Last Verified row with this run
 - [x] File the follow-ups as issues: Phase B (the docz-api job, its own
   DESIGN); the Jira DESIGN (INV-0019 decision 8); page attachments for
   local images; `--prune`; an in-place update that keeps Confluence-side
   comments. Link rather than duplicate where #142 already covers one
   - Filed 2026-10-05: Phase B [#154](https://github.com/donaldgifford/docz/issues/154), Jira [#155](https://github.com/donaldgifford/docz/issues/155), image attachments [#156](https://github.com/donaldgifford/docz/issues/156), `--prune` [#157](https://github.com/donaldgifford/docz/issues/157), comment-preserving updates [#158](https://github.com/donaldgifford/docz/issues/158). #142 is closed and covered none of them
-- [ ] `docz status set impl IMPL-0023 Completed` and
+- [x] `docz status set impl IMPL-0023 Completed` and
   `docz status set design DESIGN-0020 Implemented`, then `docz update`,
   through a branch and PR
-  - **Deferred - human required**: only true once the beta ships
+  - Done 2026-10-06, after `v2.0.0-beta.7` shipped
 
 <!--docz:tasks:end-->
 
@@ -825,10 +833,9 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 - [x] The live run over this repository, recorded in Phase 6, with both
   token kinds
   - Done: the unscoped runs on 2026-10-05 and the scoped runs on 2026-10-06
-- [ ] `just ci` green on the PR, and the published beta.7 artifacts
+- [x] `just ci` green on the PR, and the published beta.7 artifacts
   verified by RUNBOOK-0001 Procedure 2 (Phase 8)
-  - CI is green on `aa2dd50` (2026-10-06). **Deferred - human required**:
-    the release and RUNBOOK-0001 Procedure 2
+  - CI is green on `aa2dd50`, and Procedure 2 passed on 2026-10-06
 
 <!--docz:testing:end-->
 
