@@ -1,7 +1,7 @@
 ---
 id: INV-0020
 title: "docz-api Confluence export: running confluence.Export without a checkout"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-06
 ---
@@ -25,8 +25,10 @@ created: 2026-10-06
   - [Observation 6: links and the banner need the repository, not a remote](#observation-6-links-and-the-banner-need-the-repository-not-a-remote)
   - [Observation 7: titles are unique across the whole space, and folders need their own scopes](#observation-7-titles-are-unique-across-the-whole-space-and-folders-need-their-own-scopes)
   - [Observation 8: overwriting a page body orphans its inline comments](#observation-8-overwriting-a-page-body-orphans-its-inline-comments)
+  - [Observation 9: a folder works as the repository's container](#observation-9-a-folder-works-as-the-repositorys-container)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
+  - [Decisions](#decisions)
   - [1. How does Export get its inputs without a checkout?](#1-how-does-export-get-its-inputs-without-a-checkout)
   - [2. Where do the inputs come from?](#2-where-do-the-inputs-come-from)
   - [3. What triggers an export?](#3-what-triggers-an-export)
@@ -226,6 +228,34 @@ still appears. That is issue
 [#158](https://github.com/donaldgifford/docz/issues/158), filed as a
 follow-up to Phase A; for Phase B it is a prerequisite.
 
+### Observation 9: a folder works as the repository's container
+
+Retested on 2026-10-06 with a token that adds the folder scopes
+(`read:folder:confluence`, `write:folder:confluence`) and delete:
+
+| Request | Result |
+| ------- | ------ |
+| Create a folder (`POST /folders`) under a page | `200`; the folder's `parentType` is `page` |
+| Create a second folder with the same title | `400`: "A folder exists with the same title in this space" |
+| Create a page with the folder's title | `200`: pages and folders do not share title uniqueness |
+| Create a page inside the folder | `200`; the page's `parentType` is `folder` |
+| `POST` then `GET /folders/{id}/properties` | `200`: folders carry content properties |
+| `GET /pages/{id}/children` | `200`, as in Phase A |
+| `GET /folders/{id}/direct-children`, `/descendants`, `GET /pages/{id}/direct-children` | `401`: "scope does not match" |
+| `DELETE /pages/{id}`, `DELETE /folders/{id}` | `204` |
+
+So a folder can be the container. It can carry a `docz` property, so docz
+can recognise a folder it made, and pages can live inside it. Folder titles
+are unique per space as page titles are, so two repositories with the same
+name under different owners would collide on the folder title. Pages inside
+a folder still need their titles prefixed with the repository name
+(Observation 7). The one gap is listing a folder's children: the v2
+endpoints that can return folder children ask for a scope the token lacks,
+probably `read:hierarchical-content:confluence`. This is unconfirmed. Phase
+A's `/pages/{id}/children` lists only pages, so the archive pass over a
+folder needs one of these endpoints or a CQL search by ancestor. The test
+folder and pages were deleted afterwards.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -260,6 +290,28 @@ docz in the repository is always the source of truth, as it is for the API.
 Confluence edits are overwritten, but comments must not be lost, and pages
 are archived, never deleted. Questions 5, 9, and 11 are written to that
 direction.
+
+### Decisions
+
+Decided on 2026-10-06:
+
+| Question | Decision |
+| -------- | -------- |
+| 1 | (a), but only as an experiment: the byte-input path needs close watching and testing once the code is in |
+| 2 | (a) |
+| 3 | (a) |
+| 4 | (a) |
+| 5 | (b): one Confluence folder per repository, named after it, holding `docs_dir`. It works like `index.md`, a home for the repository. Titles inside still carry the repository prefix, because uniqueness is space-wide (Observation 9) |
+| 6 | (a) |
+| 7 | (a) |
+| 8 | (a) |
+| 9 | (a) on the server. The CLI keeps skipping edited pages but warns about each one: `WARNING: ADR-0001 was edited in Confluence (v4, expected v3); not overwritten, use --force` |
+| 10 | (a) |
+| 11 | (a), built as #158. It is larger work and lands before the server job |
+
+Listing a folder's children needs one more scope, probably
+`read:hierarchical-content:confluence`. The DESIGN confirms it or uses a CQL
+search instead (Observation 9).
 
 ### 1. How does Export get its inputs without a checkout?
 
