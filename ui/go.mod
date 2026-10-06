@@ -6,4 +6,4 @@
 // its boundary.
 module github.com/donaldgifford/docz/v2/ui
 
-go 1.26.5
+go 1.26.6
