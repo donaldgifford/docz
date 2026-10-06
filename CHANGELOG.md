@@ -24,6 +24,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(export/confluence)* A foreign docz property is never edited or archived
 - *(export/confluence)* Leave the parent page where it is, and skip known pages when hunting orphans
+- *(otel)* Bump to 1.45.0
 
 ### Documentation
 
