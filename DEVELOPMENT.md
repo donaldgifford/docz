@@ -1010,7 +1010,7 @@ headings demoted one level. Its recipes are the `api` just module: read each
 
 Everything a new developer needs to build, run, and test docz-api locally. For
 deploying the full stack to a real host, see
-[deploy/README.md](deploy/README.md).
+[deploy/api/README.md](deploy/api/README.md).
 
 ### Prerequisites
 
@@ -1102,13 +1102,13 @@ login via `/auth/login?provider=github` to exercise those routes. The probes,
 spec, and metrics endpoints above are public. Ingestion (webhooks) additionally
 needs a GitHub App (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,
 `GITHUB_WEBHOOK_SECRET`) — permissions, events, and setup steps are in
-[deploy/README.md](deploy/README.md#github-app-setup-ingestion); the `-onboard`
+[deploy/api/README.md](deploy/api/README.md#github-app-setup-ingestion); the `-onboard`
 flag is the manual fallback that skips webhooks.
 
 For local dev, **use one GitHub App for both**: the same app that delivers
 webhooks can be the OAuth login provider (callback URL + client secret + email
 permission — see
-[deploy/README.md](deploy/README.md#site-login-reuse-the-github-app-or-a-separate-oauth-app)),
+[deploy/api/README.md](deploy/api/README.md#site-login-reuse-the-github-app-or-a-separate-oauth-app)),
 so you only ever create and configure a single dev app.
 
 When you are done:
@@ -1132,7 +1132,7 @@ just dev-tunnel
 ```
 
 Paste the printed URL into your GitHub App's **Webhook URL** setting (see
-[deploy/README.md](deploy/README.md#github-app-setup-ingestion) for the full app
+[deploy/api/README.md](deploy/api/README.md#github-app-setup-ingestion) for the full app
 configuration). The tunnel targets the **host's** `:8080`, so start the service
 (`just run`) for deliveries to land. Inspect and replay deliveries at
 <http://localhost:4040>.
@@ -1182,8 +1182,8 @@ both claim `:8080`/`:4040`, so `just dev-down` before `just local-up` (and vice
 versa). Rebuild + restart after code changes is just `just local-up` again.
 
 There is also the production-shaped reference deployment in
-`deploy/compose.yaml` (`.env.production`, restart policies, no tunnel) —
-`deploy/README.md` covers that layout, secrets handling, and
+`deploy/api/compose.yaml` (`.env.production`, restart policies, no tunnel) —
+`deploy/api/README.md` covers that layout, secrets handling, and
 health/observability endpoints in detail.
 
 #### Local monitoring stack (`just monitor-up`)
