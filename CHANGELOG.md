@@ -11,6 +11,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Add a temporary README line to check CI path filtering
 - Remove the temporary CI path-filter README line
 - *(inv-0020)* Docz-api Confluence export without a checkout
+- *(inv-0020)* Shared spaces, one-way sync, and the title test
 
 ### Miscellaneous Tasks
 
