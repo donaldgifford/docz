@@ -733,14 +733,15 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
 - [x] `charts/docz/Chart.yaml`: `version: 0.2.1`, `appVersion:
   "2.0.0-beta.7"` (bare), with the chart CHANGELOG and README regenerated
   and the version test updated (Open Question 7)
-- [ ] Open the PR with `dont-release` and push; CI is green
+- [x] Open the PR with `dont-release` and push; CI is green
   - PR [#153](https://github.com/donaldgifford/docz/pull/153) is open with
-    `dont-release`. Every check passes except Security Scan, where
-    govulncheck reports GO-2026-6505 (otel exporter and sdk v1.44.0, fixed
-    in v1.45.0) and GO-2026-6218 (`net/url` in Go 1.26.5, fixed in 1.26.6).
-    Both are on `main` too; this branch introduces neither. **Deferred - human required**: a
-    `chore(deps)` bump of otel and the Go toolchain is
-    a separate decision
+    `dont-release`. Security Scan failed on advisories already on `main`:
+    GO-2026-6505 in the otel exporter, and GO-2026-6218, -6091, -6090, and
+    -6089 in Go 1.26.5's `net/url`, `html/template`, `crypto/tls`, and
+    `net/http`. On 2026-10-06 the branch bumped otel to v1.45.0 (the
+    `otlptracehttp` exporter included) and Go to 1.26.6 in all three
+    `go.mod` files, `mise.toml`, and `Dockerfile.api`. Every check passes on
+    `aa2dd50`
 - [ ] **(human)** Merge the PR **with a merge commit**
   - **Deferred - human required**: PR [#153](https://github.com/donaldgifford/docz/pull/153)
 - [ ] Follow RUNBOOK-0001 Procedure 1 on `main`: `just release-check` and
@@ -826,7 +827,8 @@ since its `config.ParseBytes` now merely accepts a `sync:` block.
   - Done: the unscoped runs on 2026-10-05 and the scoped runs on 2026-10-06
 - [ ] `just ci` green on the PR, and the published beta.7 artifacts
   verified by RUNBOOK-0001 Procedure 2 (Phase 8)
-  - **Deferred - human required**: govulncheck's two advisories from `main`, and the release
+  - CI is green on `aa2dd50` (2026-10-06). **Deferred - human required**:
+    the release and RUNBOOK-0001 Procedure 2
 
 <!--docz:testing:end-->
 
