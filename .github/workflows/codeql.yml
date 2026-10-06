@@ -5,8 +5,18 @@ name: CodeQL
 on:
   push:
     branches: [main]
+  # On a PR, only when there is code to analyze: Go for the go language,
+  # ui/ for javascript-typescript. A docs or chart PR has neither. Pushes to
+  # main and the weekly schedule still analyze everything.
   pull_request:
     branches: [main]
+    paths:
+      - '**/*.go'
+      - '**/go.mod'
+      - '**/go.sum'
+      - 'ui/**'
+      - '.github/codeql/**'
+      - '.github/workflows/codeql.yml'
   schedule:
     # Mondays at 0000 — same slot as security.yml's grype scan.
     - cron: "0 0 * * 1"

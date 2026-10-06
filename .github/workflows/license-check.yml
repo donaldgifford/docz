@@ -5,8 +5,15 @@ name: License Check
 on:
   push:
     branches: [main]
+  # go-licenses reads the module graph, which only a go.mod or go.sum change
+  # can alter. Every push to main still runs it.
   pull_request:
     branches: [main]
+    paths:
+      - '**/go.mod'
+      - '**/go.sum'
+      - '.github/licenses-csv.tpl'
+      - '.github/workflows/license-check.yml'
 
 permissions:
   contents: read

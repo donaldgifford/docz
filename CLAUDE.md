@@ -172,11 +172,31 @@ the move changed about the repository.
   release, before the tag, and its `appVersion` is bare semver.
 - **CI stays path-filtered** (ADR-0004 OQ 4, revisited as DESIGN-0017 OQ 7).
   The `ui` and `ui-e2e` jobs run on `ui/**`, `Dockerfile.ui`, and
-  `api/openapi.yaml`, so a spec change runs both halves; the Go jobs are
-  unfiltered. **Revisit the filter the moment a Go change can break the UI
-  other than through the spec** — an `//go:embed` of `ui/dist`, a shared
-  generated file, a Go test that reads `ui/`. Until then the UI reaches the
-  server only over the specced HTTP surface.
+  `api/openapi.yaml`, so a spec change runs both halves. **Revisit the filter
+  the moment a Go change can break the UI other than through the spec** — an
+  `//go:embed` of `ui/dist`, a shared generated file, a Go test that reads
+  `ui/`. Until then the UI reaches the server only over the specced HTTP
+  surface.
+- **The Go jobs are path-filtered on PRs too** (reversing the "Go jobs are
+  unfiltered" choice above). `dont-release` is on every v2 PR, Go or not, so
+  the paths decide: Lint, Test Go, Security Scan, and Build run when the
+  `changes` job's `go` filter matches, and Security Scan also on `ui` (Trivy
+  scans its lockfile). The `go` filter is every Go *input*, not just `*.go`:
+  `pkg/**` (embedded templates and schemas), `cmd/**`, `internal/**`,
+  `api/**`, `test/**` (parity fixtures, goldens), `**/go.{mod,sum}`, the
+  justfiles, `.golangci.yml`, `.goreleaser.yml`, `mise.toml`, `sqlc.yaml`,
+  and `ci.yml` itself. **Widen it when a Go job starts reading a new
+  path.** Every push to `main` runs them unfiltered. One job, **Docs and
+  repository checks**, runs on every PR: `just validate` plus `go test
+  ./pkg/doczcore/repo/... ./test/archive/...`, because those two read the
+  real tree (the migration test runs over `docs/`, `test/archive` scans every
+  tracked file and `.docz.yaml`), so a docs-only PR can break them. Add any
+  new test that reads the real tree to that job. CodeQL runs on PRs only for
+  Go or `ui/` changes, and the licence check only for `go.mod`/`go.sum`. No
+  check is required on `main`, so a skipped job never blocks a merge. Every
+  job that runs `goreleaser-action` installs cosign first, so the action
+  verifies the signature on the GoReleaser it downloads; the release itself
+  is still GPG-signed.
 
 ## Helm chart (`charts/docz`)
 

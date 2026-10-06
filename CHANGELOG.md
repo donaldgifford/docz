@@ -9,6 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Record v2.0.0-beta.7 and close IMPL-0023
 
+### Miscellaneous Tasks
+
+- *(ci)* Path-filter the Go jobs and verify GoReleaser with cosign
+
 ## [2.0.0-beta.7] - 2026-10-06
 
 ### Features
