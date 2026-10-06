@@ -59,6 +59,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0023)* Record Phase 8's filed follow-ups and the steps left for a person
 - *(impl-0023)* Record PR #153's CI result
 - *(impl-0023)* Tick the testing plan and mark what waits on a person
+- Fix DESIGN-0019's nested fence and four broken links
+- *(impl-0023)* Record the scoped-token runs and the browser pass
 
 ### Testing
 
