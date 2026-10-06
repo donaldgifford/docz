@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0020
 title: "Confluence export: docz documents as Confluence Cloud pages"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-10-05
 ---
