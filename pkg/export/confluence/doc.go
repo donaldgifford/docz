@@ -26,7 +26,9 @@
 //     confluence/<cloudId>, which takes scoped and unscoped API tokens
 //     alike. Its errors are typed (AuthError, ConflictError, RequestError)
 //     and never carry a credential.
-//   - Export reads a repository through repo.Repo, plans the page tree
+//   - Export takes its configuration from a repo.Repo and every byte from
+//     ExportOptions.FS (os.DirFS of the root when nil), so a server with a
+//     fetched tree and no checkout plans the same tree. It plans the page tree
 //     (the parent page, one page per type carrying the type's README index,
 //     the documents under their type, the api: pages when
 //     sync.confluence.api_pages is on), and reconciles each page: create,
