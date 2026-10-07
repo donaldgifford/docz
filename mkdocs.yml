@@ -84,6 +84,7 @@ nav:
         - Overview: runbook/README.md
         - 'RUNBOOK-0001: Cut a v2 beta release': runbook/0001-cut-a-v2-beta-release.md
         - 'RUNBOOK-0002: docz-api webhook deliveries fail': runbook/0002-docz-api-webhook-deliveries-fail.md
+        - 'RUNBOOK-0003: Enable Confluence export on docz-api': runbook/0003-enable-confluence-export-on-docz-api.md
 plugins:
     - techdocs-core
 site_description: Documentation for docz

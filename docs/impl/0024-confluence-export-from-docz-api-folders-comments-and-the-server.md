@@ -660,7 +660,7 @@ in its own, and `v2.0.0-beta.8` ships it.
   `tests/api/prometheusrule_test.yaml`, and
   `contrib/prometheus/alerts.yaml`; `just api lint-alerts` passes;
   `contrib/README.md` lists the three new metrics
-- [ ] A new runbook, "Enable Confluence export on docz-api" (see Open
+- [x] A new runbook, "Enable Confluence export on docz-api" (see Open
   Question 7): creating the token with its six scopes, the four
   variables and chart values, adding a space to the allow-list, reading
   `GET …/confluence`, and what each status means. Its Last Verified row

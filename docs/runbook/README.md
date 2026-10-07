@@ -42,4 +42,5 @@ Runbooks ship disabled. Turn them on with `types.runbook.enabled: true` in
 |----|-------|--------|------|--------|------|
 | RUNBOOK-0001 | Cut a v2 beta release | Active | 2026-10-01 | Donald Gifford | [0001-cut-a-v2-beta-release.md](0001-cut-a-v2-beta-release.md) |
 | RUNBOOK-0002 | docz-api webhook deliveries fail | Draft | 2026-10-01 | Donald Gifford | [0002-docz-api-webhook-deliveries-fail.md](0002-docz-api-webhook-deliveries-fail.md) |
+| RUNBOOK-0003 | Enable Confluence export on docz-api | Draft | 2026-10-07 | Donald Gifford | [0003-enable-confluence-export-on-docz-api.md](0003-enable-confluence-export-on-docz-api.md) |
 <!-- END DOCZ AUTO-GENERATED -->
