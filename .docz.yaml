@@ -108,7 +108,7 @@ sync:
     enabled: true # docz export confluence (IMPL-0023); credentials come from the environment
     site: https://dgifford06.atlassian.net
     space: DOCZ
-    parent: docz
+    layout: folder # a docz folder at the top of DOCZ (DESIGN-0021); no parent
     api_pages: true # the api: landing page and additional docs ride along
     exclude:
       - examples # in step with api.exclude
