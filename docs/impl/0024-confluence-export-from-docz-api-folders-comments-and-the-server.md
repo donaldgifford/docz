@@ -668,7 +668,7 @@ in its own, and `v2.0.0-beta.8` ships it.
 - [x] README, CLAUDE.md, and DEVELOPMENT.md: the folder layout, the new
   keys, the server's export, its configuration, and the `WARNING` lines;
   `pkg/export/confluence`'s package doc
-- [ ] DESIGN-0021 to Implemented, with any amendment the live runs called
+- [x] DESIGN-0021 to Implemented, with any amendment the live runs called
   for
 - [ ] Live server run: `deferred - human required` to provision. Run
   docz-api locally against the scratch site with this repository and a

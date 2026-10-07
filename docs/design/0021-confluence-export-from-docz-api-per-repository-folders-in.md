@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0021
 title: "Confluence export from docz-api: per-repository folders in shared spaces"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-10-06
 ---
@@ -777,6 +777,12 @@ worked keeps working through a failed run.
 The page's `docz` property is still written: it is what lets a page
 explain itself, what the CLI reads, and what the server trusts when its
 table and Confluence disagree.
+
+> **Amended 2026-10-07 (IMPL-0024).** `confluence_pages` also carries
+> `source TEXT NOT NULL DEFAULT ''` (the document's repo-relative path) and
+> `edited_expected INTEGER NOT NULL DEFAULT 0` (the version docz expected
+> when it found an edit). §7's response serves both, as `source` and
+> `edited.expected`, and the table above had no column for either.
 
 <!--docz:data-model:end-->
 
