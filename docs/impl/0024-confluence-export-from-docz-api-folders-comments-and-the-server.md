@@ -522,58 +522,58 @@ an in-memory Confluence.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/queue/export.go`: `TaskTypeExport = "export:confluence"`,
+- [x] `internal/queue/export.go`: `TaskTypeExport = "export:confluence"`,
   queue `export`, `ExportJob{RepoID, Owner, Name, Reason, TraceParent,
   TraceState}`, `EnqueueExport` with task id `export:owner/name`,
   `MaxRetry(5)`, and no `ProcessIn`
-- [ ] Generalise `resolveTaskIDConflict` and `classifyConflict` over a
+- [x] Generalise `resolveTaskIDConflict` and `classifyConflict` over a
   `{taskType, queue, id}` value so ingest and export share them. Every
   existing `client_test.go` case passes unedited, and each gains an export
   twin
-- [ ] `worker.go`: `Queues: {ingest: 2, export: 1}`; an `Exporter`
+- [x] `worker.go`: `Queues: {ingest: 2, export: 1}`; an `Exporter`
   interface (`Run(ctx, repoID int64) (export.Result, error)`) registered
   for `TaskTypeExport` when non-nil; a `queue.export` consumer span from
   the job's trace fields; `isFailure` unchanged
-- [ ] `internal/export/service.go`: `Service.Run(ctx, repoID)` per
+- [x] `internal/export/service.go`: `Service.Run(ctx, repoID)` per
   DESIGN-0021 §5 steps 1 to 7: `ExportInputs`; decode `config_snapshot`
   into `doczcfg.Config`; record `disabled`, or `refused` (site, space, or
   `layout: page`) and return nil; record `running`; build the
   `fstest.MapFS`; run `confluence.Export`; record the report; loop on a
   moved head SHA at most three times
-- [ ] `internal/export/files.go`: the `fstest.MapFS` from rows; one README
+- [x] `internal/export/files.go`: the `fstest.MapFS` from rows; one README
   per enabled type from `index.Splice(nil, header, index.GenerateTable(...))`
   with the header from the embedded tier only (see Open Question 5); the
   landing page from `repos.index_md` at `api_landing_page`; `repo_pages` at
   their `repo_path`
-- [ ] `internal/export/links.go`: the resolver returning
+- [x] `internal/export/links.go`: the resolver returning
   `https://github.com/<owner>/<name>/blob/<default_branch>/<path>` for any
   repository path, with no existence check
-- [ ] `internal/export/retry.go`: `classify(err, report)` per DESIGN-0021
+- [x] `internal/export/retry.go`: `classify(err, report)` per DESIGN-0021
   §5's table, returning the status and whether to wrap
   `asynq.SkipRetry`
-- [ ] One `confluence.HTTPClient` per process, built from
+- [x] One `confluence.HTTPClient` per process, built from
   `ConfluenceConfig` in `cmd/docz-api` and shared by every job (see Open
   Question 6)
-- [ ] `internal/ingest/service.go`: an optional `Exporter` (the queue's
+- [x] `internal/ingest/service.go`: an optional `Exporter` (the queue's
   `EnqueueExport`) beside `Indexer`; after a successful reconcile with
   `cfg.Sync.Confluence.Enabled`, enqueue `{RepoID, Owner, Name, Reason}`
   and log a failure at error without failing the ingest.
   `cmd/docz-api/runner.go` passes it only when `ConfluenceConfig.Enabled()`
-- [ ] `cmd/docz-api/main.go`: wire the export service into the worker;
+- [x] `cmd/docz-api/main.go`: wire the export service into the worker;
   add `-export owner/name`, which looks up the repository, enqueues one
   export with reason `manual`, and exits, mirroring `-onboard`
-- [ ] `internal/telemetry/metrics.go`: `ObserveExport(reason, status, d)`
+- [x] `internal/telemetry/metrics.go`: `ObserveExport(reason, status, d)`
   for `docz_api_export_jobs_total` and
   `docz_api_export_job_duration_seconds` (buckets to 600s), and
   `docz_api_export_pages_total{action}`
-- [ ] Logs: `export job complete` with counts and the folder; a warn line
+- [x] Logs: `export job complete` with counts and the folder; a warn line
   per refused repository, per foreign page, and per lost comment; the
   failure path through `logIngestFailure`'s twin with the task id,
   `retried`, `max_retry`, repository, and reason
-- [ ] Unit tests for `internal/export` with a fake client and a fake
+- [x] Unit tests for `internal/export` with a fake client and a fake
   store: each status; the README bytes for a fixture type; the resolver;
   each row of the retry table; the head-SHA loop stopping at three
-- [ ] `internal/e2e/confluence_integration_test.go` (real Postgres, fake
+- [x] `internal/e2e/confluence_integration_test.go` (real Postgres, fake
   fetcher, an `httptest` Confluence that keeps pages, folders, and
   properties in memory): onboard a fixture repository, run the export,
   assert the folder tree and the recorded rows; rename a document, ingest

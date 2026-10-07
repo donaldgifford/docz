@@ -52,4 +52,8 @@
 // Export prints nothing and holds no logger. Hooks, carried in the context
 // by WithHooks, report each page and each HTTP response to a caller that
 // wants to narrate.
+//
+// Package confluencetest is an in-memory Confluence site for tests of code
+// built on this one: a Client itself, and over HTTP the endpoints
+// HTTPClient calls.
 package confluence
