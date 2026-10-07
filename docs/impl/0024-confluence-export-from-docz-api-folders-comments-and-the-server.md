@@ -189,12 +189,18 @@ experiment, DESIGN-0021 question 4).
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Before changing `plan.go`, add `plan_parity_test.go` capturing
+- [x] Before changing `plan.go`, add `plan_parity_test.go` capturing
   today's plan over this repository's `docs/` and `.docz.yaml` and over
   the Phase A corpus fixtures: every item's key, title, source, parent
   index, and a hash of its bytes, plus `keys`, `titles`, and `targets`.
   Commit it as a golden (`testdata/plan/*.golden.json`, `-update`) while
-  `rp.List` still builds the plan
+  `rp.List` still builds the plan. The golden is over a repository
+  built at test time from the corpus fixtures (every `.orig.md` as a
+  numbered document, runbook enabled, an `api:` landing page and
+  additional doc), for a full run and runs narrowed by type and by id;
+  this repository's own `docs/` is covered by the `--dry-run --out`
+  comparison in the success criteria, since a golden over live docs
+  would move with every edit
 - [ ] `ExportOptions.FS fs.FS`, documented as the repository's files rooted
   at the repository root with slash paths. `Export` uses
   `os.DirFS(rp.Root)` when it is nil
