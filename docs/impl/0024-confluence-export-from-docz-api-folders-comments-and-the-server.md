@@ -606,20 +606,20 @@ the API reports each repository's last export.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/httpapi/dto.go`: `documentDTO.ConfluenceURL`
+- [x] `internal/httpapi/dto.go`: `documentDTO.ConfluenceURL`
   (`json:"confluence_url"`, `""` when none) on both document responses
-- [ ] `internal/httpapi`: `GET /api/v1/repos/{owner}/{name}/confluence`
+- [x] `internal/httpapi`: `GET /api/v1/repos/{owner}/{name}/confluence`
   returning DESIGN-0021 §7's shape, behind `resolveRepo`'s existence
   hiding. A repository with no row is `never` with empty fields and
   `pages: []`; with the server's export off it is `disabled` with the
   reason `disabled on this server`
-- [ ] `api/openapi.yaml`: the `confluence_url` property, the
+- [x] `api/openapi.yaml`: the `confluence_url` property, the
   `ConfluenceSync` and `ConfluencePage` schemas with
   `additionalProperties: false`, the operation, and `info.version`
   `1.5.0` → `1.6.0`. `just api lint-openapi` scores 100
-- [ ] `openapi_contract_test.go`: the new route for a synced repository, a
+- [x] `openapi_contract_test.go`: the new route for a synced repository, a
   never-synced one, and a document with and without a URL
-- [ ] `ui/`: `just ui gen-api`; in `src/routes/doc.tsx`, a "View in
+- [x] `ui/`: `just ui gen-api`; in `src/routes/doc.tsx`, a "View in
   Confluence" link opening in a new tab when `confluence_url` is set; the
   MSW fixtures gain the field; `doc.test.tsx` covers both cases.
   `just ui ci` passes

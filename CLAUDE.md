@@ -1512,6 +1512,16 @@ folder layout, and records what it wrote.
   `failed` with `asynq.SkipRetry`, a page failing on 429/5xx/network is
   `partial` and retried, a malformed render, a taken title, or another 4xx
   is not, and a cancelled context is `failed` and re-queued.
+- **API** (spec 1.6.0): both document responses carry `confluence_url`
+  (`''` when the last export left no page; a failed page keeps its previous
+  URL). `GET /api/v1/repos/{owner}/{name}/confluence` serves the last run
+  (`internal/httpapi/confluence.go`): `never` with empty fields and
+  `pages: []` for a repo with no row, and `disabled` / `disabled on this
+  server` when `Handler.WithConfluenceExport(false)`, which `runServer`
+  sets from whether a Confluence client exists. `confluence_pages` carries
+  `source` and `edited_expected` beyond DESIGN-0021's Data Model because
+  §7's response names them. docz-site's reader shows "View in Confluence"
+  when the URL is set.
 - **Telemetry**: `docz_api_export_jobs_total{reason,status}`,
   `docz_api_export_job_duration_seconds` (to 600s),
   `docz_api_export_pages_total{action}`; spans `queue.export` →
