@@ -263,7 +263,9 @@ func runServer(
 		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
 	)
 	// The read/search API plus the two session-gated auth endpoints share the gate.
-	httpapi.NewHandlerWithSearch(st, searchClient).Mount(router, gate, authHandler.MountAPI)
+	httpapi.NewHandlerWithSearch(st, searchClient).
+		WithConfluenceExport(confluenceClient != nil).
+		Mount(router, gate, authHandler.MountAPI)
 	if !cfg.AuthDisabled() {
 		// /auth/login and /auth/callback are public (state is their CSRF guard).
 		// Under none-mode there is no provider to redirect to, so the routes are

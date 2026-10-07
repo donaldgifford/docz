@@ -181,6 +181,12 @@ func buildContractHandler() http.Handler { return contractHandler(false) }
 // session middleware, and the public login routes are left unmounted.
 func contractHandler(authDisabled bool) http.Handler {
 	st := seededStore()
+	// A document the export never wrote, so getDoc covers confluence_url "".
+	st.docs[1] = append(st.docs[1], store.Document{
+		ID: 101, RepoID: 1, Type: "frameworks", DocID: "FW-0002", Title: "Unexported",
+		Status: validText("Draft"), Path: "docs/frameworks/0002-unexported.md",
+		GitSha: "def", ContentHash: "hash2", RawMd: "# Unexported\n",
+	})
 	sessions := fakeSessions{}
 
 	r := chi.NewRouter()
@@ -198,7 +204,7 @@ func contractHandler(authDisabled bool) http.Handler {
 		sessions, fakeUsers{}, []byte(contractStateSecret),
 	)
 	// Read/search routes plus the gated /auth/session + /auth/logout share the gate.
-	NewHandlerWithSearch(st, contractSearcher{}).Mount(r, gate, authHandler.MountAPI)
+	NewHandlerWithSearch(st, contractSearcher{}).WithConfluenceExport(true).Mount(r, gate, authHandler.MountAPI)
 	if !authDisabled {
 		// Public auth routes (the signed state is their CSRF guard, not a session).
 		authHandler.MountPublic(r)
@@ -348,6 +354,9 @@ func TestOpenAPIContract(t *testing.T) {
 		{name: "listTypes", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types"},
 		{name: "listDocs", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/frameworks/docs"},
 		{name: "getDoc", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001"},
+		{name: "getDocNoConfluence", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0002"},
+		{name: "getRepoConfluence", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/platform/confluence"},
+		{name: "getRepoConfluenceNever", method: http.MethodGet, target: "http://localhost/api/v1/repos/acme/bare/confluence"},
 		{name: "searchDocs", method: http.MethodGet, target: "http://localhost/api/v1/search?q=intro"},
 		// A sorted search validates the sort enum on the request side. The
 		// rejected case is deliberately absent: an out-of-enum value fails

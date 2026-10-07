@@ -44,6 +44,14 @@ func (errStore) GetRepoPageByPath(context.Context, int64, string) (store.RepoPag
 	return store.RepoPage{}, errBoom
 }
 
+func (errStore) GetConfluenceSync(context.Context, int64) (store.ConfluenceSync, error) {
+	return store.ConfluenceSync{}, errBoom
+}
+
+func (errStore) ListConfluencePages(context.Context, int64) ([]store.ConfluencePage, error) {
+	return nil, errBoom
+}
+
 func TestStoreErrorIs500(t *testing.T) {
 	st := errStore{}
 	// The authorizer must not itself fail, so allow everything.
