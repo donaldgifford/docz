@@ -552,3 +552,102 @@ func TestBlobResolver(t *testing.T) {
 		t.Error("no remote should mean no resolver")
 	}
 }
+
+func TestExportConfluence_Warnings(t *testing.T) {
+	const adr = "ADR-0001: A decision"
+
+	tests := []struct {
+		name  string
+		setup func(f *cmdFake)
+		want  string
+	}{
+		{
+			name:  "edited",
+			setup: func(f *cmdFake) { f.pages[adr].Version++ },
+			want:  "WARNING: ADR-0001 was edited in Confluence (v2, expected v1); not overwritten, use --force\n",
+		},
+		{
+			name: "another repository's",
+			setup: func(f *cmdFake) {
+				f.props[f.pages[adr].ID].Value = []byte(`{"id":"ADR-0001","version":1,"repo":"other/x"}`)
+			},
+			want: "WARNING: ADR-0001: A decision belongs to other/x; not written\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newCmdFake()
+			r, out := exportFixture(t, fake)
+			exportOnce(t, r)
+			tt.setup(fake)
+
+			var stderr bytes.Buffer
+
+			r.Err = &stderr
+			out.Reset()
+
+			err := r.exportConfluence(t.Context(), exportOpts{format: formatText, strict: true}, nil)
+			if exitCode(err) != 1 {
+				t.Errorf("exit %d (%v); want 1 under --strict", exitCode(err), err)
+			}
+
+			if stderr.String() != tt.want {
+				t.Errorf("stderr %q; want %q", stderr.String(), tt.want)
+			}
+
+			if strings.Contains(out.String(), "WARNING") {
+				t.Errorf("stdout carries the warning:\n%s", out)
+			}
+		})
+	}
+}
+
+func TestRepositoryName(t *testing.T) {
+	for remote, want := range map[string]string{
+		"git@github.com:donaldgifford/docz.git":   "donaldgifford/docz",
+		"ssh://git@github.com/donaldgifford/docz": "donaldgifford/docz",
+		"https://github.com/donaldgifford/docz":   "donaldgifford/docz",
+		"https://gitlab.com/x/y.git":              "",
+		"":                                        "",
+	} {
+		if got := repositoryName(githubURL(remote)); got != want {
+			t.Errorf("repositoryName(%q) = %q; want %q", remote, got, want)
+		}
+	}
+}
+
+func TestExportConfluence_JSONCarriesTheFolder(t *testing.T) {
+	r, out := exportFixture(t, newCmdFake())
+	r.Cfg.Sync.Confluence.Layout = config.LayoutFolder
+	r.Cfg.Sync.Confluence.Parent = ""
+
+	if err := r.exportConfluence(t.Context(), exportOpts{format: formatJSON}, nil); err != nil {
+		t.Fatalf("export: %v", err)
+	}
+
+	var report struct {
+		Folder *struct {
+			ID    string `json:"id"`
+			Title string `json:"title"`
+			Type  string `json:"type"`
+		} `json:"folder"`
+		Pages []struct {
+			Key   string `json:"key"`
+			Title string `json:"title"`
+			Hash  string `json:"hash"`
+		} `json:"pages"`
+	}
+
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatalf("not JSON: %v", err)
+	}
+
+	if report.Folder == nil || report.Folder.Title != "r" || report.Folder.Type != "folder" {
+		t.Errorf("folder %+v; want r, named from the remote o/r", report.Folder)
+	}
+
+	if p := report.Pages[1]; p.Key != "docz:type:rfc" || p.Title != "r: RFCs" || p.Hash == "" {
+		t.Errorf("type page %+v; want its key, prefixed title, and hash", p)
+	}
+}
