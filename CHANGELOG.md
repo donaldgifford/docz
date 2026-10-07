@@ -19,6 +19,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0024)* Plan Phase B of the Confluence export
 - *(impl-0024)* Resolve open questions; DESIGN-0021 approved
 - *(design-0021)* Archived pages keep their titles
+- *(impl-0024)* All phases on one branch
 
 ### Miscellaneous Tasks
 
