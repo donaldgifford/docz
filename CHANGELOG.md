@@ -73,6 +73,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(confluence)* A live inline comment survives an update
 - *(store)* Confluence records, the URL join, and ExportInputs as one snapshot
 - *(e2e)* A repository's Confluence export through ingest, rename, removal, and disable
+- *(confluence)* Live fixture repositories for the server's export check
 
 ### Miscellaneous Tasks
 
