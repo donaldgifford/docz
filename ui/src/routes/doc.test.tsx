@@ -191,6 +191,34 @@ describe("metadata table omission", () => {
   });
 });
 
+describe("View in Confluence", () => {
+  it("links the document's Confluence page in a new tab", async () => {
+    const base = DEMO_DOCS.find((doc) => doc.doc_id === "DESIGN-0001");
+    const url = "https://example.atlassian.net/wiki/spaces/DOCZ/pages/65861";
+    server.use(
+      http.get(DOC_ENDPOINT, () =>
+        HttpResponse.json({ ...base, confluence_url: url }),
+      ),
+    );
+    mountAt(DOC_URL);
+    await findRenderedDesign0001();
+
+    const link = screen.getByRole("link", { name: "View in Confluence" });
+    expect(link).toHaveAttribute("href", url);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("shows no link for a document with no page", async () => {
+    mountAt(DOC_URL);
+    await findRenderedDesign0001();
+
+    expect(
+      screen.queryByRole("link", { name: "View in Confluence" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("lifecycle disclosure", () => {
   // The docz-api design doc is ~1200 lines; give the pipeline headroom.
   it(

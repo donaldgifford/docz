@@ -28,6 +28,7 @@ function makeDoc(overrides: Partial<Document> = {}): Document {
     git_sha: "0123456789abcdef",
     content_hash: "hash-a",
     updated_at: "2026-07-01T00:00:00Z",
+    confluence_url: "",
     raw_md: "# A design\n\n## Section\n\nBody.",
     ...overrides,
   };

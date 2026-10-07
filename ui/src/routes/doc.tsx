@@ -132,6 +132,19 @@ function DocHeader({ doc }: { doc: Document }) {
         <span>{doc.author === "" ? "unassigned" : doc.author}</span>
         <span className="text-fg-muted">·</span>
         <span>updated {updated}</span>
+        {doc.confluence_url !== "" && (
+          <>
+            <span className="text-fg-muted">·</span>
+            <a
+              href={doc.confluence_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              View in Confluence
+            </a>
+          </>
+        )}
       </div>
     </header>
   );

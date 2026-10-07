@@ -68,6 +68,7 @@ const renderingDoc = http.get(
       git_sha: "fixture-sha-design-0777",
       content_hash: "fixture-hash-design-0777",
       updated_at: "2026-07-12T00:00:00Z",
+      confluence_url: "",
       raw_md: RENDERING_DOC_MD,
     });
   },
