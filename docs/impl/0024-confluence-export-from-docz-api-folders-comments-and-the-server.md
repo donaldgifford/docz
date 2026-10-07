@@ -357,10 +357,10 @@ this repository exports to the scratch site in the folder layout.
 - [x] Before the first folder-layout run, the Phase A tree on the scratch
   site (the `docz` page and its 76 descendants) is moved out of the way:
   archived in the Confluence UI on 2026-10-07
-- [ ] The archived `docz` page (65860) still holds its title, which the
-  home page needs (DESIGN-0021 §3 amendment, tested 2026-10-07): rename it
-  (for example to `docz (Phase A)`) or delete it before the first real
-  run. `deferred - human required`
+- [x] The archived `docz` page (65860) still held its title, which the
+  home page needs (DESIGN-0021 §3 amendment, tested 2026-10-07). It was
+  deleted on 2026-10-07, and a page titled `docz` was then created and
+  removed to confirm the title is free
 - [ ] `.docz.yaml`: `layout: folder`, `parent:` removed, so the folder sits
   at the top of `DOCZ`
 - [ ] Live: `docz export confluence --dry-run`, then a real run, then a
@@ -419,9 +419,9 @@ page's version (DESIGN-0021 question 11).
 - [ ] Live: on a scratch page, add an inline comment (Open Question 3), read the page's
   version, change the source markdown around the commented text, export
   with `--force`, and confirm the comment still shows anchored in the
-  browser. Record whether adding the comment bumped the version, which
-  settles DESIGN-0021 question 11: under decision (a) nothing changes
-  either way, so record the finding in DESIGN-0021 §4 as an amendment
+  browser. Whether a comment bumps the version was settled on 2026-10-07
+  ahead of this phase: it does not (DESIGN-0021 §4 amendment). The live
+  test asserts it stays that way
 
 <!--docz:tasks:end-->
 

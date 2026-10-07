@@ -409,6 +409,12 @@ decision 11). One fact needs a live check before the IMPL commits to it:
 whether adding an inline comment in Confluence bumps the page's version
 (question 11). If it does, every commented page reads as edited.
 
+> **Amended 2026-10-07.** It does not. On the scratch site, a page at
+> version 1 took an inline comment through `POST /inline-comments` and was
+> still at version 1, with the `ac:inline-comment-marker` already in its
+> storage body. A commented page does not read as edited, and question 11's
+> decision never comes into play. The marker's form matches §4's example.
+
 ### 5. The job
 
 ```mermaid
