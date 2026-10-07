@@ -5,8 +5,11 @@ package confluence
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -55,7 +58,7 @@ func TestLive(t *testing.T) {
 		t.Errorf("page %+v; want it under %s with a web URL", page, parent.ID)
 	}
 
-	prop, err := h.Property(ctx, page.ID, "docz")
+	prop, err := h.Property(ctx, PageTarget(page.ID), "docz")
 	if err != nil {
 		t.Fatalf("property: %v", err)
 	}
@@ -66,11 +69,11 @@ func TestLive(t *testing.T) {
 	}
 
 	prop.Value = value
-	if err := h.SetProperty(ctx, page.ID, prop); err != nil {
+	if err := h.SetProperty(ctx, PageTarget(page.ID), prop); err != nil {
 		t.Fatalf("set property: %v", err)
 	}
 
-	got, err := h.Property(ctx, page.ID, "docz")
+	got, err := h.Property(ctx, PageTarget(page.ID), "docz")
 	if err != nil || got == nil {
 		t.Fatalf("read back property: %v %v", got, err)
 	}
@@ -80,7 +83,7 @@ func TestLive(t *testing.T) {
 		t.Errorf("property %s; want stamp %s", got.Value, stamp)
 	}
 
-	children, err := h.Children(ctx, parent.ID)
+	children, err := h.Children(ctx, PageTarget(parent.ID))
 	if err != nil {
 		t.Fatalf("children: %v", err)
 	}
@@ -96,6 +99,138 @@ func TestLive(t *testing.T) {
 	}
 
 	t.Logf("round trip ok: %s", page.WebURL)
+}
+
+// TestLiveFolder round trips a folder (IMPL-0024 Phase 3): create it,
+// set and read its property, create a page in it, list it through
+// direct-children, archive the page under an Archive page inside it, and
+// delete everything it made, so a run leaves the space as it found it.
+func TestLiveFolder(t *testing.T) {
+	h, spaceID := liveClient(t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+
+	stamp := time.Now().UTC().Format("20060102T150405")
+
+	folder, err := h.CreateFolder(ctx, &NewFolder{SpaceID: spaceID, Title: "docz live folder " + stamp})
+	if err != nil {
+		t.Fatalf("create folder: %v", err)
+	}
+
+	t.Cleanup(func() { liveDelete(t, h, "folders", folder.ID) })
+
+	if got, err := h.Folder(ctx, folder.ID); err != nil || got == nil || got.Title != folder.Title {
+		t.Fatalf("read folder back: %+v %v", got, err)
+	}
+
+	if _, err := h.CreateFolder(ctx, &NewFolder{SpaceID: spaceID, Title: folder.Title}); !isTitleError(err) {
+		t.Errorf("second folder with the title: %v; want a TitleError", err)
+	}
+
+	value := json.RawMessage(`{"repo":"donaldgifford/docz","docz":"live"}`)
+	if err := h.SetProperty(ctx, FolderTarget(folder.ID), &Property{Key: "docz", Value: value}); err != nil {
+		t.Fatalf("set folder property: %v", err)
+	}
+
+	prop, err := h.Property(ctx, FolderTarget(folder.ID), "docz")
+	if err != nil || prop == nil || !strings.Contains(string(prop.Value), "donaldgifford/docz") {
+		t.Fatalf("folder property: %+v %v", prop, err)
+	}
+
+	page, err := h.CreatePage(ctx, &NewPage{
+		SpaceID: spaceID, ParentID: folder.ID, Title: "docz live page " + stamp, Body: []byte("<p>kept</p>"),
+	})
+	if err != nil {
+		t.Fatalf("create page in folder: %v", err)
+	}
+
+	t.Cleanup(func() { liveDelete(t, h, "pages", page.ID) })
+
+	archive, err := h.CreatePage(ctx, &NewPage{
+		SpaceID: spaceID, ParentID: folder.ID, Title: "docz live archive " + stamp, Body: []byte("<p>archive</p>"),
+	})
+	if err != nil {
+		t.Fatalf("create archive: %v", err)
+	}
+
+	t.Cleanup(func() { liveDelete(t, h, "pages", archive.ID) })
+
+	children, err := h.Children(ctx, FolderTarget(folder.ID))
+	if err != nil {
+		t.Fatalf("direct-children: %v", err)
+	}
+
+	if len(children) != 2 || children[0].Type != TypePage {
+		t.Errorf("folder children %+v; want the two pages", children)
+	}
+
+	moved, err := h.UpdatePage(ctx, page.ID, &PageUpdate{ParentID: archive.ID, Message: "docz live: archived"})
+	if err != nil || moved.ParentID != archive.ID {
+		t.Fatalf("archive move: %+v %v", moved, err)
+	}
+
+	if body, err := h.Body(ctx, page.ID); err != nil || !strings.Contains(string(body), "kept") {
+		t.Errorf("body after the move %q %v; want it kept", body, err)
+	}
+
+	if got, err := h.Page(ctx, "1"); err != nil || got != nil {
+		t.Errorf("Page of a missing id: %+v %v; want nil, nil", got, err)
+	}
+
+	t.Logf("folder round trip ok: %s", folder.WebURL)
+}
+
+// liveClient builds the client and resolves the space, skipping without
+// credentials.
+func liveClient(t *testing.T) (*HTTPClient, string) {
+	t.Helper()
+
+	env := func(k string) string {
+		v := os.Getenv(k)
+		if v == "" {
+			t.Skipf("%s is not set", k)
+		}
+
+		return v
+	}
+
+	h := NewHTTPClient(env("ATLASSIAN_SITE"), env("ATLASSIAN_EMAIL"), env("ATLASSIAN_API_TOKEN"))
+
+	spaceID, err := h.SpaceID(t.Context(), env("DOCZ_LIVE_SPACE"))
+	if err != nil {
+		t.Fatalf("space: %v", err)
+	}
+
+	return h, spaceID
+}
+
+// liveDelete deletes and purges what a live test made. The Client has no
+// delete, since docz never deletes; the test reaches the transport itself.
+func liveDelete(t *testing.T, h *HTTPClient, kind, id string) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	path := "/wiki/api/v2/" + kind + "/" + id
+	if err := h.do(ctx, "delete", http.MethodDelete, path, nil, nil); err != nil {
+		t.Errorf("delete %s %s: %v", kind, id, err)
+
+		return
+	}
+
+	if kind == "pages" {
+		if err := h.do(ctx, "purge", http.MethodDelete, path+"?purge=true", nil, nil); err != nil {
+			t.Logf("purge page %s: %v", id, err)
+		}
+	}
+}
+
+func isTitleError(err error) bool {
+	var te *TitleError
+
+	return errors.As(err, &te)
 }
 
 // livePage finds the page titled p.Title or creates it.
