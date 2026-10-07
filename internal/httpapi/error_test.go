@@ -32,8 +32,8 @@ func (errStore) ListDocumentsByType(
 	return nil, errBoom
 }
 
-func (errStore) GetDocumentByID(context.Context, int64, string) (store.Document, error) {
-	return store.Document{}, errBoom
+func (errStore) GetDocumentByID(context.Context, int64, string) (store.GetDocumentByIDRow, error) {
+	return store.GetDocumentByIDRow{}, errBoom
 }
 
 func (errStore) ListRepoPages(context.Context, int64) ([]store.ListRepoPagesRow, error) {

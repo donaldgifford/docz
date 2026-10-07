@@ -10,6 +10,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ConfluencePage struct {
+	RepoID       int64              `json:"repo_id"`
+	Key          string             `json:"key"`
+	DocID        string             `json:"doc_id"`
+	PageID       string             `json:"page_id"`
+	Title        string             `json:"title"`
+	Url          string             `json:"url"`
+	Version      int32              `json:"version"`
+	Hash         string             `json:"hash"`
+	Action       string             `json:"action"`
+	Reason       string             `json:"reason"`
+	EditedFrom   int32              `json:"edited_from"`
+	CommentsLost int32              `json:"comments_lost"`
+	SyncedAt     pgtype.Timestamptz `json:"synced_at"`
+}
+
+type ConfluenceSync struct {
+	RepoID      int64              `json:"repo_id"`
+	Status      string             `json:"status"`
+	Reason      string             `json:"reason"`
+	Site        string             `json:"site"`
+	Space       string             `json:"space"`
+	FolderID    string             `json:"folder_id"`
+	FolderTitle string             `json:"folder_title"`
+	FolderUrl   string             `json:"folder_url"`
+	HeadSha     string             `json:"head_sha"`
+	Counts      json.RawMessage    `json:"counts"`
+	StartedAt   pgtype.Timestamptz `json:"started_at"`
+	FinishedAt  pgtype.Timestamptz `json:"finished_at"`
+}
+
 type DocType struct {
 	ID          int64           `json:"id"`
 	RepoID      int64           `json:"repo_id"`

@@ -56,13 +56,13 @@ func (f *fakeStore) ListDocumentsByType(
 	return out, nil
 }
 
-func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID string) (store.Document, error) {
+func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID string) (store.GetDocumentByIDRow, error) {
 	for i := range f.docs[repoID] {
 		if f.docs[repoID][i].DocID == docID {
-			return f.docs[repoID][i], nil
+			return store.GetDocumentByIDRow{Document: f.docs[repoID][i]}, nil
 		}
 	}
-	return store.Document{}, pgx.ErrNoRows
+	return store.GetDocumentByIDRow{}, pgx.ErrNoRows
 }
 
 func (f *fakeStore) ListRepoPages(_ context.Context, repoID int64) ([]store.ListRepoPagesRow, error) {

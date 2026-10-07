@@ -26,7 +26,7 @@ type storeReader interface {
 	GetRepo(ctx context.Context, owner, name string) (store.Repo, error)
 	GetDocTypesForRepo(ctx context.Context, repoID int64) ([]store.DocType, error)
 	ListDocumentsByType(ctx context.Context, repoID int64, typeName string) ([]store.ListDocumentsByTypeRow, error)
-	GetDocumentByID(ctx context.Context, repoID int64, docID string) (store.Document, error)
+	GetDocumentByID(ctx context.Context, repoID int64, docID string) (store.GetDocumentByIDRow, error)
 	ListRepoPages(ctx context.Context, repoID int64) ([]store.ListRepoPagesRow, error)
 	GetRepoPageByPath(ctx context.Context, repoID int64, path string) (store.RepoPage, error)
 }
