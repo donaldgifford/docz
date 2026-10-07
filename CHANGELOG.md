@@ -10,6 +10,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(config)* Sync.confluence layout and folder
 - *(doctemplate)* Generated sync block carries layout and folder
 - *(confluence)* Plan the export from an fs.FS
+- *(confluence)* The folder layout, recorded ids, ownership, and Overwrite
 
 ### Documentation
 
@@ -29,11 +30,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design-0021)* An inline comment does not bump the page version
 - *(impl-0024)* Phase 1 complete
 - *(confluence)* Export reads through ExportOptions.FS
+- *(impl-0024)* Phase 3 complete
 
 ### Testing
 
 - *(confluence)* Pin the export plan with a corpus golden
 - *(confluence)* The plan golden through MapFS, an export that never reads the disk
+- *(confluence)* Folders, ownership, recorded ids, and Overwrite over the fake
+- *(confluence)* The live round trip gains a folder
 
 ### Miscellaneous Tasks
 
