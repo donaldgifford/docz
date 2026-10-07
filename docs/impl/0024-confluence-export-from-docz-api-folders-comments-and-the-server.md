@@ -1,7 +1,7 @@
 ---
 id: IMPL-0024
 title: "Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021)"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-10-07
 ---
@@ -677,7 +677,10 @@ in its own, and `v2.0.0-beta.8` ships it.
   expecting `refused`. Record each repository's `GET …/confluence` in this
   document
 - [ ] `just ci` green; the PR merged by a person; `just release
-  v2.0.0-beta.8` from the merge commit: `deferred - human required`
+  v2.0.0-beta.8` from the merge commit: `deferred - human required`.
+  `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
+  since go-licenses misreads the standard library when the toolchain
+  switches from mise's go 1.26.5 to `go.mod`'s 1.26.6)
 
 <!--docz:tasks:end-->
 
@@ -737,26 +740,27 @@ in its own, and `v2.0.0-beta.8` ships it.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] The plan golden over this repository and the Phase A corpus, captured
+- [x] The plan golden over this repository and the Phase A corpus, captured
   before Phase 2 changes anything, passes through `os.DirFS` and
   `fstest.MapFS`
-- [ ] Table-driven `Export` tests over the in-memory client for the folder
+- [x] Table-driven `Export` tests over the in-memory client for the folder
   layout, ownership, recorded ids, and `Overwrite`, including two
   repositories in one space
-- [ ] `httptest` tests for every new `HTTPClient` method, with pagination
+- [x] `httptest` tests for every new `HTTPClient` method, with pagination
   and 404s
-- [ ] The comment corpus goldens and `FuzzCarryMarkers`
-- [ ] `cmd/export_test.go` for the `WARNING` lines and the repository name
-- [ ] The consumer module exercises the new options from outside
-- [ ] `internal/config`, `internal/queue`, and `internal/export` unit tests,
+- [x] The comment corpus goldens and `FuzzCarryMarkers`
+- [x] `cmd/export_test.go` for the `WARNING` lines and the repository name
+- [x] The consumer module exercises the new options from outside
+- [x] `internal/config`, `internal/queue`, and `internal/export` unit tests,
   including the retry classification table
-- [ ] Store integration tests for the migration, the queries, the join, and
+- [x] Store integration tests for the migration, the queries, the join, and
   the read transaction
-- [ ] The e2e integration test: export, rename, remove, disable
-- [ ] The OpenAPI contract test and `doc.test.tsx`
-- [ ] helm-unittest for the env block, the Secret key, and the alert
+- [x] The e2e integration test: export, rename, remove, disable
+- [x] The OpenAPI contract test and `doc.test.tsx`
+- [x] helm-unittest for the env block, the Secret key, and the alert
 - [ ] Live: `just export-live` with folders; the CLI run of Phase 4; the
-  comment check of Phase 5; the server run of Phase 9
+  comment check of Phase 5; the server run of Phase 9. The first three
+  ran on 2026-10-07; the server run is `deferred - human required`
 
 <!--docz:testing:end-->
 
