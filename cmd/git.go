@@ -75,6 +75,9 @@ func (g realGit) output(ctx context.Context, args ...string) string {
 // defaultBranch is the branch assumed when origin's HEAD cannot be read.
 const defaultBranch = "main"
 
+// githubPrefix starts every remote githubURL returns.
+const githubPrefix = "https://github.com/"
+
 // githubURL normalises a GitHub remote to https://github.com/<o>/<r>:
 // git@github.com:o/r.git, ssh://git@github.com/o/r, and
 // https://github.com/o/r.git all give the same answer. Anything else is "".
@@ -96,7 +99,7 @@ func githubURL(remote string) string {
 		return ""
 	}
 
-	return "https://github.com/" + owner + "/" + name
+	return githubPrefix + owner + "/" + name
 }
 
 // staticGit is the test double for GitResolver. Tests set Name to the

@@ -21,6 +21,11 @@ type pageProperty struct {
 	Repo string `json:"repo,omitempty"`
 }
 
+// ReasonForeign starts the Reason of a page Skipped because another
+// repository's property names it: "belongs to owner/name". No option
+// writes such a page, Force included.
+const ReasonForeign = "belongs to "
+
 // owned reports whether the repository named repo may write the page:
 // the property names no repository or names this one.
 func (p *pageProperty) owned(repo string) bool {
@@ -78,7 +83,7 @@ func (r *exportRun) reconcile(ctx context.Context, it *item, parentID string) (P
 	}
 
 	if prop != nil && !stored.owned(r.opts.Repository) {
-		res.Action, res.Reason = Skipped, "belongs to "+stored.Repo
+		res.Action, res.Reason = Skipped, ReasonForeign+stored.Repo
 
 		return res, nil
 	}
