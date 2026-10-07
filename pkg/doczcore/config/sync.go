@@ -20,6 +20,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Mermaid viewer settings accepted by MermaidSyncConfig.Viewer besides an
@@ -31,6 +33,17 @@ const (
 	// MermaidViewerOff renders mermaid as a plain code panel, for a site
 	// without the viewer installed.
 	MermaidViewerOff = "off"
+)
+
+// Layouts accepted by ConfluenceSyncConfig.Layout (DESIGN-0021 §2).
+const (
+	// LayoutFolder puts the repository's pages in a Confluence folder named
+	// after it, every title prefixed with the folder's name, so several
+	// repositories can share a space. The default.
+	LayoutFolder = "folder"
+	// LayoutPage is the Phase A tree: everything under the parent page,
+	// titles unprefixed. For a person exporting into a space they own.
+	LayoutPage = "page"
 )
 
 // SyncConfig maps the opt-in sync: block, the external services a
@@ -54,7 +67,14 @@ type ConfluenceSyncConfig struct {
 	Site string `yaml:"site" json:"site"`
 	// Space is the key of the space pages are written to.
 	Space string `yaml:"space" json:"space"`
-	// Parent is the title of the page every exported page sits beneath.
+	// Layout is LayoutFolder (the default) or LayoutPage.
+	Layout string `yaml:"layout" json:"layout"`
+	// Folder is the title of the repository's folder in the folder layout.
+	// Empty means the repository's name, which the exporter supplies.
+	Folder string `yaml:"folder,omitempty" json:"folder,omitempty"`
+	// Parent is the title of the page the tree sits beneath: the root page
+	// in the page layout, where it is required, and the page the folder
+	// sits under in the folder layout, where it is optional.
 	Parent string `yaml:"parent" json:"parent"`
 	// Types narrows the export to these types. Empty means every enabled
 	// type.
@@ -88,6 +108,12 @@ var viewerKeyPattern = regexp.MustCompile(`^[0-9a-f-]{36}/[0-9a-f-]{36}/static/[
 func normalizeSync(cfg *Config) {
 	c := &cfg.Sync.Confluence
 	c.Site = strings.TrimSuffix(strings.TrimSpace(c.Site), "/")
+	c.Layout = strings.ToLower(strings.TrimSpace(c.Layout))
+	c.Folder = strings.TrimSpace(c.Folder)
+
+	if c.Layout == "" {
+		c.Layout = LayoutFolder
+	}
 
 	for i, entry := range c.Exclude {
 		c.Exclude[i] = normalizeExcludePrefix(entry)
@@ -115,8 +141,8 @@ func (c *Config) validateSync() error {
 		return fmt.Errorf("%w: sync.confluence.space must not be empty", ErrInvalidSync)
 	}
 
-	if strings.TrimSpace(s.Parent) == "" {
-		return fmt.Errorf("%w: sync.confluence.parent must not be empty", ErrInvalidSync)
+	if err := validateSyncLayout(s); err != nil {
+		return err
 	}
 
 	if err := c.validateSyncTypes(); err != nil {
@@ -138,6 +164,53 @@ func (c *Config) validateSync() error {
 	default:
 		return fmt.Errorf("%w: sync.confluence.mermaid.viewer %q must be %q, %q, or an extension key",
 			ErrInvalidSync, v, MermaidViewerAuto, MermaidViewerOff)
+	}
+
+	return nil
+}
+
+// maxFolderTitle is the longest folder title Confluence accepts.
+const maxFolderTitle = 255
+
+// validateSyncLayout checks the layout and the keys that depend on it: the
+// page layout needs a parent page and has no folder, and a folder title
+// must be one Confluence can hold.
+func validateSyncLayout(s *ConfluenceSyncConfig) error {
+	switch s.Layout {
+	case LayoutPage:
+		if strings.TrimSpace(s.Parent) == "" {
+			return fmt.Errorf("%w: sync.confluence.parent must not be empty in the page layout", ErrInvalidSync)
+		}
+
+		if s.Folder != "" {
+			return fmt.Errorf("%w: sync.confluence.folder must be empty in the page layout", ErrInvalidSync)
+		}
+	case LayoutFolder:
+		if err := validateFolderTitle(s.Folder); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("%w: sync.confluence.layout %q must be %q or %q",
+			ErrInvalidSync, s.Layout, LayoutFolder, LayoutPage)
+	}
+
+	return nil
+}
+
+// validateFolderTitle rejects a folder title Confluence would refuse or
+// that would read differently from what was written. Empty is allowed: the
+// exporter names the folder after the repository.
+func validateFolderTitle(title string) error {
+	if title != strings.TrimSpace(title) {
+		return fmt.Errorf("%w: sync.confluence.folder %q has leading or trailing space", ErrInvalidSync, title)
+	}
+
+	if utf8.RuneCountInString(title) > maxFolderTitle {
+		return fmt.Errorf("%w: sync.confluence.folder is longer than %d characters", ErrInvalidSync, maxFolderTitle)
+	}
+
+	if strings.ContainsFunc(title, unicode.IsControl) {
+		return fmt.Errorf("%w: sync.confluence.folder %q contains a control character", ErrInvalidSync, title)
 	}
 
 	return nil

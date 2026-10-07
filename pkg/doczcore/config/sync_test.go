@@ -75,6 +75,32 @@ func TestLoad_SyncBlockNormalization(t *testing.T) {
 	}
 }
 
+func TestLoad_SyncLayoutDefaults(t *testing.T) {
+	t.Parallel()
+
+	// The Phase A shape: parent set, no layout. It loads as the folder
+	// layout with parent as the page the folder sits under.
+	cfg, err := config.ParseBytes([]byte(syncBase + "    folder: \" docs \"\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := cfg.Sync.Confluence
+	if got.Layout != config.LayoutFolder {
+		t.Errorf("Layout = %q, want %q", got.Layout, config.LayoutFolder)
+	}
+	if got.Parent != "docz" || got.Folder != "docs" {
+		t.Errorf("Parent, Folder = %q, %q; want docz, docs", got.Parent, got.Folder)
+	}
+	if _, err := cfg.Validate(); err != nil {
+		t.Errorf("Validate: %v", err)
+	}
+
+	if d := config.DefaultConfig(); d.Sync.Confluence.Layout != config.LayoutFolder {
+		t.Errorf("DefaultConfig layout = %q, want %q", d.Sync.Confluence.Layout, config.LayoutFolder)
+	}
+}
+
 func TestValidate_SyncDormantBlockIsNeverJudged(t *testing.T) {
 	t.Parallel()
 
@@ -82,6 +108,8 @@ func TestValidate_SyncDormantBlockIsNeverJudged(t *testing.T) {
   confluence:
     enabled: false
     site: ftp://nope/path
+    layout: tree
+    folder: "a\tb"
     types: [nonsense]
     exclude: [../escape]
     api_pages: true
@@ -112,7 +140,14 @@ func TestValidate_Sync(t *testing.T) {
 		{name: "site with a query", yaml: "    site: https://example.atlassian.net?x=1\n", wantErr: "sync.confluence.site"},
 		{name: "empty site", yaml: "    site: \"\"\n", wantErr: "sync.confluence.site"},
 		{name: "empty space", yaml: "    space: \" \"\n", wantErr: "sync.confluence.space"},
-		{name: "empty parent", yaml: "    parent: \"\"\n", wantErr: "sync.confluence.parent"},
+		{name: "empty parent in the folder layout", yaml: "    parent: \"\"\n"},
+		{name: "folder layout spelled out", yaml: "    layout: Folder\n    folder: Platform docs\n"},
+		{name: "page layout", yaml: "    layout: page\n"},
+		{name: "empty parent in the page layout", yaml: "    layout: page\n    parent: \"\"\n", wantErr: "sync.confluence.parent"},
+		{name: "folder in the page layout", yaml: "    layout: page\n    folder: docz\n", wantErr: "sync.confluence.folder"},
+		{name: "unknown layout", yaml: "    layout: tree\n", wantErr: "sync.confluence.layout"},
+		{name: "folder with a control character", yaml: "    folder: \"do\\tcz\"\n", wantErr: "control character"},
+		{name: "folder too long", yaml: "    folder: " + strings.Repeat("x", 256) + "\n", wantErr: "longer than 255"},
 		{name: "types by alias and prefix", yaml: "    types: [inv, DESIGN]\n"},
 		{name: "unknown type", yaml: "    types: [nope]\n", wantErr: "sync.confluence.types[0]"},
 		{name: "disabled built-in", yaml: "    types: [runbook]\n", wantErr: "not an enabled type"},
