@@ -250,34 +250,34 @@ one when asked. Everything is proven against the fake client.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `client.go`: `Node` (a `Page` with `Type` `page` or `folder`),
+- [x] `client.go`: `Node` (a `Page` with `Type` `page` or `folder`),
   `Folder`, `NewFolder`, and the methods `Page`, `Body`, `Folder`,
   `CreateFolder`, `SpaceHome`; `Children` now returns `[]Node`.
   `Property`/`SetProperty` take a `Target{Type, ID}` so they address a
   folder or a page. Doc comments state the `(nil, nil)` rule for each
-- [ ] `httpclient.go`: the new methods on the v2 endpoints in
+- [x] `httpclient.go`: the new methods on the v2 endpoints in
   DESIGN-0021 §3 (`GET /pages/{id}`, `GET /pages/{id}?body-format=storage`,
   `GET /folders/{id}`, `POST /folders`, `GET /spaces/{id}`,
   `GET /{pages,folders}/{id}/direct-children` with every page of results
   followed, and the folder property endpoints). A 404 is `(nil, nil)`.
   `httpclient_test.go` covers each against `httptest`, including
   pagination and a 404
-- [ ] `fake_test.go`: the fake keeps folders, their properties, and a
+- [x] `fake_test.go`: the fake keeps folders, their properties, and a
   per-space title index for pages and one for folders, and rejects a
   duplicate title in either with Confluence's 400 shape
-- [ ] `ExportOptions.Repository`, `Pages map[string]string`,
+- [x] `ExportOptions.Repository`, `Pages map[string]string`,
   `Folder string`, `Overwrite bool`. `Force` implies `Overwrite`
-- [ ] `pageProperty` gains `Repo string` (`json:"repo,omitempty"`). A new
+- [x] `pageProperty` gains `Repo string` (`json:"repo,omitempty"`). A new
   `owned(repo)` method: true when `Repo` is empty or equal. A
   `folderProperty{Repo, Docz}` for the folder
-- [ ] The plan, in the folder layout: the folder title is `sync.Folder`,
+- [x] The plan, in the folder layout: the folder title is `sync.Folder`,
   else the last element of `Repository`, else the base of the root; every
   composed and document title starts with the folder name and a colon
   (`docz: ADR-0001: …`); the home page (key `docz:parent`) is titled with the folder
   name alone; `Archive` becomes `<folder>: Archive`. The page layout
   keeps Phase A's titles exactly, which the Phase 2 golden proves once
   its fixtures set `layout: page`
-- [ ] `export.go`: in the folder layout, resolve the folder first:
+- [x] `export.go`: in the folder layout, resolve the folder first:
   `opts.Folder` through `Client.Folder`, else a `direct-children` search
   of the `parent` page (found by title) or of `SpaceHome`, else
   `CreateFolder`. A folder whose property is missing or names another
@@ -285,25 +285,25 @@ one when asked. Everything is proven against the fake client.
   `sync.confluence.folder`; a create that 400s on the title is a
   `ConfigError` too. The folder's property is written on create.
   `Report.Folder` is set
-- [ ] `HTTPClient.FindPage` gains a `status` argument through an unexported
+- [x] `HTTPClient.FindPage` gains a `status` argument through an unexported
   helper, and `create` handles a 400 on the title: it looks the title up
   among archived pages and fails the page with
   `title held by archived page <id>; restore, rename, or delete it in
   Confluence`. A fake-client test covers it, since the fake keeps archived
   titles reserved as Confluence does
-- [ ] `reconcile.go`: a key in `opts.Pages` is looked up with
+- [x] `reconcile.go`: a key in `opts.Pages` is looked up with
   `Client.Page` first, falling back to `FindPage` when it is gone or in
   another space. A page whose property is not `owned` is `Skipped`
   "belongs to <repo>" whatever `Force` says. `decide` takes `Overwrite`:
   a moved version under `Overwrite` is `Updated` with `Edited` set; without
   it, `Skipped` with `Edited` set. The unchanged check compares the title
   as well
-- [ ] `orphans.go`: containers are the folder and each type page, listed
+- [x] `orphans.go`: containers are the folder and each type page, listed
   with `Children` (`direct-children`); only `page` nodes are candidates;
   a page not `owned` is never moved
-- [ ] `PageResult` gains `Key`, `Hash`, `Edited *Edit`; `Report` gains
+- [x] `PageResult` gains `Key`, `Hash`, `Edited *Edit`; `Report` gains
   `Folder *Node`. JSON tags follow the existing snake_case
-- [ ] `export_test.go`, table-driven over the fake: the folder tree and
+- [x] `export_test.go`, table-driven over the fake: the folder tree and
   titles; a folder found under the parent page and under the space home;
   another repository's folder (`ConfigError`); a folder title taken
   elsewhere (`ConfigError`); a page found by recorded id and renamed; a
@@ -311,11 +311,11 @@ one when asked. Everything is proven against the fake client.
   page, a property-less page, and another repository's page; orphans in a
   folder; two repositories sharing the fake space with no collision; and
   one repository alone in its space still prefixed
-- [ ] `live_test.go` (`//go:build live`): the round trip gains a folder:
+- [x] `live_test.go` (`//go:build live`): the round trip gains a folder:
   create it, set and read its property, create a page in it, list it with
   `direct-children`, archive a page inside it, and delete everything it
   made
-- [ ] `test/consumer/consumer_v2_export_test.go`: an `Export` with an
+- [x] `test/consumer/consumer_v2_export_test.go`: an `Export` with an
   `fstest.MapFS`, `Repository`, and `Overwrite`, against the consumer's own
   `Client`, asserting the folder and the prefixed titles
 

@@ -24,17 +24,30 @@
 //   - Client is the Confluence surface Export needs. HTTPClient implements
 //     it over net/http through Atlassian's gateway, api.atlassian.com/ex/
 //     confluence/<cloudId>, which takes scoped and unscoped API tokens
-//     alike. Its errors are typed (AuthError, ConflictError, RequestError)
-//     and never carry a credential.
+//     alike. Its errors are typed (AuthError, ConflictError, RequestError,
+//     TitleError) and never carry a credential.
 //   - Export takes its configuration from a repo.Repo and every byte from
 //     ExportOptions.FS (os.DirFS of the root when nil), so a server with a
-//     fetched tree and no checkout plans the same tree. It plans the page tree
-//     (the parent page, one page per type carrying the type's README index,
+//     fetched tree and no checkout plans the same tree. It plans the page
+//     tree (a home page, one page per type carrying the type's README index,
 //     the documents under their type, the api: pages when
 //     sync.confluence.api_pages is on), and reconciles each page: create,
 //     update, leave unchanged, or skip one edited in Confluence. On a full
 //     run, docz pages whose documents are gone move under an Archive page;
 //     nothing is ever deleted.
+//
+// The tree has two layouts (DESIGN-0021 §2). In the folder layout, the
+// default, a repository's pages live in a Confluence folder titled
+// sync.confluence.folder or the repository's name, and every title but the
+// home page's starts with the folder name and a colon, so any number of
+// repositories can share a space without a title colliding. The folder and
+// every page carry a docz property naming the repository, and a run never
+// writes, adopts, or archives what another repository's property names,
+// whatever ExportOptions.Force says. The page layout is Phase A's: the
+// parent page is the root and titles are unprefixed. A caller that records
+// page ids passes them back in ExportOptions.Pages, so a renamed document's
+// page is renamed in place; ExportOptions.Overwrite updates a page edited
+// in Confluence instead of skipping it.
 //
 // Export prints nothing and holds no logger. Hooks, carried in the context
 // by WithHooks, report each page and each HTTP response to a caller that
