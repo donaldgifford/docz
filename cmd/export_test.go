@@ -172,9 +172,11 @@ func (f *cmdFake) UpdatePage(_ context.Context, id string, u *confluence.PageUpd
 	return &cp, nil
 }
 
-func (f *cmdFake) Property(_ context.Context, pageID, _ string) (*confluence.Property, error) {
+func (*cmdFake) SpaceHome(context.Context, string) (string, error) { return "home", nil }
+
+func (f *cmdFake) Page(_ context.Context, id string) (*confluence.Page, error) {
 	f.calls++
-	if p, ok := f.props[pageID]; ok {
+	if p := f.byID(id); p != nil {
 		cp := *p
 
 		return &cp, nil
@@ -183,21 +185,46 @@ func (f *cmdFake) Property(_ context.Context, pageID, _ string) (*confluence.Pro
 	return nil, nil
 }
 
-func (f *cmdFake) SetProperty(_ context.Context, pageID string, p *confluence.Property) error {
+func (f *cmdFake) Body(_ context.Context, id string) ([]byte, error) {
 	f.calls++
-	f.props[pageID] = &confluence.Property{ID: "p" + pageID, Key: p.Key, Value: p.Value, Version: p.Version + 1}
+
+	return f.bodies[id], nil
+}
+
+func (*cmdFake) Folder(context.Context, string) (*confluence.Folder, error) { return nil, nil }
+
+func (f *cmdFake) CreateFolder(_ context.Context, nf *confluence.NewFolder) (*confluence.Folder, error) {
+	f.calls++
+
+	return &confluence.Folder{ID: "f-" + nf.Title, Title: nf.Title, ParentID: nf.ParentID, SpaceID: nf.SpaceID}, nil
+}
+
+func (f *cmdFake) Property(_ context.Context, t confluence.Target, _ string) (*confluence.Property, error) {
+	f.calls++
+	if p, ok := f.props[t.ID]; ok {
+		cp := *p
+
+		return &cp, nil
+	}
+
+	return nil, nil
+}
+
+func (f *cmdFake) SetProperty(_ context.Context, t confluence.Target, p *confluence.Property) error {
+	f.calls++
+	f.props[t.ID] = &confluence.Property{ID: "p" + t.ID, Key: p.Key, Value: p.Value, Version: p.Version + 1}
 
 	return nil
 }
 
-func (f *cmdFake) Children(_ context.Context, parentID string) ([]confluence.Page, error) {
+func (f *cmdFake) Children(_ context.Context, parent confluence.Target) ([]confluence.Node, error) {
 	f.calls++
 
-	var out []confluence.Page
+	var out []confluence.Node
 
 	for _, p := range f.pages {
-		if p.ParentID == parentID {
-			out = append(out, *p)
+		if p.ParentID == parent.ID {
+			out = append(out, confluence.Node{Page: *p, Type: confluence.TypePage})
 		}
 	}
 
@@ -212,7 +239,7 @@ func exportFixture(t *testing.T, fake *cmdFake) (*Runner, *bytes.Buffer) {
 
 	r, out, root := exportRunner(t)
 	r.Cfg.Sync.Confluence = config.ConfluenceSyncConfig{
-		Enabled: true, Site: "https://example.atlassian.net", Space: "DOCZ", Parent: "docz",
+		Enabled: true, Site: "https://example.atlassian.net", Space: "DOCZ", Parent: "docz", Layout: config.LayoutPage,
 		Types:   []string{"rfc", "adr"},
 		Mermaid: config.MermaidSyncConfig{Viewer: config.MermaidViewerAuto},
 	}

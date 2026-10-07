@@ -181,14 +181,17 @@ func mapFS(t *testing.T, root string) fstest.MapFS {
 func checkPlanGolden(t *testing.T, rp *repo.Repo, fsys fs.FS) {
 	t.Helper()
 
-	for name, opts := range map[string]ExportOptions{
+	cases := map[string]ExportOptions{
 		"full":  {},
 		"types": {Types: []string{"adr", "inv"}},
 		"ids":   {IDs: []string{"RFC-0002", "DESIGN-0014"}},
-	} {
+	}
+
+	for _, name := range []string{"full", "types", "ids"} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			opts := cases[name]
 			opts.FS = fsys
 
 			p, err := buildPlan(t.Context(), rp, &opts)

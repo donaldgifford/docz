@@ -165,12 +165,78 @@ func TestHTTPClient_Endpoints(t *testing.T) {
 		WebURL: testSite + "/wiki/spaces/DOCZ/pages/42",
 	}
 
+	folderJSON := `{"id":"5","type":"folder","title":"docz","parentId":"65","spaceId":"9",` +
+		`"_links":{"webui":"/spaces/DOCZ/folder/5"}}`
+	wantFolder := &Folder{ID: "5", Title: "docz", ParentID: "65", SpaceID: "9", WebURL: testSite + "/wiki/spaces/DOCZ/folder/5"}
+
 	tests := []struct {
-		name  string
-		reply string
-		call  func(ctx context.Context, h *HTTPClient) (any, error)
-		want  any
+		name   string
+		status int
+		reply  string
+		call   func(ctx context.Context, h *HTTPClient) (any, error)
+		want   any
 	}{
+		{
+			name:  "space_home",
+			reply: `{"id":"9","key":"DOCZ","homepageId":"65"}`,
+			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.SpaceHome(ctx, "9") },
+			want:  "65",
+		},
+		{
+			name:  "page",
+			reply: pageJSON,
+			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.Page(ctx, "42") },
+			want:  want,
+		},
+		{
+			name:   "page_missing",
+			status: http.StatusNotFound,
+			reply:  `{"errors":[{"status":404,"title":"Not Found"}]}`,
+			call:   func(ctx context.Context, h *HTTPClient) (any, error) { return h.Page(ctx, "42") },
+			want:   (*Page)(nil),
+		},
+		{
+			name:  "body",
+			reply: `{"id":"42","body":{"storage":{"value":"<p>kept</p>"}}}`,
+			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.Body(ctx, "42") },
+			want:  []byte("<p>kept</p>"),
+		},
+		{
+			name:  "folder",
+			reply: folderJSON,
+			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.Folder(ctx, "5") },
+			want:  wantFolder,
+		},
+		{
+			name:   "folder_missing",
+			status: http.StatusNotFound,
+			reply:  `{"errors":[]}`,
+			call:   func(ctx context.Context, h *HTTPClient) (any, error) { return h.Folder(ctx, "5") },
+			want:   (*Folder)(nil),
+		},
+		{
+			name:  "create_folder",
+			reply: folderJSON,
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return h.CreateFolder(ctx, &NewFolder{SpaceID: "9", Title: "docz"})
+			},
+			want: wantFolder,
+		},
+		{
+			name:  "folder_property",
+			reply: `{"results":[{"id":"p9","key":"docz","value":{"repo":"o/r"},"version":{"number":1}}]}`,
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return h.Property(ctx, FolderTarget("5"), "docz")
+			},
+			want: &Property{ID: "p9", Key: "docz", Value: json.RawMessage(`{"repo":"o/r"}`), Version: 1},
+		},
+		{
+			name:  "set_folder_property",
+			reply: `{}`,
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return nil, h.SetProperty(ctx, FolderTarget("5"), &Property{Key: "docz", Value: json.RawMessage(`{"repo":"o/r"}`)})
+			},
+		},
 		{
 			name:  "space_id",
 			reply: `{"results":[{"id":"9","key":"DOCZ"}]}`,
@@ -223,27 +289,31 @@ func TestHTTPClient_Endpoints(t *testing.T) {
 		{
 			name:  "property",
 			reply: `{"results":[{"id":"p1","key":"docz","value":{"hash":"abc"},"version":{"number":2}}]}`,
-			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.Property(ctx, "42", "docz") },
-			want:  &Property{ID: "p1", Key: "docz", Value: json.RawMessage(`{"hash":"abc"}`), Version: 2},
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return h.Property(ctx, PageTarget("42"), "docz")
+			},
+			want: &Property{ID: "p1", Key: "docz", Value: json.RawMessage(`{"hash":"abc"}`), Version: 2},
 		},
 		{
 			name:  "property_missing",
 			reply: `{"results":[]}`,
-			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.Property(ctx, "42", "docz") },
-			want:  (*Property)(nil),
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return h.Property(ctx, PageTarget("42"), "docz")
+			},
+			want: (*Property)(nil),
 		},
 		{
 			name:  "set_property_create",
 			reply: `{}`,
 			call: func(ctx context.Context, h *HTTPClient) (any, error) {
-				return nil, h.SetProperty(ctx, "42", &Property{Key: "docz", Value: json.RawMessage(`{"hash":"abc"}`)})
+				return nil, h.SetProperty(ctx, PageTarget("42"), &Property{Key: "docz", Value: json.RawMessage(`{"hash":"abc"}`)})
 			},
 		},
 		{
 			name:  "set_property_update",
 			reply: `{}`,
 			call: func(ctx context.Context, h *HTTPClient) (any, error) {
-				return nil, h.SetProperty(ctx, "42", &Property{
+				return nil, h.SetProperty(ctx, PageTarget("42"), &Property{
 					ID: "p1", Key: "docz", Value: json.RawMessage(`{"hash":"def"}`), Version: 2,
 				})
 			},
@@ -255,6 +325,10 @@ func TestHTTPClient_Endpoints(t *testing.T) {
 			t.Parallel()
 
 			f := newFake(t, func(w http.ResponseWriter, _ *http.Request, _ []byte) {
+				if tt.status != 0 {
+					w.WriteHeader(tt.status)
+				}
+
 				io.WriteString(w, tt.reply)
 			})
 
@@ -276,6 +350,10 @@ func TestHTTPClient_Endpoints(t *testing.T) {
 func deref(v any) any {
 	switch p := v.(type) {
 	case *Page:
+		if p != nil {
+			return *p
+		}
+	case *Folder:
 		if p != nil {
 			return *p
 		}
@@ -396,15 +474,16 @@ func TestHTTPClient_ChildrenPaginates(t *testing.T) {
 		link := ""
 
 		if next != "" {
-			link = `"/wiki/api/v2/pages/7/children?limit=250&cursor=` + next + `"`
+			link = `"/wiki/api/v2/pages/7/direct-children?limit=250&cursor=` + next + `"`
 		} else {
 			link = `""`
 		}
 
-		fmt.Fprintf(w, `{"results":[{"id":"p-%s","title":"T %s"}],"_links":{"next":%s}}`, cursor, cursor, link)
+		kind := map[string]string{"": "page", "c2": "folder", "c3": "page"}[cursor]
+		fmt.Fprintf(w, `{"results":[{"id":"p-%s","type":"%s","title":"T %s"}],"_links":{"next":%s}}`, cursor, kind, cursor, link)
 	})
 
-	got, err := f.client(nil).Children(t.Context(), "7")
+	got, err := f.client(nil).Children(t.Context(), PageTarget("7"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,14 +495,96 @@ func TestHTTPClient_ChildrenPaginates(t *testing.T) {
 			t.Errorf("child %s has parent %q", p.ID, p.ParentID)
 		}
 
-		ids = append(ids, p.ID)
+		ids = append(ids, p.ID+"/"+p.Type)
 	}
 
-	if strings.Join(ids, ",") != "p-,p-c2,p-c3" {
+	if strings.Join(ids, ",") != "p-/page,p-c2/folder,p-c3/page" {
 		t.Errorf("children %v; want three pages followed", ids)
 	}
 
 	checkGolden(t, "client/children.golden", requestShape(apiCalls(t, f.requests())))
+}
+
+func TestHTTPClient_ChildrenOfAFolderThatIsGone(t *testing.T) {
+	t.Parallel()
+
+	f := newFake(t, func(w http.ResponseWriter, _ *http.Request, _ []byte) {
+		w.WriteHeader(http.StatusNotFound)
+		io.WriteString(w, `{"errors":[]}`)
+	})
+
+	got, err := f.client(nil).Children(t.Context(), FolderTarget("5"))
+	if err != nil || got != nil {
+		t.Errorf("Children = %v, %v; want nil, nil", got, err)
+	}
+
+	if reqs := apiCalls(t, f.requests()); len(reqs) != 1 || !strings.HasSuffix(reqs[0].Path, "/folders/5/direct-children") {
+		t.Errorf("requests %+v; want one to /folders/5/direct-children", reqs)
+	}
+}
+
+func TestHTTPClient_TitleTaken(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		archived string
+		call     func(ctx context.Context, h *HTTPClient) error
+		want     TitleError
+	}{
+		{
+			name:     "page held by an archived page",
+			archived: `{"results":[{"id":"77","title":"T","status":"archived"}]}`,
+			call: func(ctx context.Context, h *HTTPClient) error {
+				_, err := h.CreatePage(ctx, &NewPage{SpaceID: "9", Title: "T"})
+				return err
+			},
+			want: TitleError{Title: "T", ArchivedID: "77"},
+		},
+		{
+			name:     "page held by nothing archived",
+			archived: `{"results":[]}`,
+			call: func(ctx context.Context, h *HTTPClient) error {
+				_, err := h.CreatePage(ctx, &NewPage{SpaceID: "9", Title: "T"})
+				return err
+			},
+			want: TitleError{Title: "T"},
+		},
+		{
+			name: "folder",
+			call: func(ctx context.Context, h *HTTPClient) error {
+				_, err := h.CreateFolder(ctx, &NewFolder{SpaceID: "9", Title: "T"})
+				return err
+			},
+			want: TitleError{Title: "T"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			f := newFake(t, func(w http.ResponseWriter, r *http.Request, _ []byte) {
+				if r.Method == http.MethodGet {
+					if r.URL.Query().Get("status") != statusArchived {
+						t.Errorf("lookup %s; want status=archived", r.URL.RawQuery)
+					}
+
+					io.WriteString(w, tt.archived)
+
+					return
+				}
+
+				w.WriteHeader(http.StatusBadRequest)
+				io.WriteString(w, `{"errors":[{"status":400,"title":"A page already exists with the same TITLE in this space"}]}`)
+			})
+
+			var te *TitleError
+			if err := tt.call(t.Context(), f.client(nil)); !errors.As(err, &te) || *te != tt.want {
+				t.Errorf("err %v; want %+v", err, tt.want)
+			}
+		})
+	}
 }
 
 // status answers with code and a body that echoes the token, so a test can

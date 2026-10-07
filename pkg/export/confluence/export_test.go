@@ -21,6 +21,7 @@ func exportRepo(t *testing.T) *repo.Repo {
 	cfg := config.DefaultConfig()
 	cfg.Sync.Confluence = config.ConfluenceSyncConfig{
 		Enabled: true, Site: "https://example.atlassian.net", Space: "DOCZ", Parent: "docz",
+		Layout:  config.LayoutPage,
 		Mermaid: config.MermaidSyncConfig{Viewer: config.MermaidViewerAuto},
 	}
 
