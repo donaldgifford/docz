@@ -35,6 +35,32 @@ type Config struct {
 	HTTP      HTTPConfig
 	Log       LogConfig
 	Telemetry TelemetryConfig
+	// Confluence is the export's credential and allow-list; off unless
+	// CONFLUENCE_API_TOKEN is set (DESIGN-0021 §6).
+	Confluence ConfluenceConfig
+}
+
+// ConfluenceConfig is the one Atlassian credential the server lends to the
+// Confluence export, and the spaces it may lend it for (DESIGN-0021 §6).
+// Repositories choose a space in their .docz.yaml; a site or space not
+// listed here is refused.
+type ConfluenceConfig struct {
+	Site     string   // CONFLUENCE_SITE — https://<name>.atlassian.net; required when enabled.
+	Email    string   // CONFLUENCE_EMAIL — the account's email; required when enabled.
+	APIToken Secret   // CONFLUENCE_API_TOKEN — a scoped token; setting it enables the export.
+	Spaces   []string // CONFLUENCE_SPACES — comma-separated space keys; at least one when enabled.
+}
+
+// Enabled reports whether the export is on: the token is set.
+func (c *ConfluenceConfig) Enabled() bool {
+	return c.APIToken.Reveal() != ""
+}
+
+// Allowed reports whether the server may write to space on site: the site
+// is CONFLUENCE_SITE (a trailing slash aside) and the space key is listed,
+// exactly.
+func (c *ConfluenceConfig) Allowed(site, space string) bool {
+	return c.Enabled() && strings.TrimSuffix(site, "/") == c.Site && slices.Contains(c.Spaces, space)
 }
 
 // StoreConfig holds connection strings for the durable stores.
@@ -217,6 +243,12 @@ func Load() (Config, error) {
 			OTLPEndpoint:   v.GetString("otel_exporter_otlp_endpoint"),
 			SampleRate:     v.GetFloat64("otel_sample_rate"),
 			MetricsEnabled: v.GetBool("metrics_enabled"),
+		},
+		Confluence: ConfluenceConfig{
+			Site:     strings.TrimSuffix(strings.TrimSpace(v.GetString("confluence_site")), "/"),
+			Email:    strings.TrimSpace(v.GetString("confluence_email")),
+			APIToken: Secret(v.GetString("confluence_api_token")),
+			Spaces:   splitTrimmed(v.GetString("confluence_spaces")),
 		},
 	}
 

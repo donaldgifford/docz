@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 )
@@ -43,6 +44,7 @@ func validate(c *Config) error {
 	}
 
 	validateAuth(&errs, &c.Auth)
+	validateConfluence(&errs, &c.Confluence)
 	validateEnum(&errs, "LOG_LEVEL", c.Log.Level, _validLogLevels)
 	validateEnum(&errs, "LOG_FORMAT", c.Log.Format, _validLogFormats)
 
@@ -50,6 +52,28 @@ func validate(c *Config) error {
 		return nil
 	}
 	return fmt.Errorf("%w:\n  %s", ErrInvalidConfig, strings.Join(errs, "\n  "))
+}
+
+// validateConfluence checks the export's settings, only when the token
+// turns it on: an https site with a host and no path, an email, and at
+// least one space.
+func validateConfluence(errs *[]string, c *ConfluenceConfig) {
+	if !c.Enabled() {
+		return
+	}
+
+	if u, err := url.Parse(c.Site); c.Site == "" || err != nil || u.Scheme != "https" || u.Host == "" ||
+		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.User != nil {
+		*errs = append(*errs, "CONFLUENCE_SITE: an https URL with a host and no path is required when CONFLUENCE_API_TOKEN is set")
+	}
+
+	if c.Email == "" {
+		*errs = append(*errs, "CONFLUENCE_EMAIL: required when CONFLUENCE_API_TOKEN is set")
+	}
+
+	if len(c.Spaces) == 0 {
+		*errs = append(*errs, "CONFLUENCE_SPACES: at least one space key is required when CONFLUENCE_API_TOKEN is set")
+	}
 }
 
 // validateAuth checks the provider list and each enabled provider's credentials.
