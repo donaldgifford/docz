@@ -675,7 +675,12 @@ in its own, and `v2.0.0-beta.8` ships it.
   second one sharing `DOCZ`, and a third repository naming a second space
   on the allow-list. Then a fourth naming a space not on the list,
   expecting `refused`. Record each repository's `GET …/confluence` in this
-  document
+  document. The repositories are the seven live fixtures in
+  `test/live/confluence/` (`docz-fixture-basic`, `-shared`, `-solo`,
+  `-refused`, `-layout-page`, `-folder-clash`, `-disabled`), each staged
+  to end one way; its README is the procedure, the expected status per
+  fixture, and the hand-driven scenarios, and `just
+  confluence-fixtures-push` (re)publishes them
 - [ ] `just ci` green; the PR merged by a person; `just release
   v2.0.0-beta.8` from the merge commit: `deferred - human required`.
   `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
@@ -759,8 +764,9 @@ in its own, and `v2.0.0-beta.8` ships it.
 - [x] The OpenAPI contract test and `doc.test.tsx`
 - [x] helm-unittest for the env block, the Secret key, and the alert
 - [ ] Live: `just export-live` with folders; the CLI run of Phase 4; the
-  comment check of Phase 5; the server run of Phase 9. The first three
-  ran on 2026-10-07; the server run is `deferred - human required`
+  comment check of Phase 5; the server run of Phase 9 over the
+  `test/live/confluence` fixtures. The first three ran on 2026-10-07; the
+  server run is `deferred - human required`
 
 <!--docz:testing:end-->
 

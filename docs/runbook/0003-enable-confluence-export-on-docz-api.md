@@ -41,7 +41,7 @@ created: 2026-10-07
 |      |    |        |             |
 
 **Notes:** Not yet run end to end. Written from DESIGN-0021 and IMPL-0024;
-the row comes from IMPL-0024 Phase 9's live server run.
+the row comes from the `test/live/confluence` fixture run.
 
 <!--docz:last-verified:end-->
 
@@ -292,5 +292,7 @@ rate limiting or errors on some pages (`partial`).
   the implementation plan
 - [`charts/docz` README](../../charts/docz/README.md), "Confluence export"
 - [`contrib/README.md`](../../contrib/README.md), the export metrics
+- [`test/live/confluence`](../../test/live/confluence/README.md): the
+  fixture repositories and procedure that verify this runbook
 
 <!--docz:references:end-->

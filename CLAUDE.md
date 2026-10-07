@@ -1533,7 +1533,18 @@ folder layout, and records what it wrote.
   calls, with `RequireAuth` and `FailOn`. The package's own tests keep
   `fake_test.go`: in-package tests importing `confluencetest` would cycle.
   `internal/e2e/confluence_integration_test.go` runs ingest → export →
-  rename → removal → disable over real Postgres and the HTTP fake.
+  rename → removal → disable over real Postgres and the HTTP fake. The
+  **live** check runs over seven public fixture repositories,
+  `donaldgifford/docz-fixture-{basic,shared,solo,refused,layout-page,folder-clash,disabled}`,
+  whose contents are `test/live/confluence/fixtures/<repo>/` and are
+  published only by `just confluence-fixtures-push` (a force-push of one
+  commit, which also resets a fixture after the hand-driven scenarios).
+  Each is staged to end one way; `test/live/confluence/README.md` is the
+  table of expected statuses, the setup (a `DOCZ2` space beside `DOCZ`,
+  the App on those seven repositories only), the run, and the
+  hand-driven rename/remove/edit/comment/disable scenarios. `basic` must
+  export before `folder-clash`. Edit a fixture there, never in its
+  repository; nothing in `just test` or CI reads the directory.
 - **Deploy** (chart 0.3.0): `api.confluence.{site,email,spaces}` render the
   four `CONFLUENCE_*` variables **only while `site` is set**, with the
   token from the API Secret's `confluence-api-token` key (`required` then,

@@ -1027,6 +1027,7 @@ appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 | `just parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
 | `just validate` | Run `docz validate` over this repo's own `docs/`, non-strict |
 | `just export-live` | Round trip one page and its property on the Confluence site in `~/.config/docz/atlassian.env` (`//go:build live`; never in CI) |
+| `just confluence-fixtures-push [repo...]` | Force-push the Confluence live fixtures in `test/live/confluence/fixtures/` to their `donaldgifford/docz-fixture-*` repositories (all, or the ones named) |
 | `just lint` | Run golangci-lint |
 | `just lint-fix` | Auto-fix lint issues |
 | `just fmt` | Run gofmt + goimports |
@@ -1178,7 +1179,11 @@ then enqueues an export on the `export` queue, and
 `curl localhost:8080/api/v1/repos/<owner>/<name>/confluence` shows the last
 one. `-export owner/name` enqueues one by hand. `internal/export` is the
 service; its tests and `internal/e2e`'s `TestE2EConfluenceExport` run against
-`confluencetest`, so none of them need a site. Enabling it on a deployment
+`confluencetest`, so none of them need a site. The live check against a real site
+runs over seven public fixture repositories (`donaldgifford/docz-fixture-*`)
+whose contents live in [`test/live/confluence/`](test/live/confluence/README.md),
+each staged to end one way (`succeeded`, `refused`, `failed`, `disabled`);
+edit them there and publish with `just confluence-fixtures-push`. Enabling it on a deployment
 is [RUNBOOK-0003](docs/runbook/0003-enable-confluence-export-on-docz-api.md).
 
 When you are done:

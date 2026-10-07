@@ -1,0 +1,18 @@
+# docz Confluence live fixture. Generated from docz's
+# test/live/confluence; edit it there, never in this repository.
+docs_dir: docs
+types:
+  rfc:
+    enabled: true
+  adr:
+    enabled: true
+api:
+  enabled: true
+  additional_docs:
+    - CONTRIBUTING.md
+sync:
+  confluence:
+    enabled: true
+    site: https://dgifford06.atlassian.net
+    space: DOCZ
+    api_pages: true
