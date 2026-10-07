@@ -45,10 +45,10 @@ type IngestJob struct {
 func (j *IngestJob) repoLabel() string { return j.Owner + "/" + j.Name }
 
 // marshalJob encodes j to JSON for the asynq task payload.
-func marshalJob(j *IngestJob) ([]byte, error) {
+func marshalJob(j any) ([]byte, error) {
 	b, err := json.Marshal(j)
 	if err != nil {
-		return nil, fmt.Errorf("marshal ingest job: %w", err)
+		return nil, fmt.Errorf("marshal %T: %w", j, err)
 	}
 	return b, nil
 }
@@ -62,26 +62,25 @@ func unmarshalJob(payload []byte) (*IngestJob, error) {
 	return &j, nil
 }
 
-// injectTrace records the active span's W3C trace context onto job using the
-// global propagator, so a downstream worker can continue the trace. It is a
-// no-op when ctx carries no span (the fields stay empty).
-func injectTrace(ctx context.Context, job *IngestJob) {
+// injectTrace returns the active span's W3C trace context, captured with the
+// global propagator, so a downstream worker can continue the trace. Both are
+// empty when ctx carries no span.
+func injectTrace(ctx context.Context) (parent, state string) {
 	carrier := propagation.MapCarrier{}
 	otel.GetTextMapPropagator().Inject(ctx, carrier)
-	job.TraceParent = carrier["traceparent"]
-	job.TraceState = carrier["tracestate"]
+	return carrier["traceparent"], carrier["tracestate"]
 }
 
-// extractTrace returns a context carrying the remote span referenced by job's
-// trace fields, so a worker span becomes a child of the enqueue-time span. It
+// extractTrace returns a context carrying the remote span a job's trace
+// fields name, so a worker span becomes a child of the enqueue-time span. It
 // returns ctx unchanged when the job carries no trace context.
-func extractTrace(ctx context.Context, job *IngestJob) context.Context {
-	if job.TraceParent == "" {
+func extractTrace(ctx context.Context, parent, state string) context.Context {
+	if parent == "" {
 		return ctx
 	}
-	carrier := propagation.MapCarrier{"traceparent": job.TraceParent}
-	if job.TraceState != "" {
-		carrier["tracestate"] = job.TraceState
+	carrier := propagation.MapCarrier{"traceparent": parent}
+	if state != "" {
+		carrier["tracestate"] = state
 	}
 	return otel.GetTextMapPropagator().Extract(ctx, carrier)
 }

@@ -95,7 +95,7 @@ func (w *Worker) handleIngest(ctx context.Context, task *asynq.Task) error {
 
 	// Continue the trace started at the enqueue site (the webhook/HTTP request),
 	// so the whole trigger → ingest flow is one trace.
-	ctx = extractTrace(ctx, job)
+	ctx = extractTrace(ctx, job.TraceParent, job.TraceState)
 	ctx, span := tracer.Start(ctx, "queue.ingest",
 		trace.WithSpanKind(trace.SpanKindConsumer),
 		trace.WithAttributes(

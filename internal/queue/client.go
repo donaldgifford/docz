@@ -71,6 +71,37 @@ func NewClient(redisURL string, debounce time.Duration) (*Client, error) {
 	}, nil
 }
 
+// taskSpec is what tells one kind of job from another on the queue: its
+// asynq task type, its queue, and the word the logs use for it. With a task
+// id it names one task, which is everything the conflict path needs.
+type taskSpec struct {
+	taskType string
+	queue    string
+	kind     string
+}
+
+var (
+	ingestSpec = taskSpec{taskType: TaskTypeIngest, queue: queueName, kind: "ingest"}
+	exportSpec = taskSpec{taskType: TaskTypeExport, queue: exportQueueName, kind: "export"}
+)
+
+// queuedJob is a job payload the client can enqueue: IngestJob and ExportJob.
+type queuedJob interface {
+	spec() taskSpec
+	options(c *Client) []asynq.Option
+	repoLabel() string
+	jobReason() string
+}
+
+func (j *IngestJob) jobReason() string { return j.Reason }
+func (*IngestJob) spec() taskSpec      { return ingestSpec }
+
+// options delays an ingest by the debounce window so a burst of triggers
+// collapses to one run at the latest HEAD.
+func (*IngestJob) options(c *Client) []asynq.Option {
+	return []asynq.Option{asynq.ProcessIn(c.debounce), asynq.MaxRetry(maxRetry)}
+}
+
 // ingestTaskID is the asynq task id for a repo's ingest job. It is deliberately
 // stable per repo: that is what makes a burst of triggers coalesce into one run.
 func ingestTaskID(job *IngestJob) string {
@@ -93,7 +124,7 @@ func ingestTaskID(job *IngestJob) string {
 func (c *Client) EnqueueIngest(ctx context.Context, job *IngestJob) error {
 	// Capture the caller's trace context into the payload so the worker span
 	// continues this trace across the Redis boundary.
-	injectTrace(ctx, job)
+	job.TraceParent, job.TraceState = injectTrace(ctx)
 
 	payload, err := marshalJob(job)
 	if err != nil {
@@ -101,7 +132,7 @@ func (c *Client) EnqueueIngest(ctx context.Context, job *IngestJob) error {
 	}
 	taskID := ingestTaskID(job)
 
-	err = c.enqueue(ctx, payload, taskID)
+	err = c.enqueue(ctx, job, payload, taskID)
 	switch {
 	case err == nil:
 		slog.InfoContext(ctx, "ingest job enqueued",
@@ -116,14 +147,10 @@ func (c *Client) EnqueueIngest(ctx context.Context, job *IngestJob) error {
 
 // enqueue submits the task, returning asynq's error unwrapped so the caller can
 // classify it.
-func (c *Client) enqueue(ctx context.Context, payload []byte, taskID string) error {
-	_, err := c.asynq.EnqueueContext(ctx,
-		asynq.NewTask(TaskTypeIngest, payload),
-		asynq.TaskID(taskID),
-		asynq.Queue(queueName),
-		asynq.ProcessIn(c.debounce),
-		asynq.MaxRetry(maxRetry),
-	)
+func (c *Client) enqueue(ctx context.Context, job queuedJob, payload []byte, taskID string) error {
+	sp := job.spec()
+	opts := append([]asynq.Option{asynq.TaskID(taskID), asynq.Queue(sp.queue)}, job.options(c)...)
+	_, err := c.asynq.EnqueueContext(ctx, asynq.NewTask(sp.taskType, payload), opts...)
 	return err
 }
 
@@ -142,9 +169,10 @@ func isTaskIDConflict(err error) bool {
 // Only a task that will still run counts as coalescing; a terminal one is
 // cleared and the trigger re-enqueued.
 func (c *Client) resolveTaskIDConflict(
-	ctx context.Context, job *IngestJob, payload []byte, taskID string,
+	ctx context.Context, job queuedJob, payload []byte, taskID string,
 ) error {
-	info, ierr := c.inspector.GetTaskInfo(queueName, taskID)
+	sp := job.spec()
+	info, ierr := c.inspector.GetTaskInfo(sp.queue, taskID)
 	if classifyConflict(info, ierr) == coalesceTrigger {
 		// classifyConflict already folds a nil info into coalescing, so this
 		// branch must tolerate one: the real *asynq.Inspector always pairs a nil
@@ -152,15 +180,15 @@ func (c *Client) resolveTaskIDConflict(
 		// dereferenced just below.
 		if ierr != nil || info == nil {
 			slog.WarnContext(ctx,
-				"could not inspect the conflicting ingest task; treating as coalesced",
-				"repo", job.repoLabel(), "reason", job.Reason, "err", ierr)
+				"could not inspect the conflicting "+sp.kind+" task; treating as coalesced",
+				"repo", job.repoLabel(), "reason", job.jobReason(), "err", ierr)
 			return nil
 		}
 		// Info, not Debug: this branch also absorbs the active-window drop
 		// documented on EnqueueIngest, so it is the one place a trigger can
 		// legitimately go nowhere. It must be visible at the default log level.
-		slog.InfoContext(ctx, "ingest job coalesced into an existing task",
-			"repo", job.repoLabel(), "reason", job.Reason, "state", info.State.String())
+		slog.InfoContext(ctx, sp.kind+" job coalesced into an existing task",
+			"repo", job.repoLabel(), "reason", job.jobReason(), "state", info.State.String())
 		return nil
 	}
 
@@ -169,27 +197,27 @@ func (c *Client) resolveTaskIDConflict(
 	// this, two pushes seconds apart make the loser answer 500, and because the
 	// delivery id was already recorded, GitHub's redelivery is deduped to a
 	// no-op instead of retrying.
-	if derr := c.inspector.DeleteTask(queueName, taskID); derr != nil &&
+	if derr := c.inspector.DeleteTask(sp.queue, taskID); derr != nil &&
 		!errors.Is(derr, asynq.ErrTaskNotFound) {
-		return fmt.Errorf("clear finished ingest task for %s: %w", job.repoLabel(), derr)
+		return fmt.Errorf("clear finished %s task for %s: %w", sp.kind, job.repoLabel(), derr)
 	}
 	// Re-enqueued exactly once: if this conflicts again another enqueue won the
 	// race, which means a run is now pending and the trigger is covered.
-	if eerr := c.enqueue(ctx, payload, taskID); eerr != nil {
+	if eerr := c.enqueue(ctx, job, payload, taskID); eerr != nil {
 		if isTaskIDConflict(eerr) {
-			slog.InfoContext(ctx, "ingest job coalesced after clearing a finished task",
-				"repo", job.repoLabel(), "reason", job.Reason)
+			slog.InfoContext(ctx, sp.kind+" job coalesced after clearing a finished task",
+				"repo", job.repoLabel(), "reason", job.jobReason())
 			return nil
 		}
-		return fmt.Errorf("re-enqueue ingest for %s: %w", job.repoLabel(), eerr)
+		return fmt.Errorf("re-enqueue %s for %s: %w", sp.kind, job.repoLabel(), eerr)
 	}
 
-	slog.InfoContext(ctx, "cleared a finished ingest task and re-enqueued",
-		"repo", job.repoLabel(), "reason", job.Reason, "cleared_state", info.State.String())
+	slog.InfoContext(ctx, "cleared a finished "+sp.kind+" task and re-enqueued",
+		"repo", job.repoLabel(), "reason", job.jobReason(), "cleared_state", info.State.String())
 	return nil
 }
 
-// conflictAction is what a taken ingest task id means for the new trigger.
+// conflictAction is what a taken task id means for the new trigger.
 type conflictAction int
 
 const (
