@@ -17,6 +17,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(store)* Record Confluence exports and join each document's page
 - *(config)* CONFLUENCE_SITE, _EMAIL, _API_TOKEN, and _SPACES
 - *(docz-api)* Check the Confluence credential at startup
+- *(queue)* The export:confluence task and a conflict path shared with ingest
+- *(doctemplate)* EmbeddedIndexHeader, the index header without the disk tier
+- *(confluence)* Confluencetest, an in-memory Confluence site
+- *(export)* The repository tree, the blob resolver, and the retry table
+- *(export)* Service.Run, one repository's export from a stored snapshot
+- *(telemetry)* Export job and page metrics
+- *(queue)* The worker serves the export queue
+- *(ingest)* Enqueue a Confluence export after each ingest
+- *(docz-api)* Run Confluence exports, and -export owner/name
 
 ### Documentation
 
@@ -40,6 +49,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0024)* Phase 4 complete
 - *(impl-0024)* Phase 5 complete
 - *(impl)* Check off IMPL-0024 Phase 6
+- IMPL-0024 Phase 7, the export task
 
 ### Testing
 
@@ -51,6 +61,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(confluence)* The inline-comment corpus, FuzzCarryMarkers, and an update over the fake
 - *(confluence)* A live inline comment survives an update
 - *(store)* Confluence records, the URL join, and ExportInputs as one snapshot
+- *(e2e)* A repository's Confluence export through ingest, rename, removal, and disable
 
 ### Miscellaneous Tasks
 
