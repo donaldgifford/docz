@@ -21,6 +21,9 @@ type ingestRunner struct {
 	store   *store.Store
 	indexer *search.Client
 	github  config.GitHubConfig
+	// exporter enqueues a Confluence export after each ingest; nil when the
+	// server has no Atlassian credential.
+	exporter ingest.Exporter
 }
 
 // *ingestRunner is the production queue.Ingestor.
@@ -40,5 +43,9 @@ func (r *ingestRunner) Run(
 	if err != nil {
 		return store.ReconcileResult{}, fmt.Errorf("build github client for installation %d: %w", installationID, err)
 	}
-	return ingest.NewService(r.store, ghClient, r.indexer).Run(ctx, installationID, owner, name)
+	svc := ingest.NewService(r.store, ghClient, r.indexer)
+	if r.exporter != nil {
+		svc.WithExporter(r.exporter)
+	}
+	return svc.Run(ctx, installationID, owner, name)
 }

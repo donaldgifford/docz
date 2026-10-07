@@ -28,6 +28,7 @@ import (
 	"github.com/donaldgifford/docz/v2/internal/authhttp"
 	"github.com/donaldgifford/docz/v2/internal/authorize"
 	"github.com/donaldgifford/docz/v2/internal/config"
+	"github.com/donaldgifford/docz/v2/internal/export"
 	"github.com/donaldgifford/docz/v2/internal/githubapp"
 	"github.com/donaldgifford/docz/v2/internal/httpapi"
 	"github.com/donaldgifford/docz/v2/internal/queue"
@@ -36,6 +37,7 @@ import (
 	"github.com/donaldgifford/docz/v2/internal/store"
 	"github.com/donaldgifford/docz/v2/internal/telemetry"
 	"github.com/donaldgifford/docz/v2/internal/webhook"
+	"github.com/donaldgifford/docz/v2/pkg/export/confluence"
 )
 
 // Build metadata, injected via -ldflags at release time (see justfile).
@@ -78,6 +80,8 @@ func run() error {
 	migrateOnly := flag.Bool("migrate", false, "apply database migrations and exit")
 	onboardSpec := flag.String("onboard", "",
 		"seed a repo and run one ingest, then exit: owner/name@installation_id")
+	exportSpec := flag.String("export", "",
+		"enqueue one Confluence export of an onboarded repo, then exit: owner/name")
 	flag.Parse()
 
 	if *showVersion {
@@ -130,7 +134,8 @@ func run() error {
 
 	// The Confluence export's credential, when one is configured, is proven
 	// the same way: a rejected token fails the deploy (DESIGN-0021 §6).
-	if _, err := setupConfluence(context.Background(), &cfg.Confluence); err != nil {
+	confluenceClient, err := setupConfluence(context.Background(), &cfg.Confluence)
+	if err != nil {
 		return err
 	}
 
@@ -164,9 +169,18 @@ func run() error {
 		return runOnboard(context.Background(), st, queueClient, *onboardSpec)
 	}
 
+	// `-export` enqueues one export of an onboarded repository, then exits.
+	if *exportSpec != "" {
+		defer closeQueueClient(queueClient)
+		if confluenceClient == nil {
+			return errors.New("-export: the Confluence export is off; set CONFLUENCE_API_TOKEN")
+		}
+		return runExport(context.Background(), st, queueClient, *exportSpec)
+	}
+
 	// Serve path (not -onboard): build the auth stack + in-process worker + HTTP
 	// surface and serve until shutdown.
-	return runServer(&cfg, st, searchClient, queueClient)
+	return runServer(&cfg, st, searchClient, queueClient, confluenceClient)
 }
 
 // runServer builds the site-user auth stack, the in-process ingest worker, and
@@ -175,6 +189,7 @@ func run() error {
 // owns the queue client on the happy path.
 func runServer(
 	cfg *config.Config, st *store.Store, searchClient *search.Client, queueClient *queue.Client,
+	confluenceClient *confluence.HTTPClient,
 ) error {
 	// Site-user auth: build the enabled providers (OIDC discovery happens here,
 	// bounded by a startup context) and the Redis session store, before the
@@ -195,8 +210,15 @@ func runServer(
 
 	// The worker runs in-process alongside the HTTP server (single-binary ethos).
 	// It builds a per-installation GitHub client per job via ingestRunner.
+	// With a Confluence credential configured, each ingest enqueues an export
+	// and the same worker runs it over the one process-wide client.
 	runner := &ingestRunner{store: st, indexer: searchClient, github: cfg.GitHub}
-	worker, err := queue.NewWorker(cfg.Store.RedisURL, workerConcurrency, runner, nil)
+	var exporter queue.Exporter
+	if confluenceClient != nil {
+		runner.exporter = queueClient
+		exporter = export.NewService(st, confluenceClient, &cfg.Confluence, version)
+	}
+	worker, err := queue.NewWorker(cfg.Store.RedisURL, workerConcurrency, runner, exporter)
 	if err != nil {
 		closeQueueClient(queueClient)
 		return fmt.Errorf("building queue worker: %w", err)
@@ -297,6 +319,35 @@ func runOnboard(ctx context.Context, st *store.Store, enq queue.Enqueuer, spec s
 
 	slog.Info("onboard enqueued; a running worker will ingest shortly",
 		"repo", owner+"/"+name, "installation_id", installationID)
+	return nil
+}
+
+// repoGetter is the store lookup -export needs; *store.Store satisfies it.
+type repoGetter interface {
+	GetRepo(ctx context.Context, owner, name string) (store.Repo, error)
+}
+
+// runExport enqueues one Confluence export of an onboarded repository
+// (owner/name), with reason manual, then returns; a running server's worker
+// performs it.
+func runExport(ctx context.Context, st repoGetter, enq queue.ExportEnqueuer, spec string) error {
+	owner, name, ok := strings.Cut(spec, "/")
+	if !ok || owner == "" || name == "" || strings.Contains(name, "/") {
+		return fmt.Errorf("parse -export: expected owner/name, got %q", spec)
+	}
+
+	repo, err := st.GetRepo(ctx, owner, name)
+	if err != nil {
+		return fmt.Errorf("-export: look up %s: %w", spec, err)
+	}
+
+	if err := enq.EnqueueExport(ctx, &queue.ExportJob{
+		RepoID: repo.ID, Owner: owner, Name: name, Reason: "manual",
+	}); err != nil {
+		return fmt.Errorf("enqueue export: %w", err)
+	}
+
+	slog.Info("export enqueued; a running worker will export shortly", "repo", spec)
 	return nil
 }
 
