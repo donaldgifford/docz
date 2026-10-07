@@ -12,6 +12,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(confluence)* Plan the export from an fs.FS
 - *(confluence)* The folder layout, recorded ids, ownership, and Overwrite
 - *(export)* The CLI names its repository and warns about edited pages
+- *(confluence)* Carry inline comments across an update ([#158](https://github.com/donaldgifford/docz/issues/158))
+- *(export)* Warn for each inline comment an update could not re-anchor
 
 ### Documentation
 
@@ -33,6 +35,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(confluence)* Export reads through ExportOptions.FS
 - *(impl-0024)* Phase 3 complete
 - *(impl-0024)* Phase 4 complete
+- *(impl-0024)* Phase 5 complete
 
 ### Testing
 
@@ -41,6 +44,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(confluence)* Folders, ownership, recorded ids, and Overwrite over the fake
 - *(confluence)* The live round trip gains a folder
 - *(export)* Warnings on stderr, the repository name, the JSON folder
+- *(confluence)* The inline-comment corpus, FuzzCarryMarkers, and an update over the fake
+- *(confluence)* A live inline comment survives an update
 
 ### Miscellaneous Tasks
 
