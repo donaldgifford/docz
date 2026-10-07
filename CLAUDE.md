@@ -1534,6 +1534,13 @@ folder layout, and records what it wrote.
   `fake_test.go`: in-package tests importing `confluencetest` would cycle.
   `internal/e2e/confluence_integration_test.go` runs ingest → export →
   rename → removal → disable over real Postgres and the HTTP fake.
+- **Deploy** (chart 0.3.0): `api.confluence.{site,email,spaces}` render the
+  four `CONFLUENCE_*` variables **only while `site` is set**, with the
+  token from the API Secret's `confluence-api-token` key (`required` then,
+  as are the email and spaces). `DoczAPIExportFailures` (failed or partial
+  exports over 30 minutes) is in the chart's PrometheusRule and
+  `contrib/prometheus/alerts.yaml`. Turning it on, widening the allow-list,
+  and reading each status are RUNBOOK-0003.
 
 ### Renovate
 

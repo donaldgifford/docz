@@ -49,6 +49,11 @@
 // page is renamed in place; ExportOptions.Overwrite updates a page edited
 // in Confluence instead of skipping it.
 //
+// An update carries the inline comments readers left on a page: each
+// comment's marker moves into the new body wherever the text it was
+// anchored to survives, and the ones that cannot be placed are reported in
+// PageResult.Comments.Lost rather than dropped silently (#158).
+//
 // Export prints nothing and holds no logger. Hooks, carried in the context
 // by WithHooks, report each page and each HTTP response to a caller that
 // wants to narrate.

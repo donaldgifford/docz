@@ -155,7 +155,7 @@ docz update --dry-run  # preview changes without writing
 | Flag | Description |
 |------|-------------|
 | `--type <name>` | Export one type; repeatable (default: `sync.confluence.types`, else every enabled type) |
-| `--force` | Overwrite pages edited in Confluence and adopt pages docz did not create |
+| `--force` | Overwrite pages edited in Confluence and adopt pages docz did not create (never another repository's) |
 | `--dry-run` | Make every read and no write; report what each page would have done |
 | `--out <dir>` | Also write each rendered page to `<dir>/<id>.xhtml` |
 | `--format <fmt>` | Output format: `text` (default), `json` |
@@ -456,6 +456,10 @@ api:
   landing_page: ""         # defaults to <docs_dir>/index.md
   exclude: []              # path prefixes under docs_dir that are never published
   additional_docs: []      # markdown OUTSIDE docs_dir, e.g. CONTRIBUTING.md
+
+sync:
+  confluence:
+    enabled: false         # opt in to export to Confluence Cloud (see Sync below)
 ```
 
 Run `docz config` to see the fully resolved configuration.
@@ -521,17 +525,19 @@ consumers derive one from the document's H1 via `doczcore/docparse.Title`.
 
 ### Sync
 
-The `sync:` block points `docz export confluence` at a Confluence Cloud
-space. Like `api:` it is **off by default**, and a disabled block is never
-validated:
+The `sync:` block points `docz export confluence`, and docz-api's export, at
+a Confluence Cloud space. Like `api:` it is **off by default**, and a
+disabled block is never validated:
 
 ```yaml
 sync:
   confluence:
     enabled: true
     site: https://example.atlassian.net   # the Cloud site; not a secret
-    space: DOCZ                           # space key
-    parent: docz                          # the page everything goes under
+    space: DOCZ                           # space key; several repositories may share one
+    layout: folder                        # folder (default) | page
+    folder: ""                            # the folder's title; empty: the repository's name
+    parent: ""                            # optional under folder; the root page under page
     types: []                             # empty: every enabled type
     exclude: [examples]                   # prefixes under docs_dir, as api.exclude
     api_pages: false                      # also export the api: landing page and additional_docs
@@ -539,17 +545,23 @@ sync:
       viewer: auto                        # auto | off | <extension key>
 ```
 
-The export builds one tree under the parent page:
+With **`layout: folder`** (the default, DESIGN-0021) the export builds one
+Confluence folder per repository at the top of the space, or under
+`parent` when it is set, and prefixes every title with the folder's name so
+repositories sharing a space never collide:
 
-- **The parent page** carries the `api:` landing page as its body when
-  `api_pages` is on, otherwise one line naming the repository. It stays
-  wherever it is in the space.
-- **A page per type**, titled with the type's nav title, carries that type's
-  README index. Its table links to the pages beneath it.
-- **One page per document**, titled `ID: Title`, sits under its type page.
-  A banner names the source file and links to it on GitHub.
-- **The `additional_docs`** sit directly under the parent when `api_pages`
-  is on.
+- **The repository's page**, titled with the folder's name alone, carries the `api:`
+  landing page as its body when `api_pages` is on, otherwise one line
+  naming the repository.
+- **A page per type** (`<folder>: RFCs`), titled with the type's nav
+  title, carries that type's README index. Its table links to the pages
+  beneath it.
+- **One page per document** (`<folder>: RFC-0001: Title`) sits under its
+  type page. A banner names the source file and links to it on GitHub.
+- **The `additional_docs`** sit in the folder when `api_pages` is on.
+
+**`layout: page`** is the IMPL-0023 shape for the CLI alone: everything
+under the existing `parent` page, titles unprefixed. docz-api refuses it.
 
 A relative link to another exported file becomes a link to its page. A link
 to any other file that exists becomes a GitHub blob URL at the default
@@ -566,17 +578,20 @@ docz export confluence
 
 Prefer a **scoped API token**. Create one at
 <https://id.atlassian.com/manage-profile/security/api-tokens> with "Create
-API token with scopes", choose Confluence, and grant these three scopes:
+API token with scopes", choose Confluence, and grant these six scopes:
 
 - `read:space:confluence`
 - `read:page:confluence`
 - `write:page:confluence`
+- `read:folder:confluence`
+- `write:folder:confluence`
+- `read:hierarchical-content:confluence`
 
-Every request goes through Atlassian's gateway
-(`api.atlassian.com/ex/confluence/<cloudId>`), which accepts both scoped and
-unscoped tokens. An unscoped token therefore works too. A token Atlassian
-rejects exits 2, with the response body, which for a scoped token names the
-scope it lacks.
+No delete scope is needed: nothing is ever deleted. Every request goes
+through Atlassian's gateway (`api.atlassian.com/ex/confluence/<cloudId>`),
+which accepts both scoped and unscoped tokens. An unscoped token therefore
+works too. A token Atlassian rejects exits 2, with the response body, which
+for a scoped token names the scope it lacks.
 
 Mermaid fences render through Atlassian Labs' **Mermaid diagrams viewer**
 app, which a site admin must install from the Marketplace. Each diagram
@@ -584,25 +599,41 @@ draws from its source, kept beneath it in a collapsed "Diagram source"
 expand. On a site without the app, set `mermaid.viewer: off` and the
 fences export as plain code blocks instead.
 
-Each page carries a `docz` content property recording the document id, its
-source, the hash of its rendered body, and the page version docz wrote. On
-every run a page takes one of these actions:
+Each page and folder carries a `docz` content property recording the
+document id, the repository, its source, the hash of its rendered body,
+and the page version docz wrote. The CLI finds each page by its title;
+docz-api finds it by the page id it recorded, so a renamed document's page
+is renamed in place. On every run a page takes one of these actions:
 
 - **Unchanged:** the hash and the parent match, so nothing is written.
-- **Updated:** the document changed, so a new version is written.
-- **Skipped:** somebody edited the page in Confluence since docz wrote it,
-  or the page has the right title but docz did not create it. `--force`
-  overwrites the edit, or adopts the page. A skip exits 0 unless `--strict`
-  is set.
+- **Updated:** the document changed, so a new version is written. Inline
+  comments readers left on the page are carried into the new version
+  wherever their text survives; one whose text is gone is named in a
+  `WARNING: … lost its anchor` line on stderr.
+- **Skipped:** somebody edited the page in Confluence since docz wrote it
+  (named in a `WARNING: … was edited in Confluence` line), or the page has
+  the right title but docz did not create it. `--force` overwrites the
+  edit, or adopts the page. A page or folder **another repository** wrote
+  is never touched, `--force` included, and is named in a `WARNING` line. A
+  skip exits 0 unless `--strict` is set.
 - **Archived:** a full run (no `--type`, no ids) found a page whose
-  document is gone, and moved it under an `Archive` child of the parent.
-  Nothing is ever deleted. A document that comes back is moved back.
+  document is gone, and moved it under `<folder>: Archive`. Nothing is
+  ever deleted. A document that comes back is moved back.
 
 Content only flows out: nothing in Confluence is read back into the
 repository. Exit codes are 0 when no page failed, 1 when a page failed (the
 rest are still written), and 2 for configuration problems. Those include a
 disabled block, missing or rejected credentials, an unknown type, and an id
 that matches nothing.
+
+**docz-api** runs the same export after every ingest of an opted-in
+repository, with no checkout, when the server is configured with
+`CONFLUENCE_SITE`, `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`, and
+`CONFLUENCE_SPACES` (the chart's `api.confluence.*`). It writes only into a
+space on that list, always overwrites edits made in Confluence, and serves
+each repository's last export at `GET /api/v1/repos/{owner}/{name}/confluence`.
+[RUNBOOK-0003](docs/runbook/0003-enable-confluence-export-on-docz-api.md)
+turns it on.
 
 ## Template System
 
