@@ -11,19 +11,21 @@ import (
 )
 
 type ConfluencePage struct {
-	RepoID       int64              `json:"repo_id"`
-	Key          string             `json:"key"`
-	DocID        string             `json:"doc_id"`
-	PageID       string             `json:"page_id"`
-	Title        string             `json:"title"`
-	Url          string             `json:"url"`
-	Version      int32              `json:"version"`
-	Hash         string             `json:"hash"`
-	Action       string             `json:"action"`
-	Reason       string             `json:"reason"`
-	EditedFrom   int32              `json:"edited_from"`
-	CommentsLost int32              `json:"comments_lost"`
-	SyncedAt     pgtype.Timestamptz `json:"synced_at"`
+	RepoID         int64              `json:"repo_id"`
+	Key            string             `json:"key"`
+	DocID          string             `json:"doc_id"`
+	PageID         string             `json:"page_id"`
+	Title          string             `json:"title"`
+	Source         string             `json:"source"`
+	Url            string             `json:"url"`
+	Version        int32              `json:"version"`
+	Hash           string             `json:"hash"`
+	Action         string             `json:"action"`
+	Reason         string             `json:"reason"`
+	EditedFrom     int32              `json:"edited_from"`
+	EditedExpected int32              `json:"edited_expected"`
+	CommentsLost   int32              `json:"comments_lost"`
+	SyncedAt       pgtype.Timestamptz `json:"synced_at"`
 }
 
 type ConfluenceSync struct {

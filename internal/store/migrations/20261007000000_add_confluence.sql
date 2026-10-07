@@ -26,12 +26,14 @@ CREATE TABLE confluence_pages (
     doc_id        TEXT        NOT NULL DEFAULT '',
     page_id       TEXT        NOT NULL,
     title         TEXT        NOT NULL,
+    source        TEXT        NOT NULL DEFAULT '', -- the repository file the page was rendered from
     url           TEXT        NOT NULL DEFAULT '',
     version       INTEGER     NOT NULL DEFAULT 0,
     hash          TEXT        NOT NULL DEFAULT '',
     action        TEXT        NOT NULL,
     reason        TEXT        NOT NULL DEFAULT '',
     edited_from   INTEGER     NOT NULL DEFAULT 0, -- the Confluence version overwritten, 0 if none
+    edited_expected INTEGER   NOT NULL DEFAULT 0, -- the version docz last wrote, when edited_from is set
     comments_lost INTEGER     NOT NULL DEFAULT 0,
     synced_at     TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (repo_id, key)

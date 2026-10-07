@@ -374,12 +374,12 @@ func (s *Service) record(
 		}
 
 		p := store.UpsertConfluencePageParams{
-			RepoID: in.Repo.ID, Key: r.Key, DocID: r.ID, PageID: r.PageID, Title: r.Title, Url: r.URL,
+			RepoID: in.Repo.ID, Key: r.Key, DocID: r.ID, PageID: r.PageID, Title: r.Title, Source: r.Source, Url: r.URL,
 			Version: int32Of(r.Version), Hash: r.Hash, Action: r.Action.String(), Reason: r.Reason,
 			CommentsLost: int32Of(len(r.Comments.Lost)), SyncedAt: timestamp(now),
 		}
 		if r.Edited != nil {
-			p.EditedFrom = int32Of(r.Edited.Version)
+			p.EditedFrom, p.EditedExpected = int32Of(r.Edited.Version), int32Of(r.Edited.Expected)
 		}
 
 		pages = append(pages, p)

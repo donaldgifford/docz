@@ -97,7 +97,7 @@ func (q *Queries) ListConfluencePageIDs(ctx context.Context, repoID int64) ([]Li
 }
 
 const listConfluencePages = `-- name: ListConfluencePages :many
-SELECT repo_id, key, doc_id, page_id, title, url, version, hash, action, reason, edited_from, comments_lost, synced_at FROM confluence_pages WHERE repo_id = $1 ORDER BY key
+SELECT repo_id, key, doc_id, page_id, title, source, url, version, hash, action, reason, edited_from, edited_expected, comments_lost, synced_at FROM confluence_pages WHERE repo_id = $1 ORDER BY key
 `
 
 func (q *Queries) ListConfluencePages(ctx context.Context, repoID int64) ([]ConfluencePage, error) {
@@ -115,12 +115,14 @@ func (q *Queries) ListConfluencePages(ctx context.Context, repoID int64) ([]Conf
 			&i.DocID,
 			&i.PageID,
 			&i.Title,
+			&i.Source,
 			&i.Url,
 			&i.Version,
 			&i.Hash,
 			&i.Action,
 			&i.Reason,
 			&i.EditedFrom,
+			&i.EditedExpected,
 			&i.CommentsLost,
 			&i.SyncedAt,
 		); err != nil {
@@ -210,39 +212,43 @@ func (q *Queries) ListRepoPagesForExport(ctx context.Context, repoID int64) ([]R
 
 const upsertConfluencePage = `-- name: UpsertConfluencePage :exec
 INSERT INTO confluence_pages (
-    repo_id, key, doc_id, page_id, title, url, version, hash, action,
-    reason, edited_from, comments_lost, synced_at
+    repo_id, key, doc_id, page_id, title, source, url, version, hash, action,
+    reason, edited_from, edited_expected, comments_lost, synced_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 )
 ON CONFLICT (repo_id, key) DO UPDATE SET
     doc_id        = EXCLUDED.doc_id,
     page_id       = COALESCE(NULLIF(EXCLUDED.page_id, ''), confluence_pages.page_id),
     title         = EXCLUDED.title,
+    source        = EXCLUDED.source,
     url           = COALESCE(NULLIF(EXCLUDED.url, ''), confluence_pages.url),
     version       = EXCLUDED.version,
     hash          = EXCLUDED.hash,
     action        = EXCLUDED.action,
     reason        = EXCLUDED.reason,
     edited_from   = EXCLUDED.edited_from,
+    edited_expected = EXCLUDED.edited_expected,
     comments_lost = EXCLUDED.comments_lost,
     synced_at     = EXCLUDED.synced_at
 `
 
 type UpsertConfluencePageParams struct {
-	RepoID       int64              `json:"repo_id"`
-	Key          string             `json:"key"`
-	DocID        string             `json:"doc_id"`
-	PageID       string             `json:"page_id"`
-	Title        string             `json:"title"`
-	Url          string             `json:"url"`
-	Version      int32              `json:"version"`
-	Hash         string             `json:"hash"`
-	Action       string             `json:"action"`
-	Reason       string             `json:"reason"`
-	EditedFrom   int32              `json:"edited_from"`
-	CommentsLost int32              `json:"comments_lost"`
-	SyncedAt     pgtype.Timestamptz `json:"synced_at"`
+	RepoID         int64              `json:"repo_id"`
+	Key            string             `json:"key"`
+	DocID          string             `json:"doc_id"`
+	PageID         string             `json:"page_id"`
+	Title          string             `json:"title"`
+	Source         string             `json:"source"`
+	Url            string             `json:"url"`
+	Version        int32              `json:"version"`
+	Hash           string             `json:"hash"`
+	Action         string             `json:"action"`
+	Reason         string             `json:"reason"`
+	EditedFrom     int32              `json:"edited_from"`
+	EditedExpected int32              `json:"edited_expected"`
+	CommentsLost   int32              `json:"comments_lost"`
+	SyncedAt       pgtype.Timestamptz `json:"synced_at"`
 }
 
 // One page's result. A failed page passes an empty page_id and url, and
@@ -255,12 +261,14 @@ func (q *Queries) UpsertConfluencePage(ctx context.Context, arg UpsertConfluence
 		arg.DocID,
 		arg.PageID,
 		arg.Title,
+		arg.Source,
 		arg.Url,
 		arg.Version,
 		arg.Hash,
 		arg.Action,
 		arg.Reason,
 		arg.EditedFrom,
+		arg.EditedExpected,
 		arg.CommentsLost,
 		arg.SyncedAt,
 	)

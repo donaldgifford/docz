@@ -28,21 +28,23 @@ SELECT * FROM confluence_syncs WHERE repo_id = $1;
 -- keeps the previous row's, so a link that worked keeps working through a
 -- failed run (DESIGN-0021 Data Model).
 INSERT INTO confluence_pages (
-    repo_id, key, doc_id, page_id, title, url, version, hash, action,
-    reason, edited_from, comments_lost, synced_at
+    repo_id, key, doc_id, page_id, title, source, url, version, hash, action,
+    reason, edited_from, edited_expected, comments_lost, synced_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 )
 ON CONFLICT (repo_id, key) DO UPDATE SET
     doc_id        = EXCLUDED.doc_id,
     page_id       = COALESCE(NULLIF(EXCLUDED.page_id, ''), confluence_pages.page_id),
     title         = EXCLUDED.title,
+    source        = EXCLUDED.source,
     url           = COALESCE(NULLIF(EXCLUDED.url, ''), confluence_pages.url),
     version       = EXCLUDED.version,
     hash          = EXCLUDED.hash,
     action        = EXCLUDED.action,
     reason        = EXCLUDED.reason,
     edited_from   = EXCLUDED.edited_from,
+    edited_expected = EXCLUDED.edited_expected,
     comments_lost = EXCLUDED.comments_lost,
     synced_at     = EXCLUDED.synced_at;
 
