@@ -734,11 +734,11 @@ in its own, and `v2.0.0-beta.8` ships it.
 <!--docz:dependencies:start-->
 ## Dependencies
 
-- DESIGN-0021, all questions resolved; it moves to Approved when this plan
-  is accepted
+- DESIGN-0021, all questions resolved, Approved with this plan
 - The scoped token in `~/.config/docz/atlassian.env` with the six scopes,
-  confirmed on 2026-10-06 (INV-0020 Observation 9). Phase 5's live check
-  may need two more (Open Question 3)
+  confirmed on 2026-10-06 (INV-0020 Observation 9), plus
+  `read:comment:confluence` and `write:comment:confluence` for Phase 5's
+  live check (Open Question 3)
 - The scratch site's Phase A tree moved aside by hand before Phase 4's
   first real run
 - A second and third GitHub repository with `.docz.yaml`, installed on the
@@ -764,6 +764,8 @@ in its own, and `v2.0.0-beta.8` ships it.
   the end, the largest diff.
 - d. Other.
 
+> **Resolved 2026-10-07: (a).**
+
 ### 2. How many betas does this ship in?
 
 - a. **One, `v2.0.0-beta.8`, after Phase 9.** DESIGN-0021's rollout plans
@@ -772,6 +774,8 @@ in its own, and `v2.0.0-beta.8` ships it.
 - b. Two: `v2.0.0-beta.8` after Phase 5 for the CLI's folder layout and
   comment carrying, and `v2.0.0-beta.9` after Phase 9 for the server.
 - c. Other.
+
+> **Resolved 2026-10-07: (a).**
 
 ### 3. How does Phase 5's live check create an inline comment?
 
@@ -783,6 +787,8 @@ in its own, and `v2.0.0-beta.8` ships it.
   scopes, but the check needs a person every time it runs.
 - c. Other.
 
+> **Resolved 2026-10-07: (a).**
+
 ### 4. Where does the in-memory Confluence used by tests live?
 
 - a. **A public `pkg/export/confluence/confluencetest` package: an
@@ -793,6 +799,8 @@ in its own, and `v2.0.0-beta.8` ships it.
 - b. Keep `fake_test.go` private and write a second fake inside
   `internal/e2e`.
 - c. Other.
+
+> **Resolved 2026-10-07: (a).**
 
 ### 5. How does the server get a type's index header without reading its own disk?
 
@@ -807,6 +815,8 @@ in its own, and `v2.0.0-beta.8` ships it.
   INV-0020 decision 2 chose not to cover.
 - d. Other.
 
+> **Resolved 2026-10-07: (a).**
+
 ### 6. How long does a Confluence client live in docz-api?
 
 - a. **One `HTTPClient` per process, built at startup and shared by every
@@ -815,6 +825,8 @@ in its own, and `v2.0.0-beta.8` ships it.
 - b. A new client per job, as ingest builds a GitHub client per job.
   Simpler lifetime, but every job resolves the cloud id again.
 - c. Other.
+
+> **Resolved 2026-10-07: (a).**
 
 ### 7. Where is enabling the export documented for operators?
 
@@ -826,6 +838,8 @@ in its own, and `v2.0.0-beta.8` ships it.
   the values, but no verification steps.
 - c. Other.
 
+> **Resolved 2026-10-07: (a).**
+
 ### 8. Does Phase 2 keep `rp.List` as a fallback?
 
 - a. **No. Once the golden passes through `os.DirFS`, the `rp.List` path is
@@ -834,6 +848,8 @@ in its own, and `v2.0.0-beta.8` ships it.
 - b. Keep `rp.List` when `FS` is nil until Phase 4's live run, then delete
   it.
 - c. Other.
+
+> **Resolved 2026-10-07: (a).**
 
 <!--docz:open-questions:end-->
 

@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0021
 title: "Confluence export from docz-api: per-repository folders in shared spaces"
-status: Draft
+status: Approved
 author: Donald Gifford
 created: 2026-10-06
 ---
