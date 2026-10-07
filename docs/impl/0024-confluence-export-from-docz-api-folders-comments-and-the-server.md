@@ -138,26 +138,26 @@ new fields in Phase 3.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/config/sync.go`: `ConfluenceSyncConfig` gains
+- [x] `pkg/doczcore/config/sync.go`: `ConfluenceSyncConfig` gains
   `Layout string` (`yaml:"layout" json:"layout"`) and `Folder string`
   (`yaml:"folder,omitempty" json:"folder,omitempty"`), with exported
   constants `LayoutFolder = "folder"` and `LayoutPage = "page"`.
   `DefaultConfig()` sets `Layout` to `folder`
-- [ ] `normalizeSync` backfills an empty `layout` to `folder`, folds it to
+- [x] `normalizeSync` backfills an empty `layout` to `folder`, folds it to
   lower case, and trims `folder`. It never rejects
-- [ ] `validateSync`, still only when enabled:
+- [x] `validateSync`, still only when enabled:
   - `layout` is `folder` or `page`;
   - in the page layout, `parent` is required and `folder` must be empty;
   - in the folder layout, `parent` is optional, and `folder`, when set,
     has no control characters, no leading or trailing space, and at most
     255 characters
-- [ ] `sync_test.go`: one case per rule; the Phase A shape
+- [x] `sync_test.go`: one case per rule; the Phase A shape
   (`parent` set, no `layout`) now loads as the folder layout with
   `parent` as the folder's parent page; a dormant block with every field
   wrong still loads; `ParseBytes` and both `Load` paths agree
-- [ ] `json_test.go`: `TestConfigJSON_MarshaledShape` gains `layout` and
+- [x] `json_test.go`: `TestConfigJSON_MarshaledShape` gains `layout` and
   `folder`; `TestJSONTags_MirrorYAML` passes unedited
-- [ ] `docz_yaml.tmpl`: the disabled block gains `layout: folder`, a
+- [x] `docz_yaml.tmpl`: the disabled block gains `layout: folder`, a
   commented `folder:` line saying it defaults to the repository's name, and
   `parent` commented as optional; the comment lists the six scopes from
   DESIGN-0021 Background. The parity `sync` normaliser already drops the
