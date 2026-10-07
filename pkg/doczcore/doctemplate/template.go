@@ -190,12 +190,22 @@ func ResolveIndexHeader(docType, docsDir string, data IndexHeaderData) (string, 
 		return string(b), nil
 	}
 
-	// 2. Embedded type-specific header (hits for the six built-ins).
+	return EmbeddedIndexHeader(docType, data)
+}
+
+// EmbeddedIndexHeader is ResolveIndexHeader without the on-disk tier: the
+// embedded type-specific header verbatim, else the embedded generic header
+// rendered with data. It is for a consumer with no checkout, docz-api's
+// Confluence export among them, which must never pick up a stray
+// templates/index_<type>.md from its own working directory (IMPL-0024 Open
+// Question 5).
+func EmbeddedIndexHeader(docType string, data IndexHeaderData) (string, error) {
+	// Embedded type-specific header (hits for the six built-ins).
 	if b, err := templateFS.ReadFile("templates/index_" + docType + ".md"); err == nil {
 		return string(b), nil
 	}
 
-	// 3. Embedded generic fallback, rendered with data.
+	// Embedded generic fallback, rendered with data.
 	b, err := templateFS.ReadFile("templates/index_default.md")
 	if err != nil {
 		return "", fmt.Errorf("reading embedded default index header: %w", err)
