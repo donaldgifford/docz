@@ -177,6 +177,14 @@ func TestHTTPClient_Endpoints(t *testing.T) {
 		want   any
 	}{
 		{
+			name:  "spaces",
+			reply: `{"results":[{"id":"9","key":"DOCZ"}]}`,
+			call: func(ctx context.Context, h *HTTPClient) (any, error) {
+				return h.Spaces(ctx, []string{"DOCZ", "ENG"})
+			},
+			want: map[string]string{"DOCZ": "9"},
+		},
+		{
 			name:  "space_home",
 			reply: `{"id":"9","key":"DOCZ","homepageId":"65"}`,
 			call:  func(ctx context.Context, h *HTTPClient) (any, error) { return h.SpaceHome(ctx, "9") },

@@ -346,6 +346,29 @@ func (h *HTTPClient) SpaceID(ctx context.Context, key string) (string, error) {
 	return "", &RequestError{Op: "get space", Status: http.StatusNotFound, Body: fmt.Sprintf("no space with key %q", key)}
 }
 
+// Spaces looks up several space keys in one request and returns the id of
+// each one found; a key missing from the map does not exist or is not
+// visible to the credential. It is not part of Client: docz-api's startup
+// check is its one caller.
+func (h *HTTPClient) Spaces(ctx context.Context, keys []string) (map[string]string, error) {
+	var list apiList[struct {
+		ID  string `json:"id"`
+		Key string `json:"key"`
+	}]
+
+	q := url.Values{"keys": {strings.Join(keys, ",")}, "limit": {"250"}}
+	if err := h.do(ctx, "get spaces", http.MethodGet, "/wiki/api/v2/spaces?"+q.Encode(), nil, &list); err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]string, len(list.Results))
+	for _, s := range list.Results {
+		out[s.Key] = s.ID
+	}
+
+	return out, nil
+}
+
 // SpaceHome implements Client.
 func (h *HTTPClient) SpaceHome(ctx context.Context, spaceID string) (string, error) {
 	var space struct {

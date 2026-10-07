@@ -128,6 +128,12 @@ func run() error {
 		return err
 	}
 
+	// The Confluence export's credential, when one is configured, is proven
+	// the same way: a rejected token fails the deploy (DESIGN-0021 §6).
+	if _, err := setupConfluence(context.Background(), &cfg.Confluence); err != nil {
+		return err
+	}
+
 	// Runtime connection pool (separate from the migration connection). Owned
 	// here for the process lifetime; closed on shutdown.
 	pool, err := store.NewPool(context.Background(), cfg.Store.DatabaseURL)
