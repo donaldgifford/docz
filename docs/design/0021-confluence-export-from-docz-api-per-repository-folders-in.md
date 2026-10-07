@@ -334,6 +334,16 @@ not found is created. Creating one whose title is taken elsewhere in the
 space fails with Confluence's 400, which the run reports as a
 `ConfigError` naming the title.
 
+> **Amended 2026-10-07.** A page archived in Confluence (its `archived`
+> status, not docz's `Archive` page) still holds its title: creating a
+> page with that title returns the same 400 as a current page would,
+> tested on the scratch site. `FindPage` looks only at current pages, so
+> such a title reads as free and the create fails. When a create fails on
+> its title, the reconcile looks the title up among archived pages and
+> fails the page with a reason naming the archived page's id, so the fix
+> (restore it, rename it, or delete it in Confluence) is obvious. docz never
+> restores or renames a page a person archived.
+
 **Orphans** are looked for in the folder and in each type page, through
 `direct-children`, which lists folders as well as pages. Only pages are
 candidates; the rules are Phase A's plus the `repo` check.

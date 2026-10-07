@@ -279,6 +279,12 @@ one when asked. Everything is proven against the fake client.
   `sync.confluence.folder`; a create that 400s on the title is a
   `ConfigError` too. The folder's property is written on create.
   `Report.Folder` is set
+- [ ] `HTTPClient.FindPage` gains a `status` argument through an unexported
+  helper, and `create` handles a 400 on the title: it looks the title up
+  among archived pages and fails the page with
+  `title held by archived page <id>; restore, rename, or delete it in
+  Confluence`. A fake-client test covers it, since the fake keeps archived
+  titles reserved as Confluence does
 - [ ] `reconcile.go`: a key in `opts.Pages` is looked up with
   `Client.Page` first, falling back to `FindPage` when it is gone or in
   another space. A page whose property is not `owned` is `Skipped`
@@ -348,10 +354,13 @@ this repository exports to the scratch site in the folder layout.
 - [ ] `cmd/export_test.go`: the warning text for an edited page and for a
   foreign page, on stderr only; the repository name from SSH and HTTPS
   remotes and with no remote; `--strict` still exits 1 on a skip
-- [ ] Before the first folder-layout run, the Phase A tree on the scratch
+- [x] Before the first folder-layout run, the Phase A tree on the scratch
   site (the `docz` page and its 76 descendants) is moved out of the way:
-  `deferred - human required` (archive it in the Confluence UI), because
-  the home page reuses the `docz` title
+  archived in the Confluence UI on 2026-10-07
+- [ ] The archived `docz` page (65860) still holds its title, which the
+  home page needs (DESIGN-0021 §3 amendment, tested 2026-10-07): rename it
+  (for example to `docz (Phase A)`) or delete it before the first real
+  run. `deferred - human required`
 - [ ] `.docz.yaml`: `layout: folder`, `parent:` removed, so the folder sits
   at the top of `DOCZ`
 - [ ] Live: `docz export confluence --dry-run`, then a real run, then a
