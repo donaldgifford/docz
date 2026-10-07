@@ -16,6 +16,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(inv-0020)* Folder children list with the hierarchical-content scope
 - *(design-0021)* Confluence export from docz-api
 - *(design-0021)* Resolve all open questions, sharing a space is optional
+- *(impl-0024)* Plan Phase B of the Confluence export
 
 ### Miscellaneous Tasks
 
