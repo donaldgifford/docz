@@ -14,6 +14,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(export)* The CLI names its repository and warns about edited pages
 - *(confluence)* Carry inline comments across an update ([#158](https://github.com/donaldgifford/docz/issues/158))
 - *(export)* Warn for each inline comment an update could not re-anchor
+- *(store)* Record Confluence exports and join each document's page
+- *(config)* CONFLUENCE_SITE, _EMAIL, _API_TOKEN, and _SPACES
+- *(docz-api)* Check the Confluence credential at startup
 
 ### Documentation
 
@@ -36,6 +39,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0024)* Phase 3 complete
 - *(impl-0024)* Phase 4 complete
 - *(impl-0024)* Phase 5 complete
+- *(impl)* Check off IMPL-0024 Phase 6
 
 ### Testing
 
@@ -46,6 +50,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(export)* Warnings on stderr, the repository name, the JSON folder
 - *(confluence)* The inline-comment corpus, FuzzCarryMarkers, and an update over the fake
 - *(confluence)* A live inline comment survives an update
+- *(store)* Confluence records, the URL join, and ExportInputs as one snapshot
 
 ### Miscellaneous Tasks
 
