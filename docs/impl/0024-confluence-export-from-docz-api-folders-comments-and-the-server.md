@@ -773,7 +773,8 @@ in its own, and `v2.0.0-beta.8` ships it.
   the end, the largest diff.
 - d. Other.
 
-> **Resolved 2026-10-07: (a).**
+> **Resolved 2026-10-07: (d).** Every phase on `feat/docz-api-confluence-export`,
+> with the INV, DESIGN, and IMPL, in one PR, as IMPL-0023 did.
 
 ### 2. How many betas does this ship in?
 
