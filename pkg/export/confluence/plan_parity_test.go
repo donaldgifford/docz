@@ -5,12 +5,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
@@ -129,11 +131,55 @@ func factsOf(p *plan) planFacts {
 }
 
 // TestPlan_Golden pins everything buildPlan decides over the corpus
-// repository, for a full run and two narrowed ones (IMPL-0024 Phase 2).
+// repository, for a full run and two narrowed ones (IMPL-0024 Phase 2),
+// read through os.DirFS.
 func TestPlan_Golden(t *testing.T) {
 	t.Parallel()
 
+	checkPlanGolden(t, corpusRepo(t), nil)
+}
+
+// TestPlanFromMapFS proves the plan is the same when the files come from
+// memory: the corpus repository copied into an fstest.MapFS.
+func TestPlanFromMapFS(t *testing.T) {
+	t.Parallel()
+
 	rp := corpusRepo(t)
+
+	checkPlanGolden(t, rp, mapFS(t, rp.Root))
+}
+
+// mapFS copies every file under root into an fstest.MapFS.
+func mapFS(t *testing.T, root string) fstest.MapFS {
+	t.Helper()
+
+	m := fstest.MapFS{}
+
+	err := fs.WalkDir(os.DirFS(root), ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
+		if err != nil {
+			return err
+		}
+
+		m[p] = &fstest.MapFile{Data: b}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return m
+}
+
+// checkPlanGolden plans rp through fsys (nil for os.DirFS) for each golden
+// case and compares the facts, or rewrites them under -update.
+func checkPlanGolden(t *testing.T, rp *repo.Repo, fsys fs.FS) {
+	t.Helper()
 
 	for name, opts := range map[string]ExportOptions{
 		"full":  {},
@@ -142,6 +188,8 @@ func TestPlan_Golden(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
+			opts.FS = fsys
 
 			p, err := buildPlan(t.Context(), rp, &opts)
 			if err != nil {
@@ -154,7 +202,7 @@ func TestPlan_Golden(t *testing.T) {
 			}
 
 			golden := path.Join("testdata", "plan", name+".golden.json")
-			if *update {
+			if *update && fsys == nil {
 				if err := os.MkdirAll(filepath.Dir(golden), 0o750); err != nil {
 					t.Fatal(err)
 				}

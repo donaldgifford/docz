@@ -201,25 +201,25 @@ experiment, DESIGN-0021 question 4).
   this repository's own `docs/` is covered by the `--dry-run --out`
   comparison in the success criteria, since a golden over live docs
   would move with every edit
-- [ ] `ExportOptions.FS fs.FS`, documented as the repository's files rooted
+- [x] `ExportOptions.FS fs.FS`, documented as the repository's files rooted
   at the repository root with slash paths. `Export` uses
   `os.DirFS(rp.Root)` when it is nil
-- [ ] `plan.go`: `listDocs` walks each type directory with `fs.ReadDir`,
+- [x] `plan.go`: `listDocs` walks each type directory with `fs.ReadDir`,
   keeps names `document.IsDoczFile` accepts, parses with
   `document.ParseFrontmatter` (a file with no frontmatter is skipped, as
   `repo.Scan` skips it), and builds the same `repo.Entry` values with
   repo-relative slash paths. Sort order matches `repo.List`'s
-- [ ] `selectDocs` resolves `opts.IDs` against the listed entries instead
+- [x] `selectDocs` resolves `opts.IDs` against the listed entries instead
   of `rp.Find`: the id prefix picks the type as `repo.Find` does, a miss is
   `*repo.NotFoundError`, and an id with no `-` is `*repo.UnknownTypeError`
-- [ ] `typePage`, `pageItem`, and `parentItem` read with `fs.ReadFile`.
+- [x] `typePage`, `pageItem`, and `parentItem` read with `fs.ReadFile`.
   `excluded` works on slash paths only and no longer looks at `rp.Root`
-- [ ] The golden from the first task passes unchanged through
+- [x] The golden from the first task passes unchanged through
   `os.DirFS`, and again through an `fstest.MapFS` built from the same
   files (`TestPlanFromMapFS`)
-- [ ] `export_test.go`: an `Export` with `rp.Root` pointing nowhere and
+- [x] `export_test.go`: an `Export` with `rp.Root` pointing nowhere and
   `FS` set succeeds, proving nothing reads the disk
-- [ ] `just lint`, `just test`, and the existing `cmd/export_test.go` pass
+- [x] `just lint`, `just test`, and the existing `cmd/export_test.go` pass
   untouched
 
 <!--docz:tasks:end-->

@@ -297,6 +297,33 @@ func TestExport_NarrowedRunArchivesNothing(t *testing.T) {
 	}
 }
 
+func TestExport_ReadsOnlyThroughFS(t *testing.T) {
+	t.Parallel()
+
+	built := exportRepo(t)
+	rp := &repo.Repo{Root: filepath.Join(t.TempDir(), "nowhere"), Cfg: built.Cfg}
+	c := newFakeClient()
+
+	rep := export(t, rp, c, ExportOptions{FS: mapFS(t, built.Root)})
+
+	wantActions(t, &rep,
+		"docz=created", "RFCs=created", rfc1+"=created", rfc2+"=created",
+		"ADRs=created", adr1+"=created", "Design=created", "Implementation Plans=created", "Investigations=created")
+}
+
+func TestExport_IDWithoutPrefixIsUnknownType(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+
+	_, err := Export(t.Context(), rp, ExportOptions{Client: c, IDs: []string{"RFC0001"}})
+
+	var ut *repo.UnknownTypeError
+	if !errors.As(err, &ut) || ut.Token != "RFC0001" {
+		t.Errorf("err %v; want repo.UnknownTypeError for RFC0001", err)
+	}
+}
+
 func TestExport_UnknownIDIsNotFound(t *testing.T) {
 	t.Parallel()
 
