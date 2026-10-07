@@ -26,8 +26,13 @@ type ExportOptions struct {
 	// of the selected types.
 	IDs []string
 	// Force overwrites a page edited in Confluence and adopts a page that
-	// carries no docz property.
+	// carries no docz property or another tool's. It implies Overwrite. It
+	// never touches a page or folder another repository's property names.
 	Force bool
+	// Overwrite updates a docz page edited in Confluence since docz last
+	// wrote it, reporting it Updated with Edited set. Without it such a page
+	// is Skipped, with Edited set. It adopts nothing.
+	Overwrite bool
 	// DryRun reads everything and writes nothing; the report says what
 	// each page would have had done to it.
 	DryRun bool
@@ -45,6 +50,19 @@ type ExportOptions struct {
 	// os.DirFS(rp.Root). A server holding a fetched tree passes an
 	// fstest.MapFS or its own fs.FS and needs no checkout.
 	FS fs.FS
+	// Repository is owner/name when known. It names the default folder,
+	// is written into each page's and the folder's property as repo, and
+	// names the repository on a home page with no landing page.
+	Repository string
+	// Pages maps a property key (a document id, docz:parent,
+	// docz:type:<name>, docz:page:<path>) to the page id the caller
+	// recorded. A key in it is looked up by id before by title, so a
+	// renamed document's page is renamed in place. Nil finds every page by
+	// title.
+	Pages map[string]string
+	// Folder is the repository folder's recorded id; empty looks the folder
+	// up by title. Ignored in the page layout.
+	Folder string
 }
 
 // Report is what an Export did.
@@ -56,6 +74,9 @@ type Report struct {
 	// DryRun reports that no page was written; each Action is what the
 	// page would have had done to it.
 	DryRun bool `json:"dry_run"`
+	// Folder is the repository's folder; nil in the page layout, and on a
+	// dry run that would have created it.
+	Folder *Node `json:"folder,omitempty"`
 }
 
 // Count returns how many pages took action a.
@@ -75,6 +96,10 @@ func (r *Report) Count(a Action) int {
 type PageResult struct {
 	// ID is the document id; empty for the parent, type, and api pages.
 	ID string `json:"id,omitempty"`
+	// Key is the page's property id: the document id, or docz:parent,
+	// docz:type:<name>, docz:page:<path>, for a caller that records page
+	// ids by key (ExportOptions.Pages).
+	Key string `json:"key,omitempty"`
 	// Title is the page title.
 	Title string `json:"title"`
 	// Source is the repository-relative file the page was rendered from;
@@ -86,6 +111,11 @@ type PageResult struct {
 	PageID  string `json:"page_id,omitempty"`
 	URL     string `json:"url,omitempty"`
 	Version int    `json:"version,omitempty"`
+	// Hash is the rendered body's hash, sha256:<hex>.
+	Hash string `json:"hash,omitempty"`
+	// Edited is set when the page had been edited in Confluence since docz
+	// last wrote it: Updated over the edit under Overwrite, else Skipped.
+	Edited *Edit `json:"edited,omitempty"`
 	// Reason says why a page was Skipped or Failed.
 	Reason string `json:"reason,omitempty"`
 	// Links are the relative links nothing could place.
@@ -94,6 +124,13 @@ type PageResult struct {
 	// (docz export confluence --out). Empty for an archived page, which is
 	// moved and never rendered. Not part of the JSON report.
 	Body []byte `json:"-"`
+}
+
+// Edit is a page edited in Confluence: at Version, where docz last wrote
+// Expected.
+type Edit struct {
+	Version  int `json:"version"`
+	Expected int `json:"expected"`
 }
 
 // Action is what an export did to one page.
@@ -163,7 +200,17 @@ func Export(ctx context.Context, rp *repo.Repo, opts ExportOptions) (Report, err
 		return report, err
 	}
 
+	if opts.Force {
+		opts.Overwrite = true
+	}
+
 	run := &exportRun{opts: &opts, plan: p, spaceID: spaceID, report: &report}
+
+	if p.folder != "" {
+		if err := run.resolveFolder(ctx); err != nil {
+			return report, err
+		}
+	}
 
 	if err := run.pages(ctx); err != nil {
 		return report, err
@@ -203,6 +250,9 @@ type exportRun struct {
 	pageIDs map[int]string
 	// archiveID is the Archive page, once found or created.
 	archiveID string
+	// folderID is the repository's folder in the folder layout; empty in
+	// the page layout and on a dry run that would create it.
+	folderID string
 }
 
 // pages reconciles every plan item in order.
@@ -216,7 +266,7 @@ func (r *exportRun) pages(ctx context.Context) error {
 
 		it := &r.plan.items[i]
 
-		parentID := ""
+		parentID := r.folderID
 		if it.parent >= 0 {
 			parentID = r.pageIDs[it.parent]
 		}

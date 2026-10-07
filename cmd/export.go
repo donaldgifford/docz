@@ -417,12 +417,30 @@ func (offlineClient) UpdatePage(context.Context, string, *confluence.PageUpdate)
 	return nil, errOffline
 }
 
-func (offlineClient) Property(context.Context, string, string) (*confluence.Property, error) {
+func (offlineClient) SpaceHome(context.Context, string) (string, error) { return "offline", nil }
+
+func (offlineClient) Page(context.Context, string) (*confluence.Page, error) {
+	return nil, nil //nolint:nilnil // the Client contract: no page is an answer
+}
+
+func (offlineClient) Body(context.Context, string) ([]byte, error) { return nil, nil }
+
+func (offlineClient) Folder(context.Context, string) (*confluence.Folder, error) {
+	return nil, nil //nolint:nilnil // the Client contract: no folder is an answer
+}
+
+func (offlineClient) CreateFolder(context.Context, *confluence.NewFolder) (*confluence.Folder, error) {
+	return nil, errOffline
+}
+
+func (offlineClient) Property(context.Context, confluence.Target, string) (*confluence.Property, error) {
 	return nil, nil //nolint:nilnil // the Client contract: no property is an answer
 }
 
-func (offlineClient) SetProperty(context.Context, string, *confluence.Property) error {
+func (offlineClient) SetProperty(context.Context, confluence.Target, *confluence.Property) error {
 	return errOffline
 }
 
-func (offlineClient) Children(context.Context, string) ([]confluence.Page, error) { return nil, nil }
+func (offlineClient) Children(context.Context, confluence.Target) ([]confluence.Node, error) {
+	return nil, nil
+}

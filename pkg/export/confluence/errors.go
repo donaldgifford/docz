@@ -72,3 +72,21 @@ func (e *RequestError) Unwrap() error { return e.Err }
 
 // maxErrorBody caps the response body an error carries.
 const maxErrorBody = 512
+
+// TitleError reports a create Confluence refused because the title is
+// taken: page titles are unique in a space, folder titles too, and a page
+// a person archived still holds its title. ArchivedID is that archived
+// page when one holds the title, which docz never restores or renames.
+type TitleError struct {
+	Title      string
+	ArchivedID string
+}
+
+func (e *TitleError) Error() string {
+	if e.ArchivedID != "" {
+		return fmt.Sprintf("confluence: title %q held by archived page %s; restore, rename, or delete it in Confluence",
+			e.Title, e.ArchivedID)
+	}
+
+	return fmt.Sprintf("confluence: title %q is already taken in the space", e.Title)
+}

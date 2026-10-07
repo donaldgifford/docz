@@ -36,7 +36,26 @@ type plan struct {
 	targets map[string]target
 	// render is the per-page render configuration minus Source and Title.
 	render RenderOptions
+	// folder is the repository folder's title in the folder layout, and
+	// empty in the page layout. Every title but the home page's starts with
+	// it and a colon.
+	folder string
+	// archive is the title of the page orphans move under.
+	archive string
+	// parentTitle is sync.confluence.parent: the parent page's title in the
+	// page layout, the page the folder sits under in the folder layout.
+	parentTitle string
+	// space is sync.confluence.space, for messages.
+	space string
+	// top is the parent index of a type page or an additional doc: the
+	// parent page (0) in the page layout, the folder (-1) in the folder
+	// layout.
+	top int
 }
+
+// parentKey is the property id of the parent page, which is the folder's
+// home page in the folder layout.
+const parentKey = "docz:parent"
 
 // typeKeyPrefix starts a type page's property id.
 const typeKeyPrefix = "docz:type:"
@@ -78,11 +97,20 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 	}
 
 	p := &plan{
-		full:    len(opts.Types) == 0 && len(opts.IDs) == 0,
-		keys:    make(map[string]bool),
-		titles:  make(map[string]bool),
-		targets: make(map[string]target),
-		render:  renderOptions(sync),
+		full:        len(opts.Types) == 0 && len(opts.IDs) == 0,
+		keys:        make(map[string]bool),
+		titles:      make(map[string]bool),
+		targets:     make(map[string]target),
+		render:      renderOptions(sync),
+		archive:     archiveTitle,
+		parentTitle: sync.Parent,
+		space:       sync.Space,
+	}
+
+	if sync.Layout != config.LayoutPage {
+		p.folder = folderTitle(rp, sync, opts.Repository)
+		p.archive = p.folder + ": " + archiveTitle
+		p.top = -1
 	}
 
 	allTypes, err := canonicalTypes(rp.Cfg, sync.Types)
@@ -102,7 +130,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 		return nil, err
 	}
 
-	parent, err := parentItem(src, sync)
+	parent, err := parentItem(src, sync, opts.Repository)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +138,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 	p.add(parent)
 
 	for _, typeName := range allTypes {
-		p.addTarget(typePage(src, typeName, 0))
+		p.addTarget(typePage(src, typeName, p.top))
 	}
 
 	for i := range all {
@@ -119,7 +147,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 
 	for _, typeName := range types {
 		tp := len(p.items)
-		p.add(typePage(src, typeName, 0))
+		p.add(typePage(src, typeName, p.top))
 
 		for i := range selected {
 			if selected[i].Type == typeName {
@@ -135,15 +163,53 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 	return p, nil
 }
 
+// folderTitle is the repository folder's title: sync.confluence.folder,
+// else the repository's name, else the base name of the root.
+func folderTitle(rp *repo.Repo, sync *config.ConfluenceSyncConfig, repository string) string {
+	switch {
+	case sync.Folder != "":
+		return sync.Folder
+	case repository != "":
+		return path.Base(repository)
+	default:
+		return filepath.Base(rp.Root)
+	}
+}
+
 // add appends an item to the write order and marks it exported.
 func (p *plan) add(it item) { //nolint:gocritic // the item is stored by value
+	p.retitle(&it)
 	p.items = append(p.items, it)
-	p.addTarget(it)
+	p.record(&it)
 }
 
 // addTarget records an item as a link target and a known key without
 // writing it, so a narrowed run still links to pages a full run wrote.
-func (p *plan) addTarget(it item) { //nolint:gocritic // read once, by value like add
+func (p *plan) addTarget(it item) { //nolint:gocritic // the caller's copy, retitled here
+	p.retitle(&it)
+	p.record(&it)
+}
+
+// retitle prefixes an item's title with the folder's in the folder layout:
+// the home page takes the folder's title alone, everything else the folder
+// name and a colon, and the title is forced on render so a document's own
+// "ID: Title" carries the prefix too.
+func (p *plan) retitle(it *item) {
+	if p.folder == "" {
+		return
+	}
+
+	if it.key == parentKey {
+		it.title = p.folder
+	} else {
+		it.title = p.folder + ": " + it.title
+	}
+
+	it.override = it.title
+}
+
+// record marks an item's key, title, and source known.
+func (p *plan) record(it *item) {
 	p.keys[it.key] = true
 	p.titles[it.title] = true
 
@@ -160,7 +226,7 @@ func (p *plan) addPages(src *source, sync *config.ConfluenceSyncConfig) error {
 	}
 
 	for _, rel := range src.rp.Cfg.API.AdditionalDocs {
-		it, err := pageItem(src, rel, 0)
+		it, err := pageItem(src, rel, p.top)
 		if err != nil {
 			return err
 		}
@@ -489,7 +555,7 @@ func navTitle(cfg *config.Config, typeName string) string {
 
 // parentItem is the parent page: the api landing page when api_pages is
 // on, else a line naming the repository.
-func parentItem(s *source, sync *config.ConfluenceSyncConfig) (item, error) {
+func parentItem(s *source, sync *config.ConfluenceSyncConfig, repository string) (item, error) {
 	rp := s.rp
 	if sync.APIPages && rp.Cfg.API.LandingPage != "" {
 		it, err := pageItem(s, rp.Cfg.API.LandingPage, -1)
@@ -498,19 +564,23 @@ func parentItem(s *source, sync *config.ConfluenceSyncConfig) (item, error) {
 		}
 
 		if err == nil {
-			it.key, it.title, it.override = "docz:parent", sync.Parent, sync.Parent
+			it.key, it.title, it.override = parentKey, sync.Parent, sync.Parent
 
 			return it, nil
 		}
 	}
 
-	name := filepath.Base(rp.Root)
-	if rp.Root == "" {
+	name := repository
+	if name == "" {
+		name = filepath.Base(rp.Root)
+	}
+
+	if rp.Root == "" && repository == "" {
 		name = sync.Parent
 	}
 
 	return item{
-		key:      "docz:parent",
+		key:      parentKey,
 		title:    sync.Parent,
 		src:      fmt.Appendf(nil, "Documentation exported from `%s` by docz.\n", name),
 		override: sync.Parent,

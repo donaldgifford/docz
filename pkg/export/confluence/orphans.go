@@ -6,19 +6,20 @@ import (
 	"strings"
 )
 
-// orphans moves every docz page under the parent or a type page whose
-// property id is no longer exported to the Archive child of the parent
-// (DESIGN-0020 §3). Only a full run calls it: a narrowed run's set is
-// partial, and everything outside it would read as an orphan.
+// orphans moves every docz page in the folder (the parent page in the
+// page layout) or a type page whose property id is no longer exported to
+// the Archive page (DESIGN-0020 §3, DESIGN-0021 §3). Only a full run calls
+// it: a narrowed run's set is partial, and everything outside it would
+// read as an orphan.
 func (r *exportRun) orphans(ctx context.Context) error {
-	for _, containerID := range r.containers() {
+	for _, container := range r.containers() {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		children, err := r.opts.Client.Children(ctx, containerID)
+		children, err := r.opts.Client.Children(ctx, container)
 		if err != nil {
-			r.record(ctx, &PageResult{Title: "children of " + containerID}, err)
+			r.record(ctx, &PageResult{Title: "children of " + container.ID}, err)
 
 			continue
 		}
@@ -28,48 +29,62 @@ func (r *exportRun) orphans(ctx context.Context) error {
 				return err
 			}
 
-			r.orphan(ctx, &children[i])
+			// A folder is never a candidate: docz moves only pages.
+			if children[i].Type == TypePage {
+				r.orphan(ctx, &children[i].Page)
+			}
 		}
 	}
 
 	return nil
 }
 
-// containers are the page ids orphans are looked for under: the parent
-// and every type page that exists.
-func (r *exportRun) containers() []string {
-	var out []string
+// containers are where orphans are looked for: the folder, or the parent
+// page in the page layout, and every type page that exists.
+func (r *exportRun) containers() []Target {
+	var out []Target
+
+	if r.folderID != "" {
+		out = append(out, FolderTarget(r.folderID))
+	}
 
 	for i := range r.plan.items {
 		it := &r.plan.items[i]
-		if id := r.pageIDs[i]; id != "" && (it.parent < 0 || strings.HasPrefix(it.key, typeKeyPrefix)) {
-			out = append(out, id)
+
+		id := r.pageIDs[i]
+		if id == "" {
+			continue
+		}
+
+		if strings.HasPrefix(it.key, typeKeyPrefix) || (it.key == parentKey && r.plan.folder == "") {
+			out = append(out, PageTarget(id))
 		}
 	}
 
 	return out
 }
 
-// orphan archives one child page when it is docz's and no longer exported.
+// orphan archives one child page when it is this repository's and no
+// longer exported.
 func (r *exportRun) orphan(ctx context.Context, child *Page) {
 	// A page this run writes, or Archive itself, is never an orphan, and
 	// knowing that by title saves a property request per page.
-	if child.Title == archiveTitle || r.plan.titles[child.Title] {
+	if child.Title == r.plan.archive || r.plan.titles[child.Title] {
 		return
 	}
 
-	prop, stored, err := r.property(ctx, child.ID)
+	prop, stored, err := r.property(ctx, PageTarget(child.ID))
 	if err != nil {
 		r.record(ctx, &PageResult{Title: child.Title, PageID: child.ID}, err)
 
 		return
 	}
 
-	if prop == nil || !stored.valid() || r.plan.keys[stored.ID] {
+	if prop == nil || !stored.valid() || !stored.owned(r.opts.Repository) || r.plan.keys[stored.ID] {
 		return
 	}
 
-	res := PageResult{ID: stored.ID, Title: child.Title, Source: stored.Source, Action: Archived, PageID: child.ID}
+	res := PageResult{ID: stored.ID, Key: stored.ID, Title: child.Title, Source: stored.Source, Action: Archived, PageID: child.ID}
 
 	if !r.opts.DryRun {
 		page, err := r.archive(ctx, child, prop, &stored)
@@ -108,27 +123,33 @@ func (r *exportRun) archive(ctx context.Context, child *Page, prop *Property, st
 		return moved, err
 	}
 
-	return moved, r.opts.Client.SetProperty(ctx, child.ID, &Property{
+	return moved, r.opts.Client.SetProperty(ctx, PageTarget(child.ID), &Property{
 		ID: prop.ID, Key: propertyKey, Value: value, Version: prop.Version,
 	})
 }
 
-// archivePage finds or creates the Archive page under the parent.
+// archivePage finds or creates the Archive page: in the folder, or under
+// the parent page in the page layout.
 func (r *exportRun) archivePage(ctx context.Context) (string, error) {
 	if r.archiveID != "" {
 		return r.archiveID, nil
 	}
 
-	page, err := r.opts.Client.FindPage(ctx, r.spaceID, archiveTitle)
+	page, err := r.opts.Client.FindPage(ctx, r.spaceID, r.plan.archive)
 	if err != nil {
 		return "", err
 	}
 
 	if page == nil {
+		parentID := r.folderID
+		if parentID == "" {
+			parentID = r.pageIDs[0]
+		}
+
 		page, err = r.opts.Client.CreatePage(ctx, &NewPage{
 			SpaceID:  r.spaceID,
-			ParentID: r.pageIDs[0],
-			Title:    archiveTitle,
+			ParentID: parentID,
+			Title:    r.plan.archive,
 			Body:     []byte("<p>Pages docz exported whose documents no longer exist. Nothing here is deleted.</p>"),
 		})
 		if err != nil {
