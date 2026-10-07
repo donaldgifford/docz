@@ -1457,6 +1457,31 @@ and an exhausted task blocked every future trigger for that repo. INV-0007
   piped through `jq -e`. Valkey was never opened. Re-run that drill after any
   change to the queue's failure path.
 
+### Confluence export (DESIGN-0021 / IMPL-0024)
+
+docz-api runs `pkg/export/confluence` itself after each ingest, in the
+folder layout, and records what it wrote.
+
+- **Storage** (migration `20261007000000_add_confluence`):
+  `confluence_syncs` (the last run per repo: folder, status, error, counts)
+  and `confluence_pages` (one row per property key: doc id, page id, URL,
+  version, hash, action). A failed page's upsert keeps the previous page id
+  and URL (`COALESCE(NULLIF(...), ...)`). Both document reads LEFT JOIN
+  `confluence_pages` for `confluence_url` (`''` when absent), so
+  `GetDocumentByID` returns `GetDocumentByIDRow{Document, ConfluenceUrl}`
+  via `sqlc.embed`. `ExportInputs` reads repo, documents with `raw_md`,
+  pages, sync, and recorded page ids in one `REPEATABLE READ` read-only
+  transaction, so an export never sees half a reconcile;
+  `RecordConfluenceExport` writes a run in one transaction.
+- **Config** (`internal/config`): `CONFLUENCE_SITE`, `CONFLUENCE_EMAIL`,
+  `CONFLUENCE_API_TOKEN` (a `Secret`), `CONFLUENCE_SPACES`. Enabled iff the
+  token is set; then the rest are required. `Allowed(site, space)` is the
+  allow-list a repository's `.docz.yaml` cannot widen.
+- **Startup** (`cmd/docz-api/confluence.go`): one `confluence.HTTPClient`
+  per process; `checkConfluenceCredentials` resolves the cloud id and looks
+  the spaces up with `HTTPClient.Spaces`. Only a 401 fails startup, the
+  same asymmetry as the GitHub App self-check.
+
 ### Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.

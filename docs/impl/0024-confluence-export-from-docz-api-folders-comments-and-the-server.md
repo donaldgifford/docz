@@ -466,20 +466,20 @@ it may run them. Nothing is enqueued yet.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/store/migrations/<timestamp>_add_confluence.sql`: the two
+- [x] `internal/store/migrations/<timestamp>_add_confluence.sql`: the two
   tables and the index from DESIGN-0021 Data Model, with a `-- +goose Down`
   that drops them
-- [ ] `internal/store/queries/confluence.sql` and `just api generate`:
+- [x] `internal/store/queries/confluence.sql` and `just api generate`:
   `UpsertConfluenceSync`, `GetConfluenceSync`, `UpsertConfluencePage`,
   `ListConfluencePages`, `ListConfluencePageIDs` (key → page id, for
   `ExportOptions.Pages`). `ListDocumentsByType` and `GetDocumentByID` gain a
   `LEFT JOIN confluence_pages` on `(repo_id, doc_id)` returning
   `confluence_url` as `''` when absent. `just api generate-check` passes
-- [ ] `internal/store`: `Store` methods over the queries, and
+- [x] `internal/store`: `Store` methods over the queries, and
   `ExportInputs(ctx, repoID) (ExportInputs, error)` reading the repo row,
   its documents with `raw_md`, its pages, its sync row, and its page ids in
   one `REPEATABLE READ` read-only transaction
-- [ ] `internal/config`: `ConfluenceConfig{Site string, Email string,
+- [x] `internal/config`: `ConfluenceConfig{Site string, Email string,
   APIToken Secret, Spaces []string}` from `CONFLUENCE_SITE`,
   `CONFLUENCE_EMAIL`, `CONFLUENCE_API_TOKEN`, `CONFLUENCE_SPACES`
   (comma-separated, trimmed, empty entries dropped). `Enabled()` is true
@@ -487,14 +487,14 @@ it may run them. Nothing is enqueued yet.
   path), `Email`, and at least one space are required, and `Load` reports
   each missing one in its single `ErrInvalidConfig`. `Allowed(site, space)`
   compares the site with its trailing `/` trimmed and the space key exactly
-- [ ] `config_test.go`: unset is disabled; each missing field; the token
+- [x] `config_test.go`: unset is disabled; each missing field; the token
   never appears in `%v`, `%+v`, or a slog line
-- [ ] `cmd/docz-api/confluence.go`: `checkConfluenceCredentials` at
+- [x] `cmd/docz-api/confluence.go`: `checkConfluenceCredentials` at
   startup when enabled: resolve the cloud id, then
   `GET /spaces?keys=<spaces>`. A 401 fails startup; anything else,
   including a 403 or a space that is not found, logs a warning naming it
   and continues. A unit test with an `httptest` server covers each branch
-- [ ] Store integration tests: the migration up and down, the upserts, the
+- [x] Store integration tests: the migration up and down, the upserts, the
   `confluence_url` join on both document reads, and `ExportInputs` seeing a
   consistent snapshot while a concurrent reconcile commits
 
