@@ -648,7 +648,7 @@ in its own, and `v2.0.0-beta.8` ships it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `charts/docz`: `api.confluence.{site, email, spaces}` in
+- [x] `charts/docz`: `api.confluence.{site, email, spaces}` in
   `values.yaml` and the schema; a `confluence-api-token` key in
   `api-secret.yaml` (and accepted through `secrets.existingSecret`); the
   `CONFLUENCE_*` env block in `api-deployment.yaml` rendered only when

@@ -164,6 +164,29 @@
             },
             "keycloakClientSecret": {
               "type": "string"
+            },
+            "confluenceApiToken": {
+              "type": "string"
+            }
+          }
+        },
+        "confluence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "site": {
+              "type": "string",
+              "pattern": "^(|https://[^/]+/?)$"
+            },
+            "email": {
+              "type": "string"
+            },
+            "spaces": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }

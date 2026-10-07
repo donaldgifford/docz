@@ -173,6 +173,22 @@ spec:
             - name: INGEST_DEBOUNCE
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.api.confluence }}
+            {{- if .site }}
+            # Confluence export (DESIGN-0021): on only while a site is set.
+            - name: CONFLUENCE_SITE
+              value: {{ .site | quote }}
+            - name: CONFLUENCE_EMAIL
+              value: {{ required "api.confluence.email is required when api.confluence.site is set" .email | quote }}
+            - name: CONFLUENCE_SPACES
+              value: {{ required "api.confluence.spaces is required when api.confluence.site is set" (join "," .spaces) | quote }}
+            - name: CONFLUENCE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" $ }}
+                  key: confluence-api-token
+            {{- end }}
+            {{- end }}
             {{- if .Values.otel.endpoint }}
             # Tracing is on for both workloads or for neither (DESIGN-0018 §4).
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
