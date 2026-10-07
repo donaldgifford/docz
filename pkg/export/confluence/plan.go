@@ -14,6 +14,7 @@ import (
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
 
@@ -68,9 +69,14 @@ type target struct {
 }
 
 // buildPlan lists, filters, and orders everything Export will write. It
-// reads the repository and makes no request.
+// reads opts.FS, never the disk, and makes no request.
 func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, error) {
 	sync := &rp.Cfg.Sync.Confluence
+	src := &source{rp: rp, fsys: opts.FS}
+	if src.fsys == nil {
+		src.fsys = os.DirFS(rp.Root)
+	}
+
 	p := &plan{
 		full:    len(opts.Types) == 0 && len(opts.IDs) == 0,
 		keys:    make(map[string]bool),
@@ -84,19 +90,19 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 		return nil, err
 	}
 
-	allTypes = slices.DeleteFunc(allTypes, func(t string) bool { return excluded(rp, rp.RelPath(rp.ReadmePath(t))) })
+	allTypes = slices.DeleteFunc(allTypes, func(t string) bool { return excluded(rp, src.readme(t)) })
 
-	all, err := listDocs(ctx, rp, allTypes)
+	all, err := src.listDocs(ctx, allTypes)
 	if err != nil {
 		return nil, err
 	}
 
-	selected, types, err := selectDocs(ctx, rp, opts, all, allTypes)
+	selected, types, err := selectDocs(ctx, src, opts, all, allTypes)
 	if err != nil {
 		return nil, err
 	}
 
-	parent, err := parentItem(rp, sync)
+	parent, err := parentItem(src, sync)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +110,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 	p.add(parent)
 
 	for _, typeName := range allTypes {
-		p.addTarget(typePage(rp, typeName, 0))
+		p.addTarget(typePage(src, typeName, 0))
 	}
 
 	for i := range all {
@@ -113,7 +119,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 
 	for _, typeName := range types {
 		tp := len(p.items)
-		p.add(typePage(rp, typeName, 0))
+		p.add(typePage(src, typeName, 0))
 
 		for i := range selected {
 			if selected[i].Type == typeName {
@@ -122,7 +128,7 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 		}
 	}
 
-	if err := p.addPages(rp, sync); err != nil {
+	if err := p.addPages(src, sync); err != nil {
 		return nil, err
 	}
 
@@ -148,13 +154,13 @@ func (p *plan) addTarget(it item) { //nolint:gocritic // read once, by value lik
 
 // addPages appends the api: additional docs, on a full run with api_pages
 // on.
-func (p *plan) addPages(rp *repo.Repo, sync *config.ConfluenceSyncConfig) error {
+func (p *plan) addPages(src *source, sync *config.ConfluenceSyncConfig) error {
 	if !sync.APIPages {
 		return nil
 	}
 
-	for _, rel := range rp.Cfg.API.AdditionalDocs {
-		it, err := pageItem(rp, rel, 0)
+	for _, rel := range src.rp.Cfg.API.AdditionalDocs {
+		it, err := pageItem(src, rel, 0)
 		if err != nil {
 			return err
 		}
@@ -208,61 +214,195 @@ func canonicalTypes(cfg *config.Config, tokens []string) ([]string, error) {
 	return out, nil
 }
 
-// listDocs lists the documents of types, minus sync.confluence.exclude.
-func listDocs(ctx context.Context, rp *repo.Repo, types []string) ([]repo.Entry, error) {
-	entries, err := rp.List(ctx, types)
+// source reads the repository through an fs.FS: rp supplies the
+// configuration and the root's name, fsys every byte.
+type source struct {
+	rp   *repo.Repo
+	fsys fs.FS
+}
+
+// rel is a configured path as the slash path fsys addresses: repository
+// relative and cleaned, whether the configuration spelled it relative or
+// absolute under the root.
+func (s *source) rel(p string) string {
+	return path.Clean(filepath.ToSlash(s.rp.RelPath(s.rp.Path(p))))
+}
+
+// typeDir is a type's directory as a slash path.
+func (s *source) typeDir(typeName string) string {
+	return s.rel(s.rp.Cfg.TypeDir(typeName))
+}
+
+// readme is a type's README as a slash path.
+func (s *source) readme(typeName string) string {
+	return path.Join(s.typeDir(typeName), config.IndexFileName)
+}
+
+// scan lists one type's documents as repo.Scan does: names
+// document.IsDoczFile accepts, files without frontmatter or that will not
+// read skipped, a missing directory empty, sorted by id.
+func (s *source) scan(typeName string) ([]repo.Entry, error) {
+	dir := s.typeDir(typeName)
+
+	files, err := fs.ReadDir(s.fsys, dir)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("scanning %s: %w", dir, err)
 	}
 
-	return slices.DeleteFunc(entries, func(e repo.Entry) bool { return excluded(rp, e.Path) }), nil
+	var entries []repo.Entry
+
+	for _, f := range files {
+		if f.IsDir() || !document.IsDoczFile(f.Name()) {
+			continue
+		}
+
+		rel := path.Join(dir, f.Name())
+
+		content, err := fs.ReadFile(s.fsys, rel)
+		if err != nil {
+			continue
+		}
+
+		fm, err := document.ParseFrontmatter(content)
+		if err != nil {
+			continue
+		}
+
+		entries = append(entries, repo.Entry{
+			DocEntry: document.DocEntry{Frontmatter: fm, Filename: f.Name(), Content: content},
+			Type:     typeName,
+			Path:     rel,
+		})
+	}
+
+	slices.SortFunc(entries, func(a, b repo.Entry) int { return strings.Compare(a.ID, b.ID) })
+
+	return entries, nil
+}
+
+// listDocs lists the documents of types in their order, minus
+// sync.confluence.exclude. The context is checked between types.
+func (s *source) listDocs(ctx context.Context, types []string) ([]repo.Entry, error) {
+	var all []repo.Entry
+
+	for _, typeName := range types {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		entries, err := s.scan(typeName)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, entries...)
+	}
+
+	return slices.DeleteFunc(all, func(e repo.Entry) bool { return excluded(s.rp, e.Path) }), nil
+}
+
+// find resolves an id as repo.Find does: the prefix before the first "-"
+// names the type, an id with none is a *repo.UnknownTypeError, and a miss
+// is a *repo.NotFoundError. listed holds the entries already read; a type
+// the export does not cover is scanned on demand.
+func (s *source) find(id string, listed []repo.Entry) (repo.Entry, error) {
+	cfg := s.rp.Cfg
+
+	prefix, _, ok := strings.Cut(id, "-")
+	if !ok || prefix == "" {
+		return repo.Entry{}, &repo.UnknownTypeError{Token: id, Valid: cfg.EnabledTypes()}
+	}
+
+	typeName, err := cfg.ValidateType(prefix)
+	if err != nil {
+		return repo.Entry{}, &repo.UnknownTypeError{Token: prefix, Valid: cfg.EnabledTypes()}
+	}
+
+	if !cfg.Types[typeName].Enabled {
+		return repo.Entry{}, &repo.TypeDisabledError{Type: typeName}
+	}
+
+	if i := slices.IndexFunc(listed, func(e repo.Entry) bool { return e.Type == typeName && e.ID == id }); i >= 0 {
+		return listed[i], nil
+	}
+
+	entries, err := s.scan(typeName)
+	if err != nil {
+		return repo.Entry{}, err
+	}
+
+	if i := slices.IndexFunc(entries, func(e repo.Entry) bool { return e.ID == id }); i >= 0 {
+		return entries[i], nil
+	}
+
+	return repo.Entry{}, &repo.NotFoundError{Type: typeName, ID: id}
 }
 
 // selectDocs narrows the full set by opts.Types and opts.IDs, and returns
 // the documents to write with the types whose pages they need.
 func selectDocs(
 	ctx context.Context,
-	rp *repo.Repo,
+	src *source,
 	opts *ExportOptions,
 	all []repo.Entry,
 	allTypes []string,
 ) ([]repo.Entry, []string, error) {
 	if len(opts.IDs) > 0 {
-		var (
-			docs  []repo.Entry
-			types []string
-		)
-
-		for _, id := range opts.IDs {
-			e, err := rp.Find(ctx, id)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			if excluded(rp, e.Path) {
-				continue
-			}
-
-			docs = append(docs, e)
-
-			if !slices.Contains(types, e.Type) {
-				types = append(types, e.Type)
-			}
-		}
-
-		return docs, orderTypes(types, allTypes), nil
+		return selectIDs(ctx, src, opts.IDs, all, allTypes)
 	}
 
 	if len(opts.Types) == 0 {
 		return all, allTypes, nil
 	}
 
-	types, err := canonicalTypes(rp.Cfg, opts.Types)
+	types, err := canonicalTypes(src.rp.Cfg, opts.Types)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	docs := slices.DeleteFunc(slices.Clone(all), func(e repo.Entry) bool { return !slices.Contains(types, e.Type) })
+
+	return docs, orderTypes(types, allTypes), nil
+}
+
+// selectIDs resolves each id and returns the documents with the types
+// whose pages they need; an excluded document is dropped silently.
+func selectIDs(
+	ctx context.Context,
+	src *source,
+	ids []string,
+	all []repo.Entry,
+	allTypes []string,
+) ([]repo.Entry, []string, error) {
+	var (
+		docs  []repo.Entry
+		types []string
+	)
+
+	for _, id := range ids {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+
+		e, err := src.find(id, all)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if excluded(src.rp, e.Path) {
+			continue
+		}
+
+		docs = append(docs, e)
+
+		if !slices.Contains(types, e.Type) {
+			types = append(types, e.Type)
+		}
+	}
 
 	return docs, orderTypes(types, allTypes), nil
 }
@@ -282,15 +422,13 @@ func orderTypes(types, allTypes []string) []string {
 	return out
 }
 
-// excluded reports whether a repository-relative path falls under one of
-// sync.confluence.exclude's prefixes, which are relative to docs_dir.
+// excluded reports whether a repository-relative slash path falls under
+// one of sync.confluence.exclude's prefixes, which are relative to
+// docs_dir.
 func excluded(rp *repo.Repo, rel string) bool {
-	docsDir := filepath.ToSlash(filepath.Clean(rp.Cfg.DocsDir))
-	if filepath.IsAbs(rp.Cfg.DocsDir) && rp.Root != "" {
-		docsDir = filepath.ToSlash(rp.RelPath(rp.Cfg.DocsDir))
-	}
+	docsDir := (&source{rp: rp}).rel(rp.Cfg.DocsDir)
 
-	under, ok := strings.CutPrefix(filepath.ToSlash(rel), docsDir+"/")
+	under, ok := strings.CutPrefix(rel, docsDir+"/")
 	if !ok {
 		return false
 	}
@@ -317,11 +455,11 @@ func docItem(e *repo.Entry, parent int) item {
 }
 
 // typePage is a type's page: its nav title, its README index as the body.
-func typePage(rp *repo.Repo, typeName string, parent int) item {
-	title := navTitle(rp.Cfg, typeName)
-	readme := rp.ReadmePath(typeName)
+func typePage(s *source, typeName string, parent int) item {
+	title := navTitle(s.rp.Cfg, typeName)
+	readme := s.readme(typeName)
 
-	src, err := os.ReadFile(readme)
+	src, err := fs.ReadFile(s.fsys, readme)
 	if err != nil {
 		src = []byte("No " + title + " yet.\n")
 	}
@@ -329,7 +467,7 @@ func typePage(rp *repo.Repo, typeName string, parent int) item {
 	return item{
 		key:      typeKeyPrefix + typeName,
 		title:    title,
-		source:   filepath.ToSlash(rp.RelPath(readme)),
+		source:   readme,
 		src:      src,
 		override: title,
 		parent:   parent,
@@ -351,9 +489,10 @@ func navTitle(cfg *config.Config, typeName string) string {
 
 // parentItem is the parent page: the api landing page when api_pages is
 // on, else a line naming the repository.
-func parentItem(rp *repo.Repo, sync *config.ConfluenceSyncConfig) (item, error) {
+func parentItem(s *source, sync *config.ConfluenceSyncConfig) (item, error) {
+	rp := s.rp
 	if sync.APIPages && rp.Cfg.API.LandingPage != "" {
-		it, err := pageItem(rp, rp.Cfg.API.LandingPage, -1)
+		it, err := pageItem(s, rp.Cfg.API.LandingPage, -1)
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return item{}, err
 		}
@@ -381,8 +520,8 @@ func parentItem(rp *repo.Repo, sync *config.ConfluenceSyncConfig) (item, error) 
 
 // pageItem is an api: page: a file with no docz frontmatter, titled by its
 // first H1 or its path.
-func pageItem(rp *repo.Repo, rel string, parent int) (item, error) {
-	src, err := os.ReadFile(rp.Path(rel))
+func pageItem(s *source, rel string, parent int) (item, error) {
+	src, err := fs.ReadFile(s.fsys, s.rel(rel))
 	if err != nil {
 		return item{}, fmt.Errorf("confluence: reading %s: %w", rel, err)
 	}

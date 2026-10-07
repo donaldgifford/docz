@@ -3,6 +3,7 @@ package confluence
 import (
 	"context"
 	"fmt"
+	"io/fs"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 )
@@ -38,6 +39,12 @@ type ExportOptions struct {
 	Resolve LinkResolver
 	// Version is the docz version written into each page's property.
 	Version string
+	// FS is the repository's files, rooted at the repository root and
+	// addressed by slash paths: every document, README, and api: page is
+	// read through it and nothing reads the disk. Nil means
+	// os.DirFS(rp.Root). A server holding a fetched tree passes an
+	// fstest.MapFS or its own fs.FS and needs no checkout.
+	FS fs.FS
 }
 
 // Report is what an Export did.
