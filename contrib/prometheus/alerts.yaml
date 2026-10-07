@@ -7,7 +7,7 @@
 #   - chart users get these via `prometheusRule.enabled=true`;
 #   - vanilla-Prometheus users add THIS file to `rule_files` directly.
 # Keep the five shared alerts (DoczAPIDown, DoczAPIHighErrorRate,
-# DoczAPISlowRequests, DoczAPIIngestFailures, DoczAPISlowIngest) in sync
+# DoczAPISlowRequests, DoczAPIIngestFailures, DoczAPISlowIngest, DoczAPIExportFailures) in sync
 # between the two. DoczAPINoScrapes below is extra: it only makes sense for
 # a static scrape config that owns the `job` label, so it lives here, not in
 # the chart (where the ServiceMonitor sets the job).
@@ -103,6 +103,17 @@ groups:
         annotations:
           summary: "docz-api ingest jobs slow"
           description: "the 99th-percentile ingest job duration has exceeded 120s for 15+ minutes."
+
+      # Confluence exports failing or partly failing (DESIGN-0021 §9). The
+      # repository's GET /api/v1/repos/{owner}/{name}/confluence names the pages.
+      - alert: DoczAPIExportFailures
+        expr: sum by (reason) (increase(docz_api_export_jobs_total{status=~"failed|partial"}[30m])) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "docz-api Confluence exports failing"
+          description: "more than 2 Confluence export jobs for reason {{ $labels.reason }} failed or partly failed in the last 30 minutes."
 
       # -------------------------------------------------------------------
       # Scrape health (static-scrape deployments only)

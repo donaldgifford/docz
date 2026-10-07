@@ -656,7 +656,7 @@ in its own, and `v2.0.0-beta.8` ships it.
   `tests/api/deployment_env_test.yaml` and `secret_test.yaml` cover set
   and unset. Chart `version` 0.2.1 → 0.3.0, `appVersion` to the beta,
   `just chart docs` regenerated
-- [ ] `DoczAPIExportFailures` in `api-prometheusrule.yaml`,
+- [x] `DoczAPIExportFailures` in `api-prometheusrule.yaml`,
   `tests/api/prometheusrule_test.yaml`, and
   `contrib/prometheus/alerts.yaml`; `just api lint-alerts` passes;
   `contrib/README.md` lists the three new metrics

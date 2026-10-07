@@ -9,7 +9,7 @@ thresholds, panel layouts, and selectors to match your environment.
 
 | Path                              | Purpose                                                                                          |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `prometheus/alerts.yaml`          | Alerting rules: availability, HTTP 5xx error rate, request latency, and ingest failures/latency. |
+| `prometheus/alerts.yaml`          | Alerting rules: availability, HTTP 5xx error rate, request latency, ingest failures/latency, and Confluence export failures. |
 | `grafana/docz-api-dashboard.json` | Import-style Grafana dashboard (RED for the HTTP surface + the async ingest pipeline).           |
 
 ## Exposed metrics
@@ -78,6 +78,31 @@ histogram_quantile(0.95,
   sum by (le, reason) (rate(docz_api_ingest_job_duration_seconds_bucket[30m])))
 ```
 
+### Confluence export
+
+When the server is configured for it (DESIGN-0021), each ingest enqueues a
+Confluence export on a second asynq queue, and the worker records one
+observation per export job and one per page action.
+
+| Metric                                 | Type      | Labels             | Description                                                                                                                                       |
+| -------------------------------------- | --------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docz_api_export_jobs_total`           | Counter   | `reason`, `status` | Export jobs processed. `reason` ∈ {`ingest`, `manual`}; `status` ∈ {`succeeded`, `partial`, `failed`, `disabled`, `refused`}.                   |
+| `docz_api_export_job_duration_seconds` | Histogram | `reason`           | Job duration with buckets up to 600s (a first export of a large repository makes hundreds of requests). Exposes `_bucket{le}`, `_sum`, `_count`. |
+| `docz_api_export_pages_total`          | Counter   | `action`           | Pages by what the export did. `action` ∈ {`created`, `updated`, `unchanged`, `skipped`, `archived`, `failed`}.                                   |
+
+Example:
+
+```promql
+# exports that failed or partly failed, by reason
+sum by (reason) (increase(docz_api_export_jobs_total{status=~"failed|partial"}[30m]))
+
+# pages written per hour
+sum(increase(docz_api_export_pages_total{action=~"created|updated"}[1h]))
+```
+
+A repository's `GET /api/v1/repos/{owner}/{name}/confluence` names the pages
+behind a failure.
+
 ## Scraping
 
 Point Prometheus at the service's `:8080/metrics`. A minimal static config:
@@ -120,7 +145,7 @@ Prometheus data source when prompted.
   preamble), or paste the `docz-api` group into a `PrometheusRule` resource
   under the Prometheus Operator.
 - **Helm chart:** set `prometheusRule.enabled=true` and the chart installs the
-  same five alerts for you (skip this file entirely).
+  same six alerts for you (skip this file entirely).
 
 The file carries one extra alert, `DoczAPINoScrapes`
 (`absent(up{job="docz-api"}) == 1`), that only makes sense with a static scrape
