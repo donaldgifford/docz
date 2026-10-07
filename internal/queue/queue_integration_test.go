@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
+	"github.com/donaldgifford/docz/v2/internal/export"
 	"github.com/donaldgifford/docz/v2/internal/queue"
 	"github.com/donaldgifford/docz/v2/internal/store"
 )
@@ -492,5 +493,73 @@ func TestReingestAfterArchivedRun(t *testing.T) {
 	}
 	if len(rec.find("cleared a finished ingest task and re-enqueued")) == 0 {
 		t.Error("no log record explaining that the archived task was cleared")
+	}
+}
+
+// exportingIngestor enqueues an export after each ingest, as ingest.Service
+// does for a repository with sync.confluence enabled.
+type exportingIngestor struct {
+	countingIngestor
+	client *queue.Client
+}
+
+func (e *exportingIngestor) Run(
+	ctx context.Context, installationID int64, owner, name string,
+) (store.ReconcileResult, error) {
+	res, err := e.countingIngestor.Run(ctx, installationID, owner, name)
+	if err != nil {
+		return res, err
+	}
+	return res, e.client.EnqueueExport(ctx, &queue.ExportJob{RepoID: 1, Owner: owner, Name: name, Reason: "ingest"})
+}
+
+// countingExporter counts export runs.
+type countingExporter struct{ count atomic.Int64 }
+
+func (c *countingExporter) Run(context.Context, int64) (export.Result, error) {
+	c.count.Add(1)
+	return export.Result{Status: export.StatusSucceeded}, nil
+}
+
+// A burst of five pushes is one ingest, and that ingest is followed by
+// exactly one export (IMPL-0024 Phase 7).
+func TestBurstIsOneIngestAndOneExport(t *testing.T) {
+	client, err := queue.NewClient(redisURL, 500*time.Millisecond)
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	defer func() {
+		if cerr := client.Close(); cerr != nil {
+			t.Logf("close client: %v", cerr)
+		}
+	}()
+
+	ing := &exportingIngestor{client: client}
+	exp := &countingExporter{}
+
+	worker, err := queue.NewWorker(redisURL, 2, ing, exp)
+	if err != nil {
+		t.Fatalf("new worker: %v", err)
+	}
+	if err := worker.Start(); err != nil {
+		t.Fatalf("start worker: %v", err)
+	}
+	defer worker.Shutdown()
+
+	job := &queue.IngestJob{InstallationID: 42, Owner: "acme", Name: "burst-export", Reason: "push"}
+	for range 5 {
+		if err := client.EnqueueIngest(t.Context(), job); err != nil {
+			t.Fatalf("enqueue: %v", err)
+		}
+	}
+
+	deadline := time.Now().Add(6 * time.Second)
+	for exp.count.Load() < 1 && time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+	}
+	time.Sleep(500 * time.Millisecond) // give any extra run a chance to appear
+
+	if i, e := ing.count.Load(), exp.count.Load(); i != 1 || e != 1 {
+		t.Errorf("ingests %d, exports %d; want 1 and 1", i, e)
 	}
 }
