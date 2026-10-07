@@ -241,7 +241,7 @@ extraLabels:
   the Prometheus namespace with the master key.
 - **Alerts.** `prometheusRule.enabled` renders the API's starter pack:
   `DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
-  `DoczAPIIngestFailures`, and `DoczAPISlowIngest`.
+  `DoczAPIIngestFailures`, `DoczAPISlowIngest`, and `DoczAPIExportFailures`.
 - **Tracing.** Set `otel.endpoint` to an OTLP/HTTP collector
   (`http://collector:4318`) to trace both workloads, or leave it empty to
   trace neither. The chart gives each runtime the form it reads: `host:port`
