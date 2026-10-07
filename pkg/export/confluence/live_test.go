@@ -214,7 +214,22 @@ func liveDelete(t *testing.T, h *HTTPClient, kind, id string) {
 	defer cancel()
 
 	path := "/wiki/api/v2/" + kind + "/" + id
-	if err := h.do(ctx, "delete", http.MethodDelete, path, nil, nil); err != nil {
+
+	// Confluence answers a delete with an occasional 500 that a retry
+	// clears; a 404 means an earlier attempt went through.
+	var err error
+
+	for attempt := range 4 {
+		if attempt > 0 {
+			time.Sleep(time.Duration(attempt) * 2 * time.Second)
+		}
+
+		if err = h.do(ctx, "delete", http.MethodDelete, path, nil, nil); err == nil || notFound(err) {
+			break
+		}
+	}
+
+	if err != nil && !notFound(err) {
 		t.Errorf("delete %s %s: %v", kind, id, err)
 
 		return
@@ -252,4 +267,86 @@ func livePage(ctx context.Context, t *testing.T, h *HTTPClient, p *NewPage) *Pag
 	}
 
 	return page
+}
+
+// TestLiveInlineComment proves #158 on a real site (IMPL-0024 Phase 5): an
+// inline comment made through the API leaves the page's version alone
+// (DESIGN-0021 §4 amendment), and an update that carries its marker keeps
+// it anchored rather than dangling.
+func TestLiveInlineComment(t *testing.T) {
+	h, spaceID := liveClient(t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+
+	stamp := time.Now().UTC().Format("20060102T150405")
+
+	page, err := h.CreatePage(ctx, &NewPage{
+		SpaceID: spaceID, Title: "docz live comment " + stamp,
+		Body: []byte("<p>Before. We chose Postgres for the store.</p>"),
+	})
+	if err != nil {
+		t.Fatalf("create page: %v", err)
+	}
+
+	t.Cleanup(func() { liveDelete(t, h, "pages", page.ID) })
+
+	var comment struct {
+		ID               string `json:"id"`
+		ResolutionStatus string `json:"resolutionStatus"`
+		Properties       struct {
+			Ref string `json:"inlineMarkerRef"`
+		} `json:"properties"`
+	}
+
+	req := map[string]any{
+		"pageId": page.ID,
+		"body":   map[string]string{"representation": "storage", "value": "<p>docz live comment</p>"},
+		"inlineCommentProperties": map[string]any{
+			"textSelection": "Postgres", "textSelectionMatchCount": 1, "textSelectionMatchIndex": 0,
+		},
+	}
+	if err := h.do(ctx, "create inline comment", http.MethodPost, "/wiki/api/v2/inline-comments", req, &comment); err != nil {
+		t.Fatalf("create inline comment: %v", err)
+	}
+
+	after, err := h.Page(ctx, page.ID)
+	if err != nil || after == nil || after.Version != page.Version {
+		t.Fatalf("page after the comment: %+v %v; want version %d still", after, err, page.Version)
+	}
+
+	current, err := h.Body(ctx, page.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	markers := collectMarkers(current)
+	if len(markers) != 1 || markers[0].text != "Postgres" || markers[0].ref != comment.Properties.Ref {
+		t.Fatalf("markers %+v; want Postgres under ref %s", markers, comment.Properties.Ref)
+	}
+
+	out, kept, lost := carryMarkers([]byte("<p>Changed intro. We chose Postgres for the store, still.</p>"), markers)
+	if kept != 1 || len(lost) != 0 {
+		t.Fatalf("kept %d lost %v", kept, lost)
+	}
+
+	if _, err := h.UpdatePage(ctx, page.ID, &PageUpdate{
+		Title: page.Title, Body: out, Version: after.Version + 1, Message: "docz live: comment carried",
+	}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	if body, err := h.Body(ctx, page.ID); err != nil || !strings.Contains(string(body), comment.Properties.Ref) {
+		t.Errorf("body after the update lost the marker: %s %v", body, err)
+	}
+
+	if err := h.do(ctx, "get inline comment", http.MethodGet, "/wiki/api/v2/inline-comments/"+comment.ID, nil, &comment); err != nil {
+		t.Fatalf("read the comment back: %v", err)
+	}
+
+	if comment.ResolutionStatus == "dangling" {
+		t.Errorf("the comment is dangling after the update")
+	}
+
+	t.Logf("comment %s on page %s: %s after the update", comment.ID, page.ID, comment.ResolutionStatus)
 }
