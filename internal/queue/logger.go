@@ -72,7 +72,17 @@ func asynqLogLevel(logger *slog.Logger) asynq.LogLevel {
 	}
 }
 
-// logIngestFailure is the asynq ErrorHandler: it reports every failed attempt,
+// logTaskFailure is the asynq ErrorHandler. It hands each failed attempt to
+// the logger for its task type.
+func logTaskFailure(ctx context.Context, task *asynq.Task, err error) {
+	if task.Type() == TaskTypeExport {
+		logExportFailure(ctx, task, err)
+		return
+	}
+	logIngestFailure(ctx, task, err)
+}
+
+// logIngestFailure reports every failed ingest attempt,
 // including the retries and the final one before archiving.
 //
 // asynq never logs a handler's returned error itself — it hands the error to
@@ -81,6 +91,27 @@ func asynqLogLevel(logger *slog.Logger) asynq.LogLevel {
 // handler an ingest could fail all five attempts leaving no diagnosable trace
 // outside the Redis task record.
 func logIngestFailure(ctx context.Context, task *asynq.Task, err error) {
+	attrs := attemptAttrs(ctx, task, err)
+	// Best-effort enrichment: a malformed payload is itself a reported failure,
+	// so decode errors are ignored rather than masking the real one.
+	if job, jerr := unmarshalJob(task.Payload()); jerr == nil {
+		attrs = append(attrs, "repo", job.repoLabel(), "reason", job.Reason)
+	}
+	slog.ErrorContext(ctx, "ingest job attempt failed", attrs...)
+}
+
+// logExportFailure is logIngestFailure's twin for a Confluence export.
+func logExportFailure(ctx context.Context, task *asynq.Task, err error) {
+	attrs := attemptAttrs(ctx, task, err)
+	if job, jerr := unmarshalExportJob(task.Payload()); jerr == nil {
+		attrs = append(attrs, "repo", job.repoLabel(), "reason", job.Reason)
+	}
+	slog.ErrorContext(ctx, "export job attempt failed", attrs...)
+}
+
+// attemptAttrs is the task type, error, task id, and retry counts asynq
+// carries for a failed attempt.
+func attemptAttrs(ctx context.Context, task *asynq.Task, err error) []any {
 	attrs := []any{"type", task.Type(), "err", err}
 	if id, ok := asynq.GetTaskID(ctx); ok {
 		attrs = append(attrs, "task_id", id)
@@ -91,10 +122,5 @@ func logIngestFailure(ctx context.Context, task *asynq.Task, err error) {
 	if maxRetries, ok := asynq.GetMaxRetry(ctx); ok {
 		attrs = append(attrs, "max_retry", maxRetries)
 	}
-	// Best-effort enrichment: a malformed payload is itself a reported failure,
-	// so decode errors are ignored rather than masking the real one.
-	if job, jerr := unmarshalJob(task.Payload()); jerr == nil {
-		attrs = append(attrs, "repo", job.repoLabel(), "reason", job.Reason)
-	}
-	slog.ErrorContext(ctx, "ingest job attempt failed", attrs...)
+	return attrs
 }

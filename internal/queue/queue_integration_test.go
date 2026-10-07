@@ -120,7 +120,7 @@ func TestEnqueueAndDrain(t *testing.T) {
 		}
 	}()
 
-	worker, err := queue.NewWorker(redisURL, 1, ing)
+	worker, err := queue.NewWorker(redisURL, 1, ing, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestDebounceCoalesces(t *testing.T) {
 		}
 	}()
 
-	worker, err := queue.NewWorker(redisURL, 1, ing)
+	worker, err := queue.NewWorker(redisURL, 1, ing, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}
@@ -190,7 +190,7 @@ func TestShutdownDrainsInFlight(t *testing.T) {
 		}
 	}()
 
-	worker, err := queue.NewWorker(redisURL, 1, ing)
+	worker, err := queue.NewWorker(redisURL, 1, ing, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}
@@ -325,7 +325,7 @@ func TestFailedIngestLogsTheError(t *testing.T) {
 		}
 	}()
 
-	worker, err := queue.NewWorker(redisURL, 1, ing)
+	worker, err := queue.NewWorker(redisURL, 1, ing, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}
@@ -366,7 +366,7 @@ func TestAsynqInternalErrorsReachSlog(t *testing.T) {
 	rec := captureDefaultLogs(t)
 
 	// Port 1 is reserved and never listening, so the poller fails every tick.
-	worker, err := queue.NewWorker("redis://127.0.0.1:1", 1, &countingIngestor{})
+	worker, err := queue.NewWorker("redis://127.0.0.1:1", 1, &countingIngestor{}, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}
@@ -398,7 +398,7 @@ func TestReingestAfterSuccessfulRun(t *testing.T) {
 		}
 	}()
 
-	worker, err := queue.NewWorker(redisURL, 1, ing)
+	worker, err := queue.NewWorker(redisURL, 1, ing, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}
@@ -441,7 +441,7 @@ func TestReingestAfterArchivedRun(t *testing.T) {
 		}
 	}()
 
-	worker, err := queue.NewWorker(redisURL, 1, failing)
+	worker, err := queue.NewWorker(redisURL, 1, failing, nil)
 	if err != nil {
 		t.Fatalf("new worker: %v", err)
 	}

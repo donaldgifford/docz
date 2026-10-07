@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/donaldgifford/docz/v2/internal/export"
 	"github.com/donaldgifford/docz/v2/internal/store"
 	"github.com/donaldgifford/docz/v2/internal/telemetry"
 )
@@ -34,19 +35,31 @@ type Ingestor interface {
 	Run(ctx context.Context, installationID int64, owner, name string) (store.ReconcileResult, error)
 }
 
-// Worker runs the asynq server that drains ingest jobs. Callers Start it
-// (non-blocking) and Shutdown it (drains in-flight jobs). The pointer receiver
-// is required: Worker holds *asynq.Server, which must not be copied.
+// Exporter is the narrow surface the worker needs to run one Confluence
+// export. It matches export.Service.Run.
+type Exporter interface {
+	Run(ctx context.Context, repoID int64) (export.Result, error)
+}
+
+// Worker runs the asynq server that drains ingest and export jobs. Callers
+// Start it (non-blocking) and Shutdown it (drains in-flight jobs). The pointer
+// receiver is required: Worker holds *asynq.Server, which must not be copied.
 type Worker struct {
 	srv      *asynq.Server
 	ingestor Ingestor
+	exporter Exporter
 }
 
-// NewWorker builds a Worker that processes ingest jobs with ing. concurrency
-// bounds the number of parallel ingests (2–4 suits a homelab single binary:
-// each job holds a pool connection and issues GitHub API calls). The asynq
-// server connects to Redis only on Start, so NewWorker never blocks on Redis.
-func NewWorker(redisURL string, concurrency int, ing Ingestor) (*Worker, error) {
+// queueWeights serves ingest twice as often as export, so an export never
+// starves an ingest at the worker's small concurrency.
+var queueWeights = map[string]int{queueName: 2, exportQueueName: 1}
+
+// NewWorker builds a Worker that processes ingest jobs with ing and, when exp
+// is not nil, export jobs with exp. concurrency bounds the number of parallel
+// jobs (2–4 suits a homelab single binary: each job holds a pool connection
+// and issues GitHub or Confluence API calls). The asynq server connects to
+// Redis only on Start, so NewWorker never blocks on Redis.
+func NewWorker(redisURL string, concurrency int, ing Ingestor, exp Exporter) (*Worker, error) {
 	opt, err := asynq.ParseRedisURI(redisURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse redis url for worker: %w", err)
@@ -57,20 +70,23 @@ func NewWorker(redisURL string, concurrency int, ing Ingestor) (*Worker, error) 
 	// which main() installs before building the worker.
 	srv := asynq.NewServer(opt, asynq.Config{
 		Concurrency:              concurrency,
-		Queues:                   map[string]int{queueName: 1},
+		Queues:                   queueWeights,
 		IsFailure:                isFailure,
 		DelayedTaskCheckInterval: delayedTaskCheckInterval,
 		Logger:                   newAsynqLogger(nil),
 		LogLevel:                 asynqLogLevel(nil),
-		ErrorHandler:             asynq.ErrorHandlerFunc(logIngestFailure),
+		ErrorHandler:             asynq.ErrorHandlerFunc(logTaskFailure),
 	})
-	return &Worker{srv: srv, ingestor: ing}, nil
+	return &Worker{srv: srv, ingestor: ing, exporter: exp}, nil
 }
 
-// Start registers the ingest handler and starts the asynq server (non-blocking).
+// Start registers the handlers and starts the asynq server (non-blocking).
 func (w *Worker) Start() error {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskTypeIngest, w.handleIngest)
+	if w.exporter != nil {
+		mux.HandleFunc(TaskTypeExport, w.handleExport)
+	}
 	if err := w.srv.Start(mux); err != nil {
 		return fmt.Errorf("start asynq worker: %w", err)
 	}
@@ -128,6 +144,73 @@ func (w *Worker) handleIngest(ctx context.Context, task *asynq.Task) error {
 		"docs_unchanged", res.DocsUnchanged,
 	)
 	return nil
+}
+
+// handleExport is the asynq handler for TaskTypeExport. Like handleIngest it
+// drops a malformed payload and returns any other error, which asynq retries
+// unless the exporter wrapped asynq.SkipRetry. Logging a failure is
+// logTaskFailure's.
+func (w *Worker) handleExport(ctx context.Context, task *asynq.Task) error {
+	job, err := unmarshalExportJob(task.Payload())
+	if err != nil {
+		slog.Error("export job has a malformed payload; dropping", "err", err)
+		return fmt.Errorf("%w: %w", asynq.SkipRetry, err)
+	}
+
+	ctx = extractTrace(ctx, job.TraceParent, job.TraceState)
+	ctx, span := tracer.Start(ctx, "queue.export",
+		trace.WithSpanKind(trace.SpanKindConsumer),
+		trace.WithAttributes(
+			attribute.String("repo", job.repoLabel()),
+			attribute.String("reason", job.Reason),
+		),
+	)
+	defer span.End()
+
+	slog.Info("processing export job", "repo", job.repoLabel(), "reason", job.Reason)
+
+	start := time.Now()
+	res, err := w.exporter.Run(ctx, job.RepoID)
+	observeExport(job.Reason, &res, time.Since(start))
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return fmt.Errorf("export %s: %w", job.repoLabel(), err)
+	}
+
+	slog.Info("export job complete",
+		"repo", job.repoLabel(),
+		"status", res.Status,
+		"reason", res.Reason,
+		"folder", res.Folder,
+		"runs", res.Runs,
+		"created", res.Counts.Created,
+		"updated", res.Counts.Updated,
+		"unchanged", res.Counts.Unchanged,
+		"skipped", res.Counts.Skipped,
+		"archived", res.Counts.Archived,
+		"failed", res.Counts.Failed,
+	)
+	return nil
+}
+
+// observeExport records an export's metrics. A run that never reached a
+// status (the snapshot could not be read) counts as failed.
+func observeExport(reason string, res *export.Result, d time.Duration) {
+	status := string(res.Status)
+	if status == "" {
+		status = string(export.StatusFailed)
+	}
+
+	telemetry.ObserveExport(reason, status, d)
+
+	for action, n := range map[string]int{
+		"created": res.Counts.Created, "updated": res.Counts.Updated, "unchanged": res.Counts.Unchanged,
+		"skipped": res.Counts.Skipped, "archived": res.Counts.Archived, "failed": res.Counts.Failed,
+	} {
+		telemetry.ObserveExportPages(action, n)
+	}
 }
 
 // isFailure is the asynq Config.IsFailure predicate: a context cancellation

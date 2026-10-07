@@ -196,7 +196,7 @@ func runServer(
 	// The worker runs in-process alongside the HTTP server (single-binary ethos).
 	// It builds a per-installation GitHub client per job via ingestRunner.
 	runner := &ingestRunner{store: st, indexer: searchClient, github: cfg.GitHub}
-	worker, err := queue.NewWorker(cfg.Store.RedisURL, workerConcurrency, runner)
+	worker, err := queue.NewWorker(cfg.Store.RedisURL, workerConcurrency, runner, nil)
 	if err != nil {
 		closeQueueClient(queueClient)
 		return fmt.Errorf("building queue worker: %w", err)

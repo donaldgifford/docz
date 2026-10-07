@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -43,6 +44,15 @@ func (*ExportJob) options(*Client) []asynq.Option {
 // repository so a burst of ingests coalesces onto one export.
 func exportTaskID(job *ExportJob) string {
 	return "export:" + job.repoLabel()
+}
+
+// unmarshalExportJob decodes an asynq task payload into an ExportJob.
+func unmarshalExportJob(payload []byte) (*ExportJob, error) {
+	var j ExportJob
+	if err := json.Unmarshal(payload, &j); err != nil {
+		return nil, fmt.Errorf("unmarshal export job: %w", err)
+	}
+	return &j, nil
 }
 
 // ExportEnqueuer is the consumer-side interface for enqueueing an export.
