@@ -410,33 +410,38 @@ page's version (DESIGN-0021 question 11).
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `comments.go`: `collectMarkers(body []byte) []marker` reads the
+- [x] `comments.go`: `collectMarkers(body []byte) []marker` reads the
   current body's `ac:inline-comment-marker` elements with their `ac:ref`
   and text content, using the token reader `wellformed.go` already uses
-- [ ] `carryMarkers(rendered []byte, markers []marker) (out []byte, kept int, lost []string)`:
+- [x] `carryMarkers(rendered []byte, markers []marker) (out []byte, kept int, lost []string)`:
   for each marker, find its text in character data only (not in a tag,
   an attribute, an `ac:parameter`, or a `plain-text-body` CDATA), outside
   markers already placed; wrap it when it occurs exactly once inside one
   text node; else add it to `lost`. The input is never modified
-- [ ] `reconcile.go`: on `Updated` only, `Client.Body` the current page,
+- [x] `reconcile.go`: on `Updated` only, `Client.Body` the current page,
   carry the markers, check the result well-formed, and write it. The
   property's `hash` stays the hash before markers. `PageResult.Comments`
   is set. A body read that fails fails the page, as any request does
-- [ ] `testdata/comments/`: pairs of a current body with markers and a new
+- [x] `testdata/comments/`: pairs of a current body with markers and a new
   render, with `.golden` outputs, covering a kept comment, a moved
   paragraph, duplicated text, deleted text, text inside a code macro, text
   spanning `<strong>`, two markers in one paragraph, and an entity in the
   text (`&amp;`)
-- [ ] `FuzzCarryMarkers`: the output is always well-formed, and stripping
+- [x] `FuzzCarryMarkers`: the output is always well-formed, and stripping
   the markers it added gives back the render byte for byte
-- [ ] CLI: one `WARNING: <id>: an inline comment on "<text>" lost its anchor`
+- [x] CLI: one `WARNING: <id>: an inline comment on "<text>" lost its anchor`
   line per lost comment
-- [ ] Live: on a scratch page, add an inline comment (Open Question 3), read the page's
+- [x] Live: on a scratch page, add an inline comment (Open Question 3), read the page's
   version, change the source markdown around the commented text, export
   with `--force`, and confirm the comment still shows anchored in the
   browser. Whether a comment bumps the version was settled on 2026-10-07
   ahead of this phase: it does not (DESIGN-0021 §4 amendment). The live
-  test asserts it stays that way
+  test asserts it stays that way. Done 2026-10-07 as `TestLiveInlineComment`
+  under `just export-live`: the comment, made through
+  `POST /inline-comments`, left the page at version 1; its marker was
+  carried onto a changed body; and the comment read back `open`, not
+  `dangling`, after the update. The comment's anchoring is read from the
+  API rather than seen in a browser
 
 <!--docz:tasks:end-->
 
