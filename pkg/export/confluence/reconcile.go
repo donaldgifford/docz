@@ -236,6 +236,14 @@ func (r *exportRun) update(
 	res PageResult, //nolint:gocritic // a value in, a value out: the result is the caller's copy
 ) (PageResult, error) {
 	res.Action = Updated
+
+	body, comments, err := r.carryComments(ctx, page.ID, rendered.Body)
+	if err != nil {
+		return res, err
+	}
+
+	res.Comments = comments
+
 	if r.opts.DryRun {
 		return res, nil
 	}
@@ -243,7 +251,7 @@ func (r *exportRun) update(
 	updated, err := r.opts.Client.UpdatePage(ctx, page.ID, &PageUpdate{
 		Title:    rendered.Title,
 		ParentID: parentID,
-		Body:     rendered.Body,
+		Body:     body,
 		Version:  page.Version + 1,
 		Message:  syncMessage(it, rendered.Hash),
 	})
@@ -254,6 +262,29 @@ func (r *exportRun) update(
 	res.URL, res.Version = updated.WebURL, updated.Version
 
 	return res, r.writeProperty(ctx, page.ID, prop, it, rendered.Hash, updated.Version)
+}
+
+// carryComments reads the page's current body and carries its inline
+// comment markers onto the new render (DESIGN-0021 §4). Only an update
+// pays for the read. The property's hash stays the render's, so the
+// markers never make a page read as changed.
+func (r *exportRun) carryComments(ctx context.Context, pageID string, rendered []byte) ([]byte, Comments, error) {
+	current, err := r.opts.Client.Body(ctx, pageID)
+	if err != nil {
+		return nil, Comments{}, err
+	}
+
+	markers := collectMarkers(current)
+	if len(markers) == 0 {
+		return rendered, Comments{}, nil
+	}
+
+	out, kept, lost := carryMarkers(rendered, markers)
+	if err := wellFormed(out); err != nil {
+		return nil, Comments{}, err
+	}
+
+	return out, Comments{Kept: kept, Lost: lost}, nil
 }
 
 // writeProperty creates the docz property, or updates prop through its own

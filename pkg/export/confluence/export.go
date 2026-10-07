@@ -116,6 +116,9 @@ type PageResult struct {
 	// Edited is set when the page had been edited in Confluence since docz
 	// last wrote it: Updated over the edit under Overwrite, else Skipped.
 	Edited *Edit `json:"edited,omitempty"`
+	// Comments is what an update did with the page's inline comments: how
+	// many it re-anchored and the text of each it could not.
+	Comments Comments `json:"comments,omitzero"`
 	// Reason says why a page was Skipped or Failed.
 	Reason string `json:"reason,omitempty"`
 	// Links are the relative links nothing could place.
