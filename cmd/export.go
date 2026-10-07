@@ -238,24 +238,31 @@ func repositoryName(remote string) string {
 	return strings.TrimPrefix(remote, githubPrefix)
 }
 
-// printExportWarnings names on stderr, whatever the log level, each page
-// the run would not write for a reason a person must act on: an edit in
-// Confluence --force would overwrite, or another repository's page that
-// nothing here may touch (DESIGN-0021 §8).
+// printExportWarnings names on stderr, whatever the log level, what a
+// person must act on (DESIGN-0021 §4, §8): a page skipped for an edit in
+// Confluence --force would overwrite, another repository's page that
+// nothing here may touch, and each inline comment an update could not
+// re-anchor.
 func (r *Runner) printExportWarnings(report *confluence.Report) {
 	for i := range report.Pages {
 		p := &report.Pages[i]
+
+		name := p.ID
+		if name == "" {
+			name = p.Title
+		}
+
+		for _, text := range p.Comments.Lost {
+			//nolint:errcheck // warning to stderr; nothing actionable if it fails to print
+			fmt.Fprintf(r.Err, "WARNING: %s: an inline comment on %q lost its anchor\n", name, text)
+		}
+
 		if p.Action != confluence.Skipped {
 			continue
 		}
 
 		switch {
 		case p.Edited != nil:
-			name := p.ID
-			if name == "" {
-				name = p.Title
-			}
-
 			//nolint:errcheck // warning to stderr; nothing actionable if it fails to print
 			fmt.Fprintf(r.Err, "WARNING: %s was edited in Confluence (v%d, expected v%d); not overwritten, use --force\n",
 				name, p.Edited.Version, p.Edited.Expected)

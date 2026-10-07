@@ -651,3 +651,26 @@ func TestExportConfluence_JSONCarriesTheFolder(t *testing.T) {
 		t.Errorf("type page %+v; want its key, prefixed title, and hash", p)
 	}
 }
+
+func TestExportConfluence_LostCommentWarning(t *testing.T) {
+	fake := newCmdFake()
+	r, _ := exportFixture(t, fake)
+	exportOnce(t, r)
+
+	id := fake.pages["RFC-0001: First proposal"].ID
+	fake.bodies[id] = []byte(`<p><ac:inline-comment-marker ac:ref="c">vanished words</ac:inline-comment-marker></p>`)
+	appendFile(t, filepath.Join(r.RepoRoot, "docs", "rfc", "0001-first-proposal.md"), "\nChanged.\n")
+
+	var stderr bytes.Buffer
+
+	r.Err = &stderr
+
+	if err := r.exportConfluence(t.Context(), exportOpts{format: formatText}, nil); err != nil {
+		t.Fatalf("export: %v", err)
+	}
+
+	want := "WARNING: RFC-0001: an inline comment on \"vanished words\" lost its anchor\n"
+	if stderr.String() != want {
+		t.Errorf("stderr %q; want %q", stderr.String(), want)
+	}
+}
