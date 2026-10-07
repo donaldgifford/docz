@@ -345,19 +345,19 @@ this repository exports to the scratch site in the folder layout.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `cmd/export.go`: `ExportOptions.Repository` from
+- [x] `cmd/export.go`: `ExportOptions.Repository` from
   `GitResolver.RemoteURL` (`https://github.com/<owner>/<name>` →
   `owner/name`), empty when there is no GitHub remote
-- [ ] For each result with `Edited` set and action `Skipped`, print to
+- [x] For each result with `Edited` set and action `Skipped`, print to
   stderr, whatever the log level:
   `WARNING: <id> was edited in Confluence (v<N>, expected v<M>); not overwritten, use --force`,
   where `<id>` is the document id or, for a composed page, its title. The
   stdout line and the exit codes do not change
-- [ ] A skipped page owned by another repository prints
+- [x] A skipped page owned by another repository prints
   `WARNING: <title> belongs to <repo>; not written`
-- [ ] The `--format json` report carries `key`, `hash`, `edited`, and
+- [x] The `--format json` report carries `key`, `hash`, `edited`, and
   `folder`
-- [ ] `cmd/export_test.go`: the warning text for an edited page and for a
+- [x] `cmd/export_test.go`: the warning text for an edited page and for a
   foreign page, on stderr only; the repository name from SSH and HTTPS
   remotes and with no remote; `--strict` still exits 1 on a skip
 - [x] Before the first folder-layout run, the Phase A tree on the scratch
@@ -367,12 +367,21 @@ this repository exports to the scratch site in the folder layout.
   home page needs (DESIGN-0021 §3 amendment, tested 2026-10-07). It was
   deleted on 2026-10-07, and a page titled `docz` was then created and
   removed to confirm the title is free
-- [ ] `.docz.yaml`: `layout: folder`, `parent:` removed, so the folder sits
+- [x] `.docz.yaml`: `layout: folder`, `parent:` removed, so the folder sits
   at the top of `DOCZ`
-- [ ] Live: `docz export confluence --dry-run`, then a real run, then a
+- [x] Live: `docz export confluence --dry-run`, then a real run, then a
   rerun reporting every page unchanged. Edit one page in the browser,
   rerun, see the `WARNING`, rerun with `--force`. Record the counts and the
-  folder URL in this document
+  folder URL in this document. Done 2026-10-07: the dry run and the
+  first run created 79 pages in the folder
+  <https://dgifford06.atlassian.net/wiki/spaces/DOCZ/folder/459602>
+  (folder 459602 under the space homepage 98442); the rerun reported 79
+  unchanged. The edit was a new version of ADR-0001's page written
+  through the API with its body unchanged, which is what a browser edit
+  looks like to docz: the next run printed
+  `WARNING: ADR-0001 was edited in Confluence (v2, expected v1); not overwritten, use --force`
+  and reported 78 unchanged, 1 skipped; `--force` updated it to v3, and a
+  final run reported 79 unchanged
 
 <!--docz:tasks:end-->
 
