@@ -29,6 +29,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(store)* Record each Confluence page's source and the version an edit was expected at
 - *(httpapi)* Confluence_url on documents and GET /repos/{owner}/{name}/confluence
 - *(ui)* View in Confluence on a document with a page
+- *(chart)* Confluence export values, secret key, and env
+- *(chart)* DoczAPIExportFailures alert and the export metrics in contrib
 
 ### Documentation
 
@@ -54,6 +56,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* Check off IMPL-0024 Phase 6
 - IMPL-0024 Phase 7, the export task
 - IMPL-0024 Phase 8, the API and docz-site
+- *(chart)* List DoczAPIExportFailures in the README
+- *(runbook)* RUNBOOK-0003, enable Confluence export on docz-api
+- The folder layout, comments, and the server's Confluence export
+- *(design)* DESIGN-0021 Implemented, amending the Data Model for source and edited_expected
+- *(impl)* IMPL-0024 testing plan checked off; live server run and release deferred to a person
 
 ### Testing
 
