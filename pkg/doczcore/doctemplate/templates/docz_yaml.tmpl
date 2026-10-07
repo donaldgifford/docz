@@ -124,18 +124,27 @@ api:
     - {{ . }}
 {{- end }}
 
-# Export targets for `docz export confluence` (DESIGN-0020). Off by
-# default and never validated until enabled. Credentials come from the
-# environment, never from this file: ATLASSIAN_EMAIL and
-# ATLASSIAN_API_TOKEN. A scoped API token is preferred and needs
-# read:space:confluence, read:page:confluence, and write:page:confluence.
+# Export targets for `docz export confluence` and docz-api (DESIGN-0020,
+# DESIGN-0021). Off by default and never validated until enabled.
+# Credentials come from the environment, never from this file:
+# ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN. A scoped API token is preferred
+# and needs read:space:confluence, read:page:confluence,
+# write:page:confluence, read:folder:confluence, write:folder:confluence,
+# and read:hierarchical-content:confluence.
 sync:
   confluence:
     enabled: {{ .Sync.Confluence.Enabled }}
     # The Cloud site, e.g. https://example.atlassian.net.
     site:{{ with .Sync.Confluence.Site }} {{ . }}{{ end }}
-    # The space key, and the title of the page everything sits beneath.
+    # The space key. Several repositories may share one space.
     space:{{ with .Sync.Confluence.Space }} {{ . }}{{ end }}
+    # folder: one Confluence folder per repository, every title prefixed
+    # with its name. page: everything under the parent page, unprefixed.
+    layout: {{ .Sync.Confluence.Layout }}
+    # The folder's title; empty means the repository's name.
+    # folder: my-repo
+    # The page the folder sits under (optional), or the root page in the
+    # page layout (required there).
     parent:{{ with .Sync.Confluence.Parent }} {{ . }}{{ end }}
     # Types to export; empty exports every enabled type.
     types:
