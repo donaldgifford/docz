@@ -11,6 +11,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(doctemplate)* Generated sync block carries layout and folder
 - *(confluence)* Plan the export from an fs.FS
 - *(confluence)* The folder layout, recorded ids, ownership, and Overwrite
+- *(export)* The CLI names its repository and warns about edited pages
 
 ### Documentation
 
@@ -31,6 +32,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0024)* Phase 1 complete
 - *(confluence)* Export reads through ExportOptions.FS
 - *(impl-0024)* Phase 3 complete
+- *(impl-0024)* Phase 4 complete
 
 ### Testing
 
@@ -38,10 +40,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(confluence)* The plan golden through MapFS, an export that never reads the disk
 - *(confluence)* Folders, ownership, recorded ids, and Overwrite over the fake
 - *(confluence)* The live round trip gains a folder
+- *(export)* Warnings on stderr, the repository name, the JSON folder
 
 ### Miscellaneous Tasks
 
 - *(ci)* Path-filter the Go jobs and verify GoReleaser with cosign
+- *(config)* Export this repository in the folder layout
 
 ## [2.0.0-beta.7] - 2026-10-06
 
