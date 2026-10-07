@@ -5,6 +5,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(config)* Sync.confluence layout and folder
+- *(doctemplate)* Generated sync block carries layout and folder
+- *(confluence)* Plan the export from an fs.FS
+
 ### Documentation
 
 - Record v2.0.0-beta.7 and close IMPL-0023
@@ -20,6 +26,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0024)* Resolve open questions; DESIGN-0021 approved
 - *(design-0021)* Archived pages keep their titles
 - *(impl-0024)* All phases on one branch
+- *(design-0021)* An inline comment does not bump the page version
+- *(impl-0024)* Phase 1 complete
+- *(confluence)* Export reads through ExportOptions.FS
+
+### Testing
+
+- *(confluence)* Pin the export plan with a corpus golden
+- *(confluence)* The plan golden through MapFS, an export that never reads the disk
 
 ### Miscellaneous Tasks
 
