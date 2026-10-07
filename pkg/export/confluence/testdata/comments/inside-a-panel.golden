@@ -1,0 +1,4 @@
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">this first</ac:parameter><ac:rich-text-body><p>Read <ac:inline-comment-marker ac:ref="c1">this first</ac:inline-comment-marker>.</p></ac:rich-text-body></ac:structured-macro>
+---
+kept: 1
+lost: []

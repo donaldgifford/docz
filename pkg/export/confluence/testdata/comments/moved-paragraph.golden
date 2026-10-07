@@ -1,0 +1,5 @@
+<p>The <ac:inline-comment-marker ac:ref="c1">queue drains</ac:inline-comment-marker> on shutdown.</p>
+<p>First, now second.</p>
+---
+kept: 1
+lost: []
