@@ -26,6 +26,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(queue)* The worker serves the export queue
 - *(ingest)* Enqueue a Confluence export after each ingest
 - *(docz-api)* Run Confluence exports, and -export owner/name
+- *(store)* Record each Confluence page's source and the version an edit was expected at
+- *(httpapi)* Confluence_url on documents and GET /repos/{owner}/{name}/confluence
+- *(ui)* View in Confluence on a document with a page
 
 ### Documentation
 
@@ -50,6 +53,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl-0024)* Phase 5 complete
 - *(impl)* Check off IMPL-0024 Phase 6
 - IMPL-0024 Phase 7, the export task
+- IMPL-0024 Phase 8, the API and docz-site
 
 ### Testing
 
