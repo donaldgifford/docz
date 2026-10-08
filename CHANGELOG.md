@@ -32,6 +32,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(chart)* Confluence export values, secret key, and env
 - *(chart)* DoczAPIExportFailures alert and the export metrics in contrib
 
+### Bug Fixes
+
+- *(export)* Leave a link to a removed document unresolved
+- *(confluence)* Say a server-exported page's edits are overwritten
+
 ### Documentation
 
 - Record v2.0.0-beta.7 and close IMPL-0023
@@ -61,6 +66,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - The folder layout, comments, and the server's Confluence export
 - *(design)* DESIGN-0021 Implemented, amending the Data Model for source and edited_expected
 - *(impl)* IMPL-0024 testing plan checked off; live server run and release deferred to a person
+- *(impl)* IMPL-0024 live server run, initial fixture results
+- IMPL-0024 live scenarios recorded, RUNBOOK-0003 verified
+- DESIGN-0021 amended for the removed-document link and the server's banner
 
 ### Testing
 
