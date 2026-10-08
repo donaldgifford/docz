@@ -680,7 +680,26 @@ in its own, and `v2.0.0-beta.8` ships it.
   `-refused`, `-layout-page`, `-folder-clash`, `-disabled`), each staged
   to end one way; its README is the procedure, the expected status per
   fixture, and the hand-driven scenarios, and `just
-  confluence-fixtures-push` (re)publishes them
+  confluence-fixtures-push` (re)publishes them.
+  **Initial run, 2026-10-07/08** (docz-api `eb47813`, App
+  `docz-development-testing`, `CONFLUENCE_SPACES=DOCZ,DOCZ2`, webhook
+  off, onboarded with `-onboard` in the README's order), every fixture
+  as expected:
+
+  | Fixture | Status | Folder | Counts / reason |
+  | ------- | ------ | ------ | --------------- |
+  | `basic` | `succeeded` | `docz-fixture-basic` (DOCZ) | 6 created |
+  | `shared` | `succeeded` | `docz-fixture-shared` (DOCZ) | 6 created |
+  | `solo` | `succeeded` | `docz-fixture-solo` (DOCZ2) | 5 created |
+  | `refused` | `refused` | — | space NOTALLOWED on https://dgifford06.atlassian.net is not allowed on this server |
+  | `layout-page` | `refused` | — | layout: page is for the CLI; the server writes the folder layout |
+  | `folder-clash` | `failed` | — | folder "docz-fixture-basic" in space DOCZ belongs to donaldgifford/docz-fixture-basic |
+  | `disabled` | `never`, then `disabled` after `-export` | — | — |
+
+  Confluence agrees: `DOCZ`'s top level holds the `docz-fixture-basic`
+  and `docz-fixture-shared` folders beside `docz`, `DOCZ2`'s holds
+  `docz-fixture-solo` alone, and no page or folder exists for the four
+  that wrote nothing. The hand-driven scenarios are still to run
 - [ ] `just ci` green; the PR merged by a person; `just release
   v2.0.0-beta.8` from the merge commit: `deferred - human required`.
   `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
