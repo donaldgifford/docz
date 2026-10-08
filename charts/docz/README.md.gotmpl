@@ -160,6 +160,19 @@ Service.** Every request is served as an anonymous identity, and
 install on a public endpoint. To turn login on, set `auth.providers`, supply
 the provider's values and secrets, and upgrade. Nothing else changes.
 
+### Confluence export
+
+Setting `api.confluence.site` turns on the server's Confluence export
+(DESIGN-0021): the chart renders `CONFLUENCE_SITE`, `CONFLUENCE_EMAIL`,
+`CONFLUENCE_SPACES` (from the `api.confluence.spaces` list), and
+`CONFLUENCE_API_TOKEN` from the Secret's `confluence-api-token` key, and
+fails the render if the email, the spaces, or the token is missing. With the
+site empty nothing is rendered and the export stays off. A repository is
+exported only when its own `.docz.yaml` enables `sync.confluence` and names a
+space in the list. A space may hold one repository or several, each in its
+own folder. The runbook "Enable Confluence export on docz-api" in `docs/runbook/`
+covers the token's scopes and how to read each repository's status.
+
 ### Secrets
 
 With `api.secrets.create: true` (the default), the chart renders one `Secret`
@@ -173,6 +186,7 @@ chart references that Secret by key only:
 | `app-id`, `webhook-secret`, `private-key` | always |
 | `session-secret` | unless `auth.providers` is `none` |
 | `oauth-client-secret` / `okta-client-secret` / `keycloak-client-secret` | when that provider is enabled |
+| `confluence-api-token` | when `api.confluence.site` is set |
 
 The GitHub App private key is mounted as a file by default
 (`api.secrets.privateKeyAsFile: true`). The backing-service DSNs live in
@@ -227,7 +241,7 @@ extraLabels:
   the Prometheus namespace with the master key.
 - **Alerts.** `prometheusRule.enabled` renders the API's starter pack:
   `DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
-  `DoczAPIIngestFailures`, and `DoczAPISlowIngest`.
+  `DoczAPIIngestFailures`, `DoczAPISlowIngest`, and `DoczAPIExportFailures`.
 - **Tracing.** Set `otel.endpoint` to an OTLP/HTTP collector
   (`http://collector:4318`) to trace both workloads, or leave it empty to
   trace neither. The chart gives each runtime the form it reads: `host:port`

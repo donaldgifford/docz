@@ -118,6 +118,33 @@ export-live:
     go test -tags live -count=1 -run TestLive -v ./pkg/export/confluence/
     echo "✓ Confluence live round trip"
 
+# Force-push the Confluence live fixtures to their GitHub repositories (all, or the ones named)
+[group('test')]
+confluence-fixtures-push *repos:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root=test/live/confluence/fixtures
+    owner="${DOCZ_FIXTURE_OWNER:-donaldgifford}"
+    repos="{{ repos }}"
+    if [ -z "$repos" ]; then
+        repos=$(find "$root" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+    fi
+    sha=$(git rev-parse --short HEAD)
+    for r in $repos; do
+        if [ ! -d "$root/$r" ]; then
+            echo "no fixture $root/$r" >&2
+            exit 2
+        fi
+        tmp=$(mktemp -d)
+        cp -R "$root/$r/." "$tmp/"
+        git -C "$tmp" init -q -b main
+        git -C "$tmp" add -A
+        git -C "$tmp" commit -q -m "fixture: reset from docz@$sha"
+        git -C "$tmp" push -q --force "https://github.com/$owner/$r.git" main
+        rm -rf "$tmp"
+        echo "✓ $r"
+    done
+
 # ─── Functional parity (IMPL-0018 Phase 0) ─────────────────────────
 
 # The release the goldens are captured from. Goldens come from this tag and

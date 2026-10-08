@@ -444,3 +444,58 @@ tests:
       - failedTemplate:
           errorMessage: 'auth.providers: "none" must be the only entry when present'
 
+
+  - it: omits the Confluence env while no site is set
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: CONFLUENCE_SITE
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: CONFLUENCE_API_TOKEN
+
+  - it: emits the Confluence env when a site is set
+    set:
+      api:
+        confluence:
+          site: "https://acme.atlassian.net"
+          email: "bot@acme.com"
+          spaces: [DOCS, ENG]
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CONFLUENCE_SITE
+            value: "https://acme.atlassian.net"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CONFLUENCE_EMAIL
+            value: "bot@acme.com"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CONFLUENCE_SPACES
+            value: "DOCS,ENG"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CONFLUENCE_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: confluence-api-token
+
+  - it: requires the Confluence email when a site is set
+    set:
+      api:
+        confluence:
+          site: "https://acme.atlassian.net"
+          spaces: [DOCS]
+    asserts:
+      - failedTemplate:
+          errorPattern: "api.confluence.email is required"

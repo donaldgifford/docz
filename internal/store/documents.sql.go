@@ -26,7 +26,10 @@ func (q *Queries) DeleteDocument(ctx context.Context, arg DeleteDocumentParams) 
 }
 
 const getDocumentByID = `-- name: GetDocumentByID :one
-SELECT id, repo_id, type, doc_id, title, status, author, created, path, git_sha, content_hash, raw_md, updated_at FROM documents WHERE repo_id = $1 AND doc_id = $2
+SELECT d.id, d.repo_id, d.type, d.doc_id, d.title, d.status, d.author, d.created, d.path, d.git_sha, d.content_hash, d.raw_md, d.updated_at, COALESCE(cp.url, '')::text AS confluence_url
+FROM documents d
+LEFT JOIN confluence_pages cp ON cp.repo_id = d.repo_id AND cp.doc_id = d.doc_id
+WHERE d.repo_id = $1 AND d.doc_id = $2
 `
 
 type GetDocumentByIDParams struct {
@@ -34,24 +37,31 @@ type GetDocumentByIDParams struct {
 	DocID  string `json:"doc_id"`
 }
 
-// Full row including raw_md for the single-doc endpoint.
-func (q *Queries) GetDocumentByID(ctx context.Context, arg GetDocumentByIDParams) (Document, error) {
+type GetDocumentByIDRow struct {
+	Document      Document `json:"document"`
+	ConfluenceUrl string   `json:"confluence_url"`
+}
+
+// Full row including raw_md for the single-doc endpoint, with the document's
+// confluence_url as ListDocumentsByType reads it.
+func (q *Queries) GetDocumentByID(ctx context.Context, arg GetDocumentByIDParams) (GetDocumentByIDRow, error) {
 	row := q.db.QueryRow(ctx, getDocumentByID, arg.RepoID, arg.DocID)
-	var i Document
+	var i GetDocumentByIDRow
 	err := row.Scan(
-		&i.ID,
-		&i.RepoID,
-		&i.Type,
-		&i.DocID,
-		&i.Title,
-		&i.Status,
-		&i.Author,
-		&i.Created,
-		&i.Path,
-		&i.GitSha,
-		&i.ContentHash,
-		&i.RawMd,
-		&i.UpdatedAt,
+		&i.Document.ID,
+		&i.Document.RepoID,
+		&i.Document.Type,
+		&i.Document.DocID,
+		&i.Document.Title,
+		&i.Document.Status,
+		&i.Document.Author,
+		&i.Document.Created,
+		&i.Document.Path,
+		&i.Document.GitSha,
+		&i.Document.ContentHash,
+		&i.Document.RawMd,
+		&i.Document.UpdatedAt,
+		&i.ConfluenceUrl,
 	)
 	return i, err
 }
@@ -133,11 +143,13 @@ func (q *Queries) ListDocumentHashes(ctx context.Context, repoID int64) ([]ListD
 }
 
 const listDocumentsByType = `-- name: ListDocumentsByType :many
-SELECT id, repo_id, type, doc_id, title, status, author, created,
-       path, git_sha, content_hash, updated_at
-FROM documents
-WHERE repo_id = $1 AND type = $2
-ORDER BY doc_id
+SELECT d.id, d.repo_id, d.type, d.doc_id, d.title, d.status, d.author, d.created,
+       d.path, d.git_sha, d.content_hash, d.updated_at,
+       COALESCE(cp.url, '')::text AS confluence_url
+FROM documents d
+LEFT JOIN confluence_pages cp ON cp.repo_id = d.repo_id AND cp.doc_id = d.doc_id
+WHERE d.repo_id = $1 AND d.type = $2
+ORDER BY d.doc_id
 `
 
 type ListDocumentsByTypeParams struct {
@@ -146,21 +158,24 @@ type ListDocumentsByTypeParams struct {
 }
 
 type ListDocumentsByTypeRow struct {
-	ID          int64              `json:"id"`
-	RepoID      int64              `json:"repo_id"`
-	Type        string             `json:"type"`
-	DocID       string             `json:"doc_id"`
-	Title       string             `json:"title"`
-	Status      pgtype.Text        `json:"status"`
-	Author      pgtype.Text        `json:"author"`
-	Created     pgtype.Date        `json:"created"`
-	Path        string             `json:"path"`
-	GitSha      string             `json:"git_sha"`
-	ContentHash string             `json:"content_hash"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID            int64              `json:"id"`
+	RepoID        int64              `json:"repo_id"`
+	Type          string             `json:"type"`
+	DocID         string             `json:"doc_id"`
+	Title         string             `json:"title"`
+	Status        pgtype.Text        `json:"status"`
+	Author        pgtype.Text        `json:"author"`
+	Created       pgtype.Date        `json:"created"`
+	Path          string             `json:"path"`
+	GitSha        string             `json:"git_sha"`
+	ContentHash   string             `json:"content_hash"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	ConfluenceUrl string             `json:"confluence_url"`
 }
 
 // Metadata only (no raw_md) for the list endpoint; type is the canonical name.
+// confluence_url is the page the last export wrote the document to, ” when
+// there is none (DESIGN-0021 §7).
 func (q *Queries) ListDocumentsByType(ctx context.Context, arg ListDocumentsByTypeParams) ([]ListDocumentsByTypeRow, error) {
 	rows, err := q.db.Query(ctx, listDocumentsByType, arg.RepoID, arg.Type)
 	if err != nil {
@@ -183,6 +198,7 @@ func (q *Queries) ListDocumentsByType(ctx context.Context, arg ListDocumentsByTy
 			&i.GitSha,
 			&i.ContentHash,
 			&i.UpdatedAt,
+			&i.ConfluenceUrl,
 		); err != nil {
 			return nil, err
 		}

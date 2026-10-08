@@ -226,6 +226,7 @@ func DefaultConfig() Config {
 		// Dormant until a repository opts in (DESIGN-0020).
 		Sync: SyncConfig{
 			Confluence: ConfluenceSyncConfig{
+				Layout:  LayoutFolder,
 				Mermaid: MermaidSyncConfig{Viewer: MermaidViewerAuto},
 			},
 		},

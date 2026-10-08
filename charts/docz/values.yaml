@@ -217,6 +217,22 @@ api:
     # Empty → 5s.
     ingestDebounce: ""
 
+  # -- Confluence export (DESIGN-0021, IMPL-0024). Off while `site` is empty.
+  # Setting it turns the export on: the chart then renders the
+  # CONFLUENCE_* env and requires the `confluence-api-token` Secret key
+  # (`secrets.confluenceApiToken`, or the same key in `existingSecret`). A
+  # repository opts in with its own `.docz.yaml` `sync.confluence` block and
+  # is exported only into a space listed in `spaces`.
+  confluence:
+    # -- Atlassian site, e.g. `https://acme.atlassian.net` (CONFLUENCE_SITE).
+    site: ""
+    # -- Email of the account the API token belongs to (CONFLUENCE_EMAIL).
+    email: ""
+    # -- Space keys repositories may export into (CONFLUENCE_SPACES). A
+    # space may hold one repository or several; a repository naming a space
+    # not listed here is refused.
+    spaces: []
+
   # -- Tracing for the API. The endpoint and sample rate are the shared
   # top-level `otel` block.
   otel:
@@ -239,6 +255,7 @@ api:
   #   oauth-client-secret     when `github`   is in auth.providers
   #   okta-client-secret      when `okta`     is in auth.providers
   #   keycloak-client-secret  when `keycloak` is in auth.providers
+  #   confluence-api-token    when api.confluence.site is set
   #
   # Only the enabled providers' keys are referenced, so a github-only
   # install needs no okta-client-secret, and a "none" install needs no
@@ -271,6 +288,10 @@ api:
     # `keycloak` is in auth.providers and create=true. Secret key:
     # keycloak-client-secret.
     keycloakClientSecret: ""
+    # -- Atlassian API token for the Confluence export
+    # (CONFLUENCE_API_TOKEN). Required while api.confluence.site is set and
+    # create=true. Secret key: confluence-api-token.
+    confluenceApiToken: ""
 
   # -- Horizontal Pod Autoscaler. Off by default.
   autoscaling:

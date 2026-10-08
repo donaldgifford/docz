@@ -32,6 +32,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0017 | docz-api: serve runbook metadata as structured fields | Open | 2026-10-02 | Donald Gifford | [0017-docz-api-serve-runbook-metadata-as-structured-fields.md](0017-docz-api-serve-runbook-metadata-as-structured-fields.md) |
 | INV-0018 | docz-site: a step-aware runbook view | Open | 2026-10-02 | Donald Gifford | [0018-docz-site-a-step-aware-runbook-view.md](0018-docz-site-a-step-aware-runbook-view.md) |
 | INV-0019 | docz-api sync to external documentation services: Confluence and Notion | Concluded | 2026-10-02 | Donald Gifford | [0019-docz-api-sync-to-external-documentation-services-confluence-and.md](0019-docz-api-sync-to-external-documentation-services-confluence-and.md) |
+| INV-0020 | docz-api Confluence export: running confluence.Export without a checkout | Concluded | 2026-10-06 | Donald Gifford | [0020-docz-api-confluence-export-running-confluenceexport-without-a.md](0020-docz-api-confluence-export-running-confluenceexport-without-a.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

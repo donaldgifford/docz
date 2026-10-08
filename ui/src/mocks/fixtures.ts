@@ -68,6 +68,7 @@ function makeDoc(input: FixtureDocInput): Document {
     git_sha: `fixture-sha-${docId.toLowerCase()}`,
     content_hash: `fixture-hash-${docId.toLowerCase()}`,
     updated_at: input.updatedAt,
+    confluence_url: "",
     raw_md: input.raw,
   };
 }

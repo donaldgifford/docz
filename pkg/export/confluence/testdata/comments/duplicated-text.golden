@@ -1,0 +1,5 @@
+<p>the cache is warm.</p>
+<p>When the cache is cold, it fills.</p>
+---
+kept: 0
+lost: ["the cache"]

@@ -185,7 +185,7 @@ func (h *Handler) getDoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	docID := chi.URLParam(r, "doc_id")
-	doc, err := h.store.GetDocumentByID(r.Context(), repo.ID, docID)
+	row, err := h.store.GetDocumentByID(r.Context(), repo.ID, docID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "document not found")
 		return
@@ -196,11 +196,11 @@ func (h *Handler) getDoc(w http.ResponseWriter, r *http.Request) {
 	}
 	// The doc id is unique per repo; if it belongs to a different type than the
 	// URL names, treat it as not found under this path.
-	if doc.Type != canonical {
+	if row.Document.Type != canonical {
 		writeError(w, http.StatusNotFound, "document not found")
 		return
 	}
-	writeJSON(w, toDocument(repoLabel(&repo), &doc))
+	writeJSON(w, toDocument(repoLabel(&repo), &row))
 }
 
 // resolveRepoType resolves the repo (with authorization) and the {type} segment

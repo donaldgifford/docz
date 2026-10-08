@@ -341,3 +341,47 @@ func containsAll(s string, substrings ...string) bool {
 	}
 	return true
 }
+
+// TestEmbeddedIndexHeader_IgnoresDisk: the embedded tiers match
+// ResolveIndexHeader for a directory with no override, and an override on
+// disk changes ResolveIndexHeader's answer but never EmbeddedIndexHeader's.
+func TestEmbeddedIndexHeader_IgnoresDisk(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	data := IndexHeaderData{TypeName: "frameworks", PluralLabel: "Frameworks"}
+
+	for _, typ := range []string{"rfc", "frameworks"} {
+		want, err := ResolveIndexHeader(typ, dir, data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := EmbeddedIndexHeader(typ, data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got != want {
+			t.Errorf("%s: EmbeddedIndexHeader = %q, want %q", typ, got, want)
+		}
+	}
+
+	tmplDir := filepath.Join(dir, config.TemplatesDir)
+	if err := os.MkdirAll(tmplDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(tmplDir, "index_rfc.md"), []byte("# Override\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := EmbeddedIndexHeader("rfc", data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got == "# Override\n" {
+		t.Error("EmbeddedIndexHeader read the on-disk override")
+	}
+}

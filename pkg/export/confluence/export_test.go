@@ -21,6 +21,7 @@ func exportRepo(t *testing.T) *repo.Repo {
 	cfg := config.DefaultConfig()
 	cfg.Sync.Confluence = config.ConfluenceSyncConfig{
 		Enabled: true, Site: "https://example.atlassian.net", Space: "DOCZ", Parent: "docz",
+		Layout:  config.LayoutPage,
 		Mermaid: config.MermaidSyncConfig{Viewer: config.MermaidViewerAuto},
 	}
 
@@ -297,6 +298,33 @@ func TestExport_NarrowedRunArchivesNothing(t *testing.T) {
 	}
 }
 
+func TestExport_ReadsOnlyThroughFS(t *testing.T) {
+	t.Parallel()
+
+	built := exportRepo(t)
+	rp := &repo.Repo{Root: filepath.Join(t.TempDir(), "nowhere"), Cfg: built.Cfg}
+	c := newFakeClient()
+
+	rep := export(t, rp, c, ExportOptions{FS: mapFS(t, built.Root)})
+
+	wantActions(t, &rep,
+		"docz=created", "RFCs=created", rfc1+"=created", rfc2+"=created",
+		"ADRs=created", adr1+"=created", "Design=created", "Implementation Plans=created", "Investigations=created")
+}
+
+func TestExport_IDWithoutPrefixIsUnknownType(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+
+	_, err := Export(t.Context(), rp, ExportOptions{Client: c, IDs: []string{"RFC0001"}})
+
+	var ut *repo.UnknownTypeError
+	if !errors.As(err, &ut) || ut.Token != "RFC0001" {
+		t.Errorf("err %v; want repo.UnknownTypeError for RFC0001", err)
+	}
+}
+
 func TestExport_UnknownIDIsNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -470,6 +498,38 @@ func TestExport_HooksAndBannerLink(t *testing.T) {
 		"https://github.com/o/r/blob/main/docs/rfc/0001-first-proposal.md",
 	) {
 		t.Errorf("the banner does not link the source:\n%s", body)
+	}
+}
+
+func TestExport_BannerSaysWhatBecomesOfAnEdit(t *testing.T) {
+	t.Parallel()
+
+	const (
+		kept        = "changes made here are kept until the next forced sync"
+		overwritten = "changes made here are overwritten by the next sync"
+	)
+
+	tests := []struct {
+		name string
+		opts ExportOptions
+		want string
+	}{
+		{"default", ExportOptions{}, kept},
+		{"force is a one-off", ExportOptions{Force: true}, kept},
+		{"overwrite", ExportOptions{Overwrite: true}, overwritten},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			c := newFakeClient()
+			export(t, exportRepo(t), c, tt.opts)
+
+			if body := string(c.byTitle(rfc1).body); !strings.Contains(body, tt.want) {
+				t.Errorf("banner does not say %q:\n%s", tt.want, body)
+			}
+		})
 	}
 }
 

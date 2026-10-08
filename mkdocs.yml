@@ -30,6 +30,7 @@ nav:
         - 'DESIGN-0018: One Helm chart for docz: charts/docz replaces docz-api and docz-site': design/0018-one-helm-chart-for-docz-chartsdocz-replaces-docz-api-and-docz.md
         - 'DESIGN-0019: Runbook: a sixth built-in document type, disabled by default': design/0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md
         - 'DESIGN-0020: Confluence export: docz documents as Confluence Cloud pages': design/0020-confluence-export-docz-documents-as-confluence-cloud-pages.md
+        - 'DESIGN-0021: Confluence export from docz-api: per-repository folders in shared spaces': design/0021-confluence-export-from-docz-api-per-repository-folders-in.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -54,6 +55,7 @@ nav:
         - 'IMPL-0021: charts/docz: one Helm chart, v2.0.0-beta.5': impl/0021-chartsdocz-one-helm-chart-v200-beta5.md
         - 'IMPL-0022: Runbook: the sixth built-in type (v2.0.0-beta.6)': impl/0022-runbook-the-sixth-built-in-type-v200-beta6.md
         - 'IMPL-0023: Confluence export: the package and the CLI (DESIGN-0020 Phase A)': impl/0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md
+        - 'IMPL-0024: Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021)': impl/0024-confluence-export-from-docz-api-folders-comments-and-the-server.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
@@ -75,12 +77,14 @@ nav:
         - 'INV-0017: docz-api: serve runbook metadata as structured fields': investigation/0017-docz-api-serve-runbook-metadata-as-structured-fields.md
         - 'INV-0018: docz-site: a step-aware runbook view': investigation/0018-docz-site-a-step-aware-runbook-view.md
         - 'INV-0019: docz-api sync to external documentation services: Confluence and Notion': investigation/0019-docz-api-sync-to-external-documentation-services-confluence-and.md
+        - 'INV-0020: docz-api Confluence export: running confluence.Export without a checkout': investigation/0020-docz-api-confluence-export-running-confluenceexport-without-a.md
     - RFCs:
         - Overview: rfc/README.md
     - Runbooks:
         - Overview: runbook/README.md
         - 'RUNBOOK-0001: Cut a v2 beta release': runbook/0001-cut-a-v2-beta-release.md
         - 'RUNBOOK-0002: docz-api webhook deliveries fail': runbook/0002-docz-api-webhook-deliveries-fail.md
+        - 'RUNBOOK-0003: Enable Confluence export on docz-api': runbook/0003-enable-confluence-export-on-docz-api.md
 plugins:
     - techdocs-core
 site_description: Documentation for docz

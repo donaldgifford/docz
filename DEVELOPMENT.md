@@ -71,7 +71,7 @@ docz/
 │   ├── headings.go          # kind constants + the HeadingSpec table
 │   ├── parse.go             # Parse(doc []byte) (Doc, error)
 │   └── validate.go          # Validate() + the type's Code* constants
-├── pkg/export/confluence/    # Confluence Cloud export (IMPL-0023): Render, the gateway client, Export
+├── pkg/export/confluence/    # Confluence Cloud export (IMPL-0023/0024): Render, the gateway client, Export, confluencetest
 │   ├── render.go nodes.go links.go macros.go   # markdown -> storage format, pure
 │   ├── httpclient.go client.go errors.go       # the v2 REST client through api.atlassian.com
 │   ├── export.go plan.go reconcile.go orphans.go  # the page tree and its reconcile
@@ -453,7 +453,8 @@ different composition:
 ### `pkg/export/confluence`
 
 The Confluence export, an integration above the core like `pkg/wiki` and the
-one package allowed goldmark (DESIGN-0020, IMPL-0023):
+one package allowed goldmark (DESIGN-0020, IMPL-0023; the folder layout,
+comments, and the no-checkout `fs.FS` from DESIGN-0021, IMPL-0024):
 
 - **`render.go`, `nodes.go`, `links.go`, `macros.go`** — `Render` turns one
   document into storage format with no I/O. The node renderer overrides
@@ -464,15 +465,26 @@ one package allowed goldmark (DESIGN-0020, IMPL-0023):
   `HTTPClient`, which sends every request through
   `api.atlassian.com/ex/confluence/<cloudId>` so scoped and unscoped tokens
   share one path. Typed errors never carry the token.
-- **`export.go`, `plan.go`, `reconcile.go`, `orphans.go`** — `Export` plans
-  the page tree, reconciles each page against its `docz` content property,
-  and on a full run moves orphans under `Archive`. The decision is
-  `decide()` in `reconcile.go`.
+- **`export.go`, `plan.go`, `folder.go`, `reconcile.go`, `orphans.go`** —
+  `Export` plans the page tree from `ExportOptions.FS` (nil is the
+  checkout), resolves the repository's folder under `layout: folder` and
+  prefixes every title with it, finds each page by the id the caller
+  recorded (`Pages`, `Folder`) before its title, reconciles it against its
+  `docz` content property, and on a full run moves orphans under
+  `<folder>: Archive`. The decision is `decide()` in `reconcile.go`: a page
+  or folder whose property names another repository is never touched, and
+  `Overwrite` (docz-api's setting) updates over an edit made in Confluence.
+- **`comments.go`** — carries inline-comment markers from the current body
+  into the new one wherever their text survives (#158); the rest are
+  `Comments.Lost`, which `cmd/export.go` prints as `WARNING` lines.
 - **`hooks.go`** — `Hooks{PageDone, Request}` in the context. `cmd/hooks.go`
   maps them to `--verbose` lines.
 
 Tests drive `Export` through `fake_test.go`'s in-memory space and the client
-through `httptest`. `just export-live` exercises a real site from
+through `httptest`. `confluencetest.Site` is the public twin for code built
+on the package — a `Client` and, through `Handler()`/`HTTPClient()`, the v2
+REST surface over `httptest` — which docz-api's tests use (the package's
+own tests cannot import it without a cycle). `just export-live` exercises a real site from
 `~/.config/docz/atlassian.env` (`ATLASSIAN_SITE`, `ATLASSIAN_EMAIL`,
 `ATLASSIAN_API_TOKEN`, `CONFLUENCE_SPACE_KEY`), and running
 `docz export confluence` itself over this repository is the end-to-end check
@@ -1015,6 +1027,7 @@ appCfg.DocsDir = filepath.Join(t.TempDir(), "docs")
 | `just parity-capture` | Re-install v1.2.2 and re-capture the goldens (see `test/parity/README.md` first) |
 | `just validate` | Run `docz validate` over this repo's own `docs/`, non-strict |
 | `just export-live` | Round trip one page and its property on the Confluence site in `~/.config/docz/atlassian.env` (`//go:build live`; never in CI) |
+| `just confluence-fixtures-push [repo...]` | Force-push the Confluence live fixtures in `test/live/confluence/fixtures/` to their `donaldgifford/docz-fixture-*` repositories (all, or the ones named) |
 | `just lint` | Run golangci-lint |
 | `just lint-fix` | Auto-fix lint issues |
 | `just fmt` | Run gofmt + goimports |
@@ -1119,6 +1132,7 @@ Useful flags (see `cmd/docz-api`):
 docz-api -version                      # print version info and exit
 docz-api -migrate                      # apply migrations and exit (CI/ops)
 docz-api -onboard owner/name@<instID>  # seed + enqueue one repo ingest, then exit
+docz-api -export owner/name            # enqueue one Confluence export, then exit
 ```
 
 Quick smoke checks once it is up:
@@ -1144,6 +1158,33 @@ webhooks can be the OAuth login provider (callback URL + client secret + email
 permission — see
 [deploy/api/README.md](deploy/api/README.md#site-login-reuse-the-github-app-or-a-separate-oauth-app)),
 so you only ever create and configure a single dev app.
+
+#### Confluence export locally
+
+The export is off until `CONFLUENCE_API_TOKEN` is set. To run it against the
+scratch site, map `~/.config/docz/atlassian.env` onto the server's names
+without echoing the token:
+
+```sh
+set -a; source ~/.config/docz/atlassian.env; set +a
+export CONFLUENCE_SITE="https://${ATLASSIAN_SITE#https://}" \
+  CONFLUENCE_EMAIL="$ATLASSIAN_EMAIL" \
+  CONFLUENCE_API_TOKEN="$ATLASSIAN_API_TOKEN" \
+  CONFLUENCE_SPACES="$CONFLUENCE_SPACE_KEY"
+just run
+```
+
+Every ingest of a repository whose `.docz.yaml` enables `sync.confluence`
+then enqueues an export on the `export` queue, and
+`curl localhost:8080/api/v1/repos/<owner>/<name>/confluence` shows the last
+one. `-export owner/name` enqueues one by hand. `internal/export` is the
+service; its tests and `internal/e2e`'s `TestE2EConfluenceExport` run against
+`confluencetest`, so none of them need a site. The live check against a real site
+runs over seven public fixture repositories (`donaldgifford/docz-fixture-*`)
+whose contents live in [`test/live/confluence/`](test/live/confluence/README.md),
+each staged to end one way (`succeeded`, `refused`, `failed`, `disabled`);
+edit them there and publish with `just confluence-fixtures-push`. Enabling it on a deployment
+is [RUNBOOK-0003](docs/runbook/0003-enable-confluence-export-on-docz-api.md).
 
 When you are done:
 

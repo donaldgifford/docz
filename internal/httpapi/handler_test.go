@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -21,6 +22,22 @@ type fakeStore struct {
 	types map[int64][]store.DocType
 	docs  map[int64][]store.Document
 	pages map[int64][]store.RepoPage
+	// urls maps a doc id to its Confluence page URL.
+	urls map[string]string
+	// syncs and cpages are each repo's Confluence export record.
+	syncs  map[int64]store.ConfluenceSync
+	cpages map[int64][]store.ConfluencePage
+}
+
+func (f *fakeStore) GetConfluenceSync(_ context.Context, repoID int64) (store.ConfluenceSync, error) {
+	if s, ok := f.syncs[repoID]; ok {
+		return s, nil
+	}
+	return store.ConfluenceSync{}, pgx.ErrNoRows
+}
+
+func (f *fakeStore) ListConfluencePages(_ context.Context, repoID int64) ([]store.ConfluencePage, error) {
+	return f.cpages[repoID], nil
 }
 
 func (f *fakeStore) ListRepos(context.Context) ([]store.Repo, error) { return f.repos, nil }
@@ -51,18 +68,19 @@ func (f *fakeStore) ListDocumentsByType(
 			ID: d.ID, RepoID: d.RepoID, Type: d.Type, DocID: d.DocID, Title: d.Title,
 			Status: d.Status, Author: d.Author, Created: d.Created, Path: d.Path,
 			GitSha: d.GitSha, ContentHash: d.ContentHash, UpdatedAt: d.UpdatedAt,
+			ConfluenceUrl: f.urls[d.DocID],
 		})
 	}
 	return out, nil
 }
 
-func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID string) (store.Document, error) {
+func (f *fakeStore) GetDocumentByID(_ context.Context, repoID int64, docID string) (store.GetDocumentByIDRow, error) {
 	for i := range f.docs[repoID] {
 		if f.docs[repoID][i].DocID == docID {
-			return f.docs[repoID][i], nil
+			return store.GetDocumentByIDRow{Document: f.docs[repoID][i], ConfluenceUrl: f.urls[docID]}, nil
 		}
 	}
-	return store.Document{}, pgx.ErrNoRows
+	return store.GetDocumentByIDRow{}, pgx.ErrNoRows
 }
 
 func (f *fakeStore) ListRepoPages(_ context.Context, repoID int64) ([]store.ListRepoPagesRow, error) {
@@ -121,6 +139,34 @@ func seededStore() *fakeStore {
 				Created: pgtype.Date{Valid: false}, Path: "docs/frameworks/0001-intro.md",
 				GitSha: "abc", ContentHash: "hash1", RawMd: "# Intro\n",
 			}},
+		},
+		urls: map[string]string{"FW-0001": "https://example.atlassian.net/wiki/spaces/DOCZ/pages/65861"},
+		syncs: map[int64]store.ConfluenceSync{
+			1: {
+				RepoID: 1, Status: "partial", Reason: "confluence: \"platform: FW-0003\" failed",
+				Site: "https://example.atlassian.net", Space: "DOCZ",
+				FolderID: "426780", FolderTitle: "platform", FolderUrl: "https://example.atlassian.net/wiki/spaces/DOCZ/folder/426780",
+				HeadSha: "headsha", Counts: json.RawMessage(`{"created":0,"updated":1,"unchanged":1,"skipped":0,"archived":0,"failed":1}`),
+				StartedAt:  pgtype.Timestamptz{Time: time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC), Valid: true},
+				FinishedAt: pgtype.Timestamptz{Time: time.Date(2026, 10, 7, 12, 0, 41, 0, time.UTC), Valid: true},
+			},
+		},
+		cpages: map[int64][]store.ConfluencePage{
+			1: {
+				{
+					RepoID: 1, Key: "FW-0001", DocID: "FW-0001", PageID: "65861", Title: "platform: FW-0001: Intro",
+					Source: "docs/frameworks/0001-intro.md", Url: "https://example.atlassian.net/wiki/spaces/DOCZ/pages/65861",
+					Version: 5, Hash: "sha256:ab", Action: "updated", EditedFrom: 4, EditedExpected: 3, CommentsLost: 1,
+				},
+				{
+					RepoID: 1, Key: "docz:parent", PageID: "65860", Title: "platform",
+					Url: "https://example.atlassian.net/wiki/spaces/DOCZ/pages/65860", Version: 2, Action: "unchanged",
+				},
+				{
+					RepoID: 1, Key: "FW-0003", DocID: "FW-0003", PageID: "65870", Title: "platform: FW-0003: Gone",
+					Action: "failed", Reason: "503",
+				},
+			},
 		},
 		pages: map[int64][]store.RepoPage{
 			1: {

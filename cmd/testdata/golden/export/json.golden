@@ -1,45 +1,55 @@
 {
   "pages": [
     {
+      "key": "docz:parent",
       "title": "docz",
       "action": "created",
       "page_id": "1",
       "url": "https://example.atlassian.net/wiki/pages/1",
-      "version": 1
+      "version": 1,
+      "hash": "sha256:3e995c4c3fcbef445e6f47d8f1fd3f3409bcd0c70dcc4c077186b5c0342d1c00"
     },
     {
+      "key": "docz:type:rfc",
       "title": "RFCs",
       "source": "docs/rfc/README.md",
       "action": "created",
       "page_id": "2",
       "url": "https://example.atlassian.net/wiki/pages/2",
-      "version": 1
+      "version": 1,
+      "hash": "sha256:f505b6baa6e66377453c0e20877116f079d1b669d43e5908741ed86d42d2d751"
     },
     {
       "id": "RFC-0001",
+      "key": "RFC-0001",
       "title": "RFC-0001: First proposal",
       "source": "docs/rfc/0001-first-proposal.md",
       "action": "created",
       "page_id": "3",
       "url": "https://example.atlassian.net/wiki/pages/3",
-      "version": 1
+      "version": 1,
+      "hash": "sha256:75e82769cce954065450a41818ac184ae79ab582e67631f0fe8612ce1a422582"
     },
     {
+      "key": "docz:type:adr",
       "title": "ADRs",
       "source": "docs/adr/README.md",
       "action": "created",
       "page_id": "4",
       "url": "https://example.atlassian.net/wiki/pages/4",
-      "version": 1
+      "version": 1,
+      "hash": "sha256:ba8f7bbe1267bd72ba5a7855702631b9642ba6b597cf60a1901479a0e29baf06"
     },
     {
       "id": "ADR-0001",
+      "key": "ADR-0001",
       "title": "ADR-0001: A decision",
       "source": "docs/adr/0001-a-decision.md",
       "action": "created",
       "page_id": "5",
       "url": "https://example.atlassian.net/wiki/pages/5",
       "version": 1,
+      "hash": "sha256:18d946e645dc1b3a55c68eed439f1cf5f82d639b42ebd5572c3955e46bc202ff",
       "unresolved_links": [
         {
           "href": "0009-missing.md",

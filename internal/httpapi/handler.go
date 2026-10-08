@@ -26,9 +26,11 @@ type storeReader interface {
 	GetRepo(ctx context.Context, owner, name string) (store.Repo, error)
 	GetDocTypesForRepo(ctx context.Context, repoID int64) ([]store.DocType, error)
 	ListDocumentsByType(ctx context.Context, repoID int64, typeName string) ([]store.ListDocumentsByTypeRow, error)
-	GetDocumentByID(ctx context.Context, repoID int64, docID string) (store.Document, error)
+	GetDocumentByID(ctx context.Context, repoID int64, docID string) (store.GetDocumentByIDRow, error)
 	ListRepoPages(ctx context.Context, repoID int64) ([]store.ListRepoPagesRow, error)
 	GetRepoPageByPath(ctx context.Context, repoID int64, path string) (store.RepoPage, error)
+	GetConfluenceSync(ctx context.Context, repoID int64) (store.ConfluenceSync, error)
+	ListConfluencePages(ctx context.Context, repoID int64) ([]store.ConfluencePage, error)
 }
 
 // Searcher is the search surface httpapi needs. *search.Client satisfies it.
@@ -44,6 +46,9 @@ var _ Searcher = (*search.Client)(nil)
 type Handler struct {
 	store    storeReader
 	searcher Searcher
+	// confluence reports whether this server exports to Confluence; when it
+	// does not, every repository's sync reads disabled.
+	confluence bool
 }
 
 // NewHandler builds a Handler over a store reader, without search.
@@ -55,6 +60,14 @@ func NewHandler(st storeReader) *Handler {
 // searcher, enabling the /search route.
 func NewHandlerWithSearch(st storeReader, s Searcher) *Handler {
 	return &Handler{store: st, searcher: s}
+}
+
+// WithConfluenceExport tells the handler whether the server runs Confluence
+// exports (CONFLUENCE_API_TOKEN set). Off, the default, every repository's
+// /confluence reads disabled on this server.
+func (h *Handler) WithConfluenceExport(on bool) *Handler {
+	h.confluence = on
+	return h
 }
 
 // Mount registers the read routes on r behind the gate middleware (Phase 6
@@ -71,6 +84,7 @@ func (h *Handler) Mount(r chi.Router, gate func(http.Handler) http.Handler, extr
 			r.Get("/", h.getRepo)
 			r.Get("/index", h.getRepoIndex)
 			r.Get("/changelog", h.getRepoChangelog)
+			r.Get("/confluence", h.getRepoConfluence)
 			r.Get("/pages", h.listRepoPages)
 			r.Get("/pages/*", h.getRepoPage)
 			r.Get("/types", h.listTypes)

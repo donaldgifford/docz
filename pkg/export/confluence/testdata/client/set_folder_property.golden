@@ -1,0 +1,7 @@
+POST /folders/5/properties
+{
+  "key": "docz",
+  "value": {
+    "repo": "o/r"
+  }
+}

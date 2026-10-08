@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/donaldgifford/docz/v2/internal/queue"
 	"github.com/donaldgifford/docz/v2/internal/search"
 	"github.com/donaldgifford/docz/v2/internal/store"
 	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
@@ -43,12 +44,21 @@ type Indexer interface {
 // *search.Client is the production Indexer.
 var _ Indexer = (*search.Client)(nil)
 
+// Exporter enqueues a repository's Confluence export after its ingest
+// commits. *queue.Client satisfies it.
+type Exporter interface {
+	EnqueueExport(ctx context.Context, job *queue.ExportJob) error
+}
+
+var _ Exporter = (*queue.Client)(nil)
+
 // Service runs the synchronous fetch → parse → map → reconcile pipeline for one
 // repo, then mirrors the reconcile's document changes into the search index.
 type Service struct {
-	store   repoStore
-	fetcher RepoFetcher
-	indexer Indexer
+	store    repoStore
+	fetcher  RepoFetcher
+	indexer  Indexer
+	exporter Exporter
 }
 
 // NewService builds a Service over a store, a repo fetcher, and an optional
@@ -56,6 +66,15 @@ type Service struct {
 // Postgres-only paths).
 func NewService(st repoStore, f RepoFetcher, idx Indexer) *Service {
 	return &Service{store: st, fetcher: f, indexer: idx}
+}
+
+// WithExporter makes Run enqueue a Confluence export after each successful
+// ingest of a repository whose sync.confluence block is enabled. A nil
+// exporter, the default, enqueues nothing: the server has no Atlassian
+// credential.
+func (s *Service) WithExporter(e Exporter) *Service {
+	s.exporter = e
+	return s
 }
 
 // Run ingests one repo at HEAD: fetch, parse .docz.yaml, map its doc types,
@@ -137,7 +156,25 @@ func (s *Service) Run(
 	// Postgres is the source of truth and has committed; mirror the change set
 	// into the search index best-effort (see indexSearch).
 	s.indexSearch(ctx, owner, name, &result)
+	s.enqueueExport(ctx, owner, name, &cfg, &result)
 	return result, nil
+}
+
+// enqueueExport asks for a Confluence export of the repository just
+// ingested, whether or not anything changed, since running is what reverts
+// an edit made in Confluence (DESIGN-0021 question 5). Like indexing it is
+// best-effort: a failure is logged and the ingest still succeeds.
+func (s *Service) enqueueExport(
+	ctx context.Context, owner, name string, cfg *doczcfg.Config, result *store.ReconcileResult,
+) {
+	if s.exporter == nil || !cfg.Sync.Confluence.Enabled {
+		return
+	}
+	job := &queue.ExportJob{RepoID: result.RepoID, Owner: owner, Name: name, Reason: "ingest"}
+	if err := s.exporter.EnqueueExport(ctx, job); err != nil {
+		slog.ErrorContext(ctx, "enqueue confluence export failed; the ingest succeeded",
+			"repo", owner+"/"+name, "err", err)
+	}
 }
 
 // fetchSnapshot fetches the repo snapshot under a child span. It returns the

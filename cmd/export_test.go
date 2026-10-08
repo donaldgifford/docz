@@ -172,9 +172,11 @@ func (f *cmdFake) UpdatePage(_ context.Context, id string, u *confluence.PageUpd
 	return &cp, nil
 }
 
-func (f *cmdFake) Property(_ context.Context, pageID, _ string) (*confluence.Property, error) {
+func (*cmdFake) SpaceHome(context.Context, string) (string, error) { return "home", nil }
+
+func (f *cmdFake) Page(_ context.Context, id string) (*confluence.Page, error) {
 	f.calls++
-	if p, ok := f.props[pageID]; ok {
+	if p := f.byID(id); p != nil {
 		cp := *p
 
 		return &cp, nil
@@ -183,21 +185,46 @@ func (f *cmdFake) Property(_ context.Context, pageID, _ string) (*confluence.Pro
 	return nil, nil
 }
 
-func (f *cmdFake) SetProperty(_ context.Context, pageID string, p *confluence.Property) error {
+func (f *cmdFake) Body(_ context.Context, id string) ([]byte, error) {
 	f.calls++
-	f.props[pageID] = &confluence.Property{ID: "p" + pageID, Key: p.Key, Value: p.Value, Version: p.Version + 1}
+
+	return f.bodies[id], nil
+}
+
+func (*cmdFake) Folder(context.Context, string) (*confluence.Folder, error) { return nil, nil }
+
+func (f *cmdFake) CreateFolder(_ context.Context, nf *confluence.NewFolder) (*confluence.Folder, error) {
+	f.calls++
+
+	return &confluence.Folder{ID: "f-" + nf.Title, Title: nf.Title, ParentID: nf.ParentID, SpaceID: nf.SpaceID}, nil
+}
+
+func (f *cmdFake) Property(_ context.Context, t confluence.Target, _ string) (*confluence.Property, error) {
+	f.calls++
+	if p, ok := f.props[t.ID]; ok {
+		cp := *p
+
+		return &cp, nil
+	}
+
+	return nil, nil
+}
+
+func (f *cmdFake) SetProperty(_ context.Context, t confluence.Target, p *confluence.Property) error {
+	f.calls++
+	f.props[t.ID] = &confluence.Property{ID: "p" + t.ID, Key: p.Key, Value: p.Value, Version: p.Version + 1}
 
 	return nil
 }
 
-func (f *cmdFake) Children(_ context.Context, parentID string) ([]confluence.Page, error) {
+func (f *cmdFake) Children(_ context.Context, parent confluence.Target) ([]confluence.Node, error) {
 	f.calls++
 
-	var out []confluence.Page
+	var out []confluence.Node
 
 	for _, p := range f.pages {
-		if p.ParentID == parentID {
-			out = append(out, *p)
+		if p.ParentID == parent.ID {
+			out = append(out, confluence.Node{Page: *p, Type: confluence.TypePage})
 		}
 	}
 
@@ -212,7 +239,7 @@ func exportFixture(t *testing.T, fake *cmdFake) (*Runner, *bytes.Buffer) {
 
 	r, out, root := exportRunner(t)
 	r.Cfg.Sync.Confluence = config.ConfluenceSyncConfig{
-		Enabled: true, Site: "https://example.atlassian.net", Space: "DOCZ", Parent: "docz",
+		Enabled: true, Site: "https://example.atlassian.net", Space: "DOCZ", Parent: "docz", Layout: config.LayoutPage,
 		Types:   []string{"rfc", "adr"},
 		Mermaid: config.MermaidSyncConfig{Viewer: config.MermaidViewerAuto},
 	}
@@ -523,5 +550,127 @@ func TestBlobResolver(t *testing.T) {
 
 	if blobResolver("", "main", root) != nil {
 		t.Error("no remote should mean no resolver")
+	}
+}
+
+func TestExportConfluence_Warnings(t *testing.T) {
+	const adr = "ADR-0001: A decision"
+
+	tests := []struct {
+		name  string
+		setup func(f *cmdFake)
+		want  string
+	}{
+		{
+			name:  "edited",
+			setup: func(f *cmdFake) { f.pages[adr].Version++ },
+			want:  "WARNING: ADR-0001 was edited in Confluence (v2, expected v1); not overwritten, use --force\n",
+		},
+		{
+			name: "another repository's",
+			setup: func(f *cmdFake) {
+				f.props[f.pages[adr].ID].Value = []byte(`{"id":"ADR-0001","version":1,"repo":"other/x"}`)
+			},
+			want: "WARNING: ADR-0001: A decision belongs to other/x; not written\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newCmdFake()
+			r, out := exportFixture(t, fake)
+			exportOnce(t, r)
+			tt.setup(fake)
+
+			var stderr bytes.Buffer
+
+			r.Err = &stderr
+			out.Reset()
+
+			err := r.exportConfluence(t.Context(), exportOpts{format: formatText, strict: true}, nil)
+			if exitCode(err) != 1 {
+				t.Errorf("exit %d (%v); want 1 under --strict", exitCode(err), err)
+			}
+
+			if stderr.String() != tt.want {
+				t.Errorf("stderr %q; want %q", stderr.String(), tt.want)
+			}
+
+			if strings.Contains(out.String(), "WARNING") {
+				t.Errorf("stdout carries the warning:\n%s", out)
+			}
+		})
+	}
+}
+
+func TestRepositoryName(t *testing.T) {
+	for remote, want := range map[string]string{
+		"git@github.com:donaldgifford/docz.git":   "donaldgifford/docz",
+		"ssh://git@github.com/donaldgifford/docz": "donaldgifford/docz",
+		"https://github.com/donaldgifford/docz":   "donaldgifford/docz",
+		"https://gitlab.com/x/y.git":              "",
+		"":                                        "",
+	} {
+		if got := repositoryName(githubURL(remote)); got != want {
+			t.Errorf("repositoryName(%q) = %q; want %q", remote, got, want)
+		}
+	}
+}
+
+func TestExportConfluence_JSONCarriesTheFolder(t *testing.T) {
+	r, out := exportFixture(t, newCmdFake())
+	r.Cfg.Sync.Confluence.Layout = config.LayoutFolder
+	r.Cfg.Sync.Confluence.Parent = ""
+
+	if err := r.exportConfluence(t.Context(), exportOpts{format: formatJSON}, nil); err != nil {
+		t.Fatalf("export: %v", err)
+	}
+
+	var report struct {
+		Folder *struct {
+			ID    string `json:"id"`
+			Title string `json:"title"`
+			Type  string `json:"type"`
+		} `json:"folder"`
+		Pages []struct {
+			Key   string `json:"key"`
+			Title string `json:"title"`
+			Hash  string `json:"hash"`
+		} `json:"pages"`
+	}
+
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatalf("not JSON: %v", err)
+	}
+
+	if report.Folder == nil || report.Folder.Title != "r" || report.Folder.Type != "folder" {
+		t.Errorf("folder %+v; want r, named from the remote o/r", report.Folder)
+	}
+
+	if p := report.Pages[1]; p.Key != "docz:type:rfc" || p.Title != "r: RFCs" || p.Hash == "" {
+		t.Errorf("type page %+v; want its key, prefixed title, and hash", p)
+	}
+}
+
+func TestExportConfluence_LostCommentWarning(t *testing.T) {
+	fake := newCmdFake()
+	r, _ := exportFixture(t, fake)
+	exportOnce(t, r)
+
+	id := fake.pages["RFC-0001: First proposal"].ID
+	fake.bodies[id] = []byte(`<p><ac:inline-comment-marker ac:ref="c">vanished words</ac:inline-comment-marker></p>`)
+	appendFile(t, filepath.Join(r.RepoRoot, "docs", "rfc", "0001-first-proposal.md"), "\nChanged.\n")
+
+	var stderr bytes.Buffer
+
+	r.Err = &stderr
+
+	if err := r.exportConfluence(t.Context(), exportOpts{format: formatText}, nil); err != nil {
+		t.Fatalf("export: %v", err)
+	}
+
+	want := "WARNING: RFC-0001: an inline comment on \"vanished words\" lost its anchor\n"
+	if stderr.String() != want {
+		t.Errorf("stderr %q; want %q", stderr.String(), want)
 	}
 }

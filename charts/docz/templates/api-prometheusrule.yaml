@@ -67,4 +67,12 @@ spec:
           annotations:
             summary: "docz-api ingest jobs slow"
             description: "the 99th-percentile ingest job duration has exceeded 120s for 15+ minutes."
+        - alert: DoczAPIExportFailures
+          expr: sum by (reason) (increase(docz_api_export_jobs_total{status=~"failed|partial"}[30m])) > 2
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "docz-api Confluence exports failing"
+            description: "more than 2 Confluence export jobs for reason {{ "{{" }} $labels.reason {{ "}}" }} failed or partly failed in the last 30 minutes; GET /api/v1/repos/{owner}/{name}/confluence names the pages."
 {{- end }}

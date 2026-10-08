@@ -5,14 +5,90 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(config)* Sync.confluence layout and folder
+- *(doctemplate)* Generated sync block carries layout and folder
+- *(confluence)* Plan the export from an fs.FS
+- *(confluence)* The folder layout, recorded ids, ownership, and Overwrite
+- *(export)* The CLI names its repository and warns about edited pages
+- *(confluence)* Carry inline comments across an update ([#158](https://github.com/donaldgifford/docz/issues/158))
+- *(export)* Warn for each inline comment an update could not re-anchor
+- *(store)* Record Confluence exports and join each document's page
+- *(config)* CONFLUENCE_SITE, _EMAIL, _API_TOKEN, and _SPACES
+- *(docz-api)* Check the Confluence credential at startup
+- *(queue)* The export:confluence task and a conflict path shared with ingest
+- *(doctemplate)* EmbeddedIndexHeader, the index header without the disk tier
+- *(confluence)* Confluencetest, an in-memory Confluence site
+- *(export)* The repository tree, the blob resolver, and the retry table
+- *(export)* Service.Run, one repository's export from a stored snapshot
+- *(telemetry)* Export job and page metrics
+- *(queue)* The worker serves the export queue
+- *(ingest)* Enqueue a Confluence export after each ingest
+- *(docz-api)* Run Confluence exports, and -export owner/name
+- *(store)* Record each Confluence page's source and the version an edit was expected at
+- *(httpapi)* Confluence_url on documents and GET /repos/{owner}/{name}/confluence
+- *(ui)* View in Confluence on a document with a page
+- *(chart)* Confluence export values, secret key, and env
+- *(chart)* DoczAPIExportFailures alert and the export metrics in contrib
+
+### Bug Fixes
+
+- *(export)* Leave a link to a removed document unresolved
+- *(confluence)* Say a server-exported page's edits are overwritten
+
 ### Documentation
 
 - Record v2.0.0-beta.7 and close IMPL-0023
 - Add a temporary README line to check CI path filtering
+- Remove the temporary CI path-filter README line
+- *(inv-0020)* Docz-api Confluence export without a checkout
+- *(inv-0020)* Shared spaces, one-way sync, and the title test
+- *(inv-0020)* Folder tests, decisions, and conclusion
+- *(inv-0020)* Folder children list with the hierarchical-content scope
+- *(design-0021)* Confluence export from docz-api
+- *(design-0021)* Resolve all open questions, sharing a space is optional
+- *(impl-0024)* Plan Phase B of the Confluence export
+- *(impl-0024)* Resolve open questions; DESIGN-0021 approved
+- *(design-0021)* Archived pages keep their titles
+- *(impl-0024)* All phases on one branch
+- *(design-0021)* An inline comment does not bump the page version
+- *(impl-0024)* Phase 1 complete
+- *(confluence)* Export reads through ExportOptions.FS
+- *(impl-0024)* Phase 3 complete
+- *(impl-0024)* Phase 4 complete
+- *(impl-0024)* Phase 5 complete
+- *(impl)* Check off IMPL-0024 Phase 6
+- IMPL-0024 Phase 7, the export task
+- IMPL-0024 Phase 8, the API and docz-site
+- *(chart)* List DoczAPIExportFailures in the README
+- *(runbook)* RUNBOOK-0003, enable Confluence export on docz-api
+- The folder layout, comments, and the server's Confluence export
+- *(design)* DESIGN-0021 Implemented, amending the Data Model for source and edited_expected
+- *(impl)* IMPL-0024 testing plan checked off; live server run and release deferred to a person
+- *(impl)* IMPL-0024 live server run, initial fixture results
+- IMPL-0024 live scenarios recorded, RUNBOOK-0003 verified
+- DESIGN-0021 amended for the removed-document link and the server's banner
+- *(impl)* IMPL-0024 records both live fixes re-verified
+- *(runbook)* RUNBOOK-0003 verified in #162
+
+### Testing
+
+- *(confluence)* Pin the export plan with a corpus golden
+- *(confluence)* The plan golden through MapFS, an export that never reads the disk
+- *(confluence)* Folders, ownership, recorded ids, and Overwrite over the fake
+- *(confluence)* The live round trip gains a folder
+- *(export)* Warnings on stderr, the repository name, the JSON folder
+- *(confluence)* The inline-comment corpus, FuzzCarryMarkers, and an update over the fake
+- *(confluence)* A live inline comment survives an update
+- *(store)* Confluence records, the URL join, and ExportInputs as one snapshot
+- *(e2e)* A repository's Confluence export through ingest, rename, removal, and disable
+- *(confluence)* Live fixture repositories for the server's export check
 
 ### Miscellaneous Tasks
 
 - *(ci)* Path-filter the Go jobs and verify GoReleaser with cosign
+- *(config)* Export this repository in the folder layout
 
 ## [2.0.0-beta.7] - 2026-10-06
 

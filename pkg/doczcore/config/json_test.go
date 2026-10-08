@@ -116,6 +116,7 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
 				Enabled:  true,
 				Site:     "https://example.atlassian.net",
 				Space:    "DOCZ",
+				Layout:   config.LayoutFolder,
 				Parent:   "docz",
 				Types:    []string{"design"},
 				Exclude:  []string{"archive"},
@@ -201,6 +202,7 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
       "enabled": true,
       "site": "https://example.atlassian.net",
       "space": "DOCZ",
+      "layout": "folder",
       "parent": "docz",
       "types": [
         "design"

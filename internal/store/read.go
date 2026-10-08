@@ -48,11 +48,12 @@ func (s *Store) ListDocumentsByType(
 }
 
 // GetDocumentByID returns one document (including raw markdown) by repo and doc
-// id. A missing row surfaces as pgx.ErrNoRows for the caller to map to 404.
-func (s *Store) GetDocumentByID(ctx context.Context, repoID int64, docID string) (Document, error) {
+// id, with the Confluence page its last export wrote it to. A missing row
+// surfaces as pgx.ErrNoRows for the caller to map to 404.
+func (s *Store) GetDocumentByID(ctx context.Context, repoID int64, docID string) (GetDocumentByIDRow, error) {
 	doc, err := s.q.GetDocumentByID(ctx, GetDocumentByIDParams{RepoID: repoID, DocID: docID})
 	if err != nil {
-		return Document{}, fmt.Errorf("get document %q in repo %d: %w", docID, repoID, err)
+		return GetDocumentByIDRow{}, fmt.Errorf("get document %q in repo %d: %w", docID, repoID, err)
 	}
 	return doc, nil
 }

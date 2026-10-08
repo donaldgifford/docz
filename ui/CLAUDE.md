@@ -393,7 +393,9 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   ""-omitting, format switch html/md/json right-aligned above it) and
   the lifecycle is a closed-by-default `<details>` owned by
   `LifecycleRail` (renders nothing — shell included — for unknown
-  types). Gated mockup rows (relationships, tags) slot into the table
+  types). The header meta row ends in a "View in Confluence" link
+  (new tab, `noopener noreferrer`) when spec 1.6.0's `confluence_url` is
+  non-empty, and in nothing otherwise. Gated mockup rows (relationships, tags) slot into the table
   when the DESIGN-0001 API asks land. `TocList` runs a scroll spy
   (`src/hooks/useActiveHeading.ts`, IntersectionObserver over the
   heading ids, top-of-viewport band) and marks the current row

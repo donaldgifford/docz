@@ -27,6 +27,9 @@ const maxRetries = 3
 // draft, trashed, or archived.
 const statusCurrent = "current"
 
+// statusArchived is a page a person archived, which still holds its title.
+const statusArchived = "archived"
+
 // HTTPClient is the Client over Confluence Cloud's REST API v2.
 type HTTPClient struct {
 	site  string
@@ -267,6 +270,7 @@ type (
 
 	apiPage struct {
 		ID       string     `json:"id"`
+		Type     string     `json:"type"`
 		Title    string     `json:"title"`
 		ParentID string     `json:"parentId"`
 		SpaceID  string     `json:"spaceId"`
@@ -289,6 +293,12 @@ type (
 		ParentID string      `json:"parentId,omitempty"`
 		Body     apiBody     `json:"body"`
 		Version  *apiVersion `json:"version,omitempty"`
+	}
+
+	apiFolderWrite struct {
+		SpaceID  string `json:"spaceId"`
+		Title    string `json:"title"`
+		ParentID string `json:"parentId,omitempty"`
 	}
 
 	apiProperty struct {
@@ -336,9 +346,51 @@ func (h *HTTPClient) SpaceID(ctx context.Context, key string) (string, error) {
 	return "", &RequestError{Op: "get space", Status: http.StatusNotFound, Body: fmt.Sprintf("no space with key %q", key)}
 }
 
+// Spaces looks up several space keys in one request and returns the id of
+// each one found; a key missing from the map does not exist or is not
+// visible to the credential. It is not part of Client: docz-api's startup
+// check is its one caller.
+func (h *HTTPClient) Spaces(ctx context.Context, keys []string) (map[string]string, error) {
+	var list apiList[struct {
+		ID  string `json:"id"`
+		Key string `json:"key"`
+	}]
+
+	q := url.Values{"keys": {strings.Join(keys, ",")}, "limit": {"250"}}
+	if err := h.do(ctx, "get spaces", http.MethodGet, "/wiki/api/v2/spaces?"+q.Encode(), nil, &list); err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]string, len(list.Results))
+	for _, s := range list.Results {
+		out[s.Key] = s.ID
+	}
+
+	return out, nil
+}
+
+// SpaceHome implements Client.
+func (h *HTTPClient) SpaceHome(ctx context.Context, spaceID string) (string, error) {
+	var space struct {
+		HomepageID string `json:"homepageId"`
+	}
+
+	if err := h.do(ctx, "get space", http.MethodGet, "/wiki/api/v2/spaces/"+url.PathEscape(spaceID), nil, &space); err != nil {
+		return "", err
+	}
+
+	return space.HomepageID, nil
+}
+
 // FindPage implements Client.
 func (h *HTTPClient) FindPage(ctx context.Context, spaceID, title string) (*Page, error) {
-	q := url.Values{"space-id": {spaceID}, "title": {title}, "status": {statusCurrent}}
+	return h.findPage(ctx, spaceID, title, statusCurrent)
+}
+
+// findPage returns the page titled title in the space with the given
+// status, or nil.
+func (h *HTTPClient) findPage(ctx context.Context, spaceID, title, status string) (*Page, error) {
+	q := url.Values{"space-id": {spaceID}, "title": {title}, "status": {status}}
 
 	var list apiList[apiPage]
 	if err := h.do(ctx, "find page", http.MethodGet, "/wiki/api/v2/pages?"+q.Encode(), nil, &list); err != nil {
@@ -354,6 +406,96 @@ func (h *HTTPClient) FindPage(ctx context.Context, spaceID, title string) (*Page
 	return nil, nil //nolint:nilnil // a missing page is an answer, not an error (Client contract)
 }
 
+// Page implements Client.
+func (h *HTTPClient) Page(ctx context.Context, id string) (*Page, error) {
+	var out apiPage
+
+	err := h.do(ctx, "get page", http.MethodGet, "/wiki/api/v2/pages/"+url.PathEscape(id), nil, &out)
+	if notFound(err) {
+		return nil, nil //nolint:nilnil // a missing page is an answer, not an error (Client contract)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return h.page(&out), nil
+}
+
+// Body implements Client.
+func (h *HTTPClient) Body(ctx context.Context, id string) ([]byte, error) {
+	var out apiPage
+
+	err := h.do(ctx, "get page body", http.MethodGet, "/wiki/api/v2/pages/"+url.PathEscape(id)+"?body-format=storage", nil, &out)
+	if notFound(err) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(out.Body.Storage.Value), nil
+}
+
+// Folder implements Client.
+func (h *HTTPClient) Folder(ctx context.Context, id string) (*Folder, error) {
+	var out apiPage
+
+	err := h.do(ctx, "get folder", http.MethodGet, "/wiki/api/v2/folders/"+url.PathEscape(id), nil, &out)
+	if notFound(err) {
+		return nil, nil //nolint:nilnil // a missing folder is an answer, not an error (Client contract)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return h.folder(&out), nil
+}
+
+// CreateFolder implements Client.
+func (h *HTTPClient) CreateFolder(ctx context.Context, f *NewFolder) (*Folder, error) {
+	req := apiFolderWrite{SpaceID: f.SpaceID, Title: f.Title, ParentID: f.ParentID}
+
+	var out apiPage
+
+	err := h.do(ctx, "create folder", http.MethodPost, "/wiki/api/v2/folders", req, &out)
+	if titleTaken(err) {
+		return nil, &TitleError{Title: f.Title}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return h.folder(&out), nil
+}
+
+// folder converts the wire folder, which has a page's shape.
+func (h *HTTPClient) folder(p *apiPage) *Folder {
+	pg := h.page(p)
+
+	return &Folder{ID: pg.ID, Title: pg.Title, ParentID: pg.ParentID, SpaceID: pg.SpaceID, WebURL: pg.WebURL}
+}
+
+// notFound reports a 404.
+func notFound(err error) bool {
+	var re *RequestError
+
+	return errors.As(err, &re) && re.Status == http.StatusNotFound
+}
+
+// titleTaken reports Confluence's 400 for a title already in the space:
+// "A page already exists with the same TITLE in this space", and "A folder
+// exists with the same title in this space" (INV-0020 Observation 9).
+func titleTaken(err error) bool {
+	var re *RequestError
+
+	return errors.As(err, &re) && re.Status == http.StatusBadRequest &&
+		strings.Contains(strings.ToLower(re.Body), "same title")
+}
+
 // CreatePage implements Client.
 func (h *HTTPClient) CreatePage(ctx context.Context, p *NewPage) (*Page, error) {
 	req := apiPageWrite{
@@ -365,11 +507,30 @@ func (h *HTTPClient) CreatePage(ctx context.Context, p *NewPage) (*Page, error) 
 	}
 
 	var out apiPage
-	if err := h.do(ctx, "create page", http.MethodPost, "/wiki/api/v2/pages", req, &out); err != nil {
+
+	err := h.do(ctx, "create page", http.MethodPost, "/wiki/api/v2/pages", req, &out)
+	if titleTaken(err) {
+		return nil, h.titleError(ctx, p.SpaceID, p.Title)
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
 	return h.page(&out), nil
+}
+
+// titleError names the archived page holding a title when there is one: a
+// current holder is one FindPage would have found, so an archived one is
+// the likely cause, and naming it makes the fix obvious.
+func (h *HTTPClient) titleError(ctx context.Context, spaceID, title string) error {
+	te := &TitleError{Title: title}
+
+	if archived, err := h.findPage(ctx, spaceID, title, statusArchived); err == nil && archived != nil {
+		te.ArchivedID = archived.ID
+	}
+
+	return te
 }
 
 // UpdatePage implements Client.
@@ -428,12 +589,20 @@ func (h *HTTPClient) currentBody(ctx context.Context, id string, p *PageUpdate) 
 	return &out, nil
 }
 
-// Property implements Client.
-func (h *HTTPClient) Property(ctx context.Context, pageID, key string) (*Property, error) {
-	path := "/wiki/api/v2/pages/" + url.PathEscape(pageID) + "/properties?key=" + url.QueryEscape(key)
+// propertiesPath is the content-properties collection of a page or folder.
+func propertiesPath(t Target) string {
+	kind := "pages"
+	if t.Type == TypeFolder {
+		kind = "folders"
+	}
 
+	return "/wiki/api/v2/" + kind + "/" + url.PathEscape(t.ID) + "/properties"
+}
+
+// Property implements Client.
+func (h *HTTPClient) Property(ctx context.Context, t Target, key string) (*Property, error) {
 	var list apiList[apiProperty]
-	if err := h.do(ctx, "get property", http.MethodGet, path, nil, &list); err != nil {
+	if err := h.do(ctx, "get property", http.MethodGet, propertiesPath(t)+"?key="+url.QueryEscape(key), nil, &list); err != nil {
 		return nil, err
 	}
 
@@ -452,8 +621,8 @@ func (h *HTTPClient) Property(ctx context.Context, pageID, key string) (*Propert
 }
 
 // SetProperty implements Client.
-func (h *HTTPClient) SetProperty(ctx context.Context, pageID string, p *Property) error {
-	path := "/wiki/api/v2/pages/" + url.PathEscape(pageID) + "/properties"
+func (h *HTTPClient) SetProperty(ctx context.Context, t Target, p *Property) error {
+	path := propertiesPath(t)
 
 	if p.ID == "" {
 		return h.do(ctx, "create property", http.MethodPost, path, apiProperty{Key: p.Key, Value: p.Value}, nil)
@@ -464,22 +633,34 @@ func (h *HTTPClient) SetProperty(ctx context.Context, pageID string, p *Property
 	return h.do(ctx, "update property", http.MethodPut, path+"/"+url.PathEscape(p.ID), body, nil)
 }
 
-// Children implements Client.
-func (h *HTTPClient) Children(ctx context.Context, parentID string) ([]Page, error) {
-	var out []Page
+// Children implements Client, through direct-children, which lists folders
+// as well as pages and works under either.
+func (h *HTTPClient) Children(ctx context.Context, parent Target) ([]Node, error) {
+	kind := "pages"
+	if parent.Type == TypeFolder {
+		kind = "folders"
+	}
 
-	next := "/wiki/api/v2/pages/" + url.PathEscape(parentID) + "/children?limit=250"
+	var out []Node
+
+	next := "/wiki/api/v2/" + kind + "/" + url.PathEscape(parent.ID) + "/direct-children?limit=250"
 
 	for next != "" {
 		var list apiList[apiPage]
-		if err := h.do(ctx, "list children", http.MethodGet, next, nil, &list); err != nil {
+
+		err := h.do(ctx, "list children", http.MethodGet, next, nil, &list)
+		if notFound(err) {
+			return nil, nil
+		}
+
+		if err != nil {
 			return nil, err
 		}
 
 		for i := range list.Results {
 			p := h.page(&list.Results[i])
-			p.ParentID = parentID
-			out = append(out, *p)
+			p.ParentID = parent.ID
+			out = append(out, Node{Page: *p, Type: list.Results[i].Type})
 		}
 
 		// The cursor link is relative to the gateway base, like every path.

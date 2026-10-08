@@ -76,7 +76,10 @@ type documentDTO struct {
 	GitSHA      string `json:"git_sha"`
 	ContentHash string `json:"content_hash"`
 	UpdatedAt   string `json:"updated_at"`
-	RawMD       string `json:"raw_md,omitempty"`
+	// ConfluenceURL is the document's page when its last export left one,
+	// "" otherwise (DESIGN-0021 §7).
+	ConfluenceURL string `json:"confluence_url"`
+	RawMD         string `json:"raw_md,omitempty"`
 }
 
 // repoLabel is the "owner/name" identifier used across the DTOs.
@@ -151,36 +154,39 @@ func toPage(repo string, p *store.RepoPage) pageDTO {
 	return pageDTO{Repo: repo, Path: p.Path, Title: p.Title, RawMD: p.RawMd, GitSHA: p.GitSha}
 }
 
-func toDocument(repo string, d *store.Document) documentDTO {
+func toDocument(repo string, row *store.GetDocumentByIDRow) documentDTO {
+	d := &row.Document
 	return documentDTO{
-		Repo:        repo,
-		DocID:       d.DocID,
-		Type:        d.Type,
-		Title:       d.Title,
-		Status:      nullText(d.Status),
-		Author:      nullText(d.Author),
-		Created:     nullDate(d.Created),
-		Path:        d.Path,
-		GitSHA:      d.GitSha,
-		ContentHash: d.ContentHash,
-		UpdatedAt:   nullTimestamp(d.UpdatedAt),
-		RawMD:       d.RawMd,
+		Repo:          repo,
+		DocID:         d.DocID,
+		Type:          d.Type,
+		Title:         d.Title,
+		Status:        nullText(d.Status),
+		Author:        nullText(d.Author),
+		Created:       nullDate(d.Created),
+		Path:          d.Path,
+		GitSHA:        d.GitSha,
+		ContentHash:   d.ContentHash,
+		UpdatedAt:     nullTimestamp(d.UpdatedAt),
+		ConfluenceURL: row.ConfluenceUrl,
+		RawMD:         d.RawMd,
 	}
 }
 
 func toDocumentSummary(repo string, d *store.ListDocumentsByTypeRow) documentDTO {
 	return documentDTO{
-		Repo:        repo,
-		DocID:       d.DocID,
-		Type:        d.Type,
-		Title:       d.Title,
-		Status:      nullText(d.Status),
-		Author:      nullText(d.Author),
-		Created:     nullDate(d.Created),
-		Path:        d.Path,
-		GitSHA:      d.GitSha,
-		ContentHash: d.ContentHash,
-		UpdatedAt:   nullTimestamp(d.UpdatedAt),
+		Repo:          repo,
+		DocID:         d.DocID,
+		Type:          d.Type,
+		Title:         d.Title,
+		Status:        nullText(d.Status),
+		Author:        nullText(d.Author),
+		Created:       nullDate(d.Created),
+		Path:          d.Path,
+		GitSHA:        d.GitSha,
+		ContentHash:   d.ContentHash,
+		UpdatedAt:     nullTimestamp(d.UpdatedAt),
+		ConfluenceURL: d.ConfluenceUrl,
 	}
 }
 

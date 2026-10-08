@@ -32,8 +32,8 @@ func (errStore) ListDocumentsByType(
 	return nil, errBoom
 }
 
-func (errStore) GetDocumentByID(context.Context, int64, string) (store.Document, error) {
-	return store.Document{}, errBoom
+func (errStore) GetDocumentByID(context.Context, int64, string) (store.GetDocumentByIDRow, error) {
+	return store.GetDocumentByIDRow{}, errBoom
 }
 
 func (errStore) ListRepoPages(context.Context, int64) ([]store.ListRepoPagesRow, error) {
@@ -42,6 +42,14 @@ func (errStore) ListRepoPages(context.Context, int64) ([]store.ListRepoPagesRow,
 
 func (errStore) GetRepoPageByPath(context.Context, int64, string) (store.RepoPage, error) {
 	return store.RepoPage{}, errBoom
+}
+
+func (errStore) GetConfluenceSync(context.Context, int64) (store.ConfluenceSync, error) {
+	return store.ConfluenceSync{}, errBoom
+}
+
+func (errStore) ListConfluencePages(context.Context, int64) ([]store.ConfluencePage, error) {
+	return nil, errBoom
 }
 
 func TestStoreErrorIs500(t *testing.T) {

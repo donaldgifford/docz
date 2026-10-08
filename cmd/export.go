@@ -65,7 +65,7 @@ export target holds is ever read back.`,
 var exportConfluenceCmd = &cobra.Command{
 	Use:   "confluence [<id>|<path>...]",
 	Short: "Export documents to Confluence Cloud as pages",
-	Long: `Export documents to Confluence Cloud as pages, under the parent page the
+	Long: `Export documents to Confluence Cloud as pages, into the space the
 sync.confluence block of .docz.yaml names:
 
   sync:
@@ -73,7 +73,14 @@ sync.confluence block of .docz.yaml names:
       enabled: true
       site: https://example.atlassian.net
       space: DOCZ
-      parent: docz
+      layout: folder
+
+In the folder layout, the default, the pages live in a Confluence folder
+named after the repository (or sync.confluence.folder), at the top of the
+space or under the page sync.confluence.parent names, and every title but
+the home page's starts with the folder name and a colon, so several
+repositories can share a space. layout: page puts them under the parent
+page with unprefixed titles instead.
 
 With no arguments every document of the configured types is exported, each
 type under a page of its own carrying the type's README index. With ids or
@@ -83,12 +90,15 @@ Credentials come from the environment, never from the file:
 
   ATLASSIAN_EMAIL       the Atlassian account's email
   ATLASSIAN_API_TOKEN   an API token; a scoped token needs
-                        read:space:confluence, read:page:confluence,
-                        and write:page:confluence
+                        read:space, read:page, write:page, read:folder,
+                        write:folder, and read:hierarchical-content
+                        (each :confluence)
 
 A page is written only when its rendered body changed. A page edited in
 Confluence since docz last wrote it, or a page with the right title that
-docz did not create, is skipped unless --force. On a full export, pages for
+docz did not create, is skipped unless --force, and an edited page is
+named in a WARNING on stderr. A page or folder another repository wrote is
+never touched, --force included. On a full export, pages for
 documents that no longer exist move under an Archive page; nothing is ever
 deleted.
 
@@ -150,14 +160,17 @@ func (r *Runner) exportConfluence(ctx context.Context, opts exportOpts, args []s
 		return err
 	}
 
+	remote := r.Git.RemoteURL(ctx)
+
 	report, runErr := confluence.Export(ctx, r.repoOrOpen(), confluence.ExportOptions{
-		Client:  client,
-		Types:   opts.types,
-		IDs:     ids,
-		Force:   opts.force,
-		DryRun:  opts.dryRun,
-		Resolve: blobResolver(r.Git.RemoteURL(ctx), r.Git.DefaultBranch(ctx), r.RepoRoot),
-		Version: Version,
+		Client:     client,
+		Types:      opts.types,
+		IDs:        ids,
+		Force:      opts.force,
+		DryRun:     opts.dryRun,
+		Resolve:    blobResolver(remote, r.Git.DefaultBranch(ctx), r.RepoRoot),
+		Version:    Version,
+		Repository: repositoryName(remote),
 	})
 
 	if err := r.writeExportOut(opts.out, &report); err != nil {
@@ -168,6 +181,8 @@ func (r *Runner) exportConfluence(ctx context.Context, opts exportOpts, args []s
 		if err := r.printExportReport(format, &report); err != nil {
 			return err
 		}
+
+		r.printExportWarnings(&report)
 	}
 
 	if runErr != nil {
@@ -215,6 +230,47 @@ func (r *Runner) exportIDs(args []string) ([]string, error) {
 	}
 
 	return ids, nil
+}
+
+// repositoryName is owner/name from a remote githubURL normalised, or ""
+// when there is no GitHub remote.
+func repositoryName(remote string) string {
+	return strings.TrimPrefix(remote, githubPrefix)
+}
+
+// printExportWarnings names on stderr, whatever the log level, what a
+// person must act on (DESIGN-0021 §4, §8): a page skipped for an edit in
+// Confluence --force would overwrite, another repository's page that
+// nothing here may touch, and each inline comment an update could not
+// re-anchor.
+func (r *Runner) printExportWarnings(report *confluence.Report) {
+	for i := range report.Pages {
+		p := &report.Pages[i]
+
+		name := p.ID
+		if name == "" {
+			name = p.Title
+		}
+
+		for _, text := range p.Comments.Lost {
+			//nolint:errcheck // warning to stderr; nothing actionable if it fails to print
+			fmt.Fprintf(r.Err, "WARNING: %s: an inline comment on %q lost its anchor\n", name, text)
+		}
+
+		if p.Action != confluence.Skipped {
+			continue
+		}
+
+		switch {
+		case p.Edited != nil:
+			//nolint:errcheck // warning to stderr; nothing actionable if it fails to print
+			fmt.Fprintf(r.Err, "WARNING: %s was edited in Confluence (v%d, expected v%d); not overwritten, use --force\n",
+				name, p.Edited.Version, p.Edited.Expected)
+		case strings.HasPrefix(p.Reason, confluence.ReasonForeign):
+			//nolint:errcheck // warning to stderr; nothing actionable if it fails to print
+			fmt.Fprintf(r.Err, "WARNING: %s %s; not written\n", p.Title, p.Reason)
+		}
+	}
 }
 
 // blobResolver places a link to a file that is not exported on GitHub, at
@@ -329,6 +385,10 @@ func exportDetail(p *confluence.PageResult) string {
 
 		return "  " + strings.Join(parts, "  ")
 	case confluence.Skipped:
+		if strings.HasPrefix(p.Reason, confluence.ReasonForeign) {
+			return "  " + p.Reason
+		}
+
 		return "  " + p.Reason + "; use --force"
 	case confluence.Archived:
 		return "  moved under Archive"
@@ -417,12 +477,30 @@ func (offlineClient) UpdatePage(context.Context, string, *confluence.PageUpdate)
 	return nil, errOffline
 }
 
-func (offlineClient) Property(context.Context, string, string) (*confluence.Property, error) {
+func (offlineClient) SpaceHome(context.Context, string) (string, error) { return "offline", nil }
+
+func (offlineClient) Page(context.Context, string) (*confluence.Page, error) {
+	return nil, nil //nolint:nilnil // the Client contract: no page is an answer
+}
+
+func (offlineClient) Body(context.Context, string) ([]byte, error) { return nil, nil }
+
+func (offlineClient) Folder(context.Context, string) (*confluence.Folder, error) {
+	return nil, nil //nolint:nilnil // the Client contract: no folder is an answer
+}
+
+func (offlineClient) CreateFolder(context.Context, *confluence.NewFolder) (*confluence.Folder, error) {
+	return nil, errOffline
+}
+
+func (offlineClient) Property(context.Context, confluence.Target, string) (*confluence.Property, error) {
 	return nil, nil //nolint:nilnil // the Client contract: no property is an answer
 }
 
-func (offlineClient) SetProperty(context.Context, string, *confluence.Property) error {
+func (offlineClient) SetProperty(context.Context, confluence.Target, *confluence.Property) error {
 	return errOffline
 }
 
-func (offlineClient) Children(context.Context, string) ([]confluence.Page, error) { return nil, nil }
+func (offlineClient) Children(context.Context, confluence.Target) ([]confluence.Node, error) {
+	return nil, nil
+}

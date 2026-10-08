@@ -1,8 +1,10 @@
 package config_test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -335,5 +337,118 @@ func TestSecretRedaction(t *testing.T) {
 	formatted := fmt.Sprintf("%s %v %+v %#v", s, s, struct{ S config.Secret }{S: s}, s)
 	if strings.Contains(formatted, "hunter2") {
 		t.Errorf("formatted output leaked the secret value: %s", formatted)
+	}
+}
+
+func confluenceEnv() map[string]string {
+	env := validEnv()
+	env["CONFLUENCE_SITE"] = "https://example.atlassian.net/"
+	env["CONFLUENCE_EMAIL"] = "bot@example.com"
+	env["CONFLUENCE_API_TOKEN"] = "atlassian-token-value"
+	env["CONFLUENCE_SPACES"] = " DOCZ, ,ENG "
+
+	return env
+}
+
+func TestLoadConfluenceUnsetIsDisabled(t *testing.T) {
+	env := validEnv()
+	for _, k := range []string{"CONFLUENCE_SITE", "CONFLUENCE_EMAIL", "CONFLUENCE_API_TOKEN", "CONFLUENCE_SPACES"} {
+		env[k] = ""
+	}
+
+	cfg, err := load(t, env)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if cfg.Confluence.Enabled() || cfg.Confluence.Allowed("https://example.atlassian.net", "DOCZ") {
+		t.Errorf("Confluence %+v; want disabled and nothing allowed", cfg.Confluence)
+	}
+}
+
+func TestLoadConfluence(t *testing.T) {
+	cfg, err := load(t, confluenceEnv())
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	c := cfg.Confluence
+	if !c.Enabled() || c.Site != "https://example.atlassian.net" || !slices.Equal(c.Spaces, []string{"DOCZ", "ENG"}) {
+		t.Fatalf("Confluence %+v; want enabled, the site trimmed, two spaces", c)
+	}
+
+	for _, tt := range []struct {
+		site, space string
+		want        bool
+	}{
+		{"https://example.atlassian.net", "DOCZ", true},
+		{"https://example.atlassian.net/", "ENG", true},
+		{"https://example.atlassian.net", "docz", false},
+		{"https://other.atlassian.net", "DOCZ", false},
+		{"https://example.atlassian.net", "OPS", false},
+	} {
+		if got := c.Allowed(tt.site, tt.space); got != tt.want {
+			t.Errorf("Allowed(%q, %q) = %v; want %v", tt.site, tt.space, got, tt.want)
+		}
+	}
+}
+
+func TestLoadConfluenceMissing(t *testing.T) {
+	for name, value := range map[string]string{
+		"CONFLUENCE_SITE":   "",
+		"CONFLUENCE_EMAIL":  "",
+		"CONFLUENCE_SPACES": " , ",
+	} {
+		t.Run(name, func(t *testing.T) {
+			env := confluenceEnv()
+			env[name] = value
+
+			_, err := load(t, env)
+			if !errors.Is(err, config.ErrInvalidConfig) || !strings.Contains(err.Error(), name) {
+				t.Errorf("err %v; want ErrInvalidConfig naming %s", err, name)
+			}
+		})
+	}
+
+	for _, site := range []string{"http://example.atlassian.net", "https://example.atlassian.net/wiki", "example.atlassian.net"} {
+		t.Run(site, func(t *testing.T) {
+			env := confluenceEnv()
+			env["CONFLUENCE_SITE"] = site
+
+			if _, err := load(t, env); !errors.Is(err, config.ErrInvalidConfig) || !strings.Contains(err.Error(), "CONFLUENCE_SITE") {
+				t.Errorf("site %q: err %v; want ErrInvalidConfig naming CONFLUENCE_SITE", site, err)
+			}
+		})
+	}
+
+	// Every missing field is reported at once.
+	env := confluenceEnv()
+	env["CONFLUENCE_SITE"], env["CONFLUENCE_EMAIL"], env["CONFLUENCE_SPACES"] = "", "", ""
+
+	_, err := load(t, env)
+	for _, name := range []string{"CONFLUENCE_SITE", "CONFLUENCE_EMAIL", "CONFLUENCE_SPACES"} {
+		if err == nil || !strings.Contains(err.Error(), name) {
+			t.Errorf("err %v; want it to name %s", err, name)
+		}
+	}
+}
+
+func TestLoadConfluenceTokenNeverPrinted(t *testing.T) {
+	cfg, err := load(t, confluenceEnv())
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	var logged bytes.Buffer
+
+	slog.New(slog.NewTextHandler(&logged, nil)).Info("config", "confluence", cfg.Confluence, "token", cfg.Confluence.APIToken)
+
+	for _, out := range []string{
+		fmt.Sprintf("%v", cfg.Confluence), fmt.Sprintf("%+v", cfg.Confluence), fmt.Sprintf("%#v", cfg.Confluence),
+		fmt.Sprintf("%+v", cfg), logged.String(),
+	} {
+		if strings.Contains(out, "atlassian-token-value") {
+			t.Errorf("the token leaked: %s", out)
+		}
 	}
 }

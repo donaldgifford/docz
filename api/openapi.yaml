@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.5.0
+  version: 1.6.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -114,6 +114,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RepoChangelog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/repos/{owner}/{name}/confluence:
+    parameters:
+      - $ref: "#/components/parameters/Owner"
+      - $ref: "#/components/parameters/Name"
+    get:
+      tags: [repos]
+      operationId: getRepoConfluence
+      summary: The repository's last Confluence export.
+      description: |
+        Reports the last export of the repository to Confluence Cloud
+        (DESIGN-0021): its status, the folder it writes to, the counts per
+        action, and one entry per page it recorded. A repository never
+        exported reads `never` with empty fields and no pages, not a 404.
+        When this server has no Confluence credential every repository reads
+        `disabled` with the reason `disabled on this server`.
+      responses:
+        "200":
+          description: The repository's Confluence export record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfluenceSync"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -668,6 +694,120 @@ components:
           type: string
           description: Git blob SHA of the cached changelog; usable as a cache key.
           example: 9a1c4e7
+    ConfluenceSync:
+      description: A repository's last Confluence export.
+      type: object
+      additionalProperties: false
+      required: [repo, status, reason, site, space, folder, head_sha, started_at, finished_at, counts, pages]
+      properties:
+        repo:
+          type: string
+          description: The "owner/name" identifier.
+          example: acme/platform
+        status:
+          type: string
+          enum: [never, disabled, refused, running, succeeded, partial, failed]
+        reason:
+          type: string
+          description: Why the run was refused, disabled, or failed; "" otherwise.
+        site:
+          type: string
+          example: https://example.atlassian.net
+        space:
+          type: string
+          description: The space key.
+          example: DOCZ
+        folder:
+          $ref: "#/components/schemas/ConfluenceFolder"
+        head_sha:
+          type: string
+          description: The commit the run exported.
+        started_at:
+          type: string
+          description: RFC3339, UTC; "" when never run.
+        finished_at:
+          type: string
+          description: RFC3339, UTC; "" while running or never run.
+        counts:
+          $ref: "#/components/schemas/ConfluenceCounts"
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfluencePage"
+    ConfluenceFolder:
+      description: The repository's folder; empty fields before the first export.
+      type: object
+      additionalProperties: false
+      required: [id, title, url]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+    ConfluenceCounts:
+      description: Pages per action in the last run.
+      type: object
+      additionalProperties: false
+      required: [created, updated, unchanged, skipped, archived, failed]
+      properties:
+        created:
+          type: integer
+        updated:
+          type: integer
+        unchanged:
+          type: integer
+        skipped:
+          type: integer
+        archived:
+          type: integer
+        failed:
+          type: integer
+    ConfluencePage:
+      description: One page the export recorded.
+      type: object
+      additionalProperties: false
+      required: [key, title, source, action, page_id, url, version, comments_lost, reason]
+      properties:
+        key:
+          type: string
+          description: The page's property key; a document id, or docz:parent, docz:type:<name>, docz:page:<path>.
+          example: ADR-0001
+        title:
+          type: string
+        source:
+          type: string
+          description: The repository file the page was rendered from; "" for a home page with no landing page.
+        action:
+          type: string
+          enum: [created, updated, unchanged, skipped, archived, failed]
+        page_id:
+          type: string
+        url:
+          type: string
+        version:
+          type: integer
+        edited:
+          $ref: "#/components/schemas/ConfluenceEdit"
+        comments_lost:
+          type: integer
+          description: Inline comments whose anchor the last update could not carry.
+        reason:
+          type: string
+          description: Why the page was skipped or failed; "" otherwise.
+    ConfluenceEdit:
+      description: The page had been edited in Confluence since docz last wrote it.
+      type: object
+      additionalProperties: false
+      required: [version, expected]
+      properties:
+        version:
+          type: integer
+          description: The version found.
+        expected:
+          type: integer
+          description: The version docz last wrote.
     PageList:
       description: The pages a repository's `api:` block publishes.
       type: object
@@ -762,7 +902,7 @@ components:
       description: A single document. `raw_md` is present only on the get-one endpoint.
       type: object
       additionalProperties: false
-      required: [repo, doc_id, type, title, status, author, created, path, git_sha, content_hash, updated_at]
+      required: [repo, doc_id, type, title, status, author, created, path, git_sha, content_hash, updated_at, confluence_url]
       properties:
         repo:
           type: string
@@ -798,6 +938,12 @@ components:
             When docz-api last ingested a content change for this record (RFC3339, UTC). The first ingest stamps every record
             in the repository at onboard time; thereafter the value moves only when the content changes. Not the git commit
             time. "" when unset.
+        confluence_url:
+          type: string
+          format: uri-reference
+          description: >
+            The document's Confluence page, when the repository's last export created, updated, left unchanged, or skipped
+            one for it; "" otherwise.
         raw_md:
           type: string
           description: Full Markdown source; present only on the single-document endpoint.
