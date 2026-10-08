@@ -1,7 +1,7 @@
 ---
 id: IMPL-0024
 title: "Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021)"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-10-07
 ---
@@ -732,8 +732,12 @@ in its own, and `v2.0.0-beta.8` ships it.
   every banner page to "overwritten by the next sync", and re-running
   scenario 2 left RFC-0002's link to the removed ADR as plain text while
   its `scripts/check.sh` link stayed a blob URL
-- [ ] `just ci` green; the PR merged by a person; `just release
+- [x] `just ci` green; the PR merged by a person; `just release
   v2.0.0-beta.8` from the merge commit: `deferred - human required`.
+  PR #162 merged as `1031bb1`, and `v2.0.0-beta.8` was tagged from it on
+  2026-10-08. The pre-release published `ghcr.io/donaldgifford/docz-api`
+  and `docz-site` at `2.0.0-beta.8` and the `docz` chart at 0.3.0 (ECR
+  stays off behind `ECR_PUBLISH_ENABLED`).
   `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
   since go-licenses misreads the standard library when the toolchain
   switches from mise's go 1.26.5 to `go.mod`'s 1.26.6)
