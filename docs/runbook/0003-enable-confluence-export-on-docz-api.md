@@ -38,7 +38,7 @@ created: 2026-10-07
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-| 2026-10-08 |    | eb47813 | @donaldgifford |
+| 2026-10-08 | #162 | eb47813 | @donaldgifford |
 
 **Notes:** Run locally against the scratch site over the seven
 `test/live/confluence` fixtures, with the chart's variables set by hand
