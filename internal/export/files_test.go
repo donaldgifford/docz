@@ -7,10 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/donaldgifford/docz/v2/internal/store"
+	doczcfg "github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
 	"github.com/donaldgifford/docz/v2/pkg/export/confluence"
 )
@@ -104,7 +106,7 @@ func TestFiles_LandingAndPages(t *testing.T) {
 func TestBlobResolver(t *testing.T) {
 	t.Parallel()
 
-	resolve := blobResolver("o", "r", "main")
+	resolve := blobResolver("o", "r", "main", func(string) bool { return false })
 	base := "https://github.com/o/r/blob/main/"
 
 	tests := []struct{ from, href, want string }{
@@ -119,6 +121,30 @@ func TestBlobResolver(t *testing.T) {
 	for _, tt := range tests {
 		if got := resolve(tt.from, tt.href).URL; got != tt.want {
 			t.Errorf("resolve(%q, %q) = %q, want %q", tt.from, tt.href, got, tt.want)
+		}
+	}
+}
+
+func TestBlobResolver_RemovedDocument(t *testing.T) {
+	t.Parallel()
+
+	cfg := doczcfg.DefaultConfig()
+	fsys := fstest.MapFS{"docs/adr/0001-kept.md": &fstest.MapFile{Data: []byte("x")}}
+	resolve := blobResolver("o", "r", "main", missingDocument(fsys, &cfg))
+	base := "https://github.com/o/r/blob/main/"
+
+	tests := []struct{ name, href, want string }{
+		{"removed document", "../adr/0002-removed.md", ""},
+		{"removed document with a fragment", "../adr/0002-removed.md#context", ""},
+		{"ingested document", "../adr/0001-kept.md", base + "docs/adr/0001-kept.md"},
+		{"non-document under a type dir", "../adr/notes.md", base + "docs/adr/notes.md"},
+		{"document outside a type dir", "../../other/0001-x.md", base + "other/0001-x.md"},
+		{"other file", "../../scripts/check.sh", base + "scripts/check.sh"},
+	}
+
+	for _, tt := range tests {
+		if got := resolve("docs/rfc/0001-a.md", tt.href).URL; got != tt.want {
+			t.Errorf("%s: resolve(%q) = %q, want %q", tt.name, tt.href, got, tt.want)
 		}
 	}
 }

@@ -251,7 +251,7 @@ func (s *Service) export(ctx context.Context, in *store.ExportInputs, cfg *doczc
 		Repository: in.Repo.Owner + "/" + in.Repo.Name,
 		Overwrite:  true,
 		Pages:      in.PageIDs,
-		Resolve:    blobResolver(in.Repo.Owner, in.Repo.Name, in.Repo.DefaultBranch),
+		Resolve:    blobResolver(in.Repo.Owner, in.Repo.Name, in.Repo.DefaultBranch, missingDocument(fsys, cfg)),
 		Version:    s.version,
 	}
 	if in.Sync != nil {
