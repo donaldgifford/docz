@@ -175,6 +175,27 @@ The IMPL statuses already line up: In Progress is running, Paused is
 paused, Cancelled is cancelled, and Completed is set by the workflow
 after the merge.
 
+The run's states, and the IMPL status each one shows:
+
+```mermaid
+stateDiagram-v2
+  state "In Progress: running" as Running
+  state "In Progress: waiting on a person" as Waiting
+  state "In Progress: PR open" as Review
+  [*] --> Draft
+  Draft --> Running: run started
+  Running --> Waiting: a task needs a person
+  Waiting --> Running: complete-task or skip-task
+  Running --> Paused: pause
+  Paused --> Running: resume
+  Running --> Review: every task done, PR opened
+  Review --> Completed: merged, from the webhook
+  Running --> Cancelled: cancel
+  Paused --> Cancelled: cancel
+  Completed --> [*]
+  Cancelled --> [*]
+```
+
 ### Observation 3: git stays the record of a document; Temporal records a run
 
 A document's status, checkboxes, and text belong in git, where docz-api
@@ -208,6 +229,31 @@ already, and a status change in a push can start or signal a workflow.
   status, and the approve and skip actions.
 - Chart: a Temporal dependency (an external endpoint, or the Temporal chart
   backed by Postgres) and a separate deployment for the agent workers.
+
+Put together:
+
+```mermaid
+flowchart LR
+  person[Person: docz-site, Slack, or an MCP client]
+  subgraph api_box [docz-api]
+    api[REST and MCP]
+    coord[Coordinator workers: branch, commit, PR, status]
+    db[(Postgres)]
+  end
+  temporal[(Temporal)]
+  subgraph sandbox [Agent workers, sandboxed]
+    agent[One agent per task, own checkout]
+  end
+  gh[GitHub]
+  person --> api
+  api -- start, signal, query --> temporal
+  temporal -- docz-coordinator queue --> coord
+  temporal -- docz-agent queue --> agent
+  coord -- App token --> gh
+  agent -- push to the run branch, scoped token --> gh
+  gh -- webhooks: push, pull_request --> api
+  api --> db
+```
 
 ### Observation 5: what changes or goes away
 

@@ -124,6 +124,21 @@ children. Nothing is deleted, and the pages stay readable under Archive.
 Turning the default on for an existing repository therefore makes one
 visible change to its folder. Approach step 4 checks this.
 
+With the default from Question 1 (a), an export chooses its types like this:
+
+```mermaid
+flowchart TD
+  start([Export run]) --> listed{sync.confluence.types set?}
+  listed -- yes --> use[Export the listed types]
+  listed -- no --> def[Export every enabled type except impl]
+  use --> plan[Plan the pages]
+  def --> plan
+  plan --> full{Full run?}
+  full -- yes --> orphan[Pages no longer planned move under Archive, impl subtree included]
+  full -- no --> done([Done])
+  orphan --> done
+```
+
 ### Observation 3: links to IMPLs still work
 
 Links from an exported document are resolved against what the run writes,

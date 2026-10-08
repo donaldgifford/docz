@@ -158,6 +158,30 @@ posts back through `response_url` or `chat.postMessage`. A draft is a
 run of minutes. The bot shows progress (Slack's assistant threads have a
 status line), then posts the PR.
 
+A quick create, end to end:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Person
+  participant S as Slack
+  participant A as docz-api
+  participant Q as Queue
+  participant G as GitHub
+  U->>S: /docz new adr
+  S->>A: Slash command, signed
+  A-->>S: 200 within 3 seconds, open the modal
+  U->>S: Submit type, title, and repository
+  S->>A: view_submission, signed
+  A->>A: Verify, match the email to a docz user, check access
+  A->>Q: Enqueue create:owner/repo
+  A-->>S: 200, Creating
+  Q->>A: Run the create
+  A->>A: Next number from the store, then Render
+  A->>G: Branch, commit, open the PR
+  A->>S: Post the PR link in the thread
+```
+
 ### Observation 3: numbers come from the store, and need serialising
 
 Two people creating an ADR in the same repository at once would both get

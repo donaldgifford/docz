@@ -198,6 +198,32 @@ own authorization server:
 The same token service can issue personal access tokens, and client
 credentials for workers.
 
+An MCP client's first call, with docz-api as both the server and the authorization server:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant C as MCP client
+  participant M as docz-api /mcp
+  participant A as docz-api authorization server
+  participant I as SSO login
+  C->>M: tools/call with no token
+  M-->>C: 401, WWW-Authenticate with resource_metadata and scope
+  C->>M: GET /.well-known/oauth-protected-resource
+  M-->>C: authorization_servers, scopes_supported
+  C->>A: GET /.well-known/oauth-authorization-server
+  A-->>C: Metadata, client ID metadata documents and iss supported
+  C->>A: /authorize with a client_id URL, PKCE, and resource
+  A->>C: Fetch the client's metadata document
+  A->>I: Sign the person in through the existing login
+  I-->>A: Verified identity
+  A-->>C: Redirect with code and iss
+  C->>A: /token with code_verifier and resource
+  A-->>C: Access token for docz-api /mcp, refresh token
+  C->>M: tools/call with Bearer token
+  M-->>C: Result
+```
+
 ### Observation 3: in-process beats a proxy over the REST API
 
 A separate MCP service calling `/api/v1` would need bearer tokens on the
@@ -233,6 +259,22 @@ An IMPL run is a Tasks-extension task. `start_impl_run` returns a task
 handle, `tasks/get` reads the run's state (a workflow query), and
 `tasks/update` carries a person's approval of a deferred task (a workflow
 update).
+
+A write tool's confirmation under MRTR:
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant C as MCP client
+  participant M as docz-api /mcp
+  C->>M: tools/call set_status ADR-0007 Accepted
+  M-->>C: resultType input_required, a confirmation request
+  C->>P: Show the confirmation
+  P-->>C: Confirm
+  C->>M: tools/call set_status again, with inputResponses
+  M->>M: Check access, open the PR
+  M-->>C: resultType complete, the PR link
+```
 
 ### Observation 5: authorization stops being optional
 

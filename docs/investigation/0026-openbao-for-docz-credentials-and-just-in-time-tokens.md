@@ -202,6 +202,30 @@ and an audit log.
   `ATLASSIAN_*` from the environment, and a person may fill that from
   `bao kv get` if they like.
 
+Where each credential comes from, with OpenBao configured:
+
+```mermaid
+flowchart LR
+  subgraph bao [OpenBao]
+    key[GitHub App key, never leaves]
+    ghe[GitHub secrets engine]
+    transit[Transit: docz-api signing key]
+    kv[KV: static secrets]
+  end
+  api[docz-api pod]
+  sandbox[Agent sandbox]
+  secret[Kubernetes Secret]
+  key --- ghe
+  api -- Kubernetes auth --> bao
+  api -- mint: one repo, contents read --> ghe
+  api -- mint: one repo, contents and PRs write --> ghe
+  ghe -- one-hour token --> api
+  api -- wrapped token, per run --> sandbox
+  api -- sign a JWT --> transit
+  kv -- External Secrets Operator --> secret
+  secret --> api
+```
+
 ### Observation 6: OpenBao becomes a dependency on the hot path
 
 If docz-api mints a GitHub token per ingest, OpenBao going down stops

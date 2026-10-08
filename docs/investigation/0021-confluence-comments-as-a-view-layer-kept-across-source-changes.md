@@ -148,6 +148,25 @@ one is written, so collecting comments at that point costs one or two list
 requests per changed page. Unchanged pages are not read today. So comments
 made on a page that never changes would only be seen by polling.
 
+With the comment layer, an export of a changed page would run like this:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant W as Export worker
+  participant DB as Postgres
+  participant C as Confluence
+  W->>C: Read the current body and its comments
+  C-->>W: Body with markers, comment threads
+  W->>DB: Upsert comments and anchors (quote, prefix, suffix, heading)
+  W->>W: Render the new body from markdown
+  W->>DB: Load every open or orphaned anchor for the page
+  W->>W: Wrap each anchor's quote in its marker, same ac:ref
+  W->>C: Update the page body
+  W->>DB: Record kept, restored, and orphaned
+  Note over W,C: An hourly poll repeats steps 1 to 3 for pages that did not change
+```
+
 ### Observation 4: the comment layer must stay out of git
 
 Nothing about comments may reach the repository: not the markdown, not a
@@ -179,6 +198,19 @@ putting its marker back.
 
 Run Approach steps 1 to 3 on the scratch site, answer the questions below,
 then write a DESIGN.
+
+Under Questions 3 and 6 as recommended, a comment's anchor moves through these states:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Anchored: comment made in Confluence
+  Anchored --> Anchored: export finds the quote and carries the marker
+  Anchored --> Orphaned: export cannot find the quote
+  Orphaned --> Anchored: a later export finds it and restores the marker
+  Anchored --> Resolved: resolved in Confluence
+  Orphaned --> Resolved: resolved in Confluence
+  Resolved --> [*]
+```
 
 ### 1. Where does the comment layer live?
 
