@@ -486,6 +486,15 @@ never starves ingest.
    any repository path into
    `https://github.com/<owner>/<name>/blob/<default_branch>/<path>` with no
    existence check (INV-0020 decision 10).
+
+   > **Amended 2026-10-08 (IMPL-0024 live run).** One existence check
+   > after all: a path that names a document file in an enabled type's
+   > directory and was not ingested is a document since removed, and its
+   > link stays unresolved rather than becoming a blob URL that 404s. And
+   > because the server always overwrites, its pages' banner says edits
+   > made in Confluence are overwritten by the next sync, not kept until a
+   > forced one (`RenderOptions.Overwrite`, set from `Overwrite` alone).
+
 6. Write the report: upsert a `confluence_pages` row for every result with
    a page id, keep archived pages' rows with the action `archived`, and
    update `confluence_syncs` with the status, counts, folder, head SHA, and

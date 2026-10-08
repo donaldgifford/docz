@@ -726,7 +726,9 @@ in its own, and `v2.0.0-beta.8` ships it.
   blob URL to a file that no longer exists (the server's resolver checks
   no existence; the CLI's does), and the page banner says edits made in
   Confluence are "kept until the next forced sync", which is the CLI's
-  rule, not the server's, which always overwrites
+  rule, not the server's, which always overwrites. Both are fixed on this branch
+  (`fix(export)` and `fix(confluence)`, 2026-10-08), with DESIGN-0021 §5
+  amended
 - [ ] `just ci` green; the PR merged by a person; `just release
   v2.0.0-beta.8` from the merge commit: `deferred - human required`.
   `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
