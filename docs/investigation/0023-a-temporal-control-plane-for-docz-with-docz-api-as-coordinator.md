@@ -191,6 +191,9 @@ already, and a status change in a push can start or signal a workflow.
   commit, PR, and status), all of which are GitHub API calls.
 - Endpoints for starting, listing, and reading runs, plus pause, resume,
   cancel, and approving a task, all specced in `api/openapi.yaml`.
+  Over MCP (INV-0024), a run is a task in the 2026-07-28 Tasks extension:
+  `tasks/get` maps to a workflow query, and `tasks/update` maps to a
+  workflow update, such as approving a deferred task.
 - An `impl_runs` table mirroring each run's state for the API and
   docz-site, or reads straight from Temporal's visibility store.
 - Webhook handling for `pull_request` (merged) and for pushes that change

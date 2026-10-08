@@ -17,12 +17,13 @@ created: 2026-10-08
 - [Approach](#approach)
 - [Environment](#environment)
 - [Findings](#findings)
-  - [Observation 1: what current MCP practice asks of a remote server](#observation-1-what-current-mcp-practice-asks-of-a-remote-server)
+  - [Observation 1: what the 2026-07-28 revision asks of a remote server](#observation-1-what-the-2026-07-28-revision-asks-of-a-remote-server)
   - [Observation 2: docz-api needs its own authorization server](#observation-2-docz-api-needs-its-own-authorization-server)
   - [Observation 3: in-process beats a proxy over the REST API](#observation-3-in-process-beats-a-proxy-over-the-rest-api)
   - [Observation 4: the tools should be shaped for agents, not mirrored from REST](#observation-4-the-tools-should-be-shaped-for-agents-not-mirrored-from-rest)
   - [Observation 5: authorization stops being optional](#observation-5-authorization-stops-being-optional)
   - [Observation 6: document text is untrusted input to an agent](#observation-6-document-text-is-untrusted-input-to-an-agent)
+  - [Observation 7: statelessness suits docz-api](#observation-7-statelessness-suits-docz-api)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. Where does the MCP server run?](#1-where-does-the-mcp-server-run)
@@ -30,8 +31,9 @@ created: 2026-10-08
   - [3. How do unattended callers authenticate?](#3-how-do-unattended-callers-authenticate)
   - [4. Does the REST API accept the same bearer tokens?](#4-does-the-rest-api-accept-the-same-bearer-tokens)
   - [5. How is client registration handled?](#5-how-is-client-registration-handled)
-  - [6. What does the first release include?](#6-what-does-the-first-release-include)
-  - [7. What does authorization check?](#7-what-does-authorization-check)
+  - [6. What if the Go SDK lags the 2026-07-28 revision?](#6-what-if-the-go-sdk-lags-the-2026-07-28-revision)
+  - [7. What does the first release include?](#7-what-does-the-first-release-include)
+  - [8. What does authorization check?](#8-what-does-authorization-check)
 - [References](#references)
 <!--toc:end-->
 
@@ -52,7 +54,8 @@ agent the REST API and a cookie.
 An MCP server mounted in the docz-api binary at `/mcp` gives agents one
 safe, typed surface:
 
-- it speaks Streamable HTTP;
+- it speaks Streamable HTTP, statelessly, as the 2026-07-28 revision
+  requires;
 - it acts as an OAuth 2.1 resource server, with docz-api also issuing the
   tokens;
 - its tools are curated, rather than a one-to-one copy of the REST routes.
@@ -86,10 +89,11 @@ What docz-api offers today:
 <!--docz:approach:start-->
 ## Approach
 
-1. Read the current MCP specification. The newest revision known when
-   this was written is 2025-11-25. Check for a newer one before the DESIGN,
-   in particular its authorization section, the security best practices,
-   and the official Go SDK (`github.com/modelcontextprotocol/go-sdk`).
+1. Read the MCP specification, revision 2026-07-28: its authorization
+   section, its security considerations, the Tasks extension, and the
+   Multi Round-Trip Requests (MRTR) pattern. Check which revision the
+   official Go SDK (`github.com/modelcontextprotocol/go-sdk`) implements,
+   and whether it supports the stateless protocol yet.
 2. Choose where the server runs and how it reaches docz-api's data.
 3. Choose the authorization server and the token types: interactive users,
    unattended workers, and the REST API.
@@ -108,8 +112,8 @@ What docz-api offers today:
 | Component | Version / Value |
 | --------- | --------------- |
 | docz | `v2.0.0-beta.8`; API spec 1.6.0 |
-| MCP specification | 2025-11-25 (verify the current revision, Approach step 1) |
-| MCP Go SDK | `github.com/modelcontextprotocol/go-sdk` (current 1.x) |
+| MCP specification | [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) |
+| MCP Go SDK | `github.com/modelcontextprotocol/go-sdk`, with support for 2026-07-28 to be confirmed (Approach step 1) |
 | Login providers | GitHub OAuth, Okta and Keycloak OIDC (`internal/auth`) |
 
 <!--docz:environment:end-->
@@ -117,34 +121,65 @@ What docz-api offers today:
 <!--docz:findings:start-->
 ## Findings
 
-### Observation 1: what current MCP practice asks of a remote server
+### Observation 1: what the 2026-07-28 revision asks of a remote server
 
-From the 2025-11-25 specification and its security best practices:
+**The protocol is stateless.** There is no `initialize` handshake and no
+`Mcp-Session-Id`:
 
-- **Transport:** Streamable HTTP, a single endpoint taking POSTs, with
-  server-sent events for streaming. The session id is not a credential.
-- **Resource server:** the MCP server is an OAuth 2.1 resource server. It
-  publishes Protected Resource Metadata (RFC 9728) at
-  `/.well-known/oauth-protected-resource`, naming its authorization
-  servers, and answers an unauthenticated request with `401` and a
-  `WWW-Authenticate` header that points there.
-- **Clients:** they find the authorization server through RFC 8414 or OIDC
-  discovery and use PKCE (S256). They name the server in a `resource`
-  parameter (RFC 8707), and the server accepts only tokens whose audience
-  is itself.
-- **Client registration:** prefer Client ID Metadata Documents (the client
-  id is a URL to its metadata), fall back to Dynamic Client Registration
-  (RFC 7591), and allow pre-registered clients.
-- **No token passthrough:** the server never forwards the token it received
-  to another service. It uses its own credentials for GitHub and
-  Confluence.
-- **Scopes:** least privilege, with step-up through `insufficient_scope`
-  when a tool needs more.
-- **Tools:** carry annotations (`readOnlyHint`, `destructiveHint`,
-  `idempotentHint`) and output schemas for structured results. Elicitation
-  can ask a person to confirm. The specification also defines long-running
-  operations as tasks (experimental in 2025-11-25), which suits starting an
-  IMPL run.
+- every request carries its protocol version and client capabilities in
+  `_meta`;
+- the server must answer `server/discover` with its versions, its
+  capabilities, and who it is;
+- list results (`tools/list`, `resources/list`) are the same for every
+  caller, and carry `ttlMs` and `cacheScope` so clients can cache them;
+- state that has to last across calls travels as a handle the server
+  issues and the client passes back as an ordinary tool argument;
+- change notifications arrive on an opt-in `subscriptions/listen` stream.
+
+**Transport.** Streamable HTTP with POST requests. Each request carries
+`Mcp-Method` and `Mcp-Name` headers, so a proxy or middleware can route,
+log, or rate-limit a call without reading its body. A broken response
+stream is not resumed: the client re-sends the request.
+
+**Asking the person something.** Servers no longer send requests of their
+own to the client. Under Multi Round-Trip Requests (MRTR), a tool that
+needs input returns an `InputRequiredResult` (`resultType:
+"input_required"`), and the client retries the original call with the
+answers. This is how a write tool asks for confirmation. Elicitation itself
+is still part of the protocol.
+
+**Deprecated.** Sampling, Roots, and Logging are deprecated: log through
+OpenTelemetry instead. OpenTelemetry trace context (`traceparent`,
+`tracestate`) now has documented `_meta` keys.
+
+**Tasks** are an official extension, `io.modelcontextprotocol/tasks`:
+
+- the server returns a durable task handle;
+- the client polls it with `tasks/get`;
+- the client sends input mid-flight with `tasks/update`.
+
+**Authorization**, for HTTP transports:
+
+- The MCP server is an OAuth 2.1 resource server. It must publish
+  Protected Resource Metadata (RFC 9728) at
+  `/.well-known/oauth-protected-resource`. An unauthenticated request gets
+  `401` with a `WWW-Authenticate` header naming that document and the
+  scopes the call needs. A token without enough scope gets `403` with
+  `error="insufficient_scope"`, naming every scope the call needs in one
+  challenge.
+- The authorization server publishes RFC 8414 or OIDC discovery metadata.
+  It should include `iss` in authorization responses (RFC 9207) and
+  advertise that it does; a later revision is expected to make this
+  mandatory.
+- Clients use PKCE and send `resource` (RFC 8707) with the server's
+  canonical URI. The server must accept only tokens issued for it as the
+  audience, and must not pass any token on to another service.
+- **Client registration:** Client ID Metadata Documents are what clients
+  and servers should support. Pre-registration is allowed. Dynamic Client
+  Registration (RFC 7591) is **deprecated** and kept only for
+  authorization servers that can't do metadata documents.
+- Clients acting for themselves (`client_credentials`) are covered by the
+  authorization extensions in the `ext-auth` repository, not by the core.
 
 ### Observation 2: docz-api needs its own authorization server
 
@@ -184,12 +219,20 @@ with fifteen routes. A first, read-only set:
 - `get_impl_progress` (phases, tasks, and what is deferred).
 
 Documents can also be MCP resources (`docz://<owner>/<repo>/<type>/<id>`),
-so a client can attach them as context.
+so a client can attach them as context. Listing them in a fixed order
+(repository, type, then id) and caching them with `ttlMs` suits the
+2026-07-28 rules.
 
 Write tools wait on INV-0023's write access: `set_status`, `check_task`,
-`create_doc`, and `start_impl_run`, `approve_task`, and `get_run` as
-tasks. Each one is marked `destructiveHint` where it changes a repository,
-and confirmed through elicitation.
+and `create_doc`. Each one is marked `destructiveHint` where it changes a
+repository, and confirmed through MRTR: the first call returns
+`input_required` with a confirmation request, and the change happens on the
+retry that carries the answer.
+
+An IMPL run is a Tasks-extension task. `start_impl_run` returns a task
+handle, `tasks/get` reads the run's state (a workflow query), and
+`tasks/update` carries a person's approval of a deferred task (a workflow
+update).
 
 ### Observation 5: authorization stops being optional
 
@@ -210,6 +253,18 @@ can limit the damage:
 - write tools never act on a document's say-so without a confirmation;
 - per-token rate limits apply;
 - every tool call is logged with its principal, for audit.
+
+### Observation 7: statelessness suits docz-api
+
+docz-api runs as several replicas behind a Service, with an HPA in the
+chart. With no MCP sessions, any replica can answer any call. That needs no
+sticky routing and no session store, which the 2025-11-25 session model
+would have required (a Redis-backed session table, or affinity). The one
+piece of state that lasts across calls, an IMPL run, already has a durable
+handle: its Temporal workflow id, carried as the task handle. The
+`traceparent` in `_meta` joins MCP calls to the traces docz-api already
+emits, and the `Mcp-Method` and `Mcp-Name` headers give the request logger
+and the rate limiter a tool name without parsing the body.
 
 <!--docz:findings:end-->
 
@@ -239,7 +294,8 @@ The authorization model (Observation 5) is the real work, and the spike
 
 - **(a) docz-api, as an OAuth 2.1 authorization server that delegates login
   to the providers it already has. It issues audience-bound JWTs, rotating
-  refresh tokens, personal access tokens, and client credentials.**
+  refresh tokens, personal access tokens, and client credentials, and
+  includes `iss` in authorization responses (RFC 9207).**
   *(recommendation)*
 - (b) An external authorization server only (Keycloak or Okta), with
   docz-api validating its JWTs. It's less code, but a GitHub-login
@@ -249,9 +305,10 @@ The authorization model (Observation 5) is the real work, and the spike
 
 ### 3. How do unattended callers authenticate?
 
-- **(a) The OAuth client credentials grant, one client per worker
-  deployment, with short-lived tokens limited to the repositories the run
-  needs.** *(recommendation)*
+- **(a) The OAuth client credentials grant, as the `ext-auth` extension
+  describes it: one pre-registered client per worker deployment, with
+  short-lived tokens limited to the repositories the run needs.**
+  *(recommendation)*
 - (b) Personal access tokens issued to a service account.
 - (c) Other.
 
@@ -265,14 +322,27 @@ The authorization model (Observation 5) is the real work, and the spike
 
 ### 5. How is client registration handled?
 
-- **(a) Client ID Metadata Documents first, Dynamic Client Registration as
-  a server setting that is off by default, and pre-registered clients for
-  docz's own tooling.** *(recommendation)*
-- (b) Dynamic Client Registration always on.
+- **(a) Client ID Metadata Documents and pre-registered clients (for
+  docz's own tooling and the workers). No Dynamic Client Registration: it
+  is deprecated in 2026-07-28, and docz-api would be a new authorization
+  server with no older clients to support.** *(recommendation)*
+- (b) As (a), plus Dynamic Client Registration behind a setting that is off
+  by default, for clients that haven't adopted metadata documents.
 - (c) Pre-registered clients only.
 - (d) Other.
 
-### 6. What does the first release include?
+### 6. What if the Go SDK lags the 2026-07-28 revision?
+
+- **(a) Use the official Go SDK, and wait for its 2026-07-28 support before
+  shipping, since a stateless server on the old session model would be
+  rebuilt soon after.** *(recommendation)*
+- (b) Implement the stateless JSON-RPC surface by hand on chi. It's small
+  for a read-only server, but every later revision becomes docz's to
+  follow.
+- (c) Ship on 2025-11-25 sessions now and migrate later.
+- (d) Other.
+
+### 7. What does the first release include?
 
 - **(a) Read-only tools and resources only, with write tools after
   INV-0023's write access and the authorization model exist.**
@@ -280,7 +350,7 @@ The authorization model (Observation 5) is the real work, and the spike
 - (b) Read tools plus `set_status` and `check_task` on day one.
 - (c) Other.
 
-### 7. What does authorization check?
+### 8. What does authorization check?
 
 - **(a) Repository-level grants per principal (read, write, run), checked in
   `authorize` for both REST and MCP. Initially they come from the GitHub
@@ -300,12 +370,16 @@ The authorization model (Observation 5) is the real work, and the spike
   the workflows that need tokens and write tools
 - [INV-0021](0021-confluence-comments-as-a-view-layer-kept-across-source-changes.md):
   comments as untrusted text
-- [Model Context Protocol specification 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25):
-  Transports, Authorization, Security Best Practices, Tools, and Tasks
+- [Model Context Protocol specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)
+  and its [changelog](https://modelcontextprotocol.io/specification/2026-07-28/changelog):
+  Streamable HTTP, [Authorization](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization),
+  MRTR, and the Tasks extension
+- [MCP authorization extensions](https://github.com/modelcontextprotocol/ext-auth):
+  client credentials
 - [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728) (Protected Resource Metadata),
   [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707) (Resource Indicators),
   [RFC 8414](https://www.rfc-editor.org/rfc/rfc8414) (Authorization Server Metadata),
-  [RFC 7591](https://www.rfc-editor.org/rfc/rfc7591) (Dynamic Client Registration), and
+  [RFC 9207](https://www.rfc-editor.org/rfc/rfc9207) (Issuer Identification), and
   [OAuth 2.1](https://datatracker.ietf.org/doc/draft-ietf-oauth-v2-1/)
 - [`internal/`](../../internal/): `auth`, `authhttp`, `session`, and `authorize`;
   [`api/openapi.yaml`](../../api/openapi.yaml)
