@@ -69,6 +69,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* IMPL-0024 live server run, initial fixture results
 - IMPL-0024 live scenarios recorded, RUNBOOK-0003 verified
 - DESIGN-0021 amended for the removed-document link and the server's banner
+- *(impl)* IMPL-0024 records both live fixes re-verified
+- *(runbook)* RUNBOOK-0003 verified in #162
 
 ### Testing
 
