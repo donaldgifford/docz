@@ -38,6 +38,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0023 | A Temporal control plane for docz with docz-api as coordinator | Open | 2026-10-08 | Donald Gifford | [0023-a-temporal-control-plane-for-docz-with-docz-api-as-coordinator.md](0023-a-temporal-control-plane-for-docz-with-docz-api-as-coordinator.md) |
 | INV-0024 | An MCP server for docz-api with OAuth and token auth | Open | 2026-10-08 | Donald Gifford | [0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md](0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md) |
 | INV-0025 | A Slack bot for creating and changing docz documents | Open | 2026-10-08 | Donald Gifford | [0025-a-slack-bot-for-creating-and-changing-docz-documents.md](0025-a-slack-bot-for-creating-and-changing-docz-documents.md) |
+| INV-0026 | OpenBao for docz credentials and just-in-time tokens | Open | 2026-10-08 | Donald Gifford | [0026-openbao-for-docz-credentials-and-just-in-time-tokens.md](0026-openbao-for-docz-credentials-and-just-in-time-tokens.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
