@@ -728,7 +728,10 @@ in its own, and `v2.0.0-beta.8` ships it.
   Confluence are "kept until the next forced sync", which is the CLI's
   rule, not the server's, which always overwrites. Both are fixed on this branch
   (`fix(export)` and `fix(confluence)`, 2026-10-08), with DESIGN-0021 §5
-  amended
+  amended, and re-verified live the same day: the next ingest moved
+  every banner page to "overwritten by the next sync", and re-running
+  scenario 2 left RFC-0002's link to the removed ADR as plain text while
+  its `scripts/check.sh` link stayed a blob URL
 - [ ] `just ci` green; the PR merged by a person; `just release
   v2.0.0-beta.8` from the merge commit: `deferred - human required`.
   `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
