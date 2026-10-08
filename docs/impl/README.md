@@ -54,5 +54,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0021 | charts/docz: one Helm chart, v2.0.0-beta.5 | Completed | 2026-09-25 | Donald Gifford | [0021-chartsdocz-one-helm-chart-v200-beta5.md](0021-chartsdocz-one-helm-chart-v200-beta5.md) |
 | IMPL-0022 | Runbook: the sixth built-in type (v2.0.0-beta.6) | Completed | 2026-09-30 | Donald Gifford | [0022-runbook-the-sixth-built-in-type-v200-beta6.md](0022-runbook-the-sixth-built-in-type-v200-beta6.md) |
 | IMPL-0023 | Confluence export: the package and the CLI (DESIGN-0020 Phase A) | Completed | 2026-10-05 | Donald Gifford | [0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md](0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md) |
-| IMPL-0024 | Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021) | In Progress | 2026-10-07 | Donald Gifford | [0024-confluence-export-from-docz-api-folders-comments-and-the-server.md](0024-confluence-export-from-docz-api-folders-comments-and-the-server.md) |
+| IMPL-0024 | Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021) | Completed | 2026-10-07 | Donald Gifford | [0024-confluence-export-from-docz-api-folders-comments-and-the-server.md](0024-confluence-export-from-docz-api-folders-comments-and-the-server.md) |
 <!-- END DOCZ AUTO-GENERATED -->
