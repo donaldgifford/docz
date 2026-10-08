@@ -670,7 +670,7 @@ in its own, and `v2.0.0-beta.8` ships it.
   `pkg/export/confluence`'s package doc
 - [x] DESIGN-0021 to Implemented, with any amendment the live runs called
   for
-- [ ] Live server run: `deferred - human required` to provision. Run
+- [x] Live server run: `deferred - human required` to provision. Run
   docz-api locally against the scratch site with this repository and a
   second one sharing `DOCZ`, and a third repository naming a second space
   on the allow-list. Then a fourth naming a space not on the list,
@@ -699,7 +699,34 @@ in its own, and `v2.0.0-beta.8` ships it.
   Confluence agrees: `DOCZ`'s top level holds the `docz-fixture-basic`
   and `docz-fixture-shared` folders beside `docz`, `DOCZ2`'s holds
   `docz-fixture-solo` alone, and no page or folder exists for the four
-  that wrote nothing. The hand-driven scenarios are still to run
+  that wrote nothing.
+
+  **Hand-driven scenarios, 2026-10-08**, against `docz-fixture-basic`,
+  each re-ingested with `-onboard`, all as expected:
+
+  1. Rename: RFC-0001 kept page 493587 and was retitled at v2; the RFC
+     index page updated, the rest unchanged.
+  2. Remove: ADR-0001 (page 493666) moved under `docz-fixture-basic:
+     Archive`, nothing deleted; the ADR index updated.
+  3. Edit in Confluence: an edit made RFC-0002 v3; the next push
+     overwrote it at v4 (`docz sync RFC-0002 e3c8340cd8f7`) and recorded
+     `edited: {version: 3, expected: 2}`.
+  4. Inline comment: a comment on RFC-0002's first sentence survived that
+     push with its `ac:ref`; rewording the sentence reported
+     `comments_lost: 1`.
+  5. Disable: the ingest enqueued nothing, `-export` recorded `disabled`,
+     and all six pages stayed current.
+
+  Resetting the fixture (`just confluence-fixtures-push
+  docz-fixture-basic`) and re-ingesting renamed RFC-0001 back in place
+  and moved ADR-0001 out of the Archive under its type page.
+
+  Two defects found, both in what the server writes rather than in the
+  layout or reconcile: a link to a **removed document** becomes a GitHub
+  blob URL to a file that no longer exists (the server's resolver checks
+  no existence; the CLI's does), and the page banner says edits made in
+  Confluence are "kept until the next forced sync", which is the CLI's
+  rule, not the server's, which always overwrites
 - [ ] `just ci` green; the PR merged by a person; `just release
   v2.0.0-beta.8` from the merge commit: `deferred - human required`.
   `just ci` passed on 2026-10-07 (locally with `GOROOT=$(go env GOROOT)`,
@@ -782,10 +809,10 @@ in its own, and `v2.0.0-beta.8` ships it.
 - [x] The e2e integration test: export, rename, remove, disable
 - [x] The OpenAPI contract test and `doc.test.tsx`
 - [x] helm-unittest for the env block, the Secret key, and the alert
-- [ ] Live: `just export-live` with folders; the CLI run of Phase 4; the
+- [x] Live: `just export-live` with folders; the CLI run of Phase 4; the
   comment check of Phase 5; the server run of Phase 9 over the
-  `test/live/confluence` fixtures. The first three ran on 2026-10-07; the
-  server run is `deferred - human required`
+  `test/live/confluence` fixtures. The first three ran on 2026-10-07, the
+  server run on 2026-10-07/08
 
 <!--docz:testing:end-->
 

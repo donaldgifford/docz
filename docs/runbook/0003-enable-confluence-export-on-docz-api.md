@@ -38,10 +38,12 @@ created: 2026-10-07
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-|      |    |        |             |
+| 2026-10-08 |    | eb47813 | @donaldgifford |
 
-**Notes:** Not yet run end to end. Written from DESIGN-0021 and IMPL-0024;
-the row comes from the `test/live/confluence` fixture run.
+**Notes:** Run locally against the scratch site over the seven
+`test/live/confluence` fixtures, with the chart's variables set by hand
+rather than through Procedure 1's `helm upgrade`; every fixture and
+scenario ended as expected (IMPL-0024 Phase 9).
 
 <!--docz:last-verified:end-->
 
