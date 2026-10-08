@@ -58,8 +58,8 @@ call for, behind a new front door:
 - every change lands as a pull request, so git and review stay the
   gate.
 
-What's new is mapping a Slack user to a docz principal, and the default
-repository.
+What's new is the default repository. Mapping a Slack user to a docz user is
+simple, because both share SSO, so the email matches.
 
 <!--docz:hypothesis:end-->
 
@@ -178,14 +178,22 @@ only repositories docz-api has ingested and the person may write to.
 
 ### Observation 5: identity is the hard part
 
-A Slack user id means nothing to docz-api. Two ways to map it:
+A Slack user id means nothing to docz-api, but its email does. Slack and
+docz sign people in through the same SSO, so a person's Slack email is the
+email on their docz `users` row, which docz-api records only once the
+identity provider has verified it (`internal/auth` drops an unverified
+email). Slack's `users.info`, with `users:read.email`, gives that email,
+and docz-api matches it to the `users` row. No linking step is needed.
 
-- **By verified email**: Slack's `users.info`, with `users:read.email`,
-  gives an email, which is matched to a `users` row. It is simple, but it
-  trusts that the two directories agree.
-- **By linking once**: the bot sends a link to docz-site's login, and the
-  Slack id is stored against the docz user after they sign in. It's
-  explicit, and works when the emails differ.
+Two edges:
+
+- **No `users` row yet.** A person who has never signed in to docz-site
+  has no row. The bot replies with a sign-in link and retries once they
+  have signed in.
+- **GitHub login.** A deployment using GitHub login instead of Okta or
+  Keycloak stores the person's primary GitHub email, which may not be
+  their SSO email. Those deployments fall back to linking: the bot sends
+  a link to docz-site's login and stores the Slack id on the `users` row.
 
 Either way, the bot acts **as that person** (an authorization check
 against INV-0024's per-repository grants), not as a bot that can do
@@ -246,10 +254,13 @@ should follow those, not lead them.
 
 ### 3. How is a Slack user tied to a docz user?
 
-- **(a) Link once through docz-site's login, and store the Slack id on the
-  `users` row.** *(recommendation)*
-- (b) Match on verified email.
-- (c) (b), falling back to (a) when there's no match.
+- **(a) Match on email. Slack and docz share SSO, so the Slack email is
+  the docz user's verified email. A person with no `users` row gets a
+  sign-in link, and a deployment on GitHub login falls back to linking
+  once.** *(recommendation)*
+- (b) Always link once through docz-site's login, and store the Slack id on
+  the `users` row.
+- (c) Match on email only, with no fallback.
 - (d) Other.
 
 ### 4. What does the bot change, and how?
