@@ -501,6 +501,38 @@ func TestExport_HooksAndBannerLink(t *testing.T) {
 	}
 }
 
+func TestExport_BannerSaysWhatBecomesOfAnEdit(t *testing.T) {
+	t.Parallel()
+
+	const (
+		kept        = "changes made here are kept until the next forced sync"
+		overwritten = "changes made here are overwritten by the next sync"
+	)
+
+	tests := []struct {
+		name string
+		opts ExportOptions
+		want string
+	}{
+		{"default", ExportOptions{}, kept},
+		{"force is a one-off", ExportOptions{Force: true}, kept},
+		{"overwrite", ExportOptions{Overwrite: true}, overwritten},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			c := newFakeClient()
+			export(t, exportRepo(t), c, tt.opts)
+
+			if body := string(c.byTitle(rfc1).body); !strings.Contains(body, tt.want) {
+				t.Errorf("banner does not say %q:\n%s", tt.want, body)
+			}
+		})
+	}
+}
+
 func TestExport_ForeignPropertyIsSkippedAndNeverArchived(t *testing.T) {
 	t.Parallel()
 

@@ -71,6 +71,10 @@ type RenderOptions struct {
 	// SourceURL is where Source is browsable. Empty makes the banner name
 	// the path without a link.
 	SourceURL string
+	// Overwrite says the page is overwritten on every sync, so the banner
+	// tells a reader that edits made in Confluence are lost rather than
+	// kept. It changes nothing but the banner's wording.
+	Overwrite bool
 	// Title overrides the page title. Empty derives it from the document:
 	// "ID: Title" from its frontmatter, then its first H1.
 	Title string
@@ -142,7 +146,7 @@ func Render(src []byte, opts RenderOptions) (Rendered, error) {
 
 	var out bytes.Buffer
 
-	writeBanner(&out, opts.Source, opts.SourceURL)
+	writeBanner(&out, opts.Source, opts.SourceURL, opts.Overwrite)
 
 	if err := md.Convert(body, &out); err != nil {
 		return Rendered{}, fmt.Errorf("confluence: rendering: %w", err)

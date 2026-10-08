@@ -106,6 +106,9 @@ func buildPlan(ctx context.Context, rp *repo.Repo, opts *ExportOptions) (*plan, 
 		parentTitle: sync.Parent,
 		space:       sync.Space,
 	}
+	// Force is not Overwrite here: a forced CLI run overwrites once, and the
+	// next run without it keeps edits again, so its banner says they are kept.
+	p.render.Overwrite = opts.Overwrite
 
 	if sync.Layout != config.LayoutPage {
 		p.folder = folderTitle(rp, sync, opts.Repository)

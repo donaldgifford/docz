@@ -55,6 +55,9 @@ func goldenOptions(name string) RenderOptions {
 	case "banner":
 		opts.SourceURL = "https://github.com/o/r/blob/main/docs/design/0001-spec.md"
 	case "banner-nourl":
+	case "banner-overwrite":
+		opts.SourceURL = "https://github.com/o/r/blob/main/docs/design/0001-spec.md"
+		opts.Overwrite = true
 	case "mermaid-code":
 		opts.Mermaid = MermaidCode
 		opts.Source = ""
