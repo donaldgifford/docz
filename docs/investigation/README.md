@@ -33,6 +33,10 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0018 | docz-site: a step-aware runbook view | Open | 2026-10-02 | Donald Gifford | [0018-docz-site-a-step-aware-runbook-view.md](0018-docz-site-a-step-aware-runbook-view.md) |
 | INV-0019 | docz-api sync to external documentation services: Confluence and Notion | Concluded | 2026-10-02 | Donald Gifford | [0019-docz-api-sync-to-external-documentation-services-confluence-and.md](0019-docz-api-sync-to-external-documentation-services-confluence-and.md) |
 | INV-0020 | docz-api Confluence export: running confluence.Export without a checkout | Concluded | 2026-10-06 | Donald Gifford | [0020-docz-api-confluence-export-running-confluenceexport-without-a.md](0020-docz-api-confluence-export-running-confluenceexport-without-a.md) |
+| INV-0021 | Confluence comments as a view layer kept across source changes | Open | 2026-10-08 | Donald Gifford | [0021-confluence-comments-as-a-view-layer-kept-across-source-changes.md](0021-confluence-comments-as-a-view-layer-kept-across-source-changes.md) |
+| INV-0022 | Leaving IMPL documents out of the Confluence export by default | Open | 2026-10-08 | Donald Gifford | [0022-leaving-impl-documents-out-of-the-confluence-export-by-default.md](0022-leaving-impl-documents-out-of-the-confluence-export-by-default.md) |
+| INV-0023 | A Temporal control plane for docz with docz-api as coordinator | Open | 2026-10-08 | Donald Gifford | [0023-a-temporal-control-plane-for-docz-with-docz-api-as-coordinator.md](0023-a-temporal-control-plane-for-docz-with-docz-api-as-coordinator.md) |
+| INV-0024 | An MCP server for docz-api with OAuth and token auth | Open | 2026-10-08 | Donald Gifford | [0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md](0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
