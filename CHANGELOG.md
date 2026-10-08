@@ -8,6 +8,12 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(impl)* IMPL-0024 Completed, released in v2.0.0-beta.8
+- *(investigation)* INV-0021 to INV-0024 opened
+- *(investigation)* INV-0024 on MCP 2026-07-28
+- *(investigation)* INV-0025 a Slack bot for docz documents
+- *(investigation)* INV-0026 OpenBao for credentials and JIT tokens
+- *(investigation)* INV-0025 maps Slack users by their SSO email
+- *(investigation)* Diagrams for INV-0021 to INV-0026
 
 ## [2.0.0-beta.8] - 2026-10-08
 
