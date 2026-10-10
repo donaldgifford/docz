@@ -78,6 +78,15 @@ nav:
         - 'INV-0018: docz-site: a step-aware runbook view': investigation/0018-docz-site-a-step-aware-runbook-view.md
         - 'INV-0019: docz-api sync to external documentation services: Confluence and Notion': investigation/0019-docz-api-sync-to-external-documentation-services-confluence-and.md
         - 'INV-0020: docz-api Confluence export: running confluence.Export without a checkout': investigation/0020-docz-api-confluence-export-running-confluenceexport-without-a.md
+        - 'INV-0021: Confluence comments as a view layer kept across source changes': investigation/0021-confluence-comments-as-a-view-layer-kept-across-source-changes.md
+        - 'INV-0022: Leaving IMPL documents out of the Confluence export by default': investigation/0022-leaving-impl-documents-out-of-the-confluence-export-by-default.md
+        - 'INV-0023: A Temporal control plane for docz with docz-api as coordinator': investigation/0023-a-temporal-control-plane-for-docz-with-docz-api-as-coordinator.md
+        - 'INV-0024: An MCP server for docz-api with OAuth and token auth': investigation/0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md
+        - 'INV-0025: A Slack bot for creating and changing docz documents': investigation/0025-a-slack-bot-for-creating-and-changing-docz-documents.md
+        - 'INV-0026: OpenBao for docz credentials and just-in-time tokens': investigation/0026-openbao-for-docz-credentials-and-just-in-time-tokens.md
+        - 'INV-0027: Interactive mode': investigation/0027-interactive-mode.md
+        - 'INV-0028: A document graph from the references docz already parses': investigation/0028-a-document-graph-from-the-references-docz-already-parses.md
+        - 'INV-0029: Executable acceptance in docz documents': investigation/0029-executable-acceptance-in-docz-documents.md
     - RFCs:
         - Overview: rfc/README.md
     - Runbooks:

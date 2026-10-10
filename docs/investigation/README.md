@@ -39,6 +39,9 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0024 | An MCP server for docz-api with OAuth and token auth | Open | 2026-10-08 | Donald Gifford | [0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md](0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md) |
 | INV-0025 | A Slack bot for creating and changing docz documents | Open | 2026-10-08 | Donald Gifford | [0025-a-slack-bot-for-creating-and-changing-docz-documents.md](0025-a-slack-bot-for-creating-and-changing-docz-documents.md) |
 | INV-0026 | OpenBao for docz credentials and just-in-time tokens | Open | 2026-10-08 | Donald Gifford | [0026-openbao-for-docz-credentials-and-just-in-time-tokens.md](0026-openbao-for-docz-credentials-and-just-in-time-tokens.md) |
+| INV-0027 | Interactive mode | Concluded | 2026-10-10 | Donald Gifford | [0027-interactive-mode.md](0027-interactive-mode.md) |
+| INV-0028 | A document graph from the references docz already parses | Open | 2026-10-10 | Donald Gifford | [0028-a-document-graph-from-the-references-docz-already-parses.md](0028-a-document-graph-from-the-references-docz-already-parses.md) |
+| INV-0029 | Executable acceptance in docz documents | Open | 2026-10-10 | Donald Gifford | [0029-executable-acceptance-in-docz-documents.md](0029-executable-acceptance-in-docz-documents.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->
