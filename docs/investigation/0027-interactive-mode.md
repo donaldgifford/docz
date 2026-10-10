@@ -1,7 +1,7 @@
 ---
 id: INV-0027
 title: "Interactive mode"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-10
 ---
