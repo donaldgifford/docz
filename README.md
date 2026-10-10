@@ -37,7 +37,8 @@ go install github.com/donaldgifford/docz/v2/cmd/docz@latest
 
 The `/v2` path is the current development line. Released v1.x tags stay on
 the unversioned path, so `go install github.com/donaldgifford/docz/cmd/docz@v1.2.2`
-is how you pin the last v1 release.
+is how you pin the last v1 release. Coming from v1? See
+[Migrating from docz v1 to v2](docs/migrating-to-v2.md).
 
 ### Initialize a repository
 

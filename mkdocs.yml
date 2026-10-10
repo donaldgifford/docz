@@ -78,6 +78,12 @@ nav:
         - 'INV-0018: docz-site: a step-aware runbook view': investigation/0018-docz-site-a-step-aware-runbook-view.md
         - 'INV-0019: docz-api sync to external documentation services: Confluence and Notion': investigation/0019-docz-api-sync-to-external-documentation-services-confluence-and.md
         - 'INV-0020: docz-api Confluence export: running confluence.Export without a checkout': investigation/0020-docz-api-confluence-export-running-confluenceexport-without-a.md
+        - 'INV-0021: Confluence comments as a view layer kept across source changes': investigation/0021-confluence-comments-as-a-view-layer-kept-across-source-changes.md
+        - 'INV-0022: Leaving IMPL documents out of the Confluence export by default': investigation/0022-leaving-impl-documents-out-of-the-confluence-export-by-default.md
+        - 'INV-0023: A Temporal control plane for docz with docz-api as coordinator': investigation/0023-a-temporal-control-plane-for-docz-with-docz-api-as-coordinator.md
+        - 'INV-0024: An MCP server for docz-api with OAuth and token auth': investigation/0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md
+        - 'INV-0025: A Slack bot for creating and changing docz documents': investigation/0025-a-slack-bot-for-creating-and-changing-docz-documents.md
+        - 'INV-0026: OpenBao for docz credentials and just-in-time tokens': investigation/0026-openbao-for-docz-credentials-and-just-in-time-tokens.md
     - RFCs:
         - Overview: rfc/README.md
     - Runbooks:
@@ -85,6 +91,7 @@ nav:
         - 'RUNBOOK-0001: Cut a v2 beta release': runbook/0001-cut-a-v2-beta-release.md
         - 'RUNBOOK-0002: docz-api webhook deliveries fail': runbook/0002-docz-api-webhook-deliveries-fail.md
         - 'RUNBOOK-0003: Enable Confluence export on docz-api': runbook/0003-enable-confluence-export-on-docz-api.md
+    - Migrating from docz v1 to v2: migrating-to-v2.md
 plugins:
     - techdocs-core
 site_description: Documentation for docz
