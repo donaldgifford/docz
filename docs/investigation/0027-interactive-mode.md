@@ -26,6 +26,7 @@ created: 2026-10-10
   - [Observation 7: feedback is one message, in an order the agent can act on](#observation-7-feedback-is-one-message-in-an-order-the-agent-can-act-on)
   - [Observation 8: the local server still needs a token](#observation-8-the-local-server-still-needs-a-token)
   - [Observation 9: what to keep ready for a hosted version](#observation-9-what-to-keep-ready-for-a-hosted-version)
+  - [Observation 10: related work points the same way](#observation-10-related-work-points-the-same-way)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -443,6 +444,43 @@ the tool in `ui/` keeps that within reach:
 What would block it is unchanged: docz-api ingests only the default
 branch, and a document under review lives on a feature branch.
 
+### Observation 10: related work points the same way
+
+Two pieces of related work came up after this investigation was written.
+Both support the conclusion.
+
+- **[herdr-annotate](https://github.com/plannotator/herdr-annotate)**
+  brings Plannotator into herdr, a terminal multiplexer that knows about
+  AI agents. It is a Rust plugin:
+  - select terminal text and press a key to comment;
+  - review the Markdown documents in a folder, or the agent's latest
+    replies, through Plannotator's terminal interface;
+  - hand the annotations to the agent oldest first, as Markdown or as the
+    agent's next message.
+
+  The annotation model clearly outlives any one interface. That is the
+  reason `docz-review`'s feedback and its JSON should stay independent of
+  the page: a neovim client on mdp, or a herdr plugin, could be a second
+  front end without docz changing.
+- **[Design Docs Are All You Need](https://arxiv.org/abs/2609.05364)**
+  (arXiv 2609.05364, 2026-09-04) describes SMART, a library whose main
+  branch is a DAG of about 50 design documents (some 9,000 lines). Coding
+  sub-agents regenerate the implementation from them, walking the DAG in
+  topological order, in 1.5 to 3 hours per rebuild. Humans only ever edit
+  the documents. Reliability comes from worked examples that the agents
+  read as demonstrations, and from "reconciliation anchors": expected
+  outputs stated exactly and enforced by generated tests.
+
+  It has no document schema, no lifecycle, and no review tooling, and its
+  dependency edges are inferred by read-only agents. In that model,
+  reviewing a document *is* reviewing the code, which makes a structured
+  review step more valuable, not less. Two of its ideas are worth their
+  own investigations:
+  - [INV-0028](0028-a-document-graph-from-the-references-docz-already-parses.md),
+    a document graph built from references docz already parses;
+  - [INV-0029](0029-executable-acceptance-in-docz-documents.md),
+    executable acceptance in documents.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
@@ -614,6 +652,8 @@ waiting.
 - [Plannotator: Claude Code integration](https://docs.plannotator.ai/open-source/agents/claude-code)
 - [backnotprop/plannotator](https://github.com/backnotprop/plannotator)
 - [Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks)
+- [plannotator/herdr-annotate](https://github.com/plannotator/herdr-annotate)
+- [Design Docs Are All You Need: An AI-native Machine-Learning Performance Tool](https://arxiv.org/abs/2609.05364)
 - [Bun single-file executables](https://bun.sh/docs/bundler/executables)
 - [INV-0004](0004-v1-release-plan-tui-markdown-preview-and-cli-parity.md):
   the unshipped `docz preview`
