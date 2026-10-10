@@ -14,6 +14,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0026 OpenBao for credentials and JIT tokens
 - *(investigation)* INV-0025 maps Slack users by their SSO email
 - *(investigation)* Diagrams for INV-0021 to INV-0026
+- *(investigation)* INV-0027 docz-review, an interactive review add-on
+- *(investigation)* Conclude INV-0027
+- *(investigation)* Related work for INV-0027
+- *(investigation)* INV-0028 a document graph from the references docz already parses
+- *(investigation)* INV-0029 executable acceptance in docz documents
 
 ## [2.0.0-beta.8] - 2026-10-08
 
