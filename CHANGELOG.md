@@ -14,6 +14,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0026 OpenBao for credentials and JIT tokens
 - *(investigation)* INV-0025 maps Slack users by their SSO email
 - *(investigation)* Diagrams for INV-0021 to INV-0026
+- Add a v1 to v2 migration guide
 
 ## [2.0.0-beta.8] - 2026-10-08
 
