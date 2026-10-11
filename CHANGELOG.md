@@ -15,6 +15,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0025 maps Slack users by their SSO email
 - *(investigation)* Diagrams for INV-0021 to INV-0026
 
+### Miscellaneous Tasks
+
+- *(chart)* Bump charts/docz to 0.3.1
+
 ## [2.0.0-beta.8] - 2026-10-08
 
 ### Features
