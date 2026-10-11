@@ -42,13 +42,18 @@ created: 2026-10-01
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-| 2026-10-06 | #153 | 8e18d11 | @donaldgifford |
+| 2026-10-11 | #168 | 1031bb1 | @donaldgifford |
 
-**Notes:** Procedures 1 and 2 run for `v2.0.0-beta.7`; Install and
-smoke-test was not run, since the installed test is the v2.0.0
-environment swap (#147). The steps needed no fixes. The deprecated
-charts' publish jobs report success because the idempotency check skips
-inside the job, so read their logs for `already published`.
+**Notes:** Procedure 3 run against the homelab instead of kind: the
+`docz` chart 0.3.1 (`2.0.0-beta.8`, tag commit `1031bb1`), deployed by
+Argo CD and promoted by Kargo, replacing a 1.x docz-api and docz-site
+(#147). There is no Helm release under Argo CD, so `helm test` does not
+apply. It was checked through the logged-in site instead:
+- the repository list answers;
+- every type's document count matches the repository's `main`;
+- the runbook type is in the type nav;
+- a document concluded in a push that day showed its new status and
+  current blob SHA, which proves webhook ingest end to end.
 
 <!--docz:last-verified:end-->
 
