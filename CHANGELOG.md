@@ -20,6 +20,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0028 a document graph from the references docz already parses
 - *(investigation)* INV-0029 executable acceptance in docz documents
 - Add a v1 to v2 migration guide
+- *(runbook)* Record RUNBOOK-0001 Procedure 3 on a real cluster
 
 ### Miscellaneous Tasks
 
