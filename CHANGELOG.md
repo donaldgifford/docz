@@ -19,6 +19,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* Related work for INV-0027
 - *(investigation)* INV-0028 a document graph from the references docz already parses
 - *(investigation)* INV-0029 executable acceptance in docz documents
+- Add a v1 to v2 migration guide
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump charts/docz to 0.3.1
 
 ## [2.0.0-beta.8] - 2026-10-08
 
