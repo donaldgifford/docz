@@ -280,7 +280,7 @@ against 0.23.3:
   `markdownlint-disable-file` line in `impl.md` and `runbook.md`. Update
   each template's `templates/schema/` skeleton too if the derivation test
   says it must change
-- [ ] MD013 (question 3): docz writes these lines from document content and
+- [x] MD013 (question 3): docz writes these lines from document content and
   regenerates them on every `docz update`. The index region gets:
 
   ```markdown

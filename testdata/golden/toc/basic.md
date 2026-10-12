@@ -14,6 +14,8 @@ created: 2026-01-01
 **Date:** 2026-01-01
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Summary](#summary)
 - [Problem Statement](#problem-statement)
 - [Proposed Solution](#proposed-solution)
@@ -26,6 +28,7 @@ created: 2026-01-01
   - [Overview](#overview)
 - [References](#references)
   - [Overview](#overview-1)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 ## Summary

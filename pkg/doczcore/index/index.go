@@ -69,13 +69,26 @@ type UpdateOutcome struct {
 	Body   string
 }
 
+// lineLengthOff and lineLengthRestore wrap the generated table; see
+// GenerateTable.
+const (
+	lineLengthOff     = "<!-- markdownlint-capture -->\n<!-- markdownlint-disable MD013 -->\n"
+	lineLengthRestore = "<!-- markdownlint-restore -->\n"
+)
+
 // GenerateTable produces a markdown table from a list of document entries.
 // The delimiter row is padded like the header and body rows, which is the
-// one style markdownlint's MD060 accepts for all three (#127).
+// one style markdownlint's MD060 accepts for all three, and the table is
+// wrapped in markdownlint capture, disable MD013, and restore lines, since
+// a row is as long as the titles and filenames in it and the next render
+// rewrites any hand fix (#127). Capture and restore leave the rule as the
+// repository's config set it, where "markdownlint-enable" would switch on
+// a rule the repository turned off.
 func GenerateTable(docs []document.DocEntry, heading string) string {
 	var sb strings.Builder
 
 	sb.WriteString("## " + heading + "\n\n")
+	sb.WriteString(lineLengthOff)
 	sb.WriteString("| ID | Title | Status | Date | Author | Link |\n")
 	sb.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 
@@ -86,6 +99,7 @@ func GenerateTable(docs []document.DocEntry, heading string) string {
 			doc.ID, doc.Title, doc.Status, doc.Created, doc.Author,
 			doc.Filename, doc.Filename)
 	}
+	sb.WriteString(lineLengthRestore)
 
 	return sb.String()
 }

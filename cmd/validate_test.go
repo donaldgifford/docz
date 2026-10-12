@@ -28,6 +28,8 @@ created: 2026-01-01
 # ADR-0001: A Decision
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Summary](#summary)
 - [Context](#context)
 - [Decision](#decision)
@@ -37,6 +39,7 @@ created: 2026-01-01
   - [Neutral](#neutral)
 - [Alternatives Considered](#alternatives-considered)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:summary:start-->
@@ -100,9 +103,12 @@ const vtestADRReadme = `# ADRs
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All ADRs
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 | ID | Title | Status | Date | Author | Link |
 | --- | --- | --- | --- | --- | --- |
 | ADR-0001 | A Decision | Proposed | 2026-01-01 | Tester | [0001-a-decision.md](0001-a-decision.md) |
+<!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 `
 

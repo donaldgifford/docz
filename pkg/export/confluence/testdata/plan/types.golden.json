@@ -15,7 +15,7 @@
       "source": "docs/adr/README.md",
       "override": "ADRs",
       "parent": 0,
-      "sha256": "1377e614f738b6fc"
+      "sha256": "e26b9e3c26aa5db6"
     },
     {
       "key": "ADR-0001",
@@ -23,7 +23,7 @@
       "title": "ADR-0001: Use JWT for v1 agent capability tokens; defer SPIFFE to v2",
       "source": "docs/adr/0001-booty-adr-0001.md",
       "parent": 1,
-      "sha256": "1741e143aaa0e024"
+      "sha256": "b1d1dbaf8a6e238b"
     },
     {
       "key": "ADR-0001",
@@ -31,7 +31,7 @@
       "title": "ADR-0001: pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)",
       "source": "docs/adr/0004-docz-adr-0001.md",
       "parent": 1,
-      "sha256": "32e70a09def6b3f3"
+      "sha256": "396cfa914ed1c84b"
     },
     {
       "key": "ADR-0001",
@@ -39,7 +39,7 @@
       "title": "ADR-0001: Run the IMPL loop worker as its own repository",
       "source": "docs/adr/0007-tempy-adr-0001.md",
       "parent": 1,
-      "sha256": "60f376d3a491c8af"
+      "sha256": "1e48cd8d1d3c519e"
     },
     {
       "key": "ADR-0002",
@@ -47,7 +47,7 @@
       "title": "ADR-0002: Use OPA (embedded) for scope policy evaluation",
       "source": "docs/adr/0002-booty-adr-0002.md",
       "parent": 1,
-      "sha256": "f44a37658f11a991"
+      "sha256": "0e20671fc821515e"
     },
     {
       "key": "ADR-0002",
@@ -55,7 +55,7 @@
       "title": "ADR-0002: docz is an API package whose first consumer is the CLI",
       "source": "docs/adr/0005-docz-adr-0002.md",
       "parent": 1,
-      "sha256": "dc068c86f4b8e319"
+      "sha256": "43e49add5259af73"
     },
     {
       "key": "ADR-0002",
@@ -63,7 +63,7 @@
       "title": "ADR-0002: Loop control belongs to the workflow, not the prompt",
       "source": "docs/adr/0008-tempy-adr-0002.md",
       "parent": 1,
-      "sha256": "b8300f52abbae5be"
+      "sha256": "36130b8984b1589b"
     },
     {
       "key": "ADR-0003",
@@ -71,7 +71,7 @@
       "title": "ADR-0003: Develop SDK, harness, and ADK layers in one repo; defer repo split",
       "source": "docs/adr/0003-booty-adr-0003.md",
       "parent": 1,
-      "sha256": "9f9429009a545616"
+      "sha256": "6e8c53f45618c2ae"
     },
     {
       "key": "ADR-0003",
@@ -79,7 +79,7 @@
       "title": "ADR-0003: Remove plan from the built-in document types",
       "source": "docs/adr/0006-docz-adr-0003.md",
       "parent": 1,
-      "sha256": "be7398a83cf4652f"
+      "sha256": "e48902dbe5c3c86a"
     },
     {
       "key": "docz:type:investigation",
@@ -87,7 +87,7 @@
       "source": "docs/investigation/README.md",
       "override": "Investigations",
       "parent": 0,
-      "sha256": "070bad83551462e6"
+      "sha256": "5e597bd8a198ad89"
     },
     {
       "key": "INV-0001",
@@ -95,7 +95,7 @@
       "title": "INV-0001: Wiki Init Template and Init Enabled Fix",
       "source": "docs/investigation/0001-docz-inv-0001.md",
       "parent": 10,
-      "sha256": "f4d88c17416ed585"
+      "sha256": "c51c052fc085d9dc"
     },
     {
       "key": "INV-0002",
@@ -103,7 +103,7 @@
       "title": "INV-0002: Architectural Review and Cleanup Opportunities",
       "source": "docs/investigation/0002-docz-inv-0002.md",
       "parent": 10,
-      "sha256": "5a02c976c1cda15a"
+      "sha256": "b9e62586f6e1b6ee"
     },
     {
       "key": "INV-0003",
@@ -111,7 +111,7 @@
       "title": "INV-0003: Init and Update Should Respect Config-Listed Types Only",
       "source": "docs/investigation/0003-docz-inv-0003.md",
       "parent": 10,
-      "sha256": "f4cd7afaf258fbe1"
+      "sha256": "a102f6ff59ce6990"
     },
     {
       "key": "INV-0004",
@@ -119,7 +119,7 @@
       "title": "INV-0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity",
       "source": "docs/investigation/0004-docz-inv-0004.md",
       "parent": 10,
-      "sha256": "6f99eed024e5eed9"
+      "sha256": "8fa7ae86056a4805"
     },
     {
       "key": "INV-0005",
@@ -127,7 +127,7 @@
       "title": "INV-0005: docz-api and docz-site: centralized cross-repo docz registry and viewer",
       "source": "docs/investigation/0005-docz-inv-0005.md",
       "parent": 10,
-      "sha256": "87e8a86d04fa025f"
+      "sha256": "f1c5fba28782c7ff"
     },
     {
       "key": "INV-0006",
@@ -135,7 +135,7 @@
       "title": "INV-0006: Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh",
       "source": "docs/investigation/0006-docz-inv-0006.md",
       "parent": 10,
-      "sha256": "366258e6b5eb1a3a"
+      "sha256": "0eb7ec90c3b1d770"
     },
     {
       "key": "INV-0007",
@@ -143,7 +143,7 @@
       "title": "INV-0007: docz internals required for the api additional_docs block",
       "source": "docs/investigation/0007-docz-inv-0007.md",
       "parent": 10,
-      "sha256": "bbc855be48408fe7"
+      "sha256": "47125e52e04e0bee"
     },
     {
       "key": "INV-0008",
@@ -151,7 +151,7 @@
       "title": "INV-0008: Last Updated frontmatter field: scope, git semantics, and effort",
       "source": "docs/investigation/0008-docz-inv-0008.md",
       "parent": 10,
-      "sha256": "a3e7f539848a1aaf"
+      "sha256": "92ee167a4f5687a8"
     },
     {
       "key": "INV-0009",
@@ -159,7 +159,7 @@
       "title": "INV-0009: ToC regeneration in docz update and markdownlint MD051",
       "source": "docs/investigation/0009-docz-inv-0009.md",
       "parent": 10,
-      "sha256": "634926b5c5df8342"
+      "sha256": "64c2dcdce755673e"
     },
     {
       "key": "INV-0010",
@@ -167,7 +167,7 @@
       "title": "INV-0010: IMPL plan parse and write-back API for doczcore (issue 100)",
       "source": "docs/investigation/0010-docz-inv-0010.md",
       "parent": 10,
-      "sha256": "8c25a9e59948d40b"
+      "sha256": "1c4507d8dd0b68be"
     },
     {
       "key": "INV-0011",

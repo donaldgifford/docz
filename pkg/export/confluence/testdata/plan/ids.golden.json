@@ -15,7 +15,7 @@
       "source": "docs/rfc/README.md",
       "override": "RFCs",
       "parent": 0,
-      "sha256": "669aa98a96491206"
+      "sha256": "f67fad251972b659"
     },
     {
       "key": "RFC-0002",
@@ -23,7 +23,7 @@
       "title": "RFC-0002: AWS Access Triage Slack Bot",
       "source": "docs/rfc/0002-booty-rfc-0002.md",
       "parent": 1,
-      "sha256": "6d8fb41cfa501113"
+      "sha256": "2e1dc33b2b0818c9"
     },
     {
       "key": "docz:type:design",
@@ -31,7 +31,7 @@
       "source": "docs/design/README.md",
       "override": "Design",
       "parent": 0,
-      "sha256": "6d5288fe47788a7c"
+      "sha256": "5fca35bb7fa3432c"
     },
     {
       "key": "DESIGN-0014",
@@ -39,7 +39,7 @@
       "title": "DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap",
       "source": "docs/design/0005-docz-design-0014.md",
       "parent": 3,
-      "sha256": "0647883b53da5269"
+      "sha256": "e9f7be7ed79f778f"
     }
   ],
   "keys": [

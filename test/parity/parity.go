@@ -143,6 +143,15 @@ type lintRewrite struct {
 // issuePhaseSlug is the fix behind each of the IMPL template's phase lines.
 const issuePhaseSlug = "#127: the IMPL template's phase placeholder is a comment, and GitHub's slug drops it"
 
+// issueLineLength is the fix behind the lines that switch MD013 off around
+// the ToC list and the README index table, which v1.2.2 never wrote.
+const issueLineLength = "#127: docz regenerates the ToC and index lines, so it switches MD013 off around them"
+
+// issueStaleFixtureToC is the fix behind each dry-run line reporting a
+// fixture document's ToC stale: the fixtures carry v1.2.2 ToCs, which lack
+// the MD013 lines and, in the impl fixtures, carry the old phase slugs.
+const issueStaleFixtureToC = "#127: a fixture's v1.2.2 ToC lacks the MD013 lines, so a v2 dry run reports it stale"
+
 // lintRewrites is every v2 line the lint fixes changed. Nothing here is a
 // pattern: a line the fixes changed that is not listed is a regression.
 var lintRewrites = []lintRewrite{
@@ -155,6 +164,14 @@ var lintRewrites = []lintRewrite{
 		Issue: "#127: the IMPL and runbook templates repeat headings per phase or procedure (MD024)",
 		V2:    []string{"<!-- markdownlint-disable-file MD024 MD025 MD041 -->"},
 		V1:    []string{"<!-- markdownlint-disable-file MD025 MD041 -->"},
+	},
+	{
+		Issue: issueLineLength,
+		V2:    []string{"<!-- markdownlint-capture -->", "<!-- markdownlint-disable MD013 -->"},
+	},
+	{
+		Issue: issueLineLength,
+		V2:    []string{"<!-- markdownlint-restore -->"},
 	},
 	{
 		Issue: issuePhaseSlug,
@@ -172,9 +189,66 @@ var lintRewrites = []lintRewrite{
 		V1:    []string{"  - [Phase 3: <!-- Polish / Edge Cases / CI Readiness -->](#phase-3----polish--edge-cases--ci-readiness)"},
 	},
 	{
-		Issue: "#127: the impl fixture's ToC carries the v1.2.2 phase slugs, so a v2 dry run reports it stale",
+		Issue: issueStaleFixtureToC,
 		V2:    []string{"Would update ToC in $ROOT/docs/impl/0001-phase-out-the-legacy-scanner.md (18 headings)"},
 	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0001-keep-frameworks-in-a-register.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0001-use-postgresql-for-the-registry-store.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/design/0001-token-refresh-flow.md (12 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/frameworks/0001-adopt-the-internal-auth-framework.md (4 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/impl/0002-registry-store-migration.md (18 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/investigation/0001-evaluate-message-queue-options.md (11 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0001-consolidate-the-release-pipeline.md (8 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0001-switch-the-ingest-queue-to-nats.md (8 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0001-drop-the-plan-doc-type.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0002-vendor-the-markdown-walker.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/design/0002-wiki-nav-generation.md (14 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/frameworks/0002-retire-the-legacy-job-runner.md (4 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/investigation/0002-why-the-nightly-rebuild-flakes.md (12 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (8 headings)"},
+	},
+	// END lintRewrites
 }
 
 // LintNormalizer rewrites each lintRewrites entry from its v2 form back to

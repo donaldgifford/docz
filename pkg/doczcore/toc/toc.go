@@ -18,6 +18,17 @@ const (
 	EndMarker   = "<!--toc:end-->"
 )
 
+// lineLengthOff and lineLengthRestore wrap the generated list so that
+// markdownlint's MD013 does not report a long heading's entry, which no
+// one can fix by hand: the next docz update writes it back (#127).
+// Capture and restore return the rule to whatever state the repository's
+// config gave it, where "markdownlint-enable" would switch on a rule the
+// repository turned off.
+const (
+	lineLengthOff     = "<!-- markdownlint-capture -->\n<!-- markdownlint-disable MD013 -->\n"
+	lineLengthRestore = "<!-- markdownlint-restore -->\n"
+)
+
 // parseHeadings walks the headings that belong in a document's ToC:
 // everything after the ToC region ends (so the ToC itself and the
 // preamble above it are excluded), or the whole document when there is no
@@ -63,8 +74,9 @@ func linesFrom(content []byte, line int) []byte {
 
 // GenerateToC builds a markdown table of contents from headings. It uses
 // relative indentation based on the shallowest heading level found, with
-// 2-space indent per level. Returns an empty string if the number of headings
-// is below minHeadings.
+// 2-space indent per level, and is wrapped in markdownlint capture, disable
+// MD013, and restore lines (see lineLengthOff). Returns an empty string if
+// the number of headings is below minHeadings.
 func GenerateToC(headings []docparse.Heading, minHeadings int) string {
 	// The explicit empty check matters when minHeadings <= 0: the
 	// threshold guard alone would fall through to headings[0] below.
@@ -81,6 +93,7 @@ func GenerateToC(headings []docparse.Heading, minHeadings int) string {
 	}
 
 	var sb strings.Builder
+	sb.WriteString(lineLengthOff)
 	for _, h := range headings {
 		indent := strings.Repeat("  ", h.Level-minLevel)
 		sb.WriteString(indent)
@@ -90,6 +103,7 @@ func GenerateToC(headings []docparse.Heading, minHeadings int) string {
 		sb.WriteString(h.Slug)
 		sb.WriteString(")\n")
 	}
+	sb.WriteString(lineLengthRestore)
 
 	return sb.String()
 }

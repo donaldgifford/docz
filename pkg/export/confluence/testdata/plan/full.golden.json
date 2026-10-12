@@ -15,7 +15,7 @@
       "source": "docs/rfc/README.md",
       "override": "RFCs",
       "parent": 0,
-      "sha256": "669aa98a96491206"
+      "sha256": "f67fad251972b659"
     },
     {
       "key": "RFC-0001",
@@ -23,7 +23,7 @@
       "title": "RFC-0001: Agent Dev Kit on the Agentic Go Framework",
       "source": "docs/rfc/0001-booty-rfc-0001.md",
       "parent": 1,
-      "sha256": "b1fa7edc48fff4db"
+      "sha256": "73c41919dae5d501"
     },
     {
       "key": "RFC-0001",
@@ -31,7 +31,7 @@
       "title": "RFC-0001: A placeholder title",
       "source": "docs/rfc/0004-template-rendered.md",
       "parent": 1,
-      "sha256": "0e61d494aa2399a3"
+      "sha256": "7a3f769adf9e9ea6"
     },
     {
       "key": "RFC-0002",
@@ -39,7 +39,7 @@
       "title": "RFC-0002: AWS Access Triage Slack Bot",
       "source": "docs/rfc/0002-booty-rfc-0002.md",
       "parent": 1,
-      "sha256": "6d8fb41cfa501113"
+      "sha256": "2e1dc33b2b0818c9"
     },
     {
       "key": "RFC-0003",
@@ -47,7 +47,7 @@
       "title": "RFC-0003: Agent Capability Tokens",
       "source": "docs/rfc/0003-booty-rfc-0003.md",
       "parent": 1,
-      "sha256": "82ba31c93b831822"
+      "sha256": "3f4a7c20af496a10"
     },
     {
       "key": "docz:type:adr",
@@ -55,7 +55,7 @@
       "source": "docs/adr/README.md",
       "override": "ADRs",
       "parent": 0,
-      "sha256": "1377e614f738b6fc"
+      "sha256": "e26b9e3c26aa5db6"
     },
     {
       "key": "ADR-0001",
@@ -63,7 +63,7 @@
       "title": "ADR-0001: Use JWT for v1 agent capability tokens; defer SPIFFE to v2",
       "source": "docs/adr/0001-booty-adr-0001.md",
       "parent": 6,
-      "sha256": "1741e143aaa0e024"
+      "sha256": "b1d1dbaf8a6e238b"
     },
     {
       "key": "ADR-0001",
@@ -71,7 +71,7 @@
       "title": "ADR-0001: pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)",
       "source": "docs/adr/0004-docz-adr-0001.md",
       "parent": 6,
-      "sha256": "32e70a09def6b3f3"
+      "sha256": "396cfa914ed1c84b"
     },
     {
       "key": "ADR-0001",
@@ -79,7 +79,7 @@
       "title": "ADR-0001: Run the IMPL loop worker as its own repository",
       "source": "docs/adr/0007-tempy-adr-0001.md",
       "parent": 6,
-      "sha256": "60f376d3a491c8af"
+      "sha256": "1e48cd8d1d3c519e"
     },
     {
       "key": "ADR-0002",
@@ -87,7 +87,7 @@
       "title": "ADR-0002: Use OPA (embedded) for scope policy evaluation",
       "source": "docs/adr/0002-booty-adr-0002.md",
       "parent": 6,
-      "sha256": "f44a37658f11a991"
+      "sha256": "0e20671fc821515e"
     },
     {
       "key": "ADR-0002",
@@ -95,7 +95,7 @@
       "title": "ADR-0002: docz is an API package whose first consumer is the CLI",
       "source": "docs/adr/0005-docz-adr-0002.md",
       "parent": 6,
-      "sha256": "dc068c86f4b8e319"
+      "sha256": "43e49add5259af73"
     },
     {
       "key": "ADR-0002",
@@ -103,7 +103,7 @@
       "title": "ADR-0002: Loop control belongs to the workflow, not the prompt",
       "source": "docs/adr/0008-tempy-adr-0002.md",
       "parent": 6,
-      "sha256": "b8300f52abbae5be"
+      "sha256": "36130b8984b1589b"
     },
     {
       "key": "ADR-0003",
@@ -111,7 +111,7 @@
       "title": "ADR-0003: Develop SDK, harness, and ADK layers in one repo; defer repo split",
       "source": "docs/adr/0003-booty-adr-0003.md",
       "parent": 6,
-      "sha256": "9f9429009a545616"
+      "sha256": "6e8c53f45618c2ae"
     },
     {
       "key": "ADR-0003",
@@ -119,7 +119,7 @@
       "title": "ADR-0003: Remove plan from the built-in document types",
       "source": "docs/adr/0006-docz-adr-0003.md",
       "parent": 6,
-      "sha256": "be7398a83cf4652f"
+      "sha256": "e48902dbe5c3c86a"
     },
     {
       "key": "docz:type:design",
@@ -127,7 +127,7 @@
       "source": "docs/design/README.md",
       "override": "Design",
       "parent": 0,
-      "sha256": "6d5288fe47788a7c"
+      "sha256": "5fca35bb7fa3432c"
     },
     {
       "key": "DESIGN-0001",
@@ -135,7 +135,7 @@
       "title": "DESIGN-0001: docz-api cross-repo docz registry and ingestion service",
       "source": "docs/design/0001-api-design-0001.md",
       "parent": 15,
-      "sha256": "2e4bf207df5b002f"
+      "sha256": "d2f6a26d7b7e5c53"
     },
     {
       "key": "DESIGN-0002",
@@ -143,7 +143,7 @@
       "title": "DESIGN-0002: Wiki Command for MkDocs TechDocs Integration",
       "source": "docs/design/0002-docz-design-0002.md",
       "parent": 15,
-      "sha256": "46c94f9c8463b3c4"
+      "sha256": "76f820d9d577ec5c"
     },
     {
       "key": "DESIGN-0004",
@@ -151,7 +151,7 @@
       "title": "DESIGN-0004: Runner Pattern and DocType Registry",
       "source": "docs/design/0003-docz-design-0004.md",
       "parent": 15,
-      "sha256": "459375c5d7daec84"
+      "sha256": "006bcc6ccf961b13"
     },
     {
       "key": "DESIGN-0009",
@@ -159,7 +159,7 @@
       "title": "DESIGN-0009: docz-site: cross-repo docz viewer and search UI",
       "source": "docs/design/0004-docz-design-0009.md",
       "parent": 15,
-      "sha256": "5a5e5ef41e4299a3"
+      "sha256": "e1b35d2ca4fc5d21"
     },
     {
       "key": "DESIGN-0014",
@@ -167,7 +167,7 @@
       "title": "DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap",
       "source": "docs/design/0005-docz-design-0014.md",
       "parent": 15,
-      "sha256": "0647883b53da5269"
+      "sha256": "e9f7be7ed79f778f"
     },
     {
       "key": "docz:type:impl",
@@ -175,7 +175,7 @@
       "source": "docs/impl/README.md",
       "override": "Implementation Plans",
       "parent": 0,
-      "sha256": "097d718d932c62d8"
+      "sha256": "7a84d0a0f07b3dff"
     },
     {
       "key": "IMPL-0001",
@@ -183,7 +183,7 @@
       "title": "IMPL-0001: docz CLI Implementation",
       "source": "docs/impl/0005-docz-impl-0001.md",
       "parent": 21,
-      "sha256": "b9c31f7573b59e8b"
+      "sha256": "c7593ba15d0cb216"
     },
     {
       "key": "IMPL-0004",
@@ -191,7 +191,7 @@
       "title": "IMPL-0004: Adapt the helm chart, CI, and observability scaffolding",
       "source": "docs/impl/0001-api-impl-0004.md",
       "parent": 21,
-      "sha256": "fda4a93736bd6c3c"
+      "sha256": "15f23441e91afcc9"
     },
     {
       "key": "IMPL-0006",
@@ -199,7 +199,7 @@
       "title": "IMPL-0006: Error observability: log every failure, self-heal the queue, optional no-auth mode",
       "source": "docs/impl/0002-api-impl-0006.md",
       "parent": 21,
-      "sha256": "6486645a4c856d45"
+      "sha256": "a3247198f60d58b0"
     },
     {
       "key": "IMPL-0007",
@@ -207,7 +207,7 @@
       "title": "IMPL-0007: Eliminate Redundant File Reads and Heading Parses",
       "source": "docs/impl/0006-docz-impl-0007.md",
       "parent": 21,
-      "sha256": "f7c6df910a94909b"
+      "sha256": "0989c6bc7a1d9492"
     },
     {
       "key": "IMPL-0009",
@@ -215,7 +215,7 @@
       "title": "IMPL-0009: Runner Pattern and DocType Registry Refactor",
       "source": "docs/impl/0007-docz-impl-0009.md",
       "parent": 21,
-      "sha256": "466e0182704f9b33"
+      "sha256": "d68a96b38dde0344"
     },
     {
       "key": "IMPL-0017",
@@ -223,7 +223,7 @@
       "title": "IMPL-0017: v1.3.0 — updated frontmatter field and the docz update stamp pass",
       "source": "docs/impl/0008-docz-impl-0017.md",
       "parent": 21,
-      "sha256": "f20613f54b8aba14"
+      "sha256": "458b87509164463c"
     },
     {
       "key": "IMPL-8001",
@@ -263,7 +263,7 @@
       "source": "docs/investigation/README.md",
       "override": "Investigations",
       "parent": 0,
-      "sha256": "070bad83551462e6"
+      "sha256": "5e597bd8a198ad89"
     },
     {
       "key": "INV-0001",
@@ -271,7 +271,7 @@
       "title": "INV-0001: Wiki Init Template and Init Enabled Fix",
       "source": "docs/investigation/0001-docz-inv-0001.md",
       "parent": 32,
-      "sha256": "f4d88c17416ed585"
+      "sha256": "c51c052fc085d9dc"
     },
     {
       "key": "INV-0002",
@@ -279,7 +279,7 @@
       "title": "INV-0002: Architectural Review and Cleanup Opportunities",
       "source": "docs/investigation/0002-docz-inv-0002.md",
       "parent": 32,
-      "sha256": "5a02c976c1cda15a"
+      "sha256": "b9e62586f6e1b6ee"
     },
     {
       "key": "INV-0003",
@@ -287,7 +287,7 @@
       "title": "INV-0003: Init and Update Should Respect Config-Listed Types Only",
       "source": "docs/investigation/0003-docz-inv-0003.md",
       "parent": 32,
-      "sha256": "f4cd7afaf258fbe1"
+      "sha256": "a102f6ff59ce6990"
     },
     {
       "key": "INV-0004",
@@ -295,7 +295,7 @@
       "title": "INV-0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity",
       "source": "docs/investigation/0004-docz-inv-0004.md",
       "parent": 32,
-      "sha256": "6f99eed024e5eed9"
+      "sha256": "8fa7ae86056a4805"
     },
     {
       "key": "INV-0005",
@@ -303,7 +303,7 @@
       "title": "INV-0005: docz-api and docz-site: centralized cross-repo docz registry and viewer",
       "source": "docs/investigation/0005-docz-inv-0005.md",
       "parent": 32,
-      "sha256": "87e8a86d04fa025f"
+      "sha256": "f1c5fba28782c7ff"
     },
     {
       "key": "INV-0006",
@@ -311,7 +311,7 @@
       "title": "INV-0006: Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh",
       "source": "docs/investigation/0006-docz-inv-0006.md",
       "parent": 32,
-      "sha256": "366258e6b5eb1a3a"
+      "sha256": "0eb7ec90c3b1d770"
     },
     {
       "key": "INV-0007",
@@ -319,7 +319,7 @@
       "title": "INV-0007: docz internals required for the api additional_docs block",
       "source": "docs/investigation/0007-docz-inv-0007.md",
       "parent": 32,
-      "sha256": "bbc855be48408fe7"
+      "sha256": "47125e52e04e0bee"
     },
     {
       "key": "INV-0008",
@@ -327,7 +327,7 @@
       "title": "INV-0008: Last Updated frontmatter field: scope, git semantics, and effort",
       "source": "docs/investigation/0008-docz-inv-0008.md",
       "parent": 32,
-      "sha256": "a3e7f539848a1aaf"
+      "sha256": "92ee167a4f5687a8"
     },
     {
       "key": "INV-0009",
@@ -335,7 +335,7 @@
       "title": "INV-0009: ToC regeneration in docz update and markdownlint MD051",
       "source": "docs/investigation/0009-docz-inv-0009.md",
       "parent": 32,
-      "sha256": "634926b5c5df8342"
+      "sha256": "64c2dcdce755673e"
     },
     {
       "key": "INV-0010",
@@ -343,7 +343,7 @@
       "title": "INV-0010: IMPL plan parse and write-back API for doczcore (issue 100)",
       "source": "docs/investigation/0010-docz-inv-0010.md",
       "parent": 32,
-      "sha256": "8c25a9e59948d40b"
+      "sha256": "1c4507d8dd0b68be"
     },
     {
       "key": "INV-0011",
@@ -359,7 +359,7 @@
       "source": "docs/runbook/README.md",
       "override": "Runbooks",
       "parent": 0,
-      "sha256": "853a9573f3e9751f"
+      "sha256": "c50ea1accfb50e69"
     },
     {
       "key": "RUNBOOK-0001",
@@ -367,7 +367,7 @@
       "title": "RUNBOOK-0001: Cut a v2 beta release",
       "source": "docs/runbook/0002-runbook-0001.md",
       "parent": 44,
-      "sha256": "b418c6a2db637770"
+      "sha256": "11c6cd4c79ffbbc0"
     },
     {
       "key": "RUNBOOK-0002",
@@ -375,7 +375,7 @@
       "title": "RUNBOOK-0002: docz-api webhook deliveries fail",
       "source": "docs/runbook/0003-runbook-0002.md",
       "parent": 44,
-      "sha256": "acf60d06e931c020"
+      "sha256": "835971003549c8da"
     },
     {
       "key": "RUNBOOK-0003",

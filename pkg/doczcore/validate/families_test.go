@@ -363,7 +363,7 @@ func TestDocument_CodeFamilies(t *testing.T) {
 		{
 			name: "toc: a fresh list passes",
 			body: goodFrontmatter +
-				"<!--toc:start-->\n- [Alpha](#alpha)\n- [Beta](#beta)\n<!--toc:end-->\n\n" +
+				"<!--toc:start-->\n<!-- markdownlint-capture -->\n<!-- markdownlint-disable MD013 -->\n- [Alpha](#alpha)\n- [Beta](#beta)\n<!-- markdownlint-restore -->\n<!--toc:end-->\n\n" +
 				"## Alpha\n\n## Beta\n",
 			opts: validate.Options{MinHeadings: 1},
 		},
@@ -375,7 +375,7 @@ func TestDocument_CodeFamilies(t *testing.T) {
 			// to vanish and this reported toc.missing on a good document.
 			name: "toc: an inferred document keeps its real ToC pair",
 			body: goodFrontmatter +
-				"<!--toc:start-->\n- [Summary](#summary)\n<!--toc:end-->\n\n" +
+				"<!--toc:start-->\n<!-- markdownlint-capture -->\n<!-- markdownlint-disable MD013 -->\n- [Summary](#summary)\n<!-- markdownlint-restore -->\n<!--toc:end-->\n\n" +
 				"## Summary\n\ntext\n",
 			opts: validate.Options{
 				Schema: schemaOf("toc", "summary"),
