@@ -765,7 +765,10 @@ Findings come from three tiers, all printed in one format:
   `inv.conclusion.no-answer`).
 
 Every finding prints as `path:line code detail`. The **code is the stable
-part** — filter on it in CI; the wording after it may change.
+part** — filter on it in CI; the wording after it may change. In
+`--format json` output, index drift is the separate `index` array and is
+counted in neither `errors` nor `warnings`, so a gate on the JSON checks all
+three.
 
 ```bash
 docz validate                  # every enabled type

@@ -418,7 +418,7 @@ After this phase `docz init` alone leaves a repository that
 - [x] Test: `Init` followed by `Validate` gives no `index.drift`. `Init`
   followed by `Update` writes nothing. `index.Scaffold` on a header that
   ends in a pair still yields one pair
-- [ ] `--format json` (question 8): drift stays in the separate `index`
+- [x] `--format json` (question 8): drift stays in the separate `index`
   array, and `docz validate --help` and the README say so in one sentence
 - [ ] Parity: an empty-table collapse, applied to both sides after the
   `lint` normaliser, so an index region holding only a heading and a header

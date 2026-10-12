@@ -73,7 +73,9 @@ that is not what 'docz update' would write.
 With no type argument every enabled type is checked.
 
 Findings print one per line as 'path:line code detail'. The code is the
-stable part: the wording after it may change, the code will not.
+stable part: the wording after it may change, the code will not. With
+--format json, index drift is the separate "index" array and is counted in
+neither "errors" nor "warnings", so a CI gate on the JSON checks all three.
 
 With --fix, documents whose regions were read by inference get those regions
 marked, and markers docz read leniently are rewritten in the canonical
