@@ -143,6 +143,10 @@ type lintRewrite struct {
 // issuePhaseSlug is the fix behind each of the IMPL template's phase lines.
 const issuePhaseSlug = "#127: the IMPL template's phase placeholder is a comment, and GitHub's slug drops it"
 
+// issueTemplateLine is the fix behind each template line wrapped to fit
+// MD013's default of 80 characters.
+const issueTemplateLine = "#127: a template line over 80 characters is wrapped (MD013)"
+
 // issueLineLength is the fix behind the lines that switch MD013 off around
 // the ToC list and the README index table, which v1.2.2 never wrote.
 const issueLineLength = "#127: docz regenerates the ToC and index lines, so it switches MD013 off around them"
@@ -164,6 +168,33 @@ var lintRewrites = []lintRewrite{
 		Issue: "#127: the IMPL and runbook templates repeat headings per phase or procedure (MD024)",
 		V2:    []string{"<!-- markdownlint-disable-file MD024 MD025 MD041 -->"},
 		V1:    []string{"<!-- markdownlint-disable-file MD025 MD041 -->"},
+	},
+	{
+		Issue: issueTemplateLine,
+		V2: []string{
+			"<!-- What problem does this RFC address? Include supporting data, evidence",
+			"     and impact. -->",
+		},
+		V1: []string{"<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->"},
+	},
+	{
+		Issue: issueTemplateLine,
+		V2: []string{
+			"**Notes:** <!-- one or two sentences: what was run, and anything that",
+			"     differed -->",
+		},
+		V1: []string{"**Notes:** <!-- one or two sentences: what was run, and anything that differed -->"},
+	},
+	{
+		Issue: issueTemplateLine,
+		V2: []string{
+			"Implementation plans describe **the concrete steps to build a feature or",
+			"system**. Each plan includes:",
+		},
+		V1: []string{
+			"Implementation plans describe **the concrete steps to build a feature or system**.",
+			"Each plan includes:",
+		},
 	},
 	{
 		Issue: issueLineLength,

@@ -23,7 +23,8 @@ created: {{ .Date }}
 <!--docz:problem:start-->
 ## Problem Statement
 
-<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->
+<!-- What problem does this RFC address? Include supporting data, evidence
+     and impact. -->
 
 ### Supporting Data
 

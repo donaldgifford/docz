@@ -293,7 +293,7 @@ against 0.23.3:
   `toc.GenerateToC` wraps the ToC list the same way. Both are inside
   docz's own markers, so a re-render rewrites them, and `toc.stale` and
   `index.drift` compare against the same bytes
-- [ ] Wrap the three embedded template lines over 80 characters:
+- [x] Wrap the three embedded template lines over 80 characters:
   `rfc.md:26`, `runbook.md:26`, and `index_impl.md:7`. Add a test in
   `doctemplate` that fails on any embedded template line over 80 characters
   outside a table or a fence
