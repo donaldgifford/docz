@@ -152,6 +152,11 @@ var lintRewrites = []lintRewrite{
 		V1:    []string{"|----|-------|--------|------|--------|------|"},
 	},
 	{
+		Issue: "#127: the IMPL and runbook templates repeat headings per phase or procedure (MD024)",
+		V2:    []string{"<!-- markdownlint-disable-file MD024 MD025 MD041 -->"},
+		V1:    []string{"<!-- markdownlint-disable-file MD025 MD041 -->"},
+	},
+	{
 		Issue: issuePhaseSlug,
 		V2:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1-)"},
 		V1:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1----foundation--setup--core)"},

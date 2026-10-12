@@ -6,7 +6,7 @@ author: {{ .Author }}
 created: {{ .Date }}
 ---
 
-<!-- markdownlint-disable-file MD025 MD041 -->
+<!-- markdownlint-disable-file MD024 MD025 MD041 -->
 
 # {{ .Prefix }}-{{ .Number }}: {{ .Title }}
 

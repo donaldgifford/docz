@@ -6,7 +6,7 @@ author: Test Author
 created: 2026-02-22
 ---
 
-<!-- markdownlint-disable-file MD025 MD041 -->
+<!-- markdownlint-disable-file MD024 MD025 MD041 -->
 
 # IMPL-0001: Test Document
 

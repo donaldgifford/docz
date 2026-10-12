@@ -276,7 +276,7 @@ against 0.23.3:
 - [x] `index.GenerateTable`: the separator row becomes
   `| --- | --- | --- | --- | --- | --- |`, which MD060 accepts under padded
   rows. Update the `index` goldens
-- [ ] MD024 (question 2): add `MD024` to the existing
+- [x] MD024 (question 2): add `MD024` to the existing
   `markdownlint-disable-file` line in `impl.md` and `runbook.md`. Update
   each template's `templates/schema/` skeleton too if the derivation test
   says it must change
