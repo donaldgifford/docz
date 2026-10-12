@@ -225,10 +225,9 @@ lint-generated: build
     mv "$work/docz.yaml" .docz.yaml
     # Titles long enough that every index row and ToC entry passes 80
     # characters, short enough that the H1 does not (IMPL-0025 question 3).
-    for t in rfc adr design impl investigation runbook; do
+    for t in rfc adr design impl investigation runbook frameworks; do
         run create "$t" "A sample $t document for the markdownlint gate"
     done
-    # frameworks has no template until #92 lands (IMPL-0025 Phase 5).
     # docparse's anchors.md, filed as an RFC with a ToC region, so the ToC
     # docz writes for every slug case is what MD051 checks.
     {
