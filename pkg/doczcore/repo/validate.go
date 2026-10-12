@@ -549,6 +549,12 @@ func (v *validateRun) schemaFor(name string, tc *typeContext) (validate.Schema, 
 		return hit.schema, nil
 	}
 
+	if name == tc.name && tc.generic {
+		// A type on the generic template is held to the generic skeleton,
+		// the pair `docz template override` would scaffold for it (#92).
+		return v.genericSchema()
+	}
+
 	if name == tc.name && tc.tmplErr == nil {
 		// A custom type that has not scaffolded a schema: its template's own
 		// markers are its contract until it does (DESIGN-0015 §3, tier 3).
@@ -556,6 +562,29 @@ func (v *validateRun) schemaFor(name string, tc *typeContext) (validate.Schema, 
 	}
 
 	return validate.Schema{}, hit.err
+}
+
+// genericSchema is the embedded default skeleton, cached under a key no
+// schema name can take, since the name grammar forbids a leading space.
+//
+// Embedded rather than resolved by name: a repository's own
+// templates/schema/default.md is a skeleton for documents that name it, not
+// a replacement for the generic template's contract.
+func (v *validateRun) genericSchema() (validate.Schema, error) {
+	const key = " generic"
+
+	hit, ok := v.schemas[key]
+	if !ok {
+		skeleton, err := doctemplate.EmbeddedSchema(doctemplate.DefaultTemplateName)
+		hit = cachedSchema{err: err}
+		if err == nil {
+			hit.schema = validate.SchemaFromMarkers(skeleton)
+		}
+
+		v.schemas[key] = hit
+	}
+
+	return hit.schema, hit.err
 }
 
 // resolveByName is the file-then-embedded half of schema resolution — the half

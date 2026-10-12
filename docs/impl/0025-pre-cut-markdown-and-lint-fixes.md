@@ -460,7 +460,7 @@ on stderr points at `docz template override` when that happens.
   `repo.Validate`'s template tier. `repo.ExportTemplate` keeps calling
   `Resolve`, so `docz template override` still scaffolds the generic pair
   with `Scaffolded: true`
-- [ ] `repo.Validate`: a type on the generic fallback validates against the
+- [x] `repo.Validate`: a type on the generic fallback validates against the
   embedded `default` schema. It no longer reports `template.unresolved` or
   `schema.unresolved`
 - [ ] `repo.CreateResult` gains `GenericTemplate bool`. `docz create` prints

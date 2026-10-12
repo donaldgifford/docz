@@ -762,6 +762,45 @@ func TestValidate_TemplateThatResolvesNowhere(t *testing.T) {
 	}
 }
 
+// TestValidate_GenericFallbackType is issue #92 from the validator's side: a
+// custom type with no template creates from the generic one, and the document
+// that produces validates clean against the embedded default schema rather
+// than reporting a template or schema nobody wrote.
+func TestValidate_GenericFallbackType(t *testing.T) {
+	t.Parallel()
+
+	r := vtestRepo(t)
+	vtestTypeWithTemplate(t, r, "frameworks", "FW", nil)
+
+	_, err := r.Create(t.Context(), CreateOptions{
+		Type:   "frameworks",
+		Title:  vtestTitle,
+		Author: "Test Author",
+		Update: true,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	report, err := r.Validate(t.Context(), []string{"frameworks"}, ValidateOptions{})
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+
+	for _, entry := range append(report.Templates, report.Docs...) {
+		for _, code := range []string{CodeTemplateUnresolved, CodeSchemaUnresolved} {
+			if vtestHasCode(entry.Findings, code) {
+				t.Errorf("%s reports %s:\n  %s", entry.Path, code, vtestCodes(entry.Findings))
+			}
+		}
+	}
+
+	if report.Errors != 0 || report.Warnings != 0 || len(report.Index) != 0 {
+		t.Errorf("errors %d, warnings %d, index drift %d; want a clean report:\n%+v",
+			report.Errors, report.Warnings, len(report.Index), report)
+	}
+}
+
 // TestValidate_CustomTypeSchemaFromItsTemplate is the third resolution tier of
 // DESIGN-0015 §3: a custom type that has not scaffolded a schema is held to
 // the markers its own template carries, not to nothing.
