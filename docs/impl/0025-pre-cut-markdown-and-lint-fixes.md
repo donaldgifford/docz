@@ -218,12 +218,18 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   and anything that cites them. Confluence's anchor map
   (`render.go`, `out[h.Slug]`) now resolves the links the regenerated ToCs
   carry
-- [ ] Parity: add the `lint` normaliser (question 4) to
+- [x] Parity: add the `lint` normaliser (question 4) to
   `test/parity/parity.go`. It applies to both sides in `runCase` and holds
   an explicit table of v1.2.2 lines and their v2 replacements, each entry
   naming its issue. Phase 1's entries are the three IMPL phase ToC lines
   plus any other slug the replay reports. There are no regex catch-alls, so
-  an unlisted change is still a regression. Unit-test the normaliser
+  an unlisted change is still a regression. Unit-test the normaliser.
+  *Built:* the table maps each v2 line back to its v1.2.2 line, and
+  `LintNormalizer` sits in the per-run `norms` list beside `markers`. A
+  comparison-time normaliser could not work: v2 rewrites the `impl`
+  fixture's stale ToC, so it records as written a file whose v1.2.2
+  golden has only a size and digest. v1.2.2 never writes a v2 line, so
+  the rewrite is still symmetric and no golden is re-captured
 - [ ] `docz update` over this repository's `docs/`. Commit the regenerated
   ToCs separately from the code
 - [ ] CLAUDE.md: update the `docparse` slug and comment rules and the parity

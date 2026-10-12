@@ -128,6 +128,83 @@ func MarkerNormalizer() Normalizer {
 	}
 }
 
+// A lintRewrite is one deliberate v2 change to bytes v1.2.2 also wrote,
+// made so that docz's output passes markdownlint (IMPL-0025). V2 is the
+// run of whole lines the v2 line writes and V1 the run v1.2.2 wrote in its
+// place; an empty V1 is a line v2 added. Issue names the fix, so the table
+// reads as a list of permitted deltas rather than a pattern that might
+// excuse a regression.
+type lintRewrite struct {
+	Issue string
+	V2    []string
+	V1    []string
+}
+
+// issuePhaseSlug is the fix behind each of the IMPL template's phase lines.
+const issuePhaseSlug = "#127: the IMPL template's phase placeholder is a comment, and GitHub's slug drops it"
+
+// lintRewrites is every v2 line the lint fixes changed. Nothing here is a
+// pattern: a line the fixes changed that is not listed is a regression.
+var lintRewrites = []lintRewrite{
+	{
+		Issue: issuePhaseSlug,
+		V2:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1-)"},
+		V1:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1----foundation--setup--core)"},
+	},
+	{
+		Issue: issuePhaseSlug,
+		V2:    []string{"  - [Phase 2: <!-- Core Feature / Primary Commands -->](#phase-2-)"},
+		V1:    []string{"  - [Phase 2: <!-- Core Feature / Primary Commands -->](#phase-2----core-feature--primary-commands)"},
+	},
+	{
+		Issue: issuePhaseSlug,
+		V2:    []string{"  - [Phase 3: <!-- Polish / Edge Cases / CI Readiness -->](#phase-3-)"},
+		V1:    []string{"  - [Phase 3: <!-- Polish / Edge Cases / CI Readiness -->](#phase-3----polish--edge-cases--ci-readiness)"},
+	},
+	{
+		Issue: "#127: the impl fixture's ToC carries the v1.2.2 phase slugs, so a v2 dry run reports it stale",
+		V2:    []string{"Would update ToC in $ROOT/docs/impl/0001-phase-out-the-legacy-scanner.md (18 headings)"},
+	},
+}
+
+// LintNormalizer rewrites each lintRewrites entry from its v2 form back to
+// the v1.2.2 form. It sits in the per-run normaliser list, so it runs over
+// every recorded body before the before/after comparison as well as over
+// stdout and stderr. It has to: a fixture document whose ToC v2 regenerates
+// is a file v2 writes and v1.2.2 left alone, and only normalising the
+// snapshots makes the two trees agree, digests included.
+//
+// It is symmetric by construction. v1.2.2 never writes a V2 line, so on a
+// capture it changes nothing and the goldens need no re-capture.
+func LintNormalizer() Normalizer {
+	return Normalizer{
+		Name:  "lint",
+		Apply: func(s string) string { return applyLintRewrites(s, lintRewrites) },
+	}
+}
+
+// applyLintRewrites replaces each rewrite's V2 run of whole lines with its
+// V1 run.
+func applyLintRewrites(s string, rewrites []lintRewrite) string {
+	padded := "\n" + s + "\n"
+
+	for _, r := range rewrites {
+		from := "\n" + strings.Join(r.V2, "\n") + "\n"
+		to := "\n"
+		if len(r.V1) > 0 {
+			to = "\n" + strings.Join(r.V1, "\n") + "\n"
+		}
+
+		// A match consumes the newline the next adjacent match starts with,
+		// so repeat until nothing is left.
+		for strings.Contains(padded, from) {
+			padded = strings.ReplaceAll(padded, from, to)
+		}
+	}
+
+	return padded[1 : len(padded)-1]
+}
+
 // NormalizeFiles applies norms to every recorded body and recomputes the size
 // and digest from the result.
 //

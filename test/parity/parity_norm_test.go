@@ -704,3 +704,48 @@ func TestSyncNormalizer(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyLintRewrites(t *testing.T) {
+	t.Parallel()
+
+	rewrites := []lintRewrite{
+		{Issue: "one line", V2: []string{"new"}, V1: []string{"old"}},
+		{Issue: "added line", V2: []string{"added"}},
+		{Issue: "wrapped line", V2: []string{"first half", "second half"}, V1: []string{"first half second half"}},
+	}
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "rewrites a whole line", in: "a\nnew\nb", want: "a\nold\nb"},
+		{name: "rewrites adjacent repeats", in: "new\nnew\nnew", want: "old\nold\nold"},
+		{name: "leaves a partial line alone", in: "a new line\nnewer", want: "a new line\nnewer"},
+		{name: "drops an added line", in: "a\nadded\nb\n", want: "a\nb\n"},
+		{name: "joins a wrapped line", in: "x\nfirst half\nsecond half\ny", want: "x\nfirst half second half\ny"},
+		{name: "first and last lines", in: "new\nmid\nadded", want: "old\nmid"},
+		{name: "v1.2.2 output is unchanged", in: "old\nfirst half second half\n", want: "old\nfirst half second half\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := applyLintRewrites(tt.in, rewrites); got != tt.want {
+				t.Errorf("applyLintRewrites(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLintRewritesNameAnIssue keeps the table a list of permitted deltas:
+// every entry says which fix it belongs to.
+func TestLintRewritesNameAnIssue(t *testing.T) {
+	t.Parallel()
+
+	for i, r := range lintRewrites {
+		if !strings.HasPrefix(r.Issue, "#") || len(r.V2) == 0 {
+			t.Errorf("lintRewrites[%d] = %+v: want an issue reference and at least one v2 line", i, r)
+		}
+	}
+}
