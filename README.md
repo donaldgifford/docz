@@ -323,7 +323,14 @@ colliding alias or prefix.
 **Templates.** A custom type uses the same override resolution as the built-ins:
 
 - **Body template** — `docs/templates/<type>.md` (e.g. `docs/templates/frameworks.md`).
-  Without one, creation falls back to the embedded generic document template.
+  Without one, `docz create` and `docz template show` use the embedded generic
+  document template and print a note on stderr:
+  `note: frameworks has no template; used the generic one. Run "docz template
+  override frameworks" to write one.` `docz validate` checks those documents
+  against the generic schema. `docz template override <type>` writes the
+  generic template and its schema (`docs/templates/schema/<type>.md`) for you
+  to edit. A `template:` path in the type's config that names a missing file
+  is still an error.
 - **Index header** — `docs/templates/index_<type>.md` (the prose above the
   auto-generated table in the type's `README.md`). Without one, `docz` generates
   a generic header from the type's `plural_label`.

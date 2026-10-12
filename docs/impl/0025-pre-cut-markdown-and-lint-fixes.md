@@ -475,7 +475,7 @@ on stderr points at `docz template override` when that happens.
   `repo` and in `cmd` (a new test file; `cmd/*_test.go` stays frozen).
   Extend `test/consumer`'s `Create` coverage to a template-less custom type
 - [x] `just lint-generated` stops skipping the template-less type
-- [ ] README § Custom Document Types and CLAUDE.md: the fallback and the
+- [x] README § Custom Document Types and CLAUDE.md: the fallback and the
   note
 
 <!--docz:tasks:end-->
