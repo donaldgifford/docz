@@ -147,6 +147,11 @@ const issuePhaseSlug = "#127: the IMPL template's phase placeholder is a comment
 // pattern: a line the fixes changed that is not listed is a regression.
 var lintRewrites = []lintRewrite{
 	{
+		Issue: "#127: the index delimiter row is padded like its header (MD060)",
+		V2:    []string{"| --- | --- | --- | --- | --- | --- |"},
+		V1:    []string{"|----|-------|--------|------|--------|------|"},
+	},
+	{
 		Issue: issuePhaseSlug,
 		V2:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1-)"},
 		V1:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1----foundation--setup--core)"},

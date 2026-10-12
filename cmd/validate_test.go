@@ -101,7 +101,7 @@ const vtestADRReadme = `# ADRs
 ## All ADRs
 
 | ID | Title | Status | Date | Author | Link |
-|----|-------|--------|------|--------|------|
+| --- | --- | --- | --- | --- | --- |
 | ADR-0001 | A Decision | Proposed | 2026-01-01 | Tester | [0001-a-decision.md](0001-a-decision.md) |
 <!-- END DOCZ AUTO-GENERATED -->
 `

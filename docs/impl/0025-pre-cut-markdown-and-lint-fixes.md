@@ -273,7 +273,7 @@ against 0.23.3:
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `index.GenerateTable`: the separator row becomes
+- [x] `index.GenerateTable`: the separator row becomes
   `| --- | --- | --- | --- | --- | --- |`, which MD060 accepts under padded
   rows. Update the `index` goldens
 - [ ] MD024 (question 2): add `MD024` to the existing

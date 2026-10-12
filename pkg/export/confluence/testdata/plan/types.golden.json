@@ -15,7 +15,7 @@
       "source": "docs/adr/README.md",
       "override": "ADRs",
       "parent": 0,
-      "sha256": "8b353e885e62c33a"
+      "sha256": "1377e614f738b6fc"
     },
     {
       "key": "ADR-0001",
@@ -87,7 +87,7 @@
       "source": "docs/investigation/README.md",
       "override": "Investigations",
       "parent": 0,
-      "sha256": "ad2bf7c3942c06a6"
+      "sha256": "070bad83551462e6"
     },
     {
       "key": "INV-0001",

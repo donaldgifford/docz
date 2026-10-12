@@ -70,12 +70,14 @@ type UpdateOutcome struct {
 }
 
 // GenerateTable produces a markdown table from a list of document entries.
+// The delimiter row is padded like the header and body rows, which is the
+// one style markdownlint's MD060 accepts for all three (#127).
 func GenerateTable(docs []document.DocEntry, heading string) string {
 	var sb strings.Builder
 
 	sb.WriteString("## " + heading + "\n\n")
 	sb.WriteString("| ID | Title | Status | Date | Author | Link |\n")
-	sb.WriteString("|----|-------|--------|------|--------|------|\n")
+	sb.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 
 	for i := range docs {
 		doc := &docs[i]

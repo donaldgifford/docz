@@ -15,7 +15,7 @@
       "source": "docs/rfc/README.md",
       "override": "RFCs",
       "parent": 0,
-      "sha256": "5efb607bf74536b2"
+      "sha256": "669aa98a96491206"
     },
     {
       "key": "RFC-0002",
@@ -31,7 +31,7 @@
       "source": "docs/design/README.md",
       "override": "Design",
       "parent": 0,
-      "sha256": "40b4a58a9ee7cce9"
+      "sha256": "6d5288fe47788a7c"
     },
     {
       "key": "DESIGN-0014",
