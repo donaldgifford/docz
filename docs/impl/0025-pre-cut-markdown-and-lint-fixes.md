@@ -369,7 +369,7 @@ CI in the same pull request.
   Then run markdownlint-cli2 twice, once with `{}` (default rules) and once
   with this repository's `.markdownlint.yaml`, and fail on any finding.
   Print the temp path on failure
-- [ ] CI: a `lint-generated` step in the `test-go` job, which runs on the
+- [x] CI: a `lint-generated` step in the `test-go` job, which runs on the
   `go` path filter. Install markdownlint-cli2 at the version in `mise.toml`,
   read from the file so there is one pin. Add the recipe to `just ci`
 - [ ] Prove the gate catches each regression by reverting it locally:

@@ -49,6 +49,7 @@ jobs:
               - '*.just'
               - '.golangci.yml'
               - '.goreleaser.yml'
+              - '.markdownlint.yaml'
               - 'mise.toml'
               - 'sqlc.yaml'
               - '.github/workflows/ci.yml'
@@ -162,6 +163,17 @@ jobs:
       # did. Only the deltas named in test/parity/README.md are permitted.
       - name: Replay functional parity goldens
         run: just parity
+
+      # IMPL-0025: everything docz writes passes markdownlint, under default
+      # rules and under .markdownlint.yaml. The version is mise.toml's pin,
+      # read from the file so there is one place to bump it.
+      - name: Install markdownlint-cli2
+        run: |
+          version="$(sed -n 's/^markdownlint-cli2 = "\(.*\)"$/\1/p' mise.toml)"
+          npm install --global "markdownlint-cli2@${version}"
+
+      - name: Lint docz's generated markdown
+        run: just lint-generated
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7
