@@ -352,7 +352,7 @@ CI in the same pull request.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `mise.toml`: markdownlint-cli2 `0.18.1` → `0.23.3`. Renovate keeps it
+- [x] `mise.toml`: markdownlint-cli2 `0.18.1` → `0.23.3`. Renovate keeps it
   current from here
 - [ ] `just lint-generated` (`docz.just`, question 5): build docz, then in
   a temp directory:
