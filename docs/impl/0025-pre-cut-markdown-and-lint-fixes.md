@@ -206,7 +206,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   marker, never opens a block. `Markers` and `Regions` are untouched
 - [x] `TestAnchorsMatchGitHub`: run `toc.GenerateToC` over `anchors.md`.
   Every generated link must equal the hand-written link under its heading
-- [ ] Unit tests for the comment-block rule:
+- [x] Unit tests for the comment-block rule:
   - a heading inside a block is skipped
   - a heading carrying a single-line comment is kept
   - an unclosed block runs to EOF
