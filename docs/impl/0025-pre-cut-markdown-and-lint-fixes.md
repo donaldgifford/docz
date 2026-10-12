@@ -505,9 +505,11 @@ commit, and the contract says what `git_sha` is.
 
 - [x] `ui/src/components/doc-meta-table.tsx`: apply question 9's choice to
   the `git_sha` row, and update `ui/src/routes/doc.test.tsx`
-- [ ] `api/openapi.yaml`: describe `git_sha` on `Document` and
+- [x] `api/openapi.yaml`: describe `git_sha` on `Document` and
   `DocumentSummary` the way `PageSummary` does. Bump `info.version` from
-  `1.6.0` to `1.6.1` (editorial)
+  `1.6.0` to `1.6.1` (editorial). *Built: the spec has no
+  `DocumentSummary`; the list and get-one endpoints share `Document`, so
+  one description covers both.*
 - [ ] `just ui ci` and `just api lint` pass, and `gen-api-check` shows the
   regenerated client
 - [ ] CLAUDE.md: the spec version
