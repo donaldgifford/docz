@@ -44,7 +44,7 @@ created: 2026-08-11
   - [6. Where does the consumer proof for the new surface live?](#6-where-does-the-consumer-proof-for-the-new-surface-live)
   - [7. PR and release strategy for this branch?](#7-pr-and-release-strategy-for-this-branch)
   - [8. Should Phase 2 extend the existing fixtures or add a new one?](#8-should-phase-2-extend-the-existing-fixtures-or-add-a-new-one)
-  - [9. Should docs_dir itself be path-validated? (raised in Phase 1)](#9-should-docsdir-itself-be-path-validated-raised-in-phase-1)
+  - [9. Should docs_dir itself be path-validated? (raised in Phase 1)](#9-should-docs_dir-itself-be-path-validated-raised-in-phase-1)
 - [Decisions](#decisions)
   - [Note: Decisions 1 and 2 interact](#note-decisions-1-and-2-interact)
 - [References](#references)

@@ -24,7 +24,7 @@ created: 2026-06-17
 - [Detailed Design](#detailed-design)
   - [Output: index-header resolution (template.ResolveIndexHeader)](#output-index-header-resolution-templateresolveindexheader)
     - [Decoupling internal/index from internal/template](#decoupling-internalindex-from-internaltemplate)
-  - [Input: type-argument resolution by id_prefix](#input-type-argument-resolution-by-idprefix)
+  - [Input: type-argument resolution by id_prefix](#input-type-argument-resolution-by-id_prefix)
     - [Collisions and precedence](#collisions-and-precedence)
 - [API / Interface Changes](#api--interface-changes)
 - [Data Model](#data-model)

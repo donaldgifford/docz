@@ -29,7 +29,7 @@ created: 2026-10-01
     - [Verification](#verification-2)
     - [Rollback](#rollback-2)
 - [Troubleshooting](#troubleshooting)
-  - [Scenario: A chart push fails with 403 write_package](#scenario-a-chart-push-fails-with-403-writepackage)
+  - [Scenario: A chart push fails with 403 write_package](#scenario-a-chart-push-fails-with-403-write_package)
     - [Steps](#steps-3)
   - [Scenario: Pods fail to pull the image after install](#scenario-pods-fail-to-pull-the-image-after-install)
     - [Steps](#steps-4)

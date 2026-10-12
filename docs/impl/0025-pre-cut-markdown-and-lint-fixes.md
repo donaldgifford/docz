@@ -230,7 +230,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   fixture's stale ToC, so it records as written a file whose v1.2.2
   golden has only a size and digest. v1.2.2 never writes a v2 line, so
   the rewrite is still symmetric and no golden is re-captured
-- [ ] `docz update` over this repository's `docs/`. Commit the regenerated
+- [x] `docz update` over this repository's `docs/`. Commit the regenerated
   ToCs separately from the code
 - [ ] CLAUDE.md: update the `docparse` slug and comment rules and the parity
   normaliser list
