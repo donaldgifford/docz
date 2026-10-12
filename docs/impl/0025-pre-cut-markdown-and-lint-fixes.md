@@ -409,7 +409,7 @@ After this phase `docz init` alone leaves a repository that
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `repo.Init`: write each README as `index.Scaffold(header)` spliced
+- [x] `repo.Init`: write each README as `index.Scaffold(header)` spliced
   with `index.GenerateTable(nil, "All "+label)`. That is the bytes
   `updateType` writes for a type with no documents. It stays
   scaffold-then-splice, so there is still exactly one marker pair (#99).

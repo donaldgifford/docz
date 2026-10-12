@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
@@ -465,19 +464,14 @@ func tocStartLine(content []byte) int {
 // heading that differed by a word would make every README in the repository
 // look drifted.
 func (v *validateRun) checkIndex(tc *typeContext, docs []document.DocEntry, report *ValidateReport) error {
-	heading, label := tc.indexHeading()
-
-	header, err := doctemplate.ResolveIndexHeader(tc.name, v.docsDir(), doctemplate.IndexHeaderData{
-		TypeName:    tc.name,
-		PluralLabel: label,
-	})
+	header, table, err := v.repo.indexParts(tc.name, docs)
 	if err != nil {
-		return fmt.Errorf("resolving index header for %s: %w", tc.name, err)
+		return err
 	}
 
 	readme := v.repo.ReadmePath(tc.name)
 
-	outcome, err := index.DryRunReadme(readme, header, index.GenerateTable(docs, heading))
+	outcome, err := index.DryRunReadme(readme, header, table)
 	if err != nil {
 		return fmt.Errorf("checking index %s: %w", v.repo.RelPath(readme), err)
 	}
@@ -673,23 +667,6 @@ func (tc *typeContext) render() ([]byte, string, error) {
 	}
 
 	return []byte(body), filename, nil
-}
-
-// indexHeading is the README table heading and the display label behind it.
-//
-// The pair `docz update` builds: the configured plural_label, or the type name
-// with its first rune upper-cased for a type that declares none (DESIGN-0006
-// Decision 3). Built the same way here because a heading that differed by a
-// word would report every README in the repository as drifted.
-func (tc *typeContext) indexHeading() (heading, label string) {
-	label = tc.cfg.PluralLabel
-	if label == "" && tc.name != "" {
-		runes := []rune(tc.name)
-		runes[0] = unicode.ToUpper(runes[0])
-		label = string(runes)
-	}
-
-	return "All " + label, label
 }
 
 // tally recounts a report's severity totals from its findings.

@@ -177,20 +177,19 @@ func (r *Repo) initType(ctx context.Context, typeName string, force bool) (InitF
 		return InitFile{Path: rel, Action: action}, nil
 	}
 
-	header, err := doctemplate.ResolveIndexHeader(typeName, r.Path(r.Cfg.DocsDir), doctemplate.IndexHeaderData{
-		TypeName:    typeName,
-		PluralLabel: r.indexLabelFor(typeName),
-	})
+	header, table, err := r.indexParts(typeName, nil)
 	if err != nil {
-		return InitFile{}, fmt.Errorf("resolving index header for %s: %w", typeName, err)
+		return InitFile{}, err
 	}
 
-	// index.Scaffold and nothing else. The body is the header plus exactly one
-	// marker pair, and appending a pair here as cmd/init.go does today is
-	// issue #99: two of the embedded headers end with their own pair, so every
-	// new repository got a second, permanently empty one that no splice ever
-	// touches again.
-	if err := r.writeAndFire(ctx, path, index.Scaffold(header), FileIndex); err != nil {
+	// The README a render writes for a type with no documents, so a fresh
+	// repository passes docz validate --strict (#112). index.Splice over no
+	// existing file is index.Scaffold and then the splice, which keeps the
+	// issue #99 fix: two of the embedded headers end with their own pair,
+	// and appending another gave every new repository a second, permanently
+	// empty one. Scaffold appends a pair only when the header has none.
+	body, _ := index.Splice(nil, header, table)
+	if err := r.writeAndFire(ctx, path, body, FileIndex); err != nil {
 		return InitFile{}, err
 	}
 
