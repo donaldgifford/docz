@@ -537,8 +537,10 @@ commit, and the contract says what `git_sha` is.
   every ToC with an affected heading and every README index table once.
   `docz validate` reports `toc.stale` until it runs. Also cover the
   `disable-file` and capture lines, and the generic-template fallback
-- [ ] Draft the release notes for question 10's beta. Name the three frozen
-  packages whose output changed and why
+- [x] Draft the release notes for question 10's beta. Name the three frozen
+  packages whose output changed and why. *Built: the draft is in the pull
+  request description, ready for the `v2.0.0-beta.9` release body;
+  goreleaser writes the rest.*
 - [ ] The pull request closes #82, #96, #127, #112, #92, and #169
   (`Closes` lines in its description). Comment on #98 with what is left
 - [ ] Set this document to Completed
