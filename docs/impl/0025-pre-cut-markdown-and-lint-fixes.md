@@ -372,12 +372,16 @@ CI in the same pull request.
 - [x] CI: a `lint-generated` step in the `test-go` job, which runs on the
   `go` path filter. Install markdownlint-cli2 at the version in `mise.toml`,
   read from the file so there is one pin. Add the recipe to `just ci`
-- [ ] Prove the gate catches each regression by reverting it locally:
+- [x] Prove the gate catches each regression by reverting it locally:
   - restore the old separator row: MD060
   - restore the `[a-z0-9 -]` slug filter: MD051
   - drop `MD024` from the IMPL `disable-file` line: MD024
 
-  Record the three results in the pull request description
+  Record the three results in the pull request description.
+  *Results: 36 × MD060, 6 × MD051, 8 × MD024. The slug drill first passed,
+  because no generated ToC carried an underscore or a non-ASCII letter, so
+  the gate now files `anchors.md` as an RFC with a ToC region and lints
+  the ToC docz writes for it*
 - [ ] Comment on #98: the generated output is gated here, and what is left
   is this repository's own `docs/` (question 6)
 - [ ] CLAUDE.md: the recipe, the CI step, and the version pin

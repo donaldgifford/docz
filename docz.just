@@ -227,10 +227,16 @@ lint-generated: build
         run create "$t" "A sample $t document for the markdownlint gate"
     done
     # frameworks has no template until #92 lands (IMPL-0025 Phase 5).
+    # docparse's anchors.md, filed as an RFC with a ToC region, so the ToC
+    # docz writes for every slug case is what MD051 checks.
+    {
+        printf -- '---\nid: RFC-0002\ntitle: "Anchors"\nstatus: Draft\nauthor: lint-generated\ncreated: 2026-01-01\n---\n\n'
+        awk '/^# / && !done { print; print ""; print "<!--toc:start-->"; print "<!--toc:end-->"; done = 1; next } { print }' \
+            "$root/pkg/doczcore/docparse/testdata/anchors.md"
+    } > docs/rfc/0002-anchors.md
     run update
     run wiki init
     run template override impl
-    cp "$root/pkg/doczcore/docparse/testdata/anchors.md" docs/anchors.md
     echo '{}' > "$work/defaults.markdownlint.json"
     for config in "$work/defaults.markdownlint.json" "$root/.markdownlint.yaml"; do
         if ! "$mdl" --config "$config" 'docs/**/*.md' >"$work/lint.out" 2>&1; then

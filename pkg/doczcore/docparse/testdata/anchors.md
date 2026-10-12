@@ -1,4 +1,4 @@
-<!-- markdownlint-disable-file MD003 MD024 MD033 MD042 MD049 -->
+<!-- markdownlint-disable-file MD003 MD024 MD025 MD033 MD041 MD042 MD049 -->
 
 # Anchor ground truth
 
