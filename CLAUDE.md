@@ -31,9 +31,10 @@ just test           # run all tests (root module only)
 just test-consumer  # the external-module smoke test (test/consumer, own go.mod)
 just parity         # replay the v1.2.2 CLI goldens against build/bin/docz
 just validate       # docz validate over this repo's own docs/, non-strict
+just lint-generated # markdownlint over a repository docz scaffolds: default rules and .markdownlint.yaml
 just lint           # golangci-lint + golines
 just fmt            # gofmt + goimports
-just ci             # lint + test + test-consumer + parity + validate + build + license-check + api::{lint,test,helm-lint} + the ui:: chain
+just ci             # lint + test + test-consumer + parity + lint-generated + validate + build + license-check + api::{lint,test,helm-lint} + the ui:: chain
 just api build      # the server binary to build/bin/docz-api (api.just, a module)
 just api test       # the server's packages only: ./cmd/docz-api/... ./internal/... ./api/...
 just ui ci          # the frontend's CI parity: install, gen-api, lint, fmt-check, typecheck, test, build, bundle-budget, gen-api-check
@@ -69,6 +70,21 @@ installs it with `extractions/setup-just` rather than through mise — this
 repository's CI has never used mise-action, pinning each tool with its own action
 (`setup-go`, `golangci-lint-action`), and matching that was the smaller change.
 `.makefmt.yml`, the `makefmt` tool entry, and `checkmake` went with the Makefile.
+
+`just lint-generated` (IMPL-0025, #127) is the gate on docz's own output: it
+builds docz, scaffolds a repository in a temp directory (`init`, the runbook
+enabled, a template-less custom type, one `create` per type, `update`,
+`wiki init`, `template override impl`, and docparse's `anchors.md` filed as an
+RFC with a ToC region, so MD051 checks the ToC docz writes for every slug
+case), and lints `docs/**` with markdownlint-cli2 twice — default rules and
+this repository's `.markdownlint.yaml` — keeping the scaffold on failure. It
+resolves the linter with `mise which` before leaving the repository, because
+mise picks a tool's version by working directory and a temp directory gets
+the global one. The pin is `mise.toml`'s `markdownlint-cli2` (0.23.3, which
+has MD060; 0.18.1 hid the table failures), and the Test Go job installs that
+version with npm, read from the file. Three revert drills prove it bites:
+the old delimiter row fails MD060, the ASCII-only slug filter MD051, and
+`MD024` off the IMPL template's disable line MD024.
 
 The thirteen packages this repo made public on the v2 line are **experimental
 until v2.0.0 proper ships**: each one's doc comment carries an `EXPERIMENTAL`

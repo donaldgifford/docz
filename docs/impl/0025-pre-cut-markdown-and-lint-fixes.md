@@ -382,9 +382,9 @@ CI in the same pull request.
   because no generated ToC carried an underscore or a non-ASCII letter, so
   the gate now files `anchors.md` as an RFC with a ToC region and lints
   the ToC docz writes for it*
-- [ ] Comment on #98: the generated output is gated here, and what is left
+- [x] Comment on #98: the generated output is gated here, and what is left
   is this repository's own `docs/` (question 6)
-- [ ] CLAUDE.md: the recipe, the CI step, and the version pin
+- [x] CLAUDE.md: the recipe, the CI step, and the version pin
 
 <!--docz:tasks:end-->
 
