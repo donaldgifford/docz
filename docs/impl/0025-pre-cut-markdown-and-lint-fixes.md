@@ -533,7 +533,7 @@ commit, and the contract says what `git_sha` is.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `docs/migrating-to-v2.md`: the first `docz update` on v2 rewrites
+- [x] `docs/migrating-to-v2.md`: the first `docz update` on v2 rewrites
   every ToC with an affected heading and every README index table once.
   `docz validate` reports `toc.stale` until it runs. Also cover the
   `disable-file` and capture lines, and the generic-template fallback

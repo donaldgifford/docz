@@ -1,6 +1,6 @@
 # Migrating from docz v1 to v2
 
-docz v2 is in beta (`v2.0.0-beta.8` at the time of writing). This guide
+docz v2 is in beta (`v2.0.0-beta.9` at the time of writing). This guide
 covers the move from v1.2.2 for three kinds of user. Read the sections that
 apply to you:
 
@@ -25,7 +25,9 @@ an import-path change, and the server needs a new Helm release.
   - new commands and flags;
   - new findings from existing commands;
   - the removed `plan` type;
-  - the disabled `runbook` and `sync:` blocks that `docz init` writes.
+  - the disabled `runbook` and `sync:` blocks that `docz init` writes;
+  - the markdownlint fixes to generated ToCs, README tables, and templates
+    (see [Generated markdown passes markdownlint](#generated-markdown-passes-markdownlint)).
 - **The five v1 library packages are frozen.** `config`, `document`,
   `docparse`, `docwrite`, and `toc` keep their v1 shapes under
   `pkg/doczcore/`. The one exception is the removal of `plan` from the type
@@ -36,9 +38,9 @@ an import-path change, and the server needs a new Helm release.
 ### Install
 
 ```bash
-mise use -g github:donaldgifford/docz@v2.0.0-beta.8
+mise use -g github:donaldgifford/docz@v2.0.0-beta.9
 # or
-go install github.com/donaldgifford/docz/v2/cmd/docz@v2.0.0-beta.8
+go install github.com/donaldgifford/docz/v2/cmd/docz@v2.0.0-beta.9
 ```
 
 Note the `/v2` in the `go install` path. The unversioned path stays on v1,
@@ -133,6 +135,46 @@ git diff                 # review: only marker lines are added
 `--fix` never touches a document that already has markers, other than to
 correct a misspelled one. A second run changes nothing.
 
+### Generated markdown passes markdownlint
+
+From `v2.0.0-beta.9`, everything docz writes passes markdownlint under its
+default rules (IMPL-0025). **The first `docz update` on v2 rewrites every
+README index table and every ToC with an affected heading, once.** Commit
+that diff on its own. Until it runs, `docz validate` reports `toc.stale` on
+those documents and `--strict` reports index drift.
+
+What changes in the files docz writes:
+
+- **ToC anchors follow GitHub's slug rules**, the ones markdownlint (MD051)
+  and docz-site use. A heading with a `_`, a closing `#` sequence, an HTML
+  tag inside a code span, or a duplicate of an earlier heading now links to
+  the anchor GitHub generates. Headings inside an HTML comment block are no
+  longer listed.
+- **README index tables** use a `| --- |` separator. The table, and the
+  list inside a ToC, sit between these lines so that a long row does not
+  fail MD013 (line length):
+
+  ```markdown
+  <!-- markdownlint-capture -->
+  <!-- markdownlint-disable MD013 -->
+  ...
+  <!-- markdownlint-restore -->
+  ```
+
+  `restore` puts your own configuration back, so the rest of the file is
+  linted as before.
+- **New IMPL and runbook documents** carry
+  `<!-- markdownlint-disable-file MD024 MD025 MD041 -->`, because each phase
+  or procedure repeats headings such as `#### Tasks`. Existing documents
+  keep the line they were created with. Add `MD024` to it if markdownlint
+  flags them.
+- **A custom type with no template** creates, shows, and validates from the
+  embedded generic template, and prints a note on stderr. It used to fail.
+  Run `docz template override <type>` to write a template and its schema
+  you can edit.
+- **`docz init` writes READMEs that `docz validate --strict` accepts**, so a
+  freshly scaffolded repository passes straight away.
+
 ### Every command respects `enabled`
 
 In v1, some commands ignored a type's `enabled: false`. In v2:
@@ -155,7 +197,9 @@ feature.
 ### Checklist
 
 - [ ] Install v2 and run `docz --version`.
-- [ ] Run `docz update --dry-run`. Expect no changes.
+- [ ] Run `docz update` and commit the result. It rewrites README tables
+  and some ToCs once (see
+  [Generated markdown passes markdownlint](#generated-markdown-passes-markdownlint)).
 - [ ] Run `docz validate` and fix any errors. Warnings are optional.
 - [ ] If you create plan documents, run `docz template override plan`.
 - [ ] Optional: enable `runbook`.
@@ -191,6 +235,16 @@ On Linux, drop the `''` after `-i`.
 
 `config`, `document`, `docparse`, `docwrite`, and `toc` keep their v1
 behaviour. Things that changed:
+
+- **Three of them produce different output** (IMPL-0025). Their signatures
+  are unchanged:
+  - `docparse.AnchorSlug` and `Heading.Slug` follow github-slugger.
+    `Headings`, `Title`, and `TaskItems` skip HTML comment blocks.
+  - `toc.GenerateToC` wraps the list in the MD013 capture, disable, and
+    restore lines, so `UpdateToC` rewrites a v1 ToC once.
+  - `docwrite.Render` and `Create` fall back to the generic template for a
+    type with no template, where they returned `doctemplate.ErrNoTemplate`.
+    `Rendered.Generic` says when that happened.
 
 - **`plan` is gone from `config.DocTypeNames()`** and from
   `DefaultConfig().Types`. Code that assumed six built-ins, or looked for
