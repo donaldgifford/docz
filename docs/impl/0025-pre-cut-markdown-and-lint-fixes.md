@@ -471,7 +471,7 @@ on stderr points at `docz template override` when that happens.
   creates a generic document instead of failing (ADR-0003). The parity
   fixture's `plan` block is dormant, so no golden moves. Note this in
   `docs/migrating-to-v2.md`
-- [ ] Tests: create, show, and validate for a template-less custom type, in
+- [x] Tests: create, show, and validate for a template-less custom type, in
   `repo` and in `cmd` (a new test file; `cmd/*_test.go` stays frozen).
   Extend `test/consumer`'s `Create` coverage to a template-less custom type
 - [ ] `just lint-generated` stops skipping the template-less type
