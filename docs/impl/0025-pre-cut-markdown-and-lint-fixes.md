@@ -354,7 +354,7 @@ CI in the same pull request.
 
 - [x] `mise.toml`: markdownlint-cli2 `0.18.1` → `0.23.3`. Renovate keeps it
   current from here
-- [ ] `just lint-generated` (`docz.just`, question 5): build docz, then in
+- [x] `just lint-generated` (`docz.just`, question 5): build docz, then in
   a temp directory:
   - `git init` and `docz init`
   - turn the runbook on, and add a custom `frameworks` type with no

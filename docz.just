@@ -192,6 +192,56 @@ validate: build
     @{{ bin }} validate
     @echo "✓ docs/ validates against its schemas"
 
+# Lint the markdown docz writes: a scaffolded repository under default rules and this repository's config
+[group('lint')]
+lint-generated: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="$PWD"
+    docz="$root/{{ bin }}"
+    # Resolved here: mise picks a tool's version by working directory, and
+    # the scaffold below is outside this repository's mise.toml.
+    if command -v mise >/dev/null; then
+        mdl="$(mise which markdownlint-cli2)"
+    else
+        mdl="$(command -v markdownlint-cli2)"
+    fi
+    work="$(mktemp -d)"
+    repo="$work/repo"
+    mkdir "$repo"
+    cd "$repo"
+    # docz warns about the custom type on every command; show its output
+    # only when a command fails.
+    run() { "$docz" "$@" >"$work/docz.out" 2>&1 || { cat "$work/docz.out" >&2; exit 1; }; }
+    git init -q .
+    run init
+    # Every type that writes markdown: the runbook on, and a custom type with
+    # no template, which resolves the generic template and index header.
+    awk '/^  runbook:$/ { rb = 1 } rb && /enabled: false/ { sub(/false/, "true"); rb = 0 } { print }
+        /^types:$/ { print "  frameworks:\n    enabled: true\n    dir: frameworks\n    id_prefix: \"FW\"\n    id_width: 4\n    statuses: [Draft, Active]" }' \
+        .docz.yaml > "$work/docz.yaml"
+    mv "$work/docz.yaml" .docz.yaml
+    # Titles long enough that every index row and ToC entry passes 80
+    # characters, short enough that the H1 does not (IMPL-0025 question 3).
+    for t in rfc adr design impl investigation runbook; do
+        run create "$t" "A sample $t document for the markdownlint gate"
+    done
+    # frameworks has no template until #92 lands (IMPL-0025 Phase 5).
+    run update
+    run wiki init
+    run template override impl
+    cp "$root/pkg/doczcore/docparse/testdata/anchors.md" docs/anchors.md
+    echo '{}' > "$work/defaults.markdownlint.json"
+    for config in "$work/defaults.markdownlint.json" "$root/.markdownlint.yaml"; do
+        if ! "$mdl" --config "$config" 'docs/**/*.md' >"$work/lint.out" 2>&1; then
+            cat "$work/lint.out" >&2
+            echo "✗ docz output fails markdownlint with $config; scaffold kept at $repo" >&2
+            exit 1
+        fi
+    done
+    rm -rf "$work"
+    echo "✓ docz output passes markdownlint (default rules and .markdownlint.yaml)"
+
 # ─── Lint & format ─────────────────────────────────────────────────
 
 # Run golangci-lint
