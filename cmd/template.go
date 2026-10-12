@@ -89,9 +89,15 @@ func (r *Runner) TemplateShow(ctx context.Context, args []string) error {
 		return err
 	}
 
-	content, err := r.tmplResolve(ctx, docType)
+	content, generic, err := r.tmplResolve(ctx, docType)
 	if err != nil {
 		return err
+	}
+
+	if generic {
+		if err := r.genericTemplateNote(docType); err != nil {
+			return err
+		}
 	}
 
 	_, err = fmt.Fprint(r.Out, content)
@@ -160,7 +166,7 @@ func (r *Runner) TemplateOverride(ctx context.Context, args []string) error {
 	// The resolve that decides whether there is anything to copy. Its
 	// error is repo.Template's, already wrapped "resolving <type>
 	// template: …", so the message is unchanged by going through it.
-	if _, err := r.tmplResolve(ctx, docType); err != nil {
+	if _, _, err := r.tmplResolve(ctx, docType); err != nil {
 		return err
 	}
 
@@ -184,16 +190,28 @@ func (r *Runner) TemplateOverride(ctx context.Context, args []string) error {
 
 // tmplResolve resolves a type's body template through the repo API,
 // keeping the debug line the command emitted when it called
-// doctemplate.Resolve itself.
-func (r *Runner) tmplResolve(ctx context.Context, docType string) (string, error) {
+// doctemplate.Resolve itself. generic reports the embedded generic
+// fallback for a type with no template of its own.
+func (r *Runner) tmplResolve(ctx context.Context, docType string) (body string, generic bool, err error) {
 	r.Logger.Debug("resolving template",
 		"type", docType,
 		"config_template_path", r.Cfg.Types[docType].Template,
 		"docs_dir", r.Cfg.DocsDir,
 	)
 
-	body, _, err := r.repoOrOpen().Template(ctx, docType)
-	return body, err
+	return r.repoOrOpen().Template(ctx, docType)
+}
+
+// genericTemplateNote tells the user on r.Err that a type had no template and
+// the generic one stood in, and how to write one (issue #92). On stderr so a
+// `template show` piped into a file is still just the template.
+func (r *Runner) genericTemplateNote(docType string) error {
+	_, err := fmt.Fprintf(r.Err,
+		"note: %s has no template; used the generic one. "+
+			"Run \"docz template override %s\" to write one.\n",
+		docType, docType)
+
+	return err
 }
 
 // tmplOverridePath is the file `template override` writes:

@@ -772,7 +772,7 @@ func TestValidate_GenericFallbackType(t *testing.T) {
 	r := vtestRepo(t)
 	vtestTypeWithTemplate(t, r, "frameworks", "FW", nil)
 
-	_, err := r.Create(t.Context(), CreateOptions{
+	res, err := r.Create(t.Context(), CreateOptions{
 		Type:   "frameworks",
 		Title:  vtestTitle,
 		Author: "Test Author",
@@ -780,6 +780,10 @@ func TestValidate_GenericFallbackType(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
+	}
+
+	if !res.GenericTemplate {
+		t.Error("CreateResult.GenericTemplate = false, want true for a type with no template")
 	}
 
 	report, err := r.Validate(t.Context(), []string{"frameworks"}, ValidateOptions{})

@@ -463,7 +463,7 @@ on stderr points at `docz template override` when that happens.
 - [x] `repo.Validate`: a type on the generic fallback validates against the
   embedded `default` schema. It no longer reports `template.unresolved` or
   `schema.unresolved`
-- [ ] `repo.CreateResult` gains `GenericTemplate bool`. `docz create` prints
+- [x] `repo.CreateResult` gains `GenericTemplate bool`. `docz create` prints
   `note: <type> has no template; used the generic one. Run "docz template
   override <type>" to write one.` on stderr. `docz template show` prints the
   same note
