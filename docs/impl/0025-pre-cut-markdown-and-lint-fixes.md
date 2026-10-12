@@ -423,7 +423,7 @@ After this phase `docz init` alone leaves a repository that
 - [x] Parity: an empty-table collapse, applied to both sides after the
   `lint` normaliser, so an index region holding only a heading and a header
   table reads as an empty pair. Count the 14 init goldens it touches
-- [ ] `just lint-generated` runs `docz validate --strict` straight after
+- [x] `just lint-generated` runs `docz validate --strict` straight after
   `docz init` and expects exit 0
 - [ ] CLAUDE.md: the `repo.Init` paragraph
 

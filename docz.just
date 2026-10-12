@@ -215,6 +215,8 @@ lint-generated: build
     run() { "$docz" "$@" >"$work/docz.out" 2>&1 || { cat "$work/docz.out" >&2; exit 1; }; }
     git init -q .
     run init
+    # A repository docz init just wrote passes docz's strictest check (#112).
+    run validate --strict
     # Every type that writes markdown: the runbook on, and a custom type with
     # no template, which resolves the generic template and index header.
     awk '/^  runbook:$/ { rb = 1 } rb && /enabled: false/ { sub(/false/, "true"); rb = 0 } { print }
