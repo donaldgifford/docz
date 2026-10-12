@@ -299,8 +299,11 @@ against 0.23.3:
   outside a table or a fence
 - [x] `wiki_index.md`: end with exactly one newline (MD012), and update the
   `pkg/wiki` goldens
-- [ ] Check the generic `default.md` and every `index_*.md` header against
-  default rules, and fix what they report
+- [x] Check the generic `default.md` and every `index_*.md` header against
+  default rules, and fix what they report. *`default.md` is clean. Each
+  header ends with the blank line that separates it from the marker pair,
+  which is MD012 only when the header is linted alone; a generated README
+  passes, so nothing changed*
 - [ ] Parity: add entries to the `lint` normaliser for:
   - the separator row
   - the three wrapped lines
