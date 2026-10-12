@@ -21,6 +21,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(investigation)* INV-0029 executable acceptance in docz documents
 - Add a v1 to v2 migration guide
 - *(runbook)* Record RUNBOOK-0001 Procedure 3 on a real cluster
+- *(impl)* Add IMPL-0025 pre-cut markdown and lint fixes
+- *(impl)* Resolve IMPL-0025 open questions
 
 ### Miscellaneous Tasks
 
