@@ -323,7 +323,7 @@ against 0.23.3:
   READMEs and ToCs separately
 - [x] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
   (`MD025 MD041` gains `MD024` for IMPL and runbook)
-- [ ] `just ci` passes
+- [x] `just ci` passes (`license-check` aside, as in Phase 1)
 
 <!--docz:tasks:end-->
 
