@@ -425,7 +425,7 @@ After this phase `docz init` alone leaves a repository that
   table reads as an empty pair. Count the 14 init goldens it touches
 - [x] `just lint-generated` runs `docz validate --strict` straight after
   `docz init` and expects exit 0
-- [ ] CLAUDE.md: the `repo.Init` paragraph
+- [x] CLAUDE.md: the `repo.Init` paragraph
 
 <!--docz:tasks:end-->
 
