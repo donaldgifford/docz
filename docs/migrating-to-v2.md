@@ -53,14 +53,17 @@ Through v1, `plan` was a sixth built-in type. v2 drops it (ADR-0003).
   block now declares a *custom* type. `list`, `update`, `status`,
   `validate`, and the wiki nav keep working over `docs/plan/`, and each
   command prints a warning that `plan` is not a built-in.
-- **Only `docz create plan` fails**, because v2 no longer bundles a plan
-  template. To restore it, scaffold the template:
+- **`docz create plan` uses the generic template**, because v2 no longer
+  bundles a plan template. It prints a note on stderr saying so. Before
+  v2.0.0-beta.9 it failed instead. To get your plan layout back, scaffold
+  the template and edit it:
 
   ```bash
   docz template override plan
   ```
 
-  This writes `docs/templates/plan.md`. Commit it.
+  This writes `docs/templates/plan.md` and its schema,
+  `docs/templates/schema/plan.md`. Commit both.
 - **A repository with no `plan:` block, or one with `enabled: false`, needs
   nothing.** Plan was disabled by default from v1.1.1 on.
 
@@ -154,7 +157,7 @@ feature.
 - [ ] Install v2 and run `docz --version`.
 - [ ] Run `docz update --dry-run`. Expect no changes.
 - [ ] Run `docz validate` and fix any errors. Warnings are optional.
-- [ ] If you use plan documents, run `docz template override plan`.
+- [ ] If you create plan documents, run `docz template override plan`.
 - [ ] Optional: enable `runbook`.
 - [ ] Optional: run `docz validate --fix` to add markers.
 - [ ] Optional: add `docz validate` to CI. Add `--strict` once the

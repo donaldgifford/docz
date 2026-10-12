@@ -467,7 +467,7 @@ on stderr points at `docz template override` when that happens.
   `note: <type> has no template; used the generic one. Run "docz template
   override <type>" to write one.` on stderr. `docz template show` prints the
   same note
-- [ ] A legacy repository with `types.plan` enabled and no template now
+- [x] A legacy repository with `types.plan` enabled and no template now
   creates a generic document instead of failing (ADR-0003). The parity
   fixture's `plan` block is dormant, so no golden moves. Note this in
   `docs/migrating-to-v2.md`
