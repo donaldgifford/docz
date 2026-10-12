@@ -86,6 +86,71 @@ func TestResolve_EmbeddedDefault(t *testing.T) {
 	}
 }
 
+func TestResolveOrGeneric(t *testing.T) {
+	t.Parallel()
+
+	generic, err := GenericTemplate()
+	if err != nil {
+		t.Fatalf("GenericTemplate: %v", err)
+	}
+
+	docsDir := t.TempDir()
+	override := filepath.Join(docsDir, config.TemplatesDir, "widgets.md")
+	if err := os.MkdirAll(filepath.Dir(override), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(override, []byte("widget body"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name        string
+		docType     string
+		configPath  string
+		wantBody    string
+		wantGeneric bool
+	}{
+		{name: "built-in resolves its own", docType: "rfc"},
+		{name: "on-disk override wins", docType: "widgets", wantBody: "widget body"},
+		{name: "custom type falls back", docType: "frameworks", wantBody: generic, wantGeneric: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			body, isGeneric, err := ResolveOrGeneric(tt.docType, tt.configPath, docsDir)
+			if err != nil {
+				t.Fatalf("ResolveOrGeneric: %v", err)
+			}
+			if isGeneric != tt.wantGeneric {
+				t.Errorf("generic = %v, want %v", isGeneric, tt.wantGeneric)
+			}
+			if tt.wantBody != "" && body != tt.wantBody {
+				t.Errorf("body = %q, want %q", body, tt.wantBody)
+			}
+			if body == "" {
+				t.Error("body is empty")
+			}
+		})
+	}
+}
+
+// TestResolveOrGeneric_MissingConfigPathStillFails pins that only "no
+// template anywhere" falls back: a configured path that is not there is the
+// mistake it looks like.
+func TestResolveOrGeneric_MissingConfigPathStillFails(t *testing.T) {
+	t.Parallel()
+
+	_, isGeneric, err := ResolveOrGeneric("frameworks", filepath.Join(t.TempDir(), "missing.md"), t.TempDir())
+	if err == nil {
+		t.Fatal("ResolveOrGeneric with a missing configured path succeeded")
+	}
+	if isGeneric {
+		t.Error("generic = true for a configured path")
+	}
+}
+
 // TestResolveIndexHeader_LocalOverride proves tier 1 wins and is returned
 // byte-for-byte, including a literal "{{" that must NOT be rendered.
 func TestResolveIndexHeader_LocalOverride(t *testing.T) {

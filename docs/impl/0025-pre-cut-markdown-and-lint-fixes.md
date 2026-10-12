@@ -451,7 +451,7 @@ on stderr points at `docz template override` when that happens.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `doctemplate.ResolveOrGeneric(docType, configPath, docsDir)
+- [x] `doctemplate.ResolveOrGeneric(docType, configPath, docsDir)
   (body string, generic bool, err error)` (question 7). It runs the three
   tiers and falls back to `GenericTemplate()` on `ErrNoTemplate` only.
   `Resolve` keeps its contract, and a configured path that does not exist
