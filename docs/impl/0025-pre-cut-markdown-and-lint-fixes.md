@@ -11,6 +11,8 @@ created: 2026-10-12
 # IMPL-0025: Pre-cut markdown and lint fixes
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -53,6 +55,7 @@ created: 2026-10-12
   - [10. How does this ship?](#10-how-does-this-ship)
   - [11. Does this document merge on its own first?](#11-does-this-document-merge-on-its-own-first)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->
@@ -304,13 +307,18 @@ against 0.23.3:
   header ends with the blank line that separates it from the marker pair,
   which is MD012 only when the header is linted alone; a generated README
   passes, so nothing changed*
-- [ ] Parity: add entries to the `lint` normaliser for:
+- [x] Parity: add entries to the `lint` normaliser for:
   - the separator row
   - the three wrapped lines
   - the capture, disable, and restore lines, dropped on both sides the way
     `MarkerNormalizer` drops markers
   - the IMPL and runbook `disable-file` lines
   - the wiki index's trailing blank line
+
+  *Added with each change, so every commit replays clean. The wrapper
+  lines also make every fixture's v1.2.2 ToC stale, so each dry-run line
+  reporting one is listed, and the wiki ending needed an end-of-file
+  anchored entry per last list line*
 - [ ] `docz update` over this repository's `docs/`. Commit the regenerated
   READMEs and ToCs separately
 - [ ] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
