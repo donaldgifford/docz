@@ -415,7 +415,7 @@ After this phase `docz init` alone leaves a repository that
   scaffold-then-splice, so there is still exactly one marker pair (#99).
   Share one helper with `update.go:139` and `validate.go:480`, so all three
   render the empty table the same way
-- [ ] Test: `Init` followed by `Validate` gives no `index.drift`. `Init`
+- [x] Test: `Init` followed by `Validate` gives no `index.drift`. `Init`
   followed by `Update` writes nothing. `index.Scaffold` on a header that
   ends in a pair still yields one pair
 - [ ] `--format json` (question 8): drift stays in the separate `index`
