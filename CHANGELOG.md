@@ -24,6 +24,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(doctemplate)* End the wiki landing page with one newline
 - *(repo)* Docz init writes the README index a render writes
 - *(ui)* Drop the blob SHA the reader labelled Commit
+- *(deps)* Bump golang.org/x/net to v0.60.0
 
 ### Documentation
 
