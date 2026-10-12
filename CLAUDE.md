@@ -923,7 +923,9 @@ version + document consumption). `api/README.md` is the consumer-facing guide.
   UI (OQ-3d). `info.version` is **SemVer from `1.0.0`** (OQ-5a), bumped by hand on
   any specced wire change (patch = editorial, minor = additive, major = breaking),
   independent of the binary version — the consumer-pin signal. **Currently
-  `1.1.0`** (IMPL-0003 added `getRepoIndex`). The docz-site
+  `1.6.1`** (IMPL-0025: `git_sha` on `Document` described as a blob SHA, a
+  cache key and not a commit, which is why docz-site's reader no longer
+  shows it, #169). The docz-site
   vendors the file (or fetches the served spec at a pinned version) and generates
   a typed client; see `api/README.md`.
 - **Spec lint/format (OQ-7b):** `just lint-openapi` runs **`vacuum`** (`aqua:
