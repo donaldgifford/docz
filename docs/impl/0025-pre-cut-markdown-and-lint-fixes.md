@@ -232,7 +232,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   the rewrite is still symmetric and no golden is re-captured
 - [x] `docz update` over this repository's `docs/`. Commit the regenerated
   ToCs separately from the code
-- [ ] CLAUDE.md: update the `docparse` slug and comment rules and the parity
+- [x] CLAUDE.md: update the `docparse` slug and comment rules and the parity
   normaliser list
 - [ ] `just ci` passes
 
