@@ -503,7 +503,7 @@ commit, and the contract says what `git_sha` is.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/src/components/doc-meta-table.tsx`: apply question 9's choice to
+- [x] `ui/src/components/doc-meta-table.tsx`: apply question 9's choice to
   the `git_sha` row, and update `ui/src/routes/doc.test.tsx`
 - [ ] `api/openapi.yaml`: describe `git_sha` on `Document` and
   `DocumentSummary` the way `PageSummary` does. Bump `info.version` from

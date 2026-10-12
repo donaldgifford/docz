@@ -137,7 +137,6 @@ describe("metadata table omission", () => {
           status: "",
           author: "",
           created: "",
-          git_sha: "",
         }),
       ),
     );
@@ -148,7 +147,6 @@ describe("metadata table omission", () => {
     expect(screen.getByText("unassigned")).toBeInTheDocument();
     // table rows for ""-valued fields are gone entirely
     expect(screen.queryByText("Created")).not.toBeInTheDocument();
-    expect(screen.queryByText("Commit")).not.toBeInTheDocument();
     // fields the DTO always carries stay
     const table = within(
       screen.getByRole("table", { name: "Document metadata" }),
@@ -177,9 +175,14 @@ describe("metadata table omission", () => {
         { selector: "td *" },
       ),
     ).toBeInTheDocument();
+    // git_sha is the blob SHA, a cache key rather than a commit, so the
+    // reader shows no row for it (#169).
     expect(
-      screen.getByText("fixture-sha-design-0001".slice(0, 7)),
-    ).toBeInTheDocument();
+      screen.queryByRole("rowheader", { name: "Commit" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("fixture-sha-design-0001".slice(0, 7)),
+    ).not.toBeInTheDocument();
 
     const group = screen.getByRole("group", { name: "Document format" });
     const html = within(group).getByRole("button", { name: "html" });

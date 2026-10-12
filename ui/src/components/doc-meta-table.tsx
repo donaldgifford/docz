@@ -127,11 +127,6 @@ export function DocMetaTable({
           {doc.created !== "" && (
             <MetaRow label="Created">{doc.created}</MetaRow>
           )}
-          {doc.git_sha !== "" && (
-            <MetaRow label="Commit">
-              <span className="font-mono">{doc.git_sha.slice(0, 7)}</span>
-            </MetaRow>
-          )}
         </tbody>
       </table>
     </div>
