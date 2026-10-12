@@ -321,7 +321,7 @@ against 0.23.3:
   anchored entry per last list line*
 - [x] `docz update` over this repository's `docs/`. Commit the regenerated
   READMEs and ToCs separately
-- [ ] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
+- [x] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
   (`MD025 MD041` gains `MD024` for IMPL and runbook)
 - [ ] `just ci` passes
 
