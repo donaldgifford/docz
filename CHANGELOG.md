@@ -5,6 +5,26 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(doctemplate)* Add ResolveOrGeneric, Resolve with the generic fallback
+- *(repo)* Create, show, and validate fall back to the generic template
+- *(repo)* Validate a generic-fallback type against the default schema
+- *(create)* Note the generic template on stderr
+
+### Bug Fixes
+
+- *(docparse)* Skip HTML comment blocks in Headings, Title, and TaskItems
+- *(docparse)* Slug headings the way GitHub does
+- *(docparse)* Keep a tag inside a code span in the heading slug
+- *(index)* Pad the README index delimiter row
+- *(doctemplate)* Disable MD024 in the IMPL and runbook templates
+- *(toc,index)* Switch MD013 off around the generated ToC and index
+- *(doctemplate)* Wrap template lines over 80 characters
+- *(doctemplate)* End the wiki landing page with one newline
+- *(repo)* Docz init writes the README index a render writes
+- *(ui)* Drop the blob SHA the reader labelled Commit
+
 ### Documentation
 
 - *(impl)* IMPL-0024 Completed, released in v2.0.0-beta.8
@@ -23,10 +43,46 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(runbook)* Record RUNBOOK-0001 Procedure 3 on a real cluster
 - *(impl)* Add IMPL-0025 pre-cut markdown and lint fixes
 - *(impl)* Resolve IMPL-0025 open questions
+- *(impl)* Land IMPL-0025 in a single pull request
+- Regenerate ToCs with GitHub anchors
+- *(claude)* Document GitHub slugs, comment blocks, and the lint normaliser
+- *(impl)* Complete IMPL-0025 Phase 1
+- *(impl)* Record the default and index header lint check
+- *(impl)* Record the Phase 2 parity entries
+- Regenerate READMEs and ToCs with lint-clean output
+- *(claude)* Document the lint-clean index, ToC, and template rules
+- *(impl)* Complete IMPL-0025 Phase 2
+- *(claude)* Document the lint-generated gate
+- *(validate)* Say where index drift goes in the JSON report
+- *(claude)* Document init's README and the empty-index normaliser
+- *(migrating)* Create plan uses the generic template
+- The generic-template fallback for a custom type
+- *(api)* Say git_sha on Document is a blob SHA, spec 1.6.1
+- Spec 1.6.1 in CLAUDE.md and api/README.md
+- *(migrating)* The markdownlint fixes and the one-time rewrite
+- *(impl)* IMPL-0025 release notes drafted in the PR
+- *(impl)* IMPL-0025 Completed
+
+### Testing
+
+- *(docparse)* Add anchors.md slug ground truth
+- *(toc)* Check the ToC for anchors.md against its hand-written links
+- *(docparse)* Pin comment blocks, the slug source, and duplicate collisions
+- *(confluence)* Regenerate plan goldens for GitHub anchors
+- *(parity)* Add the lint normaliser for IMPL-0025's output changes
+- *(repo)* Pin that init leaves nothing for validate or update
+- *(parity)* Collapse an empty index table for the init goldens
+- Create, show, validate, and override a template-less custom type
 
 ### Miscellaneous Tasks
 
 - *(chart)* Bump charts/docz to 0.3.1
+- *(mise)* Bump markdownlint-cli2 to 0.23.3
+- *(just)* Add lint-generated, a markdownlint gate over docz output
+- Run lint-generated in Test Go and the just ci gate
+- *(just)* Lint the ToC docz writes for anchors.md
+- *(just)* Lint-generated validates a fresh init under --strict
+- *(just)* Lint-generated creates the template-less custom type
 
 ## [2.0.0-beta.8] - 2026-10-08
 
