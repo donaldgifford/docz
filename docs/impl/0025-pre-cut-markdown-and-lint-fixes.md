@@ -166,7 +166,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `pkg/doczcore/docparse/testdata/anchors.md`. It holds a heading
+- [x] Add `pkg/doczcore/docparse/testdata/anchors.md`. It holds a heading
   for each case, each followed by a hand-written link to its anchor:
   - underscores, including intraword `a_b_c` and `id_prefix`
   - non-ASCII letters (`Über uns`, `Café résumé`)
@@ -179,7 +179,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   - emoji
   - three duplicates, plus a literal `dup-1` heading that collides with a
     generated suffix
-- [ ] Confirm `anchors.md` passes markdownlint-cli2 0.23.3 MD051 before
+- [x] Confirm `anchors.md` passes markdownlint-cli2 0.23.3 MD051 before
   any Go changes. It is the ground truth from here on, and Phase 3's gate
   lints it on every run
 - [ ] `AnchorSlug`: replace the `[a-z0-9 -]` filter with github-slugger's
