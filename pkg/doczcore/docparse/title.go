@@ -52,9 +52,9 @@ var blockMarkerPattern = regexp.MustCompile(`^(#|>|[-*+]\s|\d+[.)]\s|\||<)`)
 //   - A leading YAML frontmatter block is skipped. A "---" appearing
 //     later is a horizontal rule and is treated as ordinary content.
 //
-// Shared with Headings: an H1 inside a fenced code block is skipped
-// under the same fence rule (a trimmed line starting with ``` toggles;
-// ~~~ does not), leading whitespace is trimmed before matching, and the
+// Shared with Headings: an H1 inside a fenced code block or an HTML
+// comment block is skipped under the same rules (a trimmed line starting
+// with ``` toggles; ~~~ does not), leading whitespace is trimmed before matching, and the
 // text is run through the same inline-markdown stripping, so
 // "# **Bold** Title" yields "Bold Title". Also shared: indented code
 // blocks are not modeled, so a four-space-indented "# x" is a heading to
@@ -70,13 +70,9 @@ var blockMarkerPattern = regexp.MustCompile(`^(#|>|[-*+]\s|\d+[.)]\s|\||<)`)
 func Title(content []byte) string {
 	lines := skipFrontmatter(strings.Split(string(content), "\n"))
 
-	inCodeBlock := false
+	var blocks blockSkipper
 	for i, line := range lines {
-		if isFenceToggle(line) {
-			inCodeBlock = !inCodeBlock
-			continue
-		}
-		if inCodeBlock {
+		if blocks.skip(line) {
 			continue
 		}
 

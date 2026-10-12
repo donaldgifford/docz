@@ -43,8 +43,9 @@ var taskItemPattern = regexp.MustCompile(`^([ \t]*)[-*][ \t]+\[([ xX])\](?:[ \t]
 
 // TaskItems extracts every checkbox task-list item from content: a "-"
 // or "*" bullet followed by "[ ]", "[x]", or "[X]" and optional item
-// text. Items inside fenced code blocks are skipped using the same
-// fence rule as Headings. Ordinary list items without a checkbox are
+// text. Items inside fenced code blocks and HTML comment blocks are
+// skipped using the same rules as Headings: a task in a comment is not a
+// task. Ordinary list items without a checkbox are
 // not task items.
 //
 // Content is expected to use LF line endings (the docz write contract);
@@ -54,15 +55,10 @@ func TaskItems(content []byte) []TaskItem {
 	lines := strings.Split(string(content), "\n")
 
 	var items []TaskItem
-	inCodeBlock := false
+	var blocks blockSkipper
 
 	for i, line := range lines {
-		if isFenceToggle(line) {
-			inCodeBlock = !inCodeBlock
-			continue
-		}
-
-		if inCodeBlock {
+		if blocks.skip(line) {
 			continue
 		}
 

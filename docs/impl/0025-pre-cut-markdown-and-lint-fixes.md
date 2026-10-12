@@ -197,7 +197,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
 - [ ] Duplicate suffixes follow github-slugger's loop. When `dup-1` is
   already taken, the counter moves on to `dup-2`, and a generated suffix is
   itself recorded as taken
-- [ ] Comment awareness (question 1): a line whose first non-space
+- [x] Comment awareness (question 1): a line whose first non-space
   characters are `<!--`, with no `-->` after them on the same line, opens a
   comment block. The block ends on the first line containing `-->`. That is
   CommonMark's HTML-block type 2. Lines inside it are skipped by the walkers
