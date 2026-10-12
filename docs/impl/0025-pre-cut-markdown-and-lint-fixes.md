@@ -212,7 +212,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   - an unclosed block runs to EOF
   - a fence inside a comment and a comment inside a fence
   - plus the same cases for each other walker question 1 picks
-- [ ] Regenerate the goldens (`go test ./... -update`) for `docparse`,
+- [x] Regenerate the goldens (`go test ./... -update`) for `docparse`,
   `toc`, `kinds`, the six type packages, `repo`, and
   `pkg/export/confluence`. Review each diff, which should only touch slugs
   and anything that cites them. Confluence's anchor map

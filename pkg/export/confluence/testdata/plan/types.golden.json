@@ -143,7 +143,7 @@
       "title": "INV-0007: docz internals required for the api additional_docs block",
       "source": "docs/investigation/0007-docz-inv-0007.md",
       "parent": 10,
-      "sha256": "318ae9732ee087d0"
+      "sha256": "bbc855be48408fe7"
     },
     {
       "key": "INV-0008",
@@ -151,7 +151,7 @@
       "title": "INV-0008: Last Updated frontmatter field: scope, git semantics, and effort",
       "source": "docs/investigation/0008-docz-inv-0008.md",
       "parent": 10,
-      "sha256": "f469f5a27211651e"
+      "sha256": "a3e7f539848a1aaf"
     },
     {
       "key": "INV-0009",
@@ -643,7 +643,7 @@
       "phase-2-queue-self-heal--un-swallow-the-archived-task-conflict",
       "phase-3-boot-time-github-app-credential-self-check",
       "phase-4-the-four-mute-http-sinks",
-      "phase-5-authprovidersnone--first-setup-no-auth-mode",
+      "phase-5-auth_providersnone--first-setup-no-auth-mode",
       "phase-6-deliberate-failure-verification-deploy-close-out",
       "references",
       "scope",
@@ -1056,7 +1056,7 @@
     "docs/investigation/0007-docz-inv-0007.md": [
       "INV-0007: docz internals required for the api additional_docs block",
       "1-where-should-the-h1title-extractor-live",
-      "2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additionaldocs",
+      "2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additional_docs",
       "3-does-docz-need-to-expose-the-urlroute-mapping",
       "amendment-to-decision-1-the-empty-string-contract",
       "approach",
@@ -1070,7 +1070,7 @@
       "f4-additional-docs-have-no-id-and-the-whole-downstream-contract-is-keyed-on-id",
       "f5-the-ingestion-fetcher-filters-the-tree-by-type-dir-so-additional-docs-are-invisible-to-it",
       "f6-globs-cannot-be-expanded-by-docz-in-the-consumers-model",
-      "f7-wiki-exclude-and-api-additionaldocs-disagree-about-examples",
+      "f7-wiki-exclude-and-api-additional_docs-disagree-about-examples",
       "findings",
       "how-the-design-resolved-f5-f6-and-f7",
       "hypothesis",
@@ -1083,7 +1083,7 @@
       "INV-0008: Last Updated frontmatter field: scope, git semantics, and effort",
       "1-field-name",
       "2-sha-representation-if-recorded",
-      "3-configurable-key-name-per-type-updatedfield-like-statusfield",
+      "3-configurable-key-name-per-type-updated_field-like-status_field",
       "4-date-source-for-the-git-derived-path",
       "5-what-does-docz-update-do-in-a-shallow-clone",
       "6-add-an-updated-column-to-the-readme-index-tables",
@@ -1310,7 +1310,7 @@
       "rollback",
       "rollback-1",
       "rollback-2",
-      "scenario-a-chart-push-fails-with-403-writepackage",
+      "scenario-a-chart-push-fails-with-403-write_package",
       "scenario-pods-fail-to-pull-the-image-after-install",
       "steps",
       "steps-1",
