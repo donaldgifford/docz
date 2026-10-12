@@ -595,6 +595,8 @@ commit, and the contract says what `git_sha` is.
   goldens.
 - d. Other.
 
+> **Resolved 2026-10-12: (a).** Headings, Title, and TaskItems, as INV-0009 Decision 3 said.
+
 ### 2. How do IMPL and runbook stop failing MD024?
 
 - **a. Add `MD024` to the `markdownlint-disable-file` line both templates
@@ -606,6 +608,8 @@ commit, and the contract says what `git_sha` is.
 - c. Make the headings unique (`#### Phase 1 tasks`). This breaks the
   heading specs, inference, and every existing IMPL.
 - d. Other.
+
+> **Resolved 2026-10-12: (a).** MD024 joins the existing disable-file line in the IMPL and runbook templates.
 
 ### 3. What does docz do about MD013 on lines it writes from content?
 
@@ -620,6 +624,8 @@ commit, and the contract says what `git_sha` is.
 - d. Nothing; MD013 is the repository's config to set.
 - e. Other.
 
+> **Resolved 2026-10-12: (a).** Capture, disable, and restore inside the ToC and index regions only; the H1 is left alone.
+
 ### 4. How does the parity suite accept the changed bytes?
 
 - **a. A `lint` normaliser applied to both sides, with an explicit table of
@@ -631,6 +637,8 @@ commit, and the contract says what `git_sha` is.
   precise per case, but it means about 50 new files.
 - c. Other.
 
+> **Resolved 2026-10-12: (a).** One `lint` normaliser with an explicit per-issue table, applied to both sides.
+
 ### 5. What shape is the lint gate?
 
 - **a. A `just lint-generated` recipe (a bash body), with a step in the
@@ -641,6 +649,8 @@ commit, and the contract says what `git_sha` is.
 - c. Fold it into `just parity`.
 - d. Other.
 
+> **Resolved 2026-10-12: (a).** A `just lint-generated` recipe, in the `test-go` CI job and `just ci`.
+
 ### 6. Does Phase 3 also gate this repository's own docs/ (#98)?
 
 - **a. No. Gate generated output now, and leave #98 for the pre-cut
@@ -648,6 +658,8 @@ commit, and the contract says what `git_sha` is.
   content, and fixing it is a separate, mechanical pull request
 - b. Yes. Fix every finding and gate `docs/` in Phase 3.
 - c. Other.
+
+> **Resolved 2026-10-12: (a).** Generated output only; #98 waits for the pre-cut revisit.
 
 ### 7. Where does the #92 fallback live?
 
@@ -663,6 +675,8 @@ commit, and the contract says what `git_sha` is.
   the error. No behaviour change.
 - d. Other.
 
+> **Resolved 2026-10-12: (a).** `doctemplate.ResolveOrGeneric`; `Resolve` and `ExportTemplate` keep their contracts.
+
 ### 8. Should `docz validate --format json` count index drift?
 
 - **a. No. Keep drift in the separate `index` array and document it in
@@ -671,6 +685,8 @@ commit, and the contract says what `git_sha` is.
   people
 - b. Count drift in `warnings` as well.
 - c. Other.
+
+> **Resolved 2026-10-12: (a).** Drift stays in the `index` array and is documented.
 
 ### 9. What does the reader show instead of "Commit"?
 
@@ -681,6 +697,8 @@ commit, and the contract says what `git_sha` is.
   from", which needs the repository record on the reader page.
 - d. Other.
 
+> **Resolved 2026-10-12: (a).** Drop the row. The value stays in docz-api's database, so a view can come back later if it is ever wanted.
+
 ### 10. How does this ship?
 
 - **a. One beta (`v2.0.0-beta.9`) after Phase 7, before #133, #135, and
@@ -690,12 +708,16 @@ commit, and the contract says what `git_sha` is.
 - c. A beta per phase.
 - d. Other.
 
+> **Resolved 2026-10-12: (a).** One beta, `v2.0.0-beta.9`, after Phase 7.
+
 ### 11. Does this document merge on its own first?
 
 - **a. Yes. This docs pull request merges, then Phase 1 starts from `main`
   and checks its boxes in its own pull request.** *(recommendation)*
 - b. It rides with Phase 1's pull request.
 - c. Other.
+
+> **Resolved 2026-10-12: (a).** This document merges on its own as a docs pull request; Phase 1 starts from `main`.
 
 <!--docz:open-questions:end-->
 
