@@ -133,10 +133,12 @@ predates MD060, so CI has never seen the table failures.
 
 ## Implementation Phases
 
-Each phase is one pull request off `main`, opened after the previous one
-merges (not stacked), labelled `dont-release`, in this order. A phase is
-complete when all its tasks are checked off and its success criteria are
-met. Phases 1 and 2 change consumer-visible bytes in frozen v1 packages
+All seven phases land in one pull request from `fix/pre-cut-lint-fixes`,
+labelled `dont-release`. The phases run in this order on that branch, each
+as its own commits, so the history reads phase by phase and a phase can be
+reverted on its own. A phase is complete when all its tasks are checked
+off and its success criteria are met. The pull request is ready for review
+when every phase is complete and `just ci` passes on the branch. Phases 1 and 2 change consumer-visible bytes in frozen v1 packages
 (`docparse`, `toc`, `index`): a behaviour fix toward their documented
 contract, not a shape change. The release notes say so.
 
@@ -356,7 +358,7 @@ CI in the same pull request.
   - restore the `[a-z0-9 -]` slug filter: MD051
   - drop `MD024` from the IMPL `disable-file` line: MD024
 
-  Record the three results in the PR
+  Record the three results in the pull request description
 - [ ] Comment on #98: the generated output is gated here, and what is left
   is this repository's own `docs/` (question 6)
 - [ ] CLAUDE.md: the recipe, the CI step, and the version pin
@@ -512,8 +514,8 @@ commit, and the contract says what `git_sha` is.
   `disable-file` and capture lines, and the generic-template fallback
 - [ ] Draft the release notes for question 10's beta. Name the three frozen
   packages whose output changed and why
-- [ ] Close #82, #96, #127, #112, #92, and #169 with the merged PRs. Comment
-  on #98 with what is left
+- [ ] The pull request closes #82, #96, #127, #112, #92, and #169
+  (`Closes` lines in its description). Comment on #98 with what is left
 - [ ] Set this document to Completed
 - [ ] Human: cut the beta (`just release`), then do #133, #135, and #140
 
@@ -717,7 +719,7 @@ commit, and the contract says what `git_sha` is.
 - b. It rides with Phase 1's pull request.
 - c. Other.
 
-> **Resolved 2026-10-12: (a).** This document merges on its own as a docs pull request; Phase 1 starts from `main`.
+> **Resolved 2026-10-12: (a).** This document merges on its own as a docs pull request; the work starts from `main`. Amended the same day: every phase lands in a single pull request rather than one per phase.
 
 <!--docz:open-questions:end-->
 
