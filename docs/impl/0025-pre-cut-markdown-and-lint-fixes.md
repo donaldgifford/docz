@@ -1,7 +1,7 @@
 ---
 id: IMPL-0025
 title: "Pre-cut markdown and lint fixes"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-10-12
 ---
@@ -541,10 +541,11 @@ commit, and the contract says what `git_sha` is.
   packages whose output changed and why. *Built: the draft is in the pull
   request description, ready for the `v2.0.0-beta.9` release body;
   goreleaser writes the rest.*
-- [ ] The pull request closes #82, #96, #127, #112, #92, and #169
+- [x] The pull request closes #82, #96, #127, #112, #92, and #169
   (`Closes` lines in its description). Comment on #98 with what is left
-- [ ] Set this document to Completed
-- [ ] Human: cut the beta (`just release`), then do #133, #135, and #140
+- [x] Set this document to Completed
+- [ ] Human: cut the beta (`just release`), then do #133, #135, and #140.
+  *Deferred, human required: tags and merges are the maintainer's.*
 
 <!--docz:tasks:end-->
 
@@ -587,16 +588,16 @@ commit, and the contract says what `git_sha` is.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] `anchors.md` is checked by markdownlint (MD051) and by
+- [x] `anchors.md` is checked by markdownlint (MD051) and by
   `TestAnchorsMatchGitHub`, so the slug has one external ground truth
-- [ ] Every regenerated golden is reviewed as a diff, not accepted wholesale
-- [ ] `just lint-generated` with default rules and with the repository
+- [x] Every regenerated golden is reviewed as a diff, not accepted wholesale
+- [x] `just lint-generated` with default rules and with the repository
   config, plus the three revert drills from Phase 3
-- [ ] `just parity`: every delta is a named normaliser entry tied to an issue
-- [ ] `docz validate --strict` straight after `docz init`
-- [ ] Template-less custom type: create, show, validate, and override, in
+- [x] `just parity`: every delta is a named normaliser entry tied to an issue
+- [x] `docz validate --strict` straight after `docz init`
+- [x] Template-less custom type: create, show, validate, and override, in
   `repo`, `cmd`, and `test/consumer`
-- [ ] `just ui ci` for the reader change
+- [x] `just ui ci` for the reader change
 
 <!--docz:testing:end-->
 
