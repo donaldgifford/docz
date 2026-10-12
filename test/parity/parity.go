@@ -134,14 +134,22 @@ func MarkerNormalizer() Normalizer {
 // place; an empty V1 is a line v2 added. Issue names the fix, so the table
 // reads as a list of permitted deltas rather than a pattern that might
 // excuse a regression.
+//
+// AtEOF anchors the V2 run to the end of the text, for a change that is
+// about how a file ends rather than what a line says.
 type lintRewrite struct {
 	Issue string
 	V2    []string
 	V1    []string
+	AtEOF bool
 }
 
 // issuePhaseSlug is the fix behind each of the IMPL template's phase lines.
 const issuePhaseSlug = "#127: the IMPL template's phase placeholder is a comment, and GitHub's slug drops it"
+
+// issueWikiIndexEnd is the fix behind each docs/index.md ending: v1.2.2
+// ended the type list with a blank line too many (MD012).
+const issueWikiIndexEnd = "#127: the wiki landing page ends with one newline, not a blank line (MD012)"
 
 // issueTemplateLine is the fix behind each template line wrapped to fit
 // MD013's default of 80 characters.
@@ -280,6 +288,42 @@ var lintRewrites = []lintRewrite{
 		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (8 headings)"},
 	},
 	// END lintRewrites
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [ADRs](adr/README.md)", ""},
+		V1:    []string{"- [ADRs](adr/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Design](design/README.md)", ""},
+		V1:    []string{"- [Design](design/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Frameworks](frameworks/README.md)", ""},
+		V1:    []string{"- [Frameworks](frameworks/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Implementation Plans](impl/README.md)", ""},
+		V1:    []string{"- [Implementation Plans](impl/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Investigations](investigation/README.md)", ""},
+		V1:    []string{"- [Investigations](investigation/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [RFCs](rfc/README.md)", ""},
+		V1:    []string{"- [RFCs](rfc/README.md)", "", ""},
+		AtEOF: true,
+	},
 }
 
 // LintNormalizer rewrites each lintRewrites entry from its v2 form back to
@@ -304,6 +348,11 @@ func applyLintRewrites(s string, rewrites []lintRewrite) string {
 	padded := "\n" + s + "\n"
 
 	for _, r := range rewrites {
+		if r.AtEOF {
+			padded = rewriteAtEOF(padded, r)
+			continue
+		}
+
 		from := "\n" + strings.Join(r.V2, "\n") + "\n"
 		to := "\n"
 		if len(r.V1) > 0 {
@@ -318,6 +367,17 @@ func applyLintRewrites(s string, rewrites []lintRewrite) string {
 	}
 
 	return padded[1 : len(padded)-1]
+}
+
+// rewriteAtEOF applies r when its V2 run ends padded, the text with a
+// newline added at each end.
+func rewriteAtEOF(padded string, r lintRewrite) string {
+	from := "\n" + strings.Join(r.V2, "\n") + "\n"
+	if !strings.HasSuffix(padded, from) {
+		return padded
+	}
+
+	return strings.TrimSuffix(padded, from) + "\n" + strings.Join(r.V1, "\n") + "\n"
 }
 
 // NormalizeFiles applies norms to every recorded body and recomputes the size

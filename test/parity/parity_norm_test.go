@@ -712,6 +712,7 @@ func TestApplyLintRewrites(t *testing.T) {
 		{Issue: "one line", V2: []string{"new"}, V1: []string{"old"}},
 		{Issue: "added line", V2: []string{"added"}},
 		{Issue: "wrapped line", V2: []string{"first half", "second half"}, V1: []string{"first half second half"}},
+		{Issue: "file end", V2: []string{"last", ""}, V1: []string{"last", "", ""}, AtEOF: true},
 	}
 
 	tests := []struct {
@@ -725,6 +726,9 @@ func TestApplyLintRewrites(t *testing.T) {
 		{name: "drops an added line", in: "a\nadded\nb\n", want: "a\nb\n"},
 		{name: "joins a wrapped line", in: "x\nfirst half\nsecond half\ny", want: "x\nfirst half second half\ny"},
 		{name: "first and last lines", in: "new\nmid\nadded", want: "old\nmid"},
+		{name: "adds the blank line at the end", in: "a\nlast\n", want: "a\nlast\n\n"},
+		{name: "leaves a v1.2.2 ending alone", in: "a\nlast\n\n", want: "a\nlast\n\n"},
+		{name: "leaves the same line mid-file alone", in: "last\nmore\n", want: "last\nmore\n"},
 		{name: "v1.2.2 output is unchanged", in: "old\nfirst half second half\n", want: "old\nfirst half second half\n"},
 	}
 

@@ -297,7 +297,7 @@ against 0.23.3:
   `rfc.md:26`, `runbook.md:26`, and `index_impl.md:7`. Add a test in
   `doctemplate` that fails on any embedded template line over 80 characters
   outside a table or a fence
-- [ ] `wiki_index.md`: end with exactly one newline (MD012), and update the
+- [x] `wiki_index.md`: end with exactly one newline (MD012), and update the
   `pkg/wiki` goldens
 - [ ] Check the generic `default.md` and every `index_*.md` header against
   default rules, and fix what they report
