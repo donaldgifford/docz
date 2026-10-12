@@ -737,6 +737,13 @@ func TestValidate_TemplateThatResolvesNowhere(t *testing.T) {
 	r := vtestRepo(t)
 	vtestTypeWithTemplate(t, r, "frameworks", "FW", nil)
 
+	// A configured template path that does not exist is the one way left to
+	// resolve nowhere: a type with no template at all falls back to the
+	// generic one (issue #92).
+	fw := r.Cfg.Types["frameworks"]
+	fw.Template = "docs/templates/missing.md"
+	r.Cfg.Types["frameworks"] = fw
+
 	report, err := r.Validate(t.Context(), []string{"frameworks", "adr"}, ValidateOptions{})
 	if err != nil {
 		t.Fatalf("Validate: %v", err)

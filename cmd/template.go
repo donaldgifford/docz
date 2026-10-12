@@ -192,7 +192,8 @@ func (r *Runner) tmplResolve(ctx context.Context, docType string) (string, error
 		"docs_dir", r.Cfg.DocsDir,
 	)
 
-	return r.repoOrOpen().Template(ctx, docType)
+	body, _, err := r.repoOrOpen().Template(ctx, docType)
+	return body, err
 }
 
 // tmplOverridePath is the file `template override` writes:

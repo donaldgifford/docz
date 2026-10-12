@@ -232,6 +232,10 @@ type typeContext struct {
 	tmpl    string
 	tmplErr error
 
+	// generic is set when the type has no template of its own and tmpl is
+	// the embedded generic one (issue #92).
+	generic bool
+
 	// tmplPath is the repo-relative template file a person would edit, or ""
 	// when the template is the embedded one.
 	tmplPath string
@@ -256,7 +260,11 @@ type typeContext struct {
 func (v *validateRun) typeContext(typeName string) *typeContext {
 	tc := &typeContext{name: typeName, cfg: v.repo.Cfg.Types[typeName]}
 
-	tc.tmpl, tc.tmplErr = doctemplate.Resolve(typeName, v.repo.Path(tc.cfg.Template), v.docsDir())
+	tc.tmpl, tc.generic, tc.tmplErr = doctemplate.ResolveOrGeneric(
+		typeName,
+		v.repo.Path(tc.cfg.Template),
+		v.docsDir(),
+	)
 	if tc.tmplErr != nil {
 		return tc
 	}

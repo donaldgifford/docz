@@ -15,8 +15,8 @@ import (
 
 // ADR-0003 removes `plan` from the built-in catalogue on the v2 line. A repo
 // that kept its `types.plan` block does not lose its documents: the block now
-// declares a **custom** type, and everything except creating a new one keeps
-// working.
+// declares a **custom** type, and everything keeps working — creating a new
+// one included, from the generic template (issue #92).
 //
 // These tests are the promise. Without them the fallback is an argument in a
 // design document rather than something the binary does.
@@ -216,47 +216,45 @@ func TestLegacyPlan_InitListAndUpdateWork(t *testing.T) {
 	runner = nil
 }
 
-// TestLegacyPlan_CreateFailsNamingTheFix is the one command that stops working,
-// and the message is the whole of the user experience: it has to name the file
-// to create, not just say no.
-func TestLegacyPlan_CreateFailsNamingTheFix(t *testing.T) {
+// TestLegacyPlan_CreateUsesTheGenericTemplate pins the fallback for the one
+// command that used to stop working: with no plan template anywhere, a new
+// plan document comes from the embedded generic template (issue #92), so
+// nothing the repository does with its plan block fails on v2.
+func TestLegacyPlan_CreateUsesTheGenericTemplate(t *testing.T) {
 	dir := setupLegacyPlan(t)
 
 	runRoot(t, "init")
 
-	out, err := runRootErr(t, "create", "plan", "Something new")
-	if err == nil {
-		t.Fatalf("create plan succeeded; there is no plan template left (output: %s)", out)
+	if out, err := runRootErr(t, "create", "plan", "Something new"); err != nil {
+		t.Fatalf("create plan = %v, want the generic template (output: %s)", err, out)
 	}
 
-	want := filepath.Join(dir, "docs", "templates", "plan.md")
-	if !strings.Contains(err.Error(), want) {
-		t.Errorf("create plan error does not name %s as the fix:\n%v", want, err)
+	body, err := os.ReadFile(filepath.Join(dir, "docs", "plan", "0001-something-new.md"))
+	if err != nil {
+		t.Fatalf("the plan document was not written: %v", err)
+	}
+
+	if !strings.Contains(string(body), "# PLAN-0001: Something new") {
+		t.Errorf("plan document is not the rendered generic template:\n%s", body)
 	}
 }
 
-// TestLegacyPlan_TemplateOverrideNamesTheSamePath pins where the fallback
-// stands today.
-//
-// repo.ExportTemplate scaffolds the generic template-and-schema pair for a type
-// whose template resolves nowhere (IMPL-0018 Phase 3), but cmd/template.go does
-// not go through it until the Phase 5 swap. Until then the command fails and
-// names the path a person would create, which is the same path `create` names.
-// This test is what will fail when the swap lands, and that failure is the
-// reminder to assert the scaffold instead.
-func TestLegacyPlan_TemplateOverrideNamesTheSamePath(t *testing.T) {
+// TestLegacyPlan_TemplateOverrideScaffoldsThePair pins `template override` for
+// a type whose template resolves nowhere: it writes the generic template and
+// the generic marker skeleton under the type's own names, so the repository
+// has the same two artifacts a built-in has (DESIGN-0015 §3).
+func TestLegacyPlan_TemplateOverrideScaffoldsThePair(t *testing.T) {
 	dir := setupLegacyPlan(t)
 
 	runRoot(t, "init")
 
-	out, err := runRootErr(t, "template", "override", "plan")
-	if err == nil {
-		t.Fatalf("template override plan succeeded; Phase 5 has landed, "+
-			"so assert the scaffolded pair here instead (output: %s)", out)
+	if out, err := runRootErr(t, "template", "override", "plan"); err != nil {
+		t.Fatalf("template override plan = %v, want the scaffolded pair (output: %s)", err, out)
 	}
 
-	want := filepath.Join(dir, "docs", "templates", "plan.md")
-	if !strings.Contains(err.Error(), want) {
-		t.Errorf("template override plan error does not name %s:\n%v", want, err)
+	for _, rel := range []string{"templates/plan.md", "templates/schema/plan.md"} {
+		if _, err := os.Stat(filepath.Join(dir, "docs", rel)); err != nil {
+			t.Errorf("template override plan did not write docs/%s: %v", rel, err)
+		}
 	}
 }

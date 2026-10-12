@@ -456,7 +456,7 @@ on stderr points at `docz template override` when that happens.
   tiers and falls back to `GenericTemplate()` on `ErrNoTemplate` only.
   `Resolve` keeps its contract, and a configured path that does not exist
   is still an error
-- [ ] Callers: `docwrite.Render`, `repo.Template` (show), and
+- [x] Callers: `docwrite.Render`, `repo.Template` (show), and
   `repo.Validate`'s template tier. `repo.ExportTemplate` keeps calling
   `Resolve`, so `docz template override` still scaffolds the generic pair
   with `Scaffolded: true`
