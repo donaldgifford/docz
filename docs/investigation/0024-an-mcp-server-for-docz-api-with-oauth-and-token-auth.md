@@ -11,6 +11,8 @@ created: 2026-10-08
 # INV-0024: An MCP server for docz-api with OAuth and token auth
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -35,6 +37,7 @@ created: 2026-10-08
   - [7. What does the first release include?](#7-what-does-the-first-release-include)
   - [8. What does authorization check?](#8-what-does-authorization-check)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

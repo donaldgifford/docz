@@ -11,6 +11,8 @@ created: 2026-09-12
 # IMPL-0017: v1.3.0 — updated frontmatter field and the docz update stamp pass
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -45,6 +47,7 @@ created: 2026-09-12
   - [8. What clock does "today" use for an edit-time stamp?](#8-what-clock-does-today-use-for-an-edit-time-stamp)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

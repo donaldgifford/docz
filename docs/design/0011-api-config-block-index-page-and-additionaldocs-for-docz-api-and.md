@@ -11,6 +11,8 @@ created: 2026-08-10
 # DESIGN-0011: api config block: index page and additional_docs for docz-api and docz-site
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -34,6 +36,7 @@ created: 2026-08-10
 - [Decisions](#decisions)
   - [Revision history](#revision-history)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

@@ -14,6 +14,8 @@ created: 2026-06-23
 **Date:** 2026-06-23
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -39,6 +41,7 @@ created: 2026-06-23
   - [8. Scope of the first deliverable?](#8-scope-of-the-first-deliverable)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

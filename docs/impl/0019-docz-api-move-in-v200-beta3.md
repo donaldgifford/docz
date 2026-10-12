@@ -11,6 +11,8 @@ created: 2026-09-22
 # IMPL-0019: docz-api move-in: v2.0.0-beta.3
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -45,6 +47,7 @@ created: 2026-09-22
   - [5. How do the image and chart versions continue?](#5-how-do-the-image-and-chart-versions-continue)
   - [6. When are the INV-0002 and INV-0003 successors written?](#6-when-are-the-inv-0002-and-inv-0003-successors-written)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

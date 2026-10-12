@@ -11,6 +11,8 @@ created: 2026-09-12
 # INV-0008: Last Updated frontmatter field: scope, git semantics, and effort
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -36,6 +38,7 @@ created: 2026-09-12
   - [5. What does docz update do in a shallow clone?](#5-what-does-docz-update-do-in-a-shallow-clone)
   - [6. Add an Updated column to the README index tables?](#6-add-an-updated-column-to-the-readme-index-tables)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

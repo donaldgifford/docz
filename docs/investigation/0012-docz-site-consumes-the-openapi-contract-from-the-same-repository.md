@@ -11,6 +11,8 @@ created: 2026-09-23
 # INV-0012: docz-site consumes the OpenAPI contract from the same repository
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -20,6 +22,7 @@ created: 2026-09-23
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

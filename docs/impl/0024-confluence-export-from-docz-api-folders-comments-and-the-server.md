@@ -11,6 +11,8 @@ created: 2026-10-07
 # IMPL-0024: Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021)
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -56,6 +58,7 @@ created: 2026-10-07
   - [7. Where is enabling the export documented for operators?](#7-where-is-enabling-the-export-documented-for-operators)
   - [8. Does Phase 2 keep rp.List as a fallback?](#8-does-phase-2-keep-rplist-as-a-fallback)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

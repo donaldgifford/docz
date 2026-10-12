@@ -11,6 +11,8 @@ created: 2026-08-10
 # INV-0007: docz internals required for the api additional_docs block
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -34,6 +36,7 @@ created: 2026-08-10
   - [Amendment to Decision 1: the empty-string contract](#amendment-to-decision-1-the-empty-string-contract)
   - [How the design resolved F5, F6, and F7](#how-the-design-resolved-f5-f6-and-f7)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

@@ -11,6 +11,8 @@ created: 2026-09-30
 # DESIGN-0019: Runbook: a sixth built-in document type, disabled by default
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -47,6 +49,7 @@ created: 2026-09-30
   - [13. Is there an ADR?](#13-is-there-an-adr)
   - [14. How is docz-api version skew handled?](#14-how-is-docz-api-version-skew-handled)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

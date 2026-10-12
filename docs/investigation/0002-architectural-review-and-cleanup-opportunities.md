@@ -13,6 +13,8 @@ created: 2026-05-15
 **Status:** Concluded **Author:** Donald Gifford **Date:** 2026-05-15
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -92,6 +94,7 @@ created: 2026-05-15
   - [Wave 5 — Architecture refactor — Done (DESIGN-0004 + IMPL-0009)](#wave-5--architecture-refactor--done-design-0004--impl-0009)
   - [Low priority / defer](#low-priority--defer)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

@@ -11,6 +11,8 @@ created: 2026-09-22
 # DESIGN-0016: Move docz-api in: internal, cmd/docz-api, api, charts, and config.ParseBytes
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -45,6 +47,7 @@ created: 2026-09-22
   - [5. Does Dockerfile become Dockerfile.api now?](#5-does-dockerfile-become-dockerfileapi-now)
   - [6. Is a knowingly-red Phase 2 acceptable?](#6-is-a-knowingly-red-phase-2-acceptable)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

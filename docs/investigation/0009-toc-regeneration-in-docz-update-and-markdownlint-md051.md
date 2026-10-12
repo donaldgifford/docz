@@ -11,6 +11,8 @@ created: 2026-09-13
 # INV-0009: ToC regeneration in docz update and markdownlint MD051
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -35,6 +37,7 @@ created: 2026-09-13
   - [6. Where do the documentation fixes land?](#6-where-do-the-documentation-fixes-land)
   - [7. What to do with the doubled index-marker pair (Observation 7)?](#7-what-to-do-with-the-doubled-index-marker-pair-observation-7)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

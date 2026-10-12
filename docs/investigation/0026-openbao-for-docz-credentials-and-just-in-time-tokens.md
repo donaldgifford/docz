@@ -11,6 +11,8 @@ created: 2026-10-08
 # INV-0026: OpenBao for docz credentials and just-in-time tokens
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -32,6 +34,7 @@ created: 2026-10-08
   - [5. How do static secrets reach the pod?](#5-how-do-static-secrets-reach-the-pod)
   - [6. How do agent sandboxes get credentials?](#6-how-do-agent-sandboxes-get-credentials)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

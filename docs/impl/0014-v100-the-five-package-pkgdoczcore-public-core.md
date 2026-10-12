@@ -13,6 +13,8 @@ created: 2026-07-03
 **Status:** Completed **Author:** Donald Gifford **Date:** 2026-07-03
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -47,6 +49,7 @@ created: 2026-07-03
   - [4. Does the UpdateFiles family go public with toc?](#4-does-the-updatefiles-family-go-public-with-toc)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

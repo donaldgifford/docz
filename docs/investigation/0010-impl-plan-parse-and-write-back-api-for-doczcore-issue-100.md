@@ -11,6 +11,8 @@ created: 2026-09-13
 # INV-0010: IMPL plan parse and write-back API for doczcore (issue 100)
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -39,6 +41,7 @@ created: 2026-09-13
   - [8. CLI surface in the first release](#8-cli-surface-in-the-first-release)
   - [9. Release sequencing against IMPL-0017](#9-release-sequencing-against-impl-0017)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

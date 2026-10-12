@@ -11,6 +11,8 @@ created: 2026-08-11
 # IMPL-0016: v1.2.0 — api config block and docparse.Title
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -48,6 +50,7 @@ created: 2026-08-11
 - [Decisions](#decisions)
   - [Note: Decisions 1 and 2 interact](#note-decisions-1-and-2-interact)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

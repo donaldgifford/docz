@@ -319,7 +319,7 @@ against 0.23.3:
   lines also make every fixture's v1.2.2 ToC stale, so each dry-run line
   reporting one is listed, and the wiki ending needed an end-of-file
   anchored entry per last list line*
-- [ ] `docz update` over this repository's `docs/`. Commit the regenerated
+- [x] `docz update` over this repository's `docs/`. Commit the regenerated
   READMEs and ToCs separately
 - [ ] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
   (`MD025 MD041` gains `MD024` for IMPL and runbook)

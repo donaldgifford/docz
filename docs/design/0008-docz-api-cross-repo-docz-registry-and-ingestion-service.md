@@ -13,6 +13,8 @@ created: 2026-06-23
 **Status:** Approved **Author:** Donald Gifford **Date:** 2026-06-23
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -50,6 +52,7 @@ created: 2026-06-23
   - [13. Multi-org / multi-tenant model?](#13-multi-org--multi-tenant-model)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

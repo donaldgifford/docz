@@ -11,6 +11,8 @@ created: 2026-10-10
 # INV-0029: Executable acceptance in docz documents
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -27,6 +29,7 @@ created: 2026-10-10
   - [3. Do DESIGN documents get a worked-example region?](#3-do-design-documents-get-a-worked-example-region)
   - [4. Who may run the commands?](#4-who-may-run-the-commands)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

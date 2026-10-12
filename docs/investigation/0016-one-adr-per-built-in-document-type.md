@@ -11,6 +11,8 @@ created: 2026-10-02
 # INV-0016: One ADR per built-in document type
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -30,6 +32,7 @@ created: 2026-10-02
   - [4. What evidence does each cite?](#4-what-evidence-does-each-cite)
   - [5. One PR or six?](#5-one-pr-or-six)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

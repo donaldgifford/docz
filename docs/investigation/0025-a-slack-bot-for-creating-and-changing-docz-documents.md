@@ -11,6 +11,8 @@ created: 2026-10-08
 # INV-0025: A Slack bot for creating and changing docz documents
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -32,6 +34,7 @@ created: 2026-10-08
   - [5. What is the default repository?](#5-what-is-the-default-repository)
   - [6. What ships first?](#6-what-ships-first)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

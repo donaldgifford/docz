@@ -11,6 +11,8 @@ created: 2026-10-06
 # INV-0020: docz-api Confluence export: running confluence.Export without a checkout
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -41,6 +43,7 @@ created: 2026-10-06
   - [10. How are links to files it does not export resolved?](#10-how-are-links-to-files-it-does-not-export-resolved)
   - [11. How are comments kept when a page is overwritten?](#11-how-are-comments-kept-when-a-page-is-overwritten)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

@@ -11,6 +11,8 @@ created: 2026-09-30
 # IMPL-0022: Runbook: the sixth built-in type (v2.0.0-beta.6)
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -53,6 +55,7 @@ created: 2026-09-30
   - [7. How does the Phase 8 install prove a runbook reaches the site?](#7-how-does-the-phase-8-install-prove-a-runbook-reaches-the-site)
   - [8. Does Phase 3 enable runbook before the typed reader exists?](#8-does-phase-3-enable-runbook-before-the-typed-reader-exists)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

@@ -11,6 +11,8 @@ created: 2026-09-25
 # DESIGN-0018: One Helm chart for docz: charts/docz replaces docz-api and docz-site
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -51,6 +53,7 @@ created: 2026-09-25
   - [16. Does the first cut add a site alert?](#16-does-the-first-cut-add-a-site-alert)
   - [17. Is authRedirectBase derived from the edge?](#17-is-authredirectbase-derived-from-the-edge)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

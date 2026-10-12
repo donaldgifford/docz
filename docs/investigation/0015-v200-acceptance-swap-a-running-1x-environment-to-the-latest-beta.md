@@ -11,6 +11,8 @@ created: 2026-10-02
 # INV-0015: v2.0.0 acceptance: swap a running 1.x environment to the latest beta
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -29,6 +31,7 @@ created: 2026-10-02
   - [3. How is traffic cut over?](#3-how-is-traffic-cut-over)
   - [4. What does passing mean for v2.0.0?](#4-what-does-passing-mean-for-v200)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

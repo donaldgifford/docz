@@ -11,6 +11,8 @@ created: 2026-09-25
 # INV-0014: Consolidate the docz-api and docz-site Helm charts into one chart
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -29,6 +31,7 @@ created: 2026-09-25
   - [2. What happens to the two published charts?](#2-what-happens-to-the-two-published-charts)
   - [3. How does an existing release move over?](#3-how-does-an-existing-release-move-over)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

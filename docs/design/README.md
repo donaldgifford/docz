@@ -30,8 +30,10 @@ docz create design "Your Design Title"
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All Design
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 | ID | Title | Status | Date | Author | Link |
-|----|-------|--------|------|--------|------|
+| --- | --- | --- | --- | --- | --- |
 | DESIGN-0001 | docz CLI Tool | Implemented | 2026-02-22 | Donald Gifford | [0001-docz-cli-design.md](0001-docz-cli-design.md) |
 | DESIGN-0002 | Wiki Command for MkDocs TechDocs Integration | Implemented | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
 | DESIGN-0003 | Table of Contents Generation | Draft | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
@@ -53,4 +55,5 @@ docz create design "Your Design Title"
 | DESIGN-0019 | Runbook: a sixth built-in document type, disabled by default | Implemented | 2026-09-30 | Donald Gifford | [0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md](0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md) |
 | DESIGN-0020 | Confluence export: docz documents as Confluence Cloud pages | Implemented | 2026-10-05 | Donald Gifford | [0020-confluence-export-docz-documents-as-confluence-cloud-pages.md](0020-confluence-export-docz-documents-as-confluence-cloud-pages.md) |
 | DESIGN-0021 | Confluence export from docz-api: per-repository folders in shared spaces | Implemented | 2026-10-06 | Donald Gifford | [0021-confluence-export-from-docz-api-per-repository-folders-in.md](0021-confluence-export-from-docz-api-per-repository-folders-in.md) |
+<!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

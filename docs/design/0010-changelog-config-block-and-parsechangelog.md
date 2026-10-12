@@ -14,6 +14,8 @@ created: 2026-08-02
 **Date:** 2026-08-02
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -39,6 +41,7 @@ created: 2026-08-02
   - [9. What happens on duplicate version headings?](#9-what-happens-on-duplicate-version-headings)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

@@ -11,6 +11,8 @@ created: 2026-09-14
 # DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -54,6 +56,7 @@ created: 2026-09-14
   - [11. Delivery granularity](#11-delivery-granularity)
   - [12. Hooks for wiki](#12-hooks-for-wiki)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

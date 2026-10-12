@@ -11,6 +11,8 @@ created: 2026-10-07
 # RUNBOOK-0003: Enable Confluence export on docz-api
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Last Verified](#last-verified)
 - [Overview](#overview)
 - [When to Use](#when-to-use)
@@ -31,6 +33,7 @@ created: 2026-10-07
     - [Steps](#steps-3)
 - [Escalation](#escalation)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:last-verified:start-->

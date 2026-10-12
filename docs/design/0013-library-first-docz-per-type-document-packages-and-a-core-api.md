@@ -11,6 +11,8 @@ created: 2026-09-13
 # DESIGN-0013: Library-first docz: per-type document packages and a core API the CLI can sit on
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -52,6 +54,7 @@ created: 2026-09-13
   - [14. Is the CLI a consumer of pkg/impl in Phase A?](#14-is-the-cli-a-consumer-of-pkgimpl-in-phase-a)
   - [15. Module boundary](#15-module-boundary)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

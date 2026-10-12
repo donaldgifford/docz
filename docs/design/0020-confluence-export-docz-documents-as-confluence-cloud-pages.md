@@ -11,6 +11,8 @@ created: 2026-10-05
 # DESIGN-0020: Confluence export: docz documents as Confluence Cloud pages
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -45,6 +47,7 @@ created: 2026-10-05
   - [13. Is a skipped page a failure?](#13-is-a-skipped-page-a-failure)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

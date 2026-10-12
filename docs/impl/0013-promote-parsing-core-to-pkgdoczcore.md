@@ -14,6 +14,8 @@ created: 2026-06-30
 **Date:** 2026-06-30
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -43,6 +45,7 @@ created: 2026-06-30
   - [5. Single atomic PR or a staged move?](#5-single-atomic-pr-or-a-staged-move)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

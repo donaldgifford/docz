@@ -10,6 +10,8 @@ created: 2026-07-03
 # 0001. pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Status](#status)
 - [Summary](#summary)
 - [Context](#context)
@@ -34,6 +36,7 @@ created: 2026-07-03
   - [7. Post-1.0 compatibility & deprecation policy?](#7-post-10-compatibility--deprecation-policy)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 ## Status

@@ -30,8 +30,10 @@ docz create impl "Your Implementation Title"
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All Implementation Plans
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 | ID | Title | Status | Date | Author | Link |
-|----|-------|--------|------|--------|------|
+| --- | --- | --- | --- | --- | --- |
 | IMPL-0001 | docz CLI Implementation | Completed | 2026-02-22 | Donald Gifford | [0001-docz-cli-implementation.md](0001-docz-cli-implementation.md) |
 | IMPL-0002 | Wiki Command for MkDocs TechDocs Integration | Completed | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
 | IMPL-0003 | Table of Contents Generation | Completed | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
@@ -56,4 +58,5 @@ docz create impl "Your Implementation Title"
 | IMPL-0023 | Confluence export: the package and the CLI (DESIGN-0020 Phase A) | Completed | 2026-10-05 | Donald Gifford | [0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md](0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md) |
 | IMPL-0024 | Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021) | Completed | 2026-10-07 | Donald Gifford | [0024-confluence-export-from-docz-api-folders-comments-and-the-server.md](0024-confluence-export-from-docz-api-folders-comments-and-the-server.md) |
 | IMPL-0025 | Pre-cut markdown and lint fixes | Draft | 2026-10-12 | Donald Gifford | [0025-pre-cut-markdown-and-lint-fixes.md](0025-pre-cut-markdown-and-lint-fixes.md) |
+<!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

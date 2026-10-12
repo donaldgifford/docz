@@ -14,6 +14,8 @@ created: 2026-08-02
 **Date:** 2026-08-02
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -42,6 +44,7 @@ created: 2026-08-02
 - [Notes for review](#notes-for-review)
 - [Outcome](#outcome)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->
