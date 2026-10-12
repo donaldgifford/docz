@@ -182,19 +182,19 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
 - [x] Confirm `anchors.md` passes markdownlint-cli2 0.23.3 MD051 before
   any Go changes. It is the ground truth from here on, and Phase 3's gate
   lints it on every run
-- [ ] `AnchorSlug`: replace the `[a-z0-9 -]` filter with github-slugger's
+- [x] `AnchorSlug`: replace the `[a-z0-9 -]` filter with github-slugger's
   character class (Unicode L, M, N, and Pc, plus space and `-`). Drop
   `strings.Trim(s, "-")`. Rewrite the doc comment to name github-slugger as
   the contract
-- [ ] `Headings`: build the slug input from the raw heading text. Strip the
+- [x] `Headings`: build the slug input from the raw heading text. Strip the
   closing ATX sequence, remove HTML comments and inline tags (keeping the
   spaces around them), strip inline markdown, then slug. `Heading.Text` keeps
   its comments: `pkg/impl`, `kinds.InferRegions`, and `kinds.Alternatives`
   read the placeholder comment from it
-- [ ] `stripInlineMarkdown`: `_` emphasis only opens and closes at a word
+- [x] `stripInlineMarkdown`: `_` emphasis only opens and closes at a word
   boundary (CommonMark's intraword rule), so `a_b_c` stays `a_b_c` in both
   `Text` and the slug
-- [ ] Duplicate suffixes follow github-slugger's loop. When `dup-1` is
+- [x] Duplicate suffixes follow github-slugger's loop. When `dup-1` is
   already taken, the counter moves on to `dup-2`, and a generated suffix is
   itself recorded as taken
 - [x] Comment awareness (question 1): a line whose first non-space
