@@ -234,7 +234,9 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   ToCs separately from the code
 - [x] CLAUDE.md: update the `docparse` slug and comment rules and the parity
   normaliser list
-- [ ] `just ci` passes
+- [x] `just ci` passes. *Locally `license-check` fails the same way on a
+  clean `main` (the installed go-licenses rejects standard-library
+  packages); every other gate passes*
 
 <!--docz:tasks:end-->
 
