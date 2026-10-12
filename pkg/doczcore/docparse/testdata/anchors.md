@@ -72,6 +72,10 @@ both. docz follows github-slugger, pinned by `TestHeadingsDuplicateCollision`.
 
 [this heading](#an-inline-tag)
 
+## How `<type>` resolves
+
+[this heading](#how-type-resolves)
+
 ## Closing sequence ##
 
 [this heading](#closing-sequence)

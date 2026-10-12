@@ -137,6 +137,8 @@ func TestHeadingsSlugSource(t *testing.T) {
 		{"hash without space is text", "## C#", "C#", "c"},
 		{"intraword underscores", "## Use a_b_c names", "Use a_b_c names", "use-a_b_c-names"},
 		{"underscore emphasis", "## _under_ and _more_", "under and more", "under-and-more"},
+		{"tag inside a code span", "## How `<type>` resolves", "How <type> resolves", "how-type-resolves"},
+		{"comment inside a code span", "## The `<!-- x -->` form", "The <!-- x --> form", "the----x----form"},
 		{"code span underscore", "## The `code_span` heading", "The code_span heading", "the-code_span-heading"},
 	}
 

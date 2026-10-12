@@ -119,11 +119,28 @@ func stripInline(text string) string {
 
 // slugSource is the text github-slugger sees for a heading: its HTML
 // comments and inline tags removed, with the spaces around them kept,
-// and its inline markdown stripped.
+// and its inline markdown stripped. Inside a code span a tag is literal
+// text, so "`<type>`" keeps its "type".
 func slugSource(raw string) string {
-	raw = commentPattern.ReplaceAllString(raw, "")
-	raw = inlineTagPattern.ReplaceAllString(raw, "")
-	return stripInline(raw)
+	var b strings.Builder
+	for raw != "" {
+		loc := codePattern.FindStringIndex(raw)
+		if loc == nil {
+			b.WriteString(dropHTML(raw))
+			break
+		}
+		b.WriteString(dropHTML(raw[:loc[0]]))
+		b.WriteString(raw[loc[0]:loc[1]])
+		raw = raw[loc[1]:]
+	}
+	return stripInline(b.String())
+}
+
+// dropHTML removes HTML comments and inline tags from text outside code
+// spans.
+func dropHTML(s string) string {
+	s = commentPattern.ReplaceAllString(s, "")
+	return inlineTagPattern.ReplaceAllString(s, "")
 }
 
 // isFenceToggle reports whether line opens or closes a fenced code
