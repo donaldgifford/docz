@@ -204,7 +204,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   question 1 picks. Fences are tested first, so `<!--` inside a fence opens
   nothing. A single-line comment, which includes every `<!--docz:…-->`
   marker, never opens a block. `Markers` and `Regions` are untouched
-- [ ] `TestAnchorsMatchGitHub`: run `toc.GenerateToC` over `anchors.md`.
+- [x] `TestAnchorsMatchGitHub`: run `toc.GenerateToC` over `anchors.md`.
   Every generated link must equal the hand-written link under its heading
 - [ ] Unit tests for the comment-block rule:
   - a heading inside a block is skipped
