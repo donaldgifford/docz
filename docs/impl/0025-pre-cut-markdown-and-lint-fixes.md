@@ -420,7 +420,7 @@ After this phase `docz init` alone leaves a repository that
   ends in a pair still yields one pair
 - [x] `--format json` (question 8): drift stays in the separate `index`
   array, and `docz validate --help` and the README say so in one sentence
-- [ ] Parity: an empty-table collapse, applied to both sides after the
+- [x] Parity: an empty-table collapse, applied to both sides after the
   `lint` normaliser, so an index region holding only a heading and a header
   table reads as an empty pair. Count the 14 init goldens it touches
 - [ ] `just lint-generated` runs `docz validate --strict` straight after

@@ -753,3 +753,36 @@ func TestLintRewritesNameAnIssue(t *testing.T) {
 		}
 	}
 }
+
+func TestEmptyIndexNormalizer(t *testing.T) {
+	t.Parallel()
+
+	const (
+		begin = "<!-- BEGIN DOCZ AUTO-GENERATED -->"
+		end   = "<!-- END DOCZ AUTO-GENERATED -->"
+		table = "## All ADRs\n\n| ID | Title | Status | Date | Author | Link |\n|----|-------|--------|------|--------|------|\n"
+		row   = "| ADR-0001 | A | Draft | 2026-03-04 | Me | [0001-a.md](0001-a.md) |\n"
+	)
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "collapses an empty table", in: "# ADRs\n\n" + begin + "\n" + table + end + "\n", want: "# ADRs\n\n" + begin + "\n" + end + "\n"},
+		{name: "keeps a table with rows", in: begin + "\n" + table + row + end + "\n", want: begin + "\n" + table + row + end + "\n"},
+		{name: "keeps an empty pair", in: begin + "\n" + end + "\n", want: begin + "\n" + end + "\n"},
+		{name: "keeps a table outside the region", in: table, want: table},
+		{name: "unclosed region", in: begin + "\n" + table, want: begin + "\n" + table},
+	}
+
+	n := EmptyIndexNormalizer()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := n.Apply(tt.in); got != tt.want {
+				t.Errorf("Apply(%q) =\n%q\nwant\n%q", tt.in, got, tt.want)
+			}
+		})
+	}
+}

@@ -380,6 +380,66 @@ func rewriteAtEOF(padded string, r lintRewrite) string {
 	return strings.TrimSuffix(padded, from) + "\n" + strings.Join(r.V1, "\n") + "\n"
 }
 
+// emptyIndexRows is what follows the "## All <label>" heading in the README
+// index region a render writes for a type with no documents, after
+// LintNormalizer has mapped it back to v1.2.2's spelling: a blank line, the
+// header row, and the delimiter row.
+var emptyIndexRows = []string{
+	"",
+	"| ID | Title | Status | Date | Author | Link |",
+	"|----|-------|--------|------|--------|------|",
+}
+
+// EmptyIndexNormalizer collapses an index region holding only an empty
+// table to an empty marker pair. v1.2.2's docz init wrote the empty pair and
+// v2's writes the table a render would, so a fresh repository validates
+// clean (#112). It runs after LintNormalizer, over snapshots like it, and on
+// both sides: v1.2.2's own update writes the same empty table for a type
+// with no documents, so the collapse cannot make the two sides disagree.
+func EmptyIndexNormalizer() Normalizer {
+	return Normalizer{
+		Name: "empty-index",
+		Apply: func(s string) string {
+			if !strings.Contains(s, "<!-- BEGIN DOCZ AUTO-GENERATED -->") {
+				return s
+			}
+
+			lines := strings.Split(s, "\n")
+			kept := make([]string, 0, len(lines))
+
+			for i := 0; i < len(lines); i++ {
+				kept = append(kept, lines[i])
+				if lines[i] == "<!-- BEGIN DOCZ AUTO-GENERATED -->" && isEmptyIndex(lines[i+1:]) {
+					i += 1 + len(emptyIndexRows)
+				}
+			}
+
+			return strings.Join(kept, "\n")
+		},
+	}
+}
+
+// isEmptyIndex reports whether lines open with an "## All <label>" heading
+// and an empty table, followed by the region's end marker.
+func isEmptyIndex(lines []string) bool {
+	n := 1 + len(emptyIndexRows)
+	if len(lines) <= n || lines[n] != "<!-- END DOCZ AUTO-GENERATED -->" {
+		return false
+	}
+
+	if !strings.HasPrefix(lines[0], "## All ") {
+		return false
+	}
+
+	for i, want := range emptyIndexRows {
+		if lines[1+i] != want {
+			return false
+		}
+	}
+
+	return true
+}
+
 // NormalizeFiles applies norms to every recorded body and recomputes the size
 // and digest from the result.
 //
