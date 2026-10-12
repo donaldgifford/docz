@@ -11,6 +11,8 @@ created: 2026-09-19
 # IMPL-0018: v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -51,6 +53,7 @@ created: 2026-09-19
   - [10. Which documents get the per-type tier in docz validate](#10-which-documents-get-the-per-type-tier-in-docz-validate)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

@@ -704,3 +704,85 @@ func TestSyncNormalizer(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyLintRewrites(t *testing.T) {
+	t.Parallel()
+
+	rewrites := []lintRewrite{
+		{Issue: "one line", V2: []string{"new"}, V1: []string{"old"}},
+		{Issue: "added line", V2: []string{"added"}},
+		{Issue: "wrapped line", V2: []string{"first half", "second half"}, V1: []string{"first half second half"}},
+		{Issue: "file end", V2: []string{"last", ""}, V1: []string{"last", "", ""}, AtEOF: true},
+	}
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "rewrites a whole line", in: "a\nnew\nb", want: "a\nold\nb"},
+		{name: "rewrites adjacent repeats", in: "new\nnew\nnew", want: "old\nold\nold"},
+		{name: "leaves a partial line alone", in: "a new line\nnewer", want: "a new line\nnewer"},
+		{name: "drops an added line", in: "a\nadded\nb\n", want: "a\nb\n"},
+		{name: "joins a wrapped line", in: "x\nfirst half\nsecond half\ny", want: "x\nfirst half second half\ny"},
+		{name: "first and last lines", in: "new\nmid\nadded", want: "old\nmid"},
+		{name: "adds the blank line at the end", in: "a\nlast\n", want: "a\nlast\n\n"},
+		{name: "leaves a v1.2.2 ending alone", in: "a\nlast\n\n", want: "a\nlast\n\n"},
+		{name: "leaves the same line mid-file alone", in: "last\nmore\n", want: "last\nmore\n"},
+		{name: "v1.2.2 output is unchanged", in: "old\nfirst half second half\n", want: "old\nfirst half second half\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := applyLintRewrites(tt.in, rewrites); got != tt.want {
+				t.Errorf("applyLintRewrites(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLintRewritesNameAnIssue keeps the table a list of permitted deltas:
+// every entry says which fix it belongs to.
+func TestLintRewritesNameAnIssue(t *testing.T) {
+	t.Parallel()
+
+	for i, r := range lintRewrites {
+		if !strings.HasPrefix(r.Issue, "#") || len(r.V2) == 0 {
+			t.Errorf("lintRewrites[%d] = %+v: want an issue reference and at least one v2 line", i, r)
+		}
+	}
+}
+
+func TestEmptyIndexNormalizer(t *testing.T) {
+	t.Parallel()
+
+	const (
+		begin = "<!-- BEGIN DOCZ AUTO-GENERATED -->"
+		end   = "<!-- END DOCZ AUTO-GENERATED -->"
+		table = "## All ADRs\n\n| ID | Title | Status | Date | Author | Link |\n|----|-------|--------|------|--------|------|\n"
+		row   = "| ADR-0001 | A | Draft | 2026-03-04 | Me | [0001-a.md](0001-a.md) |\n"
+	)
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "collapses an empty table", in: "# ADRs\n\n" + begin + "\n" + table + end + "\n", want: "# ADRs\n\n" + begin + "\n" + end + "\n"},
+		{name: "keeps a table with rows", in: begin + "\n" + table + row + end + "\n", want: begin + "\n" + table + row + end + "\n"},
+		{name: "keeps an empty pair", in: begin + "\n" + end + "\n", want: begin + "\n" + end + "\n"},
+		{name: "keeps a table outside the region", in: table, want: table},
+		{name: "unclosed region", in: begin + "\n" + table, want: begin + "\n" + table},
+	}
+
+	n := EmptyIndexNormalizer()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := n.Apply(tt.in); got != tt.want {
+				t.Errorf("Apply(%q) =\n%q\nwant\n%q", tt.in, got, tt.want)
+			}
+		})
+	}
+}

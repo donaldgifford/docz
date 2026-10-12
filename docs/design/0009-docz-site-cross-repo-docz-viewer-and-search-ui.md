@@ -14,6 +14,8 @@ created: 2026-06-23
 **Date:** 2026-06-23
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -41,6 +43,7 @@ created: 2026-06-23
   - [7. Where does the OIDC/OAuth token exchange happen?](#7-where-does-the-oidcoauth-token-exchange-happen)
   - [8. How should docz's own ToC markers be handled?](#8-how-should-doczs-own-toc-markers-be-handled)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

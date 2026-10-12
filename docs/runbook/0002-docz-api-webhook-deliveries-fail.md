@@ -11,6 +11,8 @@ created: 2026-10-01
 # RUNBOOK-0002: docz-api webhook deliveries fail
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Last Verified](#last-verified)
 - [Overview](#overview)
 - [When to Use](#when-to-use)
@@ -33,6 +35,7 @@ created: 2026-10-01
     - [Steps](#steps-5)
 - [Escalation](#escalation)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:last-verified:start-->

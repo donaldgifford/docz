@@ -11,6 +11,8 @@ created: 2026-09-21
 # INV-0011: Consolidating docz-api and docz-site into one repo: layout, module topology, and the v2 upgrade
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -42,6 +44,7 @@ created: 2026-09-21
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

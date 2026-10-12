@@ -11,6 +11,8 @@ created: 2026-10-10
 # INV-0028: A document graph from the references docz already parses
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -27,6 +29,7 @@ created: 2026-10-10
   - [3. What does the CLI print?](#3-what-does-the-cli-print)
   - [4. Does the validator use it?](#4-does-the-validator-use-it)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

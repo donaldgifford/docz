@@ -14,6 +14,8 @@ created: 2026-07-03
 **Date:** 2026-07-03
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -36,6 +38,7 @@ created: 2026-07-03
   - [4. The already-public CLI-shaped config helpers at v1.0?](#4-the-already-public-cli-shaped-config-helpers-at-v10)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

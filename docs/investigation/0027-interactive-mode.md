@@ -11,6 +11,8 @@ created: 2026-10-10
 # INV-0027: Interactive mode
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -40,6 +42,7 @@ created: 2026-10-10
   - [8. How is it released and installed?](#8-how-is-it-released-and-installed)
   - [9. How does Claude Code get the hooks?](#9-how-does-claude-code-get-the-hooks)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

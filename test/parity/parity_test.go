@@ -303,7 +303,7 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 		t.Fatalf("snapshot after: %v", err)
 	}
 
-	norms := []Normalizer{RootNormalizer(root), DateNormalizer(today), MarkerNormalizer()}
+	norms := []Normalizer{RootNormalizer(root), DateNormalizer(today), MarkerNormalizer(), LintNormalizer(), EmptyIndexNormalizer()}
 
 	// Normalised on both sides before the comparison, so a size and digest
 	// recorded beside a body describe the body the golden shows.

@@ -59,6 +59,9 @@ type CreateResult struct {
 type Rendered struct {
 	Filename string
 	Content  []byte
+	// Generic is set when the type had no template and the embedded
+	// generic one was rendered instead.
+	Generic bool
 }
 
 // Create generates a new document from a template and writes it to the
@@ -118,13 +121,17 @@ func NextNumber(dir string, width int) (string, error) {
 // metadata, returning the filename and bytes without touching the filesystem
 // beyond reading the template.
 //
+// A type with no template anywhere is rendered from the embedded generic one
+// and Rendered.Generic says so (issue #92), so a custom type declared in
+// .docz.yaml creates documents before anybody writes it a template.
+//
 // The error return is the template resolution and execution, which is the only
 // thing here that can fail.
 func Render(opts *CreateOptions, number string) (Rendered, error) {
 	slug := doctemplate.FilenameSlug(opts.Title)
 	filename := number + "-" + slug + ".md"
 
-	tmplContent, err := doctemplate.Resolve(string(opts.Type), opts.TemplatePath, opts.DocsDir)
+	tmplContent, generic, err := doctemplate.ResolveOrGeneric(string(opts.Type), opts.TemplatePath, opts.DocsDir)
 	if err != nil {
 		return Rendered{}, fmt.Errorf("resolving template: %w", err)
 	}
@@ -151,7 +158,7 @@ func Render(opts *CreateOptions, number string) (Rendered, error) {
 		return Rendered{}, fmt.Errorf("rendering template: %w", err)
 	}
 
-	return Rendered{Filename: filename, Content: []byte(rendered)}, nil
+	return Rendered{Filename: filename, Content: []byte(rendered), Generic: generic}, nil
 }
 
 // nextID scans the directory for existing NNNN-*.md files and returns the

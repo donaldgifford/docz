@@ -6,7 +6,7 @@ author: {{ .Author }}
 created: {{ .Date }}
 ---
 
-<!-- markdownlint-disable-file MD025 MD041 -->
+<!-- markdownlint-disable-file MD024 MD025 MD041 -->
 
 # {{ .Prefix }}-{{ .Number }}: {{ .Title }}
 
@@ -23,7 +23,8 @@ created: {{ .Date }}
 | ---- | -- | ------ | ----------- |
 |      |    |        |             |
 
-**Notes:** <!-- one or two sentences: what was run, and anything that differed -->
+**Notes:** <!-- one or two sentences: what was run, and anything that
+     differed -->
 
 <!--docz:last-verified:end-->
 

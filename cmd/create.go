@@ -116,6 +116,19 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		return err
 	}
 
+	if err := r.printCreated(docType, &result, err); err != nil {
+		return err
+	}
+
+	return r.autoUpdateNav(ctx, opts.noUpdate)
+}
+
+// printCreated reports a creation: the path, the generic-template note when
+// the type had no template, and the index refresh. It returns createErr, or
+// the first print failure when the creation itself succeeded.
+func (r *Runner) printCreated(docType string, result *repo.CreateResult, createErr error) error {
+	err := createErr
+
 	// Printing runs to the end even if it fails partway, and its error is
 	// kept only when the creation itself succeeded. A write to r.Out that
 	// fails is worth reporting on its own and never worth reporting instead
@@ -130,17 +143,19 @@ func (r *Runner) Create(ctx context.Context, opts createOpts, args []string) err
 		err = perr
 	}
 
+	if result.GenericTemplate {
+		if perr := r.genericTemplateNote(docType); perr != nil && err == nil {
+			err = perr
+		}
+	}
+
 	if result.Update != nil {
 		if perr := r.printTypeReport(result.Update); perr != nil && err == nil {
 			err = perr
 		}
 	}
 
-	if err != nil {
-		return err
-	}
-
-	return r.autoUpdateNav(ctx, opts.noUpdate)
+	return err
 }
 
 // autoUpdateNav rebuilds the MkDocs nav after a creation, when the config

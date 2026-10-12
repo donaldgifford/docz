@@ -11,6 +11,8 @@ created: 2026-09-23
 # IMPL-0020: docz-site move-in: v2.0.0-beta.4
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -45,6 +47,7 @@ created: 2026-09-23
   - [5. How does the docz-site sweep avoid cutting a docz-site release?](#5-how-does-the-docz-site-sweep-avoid-cutting-a-docz-site-release)
   - [6. What happens to docz-site's "bump the chart in the same PR" rule?](#6-what-happens-to-docz-sites-bump-the-chart-in-the-same-pr-rule)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

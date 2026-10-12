@@ -43,7 +43,12 @@ release version). Bump it by hand on any change to a specced wire shape:
 The version is the signal consumers pin against, so a wire change without a bump
 is a contract bug.
 
-Current: **`1.5.0`** — every search hit carries `created` (the authored
+Current: **`1.6.1`** — editorial: `git_sha` on `Document` is described as
+the source file's blob SHA, a cache key and not a commit; the repository's
+synced commit is `last_synced_sha` (IMPL-0025, #169). `1.6.0` — both
+document responses carry `confluence_url`, and
+`GET /api/v1/repos/{owner}/{name}/confluence` serves the last export
+(IMPL-0024). `1.5.0` — every search hit carries `created` (the authored
 `YYYY-MM-DD`, `""` on pages) and `updated_at` (RFC 3339 UTC, the same
 value the document endpoint serves), `searchDocs` accepts `sort`
 (`updated_at`/`created`, each direction) and `source` (`doc`/`page`), and

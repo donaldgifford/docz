@@ -14,6 +14,8 @@ created: 2026-06-17
 **Date:** 2026-06-17
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -24,7 +26,7 @@ created: 2026-06-17
 - [Detailed Design](#detailed-design)
   - [Output: index-header resolution (template.ResolveIndexHeader)](#output-index-header-resolution-templateresolveindexheader)
     - [Decoupling internal/index from internal/template](#decoupling-internalindex-from-internaltemplate)
-  - [Input: type-argument resolution by id_prefix](#input-type-argument-resolution-by-idprefix)
+  - [Input: type-argument resolution by id_prefix](#input-type-argument-resolution-by-id_prefix)
     - [Collisions and precedence](#collisions-and-precedence)
 - [API / Interface Changes](#api--interface-changes)
 - [Data Model](#data-model)
@@ -33,6 +35,7 @@ created: 2026-06-17
 - [Open Questions](#open-questions)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

@@ -11,6 +11,8 @@ created: 2026-09-21
 # ADR-0004: One repository: docz, docz-api, and docz-site as a single Go module
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Summary](#summary)
 - [Context](#context)
 - [Decision](#decision)
@@ -27,6 +29,7 @@ created: 2026-09-21
   - [3. Do the doczcontract tests survive the move?](#3-do-the-doczcontract-tests-survive-the-move)
   - [4. Does ui/ build in CI on every pull request, or only when it changes?](#4-does-ui-build-in-ci-on-every-pull-request-or-only-when-it-changes)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:summary:start-->

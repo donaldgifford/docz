@@ -11,6 +11,8 @@ created: 2026-09-19
 # DESIGN-0015: Structured regions and docz validate
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -39,6 +41,7 @@ created: 2026-09-19
   - [8. Unknown kinds](#8-unknown-kinds)
   - [9. Should the ToC and index splices sit on the region walker?](#9-should-the-toc-and-index-splices-sit-on-the-region-walker)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

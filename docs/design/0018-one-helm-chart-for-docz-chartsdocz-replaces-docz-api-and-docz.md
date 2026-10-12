@@ -11,6 +11,8 @@ created: 2026-09-25
 # DESIGN-0018: One Helm chart for docz: charts/docz replaces docz-api and docz-site
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -38,7 +40,7 @@ created: 2026-09-25
   - [3. Where do the backing services live in values?](#3-where-do-the-backing-services-live-in-values)
   - [4. How are resources named?](#4-how-are-resources-named)
   - [5. Which workloads can be turned off?](#5-which-workloads-can-be-turned-off)
-  - [6. Is DOCZAPIURL overridable?](#6-is-doczapiurl-overridable)
+  - [6. Is DOCZ_API_URL overridable?](#6-is-docz_api_url-overridable)
   - [7. Where do the shared settings live?](#7-where-do-the-shared-settings-live)
   - [8. What does the edge point at?](#8-what-does-the-edge-point-at)
   - [9. Where does the Tailscale sidecar go?](#9-where-does-the-tailscale-sidecar-go)
@@ -51,6 +53,7 @@ created: 2026-09-25
   - [16. Does the first cut add a site alert?](#16-does-the-first-cut-add-a-site-alert)
   - [17. Is authRedirectBase derived from the edge?](#17-is-authredirectbase-derived-from-the-edge)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

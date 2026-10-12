@@ -11,6 +11,8 @@ created: 2026-09-12
 # INV-0008: Last Updated frontmatter field: scope, git semantics, and effort
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -31,11 +33,12 @@ created: 2026-09-12
   - [Decisions](#decisions)
   - [1. Field name?](#1-field-name)
   - [2. Sha representation, if recorded?](#2-sha-representation-if-recorded)
-  - [3. Configurable key name per type (updatedfield, like statusfield)?](#3-configurable-key-name-per-type-updatedfield-like-statusfield)
+  - [3. Configurable key name per type (updated_field, like status_field)?](#3-configurable-key-name-per-type-updated_field-like-status_field)
   - [4. Date source for the git-derived path?](#4-date-source-for-the-git-derived-path)
   - [5. What does docz update do in a shallow clone?](#5-what-does-docz-update-do-in-a-shallow-clone)
   - [6. Add an Updated column to the README index tables?](#6-add-an-updated-column-to-the-readme-index-tables)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

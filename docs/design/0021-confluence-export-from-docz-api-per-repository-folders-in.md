@@ -11,6 +11,8 @@ created: 2026-10-06
 # DESIGN-0021: Confluence export from docz-api: per-repository folders in shared spaces
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -47,6 +49,7 @@ created: 2026-10-06
   - [13. What happens to a repository's pages when its block is disabled or the App is uninstalled?](#13-what-happens-to-a-repositorys-pages-when-its-block-is-disabled-or-the-app-is-uninstalled)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

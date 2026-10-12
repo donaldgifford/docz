@@ -426,3 +426,69 @@ func TestInit_RunbookOnlyWhenEnabled(t *testing.T) {
 		})
 	}
 }
+
+// initTestEveryType returns a Repo over an empty directory with every
+// built-in enabled, runbook included, and the custom type.
+func initTestEveryType(t *testing.T) (*repo.Repo, string) {
+	t.Helper()
+
+	r, root := initTestRepo(t, true)
+
+	runbook := r.Cfg.Types["runbook"]
+	runbook.Enabled = true
+	r.Cfg.Types["runbook"] = runbook
+
+	return r, root
+}
+
+// TestInit_ValidatesWithoutDrift is issue #112: a repository docz init just
+// created has no index drift, because Init writes the README a render writes
+// for a type with no documents.
+func TestInit_ValidatesWithoutDrift(t *testing.T) {
+	t.Parallel()
+
+	r, _ := initTestEveryType(t)
+
+	if _, err := r.Init(t.Context(), repo.InitOptions{}); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+
+	report, err := r.Validate(t.Context(), nil, repo.ValidateOptions{})
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+
+	if len(report.Index) != 0 {
+		t.Errorf("Validate after Init reports index drift: %+v", report.Index)
+	}
+}
+
+// TestInit_UpdateWritesNothing pins the same agreement from the other side:
+// docz update straight after docz init leaves every file as it was.
+func TestInit_UpdateWritesNothing(t *testing.T) {
+	t.Parallel()
+
+	r, root := initTestEveryType(t)
+
+	if _, err := r.Init(t.Context(), repo.InitOptions{}); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+
+	before := initTestSnapshot(t, root)
+
+	if _, err := r.Update(t.Context(), nil, repo.UpdateOptions{}); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	after := initTestSnapshot(t, root)
+
+	for path, body := range after {
+		if before[path] != body {
+			t.Errorf("Update after Init rewrote %s:\n--- init ---\n%s\n--- update ---\n%s", path, before[path], body)
+		}
+	}
+
+	if len(after) != len(before) {
+		t.Errorf("Update after Init changed the file count from %d to %d", len(before), len(after))
+	}
+}

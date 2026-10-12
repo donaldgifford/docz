@@ -11,6 +11,8 @@ created: 2026-10-02
 # INV-0018: docz-site: a step-aware runbook view
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -32,6 +34,7 @@ created: 2026-10-02
   - [4. What does the rail show for a runbook?](#4-what-does-the-rail-show-for-a-runbook)
   - [5. Where does the Last Verified badge read from?](#5-where-does-the-last-verified-badge-read-from)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

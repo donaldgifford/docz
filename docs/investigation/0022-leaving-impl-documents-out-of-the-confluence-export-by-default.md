@@ -11,6 +11,8 @@ created: 2026-10-08
 # INV-0022: Leaving IMPL documents out of the Confluence export by default
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -29,6 +31,7 @@ created: 2026-10-08
   - [3. Is impl the only type left out?](#3-is-impl-the-only-type-left-out)
   - [4. What happens to IMPL pages already in Confluence?](#4-what-happens-to-impl-pages-already-in-confluence)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

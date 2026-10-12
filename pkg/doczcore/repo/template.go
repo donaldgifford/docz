@@ -43,7 +43,8 @@ type ExportResult struct {
 	SchemaPath string
 }
 
-// Template returns the resolved body template for a type.
+// Template returns the resolved body template for a type, and whether it is
+// the embedded generic one.
 //
 // Resolution is doctemplate's: the path in the type's config, then
 // <DocsDir>/templates/<type>.md, then the embedded default. Both
@@ -51,19 +52,37 @@ type ExportResult struct {
 // on a checkout somewhere other than its own working directory resolves that
 // checkout's overrides rather than its own.
 //
-// A type with none of the three is doctemplate.ErrNoTemplate, wrapped and
-// still reachable with errors.Is. That is the clear error issue #92 asked for,
-// and ExportTemplate branches on it to scaffold.
-func (r *Repo) Template(ctx context.Context, typeName string) (string, error) {
+// A type with none of the three gets the embedded generic template and
+// generic set (issue #92), which is what `docz create` writes for it. A
+// configured path that does not exist is still an error: that is a typo in
+// .docz.yaml, not a type that never had a template.
+func (r *Repo) Template(ctx context.Context, typeName string) (body string, generic bool, err error) {
 	canonical, err := r.resolveType(typeName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	if err := ctx.Err(); err != nil {
-		return "", err
+		return "", false, err
 	}
 
+	body, generic, err = doctemplate.ResolveOrGeneric(
+		canonical,
+		r.Path(r.Cfg.Types[canonical].Template),
+		r.Path(r.Cfg.DocsDir),
+	)
+	if err != nil {
+		return "", false, fmt.Errorf("resolving %s template: %w", canonical, err)
+	}
+
+	return body, generic, nil
+}
+
+// resolveTemplate is Template without the generic fallback: a type whose
+// template resolves nowhere is doctemplate.ErrNoTemplate, wrapped. It is what
+// ExportTemplate branches on to scaffold the generic pair under the type's
+// own names, which the fallback would otherwise hide.
+func (r *Repo) resolveTemplate(canonical string) (string, error) {
 	body, err := doctemplate.Resolve(
 		canonical,
 		r.Path(r.Cfg.Types[canonical].Template),
@@ -101,7 +120,11 @@ func (r *Repo) ExportTemplate(
 		return ExportResult{}, err
 	}
 
-	body, err := r.Template(ctx, canonical)
+	if err := ctx.Err(); err != nil {
+		return ExportResult{}, err
+	}
+
+	body, err := r.resolveTemplate(canonical)
 	if err != nil {
 		if dest == "" && errors.Is(err, doctemplate.ErrNoTemplate) {
 			return r.scaffoldTemplate(ctx, canonical, opts.Overwrite)

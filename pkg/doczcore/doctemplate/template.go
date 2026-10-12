@@ -16,6 +16,7 @@ package doctemplate
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -126,6 +127,29 @@ func Resolve(docType, configPath, docsDir string) (string, error) {
 	}
 
 	return body, nil
+}
+
+// ResolveOrGeneric is Resolve with the embedded generic template as a
+// fourth tier, for a type none of the three tiers has a body for: a custom
+// type with no configured template and no file under templates/ (#92).
+// generic reports that the fallback was used, so a caller can say so and
+// point at `docz template override`.
+//
+// Only ErrNoTemplate falls back. A configured template path that cannot be
+// read is still its error, because a path somebody wrote down and got wrong
+// is not the same as no template at all.
+func ResolveOrGeneric(docType, configPath, docsDir string) (body string, generic bool, err error) {
+	body, err = Resolve(docType, configPath, docsDir)
+	if !errors.Is(err, ErrNoTemplate) {
+		return body, false, err
+	}
+
+	body, err = GenericTemplate()
+	if err != nil {
+		return "", false, err
+	}
+
+	return body, true, nil
 }
 
 // ResolveSchema returns the marker skeleton for the given schema name,

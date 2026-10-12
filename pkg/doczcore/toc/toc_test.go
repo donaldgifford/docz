@@ -17,7 +17,7 @@ func TestGenerateToC(t *testing.T) {
 			{Level: 2, Text: "Second", Slug: "second"},
 		}
 		got := GenerateToC(headings, 1)
-		want := "- [First](#first)\n- [Second](#second)\n"
+		want := lineLengthOff + "- [First](#first)\n- [Second](#second)\n" + lineLengthRestore
 		if got != want {
 			t.Errorf("GenerateToC() =\n%q\nwant:\n%q", got, want)
 		}
@@ -32,10 +32,12 @@ func TestGenerateToC(t *testing.T) {
 			{Level: 2, Text: "Another", Slug: "another"},
 		}
 		got := GenerateToC(headings, 1)
-		want := "- [Section](#section)\n" +
+		want := lineLengthOff +
+			"- [Section](#section)\n" +
 			"  - [Subsection](#subsection)\n" +
 			"    - [Detail](#detail)\n" +
-			"- [Another](#another)\n"
+			"- [Another](#another)\n" +
+			lineLengthRestore
 		if got != want {
 			t.Errorf("GenerateToC() =\n%q\nwant:\n%q", got, want)
 		}
@@ -48,7 +50,7 @@ func TestGenerateToC(t *testing.T) {
 			{Level: 4, Text: "Second", Slug: "second"},
 		}
 		got := GenerateToC(headings, 1)
-		want := "- [First](#first)\n  - [Second](#second)\n"
+		want := lineLengthOff + "- [First](#first)\n  - [Second](#second)\n" + lineLengthRestore
 		if got != want {
 			t.Errorf("GenerateToC() =\n%q\nwant:\n%q", got, want)
 		}

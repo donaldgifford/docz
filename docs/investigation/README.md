@@ -11,8 +11,10 @@ Design docs, plans, and implementation docs can reference investigations by ID
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 ## All Investigations
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 | ID | Title | Status | Date | Author | Link |
-|----|-------|--------|------|--------|------|
+| --- | --- | --- | --- | --- | --- |
 | INV-0001 | Wiki Init Template and Init Enabled Fix | Concluded | 2026-04-02 | Donald Gifford | [0001-wiki-init-template-and-init-enabled-fix.md](0001-wiki-init-template-and-init-enabled-fix.md) |
 | INV-0002 | Architectural Review and Cleanup Opportunities | Concluded | 2026-05-15 | Donald Gifford | [0002-architectural-review-and-cleanup-opportunities.md](0002-architectural-review-and-cleanup-opportunities.md) |
 | INV-0003 | Init and Update Should Respect Config-Listed Types Only | Concluded | 2026-05-20 | Donald Gifford | [0003-init-and-update-should-respect-config-listed-types-only.md](0003-init-and-update-should-respect-config-listed-types-only.md) |
@@ -42,6 +44,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0027 | Interactive mode | Concluded | 2026-10-10 | Donald Gifford | [0027-interactive-mode.md](0027-interactive-mode.md) |
 | INV-0028 | A document graph from the references docz already parses | Open | 2026-10-10 | Donald Gifford | [0028-a-document-graph-from-the-references-docz-already-parses.md](0028-a-document-graph-from-the-references-docz-already-parses.md) |
 | INV-0029 | Executable acceptance in docz documents | Open | 2026-10-10 | Donald Gifford | [0029-executable-acceptance-in-docz-documents.md](0029-executable-acceptance-in-docz-documents.md) |
+<!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
 <!-- END DOCZ AUTO-GENERATED -->

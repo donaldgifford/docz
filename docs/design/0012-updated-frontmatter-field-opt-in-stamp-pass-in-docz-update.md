@@ -11,6 +11,8 @@ created: 2026-09-12
 # DESIGN-0012: Updated frontmatter field: opt-in stamp pass in docz update
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -42,6 +44,7 @@ created: 2026-09-12
   - [8. How narrow is the "bookkeeping commit" filter?](#8-how-narrow-is-the-bookkeeping-commit-filter)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

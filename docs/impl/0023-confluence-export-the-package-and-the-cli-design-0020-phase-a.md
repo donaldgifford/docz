@@ -11,6 +11,8 @@ created: 2026-10-05
 # IMPL-0023: Confluence export: the package and the CLI (DESIGN-0020 Phase A)
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -55,6 +57,7 @@ created: 2026-10-05
   - [9. What does the live test look like?](#9-what-does-the-live-test-look-like)
   - [10. What happens after a failed request?](#10-what-happens-after-a-failed-request)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

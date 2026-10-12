@@ -14,6 +14,8 @@ created: 2026-06-23
 **Date:** 2026-06-23
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -45,6 +47,7 @@ created: 2026-06-23
   - [8. Where does the consumer import smoke test live?](#8-where-does-the-consumer-import-smoke-test-live)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

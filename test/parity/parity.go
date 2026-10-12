@@ -128,6 +128,318 @@ func MarkerNormalizer() Normalizer {
 	}
 }
 
+// A lintRewrite is one deliberate v2 change to bytes v1.2.2 also wrote,
+// made so that docz's output passes markdownlint (IMPL-0025). V2 is the
+// run of whole lines the v2 line writes and V1 the run v1.2.2 wrote in its
+// place; an empty V1 is a line v2 added. Issue names the fix, so the table
+// reads as a list of permitted deltas rather than a pattern that might
+// excuse a regression.
+//
+// AtEOF anchors the V2 run to the end of the text, for a change that is
+// about how a file ends rather than what a line says.
+type lintRewrite struct {
+	Issue string
+	V2    []string
+	V1    []string
+	AtEOF bool
+}
+
+// issuePhaseSlug is the fix behind each of the IMPL template's phase lines.
+const issuePhaseSlug = "#127: the IMPL template's phase placeholder is a comment, and GitHub's slug drops it"
+
+// issueWikiIndexEnd is the fix behind each docs/index.md ending: v1.2.2
+// ended the type list with a blank line too many (MD012).
+const issueWikiIndexEnd = "#127: the wiki landing page ends with one newline, not a blank line (MD012)"
+
+// issueTemplateLine is the fix behind each template line wrapped to fit
+// MD013's default of 80 characters.
+const issueTemplateLine = "#127: a template line over 80 characters is wrapped (MD013)"
+
+// issueLineLength is the fix behind the lines that switch MD013 off around
+// the ToC list and the README index table, which v1.2.2 never wrote.
+const issueLineLength = "#127: docz regenerates the ToC and index lines, so it switches MD013 off around them"
+
+// issueStaleFixtureToC is the fix behind each dry-run line reporting a
+// fixture document's ToC stale: the fixtures carry v1.2.2 ToCs, which lack
+// the MD013 lines and, in the impl fixtures, carry the old phase slugs.
+const issueStaleFixtureToC = "#127: a fixture's v1.2.2 ToC lacks the MD013 lines, so a v2 dry run reports it stale"
+
+// lintRewrites is every v2 line the lint fixes changed. Nothing here is a
+// pattern: a line the fixes changed that is not listed is a regression.
+var lintRewrites = []lintRewrite{
+	{
+		Issue: "#127: the index delimiter row is padded like its header (MD060)",
+		V2:    []string{"| --- | --- | --- | --- | --- | --- |"},
+		V1:    []string{"|----|-------|--------|------|--------|------|"},
+	},
+	{
+		Issue: "#127: the IMPL and runbook templates repeat headings per phase or procedure (MD024)",
+		V2:    []string{"<!-- markdownlint-disable-file MD024 MD025 MD041 -->"},
+		V1:    []string{"<!-- markdownlint-disable-file MD025 MD041 -->"},
+	},
+	{
+		Issue: issueTemplateLine,
+		V2: []string{
+			"<!-- What problem does this RFC address? Include supporting data, evidence",
+			"     and impact. -->",
+		},
+		V1: []string{"<!-- What problem does this RFC address? Include supporting data, evidence and impact. -->"},
+	},
+	{
+		Issue: issueTemplateLine,
+		V2: []string{
+			"**Notes:** <!-- one or two sentences: what was run, and anything that",
+			"     differed -->",
+		},
+		V1: []string{"**Notes:** <!-- one or two sentences: what was run, and anything that differed -->"},
+	},
+	{
+		Issue: issueTemplateLine,
+		V2: []string{
+			"Implementation plans describe **the concrete steps to build a feature or",
+			"system**. Each plan includes:",
+		},
+		V1: []string{
+			"Implementation plans describe **the concrete steps to build a feature or system**.",
+			"Each plan includes:",
+		},
+	},
+	{
+		Issue: issueLineLength,
+		V2:    []string{"<!-- markdownlint-capture -->", "<!-- markdownlint-disable MD013 -->"},
+	},
+	{
+		Issue: issueLineLength,
+		V2:    []string{"<!-- markdownlint-restore -->"},
+	},
+	{
+		Issue: issuePhaseSlug,
+		V2:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1-)"},
+		V1:    []string{"  - [Phase 1: <!-- Foundation / Setup / Core -->](#phase-1----foundation--setup--core)"},
+	},
+	{
+		Issue: issuePhaseSlug,
+		V2:    []string{"  - [Phase 2: <!-- Core Feature / Primary Commands -->](#phase-2-)"},
+		V1:    []string{"  - [Phase 2: <!-- Core Feature / Primary Commands -->](#phase-2----core-feature--primary-commands)"},
+	},
+	{
+		Issue: issuePhaseSlug,
+		V2:    []string{"  - [Phase 3: <!-- Polish / Edge Cases / CI Readiness -->](#phase-3-)"},
+		V1:    []string{"  - [Phase 3: <!-- Polish / Edge Cases / CI Readiness -->](#phase-3----polish--edge-cases--ci-readiness)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/impl/0001-phase-out-the-legacy-scanner.md (18 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0001-keep-frameworks-in-a-register.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0001-use-postgresql-for-the-registry-store.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/design/0001-token-refresh-flow.md (12 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/frameworks/0001-adopt-the-internal-auth-framework.md (4 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/impl/0002-registry-store-migration.md (18 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/investigation/0001-evaluate-message-queue-options.md (11 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0001-consolidate-the-release-pipeline.md (8 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0001-switch-the-ingest-queue-to-nats.md (8 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0001-drop-the-plan-doc-type.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/adr/0002-vendor-the-markdown-walker.md (10 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/design/0002-wiki-nav-generation.md (14 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/frameworks/0002-retire-the-legacy-job-runner.md (4 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/investigation/0002-why-the-nightly-rebuild-flakes.md (12 headings)"},
+	},
+	{
+		Issue: issueStaleFixtureToC,
+		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (8 headings)"},
+	},
+	// END lintRewrites
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [ADRs](adr/README.md)", ""},
+		V1:    []string{"- [ADRs](adr/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Design](design/README.md)", ""},
+		V1:    []string{"- [Design](design/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Frameworks](frameworks/README.md)", ""},
+		V1:    []string{"- [Frameworks](frameworks/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Implementation Plans](impl/README.md)", ""},
+		V1:    []string{"- [Implementation Plans](impl/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [Investigations](investigation/README.md)", ""},
+		V1:    []string{"- [Investigations](investigation/README.md)", "", ""},
+		AtEOF: true,
+	},
+	{
+		Issue: issueWikiIndexEnd,
+		V2:    []string{"- [RFCs](rfc/README.md)", ""},
+		V1:    []string{"- [RFCs](rfc/README.md)", "", ""},
+		AtEOF: true,
+	},
+}
+
+// LintNormalizer rewrites each lintRewrites entry from its v2 form back to
+// the v1.2.2 form. It sits in the per-run normaliser list, so it runs over
+// every recorded body before the before/after comparison as well as over
+// stdout and stderr. It has to: a fixture document whose ToC v2 regenerates
+// is a file v2 writes and v1.2.2 left alone, and only normalising the
+// snapshots makes the two trees agree, digests included.
+//
+// It is symmetric by construction. v1.2.2 never writes a V2 line, so on a
+// capture it changes nothing and the goldens need no re-capture.
+func LintNormalizer() Normalizer {
+	return Normalizer{
+		Name:  "lint",
+		Apply: func(s string) string { return applyLintRewrites(s, lintRewrites) },
+	}
+}
+
+// applyLintRewrites replaces each rewrite's V2 run of whole lines with its
+// V1 run.
+func applyLintRewrites(s string, rewrites []lintRewrite) string {
+	padded := "\n" + s + "\n"
+
+	for _, r := range rewrites {
+		if r.AtEOF {
+			padded = rewriteAtEOF(padded, r)
+			continue
+		}
+
+		from := "\n" + strings.Join(r.V2, "\n") + "\n"
+		to := "\n"
+		if len(r.V1) > 0 {
+			to = "\n" + strings.Join(r.V1, "\n") + "\n"
+		}
+
+		// A match consumes the newline the next adjacent match starts with,
+		// so repeat until nothing is left.
+		for strings.Contains(padded, from) {
+			padded = strings.ReplaceAll(padded, from, to)
+		}
+	}
+
+	return padded[1 : len(padded)-1]
+}
+
+// rewriteAtEOF applies r when its V2 run ends padded, the text with a
+// newline added at each end.
+func rewriteAtEOF(padded string, r lintRewrite) string {
+	from := "\n" + strings.Join(r.V2, "\n") + "\n"
+	if !strings.HasSuffix(padded, from) {
+		return padded
+	}
+
+	return strings.TrimSuffix(padded, from) + "\n" + strings.Join(r.V1, "\n") + "\n"
+}
+
+// emptyIndexRows is what follows the "## All <label>" heading in the README
+// index region a render writes for a type with no documents, after
+// LintNormalizer has mapped it back to v1.2.2's spelling: a blank line, the
+// header row, and the delimiter row.
+var emptyIndexRows = []string{
+	"",
+	"| ID | Title | Status | Date | Author | Link |",
+	"|----|-------|--------|------|--------|------|",
+}
+
+// EmptyIndexNormalizer collapses an index region holding only an empty
+// table to an empty marker pair. v1.2.2's docz init wrote the empty pair and
+// v2's writes the table a render would, so a fresh repository validates
+// clean (#112). It runs after LintNormalizer, over snapshots like it, and on
+// both sides: v1.2.2's own update writes the same empty table for a type
+// with no documents, so the collapse cannot make the two sides disagree.
+func EmptyIndexNormalizer() Normalizer {
+	return Normalizer{
+		Name: "empty-index",
+		Apply: func(s string) string {
+			if !strings.Contains(s, "<!-- BEGIN DOCZ AUTO-GENERATED -->") {
+				return s
+			}
+
+			lines := strings.Split(s, "\n")
+			kept := make([]string, 0, len(lines))
+
+			for i := 0; i < len(lines); i++ {
+				kept = append(kept, lines[i])
+				if lines[i] == "<!-- BEGIN DOCZ AUTO-GENERATED -->" && isEmptyIndex(lines[i+1:]) {
+					i += 1 + len(emptyIndexRows)
+				}
+			}
+
+			return strings.Join(kept, "\n")
+		},
+	}
+}
+
+// isEmptyIndex reports whether lines open with an "## All <label>" heading
+// and an empty table, followed by the region's end marker.
+func isEmptyIndex(lines []string) bool {
+	n := 1 + len(emptyIndexRows)
+	if len(lines) <= n || lines[n] != "<!-- END DOCZ AUTO-GENERATED -->" {
+		return false
+	}
+
+	if !strings.HasPrefix(lines[0], "## All ") {
+		return false
+	}
+
+	for i, want := range emptyIndexRows {
+		if lines[1+i] != want {
+			return false
+		}
+	}
+
+	return true
+}
+
 // NormalizeFiles applies norms to every recorded body and recomputes the size
 // and digest from the result.
 //

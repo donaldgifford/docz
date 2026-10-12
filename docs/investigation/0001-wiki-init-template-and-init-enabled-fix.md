@@ -14,6 +14,8 @@ created: 2026-04-02
 **Date:** 2026-04-02
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -31,6 +33,7 @@ created: 2026-04-02
   - [Change 3: docz init respects enabled: false](#change-3-docz-init-respects-enabled-false)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

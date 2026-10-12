@@ -50,6 +50,11 @@ type CreateResult struct {
 
 	docwrite.CreateResult
 
+	// GenericTemplate is set when the type had no template of its own and
+	// the document was rendered from the embedded generic one (issue #92).
+	// A caller that prints says so and points at `docz template override`.
+	GenericTemplate bool
+
 	// Update is the index refresh, or nil when CreateOptions.Update was
 	// false. A non-nil pointer means the refresh ran; its own fields say
 	// what it did.
@@ -93,7 +98,7 @@ func (r *Repo) Create(ctx context.Context, opts CreateOptions) (CreateResult, er
 
 	docOpts := r.createOptions(typeName, &opts)
 
-	path, err := createPlannedPath(&docOpts)
+	path, generic, err := createPlannedPath(&docOpts)
 	if err != nil {
 		return CreateResult{}, fmt.Errorf("preparing %s document: %w", typeName, err)
 	}
@@ -109,7 +114,7 @@ func (r *Repo) Create(ctx context.Context, opts CreateOptions) (CreateResult, er
 
 	fireFileWritten(ctx, written.FilePath, FileDocument)
 
-	result := CreateResult{Type: typeName, CreateResult: written}
+	result := CreateResult{Type: typeName, CreateResult: written, GenericTemplate: generic}
 
 	if !opts.Update {
 		return result, nil
@@ -157,7 +162,8 @@ func (r *Repo) createOptions(typeName string, opts *CreateOptions) docwrite.Crea
 	}
 }
 
-// createPlannedPath returns the path docwrite.Create will write for opts.
+// createPlannedPath returns the path docwrite.Create will write for opts, and
+// whether the template it renders is the generic fallback.
 //
 // Asking the writer's own two halves — NextNumber for the number, Render
 // for the filename — rather than reassembling the naming rule here, so
@@ -165,18 +171,18 @@ func (r *Repo) createOptions(typeName string, opts *CreateOptions) docwrite.Crea
 // of step with the first. Render reads the template and is therefore the
 // step that fails when a custom type has none, which is worth failing at:
 // better before the directory is created than after.
-func createPlannedPath(opts *docwrite.CreateOptions) (string, error) {
+func createPlannedPath(opts *docwrite.CreateOptions) (path string, generic bool, err error) {
 	dir := filepath.Join(opts.DocsDir, opts.TypeDir)
 
 	number, err := docwrite.NextNumber(dir, opts.IDWidth)
 	if err != nil {
-		return "", fmt.Errorf("numbering the next document in %s: %w", dir, err)
+		return "", false, fmt.Errorf("numbering the next document in %s: %w", dir, err)
 	}
 
 	rendered, err := docwrite.Render(opts, number)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
-	return filepath.Join(dir, rendered.Filename), nil
+	return filepath.Join(dir, rendered.Filename), rendered.Generic, nil
 }

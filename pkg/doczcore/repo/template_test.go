@@ -55,7 +55,7 @@ func TestTemplate_ResolvesTheEmbeddedDefault(t *testing.T) {
 
 	r, _ := templateTestRepo(t)
 
-	body, err := r.Template(t.Context(), "adr")
+	body, _, err := r.Template(t.Context(), "adr")
 	if err != nil {
 		t.Fatalf("Template: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestTemplate_LocalOverrideWins(t *testing.T) {
 	// reason repo joins every config-relative path itself.
 	templateTestWrite(t, filepath.Join(root, "docs", config.TemplatesDir, "adr.md"), override)
 
-	body, err := r.Template(t.Context(), "adr")
+	body, _, err := r.Template(t.Context(), "adr")
 	if err != nil {
 		t.Fatalf("Template: %v", err)
 	}
@@ -96,22 +96,27 @@ func TestTemplate_AliasAndErrors(t *testing.T) {
 
 	r, _ := templateTestRepo(t)
 
-	if _, err := r.Template(t.Context(), "inv"); err != nil {
+	if _, _, err := r.Template(t.Context(), "inv"); err != nil {
 		t.Errorf("Template(inv): %v, want the investigation template", err)
 	}
 
-	_, err := r.Template(t.Context(), "nonsense")
+	_, _, err := r.Template(t.Context(), "nonsense")
 
 	var unknown *repo.UnknownTypeError
 	if !errors.As(err, &unknown) {
 		t.Errorf("want *UnknownTypeError, got %T: %v", err, err)
 	}
 
-	// A custom type with nothing embedded, no config path, and no file is
-	// ErrNoTemplate — issue #92's clear error, and what ExportTemplate branches
-	// on to scaffold.
-	if _, err := r.Template(t.Context(), templateTestCustomType); !errors.Is(err, doctemplate.ErrNoTemplate) {
-		t.Errorf("err = %v, want doctemplate.ErrNoTemplate", err)
+	// A custom type with nothing embedded, no config path, and no file gets
+	// the embedded generic template and says so (issue #92).
+	generic, err := doctemplate.GenericTemplate()
+	if err != nil {
+		t.Fatalf("GenericTemplate: %v", err)
+	}
+
+	body, isGeneric, err := r.Template(t.Context(), templateTestCustomType)
+	if err != nil || !isGeneric || body != generic {
+		t.Errorf("Template(%s) = generic %v, err %v; want the generic template", templateTestCustomType, isGeneric, err)
 	}
 }
 
@@ -169,7 +174,7 @@ func TestExportTemplate_EmptyDestIsTheOverride(t *testing.T) {
 		t.Fatalf("override not written: %v", err)
 	}
 
-	body, err := r.Template(t.Context(), "adr")
+	body, _, err := r.Template(t.Context(), "adr")
 	if err != nil {
 		t.Fatalf("Template after export: %v", err)
 	}
@@ -278,7 +283,7 @@ func TestExportTemplate_ScaffoldsACustomType(t *testing.T) {
 
 	// Both files resolve by name from here on, which is the point of writing
 	// them where the resolvers look.
-	if _, err := r.Template(t.Context(), templateTestCustomType); err != nil {
+	if _, _, err := r.Template(t.Context(), templateTestCustomType); err != nil {
 		t.Errorf("Template after scaffolding: %v", err)
 	}
 

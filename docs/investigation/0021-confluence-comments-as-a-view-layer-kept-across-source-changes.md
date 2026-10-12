@@ -11,6 +11,8 @@ created: 2026-10-08
 # INV-0021: Confluence comments as a view layer kept across source changes
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -31,6 +33,7 @@ created: 2026-10-08
   - [5. Does docz-site show the comments?](#5-does-docz-site-show-the-comments)
   - [6. What happens to a comment whose text is gone for good?](#6-what-happens-to-a-comment-whose-text-is-gone-for-good)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

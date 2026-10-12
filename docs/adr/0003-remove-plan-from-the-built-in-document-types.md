@@ -11,6 +11,8 @@ created: 2026-09-14
 # ADR-0003: Remove plan from the built-in document types
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Summary](#summary)
 - [Context](#context)
 - [Decision](#decision)
@@ -25,6 +27,7 @@ created: 2026-09-14
   - [1. Semver treatment](#1-semver-treatment)
   - [2. Sequencing against the API work](#2-sequencing-against-the-api-work)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:summary:start-->

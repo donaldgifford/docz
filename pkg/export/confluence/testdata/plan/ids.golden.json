@@ -15,7 +15,7 @@
       "source": "docs/rfc/README.md",
       "override": "RFCs",
       "parent": 0,
-      "sha256": "5efb607bf74536b2"
+      "sha256": "f67fad251972b659"
     },
     {
       "key": "RFC-0002",
@@ -23,7 +23,7 @@
       "title": "RFC-0002: AWS Access Triage Slack Bot",
       "source": "docs/rfc/0002-booty-rfc-0002.md",
       "parent": 1,
-      "sha256": "6d8fb41cfa501113"
+      "sha256": "2e1dc33b2b0818c9"
     },
     {
       "key": "docz:type:design",
@@ -31,7 +31,7 @@
       "source": "docs/design/README.md",
       "override": "Design",
       "parent": 0,
-      "sha256": "40b4a58a9ee7cce9"
+      "sha256": "5fca35bb7fa3432c"
     },
     {
       "key": "DESIGN-0014",
@@ -39,7 +39,7 @@
       "title": "DESIGN-0014: The docz API as one unit: packages, types, functions, and the cmd swap",
       "source": "docs/design/0005-docz-design-0014.md",
       "parent": 3,
-      "sha256": "0647883b53da5269"
+      "sha256": "e9f7be7ed79f778f"
     }
   ],
   "keys": [
@@ -507,7 +507,7 @@
       "phase-2-queue-self-heal--un-swallow-the-archived-task-conflict",
       "phase-3-boot-time-github-app-credential-self-check",
       "phase-4-the-four-mute-http-sinks",
-      "phase-5-authprovidersnone--first-setup-no-auth-mode",
+      "phase-5-auth_providersnone--first-setup-no-auth-mode",
       "phase-6-deliberate-failure-verification-deploy-close-out",
       "references",
       "scope",
@@ -920,7 +920,7 @@
     "docs/investigation/0007-docz-inv-0007.md": [
       "INV-0007: docz internals required for the api additional_docs block",
       "1-where-should-the-h1title-extractor-live",
-      "2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additionaldocs",
+      "2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additional_docs",
       "3-does-docz-need-to-expose-the-urlroute-mapping",
       "amendment-to-decision-1-the-empty-string-contract",
       "approach",
@@ -934,7 +934,7 @@
       "f4-additional-docs-have-no-id-and-the-whole-downstream-contract-is-keyed-on-id",
       "f5-the-ingestion-fetcher-filters-the-tree-by-type-dir-so-additional-docs-are-invisible-to-it",
       "f6-globs-cannot-be-expanded-by-docz-in-the-consumers-model",
-      "f7-wiki-exclude-and-api-additionaldocs-disagree-about-examples",
+      "f7-wiki-exclude-and-api-additional_docs-disagree-about-examples",
       "findings",
       "how-the-design-resolved-f5-f6-and-f7",
       "hypothesis",
@@ -947,7 +947,7 @@
       "INV-0008: Last Updated frontmatter field: scope, git semantics, and effort",
       "1-field-name",
       "2-sha-representation-if-recorded",
-      "3-configurable-key-name-per-type-updatedfield-like-statusfield",
+      "3-configurable-key-name-per-type-updated_field-like-status_field",
       "4-date-source-for-the-git-derived-path",
       "5-what-does-docz-update-do-in-a-shallow-clone",
       "6-add-an-updated-column-to-the-readme-index-tables",
@@ -1174,7 +1174,7 @@
       "rollback",
       "rollback-1",
       "rollback-2",
-      "scenario-a-chart-push-fails-with-403-writepackage",
+      "scenario-a-chart-push-fails-with-403-write_package",
       "scenario-pods-fail-to-pull-the-image-after-install",
       "steps",
       "steps-1",

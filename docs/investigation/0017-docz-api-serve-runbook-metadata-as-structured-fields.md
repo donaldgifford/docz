@@ -11,6 +11,8 @@ created: 2026-10-02
 # INV-0017: docz-api: serve runbook metadata as structured fields
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -31,6 +33,7 @@ created: 2026-10-02
   - [4. How do existing rows get the fields?](#4-how-do-existing-rows-get-the-fields)
   - [5. What reaches search?](#5-what-reaches-search)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

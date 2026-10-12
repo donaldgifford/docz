@@ -4,8 +4,8 @@ This directory contains implementation plans with concrete tasks and milestones.
 
 ## What are Implementation Plans?
 
-Implementation plans describe **the concrete steps to build a feature or system**.
-Each plan includes:
+Implementation plans describe **the concrete steps to build a feature or
+system**. Each plan includes:
 
 - **Objective**: What is being implemented and which RFC/design it implements
 - **Scope**: What is in and out of scope

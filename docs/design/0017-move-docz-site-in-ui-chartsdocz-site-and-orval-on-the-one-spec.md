@@ -11,6 +11,8 @@ created: 2026-09-23
 # DESIGN-0017: Move docz-site in: ui/, charts/docz-site, and orval on the one spec
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Overview](#overview)
 - [Goals and Non-Goals](#goals-and-non-goals)
   - [Goals](#goals)
@@ -46,6 +48,7 @@ created: 2026-09-23
   - [8. How are the ui image and charts/docz-site versioned?](#8-how-are-the-ui-image-and-chartsdocz-site-versioned)
   - [9. Do docz-site DESIGN-0001 and DESIGN-0005 get successors?](#9-do-docz-site-design-0001-and-design-0005-get-successors)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:overview:start-->

@@ -168,6 +168,46 @@ func TestExternalConsumerCreatesScansAndFinds(t *testing.T) {
 	}
 }
 
+// TestExternalConsumerCreatesATemplatelessCustomType is issue #92 from
+// outside: a custom type a consumer adds to the config with no template
+// creates from the embedded generic one, the result says so, and the
+// document validates clean.
+func TestExternalConsumerCreatesATemplatelessCustomType(t *testing.T) {
+	r := repoFixture(t)
+
+	r.Cfg.Types["frameworks"] = config.TypeConfig{
+		Enabled:  true,
+		Dir:      "frameworks",
+		IDPrefix: "FW",
+		IDWidth:  4,
+		Statuses: []string{"Draft", "Active"},
+	}
+
+	created, err := r.Create(t.Context(), repo.CreateOptions{
+		Type:   "FW",
+		Title:  "A framework",
+		Author: "A Consumer",
+		Update: true,
+	})
+	if err != nil {
+		t.Fatalf("Create = %v, want the generic template", err)
+	}
+
+	if created.Type != "frameworks" || !created.GenericTemplate {
+		t.Errorf("Type = %q, GenericTemplate = %v; want frameworks from the generic template",
+			created.Type, created.GenericTemplate)
+	}
+
+	report, err := r.Validate(t.Context(), []string{"frameworks"}, repo.ValidateOptions{})
+	if err != nil {
+		t.Fatalf("Validate = %v, want nil", err)
+	}
+
+	if report.Errors != 0 || report.Warnings != 0 {
+		t.Errorf("errors %d, warnings %d; want a clean report", report.Errors, report.Warnings)
+	}
+}
+
 // TestExternalConsumerSetsAStatusWithDryRun is the automation path: a CI job
 // that wants to know what a status change would do before doing it.
 func TestExternalConsumerSetsAStatusWithDryRun(t *testing.T) {

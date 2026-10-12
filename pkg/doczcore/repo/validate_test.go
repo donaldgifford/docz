@@ -737,6 +737,13 @@ func TestValidate_TemplateThatResolvesNowhere(t *testing.T) {
 	r := vtestRepo(t)
 	vtestTypeWithTemplate(t, r, "frameworks", "FW", nil)
 
+	// A configured template path that does not exist is the one way left to
+	// resolve nowhere: a type with no template at all falls back to the
+	// generic one (issue #92).
+	fw := r.Cfg.Types["frameworks"]
+	fw.Template = "docs/templates/missing.md"
+	r.Cfg.Types["frameworks"] = fw
+
 	report, err := r.Validate(t.Context(), []string{"frameworks", "adr"}, ValidateOptions{})
 	if err != nil {
 		t.Fatalf("Validate: %v", err)
@@ -752,6 +759,49 @@ func TestValidate_TemplateThatResolvesNowhere(t *testing.T) {
 
 	if vtestHasCode(report.Templates[1].Findings, CodeTemplateUnresolved) {
 		t.Errorf("the adr template did not resolve either:\n  %s", vtestCodes(report.Templates[1].Findings))
+	}
+}
+
+// TestValidate_GenericFallbackType is issue #92 from the validator's side: a
+// custom type with no template creates from the generic one, and the document
+// that produces validates clean against the embedded default schema rather
+// than reporting a template or schema nobody wrote.
+func TestValidate_GenericFallbackType(t *testing.T) {
+	t.Parallel()
+
+	r := vtestRepo(t)
+	vtestTypeWithTemplate(t, r, "frameworks", "FW", nil)
+
+	res, err := r.Create(t.Context(), CreateOptions{
+		Type:   "frameworks",
+		Title:  vtestTitle,
+		Author: "Test Author",
+		Update: true,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	if !res.GenericTemplate {
+		t.Error("CreateResult.GenericTemplate = false, want true for a type with no template")
+	}
+
+	report, err := r.Validate(t.Context(), []string{"frameworks"}, ValidateOptions{})
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+
+	for _, entry := range append(report.Templates, report.Docs...) {
+		for _, code := range []string{CodeTemplateUnresolved, CodeSchemaUnresolved} {
+			if vtestHasCode(entry.Findings, code) {
+				t.Errorf("%s reports %s:\n  %s", entry.Path, code, vtestCodes(entry.Findings))
+			}
+		}
+	}
+
+	if report.Errors != 0 || report.Warnings != 0 || len(report.Index) != 0 {
+		t.Errorf("errors %d, warnings %d, index drift %d; want a clean report:\n%+v",
+			report.Errors, report.Warnings, len(report.Index), report)
 	}
 }
 

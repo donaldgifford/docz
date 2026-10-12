@@ -11,6 +11,8 @@ created: 2026-10-01
 # RUNBOOK-0001: Cut a v2 beta release
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Last Verified](#last-verified)
 - [Overview](#overview)
 - [When to Use](#when-to-use)
@@ -29,12 +31,13 @@ created: 2026-10-01
     - [Verification](#verification-2)
     - [Rollback](#rollback-2)
 - [Troubleshooting](#troubleshooting)
-  - [Scenario: A chart push fails with 403 write_package](#scenario-a-chart-push-fails-with-403-writepackage)
+  - [Scenario: A chart push fails with 403 write_package](#scenario-a-chart-push-fails-with-403-write_package)
     - [Steps](#steps-3)
   - [Scenario: Pods fail to pull the image after install](#scenario-pods-fail-to-pull-the-image-after-install)
     - [Steps](#steps-4)
 - [Escalation](#escalation)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:last-verified:start-->

@@ -11,6 +11,8 @@ created: 2026-08-10
 # INV-0007: docz internals required for the api additional_docs block
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -23,17 +25,18 @@ created: 2026-08-10
   - [F4. Additional docs have no id, and the whole downstream contract is keyed on id](#f4-additional-docs-have-no-id-and-the-whole-downstream-contract-is-keyed-on-id)
   - [F5. The ingestion fetcher filters the tree by type dir, so additional docs are invisible to it](#f5-the-ingestion-fetcher-filters-the-tree-by-type-dir-so-additional-docs-are-invisible-to-it)
   - [F6. Globs cannot be expanded by docz in the consumer's model](#f6-globs-cannot-be-expanded-by-docz-in-the-consumers-model)
-  - [F7. wiki exclude and api additional_docs disagree about examples](#f7-wiki-exclude-and-api-additionaldocs-disagree-about-examples)
+  - [F7. wiki exclude and api additional_docs disagree about examples](#f7-wiki-exclude-and-api-additional_docs-disagree-about-examples)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
   - [1. Where should the H1/title extractor live?](#1-where-should-the-h1title-extractor-live)
-  - [2. Should the path-validation rules be shared between changelog.file and additional_docs?](#2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additionaldocs)
+  - [2. Should the path-validation rules be shared between changelog.file and additional_docs?](#2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additional_docs)
   - [3. Does docz need to expose the URL/route mapping?](#3-does-docz-need-to-expose-the-urlroute-mapping)
 - [Decisions](#decisions)
   - [Amendment to Decision 1: the empty-string contract](#amendment-to-decision-1-the-empty-string-contract)
   - [How the design resolved F5, F6, and F7](#how-the-design-resolved-f5-f6-and-f7)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

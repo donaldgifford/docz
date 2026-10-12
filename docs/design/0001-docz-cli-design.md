@@ -10,6 +10,8 @@ created: 2026-02-22
 # DESIGN-0001: docz CLI Tool
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Problem Statement](#problem-statement)
 - [Proposed Solution](#proposed-solution)
 - [Goals](#goals)
@@ -48,6 +50,7 @@ created: 2026-02-22
 - [Future Considerations](#future-considerations)
 - [Resolved Decisions](#resolved-decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:background:start-->

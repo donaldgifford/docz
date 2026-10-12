@@ -11,6 +11,8 @@ created: 2026-09-23
 # INV-0013: docz-site deferred features after the move: link graph, lifecycle, labels
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -20,6 +22,7 @@ created: 2026-09-23
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

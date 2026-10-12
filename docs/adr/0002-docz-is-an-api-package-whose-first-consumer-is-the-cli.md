@@ -11,6 +11,8 @@ created: 2026-09-14
 # ADR-0002: docz is an API package whose first consumer is the CLI
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Summary](#summary)
 - [Context](#context)
 - [Decision](#decision)
@@ -29,6 +31,7 @@ created: 2026-09-14
   - [4. Does the swap ship a first-party consumer of the type layer?](#4-does-the-swap-ship-a-first-party-consumer-of-the-type-layer)
   - [5. Are document types built on generics?](#5-are-document-types-built-on-generics)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:summary:start-->

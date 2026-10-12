@@ -132,18 +132,9 @@ func (r *Repo) updateType(ctx context.Context, typeName string, dryRun bool) (Ty
 		report.ToC = tocReport
 	}
 
-	// The label feeds both the table's heading and the generic index
-	// header's render data, so it is resolved once. The heading is "All "
-	// plus the label, which is the wording every existing README carries.
-	label := r.indexLabelFor(typeName)
-	table := index.GenerateTable(docs, "All "+label)
-
-	header, err := doctemplate.ResolveIndexHeader(typeName, r.Path(r.Cfg.DocsDir), doctemplate.IndexHeaderData{
-		TypeName:    typeName,
-		PluralLabel: label,
-	})
+	header, table, err := r.indexParts(typeName, docs)
 	if err != nil {
-		return report, fmt.Errorf("resolving index header for %s: %w", typeName, err)
+		return report, err
 	}
 
 	outcome, err := r.writeIndex(ctx, typeName, header, table, dryRun)
@@ -247,6 +238,28 @@ func (r *Repo) writeIndex(
 // Upper-casing rather than leaving a custom type's name bare, because the
 // heading reads as prose — "All Frameworks" — and a lower-case word there
 // looks like a bug rather than a choice.
+// indexParts resolves what a type's README index is made of: the header
+// above the marker pair and the table between them. Init, Update, and
+// Validate all build a README through it, so the three agree on every byte,
+// a type with no documents included (#112).
+//
+// The label feeds both the table's heading and the generic index header's
+// render data, so it is resolved once. The heading is "All " plus the
+// label, which is the wording every existing README carries.
+func (r *Repo) indexParts(typeName string, docs []document.DocEntry) (header, table string, err error) {
+	label := r.indexLabelFor(typeName)
+
+	header, err = doctemplate.ResolveIndexHeader(typeName, r.Path(r.Cfg.DocsDir), doctemplate.IndexHeaderData{
+		TypeName:    typeName,
+		PluralLabel: label,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("resolving index header for %s: %w", typeName, err)
+	}
+
+	return header, index.GenerateTable(docs, "All "+label), nil
+}
+
 func (r *Repo) indexLabelFor(typeName string) string {
 	if label := r.Cfg.Types[typeName].PluralLabel; label != "" {
 		return label

@@ -24,10 +24,12 @@ func TestGenerateTable_Empty(t *testing.T) {
 	if !strings.Contains(result, "| ID |") {
 		t.Error("missing table header")
 	}
-	// Should only have heading + header + separator, no data rows.
-	lines := strings.Split(strings.TrimSpace(result), "\n")
-	if len(lines) != 4 { // heading, blank, header, separator
-		t.Errorf("expected 4 lines, got %d: %v", len(lines), lines)
+	// Heading, header, and separator inside the MD013 wrapper; no data rows.
+	want := "## All RFCs\n\n" + lineLengthOff +
+		"| ID | Title | Status | Date | Author | Link |\n" +
+		"| --- | --- | --- | --- | --- | --- |\n" + lineLengthRestore
+	if result != want {
+		t.Errorf("GenerateTable(nil) =\n%q\nwant:\n%q", result, want)
 	}
 }
 

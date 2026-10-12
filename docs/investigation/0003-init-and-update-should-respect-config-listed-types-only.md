@@ -20,6 +20,8 @@ declares a top-level `types:` block. Guarded by the five e2e tests
 enumerated in this doc, now living in `cmd/inv0003_test.go`.
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -37,6 +39,7 @@ enumerated in this doc, now living in `cmd/inv0003_test.go`.
 - [Recommendation](#recommendation)
   - [Tests to add (drives the e2e portion of the user's request)](#tests-to-add-drives-the-e2e-portion-of-the-users-request)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

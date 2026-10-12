@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
@@ -233,6 +232,10 @@ type typeContext struct {
 	tmpl    string
 	tmplErr error
 
+	// generic is set when the type has no template of its own and tmpl is
+	// the embedded generic one (issue #92).
+	generic bool
+
 	// tmplPath is the repo-relative template file a person would edit, or ""
 	// when the template is the embedded one.
 	tmplPath string
@@ -257,7 +260,11 @@ type typeContext struct {
 func (v *validateRun) typeContext(typeName string) *typeContext {
 	tc := &typeContext{name: typeName, cfg: v.repo.Cfg.Types[typeName]}
 
-	tc.tmpl, tc.tmplErr = doctemplate.Resolve(typeName, v.repo.Path(tc.cfg.Template), v.docsDir())
+	tc.tmpl, tc.generic, tc.tmplErr = doctemplate.ResolveOrGeneric(
+		typeName,
+		v.repo.Path(tc.cfg.Template),
+		v.docsDir(),
+	)
 	if tc.tmplErr != nil {
 		return tc
 	}
@@ -465,19 +472,14 @@ func tocStartLine(content []byte) int {
 // heading that differed by a word would make every README in the repository
 // look drifted.
 func (v *validateRun) checkIndex(tc *typeContext, docs []document.DocEntry, report *ValidateReport) error {
-	heading, label := tc.indexHeading()
-
-	header, err := doctemplate.ResolveIndexHeader(tc.name, v.docsDir(), doctemplate.IndexHeaderData{
-		TypeName:    tc.name,
-		PluralLabel: label,
-	})
+	header, table, err := v.repo.indexParts(tc.name, docs)
 	if err != nil {
-		return fmt.Errorf("resolving index header for %s: %w", tc.name, err)
+		return err
 	}
 
 	readme := v.repo.ReadmePath(tc.name)
 
-	outcome, err := index.DryRunReadme(readme, header, index.GenerateTable(docs, heading))
+	outcome, err := index.DryRunReadme(readme, header, table)
 	if err != nil {
 		return fmt.Errorf("checking index %s: %w", v.repo.RelPath(readme), err)
 	}
@@ -547,6 +549,12 @@ func (v *validateRun) schemaFor(name string, tc *typeContext) (validate.Schema, 
 		return hit.schema, nil
 	}
 
+	if name == tc.name && tc.generic {
+		// A type on the generic template is held to the generic skeleton,
+		// the pair `docz template override` would scaffold for it (#92).
+		return v.genericSchema()
+	}
+
 	if name == tc.name && tc.tmplErr == nil {
 		// A custom type that has not scaffolded a schema: its template's own
 		// markers are its contract until it does (DESIGN-0015 §3, tier 3).
@@ -554,6 +562,29 @@ func (v *validateRun) schemaFor(name string, tc *typeContext) (validate.Schema, 
 	}
 
 	return validate.Schema{}, hit.err
+}
+
+// genericSchema is the embedded default skeleton, cached under a key no
+// schema name can take, since the name grammar forbids a leading space.
+//
+// Embedded rather than resolved by name: a repository's own
+// templates/schema/default.md is a skeleton for documents that name it, not
+// a replacement for the generic template's contract.
+func (v *validateRun) genericSchema() (validate.Schema, error) {
+	const key = " generic"
+
+	hit, ok := v.schemas[key]
+	if !ok {
+		skeleton, err := doctemplate.EmbeddedSchema(doctemplate.DefaultTemplateName)
+		hit = cachedSchema{err: err}
+		if err == nil {
+			hit.schema = validate.SchemaFromMarkers(skeleton)
+		}
+
+		v.schemas[key] = hit
+	}
+
+	return hit.schema, hit.err
 }
 
 // resolveByName is the file-then-embedded half of schema resolution — the half
@@ -673,23 +704,6 @@ func (tc *typeContext) render() ([]byte, string, error) {
 	}
 
 	return []byte(body), filename, nil
-}
-
-// indexHeading is the README table heading and the display label behind it.
-//
-// The pair `docz update` builds: the configured plural_label, or the type name
-// with its first rune upper-cased for a type that declares none (DESIGN-0006
-// Decision 3). Built the same way here because a heading that differed by a
-// word would report every README in the repository as drifted.
-func (tc *typeContext) indexHeading() (heading, label string) {
-	label = tc.cfg.PluralLabel
-	if label == "" && tc.name != "" {
-		runes := []rune(tc.name)
-		runes[0] = unicode.ToUpper(runes[0])
-		label = string(runes)
-	}
-
-	return "All " + label, label
 }
 
 // tally recounts a report's severity totals from its findings.

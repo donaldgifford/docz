@@ -11,6 +11,8 @@ created: 2026-10-02
 # INV-0019: docz-api sync to external documentation services: Confluence and Notion
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -55,6 +57,7 @@ created: 2026-10-02
   - [11. Mermaid in Confluence](#11-mermaid-in-confluence)
 - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

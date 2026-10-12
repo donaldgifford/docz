@@ -14,6 +14,8 @@ created: 2026-05-22
 **Date:** 2026-05-22
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -35,6 +37,7 @@ created: 2026-05-22
   - [Out of scope for v1](#out-of-scope-for-v1)
   - [Decisions](#decisions)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

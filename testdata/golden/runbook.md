@@ -6,7 +6,7 @@ author: Test Author
 created: 2026-02-22
 ---
 
-<!-- markdownlint-disable-file MD025 MD041 -->
+<!-- markdownlint-disable-file MD024 MD025 MD041 -->
 
 # RUNBOOK-0001: Test Document
 
@@ -23,7 +23,8 @@ created: 2026-02-22
 | ---- | -- | ------ | ----------- |
 |      |    |        |             |
 
-**Notes:** <!-- one or two sentences: what was run, and anything that differed -->
+**Notes:** <!-- one or two sentences: what was run, and anything that
+     differed -->
 
 <!--docz:last-verified:end-->
 

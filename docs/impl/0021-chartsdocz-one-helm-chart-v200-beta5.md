@@ -11,6 +11,8 @@ created: 2026-09-25
 # IMPL-0021: charts/docz: one Helm chart, v2.0.0-beta.5
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -48,6 +50,7 @@ created: 2026-09-25
   - [8. What happens to the sidecar docs in deploy/api/README.md?](#8-what-happens-to-the-sidecar-docs-in-deployapireadmemd)
   - [9. What appVersion do the deprecated finals carry?](#9-what-appversion-do-the-deprecated-finals-carry)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->

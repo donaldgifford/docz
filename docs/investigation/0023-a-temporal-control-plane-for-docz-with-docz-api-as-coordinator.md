@@ -11,6 +11,8 @@ created: 2026-10-08
 # INV-0023: A Temporal control plane for docz with docz-api as coordinator
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Question](#question)
 - [Hypothesis](#hypothesis)
 - [Context](#context)
@@ -32,6 +34,7 @@ created: 2026-10-08
   - [5. Does asynq move to Temporal?](#5-does-asynq-move-to-temporal)
   - [6. How does a task say it needs a person?](#6-how-does-a-task-say-it-needs-a-person)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:question:start-->

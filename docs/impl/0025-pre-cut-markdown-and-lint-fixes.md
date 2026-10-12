@@ -1,7 +1,7 @@
 ---
 id: IMPL-0025
 title: "Pre-cut markdown and lint fixes"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-10-12
 ---
@@ -11,6 +11,8 @@ created: 2026-10-12
 # IMPL-0025: Pre-cut markdown and lint fixes
 
 <!--toc:start-->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD013 -->
 - [Objective](#objective)
 - [Scope](#scope)
   - [In Scope](#in-scope)
@@ -53,6 +55,7 @@ created: 2026-10-12
   - [10. How does this ship?](#10-how-does-this-ship)
   - [11. Does this document merge on its own first?](#11-does-this-document-merge-on-its-own-first)
 - [References](#references)
+<!-- markdownlint-restore -->
 <!--toc:end-->
 
 <!--docz:objective:start-->
@@ -133,10 +136,12 @@ predates MD060, so CI has never seen the table failures.
 
 ## Implementation Phases
 
-Each phase is one pull request off `main`, opened after the previous one
-merges (not stacked), labelled `dont-release`, in this order. A phase is
-complete when all its tasks are checked off and its success criteria are
-met. Phases 1 and 2 change consumer-visible bytes in frozen v1 packages
+All seven phases land in one pull request from `fix/pre-cut-lint-fixes`,
+labelled `dont-release`. The phases run in this order on that branch, each
+as its own commits, so the history reads phase by phase and a phase can be
+reverted on its own. A phase is complete when all its tasks are checked
+off and its success criteria are met. The pull request is ready for review
+when every phase is complete and `just ci` passes on the branch. Phases 1 and 2 change consumer-visible bytes in frozen v1 packages
 (`docparse`, `toc`, `index`): a behaviour fix toward their documented
 contract, not a shape change. The release notes say so.
 
@@ -164,7 +169,7 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `pkg/doczcore/docparse/testdata/anchors.md`. It holds a heading
+- [x] Add `pkg/doczcore/docparse/testdata/anchors.md`. It holds a heading
   for each case, each followed by a hand-written link to its anchor:
   - underscores, including intraword `a_b_c` and `id_prefix`
   - non-ASCII letters (`Über uns`, `Café résumé`)
@@ -177,56 +182,64 @@ So `### Phase 1: <!-- Foundation -->` gives `#phase-1-`, and
   - emoji
   - three duplicates, plus a literal `dup-1` heading that collides with a
     generated suffix
-- [ ] Confirm `anchors.md` passes markdownlint-cli2 0.23.3 MD051 before
+- [x] Confirm `anchors.md` passes markdownlint-cli2 0.23.3 MD051 before
   any Go changes. It is the ground truth from here on, and Phase 3's gate
   lints it on every run
-- [ ] `AnchorSlug`: replace the `[a-z0-9 -]` filter with github-slugger's
+- [x] `AnchorSlug`: replace the `[a-z0-9 -]` filter with github-slugger's
   character class (Unicode L, M, N, and Pc, plus space and `-`). Drop
   `strings.Trim(s, "-")`. Rewrite the doc comment to name github-slugger as
   the contract
-- [ ] `Headings`: build the slug input from the raw heading text. Strip the
+- [x] `Headings`: build the slug input from the raw heading text. Strip the
   closing ATX sequence, remove HTML comments and inline tags (keeping the
   spaces around them), strip inline markdown, then slug. `Heading.Text` keeps
   its comments: `pkg/impl`, `kinds.InferRegions`, and `kinds.Alternatives`
   read the placeholder comment from it
-- [ ] `stripInlineMarkdown`: `_` emphasis only opens and closes at a word
+- [x] `stripInlineMarkdown`: `_` emphasis only opens and closes at a word
   boundary (CommonMark's intraword rule), so `a_b_c` stays `a_b_c` in both
   `Text` and the slug
-- [ ] Duplicate suffixes follow github-slugger's loop. When `dup-1` is
+- [x] Duplicate suffixes follow github-slugger's loop. When `dup-1` is
   already taken, the counter moves on to `dup-2`, and a generated suffix is
   itself recorded as taken
-- [ ] Comment awareness (question 1): a line whose first non-space
+- [x] Comment awareness (question 1): a line whose first non-space
   characters are `<!--`, with no `-->` after them on the same line, opens a
   comment block. The block ends on the first line containing `-->`. That is
   CommonMark's HTML-block type 2. Lines inside it are skipped by the walkers
   question 1 picks. Fences are tested first, so `<!--` inside a fence opens
   nothing. A single-line comment, which includes every `<!--docz:…-->`
   marker, never opens a block. `Markers` and `Regions` are untouched
-- [ ] `TestAnchorsMatchGitHub`: run `toc.GenerateToC` over `anchors.md`.
+- [x] `TestAnchorsMatchGitHub`: run `toc.GenerateToC` over `anchors.md`.
   Every generated link must equal the hand-written link under its heading
-- [ ] Unit tests for the comment-block rule:
+- [x] Unit tests for the comment-block rule:
   - a heading inside a block is skipped
   - a heading carrying a single-line comment is kept
   - an unclosed block runs to EOF
   - a fence inside a comment and a comment inside a fence
   - plus the same cases for each other walker question 1 picks
-- [ ] Regenerate the goldens (`go test ./... -update`) for `docparse`,
+- [x] Regenerate the goldens (`go test ./... -update`) for `docparse`,
   `toc`, `kinds`, the six type packages, `repo`, and
   `pkg/export/confluence`. Review each diff, which should only touch slugs
   and anything that cites them. Confluence's anchor map
   (`render.go`, `out[h.Slug]`) now resolves the links the regenerated ToCs
   carry
-- [ ] Parity: add the `lint` normaliser (question 4) to
+- [x] Parity: add the `lint` normaliser (question 4) to
   `test/parity/parity.go`. It applies to both sides in `runCase` and holds
   an explicit table of v1.2.2 lines and their v2 replacements, each entry
   naming its issue. Phase 1's entries are the three IMPL phase ToC lines
   plus any other slug the replay reports. There are no regex catch-alls, so
-  an unlisted change is still a regression. Unit-test the normaliser
-- [ ] `docz update` over this repository's `docs/`. Commit the regenerated
+  an unlisted change is still a regression. Unit-test the normaliser.
+  *Built:* the table maps each v2 line back to its v1.2.2 line, and
+  `LintNormalizer` sits in the per-run `norms` list beside `markers`. A
+  comparison-time normaliser could not work: v2 rewrites the `impl`
+  fixture's stale ToC, so it records as written a file whose v1.2.2
+  golden has only a size and digest. v1.2.2 never writes a v2 line, so
+  the rewrite is still symmetric and no golden is re-captured
+- [x] `docz update` over this repository's `docs/`. Commit the regenerated
   ToCs separately from the code
-- [ ] CLAUDE.md: update the `docparse` slug and comment rules and the parity
+- [x] CLAUDE.md: update the `docparse` slug and comment rules and the parity
   normaliser list
-- [ ] `just ci` passes
+- [x] `just ci` passes. *Locally `license-check` fails the same way on a
+  clean `main` (the installed go-licenses rejects standard-library
+  packages); every other gate passes*
 
 <!--docz:tasks:end-->
 
@@ -263,14 +276,14 @@ against 0.23.3:
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `index.GenerateTable`: the separator row becomes
+- [x] `index.GenerateTable`: the separator row becomes
   `| --- | --- | --- | --- | --- | --- |`, which MD060 accepts under padded
   rows. Update the `index` goldens
-- [ ] MD024 (question 2): add `MD024` to the existing
+- [x] MD024 (question 2): add `MD024` to the existing
   `markdownlint-disable-file` line in `impl.md` and `runbook.md`. Update
   each template's `templates/schema/` skeleton too if the derivation test
   says it must change
-- [ ] MD013 (question 3): docz writes these lines from document content and
+- [x] MD013 (question 3): docz writes these lines from document content and
   regenerates them on every `docz update`. The index region gets:
 
   ```markdown
@@ -283,26 +296,34 @@ against 0.23.3:
   `toc.GenerateToC` wraps the ToC list the same way. Both are inside
   docz's own markers, so a re-render rewrites them, and `toc.stale` and
   `index.drift` compare against the same bytes
-- [ ] Wrap the three embedded template lines over 80 characters:
+- [x] Wrap the three embedded template lines over 80 characters:
   `rfc.md:26`, `runbook.md:26`, and `index_impl.md:7`. Add a test in
   `doctemplate` that fails on any embedded template line over 80 characters
   outside a table or a fence
-- [ ] `wiki_index.md`: end with exactly one newline (MD012), and update the
+- [x] `wiki_index.md`: end with exactly one newline (MD012), and update the
   `pkg/wiki` goldens
-- [ ] Check the generic `default.md` and every `index_*.md` header against
-  default rules, and fix what they report
-- [ ] Parity: add entries to the `lint` normaliser for:
+- [x] Check the generic `default.md` and every `index_*.md` header against
+  default rules, and fix what they report. *`default.md` is clean. Each
+  header ends with the blank line that separates it from the marker pair,
+  which is MD012 only when the header is linted alone; a generated README
+  passes, so nothing changed*
+- [x] Parity: add entries to the `lint` normaliser for:
   - the separator row
   - the three wrapped lines
   - the capture, disable, and restore lines, dropped on both sides the way
     `MarkerNormalizer` drops markers
   - the IMPL and runbook `disable-file` lines
   - the wiki index's trailing blank line
-- [ ] `docz update` over this repository's `docs/`. Commit the regenerated
+
+  *Added with each change, so every commit replays clean. The wrapper
+  lines also make every fixture's v1.2.2 ToC stale, so each dry-run line
+  reporting one is listed, and the wiki ending needed an end-of-file
+  anchored entry per last list line*
+- [x] `docz update` over this repository's `docs/`. Commit the regenerated
   READMEs and ToCs separately
-- [ ] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
+- [x] CLAUDE.md: the `index` and `toc` paragraphs, and the template rule
   (`MD025 MD041` gains `MD024` for IMPL and runbook)
-- [ ] `just ci` passes
+- [x] `just ci` passes (`license-check` aside, as in Phase 1)
 
 <!--docz:tasks:end-->
 
@@ -331,9 +352,9 @@ CI in the same pull request.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `mise.toml`: markdownlint-cli2 `0.18.1` → `0.23.3`. Renovate keeps it
+- [x] `mise.toml`: markdownlint-cli2 `0.18.1` → `0.23.3`. Renovate keeps it
   current from here
-- [ ] `just lint-generated` (`docz.just`, question 5): build docz, then in
+- [x] `just lint-generated` (`docz.just`, question 5): build docz, then in
   a temp directory:
   - `git init` and `docz init`
   - turn the runbook on, and add a custom `frameworks` type with no
@@ -348,18 +369,22 @@ CI in the same pull request.
   Then run markdownlint-cli2 twice, once with `{}` (default rules) and once
   with this repository's `.markdownlint.yaml`, and fail on any finding.
   Print the temp path on failure
-- [ ] CI: a `lint-generated` step in the `test-go` job, which runs on the
+- [x] CI: a `lint-generated` step in the `test-go` job, which runs on the
   `go` path filter. Install markdownlint-cli2 at the version in `mise.toml`,
   read from the file so there is one pin. Add the recipe to `just ci`
-- [ ] Prove the gate catches each regression by reverting it locally:
+- [x] Prove the gate catches each regression by reverting it locally:
   - restore the old separator row: MD060
   - restore the `[a-z0-9 -]` slug filter: MD051
   - drop `MD024` from the IMPL `disable-file` line: MD024
 
-  Record the three results in the PR
-- [ ] Comment on #98: the generated output is gated here, and what is left
+  Record the three results in the pull request description.
+  *Results: 36 × MD060, 6 × MD051, 8 × MD024. The slug drill first passed,
+  because no generated ToC carried an underscore or a non-ASCII letter, so
+  the gate now files `anchors.md` as an RFC with a ToC region and lints
+  the ToC docz writes for it*
+- [x] Comment on #98: the generated output is gated here, and what is left
   is this repository's own `docs/` (question 6)
-- [ ] CLAUDE.md: the recipe, the CI step, and the version pin
+- [x] CLAUDE.md: the recipe, the CI step, and the version pin
 
 <!--docz:tasks:end-->
 
@@ -384,23 +409,23 @@ After this phase `docz init` alone leaves a repository that
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `repo.Init`: write each README as `index.Scaffold(header)` spliced
+- [x] `repo.Init`: write each README as `index.Scaffold(header)` spliced
   with `index.GenerateTable(nil, "All "+label)`. That is the bytes
   `updateType` writes for a type with no documents. It stays
   scaffold-then-splice, so there is still exactly one marker pair (#99).
   Share one helper with `update.go:139` and `validate.go:480`, so all three
   render the empty table the same way
-- [ ] Test: `Init` followed by `Validate` gives no `index.drift`. `Init`
+- [x] Test: `Init` followed by `Validate` gives no `index.drift`. `Init`
   followed by `Update` writes nothing. `index.Scaffold` on a header that
   ends in a pair still yields one pair
-- [ ] `--format json` (question 8): drift stays in the separate `index`
+- [x] `--format json` (question 8): drift stays in the separate `index`
   array, and `docz validate --help` and the README say so in one sentence
-- [ ] Parity: an empty-table collapse, applied to both sides after the
+- [x] Parity: an empty-table collapse, applied to both sides after the
   `lint` normaliser, so an index region holding only a heading and a header
   table reads as an empty pair. Count the 14 init goldens it touches
-- [ ] `just lint-generated` runs `docz validate --strict` straight after
+- [x] `just lint-generated` runs `docz validate --strict` straight after
   `docz init` and expects exit 0
-- [ ] CLAUDE.md: the `repo.Init` paragraph
+- [x] CLAUDE.md: the `repo.Init` paragraph
 
 <!--docz:tasks:end-->
 
@@ -426,31 +451,31 @@ on stderr points at `docz template override` when that happens.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `doctemplate.ResolveOrGeneric(docType, configPath, docsDir)
+- [x] `doctemplate.ResolveOrGeneric(docType, configPath, docsDir)
   (body string, generic bool, err error)` (question 7). It runs the three
   tiers and falls back to `GenericTemplate()` on `ErrNoTemplate` only.
   `Resolve` keeps its contract, and a configured path that does not exist
   is still an error
-- [ ] Callers: `docwrite.Render`, `repo.Template` (show), and
+- [x] Callers: `docwrite.Render`, `repo.Template` (show), and
   `repo.Validate`'s template tier. `repo.ExportTemplate` keeps calling
   `Resolve`, so `docz template override` still scaffolds the generic pair
   with `Scaffolded: true`
-- [ ] `repo.Validate`: a type on the generic fallback validates against the
+- [x] `repo.Validate`: a type on the generic fallback validates against the
   embedded `default` schema. It no longer reports `template.unresolved` or
   `schema.unresolved`
-- [ ] `repo.CreateResult` gains `GenericTemplate bool`. `docz create` prints
+- [x] `repo.CreateResult` gains `GenericTemplate bool`. `docz create` prints
   `note: <type> has no template; used the generic one. Run "docz template
   override <type>" to write one.` on stderr. `docz template show` prints the
   same note
-- [ ] A legacy repository with `types.plan` enabled and no template now
+- [x] A legacy repository with `types.plan` enabled and no template now
   creates a generic document instead of failing (ADR-0003). The parity
   fixture's `plan` block is dormant, so no golden moves. Note this in
   `docs/migrating-to-v2.md`
-- [ ] Tests: create, show, and validate for a template-less custom type, in
+- [x] Tests: create, show, and validate for a template-less custom type, in
   `repo` and in `cmd` (a new test file; `cmd/*_test.go` stays frozen).
   Extend `test/consumer`'s `Create` coverage to a template-less custom type
-- [ ] `just lint-generated` stops skipping the template-less type
-- [ ] README § Custom Document Types and CLAUDE.md: the fallback and the
+- [x] `just lint-generated` stops skipping the template-less type
+- [x] README § Custom Document Types and CLAUDE.md: the fallback and the
   note
 
 <!--docz:tasks:end-->
@@ -478,14 +503,16 @@ commit, and the contract says what `git_sha` is.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/src/components/doc-meta-table.tsx`: apply question 9's choice to
+- [x] `ui/src/components/doc-meta-table.tsx`: apply question 9's choice to
   the `git_sha` row, and update `ui/src/routes/doc.test.tsx`
-- [ ] `api/openapi.yaml`: describe `git_sha` on `Document` and
+- [x] `api/openapi.yaml`: describe `git_sha` on `Document` and
   `DocumentSummary` the way `PageSummary` does. Bump `info.version` from
-  `1.6.0` to `1.6.1` (editorial)
-- [ ] `just ui ci` and `just api lint` pass, and `gen-api-check` shows the
+  `1.6.0` to `1.6.1` (editorial). *Built: the spec has no
+  `DocumentSummary`; the list and get-one endpoints share `Document`, so
+  one description covers both.*
+- [x] `just ui ci` and `just api lint` pass, and `gen-api-check` shows the
   regenerated client
-- [ ] CLAUDE.md: the spec version
+- [x] CLAUDE.md: the spec version
 
 <!--docz:tasks:end-->
 
@@ -506,16 +533,19 @@ commit, and the contract says what `git_sha` is.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `docs/migrating-to-v2.md`: the first `docz update` on v2 rewrites
+- [x] `docs/migrating-to-v2.md`: the first `docz update` on v2 rewrites
   every ToC with an affected heading and every README index table once.
   `docz validate` reports `toc.stale` until it runs. Also cover the
   `disable-file` and capture lines, and the generic-template fallback
-- [ ] Draft the release notes for question 10's beta. Name the three frozen
-  packages whose output changed and why
-- [ ] Close #82, #96, #127, #112, #92, and #169 with the merged PRs. Comment
-  on #98 with what is left
-- [ ] Set this document to Completed
-- [ ] Human: cut the beta (`just release`), then do #133, #135, and #140
+- [x] Draft the release notes for question 10's beta. Name the three frozen
+  packages whose output changed and why. *Built: the draft is in the pull
+  request description, ready for the `v2.0.0-beta.9` release body;
+  goreleaser writes the rest.*
+- [x] The pull request closes #82, #96, #127, #112, #92, and #169
+  (`Closes` lines in its description). Comment on #98 with what is left
+- [x] Set this document to Completed
+- [ ] Human: cut the beta (`just release`), then do #133, #135, and #140.
+  *Deferred, human required: tags and merges are the maintainer's.*
 
 <!--docz:tasks:end-->
 
@@ -558,16 +588,16 @@ commit, and the contract says what `git_sha` is.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] `anchors.md` is checked by markdownlint (MD051) and by
+- [x] `anchors.md` is checked by markdownlint (MD051) and by
   `TestAnchorsMatchGitHub`, so the slug has one external ground truth
-- [ ] Every regenerated golden is reviewed as a diff, not accepted wholesale
-- [ ] `just lint-generated` with default rules and with the repository
+- [x] Every regenerated golden is reviewed as a diff, not accepted wholesale
+- [x] `just lint-generated` with default rules and with the repository
   config, plus the three revert drills from Phase 3
-- [ ] `just parity`: every delta is a named normaliser entry tied to an issue
-- [ ] `docz validate --strict` straight after `docz init`
-- [ ] Template-less custom type: create, show, validate, and override, in
+- [x] `just parity`: every delta is a named normaliser entry tied to an issue
+- [x] `docz validate --strict` straight after `docz init`
+- [x] Template-less custom type: create, show, validate, and override, in
   `repo`, `cmd`, and `test/consumer`
-- [ ] `just ui ci` for the reader change
+- [x] `just ui ci` for the reader change
 
 <!--docz:testing:end-->
 
@@ -717,7 +747,7 @@ commit, and the contract says what `git_sha` is.
 - b. It rides with Phase 1's pull request.
 - c. Other.
 
-> **Resolved 2026-10-12: (a).** This document merges on its own as a docs pull request; Phase 1 starts from `main`.
+> **Resolved 2026-10-12: (a).** This document merges on its own as a docs pull request; the work starts from `main`. Amended the same day: every phase lands in a single pull request rather than one per phase.
 
 <!--docz:open-questions:end-->
 
