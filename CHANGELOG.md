@@ -13,6 +13,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(pkg)* The v2 packages are stable from v2.0.0
 - Drop the deprecated-chart notes
+- Prepare the v2.0.0 release
 
 ### Miscellaneous Tasks
 
