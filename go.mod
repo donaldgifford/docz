@@ -1,6 +1,6 @@
 module github.com/donaldgifford/docz/v2
 
-go 1.26.6
+go 1.26.9
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
@@ -111,7 +111,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4
+	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
