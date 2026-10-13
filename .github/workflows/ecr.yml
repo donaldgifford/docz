@@ -169,14 +169,17 @@ jobs:
           # this target; the component was validated by the resolve job.
           bake-target: docker-metadata-action-${{ inputs.component }}
           images: ${{ needs.aws-auth.outputs.registry }}/${{ env.IMAGE_NAME }}
-          # No `type=raw,value=latest` while the v2 line ships betas: it moved
-          # latest on every publish, a v2.0.0-beta.N included. Planned to come
-          # back. metadata-action's default flavor (latest=auto) still tags
-          # latest for a non-prerelease semver, and {{major}}.{{minor}} skips a
-          # prerelease the same way, so a beta gets exactly one tag: 2.0.0-beta.N.
+          # latest only for a release tag: one with no `-` suffix, so a later
+          # beta or rc can never take latest back (#135). The flavor's own
+          # latest=auto is off so this rule is the only one that decides, and
+          # {{major}}.{{minor}} skips a prerelease, so a beta gets exactly one
+          # tag: 2.0.0-beta.N.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}},value=${{ inputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }}
+            type=raw,value=latest,enable=${{ !contains(inputs.tag, '-') }}
 
       # bake reads VERSION/COMMIT_SHA/BUILD_DATE from same-named env vars and
       # feeds them to the Dockerfile.api ARGs (-> -ldflags main.version/commit/date).
