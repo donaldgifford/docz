@@ -6,8 +6,9 @@ import (
 )
 
 // Client is the Confluence Cloud surface Export needs. *HTTPClient
-// implements it over net/http; a test supplies a fake. The package is
-// EXPERIMENTAL, and a caller's own implementation must grow with it.
+// implements it over net/http; a test supplies a fake. A caller's own
+// implementation must provide every method; confluencetest is a complete
+// in-memory one.
 //
 // A page, folder, or property that does not exist is (nil, nil), not an
 // error: not finding one is an ordinary answer to the question Export asks.

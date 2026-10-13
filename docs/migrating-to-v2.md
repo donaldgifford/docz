@@ -280,9 +280,9 @@ These were `internal/` in v1 and are importable in v2:
 | `pkg/{rfc,adr,design,impl,investigation,runbook}` | One typed reader per built-in, e.g. `impl.Parse(doc)` gives `doc.Phases[2].Tasks[0].Checked`. |
 | `pkg/export/confluence` | Confluence Cloud export. `confluencetest` is an in-memory fake site. |
 
-**These are EXPERIMENTAL until v2.0.0** (ADR-0002 Decision 7). Their API may
-change between `v2.0.0-beta.N` tags, so pin an exact beta. The five frozen
-packages are not experimental.
+**These were EXPERIMENTAL through the betas and are stable from v2.0.0**
+(ADR-0002 Decision 7). Their API could change between `v2.0.0-beta.N` tags;
+from v2.0.0, semver covers them as it covers the five frozen packages.
 
 ### Dependencies
 

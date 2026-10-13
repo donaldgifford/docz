@@ -9,9 +9,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(deps)* Go 1.26.9 and go.yaml.in/yaml/v3 v3.0.5
 
+### Documentation
+
+- *(pkg)* The v2 packages are stable from v2.0.0
+
 ### Miscellaneous Tasks
 
 - Actions/setup-go and actions/labeler v7
+- *(images)* Tag latest for a release tag only
 
 ## [2.0.0-beta.9] - 2026-10-12
 

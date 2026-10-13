@@ -900,23 +900,12 @@ v1.0.0 and carried onto the v2 line in their v1 shapes. Additions only. The one
 breaking change v2 makes to them is `plan` leaving the catalogue `config`
 describes (ADR-0003).
 
-**Experimental** — the twelve the v2 line added: `kinds`, `validate`, `repo`,
-`doctemplate`, `index`, `wiki`, and the six type packages. Each one's doc
-comment carries this paragraph, and the surface may change between
-`v2.0.0-beta.N` tags:
-
-```go
-// EXPERIMENTAL until v2.0.0: the surface may change between betas
-// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
-// affected; this one is not among them.
-```
-
-It sits in the second paragraph rather than the first because `revive`'s
-`package-comments` rule and staticcheck's ST1000 both require a package
-comment to open with `Package <name>`. `go doc` shows it immediately either
-way. **A new public package added before the v2.0.0 cut needs this paragraph**;
-the cut is what removes all of them, and from then on the whole surface is
-contract.
+**Stable since v2.0.0** — the fourteen the v2 line added: `kinds`,
+`validate`, `repo`, `doctemplate`, `index`, `wiki`, the six type packages,
+`export/confluence`, and `export/confluence/confluencetest`. Through the
+`v2.0.0-beta.N` tags each one's doc comment carried an `EXPERIMENTAL`
+paragraph, and the surface could change between betas. The v2.0.0 cut removed
+the paragraphs (#135); from then on the whole surface is contract.
 
 ### What pr-semver-bump v1.7.4 actually does with a beta tag
 

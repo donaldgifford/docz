@@ -8,9 +8,6 @@
 // confluence.Client itself, and Handler serves the same state over the v2
 // REST endpoints HTTPClient calls, so one fake covers both the library's
 // callers and code that drives the real HTTP client.
-//
-// EXPERIMENTAL: like its parent, this package may change between
-// v2.0.0-beta.N tags (ADR-0002 Decision 7).
 package confluencetest
 
 import (
