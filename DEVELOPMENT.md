@@ -1412,5 +1412,5 @@ would otherwise try to build. Do not delete it; `TestUIModuleFence` in
 images deploy with one chart, `charts/docz/`; `just chart lint`,
 `just chart unittest`, and `just chart docs` are its recipes. Its `appVersion`
 is bare semver, and its `version` is bumped once per release, before the tag.
-`charts/docz-site/` and `charts/docz-api/` are deprecated finals, kept until
-v2.0.0 with their `just ui helm-*` and `just api helm-*` recipes.
+The per-image `charts/docz-site/` and `charts/docz-api/` were deleted at v2.0.0
+(#140), with their `just ui helm-*` and `just api helm-*` recipes.
