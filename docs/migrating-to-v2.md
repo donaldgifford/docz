@@ -359,7 +359,7 @@ section has the full key mapping. In short:
 2. **Install into a new release name or namespace:**
 
    ```bash
-   helm install docz oci://ghcr.io/donaldgifford/charts/docz --version 0.3.0 \
+   helm install docz oci://ghcr.io/donaldgifford/charts/docz --version 1.0.0 \
      -n docz --create-namespace -f docz-values.yaml \
      --set-file api.secrets.privateKey=app.pem --wait
    helm test docz -n docz

@@ -12,11 +12,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(pkg)* The v2 packages are stable from v2.0.0
+- Drop the deprecated-chart notes
 
 ### Miscellaneous Tasks
 
 - Actions/setup-go and actions/labeler v7
 - *(images)* Tag latest for a release tag only
+- *(charts)* Delete the deprecated docz-api and docz-site charts
+- *(release)* Publish charts/docz on a release; api and ui are images only
+- *(chart)* Bump charts/docz to 1.0.0 with appVersion 2.0.0
 
 ## [2.0.0-beta.9] - 2026-10-12
 

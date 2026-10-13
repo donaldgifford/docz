@@ -229,10 +229,9 @@ ui::*          → the frontend's install, client generation, lint, format,
 
 In CI the `ui` and `ui-e2e` jobs run only when `ui/`, `Dockerfile.ui`, or
 `api/openapi.yaml` changed, so a spec change always runs both halves. There are
-one Helm chart, `charts/docz/` (the old `charts/docz-api/` and
-`charts/docz-site/` are deprecated finals). Bump its `version` once per
-release, before the tag that should publish it: charts publish only from a
-`v*-beta.*` tag, never on merge.
+one Helm chart, `charts/docz/`. Bump its `version` once per release, before
+the tag that should publish it: a chart publishes from a `v*-beta.*` tag or a
+release, never from a `dont-release` merge.
 
 CI runs on every push to a PR branch. Fix failures before requesting review.
 

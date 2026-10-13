@@ -543,11 +543,12 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   password component entirely), and a purge means rewriting branch
   history.
 - The site deploys with `charts/docz` (IMPL-0021), under `site.*`;
-  `charts/docz-site` is a deprecated final. Bump `charts/docz/Chart.yaml`'s
+  `charts/docz-site` was deleted at v2.0.0 (#140). Bump `charts/docz/Chart.yaml`'s
   `version` once per release, before the tag that should publish it — not
   in every PR that touches the chart (IMPL-0020 Open Question 6).
-  Charts publish only from a `v*-beta.*` tag, never on merge (the
-  `publish_chart: false` in `release.yml`, IMPL-0021 Open Question 2), and
+  A chart publishes from a `v*-beta.*` tag or a release, never from a
+  `dont-release` merge (`release.yml` calls component `chart` only when
+  it cut a tag, IMPL-0021 Open Question 2), and
   `ghcr.yml`'s chart job runs a `helm pull` idempotency precheck, so a
   tag cut with an unbumped chart publishes NO chart and the run is still
   all-green: the chart summary shows `Already published: true`. `appVersion`

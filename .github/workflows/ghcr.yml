@@ -6,12 +6,12 @@ name: Publish to GHCR
 # dispatchable for ad-hoc republishes. Three jobs:
 #   resolve — map `component` to the image repo, bake target, and chart
 #   image   — push container image when `tag` is supplied
-#   chart   — push Helm chart; idempotent via `helm pull` precheck
+#   chart   — push charts/docz (component chart); idempotent via `helm pull`
 on:
   workflow_call:
     inputs:
       component:
-        description: 'Component to publish (api, ui, or chart); the resolve job maps it to names. chart is charts/docz alone: it has no image, so pass no tag.'
+        description: 'Component to publish (api, ui, or chart); the resolve job maps it to names. api and ui are images only; chart is charts/docz, which has no image, so pass no tag.'
         type: string
         required: false
         default: 'api'
@@ -20,11 +20,6 @@ on:
         type: string
         required: false
         default: ''
-      publish_chart:
-        description: 'Publish this component''s chart. release.yml passes false, so charts publish only from a tag.'
-        type: boolean
-        required: false
-        default: true
       dry_run:
         description: 'Package but do not push.'
         type: boolean
@@ -33,7 +28,7 @@ on:
   workflow_dispatch:
     inputs:
       component:
-        description: 'Component to publish (api, ui, or chart); the resolve job maps it to names. chart is charts/docz alone: it has no image, so pass no tag.'
+        description: 'Component to publish (api, ui, or chart); the resolve job maps it to names. api and ui are images only; chart is charts/docz, which has no image, so pass no tag.'
         type: choice
         options: [api, ui, chart]
         default: 'api'
@@ -42,11 +37,6 @@ on:
         type: string
         required: false
         default: ''
-      publish_chart:
-        description: 'Publish this component''s chart. release.yml passes false, so charts publish only from a tag.'
-        type: boolean
-        required: false
-        default: true
       dry_run:
         description: 'Package but do not push.'
         type: boolean
@@ -84,11 +74,13 @@ jobs:
         # component | image repo              | bake target | chart name | chart dir
         run: |
           case "${COMPONENT}" in
-            api) row="donaldgifford/docz-api  release-api docz-api  charts/docz-api" ;;
-            ui)  row="donaldgifford/docz-site release-ui  docz-site charts/docz-site" ;;
-            # charts/docz ships both images, so it has no image of its own:
-            # `-` fills the fields read -r needs, and the image job already
-            # skips when no tag is passed (IMPL-0021 OQ 3).
+            api) row="donaldgifford/docz-api  release-api -         -" ;;
+            ui)  row="donaldgifford/docz-site release-ui  -         -" ;;
+            # The images have no chart of their own since the per-image
+            # charts were deleted at v2.0.0 (#140), and charts/docz ships
+            # both images with no image of its own. `-` fills the fields
+            # read -r needs; the image job skips without a tag and the chart
+            # job without a chart dir.
             chart) row="-                       -           docz      charts/docz" ;;
             *)     echo "ERROR: unknown component '${COMPONENT}' (want api, ui, or chart)"; exit 1 ;;
           esac
@@ -232,9 +224,10 @@ jobs:
   chart:
     name: Publish chart
     runs-on: ubuntu-latest
-    # Off for release.yml's merge-to-main calls (IMPL-0021 OQ 2): a chart
-    # version publishes from a v*-beta.* tag, never from a merge.
-    if: inputs.publish_chart
+    # Only component chart has one. A chart version publishes from a
+    # v*-beta.* tag or a release, never from a dont-release merge: the
+    # callers decide that by whether they call component chart at all.
+    if: needs.resolve.outputs.chart_dir != '-'
     needs: resolve
     env:
       CHART_NAME: ${{ needs.resolve.outputs.chart_name }}
@@ -260,8 +253,8 @@ jobs:
 
       - uses: orhun/git-cliff-action@v4
         with:
-          # Scoped to this component's chart: with two charts, "charts/**"
-          # listed each chart's commits in the other's changelog.
+          # Scoped to the chart's own directory, so a commit that touched
+          # only charts/.yamllint.yml or a since-deleted chart stays out.
           config: ${{ env.CHART_DIR }}/cliff.toml
           args: --include-path "${{ env.CHART_DIR }}/**" --output ${{ env.CHART_DIR }}/CHANGELOG.md
         env:

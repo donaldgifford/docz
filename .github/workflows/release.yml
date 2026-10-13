@@ -81,12 +81,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
 
-  # The two publish workflows run on every main push, NOT gated on the
-  # binary release. The internal `image` job is gated on `inputs.tag != ''`
-  # so it only fires on a real release; the internal `chart` job is
-  # idempotent (skips when the chart version is already published).
-  # This lets chart-only changes (PR with `dont-release` label) publish
-  # the chart even though no binary release happened.
+  # The image publish jobs run on every main push, NOT gated on the binary
+  # release: the internal `image` job is gated on `inputs.tag != ''`, so it
+  # only fires on a real release. The api and ui components have no chart
+  # since #140, so these calls never publish one; charts/docz is
+  # publish-chart below.
   publish-ghcr:
     name: Publish to GHCR
     needs: bump-version
@@ -105,7 +104,6 @@ jobs:
       component: api
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
-      publish_chart: false
     secrets: inherit
 
   publish-ecr:
@@ -131,7 +129,6 @@ jobs:
       component: api
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
-      publish_chart: false
     secrets: inherit
 
   # docz-site's pair (IMPL-0020): the same reusable workflows with
@@ -150,7 +147,6 @@ jobs:
       component: ui
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
-      publish_chart: false
     secrets: inherit
 
   publish-ecr-ui:
@@ -167,5 +163,39 @@ jobs:
       component: ui
       tag: ${{ needs.bump-version.outputs.tag }}
       dry_run: false
-      publish_chart: false
+    secrets: inherit
+
+  # charts/docz on a real release only, so a dont-release merge never
+  # publishes a chart version (IMPL-0021 OQ 2). Without this job a release
+  # cut by label (v2.0.0 is one) published the images and no chart. The
+  # chart job skips a version already published, so a release that did not
+  # bump Chart.yaml is a no-op. Same permissions ceiling as publish-ghcr.
+  publish-chart:
+    name: Publish charts/docz to GHCR
+    needs: bump-version
+    if: needs.bump-version.outputs.skipped != 'true'
+    uses: ./.github/workflows/ghcr.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      component: chart
+      dry_run: false
+    secrets: inherit
+
+  publish-ecr-chart:
+    name: Publish charts/docz to ECR
+    needs: bump-version
+    if: needs.bump-version.outputs.skipped != 'true' && vars.ECR_PUBLISH_ENABLED == 'true'
+    uses: ./.github/workflows/ecr.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      packages: write
+    with:
+      component: chart
+      dry_run: false
     secrets: inherit
