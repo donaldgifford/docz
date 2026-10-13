@@ -13,6 +13,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(pkg)* The v2 packages are stable from v2.0.0
 - Drop the deprecated-chart notes
+- Prepare the v2.0.0 release
+- *(inv)* Conclude INV-0015, the v2.0.0 acceptance swap
+- *(readme)* What's new in v2
 
 ### Miscellaneous Tasks
 

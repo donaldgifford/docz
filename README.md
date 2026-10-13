@@ -5,6 +5,31 @@ software repositories. `docz` creates documents (RFCs, ADRs, design docs,
 implementation plans) from embedded templates, auto-increments IDs, and keeps
 README index tables up to date.
 
+## What's new in v2
+
+v2.0.0 turns docz into a library whose first consumer is its CLI, and brings
+the server and the frontend into this repository. Coming from v1, read
+[Migrating from docz v1 to v2](docs/migrating-to-v2.md) first.
+
+- **A new module path:** `github.com/donaldgifford/docz/v2`. v1.x stays on
+  the unversioned path.
+- **A Go library under `pkg/`:** typed readers for each built-in
+  type (`pkg/rfc` through `pkg/runbook`), region readers, a validator, and
+  `repo`, which provides the operations the CLI uses. See
+  [Using docz as a Go Library](#using-docz-as-a-go-library).
+- **Marked templates:** every section of a built-in template sits between
+  `<!--docz:…-->` region markers. [`docz validate`](#validation) checks
+  documents against them, and `--fix` adds markers to older documents.
+- **`plan` is no longer built in.** A repository that keeps its `types.plan`
+  block keeps a working custom type.
+- **A sixth built-in, `runbook`,** which ships disabled.
+- **`docz export confluence`** publishes documents to Confluence Cloud.
+- **Lint-clean output:** everything docz writes passes markdownlint under
+  its default rules.
+- **docz-api and docz-site now live in this repository**, and one Helm chart,
+  `oci://ghcr.io/donaldgifford/charts/docz`, deploys both. See
+  [docz-api, the server](#docz-api-the-server).
+
 ## Features
 
 - **Six built-in document types:** RFC, ADR, DESIGN, IMPL, INV, and RUNBOOK (disabled by default)
@@ -35,7 +60,7 @@ just build
 go install github.com/donaldgifford/docz/v2/cmd/docz@latest
 ```
 
-The `/v2` path is the current development line. Released v1.x tags stay on
+The `/v2` path is the current line. Released v1.x tags stay on
 the unversioned path, so `go install github.com/donaldgifford/docz/cmd/docz@v1.2.2`
 is how you pin the last v1 release. Coming from v1? See
 [Migrating from docz v1 to v2](docs/migrating-to-v2.md).
