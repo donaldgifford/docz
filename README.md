@@ -947,10 +947,10 @@ whole-repository operations. A layer imports only the layers beneath it.
 > **Stability.** The five packages promoted at v1.0.0 — `config`, `document`,
 > `docparse`, `docwrite`, and `toc` — are **frozen** and take additions only
 > (ADR-0001 Decision 6); the one break the v2 line makes to them is `plan`
-> leaving `DocTypeNames()` (ADR-0003). The other thirteen are
-> **experimental until v2.0.0 proper ships** (ADR-0002 Decision 7) and may
-> change between `v2.0.0-beta.N` tags. Pin a beta exactly if you depend on
-> them.
+> leaving `DocTypeNames()` (ADR-0003). The fourteen the v2 line
+> added were experimental through the `v2.0.0-beta.N` tags and are **stable
+> from v2.0.0** (ADR-0002 Decision 7): semver covers them as it covers the
+> frozen five.
 
 Semver covers exported identifiers under `pkg/` only; `cmd/`, CLI output
 text, and embedded template contents are not part of the contract. There is

@@ -1,9 +1,5 @@
 // Package confluence exports docz documents to Confluence Cloud as pages.
 //
-// EXPERIMENTAL until v2.0.0: the surface may change between betas
-// (ADR-0002 Decision 7). The five packages frozen at v1.0.0 are not
-// affected; this one is not among them.
-//
 // It is an integration above the core, a sibling of pkg/wiki and the type
 // packages rather than a member of pkg/doczcore (DESIGN-0020 §1): it imports
 // the core, and the core never imports it. It is also the one package under
