@@ -18,13 +18,13 @@
 #
 # Since IMPL-0019 the tag also publishes docz-api: goreleaser builds both
 # binaries (docz-api's archives carry a syft SBOM), and publish-image pushes
-# ghcr.io/donaldgifford/docz-api:<tag> plus the chart through ghcr.yml. ECR
-# stays behind vars.ECR_PUBLISH_ENABLED, as on release.yml. Since IMPL-0020
-# publish-image-ui does the same for ghcr.io/donaldgifford/docz-site and its
-# chart; each GHCR package needs its own Actions access grant for this repo.
-# Since IMPL-0021 publish-chart pushes charts/docz, the one chart for both,
-# as ghcr.io/donaldgifford/charts/docz. Charts publish only from this tag:
-# release.yml passes publish_chart: false.
+# ghcr.io/donaldgifford/docz-api:<tag> through ghcr.yml. ECR stays behind
+# vars.ECR_PUBLISH_ENABLED, as on release.yml. Since IMPL-0020
+# publish-image-ui does the same for ghcr.io/donaldgifford/docz-site; each
+# GHCR package needs its own Actions access grant for this repo. Since
+# IMPL-0021 publish-chart pushes charts/docz, the one chart for both, as
+# ghcr.io/donaldgifford/charts/docz; release.yml publishes it too, on a
+# release and never on a dont-release merge.
 name: Pre-release
 
 on:
@@ -76,8 +76,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
 
-  # The server's image and chart for the same tag. ghcr.yml's image job runs
-  # because tag is set; its chart job skips a chart version already published.
+  # The server's image for the same tag. ghcr.yml's image job runs because
+  # tag is set; component api has no chart, so its chart job skips.
   # Caller-job permissions are a hard ceiling for the reusable workflow, so
   # every permission ghcr.yml declares is granted here.
   publish-image:
@@ -109,8 +109,8 @@ jobs:
       dry_run: false
     secrets: inherit
 
-  # docz-site's image and chart for the same tag (IMPL-0020): the same pair
-  # of reusable workflows with component: ui, and the same ceiling.
+  # docz-site's image for the same tag (IMPL-0020): the same pair of
+  # reusable workflows with component: ui, and the same ceiling.
   publish-image-ui:
     name: Publish docz-site to GHCR
     uses: ./.github/workflows/ghcr.yml
