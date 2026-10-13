@@ -278,7 +278,7 @@ nothing, nothing, and `docs/archive/api/`.
 
 ### Go-specific conventions
 
-- **`go.mod` go directive matches `mise.toml`** (currently `go 1.26.4`). Bump
+- **`go.mod` go directive matches `mise.toml`** (currently `go 1.26.9`, which `Dockerfile.api`, `ui/go.mod`, and `test/consumer/go.mod` also pin). Bump
   both together — Renovate's Go updater handles `go.mod`; bump `mise.toml` in
   the same commit.
 - **No `vendor/`**. Modules are resolved at build time; the Docker cache mount
