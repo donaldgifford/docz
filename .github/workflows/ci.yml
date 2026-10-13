@@ -474,8 +474,8 @@ jobs:
       - name: Run helm-unittest
         # Every chart under charts/. charts/docz keeps its suites in
         # tests/{api,site,chart}/, which the default glob (tests/*_test.yaml)
-        # misses; `**` also matches zero directories, so the old charts'
-        # flat tests/ are still found.
+        # misses; `**` also matches zero directories, so a chart with a flat
+        # tests/ is still found.
         run: |
           for chart in charts/*/; do
             helm unittest -f 'tests/**/*_test.yaml' "${chart}"

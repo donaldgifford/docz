@@ -4,9 +4,8 @@
 # recipes run as `just chart lint` and root gates reach them as
 # `chart::lint`. The chart is neither the server's nor the frontend's — it
 # installs both — so its recipes live here rather than in api.just or
-# ui.just (DESIGN-0018 OQ 13). The deprecated charts/docz-api and
-# charts/docz-site keep their `just api helm-*` / `just ui helm-*` recipes
-# until the v2.0.0 cut deletes them.
+# ui.just (DESIGN-0018 OQ 13). The per-image charts it replaced,
+# charts/docz-api and charts/docz-site, were deleted at v2.0.0 (#140).
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
