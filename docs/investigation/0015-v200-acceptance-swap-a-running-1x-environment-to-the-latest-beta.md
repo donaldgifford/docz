@@ -1,7 +1,7 @@
 ---
 id: INV-0015
 title: "v2.0.0 acceptance: swap a running 1.x environment to the latest beta"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-02
 ---
@@ -196,12 +196,17 @@ the `api:` block already.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive until the swap is run. The desk review found no
-blocker: the chart is new-installs-only by design (Observation 1), only the
-Postgres data has to be carried (Observation 2), the migration chain is the
-same code (Observation 3), and the webhook keeps working if the host does
-(Observation 4). The verdict comes from the run, recorded in the runbook
-this investigation asks for and in RUNBOOK-0001's Last Verified row.
+**Answer:** Yes. The homelab environment that ran the 1.x docz-api and
+docz-site releases now runs `charts/docz` 0.3.1 (`2.0.0-beta.8`), and it
+passed all five acceptance checks of #147 on 2026-10-12. The swap was a new
+install, as Observation 1 requires, and it did **not** keep the data: the
+old releases were deleted and the new one started with an empty database,
+which ingest refilled from the repositories (question 1, c). That is the
+cheapest path Observation 2 allows, because Postgres holds nothing a
+re-ingest cannot rebuild. Every type's document count on the site matched
+each repository's `main`, webhook deliveries kept documents current, and the
+runbook type showed all of its documents. RUNBOOK-0001 Procedure 3's Last
+Verified row records the run (#168). Closing #147 licensed the v2.0.0 cut.
 
 <!--docz:conclusion:end-->
 
@@ -227,6 +232,9 @@ it licenses the v2.0.0 cut.
   ingest history is gone.
 - d. Other.
 
+> **Resolved 2026-10-13: (c).** Start empty: the old v1 releases were
+> deleted and v2 installed as new, and ingest rebuilt the database.
+
 ### 2. Where is the procedure recorded?
 
 - a. **A new RUNBOOK-0003, "Swap an environment to a v2 beta"**, written
@@ -235,6 +243,9 @@ it licenses the v2.0.0 cut.
 - b. A fourth procedure in RUNBOOK-0001.
 - c. In this investigation's Findings only.
 - d. Other.
+
+> **Resolved 2026-10-13: (d).** No new runbook. The run is recorded in
+> RUNBOOK-0001 Procedure 3's Last Verified row (#168) and in #147.
 
 ### 3. How is traffic cut over?
 
@@ -246,12 +257,18 @@ it licenses the v2.0.0 cut.
   downtime and no rollback but reinstalling the old charts.
 - c. Other.
 
+> **Resolved 2026-10-13: (b).** Uninstall the old releases, then install
+> the new one. With no data to carry there was nothing to roll back to.
+
 ### 4. What does passing mean for v2.0.0?
 
 - a. **The swap passing closes #147**, and v2.0.0 is cut once #135 and #140
   are done in the same cut. *(recommendation)*
 - b. Require a soak period on the beta before the cut.
 - c. Other.
+
+> **Resolved 2026-10-13: (a).** The swap passed and #147 closed on
+> 2026-10-12; with #135 and #140 done, v2.0.0 is cut.
 
 <!--docz:recommendation:end-->
 
