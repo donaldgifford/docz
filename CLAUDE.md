@@ -90,10 +90,12 @@ v2.0.0**: the cut removed each one's `EXPERIMENTAL` doc-comment paragraph
 v1.0.0 — `config`, `document`, `docparse`, `docwrite`, `toc` — stay frozen at
 their v1 shapes, ADR-0003's removal of `plan` from the catalogue excepted.
 
-Releases on the v2 line are **hand-cut betas**: every PR carries
-`dont-release`, `release.yml` stays on `push: branches: [main]` so
-`pr-semver-bump` never sees a tag, and a beta is `just release v2.0.0-beta.N`
-from the merge commit. `prerelease.yml` triggers on the `v*-beta.*` tag and
+**v2.0.0 was cut by label** (`major`, through `release.yml`'s
+`pr-semver-bump`, which bumps `2.0.0-beta.9` to `2.0.0`), and releases are by
+label from there; `release.yml` publishes the images and, when it cut a tag,
+`charts/docz`. A non-beta tag pushed by hand triggers no workflow. The
+**betas were hand-cut**: every PR carried `dont-release`, and a beta was
+`just release v2.0.0-beta.N` from the merge commit. `prerelease.yml` triggers on the `v*-beta.*` tag and
 goreleaser's `prerelease: auto` marks the GitHub release. The same tag builds
 both binaries (docz-api's archives carry a syft SBOM) and its `publish-image`
 job calls `ghcr.yml` to push `ghcr.io/donaldgifford/docz-api` and the chart;

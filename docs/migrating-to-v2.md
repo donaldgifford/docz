@@ -1,7 +1,6 @@
 # Migrating from docz v1 to v2
 
-docz v2 is in beta (`v2.0.0-beta.9` at the time of writing). This guide
-covers the move from v1.2.2 for three kinds of user. Read the sections that
+This guide covers the move from v1.2.2 for three kinds of user. Read the sections that
 apply to you:
 
 - [CLI users](#cli-users): you run `docz` over a repository's `docs/`.
@@ -38,9 +37,9 @@ an import-path change, and the server needs a new Helm release.
 ### Install
 
 ```bash
-mise use -g github:donaldgifford/docz@v2.0.0-beta.9
+mise use -g github:donaldgifford/docz@v2.0.0
 # or
-go install github.com/donaldgifford/docz/v2/cmd/docz@v2.0.0-beta.9
+go install github.com/donaldgifford/docz/v2/cmd/docz@v2.0.0
 ```
 
 Note the `/v2` in the `go install` path. The unversioned path stays on v1,
@@ -56,8 +55,7 @@ Through v1, `plan` was a sixth built-in type. v2 drops it (ADR-0003).
   `validate`, and the wiki nav keep working over `docs/plan/`, and each
   command prints a warning that `plan` is not a built-in.
 - **`docz create plan` uses the generic template**, because v2 no longer
-  bundles a plan template. It prints a note on stderr saying so. Before
-  v2.0.0-beta.9 it failed instead. To get your plan layout back, scaffold
+  bundles a plan template. It prints a note on stderr saying so. To get your plan layout back, scaffold
   the template and edit it:
 
   ```bash
@@ -137,7 +135,7 @@ correct a misspelled one. A second run changes nothing.
 
 ### Generated markdown passes markdownlint
 
-From `v2.0.0-beta.9`, everything docz writes passes markdownlint under its
+Everything v2 writes passes markdownlint under its
 default rules (IMPL-0025). **The first `docz update` on v2 rewrites every
 README index table and every ToC with an affected heading, once.** Commit
 that diff on its own. Until it runs, `docz validate` reports `toc.stale` on
@@ -213,7 +211,7 @@ feature.
 
 ```diff
 -require github.com/donaldgifford/docz v1.2.2
-+require github.com/donaldgifford/docz/v2 v2.0.0-beta.8
++require github.com/donaldgifford/docz/v2 v2.0.0
 ```
 
 ```diff
@@ -304,12 +302,13 @@ charts. In v2 they live in this repository (ADR-0004):
 | Site image | `ghcr.io/donaldgifford/docz-site`, docz-site's own version | `ghcr.io/donaldgifford/docz-site:<docz version>` |
 | Charts | `charts/docz-api`, `charts/docz-site` | **one chart**, `oci://ghcr.io/donaldgifford/charts/docz` |
 
-Image tags are bare semver, such as `2.0.0-beta.8`; a `v`-prefixed tag
+Image tags are bare semver, such as `2.0.0`; a `v`-prefixed tag
 does not exist. The `docz` chart's `appVersion` selects the images, so leave
 `image.tag` unset.
 
 `docz-api` 0.10.0 and `docz-site` 0.3.0 are the final versions of the old
-charts. Both are marked deprecated, and the charts are deleted at v2.0.0.
+charts, which were deleted at v2.0.0. Their published versions stay in the
+registry.
 
 ### There is no in-place upgrade
 

@@ -861,9 +861,10 @@ var (
 
 ## Releasing
 
-Two paths, and on the v2 line only the second one is used.
+Two paths. v1 shipped by label, the v2 betas by hand-pushed tag, and v2.0.0
+by label again.
 
-### The label path (how v1 shipped)
+### The label path (v1, and v2 from v2.0.0)
 
 `.github/workflows/release.yml` runs on every push to `main`. It reads the
 merged pull request's label, and `jefflinse/pr-semver-bump` computes and
@@ -871,9 +872,14 @@ pushes the next tag; goreleaser then builds the release. One of `major`,
 `minor`, `patch`, or `dont-release` must be on the PR or **the job fails**:
 a missing label is an error, not a skip.
 
-### The beta path (the whole v2 line)
+The same run publishes both images (`publish-ghcr`, `publish-ghcr-ui`) and
+`charts/docz` (`publish-chart`), the chart only when `bump-version` cut a tag,
+so a `dont-release` merge publishes nothing. The chart job skips a version
+already in the registry, so bump `charts/docz/Chart.yaml` in the release PR.
 
-Nothing on the v2 line is released by label. Every pull request carries
+### The beta path (the v2.0.0 betas)
+
+Nothing in the v2.0.0 beta window was released by label. Every pull request carries
 `dont-release`, and a beta is cut by hand from the merge commit:
 
 ```bash
@@ -882,9 +888,10 @@ just release v2.0.0-beta.1     # tags and pushes
 
 `.github/workflows/prerelease.yml` fires on `v*-beta.*`, runs goreleaser,
 and `prerelease: auto` marks the GitHub release from the suffix. The same tag
-publishes both images and both charts: `ghcr.yml` runs once with
-`component: api` (docz-api) and once with `component: ui` (docz-site), and
-each chart is skipped when its version is already published.
+publishes both images and the chart: `ghcr.yml` runs once with
+`component: api` (docz-api), once with `component: ui` (docz-site), and once
+with `component: chart` (`charts/docz`), which is skipped when its version is
+already published.
 
 A `/v2` module may not carry a v1 tag: `go get` rejects the mismatch. That
 is the hard reason every PR after the module move is `dont-release`, not a
@@ -933,12 +940,17 @@ Two consequences worth knowing before they bite:
   `patch`-labelled PR on `main` yields `v2.0.0` rather than `v1.2.3`, so
   **v1 maintenance cannot use the label path.**
 
-**Fallback.** If the `major` label misbehaves when v2.0.0 is finally cut,
-tag it by hand and let `prerelease.yml`'s sibling `release.yml` stay out of
-it:
+**Fallback.** A hand-pushed tag that is not `v*-beta.*` triggers **no**
+workflow: `prerelease.yml` matches only beta tags and `release.yml` runs only
+on a push to `main`. If the label path ever fails to cut a release, push the
+tag and run the two halves yourself:
 
 ```bash
-just release v2.0.0
+just release vX.Y.Z
+goreleaser release --clean     # needs GITHUB_TOKEN and the GPG key
+gh workflow run ghcr.yml -f component=api -f tag=vX.Y.Z
+gh workflow run ghcr.yml -f component=ui -f tag=vX.Y.Z
+gh workflow run ghcr.yml -f component=chart
 ```
 
 ### The v1 maintenance branch
@@ -950,9 +962,10 @@ it from `v1.2.2` on demand:
 git switch -c v1 v1.2.2
 ```
 
-It keeps the unversioned module path. Release from it by hand
-(`just release v1.2.3`) for the reason above: the label path would
-compute a v2 version from the repository's highest tag.
+It keeps the unversioned module path. Release from it by hand, as the
+fallback above does (`just release v1.2.3`, then goreleaser), for the reason
+above: the label path would compute a v2 version from the repository's
+highest tag.
 
 ## Testing Patterns
 

@@ -313,11 +313,11 @@ release-check:
 release-local:
     @goreleaser release --snapshot --clean --skip=publish --skip=sign
 
-# Every PR on the v2 line carries dont-release, so betas are cut by hand from
-# a main merge commit (ADR-0002 Decision 6). prerelease.yml triggers on the
-# v*-beta.* tag.
+# Betas are cut by hand from a main merge commit (ADR-0002 Decision 6), and
+# prerelease.yml triggers on the v*-beta.* tag. A release is cut by label
+# (release.yml); a non-beta tag pushed here triggers no workflow.
 
-# Tag and push a release: just release v2.0.0-beta.2
+# Tag and push a beta: just release v2.1.0-beta.1
 [group('release')]
 release tag:
     @git tag -a {{ tag }} -m "Release {{ tag }}"
