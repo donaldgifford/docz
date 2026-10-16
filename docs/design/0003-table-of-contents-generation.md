@@ -206,7 +206,7 @@ block. Placement should be between the status/author/date block and the first
 ```markdown
 # RFC 0001: Title
 
-**Status:** Implemented **Author:** Name **Date:** 2026-01-01
+**Status:** Draft **Author:** Name **Date:** 2026-01-01
 
 <!--toc:start-->
 <!--toc:end-->
