@@ -1,7 +1,7 @@
 ---
 id: INV-0025
 title: "A Slack bot for creating and changing docz documents"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-08
 ---
@@ -245,10 +245,19 @@ It never merges, and nothing it writes goes further than a PR.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open. Quick create stands
-on its own once docz-api can write to a repository. Drafting and editing
-need INV-0023's agent workers and INV-0024's tools and tokens, so the bot
-should follow those, not lead them.
+**Answer:** No, not now. Decided 2026-10-15 with INV-0023.
+
+Every flow here ends in docz-api opening a pull request (Observation 1),
+and INV-0023's conclusion is that docz-api never gets write access. Take
+the writes away and nothing of the bot is left that needs building: a
+read-only Slack bot is a Slack client of the MCP server INV-0024
+describes, and Slack's own AI apps can attach one. The workflow was also
+never clear enough to justify a front door of its own. Decisions start in
+Slack, but the step from a thread to a document is a person's judgement,
+and `docz create` on a laptop is already a short path.
+
+If this comes back, it comes back as an MCP client outside this
+repository, acting with the person's own token (recommendation 1 (b)).
 
 <!--docz:conclusion:end-->
 
@@ -268,6 +277,9 @@ should follow those, not lead them.
   attached.
 - (d) Other.
 
+> **Resolved 2026-10-15: not built.** If ever, (b) or (c): a client of
+> the MCP server, never in docz-api.
+
 ### 2. Events API over HTTP, or Socket Mode?
 
 - **(a) Events API over HTTP, verified by the signing secret.** docz-api
@@ -278,6 +290,8 @@ should follow those, not lead them.
   socket, so delivery is spread across replicas and has to be coordinated.
 - (c) Both, chosen by configuration.
 - (d) Other.
+
+> **Resolved 2026-10-15: not built.** Moot without a receiver in docz-api.
 
 ### 3. How is a Slack user tied to a docz user?
 
@@ -290,6 +304,9 @@ should follow those, not lead them.
 - (c) Match on email only, with no fallback.
 - (d) Other.
 
+> **Resolved 2026-10-15: not built.** An MCP client carries the person's
+> own token (INV-0024), so no mapping is needed.
+
 ### 4. What does the bot change, and how?
 
 - **(a) Always through a pull request: new documents, status changes, and
@@ -298,6 +315,9 @@ should follow those, not lead them.
 - (b) Commit status changes and checkbox ticks straight to the default
   branch, and open PRs only for new documents and edits.
 - (c) Other.
+
+> **Resolved 2026-10-15: nothing.** docz-api does not write to
+> repositories (INV-0023).
 
 ### 5. What is the default repository?
 
@@ -308,6 +328,8 @@ should follow those, not lead them.
 - (c) No default: always ask.
 - (d) Other.
 
+> **Resolved 2026-10-15: not built.** Moot without a create flow.
+
 ### 6. What ships first?
 
 - **(a) Quick create and status change, both deterministic, once docz-api
@@ -315,6 +337,9 @@ should follow those, not lead them.
   *(recommendation)*
 - (b) Everything together, behind the agent workers.
 - (c) Other.
+
+> **Resolved 2026-10-15: nothing.** The MCP server (INV-0024) ships
+> first, and a Slack client of it is someone else's add-on.
 
 <!--docz:recommendation:end-->
 

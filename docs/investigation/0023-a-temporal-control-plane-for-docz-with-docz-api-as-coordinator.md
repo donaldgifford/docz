@@ -1,7 +1,7 @@
 ---
 id: INV-0023
 title: "A Temporal control plane for docz with docz-api as coordinator"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-08
 ---
@@ -287,18 +287,34 @@ token scoped to one repository and one branch. Guards:
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open. The mapping holds up
-on paper (Observations 1 and 2). The cost is in write access, real
-authorization, and running agents safely (Observations 4 and 6), not in
-the workflow itself. The spike (Approach step 5) is the next evidence.
+**Answer:** No. Not in docz. Decided 2026-10-15, without the spike.
+
+The mapping holds up on paper (Observations 1 and 2), and that is the
+point: nothing in it needs to live in docz's code. Running an IMPL as a
+workflow is a consumer's job, and the consumer already has what it needs.
+`impl.Parse` addresses every task and its verify command,
+`docwrite.SetTaskStateBytes` and `SetStatusBytes` change a document from
+bytes, and `repo` opens a checkout. A Temporal worker, or anything else,
+can be built on those packages outside this repository.
+
+What the investigation asked of docz-api is what rules it out
+(Observations 4 and 6): write access to every installed repository, a
+real authorization model, agent sandboxes, a second engine beside asynq,
+and a new deployment. docz-api stays what it is, a read-only index of
+documents. The local agent loop keeps running as it does today, with the
+document as its state.
+
+One library affordance survives, question 6: a fixed deferred note the
+parser exposes, so an orchestrator built outside docz can tell "a person
+must do this" from "later". It is issue #177.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Build the spike, settle the questions below, and write a DESIGN for IMPL
-runs only. Leave asynq where it is.
+Build nothing. The questions below are kept for whoever builds a
+coordinator over docz's packages; only question 6 is docz's.
 
 ### 1. What does the coordinator own?
 
@@ -311,6 +327,9 @@ runs only. Leave asynq where it is.
   inverts the source of truth, so it is not recommended.
 - (d) Other.
 
+> **Resolved 2026-10-15: not docz's.** There is no coordinator in docz.
+> (a) is still the advice for anyone who builds one: git stays the record.
+
 ### 2. What starts a run?
 
 - **(a) An explicit call (API, docz-site, or an MCP tool), allowed only for
@@ -318,6 +337,8 @@ runs only. Leave asynq where it is.
 - (b) A push that sets an IMPL to In Progress on the default branch.
 - (c) Both.
 - (d) Other.
+
+> **Resolved 2026-10-15: not docz's.** No run exists in docz to start.
 
 ### 3. Where do agents run?
 
@@ -330,6 +351,9 @@ runs only. Leave asynq where it is.
   (Observation 6).
 - (d) Other.
 
+> **Resolved 2026-10-15: not docz's.** docz runs no agents. (c) stays
+> ruled out for anyone who does: never beside docz-api's credentials.
+
 ### 4. Temporal self-hosted or Temporal Cloud?
 
 - **(a) Self-hosted for the homelab, on the existing Postgres through the
@@ -338,12 +362,17 @@ runs only. Leave asynq where it is.
 - (b) Temporal Cloud from the start.
 - (c) Other.
 
+> **Resolved 2026-10-15: not docz's.** docz deploys no Temporal.
+
 ### 5. Does asynq move to Temporal?
 
 - **(a) Not now. Revisit once IMPL runs are in production.**
   *(recommendation)*
 - (b) Yes, in the same project, so docz-api has one engine.
 - (c) Other.
+
+> **Resolved 2026-10-15: (a), permanently.** asynq stays. docz-api has one
+> engine and no reason to change it.
 
 ### 6. How does a task say it needs a person?
 
@@ -352,6 +381,10 @@ runs only. Leave asynq where it is.
   *(recommendation)*
 - (b) A separate marker such as `[human]`.
 - (c) Other.
+
+> **Resolved 2026-10-15: (a).** The one piece docz keeps. `pkg/impl`
+> exposes the fixed note as a field; issue
+> [#177](https://github.com/donaldgifford/docz/issues/177).
 
 <!--docz:recommendation:end-->
 

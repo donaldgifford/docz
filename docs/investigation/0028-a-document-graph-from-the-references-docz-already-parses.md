@@ -1,7 +1,7 @@
 ---
 id: INV-0028
 title: "A document graph from the references docz already parses"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-10
 ---
@@ -20,7 +20,7 @@ created: 2026-10-10
 - [Environment](#environment)
 - [Findings](#findings)
   - [Observation 1: where relationships are written today](#observation-1-where-relationships-are-written-today)
-  - [Observation 2](#observation-2)
+  - [Observation 2: most edges are already declared, and none dangle](#observation-2-most-edges-are-already-declared-and-none-dangle)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -135,17 +135,52 @@ Uses for the graph, if it existed:
 The raw material exists, but every reader stops at text. None of them
 resolves a target to a document ID.
 
-### Observation 2
+### Observation 2: most edges are already declared, and none dangle
 
-<!-- Approach step 2: counts of typed edges and bare mentions. -->
+A scan of this repository's `docs/` on 2026-10-15 (81 documents across
+the six types, the archive excluded), counting each target once per
+document and never a document's own id:
+
+| Edge source | Count |
+| --- | --- |
+| `**Triggered by:**` fields | 29 of 29 investigations |
+| Ids named in a `references` region | 334 |
+| Ids mentioned in prose only, outside the references region | 235 |
+| Superseded ADRs | 0 |
+| Targets that resolve to no document | 0 |
+
+So three in five cross-document links are declared in a list docz
+already parses, and the rest are prose mentions. Not one target is
+missing, which means the validator warning in question 4 would fire on
+nothing today and exists to catch the first typo. Sampling the prose
+mentions by hand (Approach step 3) was not done: with the reference list
+this well kept, a mention is worth exactly what it says, a citation, and
+a typed "implements" or "depends on" edge should come from structure
+(the `**Triggered by:**` field, an IMPL's design reference) rather than
+from guessing at a sentence.
+
+One trap the counts expose: ids are not unique across the repository.
+`docs/archive/api/` holds docz-api's records under the same prefixes, so
+`IMPL-0001` names two files. A graph has to be built over the enabled
+types' directories, as `repo.List` reads them, and never over every
+markdown file under `docs/`.
 
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open, and Approach steps
-2 to 4 decide it.
+**Answer:** Yes. Decided 2026-10-15. Every edge the graph needs is
+already written where docz reads (Observation 1), and the corpus shows
+the declared edges outnumber the prose mentions with no dangling target
+(Observation 2). No new syntax is needed and no agent is involved.
+
+Next: a short DESIGN for a public reader in `pkg/doczcore` with typed
+edges from structure and untyped mentions from prose, a `docz graph`
+command over it, and two validator warnings. The reader's structure
+should ride `docz inspect --format json` from INV-0027, so one JSON
+contract serves the review page, the graph, and docz-site's lineage
+panel. Approach steps 3 and 4 are closed by Observation 2's reading.
 
 <!--docz:conclusion:end-->
 
@@ -166,6 +201,10 @@ resolves a target to a document ID.
 - d. Agent inference, as SMART does.
 - e. Other.
 
+> **Resolved 2026-10-15: (a).** Structure first, mentions second, kept
+> distinct. Frontmatter fields wait until the graph has been used and a
+> missing edge is felt.
+
 ### 2. Where does the graph live?
 
 - **a. A public reader in `pkg/doczcore` that takes the documents and
@@ -175,6 +214,9 @@ resolves a target to a document ID.
 - c. In docz-api only, computed at ingest.
 - d. Other.
 
+> **Resolved 2026-10-15: (a).** One public reader, scoped to the enabled
+> types' directories (Observation 2's archive trap).
+
 ### 3. What does the CLI print?
 
 - **a. `docz graph [id] --format json|mermaid|dot`, with `--depth` and
@@ -183,12 +225,18 @@ resolves a target to a document ID.
 - b. JSON only; rendering is someone else's job.
 - c. Other.
 
+> **Resolved 2026-10-15: (a).** JSON, Mermaid, and DOT, scoped by depth
+> and direction. The JSON shape is shared with `docz inspect` (INV-0027).
+
 ### 4. Does the validator use it?
 
 - **a. Yes, as warnings: a reference to an ID that does not exist, and a
   current document depending on a superseded one.** *(recommendation)*
 - b. Not until the graph has been used for a while.
 - c. Other.
+
+> **Resolved 2026-10-15: (a).** Two warnings. Both are silent on this
+> repository today (Observation 2), which is the point of a warning.
 
 <!--docz:open-questions:end-->
 
