@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -35,10 +36,33 @@ func validEnv() map[string]string {
 	}
 }
 
-// load applies env via t.Setenv (auto-restored) and calls config.Load. A key
-// whose value is "" is set to empty, which Load treats as unset/missing.
+// envKeys is every variable Load reads. load clears each one before applying
+// the test's map, so a developer shell that exports the server's own
+// configuration (an AUTH_PROVIDERS=none in particular, which makes the
+// session and OAuth keys optional) cannot reach the code under test.
+var envKeys = []string{
+	"AUTH_PROVIDERS", "AUTH_REDIRECT_BASE",
+	"CONFLUENCE_API_TOKEN", "CONFLUENCE_EMAIL", "CONFLUENCE_SITE", "CONFLUENCE_SPACES",
+	"DATABASE_URL", "REDIS_URL",
+	"GITHUB_API_BASE", "GITHUB_APP_ID", "GITHUB_APP_PRIVATE_KEY", "GITHUB_WEBHOOK_SECRET",
+	"GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET",
+	"HTTP_ADDR", "INGEST_DEBOUNCE",
+	"KEYCLOAK_CLIENT_ID", "KEYCLOAK_CLIENT_SECRET", "KEYCLOAK_ISSUER", "KEYCLOAK_SCOPES",
+	"LOG_FORMAT", "LOG_LEVEL",
+	"MEILI_API_KEY", "MEILI_HOST", "METRICS_ENABLED",
+	"OKTA_CLIENT_ID", "OKTA_CLIENT_SECRET", "OKTA_ISSUER", "OKTA_SCOPES",
+	"OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_SAMPLE_RATE", "OTEL_SERVICE_NAME",
+	"SESSION_SECRET", "SESSION_TTL",
+}
+
+// load clears every key Load reads, applies env via t.Setenv (auto-restored),
+// and calls config.Load. A key whose value is "" is set to empty, which Load
+// treats as unset/missing.
 func load(t *testing.T, env map[string]string) (config.Config, error) {
 	t.Helper()
+	for _, k := range envKeys {
+		t.Setenv(k, "")
+	}
 	for k, v := range env {
 		t.Setenv(k, v)
 	}
@@ -449,6 +473,35 @@ func TestLoadConfluenceTokenNeverPrinted(t *testing.T) {
 	} {
 		if strings.Contains(out, "atlassian-token-value") {
 			t.Errorf("the token leaked: %s", out)
+		}
+	}
+}
+
+// TestEnvKeysCoverLoad pins envKeys to the keys Load actually reads, so a
+// variable added to Load without a matching entry here fails by name rather
+// than leaking in from the developer's shell.
+func TestEnvKeysCoverLoad(t *testing.T) {
+	src, err := os.ReadFile("config.go")
+	if err != nil {
+		t.Fatalf("reading config.go: %v", err)
+	}
+	re := regexp.MustCompile(`v\.Get[A-Za-z0-9]+\("([a-z_]+)"\)`)
+	read := map[string]bool{}
+	for _, m := range re.FindAllStringSubmatch(string(src), -1) {
+		read[strings.ToUpper(m[1])] = true
+	}
+	listed := map[string]bool{}
+	for _, k := range envKeys {
+		listed[k] = true
+	}
+	for k := range read {
+		if !listed[k] {
+			t.Errorf("Load reads %s but envKeys does not list it", k)
+		}
+	}
+	for k := range listed {
+		if !read[k] {
+			t.Errorf("envKeys lists %s but Load does not read it", k)
 		}
 	}
 }
