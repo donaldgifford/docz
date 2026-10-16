@@ -111,7 +111,7 @@ func TestExport_FirstRunCreatesTheTree(t *testing.T) {
 
 	wantActions(t, &rep,
 		"docz=created", "RFCs=created", rfc1+"=created", rfc2+"=created",
-		"ADRs=created", adr1+"=created", "Design=created", "Implementation Plans=created", "Investigations=created")
+		"ADRs=created", adr1+"=created", "Design=created", "Investigations=created")
 
 	parent := c.byTitle("docz")
 	if parent.ParentID != "" {
@@ -309,7 +309,7 @@ func TestExport_ReadsOnlyThroughFS(t *testing.T) {
 
 	wantActions(t, &rep,
 		"docz=created", "RFCs=created", rfc1+"=created", rfc2+"=created",
-		"ADRs=created", adr1+"=created", "Design=created", "Implementation Plans=created", "Investigations=created")
+		"ADRs=created", adr1+"=created", "Design=created", "Investigations=created")
 }
 
 func TestExport_IDWithoutPrefixIsUnknownType(t *testing.T) {
@@ -612,5 +612,54 @@ func TestExport_ParentPageStaysWhereItIs(t *testing.T) {
 
 	if w := c.takeWrites(); len(w) != 0 {
 		t.Errorf("wrote %v", w)
+	}
+}
+
+// impl is exported only when sync.confluence.types lists it (ADR-0005,
+// INV-0022): a bare run leaves it out, listing the types brings it in, and
+// a run narrowed to it by type or id is refused rather than empty.
+func TestExport_ImplIsOptIn(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+	now := time.Date(2026, 3, 4, 0, 0, 0, 0, time.UTC)
+
+	if _, err := rp.Create(t.Context(), repo.CreateOptions{Type: "impl", Title: "A plan", Author: "T", Now: now, Update: true}); err != nil {
+		t.Fatal(err)
+	}
+
+	rep := export(t, rp, c, ExportOptions{})
+	for _, r := range rep.Pages {
+		if r.Key == "IMPL-0001" || r.Key == "docz:type:impl" {
+			t.Errorf("a bare run exported %s", r.Key)
+		}
+	}
+
+	for _, opts := range []ExportOptions{{Types: []string{"impl"}}, {IDs: []string{"IMPL-0001"}}} {
+		opts.Client, opts.Version = c, "test"
+
+		var notExp *NotExportedError
+		if _, err := Export(t.Context(), rp, opts); !errors.As(err, &notExp) || notExp.Type != "impl" {
+			t.Errorf("Export(%+v) error = %v, want NotExportedError{impl}", opts, err)
+		}
+	}
+
+	rp.Cfg.Sync.Confluence.Types = []string{"rfc", "adr", "design", "impl", "investigation"}
+
+	rep = export(t, rp, c, ExportOptions{})
+	wantActions(t, &rep, "docz=unchanged", "RFCs=unchanged", rfc1+"=unchanged", rfc2+"=unchanged",
+		"ADRs=unchanged", adr1+"=unchanged", "Design=unchanged", "Implementation Plans=created", "IMPL-0001: A plan=created",
+		"Investigations=unchanged")
+
+	// Dropping it from the list again archives the subtree on the next full
+	// run, nothing deleted (INV-0022 Observation 2).
+	rp.Cfg.Sync.Confluence.Types = nil
+
+	rep = export(t, rp, c, ExportOptions{})
+	wantActions(t, &rep, "docz=unchanged", "RFCs=unchanged", rfc1+"=unchanged", rfc2+"=unchanged",
+		"ADRs=unchanged", adr1+"=unchanged", "Design=unchanged", "Investigations=unchanged", "Implementation Plans=archived")
+
+	if c.byTitle("IMPL-0001: A plan") == nil {
+		t.Error("the archived IMPL page is gone; archiving must keep it")
 	}
 }

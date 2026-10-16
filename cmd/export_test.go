@@ -409,6 +409,7 @@ func TestExportConfluence_ExitCodes(t *testing.T) {
 			f.authFail = true
 		}},
 		{name: "unknown_type", opts: exportOpts{types: []string{"nope"}}, want: 2},
+		{name: "not_exported", opts: exportOpts{types: []string{"impl"}}, want: 2},
 		{name: "unknown_id", args: []string{"RFC-0099"}, want: 2},
 		{name: "bad_format", opts: exportOpts{format: "yaml"}, want: 2},
 	}

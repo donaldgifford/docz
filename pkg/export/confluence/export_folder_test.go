@@ -51,7 +51,7 @@ func TestFolder_TreeAndTitles(t *testing.T) {
 	wantActions(t, &rep,
 		"widgets=created", w("RFCs")+"=created", w(rfc1)+"=created", w(rfc2)+"=created",
 		w("ADRs")+"=created", w(adr1)+"=created", w("Design")+"=created",
-		w("Implementation Plans")+"=created", w("Investigations")+"=created")
+		w("Investigations")+"=created")
 
 	folder := c.folderByTitle("widgets")
 	if folder == nil || folder.ParentID != home {

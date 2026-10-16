@@ -8,6 +8,7 @@ nav:
         - 'ADR-0002: docz is an API package whose first consumer is the CLI': adr/0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md
         - 'ADR-0003: Remove plan from the built-in document types': adr/0003-remove-plan-from-the-built-in-document-types.md
         - 'ADR-0004: One repository: docz, docz-api, and docz-site as a single Go module': adr/0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md
+        - 'ADR-0005: Leave impl out of the Confluence export unless a repository lists it': adr/0005-leave-impl-out-of-the-confluence-export-unless-a-repository.md
     - Design:
         - Overview: design/README.md
         - 'DESIGN-0001: docz CLI Tool': design/0001-docz-cli-design.md

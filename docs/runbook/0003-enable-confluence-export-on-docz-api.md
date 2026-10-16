@@ -143,6 +143,13 @@ Give the server a scoped token, its site, and the spaces it may write to.
        layout: folder
    ```
 
+   A bare block exports every enabled type except `impl` (ADR-0005). To
+   export IMPLs too, list the types with `impl` included:
+   `types: [rfc, adr, design, impl, investigation]`. A repository that
+   drops `impl` from its list, or first exports after ADR-0005 with no
+   list, has its IMPL subtree moved under `<folder>: Archive` on that
+   run; nothing is deleted.
+
    **Expected:** the push re-ingests the repository, and the ingest
    enqueues an export
 

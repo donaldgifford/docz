@@ -77,7 +77,8 @@ type ConfluenceSyncConfig struct {
 	// sits under in the folder layout, where it is optional.
 	Parent string `yaml:"parent" json:"parent"`
 	// Types narrows the export to these types. Empty means every enabled
-	// type.
+	// type except the opt-in built-ins (impl), as Config.DefaultExportTypes
+	// returns; a repository that wants one lists its types with it included.
 	Types []string `yaml:"types" json:"types"`
 	// Exclude lists path prefixes under docs_dir that are never exported,
 	// with the same spelling rules as api.exclude.

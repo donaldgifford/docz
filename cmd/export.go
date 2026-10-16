@@ -116,7 +116,7 @@ Exit codes:
 
 func init() {
 	f := exportConfluenceCmd.Flags()
-	f.StringArrayVar(&exportTypes, "type", nil, "export one type (repeatable); default: sync.confluence.types")
+	f.StringArrayVar(&exportTypes, "type", nil, "export one type (repeatable); default: sync.confluence.types, else every enabled type except impl")
 	f.BoolVar(&exportForce, "force", false, "overwrite pages edited in Confluence and adopt pages docz did not create")
 	f.BoolVar(&exportDryRun, "dry-run", false, "report what would happen; write nothing")
 	f.StringVar(&exportOut, "out", "", "also write each rendered page to <dir>/<id>.xhtml")
@@ -438,6 +438,7 @@ func exportOutcome(report *confluence.Report, strict bool) error {
 func exportExitError(err error) error {
 	var (
 		auth     *confluence.AuthError
+		notExp   *confluence.NotExportedError
 		notFound *repo.NotFoundError
 		disabled *repo.TypeDisabledError
 		unknown  *repo.UnknownTypeError
@@ -446,6 +447,7 @@ func exportExitError(err error) error {
 	switch {
 	case errors.Is(err, confluence.ErrConfig),
 		errors.As(err, &auth),
+		errors.As(err, &notExp),
 		errors.As(err, &notFound),
 		errors.As(err, &disabled),
 		errors.As(err, &unknown),
