@@ -47,6 +47,7 @@ created: 2026-10-06
   - [11. If adding an inline comment bumps a page's version, what counts as an edit?](#11-if-adding-an-inline-comment-bumps-a-pages-version-what-counts-as-an-edit)
   - [12. How does the operator say where the server may write?](#12-how-does-the-operator-say-where-the-server-may-write)
   - [13. What happens to a repository's pages when its block is disabled or the App is uninstalled?](#13-what-happens-to-a-repositorys-pages-when-its-block-is-disabled-or-the-app-is-uninstalled)
+  - [14. Where does a lost inline comment's anchor live, and how is it put back?](#14-where-does-a-lost-inline-comments-anchor-live-and-how-is-it-put-back)
 - [Decisions](#decisions)
 - [References](#references)
 <!-- markdownlint-restore -->
@@ -417,6 +418,33 @@ whether adding an inline comment in Confluence bumps the page's version
 > still at version 1, with the `ac:inline-comment-marker` already in its
 > storage body. A commented page does not read as edited, and question 11's
 > decision never comes into play. The marker's form matches §4's example.
+>
+> **Amended 2026-10-16 (INV-0021, question 14).** Steps 2 to 4 now read as follows.
+>
+> - **Step 2.** Collect each marker's `ac:ref`, the text it wraps, up to 32 bytes of
+>    the text before and after it in the same paragraph, and the heading
+>    above it: an *anchor*. Add the anchors the page's `docz` property
+>    remembers for comments no update since could place.
+> - **Step 3.** In the new body, find each anchor's text inside character data only,
+>    as before. Where it occurs once, wrap it. Where it occurs more than
+>    once, wrap the occurrence whose surrounding text and heading match the
+>    anchor's best, when one does; a tie, or no context to decide on, leaves
+>    the comment without an anchor. The marker goes back under the same
+>    `ac:ref`, which is all Confluence needs: an update made through the
+>    API never marks a comment dangling, so the next body that carries its
+>    ref renders it anchored again (INV-0021 Observation 6).
+> - **Step 4.** Write the property with `anchors`: every placed anchor as it now sits,
+>    and every lost one as it was, so the next update tries it again. A
+>    lost anchor whose comment the page no longer lists is dropped, which
+>    is one `GET /pages/{id}/inline-comments` per update that lost
+>    something, through the optional `CommentLister` a `Client` may add.
+>    Report `PageResult.Comments{Kept, Restored, Lost}`: `Restored` is the
+>    text of each comment anchored again after an earlier loss, and `Lost`
+>    every comment without an anchor after this update, new or remembered.
+>
+> The property's hash is still the render's. The CLI and docz-api keep the
+> same anchors in the same property, so a laptop run and a server run
+> restore each other's comments.
 
 ### 5. The job
 
@@ -1100,6 +1128,21 @@ this question closes.
 
 > **Resolved 2026-10-06: (a).**
 
+### 14. Where does a lost inline comment's anchor live, and how is it put back?
+
+- a. **In the page's `docz` property, as the quote with its context and
+  heading, written back under the same `ac:ref` when a later body carries
+  the text again.** No table, no comment-side call, the same behaviour in
+  the CLI and on the server.
+- b. In a `confluence_comments` table on the server, with the CLI left as
+  it was.
+- c. Nowhere: a dropped anchor stays dropped, as before.
+- d. Other.
+
+> **Resolved 2026-10-16: (a).** INV-0021 ran the restore live: an update
+> through the API never marks a comment dangling, and the same ref in a
+> later body re-anchors it. The amendment to §4 above is the change.
+
 <!--docz:open-questions:end-->
 
 <!--docz:decisions:start-->
@@ -1122,6 +1165,7 @@ Resolved 2026-10-06, numbered as the questions above:
 | 11 | Inline comments and the page version | (a) A version bump is an edit, whatever caused it |
 | 12 | The allow-list's shape | (a) One site and a list of allowed spaces |
 | 13 | Disabled or uninstalled repositories | (a) Nothing happens to a disabled or uninstalled repository's pages |
+| 14 | Lost inline-comment anchors (2026-10-16) | (a) Kept in the page property as quote, context, and heading; written back under the same `ac:ref` when the text returns |
 
 <!--docz:decisions:end-->
 

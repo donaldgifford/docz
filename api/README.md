@@ -43,7 +43,10 @@ release version). Bump it by hand on any change to a specced wire shape:
 The version is the signal consumers pin against, so a wire change without a bump
 is a contract bug.
 
-Current: **`1.6.1`** — editorial: `git_sha` on `Document` is described as
+Current: **`1.6.2`** — editorial: `comments_lost` on a Confluence page counts
+every comment without an anchor after the last update, remembered ones
+included, since a lost anchor is now kept in the page property and tried
+again (INV-0021). `1.6.1` — editorial: `git_sha` on `Document` is described as
 the source file's blob SHA, a cache key and not a commit; the repository's
 synced commit is `last_synced_sha` (IMPL-0025, #169). `1.6.0` — both
 document responses carry `confluence_url`, and

@@ -47,8 +47,13 @@
 //
 // An update carries the inline comments readers left on a page: each
 // comment's marker moves into the new body wherever the text it was
-// anchored to survives, and the ones that cannot be placed are reported in
-// PageResult.Comments.Lost rather than dropped silently (#158).
+// anchored to survives, told apart from a second occurrence by the text
+// around it and the heading above it. The ones that cannot be placed are
+// reported in PageResult.Comments.Lost rather than dropped silently (#158),
+// and their anchors are kept in the page's docz property and tried again
+// on every update, so a comment whose text comes back is anchored again
+// (INV-0021). A Client that implements CommentLister lets an update forget
+// the anchor of a comment the page no longer lists.
 //
 // Export prints nothing and holds no logger. Hooks, carried in the context
 // by WithHooks, report each page and each HTTP response to a caller that

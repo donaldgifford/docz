@@ -31,7 +31,8 @@ func TestCarryMarkers_Corpus(t *testing.T) {
 			render := readFile(t, filepath.Join("testdata", "comments", name+".render.xml"))
 			before := bytes.Clone(render)
 
-			out, kept, lost := carryMarkers(render, collectMarkers(cur))
+			out, placed, lost := carryMarkers(render, collectMarkers(cur))
+			kept := len(placed)
 
 			if !bytes.Equal(render, before) {
 				t.Error("carryMarkers modified its input")
@@ -41,7 +42,7 @@ func TestCarryMarkers_Corpus(t *testing.T) {
 				t.Errorf("output not well-formed: %v", err)
 			}
 
-			got := fmt.Sprintf("%s---\nkept: %d\nlost: %q\n", out, kept, lost)
+			got := fmt.Sprintf("%s---\nkept: %d\nlost: %q\n", out, kept, texts(lost))
 			checkGoldenFile(t, filepath.Join("testdata", "comments", name+".golden"), []byte(got))
 		})
 	}
@@ -84,7 +85,10 @@ func TestCollectMarkers(t *testing.T) {
 		`<ac:inline-comment-marker ac:ref="">no ref</ac:inline-comment-marker></p>`)
 
 	got := collectMarkers(body)
-	want := []marker{{ref: "a", text: "one two"}, {ref: "b", text: "R&D x"}}
+	want := []anchor{
+		{Ref: "a", Quote: "one two", Suffix: " and R&D\u00a0xno ref"},
+		{Ref: "b", Quote: "R&D\u00a0x", Prefix: "one two and ", Suffix: "no ref"},
+	}
 
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("collectMarkers = %q; want %q", got, want)
@@ -112,10 +116,10 @@ func FuzzCarryMarkers(f *testing.F) {
 			t.Skip()
 		}
 
-		out, kept, lost := carryMarkers(r.Body, []marker{{ref: "r1", text: one}, {ref: "r2", text: two}})
+		out, placed, lost := carryMarkers(r.Body, []anchor{{Ref: "r1", Quote: one}, {Ref: "r2", Quote: two}})
 
-		if kept+len(lost) != 2 {
-			t.Errorf("kept %d + lost %d; want 2", kept, len(lost))
+		if len(placed)+len(lost) != 2 {
+			t.Errorf("placed %d + lost %d; want 2", len(placed), len(lost))
 		}
 
 		if err := wellFormed(out); err != nil {
@@ -141,6 +145,8 @@ func TestExport_UpdateCarriesInlineComments(t *testing.T) {
 		[]byte(`<ac:inline-comment-marker ac:ref="c1">unique phrase</ac:inline-comment-marker>`), 1)
 	page.body = bytes.Replace(page.body, []byte("doomed phrase"),
 		[]byte(`<ac:inline-comment-marker ac:ref="c2">doomed phrase</ac:inline-comment-marker>`), 1)
+	c.comment(page.ID, "c1")
+	c.comment(page.ID, "c2")
 
 	b := readFile(t, rp.Path(src))
 	writeDoc(t, rp, src, strings.Replace(string(b), "a doomed phrase", "nothing else", 1))
@@ -163,4 +169,131 @@ func TestExport_UpdateCarriesInlineComments(t *testing.T) {
 	if rep := export(t, rp, c, ExportOptions{IDs: []string{"RFC-0001"}}); rep.Pages[2].Action != Unchanged {
 		t.Errorf("a commented page reads as changed: %+v", rep.Pages[2])
 	}
+}
+
+// A comment whose text an update removed keeps its anchor in the page's
+// property, finds it again when the text returns, and is forgotten once
+// the page no longer lists the comment (INV-0021).
+func TestExport_LostAnchorIsRememberedAndRestored(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+	src := "docs/rfc/0001-first-proposal.md"
+	appendDoc(t, rp, src, "\nWe chose Postgres for the store.\n")
+	export(t, rp, c, ExportOptions{})
+
+	page := c.byTitle(rfc1)
+	page.body = bytes.Replace(page.body, []byte("Postgres"),
+		[]byte(`<ac:inline-comment-marker ac:ref="c1">Postgres</ac:inline-comment-marker>`), 1)
+	c.comment(page.ID, "c1")
+
+	rewrite := func(from, to string) {
+		t.Helper()
+
+		b := readFile(t, rp.Path(src))
+		if !strings.Contains(string(b), from) {
+			t.Fatalf("%q not in the document", from)
+		}
+
+		writeDoc(t, rp, src, strings.Replace(string(b), from, to, 1))
+	}
+
+	one := func() PageResult {
+		t.Helper()
+
+		rep := export(t, rp, c, ExportOptions{IDs: []string{"RFC-0001"}})
+
+		return rep.Pages[2]
+	}
+
+	// Lost: the sentence is gone, the anchor is remembered.
+	rewrite("We chose Postgres for the store.", "The store was decided.")
+
+	res := one()
+	if res.Action != Updated || res.Comments.Kept != 0 || fmt.Sprint(res.Comments.Lost) != "[Postgres]" {
+		t.Fatalf("after the text left: %+v; want lost [Postgres]", res.Comments)
+	}
+
+	prop := string(page.props[propertyKey].Value)
+	if !strings.Contains(prop, `"anchors":[{"ref":"c1","quote":"Postgres","prefix":"We chose ","suffix":" for the store."`) {
+		t.Fatalf("property after the loss does not remember the anchor: %s", prop)
+	}
+
+	if got := c.reads; len(got) != 1 || got[0] != "inline-comments "+page.ID {
+		t.Errorf("reads %v; want one inline-comments read for the lost anchor", got)
+	}
+
+	// Restored: the text is back, the marker goes back under the same ref,
+	// and the anchor's context follows the new placement.
+	rewrite("The store was decided.", "Later we chose Postgres for the store, as decided.")
+
+	res = one()
+	if res.Action != Updated || res.Comments.Kept != 1 || fmt.Sprint(res.Comments.Restored) != "[Postgres]" || res.Comments.Lost != nil {
+		t.Fatalf("after the text returned: %+v; want one kept, restored [Postgres]", res.Comments)
+	}
+
+	if !bytes.Contains(page.body, []byte(`<ac:inline-comment-marker ac:ref="c1">Postgres</ac:inline-comment-marker>`)) {
+		t.Errorf("the marker was not written back:\n%s", page.body)
+	}
+
+	if prop := string(page.props[propertyKey].Value); !strings.Contains(prop, `"prefix":"Later we chose "`) {
+		t.Errorf("property after the restore keeps the old context: %s", prop)
+	}
+
+	// Carried: an ordinary update neither restores nor loses it, and reads
+	// no comment list.
+	c.reads = nil
+	rewrite("as decided.", "as decided, twice.")
+
+	if res = one(); res.Comments.Kept != 1 || res.Comments.Restored != nil || res.Comments.Lost != nil || c.reads != nil {
+		t.Errorf("an ordinary update: %+v, reads %v; want one kept and no reads", res.Comments, c.reads)
+	}
+
+	// Forgotten: lost again, and the comment was deleted in Confluence.
+	c.uncomment(page.ID, "c1")
+	rewrite("Later we chose Postgres for the store, as decided, twice.", "Gone.")
+
+	if res = one(); res.Comments.Kept != 0 || res.Comments.Lost != nil {
+		t.Errorf("after the comment was deleted: %+v; want nothing lost", res.Comments)
+	}
+
+	if prop := string(page.props[propertyKey].Value); strings.Contains(prop, "anchors") {
+		t.Errorf("property still remembers a deleted comment's anchor: %s", prop)
+	}
+}
+
+// A Client without CommentLister never forgets an anchor.
+func TestExport_ClientWithoutListerKeepsAnchors(t *testing.T) {
+	t.Parallel()
+
+	rp, c := exportRepo(t), newFakeClient()
+	src := "docs/rfc/0001-first-proposal.md"
+	appendDoc(t, rp, src, "\nWe chose Postgres for the store.\n")
+	export(t, rp, c, ExportOptions{})
+
+	page := c.byTitle(rfc1)
+	page.body = bytes.Replace(page.body, []byte("Postgres"),
+		[]byte(`<ac:inline-comment-marker ac:ref="c1">Postgres</ac:inline-comment-marker>`), 1)
+
+	b := readFile(t, rp.Path(src))
+	writeDoc(t, rp, src, strings.Replace(string(b), "We chose Postgres for the store.", "Gone.", 1))
+
+	rep, err := Export(t.Context(), rp, ExportOptions{Client: noLister{c}, Version: "test", IDs: []string{"RFC-0001"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res := rep.Pages[2]; fmt.Sprint(res.Comments.Lost) != "[Postgres]" {
+		t.Fatalf("%+v; want lost [Postgres]", res.Comments)
+	}
+
+	if prop := string(page.props[propertyKey].Value); !strings.Contains(prop, `"anchors":[{"ref":"c1"`) {
+		t.Errorf("property forgot the anchor without a lister: %s", prop)
+	}
+}
+
+// noLister is the fake with its CommentLister hidden: the interface has
+// only Client's methods, so the type assertion in listed fails.
+type noLister struct {
+	Client
 }

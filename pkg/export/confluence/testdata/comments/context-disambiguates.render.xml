@@ -1,0 +1,4 @@
+<h2>Setup</h2>
+<p>Run the migration before the deploy, always.</p>
+<h2>Rollback</h2>
+<p>Run the migration after the deploy, always.</p>
