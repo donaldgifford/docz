@@ -5,6 +5,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(export)* Leave impl out of the Confluence export unless a repository lists it
+
 ### Documentation
 
 - *(investigation)* Conclude INV-0022, 0023, 0025, 0026, 0028, 0029
