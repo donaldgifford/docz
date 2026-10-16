@@ -1,7 +1,7 @@
 ---
 id: INV-0021
 title: "Confluence comments as a view layer kept across source changes"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-08
 ---
@@ -24,6 +24,7 @@ created: 2026-10-08
   - [Observation 3: the export already reads the page before it writes](#observation-3-the-export-already-reads-the-page-before-it-writes)
   - [Observation 4: the comment layer must stay out of git](#observation-4-the-comment-layer-must-stay-out-of-git)
   - [Observation 5: showing comments in docz-site crosses a permission boundary](#observation-5-showing-comments-in-docz-site-crosses-a-permission-boundary)
+  - [Observation 6: an API update never detaches a comment, so the ref alone restores it](#observation-6-an-api-update-never-detaches-a-comment-so-the-ref-alone-restores-it)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
   - [1. Where does the comment layer live?](#1-where-does-the-comment-layer-live)
@@ -185,24 +186,75 @@ allow-all). Copying comments into docz-api means anyone who can read a
 document in docz-site can also read the discussion on it, which may be a
 wider audience than the space's.
 
+### Observation 6: an API update never detaches a comment, so the ref alone restores it
+
+Approach step 2, run on 2026-10-16 as `TestLiveInlineCommentReattach`
+(`pkg/export/confluence/live_test.go`, under `just export-live`), against
+a fresh page in `DOCZ`:
+
+| Step | Body | v2 `resolutionStatus` | Marker in the rendered view |
+| --- | --- | --- | --- |
+| Comment made on "Postgres" | the original | `open` | yes |
+| Update with the sentence reworded and **no marker** | `Reworded. The store is Postgres, as decided.` | `open`, polled for 60 s | no |
+| Update with the marker written back under the **same `ac:ref`** | `Back. We chose Postgres for the store.` | `open` | yes |
+
+The comment never became `dangling`. Confluence sets that state from its
+own editor's save path, not from a storage-format body written through
+the API: after the marker was dropped, the comment stayed `open`, the
+page kept listing it, and the rendered view simply had no span carrying
+its ref. When a later body carried the ref again, the view rendered the
+highlight again. Nothing was done to the comment itself in between.
+
+Two consequences for the shape:
+
+- **Restoring an anchor is a body write and nothing else.** docz does not
+  need the comment's thread, author, or status to put it back; it needs
+  the `ac:ref` and enough of the quoted text to find the place. That is
+  the pair `collectMarkers` already reads on every update.
+- **Nothing needs to be stored about the comment, only about the
+  anchor.** The anchors a page has ever carried are a few hundred bytes
+  per comment (ref, quote, prefix, suffix) and belong beside the page,
+  not in a table of their own, which also means the CLI and the server
+  can do the same thing: the CLI has no Postgres.
+
+One limit of the run: the v1 content API, which carries the older
+`extensions.resolution` field, refused the scoped token (`401`, scope
+mismatch), so the v2 status is the only one read. The rendered view is
+the stronger evidence anyway, since it is what a reader's highlight is
+drawn from.
+
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open. Approach step 2
-decides the shape: whether a dangling comment can be attached again by
-putting its marker back.
+**Answer:** Yes, and with less machinery than the hypothesis assumed.
+Decided 2026-10-16 on Observation 6. A comment whose anchor an export
+dropped is restored by writing its marker back under the same `ac:ref`
+in a later body, with no call on the comment itself (recommendation 3).
+The only thing docz has to remember is the anchor, a ref and a quote
+with context, which fits in the page's own `docz` property
+(recommendation 1) rather than a comments table, and that keeps the CLI
+and the server identical. Reading comments on a schedule, and showing
+them in docz-site, are not needed for the anchors and are left for a
+later design if the discussion is ever wanted outside Confluence.
+
+Next: amend DESIGN-0021 §4 rather than write a new design. The change is
+one package, `pkg/export/confluence`: `collectMarkers` keeps every anchor
+in the property, `carryMarkers` matches by quote with context instead of
+exact-once, and every remembered anchor is tried on every update. Approach
+steps 1, 3, 4, and 5 close with the questions below.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Run Approach steps 1 to 3 on the scratch site, answer the questions below,
-then write a DESIGN.
+Amend DESIGN-0021 §4 with the answers below and ship the change as one PR.
 
-Under Questions 3 and 6 as recommended, a comment's anchor moves through these states:
+A comment's anchor moves through these states, all of them docz's own
+bookkeeping in the page property; Confluence's `resolutionStatus` is
+never written by docz:
 
 ```mermaid
 stateDiagram-v2
@@ -227,6 +279,14 @@ stateDiagram-v2
   state it can't clean up.
 - (d) Other.
 
+> **Resolved 2026-10-16: (c), not (a).** Observation 6 removed the reason
+> for a table: docz needs the anchor, not the comment. Anchors go in the
+> `docz` property beside `{id, source, hash, version}`, so the CLI and the
+> server write the same thing, and a page with no docz property has no
+> anchors to keep. The property is already docz's to clean up, since the
+> export writes it on every save. Size is bounded by dropping the anchor
+> of a comment the page no longer lists (question 6).
+
 ### 2. How is an anchor described?
 
 - **(a) A quote with context: the exact text, about 32 characters either
@@ -237,6 +297,10 @@ stateDiagram-v2
   any edit above the comment moves it.
 - (d) Other.
 
+> **Resolved 2026-10-16: (a).** The quote, about 32 characters of context
+> either side, and the heading. The same shape INV-0027 chose for review
+> annotations, so one definition serves both.
+
 ### 3. How is a lost anchor put back?
 
 - **(a) Write the stored marker, same `ac:ref`, into the next body where
@@ -246,6 +310,10 @@ stateDiagram-v2
   but the docz bot becomes the author and the replies flatten.
 - (c) Don't put it back, and report it in the API so someone can re-comment.
 - (d) Other.
+
+> **Resolved 2026-10-16: (a), confirmed live.** Observation 6: the same
+> `ac:ref` in a later body renders the comment anchored again, and the
+> comment was never marked dangling in between.
 
 ### 4. When are comments read?
 
@@ -258,6 +326,11 @@ stateDiagram-v2
   is a lot of machinery for this.
 - (d) Other.
 
+> **Resolved 2026-10-16: (b).** Only at export, and only the markers: the
+> body is read before every update already (Observation 3), so a comment
+> made on a quiet page is captured by the first update that would have
+> dropped it. No poll, because nothing but the anchor is kept.
+
 ### 5. Does docz-site show the comments?
 
 - **(a) Yes, read-only, with a link to reply in Confluence, behind a server
@@ -267,6 +340,11 @@ stateDiagram-v2
 - (c) No. The API stores comments only to restore anchors.
 - (d) Other.
 
+> **Resolved 2026-10-16: (c), for now.** Nothing stores the comments, so
+> there is nothing to show, and Observation 5's permission question never
+> arises. A later design can add a read of the threads if the discussion
+> is wanted in docz-site.
+
 ### 6. What happens to a comment whose text is gone for good?
 
 - **(a) Keep it in the table as `orphaned`, show it in the API and in
@@ -275,6 +353,12 @@ stateDiagram-v2
 - (b) Mark it resolved in Confluence after N exports.
 - (c) Drop it from the table.
 - (d) Other.
+
+> **Resolved 2026-10-16: (a), in the property.** The anchor stays and is
+> tried on every update, reported in `PageResult.Comments.Lost` and the
+> CLI's `WARNING:` line as today. It is dropped only when the page's
+> inline-comment list no longer carries its comment, which is one request
+> per updated page and the bound on the property's size.
 
 <!--docz:recommendation:end-->
 

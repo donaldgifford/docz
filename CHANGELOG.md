@@ -12,6 +12,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Align the legacy body Status lines with the frontmatter
 - *(design)* Keep the example snippet in DESIGN-0003 as written
 - *(design)* DESIGN-0022, incident and RCA as built-in document types
+- *(investigation)* Conclude INV-0021, a restored ac:ref re-anchors an inline comment
+
+### Testing
+
+- *(config)* Clear every env key Load reads before each case
 
 ## [2.0.0] - 2026-10-13
 
