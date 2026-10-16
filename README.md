@@ -180,7 +180,7 @@ docz update --dry-run  # preview changes without writing
 
 | Flag | Description |
 |------|-------------|
-| `--type <name>` | Export one type; repeatable (default: `sync.confluence.types`, else every enabled type) |
+| `--type <name>` | Export one type; repeatable (default: `sync.confluence.types`, else every enabled type except `impl`; a type a full run would not write is exit 2) |
 | `--force` | Overwrite pages edited in Confluence and adopt pages docz did not create (never another repository's) |
 | `--dry-run` | Make every read and no write; report what each page would have done |
 | `--out <dir>` | Also write each rendered page to `<dir>/<id>.xhtml` |
@@ -571,7 +571,7 @@ sync:
     layout: folder                        # folder (default) | page
     folder: ""                            # the folder's title; empty: the repository's name
     parent: ""                            # optional under folder; the root page under page
-    types: []                             # empty: every enabled type
+    types: []                             # empty: every enabled type except impl (ADR-0005)
     exclude: [examples]                   # prefixes under docs_dir, as api.exclude
     api_pages: false                      # also export the api: landing page and additional_docs
     mermaid:

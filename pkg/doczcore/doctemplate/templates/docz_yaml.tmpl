@@ -146,7 +146,7 @@ sync:
     # The page the folder sits under (optional), or the root page in the
     # page layout (required there).
     parent:{{ with .Sync.Confluence.Parent }} {{ . }}{{ end }}
-    # Types to export; empty exports every enabled type.
+    # Types to export; empty exports every enabled type except impl.
     types:
 {{- range .Sync.Confluence.Types }}
       - {{ . }}

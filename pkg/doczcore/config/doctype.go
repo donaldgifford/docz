@@ -48,6 +48,13 @@ type DocTypeDef struct {
 	// from the Aliases slice, so HelpDescription should NOT include
 	// any "(alias: ...)" suffix.
 	HelpDescription string
+
+	// ExportOptIn marks a built-in the Confluence export leaves out unless
+	// a repository lists it in sync.confluence.types (ADR-0005, INV-0022).
+	// It is set on the registry entry rather than read from .docz.yaml so a
+	// custom type can never be left out by accident: DefaultExportTypes
+	// drops only the built-ins that carry it.
+	ExportOptIn bool
 }
 
 // allDocTypes is the single source of truth for built-in doc types.
@@ -129,6 +136,7 @@ var allDocTypes = []DocTypeDef{
 		PluralLabel:     "Implementation Plans",
 		TemplateName:    "impl",
 		HelpDescription: "Implementation plans",
+		ExportOptIn:     true,
 	},
 	{
 		Name:    "investigation",

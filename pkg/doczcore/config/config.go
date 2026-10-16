@@ -429,6 +429,18 @@ func (c *Config) EnabledTypes() []string {
 	return append(enabled, custom...)
 }
 
+// DefaultExportTypes returns EnabledTypes without the built-ins whose
+// registry entry is ExportOptIn: the set an export writes when
+// sync.confluence.types is empty (ADR-0005). Custom types are never dropped,
+// since only a registry entry can carry the flag, and a repository that
+// wants an opt-in type lists its types with that one included.
+func (c *Config) DefaultExportTypes() []string {
+	return slices.DeleteFunc(c.EnabledTypes(), func(name string) bool {
+		def, ok := LookupDocType(name)
+		return ok && def.ExportOptIn
+	})
+}
+
 // typeAliases maps short or alternate names to their canonical type name.
 // Sourced from the DocType registry's Aliases entries.
 var typeAliases = defaultTypeAliases()

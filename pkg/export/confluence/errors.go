@@ -90,3 +90,17 @@ func (e *TitleError) Error() string {
 
 	return fmt.Sprintf("confluence: title %q is already taken in the space", e.Title)
 }
+
+// NotExportedError reports a type a narrowed run asked for that a full run
+// of the repository would not write: it is enabled, but
+// sync.confluence.types does not list it, or it is an opt-in built-in such
+// as impl and the list is empty (ADR-0005). A narrowed run never writes a
+// page a full run would archive, so the request is refused rather than
+// silently exporting nothing.
+type NotExportedError struct {
+	Type string
+}
+
+func (e *NotExportedError) Error() string {
+	return fmt.Sprintf("confluence: type %q is not exported; list it in sync.confluence.types", e.Type)
+}

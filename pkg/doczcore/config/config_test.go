@@ -802,3 +802,41 @@ func TestParseBytes_ShortRunbookBlockFillsFromRegistry(t *testing.T) {
 		t.Errorf("runbook statuses = %v, want %v", tc.Statuses, want)
 	}
 }
+
+// DefaultExportTypes is EnabledTypes without the opt-in built-ins
+// (ADR-0005): impl is the one, a custom type is never dropped, and a
+// disabled type is absent as it is from EnabledTypes.
+func TestDefaultExportTypes(t *testing.T) {
+	t.Parallel()
+
+	cfg := DefaultConfig()
+	if got, want := cfg.DefaultExportTypes(), []string{"rfc", "adr", "design", "investigation"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("DefaultExportTypes() = %v, want %v", got, want)
+	}
+
+	cfg.Types["frameworks"] = TypeConfig{Enabled: true, Dir: "frameworks", IDPrefix: "FW", IDWidth: 4, Statuses: []string{"Draft"}}
+	tc := cfg.Types["design"]
+	tc.Enabled = false
+	cfg.Types["design"] = tc
+
+	if got, want := cfg.DefaultExportTypes(), []string{"rfc", "adr", "investigation", "frameworks"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("DefaultExportTypes() with a custom type and design off = %v, want %v", got, want)
+	}
+
+	if slices.Contains(cfg.EnabledTypes(), "impl") != true {
+		t.Error("impl left EnabledTypes; the flag must narrow only the export set")
+	}
+}
+
+// Only impl carries the flag today; a second one is a decision for an ADR,
+// not a side effect of a registry edit.
+func TestDocTypeRegistry_ImplIsTheOnlyExportOptIn(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range DocTypeNames() {
+		def, _ := LookupDocType(name)
+		if def.ExportOptIn != (name == "impl") {
+			t.Errorf("%s: ExportOptIn = %v", name, def.ExportOptIn)
+		}
+	}
+}

@@ -617,6 +617,14 @@ docz-site shows "View in Confluence" on a document's page when
   `WARNING: ADR-0001: an inline comment on "Postgres" lost its anchor`.
 - `--force` adopts and overwrites as before, and now carries inline
   comments too.
+- Since ADR-0005 a bare run, in the CLI and on the server alike, exports
+  every enabled type except `impl`; a repository that wants its IMPLs
+  lists `sync.confluence.types` with `impl` in it. `--type impl` or an
+  IMPL id on a repository that does not list it is refused with
+  `type "impl" is not exported; list it in sync.confluence.types` (exit
+  2) rather than exporting nothing, and the same refusal now covers any
+  type a non-empty list leaves out. The next full run after the change
+  archives an existing IMPL subtree under `<folder>: Archive`.
 
 ### 9. Observability
 

@@ -466,7 +466,7 @@ sync:
 | `site` | | required; `https` URL with a host and no path |
 | `space` | | required; non-empty |
 | `parent` | | required; non-empty |
-| `types` | all enabled types | each a token an enabled type resolves from, through `Config.resolutionTokens()` |
+| `types` | all enabled types except `impl` (ADR-0005; `Config.DefaultExportTypes`) | each a token an enabled type resolves from, through `Config.resolutionTokens()` |
 | `exclude` | `[]` | the repo-relative path rules of `paths.go`, trailing `/` collapsed as `normalizeAPI` does |
 | `api_pages` | `false` | may be `true` only when the `api:` block is enabled; the landing page becomes the parent page's body and `additional_docs` sit under the parent (question 12) |
 | `mermaid.viewer` | `auto` | `auto`, `off`, or a key matching `<uuid>/<uuid>/static/<module>` |

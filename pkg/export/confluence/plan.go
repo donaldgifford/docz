@@ -256,11 +256,12 @@ func renderOptions(sync *config.ConfluenceSyncConfig) RenderOptions {
 	}
 }
 
-// canonicalTypes resolves type tokens, or returns every enabled type for
-// none.
+// canonicalTypes resolves type tokens, or returns the default export set for
+// none: Config.DefaultExportTypes, every enabled type except the opt-in
+// built-ins (ADR-0005), so a repository that wants impl lists it.
 func canonicalTypes(cfg *config.Config, tokens []string) ([]string, error) {
 	if len(tokens) == 0 {
-		return cfg.EnabledTypes(), nil
+		return cfg.DefaultExportTypes(), nil
 	}
 
 	out := make([]string, 0, len(tokens))
@@ -433,6 +434,12 @@ func selectDocs(
 		return nil, nil, err
 	}
 
+	for _, name := range types {
+		if !slices.Contains(allTypes, name) {
+			return nil, nil, &NotExportedError{Type: name}
+		}
+	}
+
 	docs := slices.DeleteFunc(slices.Clone(all), func(e repo.Entry) bool { return !slices.Contains(types, e.Type) })
 
 	return docs, orderTypes(types, allTypes), nil
@@ -464,6 +471,10 @@ func selectIDs(
 
 		if excluded(src.rp, e.Path) {
 			continue
+		}
+
+		if !slices.Contains(allTypes, e.Type) {
+			return nil, nil, &NotExportedError{Type: e.Type}
 		}
 
 		docs = append(docs, e)

@@ -37,5 +37,6 @@ docz create adr "Your ADR Title"
 | ADR-0002 | docz is an API package whose first consumer is the CLI | Accepted | 2026-09-14 | Donald Gifford | [0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md](0002-docz-is-an-api-package-whose-first-consumer-is-the-cli.md) |
 | ADR-0003 | Remove plan from the built-in document types | Accepted | 2026-09-14 | Donald Gifford | [0003-remove-plan-from-the-built-in-document-types.md](0003-remove-plan-from-the-built-in-document-types.md) |
 | ADR-0004 | One repository: docz, docz-api, and docz-site as a single Go module | Accepted | 2026-09-21 | Donald Gifford | [0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md](0004-one-repository-docz-docz-api-and-docz-site-as-a-single-go-module.md) |
+| ADR-0005 | Leave impl out of the Confluence export unless a repository lists it | Accepted | 2026-10-16 | Donald Gifford | [0005-leave-impl-out-of-the-confluence-export-unless-a-repository.md](0005-leave-impl-out-of-the-confluence-export-unless-a-repository.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

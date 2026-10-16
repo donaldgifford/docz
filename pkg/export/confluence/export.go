@@ -20,7 +20,8 @@ type ExportOptions struct {
 	Client Client
 	// Types narrows the export to these type tokens, resolved like any
 	// command-line type. Nil means sync.confluence.types, or every enabled
-	// type when that is empty.
+	// type except the opt-in built-ins (impl) when that is empty. A type a
+	// full run would not write is a NotExportedError, not an empty run.
 	Types []string
 	// IDs narrows the export to these documents. Nil means every document
 	// of the selected types.
