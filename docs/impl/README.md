@@ -39,8 +39,8 @@ docz create impl "Your Implementation Title"
 | IMPL-0003 | Table of Contents Generation | Completed | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
 | IMPL-0004 | Wiki Init Template and Init Enabled Fix | Completed | 2026-04-02 | Donald Gifford | [0004-wiki-init-template-and-init-enabled-fix.md](0004-wiki-init-template-and-init-enabled-fix.md) |
 | IMPL-0005 | Mechanical Style and Idiom Cleanup | Completed | 2026-05-15 | Donald Gifford | [0005-mechanical-style-and-idiom-cleanup.md](0005-mechanical-style-and-idiom-cleanup.md) |
-| IMPL-0006 | Correctness and Duplication Cleanup | In Progress | 2026-05-15 | Donald Gifford | [0006-correctness-and-duplication-cleanup.md](0006-correctness-and-duplication-cleanup.md) |
-| IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | In Progress | 2026-05-15 | Donald Gifford | [0007-eliminate-redundant-file-reads-and-heading-parses.md](0007-eliminate-redundant-file-reads-and-heading-parses.md) |
+| IMPL-0006 | Correctness and Duplication Cleanup | Completed | 2026-05-15 | Donald Gifford | [0006-correctness-and-duplication-cleanup.md](0006-correctness-and-duplication-cleanup.md) |
+| IMPL-0007 | Eliminate Redundant File Reads and Heading Parses | Completed | 2026-05-15 | Donald Gifford | [0007-eliminate-redundant-file-reads-and-heading-parses.md](0007-eliminate-redundant-file-reads-and-heading-parses.md) |
 | IMPL-0008 | Move Stranded Business Logic Into Internal Packages | Completed | 2026-05-15 | Donald Gifford | [0008-move-stranded-business-logic-into-internal-packages.md](0008-move-stranded-business-logic-into-internal-packages.md) |
 | IMPL-0009 | Runner Pattern and DocType Registry Refactor | Completed | 2026-05-15 | Donald Gifford | [0009-runner-pattern-and-doctype-registry-refactor.md](0009-runner-pattern-and-doctype-registry-refactor.md) |
 | IMPL-0011 | Status Set CLI Primitive | Completed | 2026-06-01 | Donald Gifford | [0011-status-set-cli-primitive.md](0011-status-set-cli-primitive.md) |
@@ -49,7 +49,7 @@ docz create impl "Your Implementation Title"
 | IMPL-0014 | v1.0.0: the five-package pkg/doczcore public core | Completed | 2026-07-03 | Donald Gifford | [0014-v100-the-five-package-pkgdoczcore-public-core.md](0014-v100-the-five-package-pkgdoczcore-public-core.md) |
 | IMPL-0015 | v1.1.0 — changelog config block and ParseChangelog | Completed | 2026-08-02 | Donald Gifford | [0015-v110-changelog-config-block-and-parsechangelog.md](0015-v110-changelog-config-block-and-parsechangelog.md) |
 | IMPL-0016 | v1.2.0 — api config block and docparse.Title | Completed | 2026-08-11 | Donald Gifford | [0016-v120-api-config-block-and-docparsetitle.md](0016-v120-api-config-block-and-docparsetitle.md) |
-| IMPL-0017 | v1.3.0 — updated frontmatter field and the docz update stamp pass | Draft | 2026-09-12 | Donald Gifford | [0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md](0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md) |
+| IMPL-0017 | v1.3.0 — updated frontmatter field and the docz update stamp pass | Cancelled | 2026-09-12 | Donald Gifford | [0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md](0017-v130-updated-frontmatter-field-and-the-docz-update-stamp-pass.md) |
 | IMPL-0018 | v2.0.0-beta.1 — the docz API as one unit, structured regions, and the cmd swap | Completed | 2026-09-19 | Donald Gifford | [0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md](0018-v200-beta1-the-docz-api-as-one-unit-structured-regions-and-the.md) |
 | IMPL-0019 | docz-api move-in: v2.0.0-beta.3 | Completed | 2026-09-22 | Donald Gifford | [0019-docz-api-move-in-v200-beta3.md](0019-docz-api-move-in-v200-beta3.md) |
 | IMPL-0020 | docz-site move-in: v2.0.0-beta.4 | Completed | 2026-09-23 | Donald Gifford | [0020-docz-site-move-in-v200-beta4.md](0020-docz-site-move-in-v200-beta4.md) |

@@ -1,7 +1,7 @@
 ---
 id: IMPL-0017
 title: "v1.3.0 — updated frontmatter field and the docz update stamp pass"
-status: Draft
+status: Cancelled
 author: Donald Gifford
 created: 2026-09-12
 ---
@@ -52,6 +52,10 @@ created: 2026-09-12
 
 <!--docz:objective:start-->
 ## Objective
+
+> **Cancelled 2026-10-16.** No phase was started. The v1.3.0 this plan
+> was to ship never happened: v2.0.0 followed v1.2.2 directly, and
+> DESIGN-0012 is abandoned with it. The plan is kept as written.
 
 Implement DESIGN-0012: an opt-in `updated:` config block and an
 `updated: YYYY-MM-DD` frontmatter field that `docz update` backfills from git

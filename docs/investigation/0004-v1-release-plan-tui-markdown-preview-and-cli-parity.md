@@ -1,7 +1,7 @@
 ---
 id: INV-0004
 title: "v1 Release Plan: TUI, Markdown Preview, and CLI Parity"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-05-22
 ---
@@ -9,7 +9,7 @@ created: 2026-05-22
 
 # INV 0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-05-22
 
@@ -315,6 +315,15 @@ The previously-open item was the mdp integration shape; it is now
 resolved. mdp's `pkg/` namespace exists on `main` today, so IMPL-0010
 lands the library-import path directly — no shell-out fallback, no
 mdp-side prerequisite, no coordinated release.
+
+**Closed 2026-10-16, overtaken by events.** The cleanup this plan
+sequenced (IMPL-0006 through IMPL-0009) shipped, and v1.0.0 was cut on it
+as a CLI alone. The TUI and the in-process mdp preview were never built:
+no Bubble Tea, Glamour, or mdp dependency ever entered `go.mod`, and the
+v2 line (ADR-0002, ADR-0004) moved the user-facing surface to docz-site
+and docz-api instead. The answer above records what v1 was going to be;
+what it became is the parity suite's v1.2.2 baseline. Nothing here is
+planned, and a TUI would start from a new investigation.
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->

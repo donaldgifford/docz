@@ -36,16 +36,16 @@ docz create design "Your Design Title"
 | --- | --- | --- | --- | --- | --- |
 | DESIGN-0001 | docz CLI Tool | Implemented | 2026-02-22 | Donald Gifford | [0001-docz-cli-design.md](0001-docz-cli-design.md) |
 | DESIGN-0002 | Wiki Command for MkDocs TechDocs Integration | Implemented | 2026-03-11 | Donald Gifford | [0002-wiki-command-for-mkdocs-techdocs-integration.md](0002-wiki-command-for-mkdocs-techdocs-integration.md) |
-| DESIGN-0003 | Table of Contents Generation | Draft | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
+| DESIGN-0003 | Table of Contents Generation | Implemented | 2026-03-22 | Donald Gifford | [0003-table-of-contents-generation.md](0003-table-of-contents-generation.md) |
 | DESIGN-0004 | Runner Pattern and DocType Registry | Approved | 2026-05-27 | Donald Gifford | [0004-runner-pattern-and-doctype-registry.md](0004-runner-pattern-and-doctype-registry.md) |
 | DESIGN-0005 | Status Set CLI Primitive | Implemented | 2026-05-30 | Donald Gifford | [0005-status-set-cli-primitive.md](0005-status-set-cli-primitive.md) |
 | DESIGN-0006 | Custom Document Type Support | Implemented | 2026-06-17 | Donald Gifford | [0006-custom-document-type-support.md](0006-custom-document-type-support.md) |
 | DESIGN-0007 | docz changes to support docz-api and docz-site | Implemented | 2026-06-23 | Donald Gifford | [0007-docz-changes-to-support-docz-api-and-docz-site.md](0007-docz-changes-to-support-docz-api-and-docz-site.md) |
 | DESIGN-0008 | docz-api: cross-repo docz registry and ingestion service | Approved | 2026-06-23 | Donald Gifford | [0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md](0008-docz-api-cross-repo-docz-registry-and-ingestion-service.md) |
-| DESIGN-0009 | docz-site: cross-repo docz viewer and search UI | Draft | 2026-06-23 | Donald Gifford | [0009-docz-site-cross-repo-docz-viewer-and-search-ui.md](0009-docz-site-cross-repo-docz-viewer-and-search-ui.md) |
+| DESIGN-0009 | docz-site: cross-repo docz viewer and search UI | Implemented | 2026-06-23 | Donald Gifford | [0009-docz-site-cross-repo-docz-viewer-and-search-ui.md](0009-docz-site-cross-repo-docz-viewer-and-search-ui.md) |
 | DESIGN-0010 | Changelog config block and ParseChangelog | Implemented | 2026-08-02 | Donald Gifford | [0010-changelog-config-block-and-parsechangelog.md](0010-changelog-config-block-and-parsechangelog.md) |
 | DESIGN-0011 | api config block: index page and additional_docs for docz-api and docz-site | Implemented | 2026-08-10 | Donald Gifford | [0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md](0011-api-config-block-index-page-and-additionaldocs-for-docz-api-and.md) |
-| DESIGN-0012 | Updated frontmatter field: opt-in stamp pass in docz update | Draft | 2026-09-12 | Donald Gifford | [0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md](0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md) |
+| DESIGN-0012 | Updated frontmatter field: opt-in stamp pass in docz update | Abandoned | 2026-09-12 | Donald Gifford | [0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md](0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md) |
 | DESIGN-0013 | Library-first docz: per-type document packages and a core API the CLI can sit on | Abandoned | 2026-09-13 | Donald Gifford | [0013-library-first-docz-per-type-document-packages-and-a-core-api.md](0013-library-first-docz-per-type-document-packages-and-a-core-api.md) |
 | DESIGN-0014 | The docz API as one unit: packages, types, functions, and the cmd swap | Implemented | 2026-09-14 | Donald Gifford | [0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md](0014-the-docz-api-as-one-unit-packages-types-functions-and-the-cmd.md) |
 | DESIGN-0015 | Structured regions and docz validate | Implemented | 2026-09-19 | Donald Gifford | [0015-structured-regions-and-docz-validate.md](0015-structured-regions-and-docz-validate.md) |

@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0003
 title: "Table of Contents Generation"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-03-22
 ---
@@ -10,7 +10,7 @@ created: 2026-03-22
 
 # DESIGN 0003: Table of Contents Generation
 
-**Status:** Draft **Author:** Donald Gifford **Date:** 2026-03-22
+**Status:** Implemented **Author:** Donald Gifford **Date:** 2026-03-22
 
 <!--toc:start-->
 <!-- markdownlint-capture -->

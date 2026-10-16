@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0012
 title: "Updated frontmatter field: opt-in stamp pass in docz update"
-status: Draft
+status: Abandoned
 author: Donald Gifford
 created: 2026-09-12
 ---
@@ -49,6 +49,14 @@ created: 2026-09-12
 
 <!--docz:overview:start-->
 ## Overview
+
+> **Abandoned 2026-10-16.** This design targeted docz v1.3.0, and no
+> v1.3.0 was cut: the v2 line (ADR-0002, ADR-0004) followed v1.2.2
+> directly and shipped without an `updated:` field. Nothing in v2
+> implements it, docz-api still serves only its ingest timestamp, and
+> IMPL-0017 is cancelled with it. INV-0013 points here for lifecycle
+> metadata; a v2 version would be a new design over `repo.Update` rather
+> than a revival of this one. The text below is kept as written.
 
 Add a sixth frontmatter field, `updated: YYYY-MM-DD`, recording the date a
 docz document's content last changed, and an opt-in `updated:` config block
