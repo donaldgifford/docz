@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0009
 title: "docz-site: cross-repo docz viewer and search UI"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-06-23
 ---
@@ -639,6 +639,10 @@ alternatives, and "Other" is free-form for review.
 - c. SvelteKit — smaller bundles, built-in SSR, less boilerplate.
 - d. Other.
 
+> **Resolved 2026-10-16, as built: (a).** Vite + React, on Bun, in `ui/`
+> since IMPL-0020. Recorded after the fact: the site shipped with these
+> questions never flipped.
+
 ### 2. Which markdown renderer library?
 
 - **a. (Recommended)** `markdown-it` + plugins (anchors, footnotes, highlight) —
@@ -648,6 +652,10 @@ alternatives, and "Other" is free-form for review.
 - c. `marked` — smallest/fastest, fewer plugins.
 - d. Other.
 
+> **Resolved 2026-10-16, as built: (b).** A remark/rehype pipeline
+> (`remark-parse`, `remark-gfm`, `remark-rehype`, `rehype-raw`,
+> `rehype-slug`) in `ui/src/markdown`, rendering to React nodes.
+
 ### 3. SSR or SPA?
 
 - **a. (Recommended)** SPA for the MVP — operationally simplest, defers a server
@@ -655,6 +663,10 @@ alternatives, and "Other" is free-form for review.
 - b. SSR from the start — better first paint, SEO, and a server seam for auth.
 - c. Static prerender + client hydration for public docs, SPA for private.
 - d. Other.
+
+> **Resolved 2026-10-16, as built: (a).** An SPA. The Bun server in
+> `ui/server/` serves the bundle and owns probes, metrics, and redacted
+> request logs; it renders nothing.
 
 ### 4. How does the site integrate with Meilisearch search?
 
@@ -667,6 +679,10 @@ alternatives, and "Other" is free-form for review.
 - c. Hybrid: proxy for access-scoped queries, direct for public docs only.
 - d. Other.
 
+> **Resolved 2026-10-16, as built: (a).** Every search goes through
+> docz-api's `GET /api/v1/search`; no Meilisearch key or host reaches the
+> browser.
+
 ### 5. HTML sanitization approach?
 
 - **a. (Recommended)** DOMPurify with a conservative allow-list, run after
@@ -678,6 +694,11 @@ alternatives, and "Other" is free-form for review.
   render).
 - d. Other.
 
+> **Resolved 2026-10-16, as built: (b).** `rehype-sanitize` over the
+> allow-list in `ui/src/markdown/schema.ts`, which follows from question
+> 2's remark/rehype choice. DOMPurify is still a dependency for one
+> thing: the SVG mermaid renders, which arrive outside the pipeline.
+
 ### 6. Styling / design-system choice?
 
 - **a. (Recommended)** Tailwind CSS + a headless component set (e.g. Radix) plus
@@ -687,6 +708,10 @@ alternatives, and "Other" is free-form for review.
   out-of-the-box, heavier and more opinionated.
 - c. Plain CSS modules / vanilla-extract — minimal deps, more hand-rolled UI.
 - d. Other.
+
+> **Resolved 2026-10-16, as built: (a), without the headless set.**
+> Tailwind CSS and the site's own components under `ui/src/components`;
+> `cmdk` for the command palette is the one UI library. No Radix.
 
 ### 7. Where does the OIDC/OAuth token exchange happen?
 
@@ -699,6 +724,10 @@ alternatives, and "Other" is free-form for review.
   the browser holds tokens.
 - d. Other.
 
+> **Resolved 2026-10-16, as built: (a).** docz-api performs the exchange
+> (`internal/authhttp`) and issues the `docz_session` httpOnly cookie;
+> the site holds no token and reads `GET /api/v1/auth/session`.
+
 ### 8. How should docz's own ToC markers be handled?
 
 - **a. (Recommended)** Generate the ToC from rendered headings and **strip** the
@@ -709,6 +738,10 @@ alternatives, and "Other" is free-form for review.
 - c. Render the marker block *and* a generated rail, accepting possible
   duplication.
 - d. Other.
+
+> **Resolved 2026-10-16, as built: (a).** `ui/src/markdown/preprocess.ts`
+> strips the `<!--toc:start-->…<!--toc:end-->` block before render, and
+> the right rail builds its own ToC from the rendered headings.
 <!--docz:open-questions:end-->
 
 <!--docz:references:start-->

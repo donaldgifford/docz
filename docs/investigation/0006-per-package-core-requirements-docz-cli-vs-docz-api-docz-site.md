@@ -1,7 +1,7 @@
 ---
 id: INV-0006
 title: "Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-07-03
 ---
@@ -264,7 +264,9 @@ these three already-public symbols at v1.0 is Open Question 4.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer: Yes — the hypothesis is confirmed.**
+**Answer:** Yes — the hypothesis is confirmed. (Concluded 2026-10-16: every
+question below was resolved on 2026-07-03 and adopted by ADR-0001; the status
+was never flipped.)
 
 The demand-complete public core is exactly
 `pkg/doczcore/{config,document,docparse,docwrite}` — which is precisely where

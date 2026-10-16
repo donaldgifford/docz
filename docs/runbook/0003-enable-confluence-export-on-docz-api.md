@@ -1,7 +1,7 @@
 ---
 id: RUNBOOK-0003
 title: "Enable Confluence export on docz-api"
-status: Draft
+status: Active
 author: Donald Gifford
 created: 2026-10-07
 ---

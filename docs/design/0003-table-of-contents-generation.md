@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0003
 title: "Table of Contents Generation"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-03-22
 ---

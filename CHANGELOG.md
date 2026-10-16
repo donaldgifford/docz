@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Documentation
 
 - *(investigation)* Conclude INV-0022, 0023, 0025, 0026, 0028, 0029
+- Status housekeeping so the listing tells the truth
 
 ## [2.0.0] - 2026-10-13
 

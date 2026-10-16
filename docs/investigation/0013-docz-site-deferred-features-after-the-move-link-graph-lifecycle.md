@@ -1,7 +1,7 @@
 ---
 id: INV-0013
 title: "docz-site deferred features after the move: link graph, lifecycle, labels"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-09-23
 ---
@@ -93,24 +93,41 @@ when it was archived:
 <!--docz:findings:start-->
 ## Findings
 
-Not started: this successor records what was still open when docz-api's
-investigation was archived.
+This successor was never run as its own investigation. Each item it
+carried forward was picked up by later work, checked on 2026-10-16:
+
+| INV-0003 item | Where it went |
+| --- | --- |
+| The cross-doc link graph (F2) | [INV-0028](0028-a-document-graph-from-the-references-docz-already-parses.md), concluded 2026-10-15: a public reader in `pkg/doczcore` from the references and fields docz already parses, with a DESIGN to follow |
+| Typed relationships (F2 tier 2) | INV-0028 question 1: typed edges from structure first; frontmatter fields deferred until the graph has been used |
+| Lifecycle commit metadata (F3) | [DESIGN-0012](../design/0012-updated-frontmatter-field-opt-in-stamp-pass-in-docz-update.md) and IMPL-0017, the `updated:` field |
+| Labels (F4) | Not taken up. No design has asked for a frontmatter label field since the move, and INV-0028's rule defers new frontmatter until a missing edge is felt |
+| The non-goals (pdf, raw-file ingest, the MCP page) | The MCP page became [INV-0024](0024-an-mcp-server-for-docz-api-with-oauth-and-token-auth.md); pdf and raw-file ingest remain non-goals with no owner, which is where INV-0003 left them |
+
+Approach step 2's question, whether edge extraction is a `pkg/` fact
+extractor or server-only, was answered by INV-0028 question 2: a public
+reader, so the CLI, docz-api, and docz-site share one definition.
 
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive — not yet investigated. This successor carries the
-question forward; the verdict comes with the docz-site move.
+**Answer:** Yes, every still-blocked item now has an owner, and sharing a
+module did change where each belongs: the link graph is a `pkg/` reader
+rather than server-side (INV-0028), and lifecycle metadata is a docz
+frontmatter change rather than a feature request to another repository
+(DESIGN-0012). Concluded 2026-10-16 by pointing at that work; nothing
+remains for this investigation to decide.
 
 <!--docz:conclusion:end-->
 
 <!--docz:recommendation:start-->
 ## Recommendation
 
-Open the link-graph design first, as INV-0003 recommended; it gates the largest
-cluster of deferred site features.
+Write the graph DESIGN INV-0028 concluded for; it still gates the largest
+cluster of deferred site features (References and Referenced-by, relationship
+banners, hover previews). Labels wait for a design that needs them.
 
 <!--docz:recommendation:end-->
 
