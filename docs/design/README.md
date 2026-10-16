@@ -55,5 +55,6 @@ docz create design "Your Design Title"
 | DESIGN-0019 | Runbook: a sixth built-in document type, disabled by default | Implemented | 2026-09-30 | Donald Gifford | [0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md](0019-runbook-a-sixth-built-in-document-type-disabled-by-default.md) |
 | DESIGN-0020 | Confluence export: docz documents as Confluence Cloud pages | Implemented | 2026-10-05 | Donald Gifford | [0020-confluence-export-docz-documents-as-confluence-cloud-pages.md](0020-confluence-export-docz-documents-as-confluence-cloud-pages.md) |
 | DESIGN-0021 | Confluence export from docz-api: per-repository folders in shared spaces | Implemented | 2026-10-06 | Donald Gifford | [0021-confluence-export-from-docz-api-per-repository-folders-in.md](0021-confluence-export-from-docz-api-per-repository-folders-in.md) |
+| DESIGN-0022 | Incident and root cause analysis: INC and RCA as built-in document types | Draft | 2026-10-16 | Donald Gifford | [0022-incident-and-root-cause-analysis-inc-and-rca-as-built-in.md](0022-incident-and-root-cause-analysis-inc-and-rca-as-built-in.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
