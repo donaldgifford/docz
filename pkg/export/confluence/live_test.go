@@ -350,3 +350,166 @@ func TestLiveInlineComment(t *testing.T) {
 
 	t.Logf("comment %s on page %s: %s after the update", comment.ID, page.ID, comment.ResolutionStatus)
 }
+
+// TestLiveInlineCommentReattach is INV-0021 Approach step 2, run 2026-10-16:
+// once an update drops a comment's marker, does a later update that writes
+// the marker back under the same ac:ref anchor the comment again?
+//
+// It does, and more simply than the investigation assumed. An update made
+// through the API never marks the comment dangling: its resolutionStatus
+// stays "open" (polled for a minute, the rendered view confirming the marker
+// gone) and the page keeps listing it. The comment merely has nowhere to
+// anchor until a body carries its ref again, and the next body that does
+// renders it anchored. So docz can keep a comment's ref beside its quote
+// and write the marker back whenever the quote is found, with no API call
+// on the comment itself. The v1 content API, which carries the older
+// resolution extension, refuses a scoped token (401, scope mismatch), so
+// the v2 status is the only one read.
+func TestLiveInlineCommentReattach(t *testing.T) {
+	h, spaceID := liveClient(t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
+	defer cancel()
+
+	stamp := time.Now().UTC().Format("20060102T150405")
+
+	page, err := h.CreatePage(ctx, &NewPage{
+		SpaceID: spaceID, Title: "docz live reattach " + stamp,
+		Body: []byte("<p>Before. We chose Postgres for the store.</p>"),
+	})
+	if err != nil {
+		t.Fatalf("create page: %v", err)
+	}
+
+	t.Cleanup(func() { liveDelete(t, h, "pages", page.ID) })
+
+	var comment struct {
+		ID               string `json:"id"`
+		ResolutionStatus string `json:"resolutionStatus"`
+		Properties       struct {
+			Ref string `json:"inlineMarkerRef"`
+		} `json:"properties"`
+	}
+
+	req := map[string]any{
+		"pageId": page.ID,
+		"body":   map[string]string{"representation": "storage", "value": "<p>docz live reattach</p>"},
+		"inlineCommentProperties": map[string]any{
+			"textSelection": "Postgres", "textSelectionMatchCount": 1, "textSelectionMatchIndex": 0,
+		},
+	}
+	if err := h.do(ctx, "create inline comment", http.MethodPost, "/wiki/api/v2/inline-comments", req, &comment); err != nil {
+		t.Fatalf("create inline comment: %v", err)
+	}
+
+	// status reads the comment's v2 resolutionStatus and whether the page as
+	// rendered (view format) carries the comment's marker, which is what a
+	// reader's highlight is drawn from.
+	status := func(step string) (resolution string, anchored bool) {
+		t.Helper()
+
+		var view struct {
+			Body struct {
+				View struct {
+					Value string `json:"value"`
+				} `json:"view"`
+			} `json:"body"`
+		}
+		if err := h.do(ctx, "view page", http.MethodGet, "/wiki/api/v2/pages/"+page.ID+"?body-format=view", nil, &view); err != nil {
+			t.Fatalf("%s: view body: %v", step, err)
+		}
+
+		if err := h.do(ctx, "get inline comment", http.MethodGet, "/wiki/api/v2/inline-comments/"+comment.ID, nil, &comment); err != nil {
+			t.Fatalf("%s: read the comment back: %v", step, err)
+		}
+
+		anchored = strings.Contains(view.Body.View.Value, comment.Properties.Ref)
+		t.Logf("%s: comment %s is %q, rendered anchored: %v", step, comment.ID, comment.ResolutionStatus, anchored)
+
+		return comment.ResolutionStatus, anchored
+	}
+
+	if s, anchored := status("after the comment"); s != "open" || !anchored {
+		t.Fatalf("a fresh comment is %q, anchored %v; want open and anchored", s, anchored)
+	}
+
+	current, err := h.Body(ctx, page.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	markers := collectMarkers(current)
+	if len(markers) != 1 || markers[0].ref != comment.Properties.Ref {
+		t.Fatalf("markers %+v; want one under ref %s", markers, comment.Properties.Ref)
+	}
+
+	version := page.Version
+
+	update := func(step string, body []byte) {
+		t.Helper()
+
+		version++
+
+		if _, err := h.UpdatePage(ctx, page.ID, &PageUpdate{
+			Title: page.Title, Body: body, Version: version, Message: "docz live: " + step,
+		}); err != nil {
+			t.Fatalf("%s: update: %v", step, err)
+		}
+	}
+
+	// Step 1: the sentence is reworded and the marker is dropped, which is
+	// what carryMarkers does today when the text is gone.
+	update("marker dropped", []byte("<p>Reworded. The store is Postgres, as decided.</p>"))
+
+	// Ten seconds covers a lazy recompute, if Confluence ever grows one; the
+	// 2026-10-16 run polled for a minute and saw none.
+	time.Sleep(10 * time.Second)
+
+	dropped, droppedAnchored := status("after the marker was dropped")
+
+	// Step 2: the marker is written back under the same ref, which is what
+	// INV-0021 recommendation 3 (a) would have the export do.
+	out, kept, lost := carryMarkers([]byte("<p>Back. We chose Postgres for the store.</p>"), markers)
+	if kept != 1 || len(lost) != 0 {
+		t.Fatalf("carry: kept %d lost %v", kept, lost)
+	}
+
+	update("marker restored", out)
+
+	if body, err := h.Body(ctx, page.ID); err != nil || !strings.Contains(string(body), comment.Properties.Ref) {
+		t.Fatalf("body after the restore has no marker: %s %v", body, err)
+	}
+
+	restored, restoredAnchored := status("after the marker was restored")
+
+	// The page's own view of its comments, which is what a reader sees.
+	var listed struct {
+		Results []struct {
+			ID               string `json:"id"`
+			ResolutionStatus string `json:"resolutionStatus"`
+		} `json:"results"`
+	}
+	if err := h.do(ctx, "list inline comments", http.MethodGet, "/wiki/api/v2/pages/"+page.ID+"/inline-comments", nil, &listed); err != nil {
+		t.Fatalf("list the page's inline comments: %v", err)
+	}
+
+	stillListed := false
+
+	for _, c := range listed.Results {
+		t.Logf("page lists comment %s as %q", c.ID, c.ResolutionStatus)
+
+		stillListed = stillListed || c.ID == comment.ID
+	}
+
+	if dropped != "open" || droppedAnchored {
+		t.Errorf("after the marker was dropped the comment is %q, anchored %v; want open and unanchored", dropped, droppedAnchored)
+	}
+
+	if restored != "open" || !restoredAnchored {
+		t.Errorf("after the marker was restored the comment is %q, anchored %v; want open and anchored again", restored, restoredAnchored)
+	}
+
+	if !stillListed {
+		t.Errorf("the page no longer lists comment %s", comment.ID)
+	}
+}
