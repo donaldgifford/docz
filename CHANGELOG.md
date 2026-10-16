@@ -11,6 +11,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Status housekeeping so the listing tells the truth
 - Align the legacy body Status lines with the frontmatter
 - *(design)* Keep the example snippet in DESIGN-0003 as written
+- *(design)* DESIGN-0022, incident and RCA as built-in document types
 
 ## [2.0.0] - 2026-10-13
 
