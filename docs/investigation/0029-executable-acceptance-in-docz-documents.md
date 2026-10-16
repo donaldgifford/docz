@@ -1,7 +1,7 @@
 ---
 id: INV-0029
 title: "Executable acceptance in docz documents"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-10
 ---
@@ -20,7 +20,7 @@ created: 2026-10-10
 - [Environment](#environment)
 - [Findings](#findings)
   - [Observation 1: what is executable today](#observation-1-what-is-executable-today)
-  - [Observation 2](#observation-2)
+  - [Observation 2: the acceptance lives in the criteria, not the tasks](#observation-2-the-acceptance-lives-in-the-criteria-not-the-tasks)
 - [Conclusion](#conclusion)
 - [Recommendation](#recommendation)
 - [Open Questions](#open-questions)
@@ -126,17 +126,52 @@ it.
 All three can be read today. None of them is run by docz, and only the
 runbook states an expected result.
 
-### Observation 2
+### Observation 2: the acceptance lives in the criteria, not the tasks
 
-<!-- Approach step 2: counts, and whether the commands still run. -->
+A scan of this repository on 2026-10-15:
+
+| What | Count |
+| --- | --- |
+| IMPL documents | 24 |
+| Tasks in them | 1311 |
+| Tasks with a verify line | 37 |
+| Success criteria opening with a command | 293 |
+| Runbook steps with an `**Expected:**` line | 25 across 3 runbooks |
+
+The verify-line habit never formed: under three per cent of tasks carry
+one, and the loop that runs IMPLs checks a task by running the phase's
+gate, not the task's line. The criteria are where the executable
+material is. Most name a `just` recipe (`just ci` 18 times, `just parity`
+14, then `just api`, `just test-consumer`, `just chart`, `just ui`), and
+every recipe named by a criterion still exists, checked with
+`just --dry-run`. The IMPLs are old enough that this is a real result:
+the `just` migration (ADR-0004) renamed every `make` target, and the
+criteria were rewritten with it.
+
+So the shape to serve is the criterion, and the tool that serves it is a
+listing. Whether docz should also run the command is a separate question
+with a worse answer: the criteria run anyway, in CI and in the agent
+loop, and a runner in docz would be a third place the same command runs.
 
 <!--docz:findings:end-->
 
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open, and Approach steps
-2 to 5 decide it.
+**Answer:** Yes, as a listing, and no to a runner. Decided 2026-10-15.
+docz documents already
+carry acceptance a tool can read (Observation 1), and the corpus says it
+sits in the success criteria rather than in per-task verify lines
+(Observation 2). What is missing is only the collection: one place that
+lists a document's commands and expected results for an agent, CI, or
+a person to run. A runner in docz, SMART-style generated tests, and a
+worked-example region are not taken: the commands already run where
+they belong, and a new region kind has no document asking for it.
+
+Next: no design of its own. The listing joins `docz inspect --format
+json` (INV-0027) as the criteria, verify commands, and runbook expected
+lines each type's reader already exposes. Approach steps 3 to 5 close
+with the questions below.
 
 <!--docz:conclusion:end-->
 
@@ -155,6 +190,9 @@ runbook states an expected result.
 - c. Generate test files from them, as SMART does.
 - d. Other.
 
+> **Resolved 2026-10-15: (b).** List only, through `docz inspect`. No
+> `docz verify`, no `--run`.
+
 ### 2. How is an expected result written?
 
 - **a. Reuse the runbook's `**Expected:**` line everywhere, with an exit
@@ -162,6 +200,10 @@ runbook states an expected result.
   *(recommendation)*
 - b. A fenced `expected` block with exact output, compared byte for byte.
 - c. Other.
+
+> **Resolved 2026-10-15: as today.** Runbooks keep `**Expected:**`, and
+> a criterion's expectation is its sentence. Nothing new, since nothing
+> compares them.
 
 ### 3. Do DESIGN documents get a worked-example region?
 
@@ -171,12 +213,17 @@ runbook states an expected result.
 - b. Not yet: start with IMPL and runbooks, which already have the parts.
 - c. Other.
 
+> **Resolved 2026-10-15: (b).** No new region kind.
+
 ### 4. Who may run the commands?
 
 - **a. Only the local CLI, on an explicit flag. docz-api never runs
   them, and docz-review only displays them.** *(recommendation)*
 - b. The local CLI and CI, where CI runs them in a sandbox.
 - c. Other.
+
+> **Resolved 2026-10-15: nobody in docz.** docz lists; the caller runs.
+> docz-api never runs them, which (a) also said.
 
 <!--docz:open-questions:end-->
 

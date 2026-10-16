@@ -1,7 +1,7 @@
 ---
 id: INV-0022
 title: "Leaving IMPL documents out of the Confluence export by default"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-08
 ---
@@ -169,9 +169,19 @@ appear as orphans being archived and restored, as the two alternate.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open. The findings support
-leaving IMPL out by default. The questions below decide where the default
-lives.
+**Answer:** Yes. Leave IMPL out unless a repository lists it, and put the
+default in the library so the server and the CLI export the same set.
+Decided 2026-10-15 on the findings alone: the mechanism exists
+(Observation 1), a dropped type archives cleanly (Observation 2), links
+to IMPLs still resolve (Observation 3), the repository should keep the
+last word (Observation 4), and a server-only default would make the CLI
+and docz-api disagree (Observation 5). Approach step 4, the live run,
+moves to the change's own IMPL.
+
+Next: a short ADR, because an empty `sync.confluence.types` changes
+meaning on a stable surface and the next full run moves every existing
+IMPL subtree under Archive, then one PR carrying the registry flag, the
+release note, and the RUNBOOK-0003 line.
 
 <!--docz:conclusion:end-->
 
@@ -193,6 +203,9 @@ lives.
   repository can't override it. It's the simplest, and the least flexible.
 - (d) Other.
 
+> **Resolved 2026-10-15: (a).** In the library. One rule for the CLI and
+> the server, and no server setting to drift from it.
+
 ### 2. How does a repository say "everything, IMPL included"?
 
 - **(a) List the types: `types: [rfc, adr, design, impl, investigation]`.**
@@ -200,6 +213,9 @@ lives.
 - (b) A new key, `sync.confluence.include_impl: true`.
 - (c) A wildcard, `types: ["*"]`.
 - (d) Other.
+
+> **Resolved 2026-10-15: (a).** List the types. The validation already
+> exists and nothing new is added to the config.
 
 ### 3. Is `impl` the only type left out?
 
@@ -210,6 +226,9 @@ lives.
   mark its own custom types the same way.
 - (c) Other.
 
+> **Resolved 2026-10-15: (a).** A registry flag on the one built-in. A
+> per-type config key can follow if a repository ever asks for it.
+
 ### 4. What happens to IMPL pages already in Confluence?
 
 - **(a) Archived on the next full run, as Observation 2 describes, noted in
@@ -217,6 +236,9 @@ lives.
 - (b) Left where they are, with no further updates. That needs a "frozen"
   state the export doesn't have.
 - (c) Other.
+
+> **Resolved 2026-10-15: (a).** Archived on the next full run. Nothing is
+> deleted, and the ADR and RUNBOOK-0003 say it will happen.
 
 <!--docz:recommendation:end-->
 

@@ -1,7 +1,7 @@
 ---
 id: INV-0026
 title: "OpenBao for docz credentials and just-in-time tokens"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-08
 ---
@@ -242,11 +242,22 @@ reads keep serving without it.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open. GitHub (Observation 1)
-and docz-api's own signing (Observation 3) are strong fits. Atlassian
-(Observation 2) depends on service-account OAuth. Static secrets
-(Observation 4) can move today with no code. Approach steps 2 and 3 are
-the deciding experiments.
+**Answer:** No, not in docz's code. Decided 2026-10-15 with INV-0023.
+
+This investigation existed to hand short-lived write tokens to agent
+sandboxes (Observations 1, 5, and 6). With INV-0023 concluded "no",
+docz-api never holds a write credential, so there is nothing to mint:
+the App stays Contents read-only, the Confluence token stays a scoped
+API token the operator rotates, and a signing key for INV-0024's tokens
+is one more static secret in the same Kubernetes Secret. OpenBao as a
+credentials provider inside docz-api (`CREDENTIALS_PROVIDER=openbao`, a
+Transit signer, a GitHub secrets engine) is not worth a code path for a
+set of credentials that are all static.
+
+What stands on its own is Observation 4, and it needs no code. The
+chart's `existingSecret` is the seam, and External Secrets Operator or
+any injector can fill it from OpenBao, Vault, or anywhere else. That
+becomes a README section, issue #178. Approach steps 2 to 4 are not run.
 
 <!--docz:conclusion:end-->
 
@@ -262,6 +273,9 @@ the deciding experiments.
   credentials are the ones worth protecting.
 - (c) Other.
 
+> **Resolved 2026-10-15: neither.** docz-api has no OpenBao client. An
+> operator may still keep its secrets there and sync them in (question 5).
+
 ### 2. How are GitHub tokens minted?
 
 - **(a) In OpenBao, through a GitHub App secrets engine plugin, with the
@@ -273,6 +287,9 @@ the deciding experiments.
 - (c) As today, with the key in a Kubernetes Secret.
 - (d) Other.
 
+> **Resolved 2026-10-15: (c).** The App stays read-only (INV-0023), so a
+> leaked key reads what the site already serves. Nothing to narrow.
+
 ### 3. How are Atlassian credentials handled?
 
 - **(a) A service account with OAuth 2.0 client credentials, with the
@@ -283,6 +300,9 @@ the deciding experiments.
 - (c) A custom OpenBao plugin for the exchange.
 - (d) Other.
 
+> **Resolved 2026-10-15: (b), minus OpenBao.** The scoped API token, in
+> the chart's Secret, rotated by hand as RUNBOOK-0003 already describes.
+
 ### 4. What signs docz-api's tokens (INV-0024)?
 
 - **(a) OpenBao Transit when OpenBao is configured, and a key from a
@@ -292,6 +312,10 @@ the deciding experiments.
 - (c) Always a local key.
 - (d) Other.
 
+> **Resolved 2026-10-15: (c).** A local key from the Secret. INV-0024's
+> design should still put it behind one signer so this can change later
+> without touching the token code.
+
 ### 5. How do static secrets reach the pod?
 
 - **(a) External Secrets Operator syncing KV into the chart's
@@ -300,12 +324,18 @@ the deciding experiments.
 - (c) docz-api reading KV itself at startup.
 - (d) Other.
 
+> **Resolved 2026-10-15: (a).** The one thing kept, and it is
+> documentation only: issue
+> [#178](https://github.com/donaldgifford/docz/issues/178).
+
 ### 6. How do agent sandboxes get credentials?
 
 - **(a) Only what the coordinator mints for them, passed in per run and
   response-wrapped. They have no OpenBao identity.** *(recommendation)*
 - (b) Kubernetes auth per sandbox, with a per-run policy.
 - (c) Other.
+
+> **Resolved 2026-10-15: moot.** docz runs no sandboxes (INV-0023).
 
 <!--docz:recommendation:end-->
 
