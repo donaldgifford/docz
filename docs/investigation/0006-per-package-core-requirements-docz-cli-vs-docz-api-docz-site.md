@@ -9,7 +9,7 @@ created: 2026-07-03
 
 # INV 0006: Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-07-03
 

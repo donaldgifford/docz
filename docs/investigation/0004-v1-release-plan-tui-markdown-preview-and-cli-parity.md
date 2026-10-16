@@ -9,7 +9,7 @@ created: 2026-05-22
 
 # INV 0004: v1 Release Plan: TUI, Markdown Preview, and CLI Parity
 
-**Status:** Open
+**Status:** Concluded
 **Author:** Donald Gifford
 **Date:** 2026-05-22
 

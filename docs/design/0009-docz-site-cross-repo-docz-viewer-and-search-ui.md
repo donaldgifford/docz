@@ -9,7 +9,7 @@ created: 2026-06-23
 
 # DESIGN 0009: docz-site: cross-repo docz viewer and search UI
 
-**Status:** Draft
+**Status:** Implemented
 **Author:** Donald Gifford
 **Date:** 2026-06-23
 

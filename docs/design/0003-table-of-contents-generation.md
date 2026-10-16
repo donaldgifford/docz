@@ -10,7 +10,7 @@ created: 2026-03-22
 
 # DESIGN 0003: Table of Contents Generation
 
-**Status:** Draft **Author:** Donald Gifford **Date:** 2026-03-22
+**Status:** Implemented **Author:** Donald Gifford **Date:** 2026-03-22
 
 <!--toc:start-->
 <!-- markdownlint-capture -->
@@ -206,7 +206,7 @@ block. Placement should be between the status/author/date block and the first
 ```markdown
 # RFC 0001: Title
 
-**Status:** Draft **Author:** Name **Date:** 2026-01-01
+**Status:** Implemented **Author:** Name **Date:** 2026-01-01
 
 <!--toc:start-->
 <!--toc:end-->
