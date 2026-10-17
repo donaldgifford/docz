@@ -576,7 +576,7 @@ over real Postgres and Redis before the homelab sees it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/e2e/mcp_integration_test.go` (`//go:build integration`):
+- [x] `internal/e2e/mcp_integration_test.go` (`//go:build integration`):
   the code flow with a fake provider and an `httptest` consent page that
   plays docz-site; a `none` deployment needing no token; a repository
   ingested with `[team:read]` invisible to `public:read` and visible to

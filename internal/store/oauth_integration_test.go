@@ -15,12 +15,12 @@ import (
 // ListRepoIDsForScopes answers through the JSONB ?| operator.
 func TestReconcileRepoAccessScopes(t *testing.T) {
 	ctx := t.Context()
-	seedInstallation(t, 501)
+	seedInstallation(t, 901)
 
 	reconcile := func(name string, scopes []string) int64 {
 		t.Helper()
 		res, err := testStore.ReconcileRepo(ctx, &ReconcileInput{Repo: RepoInput{
-			InstallationID: 501, Owner: "acme", Name: name, DefaultBranch: "main",
+			InstallationID: 901, Owner: "acme", Name: name, DefaultBranch: "main",
 			DocsDir: "docs", ConfigSnapshot: json.RawMessage(`{}`), AccessScopes: scopes,
 		}})
 		if err != nil {
@@ -125,7 +125,8 @@ func TestRefreshTokensAndConsents(t *testing.T) {
 		t.Error("the rotated-out token is not marked used")
 	}
 
-	if _, err := testStore.q.RotateRefreshToken(ctx, RotateRefreshTokenParams{OldHash: "hash-1", NewHash: "hash-3", Scope: ""}); !errors.Is(err, pgx.ErrNoRows) {
+	_, err = testStore.q.RotateRefreshToken(ctx, RotateRefreshTokenParams{OldHash: "hash-1", NewHash: "hash-3", Scope: ""})
+	if !errors.Is(err, pgx.ErrNoRows) {
 		t.Errorf("rotating a used token = %v, want pgx.ErrNoRows", err)
 	}
 
@@ -136,7 +137,8 @@ func TestRefreshTokensAndConsents(t *testing.T) {
 	if n != 2 {
 		t.Errorf("RevokeRefreshFamily revoked %d rows, want 2", n)
 	}
-	if _, err := testStore.q.RotateRefreshToken(ctx, RotateRefreshTokenParams{OldHash: "hash-2", NewHash: "hash-4", Scope: ""}); !errors.Is(err, pgx.ErrNoRows) {
+	_, err = testStore.q.RotateRefreshToken(ctx, RotateRefreshTokenParams{OldHash: "hash-2", NewHash: "hash-4", Scope: ""})
+	if !errors.Is(err, pgx.ErrNoRows) {
 		t.Errorf("rotating a revoked token = %v, want pgx.ErrNoRows", err)
 	}
 
@@ -153,7 +155,8 @@ func TestRefreshTokensAndConsents(t *testing.T) {
 	if consent.Scope != "public:read team:read" {
 		t.Errorf("consent scope = %q, want the upserted one", consent.Scope)
 	}
-	if _, err := testStore.q.GetConsent(ctx, GetConsentParams{UserID: userID, ClientID: "https://other.example/c.json"}); !errors.Is(err, pgx.ErrNoRows) {
+	_, err = testStore.q.GetConsent(ctx, GetConsentParams{UserID: userID, ClientID: "https://other.example/c.json"})
+	if !errors.Is(err, pgx.ErrNoRows) {
 		t.Errorf("GetConsent for an unknown client = %v, want pgx.ErrNoRows", err)
 	}
 }
