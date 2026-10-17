@@ -41,15 +41,17 @@ func validEnv() map[string]string {
 // configuration (an AUTH_PROVIDERS=none in particular, which makes the
 // session and OAuth keys optional) cannot reach the code under test.
 var envKeys = []string{
-	"AUTH_PROVIDERS", "AUTH_REDIRECT_BASE",
+	"AUTH_PROVIDERS", "AUTH_REDIRECT_BASE", "AUTHZ_CACHE_TTL", "AUTHZ_SCOPE_MAP",
 	"CONFLUENCE_API_TOKEN", "CONFLUENCE_EMAIL", "CONFLUENCE_SITE", "CONFLUENCE_SPACES",
-	"DATABASE_URL", "REDIS_URL",
+	"DATABASE_URL", "DOCZ_SITE_URL", "REDIS_URL",
 	"GITHUB_API_BASE", "GITHUB_APP_ID", "GITHUB_APP_PRIVATE_KEY", "GITHUB_WEBHOOK_SECRET",
 	"GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET",
 	"HTTP_ADDR", "INGEST_DEBOUNCE",
 	"KEYCLOAK_CLIENT_ID", "KEYCLOAK_CLIENT_SECRET", "KEYCLOAK_ISSUER", "KEYCLOAK_SCOPES",
 	"LOG_FORMAT", "LOG_LEVEL",
+	"MCP_ENABLED", "MCP_RATE_LIMIT",
 	"MEILI_API_KEY", "MEILI_HOST", "METRICS_ENABLED",
+	"OAUTH_ACCESS_TTL", "OAUTH_ISSUER", "OAUTH_REFRESH_TTL", "OAUTH_SIGNING_KEY", "OAUTH_TRUSTED_ISSUERS",
 	"OKTA_CLIENT_ID", "OKTA_CLIENT_SECRET", "OKTA_ISSUER", "OKTA_SCOPES",
 	"OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_SAMPLE_RATE", "OTEL_SERVICE_NAME",
 	"SESSION_SECRET", "SESSION_TTL",
@@ -481,14 +483,25 @@ func TestLoadConfluenceTokenNeverPrinted(t *testing.T) {
 // variable added to Load without a matching entry here fails by name rather
 // than leaking in from the developer's shell.
 func TestEnvKeysCoverLoad(t *testing.T) {
-	src, err := os.ReadFile("config.go")
+	// Load reads through config.go and the per-feature files beside it
+	// (mcp.go), so every non-test source in the package is scanned.
+	sources, err := filepath.Glob("*.go")
 	if err != nil {
-		t.Fatalf("reading config.go: %v", err)
+		t.Fatalf("listing sources: %v", err)
 	}
 	re := regexp.MustCompile(`v\.Get[A-Za-z0-9]+\("([a-z_]+)"\)`)
 	read := map[string]bool{}
-	for _, m := range re.FindAllStringSubmatch(string(src), -1) {
-		read[strings.ToUpper(m[1])] = true
+	for _, path := range sources {
+		if strings.HasSuffix(path, "_test.go") {
+			continue
+		}
+		src, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("reading %s: %v", path, err)
+		}
+		for _, m := range re.FindAllStringSubmatch(string(src), -1) {
+			read[strings.ToUpper(m[1])] = true
+		}
 	}
 	listed := map[string]bool{}
 	for _, k := range envKeys {

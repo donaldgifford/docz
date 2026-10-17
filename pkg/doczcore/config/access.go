@@ -34,8 +34,14 @@ const (
 	// ActionRead is the one action the grammar accepts today.
 	ActionRead = "read"
 	// ActionWrite is reserved: the grammar names it so that a later design
-	// can add it, and rejects it until one does.
+	// can add it, and rejects it until one does, with ScopeConfluenceWrite
+	// the one exception.
 	ActionWrite = "write"
+	// ScopeConfluenceWrite is the one scope whose action is not read: a
+	// repository lists it to let docz-api's Confluence export write its
+	// private documentation to the space its sync: block names (DESIGN-0023
+	// §7). It is held by the export alone; no route reads it.
+	ScopeConfluenceWrite = "confluence:write"
 	// AudiencePublic is the audience of ScopePublicRead.
 	AudiencePublic = "public"
 )
@@ -105,7 +111,8 @@ func (c *Config) validateAccess() error {
 
 // ValidateScope checks one scope against the grammar: `<audience>:<action>`
 // with the audience matching ^[a-z0-9][a-z0-9-]{0,62}$ and the action
-// ActionRead. ActionWrite is rejected as reserved. The error is bare, so a
+// ActionRead. ActionWrite is rejected as reserved, except for the literal
+// ScopeConfluenceWrite. The error is bare, so a
 // caller wraps it with its own sentinel and the key it was found under;
 // docz-api's scope map uses it on the principal side as access.scopes
 // does on the repository's.
@@ -127,6 +134,10 @@ func ValidateScope(scope string) error {
 	case ActionRead:
 		return nil
 	case ActionWrite:
+		if scope == ScopeConfluenceWrite {
+			return nil
+		}
+
 		return fmt.Errorf("scope %q: action %q is reserved and not yet granted", scope, action)
 	default:
 		return fmt.Errorf("scope %q: action %q must be %q", scope, action, ActionRead)

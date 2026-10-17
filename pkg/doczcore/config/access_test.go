@@ -103,6 +103,7 @@ func TestValidate_Access(t *testing.T) {
 	}{
 		{name: "public:read", yaml: "access:\n  scopes: [public:read]\n"},
 		{name: "a team audience", yaml: "access:\n  scopes: [platform-team:read, a1:read]\n"},
+		{name: "confluence:write, the one write scope", yaml: "access:\n  scopes: [platform-team:read, confluence:write]\n"},
 		{name: "a 63-character audience", yaml: "access:\n  scopes: [" + strings.Repeat("a", 63) + ":read]\n"},
 		{
 			name:    "write is reserved",
@@ -218,7 +219,9 @@ func TestValidateScope(t *testing.T) {
 		ok    bool
 	}{
 		{scope: "public:read", ok: true},
-		{scope: "confluence:write", ok: false},
+		{scope: "confluence:write", ok: true},
+		{scope: "confluence:read", ok: true},
+		{scope: "docs:write", ok: false},
 		{scope: "Team:read", ok: false},
 		{scope: "team:Read", ok: false},
 		{scope: "", ok: false},

@@ -38,6 +38,12 @@ type Config struct {
 	// Confluence is the export's credential and allow-list; off unless
 	// CONFLUENCE_API_TOKEN is set (DESIGN-0021 §6).
 	Confluence ConfluenceConfig
+	// MCP, OAuth, and Authz are the MCP server, docz-api's issuer and the
+	// issuers it trusts, and scoped access (DESIGN-0023). MCP is off unless
+	// MCP_ENABLED is set; Authz applies to every request regardless.
+	MCP   MCPConfig
+	OAuth OAuthConfig
+	Authz AuthzConfig
 }
 
 // ConfluenceConfig is the one Atlassian credential the server lends to the
@@ -168,25 +174,21 @@ type TelemetryConfig struct {
 // It returns a wrapped ErrInvalidConfig listing every problem when validation
 // fails, so an operator sees all misconfigurations at once.
 func Load() (Config, error) {
-	v := viper.New()
-	v.AutomaticEnv()
+	v := newEnv()
 
-	v.SetDefault("github_api_base", "https://api.github.com")
-	v.SetDefault("auth_providers", "github")
-	v.SetDefault("okta_scopes", _defaultOIDCScopes)
-	v.SetDefault("keycloak_scopes", _defaultOIDCScopes)
-	v.SetDefault("session_ttl", "720h")
-	v.SetDefault("ingest_debounce", "5s")
-	v.SetDefault("http_addr", ":8080")
-	v.SetDefault("log_level", "info")
-	v.SetDefault("log_format", "text")
-	v.SetDefault("otel_service_name", "docz-api")
-	v.SetDefault("otel_sample_rate", 1.0)
-	v.SetDefault("metrics_enabled", true)
-
-	privateKey, err := resolvePrivateKey(v.GetString("github_app_private_key"))
+	privateKey, err := resolvePEM("GITHUB_APP_PRIVATE_KEY", v.GetString("github_app_private_key"))
 	if err != nil {
 		return Config{}, err
+	}
+
+	signingKey, err := resolvePEM("OAUTH_SIGNING_KEY", v.GetString("oauth_signing_key"))
+	if err != nil {
+		return Config{}, err
+	}
+
+	scopeMap, err := ParseScopeMap(v.GetString("authz_scope_map"))
+	if err != nil {
+		return Config{}, fmt.Errorf("%w:\n  %w", ErrInvalidConfig, err)
 	}
 
 	cfg := Config{
@@ -252,10 +254,40 @@ func Load() (Config, error) {
 		},
 	}
 
+	cfg.MCP, cfg.OAuth, cfg.Authz = loadMCP(v, signingKey, scopeMap)
+	if cfg.OAuth.Issuer == "" {
+		cfg.OAuth.Issuer = cfg.Auth.RedirectBase
+	}
+
 	if err := validate(&cfg); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+// newEnv is the viper the environment is read through, with every default.
+func newEnv() *viper.Viper {
+	v := viper.New()
+	v.AutomaticEnv()
+
+	v.SetDefault("github_api_base", "https://api.github.com")
+	v.SetDefault("auth_providers", "github")
+	v.SetDefault("okta_scopes", _defaultOIDCScopes)
+	v.SetDefault("keycloak_scopes", _defaultOIDCScopes)
+	v.SetDefault("session_ttl", "720h")
+	v.SetDefault("ingest_debounce", "5s")
+	v.SetDefault("http_addr", ":8080")
+	v.SetDefault("log_level", "info")
+	v.SetDefault("log_format", "text")
+	v.SetDefault("otel_service_name", "docz-api")
+	v.SetDefault("otel_sample_rate", 1.0)
+	v.SetDefault("metrics_enabled", true)
+	v.SetDefault("mcp_rate_limit", DefaultMCPRateLimit)
+	v.SetDefault("oauth_access_ttl", DefaultOAuthAccessTTL.String())
+	v.SetDefault("oauth_refresh_ttl", DefaultOAuthRefreshTTL.String())
+	v.SetDefault("authz_cache_ttl", DefaultAuthzCacheTTL.String())
+
+	return v
 }
 
 // AuthEnabled reports whether provider is one of the enabled auth providers.
@@ -281,18 +313,27 @@ func (c *Config) AuthDisabled() bool {
 	return len(c.Auth.Providers) == 1 && c.Auth.Providers[0] == ProviderNone
 }
 
-// resolvePrivateKey returns the PEM body for the GitHub App private key. A
-// value beginning with a PEM header is treated as the body itself; anything
-// else is treated as a filesystem path to read. An empty value is passed
-// through — required-ness is enforced by validate.
-func resolvePrivateKey(raw string) (string, error) {
+// resolvePEM returns the PEM body for a key variable (the GitHub App private
+// key, the OAuth signing key). A value beginning with a PEM header is treated
+// as the body itself; anything else is treated as a filesystem path to read.
+// An empty value is passed through — required-ness is enforced by validate.
+func resolvePEM(name, raw string) (string, error) {
 	if raw == "" || strings.HasPrefix(raw, "-----BEGIN") {
 		return raw, nil
 	}
 	// The path comes from a trusted operator-supplied env var, not user input.
 	data, err := os.ReadFile(raw)
 	if err != nil {
-		return "", fmt.Errorf("reading GITHUB_APP_PRIVATE_KEY file %q: %w", raw, err)
+		return "", fmt.Errorf("reading %s file %q: %w", name, raw, err)
 	}
 	return string(data), nil
+}
+
+// trimSlashes drops a trailing slash from each URL, so an issuer compares
+// equal to the iss claim a token carries.
+func trimSlashes(urls []string) []string {
+	for i, u := range urls {
+		urls[i] = strings.TrimSuffix(u, "/")
+	}
+	return urls
 }

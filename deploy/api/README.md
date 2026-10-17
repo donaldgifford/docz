@@ -85,6 +85,16 @@ names, and delivers the GitHub App private key as a mounted secret file
 webhook secret, session secret, OAuth/OIDC credentials, Meili key — comes from
 `.env.production`.
 
+The MCP server and docz-api's own OAuth issuer (DESIGN-0023) are off unless
+`MCP_ENABLED=true`. Then `OAUTH_SIGNING_KEY` (an EC P-256 PEM, body or path,
+made with `openssl ecparam -name prime256v1 -genkey -noout`) and
+`DOCZ_SITE_URL` (where consent happens) are required with a login provider,
+`OAUTH_ISSUER` defaults to `AUTH_REDIRECT_BASE`, and `OAUTH_TRUSTED_ISSUERS`
+lists the external issuers (Keycloak, Okta, OpenBao) whose JWTs are accepted.
+`AUTHZ_SCOPE_MAP` maps IdP groups or logins to scopes beyond `public:read`
+and applies whether or not MCP is on; `MCP_RATE_LIMIT`, `OAUTH_ACCESS_TTL`,
+`OAUTH_REFRESH_TTL`, and `AUTHZ_CACHE_TTL` have defaults. See `.env.example`.
+
 ## GitHub App setup (ingestion)
 
 docz-api ingests repos as a **GitHub App**: install-driven onboarding, HMAC
