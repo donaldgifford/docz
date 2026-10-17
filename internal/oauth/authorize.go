@@ -60,12 +60,14 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURI := q.Get("redirect_uri")
-	if !slices.Contains(meta.RedirectURIs, redirectURI) {
+	// The redirect target is the registered entry, never the query value.
+	registered := slices.Index(meta.RedirectURIs, q.Get("redirect_uri"))
+	if registered < 0 {
 		errorPage(w, ErrorInvalidRequest, "redirect_uri is not one the client registered")
 
 		return
 	}
+	redirectURI := meta.RedirectURIs[registered]
 
 	// Post-trust: the client gets the error.
 	fail := func(code, description string) {
@@ -73,7 +75,7 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) {
 		if st := q.Get("state"); st != "" {
 			params.Set("state", st)
 		}
-		http.Redirect(w, r, s.redirectWith(redirectURI, params), http.StatusFound) //nolint:gosec // redirectURI is one the client registered
+		http.Redirect(w, r, s.redirectWith(redirectURI, params), http.StatusFound)
 	}
 
 	challenge := q.Get("code_challenge")
