@@ -1627,6 +1627,49 @@ alone). IMPL-0026 lands in six phases, one `dont-release` PR each and one
   `confluence:write` ("repository scopes grant the export nothing; add
   confluence:write to access.scopes"). Metric
   `docz_api_token_verifications_total{issuer,status}`.
+- **Phase 4, the authorization server** (`internal/oauth`, the rest):
+  `oauth.Metadata` serves the RFC 9728, RFC 8414, and JWKS documents
+  (`scopes_supported` = `public:read` plus the scope map's, pinned by
+  goldens under `testdata/metadata/`); `oauth.ClientFetcher` resolves a
+  `client_id` as a Client ID Metadata Document (`https` only, no
+  redirects, 5 s, 64 KiB, a dialer whose injected `Resolver` refuses
+  loopback/link-local/private/ULA addresses, `client_id` equal to the
+  URL, `redirect_uris` required and `https` or loopback `http`, cached
+  under `cimd:<sha256(url)>` for `max-age` capped at an hour);
+  `oauth.Server` is `GET /oauth/authorize` (validation in §5's order:
+  pre-trust failures are an HTML error page, post-trust ones an error
+  redirect with `state` and `iss`; the request pending under
+  `authz:<id>` for ten minutes, then a redirect to
+  `<DOCZ_SITE_URL>/oauth/consent?authz=<id>`), the consent endpoints
+  `GET`/`POST /api/v1/oauth/authorizations/{id}` (the first `GET` binds
+  the request to the session; another session's, unknown, expired, and
+  consumed are all `404`; `allow` mints `code:<sha256(code)>` for 60 s
+  and upserts `oauth_consents`), `POST /oauth/token` (code grant with
+  PKCE `S256`, client, redirect_uri, and resource checked against the
+  pending request; a replayed code revokes its family through
+  `redeemed:<hash>`; refresh grant rotates in one statement and reuse of
+  a rotated-out token revokes the family), and `POST /oauth/revoke`.
+  The package takes the site session through `ServerOptions.Session`
+  (a `func(ctx) (Principal, bool)`), because `session` imports `oauth`
+  for `Claims`. **A refresh recomputes the scope against what the map
+  can still grant, not against the person's current groups**: groups
+  live only in the Redis session and are never persisted, so a group
+  lost mid-family keeps its scope until the family ends; the design's
+  "re-reads the person's scopes" is met for the login and
+  operator-removed-scope cases only. `cmd/docz-api/authn.go`
+  `buildAuthStack` builds the verifier and the server together (the
+  server reuses the verifier's Redis cache) and `runServer` mounts the
+  public routes outside both gates and the consent routes through
+  `Mount`'s extras; under `AUTH_PROVIDERS=none` none of it is mounted.
+  Metric `docz_api_oauth_tokens_total{grant,status}`; the `oauth token`
+  audit line carries `grant`, `client_id`, `principal`, `status`, never
+  a token. The site's `/oauth/consent` route (`ui/src/routes/consent.tsx`)
+  renders from the two consent endpoints and sets `window.location` to
+  `redirect_to`. The contract test mounts the server over
+  `oauth.MemoryCache`, a `RoundTripper` serving the client document, and
+  an in-memory store, so kin-openapi validates every OAuth route; cases
+  the validator rejects before the handler (an unknown `grant_type`, a
+  missing `token`) are covered in `internal/oauth` instead.
   **GOTCHA — `just ui fmt-check` fails locally on
   `ui/src/markdown/mermaid-config.test.ts`** with mise's prettier 3.9.6
   while CI pins 3.7.4 (`ci.yml` "Install prettier"); the file is

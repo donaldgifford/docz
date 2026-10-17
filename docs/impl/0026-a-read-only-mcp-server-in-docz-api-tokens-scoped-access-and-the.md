@@ -374,20 +374,20 @@ is true and `AUTH_PROVIDERS` is not `none`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/oauth/metadata.go`: the three documents at
+- [x] `internal/oauth/metadata.go`: the three documents at
   `/.well-known/oauth-protected-resource`,
   `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
   with the fields DESIGN-0023 §5 lists; `scopes_supported` is
   `public:read` plus every scope the scope map can grant; golden JSON
   tests
-- [ ] `internal/oauth/client.go`: the Client ID Metadata Document fetcher:
+- [x] `internal/oauth/client.go`: the Client ID Metadata Document fetcher:
   `https` only, no redirects, 5 s timeout, 64 KiB cap, a dialer whose
   resolver refuses loopback, link-local, and RFC 1918 and ULA ranges
   (injected for tests), `client_id` equal to the fetched URL, `redirect_uris`
   required; cached in Redis under `cimd:<sha256(url)>` for the response's
   `max-age` capped at an hour; tests with an `httptest` server for each
   refusal
-- [ ] `internal/oauth/authorize.go`: `GET /oauth/authorize` validates in
+- [x] `internal/oauth/authorize.go`: `GET /oauth/authorize` validates in
   the order §5 gives (`response_type`, `client_id`, `redirect_uri`
   exact-match, `code_challenge` + `S256`, `resource` equal to the PRM's,
   `scope` a subset of what docz-api can grant with empty meaning
@@ -396,7 +396,7 @@ is true and `AUTH_PROVIDERS` is not `none`.
   `<DOCZ_SITE_URL>/oauth/consent?authz=<id>`. Pre-trust failures render a
   plain error page; post-trust failures redirect with `error`, `state`,
   and `iss`
-- [ ] `internal/oauth/consent.go`, mounted through `httpapi.Handler.Mount`'s
+- [x] `internal/oauth/consent.go`, mounted through `httpapi.Handler.Mount`'s
   extras behind the gate: `GET /api/v1/oauth/authorizations/{id}` returns
   `client_name`, `client_uri`, `scopes_requested`, `scopes_granted` (the
   intersection with the session's scopes) and binds the pending request
@@ -407,7 +407,7 @@ is true and `AUTH_PROVIDERS` is not `none`.
   `{"redirect_to": …}` with `code`, `state`, `iss`, or the `access_denied`
   redirect. A `POST` from another session, a consumed id, or an expired
   one is `404`
-- [ ] `internal/oauth/token.go`: `POST /oauth/token` with
+- [x] `internal/oauth/token.go`: `POST /oauth/token` with
   `grant_type=authorization_code` (code, `code_verifier` against the
   stored challenge, `resource`, `client_id`, `redirect_uri` equal to the
   request's; a second redemption revokes the family the first created)
@@ -417,14 +417,14 @@ is true and `AUTH_PROVIDERS` is not `none`.
   `POST /oauth/revoke` (RFC 7009, the refresh token's family). Responses
   carry `access_token`, `token_type: Bearer`, `expires_in`, `refresh_token`,
   `scope`; errors use the RFC 6749 shape
-- [ ] `internal/oauth/issue.go`: `Issue(claims) (string, error)` signs ES256
+- [x] `internal/oauth/issue.go`: `Issue(claims) (string, error)` signs ES256
   with the configured key: `iss`, `sub` (`user:<provider>:<subject>`),
   `aud`, `exp` (`OAUTH_ACCESS_TTL`), `iat`, `jti`, `scope`, `client_id`,
   `email`, `login`; round-trip tests through the Phase 3 verifier
-- [ ] `cmd/docz-api/main.go`: mount the three documents and the three
+- [x] `cmd/docz-api/main.go`: mount the three documents and the three
   endpoints on the root router outside both gates when enabled and a login
   exists; the consent endpoints through the gated group
-- [ ] `ui/src/routes/consent.tsx` at `/oauth/consent`: behind the session
+- [x] `ui/src/routes/consent.tsx` at `/oauth/consent`: behind the session
   gate like every route (a `401` stashes the route in
   `docz:auth:return-to` and lands on `/login`, which is how the person
   comes back after the provider round trip; question 4), reads the
@@ -432,16 +432,16 @@ is true and `AUTH_PROVIDERS` is not `none`.
   link, the scopes it will get in words, Allow and Deny, and sets
   `window.location` to `redirect_to`; unit tests with MSW for the happy
   path, a denied decision, a `404`, and the unauthenticated stash
-- [ ] `api/openapi.yaml`: the two consent endpoints, `/oauth/token`,
+- [x] `api/openapi.yaml`: the two consent endpoints, `/oauth/token`,
   `/oauth/revoke`, and the three well-known documents with
   `additionalProperties: false` schemas and `security: []` where public;
   `just api lint-openapi` at 100; `api/README.md` gains "Tokens" (how a
   script gets one through any MCP client, and how a platform-minted one is
   accepted); `just ui gen-api-check` clean
-- [ ] `openapi_contract_test.go`: the metadata documents, the token
+- [x] `openapi_contract_test.go`: the metadata documents, the token
   endpoint's two grants against a fake Redis and the real store fakes, the
   consent endpoints, and the revoke
-- [ ] `internal/telemetry`: `docz_api_oauth_tokens_total{grant,status}`;
+- [x] `internal/telemetry`: `docz_api_oauth_tokens_total{grant,status}`;
   `oauth token` audit line with `grant`, `client_id`, `principal`, `status`
   and never the token
 
@@ -455,6 +455,9 @@ is true and `AUTH_PROVIDERS` is not `none`.
   hand-driven round trip (`curl` for the metadata, a browser for
   `/oauth/authorize` and the consent page, `curl` for `/oauth/token`)
   yields a JWT the Phase 3 verifier accepts on `/api/v1/repos`
+  (deferred - human required: a browser and the compose stack; the same
+  round trip runs in-process in `TestOpenAPIContractOAuth` and
+  `internal/oauth`'s flow tests, 2026-10-17)
 - Redeeming a code twice revokes the refresh token it issued; presenting a
   rotated-out refresh token revokes its family
 - A metadata document on a private address, over `http`, or behind a
