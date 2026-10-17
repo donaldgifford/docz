@@ -29,6 +29,12 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, lazy: () => import("@/routes/directory") },
           { path: "login", lazy: () => import("@/routes/login") },
+          // The OAuth consent page docz-api's /oauth/authorize sends a
+          // person to (DESIGN-0023 §5); `oauth` joins the reserved words.
+          {
+            path: "oauth/consent",
+            lazy: () => import("@/routes/consent"),
+          },
           { path: "repos", lazy: () => import("@/routes/repos") },
           { path: ":owner/:repo", lazy: () => import("@/routes/repo-home") },
           // Static segment — outranks `:type` in route ranking, so
