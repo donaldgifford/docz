@@ -33,6 +33,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(server)* Mount POST /mcp behind the gate and the limiter when MCP_ENABLED
 - *(chart)* Api.mcp and api.authz, the oauth-signing-key, and DoczAPITokenFailures
 
+### Bug Fixes
+
+- *(oauth)* Redirect to the registered redirect_uri by index
+
 ### Documentation
 
 - *(investigation)* Conclude INV-0022, 0023, 0025, 0026, 0028, 0029
@@ -67,6 +71,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(store)* Regenerate confluence.sql.go for access_scopes
 - *(deps)* The MCP Go SDK v1.8.0 and chi's httprate as direct requirements
+- *(ci)* Ignore segmentio/asm in the licence check
 
 ## [2.0.0] - 2026-10-13
 
