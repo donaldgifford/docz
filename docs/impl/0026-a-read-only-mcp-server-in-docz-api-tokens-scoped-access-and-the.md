@@ -593,7 +593,7 @@ over real Postgres and Redis before the homelab sees it.
   (`just lint-alerts`); helm-unittest cases for disabled (nothing
   rendered), enabled (every variable), and the Secret key; the README
   regenerated with `just chart docs`; chart version bumped
-- [ ] `docs/runbook/0004-enable-mcp-on-docz-api.md` (`docz create
+- [x] `docs/runbook/0004-enable-mcp-on-docz-api.md` (`docz create
   runbook`): generate the signing key with `openssl ecparam -name
   prime256v1 -genkey -noout` (question 3), set the issuer and the site
   URL, turn the flag on, trust the platform's issuer (one procedure each for
