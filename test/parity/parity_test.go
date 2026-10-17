@@ -349,7 +349,7 @@ func runCase(t *testing.T, bin string, f fixtureSpec, c caseSpec, today string) 
 	// Order matters. The plan normaliser is what replaces a recorded body's
 	// size and digest, so it has to see the body list before the index pair
 	// normaliser edits any body.
-	both := []Normalizer{PlanNormalizer(), RunbookNormalizer(), SyncNormalizer(), IndexPairNormalizer()}
+	both := []Normalizer{PlanNormalizer(), RunbookNormalizer(), SyncNormalizer(), AccessNormalizer(), IndexPairNormalizer()}
 
 	want := Normalize(string(raw), both...)
 	got = Normalize(got, both...)
