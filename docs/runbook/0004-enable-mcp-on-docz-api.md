@@ -542,7 +542,10 @@ the client sent is not one the document lists.
 2. Diagnose: fetch the document yourself. It must be JSON whose
    `client_id` equals its own URL, with `redirect_uris` listing the
    client's callback; the server refuses a host that resolves to a
-   private or loopback address and a document over 64 KiB.
+   private or loopback address and a document over 64 KiB. A loopback
+   `http` callback matches on any port (RFC 8252 §7.3), because a native
+   client such as Claude Code binds an ephemeral one; every other
+   callback must match exactly.
 
    ```sh
    curl -s "$CLIENT_ID" | jq '{client_id, client_name, redirect_uris}'

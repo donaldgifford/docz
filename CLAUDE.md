@@ -1650,7 +1650,8 @@ alone). IMPL-0026 lands in six phases, one `dont-release` PR each and one
   `client_id` as a Client ID Metadata Document (`https` only, no
   redirects, 5 s, 64 KiB, a dialer whose injected `Resolver` refuses
   loopback/link-local/private/ULA addresses, `client_id` equal to the
-  URL, `redirect_uris` required and `https` or loopback `http`, cached
+  URL, `redirect_uris` required and `https` or loopback `http`, a
+  loopback one matching on any port (RFC 8252 §7.3, `matchRedirect`), cached
   under `cimd:<sha256(url)>` for `max-age` capped at an hour);
   `oauth.Server` is `GET /oauth/authorize` (validation in §5's order:
   pre-trust failures are an HTML error page, post-trust ones an error

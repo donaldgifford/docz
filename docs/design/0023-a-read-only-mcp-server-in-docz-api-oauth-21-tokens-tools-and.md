@@ -517,7 +517,9 @@ Each step's rules:
   `resource` (a request for any other audience is refused with
   `invalid_target`), `scope` a subset of the scopes docz-api can grant
   (empty means `public:read`), `redirect_uri` exactly one of the client's
-  registered URIs, and `state` present. A failure that happens before the
+  registered URIs (a registered loopback `http` URI matches on any port,
+  RFC 8252 §7.3, since a native client binds an ephemeral one), and
+  `state` present. A failure that happens before the
   `redirect_uri` is trusted is shown on an error page; after, it is
   returned to the client as an OAuth error redirect with `iss`.
 - **The client.** `client_id` is an `https` URL resolved as a Client ID
@@ -741,7 +743,8 @@ logs and meters it; what is added is the tool's name and the principal.
   `<OAUTH_ISSUER>/mcp` and whose issuer is trusted are accepted, a token
   is never forwarded anywhere, and the challenge names the PRM.
 - **The authorization server rules**: PKCE `S256` on every code request,
-  exact `redirect_uri` matching, `resource` required and checked, `iss` on
+  exact `redirect_uri` matching (any port on a loopback one, RFC 8252
+  §7.3), `resource` required and checked, `iss` on
   every response, single-use codes with reuse revoking what they issued,
   rotating refresh tokens with family revocation, refresh tokens stored
   hashed, access tokens short-lived, no DCR, no client credentials, no
