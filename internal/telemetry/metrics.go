@@ -69,7 +69,22 @@ var (
 		Name: "docz_api_token_verifications_total",
 		Help: "Bearer tokens verified, by the issuer claimed and whether the token was accepted.",
 	}, []string{"issuer", "status"})
+
+	oauthTokens = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "docz_api_oauth_tokens_total",
+		Help: "Token endpoint requests, by grant type and whether a token was issued.",
+	}, []string{"grant", "status"})
 )
+
+// ObserveOAuthToken records one token endpoint request (DESIGN-0023 §8).
+// grant is the grant_type as sent ("unknown" when empty); status is "ok"
+// or "rejected". It has the oauth.ServerOptions.Observe shape.
+func ObserveOAuthToken(grant, status string) {
+	if grant == "" {
+		grant = "unknown"
+	}
+	oauthTokens.WithLabelValues(grant, status).Inc()
+}
 
 // ObserveTokenVerification records one bearer verification (DESIGN-0023
 // §9). issuer is the token's iss claim when it parsed, else "unknown";

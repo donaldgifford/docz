@@ -90,6 +90,7 @@ observation per export job and one per page action.
 | `docz_api_export_job_duration_seconds` | Histogram | `reason`           | Job duration with buckets up to 600s (a first export of a large repository makes hundreds of requests). Exposes `_bucket{le}`, `_sum`, `_count`. |
 | `docz_api_export_pages_total`          | Counter   | `action`           | Pages by what the export did. `action` ∈ {`created`, `updated`, `unchanged`, `skipped`, `archived`, `failed`}.                                   |
 | `docz_api_token_verifications_total`   | Counter   | `issuer`, `status` | Bearer tokens verified at the `/api/v1` and `/mcp` gate (DESIGN-0023). `issuer` is the token's `iss` claim, or `unknown` when it did not parse; `status` ∈ {`ok`, `rejected`}. |
+| `docz_api_oauth_tokens_total`          | Counter   | `grant`, `status`  | `POST /oauth/token` requests (DESIGN-0023). `grant` ∈ {`authorization_code`, `refresh_token`, `unknown`}; `status` ∈ {`ok`, `rejected`}. A rising `refresh_token`/`rejected` rate is a client replaying rotated-out tokens. |
 
 Example:
 
