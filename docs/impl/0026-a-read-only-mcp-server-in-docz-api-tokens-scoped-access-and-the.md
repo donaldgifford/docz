@@ -488,11 +488,12 @@ against the type packages' corpora.
 - [ ] `internal/mcp/tools.go`: `list_repos`, `list_docs`, `get_doc`,
   `search_docs`, `get_impl_progress`, `get_page` with the argument and
   output schemas of DESIGN-0023 §3, `readOnlyHint`, `idempotentHint`, and
-  `openWorldHint: false`, each over the `storeReader` and `Searcher`
-  interfaces `internal/httpapi` declares (moved to a small shared
-  `internal/httpapi/ports.go` or duplicated consumer-side, question 6),
+  `openWorldHint: false`, each over the `StoreReader` and `Searcher`
+  interfaces `internal/httpapi` exports and through its exported
+  `ResolveType` and DTO builders, so a tool's `structuredContent` is the
+  REST response's JSON and the two surfaces cannot drift (question 6);
   the caller's `authorize.FromContext` applied to every repository
-  lookup, `resolveType` reused, errors as `isError` with the REST wording,
+  lookup, errors as `isError` with the REST wording,
   and one `text` block beside `structuredContent`
 - [ ] `internal/mcp/fields.go`: the typed-field switch over the six
   canonical type names to `rfc.Parse`, `adr.Parse`, `design.Parse`,
@@ -505,10 +506,14 @@ against the type packages' corpora.
   template per built-in type and one generic, `resources/read` returning
   `text/markdown` and `application/json` contents, a URI outside
   `AllowedRepos` not found
-- [ ] `internal/mcp/limit.go`: a `rate.Limiter` per principal key kept in
-  a map with idle eviction, `MCP_RATE_LIMIT` per minute with an equal
-  burst, applied to `/mcp` and to `/api/v1` for `Via == token`, `429`
-  with `Retry-After` (the anonymous principal's key per question 7)
+- [ ] `internal/mcp/limit.go`: chi's `httprate` middleware at
+  `MCP_RATE_LIMIT` per minute, keyed by the principal key when the session
+  has one and by the client IP (`httprate.KeyByRealIP`) under
+  `AUTH_PROVIDERS=none`, applied to `/mcp` and to `/api/v1` for `Via ==
+  token`, `429` with `Retry-After`; its limit handler increments
+  `docz_api_rate_limited_total{surface,via}`, because a throttled caller is
+  an operations signal and belongs in Prometheus, not in a log line
+  (question 7)
 - [ ] `internal/mcp/audit.go` and `internal/telemetry`: the `mcp call`
   line with `principal`, `via`, `client_id`, `issuer`, `scopes`, `tool`,
   `repo`, `doc_id`, `status`, `duration`;
@@ -543,7 +548,8 @@ against the type packages' corpora.
   against a local stack lists the six tools, reads a document with its
   typed fields, and shows search hits; with `MCP_ENABLED` unset the route
   is `404`
-- A burst past `MCP_RATE_LIMIT` is `429` with `Retry-After`, and the audit
+- A burst past `MCP_RATE_LIMIT` is `429` with `Retry-After` and increments
+  `docz_api_rate_limited_total`, and the audit
   line for every call names the principal and the tool and never the
   query text
 
@@ -583,7 +589,9 @@ over real Postgres and Redis before the homelab sees it.
 - [ ] `docs/runbook/0004-enable-mcp-on-docz-api.md` (`docz create
   runbook`): generate the signing key with `openssl ecparam -name
   prime256v1 -genkey -noout` (question 3), set the issuer and the site
-  URL, turn the flag on, trust the platform's issuer, map a group to a
+  URL, turn the flag on, trust the platform's issuer (one procedure each for
+  Keycloak and for OpenBao's OIDC provider, since the server has no
+  issuer-specific code; question 8), map a group to a
   scope, mark a repository private, connect Claude Code, mint a token from
   the platform for an agent and call `/api/v1/repos` with it, read the
   three metrics, and the three failure modes (a refused metadata document,
@@ -684,9 +692,9 @@ over real Postgres and Redis before the homelab sees it.
   support, `Stateless`, `SupportedProtocolVersions`, `SetCacheable`), a
   new direct dependency in Phase 5
 - `github.com/go-jose/go-jose/v4` for JWS, JWK, and JWKS (already an
-  indirect dependency through go-oidc; promoted to direct in Phase 3,
-  question 4)
-- `golang.org/x/time/rate` for the limiter (already indirect)
+  indirect dependency through go-oidc; promoted to direct in Phase 3)
+- `github.com/go-chi/httprate` for the limiter, a new direct dependency in
+  Phase 5 (question 7)
 - A Keycloak realm for the live checks: the compose stack's
   `--profile auth` realm locally, and the homelab's for Phase 6
 - Phases 1 and 2 have no dependency on each other beyond the config
@@ -746,6 +754,8 @@ over real Postgres and Redis before the homelab sees it.
   rejected.
 - d. Other.
 
+> **Resolved 2026-10-17: (a).**
+
 ### 4. Does `/auth/login` need `return_to`?
 
 - a. **No. docz-site already stashes the route it was on in
@@ -760,6 +770,8 @@ over real Postgres and Redis before the homelab sees it.
 - c. Both: the site's stash first, `return_to` as the fallback.
 - d. Other.
 
+> **Resolved 2026-10-17: (a).** DESIGN-0023 §5 amended: no `return_to`.
+
 ### 5. When are a cookie session's scopes computed?
 
 - a. **Per request, from the groups and login stored in the session
@@ -773,6 +785,8 @@ over real Postgres and Redis before the homelab sees it.
   `SESSION_TTL` (30 days) away.
 - c. Other.
 
+> **Resolved 2026-10-17: (a).** DESIGN-0023 §7 amended: per request.
+
 ### 6. Where do the tools get their store and search interfaces?
 
 - a. **Consumer-side, in `internal/mcp`: a `storeReader` and a `Searcher`
@@ -784,6 +798,10 @@ over real Postgres and Redis before the homelab sees it.
 - b. Export `httpapi`'s interfaces and reuse them. One definition, and
   `mcp` then imports `httpapi` for two interfaces and `resolveType`.
 - c. Other.
+
+> **Resolved 2026-10-17: (b).** The tools build the REST DTOs through the
+> interfaces and helpers `internal/httpapi` exports, so a tool's structured
+> output is the REST response and the two surfaces cannot drift.
 
 ### 7. What is the anonymous principal's rate-limit key under `AUTH_PROVIDERS=none`?
 
@@ -798,6 +816,10 @@ over real Postgres and Redis before the homelab sees it.
 - c. One shared bucket for the anonymous principal. Simplest, and one
   caller can exhaust it for all.
 - d. Other.
+
+> **Resolved 2026-10-17: (a).** With chi's `httprate` rather than a
+> hand-written limiter, and a `docz_api_rate_limited_total` metric, since
+> throttling is operations observability rather than application data.
 
 ### 8. Which issuer proves the trusted-issuer path live?
 

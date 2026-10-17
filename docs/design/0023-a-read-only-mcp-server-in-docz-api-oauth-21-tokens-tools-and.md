@@ -207,8 +207,8 @@ replaces:
 
 | Package | What it does | What changes |
 | ------- | ------------ | ------------ |
-| `internal/auth` | `Provider{Name, AuthCodeURL, Exchange}` returning an `Identity{Provider, Subject, Email, Login, Groups}`; GitHub OAuth, OIDC for Okta and Keycloak; a signed `state` with a 5-minute TTL | The `state` payload gains a `return_to` path, so a login started from the consent page comes back to it |
-| `internal/authhttp` | `/auth/login`, `/auth/callback`, `/api/v1/auth/session`, `/api/v1/auth/logout` | `/auth/login` takes `return_to`; the session response gains `via` and `scopes` |
+| `internal/auth` | `Provider{Name, AuthCodeURL, Exchange}` returning an `Identity{Provider, Subject, Email, Login, Groups}`; GitHub OAuth, OIDC for Okta and Keycloak; a signed `state` with a 5-minute TTL | Nothing: the consent page returns through docz-site's own login return (IMPL-0026 question 4) |
+| `internal/authhttp` | `/auth/login`, `/auth/callback`, `/api/v1/auth/session`, `/api/v1/auth/logout` | The session response gains `via` and `scopes` |
 | `internal/session` | Opaque Redis sessions, the `docz_session` cookie, `Middleware`, `AnonymousMiddleware`, `FromContext` | `Middleware` becomes the cookie half of `authn`; `Session` gains `Via`, `ClientID`, and `Scopes` |
 | `internal/authorize` | `AllowedRepos` in the context; `AllReposAuthorizer` returns every repository | `ScopeAuthorizer` intersects the principal's scopes with each repository's; the interface and `FromContext` are unchanged |
 | `internal/httpapi` | The REST handlers over a `storeReader` and a `Searcher`; existence hiding through `AllowedRepos` | Unchanged; the MCP tools call the same `storeReader` and `Searcher`; two consent endpoints are added for docz-site |
@@ -218,8 +218,9 @@ replaces:
 | `cmd/docz-api` | `runServer` composes the gate `authn ∘ authorize.Middleware` | Mounts the well-known documents, the JWKS, the token endpoints, and `/mcp` when enabled |
 | `pkg/doczcore/config` | The `.docz.yaml` schema | A top-level `access:` block (§7, API changes) |
 
-The server has no rate limiter today. `golang.org/x/time` is already an
-indirect dependency and `rate.Limiter` is enough for a per-principal bucket.
+The server has no rate limiter today. chi's `httprate` middleware gives a
+keyed in-process bucket with `Retry-After` in a few lines (IMPL-0026
+question 7).
 `go-jose/v4` and `golang-jwt/jwt/v5` are already indirect dependencies, so
 signing and verifying JWTs brings no new module.
 
@@ -246,7 +247,7 @@ declared.
 | ----- | ------------ |
 | `internal/mcp` (new) | The server: tool and resource registration over the Go SDK, the result shapes, the `docz://` resource template, the typed-field switch (§3, §4) |
 | `internal/oauth` (new) | The authorization server and the token verifier: metadata documents, the JWKS, `/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, the two consent endpoints, client metadata resolution, JWT issue, and verification against every trusted issuer (§5, §6) |
-| `internal/auth`, `internal/authhttp` | `return_to` on the login; `via` and `scopes` on the session response (§5) |
+| `internal/authhttp` | `via` and `scopes` on the session response (§5) |
 | `internal/session` | `Session` gains `Via`, `ClientID`, and `Scopes`; `authn` resolves a bearer token or the cookie into one (§6) |
 | `internal/authorize` | `ScopeAuthorizer` over the repositories' scope lists and the principal's; `AllReposAuthorizer` is kept for `AUTH_PROVIDERS=none` (§7) |
 | `internal/ingest`, `internal/export`, `internal/store` | `repos.access_scopes` from the manifest; the export's scope refusal; `oauth_refresh_tokens` and `oauth_consents` (§7, Data Model) |
@@ -488,11 +489,12 @@ sequenceDiagram
   A->>A: Fetch and check the client's metadata document, store the request pending for 10 minutes
   A-->>U: Redirect to DOCZ_SITE_URL/oauth/consent?authz=<pending id>
   alt no session cookie
-    U->>L: /auth/login?provider=…&return_to=/oauth/consent?authz=<pending id>
-    L->>I: The existing provider flow, return_to signed into the state
+    U->>U: The site stashes /oauth/consent?authz=<pending id> and goes to /login
+    U->>L: /auth/login?provider=…
+    L->>I: The existing provider flow
     I-->>L: Identity
     L->>L: UpsertUser, Issue session, SetCookie
-    L-->>U: Redirect to return_to
+    L-->>U: Redirect to /, where the site restores the consent route
   end
   U->>A: GET /api/v1/oauth/authorizations/<pending id> (session cookie)
   A-->>U: client name, scopes requested, scopes the person holds
@@ -532,12 +534,13 @@ Each step's rules:
   holding the validated request. The person is sent to
   `<DOCZ_SITE_URL>/oauth/consent?authz=<id>`.
 - **The login.** docz-site's consent route checks for a session as every
-  site route does, and sends a person without one through
-  `/auth/login?provider=…&return_to=/oauth/consent?authz=<id>`. `return_to`
-  is new: a path, never a URL (no scheme, no host, no `//`), carried in the
-  signed `state` so the callback cannot be pointed elsewhere, and defaulting
-  to `/` as today. With several providers the site's existing chooser
-  shows them.
+  site route does. A person without one is sent to the site's `/login`
+  with the consent route stashed in `sessionStorage`
+  (`docz:auth:return-to`), which the site already restores once the
+  callback lands on `/`; the whole redirect chain stays in one tab, so the
+  stash is there. `/auth/login` is unchanged (a `return_to` parameter was
+  struck 2026-10-17, IMPL-0026 question 4). With several providers the
+  site's existing chooser shows them.
 - **The consent endpoints** are two gated routes under `/api/v1`, in the
   spec, so docz-site's generated client has them:
   `GET /api/v1/oauth/authorizations/{id}` returns the client's name and
@@ -654,9 +657,11 @@ checks each entry against the grammar and rejects a duplicate, as it does
 so a change takes effect at the next ingest like every other setting, and
 the repository's own `.docz.yaml` is the record of who may read it.
 
-**A principal holds scopes.** The set is computed once per cookie session
-(cached in the session record and recomputed at login) and written into
-the `scope` claim of every token docz-api mints:
+**A principal holds scopes.** The set is computed per request from the
+groups and login in the session record and the current `AUTHZ_SCOPE_MAP`
+(amended 2026-10-17, IMPL-0026 question 5: a mapping change is live on
+restart and nothing new is stored), and written into the `scope` claim of
+every token docz-api mints:
 
 | Source | Scopes |
 | ------ | ------ |
@@ -702,7 +707,8 @@ logs and meters it; what is added is the tool's name and the principal.
   `docz_api_mcp_call_duration_seconds{tool}` beside the HTTP RED metrics,
   and `docz_api_oauth_tokens_total{grant,status}` for the token endpoint
   plus `docz_api_token_verifications_total{issuer,status}` for the bearer
-  path. The `tool` label is the `Mcp-Name` header's value when `Mcp-Method`
+  path and `docz_api_rate_limited_total{surface,via}` for every throttled
+  request (IMPL-0026 question 7). The `tool` label is the `Mcp-Name` header's value when `Mcp-Method`
   is `tools/call`, else the method, so cardinality is the tool set; the
   `issuer` label is the configured issuer URL, a bounded set.
 - **Traces**: the request span is named by the route, `POST /mcp`, and a
@@ -749,7 +755,8 @@ logs and meters it; what is added is the tool's name and the principal.
   issuers the operator configured.
 - **The consent hand-off**: the pending id is unguessable, expires in 10
   minutes, is bound to the session that first read it, and is consumed by
-  the decision; `return_to` is a path and is signed into the login state.
+  the decision; the return to the consent page after a login is the
+  site's own, inside the browser.
   The site's `POST` carries the session cookie and is same-origin, as
   every site call is.
 - **Origin**: `/mcp` sends no CORS headers, the same as `/api/v1`, and
@@ -797,8 +804,6 @@ anonymous principal.
 - `GET /api/v1/auth/session` gains `via` (`cookie`, `token`, `anonymous`),
   `scopes` (the principal's set), and, for a token, `client_id` and
   `issuer`. All additive.
-- `GET /auth/login` takes an optional `return_to` path.
-
 **`api/openapi.yaml`** goes to `1.7.0` (minor, additive; question 9): a
 `bearerToken` security scheme (`type: http`, `scheme: bearer`,
 `bearerFormat: JWT`) is added beside `sessionCookie` and every `/api/v1`
@@ -973,7 +978,7 @@ other routes are.
 testcontainers). The full code flow with a fake provider and a fake site
 (an `httptest` handler that plays `/oauth/consent` by calling the two
 endpoints): `/oauth/authorize` → consent → `/auth/login` → the fake's
-callback → `return_to` → decision → code → token → a tool call that
+callback → the consent route → decision → code → token → a tool call that
 returns a document from a reconciled repository; a `none` deployment
 where the same call needs no token; a repository ingested with
 `access.scopes: [team:read]` invisible to a `public:read` token and
@@ -1015,7 +1020,7 @@ existing suites cover and this design does not change.
    response, and the export refusing a repository that opts out.
 4. **The authorization server.** `internal/oauth`, the well-known
    documents, the JWKS, the three endpoints, the two consent endpoints,
-   `return_to`, behind `MCP_ENABLED`. docz-site's `/oauth/consent` route
+   behind `MCP_ENABLED`. docz-site's `/oauth/consent` route
    lands in the same PR, since the spec change regenerates its client.
 5. **The MCP server.** `internal/mcp`, `/mcp`, the tools, the resources,
    the metrics and audit line.
@@ -1263,6 +1268,8 @@ and the column stay and are inert.
 
 > **Resolved 2026-10-17: (a).** Taken as recommended; not discussed
 > separately.
+> IMPL-0026 question 7 chose chi's `httprate` over a hand-written limiter,
+> with a metric for every throttled request.
 
 ### 12. What happens to INV-0024?
 
@@ -1330,6 +1337,11 @@ Resolved 2026-10-17, numbered as the questions above:
 | 12 | INV-0024 | (a) Concluded, pointing here |
 | 13 | Packages | (a) `internal/mcp` and `internal/oauth` |
 | 14 | Lifetimes | (a) Access 15 min, refresh 30 days, codes 60 s, pending 10 min |
+
+Amended 2026-10-17 by IMPL-0026's resolutions: no `return_to` on
+`/auth/login` (its question 4, §5), scopes computed per request (question
+5, §7), and chi's `httprate` with a `docz_api_rate_limited_total` metric
+(question 7, §8).
 
 <!--docz:decisions:end-->
 
