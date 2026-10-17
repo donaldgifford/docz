@@ -583,7 +583,7 @@ over real Postgres and Redis before the homelab sees it.
   `team:read`; a token from a fake trusted issuer (an `httptest` discovery
   and JWKS) reading with the scopes it carries; refresh reuse revoking a
   family; the export refusing and then accepting a private repository
-- [ ] `charts/docz`: `api.mcp.{enabled, issuer, siteUrl, trustedIssuers,
+- [x] `charts/docz`: `api.mcp.{enabled, issuer, siteUrl, trustedIssuers,
   rateLimit}` and `api.authz.{scopeMap, cacheTtl}` rendered only while
   `enabled`, with `issuer` defaulting to the API's external URL from its
   ingress or route host and `siteUrl` to the site's; `oauth-signing-key`

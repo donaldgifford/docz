@@ -499,3 +499,191 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "api.confluence.email is required"
+
+  - it: omits the MCP, OAuth, and authz env while api.mcp.enabled is false
+    set:
+      api:
+        authz:
+          scopeMap:
+            github:group:platform: [platform:read]
+          cacheTtl: 1m
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: MCP_ENABLED
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: MCP_RATE_LIMIT
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OAUTH_ISSUER
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OAUTH_SIGNING_KEY
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OAUTH_TRUSTED_ISSUERS
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: DOCZ_SITE_URL
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: AUTHZ_SCOPE_MAP
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: AUTHZ_CACHE_TTL
+
+  - it: emits every MCP, OAuth, and authz variable when api.mcp.enabled is true
+    set:
+      api:
+        mcp:
+          enabled: true
+          issuer: "https://docz-api.example.com/"
+          siteUrl: "https://docz.example.com"
+          trustedIssuers:
+            - "https://keycloak.example.com/realms/platform"
+            - "https://openbao.example.com/v1/identity/oidc/provider/docz"
+          rateLimit: 60
+        authz:
+          scopeMap:
+            github:group:platform: [platform:read, confluence:write]
+            github:login:octocat: [team:read]
+          cacheTtl: 1m
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MCP_ENABLED
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MCP_RATE_LIMIT
+            value: "60"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OAUTH_ISSUER
+            value: "https://docz-api.example.com"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_SITE_URL
+            value: "https://docz.example.com"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OAUTH_TRUSTED_ISSUERS
+            value: "https://keycloak.example.com/realms/platform,https://openbao.example.com/v1/identity/oidc/provider/docz"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OAUTH_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-docz-api
+                key: oauth-signing-key
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AUTHZ_SCOPE_MAP
+            value: "github:group:platform=platform:read,confluence:write;github:login:octocat=team:read"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: AUTHZ_CACHE_TTL
+            value: "1m"
+
+  - it: derives the issuer and the site URL from the edges when unset
+    set:
+      api:
+        mcp:
+          enabled: true
+        ingress:
+          enabled: true
+          hosts:
+            - host: docz-api.example.com
+              paths:
+                - path: /
+                  pathType: Prefix
+      site:
+        httpRoute:
+          enabled: true
+          hostnames: [docz.example.com]
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OAUTH_ISSUER
+            value: "https://docz-api.example.com"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_SITE_URL
+            value: "https://docz.example.com"
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: OAUTH_TRUSTED_ISSUERS
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: AUTHZ_SCOPE_MAP
+
+  - it: fails the render when the issuer cannot be derived
+    set:
+      api:
+        mcp:
+          enabled: true
+          siteUrl: "https://docz.example.com"
+    asserts:
+      - failedTemplate:
+          errorPattern: "api.mcp.issuer is required"
+
+  - it: fails the render when the site URL cannot be derived
+    set:
+      api:
+        mcp:
+          enabled: true
+          issuer: "https://docz-api.example.com"
+    asserts:
+      - failedTemplate:
+          errorPattern: "api.mcp.siteUrl is required"
+
+  - it: omits the site URL under none, where nobody can consent
+    set:
+      auth:
+        providers: "none"
+      api:
+        mcp:
+          enabled: true
+          issuer: "https://docz-api.example.com"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OAUTH_ISSUER
+            value: "https://docz-api.example.com"
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: DOCZ_SITE_URL

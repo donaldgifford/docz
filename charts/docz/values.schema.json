@@ -167,6 +167,9 @@
             },
             "confluenceApiToken": {
               "type": "string"
+            },
+            "oauthSigningKey": {
+              "type": "string"
             }
           }
         },
@@ -187,6 +190,58 @@
                 "type": "string",
                 "minLength": 1
               }
+            }
+          }
+        },
+        "mcp": {
+          "description": "The MCP server and the token gate (DESIGN-0023). Nothing is rendered while enabled is false.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "issuer": {
+              "type": "string",
+              "pattern": "^(|https?://[^/]+/?)$"
+            },
+            "siteUrl": {
+              "type": "string",
+              "pattern": "^(|https?://[^/]+/?)$"
+            },
+            "trustedIssuers": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^https?://"
+              }
+            },
+            "rateLimit": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "authz": {
+          "description": "Scoped access (DESIGN-0023 §7): group and login grants and the allowed-set cache.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "scopeMap": {
+              "type": "object",
+              "propertyNames": {
+                "pattern": "^[a-z0-9-]+:(group|login):.+$"
+              },
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "cacheTtl": {
+              "type": "string"
             }
           }
         }

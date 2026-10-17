@@ -189,6 +189,38 @@ spec:
                   key: confluence-api-token
             {{- end }}
             {{- end }}
+            {{- if .Values.api.mcp.enabled }}
+            # The MCP server and the token gate (DESIGN-0023): on only while
+            # api.mcp.enabled. The issuer is the API's public URL; the site URL
+            # is where consent happens, so it is omitted under "none".
+            - name: MCP_ENABLED
+              value: "true"
+            - name: MCP_RATE_LIMIT
+              value: {{ .Values.api.mcp.rateLimit | quote }}
+            - name: OAUTH_ISSUER
+              value: {{ include "docz.api.externalUrl" . | quote }}
+            {{- if not (include "docz.api.authDisabled" .) }}
+            - name: DOCZ_SITE_URL
+              value: {{ include "docz.site.externalUrl" . | quote }}
+            {{- end }}
+            {{- with .Values.api.mcp.trustedIssuers }}
+            - name: OAUTH_TRUSTED_ISSUERS
+              value: {{ join "," . | quote }}
+            {{- end }}
+            - name: OAUTH_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "docz.api.secretName" . }}
+                  key: oauth-signing-key
+            {{- if .Values.api.authz.scopeMap }}
+            - name: AUTHZ_SCOPE_MAP
+              value: {{ include "docz.api.scopeMap" . | quote }}
+            {{- end }}
+            {{- with .Values.api.authz.cacheTtl }}
+            - name: AUTHZ_CACHE_TTL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.otel.endpoint }}
             # Tracing is on for both workloads or for neither (DESIGN-0018 §4).
             - name: OTEL_EXPORTER_OTLP_ENDPOINT

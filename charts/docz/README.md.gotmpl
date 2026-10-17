@@ -173,6 +173,25 @@ space in the list. A space may hold one repository or several, each in its
 own folder. The runbook "Enable Confluence export on docz-api" in `docs/runbook/`
 covers the token's scopes and how to read each repository's status.
 
+### MCP server and bearer tokens
+
+Setting `api.mcp.enabled: true` turns on the read-only MCP server
+(DESIGN-0023): the chart renders `MCP_ENABLED`, `MCP_RATE_LIMIT`,
+`OAUTH_ISSUER`, `DOCZ_SITE_URL`, `OAUTH_TRUSTED_ISSUERS` (from the
+`api.mcp.trustedIssuers` list), `OAUTH_SIGNING_KEY` from the Secret's
+`oauth-signing-key` key, and the `api.authz` block as `AUTHZ_SCOPE_MAP` and
+`AUTHZ_CACHE_TTL`. With the flag off nothing is rendered, the authz block
+included. The issuer defaults to `https://` on the API's first ingress host
+or HTTPRoute hostname and the site URL to the site's, and the render fails
+when neither is set and the value is empty; the site URL is omitted under
+`auth.providers: none`, where nobody can consent. The signing key is an
+ES256 private key (`openssl ecparam -name prime256v1 -genkey -noout`) and is
+`required` while the flag is on, through the `existingSecret` seam like
+every other key. `prometheusRule.enabled` adds `DoczAPITokenFailures`, which
+fires on bearer tokens rejected at the gate. The runbook "Enable MCP on
+docz-api" in `docs/runbook/` walks the key, the issuers to trust, a scope
+map, and connecting a client.
+
 ### Secrets
 
 With `api.secrets.create: true` (the default), the chart renders one `Secret`
@@ -187,6 +206,7 @@ chart references that Secret by key only:
 | `session-secret` | unless `auth.providers` is `none` |
 | `oauth-client-secret` / `okta-client-secret` / `keycloak-client-secret` | when that provider is enabled |
 | `confluence-api-token` | when `api.confluence.site` is set |
+| `oauth-signing-key` | when `api.mcp.enabled` is true |
 
 The GitHub App private key is mounted as a file by default
 (`api.secrets.privateKeyAsFile: true`). The backing-service DSNs live in
@@ -241,7 +261,8 @@ extraLabels:
   the Prometheus namespace with the master key.
 - **Alerts.** `prometheusRule.enabled` renders the API's starter pack:
   `DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
-  `DoczAPIIngestFailures`, `DoczAPISlowIngest`, and `DoczAPIExportFailures`.
+  `DoczAPIIngestFailures`, `DoczAPISlowIngest`, `DoczAPIExportFailures`,
+  and `DoczAPITokenFailures`.
 - **Tracing.** Set `otel.endpoint` to an OTLP/HTTP collector
   (`http://collector:4318`) to trace both workloads, or leave it empty to
   trace neither. The chart gives each runtime the form it reads: `host:port`

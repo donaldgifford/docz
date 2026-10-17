@@ -22,7 +22,7 @@ tests:
           path: spec.groups[0].name
           value: docz-api.rules
 
-  - it: should include all six docz-api alerts
+  - it: should include all seven docz-api alerts
     set:
       prometheusRule:
         enabled: true
@@ -57,6 +57,11 @@ tests:
           content:
             alert: DoczAPIExportFailures
           any: true
+      - contains:
+          path: spec.groups[0].rules
+          content:
+            alert: DoczAPITokenFailures
+          any: true
 
   - it: should alert on failed and partial exports
     set:
@@ -66,6 +71,15 @@ tests:
       - matchRegex:
           path: spec.groups[0].rules[5].expr
           pattern: 'docz_api_export_jobs_total\{status=~"failed\|partial"\}'
+
+  - it: should alert on rejected bearer tokens by issuer
+    set:
+      prometheusRule:
+        enabled: true
+    asserts:
+      - matchRegex:
+          path: spec.groups[0].rules[6].expr
+          pattern: 'sum by \(issuer\) \(increase\(docz_api_token_verifications_total\{status="rejected"\}\[15m\]\)\) > 10'
 
   - it: should mark DoczAPIDown critical
     set:

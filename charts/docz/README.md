@@ -1,6 +1,6 @@
 # docz
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0](https://img.shields.io/badge/AppVersion-2.0.0-informational?style=flat-square)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0](https://img.shields.io/badge/AppVersion-2.0.0-informational?style=flat-square)
 
 Helm chart for docz — docz-api, docz-site, and their backends in one release
 
@@ -47,7 +47,7 @@ attestations, Build L2).
 
 ```bash
 helm install docz oci://ghcr.io/donaldgifford/charts/docz \
-  --version 1.0.0 \
+  --version 1.1.0 \
   --namespace docz \
   --create-namespace \
   -f values.yaml
@@ -171,6 +171,25 @@ space in the list. A space may hold one repository or several, each in its
 own folder. The runbook "Enable Confluence export on docz-api" in `docs/runbook/`
 covers the token's scopes and how to read each repository's status.
 
+### MCP server and bearer tokens
+
+Setting `api.mcp.enabled: true` turns on the read-only MCP server
+(DESIGN-0023): the chart renders `MCP_ENABLED`, `MCP_RATE_LIMIT`,
+`OAUTH_ISSUER`, `DOCZ_SITE_URL`, `OAUTH_TRUSTED_ISSUERS` (from the
+`api.mcp.trustedIssuers` list), `OAUTH_SIGNING_KEY` from the Secret's
+`oauth-signing-key` key, and the `api.authz` block as `AUTHZ_SCOPE_MAP` and
+`AUTHZ_CACHE_TTL`. With the flag off nothing is rendered, the authz block
+included. The issuer defaults to `https://` on the API's first ingress host
+or HTTPRoute hostname and the site URL to the site's, and the render fails
+when neither is set and the value is empty; the site URL is omitted under
+`auth.providers: none`, where nobody can consent. The signing key is an
+ES256 private key (`openssl ecparam -name prime256v1 -genkey -noout`) and is
+`required` while the flag is on, through the `existingSecret` seam like
+every other key. `prometheusRule.enabled` adds `DoczAPITokenFailures`, which
+fires on bearer tokens rejected at the gate. The runbook "Enable MCP on
+docz-api" in `docs/runbook/` walks the key, the issuers to trust, a scope
+map, and connecting a client.
+
 ### Secrets
 
 With `api.secrets.create: true` (the default), the chart renders one `Secret`
@@ -185,6 +204,7 @@ chart references that Secret by key only:
 | `session-secret` | unless `auth.providers` is `none` |
 | `oauth-client-secret` / `okta-client-secret` / `keycloak-client-secret` | when that provider is enabled |
 | `confluence-api-token` | when `api.confluence.site` is set |
+| `oauth-signing-key` | when `api.mcp.enabled` is true |
 
 The GitHub App private key is mounted as a file by default
 (`api.secrets.privateKeyAsFile: true`). The backing-service DSNs live in
@@ -239,7 +259,8 @@ extraLabels:
   the Prometheus namespace with the master key.
 - **Alerts.** `prometheusRule.enabled` renders the API's starter pack:
   `DoczAPIDown`, `DoczAPIHighErrorRate`, `DoczAPISlowRequests`,
-  `DoczAPIIngestFailures`, `DoczAPISlowIngest`, and `DoczAPIExportFailures`.
+  `DoczAPIIngestFailures`, `DoczAPISlowIngest`, `DoczAPIExportFailures`,
+  and `DoczAPITokenFailures`.
 - **Tracing.** Set `otel.endpoint` to an OTLP/HTTP collector
   (`http://collector:4318`) to trace both workloads, or leave it empty to
   trace neither. The chart gives each runtime the form it reads: `host:port`
@@ -294,10 +315,10 @@ The backing services are renamed from `<release>-docz-api-<service>` to
 cosign verify \
   --certificate-identity-regexp '^https://github.com/donaldgifford/docz/.+' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  ghcr.io/donaldgifford/charts/docz:1.0.0
+  ghcr.io/donaldgifford/charts/docz:1.1.0
 
 gh attestation verify \
-  oci://ghcr.io/donaldgifford/charts/docz:1.0.0 \
+  oci://ghcr.io/donaldgifford/charts/docz:1.1.0 \
   --owner donaldgifford
 ```
 
@@ -309,8 +330,11 @@ gh attestation verify \
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| api | object | `{"affinity":{},"autoscaling":{"enabled":false,"maxReplicas":3,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":0},"config":{"appId":"","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","keycloakClientID":"","keycloakIssuer":"","keycloakScopes":"","logFormat":"json","logLevel":"info","oktaClientID":"","oktaIssuer":"","oktaScopes":"","port":8080,"sessionTTL":""},"confluence":{"email":"","site":"","spaces":[]},"extraEnv":[],"extraVolumeMounts":[],"extraVolumes":[],"httpRoute":{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[],"rules":[]},"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/donaldgifford/docz-api","tag":""},"ingress":{"annotations":{},"className":"","enabled":false,"hosts":[],"tls":[]},"livenessProbe":{"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":5,"periodSeconds":15},"nodeSelector":{},"otel":{"serviceName":"docz-api"},"podAnnotations":{},"podLabels":{},"podSecurityContext":{"fsGroup":65532,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}},"readinessProbe":{"httpGet":{"path":"/readyz","port":"http"},"initialDelaySeconds":5,"periodSeconds":10},"replicaCount":1,"resources":{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"revisionHistoryLimit":3,"secrets":{"confluenceApiToken":"","create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true},"service":{"port":80,"type":"ClusterIP"},"serviceAccount":{"annotations":{},"create":true,"name":""},"tolerations":[]}` | docz-api: the server. Always installed. |
+| api | object | `{"affinity":{},"authz":{"cacheTtl":"","scopeMap":{}},"autoscaling":{"enabled":false,"maxReplicas":3,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":0},"config":{"appId":"","authRedirectBase":"","githubApiBase":"","githubOAuthClientID":"","ingestDebounce":"","keycloakClientID":"","keycloakIssuer":"","keycloakScopes":"","logFormat":"json","logLevel":"info","oktaClientID":"","oktaIssuer":"","oktaScopes":"","port":8080,"sessionTTL":""},"confluence":{"email":"","site":"","spaces":[]},"extraEnv":[],"extraVolumeMounts":[],"extraVolumes":[],"httpRoute":{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[],"rules":[]},"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/donaldgifford/docz-api","tag":""},"ingress":{"annotations":{},"className":"","enabled":false,"hosts":[],"tls":[]},"livenessProbe":{"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":5,"periodSeconds":15},"mcp":{"enabled":false,"issuer":"","rateLimit":120,"siteUrl":"","trustedIssuers":[]},"nodeSelector":{},"otel":{"serviceName":"docz-api"},"podAnnotations":{},"podLabels":{},"podSecurityContext":{"fsGroup":65532,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}},"readinessProbe":{"httpGet":{"path":"/readyz","port":"http"},"initialDelaySeconds":5,"periodSeconds":10},"replicaCount":1,"resources":{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"revisionHistoryLimit":3,"secrets":{"confluenceApiToken":"","create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oauthSigningKey":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""},"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true},"service":{"port":80,"type":"ClusterIP"},"serviceAccount":{"annotations":{},"create":true,"name":""},"tolerations":[]}` | docz-api: the server. Always installed. |
 | api.affinity | object | `{}` | Affinity rules |
+| api.authz | object | `{"cacheTtl":"","scopeMap":{}}` | Scoped access (DESIGN-0023 §7), rendered only while `api.mcp.enabled`. |
+| api.authz.cacheTtl | string | `""` | How long a principal's allowed set is held in process (AUTHZ_CACHE_TTL). Empty keeps the binary's default (30s). |
+| api.authz.scopeMap | object | `{}` | Group and login grants (AUTHZ_SCOPE_MAP): a `<provider>:group:<name>` or `<provider>:login:<name>` key to the scopes it grants, on top of the `public:read` every principal holds. Example: `{"github:group:platform": ["platform:read"]}`. |
 | api.autoscaling | object | `{"enabled":false,"maxReplicas":3,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":0}` | Horizontal Pod Autoscaler. Off by default. |
 | api.autoscaling.enabled | bool | `false` | Enable a HorizontalPodAutoscaler |
 | api.autoscaling.maxReplicas | int | `3` | Maximum replicas |
@@ -355,6 +379,12 @@ gh attestation verify \
 | api.ingress.enabled | bool | `false` | Enable an Ingress |
 | api.ingress.hosts | list | `[]` | Ingress hosts. Each entry: {host, paths: [{path, pathType}]}. |
 | api.ingress.tls | list | `[]` | TLS blocks. Each entry: {secretName, hosts: []}. |
+| api.mcp | object | `{"enabled":false,"issuer":"","rateLimit":120,"siteUrl":"","trustedIssuers":[]}` | The MCP server and the token gate (DESIGN-0023). Off by default. On, the chart renders `MCP_ENABLED`, the issuer, the site URL, the trusted issuers, the rate limit, and the `api.authz` block, and the Secret must carry `oauth-signing-key`. Nothing below is rendered while `enabled` is false. |
+| api.mcp.enabled | bool | `false` | Mount `/mcp`, verify bearer tokens, and serve the authorization server (MCP_ENABLED). |
+| api.mcp.issuer | string | `""` | The issuer's public base URL (OAUTH_ISSUER), e.g. `https://docz-api.example.com`. Empty derives `https://<host>` from the first `api.ingress.hosts` entry or `api.httpRoute.hostnames` entry; with neither, the render fails. |
+| api.mcp.rateLimit | int | `120` | Tool calls per minute per principal, per replica (MCP_RATE_LIMIT). |
+| api.mcp.siteUrl | string | `""` | docz-site's public base URL (DOCZ_SITE_URL), where a person is sent to consent. Empty derives it from the first `site.ingress.hosts` or `site.httpRoute.hostnames` entry. Not rendered while `auth.providers` is `none`, since nobody can consent. |
+| api.mcp.trustedIssuers | list | `[]` | Issuer URLs whose JWTs the gate accepts besides docz-api's own (OAUTH_TRUSTED_ISSUERS), e.g. a Keycloak realm. Each is discovered at startup; one that cannot be fails the boot. |
 | api.nodeSelector | object | `{}` | Node selector |
 | api.otel | object | `{"serviceName":"docz-api"}` | Tracing for the API. The endpoint and sample rate are the shared top-level `otel` block. |
 | api.otel.serviceName | string | `"docz-api"` | Service name reported on spans (OTEL_SERVICE_NAME). |
@@ -364,12 +394,13 @@ gh attestation verify \
 | api.replicaCount | int | `1` | Number of replicas |
 | api.resources | object | `{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}` | Container resource requests and limits |
 | api.revisionHistoryLimit | int | `3` | Number of old ReplicaSets retained for rollback. Defaults to 3 to keep the kubectl `get rs` view tidy; bump if you need more rollback headroom. Kubernetes default is 10. |
-| api.secrets | object | `{"confluenceApiToken":"","create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""}` | Application secrets. When `create` is true the chart renders a Secret from the plaintext values below. When `create` is false, `existingSecret` names a Secret you supply by any means (1Password Operator, External Secrets, sealed-secrets, `kubectl create secret`, ...) — the chart only references it by key, so the provider is entirely your choice.  The referenced Secret must carry these keys:    app-id                  always   webhook-secret          always   session-secret          unless auth.providers is "none"   private-key             when secrets.privateKeyAsFile is true, or the                           GitHub App key is not supplied out-of-band   oauth-client-secret     when `github`   is in auth.providers   okta-client-secret      when `okta`     is in auth.providers   keycloak-client-secret  when `keycloak` is in auth.providers   confluence-api-token    when api.confluence.site is set  Only the enabled providers' keys are referenced, so a github-only install needs no okta-client-secret, and a "none" install needs no login keys at all. |
+| api.secrets | object | `{"confluenceApiToken":"","create":true,"existingSecret":"","keycloakClientSecret":"","oauthClientSecret":"","oauthSigningKey":"","oktaClientSecret":"","privateKey":"","privateKeyAsFile":true,"sessionSecret":"","webhookSecret":""}` | Application secrets. When `create` is true the chart renders a Secret from the plaintext values below. When `create` is false, `existingSecret` names a Secret you supply by any means (1Password Operator, External Secrets, sealed-secrets, `kubectl create secret`, ...) — the chart only references it by key, so the provider is entirely your choice.  The referenced Secret must carry these keys:    app-id                  always   webhook-secret          always   session-secret          unless auth.providers is "none"   private-key             when secrets.privateKeyAsFile is true, or the                           GitHub App key is not supplied out-of-band   oauth-client-secret     when `github`   is in auth.providers   okta-client-secret      when `okta`     is in auth.providers   keycloak-client-secret  when `keycloak` is in auth.providers   confluence-api-token    when api.confluence.site is set   oauth-signing-key       when api.mcp.enabled is true  Only the enabled providers' keys are referenced, so a github-only install needs no okta-client-secret, and a "none" install needs no login keys at all. |
 | api.secrets.confluenceApiToken | string | `""` | Atlassian API token for the Confluence export (CONFLUENCE_API_TOKEN). Required while api.confluence.site is set and create=true. Secret key: confluence-api-token. |
 | api.secrets.create | bool | `true` | Create secret resource (false = use existing secret) |
 | api.secrets.existingSecret | string | `""` | Name of an existing Secret holding the keys listed above (when create=false). Populate it with whatever secret manager you run. |
 | api.secrets.keycloakClientSecret | string | `""` | Keycloak client secret (KEYCLOAK_CLIENT_SECRET). Required while `keycloak` is in auth.providers and create=true. Secret key: keycloak-client-secret. |
 | api.secrets.oauthClientSecret | string | `""` | GitHub OAuth client secret for site login (GITHUB_OAUTH_CLIENT_SECRET). Required while `github` is in auth.providers and create=true. Secret key: oauth-client-secret. |
+| api.secrets.oauthSigningKey | string | `""` | ES256 private key, PEM, that docz-api signs its tokens with (OAUTH_SIGNING_KEY); `openssl ecparam -name prime256v1 -genkey -noout` makes one. Required while api.mcp.enabled is true and create=true. Secret key: oauth-signing-key. |
 | api.secrets.oktaClientSecret | string | `""` | Okta client secret (OKTA_CLIENT_SECRET). Required while `okta` is in auth.providers and create=true. Secret key: okta-client-secret. |
 | api.secrets.privateKey | string | `""` | GitHub App private key (PEM format, GITHUB_APP_PRIVATE_KEY) |
 | api.secrets.privateKeyAsFile | bool | `true` | Mount the private key as a file (true) or pass it as an env var (false). Either way the binary accepts a path or a PEM body. |
