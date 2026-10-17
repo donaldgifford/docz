@@ -89,6 +89,7 @@ observation per export job and one per page action.
 | `docz_api_export_jobs_total`           | Counter   | `reason`, `status` | Export jobs processed. `reason` ∈ {`ingest`, `manual`}; `status` ∈ {`succeeded`, `partial`, `failed`, `disabled`, `refused`}.                   |
 | `docz_api_export_job_duration_seconds` | Histogram | `reason`           | Job duration with buckets up to 600s (a first export of a large repository makes hundreds of requests). Exposes `_bucket{le}`, `_sum`, `_count`. |
 | `docz_api_export_pages_total`          | Counter   | `action`           | Pages by what the export did. `action` ∈ {`created`, `updated`, `unchanged`, `skipped`, `archived`, `failed`}.                                   |
+| `docz_api_token_verifications_total`   | Counter   | `issuer`, `status` | Bearer tokens verified at the `/api/v1` and `/mcp` gate (DESIGN-0023). `issuer` is the token's `iss` claim, or `unknown` when it did not parse; `status` ∈ {`ok`, `rejected`}. |
 
 Example:
 

@@ -64,7 +64,23 @@ var (
 		Name: "docz_api_export_pages_total",
 		Help: "Total Confluence pages exported, by the action taken.",
 	}, []string{"action"})
+
+	tokenVerifications = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "docz_api_token_verifications_total",
+		Help: "Bearer tokens verified, by the issuer claimed and whether the token was accepted.",
+	}, []string{"issuer", "status"})
 )
+
+// ObserveTokenVerification records one bearer verification (DESIGN-0023
+// §9). issuer is the token's iss claim when it parsed, else "unknown";
+// status is "ok" or "rejected". It has the oauth.VerifierOptions.Observe
+// shape so the verifier records it without importing this package.
+func ObserveTokenVerification(issuer, status string) {
+	if issuer == "" {
+		issuer = "unknown"
+	}
+	tokenVerifications.WithLabelValues(issuer, status).Inc()
+}
 
 // MetricsHandler serves the Prometheus exposition of the default registry
 // (docz-api instruments plus Go-runtime and process collectors). The caller
