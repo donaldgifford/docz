@@ -479,7 +479,7 @@ against the type packages' corpora.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `go.mod`: `github.com/modelcontextprotocol/go-sdk` at `v1.8.0` or
+- [x] `go.mod`: `github.com/modelcontextprotocol/go-sdk` at `v1.8.0` or
   later as a direct requirement, settled with targeted `go get` and never a
   bare `go mod tidy`; `go-licenses` and the licence check clean;
   `layer_test.go` untouched, because nothing under `pkg/` imports it
