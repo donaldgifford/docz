@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Bug Fixes
+
+- *(oauth)* Accept any port on a registered loopback redirect_uri
+
+### Documentation
+
+- *(design)* The loopback redirect port rule in DESIGN-0023 and RUNBOOK-0004
+
+### Miscellaneous Tasks
+
+- *(chart)* 1.1.0-beta.3 with appVersion 2.1.0-beta.3
+
 ## [2.1.0-beta.2] - 2026-10-17
 
 ### Testing
