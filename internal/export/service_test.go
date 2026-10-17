@@ -49,6 +49,7 @@ func fixtureInputs(t *testing.T, cfg *doczcfg.Config) store.ExportInputs {
 		Repo: store.Repo{
 			ID: 7, Owner: "o", Name: "docz", DefaultBranch: "main", DocsDir: "docs",
 			ConfigSnapshot: snap, LastSyncedSha: pgtype.Text{String: "sha-1", Valid: true},
+			AccessScopes: json.RawMessage(`["public:read"]`),
 		},
 		Documents: []store.Document{
 			{Type: "adr", DocID: "ADR-0001", Path: "docs/adr/0001-second.md", RawMd: adrMD},
@@ -244,6 +245,53 @@ func TestRun_DisabledAndRefused(t *testing.T) {
 
 			if w := site.Writes(); len(w) != 0 {
 				t.Errorf("wrote %v", w)
+			}
+		})
+	}
+}
+
+func TestRun_AccessScopes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		scopes string
+		want   Status
+	}{
+		{"public", `["public:read"]`, StatusSucceeded},
+		{"restricted", `["team:read"]`, StatusRefused},
+		{"restricted with confluence:write", `["team:read","confluence:write"]`, StatusSucceeded},
+		{"empty column", ``, StatusRefused},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := fixtureConfig()
+			in := fixtureInputs(t, &cfg)
+			in.Repo.AccessScopes = json.RawMessage(tt.scopes)
+			st := &fakeStore{in: in}
+			site := confluencetest.New("DOCZ")
+
+			res, err := newService(st, site).Run(t.Context(), 7)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if res.Status != tt.want {
+				t.Errorf("status %s (%s), want %s", res.Status, res.Reason, tt.want)
+			}
+
+			if tt.want == StatusRefused {
+				if res.Reason != reasonScopes {
+					t.Errorf("reason %q, want %q", res.Reason, reasonScopes)
+				}
+				if w := site.Writes(); len(w) != 0 {
+					t.Errorf("wrote %v", w)
+				}
+			} else if len(site.Writes()) == 0 {
+				t.Error("exported nothing")
 			}
 		})
 	}
