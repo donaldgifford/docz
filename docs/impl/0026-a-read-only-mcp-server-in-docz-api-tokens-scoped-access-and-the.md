@@ -142,17 +142,17 @@ Phase 2. This is a `minor` on the stable v2 line and can ship alone.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/config/access.go`: `AccessConfig struct{ Scopes
+- [x] `pkg/doczcore/config/access.go`: `AccessConfig struct{ Scopes
   []string }` (`yaml:"scopes" json:"scopes"`) and `Config.Access
   AccessConfig` (`yaml:"access" json:"access"`); `DefaultConfig()` sets
   `Scopes` to `[]string{"public:read"}`; the exported constants
   `ScopePublicRead = "public:read"`, `ActionRead = "read"`, and
   `ErrInvalidAccess = errors.New("invalid access config")`
-- [ ] `normalizeAccess`, on both `Load` paths after `normalizeSync` and
+- [x] `normalizeAccess`, on both `Load` paths after `normalizeSync` and
   in `parseBytes`: trims each entry, folds it to lower case, backfills an
   empty or absent list to `[public:read]`, and removes exact duplicates
   after folding. It never rejects
-- [ ] `validateAccess`, called from `Validate()` unconditionally (the block
+- [x] `validateAccess`, called from `Validate()` unconditionally (the block
   has a default, so it is never dormant): each entry is
   `<audience>:<action>` with the audience matching
   `^[a-z0-9][a-z0-9-]{0,62}$` and the action `read`; `write` is rejected
@@ -160,27 +160,27 @@ Phase 2. This is a `minor` on the stable v2 line and can ship alone.
   rejected; a bare `public` with no action is rejected naming the fix. The
   error is bare and wrapped with `ErrInvalidAccess` by the caller, as
   `paths.go` does
-- [ ] `access_test.go`: one case per rule above, the default on an absent
+- [x] `access_test.go`: one case per rule above, the default on an absent
   block, an explicitly empty `scopes: []` backfilled, `ParseBytes` equal
   to both `Load` paths, and `t.Parallel()` on every test
-- [ ] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `access`
+- [x] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `access`
   object; `TestJSONTags_MirrorYAML` passes unedited
-- [ ] `doctemplate/templates/docz_yaml.tmpl`: a top-level `access:` block
+- [x] `doctemplate/templates/docz_yaml.tmpl`: a top-level `access:` block
   after `sync:` with `scopes: [public:read]` and a comment saying what a
   scope is, that `public:read` means every signed-in reader of docz-api,
   and that a team audience such as `platform-team:read` hides the
   repository from everyone else; `DefaultConfigYAML()` renders it
-- [ ] `test/parity/parity.go`: an `AccessNormalizer()` named `access`
+- [x] `test/parity/parity.go`: an `AccessNormalizer()` named `access`
   beside `SyncNormalizer`, dropping the `access:` block with its comments
   from the generated `.docz.yaml` on both sides, applied in `runCase` with
   the other both-sides normalisers; a unit test for it outside the build
   tag, as the others have
-- [ ] `cmd/config.go` prints the block as it prints `sync:`; `docz config`
+- [x] `cmd/config.go` prints the block as it prints `sync:`; `docz config`
   golden regenerated with `-update`
-- [ ] `test/consumer/consumer_v2_test.go` (or a sibling): one inline
+- [x] `test/consumer/consumer_v2_test.go` (or a sibling): one inline
   manifest with `access.scopes: [platform-team:read]` parsed through
   `config.ParseBytes`, proving the field is reachable from outside
-- [ ] `CLAUDE.md`'s `pkg/doczcore/config` bullet gains the `access:` block,
+- [x] `CLAUDE.md`'s `pkg/doczcore/config` bullet gains the `access:` block,
   its grammar, and the reserved `write`
 
 <!--docz:tasks:end-->
