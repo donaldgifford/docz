@@ -142,6 +142,7 @@ func (s *Service) Run(
 			IndexSHA:          snap.IndexSHA,
 			APILandingPage:    apiLanding,
 			APIAdditionalDocs: apiDocs,
+			AccessScopes:      accessScopes(&cfg),
 		},
 		DocTypes:  docTypes,
 		Documents: documents,
