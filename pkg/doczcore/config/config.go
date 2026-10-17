@@ -181,6 +181,7 @@ type Config struct {
 	Changelog ChangelogConfig       `                        yaml:"changelog" json:"changelog"`
 	API       APIConfig             `                        yaml:"api"       json:"api"`
 	Sync      SyncConfig            `                        yaml:"sync"      json:"sync"`
+	Access    AccessConfig          `                        yaml:"access"    json:"access"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -229,6 +230,11 @@ func DefaultConfig() Config {
 				Layout:  LayoutFolder,
 				Mermaid: MermaidSyncConfig{Viewer: MermaidViewerAuto},
 			},
+		},
+		// Readable by every signed-in reader until a repository narrows it
+		// (DESIGN-0023 §7).
+		Access: AccessConfig{
+			Scopes: []string{ScopePublicRead},
 		},
 	}
 }
@@ -291,6 +297,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 	normalizeChangelog(&cfg)
 	normalizeAPI(&cfg)
 	normalizeSync(&cfg)
+	normalizeAccess(&cfg)
 
 	return cfg, nil
 }
@@ -524,6 +531,10 @@ func (c *Config) Validate() ([]string, error) {
 		return warnings, err
 	}
 
+	if err := c.validateAccess(); err != nil {
+		return warnings, err
+	}
+
 	return warnings, nil
 }
 
@@ -743,7 +754,7 @@ func ParseBytes(b []byte) (Config, error) {
 }
 
 // parseBytes is the single-file decode shared by ParseBytes and
-// loadFromFile: unmarshal onto the defaults, then the same four normalisers
+// loadFromFile: unmarshal onto the defaults, then the same five normalisers
 // Load's merge path runs, keyed on these bytes rather than a path.
 func parseBytes(data []byte, defaults *Config) (Config, error) {
 	cfg := *defaults
@@ -756,6 +767,7 @@ func parseBytes(data []byte, defaults *Config) (Config, error) {
 	normalizeChangelog(&cfg)
 	normalizeAPI(&cfg)
 	normalizeSync(&cfg)
+	normalizeAccess(&cfg)
 
 	return cfg, nil
 }

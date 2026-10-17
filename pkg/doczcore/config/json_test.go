@@ -124,6 +124,7 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
 				Mermaid:  config.MermaidSyncConfig{Viewer: "auto"},
 			},
 		},
+		Access: config.AccessConfig{Scopes: []string{"platform-team:read"}},
 	}
 
 	got, err := json.MarshalIndent(cfg, "", "  ")
@@ -215,6 +216,11 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
         "viewer": "auto"
       }
     }
+  },
+  "access": {
+    "scopes": [
+      "platform-team:read"
+    ]
   }
 }`
 	if string(got) != want {

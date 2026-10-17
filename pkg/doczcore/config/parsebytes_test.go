@@ -39,6 +39,10 @@ var parseBytesCases = []struct {
 			"    space: DOCZ\n    parent: docz\n    exclude: [archive/]\n",
 	},
 	{
+		name: "access scopes fold, trim, and dedupe",
+		yaml: "access:\n  scopes: [\" Platform-Team:read \", platform-team:read, public:read]\n",
+	},
+	{
 		name: "empty file",
 		yaml: "",
 	},
