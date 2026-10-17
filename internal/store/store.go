@@ -289,3 +289,17 @@ func jsonScopes(scopes []string) json.RawMessage {
 
 	return jsonStringsOrNull(scopes)
 }
+
+// ListRepoIDsForScopes returns the ids of every repository whose
+// access_scopes holds any of the given scopes (DESIGN-0023 §7). No scopes
+// unlock nothing.
+func (s *Store) ListRepoIDsForScopes(ctx context.Context, scopes []string) ([]int64, error) {
+	if len(scopes) == 0 {
+		return nil, nil
+	}
+	ids, err := s.q.ListRepoIDsForScopes(ctx, scopes)
+	if err != nil {
+		return nil, fmt.Errorf("list repo ids for scopes: %w", err)
+	}
+	return ids, nil
+}
