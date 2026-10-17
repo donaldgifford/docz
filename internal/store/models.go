@@ -78,6 +78,26 @@ type Installation struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+type OauthConsent struct {
+	UserID    int64              `json:"user_id"`
+	ClientID  string             `json:"client_id"`
+	Scope     string             `json:"scope"`
+	GrantedAt pgtype.Timestamptz `json:"granted_at"`
+	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type OauthRefreshToken struct {
+	ID         int64              `json:"id"`
+	TokenHash  string             `json:"token_hash"`
+	FamilyID   string             `json:"family_id"`
+	UserID     int64              `json:"user_id"`
+	ClientID   string             `json:"client_id"`
+	Scope      string             `json:"scope"`
+	IssuedAt   pgtype.Timestamptz `json:"issued_at"`
+	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
 type Repo struct {
 	ID                int64              `json:"id"`
 	InstallationID    int64              `json:"installation_id"`
@@ -97,6 +117,7 @@ type Repo struct {
 	ChangelogFile     pgtype.Text        `json:"changelog_file"`
 	ApiLandingPage    pgtype.Text        `json:"api_landing_page"`
 	ApiAdditionalDocs json.RawMessage    `json:"api_additional_docs"`
+	AccessScopes      json.RawMessage    `json:"access_scopes"`
 }
 
 type RepoPage struct {

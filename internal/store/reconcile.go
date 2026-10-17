@@ -46,6 +46,7 @@ func (s *Store) ReconcileRepo(ctx context.Context, in *ReconcileInput) (res Reco
 		IndexSha:          textOrNull(in.Repo.IndexSHA),
 		ApiLandingPage:    textOrNull(in.Repo.APILandingPage),
 		ApiAdditionalDocs: jsonStringsOrNull(in.Repo.APIAdditionalDocs),
+		AccessScopes:      jsonScopes(in.Repo.AccessScopes),
 	})
 	if err != nil {
 		return res, fmt.Errorf("upsert repo %s/%s: %w", in.Repo.Owner, in.Repo.Name, err)

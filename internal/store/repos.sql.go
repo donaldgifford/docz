@@ -31,7 +31,7 @@ func (q *Queries) DeleteRepoByOwnerName(ctx context.Context, arg DeleteRepoByOwn
 }
 
 const getRepoByOwnerName = `-- name: GetRepoByOwnerName :one
-SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file, api_landing_page, api_additional_docs FROM repos WHERE owner = $1 AND name = $2
+SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file, api_landing_page, api_additional_docs, access_scopes FROM repos WHERE owner = $1 AND name = $2
 `
 
 type GetRepoByOwnerNameParams struct {
@@ -61,6 +61,7 @@ func (q *Queries) GetRepoByOwnerName(ctx context.Context, arg GetRepoByOwnerName
 		&i.ChangelogFile,
 		&i.ApiLandingPage,
 		&i.ApiAdditionalDocs,
+		&i.AccessScopes,
 	)
 	return i, err
 }
@@ -92,7 +93,7 @@ func (q *Queries) ListRepoIDsByInstallation(ctx context.Context, installationID 
 }
 
 const listRepos = `-- name: ListRepos :many
-SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file, api_landing_page, api_additional_docs FROM repos ORDER BY owner, name
+SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file, api_landing_page, api_additional_docs, access_scopes FROM repos ORDER BY owner, name
 `
 
 func (q *Queries) ListRepos(ctx context.Context) ([]Repo, error) {
@@ -123,6 +124,7 @@ func (q *Queries) ListRepos(ctx context.Context) ([]Repo, error) {
 			&i.ChangelogFile,
 			&i.ApiLandingPage,
 			&i.ApiAdditionalDocs,
+			&i.AccessScopes,
 		); err != nil {
 			return nil, err
 		}
@@ -139,9 +141,9 @@ INSERT INTO repos (
     installation_id, owner, name, default_branch, docs_dir, config_snapshot,
     last_synced_sha, last_synced_at, changelog_md, changelog_sha,
     changelog_file, index_md, index_sha, api_landing_page,
-    api_additional_docs, updated_at
+    api_additional_docs, access_scopes, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, $12, $13, $14, now()
+    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, $12, $13, $14, $15, now()
 )
 ON CONFLICT (owner, name) DO UPDATE SET
     installation_id     = EXCLUDED.installation_id,
@@ -157,6 +159,7 @@ ON CONFLICT (owner, name) DO UPDATE SET
     index_sha           = EXCLUDED.index_sha,
     api_landing_page    = EXCLUDED.api_landing_page,
     api_additional_docs = EXCLUDED.api_additional_docs,
+    access_scopes       = EXCLUDED.access_scopes,
     updated_at          = now()
 RETURNING id
 `
@@ -176,6 +179,7 @@ type UpsertRepoParams struct {
 	IndexSha          pgtype.Text     `json:"index_sha"`
 	ApiLandingPage    pgtype.Text     `json:"api_landing_page"`
 	ApiAdditionalDocs json.RawMessage `json:"api_additional_docs"`
+	AccessScopes      json.RawMessage `json:"access_scopes"`
 }
 
 func (q *Queries) UpsertRepo(ctx context.Context, arg UpsertRepoParams) (int64, error) {
@@ -194,6 +198,7 @@ func (q *Queries) UpsertRepo(ctx context.Context, arg UpsertRepoParams) (int64, 
 		arg.IndexSha,
 		arg.ApiLandingPage,
 		arg.ApiAdditionalDocs,
+		arg.AccessScopes,
 	)
 	var id int64
 	err := row.Scan(&id)
