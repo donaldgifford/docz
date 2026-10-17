@@ -38,6 +38,10 @@ version     := `git describe --tags --always --dirty 2>/dev/null || echo dev`
 
 goimports_local  := "github.com/" + project_owner
 allowed_licenses := "Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0"
+# segmentio/asm (the MCP SDK's JSON codec's dependency) is MIT No Attribution,
+# a licence go-licenses' classifier does not know, so it reports no licence at
+# all. Keep the ignore in step with license-check.yml.
+license_ignore := "github.com/segmentio/asm"
 
 # ─── Build ──────────────────────────────────────────────────────────
 
@@ -294,12 +298,12 @@ docs-config: build
 # Check dependency licenses against the allow list
 [group('license')]
 license-check:
-    @go-licenses check ./... --allowed_licenses={{ allowed_licenses }}
+    @go-licenses check ./... --allowed_licenses={{ allowed_licenses }} --ignore={{ license_ignore }}
 
 # Generate a CSV report of all dependency licenses
 [group('license')]
 license-report:
-    @go-licenses report ./... --template=.github/licenses-csv.tpl
+    @go-licenses report ./... --template=.github/licenses-csv.tpl --ignore={{ license_ignore }}
 
 # ─── Release ───────────────────────────────────────────────────────
 
