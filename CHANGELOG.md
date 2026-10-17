@@ -9,6 +9,29 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(export)* Leave impl out of the Confluence export unless a repository lists it
 - *(export)* Remember a lost inline comment's anchor and restore it when its text returns
+- *(config)* The access: block, who may read a repository through docz-api
+- *(store)* The add_oauth migration and queries
+- *(ingest)* Map access.scopes onto the repository row
+- *(config)* MCP, OAuth, and Authz settings for docz-api
+- *(oauth)* Verify JWTs from docz-api's key and trusted issuers
+- *(session)* Via, Scopes, ClientID, and Issuer on Session
+- *(telemetry)* Docz_api_token_verifications_total
+- *(authorize)* ScopesFor and the ScopeAuthorizer
+- *(session)* Authn, the one gate for a bearer, a cookie, or anonymous
+- *(api)* Spec 1.7.0 with the bearerToken scheme and the session's via and scopes
+- *(export)* Refuse a repository whose scopes grant the export nothing
+- *(ui)* Session fixtures carry via and scopes
+- *(store)* GetUser and the refresh-token and consent wrappers
+- *(oauth)* The protected-resource, authorization-server, and JWKS documents
+- *(oauth)* The Client ID Metadata Document fetcher
+- *(oauth)* The authorization, consent, token, and revocation endpoints
+- *(server)* Mount the authorization server with MCP on and a login
+- *(ui)* The OAuth consent page at /oauth/consent
+- *(httpapi)* Export StoreReader, ResolveType, the DTOs, and their builders
+- *(telemetry)* The MCP call and rate-limit instruments
+- *(mcp)* The read-only MCP server
+- *(server)* Mount POST /mcp behind the gate and the limiter when MCP_ENABLED
+- *(chart)* Api.mcp and api.authz, the oauth-signing-key, and DoczAPITokenFailures
 
 ### Documentation
 
@@ -23,10 +46,27 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* IMPL-0026, the read-only MCP server in six phases
 - *(impl)* Resolve IMPL-0026 questions 1, 2, and 8
 - *(impl)* Resolve IMPL-0026 questions 3 to 7 and amend DESIGN-0023
+- *(impl)* IMPL-0026 Phase 1 complete, the access block from a consumer
+- *(impl)* IMPL-0026 Phase 2 complete
+- *(impl)* IMPL-0026 Phase 3 complete
+- *(api)* The OAuth endpoints and metadata documents in spec 1.7.0
+- *(impl)* IMPL-0026 Phase 4 complete
+- *(impl)* IMPL-0026 Phase 5 complete
+- *(runbook)* RUNBOOK-0004, enable MCP on docz-api
+- *(deploy)* Enabling MCP in the deploy guide and the chart section
+- *(impl)* IMPL-0026 Phase 6 complete
 
 ### Testing
 
 - *(config)* Clear every env key Load reads before each case
+- *(parity)* Drop the access: block on both sides
+- *(httpapi)* The authorization server's wire contract
+- *(e2e)* The MCP integration suite over Postgres and Redis
+
+### Miscellaneous Tasks
+
+- *(store)* Regenerate confluence.sql.go for access_scopes
+- *(deps)* The MCP Go SDK v1.8.0 and chi's httprate as direct requirements
 
 ## [2.0.0] - 2026-10-13
 
