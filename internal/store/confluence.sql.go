@@ -37,7 +37,7 @@ func (q *Queries) GetConfluenceSync(ctx context.Context, repoID int64) (Confluen
 }
 
 const getRepoByID = `-- name: GetRepoByID :one
-SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file, api_landing_page, api_additional_docs FROM repos WHERE id = $1
+SELECT id, installation_id, owner, name, default_branch, docs_dir, config_snapshot, last_synced_sha, last_synced_at, changelog_md, changelog_sha, created_at, updated_at, index_md, index_sha, changelog_file, api_landing_page, api_additional_docs, access_scopes FROM repos WHERE id = $1
 `
 
 func (q *Queries) GetRepoByID(ctx context.Context, id int64) (Repo, error) {
@@ -62,6 +62,7 @@ func (q *Queries) GetRepoByID(ctx context.Context, id int64) (Repo, error) {
 		&i.ChangelogFile,
 		&i.ApiLandingPage,
 		&i.ApiAdditionalDocs,
+		&i.AccessScopes,
 	)
 	return i, err
 }
