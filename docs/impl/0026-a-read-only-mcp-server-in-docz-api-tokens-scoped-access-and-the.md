@@ -536,7 +536,7 @@ against the type packages' corpora.
   `405`s, the limiter's `429`, and a tool call through real middleware;
   the audit line and the metric label asserted from a captured slog
   handler
-- [ ] `CLAUDE.md`: a "MCP server (DESIGN-0023 / IMPL-0026)" section in
+- [x] `CLAUDE.md`: a "MCP server (DESIGN-0023 / IMPL-0026)" section in
   the server part naming the packages, the tool contract rule, and the
   gotchas met
 
@@ -551,6 +551,10 @@ against the type packages' corpora.
   against a local stack lists the six tools, reads a document with its
   typed fields, and shows search hits; with `MCP_ENABLED` unset the route
   is `404`
+  (deferred - human required: needs the compose stack and a GitHub App
+  key on the operator's machine; the SDK's Streamable HTTP client against
+  the full middleware stack in `internal/mcp/http_test.go` stands in for
+  it, and the `404` with MCP off is the router's default, 2026-10-17)
 - A burst past `MCP_RATE_LIMIT` is `429` with `Retry-After` and increments
   `docz_api_rate_limited_total`, and the audit
   line for every call names the principal and the tool and never the
