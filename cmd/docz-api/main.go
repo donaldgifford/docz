@@ -206,10 +206,10 @@ func runServer(
 		return fmt.Errorf("building session store: %w", err)
 	}
 	defer closeSession(sessionStore)
-	tokens, err := buildTokenAuth(startCtx, cfg)
+	tokens, authServer, err := buildAuthStack(startCtx, cfg, st)
 	if err != nil {
 		closeQueueClient(queueClient)
-		return fmt.Errorf("building token auth: %w", err)
+		return err
 	}
 	defer tokens.close()
 
@@ -263,10 +263,21 @@ func runServer(
 	authHandler := authhttp.New(
 		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
 	)
-	// The read/search API plus the two session-gated auth endpoints share the gate.
+	// The read/search API plus the two session-gated auth endpoints share the
+	// gate, as do the consent endpoints when the authorization server is on.
+	extras := []func(chi.Router){authHandler.MountAPI}
+	if authServer != nil {
+		extras = append(extras, authServer.MountAPI)
+	}
 	httpapi.NewHandlerWithSearch(st, searchClient).
 		WithConfluenceExport(confluenceClient != nil).
-		Mount(router, gate, authHandler.MountAPI)
+		Mount(router, gate, extras...)
+	if authServer != nil {
+		// The metadata documents and the three OAuth endpoints are public by
+		// definition: the client has no token yet.
+		authServer.MountPublic(router)
+		slog.Info("authorization server mounted", "issuer", cfg.OAuth.Issuer, "consent", cfg.OAuth.SiteURL+"/oauth/consent")
+	}
 	if !cfg.AuthDisabled() {
 		// /auth/login and /auth/callback are public (state is their CSRF guard).
 		// Under none-mode there is no provider to redirect to, so the routes are

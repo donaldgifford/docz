@@ -115,3 +115,69 @@ func buildGate(cfg *config.Config, st *store.Store, sessionStore *session.Store,
 		return authn(authz(next))
 	}
 }
+
+// buildAuthStack builds the bearer verifier and the authorization server
+// together, since the second needs the first's cache.
+func buildAuthStack(ctx context.Context, cfg *config.Config, st *store.Store) (tokenAuth, *oauth.Server, error) {
+	tokens, err := buildTokenAuth(ctx, cfg)
+	if err != nil {
+		return tokenAuth{}, nil, fmt.Errorf("building token auth: %w", err)
+	}
+	authServer, err := buildAuthServer(cfg, st, tokens)
+	if err != nil {
+		tokens.close()
+
+		return tokenAuth{}, nil, fmt.Errorf("building authorization server: %w", err)
+	}
+
+	return tokens, authServer, nil
+}
+
+// buildAuthServer builds docz-api's own authorization server (DESIGN-0023
+// §5) when MCP is enabled and a login exists: under AUTH_PROVIDERS=none
+// there is no person to consent, so nothing is mounted and nil is returned.
+// Its transient state shares the token verifier's Redis cache.
+func buildAuthServer(cfg *config.Config, st *store.Store, tokens tokenAuth) (*oauth.Server, error) {
+	if !cfg.MCP.Enabled || cfg.AuthDisabled() {
+		return nil, nil //nolint:nilnil // nil is "not mounted", which the caller tests
+	}
+
+	key, err := cfg.OAuth.SigningKey()
+	if err != nil {
+		return nil, fmt.Errorf("parsing signing key: %w", err)
+	}
+	signer, err := oauth.NewSigner(cfg.OAuth.Issuer, cfg.OAuth.Audience(), key, cfg.OAuth.AccessTTL)
+	if err != nil {
+		return nil, fmt.Errorf("building signer: %w", err)
+	}
+
+	var cache oauth.Cache
+	if tokens.cache != nil {
+		cache = tokens.cache
+	}
+
+	return oauth.NewServer(&oauth.ServerOptions{
+		Issuer:     cfg.OAuth.Issuer,
+		Audience:   cfg.OAuth.Audience(),
+		SiteURL:    cfg.OAuth.SiteURL,
+		Signer:     signer,
+		ScopeMap:   cfg.Authz.ScopeMap,
+		Clients:    oauth.NewClientFetcher(&oauth.ClientFetcherOptions{Cache: cache}),
+		Cache:      cache,
+		Store:      st,
+		RefreshTTL: cfg.OAuth.RefreshTTL,
+		Session:    principalFromSession,
+		Observe:    telemetry.ObserveOAuthToken,
+	}), nil
+}
+
+// principalFromSession is how the consent endpoints read the site session
+// without the oauth package importing the session package.
+func principalFromSession(ctx context.Context) (oauth.Principal, bool) {
+	sess, ok := session.FromContext(ctx)
+	if !ok {
+		return oauth.Principal{}, false
+	}
+
+	return oauth.Principal{SessionID: sess.ID, Identity: sess.Identity, Scopes: sess.Scopes}, true
+}
