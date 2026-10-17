@@ -3,7 +3,10 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -11,7 +14,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -23,6 +28,7 @@ import (
 	"github.com/donaldgifford/docz/v2/internal/auth"
 	"github.com/donaldgifford/docz/v2/internal/authhttp"
 	"github.com/donaldgifford/docz/v2/internal/authorize"
+	"github.com/donaldgifford/docz/v2/internal/oauth"
 	"github.com/donaldgifford/docz/v2/internal/queue"
 	"github.com/donaldgifford/docz/v2/internal/search"
 	"github.com/donaldgifford/docz/v2/internal/session"
@@ -84,7 +90,8 @@ type fakeSessions struct{}
 
 func (fakeSessions) Lookup(context.Context, string) (session.Session, error) {
 	return session.Session{
-		ID: contractSessionID,
+		ID:  contractSessionID,
+		Via: session.ViaCookie,
 		Identity: auth.Identity{
 			Provider: "github", Subject: "42",
 			Email: "jane@example.com", Login: "jane",
@@ -176,6 +183,56 @@ func loadContractSpec(t *testing.T) routers.Router {
 // runs against the production handlers and their real middleware.
 func buildContractHandler() http.Handler { return contractHandler(false) }
 
+// The bearer path of the gate (DESIGN-0023 §6): docz-api's own issuer with a
+// test key, so the contract test mints tokens the verifier accepts.
+const (
+	contractIssuer   = "https://docz.example"
+	contractAudience = contractIssuer + "/mcp"
+	contractMetadata = contractIssuer + "/.well-known/oauth-protected-resource"
+)
+
+// contractSigningKey is one ES256 key per process; the verifier trusts its
+// public half and the tests sign with its private half.
+var contractSigningKey = func() *ecdsa.PrivateKey {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}()
+
+// contractVerifier is the verifier the gate runs: docz-api's own key only, no
+// trusted issuers, so no discovery request is made.
+func contractVerifier() *oauth.Verifier {
+	v, err := oauth.NewVerifier(context.Background(), &oauth.VerifierOptions{
+		Audience: contractAudience,
+		Issuer:   contractIssuer,
+		Key:      &contractSigningKey.PublicKey,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// contractToken mints a token for the test subject with the given audience
+// and lifetime, so a case can ask for a wrong audience or an expired token.
+func contractToken(t *testing.T, audience string, ttl time.Duration) string {
+	t.Helper()
+	signer, err := oauth.NewSigner(contractIssuer, audience, contractSigningKey, ttl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := signer.Issue(&oauth.Claims{
+		Subject: "user:github:42", ClientID: "contract-client",
+		Scopes: []string{"public:read"}, Email: "jane@example.com", Login: "jane",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
 // contractHandler builds the surface in either auth mode. authDisabled mirrors
 // runServer under AUTH_PROVIDERS=none: the anonymous injector replaces the
 // session middleware, and the public login routes are left unmounted.
@@ -190,12 +247,16 @@ func contractHandler(authDisabled bool) http.Handler {
 	sessions := fakeSessions{}
 
 	r := chi.NewRouter()
-	// The /api/v1 gate: session authn composed over the authorize seam, matching
-	// runServer. A fixed cookie resolves to a fixed identity via fakeSessions.
-	authn := session.Middleware(sessions)
-	if authDisabled {
-		authn = session.AnonymousMiddleware()
-	}
+	// The /api/v1 gate: session.Authn (a bearer from the contract key, else
+	// the cookie, else the anonymous principal) composed over the authorize
+	// seam, matching runServer. A fixed cookie resolves to a fixed identity
+	// via fakeSessions.
+	authn := session.Authn(session.AuthnOptions{
+		Sessions:         sessions,
+		Verifier:         contractVerifier(),
+		Anonymous:        authDisabled,
+		ResourceMetadata: contractMetadata,
+	})
 	gate := func(next http.Handler) http.Handler {
 		return authn(authorize.Middleware(authorize.NewAllReposAuthorizer(st))(next))
 	}
@@ -392,6 +453,104 @@ func TestOpenAPIContract(t *testing.T) {
 	}
 }
 
+// bearerRequest is contractRequest with a token instead of the cookie.
+func bearerRequest(t *testing.T, target, token string) *http.Request {
+	t.Helper()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, target, http.NoBody)
+	req.Header.Set("Authorization", "Bearer "+token)
+	return req
+}
+
+// Every read route with a bearer token in place of the cookie serves the
+// same contract (DESIGN-0023 §6): the token is the session, nothing else
+// changes on the wire.
+func TestOpenAPIContractBearer(t *testing.T) {
+	router := loadContractSpec(t)
+	h := buildContractHandler()
+	token := contractToken(t, contractAudience, time.Minute)
+
+	for _, target := range []string{
+		"http://localhost/api/v1/repos",
+		"http://localhost/api/v1/repos/acme/platform",
+		"http://localhost/api/v1/repos/acme/platform/index",
+		"http://localhost/api/v1/repos/acme/platform/changelog",
+		"http://localhost/api/v1/repos/acme/platform/pages",
+		"http://localhost/api/v1/repos/acme/platform/pages/guides%2Fsetup.md",
+		"http://localhost/api/v1/repos/acme/platform/types",
+		"http://localhost/api/v1/repos/acme/platform/types/frameworks/docs",
+		"http://localhost/api/v1/repos/acme/platform/types/FW/docs/FW-0001",
+		"http://localhost/api/v1/repos/acme/platform/confluence",
+		"http://localhost/api/v1/search?q=intro",
+		"http://localhost/api/v1/auth/session",
+	} {
+		t.Run(strings.TrimPrefix(target, "http://localhost"), func(t *testing.T) {
+			validateRoundTrip(t, router, h, bearerRequest(t, target, token))
+		})
+	}
+}
+
+// A token the verifier refuses is a 401 with the RFC 9728 challenge, and it
+// never falls through to a cookie on the same request (DESIGN-0023 §6).
+func TestOpenAPIContractBadBearer(t *testing.T) {
+	router := loadContractSpec(t)
+	h := buildContractHandler()
+	wantChallenge := `Bearer resource_metadata="` + contractMetadata + `", scope="public:read"`
+
+	cases := []struct {
+		name  string
+		token string
+	}{
+		{"garbage", "not-a-jwt"},
+		{"wrong audience", contractToken(t, "https://other.example/mcp", time.Minute)},
+		{"expired", contractToken(t, contractAudience, -2*time.Minute)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := bearerRequest(t, "http://localhost/api/v1/repos", tc.token)
+			req.AddCookie(&http.Cookie{Name: "docz_session", Value: contractSessionID})
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, req)
+			if rr.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, want 401 (body %q)", rr.Code, rr.Body.String())
+			}
+			if got := rr.Header().Get("WWW-Authenticate"); got != wantChallenge {
+				t.Errorf("WWW-Authenticate = %q, want %q", got, wantChallenge)
+			}
+			validateRoundTrip(t, router, h, bearerRequest(t, "http://localhost/api/v1/repos", tc.token))
+		})
+	}
+}
+
+// The session response for a token caller names how it authenticated, its
+// scopes, the client, and the issuer; docz-api's own subject resolves to the
+// person the token was minted for.
+func TestSessionReportsTokenPrincipal(t *testing.T) {
+	h := buildContractHandler()
+	req := bearerRequest(t, "http://localhost/api/v1/auth/session", contractToken(t, contractAudience, time.Minute))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body %q)", rr.Code, rr.Body.String())
+	}
+
+	var got struct {
+		Provider string   `json:"provider"`
+		Subject  string   `json:"subject"`
+		Via      string   `json:"via"`
+		Scopes   []string `json:"scopes"`
+		ClientID string   `json:"client_id"`
+		Issuer   string   `json:"issuer"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode session body %q: %v", rr.Body.String(), err)
+	}
+	if got.Provider != "github" || got.Subject != "42" || got.Via != "token" ||
+		got.ClientID != "contract-client" || got.Issuer != contractIssuer ||
+		len(got.Scopes) != 1 || got.Scopes[0] != "public:read" {
+		t.Errorf("session = %+v, want github/42 via token for contract-client from %s with [public:read]", got, contractIssuer)
+	}
+}
+
 // none-mode (AUTH_PROVIDERS=none) must serve the same wire contract with no
 // cookie at all: same schemas, same status codes, no spec change. That is what
 // makes it usable as a first-setup shape — the docz-site talks to it unmodified.
@@ -436,12 +595,13 @@ func TestNoAuthModeReportsAnonymousIdentity(t *testing.T) {
 	var got struct {
 		Provider string `json:"provider"`
 		Subject  string `json:"subject"`
+		Via      string `json:"via"`
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode session body %q: %v", rr.Body.String(), err)
 	}
-	if got.Provider != session.AnonymousProvider || got.Subject != session.AnonymousSubject {
-		t.Errorf("identity = %+v, want provider %q subject %q",
+	if got.Provider != session.AnonymousProvider || got.Subject != session.AnonymousSubject || got.Via != "anonymous" {
+		t.Errorf("identity = %+v, want provider %q subject %q via anonymous",
 			got, session.AnonymousProvider, session.AnonymousSubject)
 	}
 }

@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.6.2
+  version: 1.7.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -23,6 +23,7 @@ tags:
     description: The GitHub App webhook receiver (HMAC-authenticated).
 security:
   - sessionCookie: []
+  - bearerToken: []
 paths:
   /api/v1/repos:
     get:
@@ -516,6 +517,20 @@ components:
         anonymous identity, and does not mount `/auth/login` or
         `/auth/callback`. Request and response shapes are unchanged, so a client
         generated from this spec works against either mode.
+    bearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        An OAuth 2.1 access token (DESIGN-0023): a JWT minted by docz-api's
+        authorization server or by an issuer in `OAUTH_TRUSTED_ISSUERS`, with
+        `aud` set to `<OAUTH_ISSUER>/mcp`. Accepted on every `/api/v1`
+        operation beside the cookie and on `/mcp`, only while `MCP_ENABLED`
+        is true; otherwise the header is ignored and the cookie decides. A
+        token that fails verification is a `401` carrying
+        `WWW-Authenticate: Bearer resource_metadata="<OAUTH_ISSUER>/.well-known/oauth-protected-resource", scope="public:read"`,
+        and a bad token never falls through to the cookie. The token's
+        `scope` (or `scp`) claim is the principal's scopes.
   parameters:
     Owner:
       name: owner
@@ -1027,10 +1042,13 @@ components:
               type: integer
               format: int64
     Session:
-      description: The authenticated site user's normalized identity.
+      description: |
+        The authenticated principal: the site user's normalized identity for
+        a cookie session, the token's subject for a bearer, or the anonymous
+        identity under `AUTH_PROVIDERS=none`.
       type: object
       additionalProperties: false
-      required: [provider, subject]
+      required: [provider, subject, via, scopes]
       properties:
         provider:
           type: string
@@ -1056,6 +1074,28 @@ components:
             is not assigned) or a claim mapper. Treat it as always optional.
           items:
             type: string
+        via:
+          type: string
+          enum: [cookie, token, anonymous]
+          description: How the request authenticated (DESIGN-0023 §6).
+          example: cookie
+        scopes:
+          type: array
+          description: |
+            The scopes the principal holds (DESIGN-0023 §7): `public:read`
+            plus whatever `AUTHZ_SCOPE_MAP` grants for a cookie session, the
+            token's `scope` claim for a bearer, and empty for the anonymous
+            identity, which sees every repository. A repository is visible
+            when its `access.scopes` holds any of them.
+          items:
+            type: string
+          example: ['public:read']
+        client_id:
+          type: string
+          description: For a bearer token, the client it was issued to.
+        issuer:
+          type: string
+          description: For a bearer token, the issuer that minted it.
     StatusResponse:
       description: A minimal JSON status envelope with a single `status` field.
       type: object

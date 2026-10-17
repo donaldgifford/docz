@@ -97,12 +97,20 @@ func (*Handler) getSession(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
+	scopes := sess.Scopes
+	if scopes == nil {
+		scopes = []string{}
+	}
 	writeJSON(w, sessionDTO{
 		Provider: sess.Identity.Provider,
 		Subject:  sess.Identity.Subject,
 		Email:    sess.Identity.Email,
 		Login:    sess.Identity.Login,
 		Groups:   sess.Identity.Groups,
+		Via:      sess.Via.String(),
+		Scopes:   scopes,
+		ClientID: sess.ClientID,
+		Issuer:   sess.Issuer,
 	})
 }
 
