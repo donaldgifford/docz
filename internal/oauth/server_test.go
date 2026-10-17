@@ -668,3 +668,36 @@ func TestErrorFor(t *testing.T) {
 		t.Error("errorFor mapping")
 	}
 }
+
+// TestFlowLoopbackPort is a native client on an ephemeral port: the document
+// registers http://127.0.0.1:9999/cb, the client bound 54321, and the code
+// flow completes on the port it bound (RFC 8252 §7.3).
+func TestFlowLoopbackPort(t *testing.T) {
+	t.Parallel()
+
+	fl := newFlow(t, map[string][]string{"github:group:eng": {"team:read"}})
+	const bound = "http://127.0.0.1:54321/cb"
+
+	rec := fl.do(t, http.MethodGet, fl.authorizeURL(url.Values{"redirect_uri": {bound}}), "", nil)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("authorize = %d %s", rec.Code, rec.Body.String())
+	}
+	loc, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cb, status := fl.consent(t, loc.Query().Get("authz"), "allow")
+	if status != http.StatusOK {
+		t.Fatalf("consent = %d", status)
+	}
+	if got := cb.Scheme + "://" + cb.Host + cb.Path; got != bound {
+		t.Fatalf("callback = %s, want %s", got, bound)
+	}
+
+	form := fl.codeForm(cb.Query().Get("code"))
+	form.Set("redirect_uri", bound)
+	if _, bad, code := fl.tokenRequest(t, form); code != http.StatusOK {
+		t.Fatalf("token = %d %s: %s", code, bad.Error, bad.Description)
+	}
+}

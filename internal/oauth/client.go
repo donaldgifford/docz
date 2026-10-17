@@ -268,11 +268,7 @@ func validateRedirectURI(raw string) error {
 	case "https":
 		return nil
 	case "http":
-		host := u.Hostname()
-		if host == "localhost" {
-			return nil
-		}
-		if a, err := netip.ParseAddr(host); err == nil && a.IsLoopback() {
+		if loopbackHTTP(u) {
 			return nil
 		}
 

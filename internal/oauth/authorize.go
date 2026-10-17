@@ -60,14 +60,14 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The redirect target is the registered entry, never the query value.
-	registered := slices.Index(meta.RedirectURIs, q.Get("redirect_uri"))
-	if registered < 0 {
+	// The redirect target is built from the registered entry, never from the
+	// query value; a loopback entry takes the port the client bound.
+	redirectURI, ok := matchRedirect(meta.RedirectURIs, q.Get("redirect_uri"))
+	if !ok {
 		errorPage(w, ErrorInvalidRequest, "redirect_uri is not one the client registered")
 
 		return
 	}
-	redirectURI := meta.RedirectURIs[registered]
 
 	// Post-trust: the client gets the error.
 	fail := func(code, description string) {
