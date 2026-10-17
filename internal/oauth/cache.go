@@ -16,6 +16,10 @@ import (
 type Cache interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+	// Take returns the value and deletes the key in one step, so a pending
+	// authorization or a code is redeemed exactly once across replicas.
+	Take(ctx context.Context, key string) ([]byte, error)
+	Delete(ctx context.Context, key string) error
 }
 
 // ErrCacheMiss is returned by Cache.Get for a key that is absent or expired.
@@ -54,6 +58,21 @@ func (c *RedisCache) Get(ctx context.Context, key string) ([]byte, error) {
 // Set implements Cache.
 func (c *RedisCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
 	return c.client.Set(ctx, key, value, ttl).Err()
+}
+
+// Take implements Cache through GETDEL.
+func (c *RedisCache) Take(ctx context.Context, key string) ([]byte, error) {
+	val, err := c.client.GetDel(ctx, key).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return nil, ErrCacheMiss
+	}
+
+	return val, err
+}
+
+// Delete implements Cache.
+func (c *RedisCache) Delete(ctx context.Context, key string) error {
+	return c.client.Del(ctx, key).Err()
 }
 
 // Close releases the client.
@@ -106,6 +125,29 @@ func (c *MemoryCache) Set(_ context.Context, key string, value []byte, ttl time.
 		expires = c.now().Add(ttl)
 	}
 	c.entries[key] = memoryEntry{value: value, expires: expires}
+
+	return nil
+}
+
+// Take implements Cache.
+func (c *MemoryCache) Take(ctx context.Context, key string) ([]byte, error) {
+	val, err := c.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	c.mu.Lock()
+	delete(c.entries, key)
+	c.mu.Unlock()
+
+	return val, nil
+}
+
+// Delete implements Cache.
+func (c *MemoryCache) Delete(_ context.Context, key string) error {
+	c.mu.Lock()
+	delete(c.entries, key)
+	c.mu.Unlock()
 
 	return nil
 }

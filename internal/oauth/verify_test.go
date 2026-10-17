@@ -1,6 +1,7 @@
 package oauth
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -301,4 +302,16 @@ func TestMemoryCacheExpiry(t *testing.T) {
 	if _, err := c.Get(t.Context(), "k"); !errors.Is(err, ErrCacheMiss) {
 		t.Errorf("Get after expiry = %v, want ErrCacheMiss", err)
 	}
+}
+
+// fixedKey is one P-256 key for every golden, so the thumbprint is stable.
+func fixedKey(t *testing.T) *ecdsa.PrivateKey {
+	t.Helper()
+	// A fixed scalar; the key is for tests only and secures nothing.
+	key, err := ecdsa.ParseRawPrivateKey(elliptic.P256(), bytes.Repeat([]byte{0x42}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return key
 }
