@@ -242,6 +242,22 @@ level. `chart.just` drives it, and its README is the operator's guide.
   read it differently: `host:port` for the API's
   `otlptracehttp.WithEndpoint`, and the full `/v1/traces` URL for the site's
   exporter.
+- **MCP.** `api.mcp.{enabled, issuer, siteUrl, trustedIssuers, rateLimit}`
+  and `api.authz.{scopeMap, cacheTtl}` (IMPL-0026, DESIGN-0023) render
+  `MCP_ENABLED`, `MCP_RATE_LIMIT`, `OAUTH_ISSUER`, `DOCZ_SITE_URL`,
+  `OAUTH_TRUSTED_ISSUERS`, `OAUTH_SIGNING_KEY`, `AUTHZ_SCOPE_MAP`, and
+  `AUTHZ_CACHE_TTL` **only while `enabled`**, the authz block included. The
+  issuer defaults to `https://` on the API's first ingress host or HTTPRoute
+  hostname (`docz.api.externalUrl` over `docz.edgeHost`) and the site URL to
+  the site's (`docz.site.externalUrl`); with neither set the render fails
+  naming the value. `DOCZ_SITE_URL` is omitted under `auth.providers: none`,
+  where nobody can consent. The Secret's `oauth-signing-key` is `required`
+  while enabled, through the `existingSecret` seam, and the scope map is
+  rendered with sorted keys (`docz.api.scopeMap`) so the value is stable.
+  `DoczAPITokenFailures` is the seventh alert in the PrometheusRule and
+  `contrib/prometheus/alerts.yaml`; `tests/api/prometheusrule_test.yaml`
+  indexes rules by position, so a new alert goes last. RUNBOOK-0004 is the
+  operator's path.
 - **Edges.** There is one Ingress and one HTTPRoute per workload, each routed
   to its own Service. No Tailscale is in the chart:
   `deploy/tailscale-operator.md` is the only Tailscale documentation, and a

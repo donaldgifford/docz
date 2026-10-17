@@ -243,8 +243,9 @@ Okta-specific things to get right:
    reads a `groups` claim, but Okta does **not** emit one by default — add a
    groups claim to the authorization server (Security → API → Authorization
    Servers → your server → Claims) if you want `Identity.Groups` populated.
-   Authorization is currently a pass-through seam, so an empty `groups` is
-   harmless today; this only matters once group-based access lands.
+   `AUTHZ_SCOPE_MAP` keys of the form `okta:group:<name>` match against
+   that claim (DESIGN-0023 §7), so without the mapping a member holds
+   `public:read` only.
 3. **Register the redirect URI.** The Okta app's **Sign-in redirect URIs** must
    include `<AUTH_REDIRECT_BASE>/auth/callback` (same value the GitHub flow
    uses). Also confirm the user's email is **verified** in Okta — the service
@@ -261,6 +262,44 @@ secret from a secret manager, set `api.secrets.create=false` and point
 For local development you usually run **Keycloak** instead of a hosted Okta
 tenant (same OIDC code path); see
 [DEVELOPMENT.md](../DEVELOPMENT.md#local-monitoring-stack-just-monitor-up).
+
+### Enabling MCP (bearer tokens and the consent page)
+
+With `MCP_ENABLED=true` the service mounts `/mcp` (a read-only MCP server
+over the same documents the REST API serves), verifies bearer tokens at the
+`/api/v1` and `/mcp` gate, and, when a login provider is configured, acts
+as an OAuth 2.1 authorization server for MCP clients: `/oauth/authorize`
+sends a person to docz-site's consent page at `DOCZ_SITE_URL/oauth/consent`,
+`/oauth/token` redeems the code for a 15-minute JWT and a rotating refresh
+token, and the three `/.well-known` documents let a client find all of it
+(DESIGN-0023). Tokens an identity platform mints for agents are accepted
+when their issuer is in `OAUTH_TRUSTED_ISSUERS`; each is discovered at
+startup like a login provider, and the `aud` must be `OAUTH_ISSUER/mcp`.
+
+```sh
+MCP_ENABLED=true
+OAUTH_SIGNING_KEY=/run/secrets/oauth_signing_key   # or the PEM body
+OAUTH_ISSUER=https://docz-api.example.com          # defaults to AUTH_REDIRECT_BASE
+DOCZ_SITE_URL=https://docz.example.com
+OAUTH_TRUSTED_ISSUERS=https://keycloak.example.com/realms/platform
+AUTHZ_SCOPE_MAP=keycloak:group:platform=platform:read;github:login:octocat=platform:read
+```
+
+A repository is visible only to a principal holding one of its
+`access.scopes` (`[public:read]` when the block is absent), whether the
+principal arrived by cookie, by token, or anonymously under
+`AUTH_PROVIDERS=none`, where every scope is held. Under `none` there is no
+person to consent, so the authorization server is not mounted and only
+trusted issuers' tokens reach `/mcp`.
+
+On Kubernetes the `docz` Helm chart renders the same variables from
+`api.mcp.{enabled, issuer, siteUrl, trustedIssuers, rateLimit}` and
+`api.authz.{scopeMap, cacheTtl}` (nothing while `enabled` is false), with
+the key from the Secret's `oauth-signing-key`, and adds the
+`DoczAPITokenFailures` alert. [RUNBOOK-0004](../../docs/runbook/0004-enable-mcp-on-docz-api.md)
+walks the key, trusting Keycloak and OpenBao, a scope map, a private
+repository, connecting Claude Code, and the failure modes; the metrics are
+in [`contrib/README.md`](../../contrib/README.md).
 
 ## Health and observability
 

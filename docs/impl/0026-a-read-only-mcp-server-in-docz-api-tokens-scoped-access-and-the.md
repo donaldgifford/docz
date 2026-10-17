@@ -604,8 +604,9 @@ over real Postgres and Redis before the homelab sees it.
   three metrics, and the three failure modes (a refused metadata document,
   a wrong audience, a principal whose scopes unlock nothing), with a
   rollback procedure (turn the flag off) and a filled Last Verified row
-- [ ] `deploy/README.md` and `CLAUDE.md`'s chart section updated;
-  `contrib/README.md` lists the new metrics
+- [x] `deploy/README.md` and `CLAUDE.md`'s chart section updated;
+  `contrib/README.md` lists the new metrics (the deploy guide is
+  `deploy/api/README.md`; there is no `deploy/README.md`)
 - [ ] The homelab deployment turned on with GitHub login and the homelab
   Keycloak as a trusted issuer (question 8); the runbook followed end to
   end; what it taught written back into the runbook
