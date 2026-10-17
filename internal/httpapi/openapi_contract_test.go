@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -233,6 +234,116 @@ func contractToken(t *testing.T, audience string, ttl time.Duration) string {
 	return raw
 }
 
+// contractClientID is the one Client ID Metadata Document the contract's
+// fetcher serves, from memory: the flow never fetches over the network.
+const (
+	contractClientID     = "https://agent.example/oauth.json"
+	contractRedirectURI  = "https://agent.example/cb"
+	contractPKCEVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	contractChallenge    = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+)
+
+// contractScopeMap grants the fixed session's login one scope beyond
+// public:read, so a consent has something to intersect.
+var contractScopeMap = map[string][]string{"github:login:jane": {"team:read"}}
+
+// clientDocument serves contractClientID's document without a server.
+type clientDocument struct{}
+
+func (clientDocument) RoundTrip(r *http.Request) (*http.Response, error) {
+	body := `{"client_id":"` + contractClientID + `","client_name":"Agent","client_uri":"https://agent.example","redirect_uris":["` + contractRedirectURI + `"]}`
+	status := http.StatusOK
+	if r.URL.String() != contractClientID {
+		status, body = http.StatusNotFound, ""
+	}
+	return &http.Response{
+		StatusCode: status, Body: io.NopCloser(strings.NewReader(body)),
+		Header: http.Header{"Content-Type": {"application/json"}}, Request: r,
+	}, nil
+}
+
+// fakeOAuthStore is the authorization server's durable surface in memory;
+// the real one is a sqlc query set over Postgres.
+type fakeOAuthStore struct {
+	fakeUsers
+	mu     sync.Mutex
+	tokens map[string]*store.RefreshToken
+}
+
+func (*fakeOAuthStore) GetUser(context.Context, int64) (store.TokenUser, error) {
+	return store.TokenUser{ID: 1, Provider: "github", Subject: "42", Email: "jane@example.com", Login: "jane"}, nil
+}
+
+func (f *fakeOAuthStore) InsertRefreshToken(_ context.Context, hash, familyID string, userID int64, clientID, scope string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.tokens[hash] = &store.RefreshToken{TokenHash: hash, FamilyID: familyID, UserID: userID, ClientID: clientID, Scope: scope, IssuedAt: time.Now()}
+	return nil
+}
+
+func (f *fakeOAuthStore) GetRefreshToken(_ context.Context, hash string) (store.RefreshToken, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if t, ok := f.tokens[hash]; ok {
+		return *t, nil
+	}
+	return store.RefreshToken{}, store.ErrNotFound
+}
+
+func (f *fakeOAuthStore) RotateRefreshToken(_ context.Context, oldHash, newHash, scope string) (store.RefreshToken, bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	old, ok := f.tokens[oldHash]
+	if !ok || old.LastUsedAt != nil || old.RevokedAt != nil {
+		return store.RefreshToken{}, false, nil
+	}
+	now := time.Now()
+	old.LastUsedAt = &now
+	next := &store.RefreshToken{TokenHash: newHash, FamilyID: old.FamilyID, UserID: old.UserID, ClientID: old.ClientID, Scope: scope, IssuedAt: now}
+	f.tokens[newHash] = next
+	return *next, true, nil
+}
+
+func (f *fakeOAuthStore) RevokeRefreshFamily(_ context.Context, familyID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	now := time.Now()
+	for _, t := range f.tokens {
+		if t.FamilyID == familyID && t.RevokedAt == nil {
+			t.RevokedAt = &now
+		}
+	}
+	return nil
+}
+
+func (*fakeOAuthStore) UpsertConsent(context.Context, int64, string, string) error { return nil }
+
+// contractAuthServer builds the authorization server over the contract key,
+// an in-memory cache standing in for Redis, and the fakes above.
+func contractAuthServer() *oauth.Server {
+	signer, err := oauth.NewSigner(contractIssuer, contractAudience, contractSigningKey, 15*time.Minute)
+	if err != nil {
+		panic(err)
+	}
+	cache := oauth.NewMemoryCache()
+	return oauth.NewServer(&oauth.ServerOptions{
+		Issuer: contractIssuer, Audience: contractAudience, SiteURL: "https://site.example",
+		Signer:     signer,
+		ScopeMap:   map[string][]string{"github:login:jane": {"team:read"}},
+		Clients:    oauth.NewClientFetcher(&oauth.ClientFetcherOptions{Cache: cache, Transport: clientDocument{}}),
+		Cache:      cache,
+		Store:      &fakeOAuthStore{tokens: map[string]*store.RefreshToken{}},
+		RefreshTTL: 720 * time.Hour,
+		Session: func(ctx context.Context) (oauth.Principal, bool) {
+			sess, ok := session.FromContext(ctx)
+			if !ok {
+				return oauth.Principal{}, false
+			}
+			return oauth.Principal{SessionID: sess.ID, Identity: sess.Identity, Scopes: sess.Scopes}, true
+		},
+	})
+}
+
 // contractHandler builds the surface in either auth mode. authDisabled mirrors
 // runServer under AUTH_PROVIDERS=none: the anonymous injector replaces the
 // session middleware, and the public login routes are left unmounted.
@@ -254,6 +365,7 @@ func contractHandler(authDisabled bool) http.Handler {
 	authn := session.Authn(session.AuthnOptions{
 		Sessions:         sessions,
 		Verifier:         contractVerifier(),
+		Scopes:           func(id *auth.Identity) []string { return authorize.ScopesFor(id, contractScopeMap) },
 		Anonymous:        authDisabled,
 		ResourceMetadata: contractMetadata,
 	})
@@ -265,10 +377,19 @@ func contractHandler(authDisabled bool) http.Handler {
 		sessions, fakeUsers{}, []byte(contractStateSecret),
 	)
 	// Read/search routes plus the gated /auth/session + /auth/logout share the gate.
-	NewHandlerWithSearch(st, contractSearcher{}).WithConfluenceExport(true).Mount(r, gate, authHandler.MountAPI)
+	extras := []func(chi.Router){authHandler.MountAPI}
+	var authServer *oauth.Server
+	if !authDisabled {
+		// The authorization server, as runServer mounts it with MCP on and a
+		// login: the consent endpoints behind the gate, the rest public.
+		authServer = contractAuthServer()
+		extras = append(extras, authServer.MountAPI)
+	}
+	NewHandlerWithSearch(st, contractSearcher{}).WithConfluenceExport(true).Mount(r, gate, extras...)
 	if !authDisabled {
 		// Public auth routes (the signed state is their CSRF guard, not a session).
 		authHandler.MountPublic(r)
+		authServer.MountPublic(r)
 	}
 	// The webhook receiver sits outside the gate — its HMAC signature is the auth.
 	wh := webhook.New([]byte(contractWebhookSecret), fakeWebhookStore{}, fakeEnqueuer{}, nil)
@@ -548,6 +669,198 @@ func TestSessionReportsTokenPrincipal(t *testing.T) {
 		got.ClientID != "contract-client" || got.Issuer != contractIssuer ||
 		len(got.Scopes) != 1 || got.Scopes[0] != "public:read" {
 		t.Errorf("session = %+v, want github/42 via token for contract-client from %s with [public:read]", got, contractIssuer)
+	}
+}
+
+// formRequest is a form-encoded POST with no cookie: the code or the token
+// is the credential.
+func formRequest(t *testing.T, target string, form url.Values) *http.Request {
+	t.Helper()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, target, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req
+}
+
+// serveJSON runs req and decodes the body into out, returning the status.
+func serveJSON(t *testing.T, h http.Handler, req *http.Request, out any) int {
+	t.Helper()
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if out != nil && rr.Code == http.StatusOK {
+		if err := json.Unmarshal(rr.Body.Bytes(), out); err != nil {
+			t.Fatalf("decode %q: %v", rr.Body.String(), err)
+		}
+	}
+	return rr.Code
+}
+
+// authorizeAndConsent runs the authorization request and the consent
+// decision for the fixed session, returning the code.
+func authorizeAndConsent(t *testing.T, router routers.Router, h http.Handler) string {
+	t.Helper()
+	q := url.Values{
+		"response_type": {"code"}, "client_id": {contractClientID}, "redirect_uri": {contractRedirectURI},
+		"code_challenge": {contractChallenge}, "code_challenge_method": {"S256"},
+		"resource": {contractAudience}, "scope": {"public:read team:read"}, "state": {"xyz"},
+	}
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://localhost/oauth/authorize?"+q.Encode(), http.NoBody))
+	if rr.Code != http.StatusFound {
+		t.Fatalf("authorize = %d %s", rr.Code, rr.Body.String())
+	}
+	loc, err := url.Parse(rr.Header().Get("Location"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := loc.Query().Get("authz")
+	if id == "" {
+		t.Fatalf("authorize redirected to %s, want the consent page", loc)
+	}
+
+	target := "http://localhost/api/v1/oauth/authorizations/" + id
+	validateRoundTrip(t, router, h, contractRequest(t, http.MethodGet, target))
+
+	decide := contractRequest(t, http.MethodPost, target)
+	decide.Body = io.NopCloser(strings.NewReader(`{"decision":"allow"}`))
+	decide.Header.Set("Content-Type", "application/json")
+	var res struct {
+		RedirectTo string `json:"redirect_to"`
+	}
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, decide)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("decide = %d %s", rr.Code, rr.Body.String())
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	cb, err := url.Parse(res.RedirectTo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cb.Query().Get("code")
+}
+
+// The authorization server's wire contract (DESIGN-0023 §5): the three
+// metadata documents, the consent endpoints, both grants, and the revoke,
+// each validated against the spec.
+func TestOpenAPIContractOAuth(t *testing.T) {
+	router := loadContractSpec(t)
+	h := buildContractHandler()
+
+	for _, target := range []string{
+		"http://localhost/.well-known/oauth-protected-resource",
+		"http://localhost/.well-known/oauth-authorization-server",
+		"http://localhost/.well-known/jwks.json",
+	} {
+		t.Run(strings.TrimPrefix(target, "http://localhost"), func(t *testing.T) {
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, target, http.NoBody)
+			validateRoundTrip(t, router, h, req)
+		})
+	}
+
+	t.Run("consent, code, refresh, revoke", func(t *testing.T) {
+		code := authorizeAndConsent(t, router, h)
+
+		codeForm := url.Values{
+			"grant_type": {"authorization_code"}, "code": {code}, "code_verifier": {contractPKCEVerifier},
+			"client_id": {contractClientID}, "redirect_uri": {contractRedirectURI}, "resource": {contractAudience},
+		}
+		validateRoundTrip(t, router, h, formRequest(t, "http://localhost/oauth/token", codeForm))
+	})
+
+	t.Run("decision validated", func(t *testing.T) {
+		code := authorizeAndConsent(t, router, h)
+
+		// The decision endpoint itself, through the validator.
+		id2 := authorizeOnly(t, h)
+		validateRoundTrip(t, router, h, contractRequest(t, http.MethodGet, "http://localhost/api/v1/oauth/authorizations/"+id2))
+		decide := contractRequest(t, http.MethodPost, "http://localhost/api/v1/oauth/authorizations/"+id2)
+		decide.Body = io.NopCloser(strings.NewReader(`{"decision":"deny"}`))
+		decide.Header.Set("Content-Type", "application/json")
+		validateRoundTrip(t, router, h, decide)
+
+		var tok struct {
+			AccessToken  string `json:"access_token"`
+			RefreshToken string `json:"refresh_token"`
+		}
+		codeForm := url.Values{
+			"grant_type": {"authorization_code"}, "code": {code}, "code_verifier": {contractPKCEVerifier},
+			"client_id": {contractClientID}, "redirect_uri": {contractRedirectURI}, "resource": {contractAudience},
+		}
+		if status := serveJSON(t, h, formRequest(t, "http://localhost/oauth/token", codeForm), &tok); status != http.StatusOK {
+			t.Fatalf("token = %d", status)
+		}
+
+		// The minted token reads the API like a cookie does.
+		validateRoundTrip(t, router, h, bearerRequest(t, "http://localhost/api/v1/repos", tok.AccessToken))
+		var sess struct {
+			Via    string   `json:"via"`
+			Scopes []string `json:"scopes"`
+		}
+		if status := serveJSON(t, h, bearerRequest(t, "http://localhost/api/v1/auth/session", tok.AccessToken), &sess); status != http.StatusOK {
+			t.Fatalf("session = %d", status)
+		}
+		if sess.Via != "token" || len(sess.Scopes) != 2 {
+			t.Errorf("session via token = %+v, want via token with both scopes", sess)
+		}
+
+		// The refresh grant, then the revoke, each against the spec.
+		refreshForm := url.Values{"grant_type": {"refresh_token"}, "refresh_token": {tok.RefreshToken}}
+		validateRoundTrip(t, router, h, formRequest(t, "http://localhost/oauth/token", refreshForm))
+
+		// The rotated-out token is now an RFC 6749 error, in the spec's shape.
+		validateRoundTrip(t, router, h, formRequest(t, "http://localhost/oauth/token", refreshForm))
+
+		validateRoundTrip(t, router, h, formRequest(t, "http://localhost/oauth/revoke", url.Values{"token": {tok.RefreshToken}}))
+	})
+
+	t.Run("errors in the spec's shape", func(t *testing.T) {
+		// An unknown grant_type or a missing token fails kin-openapi's request
+		// validation before the handler runs, so those would prove the spec
+		// rather than the handler (the search sort enum precedent); the
+		// package tests cover their RFC 6749 bodies. The consent 404 and a
+		// bad code are reachable through the validator.
+		validateRoundTrip(t, router, h, contractRequest(t, http.MethodGet, "http://localhost/api/v1/oauth/authorizations/nope"))
+		validateRoundTrip(t, router, h, formRequest(t, "http://localhost/oauth/token", url.Values{
+			"grant_type": {"authorization_code"}, "code": {"nope"}, "code_verifier": {contractPKCEVerifier},
+			"client_id": {contractClientID}, "redirect_uri": {contractRedirectURI}, "resource": {contractAudience},
+		}))
+	})
+}
+
+// authorizeOnly runs the authorization request and returns the pending id.
+func authorizeOnly(t *testing.T, h http.Handler) string {
+	t.Helper()
+	q := url.Values{
+		"response_type": {"code"}, "client_id": {contractClientID}, "redirect_uri": {contractRedirectURI},
+		"code_challenge": {contractChallenge}, "code_challenge_method": {"S256"},
+		"resource": {contractAudience}, "scope": {"public:read"}, "state": {"xyz"},
+	}
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://localhost/oauth/authorize?"+q.Encode(), http.NoBody))
+	loc, err := url.Parse(rr.Header().Get("Location"))
+	if err != nil || rr.Code != http.StatusFound {
+		t.Fatalf("authorize = %d %s", rr.Code, rr.Body.String())
+	}
+	return loc.Query().Get("authz")
+}
+
+// Under none-mode the authorization server is absent: the metadata, the
+// endpoints, and the consent routes all 404, while /api/v1 still serves.
+func TestNoAuthModeOmitsAuthorizationServer(t *testing.T) {
+	h := contractHandler(true)
+	for _, target := range []string{
+		"http://localhost/.well-known/oauth-authorization-server",
+		"http://localhost/oauth/authorize?response_type=code",
+		"http://localhost/api/v1/oauth/authorizations/x",
+	} {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, target, http.NoBody)
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNotFound {
+			t.Errorf("%s: status = %d, want 404", target, rr.Code)
+		}
 	}
 }
 
