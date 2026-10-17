@@ -11,6 +11,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, provider, subject, email, login, created_at FROM users WHERE id = $1
+`
+
+// The person a refresh token belongs to, for the claims of the access token
+// a refresh mints (DESIGN-0023 §5).
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Provider,
+		&i.Subject,
+		&i.Email,
+		&i.Login,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const upsertUser = `-- name: UpsertUser :one
 INSERT INTO users (provider, subject, email, login)
 VALUES ($1, $2, $3, $4)
