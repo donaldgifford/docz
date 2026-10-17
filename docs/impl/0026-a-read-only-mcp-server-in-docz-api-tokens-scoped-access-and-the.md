@@ -212,26 +212,26 @@ gets the migration and nothing else, because `MCP_ENABLED` is unset.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Migration `20261017000000_add_oauth.sql`: `ALTER TABLE repos ADD
+- [x] Migration `20261017000000_add_oauth.sql`: `ALTER TABLE repos ADD
   COLUMN access_scopes JSONB NOT NULL DEFAULT '["public:read"]'` with a
   GIN index; `oauth_refresh_tokens` and `oauth_consents` as DESIGN-0023's
   Data Model draws them (hashed token, family id, user and client,
   scope, issued, last used, revoked; the consents unique on `(user_id,
   client_id)`); a `-- +goose Down` that drops all three
-- [ ] `sqlc.yaml` and `internal/store/queries/`: `UpsertRepo` takes
+- [x] `sqlc.yaml` and `internal/store/queries/`: `UpsertRepo` takes
   `access_scopes`; `ListRepoIDsForScopes(scopes text[])` as `SELECT id
   FROM repos WHERE access_scopes ?| @scopes`; `InsertRefreshToken`,
   `RotateRefreshToken` (one statement marking the old row used and
   inserting the new), `GetRefreshTokenByHash`, `RevokeRefreshFamily`,
   `UpsertConsent`, `GetConsent`; `just api generate` and
   `generate-check` clean
-- [ ] `internal/store`: `RepoInput.AccessScopes []string` marshalled to
+- [x] `internal/store`: `RepoInput.AccessScopes []string` marshalled to
   JSONB; `ReconcileRepo` writes it; the integration test
   (`//go:build integration`) round-trips the column and the two tables,
   and runs the migration up and down
-- [ ] `internal/ingest/service.go`: `AccessScopes: cfg.Access.Scopes` on
+- [x] `internal/ingest/service.go`: `AccessScopes: cfg.Access.Scopes` on
   the `RepoInput`; `mapper_test.go` covers the default and a team scope
-- [ ] `internal/config`: `MCPConfig{Enabled bool, RateLimit int}`,
+- [x] `internal/config`: `MCPConfig{Enabled bool, RateLimit int}`,
   `OAuthConfig{Issuer string, SigningKey Secret, TrustedIssuers []string,
   AccessTTL, RefreshTTL time.Duration}`, `AuthzConfig{ScopeMap
   map[string][]string, CacheTTL time.Duration}` read from `MCP_ENABLED`,
@@ -239,7 +239,7 @@ gets the migration and nothing else, because `MCP_ENABLED` is unset.
   `OAUTH_TRUSTED_ISSUERS`, `OAUTH_ACCESS_TTL`, `OAUTH_REFRESH_TTL`,
   `DOCZ_SITE_URL`, `AUTHZ_SCOPE_MAP`, `AUTHZ_CACHE_TTL`, with the defaults
   in DESIGN-0023's configuration table
-- [ ] Validation, every problem in the one `ErrInvalidConfig`: `OAUTH_ISSUER`
+- [x] Validation, every problem in the one `ErrInvalidConfig`: `OAUTH_ISSUER`
   defaults to `AUTH_REDIRECT_BASE`, must be `https` with a host and no
   query or fragment, and is required when MCP is enabled; each trusted
   issuer the same rule with a path allowed; `OAUTH_SIGNING_KEY` and
@@ -250,10 +250,10 @@ gets the migration and nothing else, because `MCP_ENABLED` is unset.
   `provider:login:<name>=…`, every scope checked against the Phase 1
   grammar through `config.ValidateScope` (exported for this), a `public`
   audience or a `write` action rejected; `MCP_RATE_LIMIT` positive
-- [ ] `config_test.go`: the new variables added to `envKeys` so
+- [x] `config_test.go`: the new variables added to `envKeys` so
   `TestEnvKeysCoverLoad` passes; a case per validation rule; the defaults
   pinned
-- [ ] `.env.example`, `deploy/.env.production.example`, and
+- [x] `.env.example`, `deploy/.env.production.example`, and
   `deploy/README.md` list the variables, commented out
 
 <!--docz:tasks:end-->
