@@ -260,6 +260,9 @@ func runServer(
 	// principal) composed over the authorize seam, which resolves the allowed
 	// repositories from the principal's scopes. See buildGate.
 	gate := buildGate(cfg, st, sessionStore, tokens)
+	// With MCP on, /mcp is mounted here and the /api/v1 gate gains the
+	// token-only rate limiter (DESIGN-0023 §8).
+	gate = mountMCP(router, cfg, st, searchClient, gate)
 	authHandler := authhttp.New(
 		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
 	)

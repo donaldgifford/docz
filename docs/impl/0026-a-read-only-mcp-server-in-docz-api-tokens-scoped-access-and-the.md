@@ -524,7 +524,7 @@ against the type packages' corpora.
   `docz_api_mcp_call_duration_seconds{tool}` labelled from the `Mcp-Name`
   header; a child span `mcp.<method>` carrying the tool name with the
   `traceparent` from `_meta` as parent when the HTTP headers carry none
-- [ ] `cmd/docz-api/main.go`: `POST /mcp` mounted behind `authn`, the
+- [x] `cmd/docz-api/main.go`: `POST /mcp` mounted behind `authn`, the
   authorizer, and the limiter when `MCP_ENABLED`; the `401` challenge
   verified to fire before the SDK sees the request
 - [x] Tests: the SDK's in-memory transport for `server/discover`,
