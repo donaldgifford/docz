@@ -26,7 +26,6 @@ import (
 	"github.com/donaldgifford/docz/v2/api"
 	"github.com/donaldgifford/docz/v2/internal/auth"
 	"github.com/donaldgifford/docz/v2/internal/authhttp"
-	"github.com/donaldgifford/docz/v2/internal/authorize"
 	"github.com/donaldgifford/docz/v2/internal/config"
 	"github.com/donaldgifford/docz/v2/internal/export"
 	"github.com/donaldgifford/docz/v2/internal/githubapp"
@@ -207,6 +206,12 @@ func runServer(
 		return fmt.Errorf("building session store: %w", err)
 	}
 	defer closeSession(sessionStore)
+	tokens, err := buildTokenAuth(startCtx, cfg)
+	if err != nil {
+		closeQueueClient(queueClient)
+		return fmt.Errorf("building token auth: %w", err)
+	}
+	defer tokens.close()
 
 	// The worker runs in-process alongside the HTTP server (single-binary ethos).
 	// It builds a per-installation GitHub client per job via ingestRunner.
@@ -251,14 +256,10 @@ func runServer(
 	if cfg.Telemetry.MetricsEnabled {
 		router.Handle("/metrics", telemetry.MetricsHandler())
 	}
-	// The /api/v1 gate is the session authn check (401 without a valid session)
-	// composed over the authorize seam (which still grants all onboarded repos;
-	// the future SpiceDB resolver plugs in here). Session runs first so authorize
-	// resolves behind a real identity.
-	authorizer := authorize.NewAllReposAuthorizer(st)
-	gate := func(next http.Handler) http.Handler {
-		return authn(cfg, sessionStore)(authorize.Middleware(authorizer)(next))
-	}
+	// The /api/v1 gate: authentication (a bearer, the cookie, or the anonymous
+	// principal) composed over the authorize seam, which resolves the allowed
+	// repositories from the principal's scopes. See buildGate.
+	gate := buildGate(cfg, st, sessionStore, tokens)
 	authHandler := authhttp.New(
 		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
 	)
@@ -595,15 +596,4 @@ func checkGitHubCredentials(ctx context.Context, cfg config.GitHubConfig) error 
 			"err", err)
 		return nil
 	}
-}
-
-// authn returns the authentication middleware for the /api/v1 gate: the real
-// session check normally, or the anonymous injector under AUTH_PROVIDERS=none.
-// Both inject a session.Session, so everything downstream — authorize, the
-// handlers, /api/v1/auth/session — is identical in either mode.
-func authn(cfg *config.Config, sessionStore *session.Store) func(http.Handler) http.Handler {
-	if cfg.AuthDisabled() {
-		return session.AnonymousMiddleware()
-	}
-	return session.Middleware(sessionStore)
 }
