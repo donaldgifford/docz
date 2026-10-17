@@ -713,6 +713,9 @@ over real Postgres and Redis before the homelab sees it.
   largest diff this repository has had since the move-ins.
 - d. Other.
 
+> **Resolved 2026-10-17: (a).** One PR per phase from `main`, `dont-release`
+> until the last.
+
 ### 2. How does it release?
 
 - a. **One `minor` after Phase 6, carrying the whole feature and whatever
@@ -723,6 +726,10 @@ over real Postgres and Redis before the homelab sees it.
   Phase 6. Lets a repository write `access.scopes` early, and gives
   #185 and #186 a release sooner, at the cost of a second release cycle.
 - c. Other.
+
+> **Resolved 2026-10-17: (a).** One `minor` after Phase 6. A hand-cut
+> `v*-beta.*` tag from a merge commit publishes images for the homelab
+> check before then, as the v2 betas did.
 
 ### 3. How does an operator make the signing key?
 
@@ -805,6 +812,10 @@ over real Postgres and Redis before the homelab sees it.
   docz-api's own tokens, with the external issuer untested outside the
   integration suite's fake.
 - d. Other.
+
+> **Resolved 2026-10-17: (a).** No OpenBao-specific code: its OIDC provider
+> publishes discovery and a JWKS like Keycloak and Okta, so it is one more
+> entry in `OAUTH_TRUSTED_ISSUERS` when a platform adopts it.
 
 <!--docz:open-questions:end-->
 
