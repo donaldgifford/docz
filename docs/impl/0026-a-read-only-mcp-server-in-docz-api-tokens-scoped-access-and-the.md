@@ -1,7 +1,7 @@
 ---
 id: IMPL-0026
 title: "A read-only MCP server in docz-api: tokens, scoped access, and the six tools"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-10-17
 ---
@@ -609,11 +609,17 @@ over real Postgres and Redis before the homelab sees it.
   `deploy/api/README.md`; there is no `deploy/README.md`)
 - [ ] The homelab deployment turned on with GitHub login and the homelab
   Keycloak as a trusted issuer (question 8); the runbook followed end to
-  end; what it taught written back into the runbook
-- [ ] `CHANGELOG.md` carries the tool contract under `mcp` and the
-  `access:` block under `config`; the release PR labelled `minor`
-  (question 2); INV-0024 and DESIGN-0023 already point at each other,
-  DESIGN-0023's status flipped to `Implemented` in the release PR
+  end; what it taught written back into the runbook (deferred - human
+  required: needs the homelab's values, its Keycloak admin, and a browser
+  for the consent page; RUNBOOK-0004's Last Verified row records the
+  integration suite until then, 2026-10-17)
+- [x] `CHANGELOG.md` carries the tool contract under `mcp` and the
+  `access:` block under `config` (git-cliff's unreleased preview groups
+  `*(mcp)* The read-only MCP server` and `*(config)* The access: block`,
+  and CI regenerates the file); DESIGN-0023's status flipped to
+  `Implemented` on this branch; the release PR labelled `minor`
+  (question 2) is deferred - human required: the label is set when the
+  PR is opened
 
 <!--docz:tasks:end-->
 
@@ -669,27 +675,28 @@ over real Postgres and Redis before the homelab sees it.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Phase 1: table tests for the grammar; `ParseBytes` equal to both
+- [x] Phase 1: table tests for the grammar; `ParseBytes` equal to both
   `Load` paths; the json shape; the parity normaliser's unit test and
   `just parity`; `just lint-generated` over the scaffold with the new block
-- [ ] Phase 2: store integration round trips and the migration down;
+- [x] Phase 2: store integration round trips and the migration down;
   config validation cases and the `envKeys` pin; the mapper's default and
   team scope
-- [ ] Phase 3: the verifier against a test key and a fake issuer (signature,
+- [x] Phase 3: the verifier against a test key and a fake issuer (signature,
   `iss`, `aud`, `exp`, `nbf`, unknown `kid` refresh, `scope` and `scp`);
   the `authn` flowchart as a table; the scope rule and cache; the export
   refusal table; the contract test with bearer tokens
-- [ ] Phase 4: the metadata goldens; every authorization refusal by name;
+- [x] Phase 4: the metadata goldens; every authorization refusal by name;
   the fetcher's SSRF refusals through an injected resolver; code
   single-use and PKCE; rotation and family revocation; the consent
   binding; MSW tests for the consent route; the contract test for every
   new endpoint
-- [ ] Phase 5: the in-memory transport for every tool and resource;
+- [x] Phase 5: the in-memory transport for every tool and resource;
   `fields` pinned to the type corpora; the conformance test over the full
   stack; the limiter; the audit line and metric label
-- [ ] Phase 6: the integration suite over real Postgres and Redis;
+- [x] Phase 6: the integration suite over real Postgres and Redis;
   helm-unittest; the hand-driven live check with Claude Code and a
-  Keycloak-minted token, recorded in RUNBOOK-0004
+  Keycloak-minted token, recorded in RUNBOOK-0004 (the live check is
+  deferred - human required, with the homelab task above)
 
 <!--docz:testing:end-->
 
