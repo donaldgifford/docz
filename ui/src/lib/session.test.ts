@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { getSessionResponse } from "@/api/__generated__/docz-api";
+import type { Session } from "@/api/__generated__/docz-api.schemas";
 import { SessionRequiredError, SessionUnavailableError } from "@/api/fetcher";
 import { classifySession } from "@/lib/session";
 
@@ -18,9 +19,11 @@ describe("classifySession", () => {
   });
 
   it("200 with a github identity → signed-in carrying the session", () => {
-    const session = {
+    const session: Session = {
       provider: "github",
       subject: "12345",
+      via: "cookie",
+      scopes: ["public:read"],
       login: "donaldgifford",
     };
     expect(
@@ -36,6 +39,8 @@ describe("classifySession", () => {
         data: ok({
           provider: "none",
           subject: "anonymous",
+          via: "anonymous",
+          scopes: [],
           login: "anonymous",
         }),
       }),

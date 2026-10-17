@@ -190,6 +190,8 @@ describe("axe: core views", () => {
         HttpResponse.json({
           provider: "none",
           subject: "anonymous",
+          via: "anonymous",
+          scopes: [],
           login: "anonymous",
         }),
       ),
