@@ -13,23 +13,26 @@ import (
 // deliberately separate from the sqlc row types so nullable pgtype columns are
 // flattened to plain strings ("" for NULL) and never leak into the API.
 
-type repoSummaryDTO struct {
+// RepoSummaryDTO is one entry of GET /repos.
+type RepoSummaryDTO struct {
 	Repo          string `json:"repo"`
 	DefaultBranch string `json:"default_branch"`
 	DocsDir       string `json:"docs_dir"`
 	LastSyncedSHA string `json:"last_synced_sha"`
 }
 
-type repoDetailDTO struct {
+// RepoDetailDTO is GET /repos/{owner}/{name}.
+type RepoDetailDTO struct {
 	Repo           string          `json:"repo"`
 	DefaultBranch  string          `json:"default_branch"`
 	DocsDir        string          `json:"docs_dir"`
 	LastSyncedSHA  string          `json:"last_synced_sha"`
 	ConfigSnapshot json.RawMessage `json:"config_snapshot"`
-	Types          []typeDTO       `json:"types"`
+	Types          []TypeDTO       `json:"types"`
 }
 
-type typeDTO struct {
+// TypeDTO is one document type of a repository.
+type TypeDTO struct {
 	Name        string   `json:"name"`
 	Dir         string   `json:"dir"`
 	IDPrefix    string   `json:"id_prefix"`
@@ -38,25 +41,29 @@ type typeDTO struct {
 	Aliases     []string `json:"aliases"`
 }
 
-type repoIndexDTO struct {
+// RepoIndexDTO is GET /repos/{owner}/{name}/index.
+type RepoIndexDTO struct {
 	Repo     string `json:"repo"`
 	IndexMD  string `json:"index_md"`
 	IndexSHA string `json:"index_sha"`
 }
 
-type repoChangelogDTO struct {
+// RepoChangelogDTO is GET /repos/{owner}/{name}/changelog.
+type RepoChangelogDTO struct {
 	Repo         string `json:"repo"`
 	ChangelogMD  string `json:"changelog_md"`
 	ChangelogSHA string `json:"changelog_sha"`
 }
 
-type pageSummaryDTO struct {
+// PageSummaryDTO is one entry of GET /repos/{owner}/{name}/pages.
+type PageSummaryDTO struct {
 	Path   string `json:"path"`
 	Title  string `json:"title"`
 	GitSHA string `json:"git_sha"`
 }
 
-type pageDTO struct {
+// PageDTO is GET /repos/{owner}/{name}/pages/{path}.
+type PageDTO struct {
 	Repo   string `json:"repo"`
 	Path   string `json:"path"`
 	Title  string `json:"title"`
@@ -64,7 +71,8 @@ type pageDTO struct {
 	GitSHA string `json:"git_sha"`
 }
 
-type documentDTO struct {
+// DocumentDTO is a document, with raw_md only from the single-document read.
+type DocumentDTO struct {
 	Repo        string `json:"repo"`
 	DocID       string `json:"doc_id"`
 	Type        string `json:"type"`
@@ -82,34 +90,37 @@ type documentDTO struct {
 	RawMD         string `json:"raw_md,omitempty"`
 }
 
-// repoLabel is the "owner/name" identifier used across the DTOs.
-func repoLabel(r *store.Repo) string { return r.Owner + "/" + r.Name }
+// RepoLabel is the "owner/name" identifier used across the DTOs.
+func RepoLabel(r *store.Repo) string { return r.Owner + "/" + r.Name }
 
-func toRepoSummary(r *store.Repo) repoSummaryDTO {
-	return repoSummaryDTO{
-		Repo:          repoLabel(r),
+// ToRepoSummary maps a repository row to its list entry.
+func ToRepoSummary(r *store.Repo) RepoSummaryDTO {
+	return RepoSummaryDTO{
+		Repo:          RepoLabel(r),
 		DefaultBranch: r.DefaultBranch,
 		DocsDir:       r.DocsDir,
 		LastSyncedSHA: nullText(r.LastSyncedSha),
 	}
 }
 
-func toRepoDetail(r *store.Repo, types []store.DocType) repoDetailDTO {
-	return repoDetailDTO{
-		Repo:           repoLabel(r),
+// ToRepoDetail maps a repository row and its types to the detail shape.
+func ToRepoDetail(r *store.Repo, types []store.DocType) RepoDetailDTO {
+	return RepoDetailDTO{
+		Repo:           RepoLabel(r),
 		DefaultBranch:  r.DefaultBranch,
 		DocsDir:        r.DocsDir,
 		LastSyncedSHA:  nullText(r.LastSyncedSha),
 		ConfigSnapshot: r.ConfigSnapshot,
-		Types:          toTypeDTOs(types),
+		Types:          ToTypeDTOs(types),
 	}
 }
 
-func toTypeDTOs(types []store.DocType) []typeDTO {
-	dtos := make([]typeDTO, len(types))
+// ToTypeDTOs maps doc_types rows to the wire shape.
+func ToTypeDTOs(types []store.DocType) []TypeDTO {
+	dtos := make([]TypeDTO, len(types))
 	for i := range types {
 		dt := &types[i]
-		dtos[i] = typeDTO{
+		dtos[i] = TypeDTO{
 			Name:        dt.Name,
 			Dir:         dt.Dir,
 			IDPrefix:    dt.IDPrefix,
@@ -121,42 +132,44 @@ func toTypeDTOs(types []store.DocType) []typeDTO {
 	return dtos
 }
 
-// toRepoIndex maps the cached repo home (DESIGN-0003). An empty-but-present
+// ToRepoIndex maps the cached repo home (DESIGN-0003). An empty-but-present
 // index.md is stored as a NULL body with a valid sha, so nullText yields the
 // "" body the contract promises; callers gate existence on IndexSha.Valid.
-func toRepoIndex(r *store.Repo) repoIndexDTO {
-	return repoIndexDTO{
-		Repo:     repoLabel(r),
+func ToRepoIndex(r *store.Repo) RepoIndexDTO {
+	return RepoIndexDTO{
+		Repo:     RepoLabel(r),
 		IndexMD:  nullText(r.IndexMd),
 		IndexSHA: nullText(r.IndexSha),
 	}
 }
 
-// toRepoChangelog maps the cached changelog (IMPL-0005) on the same terms as
-// toRepoIndex: an empty-but-present file is a NULL body with a valid sha, so
+// ToRepoChangelog maps the cached changelog (IMPL-0005) on the same terms as
+// ToRepoIndex: an empty-but-present file is a NULL body with a valid sha, so
 // nullText yields "" and callers gate existence on ChangelogSha.Valid.
-func toRepoChangelog(r *store.Repo) repoChangelogDTO {
-	return repoChangelogDTO{
-		Repo:         repoLabel(r),
+func ToRepoChangelog(r *store.Repo) RepoChangelogDTO {
+	return RepoChangelogDTO{
+		Repo:         RepoLabel(r),
 		ChangelogMD:  nullText(r.ChangelogMd),
 		ChangelogSHA: nullText(r.ChangelogSha),
 	}
 }
 
-func toPageSummary(p *store.ListRepoPagesRow) pageSummaryDTO {
-	return pageSummaryDTO{Path: p.Path, Title: p.Title, GitSHA: p.GitSha}
+// ToPageSummary maps a page row to its list entry.
+func ToPageSummary(p *store.ListRepoPagesRow) PageSummaryDTO {
+	return PageSummaryDTO{Path: p.Path, Title: p.Title, GitSHA: p.GitSha}
 }
 
-// toPage maps one page row (DESIGN-0004). Every column is NOT NULL — row
+// ToPage maps one page row (DESIGN-0004). Every column is NOT NULL — row
 // existence is the presence signal, so there is no sha-gating subtlety here;
 // an empty-but-present page serves raw_md "".
-func toPage(repo string, p *store.RepoPage) pageDTO {
-	return pageDTO{Repo: repo, Path: p.Path, Title: p.Title, RawMD: p.RawMd, GitSHA: p.GitSha}
+func ToPage(repo string, p *store.RepoPage) PageDTO {
+	return PageDTO{Repo: repo, Path: p.Path, Title: p.Title, RawMD: p.RawMd, GitSHA: p.GitSha}
 }
 
-func toDocument(repo string, row *store.GetDocumentByIDRow) documentDTO {
+// ToDocument maps the single-document read, raw markdown included.
+func ToDocument(repo string, row *store.GetDocumentByIDRow) DocumentDTO {
 	d := &row.Document
-	return documentDTO{
+	return DocumentDTO{
 		Repo:          repo,
 		DocID:         d.DocID,
 		Type:          d.Type,
@@ -173,8 +186,9 @@ func toDocument(repo string, row *store.GetDocumentByIDRow) documentDTO {
 	}
 }
 
-func toDocumentSummary(repo string, d *store.ListDocumentsByTypeRow) documentDTO {
-	return documentDTO{
+// ToDocumentSummary maps a list row: the document without its markdown.
+func ToDocumentSummary(repo string, d *store.ListDocumentsByTypeRow) DocumentDTO {
+	return DocumentDTO{
 		Repo:          repo,
 		DocID:         d.DocID,
 		Type:          d.Type,

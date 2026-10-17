@@ -16,7 +16,7 @@ import (
 	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
-// fakeStore is an in-memory storeReader for the handler tests.
+// fakeStore is an in-memory StoreReader for the handler tests.
 type fakeStore struct {
 	repos []store.Repo
 	types map[int64][]store.DocType
@@ -185,7 +185,7 @@ func seededStore() *fakeStore {
 
 // testServer wires the handler exactly as main does: authorize middleware over
 // the read routes.
-func testServer(st storeReader, authz authorize.Authorizer) http.Handler {
+func testServer(st StoreReader, authz authorize.Authorizer) http.Handler {
 	r := chi.NewRouter()
 	NewHandler(st).Mount(r, authorize.Middleware(authz))
 	return r
@@ -264,7 +264,7 @@ func TestReadEndpoints(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
-		var body documentDTO
+		var body DocumentDTO
 		mustDecode(t, rec, &body)
 		if body.DocID != "FW-0001" || body.Type != "frameworks" || body.RawMD != "# Intro\n" {
 			t.Errorf("doc = %+v, want FW-0001/frameworks with raw_md", body)
@@ -280,7 +280,7 @@ func TestReadEndpoints(t *testing.T) {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
 		var body struct {
-			Pages []pageSummaryDTO `json:"pages"`
+			Pages []PageSummaryDTO `json:"pages"`
 		}
 		mustDecode(t, rec, &body)
 		if len(body.Pages) != 2 || body.Pages[0].Path != "guides" || body.Pages[1].Path != "guides/setup.md" {
@@ -294,7 +294,7 @@ func TestReadEndpoints(t *testing.T) {
 			t.Fatalf("status = %d, want 200 (the repo exists; its page set is empty)", rec.Code)
 		}
 		var body struct {
-			Pages []pageSummaryDTO `json:"pages"`
+			Pages []PageSummaryDTO `json:"pages"`
 		}
 		mustDecode(t, rec, &body)
 		if body.Pages == nil || len(body.Pages) != 0 {
@@ -310,7 +310,7 @@ func TestReadEndpoints(t *testing.T) {
 			if rec.Code != http.StatusOK {
 				t.Fatalf("GET pages/%s status = %d, want 200", p, rec.Code)
 			}
-			var body pageDTO
+			var body PageDTO
 			mustDecode(t, rec, &body)
 			if body.Path != "guides/setup.md" || body.RawMD != "# Setup\n" || body.Repo != "acme/platform" {
 				t.Errorf("via %q: page = %+v", p, body)
@@ -383,7 +383,7 @@ func TestGetRepoIndex(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
-		var body repoIndexDTO
+		var body RepoIndexDTO
 		mustDecode(t, rec, &body)
 		if body.Repo != "acme/platform" || body.IndexMD != "# Platform\n" || body.IndexSHA != "idxsha" {
 			t.Errorf("index = %+v, want the cached body and sha", body)
@@ -395,7 +395,7 @@ func TestGetRepoIndex(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
-		var body repoIndexDTO
+		var body RepoIndexDTO
 		mustDecode(t, rec, &body)
 		if body.IndexMD != "" || body.IndexSHA != "emptysha" {
 			t.Errorf("index = %+v, want empty body with a valid sha", body)
@@ -439,7 +439,7 @@ func TestGetRepoChangelog(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
-		var body repoChangelogDTO
+		var body RepoChangelogDTO
 		mustDecode(t, rec, &body)
 		if body.Repo != "acme/platform" || body.ChangelogSHA != "clsha" {
 			t.Errorf("changelog = %+v, want the cached body and sha", body)
@@ -454,7 +454,7 @@ func TestGetRepoChangelog(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
-		var body repoChangelogDTO
+		var body RepoChangelogDTO
 		mustDecode(t, rec, &body)
 		if body.ChangelogMD != "" || body.ChangelogSHA != "emptyclsha" {
 			t.Errorf("changelog = %+v, want empty body with a valid sha", body)

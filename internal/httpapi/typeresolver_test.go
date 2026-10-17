@@ -33,9 +33,9 @@ func TestResolveType(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.wantWhat, func(t *testing.T) {
-			got, ok := resolveType(types, tt.input)
+			got, ok := ResolveType(types, tt.input)
 			if ok != tt.wantOK || got != tt.want {
-				t.Errorf("resolveType(%q) = (%q, %v), want (%q, %v)", tt.input, got, ok, tt.want, tt.wantOK)
+				t.Errorf("ResolveType(%q) = (%q, %v), want (%q, %v)", tt.input, got, ok, tt.want, tt.wantOK)
 			}
 		})
 	}

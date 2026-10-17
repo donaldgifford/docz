@@ -27,6 +27,14 @@ func (a AllowedRepos) Contains(id int64) bool {
 // ctxKey is the unexported context key type for the allowed-repo set.
 type ctxKey struct{}
 
+// ContextWithAllowed returns ctx carrying repos as the allowed set, as
+// Middleware would have injected it: the entry for a caller that is not an
+// HTTP request, such as a test driving the MCP server over an in-memory
+// transport.
+func ContextWithAllowed(ctx context.Context, repos AllowedRepos) context.Context {
+	return context.WithValue(ctx, ctxKey{}, repos)
+}
+
 // FromContext returns the AllowedRepos injected by Middleware, or nil if the
 // request did not pass through it.
 func FromContext(ctx context.Context) AllowedRepos {

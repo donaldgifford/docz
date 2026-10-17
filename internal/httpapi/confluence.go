@@ -78,7 +78,7 @@ func (h *Handler) getRepoConfluence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := confluenceSyncDTO{Repo: repoLabel(&repo), Status: syncNever, Pages: []confluencePageDTO{}}
+	out := confluenceSyncDTO{Repo: RepoLabel(&repo), Status: syncNever, Pages: []confluencePageDTO{}}
 
 	if !h.confluence {
 		out.Status, out.Reason = syncDisabled, reasonServerOff

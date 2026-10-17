@@ -22,10 +22,10 @@ func (h *Handler) listRepos(w http.ResponseWriter, r *http.Request) {
 	}
 	allowed := authorize.FromContext(r.Context())
 
-	out := make([]repoSummaryDTO, 0, len(repos))
+	out := make([]RepoSummaryDTO, 0, len(repos))
 	for i := range repos {
 		if allowed.Contains(repos[i].ID) {
-			out = append(out, toRepoSummary(&repos[i]))
+			out = append(out, ToRepoSummary(&repos[i]))
 		}
 	}
 	writeJSON(w, map[string]any{"repos": out})
@@ -42,7 +42,7 @@ func (h *Handler) getRepo(w http.ResponseWriter, r *http.Request) {
 		serverError(w, "get doc types", err)
 		return
 	}
-	writeJSON(w, toRepoDetail(&repo, types))
+	writeJSON(w, ToRepoDetail(&repo, types))
 }
 
 // getRepoIndex returns the cached docs_dir/index.md repo home (DESIGN-0003).
@@ -58,7 +58,7 @@ func (h *Handler) getRepoIndex(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "index not found")
 		return
 	}
-	writeJSON(w, toRepoIndex(&repo))
+	writeJSON(w, ToRepoIndex(&repo))
 }
 
 // getRepoChangelog returns a repo's cached changelog. A repo that has not
@@ -72,7 +72,7 @@ func (h *Handler) getRepoChangelog(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "changelog not found")
 		return
 	}
-	writeJSON(w, toRepoChangelog(&repo))
+	writeJSON(w, ToRepoChangelog(&repo))
 }
 
 // listRepoPages returns a repo's published pages (metadata only), ordered by
@@ -89,9 +89,9 @@ func (h *Handler) listRepoPages(w http.ResponseWriter, r *http.Request) {
 		serverError(w, "list pages", err)
 		return
 	}
-	out := make([]pageSummaryDTO, len(pages))
+	out := make([]PageSummaryDTO, len(pages))
 	for i := range pages {
-		out[i] = toPageSummary(&pages[i])
+		out[i] = ToPageSummary(&pages[i])
 	}
 	writeJSON(w, map[string]any{"pages": out})
 }
@@ -108,7 +108,7 @@ func (h *Handler) getRepoPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p, err := url.PathUnescape(chi.URLParam(r, "*"))
-	if err != nil || !validPagePath(p) {
+	if err != nil || !ValidPagePath(p) {
 		writeError(w, http.StatusNotFound, "page not found")
 		return
 	}
@@ -121,13 +121,13 @@ func (h *Handler) getRepoPage(w http.ResponseWriter, r *http.Request) {
 		serverError(w, "get page", err)
 		return
 	}
-	writeJSON(w, toPage(repoLabel(&repo), &page))
+	writeJSON(w, ToPage(RepoLabel(&repo), &page))
 }
 
-// validPagePath reports whether a decoded pages wildcard is a lookup-safe
+// ValidPagePath reports whether a decoded pages wildcard is a lookup-safe
 // published path: non-empty, relative, forward-slash separated, no "." / ".."
 // / empty segments, no backslashes, no control bytes.
-func validPagePath(p string) bool {
+func ValidPagePath(p string) bool {
 	if p == "" || strings.HasPrefix(p, "/") || strings.ContainsRune(p, '\\') {
 		return false
 	}
@@ -155,7 +155,7 @@ func (h *Handler) listTypes(w http.ResponseWriter, r *http.Request) {
 		serverError(w, "get doc types", err)
 		return
 	}
-	writeJSON(w, map[string]any{"types": toTypeDTOs(types)})
+	writeJSON(w, map[string]any{"types": ToTypeDTOs(types)})
 }
 
 // listDocs returns a repo's documents of one type (metadata only). The {type}
@@ -170,10 +170,10 @@ func (h *Handler) listDocs(w http.ResponseWriter, r *http.Request) {
 		serverError(w, "list documents", err)
 		return
 	}
-	label := repoLabel(&repo)
-	out := make([]documentDTO, len(docs))
+	label := RepoLabel(&repo)
+	out := make([]DocumentDTO, len(docs))
 	for i := range docs {
-		out[i] = toDocumentSummary(label, &docs[i])
+		out[i] = ToDocumentSummary(label, &docs[i])
 	}
 	writeJSON(w, map[string]any{"docs": out})
 }
@@ -200,7 +200,7 @@ func (h *Handler) getDoc(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "document not found")
 		return
 	}
-	writeJSON(w, toDocument(repoLabel(&repo), &row))
+	writeJSON(w, ToDocument(RepoLabel(&repo), &row))
 }
 
 // resolveRepoType resolves the repo (with authorization) and the {type} segment
@@ -215,7 +215,7 @@ func (h *Handler) resolveRepoType(w http.ResponseWriter, r *http.Request) (repo 
 		serverError(w, "get doc types", err)
 		return store.Repo{}, "", false
 	}
-	canonical, ok = resolveType(types, chi.URLParam(r, "type"))
+	canonical, ok = ResolveType(types, chi.URLParam(r, "type"))
 	if !ok {
 		writeError(w, http.StatusNotFound, "type not found")
 		return store.Repo{}, "", false
