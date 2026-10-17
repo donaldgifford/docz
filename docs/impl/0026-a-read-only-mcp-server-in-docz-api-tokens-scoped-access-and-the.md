@@ -483,12 +483,12 @@ against the type packages' corpora.
   later as a direct requirement, settled with targeted `go get` and never a
   bare `go mod tidy`; `go-licenses` and the licence check clean;
   `layer_test.go` untouched, because nothing under `pkg/` imports it
-- [ ] `internal/mcp/server.go`: `New(deps) *mcp.Server` with
+- [x] `internal/mcp/server.go`: `New(deps) *mcp.Server` with
   `Implementation{Name: "docz-api", Version}`,
   `SupportedProtocolVersions` narrowed to `2026-07-28`, `SetCacheable`
   giving every list a `ttlMs` of one hour; `Handler()` returns the SDK's
   `StreamableHTTPHandler` with `Stateless: true`
-- [ ] `internal/mcp/tools.go`: `list_repos`, `list_docs`, `get_doc`,
+- [x] `internal/mcp/tools.go`: `list_repos`, `list_docs`, `get_doc`,
   `search_docs`, `get_impl_progress`, `get_page` with the argument and
   output schemas of DESIGN-0023 §3, `readOnlyHint`, `idempotentHint`, and
   `openWorldHint: false`, each over the `StoreReader` and `Searcher`
@@ -498,18 +498,18 @@ against the type packages' corpora.
   the caller's `authorize.FromContext` applied to every repository
   lookup, errors as `isError` with the REST wording,
   and one `text` block beside `structuredContent`
-- [ ] `internal/mcp/fields.go`: the typed-field switch over the six
+- [x] `internal/mcp/fields.go`: the typed-field switch over the six
   canonical type names to `rfc.Parse`, `adr.Parse`, `design.Parse`,
   `impl.Parse`, `investigation.Parse`, `runbook.Parse`, each marshalled
   under `kind`; a custom type or a parse failure yields `generic` with
   `docparse.Headings` and `kinds.ResolveRegions` and `parse_error` when
   there was one; `get_impl_progress` derives `done`, `total`, and the
   deferred count per phase from `impl.Doc`
-- [ ] `internal/mcp/resources.go`: one `docz://{owner}/{name}/{type}/{id}`
+- [x] `internal/mcp/resources.go`: one `docz://{owner}/{name}/{type}/{id}`
   template per built-in type and one generic, `resources/read` returning
   `text/markdown` and `application/json` contents, a URI outside
   `AllowedRepos` not found
-- [ ] `internal/mcp/limit.go`: chi's `httprate` middleware at
+- [x] `internal/mcp/limit.go`: chi's `httprate` middleware at
   `MCP_RATE_LIMIT` per minute, keyed by the principal key when the session
   has one and by the client IP (`httprate.KeyByRealIP`) under
   `AUTH_PROVIDERS=none`, applied to `/mcp` and to `/api/v1` for `Via ==
@@ -517,7 +517,7 @@ against the type packages' corpora.
   `docz_api_rate_limited_total{surface,via}`, because a throttled caller is
   an operations signal and belongs in Prometheus, not in a log line
   (question 7)
-- [ ] `internal/mcp/audit.go` and `internal/telemetry`: the `mcp call`
+- [x] `internal/mcp/audit.go` and `internal/telemetry`: the `mcp call`
   line with `principal`, `via`, `client_id`, `issuer`, `scopes`, `tool`,
   `repo`, `doc_id`, `status`, `duration`;
   `docz_api_mcp_calls_total{tool,status}` and
@@ -527,7 +527,7 @@ against the type packages' corpora.
 - [ ] `cmd/docz-api/main.go`: `POST /mcp` mounted behind `authn`, the
   authorizer, and the limiter when `MCP_ENABLED`; the `401` challenge
   verified to fire before the SDK sees the request
-- [ ] Tests: the SDK's in-memory transport for `server/discover`,
+- [x] Tests: the SDK's in-memory transport for `server/discover`,
   `tools/list`, each tool over the `httpapi` fakes, `resources/list`, and
   `resources/read`; `get_doc.fields` pinned equal to each type package's
   `Parse` over every `.md` under `pkg/<type>/testdata`; the `generic`
