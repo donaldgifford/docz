@@ -147,3 +147,24 @@ type Property struct {
 	// Version is the property's current version number.
 	Version int
 }
+
+// InlineComment is one inline comment a page lists.
+type InlineComment struct {
+	ID string
+	// Ref is the ac:ref of the marker the comment anchors to.
+	Ref string
+	// Status is Confluence's resolution status: open, resolved, reopened, or
+	// dangling.
+	Status string
+}
+
+// CommentLister is the optional surface a Client adds so an update can
+// forget the anchor of a comment the page no longer lists (INV-0021). A
+// Client without it keeps every remembered anchor. *HTTPClient and
+// confluencetest implement it; a Client is not required to.
+type CommentLister interface {
+	// InlineComments returns a page's inline comments, every page of
+	// results followed. It is asked only about a page whose body was just
+	// read, so a page that does not exist is an error, not an empty list.
+	InlineComments(ctx context.Context, pageID string) ([]InlineComment, error)
+}

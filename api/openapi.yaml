@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.6.1
+  version: 1.6.2
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -792,7 +792,9 @@ components:
           $ref: "#/components/schemas/ConfluenceEdit"
         comments_lost:
           type: integer
-          description: Inline comments whose anchor the last update could not carry.
+          description: >-
+            Inline comments without an anchor after the last update, whether lost by it or by an earlier one. A lost anchor
+            is remembered in the page property and tried again on every update until the page no longer lists the comment.
         reason:
           type: string
           description: Why the page was skipped or failed; "" otherwise.

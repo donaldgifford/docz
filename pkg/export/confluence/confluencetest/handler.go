@@ -208,14 +208,7 @@ func (s *Site) servePages(w http.ResponseWriter, r *http.Request, seg []string) 
 		})
 		s.reply(w, p, err)
 	case r.Method == http.MethodGet:
-		wp, ok := s.wire(seg[0], confluence.TypePage, r.URL.Query().Get("body-format") == "storage")
-		if !ok {
-			http.NotFound(w, r)
-
-			return
-		}
-
-		writeJSON(w, wp)
+		s.getPage(w, r, seg)
 	case r.Method == http.MethodPut:
 		var in wireWrite
 		if !readJSON(w, r, &in) {
@@ -441,4 +434,50 @@ func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	//nolint:errcheck,gosec // a test server's failed write surfaces in the client
 	w.Write(b)
+}
+
+// wireInlineComment is the wire shape of an inline comment, as HTTPClient
+// reads it.
+type wireInlineComment struct {
+	ID               string `json:"id"`
+	ResolutionStatus string `json:"resolutionStatus"`
+	Properties       struct {
+		Ref string `json:"inlineMarkerRef"`
+	} `json:"properties"`
+}
+
+func (s *Site) serveInlineComments(w http.ResponseWriter, r *http.Request, pageID string) {
+	comments, err := s.InlineComments(r.Context(), pageID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
+	}
+
+	out := make([]wireInlineComment, 0, len(comments))
+	for _, c := range comments {
+		var wc wireInlineComment
+		wc.ID, wc.ResolutionStatus, wc.Properties.Ref = c.ID, c.Status, c.Ref
+		out = append(out, wc)
+	}
+
+	writeList(w, out)
+}
+
+// getPage serves GET /pages/{id} and its inline-comments sub-resource.
+func (s *Site) getPage(w http.ResponseWriter, r *http.Request, seg []string) {
+	if len(seg) == 2 && seg[1] == "inline-comments" {
+		s.serveInlineComments(w, r, seg[0])
+
+		return
+	}
+
+	wp, ok := s.wire(seg[0], confluence.TypePage, r.URL.Query().Get("body-format") == "storage")
+	if !ok {
+		http.NotFound(w, r)
+
+		return
+	}
+
+	writeJSON(w, wp)
 }

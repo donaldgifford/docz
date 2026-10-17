@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -19,6 +20,11 @@ type pageProperty struct {
 	// Repo is the owner/name that wrote the page. Phase A wrote none, and
 	// a property without one belongs to any repository.
 	Repo string `json:"repo,omitempty"`
+	// Anchors is where each inline comment on the page sits, or last sat
+	// (INV-0021): the ones carried onto the body plus the ones no update
+	// since could place, tried again on every update and dropped once the
+	// page no longer lists their comment.
+	Anchors []anchor `json:"anchors,omitempty"`
 }
 
 // ReasonForeign starts the Reason of a page Skipped because another
@@ -97,7 +103,7 @@ func (r *exportRun) reconcile(ctx context.Context, it *item, parentID string) (P
 		return res, nil
 	}
 
-	return r.update(ctx, it, &rendered, page, prop, parentID, res)
+	return r.update(ctx, it, &rendered, page, prop, &stored, parentID, res)
 }
 
 // findPage finds an item's page: by the id the caller recorded for its key
@@ -222,7 +228,7 @@ func (r *exportRun) create(
 
 	res.PageID, res.URL, res.Version = page.ID, page.WebURL, page.Version
 
-	return res, r.writeProperty(ctx, page.ID, nil, it, rendered.Hash, page.Version)
+	return res, r.writeProperty(ctx, page.ID, nil, it, rendered.Hash, page.Version, nil)
 }
 
 // update writes a new version of a page and its property.
@@ -232,12 +238,13 @@ func (r *exportRun) update(
 	rendered *Rendered,
 	page *Page,
 	prop *Property,
+	stored *pageProperty,
 	parentID string,
 	res PageResult, //nolint:gocritic // a value in, a value out: the result is the caller's copy
 ) (PageResult, error) {
 	res.Action = Updated
 
-	body, comments, err := r.carryComments(ctx, page.ID, rendered.Body)
+	body, comments, anchors, err := r.carryComments(ctx, page.ID, rendered.Body, stored.Anchors)
 	if err != nil {
 		return res, err
 	}
@@ -261,37 +268,97 @@ func (r *exportRun) update(
 
 	res.URL, res.Version = updated.WebURL, updated.Version
 
-	return res, r.writeProperty(ctx, page.ID, prop, it, rendered.Hash, updated.Version)
+	return res, r.writeProperty(ctx, page.ID, prop, it, rendered.Hash, updated.Version, anchors)
 }
 
-// carryComments reads the page's current body and carries its inline
-// comment markers onto the new render (DESIGN-0021 §4). Only an update
-// pays for the read. The property's hash stays the render's, so the
-// markers never make a page read as changed.
-func (r *exportRun) carryComments(ctx context.Context, pageID string, rendered []byte) ([]byte, Comments, error) {
+// carryComments carries the page's inline comments onto the new render
+// (DESIGN-0021 §4, INV-0021). The anchors are the markers in the current
+// body plus the ones the property remembers that no update since could
+// place; each is tried against the render, and an anchor whose comment
+// the page no longer lists is forgotten. Only an update pays for the
+// reads. The property's hash stays the render's, so the markers never make
+// a page read as changed. The anchors returned are what the property
+// should hold next: the placed ones as they now sit, and the lost ones as
+// they were.
+func (r *exportRun) carryComments(
+	ctx context.Context,
+	pageID string,
+	rendered []byte,
+	remembered []anchor,
+) ([]byte, Comments, []anchor, error) {
 	current, err := r.opts.Client.Body(ctx, pageID)
 	if err != nil {
-		return nil, Comments{}, err
+		return nil, Comments{}, nil, err
 	}
 
-	markers := collectMarkers(current)
-	if len(markers) == 0 {
-		return rendered, Comments{}, nil
+	live := collectMarkers(current)
+	anchors := slices.Concat(live, missing(remembered, live))
+
+	if len(anchors) == 0 {
+		return rendered, Comments{}, nil, nil
 	}
 
-	out, kept, lost := carryMarkers(rendered, markers)
+	out, placed, lost := carryMarkers(rendered, anchors)
 	if err := wellFormed(out); err != nil {
-		return nil, Comments{}, err
+		return nil, Comments{}, nil, err
 	}
 
-	return out, Comments{Kept: kept, Lost: lost}, nil
+	lost, err = r.listed(ctx, pageID, lost)
+	if err != nil {
+		return nil, Comments{}, nil, err
+	}
+
+	restored := missing(placed, live)
+	comments := Comments{Kept: len(placed), Restored: texts(restored), Lost: texts(lost)}
+
+	return out, comments, append(collectMarkers(out), lost...), nil
+}
+
+// missing returns the anchors in a whose ref none in b carries.
+func missing(a, b []anchor) []anchor {
+	var out []anchor
+
+	for i := range a {
+		if !slices.ContainsFunc(b, func(x anchor) bool { return x.Ref == a[i].Ref }) {
+			out = append(out, a[i])
+		}
+	}
+
+	return out
+}
+
+// listed keeps the lost anchors whose comment the page still lists, when
+// the client can say. A client without CommentLister keeps them all.
+func (r *exportRun) listed(ctx context.Context, pageID string, lost []anchor) ([]anchor, error) {
+	lister, ok := r.opts.Client.(CommentLister)
+	if !ok || len(lost) == 0 {
+		return lost, nil
+	}
+
+	comments, err := lister.InlineComments(ctx, pageID)
+	if err != nil {
+		return nil, err
+	}
+
+	return slices.DeleteFunc(lost, func(a anchor) bool {
+		return !slices.ContainsFunc(comments, func(c InlineComment) bool { return c.Ref == a.Ref })
+	}), nil
 }
 
 // writeProperty creates the docz property, or updates prop through its own
 // version.
-func (r *exportRun) writeProperty(ctx context.Context, pageID string, prop *Property, it *item, hash string, version int) error {
+func (r *exportRun) writeProperty(
+	ctx context.Context,
+	pageID string,
+	prop *Property,
+	it *item,
+	hash string,
+	version int,
+	anchors []anchor,
+) error {
 	value, err := json.Marshal(pageProperty{
 		ID: it.key, Source: it.source, Hash: hash, Version: version, Docz: r.opts.Version, Repo: r.opts.Repository,
+		Anchors: anchors,
 	})
 	if err != nil {
 		return err

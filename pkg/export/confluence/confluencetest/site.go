@@ -16,6 +16,7 @@ import (
 	"maps"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/donaldgifford/docz/v2/pkg/export/confluence"
@@ -37,6 +38,8 @@ type node struct {
 	status string
 	body   []byte
 	props  map[string]*confluence.Property
+	// comments is the page's inline comments by marker ref.
+	comments []string
 }
 
 // Site is an in-memory Confluence site. The zero value is not usable; call
@@ -515,3 +518,60 @@ func compareIDs(a, b string) int {
 
 	return 0
 }
+
+// Comment adds an inline comment on the page with the given id, anchored
+// to the marker with ref: the page's body gains the marker around the
+// first occurrence of text, which must occur in it, and the page lists the
+// comment until Uncomment. Adding a comment does not bump the version, as
+// Confluence's does not.
+func (s *Site) Comment(pageID, ref, text string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	n, ok := s.nodes[pageID]
+	if !ok || n.kind != confluence.TypePage {
+		panic("confluencetest: Comment on a page that does not exist: " + pageID)
+	}
+
+	marked := []byte(`<ac:inline-comment-marker ac:ref="` + ref + `">` + text + `</ac:inline-comment-marker>`)
+
+	body, found := strings.CutPrefix(string(n.body), "")
+	if !found || !strings.Contains(body, text) {
+		panic("confluentest: Comment text not in the page: " + text)
+	}
+
+	n.body = []byte(strings.Replace(body, text, string(marked), 1))
+	n.comments = append(n.comments, ref)
+}
+
+// Uncomment deletes the inline comment anchored to ref, as a person does in
+// Confluence. The marker, if the body still carries it, stays; Confluence
+// leaves it too.
+func (s *Site) Uncomment(pageID, ref string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if n, ok := s.nodes[pageID]; ok {
+		n.comments = slices.DeleteFunc(n.comments, func(r string) bool { return r == ref })
+	}
+}
+
+// InlineComments implements confluence.CommentLister.
+func (s *Site) InlineComments(_ context.Context, pageID string) ([]confluence.InlineComment, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	n, ok := s.nodes[pageID]
+	if !ok || n.kind != confluence.TypePage {
+		return nil, nil
+	}
+
+	out := make([]confluence.InlineComment, 0, len(n.comments))
+	for _, ref := range n.comments {
+		out = append(out, confluence.InlineComment{ID: "comment-" + ref, Ref: ref, Status: "open"})
+	}
+
+	return out, nil
+}
+
+var _ confluence.CommentLister = (*Site)(nil)

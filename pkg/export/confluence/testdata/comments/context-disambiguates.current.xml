@@ -1,0 +1,4 @@
+<h2>Setup</h2>
+<p>Run the migration before the deploy.</p>
+<h2>Rollback</h2>
+<p>Run the <ac:inline-comment-marker ac:ref="c1">migration</ac:inline-comment-marker> after the deploy.</p>

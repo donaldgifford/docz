@@ -32,6 +32,10 @@ type fakeClient struct {
 	writes []string
 	// fail names one operation, "<op> <title>", that returns an error.
 	fail string
+	// inline is each page's inline comments by marker ref.
+	inline map[string][]string
+	// reads logs each InlineComments call.
+	reads []string
 }
 
 var _ Client = (*fakeClient)(nil)
@@ -371,3 +375,42 @@ func (f *fakeClient) edit(title string) {
 		}
 	}
 }
+
+// comments is the fake's inline comments per page id, by ref.
+func (f *fakeClient) comment(pageID, ref string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.inline == nil {
+		f.inline = make(map[string][]string)
+	}
+
+	f.inline[pageID] = append(f.inline[pageID], ref)
+}
+
+// uncomment deletes an inline comment, as a person does in Confluence.
+func (f *fakeClient) uncomment(pageID, ref string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.inline[pageID] = slices.DeleteFunc(f.inline[pageID], func(r string) bool { return r == ref })
+}
+
+// InlineComments implements CommentLister. A page the fake was never told
+// about lists nothing, which is what Confluence says of a page nobody
+// commented on.
+func (f *fakeClient) InlineComments(_ context.Context, pageID string) ([]InlineComment, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.reads = append(f.reads, "inline-comments "+pageID)
+
+	out := make([]InlineComment, 0, len(f.inline[pageID]))
+	for _, ref := range f.inline[pageID] {
+		out = append(out, InlineComment{ID: "c-" + ref, Ref: ref, Status: "open"})
+	}
+
+	return out, nil
+}
+
+var _ CommentLister = (*fakeClient)(nil)

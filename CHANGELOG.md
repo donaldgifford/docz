@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Features
 
 - *(export)* Leave impl out of the Confluence export unless a repository lists it
+- *(export)* Remember a lost inline comment's anchor and restore it when its text returns
 
 ### Documentation
 

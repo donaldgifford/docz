@@ -669,3 +669,39 @@ func (h *HTTPClient) Children(ctx context.Context, parent Target) ([]Node, error
 
 	return out, nil
 }
+
+// apiInlineComment is the wire shape of an inline comment.
+type apiInlineComment struct {
+	ID               string `json:"id"`
+	ResolutionStatus string `json:"resolutionStatus"`
+	Properties       struct {
+		Ref string `json:"inlineMarkerRef"`
+	} `json:"properties"`
+}
+
+// InlineComments implements CommentLister over
+// GET /wiki/api/v2/pages/{id}/inline-comments.
+func (h *HTTPClient) InlineComments(ctx context.Context, pageID string) ([]InlineComment, error) {
+	var out []InlineComment
+
+	next := "/wiki/api/v2/pages/" + url.PathEscape(pageID) + "/inline-comments?limit=250"
+
+	for next != "" {
+		var list apiList[apiInlineComment]
+
+		if err := h.do(ctx, "list inline comments", http.MethodGet, next, nil, &list); err != nil {
+			return nil, err
+		}
+
+		for i := range list.Results {
+			c := &list.Results[i]
+			out = append(out, InlineComment{ID: c.ID, Ref: c.Properties.Ref, Status: c.ResolutionStatus})
+		}
+
+		next = list.Links.Next
+	}
+
+	return out, nil
+}
+
+var _ CommentLister = (*HTTPClient)(nil)

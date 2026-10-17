@@ -321,13 +321,13 @@ func TestLiveInlineComment(t *testing.T) {
 	}
 
 	markers := collectMarkers(current)
-	if len(markers) != 1 || markers[0].text != "Postgres" || markers[0].ref != comment.Properties.Ref {
+	if len(markers) != 1 || markers[0].Quote != "Postgres" || markers[0].Ref != comment.Properties.Ref {
 		t.Fatalf("markers %+v; want Postgres under ref %s", markers, comment.Properties.Ref)
 	}
 
-	out, kept, lost := carryMarkers([]byte("<p>Changed intro. We chose Postgres for the store, still.</p>"), markers)
-	if kept != 1 || len(lost) != 0 {
-		t.Fatalf("kept %d lost %v", kept, lost)
+	out, placed, lost := carryMarkers([]byte("<p>Changed intro. We chose Postgres for the store, still.</p>"), markers)
+	if len(placed) != 1 || len(lost) != 0 {
+		t.Fatalf("placed %d lost %v", len(placed), lost)
 	}
 
 	if _, err := h.UpdatePage(ctx, page.ID, &PageUpdate{
@@ -439,7 +439,7 @@ func TestLiveInlineCommentReattach(t *testing.T) {
 	}
 
 	markers := collectMarkers(current)
-	if len(markers) != 1 || markers[0].ref != comment.Properties.Ref {
+	if len(markers) != 1 || markers[0].Ref != comment.Properties.Ref {
 		t.Fatalf("markers %+v; want one under ref %s", markers, comment.Properties.Ref)
 	}
 
@@ -469,9 +469,9 @@ func TestLiveInlineCommentReattach(t *testing.T) {
 
 	// Step 2: the marker is written back under the same ref, which is what
 	// INV-0021 recommendation 3 (a) would have the export do.
-	out, kept, lost := carryMarkers([]byte("<p>Back. We chose Postgres for the store.</p>"), markers)
-	if kept != 1 || len(lost) != 0 {
-		t.Fatalf("carry: kept %d lost %v", kept, lost)
+	out, placed, lost := carryMarkers([]byte("<p>Back. We chose Postgres for the store.</p>"), markers)
+	if len(placed) != 1 || len(lost) != 0 {
+		t.Fatalf("carry: placed %d lost %v", len(placed), lost)
 	}
 
 	update("marker restored", out)
@@ -511,5 +511,58 @@ func TestLiveInlineCommentReattach(t *testing.T) {
 
 	if !stillListed {
 		t.Errorf("the page no longer lists comment %s", comment.ID)
+	}
+}
+
+// TestLiveInlineCommentsList checks HTTPClient.InlineComments against a real
+// page: a comment made through the API is listed with the ref its marker
+// carries and its resolution status, and a page with none lists nothing.
+func TestLiveInlineCommentsList(t *testing.T) {
+	h, spaceID := liveClient(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+
+	stamp := time.Now().UTC().Format("20060102-150405")
+
+	page, err := h.CreatePage(ctx, &NewPage{SpaceID: spaceID, Title: "docz live list " + stamp, Body: []byte("<p>We chose Postgres.</p>")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { liveDelete(t, h, "pages", page.ID) })
+
+	if listed, err := h.InlineComments(ctx, page.ID); err != nil || len(listed) != 0 {
+		t.Fatalf("a fresh page lists %v, %v; want nothing", listed, err)
+	}
+
+	var comment struct {
+		ID         string `json:"id"`
+		Properties struct {
+			Ref string `json:"inlineMarkerRef"`
+		} `json:"properties"`
+	}
+
+	req := map[string]any{
+		"pageId": page.ID,
+		"body":   map[string]string{"representation": "storage", "value": "<p>listed?</p>"},
+		"inlineCommentProperties": map[string]any{
+			"textSelection": "Postgres", "textSelectionMatchCount": 1, "textSelectionMatchIndex": 0,
+		},
+	}
+	if err := h.do(ctx, "create inline comment", http.MethodPost, "/wiki/api/v2/inline-comments", req, &comment); err != nil {
+		t.Fatalf("create inline comment: %v", err)
+	}
+
+	listed, err := h.InlineComments(ctx, page.ID)
+	if err != nil || len(listed) != 1 {
+		t.Fatalf("listed %v, %v; want the one comment", listed, err)
+	}
+
+	if listed[0].ID != comment.ID || listed[0].Ref != comment.Properties.Ref || listed[0].Status != "open" {
+		t.Errorf("listed %+v; want id %s, ref %s, open", listed[0], comment.ID, comment.Properties.Ref)
+	}
+
+	if body, err := h.Body(ctx, page.ID); err != nil || !strings.Contains(string(body), `ac:ref="`+listed[0].Ref+`"`) {
+		t.Errorf("the body does not carry the listed ref: %s %v", body, err)
 	}
 }
