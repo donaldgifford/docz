@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// schemeHTTPS is the one scheme an issuer or a Confluence site may use.
+const schemeHTTPS = "https"
+
 // ErrInvalidConfig is returned by Load when the environment fails validation.
 // Callers branch on it with errors.Is; the wrapped message lists every problem.
 var ErrInvalidConfig = errors.New("invalid config")
@@ -45,6 +48,7 @@ func validate(c *Config) error {
 
 	validateAuth(&errs, &c.Auth)
 	validateConfluence(&errs, &c.Confluence)
+	validateMCP(&errs, c)
 	validateEnum(&errs, "LOG_LEVEL", c.Log.Level, _validLogLevels)
 	validateEnum(&errs, "LOG_FORMAT", c.Log.Format, _validLogFormats)
 
@@ -62,7 +66,7 @@ func validateConfluence(errs *[]string, c *ConfluenceConfig) {
 		return
 	}
 
-	if u, err := url.Parse(c.Site); c.Site == "" || err != nil || u.Scheme != "https" || u.Host == "" ||
+	if u, err := url.Parse(c.Site); c.Site == "" || err != nil || u.Scheme != schemeHTTPS || u.Host == "" ||
 		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.User != nil {
 		*errs = append(*errs, "CONFLUENCE_SITE: an https URL with a host and no path is required when CONFLUENCE_API_TOKEN is set")
 	}
@@ -158,3 +162,77 @@ func splitTrimmed(raw string) []string {
 	}
 	return out
 }
+
+// validateMCP checks the MCP, OAuth, and authorization settings. The scope
+// map, the rate limit, the TTLs, and a signing key that is set are judged
+// whenever present; the issuer, the key, and the site URL are required only
+// while MCP is on, and the key and the site only with a login to consent
+// through (DESIGN-0023 question 4).
+func validateMCP(errs *[]string, c *Config) {
+	validateMCPBounds(errs, c)
+	validateOAuth(errs, &c.OAuth)
+
+	if !c.MCP.Enabled {
+		return
+	}
+
+	if err := validateIssuerURL(c.OAuth.Issuer, false); err != nil {
+		*errs = append(*errs, fmt.Sprintf("OAUTH_ISSUER: %v when MCP_ENABLED is set (defaults to AUTH_REDIRECT_BASE)", err))
+	}
+
+	if c.AuthDisabled() {
+		return
+	}
+
+	if c.OAuth.SigningKeyPEM.Reveal() == "" {
+		*errs = append(*errs, "OAUTH_SIGNING_KEY: required when MCP_ENABLED is set with a login provider")
+	}
+
+	if c.OAuth.SiteURL == "" {
+		*errs = append(*errs, "DOCZ_SITE_URL: required when MCP_ENABLED is set with a login provider")
+	}
+}
+
+// validateMCPBounds checks the numbers: the rate limit and the three TTLs.
+func validateMCPBounds(errs *[]string, c *Config) {
+	if c.MCP.RateLimit <= 0 {
+		*errs = append(*errs, "MCP_RATE_LIMIT: must be a positive number of calls per minute")
+	}
+
+	if c.OAuth.AccessTTL <= 0 {
+		*errs = append(*errs, "OAUTH_ACCESS_TTL: must be a positive duration")
+	}
+
+	if c.OAuth.RefreshTTL <= 0 {
+		*errs = append(*errs, "OAUTH_REFRESH_TTL: must be a positive duration")
+	}
+
+	if c.Authz.CacheTTL <= 0 {
+		*errs = append(*errs, "AUTHZ_CACHE_TTL: must be a positive duration")
+	}
+}
+
+// validateOAuth checks the values that are judged whenever set: each trusted
+// issuer, a signing key, and the site URL.
+func validateOAuth(errs *[]string, c *OAuthConfig) {
+	for _, issuer := range c.TrustedIssuers {
+		if err := validateIssuerURL(issuer, true); err != nil {
+			*errs = append(*errs, fmt.Sprintf("OAUTH_TRUSTED_ISSUERS: %q %v", issuer, err))
+		}
+	}
+
+	if pemBody := c.SigningKeyPEM.Reveal(); pemBody != "" {
+		if _, err := ParseSigningKey(pemBody); err != nil {
+			*errs = append(*errs, "OAUTH_SIGNING_KEY: "+strings.TrimPrefix(err.Error(), ErrInvalidSigningKey.Error()+": "))
+		}
+	}
+
+	if c.SiteURL != "" {
+		if u, err := url.Parse(c.SiteURL); err != nil || (u.Scheme != schemeHTTPS && u.Scheme != "http") || u.Host == "" {
+			*errs = append(*errs, "DOCZ_SITE_URL: must be an http or https URL with a host")
+		}
+	}
+}
+
+// sortStrings sorts in place; a local name so mcp.go needs no extra import.
+func sortStrings(s []string) { slices.Sort(s) }

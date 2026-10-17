@@ -165,6 +165,11 @@ type (
 		IndexSHA          string
 		APILandingPage    string
 		APIAdditionalDocs []string
+		// AccessScopes is the manifest's access.scopes (DESIGN-0023 §7), the
+		// scopes that unlock the repository. Empty is stored as the default,
+		// ["public:read"], which is what the library normalises an absent
+		// block to.
+		AccessScopes []string
 	}
 
 	// DocTypeInput is one desired doc-type row (from .docz.yaml).
@@ -268,4 +273,33 @@ func dateOrNull(t time.Time) pgtype.Date {
 		return pgtype.Date{}
 	}
 	return pgtype.Date{Time: t, Valid: true}
+}
+
+// defaultAccessScopes is what repos.access_scopes holds for a repository whose
+// manifest says nothing: the library's default and the migration's backfill.
+const defaultAccessScopes = `["public:read"]`
+
+// jsonScopes marshals a repository's scope list for repos.access_scopes,
+// which is NOT NULL: an empty list becomes the default rather than NULL or
+// [], so no row can ever be unlockable by nothing by accident.
+func jsonScopes(scopes []string) json.RawMessage {
+	if len(scopes) == 0 {
+		return json.RawMessage(defaultAccessScopes)
+	}
+
+	return jsonStringsOrNull(scopes)
+}
+
+// ListRepoIDsForScopes returns the ids of every repository whose
+// access_scopes holds any of the given scopes (DESIGN-0023 §7). No scopes
+// unlock nothing.
+func (s *Store) ListRepoIDsForScopes(ctx context.Context, scopes []string) ([]int64, error) {
+	if len(scopes) == 0 {
+		return nil, nil
+	}
+	ids, err := s.q.ListRepoIDsForScopes(ctx, scopes)
+	if err != nil {
+		return nil, fmt.Errorf("list repo ids for scopes: %w", err)
+	}
+	return ids, nil
 }

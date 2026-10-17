@@ -20,8 +20,8 @@ import (
 	"github.com/donaldgifford/docz/v2/internal/store"
 )
 
-// storeReader is the read surface httpapi needs. *store.Store satisfies it.
-type storeReader interface {
+// StoreReader is the read surface httpapi needs. *store.Store satisfies it.
+type StoreReader interface {
 	ListRepos(ctx context.Context) ([]store.Repo, error)
 	GetRepo(ctx context.Context, owner, name string) (store.Repo, error)
 	GetDocTypesForRepo(ctx context.Context, repoID int64) ([]store.DocType, error)
@@ -44,7 +44,7 @@ var _ Searcher = (*search.Client)(nil)
 // Handler serves the /api/v1 read and search routes. searcher is optional: when
 // nil, the /search route is not mounted.
 type Handler struct {
-	store    storeReader
+	store    StoreReader
 	searcher Searcher
 	// confluence reports whether this server exports to Confluence; when it
 	// does not, every repository's sync reads disabled.
@@ -52,13 +52,13 @@ type Handler struct {
 }
 
 // NewHandler builds a Handler over a store reader, without search.
-func NewHandler(st storeReader) *Handler {
+func NewHandler(st StoreReader) *Handler {
 	return &Handler{store: st}
 }
 
 // NewHandlerWithSearch builds a Handler with both the store reader and a
 // searcher, enabling the /search route.
-func NewHandlerWithSearch(st storeReader, s Searcher) *Handler {
+func NewHandlerWithSearch(st StoreReader, s Searcher) *Handler {
 	return &Handler{store: st, searcher: s}
 }
 

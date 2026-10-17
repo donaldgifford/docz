@@ -162,3 +162,13 @@ sync:
       # auto (the Mermaid diagrams viewer), off (a code panel), or an
       # extension key.
       viewer: {{ .Sync.Confluence.Mermaid.Viewer }}
+
+# Who may read this repository through docz-api (DESIGN-0023). A scope is
+# <audience>:read. public:read means every signed-in reader; a team
+# audience such as platform-team:read hides the repository from everyone
+# who does not hold that scope. The write action is reserved.
+access:
+  scopes:
+{{- range .Access.Scopes }}
+    - {{ . }}
+{{- end }}

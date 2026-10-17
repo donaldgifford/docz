@@ -786,3 +786,47 @@ func TestEmptyIndexNormalizer(t *testing.T) {
 		})
 	}
 }
+
+// TestAccessNormalizer covers the eighth permitted delta: the `access:` block
+// v2 writes (DESIGN-0023) that v1.2.2 never did.
+func TestAccessNormalizer(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "drops the generated block with its comments and blank",
+			in: "sync:\n  confluence:\n    enabled: false\n\n# Who may read this repository.\n# The write action is reserved.\n" +
+				"access:\n  scopes:\n    - public:read\n",
+			want: "sync:\n  confluence:\n    enabled: false\n",
+		},
+		{
+			name: "drops a docz config block followed by another key",
+			in:   "api:\n  enabled: false\naccess:\n  scopes:\n    - public:read\nnext: 1\n",
+			want: "api:\n  enabled: false\nnext: 1\n",
+		},
+		{
+			name: "leaves an indented access key alone",
+			in:   "types:\n  access:\n    dir: access\n",
+			want: "types:\n  access:\n    dir: access\n",
+		},
+		{
+			name: "is a no-op on a v1.2.2 golden",
+			in:   "api:\n  enabled: false\n",
+			want: "api:\n  enabled: false\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := Normalize(tt.in, AccessNormalizer()); got != tt.want {
+				t.Errorf("AccessNormalizer()\ngot:\n%q\nwant:\n%q", got, tt.want)
+			}
+		})
+	}
+}

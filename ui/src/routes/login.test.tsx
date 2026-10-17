@@ -64,6 +64,8 @@ describe("login page", () => {
         HttpResponse.json({
           provider: "none",
           subject: "anonymous",
+          via: "anonymous",
+          scopes: [],
           login: "anonymous",
         }),
       ),

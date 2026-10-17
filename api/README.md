@@ -95,6 +95,49 @@ There is **no bundled Swagger/Scalar UI** in docz-api (IMPL-0002 OQ-3d) — the
 served `/openapi.yaml` is the machine contract; human browsing is left to the
 consumer's tooling or an optional docz mkdocs render.
 
+## Tokens
+
+Spec `1.7.0` (DESIGN-0023) lets a script or an MCP client call `/api/v1`
+and `/mcp` with `Authorization: Bearer <jwt>` instead of the session
+cookie, while `MCP_ENABLED` is true on the server. A token is a JWT whose
+`aud` is `<OAUTH_ISSUER>/mcp`, minted by one of two kinds of issuer.
+
+**Through any MCP client.** docz-api is its own authorization server. A
+client that gets a `401` reads `WWW-Authenticate: Bearer
+resource_metadata=…`, fetches `/.well-known/oauth-protected-resource` and
+`/.well-known/oauth-authorization-server`, and runs the OAuth 2.1 code flow
+with PKCE (`S256`), a `resource` of `<OAUTH_ISSUER>/mcp`, and its Client ID
+Metadata Document URL as `client_id` (no registration). `GET
+/oauth/authorize` sends the person to docz-site's `/oauth/consent`, where
+they sign in if they must and approve the client; the browser lands on the
+client's `redirect_uri` with `code`, `state`, and `iss`; `POST /oauth/token`
+exchanges the code for a 15-minute access token and a rotating refresh
+token. The scopes a person can grant are `public:read` plus whatever
+`AUTHZ_SCOPE_MAP` gives their groups or login; a repository is visible when
+its `.docz.yaml` `access.scopes` holds one of them. The same flow works by
+hand with a browser and `curl`:
+
+```sh
+# 1. the metadata
+curl -s https://docz.example/.well-known/oauth-authorization-server | jq .
+# 2. a PKCE pair
+verifier=$(openssl rand -base64 48 | tr -d '=+/' | cut -c1-64)
+challenge=$(printf %s "$verifier" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+# 3. in a browser: approve, then read `code` off the redirect
+open "https://docz.example/oauth/authorize?response_type=code&client_id=https://you.example/oauth.json&redirect_uri=http://127.0.0.1:9999/cb&code_challenge=$challenge&code_challenge_method=S256&resource=https://docz.example/mcp&scope=public:read&state=$(openssl rand -hex 8)"
+# 4. the token
+curl -s https://docz.example/oauth/token -d grant_type=authorization_code -d code="$code" \
+  -d code_verifier="$verifier" -d client_id=https://you.example/oauth.json \
+  -d redirect_uri=http://127.0.0.1:9999/cb -d resource=https://docz.example/mcp
+```
+
+**Minted by the platform.** A token from an issuer in
+`OAUTH_TRUSTED_ISSUERS` (Keycloak, Okta, OpenBao's OIDC provider) is
+accepted as-is when its `iss` matches, its `aud` contains
+`<OAUTH_ISSUER>/mcp`, its signature checks against the issuer's JWKS, and
+it is in date; its `scope` or `scp` claim is the principal's scopes. That is
+how an unattended job gets access: docz-api mints nothing for a machine.
+
 ## References
 
 - [DESIGN-0002](../docs/design/0002-openapi-contract-for-docz-api-and-the-docz-site.md)

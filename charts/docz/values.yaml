@@ -233,6 +233,43 @@ api:
     # not listed here is refused.
     spaces: []
 
+  # -- The MCP server and the token gate (DESIGN-0023). Off by default. On,
+  # the chart renders `MCP_ENABLED`, the issuer, the site URL, the trusted
+  # issuers, the rate limit, and the `api.authz` block, and the Secret must
+  # carry `oauth-signing-key`. Nothing below is rendered while `enabled` is
+  # false.
+  mcp:
+    # -- Mount `/mcp`, verify bearer tokens, and serve the authorization
+    # server (MCP_ENABLED).
+    enabled: false
+    # -- The issuer's public base URL (OAUTH_ISSUER), e.g.
+    # `https://docz-api.example.com`. Empty derives `https://<host>` from the
+    # first `api.ingress.hosts` entry or `api.httpRoute.hostnames` entry; with
+    # neither, the render fails.
+    issuer: ""
+    # -- docz-site's public base URL (DOCZ_SITE_URL), where a person is sent
+    # to consent. Empty derives it from the first `site.ingress.hosts` or
+    # `site.httpRoute.hostnames` entry. Not rendered while `auth.providers`
+    # is `none`, since nobody can consent.
+    siteUrl: ""
+    # -- Issuer URLs whose JWTs the gate accepts besides docz-api's own
+    # (OAUTH_TRUSTED_ISSUERS), e.g. a Keycloak realm. Each is discovered at
+    # startup; one that cannot be fails the boot.
+    trustedIssuers: []
+    # -- Tool calls per minute per principal, per replica (MCP_RATE_LIMIT).
+    rateLimit: 120
+
+  # -- Scoped access (DESIGN-0023 §7), rendered only while `api.mcp.enabled`.
+  authz:
+    # -- Group and login grants (AUTHZ_SCOPE_MAP): a `<provider>:group:<name>`
+    # or `<provider>:login:<name>` key to the scopes it grants, on top of the
+    # `public:read` every principal holds. Example:
+    # `{"github:group:platform": ["platform:read"]}`.
+    scopeMap: {}
+    # -- How long a principal's allowed set is held in process
+    # (AUTHZ_CACHE_TTL). Empty keeps the binary's default (30s).
+    cacheTtl: ""
+
   # -- Tracing for the API. The endpoint and sample rate are the shared
   # top-level `otel` block.
   otel:
@@ -256,6 +293,7 @@ api:
   #   okta-client-secret      when `okta`     is in auth.providers
   #   keycloak-client-secret  when `keycloak` is in auth.providers
   #   confluence-api-token    when api.confluence.site is set
+  #   oauth-signing-key       when api.mcp.enabled is true
   #
   # Only the enabled providers' keys are referenced, so a github-only
   # install needs no okta-client-secret, and a "none" install needs no
@@ -292,6 +330,11 @@ api:
     # (CONFLUENCE_API_TOKEN). Required while api.confluence.site is set and
     # create=true. Secret key: confluence-api-token.
     confluenceApiToken: ""
+    # -- ES256 private key, PEM, that docz-api signs its tokens with
+    # (OAUTH_SIGNING_KEY); `openssl ecparam -name prime256v1 -genkey -noout`
+    # makes one. Required while api.mcp.enabled is true and create=true.
+    # Secret key: oauth-signing-key.
+    oauthSigningKey: ""
 
   # -- Horizontal Pod Autoscaler. Off by default.
   autoscaling:

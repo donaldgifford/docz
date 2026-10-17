@@ -1,7 +1,7 @@
 ---
 id: IMPL-0026
 title: "A read-only MCP server in docz-api: tokens, scoped access, and the six tools"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-10-17
 ---
@@ -142,17 +142,17 @@ Phase 2. This is a `minor` on the stable v2 line and can ship alone.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/doczcore/config/access.go`: `AccessConfig struct{ Scopes
+- [x] `pkg/doczcore/config/access.go`: `AccessConfig struct{ Scopes
   []string }` (`yaml:"scopes" json:"scopes"`) and `Config.Access
   AccessConfig` (`yaml:"access" json:"access"`); `DefaultConfig()` sets
   `Scopes` to `[]string{"public:read"}`; the exported constants
   `ScopePublicRead = "public:read"`, `ActionRead = "read"`, and
   `ErrInvalidAccess = errors.New("invalid access config")`
-- [ ] `normalizeAccess`, on both `Load` paths after `normalizeSync` and
+- [x] `normalizeAccess`, on both `Load` paths after `normalizeSync` and
   in `parseBytes`: trims each entry, folds it to lower case, backfills an
   empty or absent list to `[public:read]`, and removes exact duplicates
   after folding. It never rejects
-- [ ] `validateAccess`, called from `Validate()` unconditionally (the block
+- [x] `validateAccess`, called from `Validate()` unconditionally (the block
   has a default, so it is never dormant): each entry is
   `<audience>:<action>` with the audience matching
   `^[a-z0-9][a-z0-9-]{0,62}$` and the action `read`; `write` is rejected
@@ -160,27 +160,27 @@ Phase 2. This is a `minor` on the stable v2 line and can ship alone.
   rejected; a bare `public` with no action is rejected naming the fix. The
   error is bare and wrapped with `ErrInvalidAccess` by the caller, as
   `paths.go` does
-- [ ] `access_test.go`: one case per rule above, the default on an absent
+- [x] `access_test.go`: one case per rule above, the default on an absent
   block, an explicitly empty `scopes: []` backfilled, `ParseBytes` equal
   to both `Load` paths, and `t.Parallel()` on every test
-- [ ] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `access`
+- [x] `json_test.go`: `TestConfigJSON_MarshaledShape` gains the `access`
   object; `TestJSONTags_MirrorYAML` passes unedited
-- [ ] `doctemplate/templates/docz_yaml.tmpl`: a top-level `access:` block
+- [x] `doctemplate/templates/docz_yaml.tmpl`: a top-level `access:` block
   after `sync:` with `scopes: [public:read]` and a comment saying what a
   scope is, that `public:read` means every signed-in reader of docz-api,
   and that a team audience such as `platform-team:read` hides the
   repository from everyone else; `DefaultConfigYAML()` renders it
-- [ ] `test/parity/parity.go`: an `AccessNormalizer()` named `access`
+- [x] `test/parity/parity.go`: an `AccessNormalizer()` named `access`
   beside `SyncNormalizer`, dropping the `access:` block with its comments
   from the generated `.docz.yaml` on both sides, applied in `runCase` with
   the other both-sides normalisers; a unit test for it outside the build
   tag, as the others have
-- [ ] `cmd/config.go` prints the block as it prints `sync:`; `docz config`
+- [x] `cmd/config.go` prints the block as it prints `sync:`; `docz config`
   golden regenerated with `-update`
-- [ ] `test/consumer/consumer_v2_test.go` (or a sibling): one inline
+- [x] `test/consumer/consumer_v2_test.go` (or a sibling): one inline
   manifest with `access.scopes: [platform-team:read]` parsed through
   `config.ParseBytes`, proving the field is reachable from outside
-- [ ] `CLAUDE.md`'s `pkg/doczcore/config` bullet gains the `access:` block,
+- [x] `CLAUDE.md`'s `pkg/doczcore/config` bullet gains the `access:` block,
   its grammar, and the reserved `write`
 
 <!--docz:tasks:end-->
@@ -212,26 +212,26 @@ gets the migration and nothing else, because `MCP_ENABLED` is unset.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Migration `20261017000000_add_oauth.sql`: `ALTER TABLE repos ADD
+- [x] Migration `20261017000000_add_oauth.sql`: `ALTER TABLE repos ADD
   COLUMN access_scopes JSONB NOT NULL DEFAULT '["public:read"]'` with a
   GIN index; `oauth_refresh_tokens` and `oauth_consents` as DESIGN-0023's
   Data Model draws them (hashed token, family id, user and client,
   scope, issued, last used, revoked; the consents unique on `(user_id,
   client_id)`); a `-- +goose Down` that drops all three
-- [ ] `sqlc.yaml` and `internal/store/queries/`: `UpsertRepo` takes
+- [x] `sqlc.yaml` and `internal/store/queries/`: `UpsertRepo` takes
   `access_scopes`; `ListRepoIDsForScopes(scopes text[])` as `SELECT id
   FROM repos WHERE access_scopes ?| @scopes`; `InsertRefreshToken`,
   `RotateRefreshToken` (one statement marking the old row used and
   inserting the new), `GetRefreshTokenByHash`, `RevokeRefreshFamily`,
   `UpsertConsent`, `GetConsent`; `just api generate` and
   `generate-check` clean
-- [ ] `internal/store`: `RepoInput.AccessScopes []string` marshalled to
+- [x] `internal/store`: `RepoInput.AccessScopes []string` marshalled to
   JSONB; `ReconcileRepo` writes it; the integration test
   (`//go:build integration`) round-trips the column and the two tables,
   and runs the migration up and down
-- [ ] `internal/ingest/service.go`: `AccessScopes: cfg.Access.Scopes` on
+- [x] `internal/ingest/service.go`: `AccessScopes: cfg.Access.Scopes` on
   the `RepoInput`; `mapper_test.go` covers the default and a team scope
-- [ ] `internal/config`: `MCPConfig{Enabled bool, RateLimit int}`,
+- [x] `internal/config`: `MCPConfig{Enabled bool, RateLimit int}`,
   `OAuthConfig{Issuer string, SigningKey Secret, TrustedIssuers []string,
   AccessTTL, RefreshTTL time.Duration}`, `AuthzConfig{ScopeMap
   map[string][]string, CacheTTL time.Duration}` read from `MCP_ENABLED`,
@@ -239,7 +239,7 @@ gets the migration and nothing else, because `MCP_ENABLED` is unset.
   `OAUTH_TRUSTED_ISSUERS`, `OAUTH_ACCESS_TTL`, `OAUTH_REFRESH_TTL`,
   `DOCZ_SITE_URL`, `AUTHZ_SCOPE_MAP`, `AUTHZ_CACHE_TTL`, with the defaults
   in DESIGN-0023's configuration table
-- [ ] Validation, every problem in the one `ErrInvalidConfig`: `OAUTH_ISSUER`
+- [x] Validation, every problem in the one `ErrInvalidConfig`: `OAUTH_ISSUER`
   defaults to `AUTH_REDIRECT_BASE`, must be `https` with a host and no
   query or fragment, and is required when MCP is enabled; each trusted
   issuer the same rule with a path allowed; `OAUTH_SIGNING_KEY` and
@@ -250,10 +250,10 @@ gets the migration and nothing else, because `MCP_ENABLED` is unset.
   `provider:login:<name>=…`, every scope checked against the Phase 1
   grammar through `config.ValidateScope` (exported for this), a `public`
   audience or a `write` action rejected; `MCP_RATE_LIMIT` positive
-- [ ] `config_test.go`: the new variables added to `envKeys` so
+- [x] `config_test.go`: the new variables added to `envKeys` so
   `TestEnvKeysCoverLoad` passes; a case per validation rule; the defaults
   pinned
-- [ ] `.env.example`, `deploy/.env.production.example`, and
+- [x] `.env.example`, `deploy/.env.production.example`, and
   `deploy/README.md` list the variables, commented out
 
 <!--docz:tasks:end-->
@@ -286,7 +286,7 @@ observable through the session response.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/oauth/verify.go`: `Verifier` built from the signing key's
+- [x] `internal/oauth/verify.go`: `Verifier` built from the signing key's
   public half (`kid` = the JWK's RFC 7638 thumbprint) and the trusted
   issuers, each discovered at startup under `oidcDiscoveryTimeout` (a bad
   issuer fails boot, as a login provider does) with its JWKS cached in
@@ -296,16 +296,16 @@ observable through the session response.
   `<OAUTH_ISSUER>/mcp`, `exp` and `nbf` with 30 s skew, and reads `scope`
   (space-separated) or `scp` (array). `Claims{Issuer, Subject, ClientID,
   Scopes, Email, Login, Expiry}`
-- [ ] `internal/session`: `Session` gains `Via SessionVia` (`cookie`,
+- [x] `internal/session`: `Session` gains `Via SessionVia` (`cookie`,
   `token`, `anonymous`, with a `String()`), `ClientID`, `Issuer`, and
   `Scopes []string`; `sessionData` stores `groups` already and gains
   nothing, because scopes for a cookie session are computed per request
   (question 5)
-- [ ] `internal/authorize/scopes.go`: `ScopesFor(identity, scopeMap)
+- [x] `internal/authorize/scopes.go`: `ScopesFor(identity, scopeMap)
   []string`: `public:read` plus every scope the map yields for
   `<provider>:group:<g>` over `Identity.Groups` and for
   `<provider>:login:<login>`, sorted and de-duplicated; a table test
-- [ ] `cmd/docz-api/main.go`: `authn` becomes `session.Authn(store,
+- [x] `cmd/docz-api/main.go`: `authn` becomes `session.Authn(store,
   verifier, scopeMap, anonymous bool)` in `internal/session/authn.go`:
   bearer first (`401` with `WWW-Authenticate: Bearer
   resource_metadata="<issuer>/.well-known/oauth-protected-resource",
@@ -315,31 +315,31 @@ observable through the session response.
   the middleware writes; a verifier of nil means no bearer path (MCP
   off). A table test over every edge of DESIGN-0023 §6's flowchart with
   a fake verifier and a fake lookup
-- [ ] `internal/authorize`: `ScopeAuthorizer{lister, cache}` whose
+- [x] `internal/authorize`: `ScopeAuthorizer{lister, cache}` whose
   `Allowed` reads `session.FromContext`, calls `ListRepoIDsForScopes`
   with the session's scopes, and caches the result per principal key
   (`<issuer>:<sub>` or `user:<provider>:<subject>`) for `AUTHZ_CACHE_TTL`;
   `runServer` wires it, keeping `AllReposAuthorizer` under `none`; unit
   tests for the rule (public, team, no scopes, cache expiry) with a fake
   lister
-- [ ] `internal/authhttp`: `/api/v1/auth/session` gains `via`, `scopes`,
+- [x] `internal/authhttp`: `/api/v1/auth/session` gains `via`, `scopes`,
   and, for a token, `client_id` and `issuer`; `sessionDTO` and the spec's
   `SessionResponse` updated together; `api/openapi.yaml` `info.version`
   to `1.7.0` with the `bearerToken` security scheme listed on every
   `/api/v1` operation beside `sessionCookie` (the remaining 1.7.0 additions
   land in Phase 4 before any release)
-- [ ] `internal/httpapi/openapi_contract_test.go`: every read route with a
+- [x] `internal/httpapi/openapi_contract_test.go`: every read route with a
   bearer from a test key, a bad bearer's `401` and its challenge, the
   session response for a token caller; `TestNoAuthModeReportsAnonymousIdentity`
   extended with `via: anonymous`
-- [ ] `internal/export/service.go`: after the allow-list check, a
+- [x] `internal/export/service.go`: after the allow-list check, a
   repository whose `access_scopes` contains neither `public:read` nor
   `confluence:write` is `StatusRefused` with the reason `repository
   scopes grant the export nothing; add confluence:write to access.scopes`;
   `ExportInputs` reads the column; a table test with the three cases
-- [ ] `internal/telemetry`: `docz_api_token_verifications_total{issuer,status}`,
+- [x] `internal/telemetry`: `docz_api_token_verifications_total{issuer,status}`,
   recorded in `authn`; `contrib/README.md` lists it
-- [ ] `ui/`: `just ui gen-api`; the session hook tolerates the new fields
+- [x] `ui/`: `just ui gen-api`; the session hook tolerates the new fields
   (additive, so no change expected); `just ui ci` green
 
 <!--docz:tasks:end-->
@@ -374,20 +374,20 @@ is true and `AUTH_PROVIDERS` is not `none`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/oauth/metadata.go`: the three documents at
+- [x] `internal/oauth/metadata.go`: the three documents at
   `/.well-known/oauth-protected-resource`,
   `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
   with the fields DESIGN-0023 §5 lists; `scopes_supported` is
   `public:read` plus every scope the scope map can grant; golden JSON
   tests
-- [ ] `internal/oauth/client.go`: the Client ID Metadata Document fetcher:
+- [x] `internal/oauth/client.go`: the Client ID Metadata Document fetcher:
   `https` only, no redirects, 5 s timeout, 64 KiB cap, a dialer whose
   resolver refuses loopback, link-local, and RFC 1918 and ULA ranges
   (injected for tests), `client_id` equal to the fetched URL, `redirect_uris`
   required; cached in Redis under `cimd:<sha256(url)>` for the response's
   `max-age` capped at an hour; tests with an `httptest` server for each
   refusal
-- [ ] `internal/oauth/authorize.go`: `GET /oauth/authorize` validates in
+- [x] `internal/oauth/authorize.go`: `GET /oauth/authorize` validates in
   the order §5 gives (`response_type`, `client_id`, `redirect_uri`
   exact-match, `code_challenge` + `S256`, `resource` equal to the PRM's,
   `scope` a subset of what docz-api can grant with empty meaning
@@ -396,7 +396,7 @@ is true and `AUTH_PROVIDERS` is not `none`.
   `<DOCZ_SITE_URL>/oauth/consent?authz=<id>`. Pre-trust failures render a
   plain error page; post-trust failures redirect with `error`, `state`,
   and `iss`
-- [ ] `internal/oauth/consent.go`, mounted through `httpapi.Handler.Mount`'s
+- [x] `internal/oauth/consent.go`, mounted through `httpapi.Handler.Mount`'s
   extras behind the gate: `GET /api/v1/oauth/authorizations/{id}` returns
   `client_name`, `client_uri`, `scopes_requested`, `scopes_granted` (the
   intersection with the session's scopes) and binds the pending request
@@ -407,7 +407,7 @@ is true and `AUTH_PROVIDERS` is not `none`.
   `{"redirect_to": …}` with `code`, `state`, `iss`, or the `access_denied`
   redirect. A `POST` from another session, a consumed id, or an expired
   one is `404`
-- [ ] `internal/oauth/token.go`: `POST /oauth/token` with
+- [x] `internal/oauth/token.go`: `POST /oauth/token` with
   `grant_type=authorization_code` (code, `code_verifier` against the
   stored challenge, `resource`, `client_id`, `redirect_uri` equal to the
   request's; a second redemption revokes the family the first created)
@@ -417,14 +417,14 @@ is true and `AUTH_PROVIDERS` is not `none`.
   `POST /oauth/revoke` (RFC 7009, the refresh token's family). Responses
   carry `access_token`, `token_type: Bearer`, `expires_in`, `refresh_token`,
   `scope`; errors use the RFC 6749 shape
-- [ ] `internal/oauth/issue.go`: `Issue(claims) (string, error)` signs ES256
+- [x] `internal/oauth/issue.go`: `Issue(claims) (string, error)` signs ES256
   with the configured key: `iss`, `sub` (`user:<provider>:<subject>`),
   `aud`, `exp` (`OAUTH_ACCESS_TTL`), `iat`, `jti`, `scope`, `client_id`,
   `email`, `login`; round-trip tests through the Phase 3 verifier
-- [ ] `cmd/docz-api/main.go`: mount the three documents and the three
+- [x] `cmd/docz-api/main.go`: mount the three documents and the three
   endpoints on the root router outside both gates when enabled and a login
   exists; the consent endpoints through the gated group
-- [ ] `ui/src/routes/consent.tsx` at `/oauth/consent`: behind the session
+- [x] `ui/src/routes/consent.tsx` at `/oauth/consent`: behind the session
   gate like every route (a `401` stashes the route in
   `docz:auth:return-to` and lands on `/login`, which is how the person
   comes back after the provider round trip; question 4), reads the
@@ -432,16 +432,16 @@ is true and `AUTH_PROVIDERS` is not `none`.
   link, the scopes it will get in words, Allow and Deny, and sets
   `window.location` to `redirect_to`; unit tests with MSW for the happy
   path, a denied decision, a `404`, and the unauthenticated stash
-- [ ] `api/openapi.yaml`: the two consent endpoints, `/oauth/token`,
+- [x] `api/openapi.yaml`: the two consent endpoints, `/oauth/token`,
   `/oauth/revoke`, and the three well-known documents with
   `additionalProperties: false` schemas and `security: []` where public;
   `just api lint-openapi` at 100; `api/README.md` gains "Tokens" (how a
   script gets one through any MCP client, and how a platform-minted one is
   accepted); `just ui gen-api-check` clean
-- [ ] `openapi_contract_test.go`: the metadata documents, the token
+- [x] `openapi_contract_test.go`: the metadata documents, the token
   endpoint's two grants against a fake Redis and the real store fakes, the
   consent endpoints, and the revoke
-- [ ] `internal/telemetry`: `docz_api_oauth_tokens_total{grant,status}`;
+- [x] `internal/telemetry`: `docz_api_oauth_tokens_total{grant,status}`;
   `oauth token` audit line with `grant`, `client_id`, `principal`, `status`
   and never the token
 
@@ -455,6 +455,9 @@ is true and `AUTH_PROVIDERS` is not `none`.
   hand-driven round trip (`curl` for the metadata, a browser for
   `/oauth/authorize` and the consent page, `curl` for `/oauth/token`)
   yields a JWT the Phase 3 verifier accepts on `/api/v1/repos`
+  (deferred - human required: a browser and the compose stack; the same
+  round trip runs in-process in `TestOpenAPIContractOAuth` and
+  `internal/oauth`'s flow tests, 2026-10-17)
 - Redeeming a code twice revokes the refresh token it issued; presenting a
   rotated-out refresh token revokes its family
 - A metadata document on a private address, over `http`, or behind a
@@ -476,16 +479,16 @@ against the type packages' corpora.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `go.mod`: `github.com/modelcontextprotocol/go-sdk` at `v1.8.0` or
+- [x] `go.mod`: `github.com/modelcontextprotocol/go-sdk` at `v1.8.0` or
   later as a direct requirement, settled with targeted `go get` and never a
   bare `go mod tidy`; `go-licenses` and the licence check clean;
   `layer_test.go` untouched, because nothing under `pkg/` imports it
-- [ ] `internal/mcp/server.go`: `New(deps) *mcp.Server` with
+- [x] `internal/mcp/server.go`: `New(deps) *mcp.Server` with
   `Implementation{Name: "docz-api", Version}`,
   `SupportedProtocolVersions` narrowed to `2026-07-28`, `SetCacheable`
   giving every list a `ttlMs` of one hour; `Handler()` returns the SDK's
   `StreamableHTTPHandler` with `Stateless: true`
-- [ ] `internal/mcp/tools.go`: `list_repos`, `list_docs`, `get_doc`,
+- [x] `internal/mcp/tools.go`: `list_repos`, `list_docs`, `get_doc`,
   `search_docs`, `get_impl_progress`, `get_page` with the argument and
   output schemas of DESIGN-0023 §3, `readOnlyHint`, `idempotentHint`, and
   `openWorldHint: false`, each over the `StoreReader` and `Searcher`
@@ -495,18 +498,18 @@ against the type packages' corpora.
   the caller's `authorize.FromContext` applied to every repository
   lookup, errors as `isError` with the REST wording,
   and one `text` block beside `structuredContent`
-- [ ] `internal/mcp/fields.go`: the typed-field switch over the six
+- [x] `internal/mcp/fields.go`: the typed-field switch over the six
   canonical type names to `rfc.Parse`, `adr.Parse`, `design.Parse`,
   `impl.Parse`, `investigation.Parse`, `runbook.Parse`, each marshalled
   under `kind`; a custom type or a parse failure yields `generic` with
   `docparse.Headings` and `kinds.ResolveRegions` and `parse_error` when
   there was one; `get_impl_progress` derives `done`, `total`, and the
   deferred count per phase from `impl.Doc`
-- [ ] `internal/mcp/resources.go`: one `docz://{owner}/{name}/{type}/{id}`
+- [x] `internal/mcp/resources.go`: one `docz://{owner}/{name}/{type}/{id}`
   template per built-in type and one generic, `resources/read` returning
   `text/markdown` and `application/json` contents, a URI outside
   `AllowedRepos` not found
-- [ ] `internal/mcp/limit.go`: chi's `httprate` middleware at
+- [x] `internal/mcp/limit.go`: chi's `httprate` middleware at
   `MCP_RATE_LIMIT` per minute, keyed by the principal key when the session
   has one and by the client IP (`httprate.KeyByRealIP`) under
   `AUTH_PROVIDERS=none`, applied to `/mcp` and to `/api/v1` for `Via ==
@@ -514,17 +517,17 @@ against the type packages' corpora.
   `docz_api_rate_limited_total{surface,via}`, because a throttled caller is
   an operations signal and belongs in Prometheus, not in a log line
   (question 7)
-- [ ] `internal/mcp/audit.go` and `internal/telemetry`: the `mcp call`
+- [x] `internal/mcp/audit.go` and `internal/telemetry`: the `mcp call`
   line with `principal`, `via`, `client_id`, `issuer`, `scopes`, `tool`,
   `repo`, `doc_id`, `status`, `duration`;
   `docz_api_mcp_calls_total{tool,status}` and
   `docz_api_mcp_call_duration_seconds{tool}` labelled from the `Mcp-Name`
   header; a child span `mcp.<method>` carrying the tool name with the
   `traceparent` from `_meta` as parent when the HTTP headers carry none
-- [ ] `cmd/docz-api/main.go`: `POST /mcp` mounted behind `authn`, the
+- [x] `cmd/docz-api/main.go`: `POST /mcp` mounted behind `authn`, the
   authorizer, and the limiter when `MCP_ENABLED`; the `401` challenge
   verified to fire before the SDK sees the request
-- [ ] Tests: the SDK's in-memory transport for `server/discover`,
+- [x] Tests: the SDK's in-memory transport for `server/discover`,
   `tools/list`, each tool over the `httpapi` fakes, `resources/list`, and
   `resources/read`; `get_doc.fields` pinned equal to each type package's
   `Parse` over every `.md` under `pkg/<type>/testdata`; the `generic`
@@ -533,7 +536,7 @@ against the type packages' corpora.
   `405`s, the limiter's `429`, and a tool call through real middleware;
   the audit line and the metric label asserted from a captured slog
   handler
-- [ ] `CLAUDE.md`: a "MCP server (DESIGN-0023 / IMPL-0026)" section in
+- [x] `CLAUDE.md`: a "MCP server (DESIGN-0023 / IMPL-0026)" section in
   the server part naming the packages, the tool contract rule, and the
   gotchas met
 
@@ -548,6 +551,10 @@ against the type packages' corpora.
   against a local stack lists the six tools, reads a document with its
   typed fields, and shows search hits; with `MCP_ENABLED` unset the route
   is `404`
+  (deferred - human required: needs the compose stack and a GitHub App
+  key on the operator's machine; the SDK's Streamable HTTP client against
+  the full middleware stack in `internal/mcp/http_test.go` stands in for
+  it, and the `404` with MCP off is the router's default, 2026-10-17)
 - A burst past `MCP_RATE_LIMIT` is `429` with `Retry-After` and increments
   `docz_api_rate_limited_total`, and the audit
   line for every call names the principal and the tool and never the
@@ -569,14 +576,14 @@ over real Postgres and Redis before the homelab sees it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/e2e/mcp_integration_test.go` (`//go:build integration`):
+- [x] `internal/e2e/mcp_integration_test.go` (`//go:build integration`):
   the code flow with a fake provider and an `httptest` consent page that
   plays docz-site; a `none` deployment needing no token; a repository
   ingested with `[team:read]` invisible to `public:read` and visible to
   `team:read`; a token from a fake trusted issuer (an `httptest` discovery
   and JWKS) reading with the scopes it carries; refresh reuse revoking a
   family; the export refusing and then accepting a private repository
-- [ ] `charts/docz`: `api.mcp.{enabled, issuer, siteUrl, trustedIssuers,
+- [x] `charts/docz`: `api.mcp.{enabled, issuer, siteUrl, trustedIssuers,
   rateLimit}` and `api.authz.{scopeMap, cacheTtl}` rendered only while
   `enabled`, with `issuer` defaulting to the API's external URL from its
   ingress or route host and `siteUrl` to the site's; `oauth-signing-key`
@@ -586,7 +593,7 @@ over real Postgres and Redis before the homelab sees it.
   (`just lint-alerts`); helm-unittest cases for disabled (nothing
   rendered), enabled (every variable), and the Secret key; the README
   regenerated with `just chart docs`; chart version bumped
-- [ ] `docs/runbook/0004-enable-mcp-on-docz-api.md` (`docz create
+- [x] `docs/runbook/0004-enable-mcp-on-docz-api.md` (`docz create
   runbook`): generate the signing key with `openssl ecparam -name
   prime256v1 -genkey -noout` (question 3), set the issuer and the site
   URL, turn the flag on, trust the platform's issuer (one procedure each for
@@ -597,15 +604,22 @@ over real Postgres and Redis before the homelab sees it.
   three metrics, and the three failure modes (a refused metadata document,
   a wrong audience, a principal whose scopes unlock nothing), with a
   rollback procedure (turn the flag off) and a filled Last Verified row
-- [ ] `deploy/README.md` and `CLAUDE.md`'s chart section updated;
-  `contrib/README.md` lists the new metrics
+- [x] `deploy/README.md` and `CLAUDE.md`'s chart section updated;
+  `contrib/README.md` lists the new metrics (the deploy guide is
+  `deploy/api/README.md`; there is no `deploy/README.md`)
 - [ ] The homelab deployment turned on with GitHub login and the homelab
   Keycloak as a trusted issuer (question 8); the runbook followed end to
-  end; what it taught written back into the runbook
-- [ ] `CHANGELOG.md` carries the tool contract under `mcp` and the
-  `access:` block under `config`; the release PR labelled `minor`
-  (question 2); INV-0024 and DESIGN-0023 already point at each other,
-  DESIGN-0023's status flipped to `Implemented` in the release PR
+  end; what it taught written back into the runbook (deferred - human
+  required: needs the homelab's values, its Keycloak admin, and a browser
+  for the consent page; RUNBOOK-0004's Last Verified row records the
+  integration suite until then, 2026-10-17)
+- [x] `CHANGELOG.md` carries the tool contract under `mcp` and the
+  `access:` block under `config` (git-cliff's unreleased preview groups
+  `*(mcp)* The read-only MCP server` and `*(config)* The access: block`,
+  and CI regenerates the file); DESIGN-0023's status flipped to
+  `Implemented` on this branch; the release PR labelled `minor`
+  (question 2) is deferred - human required: the label is set when the
+  PR is opened
 
 <!--docz:tasks:end-->
 
@@ -661,27 +675,28 @@ over real Postgres and Redis before the homelab sees it.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Phase 1: table tests for the grammar; `ParseBytes` equal to both
+- [x] Phase 1: table tests for the grammar; `ParseBytes` equal to both
   `Load` paths; the json shape; the parity normaliser's unit test and
   `just parity`; `just lint-generated` over the scaffold with the new block
-- [ ] Phase 2: store integration round trips and the migration down;
+- [x] Phase 2: store integration round trips and the migration down;
   config validation cases and the `envKeys` pin; the mapper's default and
   team scope
-- [ ] Phase 3: the verifier against a test key and a fake issuer (signature,
+- [x] Phase 3: the verifier against a test key and a fake issuer (signature,
   `iss`, `aud`, `exp`, `nbf`, unknown `kid` refresh, `scope` and `scp`);
   the `authn` flowchart as a table; the scope rule and cache; the export
   refusal table; the contract test with bearer tokens
-- [ ] Phase 4: the metadata goldens; every authorization refusal by name;
+- [x] Phase 4: the metadata goldens; every authorization refusal by name;
   the fetcher's SSRF refusals through an injected resolver; code
   single-use and PKCE; rotation and family revocation; the consent
   binding; MSW tests for the consent route; the contract test for every
   new endpoint
-- [ ] Phase 5: the in-memory transport for every tool and resource;
+- [x] Phase 5: the in-memory transport for every tool and resource;
   `fields` pinned to the type corpora; the conformance test over the full
   stack; the limiter; the audit line and metric label
-- [ ] Phase 6: the integration suite over real Postgres and Redis;
+- [x] Phase 6: the integration suite over real Postgres and Redis;
   helm-unittest; the hand-driven live check with Claude Code and a
-  Keycloak-minted token, recorded in RUNBOOK-0004
+  Keycloak-minted token, recorded in RUNBOOK-0004 (the live check is
+  deferred - human required, with the homelab task above)
 
 <!--docz:testing:end-->
 

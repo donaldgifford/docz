@@ -77,7 +77,8 @@ const (
 // that never rejects a request — the read API is open under it, by design.
 func AnonymousMiddleware() func(http.Handler) http.Handler {
 	sess := Session{
-		ID: AnonymousSubject,
+		ID:  AnonymousSubject,
+		Via: ViaAnonymous,
 		Identity: auth.Identity{
 			Provider: AnonymousProvider,
 			Subject:  AnonymousSubject,
@@ -128,4 +129,11 @@ func writeJSONStatus(w http.ResponseWriter, status int, body string) {
 	if _, err := w.Write([]byte(body)); err != nil {
 		slog.Debug("response write failed", "err", err, "status", status)
 	}
+}
+
+// ContextWithSession returns ctx carrying sess, which FromContext reads back.
+// It is what a test or a handler composing its own gate uses; Authn and
+// Middleware set it for every request they pass.
+func ContextWithSession(ctx context.Context, sess *Session) context.Context {
+	return context.WithValue(ctx, ctxKey{}, *sess)
 }

@@ -8,3 +8,8 @@ ON CONFLICT (provider, subject) DO UPDATE SET
     email = EXCLUDED.email,
     login = EXCLUDED.login
 RETURNING id;
+
+-- name: GetUserByID :one
+-- The person a refresh token belongs to, for the claims of the access token
+-- a refresh mints (DESIGN-0023 §5).
+SELECT * FROM users WHERE id = $1;

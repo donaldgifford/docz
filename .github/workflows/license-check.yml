@@ -37,12 +37,14 @@ jobs:
       - name: Install go-licenses
         run: go install github.com/google/go-licenses@latest
 
+      # segmentio/asm is MIT No Attribution, which go-licenses cannot classify;
+      # the ignore mirrors docz.just's license_ignore.
       - name: Check licenses
-        run: go-licenses check ./... --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0
+        run: go-licenses check ./... --allowed_licenses=Apache-2.0,MIT,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0 --ignore=github.com/segmentio/asm
 
       - name: Generate license report
         if: always()
-        run: go-licenses report ./... --template=.github/licenses-csv.tpl > licenses.csv
+        run: go-licenses report ./... --template=.github/licenses-csv.tpl --ignore=github.com/segmentio/asm > licenses.csv
 
       - name: Upload license report
         if: always()

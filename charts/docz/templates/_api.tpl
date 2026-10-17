@@ -221,3 +221,62 @@ site.config.doczApiUrl overrides it (DESIGN-0018 §4).
 {{- define "docz.api.internalUrl" -}}
 {{- printf "http://%s.%s.svc.cluster.local:%v" (include "docz.componentFullname" (dict "ctx" . "component" "api")) .Release.Namespace .Values.api.service.port -}}
 {{- end -}}
+
+{{/*
+The first host an edge names for a workload: the first api/site
+ingress host, else the first httpRoute hostname, else empty. Takes
+(dict "ctx" $ "component" "api"|"site").
+*/}}
+{{- define "docz.edgeHost" -}}
+{{- $w := index .ctx.Values .component -}}
+{{- if and $w.ingress.enabled $w.ingress.hosts -}}
+{{- (index $w.ingress.hosts 0).host -}}
+{{- else if and $w.httpRoute.enabled $w.httpRoute.hostnames -}}
+{{- index $w.httpRoute.hostnames 0 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+The API's public base URL, OAUTH_ISSUER (DESIGN-0023 §5): api.mcp.issuer
+when set, else https:// on the API's edge host. The issuer is what every
+token's aud is checked against, so a guess would reject every token.
+*/}}
+{{- define "docz.api.externalUrl" -}}
+{{- if .Values.api.mcp.issuer -}}
+{{- .Values.api.mcp.issuer | trimSuffix "/" -}}
+{{- else -}}
+{{- $host := include "docz.edgeHost" (dict "ctx" . "component" "api") -}}
+{{- if not $host -}}
+{{- fail "api.mcp.issuer is required when api.mcp.enabled is true and no api.ingress host or api.httpRoute hostname is set" -}}
+{{- end -}}
+{{- printf "https://%s" $host -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+docz-site's public base URL, DOCZ_SITE_URL: api.mcp.siteUrl when set, else
+https:// on the site's edge host. The consent page lives there.
+*/}}
+{{- define "docz.site.externalUrl" -}}
+{{- if .Values.api.mcp.siteUrl -}}
+{{- .Values.api.mcp.siteUrl | trimSuffix "/" -}}
+{{- else -}}
+{{- $host := include "docz.edgeHost" (dict "ctx" . "component" "site") -}}
+{{- if not $host -}}
+{{- fail "api.mcp.siteUrl is required when api.mcp.enabled is true and no site.ingress host or site.httpRoute hostname is set" -}}
+{{- end -}}
+{{- printf "https://%s" $host -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+AUTHZ_SCOPE_MAP from api.authz.scopeMap: `key=scope,scope` entries joined
+by `;`, keys in sorted order so the rendered value is stable.
+*/}}
+{{- define "docz.api.scopeMap" -}}
+{{- $entries := list -}}
+{{- range $key, $scopes := .Values.api.authz.scopeMap -}}
+{{- $entries = append $entries (printf "%s=%s" $key (join "," $scopes)) -}}
+{{- end -}}
+{{- join ";" $entries -}}
+{{- end -}}

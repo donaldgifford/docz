@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -168,6 +169,24 @@ func (s *Service) load(ctx context.Context, repoID int64) (store.ExportInputs, e
 }
 
 // once runs one export over a snapshot and records it.
+// reasonScopes is the refusal for a repository whose access.scopes grant
+// the export nothing (DESIGN-0023 §7).
+const reasonScopes = "repository scopes grant the export nothing; add confluence:write to access.scopes"
+
+// exportable reads repos.access_scopes and says whether the export may
+// publish the repository: public:read makes it readable by anyone, which
+// a Confluence space is, and confluence:write is the explicit grant for a
+// repository that is otherwise restricted. An unreadable column is treated
+// as granting nothing.
+func exportable(raw json.RawMessage) bool {
+	var scopes []string
+	if len(raw) == 0 || json.Unmarshal(raw, &scopes) != nil {
+		return false
+	}
+
+	return slices.Contains(scopes, doczcfg.ScopePublicRead) || slices.Contains(scopes, doczcfg.ScopeConfluenceWrite)
+}
+
 func (s *Service) once(ctx context.Context, in *store.ExportInputs) (Result, error) {
 	label := in.Repo.Owner + "/" + in.Repo.Name
 	res := Result{Repo: label, HeadSHA: in.Repo.LastSyncedSha.String}
@@ -192,6 +211,8 @@ func (s *Service) once(ctx context.Context, in *store.ExportInputs) (Result, err
 		res.Status, res.Reason = StatusRefused, "layout: page is for the CLI; the server writes the folder layout"
 	case !s.allow.Allowed(sc.Site, sc.Space):
 		res.Status, res.Reason = StatusRefused, fmt.Sprintf("space %s on %s is not allowed on this server", sc.Space, sc.Site)
+	case !exportable(in.Repo.AccessScopes):
+		res.Status, res.Reason = StatusRefused, reasonScopes
 	}
 
 	if res.Status == StatusRefused {

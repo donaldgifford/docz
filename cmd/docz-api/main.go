@@ -26,7 +26,6 @@ import (
 	"github.com/donaldgifford/docz/v2/api"
 	"github.com/donaldgifford/docz/v2/internal/auth"
 	"github.com/donaldgifford/docz/v2/internal/authhttp"
-	"github.com/donaldgifford/docz/v2/internal/authorize"
 	"github.com/donaldgifford/docz/v2/internal/config"
 	"github.com/donaldgifford/docz/v2/internal/export"
 	"github.com/donaldgifford/docz/v2/internal/githubapp"
@@ -207,6 +206,12 @@ func runServer(
 		return fmt.Errorf("building session store: %w", err)
 	}
 	defer closeSession(sessionStore)
+	tokens, authServer, err := buildAuthStack(startCtx, cfg, st)
+	if err != nil {
+		closeQueueClient(queueClient)
+		return err
+	}
+	defer tokens.close()
 
 	// The worker runs in-process alongside the HTTP server (single-binary ethos).
 	// It builds a per-installation GitHub client per job via ingestRunner.
@@ -251,21 +256,31 @@ func runServer(
 	if cfg.Telemetry.MetricsEnabled {
 		router.Handle("/metrics", telemetry.MetricsHandler())
 	}
-	// The /api/v1 gate is the session authn check (401 without a valid session)
-	// composed over the authorize seam (which still grants all onboarded repos;
-	// the future SpiceDB resolver plugs in here). Session runs first so authorize
-	// resolves behind a real identity.
-	authorizer := authorize.NewAllReposAuthorizer(st)
-	gate := func(next http.Handler) http.Handler {
-		return authn(cfg, sessionStore)(authorize.Middleware(authorizer)(next))
-	}
+	// The /api/v1 gate: authentication (a bearer, the cookie, or the anonymous
+	// principal) composed over the authorize seam, which resolves the allowed
+	// repositories from the principal's scopes. See buildGate.
+	gate := buildGate(cfg, st, sessionStore, tokens)
+	// With MCP on, /mcp is mounted here and the /api/v1 gate gains the
+	// token-only rate limiter (DESIGN-0023 §8).
+	gate = mountMCP(router, cfg, st, searchClient, gate)
 	authHandler := authhttp.New(
 		auth.NewRegistry(providers), sessionStore, st, []byte(cfg.Session.Secret.Reveal()),
 	)
-	// The read/search API plus the two session-gated auth endpoints share the gate.
+	// The read/search API plus the two session-gated auth endpoints share the
+	// gate, as do the consent endpoints when the authorization server is on.
+	extras := []func(chi.Router){authHandler.MountAPI}
+	if authServer != nil {
+		extras = append(extras, authServer.MountAPI)
+	}
 	httpapi.NewHandlerWithSearch(st, searchClient).
 		WithConfluenceExport(confluenceClient != nil).
-		Mount(router, gate, authHandler.MountAPI)
+		Mount(router, gate, extras...)
+	if authServer != nil {
+		// The metadata documents and the three OAuth endpoints are public by
+		// definition: the client has no token yet.
+		authServer.MountPublic(router)
+		slog.Info("authorization server mounted", "issuer", cfg.OAuth.Issuer, "consent", cfg.OAuth.SiteURL+"/oauth/consent")
+	}
 	if !cfg.AuthDisabled() {
 		// /auth/login and /auth/callback are public (state is their CSRF guard).
 		// Under none-mode there is no provider to redirect to, so the routes are
@@ -595,15 +610,4 @@ func checkGitHubCredentials(ctx context.Context, cfg config.GitHubConfig) error 
 			"err", err)
 		return nil
 	}
-}
-
-// authn returns the authentication middleware for the /api/v1 gate: the real
-// session check normally, or the anonymous injector under AUTH_PROVIDERS=none.
-// Both inject a session.Session, so everything downstream — authorize, the
-// handlers, /api/v1/auth/session — is identical in either mode.
-func authn(cfg *config.Config, sessionStore *session.Store) func(http.Handler) http.Handler {
-	if cfg.AuthDisabled() {
-		return session.AnonymousMiddleware()
-	}
-	return session.Middleware(sessionStore)
 }

@@ -677,6 +677,8 @@ export const demoOrgHandlers = [
     HttpResponse.json({
       provider: "github",
       subject: "1138",
+      via: "cookie",
+      scopes: ["public:read"],
       login: "donaldgifford",
       email: "donald@demo.docz",
     }),

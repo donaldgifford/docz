@@ -1,0 +1,15 @@
+{
+  "resource": "https://docz-api.example/mcp",
+  "authorization_servers": [
+    "https://docz-api.example"
+  ],
+  "scopes_supported": [
+    "public:read",
+    "docz:read",
+    "team:read"
+  ],
+  "bearer_methods_supported": [
+    "header"
+  ],
+  "resource_name": "docz-api"
+}

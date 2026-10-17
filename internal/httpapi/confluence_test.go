@@ -70,14 +70,14 @@ func TestDocumentConfluenceURL(t *testing.T) {
 	h := confluenceServer(true)
 	const want = "https://example.atlassian.net/wiki/spaces/DOCZ/pages/65861"
 
-	var one documentDTO
+	var one DocumentDTO
 	rec := doGet(t, h, "/api/v1/repos/acme/platform/types/FW/docs/FW-0001")
 	if err := json.Unmarshal(rec.Body.Bytes(), &one); err != nil || one.ConfluenceURL != want {
 		t.Errorf("getDoc confluence_url = %q (%v), want %q", one.ConfluenceURL, err, want)
 	}
 
 	var list struct {
-		Docs []documentDTO `json:"docs"`
+		Docs []DocumentDTO `json:"docs"`
 	}
 	rec = doGet(t, h, "/api/v1/repos/acme/platform/types/FW/docs")
 	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list.Docs) != 1 || list.Docs[0].ConfluenceURL != want {

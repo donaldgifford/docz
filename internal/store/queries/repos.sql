@@ -3,9 +3,9 @@ INSERT INTO repos (
     installation_id, owner, name, default_branch, docs_dir, config_snapshot,
     last_synced_sha, last_synced_at, changelog_md, changelog_sha,
     changelog_file, index_md, index_sha, api_landing_page,
-    api_additional_docs, updated_at
+    api_additional_docs, access_scopes, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, $12, $13, $14, now()
+    $1, $2, $3, $4, $5, $6, $7, now(), $8, $9, $10, $11, $12, $13, $14, $15, now()
 )
 ON CONFLICT (owner, name) DO UPDATE SET
     installation_id     = EXCLUDED.installation_id,
@@ -21,6 +21,7 @@ ON CONFLICT (owner, name) DO UPDATE SET
     index_sha           = EXCLUDED.index_sha,
     api_landing_page    = EXCLUDED.api_landing_page,
     api_additional_docs = EXCLUDED.api_additional_docs,
+    access_scopes       = EXCLUDED.access_scopes,
     updated_at          = now()
 RETURNING id;
 

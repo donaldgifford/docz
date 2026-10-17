@@ -825,6 +825,8 @@ func RunbookNormalizer() Normalizer {
 // syncKey matches the top-level `sync:` key that opens the block.
 var syncKey = regexp.MustCompile(`^sync:[ \t]*$`)
 
+var accessKey = regexp.MustCompile(`^access:[ \t]*$`)
+
 // SyncNormalizer removes the `sync:` block (DESIGN-0020, IMPL-0023) from a
 // generated `.docz.yaml` and from `docz config` output: the key, its
 // indented body, and the comment run and blank line that introduce it in
@@ -835,28 +837,41 @@ var syncKey = regexp.MustCompile(`^sync:[ \t]*$`)
 // sides for symmetry. The block is dormant by default, so it changes nothing
 // else a case observes.
 func SyncNormalizer() Normalizer {
-	return Normalizer{
-		Name: "sync",
-		Apply: func(s string) string {
-			lines := strings.Split(s, "\n")
-			kept := make([]string, 0, len(lines))
+	return Normalizer{Name: "sync", Apply: dropTopLevelBlock(syncKey)}
+}
 
-			for i := 0; i < len(lines); i++ {
-				if !syncKey.MatchString(lines[i]) {
-					kept = append(kept, lines[i])
+// AccessNormalizer removes the `access:` block (DESIGN-0023, IMPL-0026) from
+// a generated `.docz.yaml` and from `docz config` output, as SyncNormalizer
+// removes `sync:`. The eighth permitted delta, additive in the same way:
+// v1.2.2 never wrote the block, it is `[public:read]` by default, and
+// nothing a case observes reads it.
+func AccessNormalizer() Normalizer {
+	return Normalizer{Name: "access", Apply: dropTopLevelBlock(accessKey)}
+}
 
-					continue
-				}
+// dropTopLevelBlock returns an Apply that removes every top-level yaml key
+// matching key, its indented body, and the comment run and blank line that
+// introduce it in the template.
+func dropTopLevelBlock(key *regexp.Regexp) func(string) string {
+	return func(s string) string {
+		lines := strings.Split(s, "\n")
+		kept := make([]string, 0, len(lines))
 
-				kept = dropTrailingComments(kept)
+		for i := 0; i < len(lines); i++ {
+			if !key.MatchString(lines[i]) {
+				kept = append(kept, lines[i])
 
-				for i+1 < len(lines) && strings.HasPrefix(lines[i+1], " ") {
-					i++
-				}
+				continue
 			}
 
-			return strings.Join(kept, "\n")
-		},
+			kept = dropTrailingComments(kept)
+
+			for i+1 < len(lines) && strings.HasPrefix(lines[i+1], " ") {
+				i++
+			}
+		}
+
+		return strings.Join(kept, "\n")
 	}
 }
 

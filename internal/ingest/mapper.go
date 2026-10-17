@@ -91,3 +91,11 @@ func mapDocument(typeName string, blob *BlobEntry, fm *doczdoc.Frontmatter) (sto
 		RawMD:       string(blob.Content),
 	}, nil
 }
+
+// accessScopes maps the manifest's access.scopes (DESIGN-0023 §7) onto the
+// repository row. The library has already normalised the list, so an absent
+// or empty block arrives as [public:read]; the clone keeps the row's slice
+// from aliasing the config's.
+func accessScopes(cfg *doczcfg.Config) []string {
+	return slices.Clone(cfg.Access.Scopes)
+}

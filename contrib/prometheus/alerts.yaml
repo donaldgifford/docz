@@ -6,8 +6,9 @@
 # (charts/docz/templates/api-prometheusrule.yaml), in two formats:
 #   - chart users get these via `prometheusRule.enabled=true`;
 #   - vanilla-Prometheus users add THIS file to `rule_files` directly.
-# Keep the five shared alerts (DoczAPIDown, DoczAPIHighErrorRate,
-# DoczAPISlowRequests, DoczAPIIngestFailures, DoczAPISlowIngest, DoczAPIExportFailures) in sync
+# Keep the seven shared alerts (DoczAPIDown, DoczAPIHighErrorRate,
+# DoczAPISlowRequests, DoczAPIIngestFailures, DoczAPISlowIngest,
+# DoczAPIExportFailures, DoczAPITokenFailures) in sync
 # between the two. DoczAPINoScrapes below is extra: it only makes sense for
 # a static scrape config that owns the `job` label, so it lives here, not in
 # the chart (where the ServiceMonitor sets the job).
@@ -114,6 +115,18 @@ groups:
         annotations:
           summary: "docz-api Confluence exports failing"
           description: "more than 2 Confluence export jobs for reason {{ $labels.reason }} failed or partly failed in the last 30 minutes."
+
+      # Bearer tokens rejected at the /api/v1 and /mcp gate (DESIGN-0023 §6):
+      # a wrong audience, an untrusted issuer, or an expired key set.
+      # RUNBOOK-0004 lists the failure modes.
+      - alert: DoczAPITokenFailures
+        expr: sum by (issuer) (increase(docz_api_token_verifications_total{status="rejected"}[15m])) > 10
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "docz-api rejecting bearer tokens"
+          description: "more than 10 bearer tokens from issuer {{ $labels.issuer }} were rejected in the last 15 minutes."
 
       # -------------------------------------------------------------------
       # Scrape health (static-scrape deployments only)

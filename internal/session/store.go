@@ -46,6 +46,51 @@ var ErrSessionCorrupt = errors.New("session could not be decoded")
 type Session struct {
 	ID       string
 	Identity auth.Identity
+	// Via says how the caller authenticated (DESIGN-0023 §6): a cookie, a
+	// bearer token, or the anonymous principal under AUTH_PROVIDERS=none.
+	Via SessionVia
+	// Scopes is what the principal holds (DESIGN-0023 §7): public:read plus
+	// the scope map's grants for a cookie session, computed per request; the
+	// token's scope claim as-is for a bearer; every scope for anonymous.
+	Scopes []string
+	// ClientID and Issuer are set for a bearer token: the client it was
+	// issued to and the issuer that minted it.
+	ClientID string
+	Issuer   string
+}
+
+// SessionVia is how a Session was established.
+type SessionVia int
+
+// The three ways a request authenticates.
+const (
+	ViaCookie SessionVia = iota
+	ViaToken
+	ViaAnonymous
+)
+
+// String is the wire and log spelling: cookie, token, or anonymous.
+func (v SessionVia) String() string {
+	switch v {
+	case ViaToken:
+		return "token"
+	case ViaAnonymous:
+		return "anonymous"
+	default:
+		return "cookie"
+	}
+}
+
+// PrincipalKey names the principal for caches, limits, and the audit line:
+// `<issuer>:<sub>` for an external token and `user:<provider>:<subject>`
+// for a person, however they authenticated, so a person's cookie and a
+// token docz-api minted for them share one entry.
+func (s *Session) PrincipalKey() string {
+	if s.Via == ViaToken && s.Issuer != "" && s.Identity.Provider == s.Issuer {
+		return s.Issuer + ":" + s.Identity.Subject
+	}
+
+	return "user:" + s.Identity.Provider + ":" + s.Identity.Subject
 }
 
 // sessionData is the JSON value stored in Redis under sess:<id>. It carries no
@@ -122,7 +167,8 @@ func (s *Store) Lookup(ctx context.Context, sessionID string) (Session, error) {
 		return Session{}, fmt.Errorf("%w: %w", ErrSessionCorrupt, uerr)
 	}
 	return Session{
-		ID: sessionID,
+		ID:  sessionID,
+		Via: ViaCookie,
 		Identity: auth.Identity{
 			Provider: data.Provider,
 			Subject:  data.Subject,

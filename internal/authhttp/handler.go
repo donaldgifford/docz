@@ -82,6 +82,10 @@ type sessionDTO struct {
 	Email    string   `json:"email,omitempty"`
 	Login    string   `json:"login,omitempty"`
 	Groups   []string `json:"groups,omitempty"`
+	Via      string   `json:"via"`
+	Scopes   []string `json:"scopes"`
+	ClientID string   `json:"client_id,omitempty"`
+	Issuer   string   `json:"issuer,omitempty"`
 }
 
 // writeJSON serializes v as a 200 JSON response.

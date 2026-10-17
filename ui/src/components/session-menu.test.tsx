@@ -34,6 +34,8 @@ describe("session menu", () => {
           ? HttpResponse.json({
               provider: "github",
               subject: "1138",
+              via: "cookie",
+              scopes: ["public:read"],
               login: "donaldgifford",
             })
           : HttpResponse.json({ error: "session required" }, { status: 401 }),
@@ -75,6 +77,8 @@ describe("session menu", () => {
         HttpResponse.json({
           provider: "okta",
           subject: "u-1138",
+          via: "cookie",
+          scopes: ["public:read"],
           email: "dev@example.com",
         }),
       ),
@@ -125,6 +129,8 @@ describe("session menu", () => {
         HttpResponse.json({
           provider: "none",
           subject: "anonymous",
+          via: "anonymous",
+          scopes: [],
           login: "anonymous",
         }),
       ),
@@ -167,6 +173,8 @@ describe("session menu", () => {
           ? HttpResponse.json({
               provider: "github",
               subject: "1138",
+              via: "cookie",
+              scopes: ["public:read"],
               login: "donaldgifford",
             })
           : HttpResponse.json(

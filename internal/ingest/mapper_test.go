@@ -3,6 +3,7 @@ package ingest
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"slices"
 	"testing"
 	"time"
 
@@ -86,5 +87,35 @@ func TestMapDocumentBadDate(t *testing.T) {
 	fm := doczdoc.Frontmatter{ID: "FW-0003", Created: "July 1st"}
 	if _, err := mapDocument("frameworks", &blob, &fm); err == nil {
 		t.Fatal("mapDocument with a malformed created date = nil error, want error")
+	}
+}
+
+func TestAccessScopes(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+		want []string
+	}{
+		{name: "absent block is the default", yaml: "docs_dir: docs\n", want: []string{doczcfg.ScopePublicRead}},
+		{name: "a team scope", yaml: "access:\n  scopes: [Platform-Team:read]\n", want: []string{"platform-team:read"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := doczcfg.ParseBytes([]byte(tt.yaml))
+			if err != nil {
+				t.Fatalf("ParseBytes: %v", err)
+			}
+
+			got := accessScopes(&cfg)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("accessScopes() = %q, want %q", got, tt.want)
+			}
+
+			got[0] = "changed"
+			if cfg.Access.Scopes[0] == "changed" {
+				t.Error("accessScopes() aliases the config's slice")
+			}
+		})
 	}
 }

@@ -2,7 +2,7 @@
 openapi: 3.1.0
 info:
   title: docz-api
-  version: 1.6.2
+  version: 1.7.0
   description: |
     HTTP contract for docz-api's `/api/v1` read and search surface, plus the
     site auth endpoints and the GitHub webhook receiver. Hand-authored and kept
@@ -21,8 +21,14 @@ tags:
     description: Site-user login, logout, and the current session.
   - name: webhooks
     description: The GitHub App webhook receiver (HMAC-authenticated).
+  - name: oauth
+    description: |
+      docz-api's own authorization server and the consent endpoints
+      (DESIGN-0023 §5), present only while `MCP_ENABLED` is true and a
+      login exists.
 security:
   - sessionCookie: []
+  - bearerToken: []
 paths:
   /api/v1/repos:
     get:
@@ -378,6 +384,64 @@ paths:
                 $ref: "#/components/schemas/StatusResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /api/v1/oauth/authorizations/{id}:
+    get:
+      tags: [oauth]
+      operationId: getOAuthAuthorization
+      summary: Read a pending authorization for the consent page.
+      description: |
+        The request `GET /oauth/authorize` stored (DESIGN-0023 §5): the
+        client's name and link, the scopes it asked for, and the scopes the
+        signed-in person can actually grant it. The first read binds the
+        request to the caller's session; a later read or decision from
+        another session is `404`, as are an unknown, expired, or consumed id.
+        The id is the only secret the page handles. Present only while
+        `MCP_ENABLED` is true and a login exists.
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationID"
+      responses:
+        "200":
+          description: The pending authorization.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthAuthorization"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [oauth]
+      operationId: decideOAuthAuthorization
+      summary: Allow or deny a pending authorization.
+      description: |
+        From the session the `GET` bound. `allow` mints a single-use code,
+        remembers the consent, and returns the client's `redirect_uri` with
+        `code`, `state`, and `iss`; `deny` returns it with
+        `error=access_denied`, `state`, and `iss`. The page sets
+        `window.location` to `redirect_to`. The id is consumed either way.
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationID"
+      requestBody:
+        description: The decision.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthDecision"
+      responses:
+        "200":
+          description: Where to send the browser.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthDecisionResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /auth/login:
     get:
       tags: [auth]
@@ -441,6 +505,131 @@ paths:
                 $ref: "#/components/schemas/Error"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /.well-known/oauth-protected-resource:
+    get:
+      tags: [oauth]
+      operationId: getProtectedResourceMetadata
+      summary: RFC 9728 protected resource metadata for the MCP endpoint.
+      description: |
+        Where a client that got a `401` with `WWW-Authenticate: Bearer
+        resource_metadata=…` learns the authorization server and the scopes.
+        Public. Present only while `MCP_ENABLED` is true and a login exists.
+      security: []
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtectedResourceMetadata"
+  /.well-known/oauth-authorization-server:
+    get:
+      tags: [oauth]
+      operationId: getAuthorizationServerMetadata
+      summary: RFC 8414 metadata for docz-api's own authorization server.
+      description: |
+        The endpoints, the JWKS, and the capabilities a client needs: PKCE
+        with `S256` only, `authorization_code` and `refresh_token` grants,
+        no client authentication (clients are Client ID Metadata Documents),
+        `iss` on every authorization response. Public.
+      security: []
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationServerMetadata"
+  /.well-known/jwks.json:
+    get:
+      tags: [oauth]
+      operationId: getJWKS
+      summary: The public key docz-api signs access tokens with.
+      description: |
+        RFC 7517. One ES256 key whose `kid` is its RFC 7638 thumbprint, so a
+        verifier elsewhere can check docz-api's tokens too. Public.
+      security: []
+      responses:
+        "200":
+          description: The key set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JWKS"
+  /oauth/token:
+    post:
+      tags: [oauth]
+      operationId: oauthToken
+      summary: Exchange a code or a refresh token for an access token.
+      description: |
+        OAuth 2.1 token endpoint, form-encoded. `grant_type=authorization_code`
+        takes `code`, `code_verifier` (PKCE `S256`), `client_id`,
+        `redirect_uri`, and `resource` (`<OAUTH_ISSUER>/mcp`), each as the
+        authorization request used them; a code redeemed twice revokes every
+        token it issued. `grant_type=refresh_token` takes `refresh_token` and
+        optionally `client_id` and a narrower `scope`; the token is rotated on
+        every use, and presenting a rotated-out token revokes its family. The
+        access token is a 15-minute JWT; the refresh token is opaque and
+        expires after `OAUTH_REFRESH_TTL` of disuse. Public: the code or the
+        refresh token is the credential.
+      security: []
+      requestBody:
+        description: The grant and its parameters, form-encoded.
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OAuthTokenRequest"
+      responses:
+        "200":
+          description: A token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthTokenResponse"
+        "400":
+          description: An RFC 6749 §5.2 error (`invalid_request`, `invalid_grant`, `invalid_scope`, `invalid_target`, `unsupported_grant_type`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+        "401":
+          description: "`invalid_client`: the client is not the one the code or token was issued to."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+  /oauth/revoke:
+    post:
+      tags: [oauth]
+      operationId: oauthRevoke
+      summary: Revoke a refresh token and its family.
+      description: |
+        RFC 7009, form-encoded: `token` and an optional `token_type_hint`.
+        Revokes the refresh token's whole family. An unknown token, or an
+        access token (which is a JWT and expires on its own), is `200` like
+        a known one, so the endpoint confirms nothing. Public.
+      security: []
+      requestBody:
+        description: The token to revoke, form-encoded.
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OAuthRevokeRequest"
+      responses:
+        "200":
+          description: Revoked, or nothing to revoke.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "400":
+          description: No `token` in the body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
   /webhooks/github:
     post:
       tags: [webhooks]
@@ -516,7 +705,28 @@ components:
         anonymous identity, and does not mount `/auth/login` or
         `/auth/callback`. Request and response shapes are unchanged, so a client
         generated from this spec works against either mode.
+    bearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        An OAuth 2.1 access token (DESIGN-0023): a JWT minted by docz-api's
+        authorization server or by an issuer in `OAUTH_TRUSTED_ISSUERS`, with
+        `aud` set to `<OAUTH_ISSUER>/mcp`. Accepted on every `/api/v1`
+        operation beside the cookie and on `/mcp`, only while `MCP_ENABLED`
+        is true; otherwise the header is ignored and the cookie decides. A
+        token that fails verification is a `401` carrying
+        `WWW-Authenticate: Bearer resource_metadata="<OAUTH_ISSUER>/.well-known/oauth-protected-resource", scope="public:read"`,
+        and a bad token never falls through to the cookie. The token's
+        `scope` (or `scp`) claim is the principal's scopes.
   parameters:
+    AuthorizationID:
+      name: id
+      in: path
+      required: true
+      description: The pending authorization id from the consent page's `authz` query parameter.
+      schema:
+        type: string
     Owner:
       name: owner
       in: path
@@ -1027,10 +1237,13 @@ components:
               type: integer
               format: int64
     Session:
-      description: The authenticated site user's normalized identity.
+      description: |
+        The authenticated principal: the site user's normalized identity for
+        a cookie session, the token's subject for a bearer, or the anonymous
+        identity under `AUTH_PROVIDERS=none`.
       type: object
       additionalProperties: false
-      required: [provider, subject]
+      required: [provider, subject, via, scopes]
       properties:
         provider:
           type: string
@@ -1056,6 +1269,267 @@ components:
             is not assigned) or a claim mapper. Treat it as always optional.
           items:
             type: string
+        via:
+          type: string
+          enum: [cookie, token, anonymous]
+          description: How the request authenticated (DESIGN-0023 §6).
+          example: cookie
+        scopes:
+          type: array
+          description: |
+            The scopes the principal holds (DESIGN-0023 §7): `public:read`
+            plus whatever `AUTHZ_SCOPE_MAP` grants for a cookie session, the
+            token's `scope` claim for a bearer, and empty for the anonymous
+            identity, which sees every repository. A repository is visible
+            when its `access.scopes` holds any of them.
+          items:
+            type: string
+          example: ['public:read']
+        client_id:
+          type: string
+          description: For a bearer token, the client it was issued to.
+        issuer:
+          type: string
+          description: For a bearer token, the issuer that minted it.
+    OAuthAuthorization:
+      description: A pending authorization as the consent page renders it.
+      type: object
+      additionalProperties: false
+      required: [client_id, client_name, scopes_requested, scopes_granted]
+      properties:
+        client_id:
+          type: string
+          description: The client's Client ID Metadata Document URL.
+          example: https://agent.example/oauth.json
+        client_name:
+          type: string
+          description: The document's `client_name`, else its `client_id`.
+          example: Agent
+        client_uri:
+          type: string
+          description: The document's `client_uri`, when it has one.
+          example: https://agent.example
+        scopes_requested:
+          type: array
+          description: What the client asked for.
+          items:
+            type: string
+          example: ['public:read', 'team:read']
+        scopes_granted:
+          type: array
+          description: The requested scopes the person holds, which is what the token will carry.
+          items:
+            type: string
+          example: ['public:read']
+    OAuthDecision:
+      description: The consent page's answer.
+      type: object
+      additionalProperties: false
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [allow, deny]
+    OAuthDecisionResult:
+      description: Where the page sends the browser.
+      type: object
+      additionalProperties: false
+      required: [redirect_to]
+      properties:
+        redirect_to:
+          type: string
+          description: The client's `redirect_uri` with `code`, `state`, and `iss`, or with `error`, `state`, and `iss`.
+          example: "https://agent.example/cb?code=…&state=xyz&iss=https%3A%2F%2Fdocz.example"
+    OAuthTokenRequest:
+      description: The token endpoint's form body, one of the two grants.
+      type: object
+      required: [grant_type]
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code, refresh_token]
+        code:
+          type: string
+          description: The code from the authorization response (`authorization_code`).
+        code_verifier:
+          type: string
+          description: The PKCE verifier whose `S256` challenge the authorization carried (`authorization_code`).
+        client_id:
+          type: string
+          description: The Client ID Metadata Document URL; required with a code, optional with a refresh token.
+        redirect_uri:
+          type: string
+          description: The `redirect_uri` the authorization used (`authorization_code`).
+        resource:
+          type: string
+          description: "`<OAUTH_ISSUER>/mcp` (`authorization_code`)."
+        refresh_token:
+          type: string
+          description: The refresh token to rotate (`refresh_token`).
+        scope:
+          type: string
+          description: A space-separated subset of the granted scopes, to narrow the new token (`refresh_token`).
+    OAuthTokenResponse:
+      description: RFC 6749 §5.1.
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type, expires_in, refresh_token, scope]
+      properties:
+        access_token:
+          type: string
+          description: "A JWT; send it as `Authorization: Bearer <access_token>`."
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          format: int64
+          description: Seconds until the access token expires.
+          example: 900
+        refresh_token:
+          type: string
+          description: Opaque; rotated on every use.
+        scope:
+          type: string
+          description: Space-separated scopes the access token carries.
+          example: public:read
+    OAuthRevokeRequest:
+      description: RFC 7009's form body.
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+        token_type_hint:
+          type: string
+          description: Ignored; the token's kind is recognised by lookup.
+    OAuthError:
+      description: RFC 6749 §5.2.
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: invalid_grant
+        error_description:
+          type: string
+    ProtectedResourceMetadata:
+      description: RFC 9728.
+      type: object
+      additionalProperties: false
+      required: [resource, authorization_servers, scopes_supported, bearer_methods_supported, resource_name]
+      properties:
+        resource:
+          type: string
+          description: "`<OAUTH_ISSUER>/mcp`, the audience every accepted token must carry."
+        authorization_servers:
+          type: array
+          items:
+            type: string
+        scopes_supported:
+          type: array
+          description: "`public:read` plus every scope `AUTHZ_SCOPE_MAP` can grant."
+          items:
+            type: string
+        bearer_methods_supported:
+          type: array
+          items:
+            type: string
+        resource_name:
+          type: string
+    AuthorizationServerMetadata:
+      description: RFC 8414.
+      type: object
+      additionalProperties: false
+      required:
+        - issuer
+        - authorization_endpoint
+        - token_endpoint
+        - revocation_endpoint
+        - jwks_uri
+        - scopes_supported
+        - response_types_supported
+        - grant_types_supported
+        - code_challenge_methods_supported
+        - token_endpoint_auth_methods_supported
+        - revocation_endpoint_auth_methods_supported
+        - authorization_response_iss_parameter_supported
+        - client_id_metadata_document_supported
+      properties:
+        issuer:
+          type: string
+        authorization_endpoint:
+          type: string
+        token_endpoint:
+          type: string
+        revocation_endpoint:
+          type: string
+        jwks_uri:
+          type: string
+        scopes_supported:
+          type: array
+          items:
+            type: string
+        response_types_supported:
+          type: array
+          items:
+            type: string
+        grant_types_supported:
+          type: array
+          items:
+            type: string
+        code_challenge_methods_supported:
+          type: array
+          items:
+            type: string
+        token_endpoint_auth_methods_supported:
+          type: array
+          items:
+            type: string
+        revocation_endpoint_auth_methods_supported:
+          type: array
+          items:
+            type: string
+        authorization_response_iss_parameter_supported:
+          type: boolean
+        client_id_metadata_document_supported:
+          type: boolean
+    JWKS:
+      description: RFC 7517 key set.
+      type: object
+      additionalProperties: false
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/JWK"
+    JWK:
+      description: One public key; the EC fields docz-api's ES256 key carries.
+      type: object
+      additionalProperties: false
+      required: [kty, kid, crv, x, y]
+      properties:
+        kty:
+          type: string
+          example: EC
+        kid:
+          type: string
+          description: The key's RFC 7638 thumbprint.
+        use:
+          type: string
+          example: sig
+        alg:
+          type: string
+          example: ES256
+        crv:
+          type: string
+          example: P-256
+        x:
+          type: string
+        y:
+          type: string
     StatusResponse:
       description: A minimal JSON status envelope with a single `status` field.
       type: object

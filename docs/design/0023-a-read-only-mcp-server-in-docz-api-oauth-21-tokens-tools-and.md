@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0023
 title: "A read-only MCP server in docz-api: OAuth 2.1 tokens, tools, and resources"
-status: Draft
+status: Implemented
 author: Donald Gifford
 created: 2026-10-17
 ---

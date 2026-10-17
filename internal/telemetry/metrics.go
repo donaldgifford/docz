@@ -64,7 +64,54 @@ var (
 		Name: "docz_api_export_pages_total",
 		Help: "Total Confluence pages exported, by the action taken.",
 	}, []string{"action"})
+
+	tokenVerifications = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "docz_api_token_verifications_total",
+		Help: "Bearer tokens verified, by the issuer claimed and whether the token was accepted.",
+	}, []string{"issuer", "status"})
+
+	oauthTokens = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "docz_api_oauth_tokens_total",
+		Help: "Token endpoint requests, by grant type and whether a token was issued.",
+	}, []string{"grant", "status"})
+
+	mcpCalls = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "docz_api_mcp_calls_total",
+		Help: "MCP requests by tool (the Mcp-Name header for a tool call, else the method) and outcome.",
+	}, []string{"tool", labelStatus})
+
+	mcpDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "docz_api_mcp_call_duration_seconds",
+		Help:    "MCP request duration in seconds by tool.",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"tool"})
+
+	rateLimited = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "docz_api_rate_limited_total",
+		Help: "Requests answered 429 by the per-principal limiter, by surface (mcp or api) and how the caller authenticated.",
+	}, []string{"surface", "via"})
 )
+
+// ObserveOAuthToken records one token endpoint request (DESIGN-0023 §8).
+// grant is the grant_type as sent ("unknown" when empty); status is "ok"
+// or "rejected". It has the oauth.ServerOptions.Observe shape.
+func ObserveOAuthToken(grant, status string) {
+	if grant == "" {
+		grant = "unknown"
+	}
+	oauthTokens.WithLabelValues(grant, status).Inc()
+}
+
+// ObserveTokenVerification records one bearer verification (DESIGN-0023
+// §9). issuer is the token's iss claim when it parsed, else "unknown";
+// status is "ok" or "rejected". It has the oauth.VerifierOptions.Observe
+// shape so the verifier records it without importing this package.
+func ObserveTokenVerification(issuer, status string) {
+	if issuer == "" {
+		issuer = "unknown"
+	}
+	tokenVerifications.WithLabelValues(issuer, status).Inc()
+}
 
 // MetricsHandler serves the Prometheus exposition of the default registry
 // (docz-api instruments plus Go-runtime and process collectors). The caller
@@ -97,4 +144,21 @@ func ObserveExportPages(action string, n int) {
 	if n > 0 {
 		exportPages.WithLabelValues(action).Add(float64(n))
 	}
+}
+
+// ObserveMCPCall records one MCP request (DESIGN-0023 §8). tool is the
+// Mcp-Name header's value for a tool call and the method otherwise, so the
+// label set is the tool set plus a handful of methods; status is "ok" or
+// "error".
+func ObserveMCPCall(tool, status string, dur time.Duration) {
+	mcpCalls.WithLabelValues(tool, status).Inc()
+	mcpDuration.WithLabelValues(tool).Observe(dur.Seconds())
+}
+
+// ObserveRateLimited records one request the limiter refused (IMPL-0026
+// question 7): a throttled caller is an operations signal, so it lands in
+// Prometheus rather than in a log line. surface is "mcp" or "api"; via is
+// how the caller authenticated.
+func ObserveRateLimited(surface, via string) {
+	rateLimited.WithLabelValues(surface, via).Inc()
 }
