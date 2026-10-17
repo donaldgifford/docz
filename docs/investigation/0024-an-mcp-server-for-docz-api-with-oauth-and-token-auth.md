@@ -1,7 +1,7 @@
 ---
 id: INV-0024
 title: "An MCP server for docz-api with OAuth and token auth"
-status: Open
+status: Concluded
 author: Donald Gifford
 created: 2026-10-08
 ---
@@ -316,10 +316,20 @@ and the rate limiter a tool name without parsing the body.
 <!--docz:conclusion:start-->
 ## Conclusion
 
-**Answer:** Inconclusive. The investigation is open. The direction is
-clear: an in-process MCP server, with docz-api as the authorization server.
-The authorization model (Observation 5) is the real work, and the spike
-(Approach step 6) comes next.
+**Answer:** Yes: an in-process MCP server at `/mcp`, with docz-api as
+an authorization server where the deployment has none. Concluded
+2026-10-17 by [DESIGN-0023](../design/0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md),
+which takes recommendations 1, 4, 5, 6, 7, and 8 as its starting point and
+resolves the authorization model Observation 5 called the real work as
+scopes a repository declares and a principal holds. Three of this
+investigation's threads did not survive it: the write tools, the MRTR
+confirmation, and the Tasks-extension run handle (Observation 4) depended
+on INV-0023's write access and Temporal control plane, and docz-api was
+decided read-only on 2026-10-15, so the design is read-only as its whole
+scope; recommendation 3's client credentials became tokens from a trusted
+external issuer instead of credentials docz-api mints; and recommendation
+2's token service issues JWTs only, with no personal access tokens. The
+protocol reading in Observations 1, 2, 3, 6, and 7 stands as written.
 
 <!--docz:conclusion:end-->
 
