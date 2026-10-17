@@ -18,6 +18,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* Keep the example snippet in DESIGN-0003 as written
 - *(design)* DESIGN-0022, incident and RCA as built-in document types
 - *(investigation)* Conclude INV-0021, a restored ac:ref re-anchors an inline comment
+- *(design)* DESIGN-0023, a read-only MCP server in docz-api with OAuth 2.1 tokens
+- *(design)* Resolve DESIGN-0023's fourteen questions and conclude INV-0024
+- *(impl)* IMPL-0026, the read-only MCP server in six phases
+- *(impl)* Resolve IMPL-0026 questions 1, 2, and 8
+- *(impl)* Resolve IMPL-0026 questions 3 to 7 and amend DESIGN-0023
 
 ### Testing
 
