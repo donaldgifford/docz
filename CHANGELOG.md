@@ -5,6 +5,16 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Testing
+
+- *(chart)* The default image tag follows the beta appVersion
+
+### Miscellaneous Tasks
+
+- *(chart)* 1.1.0-beta.2 with appVersion 2.1.0-beta.2 for the beta
+
+## [2.1.0-beta.1] - 2026-10-17
+
 ### Features
 
 - *(export)* Leave impl out of the Confluence export unless a repository lists it
