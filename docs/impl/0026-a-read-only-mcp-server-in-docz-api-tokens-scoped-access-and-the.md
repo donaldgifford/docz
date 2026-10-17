@@ -286,7 +286,7 @@ observable through the session response.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `internal/oauth/verify.go`: `Verifier` built from the signing key's
+- [x] `internal/oauth/verify.go`: `Verifier` built from the signing key's
   public half (`kid` = the JWK's RFC 7638 thumbprint) and the trusted
   issuers, each discovered at startup under `oidcDiscoveryTimeout` (a bad
   issuer fails boot, as a login provider does) with its JWKS cached in
@@ -296,16 +296,16 @@ observable through the session response.
   `<OAUTH_ISSUER>/mcp`, `exp` and `nbf` with 30 s skew, and reads `scope`
   (space-separated) or `scp` (array). `Claims{Issuer, Subject, ClientID,
   Scopes, Email, Login, Expiry}`
-- [ ] `internal/session`: `Session` gains `Via SessionVia` (`cookie`,
+- [x] `internal/session`: `Session` gains `Via SessionVia` (`cookie`,
   `token`, `anonymous`, with a `String()`), `ClientID`, `Issuer`, and
   `Scopes []string`; `sessionData` stores `groups` already and gains
   nothing, because scopes for a cookie session are computed per request
   (question 5)
-- [ ] `internal/authorize/scopes.go`: `ScopesFor(identity, scopeMap)
+- [x] `internal/authorize/scopes.go`: `ScopesFor(identity, scopeMap)
   []string`: `public:read` plus every scope the map yields for
   `<provider>:group:<g>` over `Identity.Groups` and for
   `<provider>:login:<login>`, sorted and de-duplicated; a table test
-- [ ] `cmd/docz-api/main.go`: `authn` becomes `session.Authn(store,
+- [x] `cmd/docz-api/main.go`: `authn` becomes `session.Authn(store,
   verifier, scopeMap, anonymous bool)` in `internal/session/authn.go`:
   bearer first (`401` with `WWW-Authenticate: Bearer
   resource_metadata="<issuer>/.well-known/oauth-protected-resource",
@@ -315,31 +315,31 @@ observable through the session response.
   the middleware writes; a verifier of nil means no bearer path (MCP
   off). A table test over every edge of DESIGN-0023 §6's flowchart with
   a fake verifier and a fake lookup
-- [ ] `internal/authorize`: `ScopeAuthorizer{lister, cache}` whose
+- [x] `internal/authorize`: `ScopeAuthorizer{lister, cache}` whose
   `Allowed` reads `session.FromContext`, calls `ListRepoIDsForScopes`
   with the session's scopes, and caches the result per principal key
   (`<issuer>:<sub>` or `user:<provider>:<subject>`) for `AUTHZ_CACHE_TTL`;
   `runServer` wires it, keeping `AllReposAuthorizer` under `none`; unit
   tests for the rule (public, team, no scopes, cache expiry) with a fake
   lister
-- [ ] `internal/authhttp`: `/api/v1/auth/session` gains `via`, `scopes`,
+- [x] `internal/authhttp`: `/api/v1/auth/session` gains `via`, `scopes`,
   and, for a token, `client_id` and `issuer`; `sessionDTO` and the spec's
   `SessionResponse` updated together; `api/openapi.yaml` `info.version`
   to `1.7.0` with the `bearerToken` security scheme listed on every
   `/api/v1` operation beside `sessionCookie` (the remaining 1.7.0 additions
   land in Phase 4 before any release)
-- [ ] `internal/httpapi/openapi_contract_test.go`: every read route with a
+- [x] `internal/httpapi/openapi_contract_test.go`: every read route with a
   bearer from a test key, a bad bearer's `401` and its challenge, the
   session response for a token caller; `TestNoAuthModeReportsAnonymousIdentity`
   extended with `via: anonymous`
-- [ ] `internal/export/service.go`: after the allow-list check, a
+- [x] `internal/export/service.go`: after the allow-list check, a
   repository whose `access_scopes` contains neither `public:read` nor
   `confluence:write` is `StatusRefused` with the reason `repository
   scopes grant the export nothing; add confluence:write to access.scopes`;
   `ExportInputs` reads the column; a table test with the three cases
-- [ ] `internal/telemetry`: `docz_api_token_verifications_total{issuer,status}`,
+- [x] `internal/telemetry`: `docz_api_token_verifications_total{issuer,status}`,
   recorded in `authn`; `contrib/README.md` lists it
-- [ ] `ui/`: `just ui gen-api`; the session hook tolerates the new fields
+- [x] `ui/`: `just ui gen-api`; the session hook tolerates the new fields
   (additive, so no change expected); `just ui ci` green
 
 <!--docz:tasks:end-->

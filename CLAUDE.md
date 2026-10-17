@@ -1577,6 +1577,62 @@ folder layout, and records what it wrote.
   `contrib/prometheus/alerts.yaml`. Turning it on, widening the allow-list,
   and reading each status are RUNBOOK-0003.
 
+### Scoped access, tokens, and the MCP server (DESIGN-0023 / IMPL-0026)
+
+docz-api stays read-only (ADR on scope: no write tools; `write` is a
+reserved action except the literal `confluence:write`, the export's
+alone). IMPL-0026 lands in six phases, one `dont-release` PR each and one
+`minor` after the last. What has landed so far:
+
+- **Phase 1, the library** (`pkg/doczcore/config/access.go`): the
+  `access.scopes` block, `ValidateScope`, `public:read` the default, and
+  the parity normaliser `AccessNormalizer` for the block `docz init` now
+  writes. See the config bullet above.
+- **Phase 2, storage and settings**: migration `20261017000000_add_oauth`
+  (`repos.access_scopes` JSONB, `oauth_clients`, `oauth_refresh_tokens`,
+  `oauth_consents`), `queries/oauth.sql` (`ListRepoIDsForScopes` through
+  the JSONB `?|` operator, `RotateRefreshToken` as one CTE), ingest maps
+  `access.scopes` onto the row, and `internal/config/mcp.go` reads
+  `MCP_*`, `OAUTH_*`, `AUTHZ_*`: `ParseScopeMap` rejects a public
+  audience and any write action, `ParseSigningKey` takes a P-256 key in
+  SEC 1 or PKCS #8 PEM (or a path to one), MCP on requires an `https`
+  issuer with no path and, with a login, a key and `DOCZ_SITE_URL`.
+- **Phase 3, the gate** (`internal/oauth`, `internal/session/authn.go`,
+  `internal/authorize/scopes.go`, `cmd/docz-api/authn.go`):
+  `oauth.Verifier` checks a JWT's signature against docz-api's own key or
+  a trusted issuer's JWKS (discovered at boot, cached in Redis under
+  `jwks:<sha256(issuer)>`, refreshed on an unknown `kid` at most once a
+  minute), `iss`, `aud` = `<OAUTH_ISSUER>/mcp`, `exp`/`nbf` with 30s of
+  skew, and reads `scope` or `scp`; `oauth.Signer` mints ES256 tokens
+  with the RFC 7638 thumbprint as `kid`. `session.Authn` is the one
+  middleware: **a bearer first, and any bearer failure is a `401` with
+  `WWW-Authenticate: Bearer resource_metadata="<issuer>/.well-known/oauth-protected-resource", scope="public:read"`
+  and never a fall-through to the cookie**; then the cookie with the
+  `401`/`503` split; then the anonymous principal under
+  `AUTH_PROVIDERS=none`. A nil verifier (MCP off, the default) ignores
+  the header. `Session` carries `Via` (`cookie`/`token`/`anonymous`),
+  `Scopes`, `ClientID`, `Issuer`, and `PrincipalKey()`
+  (`<issuer>:<sub>` for an external token, `user:<provider>:<subject>`
+  for a person, so a person's cookie and their docz-api-minted token are
+  one principal). A cookie session's scopes are computed per request by
+  `authorize.ScopesFor` (public:read plus the scope map's grants over
+  groups and login). `authorize.ScopeAuthorizer` resolves the allowed set
+  from the session's scopes through `ListRepoIDsForScopes`, cached per
+  principal key for `AUTHZ_CACHE_TTL` and recomputed when the scopes
+  change inside the window; `AllReposAuthorizer` stays under `none`.
+  Spec **1.7.0**: the `bearerToken` scheme beside `sessionCookie` on
+  every `/api/v1` operation, and `Session` gains required `via` and
+  `scopes` plus `client_id`/`issuer` for a token. The export refuses a
+  repository whose `access_scopes` holds neither `public:read` nor
+  `confluence:write` ("repository scopes grant the export nothing; add
+  confluence:write to access.scopes"). Metric
+  `docz_api_token_verifications_total{issuer,status}`.
+  **GOTCHA — `just ui fmt-check` fails locally on
+  `ui/src/markdown/mermaid-config.test.ts`** with mise's prettier 3.9.6
+  while CI pins 3.7.4 (`ci.yml` "Install prettier"); the file is
+  untouched and CI is green, so run the other `ui` recipes individually
+  until the pins agree.
+
 ### Renovate
 
 - `go.mod` updates are PR'd by Renovate's Go module manager.
