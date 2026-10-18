@@ -58,6 +58,6 @@ docz create impl "Your Implementation Title"
 | IMPL-0023 | Confluence export: the package and the CLI (DESIGN-0020 Phase A) | Completed | 2026-10-05 | Donald Gifford | [0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md](0023-confluence-export-the-package-and-the-cli-design-0020-phase-a.md) |
 | IMPL-0024 | Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021) | Completed | 2026-10-07 | Donald Gifford | [0024-confluence-export-from-docz-api-folders-comments-and-the-server.md](0024-confluence-export-from-docz-api-folders-comments-and-the-server.md) |
 | IMPL-0025 | Pre-cut markdown and lint fixes | Completed | 2026-10-12 | Donald Gifford | [0025-pre-cut-markdown-and-lint-fixes.md](0025-pre-cut-markdown-and-lint-fixes.md) |
-| IMPL-0026 | A read-only MCP server in docz-api: tokens, scoped access, and the six tools | In Progress | 2026-10-17 | Donald Gifford | [0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md](0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md) |
+| IMPL-0026 | A read-only MCP server in docz-api: tokens, scoped access, and the six tools | Completed | 2026-10-17 | Donald Gifford | [0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md](0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
