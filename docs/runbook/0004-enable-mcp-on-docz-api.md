@@ -55,7 +55,7 @@ created: 2026-10-17
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-| 2026-10-18 | [chore/release-2.1.0](https://github.com/donaldgifford/docz/tree/chore/release-2.1.0) | f4f78ad | @donaldgifford |
+| 2026-10-18 | [#192](https://github.com/donaldgifford/docz/pull/192) | f4f78ad | @donaldgifford |
 
 **Notes:** Verified on the homelab on chart `1.1.0-beta.3` with images
 `2.1.0-beta.3`: Procedures 1, 2, and 5 by hand, with Keycloak as the login
