@@ -1,7 +1,7 @@
 ---
 id: IMPL-0026
 title: "A read-only MCP server in docz-api: tokens, scoped access, and the six tools"
-status: In Progress
+status: Completed
 author: Donald Gifford
 created: 2026-10-17
 ---
@@ -455,9 +455,8 @@ is true and `AUTH_PROVIDERS` is not `none`.
   hand-driven round trip (`curl` for the metadata, a browser for
   `/oauth/authorize` and the consent page, `curl` for `/oauth/token`)
   yields a JWT the Phase 3 verifier accepts on `/api/v1/repos`
-  (deferred - human required: a browser and the compose stack; the same
-  round trip runs in-process in `TestOpenAPIContractOAuth` and
-  `internal/oauth`'s flow tests, 2026-10-17)
+  (run in-process in `TestOpenAPIContractOAuth` and `internal/oauth`'s
+  flow tests, and by hand on the homelab with Claude Code on 2026-10-18)
 - Redeeming a code twice revokes the refresh token it issued; presenting a
   rotated-out refresh token revokes its family
 - A metadata document on a private address, over `http`, or behind a
@@ -551,10 +550,9 @@ against the type packages' corpora.
   against a local stack lists the six tools, reads a document with its
   typed fields, and shows search hits; with `MCP_ENABLED` unset the route
   is `404`
-  (deferred - human required: needs the compose stack and a GitHub App
-  key on the operator's machine; the SDK's Streamable HTTP client against
-  the full middleware stack in `internal/mcp/http_test.go` stands in for
-  it, and the `404` with MCP off is the router's default, 2026-10-17)
+  (the SDK's Streamable HTTP client against the full middleware stack in
+  `internal/mcp/http_test.go`, and Claude Code against the homelab on
+  2026-10-18; the `404` with MCP off is the router's default)
 - A burst past `MCP_RATE_LIMIT` is `429` with `Retry-After` and increments
   `docz_api_rate_limited_total`, and the audit
   line for every call names the principal and the tool and never the
@@ -607,19 +605,20 @@ over real Postgres and Redis before the homelab sees it.
 - [x] `deploy/README.md` and `CLAUDE.md`'s chart section updated;
   `contrib/README.md` lists the new metrics (the deploy guide is
   `deploy/api/README.md`; there is no `deploy/README.md`)
-- [ ] The homelab deployment turned on with GitHub login and the homelab
-  Keycloak as a trusted issuer (question 8); the runbook followed end to
-  end; what it taught written back into the runbook (deferred - human
-  required: needs the homelab's values, its Keycloak admin, and a browser
-  for the consent page; RUNBOOK-0004's Last Verified row records the
-  integration suite until then, 2026-10-17)
+- [x] The homelab deployment turned on with the homelab Keycloak as the
+  login and as a trusted issuer (question 8); the runbook followed end to
+  end; what it taught written back into the runbook (2026-10-18, on
+  `2.1.0-beta.3`: Claude Code through the consent page, and a
+  client-credentials token from the realm on `/api/v1/repos`; the
+  ephemeral loopback port and the Audience mapper's timing are in
+  RUNBOOK-0004's Last Verified row)
 - [x] `CHANGELOG.md` carries the tool contract under `mcp` and the
   `access:` block under `config` (git-cliff's unreleased preview groups
   `*(mcp)* The read-only MCP server` and `*(config)* The access: block`,
   and CI regenerates the file); DESIGN-0023's status flipped to
   `Implemented` on this branch; the release PR labelled `minor`
-  (question 2) is deferred - human required: the label is set when the
-  PR is opened
+  (question 2) follows three `dont-release` betas (`v2.1.0-beta.1` to
+  `beta.3`) and carries the chart at `1.1.0` with appVersion `2.1.0`
 
 <!--docz:tasks:end-->
 
@@ -695,8 +694,8 @@ over real Postgres and Redis before the homelab sees it.
   stack; the limiter; the audit line and metric label
 - [x] Phase 6: the integration suite over real Postgres and Redis;
   helm-unittest; the hand-driven live check with Claude Code and a
-  Keycloak-minted token, recorded in RUNBOOK-0004 (the live check is
-  deferred - human required, with the homelab task above)
+  Keycloak-minted token, recorded in RUNBOOK-0004 (run on the homelab
+  on 2026-10-18)
 
 <!--docz:testing:end-->
 

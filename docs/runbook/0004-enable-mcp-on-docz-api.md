@@ -1,7 +1,7 @@
 ---
 id: RUNBOOK-0004
 title: "Enable MCP on docz-api"
-status: Draft
+status: Active
 author: Donald Gifford
 created: 2026-10-17
 ---
@@ -55,14 +55,20 @@ created: 2026-10-17
 
 | Date | PR | Commit | Verified by |
 | ---- | -- | ------ | ----------- |
-| 2026-10-17 | [feat/access-scopes-config](https://github.com/donaldgifford/docz/tree/feat/access-scopes-config) | be9111a | @donaldgifford (via the integration suite) |
+| 2026-10-18 | [#192](https://github.com/donaldgifford/docz/pull/192) | f4f78ad | @donaldgifford |
 
-**Notes:** Verified by `just api test-integration` (`TestE2EMCP`: the code
-flow through a consent page, a none deployment, `access.scopes`, a trusted
-issuer's token, refresh reuse, the export refusal) and the chart's render
-and unit tests, not yet by hand. The homelab run of Procedures 1, 2, 4, and
-5 with Claude Code and a Keycloak-minted token is pending (IMPL-0026
-Phase 6); re-verifying replaces this row.
+**Notes:** Verified on the homelab on chart `1.1.0-beta.3` with images
+`2.1.0-beta.3`: Procedures 1, 2, and 5 by hand, with Keycloak as the login
+provider. Claude Code resolved its metadata document, went through the
+consent page, and listed, read, and searched through `/mcp`; a
+client-credentials token from the `docz-agent` client in the homelab realm
+read `/api/v1/repos`, and `/api/v1/auth/session` reported `via: token`
+with the realm as `issuer` and `public:read`. Two things the run taught:
+a native client binds an ephemeral port, so the server accepts any port on
+a registered loopback callback (fixed in `2.1.0-beta.3`), and a token
+minted before the Audience mapper exists has no `aud` at all and is
+refused, so mint a fresh one after adding it. Procedures 3 and 4 are
+covered by the integration suite (`TestE2EMCP`) only.
 
 <!--docz:last-verified:end-->
 
@@ -237,7 +243,9 @@ the same way, so this procedure is the realm's side plus one chart value.
 3. Add an Audience mapper to the client (Mappers, "Add mapper by
    configuration", Audience) with the custom audience
    `https://docz-api.example.com/mcp` included in the access token. The
-   gate requires `aud` to contain the issuer's `/mcp` URL exactly.
+   gate requires `aud` to contain the issuer's `/mcp` URL exactly. A
+   token minted before the mapper exists has no `aud` at all and is
+   refused; mint a fresh one after adding it.
 
 4. Trust the realm's issuer and upgrade. The value is the realm's base
    URL, discovered at startup; one that cannot be discovered fails the
