@@ -29,6 +29,11 @@ the server and the frontend into this repository. Coming from v1, read
 - **docz-api and docz-site now live in this repository**, and one Helm chart,
   `oci://ghcr.io/donaldgifford/charts/docz`, deploys both. See
   [docz-api, the server](#docz-api-the-server).
+- **v2.1.0: scoped access and a read-only MCP server.** The `access:`
+  block in `.docz.yaml` names the scopes that may read a repository
+  through docz-api, and docz-api serves documents to agents over MCP with
+  bearer tokens. See [Access](#access) and
+  [docz-api, the server](#docz-api-the-server).
 
 ## Features
 
@@ -44,6 +49,7 @@ the server and the frontend into this repository. Coming from v1, read
 - **MkDocs/TechDocs integration:** `wiki` commands generate and maintain `mkdocs.yml` for Backstage TechDocs
 - **Changelog awareness:** opt-in `changelog:` config block plus a parser for git-cliff / Keep a Changelog files
 - **Publishing declaration:** opt-in `api:` config block naming the repo's landing page, exclusions, and markdown outside `docs_dir`, for tools that render a docz repo
+- **Access declaration:** `access:` config block naming the scopes that may read the repo through docz-api, `public:read` by default
 
 ## Getting Started
 
@@ -493,6 +499,10 @@ api:
 sync:
   confluence:
     enabled: false         # opt in to export to Confluence Cloud (see Sync below)
+
+access:
+  scopes:
+    - public:read          # who may read this repo through docz-api (see Access below)
 ```
 
 Run `docz config` to see the fully resolved configuration.
@@ -667,6 +677,31 @@ space on that list, always overwrites edits made in Confluence, and serves
 each repository's last export at `GET /api/v1/repos/{owner}/{name}/confluence`.
 [RUNBOOK-0003](docs/runbook/0003-enable-confluence-export-on-docz-api.md)
 turns it on.
+
+### Access
+
+The `access:` block says who may read the repository through docz-api
+(DESIGN-0023). The CLI only prints it (`docz config`); docz-api reads it
+at ingest. Unlike `api:` and `sync:` it always has a value, so it is
+always validated, and `docz init` writes the default:
+
+```yaml
+access:
+  scopes:
+    - public:read          # anyone docz-api lets in may read this repo
+```
+
+Each entry is `<audience>:<action>`. The audience is lower-case letters,
+digits, and hyphens (`platform-team`); the action is `read`. A repository
+that replaces `public:read` with `platform-team:read` is hidden from every
+person or token that does not hold that scope: a person's scopes come from
+the server's `AUTHZ_SCOPE_MAP` (identity-provider groups or logins mapped
+to scopes), a token's from its `scope` claim. Under `AUTH_PROVIDERS=none`
+every onboarded repository stays readable, as before.
+
+The `write` action is reserved, with one exception: `confluence:write`
+lets docz-api's Confluence export publish a repository that no longer
+lists `public:read`. Nothing else writes.
 
 ## Template System
 
@@ -1018,7 +1053,23 @@ The image is distroless and nonroot, published to
 `ghcr.io/donaldgifford/docz-api`; the Helm chart is `charts/docz/`, which
 deploys the API, the site, and the API's backends together. Running
 it locally, with compose, webhooks, and the monitoring stack, is covered in
-[DEVELOPMENT.md](DEVELOPMENT.md#developing-docz-api-the-server).
+[DEVELOPMENT.md](DEVELOPMENT.md#developing-docz-api-the-server), and
+deploying it with compose in [deploy/api/README.md](deploy/api/README.md).
+
+Since v2.1.0 the server also carries a **read-only MCP server** at `/mcp`
+(DESIGN-0023): six tools (`list_repos`, `list_docs`, `get_doc`,
+`search_docs`, `get_impl_progress`, `get_page`) over the same documents
+the REST API serves, gated by bearer tokens. With a login provider
+configured it is its own OAuth 2.1 authorization server: an MCP client is
+sent to docz-site's consent page and comes back with a short-lived token,
+and tokens an identity platform mints for agents are accepted through
+`OAUTH_TRUSTED_ISSUERS`. It is off by default (`MCP_ENABLED`; the chart's
+`api.mcp.*`). [RUNBOOK-0004](docs/runbook/0004-enable-mcp-on-docz-api.md)
+turns it on, and once it is on, Claude Code connects with one command:
+
+```sh
+claude mcp add --transport http docz https://docz-api.example.com/mcp
+```
 
 ## docz-site, the frontend
 
@@ -1038,5 +1089,7 @@ Its typed client is generated from the same `api/openapi.yaml` docz-api
 serves, so there is one spec. The image is published to
 `ghcr.io/donaldgifford/docz-site`, and both images deploy with **one chart**,
 [`charts/docz/`](charts/docz/README.md), published from the same tag as
-`oci://ghcr.io/donaldgifford/charts/docz`.
-[ui/README.md](ui/README.md) covers the rest.
+`oci://ghcr.io/donaldgifford/charts/docz`. The site also renders the MCP
+consent page at `/oauth/consent`, which docz-api reaches through
+`DOCZ_SITE_URL` (the chart's `api.mcp.siteUrl`, defaulting to the site's
+own URL). [ui/README.md](ui/README.md) covers the rest.

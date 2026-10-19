@@ -35,6 +35,8 @@ created: 2026-10-01
     - [Steps](#steps-3)
   - [Scenario: Pods fail to pull the image after install](#scenario-pods-fail-to-pull-the-image-after-install)
     - [Steps](#steps-4)
+  - [Scenario: The beta published a final chart version](#scenario-the-beta-published-a-final-chart-version)
+    - [Steps](#steps-5)
 - [Escalation](#escalation)
 - [References](#references)
 <!-- markdownlint-restore -->
@@ -63,8 +65,10 @@ apply. It was checked through the logged-in site instead:
 <!--docz:overview:start-->
 ## Overview
 
-This runbook cuts a `v2.0.0-beta.N` release of docz, docz-api, docz-site,
+This runbook cuts a `vX.Y.Z-beta.N` release of docz, docz-api, docz-site,
 and the `charts/docz` chart from one tag, and checks what the tag published.
+`X.Y.Z` is the release the betas lead up to (`v2.1.0-beta.3` preceded
+`v2.1.0`), and the chart carries a matching prerelease version.
 Betas on the v2 line are cut by hand from a merge commit on `main`. Every PR
 carries `dont-release`, so nothing publishes on merge (ADR-0002 Decision 6).
 
@@ -92,7 +96,7 @@ carries `dont-release`, so nothing publishes on merge (ADR-0002 Decision 6).
   installed (`mise install` provides them)
 - `gh auth status` is logged in to github.com
 - For the install procedure: `kind` and a local Docker daemon
-- The previous beta's number, from `git tag --list 'v2.0.0-beta.*'`
+- The previous beta's number, from `git tag --list 'v*-beta.*'`
 
 <!--docz:prerequisites:end-->
 
@@ -107,8 +111,12 @@ release configuration valid.
 <!--docz:steps:start-->
 #### Steps
 
-1. Before the PR merges, bump `charts/docz/Chart.yaml`: raise `version`,
-   and set `appVersion` to the new beta **without** a `v` prefix. Then
+1. Before the PR merges, set **both** fields of `charts/docz/Chart.yaml`
+   to a prerelease: `version` to the chart version the final release will
+   carry, suffixed `-beta.N` (`1.1.0-beta.3`), and `appVersion` to the
+   image tag **without** a `v` prefix (`"2.1.0-beta.3"`). Update the image
+   tag asserted by `tests/api/deployment_test.yaml` and
+   `tests/site/deployment_test.yaml` to the new `appVersion`, then
    regenerate the chart docs and run its tests.
 
    ```sh
@@ -116,7 +124,11 @@ release configuration valid.
    just chart unittest
    ```
 
-   **Expected:** `appVersion: "2.0.0-beta.N"`; the unit tests pass
+   **Expected:** `version: <chart>-beta.N` and `appVersion: "X.Y.Z-beta.N"`;
+   the unit tests pass. A final `version` here publishes a final-looking
+   chart whose default image does not exist yet, and nothing overwrites a
+   published chart version (see the scenario below). The release PR sets
+   both fields to their finals.
 
 2. Once the PR is merged, check out the merge commit on `main`.
 
@@ -152,8 +164,8 @@ release configuration valid.
 <!--docz:verification:start-->
 #### Verification
 
-- `HEAD` is the merge commit, and `charts/docz` carries the new bare
-  `appVersion`
+- `HEAD` is the merge commit, and `charts/docz` carries a prerelease
+  `version` and the new bare `appVersion`
 - Both release checks pass
 
 <!--docz:verification:end-->
@@ -179,10 +191,10 @@ was supposed to produce.
 1. Tag the merge commit and push the tag.
 
    ```sh
-   just release v2.0.0-beta.N
+   just release vX.Y.Z-beta.N
    ```
 
-   **Expected:** the tag appears with `git ls-remote --tags origin 'v2.0.0-beta.N'`
+   **Expected:** the tag appears with `git ls-remote --tags origin 'vX.Y.Z-beta.N'`
 
 2. Watch the pre-release run to the end.
 
@@ -198,7 +210,7 @@ was supposed to produce.
 3. Check the GitHub release.
 
    ```sh
-   gh release view v2.0.0-beta.N --json isPrerelease,assets -q '"prerelease=\(.isPrerelease)", (.assets[].name)'
+   gh release view vX.Y.Z-beta.N --json isPrerelease,assets -q '"prerelease=\(.isPrerelease)", (.assets[].name)'
    ```
 
    **Expected:** `prerelease=true`, the `docz_*` and `docz-api_*` archives
@@ -210,7 +222,7 @@ was supposed to produce.
 
       ```sh
       for img in docz-api docz-site; do
-        docker buildx imagetools inspect "ghcr.io/donaldgifford/${img}:2.0.0-beta.N" \
+        docker buildx imagetools inspect "ghcr.io/donaldgifford/${img}:X.Y.Z-beta.N" \
           --format '{{json .Manifest.Digest}}'
       done
       ```
@@ -231,7 +243,8 @@ was supposed to produce.
    done
    ```
 
-   **Expected:** a bare `appVersion: 2.0.0-beta.N`, plus both a signature
+   **Expected:** a prerelease `version` and a bare `appVersion: X.Y.Z-beta.N`,
+   plus both a signature
    and SLSA provenance. A chart whose version did not change is skipped by
    the publish job's idempotency check and keeps its old artifacts
 
@@ -253,7 +266,7 @@ was supposed to produce.
 2. Mark the GitHub release as broken in its notes.
 
    ```sh
-   gh release edit v2.0.0-beta.N --notes "Broken: see v2.0.0-beta.N+1"
+   gh release edit vX.Y.Z-beta.N --notes "Broken: see vX.Y.Z-beta.N+1"
    ```
 
 3. Fix forward and cut the next beta with this runbook.
@@ -307,7 +320,7 @@ v2.0.0.
    ```
 
    **Expected:** `STATUS: deployed`; every pod ready on the
-   `2.0.0-beta.N` images
+   `X.Y.Z-beta.N` images
 
 3. Query the API through the site's Service, then run the chart's test
    hook.
@@ -384,7 +397,7 @@ Actions access to it yet
 **Alert:** none; pods sit in `ImagePullBackOff`
 
 **Likely cause:** a `v`-prefixed `appVersion`. The image tag is bare
-semver (`2.0.0-beta.N`), because the publish workflow's metadata action
+semver (`X.Y.Z-beta.N`), because the publish workflow's metadata action
 strips the `v`.
 
 <!--docz:steps:start-->
@@ -400,6 +413,32 @@ strips the `v`.
 
 2. If it has one, fix `charts/docz/Chart.yaml`, bump the chart `version`,
    and cut the next beta. A published chart version is never overwritten.
+
+<!--docz:steps:end-->
+<!--docz:scenario:end-->
+
+<!--docz:scenario:start-->
+### Scenario: The beta published a final chart version
+
+**Alert:** none; `helm show chart` on the new chart reports a `version`
+without `-beta.N`, or an `appVersion` behind the images
+
+**Likely cause:** the PR raised `Chart.yaml`'s `version` to the final
+number, or left `appVersion` at the previous release. `prerelease.yml`
+publishes whatever `Chart.yaml` says, so the final version is now held by
+a chart whose default image is wrong, and the real release's chart job
+will skip it as already published.
+
+<!--docz:steps:start-->
+#### Steps
+
+1. Delete the package version in GitHub: Packages, `charts/docz`, Manage
+   versions, then the version. Nothing references a chart this new.
+
+   **Expected:** `helm show chart … --version <version>` reports not found
+
+2. Fix `Chart.yaml` on a branch as Procedure 1 step 1 says, merge, and cut
+   the next beta.
 
 <!--docz:steps:end-->
 <!--docz:scenario:end-->

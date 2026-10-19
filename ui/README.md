@@ -81,6 +81,15 @@ transient outage, never a logout: the topbar keeps its inert
 placeholder and re-probes every ~30 s until the backend recovers,
 while data routes show their normal retryable error panel.
 
+The site also renders the MCP consent page at `/oauth/consent`. When
+docz-api runs with `MCP_ENABLED=true` and a login provider, its
+`/oauth/authorize` sends a person here with an `authz` id; the page reads
+the pending request from `/api/v1/oauth/authorizations/{id}` (behind the
+session gate, so a logged-out person sees `/login` first and returns),
+shows the client and the scopes it asks for, and on allow follows the
+`redirect_to` the API answers with back to the client. docz-api finds the
+page through `DOCZ_SITE_URL` (the chart's `api.mcp.siteUrl`).
+
 ## Nav pins
 
 `DOCZ_NAV_LINKS` pins up to six deployment-chosen links into the topbar
@@ -128,10 +137,20 @@ deliver; older browsers are not transpiled for, they are unsupported.
 
 ## Deploy
 
+The image builds from the repository root's `Dockerfile.ui`, with `ui/`
+as its context and the OpenAPI spec as a second, named context, because
+orval generates the client at build time from `../api/openapi.yaml`:
+
 ```sh
-docker build -t docz-site .
-docker run -p 8080:8080 -e DOCZ_API_URL=http://docz-api:8080 docz-site
+just ui docker-build        # docker build -f ../Dockerfile.ui --build-context spec=../api …
+docker buildx bake dev-ui   # the same through docker-bake.hcl, run from the root
+docker run -p 8080:8080 -e DOCZ_API_URL=http://docz-api:8080 donaldgifford/docz-site:dev
 ```
+
+A plain `docker build .` from `ui/` finds no Dockerfile. Releases publish
+`ghcr.io/donaldgifford/docz-site` from the same tag as docz-api, and the
+chart deploys both; see
+[charts/docz/README.md](../charts/docz/README.md).
 
 The image is a multi-stage build: dist/ plus `server/serve.ts`, a small
 `Bun.serve` that serves hashed assets immutably (precompressed where it
