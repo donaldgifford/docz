@@ -12,6 +12,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Miscellaneous Tasks
 
 - *(go)* 1.26.10
+- *(chart)* 1.1.1 with appVersion 2.1.1 for the release
 
 ## [2.1.0] - 2026-10-18
 
