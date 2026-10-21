@@ -9,6 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Cover v2.1.0 deploy and setup in the READMEs and RUNBOOK-0001
 
+### Miscellaneous Tasks
+
+- *(go)* 1.26.10
+
 ## [2.1.0] - 2026-10-18
 
 ### Documentation
