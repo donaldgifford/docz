@@ -164,6 +164,13 @@ const issueLineLength = "#127: docz regenerates the ToC and index lines, so it s
 // the MD013 lines and, in the impl fixtures, carry the old phase slugs.
 const issueStaleFixtureToC = "#127: a fixture's v1.2.2 ToC lacks the MD013 lines, so a v2 dry run reports it stale"
 
+// issueEmptyKeys is the fix behind the api block's three empty keys: v2
+// writes an empty list as [] and an empty string as "", so a schema-aware
+// editor stops flagging a fresh repository, where v1.2.2 left each key bare.
+// The sync and access blocks have the same spelling and are dropped on both
+// sides, so only these three lines are mapped.
+const issueEmptyKeys = "#196: docz init writes an empty list as [] and an empty string as \"\""
+
 // lintRewrites is every v2 line the lint fixes changed. Nothing here is a
 // pattern: a line the fixes changed that is not listed is a regression.
 var lintRewrites = []lintRewrite{
@@ -286,6 +293,21 @@ var lintRewrites = []lintRewrite{
 	{
 		Issue: issueStaleFixtureToC,
 		V2:    []string{"Would update ToC in $ROOT/docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md (8 headings)"},
+	},
+	{
+		Issue: issueEmptyKeys,
+		V2:    []string{"  # Optional; defaults to <docs_dir>/index.md.", `  landing_page: ""`},
+		V1:    []string{"  # Optional; defaults to <docs_dir>/index.md.", "  landing_page:"},
+	},
+	{
+		Issue: issueEmptyKeys,
+		V2:    []string{"  #     - scratch", "  exclude: []"},
+		V1:    []string{"  #     - scratch", "  exclude:"},
+	},
+	{
+		Issue: issueEmptyKeys,
+		V2:    []string{"  #     - CONTRIBUTING.md", "  additional_docs: []"},
+		V1:    []string{"  #     - CONTRIBUTING.md", "  additional_docs:"},
 	},
 	// END lintRewrites
 	{
