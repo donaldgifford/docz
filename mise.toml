@@ -21,9 +21,9 @@ golines = "latest"
 # Frontend (ui/, docz-site, IMPL-0020). Pinned to the versions docz-site
 # builds with, so the move changes where it builds and not with what.
 # renovate: datasource=github-releases depName=oven-sh/bun
-bun = "1.3.14"
+bun = "1.4.4"
 # renovate: datasource=node-version depName=node
-node = "24.14.0"
+node = "24.22.1"
 
 
 # Repo utilities
