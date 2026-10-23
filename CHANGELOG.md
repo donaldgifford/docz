@@ -8,6 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 ### Bug Fixes
 
 - *(init)* Write empty api and sync keys as [] and ""
+- *(ui)* Dompurify 3.4.17 for GHSA-cg2g-xh64-v4q7 and GHSA-mrv2-3pqr-j5jr
 
 ### Miscellaneous Tasks
 
