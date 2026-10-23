@@ -108,18 +108,18 @@ changelog:
 api:
   enabled: {{ .API.Enabled }}
   # Optional; defaults to <docs_dir>/index.md.
-  landing_page:{{ with .API.LandingPage }} {{ . }}{{ end }}
+  landing_page:{{ with .API.LandingPage }} {{ . }}{{ else }} ""{{ end }}
   # Path prefixes under docs_dir that are never published, e.g.
   #   exclude:
   #     - scratch
-  exclude:
+  exclude:{{ if not .API.Exclude }} []{{ end }}
 {{- range .API.Exclude }}
     - {{ . }}
 {{- end }}
   # Markdown outside docs_dir; anything inside it is already consumed, e.g.
   #   additional_docs:
   #     - CONTRIBUTING.md
-  additional_docs:
+  additional_docs:{{ if not .API.AdditionalDocs }} []{{ end }}
 {{- range .API.AdditionalDocs }}
     - {{ . }}
 {{- end }}
@@ -135,9 +135,9 @@ sync:
   confluence:
     enabled: {{ .Sync.Confluence.Enabled }}
     # The Cloud site, e.g. https://example.atlassian.net.
-    site:{{ with .Sync.Confluence.Site }} {{ . }}{{ end }}
+    site:{{ with .Sync.Confluence.Site }} {{ . }}{{ else }} ""{{ end }}
     # The space key. Several repositories may share one space.
-    space:{{ with .Sync.Confluence.Space }} {{ . }}{{ end }}
+    space:{{ with .Sync.Confluence.Space }} {{ . }}{{ else }} ""{{ end }}
     # folder: one Confluence folder per repository, every title prefixed
     # with its name. page: everything under the parent page, unprefixed.
     layout: {{ .Sync.Confluence.Layout }}
@@ -145,14 +145,14 @@ sync:
     # folder: my-repo
     # The page the folder sits under (optional), or the root page in the
     # page layout (required there).
-    parent:{{ with .Sync.Confluence.Parent }} {{ . }}{{ end }}
+    parent:{{ with .Sync.Confluence.Parent }} {{ . }}{{ else }} ""{{ end }}
     # Types to export; empty exports every enabled type except impl.
-    types:
+    types:{{ if not .Sync.Confluence.Types }} []{{ end }}
 {{- range .Sync.Confluence.Types }}
       - {{ . }}
 {{- end }}
     # Path prefixes under docs_dir that are never exported.
-    exclude:
+    exclude:{{ if not .Sync.Confluence.Exclude }} []{{ end }}
 {{- range .Sync.Confluence.Exclude }}
       - {{ . }}
 {{- end }}

@@ -33,8 +33,20 @@ func TestDoczYAMLTemplate_RoundTripsToDefaultConfig(t *testing.T) {
 		t.Fatalf("unmarshalling rendered yaml: %v\nrendered:\n%s", err, rendered)
 	}
 
-	if !reflect.DeepEqual(want, got) {
-		t.Errorf("rendered template did not round-trip to DefaultConfig()\nwant: %#v\ngot:  %#v", want, got)
+	// The template writes an empty list as [] (#196), which decodes
+	// to an empty slice where DefaultConfig holds nil; the two marshal the
+	// same, and nothing in docz tells them apart, so compare the marshalled
+	// forms rather than the structs.
+	wantYAML, err := yaml.Marshal(want)
+	if err != nil {
+		t.Fatalf("marshalling DefaultConfig(): %v", err)
+	}
+	gotYAML, err := yaml.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshalling the round-tripped config: %v", err)
+	}
+	if !reflect.DeepEqual(wantYAML, gotYAML) {
+		t.Errorf("rendered template did not round-trip to DefaultConfig()\nwant:\n%s\ngot:\n%s", wantYAML, gotYAML)
 	}
 }
 
