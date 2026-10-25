@@ -415,7 +415,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   multi-block selection), the document comment box, the sidebar list
   in document order with edit and remove, painting through
   `CSS.highlights`; tests
-- [ ] `ui/src/review/findings.tsx`, `status.tsx`: findings with dismiss
+- [x] `ui/src/review/findings.tsx`, `status.tsx`: findings with dismiss
   and fix, the status select; tests
 - [ ] `ui/src/review/diff.tsx`: whole-source line diff with `diff`,
   deleted regions and frontmatter changes listed, per-region "changed"
