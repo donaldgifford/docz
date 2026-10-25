@@ -550,7 +550,7 @@ cut by hand at the end to prove the release path.
   `ui/dist-review-bin/`, outside the inputs); a test runs a compiled
   binary from an empty temp directory with `dist-review` absent and
   fetches the page and one lazy chunk
-- [ ] `ui/README.md`: how to run `docz-review` from a checkout and the
+- [x] `ui/README.md`: how to run `docz-review` from a checkout and the
   mise install block from design section 10
 - [ ] `.github/workflows/ci.yml`: the `ui` job gains `test-review`,
   `build-review` with the empty-directory run; `e2e-review` joins the
