@@ -499,7 +499,7 @@ cut by hand at the end to prove the release path.
   through `src/cli/validate.ts`, digests compared with one retry, a
   non-zero exit with no JSON or a spawn failure surfaced as an error
   distinct from a findings report; tests with a fake `docz` script
-- [ ] `ui/review/arm.ts`: `arm --from-hook` reads stdin to EOF, recognises
+- [x] `ui/review/arm.ts`: `arm --from-hook` reads stdin to EOF, recognises
   `docz create` (JSON envelope, else `Created <TYPE>: <path>` lines) and
   `docz-review arm <args>` in `tool_input.command` by word presence only,
   validates every candidate through `docz inspect --repo-root <cwd>`,

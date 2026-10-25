@@ -1,0 +1,18 @@
+{
+  "session_id": "9f1c2a4e-0b7d-4f7e-9a51-3c8e2d6b1f00",
+  "transcript_path": "/home/u/.claude/projects/p/9f1c.jsonl",
+  "cwd": "/work/repo",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "docz create design \"Review cache\" --format json",
+    "description": "x"
+  },
+  "tool_response": {
+    "stdout": "{\n  \"schema_version\": 1,\n  \"id\": \"DESIGN-0001\",\n  \"type\": \"design\",\n  \"path\": \"docs/design/0001-review-cache.md\",\n  \"title\": \"Review cache\",\n  \"generic_template\": false,\n  \"update\": {\n    \"type\": \"design\",\n    \"dir\": \"docs/design\",\n    \"docs\": 1,\n    \"index\": {\n      \"action\": \"updated\",\n      \"path\": \"docs/design/README.md\"\n    },\n    \"toc\": {\n      \"updated\": [\n        {\n          \"path\": \"docs/design/0001-review-cache.md\",\n          \"headings\": 12\n        }\n      ],\n      \"unchanged\": [],\n      \"would_update\": [],\n      \"skipped\": [],\n      \"write_errors\": []\n    }\n  },\n  \"nav\": null\n}\n",
+    "stderr": "",
+    "interrupted": false,
+    "isImage": false
+  }
+}
