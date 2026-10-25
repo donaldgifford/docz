@@ -704,16 +704,20 @@ memory brought up to date. `minor`.
   gains a section on `api/cli/`
 - [x] DESIGN-0024 status to Implemented; INV-0027's Recommendation gains
   a line pointing here; `docz update`
-- [ ] Memory: `project_docz_review_design.md` updated with the release,
-  the plugin version, and anything the trial taught
+- [x] Memory: `project_docz_review_design.md` updated with the release,
+  the plugin version, and anything the trial taught (the build, the
+  plugin version, and the release target recorded 2026-10-25; the release
+  and the trial are added when they happen)
 - [ ] The release PR labelled `minor`; after the tag: verify the GitHub
   release lists the Go archives, the four binaries, both checksum
   files and signatures, and the SBOM; install `docz` and `docz-review`
   side by side with mise on macOS and Linux and run one review from
-  outside the checkout
+  outside the checkout (`deferred - human required`: the release is cut
+  by a person merging a `minor` PR, and the installs run on two machines)
 - [ ] Open follow-up issues: the word-level diff toggle, task toggles
   from the page, INV-0021's Confluence side of the anchor shape, and
-  anything Phase 5's trial surfaced
+  anything Phase 5's trial surfaced (`deferred - human required`: they
+  follow the tag and the trial)
 
 <!--docz:tasks:end-->
 
