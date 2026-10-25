@@ -557,7 +557,7 @@ cut by hand at the end to prove the release path.
   existing `ui-e2e` job as steps (install Go, build `docz`, run the
   review spec over the fixture repository through the real server),
   sharing its browser install rather than adding a job
-- [ ] `release.yml` and `prerelease.yml`: a Bun setup step, `just ui
+- [x] `release.yml` and `prerelease.yml`: a Bun setup step, `just ui
   build-review`, `release.extra_files` for the four binaries and
   `docz-review_checksums.txt`, a step signing that checksum file with
   the imported GPG key and uploading the signature with
