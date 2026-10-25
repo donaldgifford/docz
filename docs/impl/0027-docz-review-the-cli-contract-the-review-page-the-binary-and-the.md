@@ -552,7 +552,7 @@ cut by hand at the end to prove the release path.
   fetches the page and one lazy chunk
 - [x] `ui/README.md`: how to run `docz-review` from a checkout and the
   mise install block from design section 10
-- [ ] `.github/workflows/ci.yml`: the `ui` job gains `test-review`,
+- [x] `.github/workflows/ci.yml`: the `ui` job gains `test-review`,
   `build-review` with the empty-directory run; `e2e-review` joins the
   existing `ui-e2e` job as steps (install Go, build `docz`, run the
   review spec over the fixture repository through the real server),

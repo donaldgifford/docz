@@ -404,6 +404,11 @@ jobs:
       - name: Test server
         run: just ui test-server
 
+      # docz-review: the page's and the CLI contract's vitest suites, then
+      # bun test over its server (state, lease, arming, rounds, signals).
+      - name: Test review
+        run: just ui test-review
+
       - name: Build
         run: just ui build
 
@@ -415,6 +420,11 @@ jobs:
 
       - name: Generated CLI types drift check
         run: just ui gen-cli-check
+
+      # The four docz-review binaries, with the host's run from an empty
+      # directory: the page and a lazy chunk must come from the binary.
+      - name: Build review binaries
+        run: just ui build-review
 
       # The npm-tree fence (IMPL-0020 Open Question 3): node_modules is
       # populated here and nowhere else in CI, and it ships stray .go files.
@@ -432,11 +442,13 @@ jobs:
             exit 1
           fi
 
+  # Also on a Go change: the review spec drives a built docz, so a Go-side
+  # change that breaks the page fails the same PR.
   ui-e2e:
     name: UI e2e
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.ui == 'true'
+    if: needs.changes.outputs.ui == 'true' || needs.changes.outputs.go == 'true'
     defaults:
       run:
         working-directory: ui
@@ -463,6 +475,20 @@ jobs:
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
+
+      # e2e/review-server.spec.ts runs docz-review's real server over the
+      # fixture repository: it needs docz and the built review page.
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build docz
+        working-directory: .
+        run: just build
+
+      - name: Build the review page
+        run: bun run build:review
 
       - name: e2e
         run: just ui e2e

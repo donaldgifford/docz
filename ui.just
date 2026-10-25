@@ -138,9 +138,12 @@ build-review version="":
 e2e:
     bun run e2e
 
-# Playwright over docz-review's page alone (chromium, the fake server)
+# Playwright over docz-review alone (chromium): the page against the fake
+# server, then through the real server over the fixture repository, which
+# needs a built docz (just build, or DOCZ_REVIEW_DOCZ)
 e2e-review:
-    bunx playwright test e2e/review.spec.ts
+    bun run build:review
+    bunx playwright test e2e/review.spec.ts e2e/review-server.spec.ts
 
 # Serve the production build locally
 preview:
