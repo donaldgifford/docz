@@ -290,7 +290,7 @@ docz plugin's skills can use `inspect` before any page exists.
   structures; the prose for both is suppressed under JSON; the
   generic-template note stays on stderr; a failed creation is an error
   on stderr with no JSON
-- [ ] `cmd/inspect_test.go`: the resolution grammar (type name refused,
+- [x] `cmd/inspect_test.go`: the resolution grammar (type name refused,
   ID, repo-relative path, absolute path inside the root, a path outside
   the root, a path under a disabled type, a symlink escaping the root,
   an unknown ID, a duplicate ID resolved by path), the text form, and
