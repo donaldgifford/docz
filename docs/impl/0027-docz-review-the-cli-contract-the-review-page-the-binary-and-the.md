@@ -645,7 +645,7 @@ installs from a git ref, not a release asset.
   against a private marketplace of our own, both the reference path and
   the copy path: the plugin installs and the hooks fire; fix the
   instructions before the PR merges
-- [ ] `plugins/docz-review/tests/`: the hook tests over the Phase 1
+- [x] `plugins/docz-review/tests/`: the hook tests over the Phase 1
   fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
   including the missing-binary path
 - [ ] claude-skills, the docz plugin's `create` skill: one sentence
