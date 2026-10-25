@@ -284,7 +284,7 @@ docz plugin's skills can use `inspect` before any page exists.
   every path (the `os.ReadFile` goes away); add `schema_version` and,
   per document, `content_sha256` to the JSON output of both the plain
   report and `validateFixOutput`
-- [ ] `cmd/create.go`: `--format json` makes stdout one envelope
+- [x] `cmd/create.go`: `--format json` makes stdout one envelope
   `{schema_version, id, type, path, title, generic_template, update, nav}`
   where `update` is the type report and `nav` the MkDocs nav result as
   structures; the prose for both is suppressed under JSON; the
