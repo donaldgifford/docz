@@ -22,11 +22,18 @@ import (
 func fixtureRunner(t *testing.T, fixture string) (*Runner, *bytes.Buffer, string) {
 	t.Helper()
 
+	return copyRunner(t, filepath.Join("..", "test", "parity", "fixtures", fixture))
+}
+
+// copyRunner copies the repository at src into a temp root and returns
+// a Runner over the copy.
+func copyRunner(t *testing.T, src string) (*Runner, *bytes.Buffer, string) {
+	t.Helper()
+
 	root := t.TempDir()
 
-	src := filepath.Join("..", "test", "parity", "fixtures", fixture)
 	if err := os.CopyFS(root, os.DirFS(src)); err != nil {
-		t.Fatalf("copying fixture %s: %v", fixture, err)
+		t.Fatalf("copying fixture %s: %v", src, err)
 	}
 
 	cfg, err := config.Load(filepath.Join(root, config.ConfigFileName), root)

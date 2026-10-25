@@ -45,6 +45,8 @@ jobs:
               - 'internal/**'
               - 'api/**'
               - 'test/**'
+              # cmd/review_fixture_test.go reads the review page's capture
+              - 'ui/e2e/fixtures/review-**'
               - 'justfile'
               - '*.just'
               - '.golangci.yml'

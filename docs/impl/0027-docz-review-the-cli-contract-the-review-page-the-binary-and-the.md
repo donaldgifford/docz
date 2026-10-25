@@ -435,7 +435,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   document switcher, per-document Submit, Approve, Dismiss, Done, the
   stale banner, and the before-unload warning while a draft exists;
   `vite.config.ts` gains the second input and `dist-review` output
-- [ ] `ui/e2e/fixtures/review-repo/` (open question 4): a `.docz.yaml`
+- [x] `ui/e2e/fixtures/review-repo/` (open question 4): a `.docz.yaml`
   and documents covering open questions, tasks, duplicate headings, an
   unmarked document, and a document with no frontmatter;
   `ui.just` gains `dev-review` (Vite against the fake server over the

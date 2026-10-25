@@ -1,0 +1,234 @@
+# .docz.yaml -- configuration for the docz CLI.
+#
+# This file is created by `docz init` and read by every other docz command.
+# Edit anything below; rerun `docz init` only on a fresh checkout — the
+# command will not overwrite an existing .docz.yaml.
+#
+# About the `types:` block:
+#   If you include `types:`, docz uses ONLY the types you list. Omitting a
+#   type opts it out of scaffolding and updates. Remove the `types:` block
+#   entirely to keep all six built-in types (rfc, adr, design, impl,
+#   investigation, runbook) at their defaults.
+#
+#   `runbook` ships disabled. Set `types.runbook.enabled: true` to scaffold
+#   docs/runbook/ and use `docz create runbook` (alias: rb). A short
+#   `runbook: {enabled: true}` gets every other field from the defaults,
+#   but a `types:` block that lists ONLY runbook switches the other five
+#   off: add it to this block rather than replacing the block with it.
+#
+#   `plan` was a built-in through v1 and is not one in v2 (ADR-0003). A repo
+#   that still wants it keeps its `types.plan` block, which now declares a
+#   custom type: add `docs/templates/plan.md` — `docz template override plan`
+#   scaffolds one — and everything except `docz create plan` keeps working
+#   until you do.
+#
+# Custom types:
+#   Add your own type by giving it a unique `id_prefix` and `dir`. It can then
+#   be created/listed by its name, its `id_prefix`, or any `aliases:` entry
+#   (e.g. `docz create frameworks`, `docz create FW`, `docz create fw`).
+#   A duplicate `id_prefix` or an alias that collides with another type is
+#   rejected at startup. See the commented example below the built-in types.
+#
+# Documentation: https://github.com/donaldgifford/docz
+
+docs_dir: docs
+
+types:
+  adr:
+    enabled: true
+    dir: adr
+    template: ""
+    id_prefix: "ADR"
+    id_width: 4
+    statuses:
+      - Proposed
+      - Accepted
+      - Deprecated
+      - Superseded
+    status_field: "status"
+    plural_label: "ADRs"
+
+  design:
+    enabled: true
+    dir: design
+    template: ""
+    id_prefix: "DESIGN"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Review
+      - Approved
+      - Implemented
+      - Abandoned
+    status_field: "status"
+    plural_label: "Design"
+
+  impl:
+    enabled: true
+    dir: impl
+    template: ""
+    id_prefix: "IMPL"
+    id_width: 4
+    statuses:
+      - Draft
+      - In Progress
+      - Completed
+      - Paused
+      - Cancelled
+    status_field: "status"
+    plural_label: "Implementation Plans"
+
+  investigation:
+    enabled: true
+    dir: investigation
+    template: ""
+    id_prefix: "INV"
+    id_width: 4
+    statuses:
+      - Open
+      - In Progress
+      - Concluded
+      - Inconclusive
+      - Abandoned
+    status_field: "status"
+    plural_label: "Investigations"
+
+  rfc:
+    enabled: true
+    dir: rfc
+    template: ""
+    id_prefix: "RFC"
+    id_width: 4
+    statuses:
+      - Draft
+      - Proposed
+      - Accepted
+      - Rejected
+      - Superseded
+    status_field: "status"
+    plural_label: "RFCs"
+
+  runbook:
+    enabled: false
+    dir: runbook
+    template: ""
+    id_prefix: "RUNBOOK"
+    id_width: 4
+    statuses:
+      - Draft
+      - Active
+      - Needs Review
+      - Deprecated
+    status_field: "status"
+    plural_label: "Runbooks"
+
+  # Example custom type (uncomment and edit):
+  # frameworks:
+  #   enabled: true
+  #   dir: frameworks
+  #   template: ""              # defaults to docs/templates/frameworks.md, else embedded
+  #   id_prefix: "FW"           # must be unique across all types
+  #   id_width: 4
+  #   aliases: ["fw"]           # optional CLI shorthands
+  #   statuses:
+  #     - Draft
+  #     - Active
+  #     - Deprecated
+  #   status_field: "status"
+  #   plural_label: "Frameworks"
+
+index:
+  auto_update: true
+  preserve_header: true
+
+author:
+  from_git: true
+  default: ""
+
+wiki:
+  auto_update: true
+  mkdocs_path: mkdocs.yml
+  plugins:
+    - techdocs-core
+  exclude:
+    - templates
+    - examples
+  nav_titles:
+    adr: ADRs
+    design: Design
+    impl: Implementation Plans
+    investigation: Investigations
+    rfc: RFCs
+    runbook: Runbooks
+
+toc:
+  enabled: true
+  min_headings: 3
+
+# Changelog awareness. Off by default; enable it so tools that read this
+# config (docz-api, docz-site) know where your changelog lives. docz does
+# not generate changelogs — git-cliff does.
+changelog:
+  enabled: false
+  file: CHANGELOG.md
+
+# docz-api / docz-site surface. Off by default. Enabling it publishes
+# every .md under docs_dir, so add exclude entries for anything that
+# should stay private. <docs_dir>/templates/ is always excluded.
+#
+# The URL path mirrors the docs_dir path: docs/index.md is the repo root,
+# a directory's README.md is that directory's page, and docz documents
+# keep their id-addressed route.
+api:
+  enabled: false
+  # Optional; defaults to <docs_dir>/index.md.
+  landing_page: ""
+  # Path prefixes under docs_dir that are never published, e.g.
+  #   exclude:
+  #     - scratch
+  exclude: []
+  # Markdown outside docs_dir; anything inside it is already consumed, e.g.
+  #   additional_docs:
+  #     - CONTRIBUTING.md
+  additional_docs: []
+
+# Export targets for `docz export confluence` and docz-api (DESIGN-0020,
+# DESIGN-0021). Off by default and never validated until enabled.
+# Credentials come from the environment, never from this file:
+# ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN. A scoped API token is preferred
+# and needs read:space:confluence, read:page:confluence,
+# write:page:confluence, read:folder:confluence, write:folder:confluence,
+# and read:hierarchical-content:confluence.
+sync:
+  confluence:
+    enabled: false
+    # The Cloud site, e.g. https://example.atlassian.net.
+    site: ""
+    # The space key. Several repositories may share one space.
+    space: ""
+    # folder: one Confluence folder per repository, every title prefixed
+    # with its name. page: everything under the parent page, unprefixed.
+    layout: folder
+    # The folder's title; empty means the repository's name.
+    # folder: my-repo
+    # The page the folder sits under (optional), or the root page in the
+    # page layout (required there).
+    parent: ""
+    # Types to export; empty exports every enabled type except impl.
+    types: []
+    # Path prefixes under docs_dir that are never exported.
+    exclude: []
+    # Also export the api: block's landing page and additional docs.
+    api_pages: false
+    mermaid:
+      # auto (the Mermaid diagrams viewer), off (a code panel), or an
+      # extension key.
+      viewer: auto
+
+# Who may read this repository through docz-api (DESIGN-0023). A scope is
+# <audience>:read. public:read means every signed-in reader; a team
+# audience such as platform-team:read hides the repository from everyone
+# who does not hold that scope. The write action is reserved.
+access:
+  scopes:
+    - public:read

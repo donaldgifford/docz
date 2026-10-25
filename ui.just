@@ -27,6 +27,15 @@ dev:
 dev-msw:
     bun run dev:msw
 
+# docz-review's page against the in-process fake server over the committed
+# fixture capture (e2e/fixtures/review-session.json); prints the page URL
+dev-review:
+    bun run dev:review
+
+# Recapture the review fixture from a fresh docz build (just build first)
+gen-review-fixture:
+    bun run gen-review-fixture
+
 # Regenerate the docz-api TS client (orval -> src/api/__generated__)
 gen-api:
     bun run gen-api
@@ -66,6 +75,10 @@ typecheck:
 # Vitest single run
 test:
     bun run test
+
+# Vitest over the review page and the CLI contract only
+test-review:
+    bunx vitest run src/review src/cli
 
 # Bun test for the production server (server/serve.ts is Bun-only, outside
 # the vitest src/ graph)

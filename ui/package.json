@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:review": "vite --mode review --host 127.0.0.1",
     "dev:msw": "VITE_API_MODE=msw vite",
     "build": "tsc -b && vite build",
     "build:review": "tsc -b && vite build --mode review",
@@ -24,6 +25,7 @@
     "gen-api": "orval --config ./orval.config.ts",
     "gen-api:check": "scripts/gen-api-check.sh",
     "gen-cli": "bun scripts/gen-cli.ts",
+    "gen-review-fixture": "bun scripts/gen-review-fixture.ts",
     "gen-cli:check": "scripts/gen-cli-check.sh"
   },
   "dependencies": {
