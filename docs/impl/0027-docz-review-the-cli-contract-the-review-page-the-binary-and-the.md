@@ -696,7 +696,7 @@ memory brought up to date. `minor`.
 - [x] `charts/docz/Chart.yaml`: bump `version` and `appVersion` to the
   release, the two deployment-test image tags, and `just chart docs`
   (the chart content is unchanged; the release rule requires the bump)
-- [ ] `CLAUDE.md`: a "docz-review" section under Frontend (`ui/`) with
+- [x] `CLAUDE.md`: a "docz-review" section under Frontend (`ui/`) with
   the second entry point, the state directory, the credential model,
   the recipes, the plugin under `plugins/`, and the release step; the CI
   path-filter paragraph gains `api/cli/**` and the `plugin` job

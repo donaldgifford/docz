@@ -189,8 +189,13 @@ the move changed about the repository.
   re-running the job is the expected path. `charts/docz` is bumped once per
   release, before the tag, and its `appVersion` is bare semver.
 - **CI stays path-filtered** (ADR-0004 OQ 4, revisited as DESIGN-0017 OQ 7).
-  The `ui` and `ui-e2e` jobs run on `ui/**`, `Dockerfile.ui`, and
-  `api/openapi.yaml`, so a spec change runs both halves. **Revisit the filter
+  The `ui` job runs on `ui/**`, `ui.just`, `Dockerfile.ui`,
+  `api/openapi.yaml`, and `api/cli/**`, so a spec or CLI-schema change runs
+  both halves; `ui-e2e` also runs on the `go` filter, since its docz-review
+  spec drives a docz it builds. The `go` filter includes
+  `ui/e2e/fixtures/review-**`, which `cmd/review_fixture_test.go` reads, and
+  the `plugin` job runs on `plugins/**`, `.claude-plugin/**`, and
+  `ui/review/**`. **Revisit the filter
   the moment a Go change can break the UI other than through the spec** — an
   `//go:embed` of `ui/dist`, a shared generated file, a Go test that reads
   `ui/`. Until then the UI reaches the server only over the specced HTTP
@@ -215,6 +220,44 @@ the move changed about the repository.
   job that runs `goreleaser-action` installs cosign first, so the action
   verifies the signature on the GoReleaser it downloads; the release itself
   is still GPG-signed.
+
+## docz-review (`ui/review/`, `plugins/docz-review/`)
+
+docz-review (DESIGN-0024, IMPL-0027) holds the end of a Claude Code turn
+until a person has reviewed, in a browser, the docz documents the agent
+created. It is three pieces, and `ui/CLAUDE.md` has the detail.
+
+- **The page** is docz-site's second Vite entry, `ui/review.html`, built by
+  `just ui build-review` into `ui/dist-review/`, reusing the reader's
+  markdown pipeline in a review render mode.
+- **The binary** is a Bun server in `ui/review/`, compiled by
+  `bun build --compile` with the page embedded, for linux and darwin on
+  x64 and arm64. It drives `docz inspect` and `docz validate` through the
+  versioned JSON contract in `api/cli/` (`schema_version` 1; `cmd/`'s
+  `TestCLIJSONContractFixtures` is the producer's side). State lives under
+  `DOCZ_REVIEW_STATE_DIR`, else `$XDG_STATE_HOME/docz/review`, else
+  `~/.local/state/docz/review`, one directory per repository root and
+  session, 0700, written atomically under `flock`.
+- **The credential** is a random token in the URL the binary opens, sent
+  back as a bearer header. There is no cookie, the server listens on
+  `127.0.0.1` only, any other `Host` is 421, and a mutation needs the exact
+  `Origin` and a JSON body, because a forged submission is a prompt
+  injection into the agent.
+- **The plugin** is `plugins/docz-review/`: a `PostToolUse` hook on `Bash`
+  that arms what `docz create` or `docz-review arm` named, a `Stop` hook
+  that runs `docz-review --pending --hook` for up to 24 hours, and the
+  `/docz-review:review` skill. The repository root's
+  `.claude-plugin/marketplace.json` makes this repository the `docz`
+  marketplace, so `/plugin install docz-review@docz` installs from `main`.
+  The plugin's version is its own, in `plugin.json`, not docz's.
+- **Recipes**: `just ui dev-review`, `test-review` (vitest over the page
+  and `bun test ./review/`), `e2e-review`, `build-review [version]`, and
+  `bun test plugins/docz-review/tests/` for the hooks.
+- **Release**: `release.yml` and `prerelease.yml` run
+  `just ui build-review "<tag>"` before GoReleaser, whose `extra_files`
+  attach the four binaries, `docz-review_checksums.txt`, and the syft SBOM
+  of `ui/`; a step after it signs that checksum file with the release GPG
+  key and uploads the signature.
 
 ## Helm chart (`charts/docz`)
 
