@@ -275,7 +275,7 @@ docz plugin's skills can use `inspect` before any page exists.
   and `resolved` are `null` when absent, arrays are `[]`, `start: 0` is
   allowed; `docz_version` from `cmd.Version`; the text form prints the
   id, type, status, counts, and unresolved questions
-- [ ] `cmd/validate.go`: accept an ID or path as the argument (type name
+- [x] `cmd/validate.go`: accept an ID or path as the argument (type name
   first), call `ValidateDocument`, run `typeValidator` over the returned
   bytes rather than re-reading, print the same `ValidateReport` shape
   with one type and one document, skip index drift and the template

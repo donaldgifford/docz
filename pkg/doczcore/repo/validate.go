@@ -96,6 +96,14 @@ type DocFindings struct {
 	// well-formedness only, and deliberately still useful.
 	Schema string `json:"schema"`
 
+	// Content is the document's bytes as the checks read them, and
+	// ContentSHA256 their lowercase hex SHA-256. Both are empty on a
+	// Templates entry. Content is never serialized; it is here so a caller
+	// composing the per-type tier judges the same bytes this tier did
+	// instead of reading the file a second time.
+	Content       []byte `json:"-"`
+	ContentSHA256 string `json:"content_sha256,omitempty"`
+
 	// Findings are the generic tier's, in the order it returned them, with
 	// this tier's own appended after. A consumer that wants them strictly by
 	// line sorts them, because two tiers cannot merge-sort without agreeing
@@ -264,12 +272,10 @@ func (r *Repo) ValidateDocument(ctx context.Context, path string) (DocumentRepor
 	run := &validateRun{repo: r, schemas: make(map[string]cachedSchema)}
 	found := run.checkDoc(run.typeContext(typeName), filepath.Dir(abs), &doc)
 
-	sum := sha256.Sum256(content)
-
 	return DocumentReport{
 		Entry:         Entry{DocEntry: doc, Type: typeName, Path: found.Path},
 		Content:       content,
-		ContentSHA256: hex.EncodeToString(sum[:]),
+		ContentSHA256: found.ContentSHA256,
 		Schema:        found.Schema,
 		Findings:      found.Findings,
 	}, nil
@@ -520,7 +526,15 @@ func (v *validateRun) checkDoc(tc *typeContext, dir string, doc *document.DocEnt
 		name = tc.name
 	}
 
-	entry := DocFindings{Type: tc.name, Path: path, Schema: name}
+	sum := sha256.Sum256(doc.Content)
+
+	entry := DocFindings{
+		Type:          tc.name,
+		Path:          path,
+		Schema:        name,
+		Content:       doc.Content,
+		ContentSHA256: hex.EncodeToString(sum[:]),
+	}
 
 	schema, err := v.schemaFor(name, tc)
 	if err != nil {
