@@ -507,7 +507,7 @@ cut by hand at the end to prove the release path.
   `systemMessage`; `arm <id|path>` by hand only validates and prints;
   tests over the Phase 1 fixtures (success, failure, long output,
   compound command, and the echo case)
-- [ ] `ui/review/server.ts`: `Bun.serve` on `127.0.0.1` with a random or
+- [x] `ui/review/server.ts`: `Bun.serve` on `127.0.0.1` with a random or
   configured port; the bootstrap `GET /?t=` serving the page; bearer
   check in constant time; `Host` other than `127.0.0.1:<port>` is 421;
   exact `Origin`, `Sec-Fetch-Site`, and `Content-Type` on mutations;
