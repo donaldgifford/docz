@@ -368,7 +368,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   `src/cli/__generated__/<name>.open.json`; `.gitignore` covers the
   directory; `ui.just` gains `gen-cli` and `gen-cli-check` (snapshot,
   regenerate, diff, like `gen-api-check.sh`)
-- [ ] `ui/src/cli/validate.ts`: ajv (2020 dialect) compiled once per open
+- [x] `ui/src/cli/validate.ts`: ajv (2020 dialect) compiled once per open
   schema; `parseInspect`, `parseValidate`, `parseCreate` take a string,
   enforce a size limit (16 MiB), parse, validate, and return the typed
   value or throw a `ContractError{schema, errors}`; `checkSchemaVersion`

@@ -376,6 +376,9 @@ jobs:
       - name: Generate API client
         run: just ui gen-api
 
+      - name: Generate CLI types
+        run: just ui gen-cli
+
       - name: Lint
         run: just ui lint
 
@@ -407,6 +410,9 @@ jobs:
 
       - name: Generated client drift check
         run: just ui gen-api-check
+
+      - name: Generated CLI types drift check
+        run: just ui gen-cli-check
 
       # The npm-tree fence (IMPL-0020 Open Question 3): node_modules is
       # populated here and nowhere else in CI, and it ships stray .go files.
@@ -449,6 +455,9 @@ jobs:
       # The client is gitignored; the MSW preview build imports it.
       - name: Generate API client
         run: just ui gen-api
+
+      - name: Generate CLI types
+        run: just ui gen-cli
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium

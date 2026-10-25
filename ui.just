@@ -121,4 +121,4 @@ local-down:
     @echo "✓ docz-site stopped"
 
 # CI parity: everything the ci workflow runs, in order
-ci: gen-api lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check
+ci: gen-api gen-cli lint fmt-check typecheck test test-server build bundle-budget e2e gen-api-check gen-cli-check
