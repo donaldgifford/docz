@@ -62,6 +62,7 @@ nav:
         - 'IMPL-0024: Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021)': impl/0024-confluence-export-from-docz-api-folders-comments-and-the-server.md
         - 'IMPL-0025: Pre-cut markdown and lint fixes': impl/0025-pre-cut-markdown-and-lint-fixes.md
         - 'IMPL-0026: A read-only MCP server in docz-api: tokens, scoped access, and the six tools': impl/0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md
+        - 'IMPL-0027: docz-review: the CLI contract, the review page, the binary, and the plugin': impl/0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
