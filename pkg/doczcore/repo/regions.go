@@ -115,6 +115,56 @@ func (r *Repo) InsertRegions(
 	return report, nil
 }
 
+// InsertRegionsIn runs the InsertRegions pass over the named documents and
+// no others.
+//
+// Each path is resolved as ValidateDocument resolves one: repo-relative or
+// absolute, under Root and under an enabled type's directory, symlinks
+// followed, or a *PathError before anything is written. The per-document
+// work is InsertRegions' own, so the two cannot disagree about what a
+// marked document looks like; what differs is only which files are read.
+// That is what lets `docz validate <path> --fix` repair one document
+// without touching a sibling.
+//
+// The context is checked between documents, and what was written stays
+// written.
+func (r *Repo) InsertRegionsIn(ctx context.Context, paths []string) (InsertRegionsReport, error) {
+	var report InsertRegionsReport
+
+	specs := make(map[string]kinds.HeadingSpec)
+
+	for _, path := range paths {
+		if err := ctx.Err(); err != nil {
+			return report, err
+		}
+
+		abs, typeName, err := r.documentPath(path)
+		if err != nil {
+			return report, err
+		}
+
+		spec, ok := specs[typeName]
+		if !ok {
+			if spec, err = r.headingSpec(typeName); err != nil {
+				return report, err
+			}
+
+			specs[typeName] = spec
+		}
+
+		content, err := os.ReadFile(abs)
+		if err != nil {
+			return report, fmt.Errorf("reading %s: %w", r.RelPath(abs), err)
+		}
+
+		if err := r.insertRegionsInDoc(ctx, abs, content, spec, InsertRegionsOptions{}, &report); err != nil {
+			return report, err
+		}
+	}
+
+	return report, nil
+}
+
 // insertRegionsInType runs the pass over one type's directory.
 //
 // The spec is resolved once per type rather than once per document: it comes

@@ -251,7 +251,7 @@ docz plugin's skills can use `inspect` before any page exists.
   and never scans a sibling; a path outside the root or outside a type
   directory is a typed `PathError{Path, Reason}` added to `errors.go`;
   a missing or malformed frontmatter is findings, not an error
-- [ ] `pkg/doczcore/repo/regions.go`: `InsertRegionsIn(ctx, paths
+- [x] `pkg/doczcore/repo/regions.go`: `InsertRegionsIn(ctx, paths
   []string) (InsertRegionsReport, error)` over the named files only,
   sharing the per-file body with `InsertRegions`; the report shape is
   unchanged
