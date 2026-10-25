@@ -76,9 +76,11 @@ typecheck:
 test:
     bun run test
 
-# Vitest over the review page and the CLI contract only
+# docz-review: vitest over the page and the CLI contract, then bun test over
+# the server (review/ is Bun-only, outside the vitest src/ graph)
 test-review:
     bunx vitest run src/review src/cli
+    bun test ./review/
 
 # Bun test for the production server (server/serve.ts is Bun-only, outside
 # the vitest src/ graph)

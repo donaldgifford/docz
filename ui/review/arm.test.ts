@@ -59,7 +59,7 @@ function setup(name: string) {
     armFromHook(JSON.stringify(req), { docz: new Docz(fake.bin), base });
   const session = () =>
     new Session({ base, root: cwd, session: req.session_id as string });
-  return { cwd, run, session, fake };
+  return { cwd, base, run, session, fake };
 }
 
 describe("candidates", () => {
@@ -180,6 +180,28 @@ describe("armFromHook", () => {
     s.apply(entry?.key ?? "", "approved");
     await run();
     expect(s.read().entries[0]).toMatchObject({ state: "pending", round: 1 });
+  });
+
+  test("two arming calls racing on the lock both land", async () => {
+    const one = setup("create-json");
+    const two = fixture("create-text");
+    two.cwd = one.cwd;
+    two.session_id = fixture("create-json").session_id;
+    const results = await Promise.all([
+      one.run(),
+      armFromHook(JSON.stringify(two), {
+        docz: new Docz(one.fake.bin),
+        base: one.base,
+      }),
+    ]);
+    expect(results.map((r) => r.armed.length)).toEqual([1, 1]);
+    expect(
+      one
+        .session()
+        .read()
+        .entries.map((e) => e.id)
+        .sort(),
+    ).toEqual(["ADR-0001", "DESIGN-0001"]);
   });
 
   test("a request that is not JSON is ignored", async () => {

@@ -160,6 +160,30 @@ describe("the Stop hook", () => {
     expect(w.session().read().entries[0]?.state).toBe("approved");
   });
 
+  test("a crash between record and state is settled on the next Stop", async () => {
+    const w = world([A]);
+    await w.hookArm("docz create design x", created(A));
+    const s = w.session();
+    const [entry] = s.read().entries;
+    if (entry === undefined) {
+      throw new Error("not armed");
+    }
+    // A server opened round 1, wrote its record, and died: the state
+    // still says open and the lease has lapsed.
+    s.apply(entry.key, "open");
+    s.writeRecord(entry.key, 1, {
+      outcome: "changes",
+      submission_id: "s_crashed",
+    });
+    let round = 0;
+    await w.stop(async (sess, post) => {
+      round = sess.documents[0]?.round_number ?? 0;
+      await post(`/api/review/${A.inspect.id}/approve`, keyOf(sess, 0, "s_2"));
+    });
+    expect(round).toBe(2);
+    expect(s.read().entries[0]?.state).toBe("approved");
+  });
+
   test("nothing armed means nothing printed and no server", async () => {
     const w = world();
     let opened = false;

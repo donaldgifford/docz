@@ -95,6 +95,9 @@ export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
 };
 
+/** The largest request body accepted; a review is text, not uploads. */
+export const MAX_BODY_BYTES = 4 * 1024 * 1024;
+
 const ROUTE = /^\/api\/review\/([^/]+)\/(submit|approve|dismiss|draft)$/;
 
 function withHeaders(res: Response): Response {
@@ -137,6 +140,7 @@ export function startServer(opts: ServerOptions): RunningServer {
     hostname: "127.0.0.1",
     port: opts.port ?? 0,
     idleTimeout: 0,
+    maxRequestBodySize: MAX_BODY_BYTES,
     fetch: async (req) => withHeaders(await handle(req)),
   });
   const port = server.port ?? 0;

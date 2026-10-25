@@ -5,7 +5,12 @@ import { INSPECT } from "@/review/testing";
 
 import { Lease } from "./lease";
 import { Review } from "./round";
-import { type AssetSource, sameSecret, startServer } from "./server";
+import {
+  type AssetSource,
+  MAX_BODY_BYTES,
+  sameSecret,
+  startServer,
+} from "./server";
 import { docAs, reviewFixture } from "./testdata/review-fixture";
 
 const A = docAs(INSPECT.id, INSPECT.path);
@@ -139,6 +144,14 @@ describe("the server", () => {
         .status,
     ).toBe(415);
     expect((await api(path, body)).status).toBe(200);
+    srv.end("signal");
+  });
+
+  test("an oversized body is refused before it is read", async () => {
+    const { srv, api, keyOf } = await serve();
+    const big = { ...(await keyOf(0, "s_1")), pad: "x".repeat(MAX_BODY_BYTES) };
+    const res = await api(`/api/review/${A.inspect.id}/approve`, post(big));
+    expect(res.status).toBe(413);
     srv.end("signal");
   });
 

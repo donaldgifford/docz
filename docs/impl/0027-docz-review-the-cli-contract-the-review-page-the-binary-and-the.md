@@ -532,7 +532,7 @@ cut by hand at the end to prove the release path.
   printing the URL to stderr under `--hook`; the hook output printed
   once and last; `--json` printing the records; the text message
   otherwise; `--version` printing the binary, docz, and schema versions
-- [ ] `ui/review/*.test.ts` (`bun test ui/review/`): the server tests the
+- [x] `ui/review/*.test.ts` (`bun test ui/review/`): the server tests the
   design's Testing Strategy lists, including the three-document batch
   (approve A, changes on B, C untouched), the stale cases (edited,
   replaced, deleted while open), the replayed submission, two arming
