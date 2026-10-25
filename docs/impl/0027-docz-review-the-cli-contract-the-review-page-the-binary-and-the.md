@@ -516,7 +516,7 @@ cut by hand at the end to prove the release path.
   `/approve`, `/dismiss`, `POST /api/review/done`,
   `PUT /api/review/{doc}/draft`, `GET /api/events`; embedded assets
   served by MIME type; stdin read to EOF under `--hook` and closed
-- [ ] `ui/review/round.ts`: round ids, snapshots, the previous round for
+- [x] `ui/review/round.ts`: round ids, snapshots, the previous round for
   the diff, staleness on every submission (identity and digest; 409 with
   the draft kept), semantic checks against the served round (option
   letters, status, finding identities; 400), submission ids (a replay
