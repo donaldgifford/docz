@@ -421,7 +421,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   deleted regions and frontmatter changes listed, per-region "changed"
   badges matched by kind and heading, collapse unchanged, annotations
   disabled on diff text, a size bound that falls back to badges; tests
-- [ ] `ui/src/review/draft.ts`: the draft model, the actionable set
+- [x] `ui/src/review/draft.ts`: the draft model, the actionable set
   (question answer, comment, replace, delete, document comment, status
   change, finding fix), `outcomeOf(draft)`, and the rule that Approve is
   enabled only with no actionable item; tests
