@@ -143,3 +143,20 @@ func (r *Repo) resolveType(token string) (string, error) {
 
 	return typeName, nil
 }
+
+// PathError reports a document path the repository does not own: one that
+// does not resolve under Root, or resolves under Root but outside every
+// enabled type's directory.
+//
+// Returned by ValidateDocument and InsertRegionsIn. A path is judged by its
+// real location, symlinks resolved, so a link inside the tree that points
+// out of it is refused rather than followed. Reason is a short phrase a
+// caller may print; branch on the type, not on the phrase.
+type PathError struct {
+	Path   string
+	Reason string
+}
+
+func (e *PathError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Path, e.Reason)
+}

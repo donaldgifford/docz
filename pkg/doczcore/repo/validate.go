@@ -2,6 +2,8 @@ package repo
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -195,6 +197,148 @@ func (r *Repo) Validate(ctx context.Context, types []string, _ ValidateOptions) 
 	tally(&report)
 
 	return report, nil
+}
+
+// DocumentReport is what ValidateDocument found in one document.
+type DocumentReport struct {
+	// Entry is the document as a listing would report it: its frontmatter
+	// (zero when it has none or it does not parse), its type, and its
+	// repo-relative path.
+	Entry
+
+	// Content is the bytes every finding was computed from, read once.
+	// ContentSHA256 is their lowercase hex SHA-256, the value a caller
+	// compares to prove a line number refers to the text it holds.
+	Content       []byte
+	ContentSHA256 string
+
+	// Schema is the name the document's schema resolved under, empty when
+	// it resolved nowhere (see DocFindings.Schema).
+	Schema string
+
+	// Findings are the generic tier's and this tier's, as in DocFindings.
+	// The per-type tier is the caller's to compose over Content, as with
+	// Validate.
+	Findings []validate.Finding
+}
+
+// ValidateDocument validates one document without reading any other.
+//
+// The path is repo-relative or absolute. It must resolve, symlinks
+// followed, to a file under Root and under an enabled type's directory;
+// anything else is a *PathError, because a document the configuration does
+// not own has no type to validate it against. The file need not follow the
+// docz filename convention, and a document with no frontmatter is validated
+// rather than refused: the frontmatter findings are the point.
+//
+// The checks are Validate's per-document ones: the generic tier against the
+// schema the document names (resolved through the same three tiers) and the
+// ToC drift check. The template check and the index comparison are
+// repository findings and are not run, and no sibling is scanned, so a
+// broken document beside this one cannot affect its report.
+func (r *Repo) ValidateDocument(ctx context.Context, path string) (DocumentReport, error) {
+	if err := ctx.Err(); err != nil {
+		return DocumentReport{}, err
+	}
+
+	abs, typeName, err := r.documentPath(path)
+	if err != nil {
+		return DocumentReport{}, err
+	}
+
+	content, err := os.ReadFile(abs)
+	if err != nil {
+		return DocumentReport{}, fmt.Errorf("reading %s: %w", r.RelPath(abs), err)
+	}
+
+	// A parse failure leaves the zero Frontmatter, which is what a document
+	// without one looks like to every check below; validate.Document reports
+	// why.
+	fm, err := document.ParseFrontmatter(content)
+	if err != nil {
+		fm = document.Frontmatter{}
+	}
+
+	doc := document.DocEntry{Frontmatter: fm, Filename: filepath.Base(abs), Content: content}
+
+	run := &validateRun{repo: r, schemas: make(map[string]cachedSchema)}
+	found := run.checkDoc(run.typeContext(typeName), filepath.Dir(abs), &doc)
+
+	sum := sha256.Sum256(content)
+
+	return DocumentReport{
+		Entry:         Entry{DocEntry: doc, Type: typeName, Path: found.Path},
+		Content:       content,
+		ContentSHA256: hex.EncodeToString(sum[:]),
+		Schema:        found.Schema,
+		Findings:      found.Findings,
+	}, nil
+}
+
+// documentPath resolves a caller's path to the file to read and the enabled
+// type whose directory holds it.
+//
+// Both sides of every comparison are real paths. The root itself may sit
+// behind a symlink (a macOS temporary directory is /var on one side and
+// /private/var on the other), so comparing a resolved path with an
+// unresolved root would refuse every document. The returned path is the
+// document's location under Root as the caller named Root, so it reports
+// repo-relative like every other path this package returns.
+func (r *Repo) documentPath(path string) (abs, typeName string, err error) {
+	realRoot, err := filepath.EvalSymlinks(r.Root)
+	if err != nil {
+		return "", "", fmt.Errorf("resolving repository root: %w", err)
+	}
+
+	realPath, err := filepath.EvalSymlinks(r.Path(path))
+	if err != nil {
+		return "", "", fmt.Errorf("resolving %s: %w", path, err)
+	}
+
+	rel, ok := within(realRoot, realPath)
+	if !ok {
+		return "", "", &PathError{Path: path, Reason: "not under the repository root"}
+	}
+
+	best := -1
+
+	for _, name := range r.Cfg.EnabledTypes() {
+		dir, err := filepath.EvalSymlinks(r.TypeDir(name))
+		if err != nil {
+			continue
+		}
+
+		if _, ok := within(dir, realPath); ok && len(dir) > best {
+			typeName, best = name, len(dir)
+		}
+	}
+
+	if typeName == "" {
+		return "", "", &PathError{Path: path, Reason: "not under an enabled type's directory"}
+	}
+
+	info, err := os.Stat(realPath)
+	if err != nil {
+		return "", "", fmt.Errorf("reading %s: %w", path, err)
+	}
+
+	if !info.Mode().IsRegular() {
+		return "", "", &PathError{Path: path, Reason: "not a regular file"}
+	}
+
+	return filepath.Join(r.Root, rel), typeName, nil
+}
+
+// within reports whether path lies strictly inside dir, both real paths,
+// and returns it relative to dir.
+func within(dir, path string) (string, bool) {
+	rel, err := filepath.Rel(dir, path)
+	if err != nil || rel == "." || rel == ".." ||
+		strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", false
+	}
+
+	return rel, true
 }
 
 // validateRun is one Validate call's state: the repository it walks, and the

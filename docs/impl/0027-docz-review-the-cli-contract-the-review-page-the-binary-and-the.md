@@ -241,7 +241,7 @@ docz plugin's skills can use `inspect` before any page exists.
   section 8, written by docz-review and tested in Phase 3), all draft
   2020-12, each with `$id`, `$version: "1.0"`, and a top-level
   description naming the command
-- [ ] `pkg/doczcore/repo/validate.go`: `ValidateDocument(ctx, path string)
+- [x] `pkg/doczcore/repo/validate.go`: `ValidateDocument(ctx, path string)
   (DocumentReport, error)` with `DocumentReport{Entry, Content []byte,
   ContentSHA256 string, Findings []validate.Finding, Schema string}`:
   resolves the path under the root and under an enabled type's
