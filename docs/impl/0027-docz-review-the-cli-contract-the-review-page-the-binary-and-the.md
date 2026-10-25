@@ -623,7 +623,7 @@ installs from a git ref, not a release asset.
   binary is on `PATH`, else one stderr line naming the install page and
   `exit 0`; stdin passed through; no interpolation of paths or commands;
   `shellcheck` clean
-- [ ] `skills/review/SKILL.md`: `/docz-review:review [<id|path>…]`, which
+- [x] `skills/review/SKILL.md`: `/docz-review:review [<id|path>…]`, which
   tells the agent to run `docz-review arm <args>` as a Bash command and
   finish its turn, or `docz-review pending` with no arguments and report
   the list
