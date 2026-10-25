@@ -108,6 +108,32 @@ build-server:
 serve-bundle: build-server
     bun dist-server/serve.js
 
+# docz-review's four binaries (DESIGN-0024 section 10): the page built into
+# dist-review, its assets embedded through the generated manifest module,
+# then bun build --compile per target into dist-review-bin/ (outside the
+# inputs, so a rebuild never embeds a previous binary), and the host's
+# binary smoke-tested from an empty directory.
+build-review version="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    v="{{ version }}"
+    [ -n "$v" ] || v="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+    bun run build:review
+    bun scripts/embed-manifest.ts
+    rm -rf dist-review-bin
+    for target in linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+      os="${target%-*}"; arch="${target#*-}"
+      [ "$arch" = x64 ] && arch=amd64
+      bun build review/compiled.ts --compile --minify --target="bun-$target" \
+        --define "DOCZ_REVIEW_VERSION=\"$v\"" \
+        --outfile "dist-review-bin/docz-review_${os}_${arch}"
+    done
+    host_os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    host_arch="$(uname -m)"
+    case "$host_arch" in x86_64) host_arch=amd64 ;; aarch64) host_arch=arm64 ;; esac
+    (cd dist-review-bin && shasum -a 256 docz-review_* > docz-review_checksums.txt)
+    bun review/smoke.ts "dist-review-bin/docz-review_${host_os}_${host_arch}"
+
 # Playwright e2e against an MSW-enabled preview build (dist-msw/)
 e2e:
     bun run e2e

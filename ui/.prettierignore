@@ -25,3 +25,5 @@ public/mockServiceWorker.js
 # not prettier. (*.md here is already covered by the top-level rule.)
 charts/
 e2e/fixtures
+dist-review-bin
+review/__generated__

@@ -542,7 +542,7 @@ cut by hand at the end to prove the release path.
 - [x] `ui/src/cli/review.test.ts`: the review record validated against
   `review.schema.json` over committed fixtures (the record's contract
   test)
-- [ ] `ui/scripts/embed-manifest.ts`: generates
+- [x] `ui/scripts/embed-manifest.ts`: generates
   `ui/review/__generated__/assets.ts` from `dist-review/.vite/manifest.json`
   with one file import per emitted asset and its MIME type;
   `ui.just` gains `build-review` (Vite build of `review.html`, the

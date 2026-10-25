@@ -21,5 +21,8 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["review/**/*.ts"]
+  "include": ["review/**/*.ts"],
+  // compiled.ts imports the module embed-manifest.ts generates at build
+  // time; the binary's build compiles both.
+  "exclude": ["review/compiled.ts", "review/__generated__"]
 }
