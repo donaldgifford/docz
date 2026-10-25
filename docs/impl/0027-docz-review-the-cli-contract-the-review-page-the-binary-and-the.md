@@ -318,7 +318,7 @@ docz plugin's skills can use `inspect` before any page exists.
   and `ui.just`; the `go` filter already covers `api/**`
 - [x] `test/consumer/consumer_v2_repo_test.go`: exercise `ValidateDocument`
   and `InsertRegionsIn` from outside the module
-- [ ] `CLAUDE.md`: the `cmd/` bullet gains `docz inspect` and the
+- [x] `CLAUDE.md`: the `cmd/` bullet gains `docz inspect` and the
   single-document `validate`; the `repo` bullet gains the two operations;
   a new bullet for `api/cli`; `docs/README.md` or the CLI reference
   gains the commands

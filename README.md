@@ -129,7 +129,8 @@ docz update --dry-run  # preview changes without writing
 | `docz create <type> <title>` | Create a new document from a template |
 | `docz update [type]` | Regenerate README index tables |
 | `docz list [type]` | List documents, optionally filtered by type |
-| `docz validate [type]` | Check documents against their schema and report drift |
+| `docz validate [type\|id\|path]` | Check documents, or one document, against their schema and report drift |
+| `docz inspect <id\|path>` | Report one document's structure: regions, headings, open questions, tasks |
 | `docz export confluence [id\|path...]` | Export documents to Confluence Cloud as pages ([Sync](#sync)) |
 | `docz template show <type>` | Print the resolved template to stdout |
 | `docz template export <type> [path]` | Write the resolved template to a file |
@@ -154,6 +155,7 @@ docz update --dry-run  # preview changes without writing
 | `--author <name>` | Override the document author |
 | `--status <status>` | Set the initial status (defaults to the first configured status) |
 | `--no-update` | Skip the automatic index update after creation |
+| `--format <fmt>` | Output format: `text` (default), `json` (one object on stdout) |
 
 ### `docz init` Flags
 
@@ -181,6 +183,31 @@ docz update --dry-run  # preview changes without writing
 | `--strict` | Fail on warnings and index drift as well as errors |
 | `--format <fmt>` | Output format: `text` (default), `json` |
 | `--fix` | Mark the regions inference finds, then report what is left |
+
+With an id or a path instead of a type, `docz validate` checks that one
+document alone: it reads the file once, reports no template or index
+finding, and `--fix` writes that file and no other.
+
+### `docz inspect` Flags
+
+| Flag | Description |
+|------|-------------|
+| `--format <fmt>` | Output format: `text` (default), `json` |
+
+`docz inspect --format json` prints the document's frontmatter (or `null`),
+regions (inferred for an unmarked document), headings with their anchors,
+open questions with their options and resolutions, tasks, the statuses its
+type allows, and its bytes with their SHA-256, all from one read. A type
+name, or a path outside the repository or outside an enabled type's
+directory, exits 2.
+
+### Machine-readable output
+
+The JSON outputs of `docz inspect`, `docz validate`, `docz create`, and
+`docz list`, and the review record docz-review writes, are governed by the
+JSON Schemas in [`api/cli/`](api/cli/). Every output but `list`'s bare array
+carries a `schema_version`; a consumer validates against the schema with
+`additionalProperties` relaxed and ignores fields it does not know.
 
 ### `docz export confluence` Flags
 
