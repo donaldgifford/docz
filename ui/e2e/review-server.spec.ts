@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync } from "node:fs";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -16,6 +17,30 @@ import { expect, test } from "@playwright/test";
 
 const DOCZ = resolve(process.env.DOCZ_REVIEW_DOCZ ?? "../build/bin/docz");
 const REPO = resolve("e2e/fixtures/review-repo");
+
+/** Sends a request's head over a raw socket and returns the status. */
+function rawStatus(port: number, head: string[]): Promise<number> {
+  return new Promise((resolveStatus, reject) => {
+    const sock = connect(port, "127.0.0.1", () => {
+      sock.write(`${head.join("\r\n")}\r\n\r\n`);
+    });
+    let buf = "";
+    sock.setEncoding("utf8");
+    sock.on("data", (chunk: string) => {
+      buf += chunk;
+      const m = /^HTTP\/1\.1 (\d{3})/.exec(buf);
+      if (m) {
+        sock.destroy();
+        resolveStatus(Number(m[1]));
+      }
+    });
+    sock.on("error", reject);
+    sock.setTimeout(5000, () => {
+      sock.destroy();
+      reject(new Error(`no status within 5s: ${JSON.stringify(buf)}`));
+    });
+  });
+}
 
 interface Run {
   url: string;
@@ -133,22 +158,19 @@ test("a hostile Origin, framing, and an oversized body are refused", async ({
   });
   expect(hostile.status()).toBe(403);
 
-  // The server answers 413 and closes before the upload finishes, which
-  // the client may see as the status or as a reset carrying it.
-  const big = await request
-    .post(approve, {
-      headers: {
-        ...auth,
-        Origin: run.origin,
-        "Content-Type": "application/json",
-      },
-      data: { ...key, pad: "x".repeat(5 * 1024 * 1024) },
-    })
-    .then(
-      (r) => String(r.status()),
-      (err: unknown) => String(err),
-    );
-  expect(big).toContain("413");
+  // An oversized body is refused from its Content-Length alone. Sent
+  // through a client that uploads the body, the server's early close
+  // races the upload and surfaces as EPIPE or a reset, so the request
+  // goes over a raw socket with the headers only.
+  const big = await rawStatus(Number(new URL(run.origin).port), [
+    `POST /api/review/DESIGN-0001/approve HTTP/1.1`,
+    `Host: ${new URL(run.origin).host}`,
+    `Authorization: ${auth.Authorization}`,
+    `Origin: ${run.origin}`,
+    "Content-Type: application/json",
+    `Content-Length: ${String(5 * 1024 * 1024)}`,
+  ]);
+  expect(big).toBe(413);
 
   // A page on another origin cannot frame the review.
   const res = await request.get(`${run.origin}/`);
