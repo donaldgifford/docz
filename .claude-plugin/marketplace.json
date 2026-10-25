@@ -1,0 +1,18 @@
+{
+  "name": "docz",
+  "owner": {
+    "name": "Donald Gifford",
+    "url": "https://github.com/donaldgifford"
+  },
+  "metadata": {
+    "description": "Claude Code plugins that ship with docz."
+  },
+  "plugins": [
+    {
+      "name": "docz-review",
+      "source": "./plugins/docz-review",
+      "description": "Blocks the end of a turn on a browser review of every docz document the agent created, and feeds the reviewer's answers back as the next instruction.",
+      "category": "documentation"
+    }
+  ]
+}

@@ -627,7 +627,7 @@ installs from a git ref, not a release asset.
   tells the agent to run `docz-review arm <args>` as a Bash command and
   finish its turn, or `docz-review pending` with no arguments and report
   the list
-- [ ] `.claude-plugin/marketplace.json` at the repository root listing
+- [x] `.claude-plugin/marketplace.json` at the repository root listing
   `docz-review` with `source: ./plugins/docz-review`, checked with
   `claude plugin validate` (or a JSON parse of both manifests if the CLI
   has no such command); the marketplace name is `docz`
