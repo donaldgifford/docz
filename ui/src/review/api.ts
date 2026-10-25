@@ -125,9 +125,15 @@ export interface ReviewClient {
   events(onEvent: (e: ReviewEvent) => void, signal: AbortSignal): Promise<void>;
 }
 
+/** The part of `fetch` the client calls, so a fake need not be all of it. */
+export type FetchLike = (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) => Promise<Response>;
+
 export function createReviewClient(
   token: string,
-  fetchImpl: typeof fetch = (input, init) => fetch(input, init),
+  fetchImpl: FetchLike = (input, init) => fetch(input, init),
 ): ReviewClient {
   const call = async (
     method: string,
