@@ -402,7 +402,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   position, and returns `{resolution: "exact"|"ambiguous"|"lost", line,
   ordinal}` with the rules in design section 7 (one hit; a strict-best
   context and heading score; the line hint never breaks a tie)
-- [ ] `ui/src/review/anchor.test.ts`: the `carryMarkers` cases ported
+- [x] `ui/src/review/anchor.test.ts`: the `carryMarkers` cases ported
   (one hit, several with context, a tie, none), plus `use **Postgres**`,
   a link, a soft-wrapped paragraph, an entity, a code span, Unicode text
   with combining marks and an emoji, a moved region found by heading,
