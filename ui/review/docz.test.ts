@@ -49,23 +49,24 @@ describe("Docz", () => {
     expect((err as Error).message).toMatch(/2\.1\.0.*2\.2\.0/);
   });
 
-  test("runs from the root with --repo-root and --config as arguments", async () => {
+  test("runs from the root with the target after -- as one argument", async () => {
     const fake = fakeDocz({ inspect: [inspectOut()] });
     const root = (await import("node:fs")).realpathSync("/tmp");
-    await new Docz(fake.bin).inspect("DESIGN-0001; rm -rf /", {
+    await new Docz(fake.bin).inspect("--config=x.yaml; rm -rf /", {
       root,
       config: "alt.yaml",
     });
     expect(fake.calls()[0]).toEqual({
       args: [
         "inspect",
-        "DESIGN-0001; rm -rf /",
         "--format",
         "json",
         "--repo-root",
         root,
         "--config",
         "alt.yaml",
+        "--",
+        "--config=x.yaml; rm -rf /",
       ],
       cwd: root,
     });
@@ -121,7 +122,7 @@ describe("Docz", () => {
     expect(snap.inspect.id).toBe(INSPECT.id);
     expect(snap.findings).toEqual(FINDINGS);
     // validate is asked about the path inspect resolved, not the id.
-    expect(fake.calls()[1]?.args[1]).toBe(INSPECT.path);
+    expect(fake.calls()[1]?.args.at(-1)).toBe(INSPECT.path);
   });
 
   test("snapshot retries once when the digests disagree, then fails", async () => {

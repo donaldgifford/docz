@@ -129,7 +129,7 @@ export class Docz {
   /** `docz inspect <target> --format json`. */
   async inspect(target: string, scope: DoczScope): Promise<DoczInspect> {
     const res = await this.run(
-      ["inspect", target, "--format", "json", ...scopeArgs(scope)],
+      ["inspect", "--format", "json", ...scopeArgs(scope), "--", target],
       scope.root,
     );
     if (res.code !== 0) {
@@ -148,7 +148,7 @@ export class Docz {
    */
   async validate(target: string, scope: DoczScope): Promise<DoczValidate> {
     const res = await this.run(
-      ["validate", target, "--format", "json", ...scopeArgs(scope)],
+      ["validate", "--format", "json", ...scopeArgs(scope), "--", target],
       scope.root,
     );
     if ((res.code !== 0 && res.code !== 1) || res.stdout.trim() === "") {

@@ -63,6 +63,14 @@ function setup(name: string) {
 }
 
 describe("candidates", () => {
+  test("drops a reported path that looks like a flag", () => {
+    expect(
+      createdPaths(
+        "Created RFC: --config=/tmp/x.yaml\nCreated ADR: docs/adr/0001-a.md\n",
+      ),
+    ).toEqual(["docs/adr/0001-a.md"]);
+  });
+
   test("reads the JSON envelope docz create printed", () => {
     expect(candidates(fixture("create-json"))).toEqual([
       "docs/design/0001-review-cache.md",
@@ -132,11 +140,12 @@ describe("armFromHook", () => {
     expect(fake.calls()[0]).toEqual({
       args: [
         "inspect",
-        "/work/repo/docs/adr/0001-use-valkey.md",
         "--format",
         "json",
         "--repo-root",
         cwd,
+        "--",
+        "/work/repo/docs/adr/0001-use-valkey.md",
       ],
       cwd,
     });

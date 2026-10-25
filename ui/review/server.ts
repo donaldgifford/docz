@@ -124,6 +124,15 @@ export async function readAll(
   return new Response(stream).text();
 }
 
+/** A path segment decoded, or null when its percent-encoding is malformed. */
+function decodeKey(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return null;
+  }
+}
+
 export function startServer(opts: ServerOptions): RunningServer {
   const token = opts.token ?? randomBytes(32).toString("hex");
   const heartbeat = opts.heartbeatMs ?? 15_000;
@@ -141,7 +150,8 @@ export function startServer(opts: ServerOptions): RunningServer {
     port: opts.port ?? 0,
     idleTimeout: 0,
     maxRequestBodySize: MAX_BODY_BYTES,
-    fetch: async (req) => withHeaders(await handle(req)),
+    development: false,
+    fetch: async (req) => withHeaders(await guarded(req)),
   });
   const port = server.port ?? 0;
   const origin = `http://127.0.0.1:${String(port)}`;
@@ -224,6 +234,19 @@ export function startServer(opts: ServerOptions): RunningServer {
     });
   }
 
+  /**
+   * Every throw becomes a 500 that still carries the security headers;
+   * Bun's own error page would carry neither them nor a stable body.
+   */
+  async function guarded(req: Request): Promise<Response> {
+    try {
+      return await handle(req);
+    } catch (err) {
+      process.stderr.write(`docz-review: ${(err as Error).message}\n`);
+      return error(500, "internal error");
+    }
+  }
+
   async function handle(req: Request): Promise<Response> {
     if (req.headers.get("host") !== `127.0.0.1:${String(port)}`) {
       return error(421, "use the 127.0.0.1 address docz-review printed");
@@ -283,7 +306,10 @@ export function startServer(opts: ServerOptions): RunningServer {
     if (m === null) {
       return error(404, "not found");
     }
-    const key = decodeURIComponent(m[1] ?? "");
+    const key = decodeKey(m[1] ?? "");
+    if (key === null) {
+      return error(404, "not found");
+    }
     const action = m[2] ?? "";
     let reply: Reply;
     if (action === "draft") {

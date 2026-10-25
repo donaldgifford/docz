@@ -111,10 +111,15 @@ export function createdPaths(text: string): string[] {
       }
     }
   }
+  // A path never starts with "-"; one that does is output trying to pass
+  // docz a flag, and is dropped like reviewArmArgs drops it.
+  const notFlag = (p: string) => !p.startsWith("-");
   if (fromJson.length > 0) {
-    return fromJson;
+    return fromJson.filter(notFlag);
   }
-  return [...text.matchAll(CREATED)].map((m) => (m[1] ?? "").trim());
+  return [...text.matchAll(CREATED)]
+    .map((m) => (m[1] ?? "").trim())
+    .filter(notFlag);
 }
 
 function envelopePath(block: string): string | null {

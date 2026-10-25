@@ -271,6 +271,11 @@ export class Review {
     if (stale !== null) {
       return fail(409, stale);
     }
+    // The run may have ended while docz was reading the file; from here to
+    // the state change nothing awaits, so this check holds.
+    if (!isOpen(doc)) {
+      return fail(409, "the round is closed");
+    }
 
     const parts =
       action === "submit"
@@ -358,6 +363,14 @@ export class Review {
     }
     return null;
   }
+}
+
+/**
+ * Reads the state through a call so a check after an await is not
+ * narrowed away by the one before it: dismissRest can run in between.
+ */
+function isOpen(doc: RoundDoc): boolean {
+  return doc.state === "open";
 }
 
 /** The round's own offer is the only valid answer set. */

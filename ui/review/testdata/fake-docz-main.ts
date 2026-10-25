@@ -17,12 +17,15 @@ const config = JSON.parse(readFileSync(configPath, "utf8")) as Record<
 >;
 const args = process.argv.slice(2);
 const cmd = args[0] ?? "";
+// docz-review passes the target after "--"; key on it, else the second word.
+const dash = args.indexOf("--");
+const target = dash === -1 ? (args[1] ?? "") : (args[dash + 1] ?? "");
 appendFileSync(
   `${configPath}.log`,
   `${JSON.stringify({ args, cwd: process.cwd() })}\n`,
 );
 
-const counter = `${configPath}.${encodeURIComponent(`${cmd} ${args[1] ?? ""}`)}.n`;
+const counter = `${configPath}.${encodeURIComponent(`${cmd} ${target}`)}.n`;
 let n = 0;
 try {
   n = Number(readFileSync(counter, "utf8"));
@@ -31,8 +34,8 @@ try {
 }
 writeFileSync(counter, String(n + 1));
 
-// "inspect DESIGN-0001" answers that argument; "inspect" any other.
-const list = config[`${cmd} ${args[1] ?? ""}`] ??
+// "inspect DESIGN-0001" answers that target; "inspect" any other.
+const list = config[`${cmd} ${target}`] ??
   config[cmd] ?? [{ code: 2, stderr: `fake docz: no ${cmd}\n` }];
 const res = list[Math.min(n, list.length - 1)] ?? {};
 process.stdout.write(res.stdout ?? "");

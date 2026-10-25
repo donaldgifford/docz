@@ -26,7 +26,12 @@ const assets: AssetSource = (path) =>
   );
 
 async function serve(
-  over: { graceMs?: number; deadlineMs?: number; heartbeatMs?: number } = {},
+  over: {
+    graceMs?: number;
+    deadlineMs?: number;
+    heartbeatMs?: number;
+    assets?: AssetSource;
+  } = {},
   docs = [A],
 ) {
   const fx = reviewFixture(docs);
@@ -41,7 +46,7 @@ async function serve(
   const lease = Lease.acquire(fx.session, { ttlMs: 60_000 });
   const srv = startServer({
     review,
-    assets,
+    assets: over.assets ?? assets,
     lease,
     graceMs: over.graceMs ?? 60_000,
     deadline,
@@ -105,6 +110,27 @@ describe("the server", () => {
       },
     });
     expect(res.status).toBe(421);
+    srv.end("signal");
+  });
+
+  test("a malformed document key is 404 and keeps the headers", async () => {
+    const { srv, api } = await serve();
+    const res = await api("/api/review/%E0%A4%A/submit", post({}));
+    expect(res.status).toBe(404);
+    expect(res.headers.get("Content-Security-Policy")).toContain(
+      "frame-ancestors 'none'",
+    );
+    srv.end("signal");
+  });
+
+  test("a throw is a 500 with the security headers, not Bun's page", async () => {
+    const { srv, origin } = await serve({
+      assets: () => Promise.reject(new Error("disk gone")),
+    });
+    const res = await fetch(`${origin}/`);
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "internal error" });
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
     srv.end("signal");
   });
 

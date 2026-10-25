@@ -168,6 +168,25 @@ describe("Review.record", () => {
     ).toBe(409);
   });
 
+  test("a run that ends while docz reads the file refuses the submission", async () => {
+    const { review, key, docz, session, entries } = await opened();
+    const inspect = docz.inspect.bind(docz);
+    docz.inspect = (...args) => {
+      review.dismissRest();
+      return inspect(...args);
+    };
+    const res = await review.record(A.inspect.id, "submit", {
+      ...key("s_1"),
+      ...changes,
+    });
+    expect(res).toEqual({
+      status: 409,
+      body: { error: "the round is closed" },
+    });
+    expect(review.records()).toEqual([]);
+    expect(session.readRecord(entries[0]?.key ?? "", 1)).toBeNull();
+  });
+
   test("the file edited, replaced, or deleted while open is stale and keeps the draft", async () => {
     const edited = docAs(A.inspect.id, A.inspect.path, "---\nedited\n");
     const replaced = docAs("DESIGN-0099", A.inspect.path);
