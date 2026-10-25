@@ -66,7 +66,7 @@ the review returns to the agent as one message through the hook's
 `decision: block` output, and the rounds repeat until the person approves.
 
 It is a Bun/TypeScript binary built as a second entry point in `ui/`, with
-its own Claude Code plugin in claude-skills. The docz CLI gains JSON
+its own Claude Code plugin, kept in this repository under `plugins/`. The docz CLI gains JSON
 output and two scoped library operations and nothing else:
 `docz inspect <id|path> --format json` reports one document's structure,
 `docz validate` accepts an ID or path, and `docz create --format json`
@@ -273,7 +273,7 @@ flowchart LR
 | JSON Schemas, Go contract test, generated TypeScript types | `api/cli/`, `cmd/`, `ui/src/cli/__generated__/` | New |
 | `docz-review` server and page | `ui/review/`, `ui/src/review/`, sharing `ui/src/markdown` | New entry point |
 | Release artifacts | `.goreleaser.yml`, `release.yml`, `prerelease.yml` | Extended |
-| `docz-review` plugin | claude-skills `plugins/docz-review` | New plugin |
+| `docz-review` plugin | `plugins/docz-review`, `.claude-plugin/marketplace.json` | New plugin; this repository is its marketplace |
 
 The `docz` binary stays headless: it reads a repository and prints JSON.
 `docz-review` owns everything interactive. The CLI never knows the review
@@ -891,7 +891,13 @@ start even though only `docz-review` writes it today.
 
 ### 9. The plugin
 
-`plugins/docz-review` in claude-skills:
+`plugins/docz-review` in this repository, published by a root
+`.claude-plugin/marketplace.json` that makes the repository a marketplace.
+(Amended 2026-10-25 by IMPL-0027 question 3: the plugin was first placed
+in claude-skills. Keeping it here lets a user install it on day one with
+`/plugin marketplace add donaldgifford/docz`, and a team with a private
+marketplace copies or references the directory; the plugin's README says
+how.)
 
 ```text
 plugins/docz-review/
@@ -1055,8 +1061,9 @@ Environment: `DOCZ_REVIEW_BROWSER` (else `BROWSER`),
 binary), `DOCZ_REVIEW_PORT` (else random). Configuration is flags and
 these variables only; there is no `.docz.yaml` block (open question 11).
 
-**claude-skills** gains `plugins/docz-review`; `plugins/docz` is
-unchanged except a sentence in its `create` skill about `--format json`.
+**This repository** gains `plugins/docz-review` and a root
+`.claude-plugin/marketplace.json`; **claude-skills** is unchanged except
+a sentence in the docz plugin's `create` skill about `--format json`.
 
 <!--docz:api-changes:end-->
 
@@ -1232,7 +1239,7 @@ Nothing migrates: no existing file or config changes, and the one
 existing output that changes (`validate --format json`) gains fields
 only. The IMPL sequences the work so each step is usable alone:
 
-1. **Phase 0, the hook drill** (claude-skills, no release): the Testing
+1. **Phase 0, the hook drill** (no release): the Testing
    Strategy's drill, with every observation recorded in a new Decisions
    section of this design; until then the open questions carry the
    provisional choices, and wherever the body assumes an answer it
@@ -1251,7 +1258,7 @@ only. The IMPL sequences the work so each step is usable alone:
    staleness, the credential and headers, hook output, state and
    drafts, `bun build --compile` with the manifest import module, the
    release workflow steps; a beta tag with the binaries.
-5. **Phase 4, the plugin** (claude-skills): hooks, wrappers, the skill,
+5. **Phase 4, the plugin** (`plugins/docz-review` here, no release): hooks, wrappers, the skill,
    the README; a trial on this repository's own documents.
 6. **Phase 5, release** (docz, `minor`): the first tag carrying the
    binaries; `ui/CLAUDE.md`, the root `CLAUDE.md`, and the memory

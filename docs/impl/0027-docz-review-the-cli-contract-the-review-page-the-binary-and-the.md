@@ -45,7 +45,7 @@ created: 2026-10-25
   - [3. Where do the hook drill's write-up and fixtures live?](#3-where-do-the-hook-drills-write-up-and-fixtures-live)
   - [4. What repository does e2e-review run against?](#4-what-repository-does-e2e-review-run-against)
   - [5. Which runtime validator does docz-review use?](#5-which-runtime-validator-does-docz-review-use)
-  - [6. Which browsers does Playwright run the review flow on?](#6-which-browsers-does-playwright-run-the-review-flow-on)
+  - [6. How much Playwright does the review flow get?](#6-how-much-playwright-does-the-review-flow-get)
   - [7. Where are the four compiled binaries built?](#7-where-are-the-four-compiled-binaries-built)
   - [8. When does the docz plugin's create skill start saying --format json?](#8-when-does-the-docz-plugins-create-skill-start-saying---format-json)
   - [9. What is the schemas' $id base?](#9-what-is-the-schemas-id-base)
@@ -61,7 +61,8 @@ contract (`docz inspect`, a single-document `docz validate`,
 `docz create --format json`, committed schemas, a Go contract test), the
 review page and its Bun server as a second entry point in `ui/`, the
 compiled binaries on the same release as `docz`, and the `docz-review`
-Claude Code plugin in claude-skills. The phases follow the design's
+Claude Code plugin, which lives in this repository under `plugins/` and
+installs from it as a marketplace. The phases follow the design's
 rollout plan one to one, shifted by one because this document numbers
 from 1: Phase 1 here is the design's Phase 0, the hook drill, and
 Phase 6 is its Phase 5, the release.
@@ -93,8 +94,9 @@ Phase 6 is its Phase 5, the release.
   recipes and CI steps for all of it
 - `release.yml` and `prerelease.yml`: the Bun build, the second checksum
   file and its signature, the SBOM
-- claude-skills: `plugins/docz-review` (hooks, wrappers, skill, README)
-  and one sentence in the docz plugin's `create` skill
+- `plugins/docz-review/` here (hooks, wrappers, skill, README, tests, the
+  drill write-up) and a root `.claude-plugin/marketplace.json`
+- claude-skills: one sentence in the docz plugin's `create` skill
 - `CLAUDE.md`, `ui/CLAUDE.md`, `ui/README.md`, and the memory
 
 <!--docz:in-scope:end-->
@@ -129,16 +131,17 @@ release.
 ### Phase 1: The hook drill
 
 Before any code, observe what Claude Code actually does with a `Stop`
-hook that waits, and record it. The drill is a throwaway plugin in
-claude-skills whose hooks are shell scripts; nothing in this repository
-changes except DESIGN-0024's Decisions section. Everything the design
+hook that waits, and record it. The drill is a throwaway plugin whose hooks are shell scripts, kept
+outside the tree (a directory under `/tmp` added as a local marketplace);
+what it leaves behind is the write-up, the fixtures, and DESIGN-0024's
+Decisions section. Everything the design
 marked "observed in Phase 0" is settled here by observation, and each
 observation is written down with the Claude Code version it was made on.
 
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] claude-skills: a throwaway plugin `plugins/docz-review-drill` with
+- [ ] A throwaway plugin `docz-review-drill` outside the tree with
   a `PostToolUse` hook on `Bash` that appends its full stdin to
   `$CLAUDE_PLUGIN_DATA/posttooluse.jsonl`, and a `Stop` hook script that
   appends its stdin, then sleeps for a configured number of seconds,
@@ -180,16 +183,16 @@ observation is written down with the Claude Code version it was made on.
   confirm the response text carries the line, so the arming parser's
   rule (validate every candidate through `docz inspect`) is the right
   defence rather than response-text trust
-- [ ] Write the drill up in claude-skills at
-  `plugins/docz-review/docs/hook-drill.md`: a table of case, observation,
+- [ ] Write the drill up at `plugins/docz-review/docs/hook-drill.md` in
+  this repository: a table of case, observation,
   Claude Code version, and date
 - [ ] DESIGN-0024: add a row per observation to the Decisions section
   (timeout ceiling, interrupt behaviour, host continuation cap,
   `stop_hook_active`, `tool_response` shape, `if` support) and amend
   open questions 1, 2, 4, and 12 only where an observation contradicts
   the resolved option; regenerate with `docz update design`
-- [ ] Delete the drill plugin or leave it unpublished; it is never
-  listed in the marketplace
+- [ ] Delete the drill plugin; it is never committed or listed in the
+  marketplace
 
 <!--docz:tasks:end-->
 
@@ -592,15 +595,19 @@ cut by hand at the end to prove the release path.
 ### Phase 5: The plugin
 
 After this phase a session with the `docz-review` plugin installed
-reviews the documents it creates, and one without it is unchanged. All
-in claude-skills; `dont-release` here because nothing in this repository
-changes except documentation.
+reviews the documents it creates, and one without it is unchanged. The
+plugin lives in this repository under `plugins/docz-review/`, and the
+repository is itself a Claude Code marketplace through a root
+`.claude-plugin/marketplace.json`, so a user installs it on day one with
+two `/plugin` commands and a team with a private marketplace copies or
+references the directory (the README says how). `dont-release`: a plugin
+installs from a git ref, not a release asset.
 
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] claude-skills `plugins/docz-review/.claude-plugin/plugin.json`,
-  `hooks/hooks.json` (the `PostToolUse` entry on `Bash` with the `if`
+- [ ] `plugins/docz-review/.claude-plugin/plugin.json` (name, version
+  `0.1.0`, description, author) and `hooks/hooks.json` (the `PostToolUse` entry on `Bash` with the `if`
   pre-filters `Bash(docz *)` and `Bash(docz-review *)` if Phase 1
   confirmed the field, `timeout: 30`; the `Stop` entry with the timeout
   Phase 1 settled, 86400 unless contradicted)
@@ -612,14 +619,26 @@ changes except documentation.
   tells the agent to run `docz-review arm <args>` as a Bash command and
   finish its turn, or `docz-review pending` with no arguments and report
   the list
-- [ ] `README.md`: install (the mise block), what arms a review, the
-  states, walking away, `--max-rounds`, and the plugin's minimum Claude
-  Code version from Phase 1
-- [ ] `tests/`: the plugin's eval or hook tests over the Phase 1 fixtures
-  through the wrappers, including the missing-binary path
-- [ ] The docz plugin's `create` skill: one sentence telling the agent to
-  pass `--format json` to `docz create` (open question 8)
-- [ ] The marketplace entry for `docz-review`; version `0.1.0`
+- [ ] `.claude-plugin/marketplace.json` at the repository root listing
+  `docz-review` with `source: ./plugins/docz-review`, checked with
+  `claude plugin validate` (or a JSON parse of both manifests if the CLI
+  has no such command); the marketplace name is `docz`
+- [ ] `plugins/docz-review/README.md`: install (`/plugin marketplace add
+  donaldgifford/docz`, `/plugin install docz-review@docz`, and the mise
+  block for the binary), what arms a review, the states, walking away,
+  `--max-rounds`, the plugin's minimum Claude Code version from Phase 1,
+  and a section "From your own marketplace" for a team with a private
+  one: reference this repository as a second marketplace, or copy the
+  directory into theirs and track `plugin.json`'s version to resync
+- [ ] `.github/workflows/ci.yml`: a `plugin` job path-filtered on
+  `plugins/**` and `.claude-plugin/**` running `shellcheck` over the
+  wrappers, the hook tests, and the manifest check
+- [ ] `plugins/docz-review/tests/`: the hook tests over the Phase 1
+  fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
+  including the missing-binary path
+- [ ] claude-skills, the docz plugin's `create` skill: one sentence
+  telling the agent to pass `--format json` to `docz create` (open
+  question 8); the only change there
 - [ ] A trial on this repository: create a document in a session with
   the plugin, revise through two rounds, approve; record the transcript's
   shape (not its content) in the plugin README's "what to expect"
@@ -637,7 +656,10 @@ changes except documentation.
   agent with the message; a second `Stop` opens round two with the
   diff; Approve ends the loop
 - A session that never ran `docz create` sees nothing
-- The plugin's tests pass in claude-skills CI
+- On a machine with no marketplace configured,
+  `/plugin marketplace add donaldgifford/docz` then
+  `/plugin install docz-review@docz` installs the plugin from `main`
+- The plugin's tests pass in this repository's `plugin` CI job
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
@@ -658,8 +680,8 @@ memory brought up to date. `minor`.
   (the chart content is unchanged; the release rule requires the bump)
 - [ ] `CLAUDE.md`: a "docz-review" section under Frontend (`ui/`) with
   the second entry point, the state directory, the credential model,
-  the recipes, and the release step; the CI path-filter paragraph gains
-  `api/cli/**`
+  the recipes, the plugin under `plugins/`, and the release step; the CI
+  path-filter paragraph gains `api/cli/**` and the `plugin` job
 - [ ] `ui/CLAUDE.md` and `ui/README.md` final pass; `api/README.md`
   gains a section on `api/cli/`
 - [ ] DESIGN-0024 status to Implemented; INV-0027's Recommendation gains
@@ -705,7 +727,7 @@ memory brought up to date. `minor`.
 | `cmd/validate.go`, `cmd/create.go` and their tests | Modify | Single-document validation and `--fix`; the JSON create envelope |
 | `cmd/cli_contract_test.go`, `cmd/testdata/cli-contract/` | Create | The Go contract test and its committed fixtures |
 | `test/consumer/consumer_v2_repo_test.go` | Modify | The two new operations from outside |
-| `.github/workflows/ci.yml` | Modify | `ui` filter gains `api/cli/**` and `ui.just`; the `ui` job gains the review steps |
+| `.github/workflows/ci.yml` | Modify | `ui` filter gains `api/cli/**` and `ui.just`; the `ui` job gains the review steps; a `plugin` job |
 | `.github/workflows/release.yml`, `prerelease.yml` | Modify | Bun build, extra files, second signature, SBOM |
 | `ui/package.json`, `bun.lock` | Modify | `json-schema-to-typescript`, `ajv`, `diff` |
 | `ui/scripts/gen-cli.ts`, `ui/scripts/embed-manifest.ts` | Create | Type generation and the asset import module |
@@ -718,7 +740,7 @@ memory brought up to date. `minor`.
 | `ui.just` | Modify | `gen-cli`, `gen-cli-check`, `dev-review`, `test-review`, `build-review`, `e2e-review` |
 | `ui/CLAUDE.md`, `ui/README.md`, `CLAUDE.md`, `api/README.md` | Modify | Documentation |
 | `charts/docz/Chart.yaml` and tests | Modify | The release bump |
-| claude-skills `plugins/docz-review/` | Create | Plugin, hooks, wrappers, skill, README, tests, drill write-up |
+| `plugins/docz-review/`, `.claude-plugin/marketplace.json` | Create | The plugin (hooks, wrappers, skill, README, tests, drill write-up) and the marketplace that publishes it |
 | claude-skills `plugins/docz/skills/create/SKILL.md` | Modify | The `--format json` sentence |
 
 <!--docz:file-changes:end-->
@@ -741,6 +763,8 @@ memory brought up to date. `minor`.
 - [ ] Playwright: `e2e-review` against the fake server in Phase 3 and the
   real server with a built `docz` from Phase 4
 - [ ] The compiled binary from an empty directory
+- [ ] The plugin's hook tests over the drill fixtures through the
+  wrappers, in the `plugin` CI job
 - [ ] The Phase 1 drill, recorded; the Phase 5 trial on this repository
 - [ ] Release verification: artifacts, both signatures, side-by-side mise
   install on macOS and Linux, a review from outside the checkout
@@ -760,8 +784,8 @@ memory brought up to date. `minor`.
 - Bun 1.4.4 (pinned), with `bun build --compile --target` for the four
   targets from one host
 - npm: `json-schema-to-typescript`, `ajv`, `diff`, `@types/diff`
-- claude-skills: a marketplace slot for `docz-review`, and the docz
-  plugin's `create` skill
+- claude-skills: the docz plugin's `create` skill only; the review plugin
+  needs nothing there
 - The GPG key already imported in `release.yml` for the second signature
 - Phase 5's trial needs the Phase 4 beta installed through mise
 
@@ -771,6 +795,8 @@ memory brought up to date. `minor`.
 ## Open Questions
 
 ### 1. How is the work split into pull requests?
+
+> **Resolved 2026-10-25: (a).**
 
 - a. **One PR per phase, each from `main` after the previous merges:
   Phase 1 touches only DESIGN-0024 here (`dont-release`), Phase 2 is
@@ -786,18 +812,41 @@ memory brought up to date. `minor`.
 
 ### 2. Which JSON Schema validator does the Go contract test use?
 
-- a. **`github.com/santhosh-tekuri/jsonschema/v6`, already an indirect
-  dependency, promoted to a test-path direct require.** *(recommendation)*
-  Draft 2020-12 complete, no new module in `go.sum`, and the same
-  library the MCP SDK's transitive tree already brought.
-- b. `github.com/google/jsonschema-go`, also already indirect through
-  the MCP SDK; a younger library with a smaller API.
+Both candidates are already in the module graph and neither can fall
+out of it: `santhosh-tekuri/jsonschema/v6` arrives through kin-openapi
+(a direct test-path dependency) and `google/jsonschema-go` through the
+MCP SDK (a direct production dependency, and the library that infers
+the MCP server's tool schemas). Either is a promotion to a direct
+require, not a new module.
+
+- a. **`github.com/santhosh-tekuri/jsonschema/v6`.** *(recommendation)*
+  It asserts `format` when asked (`AssertFormat`), so the schemas'
+  `date` and `uri` formats are checked rather than recorded, and a
+  failure's `DetailedOutput` names the instance path and the keyword,
+  which is what a contract test's failure message needs.
+- b. `github.com/google/jsonschema-go`, which would make it the one JSON
+  Schema library in the repository, since the MCP server's schemas
+  already come from it. As of v0.4.3 its documentation says `format` is
+  recorded as an annotation and never asserted, so `date` and `uri`
+  would be checked by nothing on the Go side and the test would carry
+  its own checks for those two.
 - c. kin-openapi's schema validation, already a direct test dependency,
   which speaks OpenAPI's dialect rather than draft 2020-12 and would
   need the schemas written to it.
 - d. Other.
 
 ### 3. Where do the hook drill's write-up and fixtures live?
+
+> **Resolved 2026-10-25: other.** The plugin itself, not only the
+> drill's artefacts, lives in this repository: `plugins/docz-review/`
+> with the write-up under `docs/` and the fixtures under
+> `tests/fixtures/`, and a root `.claude-plugin/marketplace.json` makes
+> the repository a marketplace. A user gets the plugin on day one from
+> here, and a team with a private marketplace copies or references the
+> directory, with the README saying how. claude-skills keeps only the
+> docz plugin's `create` sentence (question 8). Phases 1 and 5, the
+> File Changes, and the Dependencies were rewritten to match, and
+> DESIGN-0024 was amended in the places that said claude-skills.
 
 - a. **In claude-skills under `plugins/docz-review/docs/hook-drill.md`
   and `plugins/docz-review/tests/fixtures/`, with the conclusions copied
@@ -810,6 +859,8 @@ memory brought up to date. `minor`.
 - c. Other.
 
 ### 4. What repository does `e2e-review` run against?
+
+> **Resolved 2026-10-25: (a).**
 
 - a. **A committed fixture repository under `ui/e2e/fixtures/review-repo/`
   with a `.docz.yaml` and one document per shape the page needs (open
@@ -825,6 +876,8 @@ memory brought up to date. `minor`.
 
 ### 5. Which runtime validator does docz-review use?
 
+> **Resolved 2026-10-25: (a).**
+
 - a. **ajv with the 2020-12 dialect, compiled once per open schema at
   startup.** *(recommendation)* The reference implementation for the
   draft, already common in Bun projects, and the compiled validators
@@ -835,18 +888,36 @@ memory brought up to date. `minor`.
   validation at all.
 - d. Other.
 
-### 6. Which browsers does Playwright run the review flow on?
+### 6. How much Playwright does the review flow get?
 
-- a. **Chromium only, as `ui-e2e` runs today; the CSS Custom Highlight
-  API is verified by a vitest check that the page degrades to no
-  painting when `CSS.highlights` is absent.** *(recommendation)* One
-  browser in CI keeps the job's time where it is; the API is in every
-  current browser, and the degradation test covers the rest.
-- b. Chromium and WebKit, adding the Safari engine where the Highlight
-  API shipped last.
-- c. Other.
+What a real browser proves that vitest under jsdom cannot: a
+`Selection` and `Range` over laid-out text (the anchors),
+`CSS.highlights` painting, a CSP that actually blocks, the bearer
+bootstrap through `history.replaceState`, the event stream, the
+before-unload warning, and the compiled binary serving a lazy chunk.
+Those are the places the adversarial review found the risks. The cost
+today: the `ui-e2e` job is path-filtered to `ui/**`, was skipped on
+four of the last eight CI runs, and takes 49 to 60 seconds when it
+runs (one 631-second outlier was a cold browser-install cache). A
+review spec adds under a minute to that job, on `ui/` changes only.
+
+- a. **One spec, chromium only, in the existing path-filtered `ui-e2e`
+  job; everything else under vitest, including a check that the page
+  degrades to no painting when `CSS.highlights` is absent.**
+  *(recommendation)* It runs only when `ui/` changes and covers exactly
+  the behaviours no unit test can.
+- b. The same spec, run only on `v*` tags and `workflow_dispatch`, with
+  vitest carrying every PR. A minute cheaper per `ui/` PR; a regression
+  in selection or highlighting surfaces at release time instead of in
+  the PR that caused it.
+- c. No Playwright for the review flow: vitest plus happy-dom, accepting
+  that the anchors and highlights are tested only against a simulated
+  DOM.
+- d. Other.
 
 ### 7. Where are the four compiled binaries built?
+
+> **Resolved 2026-10-25: (a).**
 
 - a. **In the existing `goreleaser` job on its Ubuntu runner, with
   `bun build --compile --target` for each of the four targets from one
@@ -858,6 +929,8 @@ memory brought up to date. `minor`.
 - c. Other.
 
 ### 8. When does the docz plugin's `create` skill start saying `--format json`?
+
+> **Resolved 2026-10-25: (a).**
 
 - a. **In a small claude-skills PR right after Phase 2 releases, before
   the review plugin exists.** *(recommendation)* The envelope is useful
@@ -871,6 +944,8 @@ memory brought up to date. `minor`.
 
 The design wrote `https://docz.dev/schemas/cli/…` as an illustration;
 the domain is not this project's.
+
+> **Resolved 2026-10-25: (a).**
 
 - a. **`https://github.com/donaldgifford/docz/schemas/cli/<name>/v<n>`,
   a URI under a name this project controls, not expected to resolve.**
