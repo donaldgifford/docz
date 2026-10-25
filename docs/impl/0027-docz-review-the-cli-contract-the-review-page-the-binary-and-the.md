@@ -389,7 +389,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   and the plugin; tests for the stamp, the forged attribute, nested
   lists, raw HTML, and a block inside an alert, a table wrapper, and a
   Mermaid block
-- [ ] `ui/src/review/regions.tsx`: wraps rendered blocks into
+- [x] `ui/src/review/regions.tsx`: wraps rendered blocks into
   `<section data-region data-ordinal>` from `inspect`'s `regions[]`,
   depth-first, deepest region wins; a block crossing a boundary and a
   malformed region leave the content unwrapped; tests
