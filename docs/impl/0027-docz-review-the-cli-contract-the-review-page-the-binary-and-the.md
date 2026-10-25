@@ -826,6 +826,9 @@ MCP SDK (a direct production dependency, and the library that infers
 the MCP server's tool schemas). Either is a promotion to a direct
 require, not a new module.
 
+> **Resolved 2026-10-25: (a).** Equal effort either way; the stable
+> major and the asserted formats decide it.
+
 - a. **`github.com/santhosh-tekuri/jsonschema/v6`.** *(recommendation)*
   It asserts `format` when asked (`AssertFormat`), so the schemas'
   `date` and `uri` formats are checked rather than recorded, and a
