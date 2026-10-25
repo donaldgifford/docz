@@ -322,7 +322,7 @@ docz plugin's skills can use `inspect` before any page exists.
   single-document `validate`; the `repo` bullet gains the two operations;
   a new bullet for `api/cli`; `docs/README.md` or the CLI reference
   gains the commands
-- [ ] `just lint`, `just fmt`, `just test`, `just test-consumer`,
+- [x] `just lint`, `just fmt`, `just test`, `just test-consumer`,
   `just parity`, `just lint-generated`, `just validate`
 
 <!--docz:tasks:end-->
