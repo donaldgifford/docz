@@ -513,6 +513,10 @@ Observation 2: Claude Code's `PostToolUse` input for a `Bash` call, and
 what interrupting a session does to a `Stop` hook that is still
 waiting.
 
+DESIGN-0024 is that design, and IMPL-0027 built it: the CLI contract in
+`api/cli/`, the review page and binary in `ui/`, and the plugin in
+`plugins/docz-review/`.
+
 <!--docz:open-questions:start-->
 ## Open Questions
 

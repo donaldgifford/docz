@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0024
 title: "docz-review: a blocking review page for agent-written documents"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-10-23
 ---

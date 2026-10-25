@@ -1,7 +1,7 @@
 ---
 id: IMPL-0027
 title: "docz-review: the CLI contract, the review page, the binary, and the plugin"
-status: Draft
+status: In Progress
 author: Donald Gifford
 created: 2026-10-25
 ---
@@ -702,7 +702,7 @@ memory brought up to date. `minor`.
   path-filter paragraph gains `api/cli/**` and the `plugin` job
 - [x] `ui/CLAUDE.md` and `ui/README.md` final pass; `api/README.md`
   gains a section on `api/cli/`
-- [ ] DESIGN-0024 status to Implemented; INV-0027's Recommendation gains
+- [x] DESIGN-0024 status to Implemented; INV-0027's Recommendation gains
   a line pointing here; `docz update`
 - [ ] Memory: `project_docz_review_design.md` updated with the release,
   the plugin version, and anything the trial taught
