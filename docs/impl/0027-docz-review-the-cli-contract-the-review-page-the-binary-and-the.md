@@ -631,7 +631,7 @@ installs from a git ref, not a release asset.
   `docz-review` with `source: ./plugins/docz-review`, checked with
   `claude plugin validate` (or a JSON parse of both manifests if the CLI
   has no such command); the marketplace name is `docz`
-- [ ] `plugins/docz-review/README.md`: install (`/plugin marketplace add
+- [x] `plugins/docz-review/README.md`: install (`/plugin marketplace add
   donaldgifford/docz`, `/plugin install docz-review@docz`, and the mise
   block for the binary), what arms a review, the states, walking away,
   `--max-rounds`, the plugin's minimum Claude Code version from Phase 1,
