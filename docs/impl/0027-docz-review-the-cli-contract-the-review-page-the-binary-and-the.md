@@ -262,7 +262,7 @@ docz plugin's skills can use `inspect` before any page exists.
   root, a path under a disabled type, and `InsertRegionsIn` with a
   digest of every file in the fixture tree before and after proving
   only the named file changed; `t.Parallel()` throughout
-- [ ] `cmd/inspect.go`: `docz inspect <id|path> [--format text|json]`;
+- [x] `cmd/inspect.go`: `docz inspect <id|path> [--format text|json]`;
   resolution order type name (refused with exit 2 and a message saying
   `inspect` takes a document), then `repo.Find`, then path; DTOs
   `inspectOutput`, `inspectFrontmatter`, `inspectRegion`,
