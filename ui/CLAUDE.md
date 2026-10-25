@@ -533,6 +533,69 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   <mark>, everything else stays text) — never parse snippet HTML.
   jsdom setup stubs scrollIntoView/ResizeObserver for cmdk.
 
+## docz-review (`src/review/`, DESIGN-0024, IMPL-0027)
+
+The blocking review page for agent-written documents. Its own entry,
+`review.html` → `src/review/main.tsx`, built by `vite build --mode
+review` (`bun run build:review`) into `dist-review/` with a manifest;
+the site's `dist/` and its bundle budget never see it. Recipes:
+`just ui dev-review` (Vite against the fake server, prints the URL with
+its token), `just ui test-review` (vitest over `src/review` and
+`src/cli`), `just ui e2e-review` (the chromium spec alone; `just ui e2e`
+runs it too), `just ui gen-cli` / `gen-cli-check`, and
+`just ui gen-review-fixture`.
+
+- **The CLI contract.** `scripts/gen-cli.ts` turns `../api/cli/*.schema.json`
+  into types plus an OPEN copy of each schema (`additionalProperties`
+  stripped) under the gitignored `src/cli/__generated__/`.
+  `src/cli/validate.ts` validates docz's output with ajv against the open
+  copies (a consumer ignores fields it does not know; the closed schema is
+  the producer's drift detector) and refuses another `schema_version` or a
+  docz older than `SUPPORTED.minDocz`, naming both versions.
+- **The review render mode.** `renderMarkdown(raw, { review: true,
+  regions })` takes the WHOLE document: `preprocess.ts`'s `preserveLines`
+  blanks the frontmatter and ToC instead of cutting them, so the parser's
+  positions are document lines, and `rehype-data-line.ts` stamps
+  `data-line` on block elements AFTER sanitize, so an author's own
+  `data-line` is stripped first and can never become a coordinate. Shiki
+  rebuilds every `<pre>`, so `preLineCarrier` records the stamps before it
+  and writes them back after; `MermaidBlock` carries its stamp to the root.
+  `regions.tsx` then wraps blocks in `<section data-region data-ordinal>`
+  from `docz inspect`'s regions (deepest wins; a crossed or malformed
+  region stays unwrapped).
+- **Anchors** (`anchor.ts`) are quotes of rendered text plus 32 code
+  points of context, the region, its ordinal, the heading, and the line.
+  The resolver parses the current source with the same remark pipeline and
+  searches each block's `mdast-util-to-string` text (raw HTML blocks by
+  their tag-stripped text), using `carryMarkers`' rules: one hit is exact,
+  several are settled by context and heading or are ambiguous, none is
+  lost, and the line hint never breaks a tie.
+- **Painting without DOM.** Annotations are painted through the CSS
+  Custom Highlight API (`::highlight(docz-review)` in tokens.css) and a
+  changed region is marked by a `data-changed` attribute the stylesheet
+  badges; nothing is inserted into the sanitized markdown. Lightning CSS
+  warns that it does not know `::highlight` while minifying; the rule
+  survives, so the warning is noise.
+- **The draft** (`draft.ts`) decides the outcome from the actionable set
+  (an answer, comment, replace, delete, document comment, status change,
+  or finding to fix); Approve is enabled only while it is empty.
+  `feedback.ts` writes the round's message, golden-tested under
+  `src/review/testdata/feedback/` (`bunx vitest -u` regenerates).
+- **The server seam.** `api.ts` takes the token from `?t=` with
+  `history.replaceState` and sends it as a bearer header; there is no
+  cookie, and the event stream is read through fetch because EventSource
+  carries no header. `fake-server.ts` answers the same endpoints for
+  tests, the axe sweep, and `dev-review` (through `scripts/review-fake.ts`,
+  a Vite plugin in `--mode review` with unauthenticated `/__fake/records`,
+  `/__fake/feedback`, and `/__fake/reset` hooks for the e2e spec).
+- **The fixture.** `e2e/fixtures/review-repo/` is a real docz repository
+  and `e2e/fixtures/review-session.json` its captured `inspect` and
+  `validate` output, so nothing on this side needs a docz binary.
+  `cmd/review_fixture_test.go` (Go, in `just test`) fails when the capture
+  drifts from what docz prints; `just build && just ui
+  gen-review-fixture` is the fix. Both are in `.prettierignore`: the
+  capture is docz's formatting, not prettier's.
+
 ## Toolchain notes
 
 - Never commit credential-shaped strings — even fake ones in fixture

@@ -444,7 +444,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   question, accept all, annotate formatted, multiline, Unicode,
   repeated, and cross-block text, submit, and assert the message; a
   forged `data-line` in the fixture never becomes a coordinate
-- [ ] `ui/CLAUDE.md`: a docz-review section (the entry point, the
+- [x] `ui/CLAUDE.md`: a docz-review section (the entry point, the
   review render mode, the generated types, the recipes)
 
 <!--docz:tasks:end-->
