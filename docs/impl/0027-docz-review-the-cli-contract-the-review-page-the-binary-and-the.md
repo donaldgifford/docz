@@ -482,7 +482,7 @@ cut by hand at the end to prove the release path.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/review/state.ts`: the state directory (`DOCZ_REVIEW_STATE_DIR`,
+- [x] `ui/review/state.ts`: the state directory (`DOCZ_REVIEW_STATE_DIR`,
   `$XDG_STATE_HOME`, `$HOME/.local/state`), 0700 directories and 0600
   files, `O_NOFOLLOW` opens, `sha256(root)/<session>/` layout, `lock`
   through `flock` around every read-modify-write, `state.json` replaced

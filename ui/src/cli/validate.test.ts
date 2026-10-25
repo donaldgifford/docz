@@ -102,6 +102,18 @@ describe("parse functions", () => {
       checkSchemaVersion(1, "v2.3.0-beta.1");
     }).not.toThrow();
   });
+
+  it("accepts a build from a checkout past an older tag", () => {
+    expect(() => {
+      checkSchemaVersion(1, "v2.1.3-50-g6115270");
+    }).not.toThrow();
+    expect(() => {
+      checkSchemaVersion(1, "v2.1.3-50-g6115270-dirty");
+    }).not.toThrow();
+    expect(() => {
+      checkSchemaVersion(2, "v2.1.3-50-g6115270");
+    }).toThrow(/schema_version 2/);
+  });
 });
 
 describe("compareVersions", () => {
