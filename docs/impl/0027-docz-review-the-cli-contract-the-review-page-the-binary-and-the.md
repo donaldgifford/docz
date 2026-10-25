@@ -304,7 +304,7 @@ docz plugin's skills can use `inspect` before any page exists.
   sibling byte changed, type-name-first resolution, `content_sha256`
   equal to the file's digest, and before-and-after JSON goldens pinning
   the `schema_version` addition
-- [ ] `cmd/create_test.go` gains `--format json`: stdout parses as one
+- [x] `cmd/create_test.go` gains `--format json`: stdout parses as one
   object carrying `update` and `nav`, the note is on stderr, and
   `--format json` with a failed creation prints no JSON
 - [ ] `cmd/cli_contract_test.go`: every governed command run through a
