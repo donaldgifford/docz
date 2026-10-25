@@ -299,7 +299,7 @@ docz plugin's skills can use `inspect` before any page exists.
   reports `inferred: true` and `start: 0` for a heading on line 1; a
   document with no frontmatter reports `frontmatter: null` and its
   regions
-- [ ] `cmd/validate_test.go` gains: findings on one document, a clean
+- [x] `cmd/validate_test.go` gains: findings on one document, a clean
   document, `--fix` on one document with a tree-digest check that no
   sibling byte changed, type-name-first resolution, `content_sha256`
   equal to the file's digest, and before-and-after JSON goldens pinning

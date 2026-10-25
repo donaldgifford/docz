@@ -1,0 +1,18 @@
+{
+  "docs": [
+    {
+      "type": "adr",
+      "path": "docs/adr/0001-a-decision.md",
+      "schema": "adr"
+    }
+  ],
+  "templates": [
+    {
+      "type": "adr",
+      "path": "",
+      "schema": "adr"
+    }
+  ],
+  "errors": 0,
+  "warnings": 0
+}

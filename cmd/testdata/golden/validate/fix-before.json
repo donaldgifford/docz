@@ -1,0 +1,40 @@
+{
+  "fixed": {
+    "Changed": [
+      {
+        "Path": "docs/adr/0001-a-decision.md",
+        "Inserted": [
+          "summary",
+          "context",
+          "decision",
+          "consequences",
+          "positive",
+          "negative",
+          "neutral",
+          "alternatives",
+          "references"
+        ],
+        "Fixed": 0
+      }
+    ],
+    "Unchanged": null
+  },
+  "report": {
+    "docs": [
+      {
+        "type": "adr",
+        "path": "docs/adr/0001-a-decision.md",
+        "schema": "adr"
+      }
+    ],
+    "templates": [
+      {
+        "type": "adr",
+        "path": "",
+        "schema": "adr"
+      }
+    ],
+    "errors": 0,
+    "warnings": 0
+  }
+}
