@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0024
 title: "docz-review: a blocking review page for agent-written documents"
-status: Draft
+status: Approved
 author: Donald Gifford
 created: 2026-10-23
 ---
@@ -50,6 +50,7 @@ created: 2026-10-23
   - [10. Where does docz-review keep its state?](#10-where-does-docz-review-keep-its-state)
   - [11. Where is docz-review configured?](#11-where-is-docz-review-configured)
   - [12. Does the arming hook use Claude Code's if pre-filter?](#12-does-the-arming-hook-use-claude-codes-if-pre-filter)
+- [Decisions](#decisions)
 - [References](#references)
 <!-- markdownlint-restore -->
 <!--toc:end-->
@@ -1948,6 +1949,8 @@ as a ceiling, not an expected wait.
   ten-minute review as the norm with everything else dismissed.
 - d. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 2. What should `docz-review` do when the session is interrupted mid-review?
 
 The documentation does not say whether a running `Stop` hook is killed,
@@ -1968,6 +1971,8 @@ nothing about the session (review R1).
   chose blocking.
 - c. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 3. How are the TypeScript types produced from the schemas?
 
 - a. **`json-schema-to-typescript` in a `gen-cli` script, output
@@ -1981,6 +1986,8 @@ nothing about the session (review R1).
   schema validator). No generator, but two things to edit per change.
 - c. Commit the generated types and check them in CI.
 - d. Other.
+
+> **Resolved 2026-10-25: (a).**
 
 ### 4. Is there a limit on review rounds?
 
@@ -2002,6 +2009,8 @@ independent of it.
   conversation should move to chat.
 - d. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 5. How is `docz list --format json` governed?
 
 It is a bare array frozen by the parity suite, so a `schema_version`
@@ -2018,6 +2027,8 @@ field has nowhere to go.
 - c. Leave `list` out of the contract entirely.
 - d. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 6. Does `docz inspect` carry the document's content?
 
 - a. **Yes, as `content`, with `content_sha256` beside it: the bytes the
@@ -2030,6 +2041,8 @@ field has nowhere to go.
   `content_sha256` the caller compares to detect a race.
 - c. Behind a `--content` flag, off by default.
 - d. Other.
+
+> **Resolved 2026-10-25: (a).**
 
 ### 7. How are the page's assets bundled into the binary?
 
@@ -2047,6 +2060,8 @@ field has nowhere to go.
   inside it. Simpler build, but no longer a single file for mise.
 - d. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 8. What renders selections and existing annotations in the page?
 
 - a. **A small in-house module: `window.getSelection()` to a `Range`,
@@ -2060,6 +2075,8 @@ field has nowhere to go.
   selections in `<span>` elements. Proven, but it mutates the rendered
   markdown and adds a dependency.
 - c. Other.
+
+> **Resolved 2026-10-25: (a).**
 
 ### 9. How is the diff since the previous round computed and shown?
 
@@ -2076,6 +2093,8 @@ field has nowhere to go.
   first release.
 - d. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 10. Where does `docz-review` keep its state?
 
 - a. **`$XDG_STATE_HOME/docz/review/<sha256(root)>/<session_id>/`,
@@ -2089,6 +2108,8 @@ field has nowhere to go.
   repository and two sessions in one checkout share a file.
 - c. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 ### 11. Where is `docz-review` configured?
 
 Browser, port, timeout, grace period, round limit, and the `docz`
@@ -2101,6 +2122,8 @@ binary.
   and variables over it. It would also be the first config block the
   Go side reads for nothing.
 - c. Other.
+
+> **Resolved 2026-10-25: (a).**
 
 ### 12. Does the arming hook use Claude Code's `if` pre-filter?
 
@@ -2117,7 +2140,32 @@ permission-rule syntax, matched per subcommand.
   fewer version dependency.
 - c. Other.
 
+> **Resolved 2026-10-25: (a).**
+
 <!--docz:open-questions:end-->
+
+<!--docz:decisions:start-->
+## Decisions
+
+Resolved 2026-10-25, every question at its recommendation, numbered as
+the questions above:
+
+| # | Question | Decision |
+| - | -------- | -------- |
+| 1 | `Stop` hook timeout | (a) 86400 in the plugin, a server deadline of the hook timeout minus sixty seconds, both verified in Phase 0 |
+| 2 | Interruption | (a) State persisted before the page opens; signals are dismiss; a browser disconnect is a lease with a grace period; Phase 0 observes the host |
+| 3 | TypeScript types | (a) `json-schema-to-typescript` into a gitignored `__generated__`, `gen-cli-check` as the gate, ajv at runtime over the open variant |
+| 4 | Round limit | (a) `--max-rounds`, default 10, marks the document `dismissed`; independent of any host cap |
+| 5 | `docz list` JSON | (a) `list.schema.json` without a version field, the one stated exception; output unchanged |
+| 6 | `content` in `inspect` | (a) Yes, with `content_sha256` beside it |
+| 7 | Asset bundling | (a) Vite builds `review.html` into `dist-review/`; a manifest-generated import module embeds every asset under `bun build --compile` |
+| 8 | Selections | (a) An in-house module over `getSelection()`, `data-line`, and the CSS Custom Highlight API |
+| 9 | The diff | (a) Whole-source line diff as the baseline, region badges as the overlay, word-level toggle later |
+| 10 | State | (a) `$XDG_STATE_HOME/docz/review/<sha256(root)>/<session_id>/` with a lock and a lease |
+| 11 | Configuration | (a) Flags and `DOCZ_REVIEW_*` variables; no `.docz.yaml` block |
+| 12 | `if` pre-filter | (a) `Bash(docz *)` and `Bash(docz-review *)` on the `PostToolUse` entries, dropped only if Phase 0 shows the minimum version ignores it |
+
+<!--docz:decisions:end-->
 
 <!--docz:references:start-->
 ## References
