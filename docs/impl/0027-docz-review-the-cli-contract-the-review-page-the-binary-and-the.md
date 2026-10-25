@@ -378,7 +378,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   fixture with an extra unknown field accepted; a missing required field
   refused; an oversized input refused; a wrong `schema_version` refused
   with both versions in the message
-- [ ] `ui/src/markdown/preprocess.ts`: a `preserveLines` option that
+- [x] `ui/src/markdown/preprocess.ts`: a `preserveLines` option that
   blanks the frontmatter and ToC lines instead of cutting them, with a
   test that every block's `position.start.line` equals its document line
   over the fixture documents
