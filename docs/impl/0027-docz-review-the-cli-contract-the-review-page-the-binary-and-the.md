@@ -407,7 +407,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   a link, a soft-wrapped paragraph, an entity, a code span, Unicode text
   with combining marks and an emoji, a moved region found by heading,
   and a multi-block selection
-- [ ] `ui/src/review/questions.tsx`: the cards, unanswered by default,
+- [x] `ui/src/review/questions.tsx`: the cards, unanswered by default,
   the recommended option badged, "accept all recommendations", "Other"
   text, note, read-only when `resolved`; tests
 - [ ] `ui/src/review/annotations.tsx`: the selection popover (comment,
