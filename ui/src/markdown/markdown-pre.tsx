@@ -22,11 +22,18 @@ export function MarkdownPre({
   "data-language"?: string;
   "data-mermaid-source"?: string;
   "data-mermaid-caption"?: string;
+  "data-line"?: string;
 }) {
   // Marked by rehypeMermaidMarker (post-sanitize — only real fences
   // carry this); the block owns its own semantics and fallback.
   if (typeof mermaidSource === "string" && mermaidSource.length > 0) {
-    return <MermaidBlock source={mermaidSource} caption={mermaidCaption} />;
+    return (
+      <MermaidBlock
+        source={mermaidSource}
+        caption={mermaidCaption}
+        line={rest["data-line"]}
+      />
+    );
   }
   /* eslint-disable jsx-a11y/no-noninteractive-tabindex --
      tabIndex on a named region is the WAI pattern for scrollable code

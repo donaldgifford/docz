@@ -382,7 +382,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   blanks the frontmatter and ToC lines instead of cutting them, with a
   test that every block's `position.start.line` equals its document line
   over the fixture documents
-- [ ] `ui/src/markdown/rehype-data-line.ts`: a rehype plugin that runs
+- [x] `ui/src/markdown/rehype-data-line.ts`: a rehype plugin that runs
   **after** sanitize and stamps `data-line` on block elements from
   `position`; `schema.ts` unchanged, so an author-supplied `data-line` is
   stripped first; `processor.ts` gains a `review` mode wiring preprocess

@@ -189,9 +189,12 @@ interface RenderState {
 export function MermaidBlock({
   source,
   caption,
+  line,
 }: {
   source: string;
   caption?: string;
+  /** The review render's `data-line` stamp, carried to the root. */
+  line?: string;
 }) {
   const [state, setState] = useState<RenderState>(() => ({
     source,
@@ -252,6 +255,7 @@ export function MermaidBlock({
         aria-label="mermaid diagram source"
         tabIndex={0}
         data-mermaid-fallback={state.failed ? "failed" : "loading"}
+        data-line={line}
       >
         <code>{source}</code>
       </pre>
@@ -261,7 +265,7 @@ export function MermaidBlock({
 
   const firstLine = source.split("\n")[0]?.trim() ?? "";
   return (
-    <figure className="mermaid-figure">
+    <figure className="mermaid-figure" data-line={line}>
       <div
         ref={hostRef}
         role="img"
