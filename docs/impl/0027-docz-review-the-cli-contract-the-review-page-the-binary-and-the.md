@@ -393,7 +393,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   `<section data-region data-ordinal>` from `inspect`'s `regions[]`,
   depth-first, deepest region wins; a block crossing a boundary and a
   malformed region leave the content unwrapped; tests
-- [ ] `ui/src/review/anchor.ts`: `anchorFromRange(range, blocks)` builds
+- [x] `ui/src/review/anchor.ts`: `anchorFromRange(range, blocks)` builds
   the anchor from a DOM `Range` (region, ordinal, heading, `exact`,
   `prefix`, `suffix` within the block in code points, `line`,
   `selection`), refusing nothing but flagging `multiBlock`;
