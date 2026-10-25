@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Documentation
+
+- *(design)* DESIGN-0024, docz-review and the CLI's JSON contract
+- *(design)* DESIGN-0024 adversarial review, responses, and the revised body
+- *(design)* DESIGN-0024 resolved at (a) throughout, Approved
+- *(impl)* IMPL-0027 docz-review, six phases from DESIGN-0024
+- IMPL-0027 questions 1, 3 to 5, 7 to 9 resolved; the plugin lives in this repository
+- *(impl)* IMPL-0027 question 6 resolved (a); private-marketplace test in Phase 5
+- *(impl)* IMPL-0027 question 2 resolved (a); every question answered
+
 ## [2.1.3] - 2026-10-23
 
 ### Miscellaneous Tasks

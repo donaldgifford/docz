@@ -59,5 +59,6 @@ docz create impl "Your Implementation Title"
 | IMPL-0024 | Confluence export from docz-api: folders, comments, and the server job (DESIGN-0021) | Completed | 2026-10-07 | Donald Gifford | [0024-confluence-export-from-docz-api-folders-comments-and-the-server.md](0024-confluence-export-from-docz-api-folders-comments-and-the-server.md) |
 | IMPL-0025 | Pre-cut markdown and lint fixes | Completed | 2026-10-12 | Donald Gifford | [0025-pre-cut-markdown-and-lint-fixes.md](0025-pre-cut-markdown-and-lint-fixes.md) |
 | IMPL-0026 | A read-only MCP server in docz-api: tokens, scoped access, and the six tools | Completed | 2026-10-17 | Donald Gifford | [0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md](0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md) |
+| IMPL-0027 | docz-review: the CLI contract, the review page, the binary, and the plugin | Draft | 2026-10-25 | Donald Gifford | [0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md](0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
