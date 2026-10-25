@@ -374,7 +374,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   value or throw a `ContractError{schema, errors}`; `checkSchemaVersion`
   compares `schema_version` and `docz_version` against the supported
   pair and throws naming both versions
-- [ ] `ui/src/cli/validate.test.ts`: each committed fixture accepted; a
+- [x] `ui/src/cli/validate.test.ts`: each committed fixture accepted; a
   fixture with an extra unknown field accepted; a missing required field
   refused; an oversized input refused; a wrong `schema_version` refused
   with both versions in the message
