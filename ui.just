@@ -110,6 +110,10 @@ serve-bundle: build-server
 e2e:
     bun run e2e
 
+# Playwright over docz-review's page alone (chromium, the fake server)
+e2e-review:
+    bunx playwright test e2e/review.spec.ts
+
 # Serve the production build locally
 preview:
     bun run preview

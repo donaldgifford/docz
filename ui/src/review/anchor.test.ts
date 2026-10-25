@@ -83,6 +83,11 @@ describe("resolveAnchor over rendered text", () => {
     ["a code span", "Run `docz inspect` now.", "Run docz inspect now"],
     ["combining marks", "Café au lait", "Café au"],
     ["an emoji", "Ship it 🚀 today", "it 🚀 to"],
+    [
+      "raw HTML",
+      '<p data-line="9">Forged &amp; flagged.</p>',
+      "Forged & flagged",
+    ],
   ])("finds a quote across %s", (_name, source, exact) => {
     expect(resolveAnchor(anchor(exact), source)).toMatchObject({
       resolution: "exact",

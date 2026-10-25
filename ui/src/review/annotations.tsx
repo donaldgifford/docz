@@ -105,6 +105,22 @@ export function useSelectionAnchor(
 
 const newId = () => crypto.randomUUID();
 
+/** Room the popover needs, so it is kept on screen. */
+const POPOVER = { width: 320, height: 240, margin: 8 };
+
+/** Below the selection, kept inside the viewport. */
+export function popoverPosition(rect: PendingSelection["rect"]): {
+  top: number;
+  left: number;
+} {
+  const maxTop = window.innerHeight - POPOVER.height - POPOVER.margin;
+  const maxLeft = window.innerWidth - POPOVER.width - POPOVER.margin;
+  return {
+    top: Math.max(POPOVER.margin, Math.min(rect.bottom + 6, maxTop)),
+    left: Math.max(POPOVER.margin, Math.min(rect.left, maxLeft)),
+  };
+}
+
 export function SelectionPopover({
   pending,
   onAdd,
@@ -126,7 +142,7 @@ export function SelectionPopover({
       data-review-popover
       role="dialog"
       aria-label="Annotate selection"
-      style={{ top: pending.rect.bottom + 6, left: pending.rect.left }}
+      style={popoverPosition(pending.rect)}
       className="fixed z-50 w-[320px] border border-border-strong bg-bg-elevated p-2 shadow-lg"
     >
       <p className="mb-2 line-clamp-2 font-mono text-[12px] text-fg-tertiary">

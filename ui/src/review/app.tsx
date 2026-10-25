@@ -137,7 +137,7 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
 
   const allDone = documents.every((d) => d.state !== "open");
   return (
-    <div className="mx-auto max-w-[1280px] p-6">
+    <main className="mx-auto max-w-[1280px] p-6">
       <nav
         aria-label="Documents"
         className="mb-6 flex flex-wrap items-center gap-2"
@@ -195,6 +195,6 @@ export function ReviewApp({ client }: { client: ReviewClient }) {
           }}
         />
       )}
-    </div>
+    </main>
   );
 }

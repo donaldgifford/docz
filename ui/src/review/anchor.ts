@@ -205,7 +205,40 @@ interface SourceBlock {
   heading: string;
 }
 
-const BLOCK_TYPES = new Set(["paragraph", "heading", "code", "tableRow"]);
+const BLOCK_TYPES = new Set([
+  "paragraph",
+  "heading",
+  "code",
+  "tableRow",
+  "html",
+]);
+
+const ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: "\u00a0",
+};
+
+// The text a raw HTML block shows once sanitized and rendered: its tags
+// and comments dropped and the common entities decoded. A marker line is
+// a comment, so it yields nothing.
+function htmlText(value: string): string {
+  return value
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
+      if (name.startsWith("#x") || name.startsWith("#X")) {
+        return String.fromCodePoint(parseInt(name.slice(2), 16));
+      }
+      if (name.startsWith("#")) {
+        return String.fromCodePoint(parseInt(name.slice(1), 10));
+      }
+      return ENTITIES[name.toLowerCase()] ?? whole;
+    });
+}
 
 const parser = unified()
   .use(remarkParse)
@@ -225,7 +258,8 @@ export function sourceBlocks(source: string): SourceBlock[] {
     if (line === undefined || !BLOCK_TYPES.has(node.type)) {
       return;
     }
-    const text = mdastToString(node);
+    const text =
+      node.type === "html" ? htmlText(node.value) : mdastToString(node);
     if (node.type === "heading") {
       heading = text;
     }

@@ -440,7 +440,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   unmarked document, and a document with no frontmatter;
   `ui.just` gains `dev-review` (Vite against the fake server over the
   fixture) and `test-review` (vitest over `src/review` and `src/cli`)
-- [ ] `ui/e2e/review.spec.ts` against the fake server: open, answer a
+- [x] `ui/e2e/review.spec.ts` against the fake server: open, answer a
   question, accept all, annotate formatted, multiline, Unicode,
   repeated, and cross-block text, submit, and assert the message; a
   forged `data-line` in the fixture never becomes a coordinate
