@@ -595,6 +595,26 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   drifts from what docz prints; `just build && just ui
   gen-review-fixture` is the fix. Both are in `.prettierignore`: the
   capture is docz's formatting, not prettier's.
+- **The local server** lives in `review/` (Bun, outside the vitest
+  graph; `bun test ./review/`, the `./` matters because `review/` also
+  matches `src/review`). `state.ts` is the only writer of
+  `<state>/<sha256(root)>/<session>/` (0700/0600, `O_NOFOLLOW` reads,
+  atomic writes, `flock` through `bun:ffi` around every read-modify-write,
+  synchronous sections only); `lease.ts` keeps one server per session;
+  `docz.ts` runs docz with `execFile`, `cwd` the root, and an argument
+  list; `round.ts` checks a submission in the design's order and writes
+  the record before the state moves; `server.ts` is the 421/401/403/415/
+  413 wall and every response's headers; `main.ts` is the CLI, with the
+  hook's `{"decision":"block"}` printed once and last. Every run ending
+  but `settled` dismisses what is still open.
+- **The binary.** `just ui build-review` builds the page, generates
+  `review/__generated__/assets.ts` from the Vite manifest
+  (`scripts/embed-manifest.ts`, a `with { type: "file" }` import per
+  asset), compiles `review/compiled.ts` for four targets into
+  `dist-review-bin/`, and runs `review/smoke.ts` over the host binary
+  from an empty directory. Both outputs are gitignored, and
+  `compiled.ts` is outside tsc and eslint because its import exists only
+  after a build.
 
 ## Toolchain notes
 

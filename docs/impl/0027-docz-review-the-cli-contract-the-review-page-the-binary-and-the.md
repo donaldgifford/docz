@@ -141,6 +141,12 @@ observation is written down with the Claude Code version it was made on.
 <!--docz:tasks:start-->
 #### Tasks
 
+> `deferred - human required` (2026-10-25): every task in this phase is
+> a person driving Claude Code by hand. Until the drill runs, the arming
+> parser reads hand-written fixtures in the documented shape
+> (`ui/review/testdata/hook/`), and the server's deadline assumes the
+> 86400-second ceiling open question 1 recorded.
+
 - [ ] A throwaway plugin `docz-review-drill` outside the tree with
   a `PostToolUse` hook on `Bash` that appends its full stdin to
   `$CLAUDE_PLUGIN_DATA/posttooluse.jsonl`, and a `Stop` hook script that
@@ -565,7 +571,8 @@ cut by hand at the end to prove the release path.
   recorded, and a release-notes line stating the Bun runtime gap
 - [ ] A hand-cut `v*-beta.1` from the merge commit, as the v2 betas
   were; download the four binaries and both checksum files, verify both
-  signatures, and run one binary from `/tmp`
+  signatures, and run one binary from `/tmp` (`deferred - human
+  required`: a tag push and a download by a person)
 
 <!--docz:tasks:end-->
 
