@@ -491,7 +491,7 @@ cut by hand at the end to prove the release path.
   Model, round counters kept across re-arming, expiry after 30 days, and
   `purge`; tests with two concurrent writers and a crash between record
   and state reconciled by submission id
-- [ ] `ui/review/lease.ts`: `lease.json` with pid and expiry, refuse while
+- [x] `ui/review/lease.ts`: `lease.json` with pid and expiry, refuse while
   live, take over when expired, renewed by the event stream; tests
 - [ ] `ui/review/docz.ts`: spawn `docz` (`DOCZ_REVIEW_DOCZ`, else `PATH`)
   with `execFile` and an argument list, `--repo-root` and `--config` from
