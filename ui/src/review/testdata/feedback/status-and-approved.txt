@@ -1,0 +1,10 @@
+docz review: IMPL-0003 A plan, round 1: changes requested
+
+Open questions:
+- Q1 (no answer; leave open)
+
+Status: set to In Progress
+
+Apply the changes above, then finish your turn so the next round can open.
+
+docz review: ADR-0006 An approved record, round 1: approved

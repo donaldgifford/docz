@@ -425,7 +425,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
   (question answer, comment, replace, delete, document comment, status
   change, finding fix), `outcomeOf(draft)`, and the rule that Approve is
   enabled only with no actionable item; tests
-- [ ] `ui/src/review/feedback.ts`: the text message from a record
+- [x] `ui/src/review/feedback.ts`: the text message from a record
   (design section 8), golden-tested, with "no action" lines and the
   closing instruction naming only the answered questions
 - [ ] `ui/src/review/api.ts`: the typed client for the server's endpoints
