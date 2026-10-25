@@ -255,7 +255,7 @@ docz plugin's skills can use `inspect` before any page exists.
   []string) (InsertRegionsReport, error)` over the named files only,
   sharing the per-file body with `InsertRegions`; the report shape is
   unchanged
-- [ ] `repo` tests: `ValidateDocument` on a document with a broken
+- [x] `repo` tests: `ValidateDocument` on a document with a broken
   sibling present (the sibling never appears in the report),
   `ValidateDocument` on a file with no frontmatter (reports
   `frontmatter.missing`, returns the content), a symlink escaping the
