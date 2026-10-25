@@ -644,16 +644,20 @@ installs from a git ref, not a release asset.
 - [ ] Follow the README's "From your own marketplace" section verbatim
   against a private marketplace of our own, both the reference path and
   the copy path: the plugin installs and the hooks fire; fix the
-  instructions before the PR merges
+  instructions before the PR merges (`deferred - human required`: two
+  `/plugin` installs in a person's Claude Code against a private
+  marketplace)
 - [x] `plugins/docz-review/tests/`: the hook tests over the Phase 1
   fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
   including the missing-binary path
 - [ ] claude-skills, the docz plugin's `create` skill: one sentence
   telling the agent to pass `--format json` to `docz create` (open
-  question 8); the only change there
+  question 8); the only change there (`deferred - human required`: a
+  change and pull request in another repository)
 - [ ] A trial on this repository: create a document in a session with
   the plugin, revise through two rounds, approve; record the transcript's
   shape (not its content) in the plugin README's "what to expect"
+  (`deferred - human required`: a person reviewing in the browser)
 
 <!--docz:tasks:end-->
 
