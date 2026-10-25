@@ -10,6 +10,7 @@
  * "docz found nothing" and "docz did not run" must not look alike.
  */
 import { execFile } from "node:child_process";
+import { resolve } from "node:path";
 
 import {
   checkSchemaVersion,
@@ -47,14 +48,18 @@ export interface RunResult {
   stderr: string;
 }
 
-/** The docz binary: DOCZ_REVIEW_DOCZ, else `docz` on PATH, else null. */
+/**
+ * The docz binary: DOCZ_REVIEW_DOCZ made absolute, else `docz` on PATH,
+ * else null.
+ */
 export function resolveDocz(
   env: Record<string, string | undefined>,
   which: (cmd: string) => string | null = (cmd) =>
     Bun.which(cmd, { PATH: env.PATH ?? "" }),
 ): string | null {
   const set = env.DOCZ_REVIEW_DOCZ;
-  return set !== undefined && set !== "" ? set : which("docz");
+  // Absolute, since docz runs from each document's root, not from here.
+  return set !== undefined && set !== "" ? resolve(set) : which("docz");
 }
 
 /** One document's facts for a round, from bytes both commands agreed on. */

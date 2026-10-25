@@ -71,6 +71,27 @@ describe("Review.open", () => {
     expect(res.limited.map((e) => e.state)).toEqual(["dismissed"]);
   });
 
+  test("re-arming lifts the round limit and keeps counting rounds", async () => {
+    const fx = reviewFixture([A]);
+    const key = fx.entries[0]?.key ?? "";
+    fx.session.apply(key, "open");
+    fx.session.apply(key, "changes");
+    const entry = fx.entries[0];
+    if (entry === undefined) {
+      throw new Error("no entry");
+    }
+    fx.session.arm(entry);
+    const res = await Review.open(fx.session.read().entries, {
+      session: fx.session,
+      docz: fx.docz,
+      reviewId: "r",
+      deadline: new Date(),
+      maxRounds: 1,
+    });
+    expect(res.limited).toEqual([]);
+    expect(res.review.view().documents[0]?.round_number).toBe(2);
+  });
+
   test("a document docz cannot read is reported and left as it was", async () => {
     const fx = reviewFixture([A]);
     fx.fake.set({});

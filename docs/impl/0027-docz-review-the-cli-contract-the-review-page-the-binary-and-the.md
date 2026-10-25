@@ -522,7 +522,7 @@ cut by hand at the end to prove the release path.
   letters, status, finding identities; 400), submission ids (a replay
   acknowledged once; a closed round refused), record written and
   fsynced before the response
-- [ ] `ui/review/main.ts`: the CLI (`<id|path>…`, `--pending --hook`,
+- [x] `ui/review/main.ts`: the CLI (`<id|path>…`, `--pending --hook`,
   `--resume`, `arm`, `pending [--purge]`, `--version`, `--hook`,
   `--json`, `--repo-root`, `--config`, `--no-open`, `--timeout`,
   `--grace`, `--max-rounds`, `--port`); the deadline defaulting to the

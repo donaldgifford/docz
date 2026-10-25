@@ -62,7 +62,10 @@ export interface OpenOptions {
   /** The record's review_id: the session id, or a review by hand's id. */
   reviewId: string;
   deadline: Date;
-  /** A document past this many rounds is dismissed instead of opened. */
+  /**
+   * A document that has had this many rounds since it was last armed is
+   * dismissed instead of opened.
+   */
   maxRounds: number;
   now?: () => Date;
 }
@@ -107,7 +110,10 @@ export class Review {
     const limited: Entry[] = [];
     const failed: Opened["failed"] = [];
     for (const entry of entries) {
-      if (entry.state !== "open" && entry.round >= opts.maxRounds) {
+      if (
+        entry.state !== "open" &&
+        entry.round - entry.armed_round >= opts.maxRounds
+      ) {
         limited.push(opts.session.apply(entry.key, "dismissed"));
         continue;
       }

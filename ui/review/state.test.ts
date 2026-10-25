@@ -99,7 +99,7 @@ describe("Session", () => {
     expect(s.apply(e.key, "open").round).toBe(2);
     s.apply(e.key, "approved");
     const again = s.arm(doc());
-    expect(again).toMatchObject({ state: "pending", round: 2 });
+    expect(again).toMatchObject({ state: "pending", round: 2, armed_round: 2 });
     expect(s.apply(e.key, "open").round).toBe(3);
   });
 

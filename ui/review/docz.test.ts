@@ -26,6 +26,9 @@ describe("resolveDocz", () => {
       "/x/docz",
     );
     expect(resolveDocz({}, () => "/p/docz")).toBe("/p/docz");
+    expect(resolveDocz({ DOCZ_REVIEW_DOCZ: "bin/docz" })).toBe(
+      `${process.cwd()}/bin/docz`,
+    );
     expect(resolveDocz({}, () => null)).toBeNull();
   });
 });

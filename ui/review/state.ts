@@ -57,6 +57,12 @@ export interface Entry {
   state: DocState;
   /** The last round opened; 0 before the first. */
   round: number;
+  /**
+   * `round` when the document was last armed. The round limit counts
+   * from here, so re-arming lifts it while the counter, and with it the
+   * diff against the previous round, carries on.
+   */
+  armed_round: number;
   /** content_sha256 at the last round's open. */
   digest: string;
   /** The submission recorded for the current round, if any. */
@@ -75,6 +81,12 @@ export type Candidate = Pick<
   Entry,
   "id" | "type" | "path" | "root" | "config" | "docs_dir"
 >;
+
+/** Only a candidate's own fields, whatever object carried them. */
+function candidateOf(c: Candidate): Candidate {
+  const { id, type, path, root, config, docs_dir } = c;
+  return { id, type, path, root, config, docs_dir };
+}
 
 /** Entries and session directories are kept this long after a write. */
 export const EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -316,7 +328,13 @@ export class Session {
         `${this.dir}/state.json is not a version 1 state file`,
       );
     }
-    return { version: 1, entries: parsed.entries };
+    // armed_round arrived after version 1's first entries; 0 is what
+    // an entry written without it means.
+    const entries = parsed.entries.map((e) => ({
+      ...e,
+      armed_round: (e as Partial<Entry>).armed_round ?? 0,
+    }));
+    return { version: 1, entries };
   }
 
   /**
@@ -348,10 +366,11 @@ export class Session {
       const found = s.entries.find((e) => e.key === key);
       if (found === undefined) {
         const armed: Entry = {
-          ...c,
+          ...candidateOf(c),
           key,
           state: "pending",
           round: 0,
+          armed_round: 0,
           digest: "",
           submission_id: "",
           armed_at: at,
@@ -360,8 +379,9 @@ export class Session {
         s.entries.push(armed);
         return armed;
       }
-      return Object.assign(found, c, {
+      return Object.assign(found, candidateOf(c), {
         state: nextState(found.state, "arm"),
+        armed_round: found.round,
         armed_at: at,
         updated_at: at,
       });
