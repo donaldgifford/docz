@@ -539,7 +539,7 @@ cut by hand at the end to prove the release path.
   calls racing, the crash reconciliation, each signal and the deadline
   as dismiss, the lease refusing a second server, and the hook output
   printed once and last
-- [ ] `ui/src/cli/review.test.ts`: the review record validated against
+- [x] `ui/src/cli/review.test.ts`: the review record validated against
   `review.schema.json` over committed fixtures (the record's contract
   test)
 - [ ] `ui/scripts/embed-manifest.ts`: generates

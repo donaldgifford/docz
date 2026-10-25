@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
+import { Ajv2020 } from "ajv/dist/2020";
+
+import reviewSchema from "../../api/cli/review.schema.json";
+
 import { parseReview } from "@/cli/validate";
 import { INSPECT } from "@/review/testing";
 
@@ -7,6 +11,10 @@ import { Review } from "./round";
 import { doczConfig, docAs, reviewFixture } from "./testdata/review-fixture";
 
 const A = docAs(INSPECT.id, INSPECT.path);
+
+const ajv = new Ajv2020({ allErrors: true, validateFormats: false });
+ajv.addKeyword("$version");
+const closedReview = ajv.compile(reviewSchema);
 
 async function opened(docs = [A], maxRounds = 5) {
   const fx = reviewFixture(docs);
@@ -131,6 +139,8 @@ describe("Review.record", () => {
       state: "changes",
       submission_id: "s_1",
     });
+    // The producer writes what the closed schema allows, nothing more.
+    expect(closedReview(rec), JSON.stringify(closedReview.errors)).toBe(true);
     expect(review.settled()).toBe(true);
   });
 

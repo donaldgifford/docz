@@ -100,6 +100,19 @@ function parse(name: SchemaName, raw: string): unknown {
     throw new ContractError(name, `not JSON: ${(err as Error).message}`);
   }
 
+  // A different major version is named as one before the schema's const
+  // could reject it as a shape error, so the message says which docz and
+  // which docz-review disagree.
+  if (typeof value === "object" && value !== null) {
+    const { schema_version: v, docz_version: d } = value as Record<
+      string,
+      unknown
+    >;
+    if (typeof v === "number" && v !== SUPPORTED.schemaVersion) {
+      checkSchemaVersion(v, typeof d === "string" ? d : undefined);
+    }
+  }
+
   const fn = validator(name);
   if (!fn(value)) {
     const errors = fn.errors ?? [];

@@ -78,9 +78,9 @@ describe("parse functions", () => {
     >;
     value.schema_version = 2;
     value.docz_version = "3.0.0";
-    // The const in the schema rejects 2 before the version check, so the
-    // version check is exercised directly as well.
-    expect(() => parseInspect(JSON.stringify(value))).toThrow(ContractError);
+    expect(() => parseInspect(JSON.stringify(value))).toThrow(
+      /schema_version 2 \(docz 3\.0\.0\).*schema_version 1 from docz 2\.2\.0/,
+    );
     expect(() => {
       checkSchemaVersion(2, "3.0.0");
     }).toThrow(VersionError);
