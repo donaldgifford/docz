@@ -14,6 +14,7 @@ node_modules/
 dist/
 dist-msw/
 dist-server/
+dist-review/
 coverage/
 
 # Playwright output

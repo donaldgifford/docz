@@ -431,7 +431,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
 - [x] `ui/src/review/api.ts`: the typed client for the server's endpoints
   with the bearer header from memory and `history.replaceState` on
   load; `ui/src/review/fake-server.ts` for tests and `dev-review`
-- [ ] `ui/review.html` and `ui/src/review/main.tsx`: the entry, the
+- [x] `ui/review.html` and `ui/src/review/main.tsx`: the entry, the
   document switcher, per-document Submit, Approve, Dismiss, Done, the
   stale banner, and the before-unload warning while a draft exists;
   `vite.config.ts` gains the second input and `dist-review` output

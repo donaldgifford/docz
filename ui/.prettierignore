@@ -1,6 +1,7 @@
 dist
 dist-msw
 dist-server
+dist-review
 build
 node_modules
 coverage

@@ -10,6 +10,7 @@ export default tseslint.config(
       "dist",
       "dist-msw",
       "dist-server",
+      "dist-review",
       "coverage",
       "node_modules",
       "test-results",

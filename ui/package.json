@@ -9,6 +9,7 @@
     "dev": "vite",
     "dev:msw": "VITE_API_MODE=msw vite",
     "build": "tsc -b && vite build",
+    "build:review": "tsc -b && vite build --mode review",
     "build:msw": "VITE_API_MODE=msw VITE_NAV_LINKS='[{\"label\":\"RFCs\",\"href\":\"/donaldgifford/docz-api/rfc\"}]' vite build --outDir dist-msw",
     "preview": "vite preview",
     "preview:msw": "vite preview --outDir dist-msw --port 4173 --strictPort",
