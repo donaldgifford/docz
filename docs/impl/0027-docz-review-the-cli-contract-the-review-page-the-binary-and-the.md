@@ -360,8 +360,8 @@ page talks to a small in-process fake of the server's API. `dont-release`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/package.json`: add `json-schema-to-typescript`, `ajv`, and
-  `diff` (with `@types/diff`); `ui/scripts/gen-cli.ts` reads
+- [x] `ui/package.json`: add `json-schema-to-typescript`, `ajv`, and
+  `diff` (with `@types/diff`; not needed, `diff` 9 ships its own types); `ui/scripts/gen-cli.ts` reads
   `../api/cli/*.schema.json`, writes `src/cli/__generated__/<name>.ts`
   and, beside each, the derived **open** variant of the schema
   (`additionalProperties` removed recursively) as

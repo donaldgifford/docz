@@ -35,6 +35,14 @@ gen-api:
 gen-api-check:
     ./scripts/gen-api-check.sh
 
+# Generate the CLI contract types and open schemas (../api/cli -> src/cli/__generated__)
+gen-cli:
+    bun run gen-cli
+
+# Drift gate: snapshot, regenerate, diff the generated CLI types
+gen-cli-check:
+    ./scripts/gen-cli-check.sh
+
 # Lint (eslint flat config)
 lint:
     bun run lint

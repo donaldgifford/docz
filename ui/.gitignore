@@ -23,6 +23,9 @@ playwright-report/
 # Generated TS client from ../api/openapi.yaml (bun run gen-api)
 src/api/__generated__/
 
+# Generated CLI types and open schemas from ../api/cli (bun run gen-cli)
+src/cli/__generated__/
+
 # Local environment (secrets live here, never in mise.toml)
 .env.local
 .env.*.local
