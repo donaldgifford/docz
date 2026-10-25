@@ -314,7 +314,7 @@ docz plugin's skills can use `inspect` before any page exists.
   committed fixtures under `cmd/testdata/cli-contract/v1/*.json`
   re-validated; a revert drill in the PR description shows a renamed
   field failing the test
-- [ ] `.github/workflows/ci.yml`: the `ui` path filter gains `api/cli/**`
+- [x] `.github/workflows/ci.yml`: the `ui` path filter gains `api/cli/**`
   and `ui.just`; the `go` filter already covers `api/**`
 - [ ] `test/consumer/consumer_v2_repo_test.go`: exercise `ValidateDocument`
   and `InsertRegionsIn` from outside the module

@@ -71,6 +71,8 @@ jobs:
             ui:
               - 'ui/**'
               - 'api/openapi.yaml'
+              - 'api/cli/**'
+              - 'ui.just'
               - 'Dockerfile.ui'
 
   labeler:
