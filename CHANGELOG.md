@@ -12,6 +12,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* DESIGN-0024 resolved at (a) throughout, Approved
 - *(impl)* IMPL-0027 docz-review, six phases from DESIGN-0024
 - IMPL-0027 questions 1, 3 to 5, 7 to 9 resolved; the plugin lives in this repository
+- *(impl)* IMPL-0027 question 6 resolved (a); private-marketplace test in Phase 5
 
 ## [2.1.3] - 2026-10-23
 
