@@ -630,6 +630,13 @@
     background: var(--color-accent-bg);
   }
 
+  /* docz-review's annotations, painted with the CSS Custom Highlight
+     API (src/review/annotations.tsx) so no DOM enters the markdown. */
+  ::highlight(docz-review) {
+    background-color: var(--color-adm-warning-bg);
+    text-decoration: underline var(--color-accent-dim);
+  }
+
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;

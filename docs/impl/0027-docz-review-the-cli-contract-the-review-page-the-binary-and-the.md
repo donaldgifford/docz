@@ -410,7 +410,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
 - [x] `ui/src/review/questions.tsx`: the cards, unanswered by default,
   the recommended option badged, "accept all recommendations", "Other"
   text, note, read-only when `resolved`; tests
-- [ ] `ui/src/review/annotations.tsx`: the selection popover (comment,
+- [x] `ui/src/review/annotations.tsx`: the selection popover (comment,
   replace, delete, looks good; delete and replace disabled on a
   multi-block selection), the document comment box, the sidebar list
   in document order with edit and remove, painting through

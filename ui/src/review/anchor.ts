@@ -54,13 +54,14 @@ export interface Resolved {
 
 const codePoints = (s: string): string[] => Array.from(s);
 
-function blockOf(node: Node | null): HTMLElement | null {
+/** The review block a node sits in: the nearest element with `data-line`. */
+export function blockOf(node: Node | null): HTMLElement | null {
   const el = node instanceof Element ? node : (node?.parentElement ?? null);
   return el?.closest<HTMLElement>("[data-line]") ?? null;
 }
 
-// The text nodes a block owns, in document order.
-function ownText(block: HTMLElement): Text[] {
+/** The text nodes a block owns, not a nested block's, in document order. */
+export function ownText(block: HTMLElement): Text[] {
   const out: Text[] = [];
   const walker = block.ownerDocument.createTreeWalker(
     block,
@@ -137,6 +138,65 @@ export function anchorFromRange(
     selection: range.toString(),
     multiBlock,
   };
+}
+
+// The DOM point at a UTF-16 offset into a block's own text.
+function pointAt(texts: Text[], offset: number): [Text, number] | null {
+  let acc = 0;
+  for (const t of texts) {
+    if (offset <= acc + t.data.length) {
+      return [t, offset - acc];
+    }
+    acc += t.data.length;
+  }
+  return null;
+}
+
+/**
+ * Finds an anchor on the page again, for painting it: the occurrence of
+ * its quote in the block on its line whose context agrees best, or, when
+ * that block no longer holds it, anywhere in `root`. Null when the quote
+ * is not on the page.
+ */
+export function rangeForAnchor(
+  root: HTMLElement,
+  anchor: Anchor,
+): Range | null {
+  if (anchor.exact === "") {
+    return null;
+  }
+  const blocks = Array.from(root.querySelectorAll<HTMLElement>("[data-line]"));
+  const onLine = blocks.filter((b) => b.dataset.line === String(anchor.line));
+  let best: { texts: Text[]; at: number; score: number } | null = null;
+  for (const block of [...onLine, ...blocks]) {
+    const texts = ownText(block);
+    const text = texts.map((t) => t.data).join("");
+    for (
+      let at = text.indexOf(anchor.exact);
+      at !== -1;
+      at = text.indexOf(anchor.exact, at + 1)
+    ) {
+      const n = score({ text, line: 0, heading: "" }, at, anchor);
+      if (best === null || n > best.score) {
+        best = { texts, at, score: n };
+      }
+    }
+    if (best !== null && onLine.includes(block)) {
+      break;
+    }
+  }
+  if (best === null) {
+    return null;
+  }
+  const start = pointAt(best.texts, best.at);
+  const end = pointAt(best.texts, best.at + anchor.exact.length);
+  if (start === null || end === null) {
+    return null;
+  }
+  const range = root.ownerDocument.createRange();
+  range.setStart(...start);
+  range.setEnd(...end);
+  return range;
 }
 
 interface SourceBlock {
