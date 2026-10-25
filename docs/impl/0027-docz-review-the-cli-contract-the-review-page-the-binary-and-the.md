@@ -770,27 +770,34 @@ memory brought up to date. `minor`.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Go: `cmd/inspect_test.go`, the `validate` and `create` additions,
+- [x] Go: `cmd/inspect_test.go`, the `validate` and `create` additions,
   `cmd/cli_contract_test.go` with committed fixtures and the revert
   drill, `repo`'s scoped-operation tests with the tree digest, the
   `api/cli` package test, and the consumer-module test
-- [ ] TypeScript unit (vitest): runtime validation, preprocess positions,
+- [x] TypeScript unit (vitest): runtime validation, preprocess positions,
   the post-sanitize stamp, region wrapping, anchor computation and
   resolution with the ported `carryMarkers` cases, question cards,
   annotations, the draft's actionable set, the diff, and the feedback
   goldens
-- [ ] Bun server tests: every case in the design's Testing Strategy,
+- [x] Bun server tests: every case in the design's Testing Strategy,
   including the batch, staleness, replay, races, crash recovery,
   signals, the deadline, the lease, and the headers
-- [ ] Playwright: `e2e-review` against the fake server in Phase 3 and the
+- [x] Playwright: `e2e-review` against the fake server in Phase 3 and the
   real server with a built `docz` from Phase 4
-- [ ] The compiled binary from an empty directory
-- [ ] The plugin's hook tests over the drill fixtures through the
+- [x] The compiled binary from an empty directory
+- [x] The plugin's hook tests over the drill fixtures through the
   wrappers, in the `plugin` CI job
 - [ ] The Phase 1 drill, recorded; the Phase 5 trial on this repository
+  (`deferred - human required`)
 - [ ] Release verification: artifacts, both signatures, side-by-side mise
   install on macOS and Linux, a review from outside the checkout
-- [ ] A security pass over the server before Phase 4 merges
+  (`deferred - human required`)
+- [x] A security pass over the server before Phase 4 merges (2026-10-25:
+  argument injection into docz through a reported path, a throw answered
+  by Bun's error page, and a submission racing the run's end were fixed;
+  the bootstrap token being readable from the opener's arguments and the
+  browser's history on a shared host is open, since a single-use token
+  changes DESIGN-0024's credential model)
 
 <!--docz:testing:end-->
 
