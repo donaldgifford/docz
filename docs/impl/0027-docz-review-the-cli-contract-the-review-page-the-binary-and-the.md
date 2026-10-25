@@ -553,9 +553,10 @@ cut by hand at the end to prove the release path.
 - [ ] `ui/README.md`: how to run `docz-review` from a checkout and the
   mise install block from design section 10
 - [ ] `.github/workflows/ci.yml`: the `ui` job gains `test-review`,
-  `build-review` with the empty-directory run, and `e2e-review` (which
-  installs Go, builds `docz`, and runs Playwright over the fixture
-  repository through the real server)
+  `build-review` with the empty-directory run; `e2e-review` joins the
+  existing `ui-e2e` job as steps (install Go, build `docz`, run the
+  review spec over the fixture repository through the real server),
+  sharing its browser install rather than adding a job
 - [ ] `release.yml` and `prerelease.yml`: a Bun setup step, `just ui
   build-review`, `release.extra_files` for the four binaries and
   `docz-review_checksums.txt`, a step signing that checksum file with
@@ -633,6 +634,10 @@ installs from a git ref, not a release asset.
 - [ ] `.github/workflows/ci.yml`: a `plugin` job path-filtered on
   `plugins/**` and `.claude-plugin/**` running `shellcheck` over the
   wrappers, the hook tests, and the manifest check
+- [ ] Follow the README's "From your own marketplace" section verbatim
+  against a private marketplace of our own, both the reference path and
+  the copy path: the plugin installs and the hooks fire; fix the
+  instructions before the PR merges
 - [ ] `plugins/docz-review/tests/`: the hook tests over the Phase 1
   fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
   including the missing-binary path
@@ -660,6 +665,8 @@ installs from a git ref, not a release asset.
   `/plugin marketplace add donaldgifford/docz` then
   `/plugin install docz-review@docz` installs the plugin from `main`
 - The plugin's tests pass in this repository's `plugin` CI job
+- Both private-marketplace paths in the README were followed verbatim on
+  a private marketplace and worked
 
 <!--docz:criteria:end-->
 <!--docz:phase:end-->
@@ -829,7 +836,10 @@ require, not a new module.
   already come from it. As of v0.4.3 its documentation says `format` is
   recorded as an annotation and never asserted, so `date` and `uri`
   would be checked by nothing on the Go side and the test would carry
-  its own checks for those two.
+  its own checks for those two. It is also pre-1.0 (v0.4.3), and its
+  documentation says minor and patch releases may change behaviour,
+  with a `JSONSCHEMAGODEBUG` variable to restore the old one; the
+  santhosh library is at a stable major.
 - c. kin-openapi's schema validation, already a direct test dependency,
   which speaks OpenAPI's dialect rather than draft 2020-12 and would
   need the schemas written to it.
@@ -846,7 +856,10 @@ require, not a new module.
 > directory, with the README saying how. claude-skills keeps only the
 > docz plugin's `create` sentence (question 8). Phases 1 and 5, the
 > File Changes, and the Dependencies were rewritten to match, and
-> DESIGN-0024 was amended in the places that said claude-skills.
+> DESIGN-0024 was amended in the places that said claude-skills. The
+> README names no marketplace but this repository; the
+> private-marketplace instructions are tested against one of our own
+> before Phase 5 merges.
 
 - a. **In claude-skills under `plugins/docz-review/docs/hook-drill.md`
   and `plugins/docz-review/tests/fixtures/`, with the conclusions copied
@@ -889,6 +902,14 @@ require, not a new module.
 - d. Other.
 
 ### 6. How much Playwright does the review flow get?
+
+> **Resolved 2026-10-25: (a).** The spec joins the existing `ui-e2e`
+> job rather than adding one and reuses its browser install. On CI
+> growth generally: jobs already run in parallel and each is
+> path-filtered by the `changes` job, so what grows is one job's wall
+> clock on `ui/` changes only; a sharper filter (`ui/review/**` and
+> `ui/src/review/**` for the review steps) is a follow-up if that job
+> gets slow.
 
 What a real browser proves that vitest under jsdom cannot: a
 `Selection` and `Range` over laid-out text (the anchors),
