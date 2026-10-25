@@ -226,7 +226,7 @@ docz plugin's skills can use `inspect` before any page exists.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `api/cli/schemas.go`: package `cli` with `//go:embed *.schema.json`
+- [x] `api/cli/schemas.go`: package `cli` with `//go:embed *.schema.json`
   into an `embed.FS`, `Schema(name string) ([]byte, error)`, and the
   constants `SchemaVersionInspect`, `SchemaVersionValidate`,
   `SchemaVersionCreate`, `SchemaVersionReview`, all `1`; a package test
@@ -234,7 +234,7 @@ docz plugin's skills can use `inspect` before any page exists.
   object, asserts each `$id` matches
   `<base>/<name>/v<schema_version>` (open question 9), and asserts each
   file's `schema_version` `const` equals the Go constant
-- [ ] `api/cli/inspect.schema.json`, `validate.schema.json` (a `oneOf`
+- [x] `api/cli/inspect.schema.json`, `validate.schema.json` (a `oneOf`
   of the plain `ValidateReport` and `validateFixOutput`),
   `create.schema.json`, `list.schema.json` (no version field, the
   documented exception), and `review.schema.json` (the record in design

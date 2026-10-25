@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/donaldgifford/docz/schemas/cli/list/v1",
+  "$version": "1.0",
+  "title": "docz list",
+  "description": "Output of `docz list --format json`: a bare array, frozen by the parity suite, and the one governed output without a schema_version.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/entry"
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "status",
+        "date",
+        "author",
+        "type",
+        "file"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

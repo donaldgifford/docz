@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/donaldgifford/docz/schemas/cli/review/v1",
+  "$version": "1.0",
+  "title": "docz review",
+  "description": "The review record docz-review writes per document per round, and prints under --json.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Major version of this output's shape"
+    },
+    "review_id": {
+      "type": "string"
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "submission_id": {
+      "type": "string"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "document": {
+      "$ref": "#/$defs/document"
+    },
+    "outcome": {
+      "enum": [
+        "approved",
+        "changes",
+        "dismissed"
+      ]
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    },
+    "annotations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/annotation"
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Status chosen on the page, or empty when unchanged"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "review_id",
+    "round",
+    "submission_id",
+    "submitted_at",
+    "document",
+    "outcome",
+    "questions",
+    "annotations",
+    "status",
+    "findings"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "document": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Lowercase hex SHA-256 of the document's bytes"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "type",
+        "content_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "question": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "choice": {
+          "type": "string",
+          "pattern": "^([a-z]|other)$"
+        },
+        "text": {
+          "type": "string",
+          "description": "The text of an 'other' answer"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "choice"
+      ],
+      "additionalProperties": false
+    },
+    "annotation": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": [
+            "comment",
+            "replace",
+            "delete",
+            "document",
+            "looks-good"
+          ]
+        },
+        "anchor": {
+          "$ref": "#/$defs/anchor"
+        },
+        "selection": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "replacement": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "order",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "anchor": {
+      "type": "object",
+      "properties": {
+        "region": {
+          "type": "string",
+          "description": "Region kind, or empty"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Index of the block in document order"
+        },
+        "heading": {
+          "type": "string",
+          "description": "Nearest heading above"
+        },
+        "exact": {
+          "type": "string",
+          "description": "The selected rendered text"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "suffix": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Line hint at selection time"
+        },
+        "resolution": {
+          "enum": [
+            "exact",
+            "ambiguous",
+            "lost"
+          ]
+        }
+      },
+      "required": [
+        "region",
+        "ordinal",
+        "heading",
+        "exact",
+        "prefix",
+        "suffix",
+        "line",
+        "resolution"
+      ],
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action": {
+          "enum": [
+            "dismiss",
+            "fix"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "line",
+        "action"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/donaldgifford/docz/schemas/cli/validate/v1",
+  "$version": "1.0",
+  "title": "docz validate",
+  "description": "Output of `docz validate \u2026 --format json`, with or without --fix.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/plain"
+    },
+    {
+      "$ref": "#/$defs/fix"
+    }
+  ],
+  "$defs": {
+    "plain": {
+      "type": "object",
+      "description": "The report without --fix",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "description": "Major version of this output's shape"
+        },
+        "docs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/doc"
+          }
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/doc"
+          }
+        },
+        "index": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/drift"
+          }
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "schema_version",
+        "errors",
+        "warnings"
+      ],
+      "additionalProperties": false
+    },
+    "fix": {
+      "type": "object",
+      "description": "The output of --fix: the pass, then the report it left",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "description": "Major version of this output's shape"
+        },
+        "fixed": {
+          "$ref": "#/$defs/fixed"
+        },
+        "report": {
+          "$ref": "#/$defs/report"
+        }
+      },
+      "required": [
+        "schema_version",
+        "fixed",
+        "report"
+      ],
+      "additionalProperties": false
+    },
+    "report": {
+      "type": "object",
+      "properties": {
+        "docs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/doc"
+          }
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/doc"
+          }
+        },
+        "index": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/drift"
+          }
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "errors",
+        "warnings"
+      ],
+      "additionalProperties": false
+    },
+    "doc": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "Repo-relative path; empty for docz's embedded template"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Lowercase hex SHA-256 of the document's bytes"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "path",
+        "schema"
+      ],
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Stable code consumers filter on"
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning"
+          ]
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "1-based document line, 0 when the finding has no line"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Region kind the finding is about"
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "line",
+        "detail"
+      ],
+      "additionalProperties": false
+    },
+    "drift": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "fixed": {
+      "type": "object",
+      "properties": {
+        "Changed": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/changed"
+          }
+        },
+        "Unchanged": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "Changed",
+        "Unchanged"
+      ],
+      "additionalProperties": false
+    },
+    "changed": {
+      "type": "object",
+      "properties": {
+        "Path": {
+          "type": "string"
+        },
+        "Inserted": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "Fixed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "Path",
+        "Inserted",
+        "Fixed"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
