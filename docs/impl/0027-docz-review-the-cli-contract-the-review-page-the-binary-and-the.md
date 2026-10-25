@@ -614,12 +614,12 @@ installs from a git ref, not a release asset.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `plugins/docz-review/.claude-plugin/plugin.json` (name, version
+- [x] `plugins/docz-review/.claude-plugin/plugin.json` (name, version
   `0.1.0`, description, author) and `hooks/hooks.json` (the `PostToolUse` entry on `Bash` with the `if`
   pre-filters `Bash(docz *)` and `Bash(docz-review *)` if Phase 1
   confirmed the field, `timeout: 30`; the `Stop` entry with the timeout
   Phase 1 settled, 86400 unless contradicted)
-- [ ] `hooks/arm.sh` and `hooks/stop.sh`: `exec docz-review …` when the
+- [x] `hooks/arm.sh` and `hooks/stop.sh`: `exec docz-review …` when the
   binary is on `PATH`, else one stderr line naming the install page and
   `exit 0`; stdin passed through; no interpolation of paths or commands;
   `shellcheck` clean
