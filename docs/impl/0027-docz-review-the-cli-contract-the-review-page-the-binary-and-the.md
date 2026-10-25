@@ -638,7 +638,7 @@ installs from a git ref, not a release asset.
   and a section "From your own marketplace" for a team with a private
   one: reference this repository as a second marketplace, or copy the
   directory into theirs and track `plugin.json`'s version to resync
-- [ ] `.github/workflows/ci.yml`: a `plugin` job path-filtered on
+- [x] `.github/workflows/ci.yml`: a `plugin` job path-filtered on
   `plugins/**` and `.claude-plugin/**` running `shellcheck` over the
   wrappers, the hook tests, and the manifest check
 - [ ] Follow the README's "From your own marketplace" section verbatim

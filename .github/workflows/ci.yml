@@ -26,6 +26,7 @@ jobs:
       workflows: ${{ steps.filter.outputs.workflows }}
       alerts: ${{ steps.filter.outputs.alerts }}
       ui: ${{ steps.filter.outputs.ui }}
+      plugin: ${{ steps.filter.outputs.plugin }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -76,6 +77,12 @@ jobs:
               - 'api/cli/**'
               - 'ui.just'
               - 'Dockerfile.ui'
+            # The plugin's tests run its hooks against ui/review/ from source,
+            # so the server they exercise is an input too.
+            plugin:
+              - 'plugins/**'
+              - '.claude-plugin/**'
+              - 'ui/review/**'
 
   labeler:
     permissions:
@@ -492,6 +499,55 @@ jobs:
 
       - name: e2e
         run: just ui e2e
+
+  plugin:
+    name: Plugin
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      # shellcheck is preinstalled on ubuntu-latest.
+      - name: Shellcheck the hook wrappers
+        run: shellcheck plugins/docz-review/hooks/*.sh
+
+      # No claude CLI on the runner, so the manifests are checked for the
+      # fields a marketplace install reads, and every listed source exists.
+      - name: Check the manifests
+        run: |
+          jq -e '.name and .version and .description' \
+            plugins/docz-review/.claude-plugin/plugin.json
+          jq -e '.hooks.PostToolUse and .hooks.Stop' \
+            plugins/docz-review/hooks/hooks.json
+          jq -e '.name == "docz" and (.plugins | length > 0)' \
+            .claude-plugin/marketplace.json
+          jq -r '.plugins[].source' .claude-plugin/marketplace.json |
+            while read -r src; do
+              test -f "${src}/.claude-plugin/plugin.json" ||
+                { echo "::error::${src} has no plugin.json"; exit 1; }
+            done
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+
+      # The hooks run ui/review/main.ts from source, which needs ui's
+      # dependencies and the generated CLI schemas.
+      - name: Install ui dependencies
+        working-directory: ui
+        run: bun install --frozen-lockfile
+
+      - name: Generate CLI types
+        working-directory: ui
+        run: just ui gen-cli
+
+      - name: Test the hooks
+        run: bun test plugins/docz-review/tests/
 
   helm-unittest:
     name: Helm Unit Tests
