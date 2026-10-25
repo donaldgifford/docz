@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "docz_version": "2.2.0",
+  "path": "docs/design/0042-a-cache-for-the-reader.md",
+  "type": "design",
+  "id": "DESIGN-0042",
+  "schema": "design",
+  "content_sha256": "76cb69b8cebdbbefc1b733623a1f57639e2ea8f0d0dfa7ed226e410e1eca2129",
+  "frontmatter": {
+    "id": "DESIGN-0042",
+    "title": "A cache for the reader",
+    "status": "Draft",
+    "author": "Test Author",
+    "created": "2026-10-01"
+  },
+  "statuses": ["Draft", "In Review", "Approved", "Implemented", "Abandoned"],
+  "inferred": false,
+  "regions": [
+    {
+      "kind": "goals",
+      "start": 11,
+      "end": 16,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "open-questions",
+      "start": 18,
+      "end": 36,
+      "depth": 0,
+      "closed": true
+    }
+  ],
+  "headings": [
+    {
+      "level": 2,
+      "text": "Goals",
+      "anchor": "goals",
+      "line": 12
+    },
+    {
+      "level": 2,
+      "text": "Open Questions",
+      "anchor": "open-questions",
+      "line": 19
+    },
+    {
+      "level": 3,
+      "text": "1. Which cache?",
+      "anchor": "1-which-cache",
+      "line": 21
+    },
+    {
+      "level": 3,
+      "text": "2. How long a TTL?",
+      "anchor": "2-how-long-a-ttl",
+      "line": 26
+    },
+    {
+      "level": 3,
+      "text": "3. Already settled?",
+      "anchor": "3-already-settled",
+      "line": 31
+    }
+  ],
+  "open_questions": [
+    {
+      "number": 1,
+      "title": "Which cache?",
+      "line": 21,
+      "options": [
+        {
+          "letter": "a",
+          "text": "**Valkey.** *(recommendation)*",
+          "recommended": true,
+          "line": 23
+        },
+        {
+          "letter": "b",
+          "text": "Memcached.",
+          "recommended": false,
+          "line": 24
+        }
+      ],
+      "resolved": null
+    },
+    {
+      "number": 2,
+      "title": "How long a TTL?",
+      "line": 26,
+      "options": [
+        {
+          "letter": "a",
+          "text": "**One hour.** *(recommendation)*",
+          "recommended": true,
+          "line": 28
+        },
+        {
+          "letter": "b",
+          "text": "One day.",
+          "recommended": false,
+          "line": 29
+        }
+      ],
+      "resolved": null
+    },
+    {
+      "number": 3,
+      "title": "Already settled?",
+      "line": 31,
+      "options": [
+        {
+          "letter": "a",
+          "text": "Yes.",
+          "recommended": false,
+          "line": 33
+        }
+      ],
+      "resolved": {
+        "date": "2026-10-02",
+        "choice": "a",
+        "note": "",
+        "line": 35
+      }
+    }
+  ],
+  "tasks": [],
+  "content": "---\nid: DESIGN-0042\ntitle: \"A cache for the reader\"\nstatus: Draft\nauthor: Test Author\ncreated: 2026-10-01\n---\n\n# DESIGN 0042: A cache for the reader\n\n<!--docz:goals:start-->\n## Goals\n\nWe use **Postgres** for the store,\nand Valkey for the queue.\n<!--docz:goals:end-->\n\n<!--docz:open-questions:start-->\n## Open Questions\n\n### 1. Which cache?\n\n- a. **Valkey.** *(recommendation)*\n- b. Memcached.\n\n### 2. How long a TTL?\n\n- a. **One hour.** *(recommendation)*\n- b. One day.\n\n### 3. Already settled?\n\n- a. Yes.\n\n> **Resolved 2026-10-02: (a).**\n<!--docz:open-questions:end-->\n"
+}

@@ -428,7 +428,7 @@ page talks to a small in-process fake of the server's API. `dont-release`.
 - [x] `ui/src/review/feedback.ts`: the text message from a record
   (design section 8), golden-tested, with "no action" lines and the
   closing instruction naming only the answered questions
-- [ ] `ui/src/review/api.ts`: the typed client for the server's endpoints
+- [x] `ui/src/review/api.ts`: the typed client for the server's endpoints
   with the bearer header from memory and `history.replaceState` on
   load; `ui/src/review/fake-server.ts` for tests and `dev-review`
 - [ ] `ui/review.html` and `ui/src/review/main.tsx`: the entry, the
