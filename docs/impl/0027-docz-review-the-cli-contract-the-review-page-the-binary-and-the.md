@@ -693,7 +693,7 @@ memory brought up to date. `minor`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `charts/docz/Chart.yaml`: bump `version` and `appVersion` to the
+- [x] `charts/docz/Chart.yaml`: bump `version` and `appVersion` to the
   release, the two deployment-test image tags, and `just chart docs`
   (the chart content is unchanged; the release rule requires the bump)
 - [ ] `CLAUDE.md`: a "docz-review" section under Frontend (`ui/`) with
