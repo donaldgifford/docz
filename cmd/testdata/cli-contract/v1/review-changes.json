@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "review_id": "r_3f9a01",
+  "round": 2,
+  "submission_id": "s_17c2aa",
+  "submitted_at": "2026-10-24T15:04:05Z",
+  "document": {
+    "id": "DESIGN-0024",
+    "path": "docs/design/0024-docz-review.md",
+    "type": "design",
+    "content_sha256": "afa785fc8646bc737d991fe519abf88956780f429fb0e16e352a71a7de9cf835"
+  },
+  "outcome": "changes",
+  "questions": [
+    { "number": 1, "choice": "a", "note": "" },
+    { "number": 3, "choice": "other", "text": "put the shapes in api/openapi.yaml" }
+  ],
+  "annotations": [
+    {
+      "order": 1,
+      "kind": "comment",
+      "anchor": {
+        "region": "detailed-design",
+        "ordinal": 41,
+        "heading": "3. docz inspect and the JSON contract",
+        "exact": "Anchors are quotes.",
+        "prefix": "the line hint. ",
+        "suffix": " A quote",
+        "line": 212,
+        "resolution": "exact"
+      },
+      "selection": "Anchors are quotes.",
+      "text": "Say what INV-0021 decided once it closes."
+    },
+    {
+      "order": 2,
+      "kind": "replace",
+      "anchor": {
+        "region": "background",
+        "ordinal": 9,
+        "heading": "Background",
+        "exact": "day-to-day",
+        "prefix": "the ",
+        "suffix": " work",
+        "line": 96,
+        "resolution": "lost"
+      },
+      "selection": "day-to-day",
+      "replacement": "everyday"
+    },
+    { "order": 3, "kind": "document", "text": "Shorten the Background section." }
+  ],
+  "status": "In Review",
+  "findings": [
+    { "code": "references.no-link", "line": 589, "action": "dismiss" },
+    { "code": "frontmatter.status", "line": 3, "action": "fix" }
+  ]
+}

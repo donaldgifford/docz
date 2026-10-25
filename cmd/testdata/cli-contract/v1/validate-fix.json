@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "fixed": {
+    "Changed": [
+      {
+        "Path": "docs/adr/0001-a-decision.md",
+        "Inserted": [
+          "summary",
+          "context",
+          "decision",
+          "consequences",
+          "positive",
+          "negative",
+          "neutral",
+          "alternatives",
+          "references"
+        ],
+        "Fixed": 0
+      }
+    ],
+    "Unchanged": null
+  },
+  "report": {
+    "docs": [
+      {
+        "type": "adr",
+        "path": "docs/adr/0001-a-decision.md",
+        "schema": "adr",
+        "content_sha256": "c7f67d1a211166c38d1fe7586c8eea1ce34eecba24163b5d73da36d48dab19c6"
+      }
+    ],
+    "templates": [
+      {
+        "type": "adr",
+        "path": "",
+        "schema": "adr"
+      }
+    ],
+    "errors": 0,
+    "warnings": 0
+  }
+}

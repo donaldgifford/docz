@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "docz_version": "dev",
+  "path": "docs/frameworks/0001-adopt-the-internal-auth-framework.md",
+  "type": "frameworks",
+  "id": "FW-0001",
+  "schema": "frameworks",
+  "content_sha256": "6bb35f2f3862ea1fc10030c0b15de6a26bc8b4d4c122b2974b74482dd1bfceab",
+  "frontmatter": {
+    "id": "FW-0001",
+    "title": "Adopt the internal auth framework",
+    "status": "Active",
+    "author": "Parity Fixture",
+    "created": "2026-03-04"
+  },
+  "statuses": [
+    "Draft",
+    "Active",
+    "Deprecated"
+  ],
+  "inferred": false,
+  "regions": [
+    {
+      "kind": "toc",
+      "start": 13,
+      "end": 18,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "references",
+      "start": 32,
+      "end": 36,
+      "depth": 0,
+      "closed": true
+    }
+  ],
+  "headings": [
+    {
+      "level": 2,
+      "text": "Summary",
+      "anchor": "summary",
+      "line": 20
+    },
+    {
+      "level": 2,
+      "text": "Owner",
+      "anchor": "owner",
+      "line": 24
+    },
+    {
+      "level": 2,
+      "text": "Adoption",
+      "anchor": "adoption",
+      "line": 28
+    },
+    {
+      "level": 2,
+      "text": "References",
+      "anchor": "references",
+      "line": 33
+    }
+  ],
+  "open_questions": [],
+  "tasks": [],
+  "content": "---\nid: FW-0001\ntitle: \"Adopt the internal auth framework\"\nstatus: Active\nauthor: Parity Fixture\ncreated: 2026-03-04\n---\n\n\u003c!-- markdownlint-disable-file MD025 MD041 --\u003e\n\n# FW-0001: Adopt the internal auth framework\n\n\u003c!--toc:start--\u003e\n- [Summary](#summary)\n- [Owner](#owner)\n- [Adoption](#adoption)\n- [References](#references)\n\u003c!--toc:end--\u003e\n\n## Summary\n\n\u003c!-- What the framework is and which problem it covers --\u003e\n\n## Owner\n\n\u003c!-- Team or person accountable for the framework --\u003e\n\n## Adoption\n\n\u003c!-- Which services use it today, and what adopting it costs --\u003e\n\n\u003c!--docz:references:start--\u003e\n## References\n\n\u003c!-- Links to the upstream project, internal guides, related decisions --\u003e\n\u003c!--docz:references:end--\u003e\n"
+}

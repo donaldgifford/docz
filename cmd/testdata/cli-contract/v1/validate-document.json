@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "docs": [
+    {
+      "type": "rfc",
+      "path": "docs/rfc/0001-switch-the-ingest-queue-to-nats.md",
+      "schema": "rfc",
+      "content_sha256": "587c4679eeef722933e2099cf1d1eae2a53059a9ddbb51a2a9e3e3579dc7c0a6",
+      "findings": [
+        {
+          "code": "toc.stale",
+          "severity": "warning",
+          "line": 13,
+          "kind": "toc",
+          "detail": "table of contents is out of date; run docz update to regenerate it"
+        },
+        {
+          "code": "rfc.alternatives.empty",
+          "severity": "warning",
+          "line": 47,
+          "kind": "alternatives",
+          "detail": "the alternatives section holds no alternatives, so the proposal reads as though nothing else was considered"
+        }
+      ]
+    }
+  ],
+  "errors": 0,
+  "warnings": 2
+}

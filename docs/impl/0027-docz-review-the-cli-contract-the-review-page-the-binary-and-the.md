@@ -307,7 +307,7 @@ docz plugin's skills can use `inspect` before any page exists.
 - [x] `cmd/create_test.go` gains `--format json`: stdout parses as one
   object carrying `update` and `nav`, the note is on stderr, and
   `--format json` with a failed creation prints no JSON
-- [ ] `cmd/cli_contract_test.go`: every governed command run through a
+- [x] `cmd/cli_contract_test.go`: every governed command run through a
   `Runner` with `Out: &bytes.Buffer{}` over the parity fixtures, each
   output validated against its embedded closed schema with
   `github.com/santhosh-tekuri/jsonschema/v6` (open question 2); the
