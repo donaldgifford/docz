@@ -9,6 +9,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(design)* DESIGN-0024, docz-review and the CLI's JSON contract
 - *(design)* DESIGN-0024 adversarial review, responses, and the revised body
+- *(design)* DESIGN-0024 resolved at (a) throughout, Approved
 
 ## [2.1.3] - 2026-10-23
 
