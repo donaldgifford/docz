@@ -239,6 +239,8 @@ own entry (`review.html`), its own Bun server (`review/`), and its own
 binary. With the Claude Code plugin installed, a session's `Stop` hook
 opens the page for every document the session created; it also runs by
 hand.
+The plugin is `../plugins/docz-review/`, whose README covers installing
+it and what a session sees.
 
 ### From a checkout
 

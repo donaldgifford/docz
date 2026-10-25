@@ -700,7 +700,7 @@ memory brought up to date. `minor`.
   the second entry point, the state directory, the credential model,
   the recipes, the plugin under `plugins/`, and the release step; the CI
   path-filter paragraph gains `api/cli/**` and the `plugin` job
-- [ ] `ui/CLAUDE.md` and `ui/README.md` final pass; `api/README.md`
+- [x] `ui/CLAUDE.md` and `ui/README.md` final pass; `api/README.md`
   gains a section on `api/cli/`
 - [ ] DESIGN-0024 status to Implemented; INV-0027's Recommendation gains
   a line pointing here; `docz update`

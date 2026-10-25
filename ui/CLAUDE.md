@@ -615,6 +615,12 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   from an empty directory. Both outputs are gitignored, and
   `compiled.ts` is outside tsc and eslint because its import exists only
   after a build.
+- **The plugin** (`../plugins/docz-review/`) runs `review/main.ts` from
+  source in its hook tests (`bun test plugins/docz-review/tests/` from the
+  repository root), through a `docz-review` shim on `PATH` and the fake
+  docz in `review/testdata/`. A change to arming or to the `--pending
+  --hook` path runs that job too, and the hook fixtures under
+  `review/testdata/hook/` are shared by both suites.
 
 ## Toolchain notes
 
