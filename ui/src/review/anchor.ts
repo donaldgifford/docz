@@ -245,14 +245,16 @@ const ENTITIES: Record<string, string> = {
 };
 
 // Drops comments and tags until none is left, so a tag that only forms
-// once an inner one is removed (`<scr<b></b>ipt>`) goes too.
+// once an inner one is removed (`<scr<b></b>ipt>`) goes too, then any `<`
+// still standing: an unclosed `<!--` matches neither pattern, and a `<`
+// a page shows is written `&lt;`, decoded only after this.
 function stripMarkup(value: string): string {
   let out = value;
   for (let prev = ""; prev !== out;) {
     prev = out;
     out = out.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, "");
   }
-  return out;
+  return out.replace(/</g, "");
 }
 
 // The text a raw HTML block shows once sanitized and rendered: its tags

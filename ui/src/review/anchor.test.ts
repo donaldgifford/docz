@@ -105,6 +105,14 @@ describe("resolveAnchor over rendered text", () => {
     }
   });
 
+  it("drops an unclosed comment opener but keeps an escaped <", () => {
+    const source = "<p>a &lt; b <!-- never closed</p>";
+    expect(resolveAnchor(anchor("a < b"), source)).toMatchObject({
+      resolution: "exact",
+    });
+    expect(resolveAnchor(anchor("<!--"), source).resolution).toBe("lost");
+  });
+
   it("finds a moved region by heading, reporting where it is now", () => {
     const before: Region[] = [
       { kind: "phase", start: 1, end: 5, depth: 0, closed: true },
