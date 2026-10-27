@@ -50,6 +50,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ui)* Strip a raw HTML block's markup until none is left
 - *(ui)* Drop a stray < once a raw HTML block's markup is stripped
 - *(ui)* Read a raw HTML block's text by parsing it, not by regex
+- *(ui)* Accept a docz built where no tag is in reach
 
 ### Documentation
 
