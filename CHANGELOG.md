@@ -45,6 +45,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(plugin)* Put the hooks' if filter on the handler, not the matcher group
 - *(ui)* Keep a heading's copy button out of a review quote
 - *(plugin)* Show the missing-binary note to the person, not the debug log
+- *(ui)* Override fast-uri to 3.1.9 for seven HIGH CVEs
+- *(ui)* Build the site image with the CLI types and DOM for scripts
+- *(ui)* Strip a raw HTML block's markup until none is left
 
 ### Documentation
 
@@ -96,6 +99,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - Release docz-review's binaries with docz
 - The docz-review plugin's job
 - *(chart)* 1.2.0 with appVersion 2.2.0 for the release
+- *(ui)* Format check runs the lockfile's prettier
 
 ## [2.1.3] - 2026-10-23
 
