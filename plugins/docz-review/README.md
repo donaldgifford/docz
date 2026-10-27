@@ -21,9 +21,15 @@ repository, so `docz-review` needs a tool alias:
 docz-review = "github:donaldgifford/docz"
 
 [tools]
-docz = "latest"
+"github:donaldgifford/docz" = "latest"
 docz-review = { version = "latest", asset_pattern = "docz-review_{{ os(macos=\"darwin\") }}_{{ arch(x64=\"amd64\") }}", bin = "docz-review" }
 ```
+
+docz is not in mise's registry, so it is named by its backend. Keep the
+two at the same version: docz-review checks that docz speaks its
+contract. A mise with a minimum release age hides a release for a while
+after it is published (`mise ls-remote github:donaldgifford/docz` says
+so); pin the version, say `"2.2.0"` for both, to install it sooner.
 
 Then add this repository as a marketplace and install the plugin from
 it, inside Claude Code:
