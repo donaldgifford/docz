@@ -2,7 +2,10 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2023",
-    "lib": ["ES2023"],
+    // scripts/review-fake.ts runs the review page's fake server, whose
+    // modules use DOM types; without this the project had them only by
+    // way of Playwright's types in e2e/, which the image build excludes.
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
