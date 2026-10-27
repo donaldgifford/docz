@@ -170,8 +170,9 @@ the move changed about the repository.
 - **The image sees the spec through a named context.** `Dockerfile.ui` builds
   with context `ui/` and gets the spec from bake's `contexts = { spec = "api" }`
   via `COPY --from=spec openapi.yaml /api/openapi.yaml`, laid out so orval's
-  `../api/openapi.yaml` resolves inside the stage. Only the spec crosses the
-  boundary; `.dockerignore` excludes `ui` from the api image's root context.
+  `../api/openapi.yaml` resolves inside the stage, and `api/cli/` the same way
+  for `gen-cli`, since `tsc -b` checks the review page too. Only the spec and
+  the CLI schemas cross the boundary; `.dockerignore` excludes `ui` from the api image's root context.
 - **Three components publish from one tag.** Bake has `-api` and `-ui` target
   families, and `ghcr.yml`/`ecr.yml` take a `component` input
   (`api`|`ui`|`chart`) resolved in one table. `api` and `ui` are images only,
@@ -1731,11 +1732,10 @@ alone). IMPL-0026 lands in six phases, one `dont-release` PR each and one
   an in-memory store, so kin-openapi validates every OAuth route; cases
   the validator rejects before the handler (an unknown `grant_type`, a
   missing `token`) are covered in `internal/oauth` instead.
-  **GOTCHA — `just ui fmt-check` fails locally on
-  `ui/src/markdown/mermaid-config.test.ts`** with mise's prettier 3.9.6
-  while CI pins 3.7.4 (`ci.yml` "Install prettier"); the file is
-  untouched and CI is green, so run the other `ui` recipes individually
-  until the pins agree.
+  **Prettier is a `ui` devDependency** (IMPL-0027): `format:check`
+  runs the lockfile's version locally and in CI alike, since the
+  global `prettier@3.7.4` CI used to install lost to the copy
+  `json-schema-to-typescript` brought into `node_modules`.
 
 ### MCP server (DESIGN-0023 / IMPL-0026)
 
