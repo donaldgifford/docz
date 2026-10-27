@@ -154,8 +154,9 @@ export function parseReview(raw: string): DoczReview {
  * checkSchemaVersion refuses a docz whose contract this build does not
  * speak, naming both sides. A development build is accepted at any
  * version: "dev" carries no release number, and a build from a checkout
- * (`v2.1.3-50-g6115270`, git describe) is commits past its tag, so the
- * tag says nothing about whether it has the contract. The schema_version
+ * (`v2.1.3-50-g6115270`, git describe, or a bare `f186ed8` with no tag in
+ * reach) is commits past its tag, so the tag says nothing about whether
+ * it has the contract. The schema_version
  * check still applies to both.
  */
 export function checkSchemaVersion(
@@ -185,8 +186,10 @@ export function checkSchemaVersion(
   }
 }
 
-// git describe's "-<commits>-g<hash>" suffix: a build from a checkout.
-const DESCRIBE_BUILD = /-\d+-g[0-9a-f]+(?:-dirty)?$/;
+// A build from a checkout, as `git describe --tags --always` names it:
+// "-<commits>-g<hash>" past a tag, or the bare hash when no tag is
+// reachable (a shallow clone, as in CI).
+const DESCRIBE_BUILD = /(?:-\d+-g[0-9a-f]+|^[0-9a-f]{7,40})(?:-dirty)?$/;
 
 /** compareVersions orders two release versions by major, minor, patch. */
 export function compareVersions(a: string, b: string): number {
