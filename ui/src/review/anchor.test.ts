@@ -95,6 +95,16 @@ describe("resolveAnchor over rendered text", () => {
     });
   });
 
+  it("leaves no tag behind in nested markup", () => {
+    const source = "<div><scr<b></b>ipt>alert(1)<!--<!-- x -->--></div>";
+    expect(resolveAnchor(anchor("alert(1)"), source)).toMatchObject({
+      resolution: "exact",
+    });
+    for (const left of ["<script", "<!--", "<b>"]) {
+      expect(resolveAnchor(anchor(left), source).resolution).toBe("lost");
+    }
+  });
+
   it("finds a moved region by heading, reporting where it is now", () => {
     const before: Region[] = [
       { kind: "phase", start: 1, end: 5, depth: 0, closed: true },

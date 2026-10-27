@@ -244,14 +244,25 @@ const ENTITIES: Record<string, string> = {
   nbsp: "\u00a0",
 };
 
+// Drops comments and tags until none is left, so a tag that only forms
+// once an inner one is removed (`<scr<b></b>ipt>`) goes too.
+function stripMarkup(value: string): string {
+  let out = value;
+  for (let prev = ""; prev !== out;) {
+    prev = out;
+    out = out.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, "");
+  }
+  return out;
+}
+
 // The text a raw HTML block shows once sanitized and rendered: its tags
 // and comments dropped and the common entities decoded. A marker line is
-// a comment, so it yields nothing.
+// a comment, so it yields nothing. The result is only ever searched for a
+// quote, never inserted into the page.
 function htmlText(value: string): string {
-  return value
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
+  return stripMarkup(value).replace(
+    /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
+    (whole, name: string) => {
       if (name.startsWith("#x") || name.startsWith("#X")) {
         return String.fromCodePoint(parseInt(name.slice(2), 16));
       }
@@ -259,7 +270,8 @@ function htmlText(value: string): string {
         return String.fromCodePoint(parseInt(name.slice(1), 10));
       }
       return ENTITIES[name.toLowerCase()] ?? whole;
-    });
+    },
+  );
 }
 
 const parser = unified()
