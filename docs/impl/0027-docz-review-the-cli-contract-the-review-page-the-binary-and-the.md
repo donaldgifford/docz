@@ -146,6 +146,11 @@ observation is written down with the Claude Code version it was made on.
 > parser reads hand-written fixtures in the documented shape
 > (`ui/review/testdata/hook/`), and the server's deadline assumes the
 > 86400-second ceiling open question 1 recorded.
+>
+> 2026-10-27: a trial of the plugin on Claude Code 2.1.280 answered
+> case 9 and part of cases 1, 3, 4, and 6, recorded in
+> `plugins/docz-review/docs/hook-drill.md`; the other cases still need
+> the drill plugin.
 
 - [ ] A throwaway plugin `docz-review-drill` outside the tree with
   a `PostToolUse` hook on `Bash` that appends its full stdin to
@@ -181,7 +186,7 @@ observation is written down with the Claude Code version it was made on.
   command (`docz create … && echo done`); keep the four recorded JSON
   objects as fixtures under `plugins/docz-review/tests/fixtures/` (open
   question 3)
-- [ ] Case 9, the `if` field: add `"if": "Bash(docz *)"` to the
+- [x] Case 9, the `if` field: add `"if": "Bash(docz *)"` to the
   `PostToolUse` handler (beside `type` and `command`; on the matcher
   group Claude Code ignores it with a warning); record whether the hook ran for `docz list`,
   for `echo docz`, for `FOO=1 docz list`, and for `ls && docz list`,

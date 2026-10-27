@@ -43,10 +43,9 @@ Without the binary the plugin does nothing but print one line naming
 this page, after `docz create` and at the end of a turn. It never blocks
 a session.
 
-The minimum Claude Code version is not established yet. The plugin was
-built against 2.1.280, and the hook drill in IMPL-0027 Phase 1 will
-record the oldest version that honours the hooks' `if` filter and the
-`Stop` hook's 24-hour timeout.
+The plugin needs Claude Code 2.1.280 or later, the oldest version
+observed to honour the hooks' `if` filter and the `Stop` hook's 24-hour
+timeout. See [the hook drill](docs/hook-drill.md) for what was observed.
 
 ## What arms a review
 

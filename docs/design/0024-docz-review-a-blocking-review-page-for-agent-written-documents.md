@@ -2171,6 +2171,15 @@ the questions above:
 | 11 | Configuration | (a) Flags and `DOCZ_REVIEW_*` variables; no `.docz.yaml` block |
 | 12 | `if` pre-filter | (a) `Bash(docz *)` and `Bash(docz-review *)` on the `PostToolUse` entries, dropped only if Phase 0 shows the minimum version ignores it |
 
+Observed on Claude Code 2.1.280 on 2026-10-27, in a trial of the plugin
+rather than the full drill
+([hook-drill.md](../../plugins/docz-review/docs/hook-drill.md)): the
+host accepts `timeout: 86400` without clamping it, though the ceiling
+is not measured; Escape cancels the `Stop` hook with a signal
+docz-review catches, so question 2's "signals are dismiss" holds; and
+`if` is honoured on the hook handler, per subcommand, which keeps
+question 12's option with the field moved off the matcher group.
+
 <!--docz:decisions:end-->
 
 <!--docz:references:start-->
