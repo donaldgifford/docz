@@ -19,7 +19,7 @@ state directory. Nothing below is inferred from documentation.
 | 1 | Does a `Stop` hook's stdin reach EOF? | Yes. `docz-review --pending --hook` reads stdin to EOF before it serves, and every run opened the page; the `PostToolUse` arm hook, which also reads to EOF, armed after `docz create` and `docz-review arm` | 2.1.280 | 2026-10-27 |
 | 2 | The default 600-second timeout | Not observed | — | — |
 | 3 | A configured timeout, and any ceiling | Partly. With `timeout: 86400` the host recorded `timeoutMs: 86400000` on the hook, with no warning or clamp. No run lasted longer than about three minutes, so the ceiling itself is not measured | 2.1.280 | 2026-10-27 |
-| 4 | Block and continue | Yes. `{"decision":"block","reason":…}` is recorded as `hook_blocking_error` with the reason, and the agent resumed with it, three times in one session. Whether the person saw the `systemMessage` is not recorded | 2.1.280 | 2026-10-27 |
+| 4 | Block and continue | Yes. `{"decision":"block","reason":…}` is recorded as `hook_blocking_error` with the reason, and the agent resumed with it, three times in one session. The person sees the reason labelled "Stop hook error:", which the README now explains; whether a `systemMessage` beside a block is shown is not recorded | 2.1.280 | 2026-10-27 |
 | 5 | Repeated blocks with no tool call between | Not observed; each block in the trial was followed by tool calls | — | — |
 | 6 | Interrupt | Escape: recorded as `hook_cancelled` (`timedOut: false`, after 50.6 s). docz-review's signal handler ran: the open document was `dismissed` within the same minute rather than after the 120-second grace, and the lease was released, since an immediate re-arm opened round 3. Ctrl-C not observed | 2.1.280 | 2026-10-27 |
 | 7 | `SIGKILL` from outside | Not observed | — | — |
@@ -36,7 +36,16 @@ state directory. Nothing below is inferred from documentation.
   button, so its quote was never in the source and its anchor resolved
   `lost` (commit `5b202ed`).
 
+- Without the binary, the one install line both hooks wrote to stderr
+  on exit 0 reached only the debug log, so a person never saw it.
+  `arm.sh` now prints it as a `systemMessage` after a `docz create`;
+  `stop.sh` stays on stderr, since nothing can have been armed.
+
 ## Also seen
+
+- A failed command fires `PostToolUseFailure`, not `PostToolUse`, so
+  `docz-review arm` run without the binary (exit 127) never reaches
+  `arm.sh`; the agent reads the shell's "command not found" instead.
 
 - A plugin installed from a local-path marketplace is read from the
   working tree (`Read hooks.json for plugin docz-review …

@@ -39,9 +39,15 @@ docz-review needs docz 2.2.0 or later. Check what it found with:
 docz-review --version
 ```
 
-Without the binary the plugin does nothing but print one line naming
-this page, after `docz create` and at the end of a turn. It never blocks
-a session.
+Without the binary the plugin never blocks a session. After a
+`docz create` it shows one message naming this page; at the end of a
+turn it writes one line to stderr, which Claude Code shows only with
+`claude --debug`.
+
+When a review asks for changes, Claude Code shows the feedback as
+"Stop hook error:" followed by the annotations. It is not an error:
+that is how Claude Code labels a `Stop` hook that sends the agent back
+to work.
 
 The plugin needs Claude Code 2.1.280 or later, the oldest version
 observed to honour the hooks' `if` filter and the `Stop` hook's 24-hour

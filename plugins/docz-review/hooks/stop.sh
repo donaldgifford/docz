@@ -3,7 +3,9 @@
 # Stop hook: opens a review of every pending document through
 # `docz-review --pending --hook`, which blocks until the reviewer is done
 # and prints the block decision when they asked for changes. Without the
-# binary it prints one line and lets the turn end.
+# binary nothing can have been armed, so it lets the turn end with one
+# line on stderr, which Claude Code shows only in its debug log; arm.sh
+# is the hook that tells the person.
 
 set -euo pipefail
 

@@ -71,6 +71,9 @@ function hook(
 }
 
 /** A repository directory, a state directory, and the hook environment. */
+const readFixture = (name: string) =>
+  readFileSync(join(FIXTURES, `${name}.json`), "utf8");
+
 function setup() {
   const cwd = realpathSync(mkdtempSync(join(tmpdir(), "plugin-repo-")));
   const state = mkdtempSync(join(tmpdir(), "plugin-state-"));
@@ -111,17 +114,29 @@ function setup() {
 }
 
 describe("without the binary", () => {
-  for (const script of ["arm.sh", "stop.sh"] as const) {
-    test(`${script} prints one install line and exits 0`, () => {
-      const r = hook(script, '{"session_id":"s","cwd":"/"}', {
-        PATH: BARE_PATH,
-      });
-      expect(r.code).toBe(0);
-      expect(r.stdout).toBe("");
-      expect(r.stderr.trim().split("\n")).toHaveLength(1);
-      expect(r.stderr).toContain("docz-review is not installed; see https://");
+  test("arm.sh tells the person after docz create, on stdout", () => {
+    const r = hook("arm.sh", readFixture("create-text"), { PATH: BARE_PATH });
+    expect(r.code).toBe(0);
+    const out = JSON.parse(r.stdout) as { systemMessage: string };
+    expect(out.systemMessage).toContain(
+      "docz-review is not installed, so this document will not be reviewed; see https://",
+    );
+  });
+
+  test("arm.sh stays silent after any other command", () => {
+    const r = hook("arm.sh", readFixture("other"), { PATH: BARE_PATH });
+    expect(r).toMatchObject({ code: 0, stdout: "", stderr: "" });
+  });
+
+  test("stop.sh writes one stderr line and exits 0", () => {
+    const r = hook("stop.sh", '{"session_id":"s","cwd":"/"}', {
+      PATH: BARE_PATH,
     });
-  }
+    expect(r.code).toBe(0);
+    expect(r.stdout).toBe("");
+    expect(r.stderr.trim().split("\n")).toHaveLength(1);
+    expect(r.stderr).toContain("docz-review is not installed; see https://");
+  });
 });
 
 describe("arm.sh", () => {
