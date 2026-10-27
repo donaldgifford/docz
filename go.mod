@@ -6,7 +6,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/coreos/go-oidc/v3 v3.19.0
 	github.com/getkin/kin-openapi v0.151.0
-	github.com/go-chi/chi/v5 v5.3.0
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-chi/httprate v0.16.1
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/google/go-github/v88 v88.0.0
