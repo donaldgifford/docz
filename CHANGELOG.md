@@ -48,6 +48,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(ui)* Override fast-uri to 3.1.9 for seven HIGH CVEs
 - *(ui)* Build the site image with the CLI types and DOM for scripts
 - *(ui)* Strip a raw HTML block's markup until none is left
+- *(ui)* Drop a stray < once a raw HTML block's markup is stripped
 
 ### Documentation
 
