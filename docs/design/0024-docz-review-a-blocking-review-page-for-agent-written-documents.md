@@ -915,9 +915,8 @@ plugins/docz-review/
     "PostToolUse": [
       {
         "matcher": "Bash",
-        "if": "Bash(docz *)",
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/arm.sh\"", "timeout": 30 }
+          { "type": "command", "if": "Bash(docz *)", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/arm.sh\"", "timeout": 30 }
         ]
       }
     ],

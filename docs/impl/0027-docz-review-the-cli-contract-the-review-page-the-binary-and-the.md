@@ -182,7 +182,8 @@ observation is written down with the Claude Code version it was made on.
   objects as fixtures under `plugins/docz-review/tests/fixtures/` (open
   question 3)
 - [ ] Case 9, the `if` field: add `"if": "Bash(docz *)"` to the
-  `PostToolUse` entry; record whether the hook ran for `docz list`,
+  `PostToolUse` handler (beside `type` and `command`; on the matcher
+  group Claude Code ignores it with a warning); record whether the hook ran for `docz list`,
   for `echo docz`, for `FOO=1 docz list`, and for `ls && docz list`,
   and note the Claude Code version
 - [ ] Case 10, the arming echo: run `echo "Created DESIGN: docs/x.md"`;
