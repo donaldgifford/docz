@@ -1,3 +1,5 @@
+import { raw } from "hast-util-raw";
+import { toString as hastToString } from "hast-util-to-string";
 import { toString as mdastToString } from "mdast-util-to-string";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
@@ -9,6 +11,9 @@ import { preprocessDoczMarkdown } from "@/markdown/preprocess";
 
 import type { Anchor as RecordAnchor } from "@/cli/__generated__/review";
 import type { Heading, Region } from "@/cli/__generated__/inspect";
+import type { Root as HastRoot } from "hast";
+// Declares hast's `raw` node, which htmlText builds.
+import type {} from "remark-rehype";
 import type { Nodes, Root } from "mdast";
 
 /*
@@ -235,45 +240,13 @@ const BLOCK_TYPES = new Set([
   "html",
 ]);
 
-const ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  apos: "'",
-  nbsp: "\u00a0",
-};
-
-// Drops comments and tags until none is left, so a tag that only forms
-// once an inner one is removed (`<scr<b></b>ipt>`) goes too, then any `<`
-// still standing: an unclosed `<!--` matches neither pattern, and a `<`
-// a page shows is written `&lt;`, decoded only after this.
-function stripMarkup(value: string): string {
-  let out = value;
-  for (let prev = ""; prev !== out;) {
-    prev = out;
-    out = out.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, "");
-  }
-  return out.replace(/</g, "");
-}
-
-// The text a raw HTML block shows once sanitized and rendered: its tags
-// and comments dropped and the common entities decoded. A marker line is
-// a comment, so it yields nothing. The result is only ever searched for a
-// quote, never inserted into the page.
+// The text a raw HTML block shows once rendered: parsed as the page's
+// rehype-raw parses it, so tags and comments (an unclosed one included)
+// drop out and entities decode exactly as the reader sees them. A marker
+// line is a comment, so it yields nothing.
 function htmlText(value: string): string {
-  return stripMarkup(value).replace(
-    /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
-    (whole, name: string) => {
-      if (name.startsWith("#x") || name.startsWith("#X")) {
-        return String.fromCodePoint(parseInt(name.slice(2), 16));
-      }
-      if (name.startsWith("#")) {
-        return String.fromCodePoint(parseInt(name.slice(1), 10));
-      }
-      return ENTITIES[name.toLowerCase()] ?? whole;
-    },
-  );
+  const root: HastRoot = { type: "root", children: [{ type: "raw", value }] };
+  return hastToString(raw(root));
 }
 
 const parser = unified()
