@@ -411,3 +411,68 @@ func TestExternalConsumerMigratesADocument(t *testing.T) {
 		t.Errorf("a second pass left %d documents unchanged, want 1", len(repeat.Unchanged))
 	}
 }
+
+// TestExternalConsumerValidatesAndMarksOneDocument covers the two
+// single-document operations (IMPL-0027): a consumer holding one path
+// validates and marks that document without reading or writing a sibling,
+// and a path the repository does not own is a typed error.
+func TestExternalConsumerValidatesAndMarksOneDocument(t *testing.T) {
+	r := repoFixture(t)
+
+	body := "---\n" +
+		"id: ADR-0001\n" +
+		"title: \"One decision\"\n" +
+		"status: Accepted\n" +
+		"author: A Consumer\n" +
+		"created: 2026-01-01\n" +
+		"---\n\n" +
+		"# 0001. One decision\n\n" +
+		"## Context\n\nWhy.\n\n" +
+		"## Decision\n\nWhat.\n\n" +
+		"## Consequences\n\nThen.\n"
+
+	path := filepath.Join(r.TypeDir("adr"), "0001-one-decision.md")
+	sibling := filepath.Join(r.TypeDir("adr"), "0002-broken.md")
+
+	for p, b := range map[string]string{path: body, sibling: "no frontmatter\n"} {
+		if err := os.WriteFile(p, []byte(b), config.FileMode); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	report, err := r.ValidateDocument(t.Context(), path)
+	if err != nil {
+		t.Fatalf("ValidateDocument = %v, want nil", err)
+	}
+
+	if report.ID != "ADR-0001" || report.Type != "adr" || len(report.ContentSHA256) != 64 {
+		t.Errorf("ValidateDocument = id %q type %q digest %q", report.ID, report.Type, report.ContentSHA256)
+	}
+
+	if !bytes.Equal(report.Content, []byte(body)) {
+		t.Error("ValidateDocument().Content is not the file's bytes")
+	}
+
+	marked, err := r.InsertRegionsIn(t.Context(), []string{path})
+	if err != nil {
+		t.Fatalf("InsertRegionsIn = %v, want nil", err)
+	}
+
+	if len(marked.Changed) != 1 {
+		t.Errorf("InsertRegionsIn changed %d documents, want 1", len(marked.Changed))
+	}
+
+	if got, err := os.ReadFile(sibling); err != nil || string(got) != "no frontmatter\n" {
+		t.Errorf("the sibling changed: %q, %v", got, err)
+	}
+
+	outside := filepath.Join(t.TempDir(), "x.md")
+	if err := os.WriteFile(outside, []byte(body), config.FileMode); err != nil {
+		t.Fatal(err)
+	}
+
+	var pathErr *repo.PathError
+	if _, err := r.ValidateDocument(t.Context(), outside); !errors.As(err, &pathErr) {
+		t.Errorf("ValidateDocument(outside) = %v, want *repo.PathError", err)
+	}
+}

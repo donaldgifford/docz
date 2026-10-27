@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -641,5 +644,227 @@ func TestValidateFix_JSONCarriesBothHalves(t *testing.T) {
 
 	if got.Report.Errors != 0 {
 		t.Errorf("errors = %d, want 0 after a successful fix", got.Report.Errors)
+	}
+}
+
+// vtestDigest is the lowercase hex SHA-256 of a file.
+func vtestDigest(t *testing.T, path string) string {
+	t.Helper()
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sum := sha256.Sum256(b)
+
+	return hex.EncodeToString(sum[:])
+}
+
+// vtestTree maps every file under root to its digest.
+func vtestTree(t *testing.T, root string) map[string]string {
+	t.Helper()
+
+	out := make(map[string]string)
+
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err == nil && !entry.IsDir() {
+			out[path] = vtestDigest(t, path)
+		}
+
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return out
+}
+
+// TestValidateDocument_OneDocument covers `docz validate <id|path>`: one
+// document's findings, no template entry, and its digest.
+func TestValidateDocument_OneDocument(t *testing.T) {
+	doc := strings.Replace(vtestADRClean, `<!--docz:references:start-->
+## References
+
+- [RFC-0001](../rfc/0001-a-proposal.md)
+<!--docz:references:end-->
+`, "", 1)
+
+	r, out, root := vtestRunner(t, doc)
+	path := filepath.Join(root, "docs", "adr", "0001-a-decision.md")
+
+	for _, arg := range []string{"ADR-0001", path, filepath.Join("docs", "adr", "0001-a-decision.md")} {
+		out.Reset()
+
+		err := r.validate(t.Context(), validateOpts{format: formatJSON}, []string{arg})
+		if err == nil || exitCodeFor(err) != 1 {
+			t.Fatalf("validate(%q) = %v, want exit 1 for a missing region", arg, err)
+		}
+
+		var got validateOutput
+		if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+			t.Fatalf("validate(%q) output is not JSON: %v", arg, err)
+		}
+
+		if got.SchemaVersion != 1 || len(got.Docs) != 1 || len(got.Templates) != 0 || len(got.Index) != 0 {
+			t.Fatalf("validate(%q) = %+v, want one document and nothing else", arg, got)
+		}
+
+		if got.Docs[0].ContentSHA256 != vtestDigest(t, path) {
+			t.Errorf("validate(%q) content_sha256 = %s, want the file's digest", arg, got.Docs[0].ContentSHA256)
+		}
+
+		if got.Errors == 0 {
+			t.Errorf("validate(%q) errors = 0, want the missing region counted", arg)
+		}
+	}
+}
+
+func TestValidateDocument_CleanDocument(t *testing.T) {
+	r, out, _ := vtestRunner(t, vtestADRClean)
+
+	if err := r.validate(t.Context(), validateOpts{format: formatText}, []string{"ADR-0001"}); err != nil {
+		t.Fatalf("validate(ADR-0001) = %v, want nil\n%s", err, out.String())
+	}
+
+	if out.Len() != 0 {
+		t.Errorf("validate(ADR-0001) printed %q, want nothing for a clean document", out.String())
+	}
+}
+
+// TestValidateDocument_TypeNameFirst pins that a type name is never read as
+// a document, so `docz validate adr` keeps its type-wide report.
+func TestValidateDocument_TypeNameFirst(t *testing.T) {
+	r, out, root := vtestRunner(t, vtestADRClean)
+	vtestWrite(t, filepath.Join(root, "adr"), "not a document\n")
+
+	if err := r.validate(t.Context(), validateOpts{format: formatJSON}, []string{"adr"}); err != nil {
+		t.Fatalf("validate(adr) = %v", err)
+	}
+
+	var got validateOutput
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Templates) != 1 {
+		t.Errorf("validate(adr) has %d template entries, want the type-wide run's 1", len(got.Templates))
+	}
+}
+
+// TestValidateDocument_FixTouchesOnlyThatFile is the tree-digest proof that
+// --fix on one document writes no other byte.
+func TestValidateDocument_FixTouchesOnlyThatFile(t *testing.T) {
+	r, out, root := vtestRunner(t, vtestUnmarked())
+
+	target := filepath.Join(root, "docs", "adr", "0001-a-decision.md")
+	sibling := filepath.Join(root, "docs", "adr", "0002-another.md")
+	vtestWrite(t, sibling, strings.ReplaceAll(vtestUnmarked(), "ADR-0001", "ADR-0002"))
+
+	before := vtestTree(t, root)
+
+	if err := r.validate(t.Context(), validateOpts{format: formatJSON, fix: true}, []string{target}); err != nil {
+		t.Fatalf("validate --fix %s = %v\n%s", target, err, out.String())
+	}
+
+	after := vtestTree(t, root)
+
+	for path, sum := range before {
+		if changed := after[path] != sum; changed != (path == target) {
+			t.Errorf("after --fix on one document, %s changed = %v", path, changed)
+		}
+	}
+
+	var got validateFixOutput
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got.SchemaVersion != 1 || len(got.Fixed.Changed) != 1 || len(got.Report.Docs) != 1 {
+		t.Errorf("validate --fix output = %+v", got)
+	}
+}
+
+// TestValidate_JSONBeforeAndAfter pins the schema_version and content_sha256
+// additions as additive. The before goldens were captured from the code as
+// it stood before they existed; removing the two fields from today's output
+// must give them back byte for byte, and the after goldens hold today's
+// output whole (regenerate with -update).
+func TestValidate_JSONBeforeAndAfter(t *testing.T) {
+	cases := []struct {
+		name string
+		doc  string
+		fix  bool
+	}{
+		{"before", vtestADRClean, false},
+		{"fix-before", vtestUnmarked(), true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r, out, _ := vtestRunner(t, tc.doc)
+
+			if err := r.validate(t.Context(), validateOpts{format: formatJSON, fix: tc.fix}, nil); err != nil {
+				t.Fatalf("validate = %v", err)
+			}
+
+			afterPath := filepath.Join("testdata", "golden", "validate",
+				strings.Replace(tc.name, "before", "after", 1)+".json")
+
+			if *updateExportGoldens {
+				if err := os.WriteFile(afterPath, out.Bytes(), config.FileMode); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			want, err := os.ReadFile(afterPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Equal(out.Bytes(), want) {
+				t.Errorf("output differs from %s:\n%s", afterPath, out.String())
+			}
+
+			var current map[string]any
+			if err := json.Unmarshal(out.Bytes(), &current); err != nil {
+				t.Fatal(err)
+			}
+
+			stripAdditions(current)
+
+			before, err := os.ReadFile(filepath.Join("testdata", "golden", "validate", tc.name+".json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var old map[string]any
+			if err := json.Unmarshal(before, &old); err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(current, old) {
+				got, _ := json.MarshalIndent(current, "", "  ")
+				t.Errorf("output without the additions differs from %s.json:\n%s", tc.name, got)
+			}
+		})
+	}
+}
+
+// stripAdditions removes schema_version and every content_sha256.
+func stripAdditions(node any) {
+	switch v := node.(type) {
+	case map[string]any:
+		delete(v, "schema_version")
+		delete(v, "content_sha256")
+
+		for _, child := range v {
+			stripAdditions(child)
+		}
+	case []any:
+		for _, child := range v {
+			stripAdditions(child)
+		}
 	}
 }

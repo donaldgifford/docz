@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "review_id": "9f1c2a4e-0b7d-4f7e-9a51-3c8e2d6b1f00",
+  "round": 1,
+  "submission_id": "s_0a1b2c3d4e5f60718293a4b5",
+  "submitted_at": "2026-10-25T15:04:05Z",
+  "document": {
+    "id": "DESIGN-0024",
+    "path": "docs/design/0024-docz-review.md",
+    "type": "design",
+    "content_sha256": "afa785fc8646bc737d991fe519abf88956780f429fb0e16e352a71a7de9cf835"
+  },
+  "outcome": "approved",
+  "questions": [],
+  "annotations": [],
+  "status": "",
+  "findings": []
+}

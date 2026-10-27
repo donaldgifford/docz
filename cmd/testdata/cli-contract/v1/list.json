@@ -1,0 +1,29 @@
+[
+  {
+    "id": "ADR-0001",
+    "title": "Keep frameworks in a register",
+    "status": "Accepted",
+    "date": "2026-03-04",
+    "author": "Parity Fixture",
+    "type": "ADR",
+    "file": "0001-keep-frameworks-in-a-register.md"
+  },
+  {
+    "id": "FW-0001",
+    "title": "Adopt the internal auth framework",
+    "status": "Active",
+    "date": "2026-03-04",
+    "author": "Parity Fixture",
+    "type": "FRAMEWORKS",
+    "file": "0001-adopt-the-internal-auth-framework.md"
+  },
+  {
+    "id": "FW-0002",
+    "title": "Retire the legacy job runner",
+    "status": "Deprecated",
+    "date": "2026-03-04",
+    "author": "Parity Fixture",
+    "type": "FRAMEWORKS",
+    "file": "0002-retire-the-legacy-job-runner.md"
+  }
+]

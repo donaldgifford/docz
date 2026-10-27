@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "docz_version": "dev",
+  "path": "docs/impl/0001-phase-out-the-legacy-scanner.md",
+  "type": "impl",
+  "id": "IMPL-0001",
+  "schema": "impl",
+  "content_sha256": "a7c60a54a03566c33e6d63e745cd6291aa7d119e71bf72f5601e39160ab212da",
+  "frontmatter": {
+    "id": "IMPL-0001",
+    "title": "Phase out the legacy scanner",
+    "status": "In Progress",
+    "author": "Parity Fixture",
+    "created": "2026-03-04"
+  },
+  "statuses": [
+    "Draft",
+    "In Progress",
+    "Completed",
+    "Paused",
+    "Cancelled"
+  ],
+  "inferred": false,
+  "regions": [
+    {
+      "kind": "toc",
+      "start": 13,
+      "end": 32,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "objective",
+      "start": 34,
+      "end": 40,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "scope",
+      "start": 42,
+      "end": 56,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "in-scope",
+      "start": 45,
+      "end": 49,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "out-of-scope",
+      "start": 51,
+      "end": 55,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "phase",
+      "start": 65,
+      "end": 85,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "tasks",
+      "start": 71,
+      "end": 77,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "criteria",
+      "start": 79,
+      "end": 84,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "phase",
+      "start": 89,
+      "end": 108,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "tasks",
+      "start": 94,
+      "end": 100,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "criteria",
+      "start": 102,
+      "end": 107,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "phase",
+      "start": 112,
+      "end": 133,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "tasks",
+      "start": 117,
+      "end": 124,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "criteria",
+      "start": 126,
+      "end": 132,
+      "depth": 1,
+      "closed": true
+    },
+    {
+      "kind": "file-changes",
+      "start": 137,
+      "end": 146,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "testing",
+      "start": 148,
+      "end": 154,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "dependencies",
+      "start": 156,
+      "end": 160,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "references",
+      "start": 162,
+      "end": 166,
+      "depth": 0,
+      "closed": true
+    }
+  ],
+  "headings": [
+    {
+      "level": 2,
+      "text": "Objective",
+      "anchor": "objective",
+      "line": 35
+    },
+    {
+      "level": 2,
+      "text": "Scope",
+      "anchor": "scope",
+      "line": 43
+    },
+    {
+      "level": 3,
+      "text": "In Scope",
+      "anchor": "in-scope",
+      "line": 46
+    },
+    {
+      "level": 3,
+      "text": "Out of Scope",
+      "anchor": "out-of-scope",
+      "line": 52
+    },
+    {
+      "level": 2,
+      "text": "Implementation Phases",
+      "anchor": "implementation-phases",
+      "line": 58
+    },
+    {
+      "level": 3,
+      "text": "Phase 1: \u003c!-- Foundation / Setup / Core --\u003e",
+      "anchor": "phase-1-",
+      "line": 66
+    },
+    {
+      "level": 4,
+      "text": "Tasks",
+      "anchor": "tasks",
+      "line": 72
+    },
+    {
+      "level": 4,
+      "text": "Success Criteria",
+      "anchor": "success-criteria",
+      "line": 80
+    },
+    {
+      "level": 3,
+      "text": "Phase 2: \u003c!-- Core Feature / Primary Commands --\u003e",
+      "anchor": "phase-2-",
+      "line": 90
+    },
+    {
+      "level": 4,
+      "text": "Tasks",
+      "anchor": "tasks-1",
+      "line": 95
+    },
+    {
+      "level": 4,
+      "text": "Success Criteria",
+      "anchor": "success-criteria-1",
+      "line": 103
+    },
+    {
+      "level": 3,
+      "text": "Phase 3: \u003c!-- Polish / Edge Cases / CI Readiness --\u003e",
+      "anchor": "phase-3-",
+      "line": 113
+    },
+    {
+      "level": 4,
+      "text": "Tasks",
+      "anchor": "tasks-2",
+      "line": 118
+    },
+    {
+      "level": 4,
+      "text": "Success Criteria",
+      "anchor": "success-criteria-2",
+      "line": 127
+    },
+    {
+      "level": 2,
+      "text": "File Changes",
+      "anchor": "file-changes",
+      "line": 138
+    },
+    {
+      "level": 2,
+      "text": "Testing Plan",
+      "anchor": "testing-plan",
+      "line": 149
+    },
+    {
+      "level": 2,
+      "text": "Dependencies",
+      "anchor": "dependencies",
+      "line": 157
+    },
+    {
+      "level": 2,
+      "text": "References",
+      "anchor": "references",
+      "line": 163
+    }
+  ],
+  "open_questions": [],
+  "tasks": [
+    {
+      "line": 74,
+      "text": "Task description",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 75,
+      "text": "Task description",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 76,
+      "text": "Write unit tests for ...",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 97,
+      "text": "Task description",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 98,
+      "text": "Task description",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 99,
+      "text": "Write integration tests for ...",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 120,
+      "text": "Audit error messages for consistency",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 121,
+      "text": "Ensure `make ci` passes",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 122,
+      "text": "Review test coverage (target: \u003e80%)",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 123,
+      "text": "Clean up any TODO/FIXME comments",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 151,
+      "text": "Unit tests for all exported functions",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 152,
+      "text": "Integration tests using `t.TempDir()` for filesystem operations",
+      "checked": false,
+      "indent": 0
+    },
+    {
+      "line": 153,
+      "text": "Table-driven tests for functions with multiple input variations",
+      "checked": false,
+      "indent": 0
+    }
+  ],
+  "content": "---\nid: IMPL-0001\ntitle: \"Phase out the legacy scanner\"\nstatus: In Progress\nauthor: Parity Fixture\ncreated: 2026-03-04\n---\n\n\u003c!-- markdownlint-disable-file MD025 MD041 --\u003e\n\n# IMPL-0001: Phase out the legacy scanner\n\n\u003c!--toc:start--\u003e\n- [Objective](#objective)\n- [Scope](#scope)\n  - [In Scope](#in-scope)\n  - [Out of Scope](#out-of-scope)\n- [Implementation Phases](#implementation-phases)\n  - [Phase 1: \u003c!-- Foundation / Setup / Core --\u003e](#phase-1----foundation--setup--core)\n    - [Tasks](#tasks)\n    - [Success Criteria](#success-criteria)\n  - [Phase 2: \u003c!-- Core Feature / Primary Commands --\u003e](#phase-2----core-feature--primary-commands)\n    - [Tasks](#tasks-1)\n    - [Success Criteria](#success-criteria-1)\n  - [Phase 3: \u003c!-- Polish / Edge Cases / CI Readiness --\u003e](#phase-3----polish--edge-cases--ci-readiness)\n    - [Tasks](#tasks-2)\n    - [Success Criteria](#success-criteria-2)\n- [File Changes](#file-changes)\n- [Testing Plan](#testing-plan)\n- [Dependencies](#dependencies)\n- [References](#references)\n\u003c!--toc:end--\u003e\n\n\u003c!--docz:objective:start--\u003e\n## Objective\n\n\u003c!-- What is being implemented? Link to the RFC/DESIGN/PLAN it implements. --\u003e\n\n**Implements:** \u003c!-- RFC-XXXX / DESIGN-XXXX / PLAN-XXXX --\u003e\n\u003c!--docz:objective:end--\u003e\n\n\u003c!--docz:scope:start--\u003e\n## Scope\n\n\u003c!--docz:in-scope:start--\u003e\n### In Scope\n\n-\n\u003c!--docz:in-scope:end--\u003e\n\n\u003c!--docz:out-of-scope:start--\u003e\n### Out of Scope\n\n-\n\u003c!--docz:out-of-scope:end--\u003e\n\u003c!--docz:scope:end--\u003e\n\n## Implementation Phases\n\nEach phase builds on the previous one. A phase is complete when all its tasks\nare checked off and its success criteria are met.\n\n---\n\n\u003c!--docz:phase:start--\u003e\n### Phase 1: \u003c!-- Foundation / Setup / Core --\u003e\n\n\u003c!-- Describe what this phase establishes. Focus on the internal\n     building blocks that later phases depend on. --\u003e\n\n\u003c!--docz:tasks:start--\u003e\n#### Tasks\n\n- [ ] Task description\n- [ ] Task description\n- [ ] Write unit tests for ...\n\u003c!--docz:tasks:end--\u003e\n\n\u003c!--docz:criteria:start--\u003e\n#### Success Criteria\n\n- `go build ./...` succeeds with no errors\n- ...\n\u003c!--docz:criteria:end--\u003e\n\u003c!--docz:phase:end--\u003e\n\n---\n\n\u003c!--docz:phase:start--\u003e\n### Phase 2: \u003c!-- Core Feature / Primary Commands --\u003e\n\n\u003c!-- Describe what this phase delivers to users. --\u003e\n\n\u003c!--docz:tasks:start--\u003e\n#### Tasks\n\n- [ ] Task description\n- [ ] Task description\n- [ ] Write integration tests for ...\n\u003c!--docz:tasks:end--\u003e\n\n\u003c!--docz:criteria:start--\u003e\n#### Success Criteria\n\n- Feature X works end-to-end\n- ...\n\u003c!--docz:criteria:end--\u003e\n\u003c!--docz:phase:end--\u003e\n\n---\n\n\u003c!--docz:phase:start--\u003e\n### Phase 3: \u003c!-- Polish / Edge Cases / CI Readiness --\u003e\n\n\u003c!-- Harden, test, and prepare for release. --\u003e\n\n\u003c!--docz:tasks:start--\u003e\n#### Tasks\n\n- [ ] Audit error messages for consistency\n- [ ] Ensure `make ci` passes\n- [ ] Review test coverage (target: \u003e80%)\n- [ ] Clean up any TODO/FIXME comments\n\u003c!--docz:tasks:end--\u003e\n\n\u003c!--docz:criteria:start--\u003e\n#### Success Criteria\n\n- `make ci` passes with zero errors\n- Test coverage \u003e80% for all packages\n- All error paths produce clear, actionable messages\n\u003c!--docz:criteria:end--\u003e\n\u003c!--docz:phase:end--\u003e\n\n---\n\n\u003c!--docz:file-changes:start--\u003e\n## File Changes\n\n\u003c!-- Key files that will be created or modified --\u003e\n\n| File | Action | Description |\n| ---- | ------ | ----------- |\n|      | Create |             |\n|      | Modify |             |\n\u003c!--docz:file-changes:end--\u003e\n\n\u003c!--docz:testing:start--\u003e\n## Testing Plan\n\n- [ ] Unit tests for all exported functions\n- [ ] Integration tests using `t.TempDir()` for filesystem operations\n- [ ] Table-driven tests for functions with multiple input variations\n\u003c!--docz:testing:end--\u003e\n\n\u003c!--docz:dependencies:start--\u003e\n## Dependencies\n\n\u003c!-- External dependencies, blocking work, prerequisites --\u003e\n\u003c!--docz:dependencies:end--\u003e\n\n\u003c!--docz:references:start--\u003e\n## References\n\n\u003c!-- Links to related RFCs, ADRs, designs, plans, issues --\u003e\n\u003c!--docz:references:end--\u003e\n"
+}

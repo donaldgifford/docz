@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/donaldgifford/docz/schemas/cli/create/v1",
+  "$version": "1.0",
+  "title": "docz create",
+  "description": "Output of `docz create <type> <title> --format json`: the whole of stdout.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Major version of this output's shape"
+    },
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string",
+      "description": "Path of the created document"
+    },
+    "title": {
+      "type": "string"
+    },
+    "generic_template": {
+      "type": "boolean"
+    },
+    "update": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/update"
+        }
+      ],
+      "description": "null when the index was not refreshed"
+    },
+    "nav": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/nav"
+        }
+      ],
+      "description": "null when the MkDocs nav was not rebuilt"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "type",
+    "path",
+    "title",
+    "generic_template",
+    "update",
+    "nav"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "update": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "dir": {
+          "type": "string"
+        },
+        "docs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "index": {
+          "$ref": "#/$defs/index"
+        },
+        "toc": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/toc"
+            }
+          ],
+          "description": "null when the ToC is disabled"
+        }
+      },
+      "required": [
+        "type",
+        "dir",
+        "docs",
+        "index",
+        "toc"
+      ],
+      "additionalProperties": false
+    },
+    "index": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "none",
+            "created",
+            "updated",
+            "no_markers",
+            "dry_run_created",
+            "dry_run_updated"
+          ]
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "toc": {
+      "type": "object",
+      "properties": {
+        "updated": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toc_file"
+          }
+        },
+        "unchanged": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toc_file"
+          }
+        },
+        "would_update": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toc_file"
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "write_errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/toc_error"
+          }
+        }
+      },
+      "required": [
+        "updated",
+        "unchanged",
+        "would_update",
+        "skipped",
+        "write_errors"
+      ],
+      "additionalProperties": false
+    },
+    "toc_file": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "headings": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "path",
+        "headings"
+      ],
+      "additionalProperties": false
+    },
+    "toc_error": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "nav": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "pages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "written": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "pages",
+        "written"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

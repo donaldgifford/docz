@@ -66,6 +66,45 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
 
+      # docz-review (DESIGN-0024 section 10): goreleaser has no Bun builder,
+      # so the four binaries, their checksum file, and an SBOM are built
+      # here and attached through .goreleaser.yml's release.extra_files.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+
+      - name: Install ui dependencies
+        working-directory: ui
+        run: bun install --frozen-lockfile
+
+      # build:review typechecks the whole ui project, generated clients
+      # included.
+      - name: Generate ui clients
+        run: |
+          just ui gen-api
+          just ui gen-cli
+
+      - name: Build docz-review
+        run: just ui build-review "${{ needs.bump-version.outputs.tag }}"
+
+      # syft itemises the JavaScript the binaries were compiled from; the
+      # Bun runtime each one embeds is not in it, so the version is recorded
+      # in the document's comment and the release notes say so.
+      - name: docz-review SBOM
+        env:
+          TAG: ${{ needs.bump-version.outputs.tag }}
+        run: |
+          syft dir:ui --source-name docz-review --source-version "$TAG" \
+            --output spdx-json=sbom.tmp.json
+          jq --arg bun "$(bun --version)" \
+            '.creationInfo.comment = "Compiled with bun build --compile on Bun \($bun); the Bun runtime embedded in each binary is not itemised."' \
+            sbom.tmp.json > ui/dist-review-bin/docz-review.spdx.json
+          rm sbom.tmp.json
+
       # Not for signing (the checksums are GPG-signed): goreleaser-action
       # uses cosign, when it is on PATH, to verify the signature on the
       # GoReleaser download it fetches, and skips that check without it.
@@ -80,6 +119,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+
+      # goreleaser signs only its own checksums.txt.
+      - name: Sign docz-review checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+          TAG: ${{ needs.bump-version.outputs.tag }}
+        run: |
+          gpg --batch --local-user "$GPG_FINGERPRINT" \
+            --output ui/dist-review-bin/docz-review_checksums.txt.sig \
+            --detach-sign ui/dist-review-bin/docz-review_checksums.txt
+          gh release upload "$TAG" ui/dist-review-bin/docz-review_checksums.txt.sig
 
   # The image publish jobs run on every main push, NOT gated on the binary
   # release: the internal `image` job is gated on `inputs.tag != ''`, so it

@@ -5,6 +5,53 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(api/cli)* JSON Schemas for the CLI's governed outputs
+- *(repo)* ValidateDocument validates one document and reads no sibling
+- *(repo)* InsertRegionsIn marks the named documents only
+- *(cmd)* Docz inspect reports one document's structure
+- *(cmd)* Docz validate takes one document by id or path
+- *(cmd)* Docz create --format json prints one envelope
+- *(ui)* Generate the CLI contract types and open schemas
+- *(ui)* Validate docz CLI output at run time against the open schemas
+- *(ui)* A line-preserving preprocess mode for the review render
+- *(ui)* A review render mode stamping data-line after sanitize
+- *(ui)* Wrap review blocks in their docz regions
+- *(ui)* Rendered-text anchors and their resolver
+- *(ui)* The review draft and its actionable set
+- *(ui)* The round's feedback message, golden-tested
+- *(ui)* The review page's client and an in-process fake server
+- *(ui)* Open-question cards for the review page
+- *(ui)* Annotations with a selection popover and painted highlights
+- *(ui)* Findings with dismiss and fix, and the status select
+- *(ui)* The diff since the previous round
+- *(ui)* The review page entry, app, and per-document view
+- *(ui)* Docz-review's session state and its state machine
+- *(ui)* Docz-review's session lease
+- *(ui)* Docz-review's docz runner
+- *(ui)* Docz-review arm, the PostToolUse hook's half
+- *(ui)* Docz-review's rounds and submission rules
+- *(ui)* Docz-review's local server
+- *(ui)* The docz-review command
+- *(plugin)* Docz-review's manifest and hooks
+- *(plugin)* Docz-review's hook wrappers
+- *(plugin)* The /docz-review:review skill
+- *(plugin)* Make the repository the docz marketplace
+
+### Bug Fixes
+
+- *(ui)* Three findings from docz-review's security pass
+- *(plugin)* Put the hooks' if filter on the handler, not the matcher group
+- *(ui)* Keep a heading's copy button out of a review quote
+- *(plugin)* Show the missing-binary note to the person, not the debug log
+- *(ui)* Override fast-uri to 3.1.9 for seven HIGH CVEs
+- *(ui)* Build the site image with the CLI types and DOM for scripts
+- *(ui)* Strip a raw HTML block's markup until none is left
+- *(ui)* Drop a stray < once a raw HTML block's markup is stripped
+- *(ui)* Read a raw HTML block's text by parsing it, not by regex
+- *(ui)* Accept a docz built where no tag is in reach
+
 ### Documentation
 
 - *(design)* DESIGN-0024, docz-review and the CLI's JSON contract
@@ -14,6 +61,48 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - IMPL-0027 questions 1, 3 to 5, 7 to 9 resolved; the plugin lives in this repository
 - *(impl)* IMPL-0027 question 6 resolved (a); private-marketplace test in Phase 5
 - *(impl)* IMPL-0027 question 2 resolved (a); every question answered
+- Docz inspect, single-document validate, create --format json, api/cli
+- *(impl)* IMPL-0027 Phase 2 gates pass
+- *(ui)* A docz-review section in ui/CLAUDE.md
+- *(ui)* Running and installing docz-review
+- *(impl)* Close Phase 4 of IMPL-0027 and note docz-review's server
+- *(plugin)* Docz-review's README
+- *(impl)* Close Phase 5 of IMPL-0027
+- Docz-review in CLAUDE.md
+- The CLI's JSON contract and the plugin in the READMEs
+- DESIGN-0024 Implemented, IMPL-0027 In Progress
+- *(impl)* Close Phase 6 of IMPL-0027 up to the release
+- *(impl)* IMPL-0027's testing plan after the security pass
+- *(plugin)* Record the hook observations from the docz-review trial
+- *(plugin)* Run docz-review from a checkout, and what a review looks like
+- *(impl)* IMPL-0027's claude-skills sentence is up for review
+
+### Testing
+
+- *(repo)* ValidateDocument and InsertRegionsIn stay on the named file
+- *(cmd)* Docz inspect resolution, refusals, every type, and the null fields
+- *(cmd)* Single-document validate and before-and-after JSON goldens
+- *(cmd)* Docz create --format json is one object, notes on stderr
+- *(cmd)* The CLI JSON contract test over the closed schemas
+- *(consumer)* ValidateDocument and InsertRegionsIn from outside the module
+- *(ui)* CLI output validation over the Go contract fixtures
+- *(ui)* Anchor cases ported from carryMarkers plus rendered text
+- *(ui)* A review fixture repository, dev-review, and test-review
+- *(ui)* The review page end to end under chromium
+- *(ui)* Docz-review's server cases from the design's testing strategy
+- *(ui)* The review record's contract test
+- *(plugin)* The hooks through their wrappers
+- *(ui)* Send the oversized review body's head over a raw socket
+
+### Miscellaneous Tasks
+
+- The ui path filter covers api/cli and ui.just
+- *(ui)* Docz-review's four compiled binaries
+- Docz-review's tests, binaries, and real-server e2e
+- Release docz-review's binaries with docz
+- The docz-review plugin's job
+- *(chart)* 1.2.0 with appVersion 2.2.0 for the release
+- *(ui)* Format check runs the lockfile's prettier
 
 ## [2.1.3] - 2026-10-23
 

@@ -19,9 +19,13 @@ COPY . .
 # orval reads ../api/openapi.yaml, which from WORKDIR /app is /api: the
 # same relative layout as ui/ beside api/ in the repository.
 COPY --from=spec openapi.yaml /api/openapi.yaml
-# The orval client is generated, never committed (src/api/__generated__
-# is gitignored) — regenerate from the spec before building.
-RUN bun run gen-api && bun run build
+# gen-cli reads the CLI's JSON schemas from ../api/cli the same way; the
+# review page's types come from them and `tsc -b` checks that page too.
+COPY --from=spec cli /api/cli
+# The orval client and the CLI types are generated, never committed
+# (src/api/__generated__ and src/cli/__generated__ are gitignored) —
+# regenerate both before building.
+RUN bun run gen-api && bun run gen-cli && bun run build
 
 # Precompress the text assets where it pays; fonts/images are already
 # compressed. serve.ts prefers the .gz sibling when the client accepts.

@@ -122,8 +122,7 @@ describe("the theme variables", () => {
     // symptom is a blank figure, not an error — so assert each key is
     // one mermaid keeps rather than trusting the v11-era comment.
     const merged = mermaid.mermaidAPI.getSiteConfig().themeVariables as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(merged?.[key]).toBe(theme[key]);
   });
 
@@ -136,8 +135,7 @@ describe("the theme variables", () => {
     expect(theme.nodeBorder).toBeDefined();
     expect(theme.useGradient).toBeUndefined();
     const merged = mermaid.mermaidAPI.getSiteConfig().themeVariables as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(merged?.useGradient).toBe(false);
   });
 });

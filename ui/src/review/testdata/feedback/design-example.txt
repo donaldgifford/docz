@@ -1,0 +1,22 @@
+docz review: DESIGN-0024 docz-review…, round 2: changes requested
+
+Open questions:
+- Q1 Where do the schemas live? → a
+- Q3 How are the TypeScript types produced? → other:
+  "put the shapes in api/openapi.yaml"
+- Q5 (no answer; leave open)
+
+Annotations:
+1. [detailed-design › 3. docz inspect, line 212] "Anchors are quotes."
+   comment: Say what INV-0021 decided once it closes.
+2. [open-questions › 4., line 401] delete: "option (c)"
+3. [background, about line 96; quote not found] replace "day-to-day"
+   → "everyday"
+4. [document] Shorten the Background section.
+
+Status: set to In Review
+Validation: fix frontmatter.status at line 3
+
+No action: 1 "looks good" (overview, line 50); 1 warning dismissed (references.no-link, line 589)
+
+Resolve Q1 and Q3 in the document in the fleet's format (`> **Resolved 2026-10-24: (a).**`), apply the annotations, then finish your turn so the next round can open.

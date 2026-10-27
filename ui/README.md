@@ -231,6 +231,71 @@ Redis, Meilisearch) on a private network. See
 `deploy/ui/compose.local.yaml` (via `just ui local-up`) runs just the site
 container joined to docz-api's local development stack.
 
+## docz-review
+
+`docz-review` is the blocking review page for documents an agent writes
+(DESIGN-0024). It shares this project's markdown pipeline but is its
+own entry (`review.html`), its own Bun server (`review/`), and its own
+binary. With the Claude Code plugin installed, a session's `Stop` hook
+opens the page for every document the session created; it also runs by
+hand.
+The plugin is `../plugins/docz-review/`, whose README covers installing
+it and what a session sees.
+
+### From a checkout
+
+```bash
+just build                # the docz it drives, at build/bin/docz
+cd ui
+bun run build:review      # the page, into ui/dist-review
+DOCZ_REVIEW_DOCZ=../build/bin/docz bun review/main.ts DESIGN-0024 --repo-root ..
+```
+
+The page opens in your browser; `--no-open` prints its URL to stderr
+instead (the URL carries the session's token, so treat it as a secret).
+Submit, Approve, or Dismiss each document, or click Done. `--json`
+prints the review records when the run ends.
+
+| Command | Does |
+| --- | --- |
+| `docz-review <id\|path>...` | Review the named documents now |
+| `docz-review --resume <review id>` | Resume a review started by hand |
+| `docz-review --pending --hook` | The `Stop` hook: review the session's armed documents |
+| `docz-review arm <id\|path>...` | Check the documents resolve, as the plugin's skill does |
+| `docz-review pending [--purge]` | List this repository's documents under review, or purge expired state |
+| `docz-review --version` | Its version, the contract it speaks, and the docz it found |
+
+Environment: `DOCZ_REVIEW_DOCZ` (the docz binary, else `PATH`),
+`DOCZ_REVIEW_STATE_DIR` (else `$XDG_STATE_HOME/docz/review`, else
+`$HOME/.local/state/docz/review`), `DOCZ_REVIEW_BROWSER` (else
+`BROWSER`, else `open` or `xdg-open`), `DOCZ_REVIEW_PORT` (else
+random). docz-review needs docz 2.2.0 or later.
+
+Recipes: `just ui dev-review` runs the page against an in-process fake
+server with no docz at all, `just ui test-review` runs the page's and
+the server's tests, `just ui e2e-review` the browser test, and
+`just ui build-review` the four compiled binaries into
+`ui/dist-review-bin/`, smoke-testing the host's from an empty
+directory.
+
+### Install with mise
+
+The binaries are attached to docz's GitHub releases. `docz` installs
+from the same repository, so `docz-review` needs a tool alias to be a
+second tool rather than a second entry for the first:
+
+```toml
+[tool_alias]
+docz-review = "github:donaldgifford/docz"
+
+[tools]
+docz = "latest"
+docz-review = { version = "latest", asset_pattern = "docz-review_{{ os(macos=\"darwin\") }}_{{ arch(x64=\"amd64\") }}", bin = "docz-review" }
+```
+
+Verify a download against `docz-review_checksums.txt` and its
+signature, both attached to the same release.
+
 ## How it fits together
 
 - `../api/openapi.yaml` — docz-api's spec, at the repository root and

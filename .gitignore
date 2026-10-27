@@ -95,3 +95,7 @@ playwright-report/
 coverage.html
 coverage.txt
 .claude/donald-loop.local.md
+
+# docz-review's embedded-asset module and compiled binaries (just ui build-review)
+ui/review/__generated__/
+ui/dist-review-bin/

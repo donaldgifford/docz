@@ -7,8 +7,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:review": "vite --mode review --host 127.0.0.1",
     "dev:msw": "VITE_API_MODE=msw vite",
     "build": "tsc -b && vite build",
+    "build:review": "tsc -b && vite build --mode review",
     "build:msw": "VITE_API_MODE=msw VITE_NAV_LINKS='[{\"label\":\"RFCs\",\"href\":\"/donaldgifford/docz-api/rfc\"}]' vite build --outDir dist-msw",
     "preview": "vite preview",
     "preview:msw": "vite preview --outDir dist-msw --port 4173 --strictPort",
@@ -21,7 +23,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen-api": "orval --config ./orval.config.ts",
-    "gen-api:check": "scripts/gen-api-check.sh"
+    "gen-api:check": "scripts/gen-api-check.sh",
+    "gen-cli": "bun scripts/gen-cli.ts",
+    "gen-review-fixture": "bun scripts/gen-review-fixture.ts",
+    "gen-cli:check": "scripts/gen-cli-check.sh"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "5.3.0",
@@ -34,9 +39,13 @@
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@shikijs/rehype": "^4.3.1",
     "@tanstack/react-query": "^5.101.2",
+    "ajv": "^8.20.0",
     "cmdk": "^1.1.1",
+    "diff": "^9.0.0",
+    "hast-util-raw": "^9.1.0",
     "hast-util-to-jsx-runtime": "^2.3.6",
     "hast-util-to-string": "^3.0.1",
+    "mdast-util-to-string": "^4.0.0",
     "mermaid": "^12.0.0",
     "prom-client": "^15.1.3",
     "react": "^19.2.7",
@@ -55,6 +64,7 @@
   },
   "overrides": {
     "dompurify": "^3.4.17",
+    "fast-uri": "^3.1.9",
     "lodash-es": "^4.18.0"
   },
   "devDependencies": {
@@ -79,8 +89,10 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
+    "json-schema-to-typescript": "^16.0.0",
     "msw": "^2.15.0",
     "orval": "^8.20.0",
+    "prettier": "^3.9.10",
     "tailwindcss": "^4.3.2",
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.63.0",

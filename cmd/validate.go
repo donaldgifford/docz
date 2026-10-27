@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	clischema "github.com/donaldgifford/docz/v2/api/cli"
 	"github.com/donaldgifford/docz/v2/pkg/adr"
 	"github.com/donaldgifford/docz/v2/pkg/design"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/config"
@@ -58,19 +58,31 @@ type validateOpts struct {
 // not a thing a consumer can decode. The `fixed` key is how a consumer knows
 // which shape it has.
 type validateFixOutput struct {
-	Fixed  *repo.InsertRegionsReport `json:"fixed"`
-	Report *repo.ValidateReport      `json:"report"`
+	SchemaVersion int                       `json:"schema_version"`
+	Fixed         *repo.InsertRegionsReport `json:"fixed"`
+	Report        *repo.ValidateReport      `json:"report"`
+}
+
+// validateOutput is the plain `--format json` report with the
+// schema_version api/cli/validate.schema.json pins beside its fields.
+type validateOutput struct {
+	SchemaVersion int `json:"schema_version"`
+	*repo.ValidateReport
 }
 
 var validateCmd = &cobra.Command{
-	Use:   "validate [type]",
+	Use:   "validate [type|id|path]",
 	Short: "Check documents against their schema and report drift",
 	Long: `Validate documents against the regions their schema requires, the content
 rules of each region kind, their frontmatter, and the drift only a
 regeneration can see: a stale table of contents, and a README index table
 that is not what 'docz update' would write.
 
-With no type argument every enabled type is checked.
+With no argument every enabled type is checked. The argument is a type
+name first; anything else is one document, by id or by path (repo-relative
+or absolute, under an enabled type's directory). One document is read once
+and checked alone: no sibling, no template, and no README index is read, and
+--fix writes that document only.
 
 Findings print one per line as 'path:line code detail'. The code is the
 stable part: the wording after it may change, the code will not. With
@@ -86,7 +98,8 @@ fix by hand. A second --fix over the same repository writes nothing.
 Exit codes:
   0  nothing found, or warnings only without --strict
   1  errors were found, or anything was found with --strict
-  2  the command was used wrongly (unknown type, bad --format)
+  2  the command was used wrongly (unknown type, bad --format, a path the
+     repository does not own)
 
 ` + config.TypesHelp(),
 	Args: cobra.MaximumNArgs(1),
@@ -124,6 +137,10 @@ func (r *Runner) validate(ctx context.Context, opts validateOpts, args []string)
 
 	rp := r.repoOrOpen()
 
+	if len(args) == 1 && isDocumentArg(&r.Cfg, args[0]) {
+		return r.validateDocument(ctx, rp, format, opts, args[0])
+	}
+
 	report, err := r.validatePass(ctx, rp, args, opts)
 	if err != nil {
 		return validateExitError(err)
@@ -146,7 +163,7 @@ func (r *Runner) validate(ctx context.Context, opts validateOpts, args []string)
 // Extracted because `--fix` runs it twice — once to find what to mark, once to
 // report what is left — and a fix that reported against a different set of
 // checks than it decided from would be reporting about a different repository.
-func (r *Runner) validatePass(
+func (*Runner) validatePass(
 	ctx context.Context, rp *repo.Repo, args []string, opts validateOpts,
 ) (repo.ValidateReport, error) {
 	report, err := rp.Validate(ctx, args, repo.ValidateOptions{Strict: opts.strict})
@@ -154,7 +171,79 @@ func (r *Runner) validatePass(
 		return report, err
 	}
 
-	r.applyTypeTier(rp, &report)
+	applyTypeTier(&report)
+
+	return report, nil
+}
+
+// validateDocument is `docz validate <id|path>`: one document, read once,
+// with the per-type tier run over the same bytes (DESIGN-0024 §4).
+//
+// The report has the shape a type-wide run prints, with one document in it
+// and no template or index entry, because those are repository findings
+// rather than the document's.
+func (r *Runner) validateDocument(
+	ctx context.Context, rp *repo.Repo, format string, opts validateOpts, arg string,
+) error {
+	first, err := r.documentPass(ctx, rp, arg)
+	if err != nil {
+		return err
+	}
+
+	if !opts.fix {
+		if err := r.printValidateReport(format, &first); err != nil {
+			return err
+		}
+
+		return validateOutcome(&first, opts.strict)
+	}
+
+	var fixed repo.InsertRegionsReport
+
+	if len(fixableTypes(&first)) > 0 {
+		fixed, err = rp.InsertRegionsIn(ctx, []string{first.Docs[0].Path})
+		if err != nil {
+			return validateExitError(err)
+		}
+	}
+
+	second, err := r.documentPass(ctx, rp, first.Docs[0].Path)
+	if err != nil {
+		return err
+	}
+
+	return r.printFixed(format, &fixed, &second, opts.strict)
+}
+
+// isDocumentArg reports whether validate's argument names a document rather
+// than a type: not a type name, and shaped like a path or like an id. A bare
+// word that is neither stays on the type path, so a mistyped type is still
+// reported as an unknown type (exit 2) rather than as a missing document.
+func isDocumentArg(cfg *config.Config, arg string) bool {
+	if _, err := cfg.ValidateType(arg); err == nil {
+		return false
+	}
+
+	return looksLikePath(arg) || strings.Contains(arg, "-")
+}
+
+// documentPass validates one document into a one-entry report.
+func (r *Runner) documentPass(ctx context.Context, rp *repo.Repo, arg string) (repo.ValidateReport, error) {
+	doc, err := r.resolveDocument(ctx, rp, arg)
+	if err != nil {
+		return repo.ValidateReport{}, err
+	}
+
+	report := repo.ValidateReport{Docs: []repo.DocFindings{{
+		Type:          doc.Type,
+		Path:          doc.Path,
+		Schema:        doc.Schema,
+		Content:       doc.Content,
+		ContentSHA256: doc.ContentSHA256,
+		Findings:      doc.Findings,
+	}}}
+
+	applyTypeTier(&report)
 
 	return report, nil
 }
@@ -194,26 +283,40 @@ func (r *Runner) validateFix(
 		return validateExitError(err)
 	}
 
+	return r.printFixed(format, &fixed, &second, opts.strict)
+}
+
+// printFixed prints a --fix run, the pass then the report it left, and
+// returns the second report's exit code.
+func (r *Runner) printFixed(
+	format string, fixed *repo.InsertRegionsReport, second *repo.ValidateReport, strict bool,
+) error {
 	if format == formatJSON {
 		enc := json.NewEncoder(r.Out)
 		enc.SetIndent("", "  ")
 
-		if err := enc.Encode(validateFixOutput{Fixed: &fixed, Report: &second}); err != nil {
+		out := validateFixOutput{
+			SchemaVersion: clischema.SchemaVersionValidate,
+			Fixed:         fixed,
+			Report:        second,
+		}
+
+		if err := enc.Encode(out); err != nil {
 			return err
 		}
 
-		return validateOutcome(&second, opts.strict)
+		return validateOutcome(second, strict)
 	}
 
-	if err := r.printFixReport(&fixed); err != nil {
+	if err := r.printFixReport(fixed); err != nil {
 		return err
 	}
 
-	if err := r.printValidateText(&second); err != nil {
+	if err := r.printValidateText(second); err != nil {
 		return err
 	}
 
-	return validateOutcome(&second, opts.strict)
+	return validateOutcome(second, strict)
 }
 
 // fixableTypes names the types holding at least one document the migration
@@ -292,11 +395,10 @@ func (r *Runner) printFixReport(report *repo.InsertRegionsReport) error {
 // healthy repository, which is the fastest way to teach somebody to ignore
 // output.
 //
-// A document whose bytes cannot be re-read keeps its generic findings and
-// gains a note rather than failing the run: the generic tier already read it
-// once, so a failure here is a race with something else writing the tree, and
-// losing the rest of the report to it would be the wrong trade.
-func (r *Runner) applyTypeTier(rp *repo.Repo, report *repo.ValidateReport) {
+// The bytes are the ones the generic tier judged, carried on the report, so
+// the tiers can never disagree about which version of a file they read
+// (DESIGN-0024 §4).
+func applyTypeTier(report *repo.ValidateReport) {
 	for i := range report.Docs {
 		doc := &report.Docs[i]
 
@@ -305,15 +407,7 @@ func (r *Runner) applyTypeTier(rp *repo.Repo, report *repo.ValidateReport) {
 			continue
 		}
 
-		content, err := os.ReadFile(rp.Path(doc.Path))
-		if err != nil {
-			r.Logger.Debug("type-specific checks skipped",
-				"path", doc.Path, "err", err)
-
-			continue
-		}
-
-		doc.Findings = append(doc.Findings, check(content)...)
+		doc.Findings = append(doc.Findings, check(doc.Content)...)
 
 		sortFindings(doc.Findings)
 	}
@@ -405,7 +499,10 @@ func (r *Runner) printValidateReport(format string, report *repo.ValidateReport)
 		enc := json.NewEncoder(r.Out)
 		enc.SetIndent("", "  ")
 
-		return enc.Encode(report)
+		return enc.Encode(validateOutput{
+			SchemaVersion:  clischema.SchemaVersionValidate,
+			ValidateReport: report,
+		})
 	}
 
 	return r.printValidateText(report)
@@ -511,6 +608,11 @@ func validateExitError(err error) error {
 	var disabled *repo.TypeDisabledError
 	if errors.As(err, &disabled) {
 		return exitErrorf(errExitCode2, "%v", disabled)
+	}
+
+	var pathErr *repo.PathError
+	if errors.As(err, &pathErr) {
+		return exitErrorf(errExitCode2, "%v", pathErr)
 	}
 
 	return err

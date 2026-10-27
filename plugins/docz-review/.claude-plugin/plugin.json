@@ -1,0 +1,13 @@
+{
+  "name": "docz-review",
+  "version": "0.1.0",
+  "description": "Blocks the end of a turn on a browser review of every docz document the agent created, and feeds the reviewer's answers back as the next instruction.",
+  "author": {
+    "name": "Donald Gifford",
+    "url": "https://github.com/donaldgifford"
+  },
+  "homepage": "https://github.com/donaldgifford/docz/tree/main/plugins/docz-review",
+  "repository": "https://github.com/donaldgifford/docz",
+  "license": "Apache-2.0",
+  "keywords": ["docz", "review", "documentation", "hooks"]
+}

@@ -1,0 +1,966 @@
+[
+  {
+    "inspect": {
+      "schema_version": 1,
+      "docz_version": "fixture",
+      "path": "docs/design/0001-review-cache.md",
+      "type": "design",
+      "id": "DESIGN-0001",
+      "schema": "design",
+      "content_sha256": "2f2efe60b30022982e697a7385b6a5aa9e6d87431468efb72beff2bedb706e25",
+      "frontmatter": {
+        "id": "DESIGN-0001",
+        "title": "Review cache",
+        "status": "Draft",
+        "author": "Fixture Author",
+        "created": "2026-03-04"
+      },
+      "statuses": [
+        "Draft",
+        "In Review",
+        "Approved",
+        "Implemented",
+        "Abandoned"
+      ],
+      "inferred": false,
+      "regions": [
+        {
+          "kind": "toc",
+          "start": 13,
+          "end": 34,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "overview",
+          "start": 36,
+          "end": 45,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "goals",
+          "start": 49,
+          "end": 55,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "non-goals",
+          "start": 57,
+          "end": 62,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "background",
+          "start": 64,
+          "end": 73,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "detailed-design",
+          "start": 75,
+          "end": 86,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "api-changes",
+          "start": 88,
+          "end": 93,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "data-model",
+          "start": 95,
+          "end": 100,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "testing",
+          "start": 102,
+          "end": 107,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "rollout",
+          "start": 109,
+          "end": 114,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "open-questions",
+          "start": 116,
+          "end": 136,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "references",
+          "start": 138,
+          "end": 143,
+          "depth": 0,
+          "closed": true
+        }
+      ],
+      "headings": [
+        {
+          "level": 2,
+          "text": "Overview",
+          "anchor": "overview",
+          "line": 37
+        },
+        {
+          "level": 2,
+          "text": "Goals and Non-Goals",
+          "anchor": "goals-and-non-goals",
+          "line": 47
+        },
+        {
+          "level": 3,
+          "text": "Goals",
+          "anchor": "goals",
+          "line": 50
+        },
+        {
+          "level": 3,
+          "text": "Non-Goals",
+          "anchor": "non-goals",
+          "line": 58
+        },
+        {
+          "level": 2,
+          "text": "Background",
+          "anchor": "background",
+          "line": 65
+        },
+        {
+          "level": 3,
+          "text": "Notes",
+          "anchor": "notes",
+          "line": 67
+        },
+        {
+          "level": 2,
+          "text": "Detailed Design",
+          "anchor": "detailed-design",
+          "line": 76
+        },
+        {
+          "level": 3,
+          "text": "Notes",
+          "anchor": "notes-1",
+          "line": 78
+        },
+        {
+          "level": 2,
+          "text": "API / Interface Changes",
+          "anchor": "api--interface-changes",
+          "line": 89
+        },
+        {
+          "level": 2,
+          "text": "Data Model",
+          "anchor": "data-model",
+          "line": 96
+        },
+        {
+          "level": 2,
+          "text": "Testing Strategy",
+          "anchor": "testing-strategy",
+          "line": 103
+        },
+        {
+          "level": 2,
+          "text": "Migration / Rollout Plan",
+          "anchor": "migration--rollout-plan",
+          "line": 110
+        },
+        {
+          "level": 2,
+          "text": "Open Questions",
+          "anchor": "open-questions",
+          "line": 117
+        },
+        {
+          "level": 3,
+          "text": "1. Which cache?",
+          "anchor": "1-which-cache",
+          "line": 119
+        },
+        {
+          "level": 3,
+          "text": "2. How long a TTL?",
+          "anchor": "2-how-long-a-ttl",
+          "line": 125
+        },
+        {
+          "level": 3,
+          "text": "3. Where does the cache live?",
+          "anchor": "3-where-does-the-cache-live",
+          "line": 130
+        },
+        {
+          "level": 2,
+          "text": "References",
+          "anchor": "references",
+          "line": 139
+        }
+      ],
+      "open_questions": [
+        {
+          "number": 1,
+          "title": "Which cache?",
+          "line": 119,
+          "options": [
+            {
+              "letter": "a",
+              "text": "**Valkey.** *(recommendation)*",
+              "recommended": true,
+              "line": 121
+            },
+            {
+              "letter": "b",
+              "text": "Memcached.",
+              "recommended": false,
+              "line": 122
+            },
+            {
+              "letter": "c",
+              "text": "An in-process LRU.",
+              "recommended": false,
+              "line": 123
+            }
+          ],
+          "resolved": null
+        },
+        {
+          "number": 2,
+          "title": "How long a TTL?",
+          "line": 125,
+          "options": [
+            {
+              "letter": "a",
+              "text": "**One hour.** *(recommendation)*",
+              "recommended": true,
+              "line": 127
+            },
+            {
+              "letter": "b",
+              "text": "One day.",
+              "recommended": false,
+              "line": 128
+            }
+          ],
+          "resolved": null
+        },
+        {
+          "number": 3,
+          "title": "Where does the cache live?",
+          "line": 130,
+          "options": [
+            {
+              "letter": "a",
+              "text": "Beside the API.",
+              "recommended": false,
+              "line": 132
+            }
+          ],
+          "resolved": {
+            "date": "2026-03-04",
+            "choice": "a",
+            "note": "",
+            "line": 134
+          }
+        }
+      ],
+      "tasks": [],
+      "content": "---\nid: DESIGN-0001\ntitle: \"Review cache\"\nstatus: Draft\nauthor: Fixture Author\ncreated: 2026-03-04\n---\n\n<!-- markdownlint-disable-file MD025 MD041 -->\n\n# DESIGN-0001: Review cache\n\n<!--toc:start-->\n<!-- markdownlint-capture -->\n<!-- markdownlint-disable MD013 -->\n- [Overview](#overview)\n- [Goals and Non-Goals](#goals-and-non-goals)\n  - [Goals](#goals)\n  - [Non-Goals](#non-goals)\n- [Background](#background)\n  - [Notes](#notes)\n- [Detailed Design](#detailed-design)\n  - [Notes](#notes-1)\n- [API / Interface Changes](#api--interface-changes)\n- [Data Model](#data-model)\n- [Testing Strategy](#testing-strategy)\n- [Migration / Rollout Plan](#migration--rollout-plan)\n- [Open Questions](#open-questions)\n  - [1. Which cache?](#1-which-cache)\n  - [2. How long a TTL?](#2-how-long-a-ttl)\n  - [3. Where does the cache live?](#3-where-does-the-cache-live)\n- [References](#references)\n<!-- markdownlint-restore -->\n<!--toc:end-->\n\n<!--docz:overview:start-->\n## Overview\n\nThe reader re-renders every document on every visit. We use\n**Postgres** for the store and keep a cache in front of it, see\n[the reader](https://example.com/reader) and `docz inspect`.\n\nThe cache is warm. The cache is cold. The cache is warm.\n\n<!--docz:overview:end-->\n\n## Goals and Non-Goals\n\n<!--docz:goals:start-->\n### Goals\n\n- Serve a rendered page in under 50 ms.\n- Keep Tom &amp; Jerry's café notes ☕ intact: naïve résumé 🚀 done.\n\n<!--docz:goals:end-->\n\n<!--docz:non-goals:start-->\n### Non-Goals\n\n- Caching search results.\n\n<!--docz:non-goals:end-->\n\n<!--docz:background:start-->\n## Background\n\n### Notes\n\nThe first notes section.\n\n<p data-line=\"1\">A forged paragraph claiming line one.</p>\n\n<!--docz:background:end-->\n\n<!--docz:detailed-design:start-->\n## Detailed Design\n\n### Notes\n\nThe second notes section, under a heading the background also uses.\n\n```go\nfunc Render(doc []byte) []byte { return doc }\n```\n\n<!--docz:detailed-design:end-->\n\n<!--docz:api-changes:start-->\n## API / Interface Changes\n\n<!-- Public API surface changes, CLI changes, config changes -->\n\n<!--docz:api-changes:end-->\n\n<!--docz:data-model:start-->\n## Data Model\n\n<!-- Schema changes, storage considerations -->\n\n<!--docz:data-model:end-->\n\n<!--docz:testing:start-->\n## Testing Strategy\n\n<!-- How will this be tested? Unit, integration, e2e? -->\n\n<!--docz:testing:end-->\n\n<!--docz:rollout:start-->\n## Migration / Rollout Plan\n\n<!-- How do we get from here to there safely? -->\n\n<!--docz:rollout:end-->\n\n<!--docz:open-questions:start-->\n## Open Questions\n\n### 1. Which cache?\n\n- a. **Valkey.** *(recommendation)*\n- b. Memcached.\n- c. An in-process LRU.\n\n### 2. How long a TTL?\n\n- a. **One hour.** *(recommendation)*\n- b. One day.\n\n### 3. Where does the cache live?\n\n- a. Beside the API.\n\n> **Resolved 2026-03-04: (a).**\n\n<!--docz:open-questions:end-->\n\n<!--docz:references:start-->\n## References\n\n- [DESIGN-0002](0002-unmarked-notes.md)\n\n<!--docz:references:end-->\n"
+    },
+    "findings": []
+  },
+  {
+    "inspect": {
+      "schema_version": 1,
+      "docz_version": "fixture",
+      "path": "docs/design/0002-unmarked-notes.md",
+      "type": "design",
+      "id": "DESIGN-0002",
+      "schema": "design",
+      "content_sha256": "d5aaef88e1d8377bd04e4c0333ec3be8f739ca6e7b0f1ef63c9404f960ae22f8",
+      "frontmatter": {
+        "id": "DESIGN-0002",
+        "title": "Unmarked notes",
+        "status": "Draft",
+        "author": "Fixture Author",
+        "created": "2026-03-04"
+      },
+      "statuses": [
+        "Draft",
+        "In Review",
+        "Approved",
+        "Implemented",
+        "Abandoned"
+      ],
+      "inferred": true,
+      "regions": [
+        {
+          "kind": "overview",
+          "start": 10,
+          "end": 15,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "goals",
+          "start": 17,
+          "end": 21,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "non-goals",
+          "start": 21,
+          "end": 25,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "open-questions",
+          "start": 25,
+          "end": 32,
+          "depth": 0,
+          "closed": true
+        }
+      ],
+      "headings": [
+        {
+          "level": 2,
+          "text": "Overview",
+          "anchor": "overview",
+          "line": 11
+        },
+        {
+          "level": 2,
+          "text": "Goals and Non-Goals",
+          "anchor": "goals-and-non-goals",
+          "line": 16
+        },
+        {
+          "level": 3,
+          "text": "Goals",
+          "anchor": "goals",
+          "line": 18
+        },
+        {
+          "level": 3,
+          "text": "Non-Goals",
+          "anchor": "non-goals",
+          "line": 22
+        },
+        {
+          "level": 2,
+          "text": "Open Questions",
+          "anchor": "open-questions",
+          "line": 26
+        },
+        {
+          "level": 3,
+          "text": "1. Should it be marked?",
+          "anchor": "1-should-it-be-marked",
+          "line": 28
+        }
+      ],
+      "open_questions": [
+        {
+          "number": 1,
+          "title": "Should it be marked?",
+          "line": 28,
+          "options": [
+            {
+              "letter": "a",
+              "text": "**Yes, with docz validate --fix.** *(recommendation)*",
+              "recommended": true,
+              "line": 30
+            },
+            {
+              "letter": "b",
+              "text": "No.",
+              "recommended": false,
+              "line": 31
+            }
+          ],
+          "resolved": null
+        }
+      ],
+      "tasks": [],
+      "content": "---\nid: DESIGN-0002\ntitle: \"Unmarked notes\"\nstatus: Draft\nauthor: Fixture Author\ncreated: 2026-03-04\n---\n\n# DESIGN-0002: Unmarked notes\n\n## Overview\n\nA document written by hand, with no region markers, so every region is\ninferred from its headings.\n\n## Goals and Non-Goals\n\n### Goals\n\n- Read an unmarked document.\n\n### Non-Goals\n\n- Rewriting it.\n\n## Open Questions\n\n### 1. Should it be marked?\n\n- a. **Yes, with docz validate --fix.** *(recommendation)*\n- b. No.\n"
+    },
+    "findings": [
+      {
+        "code": "region.inferred",
+        "severity": "warning",
+        "line": 0,
+        "detail": "regions inferred from headings: goals, non-goals, open-questions, overview; not found, looked for api-changes (## api / interface changes), background (## background), data-model (## data model), detailed-design (## detailed design), references (## references), rollout (## migration / rollout plan), testing (## testing strategy)"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "api-changes",
+        "detail": "the schema requires a \"api-changes\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "background",
+        "detail": "the schema requires a \"background\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "data-model",
+        "detail": "the schema requires a \"data-model\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "detailed-design",
+        "detail": "the schema requires a \"detailed-design\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "references",
+        "detail": "the schema requires a \"references\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "rollout",
+        "detail": "the schema requires a \"rollout\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "testing",
+        "detail": "the schema requires a \"testing\" region"
+      },
+      {
+        "code": "toc.missing",
+        "severity": "warning",
+        "line": 0,
+        "kind": "toc",
+        "detail": "the schema requires a table of contents and the document has no marker pair"
+      }
+    ]
+  },
+  {
+    "inspect": {
+      "schema_version": 1,
+      "docz_version": "fixture",
+      "path": "docs/design/0003-no-frontmatter.md",
+      "type": "design",
+      "id": "DESIGN-0003",
+      "schema": "design",
+      "content_sha256": "461afe07ded4ac5a0bd68dfe388ea3819542f675e26c986c4b5308fff40b94aa",
+      "frontmatter": null,
+      "statuses": [
+        "Draft",
+        "In Review",
+        "Approved",
+        "Implemented",
+        "Abandoned"
+      ],
+      "inferred": true,
+      "regions": [],
+      "headings": [],
+      "open_questions": [],
+      "tasks": [],
+      "content": "# A document with no frontmatter\n\nSomeone wrote this by hand and forgot the frontmatter block, so\n`docz validate` reports it and the page still renders it.\n"
+    },
+    "findings": [
+      {
+        "code": "design.parse",
+        "severity": "error",
+        "line": 0,
+        "detail": "no YAML frontmatter found"
+      },
+      {
+        "code": "region.inferred",
+        "severity": "warning",
+        "line": 0,
+        "detail": "regions inferred from headings; not found, looked for api-changes (## api / interface changes), background (## background), data-model (## data model), detailed-design (## detailed design), goals (### goals), non-goals (### non-goals), open-questions (## open questions), overview (## overview), references (## references), rollout (## migration / rollout plan), testing (## testing strategy)"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "api-changes",
+        "detail": "the schema requires a \"api-changes\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "background",
+        "detail": "the schema requires a \"background\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "data-model",
+        "detail": "the schema requires a \"data-model\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "detailed-design",
+        "detail": "the schema requires a \"detailed-design\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "goals",
+        "detail": "the schema requires a \"goals\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "non-goals",
+        "detail": "the schema requires a \"non-goals\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "open-questions",
+        "detail": "the schema requires a \"open-questions\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "overview",
+        "detail": "the schema requires a \"overview\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "references",
+        "detail": "the schema requires a \"references\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "rollout",
+        "detail": "the schema requires a \"rollout\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "testing",
+        "detail": "the schema requires a \"testing\" region"
+      },
+      {
+        "code": "toc.missing",
+        "severity": "warning",
+        "line": 0,
+        "kind": "toc",
+        "detail": "the schema requires a table of contents and the document has no marker pair"
+      },
+      {
+        "code": "frontmatter.missing",
+        "severity": "error",
+        "line": 1,
+        "detail": "document has no YAML frontmatter block"
+      }
+    ]
+  },
+  {
+    "inspect": {
+      "schema_version": 1,
+      "docz_version": "fixture",
+      "path": "docs/impl/0001-ship-the-cache.md",
+      "type": "impl",
+      "id": "IMPL-0001",
+      "schema": "impl",
+      "content_sha256": "eed5301f3248a247ee32cd4d7934d47d73f43d68f17fc36b48be9bd1a256fc2c",
+      "frontmatter": {
+        "id": "IMPL-0001",
+        "title": "Ship the cache",
+        "status": "Draft",
+        "author": "Fixture Author",
+        "created": "2026-03-04"
+      },
+      "statuses": [
+        "Draft",
+        "In Progress",
+        "Completed",
+        "Paused",
+        "Cancelled"
+      ],
+      "inferred": false,
+      "regions": [
+        {
+          "kind": "toc",
+          "start": 13,
+          "end": 35,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "objective",
+          "start": 37,
+          "end": 44,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "scope",
+          "start": 46,
+          "end": 62,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "in-scope",
+          "start": 49,
+          "end": 54,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "out-of-scope",
+          "start": 56,
+          "end": 61,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "phase",
+          "start": 71,
+          "end": 95,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "tasks",
+          "start": 77,
+          "end": 86,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "criteria",
+          "start": 88,
+          "end": 94,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "phase",
+          "start": 99,
+          "end": 120,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "tasks",
+          "start": 104,
+          "end": 111,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "criteria",
+          "start": 113,
+          "end": 119,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "phase",
+          "start": 124,
+          "end": 147,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "tasks",
+          "start": 129,
+          "end": 137,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "criteria",
+          "start": 139,
+          "end": 146,
+          "depth": 1,
+          "closed": true
+        },
+        {
+          "kind": "file-changes",
+          "start": 151,
+          "end": 161,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "testing",
+          "start": 163,
+          "end": 170,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "dependencies",
+          "start": 172,
+          "end": 177,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "references",
+          "start": 179,
+          "end": 184,
+          "depth": 0,
+          "closed": true
+        }
+      ],
+      "headings": [
+        {
+          "level": 2,
+          "text": "Objective",
+          "anchor": "objective",
+          "line": 38
+        },
+        {
+          "level": 2,
+          "text": "Scope",
+          "anchor": "scope",
+          "line": 47
+        },
+        {
+          "level": 3,
+          "text": "In Scope",
+          "anchor": "in-scope",
+          "line": 50
+        },
+        {
+          "level": 3,
+          "text": "Out of Scope",
+          "anchor": "out-of-scope",
+          "line": 57
+        },
+        {
+          "level": 2,
+          "text": "Implementation Phases",
+          "anchor": "implementation-phases",
+          "line": 64
+        },
+        {
+          "level": 3,
+          "text": "Phase 1: Foundation",
+          "anchor": "phase-1-foundation",
+          "line": 72
+        },
+        {
+          "level": 4,
+          "text": "Tasks",
+          "anchor": "tasks",
+          "line": 78
+        },
+        {
+          "level": 4,
+          "text": "Success Criteria",
+          "anchor": "success-criteria",
+          "line": 89
+        },
+        {
+          "level": 3,
+          "text": "Phase 2: Rollout",
+          "anchor": "phase-2-rollout",
+          "line": 100
+        },
+        {
+          "level": 4,
+          "text": "Tasks",
+          "anchor": "tasks-1",
+          "line": 105
+        },
+        {
+          "level": 4,
+          "text": "Success Criteria",
+          "anchor": "success-criteria-1",
+          "line": 114
+        },
+        {
+          "level": 3,
+          "text": "Phase 3: Polish",
+          "anchor": "phase-3-polish",
+          "line": 125
+        },
+        {
+          "level": 4,
+          "text": "Tasks",
+          "anchor": "tasks-2",
+          "line": 130
+        },
+        {
+          "level": 4,
+          "text": "Success Criteria",
+          "anchor": "success-criteria-2",
+          "line": 140
+        },
+        {
+          "level": 2,
+          "text": "File Changes",
+          "anchor": "file-changes",
+          "line": 152
+        },
+        {
+          "level": 2,
+          "text": "Testing Plan",
+          "anchor": "testing-plan",
+          "line": 164
+        },
+        {
+          "level": 2,
+          "text": "Dependencies",
+          "anchor": "dependencies",
+          "line": 173
+        },
+        {
+          "level": 2,
+          "text": "References",
+          "anchor": "references",
+          "line": 180
+        }
+      ],
+      "open_questions": [],
+      "tasks": [
+        {
+          "line": 80,
+          "text": "Add the cache client",
+          "checked": true,
+          "indent": 0
+        },
+        {
+          "line": 81,
+          "text": "Wire the cache into the reader",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 82,
+          "text": "Invalidate on ingest",
+          "checked": false,
+          "indent": 2
+        },
+        {
+          "line": 83,
+          "text": "Task description",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 84,
+          "text": "Write unit tests for ...",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 107,
+          "text": "Turn the cache on behind a flag",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 108,
+          "text": "Task description",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 109,
+          "text": "Write integration tests for ...",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 132,
+          "text": "Audit error messages for consistency",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 133,
+          "text": "Ensure `make ci` passes",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 134,
+          "text": "Review test coverage (target: >80%)",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 135,
+          "text": "Clean up any TODO/FIXME comments",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 166,
+          "text": "Unit tests for all exported functions",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 167,
+          "text": "Integration tests using `t.TempDir()` for filesystem operations",
+          "checked": false,
+          "indent": 0
+        },
+        {
+          "line": 168,
+          "text": "Table-driven tests for functions with multiple input variations",
+          "checked": false,
+          "indent": 0
+        }
+      ],
+      "content": "---\nid: IMPL-0001\ntitle: \"Ship the cache\"\nstatus: Draft\nauthor: Fixture Author\ncreated: 2026-03-04\n---\n\n<!-- markdownlint-disable-file MD024 MD025 MD041 -->\n\n# IMPL-0001: Ship the cache\n\n<!--toc:start-->\n<!-- markdownlint-capture -->\n<!-- markdownlint-disable MD013 -->\n- [Objective](#objective)\n- [Scope](#scope)\n  - [In Scope](#in-scope)\n  - [Out of Scope](#out-of-scope)\n- [Implementation Phases](#implementation-phases)\n  - [Phase 1: Foundation](#phase-1-foundation)\n    - [Tasks](#tasks)\n    - [Success Criteria](#success-criteria)\n  - [Phase 2: Rollout](#phase-2-rollout)\n    - [Tasks](#tasks-1)\n    - [Success Criteria](#success-criteria-1)\n  - [Phase 3: Polish](#phase-3-polish)\n    - [Tasks](#tasks-2)\n    - [Success Criteria](#success-criteria-2)\n- [File Changes](#file-changes)\n- [Testing Plan](#testing-plan)\n- [Dependencies](#dependencies)\n- [References](#references)\n<!-- markdownlint-restore -->\n<!--toc:end-->\n\n<!--docz:objective:start-->\n## Objective\n\n<!-- What is being implemented? Link to the RFC/DESIGN it implements. -->\n\n**Implements:** DESIGN-0001\n\n<!--docz:objective:end-->\n\n<!--docz:scope:start-->\n## Scope\n\n<!--docz:in-scope:start-->\n### In Scope\n\n-\n\n<!--docz:in-scope:end-->\n\n<!--docz:out-of-scope:start-->\n### Out of Scope\n\n-\n\n<!--docz:out-of-scope:end-->\n<!--docz:scope:end-->\n\n## Implementation Phases\n\nEach phase builds on the previous one. A phase is complete when all its tasks\nare checked off and its success criteria are met.\n\n---\n\n<!--docz:phase:start-->\n### Phase 1: Foundation\n\n<!-- Describe what this phase establishes. Focus on the internal\n     building blocks that later phases depend on. -->\n\n<!--docz:tasks:start-->\n#### Tasks\n\n- [x] Add the cache client\n- [ ] Wire the cache into the reader\n  - [ ] Invalidate on ingest\n- [ ] Task description\n- [ ] Write unit tests for ...\n\n<!--docz:tasks:end-->\n\n<!--docz:criteria:start-->\n#### Success Criteria\n\n- `go build ./...` succeeds with no errors\n- ...\n\n<!--docz:criteria:end-->\n<!--docz:phase:end-->\n\n---\n\n<!--docz:phase:start-->\n### Phase 2: Rollout\n\n<!-- Describe what this phase delivers to users. -->\n\n<!--docz:tasks:start-->\n#### Tasks\n\n- [ ] Turn the cache on behind a flag\n- [ ] Task description\n- [ ] Write integration tests for ...\n\n<!--docz:tasks:end-->\n\n<!--docz:criteria:start-->\n#### Success Criteria\n\n- Feature X works end-to-end\n- ...\n\n<!--docz:criteria:end-->\n<!--docz:phase:end-->\n\n---\n\n<!--docz:phase:start-->\n### Phase 3: Polish\n\n<!-- Harden, test, and prepare for release. -->\n\n<!--docz:tasks:start-->\n#### Tasks\n\n- [ ] Audit error messages for consistency\n- [ ] Ensure `make ci` passes\n- [ ] Review test coverage (target: >80%)\n- [ ] Clean up any TODO/FIXME comments\n\n<!--docz:tasks:end-->\n\n<!--docz:criteria:start-->\n#### Success Criteria\n\n- `make ci` passes with zero errors\n- Test coverage >80% for all packages\n- All error paths produce clear, actionable messages\n\n<!--docz:criteria:end-->\n<!--docz:phase:end-->\n\n---\n\n<!--docz:file-changes:start-->\n## File Changes\n\n<!-- Key files that will be created or modified -->\n\n| File | Action | Description |\n| ---- | ------ | ----------- |\n|      | Create |             |\n|      | Modify |             |\n\n<!--docz:file-changes:end-->\n\n<!--docz:testing:start-->\n## Testing Plan\n\n- [ ] Unit tests for all exported functions\n- [ ] Integration tests using `t.TempDir()` for filesystem operations\n- [ ] Table-driven tests for functions with multiple input variations\n\n<!--docz:testing:end-->\n\n<!--docz:dependencies:start-->\n## Dependencies\n\n<!-- External dependencies, blocking work, prerequisites -->\n\n<!--docz:dependencies:end-->\n\n<!--docz:references:start-->\n## References\n\n<!-- Links to related RFCs, ADRs, designs, plans, issues -->\n\n<!--docz:references:end-->\n"
+    },
+    "findings": [
+      {
+        "code": "tasks.nested-checkbox",
+        "severity": "warning",
+        "line": 82,
+        "kind": "tasks",
+        "detail": "nested checkbox is not a task: Invalidate on ingest"
+      }
+    ]
+  }
+]

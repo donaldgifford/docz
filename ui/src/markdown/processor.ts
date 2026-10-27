@@ -18,6 +18,8 @@ import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { unified } from "unified";
 import { visit } from "unist-util-visit";
 
+import type { Region } from "@/cli/__generated__/inspect";
+
 import { remarkCaptureCodeMeta } from "@/markdown/capture-code-meta";
 import { remarkGithubAlerts } from "@/markdown/github-alerts";
 import { MarkdownAnchor } from "@/markdown/markdown-anchor";
@@ -28,12 +30,15 @@ import {
 } from "@/markdown/markdown-heading";
 import { MarkdownInput } from "@/markdown/markdown-input";
 import { MarkdownPre } from "@/markdown/markdown-pre";
+import { preprocessDoczMarkdown } from "@/markdown/preprocess";
+import { preLineCarrier, rehypeDataLine } from "@/markdown/rehype-data-line";
 import { rehypeMermaidMarker } from "@/markdown/mermaid-marker";
 import {
   resolveRelativeLinks,
   type RelativeLinkContext,
 } from "@/markdown/relative-links";
 import { sanitizeSchema } from "@/markdown/schema";
+import { rehypeRegions } from "@/review/regions";
 import { liftThemeContrast } from "@/markdown/theme-contrast";
 import { rehypeWrapCodeblocks } from "@/markdown/wrap-codeblock";
 import { rehypeWrapTables } from "@/markdown/wrap-table";
@@ -155,6 +160,18 @@ export interface RenderOptions {
   xrefs?: XrefResolver;
   /** Relative-href resolution: the source's own repo path + path map. */
   links?: RelativeLinkContext;
+  /**
+   * docz-review's render mode (DESIGN-0024 section 5): `raw` is the whole
+   * document as written, frontmatter and ToC included. Both are blanked
+   * rather than cut, and every block carries a `data-line` equal to its
+   * line in `raw`, stamped after sanitize so a document cannot forge it.
+   */
+  review?: boolean;
+  /**
+   * Review mode only: `docz inspect`'s regions, each wrapped as a
+   * `<section data-region data-ordinal>` around the blocks it holds.
+   */
+  regions?: readonly Region[];
 }
 
 export async function renderMarkdown(
@@ -163,6 +180,13 @@ export async function renderMarkdown(
 ): Promise<RenderedMarkdown> {
   const toc: TocEntry[] = [];
   const highlighter = await getHighlighter();
+  const review = options?.review === true;
+  const regions = options?.regions;
+  const source = review
+    ? preprocessDoczMarkdown(raw, { preserveLines: true })
+    : raw;
+  // Shiki drops the <pre> stamp; the carrier puts it back.
+  const carrier = preLineCarrier();
 
   const processor = unified()
     .use(remarkParse)
@@ -173,11 +197,17 @@ export async function renderMarkdown(
     .use(rehypeRaw)
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeCollapseDoubleClobber)
+    // Post-sanitize, so the stamp is the only data-line on the page.
+    .use(() => (review ? rehypeDataLine() : undefined))
+    .use(() =>
+      review && regions !== undefined ? rehypeRegions(regions) : undefined,
+    )
     .use(rehypeSlug)
     .use(() => rehypeCollectToc(toc))
     // Before Shiki: strips language-mermaid so the highlighter never
     // replaces (and unmarks) the pre.
     .use(() => rehypeMermaidMarker())
+    .use(() => (review ? carrier.collect() : undefined))
     .use(() =>
       // HighlighterCore is HighlighterGeneric<never, never>; the plugin
       // asks for <any, any>. Same object, incompatible variance — adapt
@@ -192,6 +222,7 @@ export async function renderMarkdown(
         },
       ),
     )
+    .use(() => (review ? carrier.restore() : undefined))
     .use(() => rehypeWrapCodeblocks())
     // Wide tables scroll inside div.table-wrap instead of widening.
     .use(() => rehypeWrapTables());
@@ -202,7 +233,7 @@ export async function renderMarkdown(
      while tsc and the raw TS compiler API both report zero diagnostics
      for the file (verified against TS 5.9.3). The explicit annotations
      keep every downstream use fully typed. */
-  const hast: Root = await processor.run(processor.parse(raw));
+  const hast: Root = await processor.run(processor.parse(source));
   // Both run after sanitize (structure is trusted); emitted hrefs come
   // from API data, never document text.
   if (options?.xrefs !== undefined) {

@@ -1,0 +1,34 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(docz *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/arm.sh\"",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "if": "Bash(docz-review *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/arm.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh\"",
+            "timeout": 86400
+          }
+        ]
+      }
+    ]
+  }
+}

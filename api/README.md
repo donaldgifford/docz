@@ -138,6 +138,33 @@ accepted as-is when its `iss` matches, its `aud` contains
 it is in date; its `scope` or `scp` claim is the principal's scopes. That is
 how an unattended job gets access: docz-api mints nothing for a machine.
 
+## The CLI's JSON contract (`cli/`)
+
+`api/cli/` is a second contract, unrelated to docz-api: JSON Schemas
+(draft 2020-12) for the docz CLI's machine-readable output (DESIGN-0024
+section 3). docz-review is its first consumer, and any script that reads
+`--format json` can rely on it the same way.
+
+| Schema | Output |
+| --- | --- |
+| `inspect.schema.json` | `docz inspect --format json` |
+| `validate.schema.json` | `docz validate --format json`, with and without `--fix` |
+| `create.schema.json` | `docz create --format json` |
+| `list.schema.json` | `docz list --format json`, a bare array |
+| `review.schema.json` | the review record docz-review writes |
+
+Every object is `additionalProperties: false`. That is the producer's
+view: `cmd/`'s contract test validates the CLI's real output against these
+bytes, so an added, renamed, or removed field fails `just test`. A consumer
+should relax `additionalProperties` and ignore fields it does not know, as
+docz-site's `just ui gen-cli` does when it generates its types.
+
+Every output but `list` carries `schema_version`, now `1`. An additive
+field bumps only the file's `$version`. A removed, renamed, or retyped
+field bumps `schema_version`, and the previous schema stays under its own
+`$id`, which names its major version and never changes. The Go package
+`api/cli` embeds the files, so the CLI and its tests read the same bytes.
+
 ## References
 
 - [DESIGN-0002](../docs/design/0002-openapi-contract-for-docz-api-and-the-docz-site.md)

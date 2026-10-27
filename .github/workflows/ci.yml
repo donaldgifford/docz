@@ -26,6 +26,7 @@ jobs:
       workflows: ${{ steps.filter.outputs.workflows }}
       alerts: ${{ steps.filter.outputs.alerts }}
       ui: ${{ steps.filter.outputs.ui }}
+      plugin: ${{ steps.filter.outputs.plugin }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -45,6 +46,8 @@ jobs:
               - 'internal/**'
               - 'api/**'
               - 'test/**'
+              # cmd/review_fixture_test.go reads the review page's capture
+              - 'ui/e2e/fixtures/review-**'
               - 'justfile'
               - '*.just'
               - '.golangci.yml'
@@ -71,7 +74,15 @@ jobs:
             ui:
               - 'ui/**'
               - 'api/openapi.yaml'
+              - 'api/cli/**'
+              - 'ui.just'
               - 'Dockerfile.ui'
+            # The plugin's tests run its hooks against ui/review/ from source,
+            # so the server they exercise is an input too.
+            plugin:
+              - 'plugins/**'
+              - '.claude-plugin/**'
+              - 'ui/review/**'
 
   labeler:
     permissions:
@@ -374,16 +385,14 @@ jobs:
       - name: Generate API client
         run: just ui gen-api
 
+      - name: Generate CLI types
+        run: just ui gen-cli
+
       - name: Lint
         run: just ui lint
 
-      # package.json's format:check calls a global prettier, which docz-site's
-      # CI got from mise. Pinned to mise.toml's version.
-      - name: Install prettier
-        run: |
-          bun add --global prettier@3.7.4
-          echo "${HOME}/.bun/bin" >> "${GITHUB_PATH}"
-
+      # format:check runs the prettier in package.json's devDependencies,
+      # so the version is the lockfile's, the same locally and here.
       - name: Format check
         run: just ui fmt-check
 
@@ -397,6 +406,11 @@ jobs:
       - name: Test server
         run: just ui test-server
 
+      # docz-review: the page's and the CLI contract's vitest suites, then
+      # bun test over its server (state, lease, arming, rounds, signals).
+      - name: Test review
+        run: just ui test-review
+
       - name: Build
         run: just ui build
 
@@ -405,6 +419,14 @@ jobs:
 
       - name: Generated client drift check
         run: just ui gen-api-check
+
+      - name: Generated CLI types drift check
+        run: just ui gen-cli-check
+
+      # The four docz-review binaries, with the host's run from an empty
+      # directory: the page and a lazy chunk must come from the binary.
+      - name: Build review binaries
+        run: just ui build-review
 
       # The npm-tree fence (IMPL-0020 Open Question 3): node_modules is
       # populated here and nowhere else in CI, and it ships stray .go files.
@@ -422,11 +444,13 @@ jobs:
             exit 1
           fi
 
+  # Also on a Go change: the review spec drives a built docz, so a Go-side
+  # change that breaks the page fails the same PR.
   ui-e2e:
     name: UI e2e
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.ui == 'true'
+    if: needs.changes.outputs.ui == 'true' || needs.changes.outputs.go == 'true'
     defaults:
       run:
         working-directory: ui
@@ -448,11 +472,77 @@ jobs:
       - name: Generate API client
         run: just ui gen-api
 
+      - name: Generate CLI types
+        run: just ui gen-cli
+
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
+      # e2e/review-server.spec.ts runs docz-review's real server over the
+      # fixture repository: it needs docz and the built review page.
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build docz
+        working-directory: .
+        run: just build
+
+      - name: Build the review page
+        run: bun run build:review
+
       - name: e2e
         run: just ui e2e
+
+  plugin:
+    name: Plugin
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      # shellcheck is preinstalled on ubuntu-latest.
+      - name: Shellcheck the hook wrappers
+        run: shellcheck plugins/docz-review/hooks/*.sh
+
+      # No claude CLI on the runner, so the manifests are checked for the
+      # fields a marketplace install reads, and every listed source exists.
+      - name: Check the manifests
+        run: |
+          jq -e '.name and .version and .description' \
+            plugins/docz-review/.claude-plugin/plugin.json
+          jq -e '.hooks.PostToolUse and .hooks.Stop' \
+            plugins/docz-review/hooks/hooks.json
+          jq -e '.name == "docz" and (.plugins | length > 0)' \
+            .claude-plugin/marketplace.json
+          jq -r '.plugins[].source' .claude-plugin/marketplace.json |
+            while read -r src; do
+              test -f "${src}/.claude-plugin/plugin.json" ||
+                { echo "::error::${src} has no plugin.json"; exit 1; }
+            done
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+
+      # The hooks run ui/review/main.ts from source, which needs ui's
+      # dependencies and the generated CLI schemas.
+      - name: Install ui dependencies
+        working-directory: ui
+        run: bun install --frozen-lockfile
+
+      - name: Generate CLI types
+        working-directory: ui
+        run: just ui gen-cli
+
+      - name: Test the hooks
+        run: bun test plugins/docz-review/tests/
 
   helm-unittest:
     name: Helm Unit Tests

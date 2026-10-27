@@ -18,10 +18,20 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: "bun run build:msw && bun run preview:msw",
-    url: "http://localhost:4173",
-    reuseExistingServer: process.env.CI === undefined,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "bun run build:msw && bun run preview:msw",
+      url: "http://localhost:4173",
+      reuseExistingServer: process.env.CI === undefined,
+      timeout: 120_000,
+    },
+    {
+      // docz-review's page against the fake server over the committed
+      // fixture capture (scripts/review-fake.ts); e2e/review.spec.ts.
+      command: "bun run dev:review --port 4174 --strictPort",
+      url: "http://127.0.0.1:4174/review.html",
+      reuseExistingServer: process.env.CI === undefined,
+      timeout: 120_000,
+    },
+  ],
 });

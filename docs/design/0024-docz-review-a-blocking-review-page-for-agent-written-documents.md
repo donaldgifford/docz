@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0024
 title: "docz-review: a blocking review page for agent-written documents"
-status: Approved
+status: Implemented
 author: Donald Gifford
 created: 2026-10-23
 ---
@@ -915,9 +915,8 @@ plugins/docz-review/
     "PostToolUse": [
       {
         "matcher": "Bash",
-        "if": "Bash(docz *)",
         "hooks": [
-          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/arm.sh\"", "timeout": 30 }
+          { "type": "command", "if": "Bash(docz *)", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/arm.sh\"", "timeout": 30 }
         ]
       }
     ],
@@ -2171,6 +2170,15 @@ the questions above:
 | 10 | State | (a) `$XDG_STATE_HOME/docz/review/<sha256(root)>/<session_id>/` with a lock and a lease |
 | 11 | Configuration | (a) Flags and `DOCZ_REVIEW_*` variables; no `.docz.yaml` block |
 | 12 | `if` pre-filter | (a) `Bash(docz *)` and `Bash(docz-review *)` on the `PostToolUse` entries, dropped only if Phase 0 shows the minimum version ignores it |
+
+Observed on Claude Code 2.1.280 on 2026-10-27, in a trial of the plugin
+rather than the full drill
+([hook-drill.md](../../plugins/docz-review/docs/hook-drill.md)): the
+host accepts `timeout: 86400` without clamping it, though the ceiling
+is not measured; Escape cancels the `Stop` hook with a signal
+docz-review catches, so question 2's "signals are dismiss" holds; and
+`if` is honoured on the hook handler, per subcommand, which keeps
+question 12's option with the field moved off the matcher group.
 
 <!--docz:decisions:end-->
 

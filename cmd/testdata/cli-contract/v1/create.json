@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "DESIGN-0003",
+  "type": "design",
+  "path": "docs/design/0003-contract.md",
+  "title": "Contract",
+  "generic_template": false,
+  "update": {
+    "type": "design",
+    "dir": "docs/design",
+    "docs": 3,
+    "index": {
+      "action": "updated",
+      "path": "docs/design/README.md"
+    },
+    "toc": {
+      "updated": [
+        {
+          "path": "docs/design/0001-token-refresh-flow.md",
+          "headings": 12
+        },
+        {
+          "path": "docs/design/0002-wiki-nav-generation.md",
+          "headings": 14
+        },
+        {
+          "path": "docs/design/0003-contract.md",
+          "headings": 12
+        }
+      ],
+      "unchanged": [],
+      "would_update": [],
+      "skipped": [],
+      "write_errors": []
+    }
+  },
+  "nav": {
+    "path": "mkdocs.yml",
+    "pages": 5,
+    "written": true
+  }
+}

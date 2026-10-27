@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/donaldgifford/docz/schemas/cli/inspect/v1",
+  "$version": "1.0",
+  "title": "docz inspect",
+  "description": "Output of `docz inspect <id|path> --format json`: one document's structure, read once.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Major version of this output's shape"
+    },
+    "docz_version": {
+      "type": "string",
+      "description": "Version of the docz binary that produced this output"
+    },
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path"
+    },
+    "type": {
+      "type": "string",
+      "description": "Canonical type name"
+    },
+    "id": {
+      "type": "string"
+    },
+    "schema": {
+      "type": "string",
+      "description": "Schema name the document validates against"
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Lowercase hex SHA-256 of the document's bytes"
+    },
+    "frontmatter": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/frontmatter"
+        }
+      ]
+    },
+    "statuses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "inferred": {
+      "type": "boolean"
+    },
+    "regions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/region"
+      }
+    },
+    "headings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/heading"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      }
+    },
+    "content": {
+      "type": "string",
+      "description": "The bytes every other field was read from"
+    }
+  },
+  "required": [
+    "schema_version",
+    "docz_version",
+    "path",
+    "type",
+    "id",
+    "schema",
+    "content_sha256",
+    "frontmatter",
+    "statuses",
+    "inferred",
+    "regions",
+    "headings",
+    "open_questions",
+    "tasks",
+    "content"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "frontmatter": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "status",
+        "author",
+        "created"
+      ],
+      "additionalProperties": false
+    },
+    "region": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Line of the start marker, or the line above an inferred region's heading (0 when that heading is line 1)"
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "closed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "start",
+        "end",
+        "depth",
+        "closed"
+      ],
+      "additionalProperties": false
+    },
+    "heading": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 6
+        },
+        "text": {
+          "type": "string"
+        },
+        "anchor": {
+          "type": "string",
+          "description": "GitHub-compatible slug, duplicate suffixes included"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "level",
+        "text",
+        "anchor",
+        "line"
+      ],
+      "additionalProperties": false
+    },
+    "question": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/option"
+          }
+        },
+        "resolved": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/resolution"
+            }
+          ]
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "line",
+        "options",
+        "resolved"
+      ],
+      "additionalProperties": false
+    },
+    "option": {
+      "type": "object",
+      "properties": {
+        "letter": {
+          "type": "string",
+          "pattern": "^[a-z]$"
+        },
+        "text": {
+          "type": "string"
+        },
+        "recommended": {
+          "type": "boolean"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "letter",
+        "text",
+        "recommended",
+        "line"
+      ],
+      "additionalProperties": false
+    },
+    "resolution": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "ISO date, or empty when the resolution carries none"
+        },
+        "choice": {
+          "type": "string",
+          "description": "Lower-case option letter, or empty"
+        },
+        "note": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "date",
+        "choice",
+        "note",
+        "line"
+      ],
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "type": "string"
+        },
+        "checked": {
+          "type": "boolean"
+        },
+        "indent": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "line",
+        "text",
+        "checked",
+        "indent"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

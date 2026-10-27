@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "docz_version": "dev",
+  "path": "docs/design/draft.md",
+  "type": "design",
+  "id": "",
+  "schema": "design",
+  "content_sha256": "1fd8e9d3fffa23bc0341a8b2882118ca4fc98faa853cedd12c29a06e84e4c637",
+  "frontmatter": null,
+  "statuses": [
+    "Draft",
+    "In Review",
+    "Approved",
+    "Implemented",
+    "Abandoned"
+  ],
+  "inferred": true,
+  "regions": [
+    {
+      "kind": "overview",
+      "start": 0,
+      "end": 4,
+      "depth": 0,
+      "closed": true
+    }
+  ],
+  "headings": [
+    {
+      "level": 2,
+      "text": "Overview",
+      "anchor": "overview",
+      "line": 1
+    }
+  ],
+  "open_questions": [],
+  "tasks": [],
+  "content": "## Overview\n\nText.\n"
+}

@@ -1,6 +1,7 @@
 dist
 dist-msw
 dist-server
+dist-review
 build
 node_modules
 coverage
@@ -11,6 +12,7 @@ bun.lock
 
 # Generated TS client from ../api/openapi.yaml — never hand-edit, never format.
 src/api/__generated__
+src/cli/__generated__
 
 # Design mockup — visual source of truth, not project code.
 mockup.html
@@ -22,3 +24,6 @@ public/mockServiceWorker.js
 # the chart YAML is owned by yamllint (via `ct lint`) and `helm lint`,
 # not prettier. (*.md here is already covered by the top-level rule.)
 charts/
+e2e/fixtures
+dist-review-bin
+review/__generated__

@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "docz_version": "dev",
+  "path": "docs/design/0001-token-refresh-flow.md",
+  "type": "design",
+  "id": "DESIGN-0001",
+  "schema": "design",
+  "content_sha256": "5bd162da5acc6ddec5efb1799be54e674d3e791b02b470787e5f2965c84d5494",
+  "frontmatter": {
+    "id": "DESIGN-0001",
+    "title": "Token refresh flow",
+    "status": "Approved",
+    "author": "Parity Fixture",
+    "created": "2026-03-04"
+  },
+  "statuses": [
+    "Draft",
+    "In Review",
+    "Approved",
+    "Implemented",
+    "Abandoned"
+  ],
+  "inferred": false,
+  "regions": [
+    {
+      "kind": "toc",
+      "start": 13,
+      "end": 26,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "overview",
+      "start": 28,
+      "end": 32,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "goals",
+      "start": 36,
+      "end": 40,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "non-goals",
+      "start": 42,
+      "end": 46,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "background",
+      "start": 48,
+      "end": 52,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "detailed-design",
+      "start": 54,
+      "end": 59,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "api-changes",
+      "start": 61,
+      "end": 65,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "data-model",
+      "start": 67,
+      "end": 71,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "testing",
+      "start": 73,
+      "end": 77,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "rollout",
+      "start": 79,
+      "end": 83,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "open-questions",
+      "start": 85,
+      "end": 89,
+      "depth": 0,
+      "closed": true
+    },
+    {
+      "kind": "references",
+      "start": 91,
+      "end": 95,
+      "depth": 0,
+      "closed": true
+    }
+  ],
+  "headings": [
+    {
+      "level": 2,
+      "text": "Overview",
+      "anchor": "overview",
+      "line": 29
+    },
+    {
+      "level": 2,
+      "text": "Goals and Non-Goals",
+      "anchor": "goals-and-non-goals",
+      "line": 34
+    },
+    {
+      "level": 3,
+      "text": "Goals",
+      "anchor": "goals",
+      "line": 37
+    },
+    {
+      "level": 3,
+      "text": "Non-Goals",
+      "anchor": "non-goals",
+      "line": 43
+    },
+    {
+      "level": 2,
+      "text": "Background",
+      "anchor": "background",
+      "line": 49
+    },
+    {
+      "level": 2,
+      "text": "Detailed Design",
+      "anchor": "detailed-design",
+      "line": 55
+    },
+    {
+      "level": 2,
+      "text": "API / Interface Changes",
+      "anchor": "api--interface-changes",
+      "line": 62
+    },
+    {
+      "level": 2,
+      "text": "Data Model",
+      "anchor": "data-model",
+      "line": 68
+    },
+    {
+      "level": 2,
+      "text": "Testing Strategy",
+      "anchor": "testing-strategy",
+      "line": 74
+    },
+    {
+      "level": 2,
+      "text": "Migration / Rollout Plan",
+      "anchor": "migration--rollout-plan",
+      "line": 80
+    },
+    {
+      "level": 2,
+      "text": "Open Questions",
+      "anchor": "open-questions",
+      "line": 86
+    },
+    {
+      "level": 2,
+      "text": "References",
+      "anchor": "references",
+      "line": 92
+    }
+  ],
+  "open_questions": [],
+  "tasks": [],
+  "content": "---\nid: DESIGN-0001\ntitle: \"Token refresh flow\"\nstatus: Approved\nauthor: Parity Fixture\ncreated: 2026-03-04\n---\n\n\u003c!-- markdownlint-disable-file MD025 MD041 --\u003e\n\n# DESIGN-0001: Token refresh flow\n\n\u003c!--toc:start--\u003e\n- [Overview](#overview)\n- [Goals and Non-Goals](#goals-and-non-goals)\n  - [Goals](#goals)\n  - [Non-Goals](#non-goals)\n- [Background](#background)\n- [Detailed Design](#detailed-design)\n- [API / Interface Changes](#api--interface-changes)\n- [Data Model](#data-model)\n- [Testing Strategy](#testing-strategy)\n- [Migration / Rollout Plan](#migration--rollout-plan)\n- [Open Questions](#open-questions)\n- [References](#references)\n\u003c!--toc:end--\u003e\n\n\u003c!--docz:overview:start--\u003e\n## Overview\n\n\u003c!-- What is being designed and why? 2-3 sentences. --\u003e\n\u003c!--docz:overview:end--\u003e\n\n## Goals and Non-Goals\n\n\u003c!--docz:goals:start--\u003e\n### Goals\n\n-\n\u003c!--docz:goals:end--\u003e\n\n\u003c!--docz:non-goals:start--\u003e\n### Non-Goals\n\n-\n\u003c!--docz:non-goals:end--\u003e\n\n\u003c!--docz:background:start--\u003e\n## Background\n\n\u003c!-- Context, prior art, and any prerequisites --\u003e\n\u003c!--docz:background:end--\u003e\n\n\u003c!--docz:detailed-design:start--\u003e\n## Detailed Design\n\n\u003c!-- The core of the document. Architecture diagrams, API contracts,\n     data models, component interactions, etc. --\u003e\n\u003c!--docz:detailed-design:end--\u003e\n\n\u003c!--docz:api-changes:start--\u003e\n## API / Interface Changes\n\n\u003c!-- Public API surface changes, CLI changes, config changes --\u003e\n\u003c!--docz:api-changes:end--\u003e\n\n\u003c!--docz:data-model:start--\u003e\n## Data Model\n\n\u003c!-- Schema changes, storage considerations --\u003e\n\u003c!--docz:data-model:end--\u003e\n\n\u003c!--docz:testing:start--\u003e\n## Testing Strategy\n\n\u003c!-- How will this be tested? Unit, integration, e2e? --\u003e\n\u003c!--docz:testing:end--\u003e\n\n\u003c!--docz:rollout:start--\u003e\n## Migration / Rollout Plan\n\n\u003c!-- How do we get from here to there safely? --\u003e\n\u003c!--docz:rollout:end--\u003e\n\n\u003c!--docz:open-questions:start--\u003e\n## Open Questions\n\n\u003c!-- Unresolved decisions or areas needing further investigation --\u003e\n\u003c!--docz:open-questions:end--\u003e\n\n\u003c!--docz:references:start--\u003e\n## References\n\n\u003c!-- Links to related RFCs, ADRs, issues, external docs --\u003e\n\u003c!--docz:references:end--\u003e\n"
+}

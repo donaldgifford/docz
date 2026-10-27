@@ -30,15 +30,33 @@ const LEADING_H1_RE =
 
 export interface PreprocessOptions {
   stripLeadingH1?: boolean;
+  /**
+   * Blank what would be cut instead of cutting it, so every remaining
+   * line keeps its line number and the parser's `position` is the
+   * document line (the docz-review render mode, DESIGN-0024 section 5).
+   * Each removed line becomes an empty one; the line count is unchanged.
+   */
+  preserveLines?: boolean;
+}
+
+// Keeps a match's line breaks and drops everything else, so a removed
+// span leaves as many empty lines as it occupied.
+function blankLines(match: string): string {
+  return match.replace(/[^\r\n]+/g, "");
 }
 
 export function preprocessDoczMarkdown(
   raw: string,
   options: PreprocessOptions = {},
 ): string {
-  let out = raw.replace(FRONTMATTER_RE, "").replace(TOC_BLOCK_RE, "");
+  const cut = options.preserveLines === true ? blankLines : () => "";
+  let out = raw.replace(FRONTMATTER_RE, cut).replace(TOC_BLOCK_RE, cut);
   if (options.stripLeadingH1 === true) {
-    out = out.replace(LEADING_H1_RE, "$1");
+    out = out.replace(LEADING_H1_RE, (match, lead: string) =>
+      options.preserveLines === true
+        ? lead + blankLines(match.slice(lead.length))
+        : lead,
+    );
   }
   return out;
 }

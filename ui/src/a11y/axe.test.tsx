@@ -2,10 +2,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 
 import { routes } from "@/app/router";
+import { createReviewClient } from "@/review/api";
+import { ReviewApp } from "@/review/app";
+import { FakeReviewServer } from "@/review/fake-server";
+import { reviewDocument, TOKEN } from "@/review/testing";
 import { expectNoAxeViolations } from "@/test/axe";
 import { server } from "@/test/server";
 import { BOOM_PATH, routesWithThrow } from "@/test/throwing-routes";
@@ -248,5 +252,25 @@ describe("axe: core views", () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  // docz-review's page (DESIGN-0024): its own entry, so its own sweep.
+  it("review page", { timeout: AXE_TIMEOUT }, async () => {
+    const fake = new FakeReviewServer({
+      token: TOKEN,
+      documents: [reviewDocument()],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ReviewApp client={createReviewClient(TOKEN, fake.fetch)} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByText("Postgres");
+    await expectNoAxeViolations();
   });
 });

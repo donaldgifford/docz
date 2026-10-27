@@ -103,6 +103,14 @@ release:
   draft: false
   prerelease: auto
   mode: prepend
+  # docz-review is a Bun binary goreleaser cannot build: the release
+  # workflows run `just ui build-review` first, and these attach what it
+  # wrote. Its checksum file's signature is uploaded after, by gh.
+  extra_files:
+    - glob: ./ui/dist-review-bin/docz-review_linux_*
+    - glob: ./ui/dist-review-bin/docz-review_darwin_*
+    - glob: ./ui/dist-review-bin/docz-review_checksums.txt
+    - glob: ./ui/dist-review-bin/docz-review.spdx.json
   header: |
     ## Release {{ .Tag }} ({{ .Date }})
 
@@ -115,7 +123,14 @@ release:
     tar -xzf docz_*.tar.gz
     mv docz ~/.local/bin/
     # the server: docz-api_<os>_<arch>.tar.gz, or ghcr.io/donaldgifford/docz-api
+    # the review page: docz-review_<os>_<arch>, a single executable
     ```
+
+    `checksums.txt` covers the Go archives and `docz-review_checksums.txt`
+    the docz-review binaries; each has a detached GPG signature beside it.
+    docz-review is compiled with Bun: `docz-review.spdx.json` lists its
+    JavaScript dependencies and records the Bun version, but the Bun
+    runtime embedded in each binary is not itemised in any SBOM.
 
   footer: |
     ---

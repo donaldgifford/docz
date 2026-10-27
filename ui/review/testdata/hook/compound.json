@@ -1,0 +1,18 @@
+{
+  "session_id": "9f1c2a4e-0b7d-4f7e-9a51-3c8e2d6b1f00",
+  "transcript_path": "/home/u/.claude/projects/p/9f1c.jsonl",
+  "cwd": "/work/repo",
+  "permission_mode": "default",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "docz create design \"A\" && docz create adr \"B\"; git status",
+    "description": "x"
+  },
+  "tool_response": {
+    "stdout": "Created DESIGN: /work/repo/docs/design/0002-a.md\nUpdated /work/repo/docs/design/README.md\nCreated ADR: /work/repo/docs/adr/0002-b.md\nUpdated /work/repo/docs/adr/README.md\nOn branch main\n",
+    "stderr": "",
+    "interrupted": false,
+    "isImage": false
+  }
+}
