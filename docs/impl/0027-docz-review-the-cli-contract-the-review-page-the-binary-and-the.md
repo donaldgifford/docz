@@ -660,10 +660,13 @@ installs from a git ref, not a release asset.
   telling the agent to pass `--format json` to `docz create` (open
   question 8); the only change there (`deferred - human required`: a
   change and pull request in another repository)
-- [ ] A trial on this repository: create a document in a session with
+- [x] A trial on this repository: create a document in a session with
   the plugin, revise through two rounds, approve; record the transcript's
   shape (not its content) in the plugin README's "what to expect"
-  (`deferred - human required`: a person reviewing in the browser)
+  (2026-10-27, in a scratch repository with binaries built from this
+  branch, Claude Code 2.1.280: it found and fixed the `if` placement,
+  a heading's `#` in a quote, and the missing-binary note reaching only
+  the debug log; the README gained "From a checkout")
 
 <!--docz:tasks:end-->
 
@@ -803,7 +806,8 @@ memory brought up to date. `minor`.
   by Bun's error page, and a submission racing the run's end were fixed;
   the bootstrap token being readable from the opener's arguments and the
   browser's history on a shared host is open, since a single-use token
-  changes DESIGN-0024's credential model)
+  changes DESIGN-0024's credential model; on 2026-10-27 Donald chose to
+  keep the model as designed for now)
 
 <!--docz:testing:end-->
 
@@ -832,6 +836,10 @@ memory brought up to date. `minor`.
 ### 1. How is the work split into pull requests?
 
 > **Resolved 2026-10-25: (a).**
+>
+> **Revised 2026-10-27: (c).** The build was done on one branch, and
+> after the trial Donald chose one PR for everything in this repository,
+> released as a `minor`.
 
 - a. **One PR per phase, each from `main` after the previous merges:
   Phase 1 touches only DESIGN-0024 here (`dont-release`), Phase 2 is
