@@ -656,10 +656,10 @@ installs from a git ref, not a release asset.
 - [x] `plugins/docz-review/tests/`: the hook tests over the Phase 1
   fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
   including the missing-binary path
-- [ ] claude-skills, the docz plugin's `create` skill: one sentence
+- [x] claude-skills, the docz plugin's `create` skill: one sentence
   telling the agent to pass `--format json` to `docz create` (open
-  question 8); the only change there (`deferred - human required`: a
-  change and pull request in another repository)
+  question 8); the only change there (2026-10-27: claude-skills PR #151,
+  conditional on docz 2.2.0 or later, docz plugin 2.0.2)
 - [x] A trial on this repository: create a document in a session with
   the plugin, revise through two rounds, approve; record the transcript's
   shape (not its content) in the plugin README's "what to expect"
