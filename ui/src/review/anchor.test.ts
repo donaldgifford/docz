@@ -245,6 +245,20 @@ describe("anchorFromRange", () => {
     expect(got?.selection).toContain("Second");
   });
 
+  it("leaves a heading's copy button out of the quote", async () => {
+    const c = await page();
+    expect(c.querySelector("h2 button")?.textContent).toContain("#");
+    const got = anchorFromRange(select(c, "Goals#"), HEADINGS);
+    expect(got).toMatchObject({ exact: "Goals", selection: "Goals", line: 5 });
+    if (got === null) {
+      return;
+    }
+    expect(resolveAnchor(got, PAGE, REGIONS)).toMatchObject({
+      resolution: "exact",
+      line: 5,
+    });
+  });
+
   it("anchors text outside any region with an empty region", async () => {
     const c = await page();
     const got = anchorFromRange(select(c, "Second"), HEADINGS);

@@ -60,7 +60,20 @@ export function blockOf(node: Node | null): HTMLElement | null {
   return el?.closest<HTMLElement>("[data-line]") ?? null;
 }
 
-/** The text nodes a block owns, not a nested block's, in document order. */
+/*
+ * Controls the page draws inside a block, such as a heading's "#" copy
+ * button, are not the document's text: a quote that took them in would
+ * never be found in the source and its anchor would be lost.
+ */
+const CONTROLS = "button";
+
+const isControlText = (n: Node): boolean =>
+  n.parentElement?.closest(CONTROLS) != null;
+
+/**
+ * The text nodes a block owns, not a nested block's or a control's, in
+ * document order.
+ */
 export function ownText(block: HTMLElement): Text[] {
   const out: Text[] = [];
   const walker = block.ownerDocument.createTreeWalker(
@@ -68,11 +81,20 @@ export function ownText(block: HTMLElement): Text[] {
     NodeFilter.SHOW_TEXT,
   );
   for (let n = walker.nextNode(); n !== null; n = walker.nextNode()) {
-    if (n instanceof Text && blockOf(n) === block) {
+    if (n instanceof Text && blockOf(n) === block && !isControlText(n)) {
       out.push(n);
     }
   }
   return out;
+}
+
+// A range's text as the reader sees the document, controls left out.
+function rangeText(range: Range): string {
+  const frag = range.cloneContents();
+  frag.querySelectorAll(CONTROLS).forEach((el) => {
+    el.remove();
+  });
+  return frag.textContent;
 }
 
 // The UTF-16 offset of a boundary point within a block's own text.
@@ -135,7 +157,7 @@ export function anchorFromRange(
     prefix: codePoints(text.slice(0, start)).slice(-CONTEXT).join(""),
     suffix: codePoints(text.slice(end)).slice(0, CONTEXT).join(""),
     line,
-    selection: range.toString(),
+    selection: rangeText(range),
     multiBlock,
   };
 }
