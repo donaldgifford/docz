@@ -2180,6 +2180,17 @@ docz-review catches, so question 2's "signals are dismiss" holds; and
 `if` is honoured on the hook handler, per subcommand, which keeps
 question 12's option with the field moved off the matcher group.
 
+The full drill ran on Claude Code 2.1.280 on 2026-10-29 and confirms
+each decision it touches, so none is amended:
+
+| Observation | Bears on |
+| ----------- | -------- |
+| A `Stop` hook with no `timeout` gets `TERM` at 600 s; `timeout: 1200` and `86400` each let a 700 s hook finish and block. No ceiling below 700 s; none above it measured | Question 1: the deadline of the hook timeout minus sixty seconds stands |
+| Escape and Ctrl-C cancel the hook with a catchable signal (`TERM` to the process group for Ctrl-C), and so does a timeout; a reply printed after it is discarded. A hook killed outright ends the turn as a non-blocking error once its stdout closes | Question 2: signals are dismiss, and a hard kill relies on state written before the page opens |
+| `stop_hook_active` is `false` on the first request and `true` after a block. The host ends a turn after nine consecutive blocks with no tool call between (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`); a tool call resets the count, fifteen honoured in a row | Question 4: `--max-rounds` bounds a review, since the agent edits between rounds; docz-review ignores `stop_hook_active` |
+| `tool_response` is `{stdout, stderr, interrupted, isImage, noOutputExpected}` plus `bashEditDiff` for a command that wrote files, `stdout` capped at 30,000 characters; a failed command fires `PostToolUseFailure` | Section 2's arming parser, unchanged: no diff line can start a `Created` line or an envelope |
+| A `systemMessage` beside a block is shown to the person as `Stop says:`, the reason as `Stop hook error:`; the agent sees only the reason | Section 2's hook output |
+
 <!--docz:decisions:end-->
 
 <!--docz:references:start-->

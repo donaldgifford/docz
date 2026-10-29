@@ -151,37 +151,46 @@ observation is written down with the Claude Code version it was made on.
 > case 9 and part of cases 1, 3, 4, and 6, recorded in
 > `plugins/docz-review/docs/hook-drill.md`; the other cases still need
 > the drill plugin.
+>
+> 2026-10-29: the drill plugin ran every case on Claude Code 2.1.280,
+> with a case 5b added (a tool call between blocks resets the host's
+> count). Two deviations from the tasks below: the plugin lived under
+> `~/docz-review-test/drill` and logged to its own directory rather than
+> `$CLAUDE_PLUGIN_DATA`, and the captures are
+> `ui/review/testdata/hook/captured-*.json`, beside the fixtures the
+> parser and the hook tests already read (open question 3). No decision
+> was contradicted.
 
-- [ ] A throwaway plugin `docz-review-drill` outside the tree with
+- [x] A throwaway plugin `docz-review-drill` outside the tree with
   a `PostToolUse` hook on `Bash` that appends its full stdin to
   `$CLAUDE_PLUGIN_DATA/posttooluse.jsonl`, and a `Stop` hook script that
   appends its stdin, then sleeps for a configured number of seconds,
   then prints a configured JSON object; both read their configuration
   from a file so a case is a file edit, not a plugin edit
-- [ ] Case 1, finite stdin: the `Stop` script records whether stdin
+- [x] Case 1, finite stdin: the `Stop` script records whether stdin
   reached EOF before it slept and whether the process was still running
   when the sleep ended (write a line on each side of the sleep)
-- [ ] Case 2, the 600-second default: with no `timeout` on the hook
+- [x] Case 2, the 600-second default: with no `timeout` on the hook
   entry, sleep 700 seconds; record whether the hook was killed and what
   the session did
-- [ ] Case 3, a configured timeout: with `timeout: 1200`, sleep 700
+- [x] Case 3, a configured timeout: with `timeout: 1200`, sleep 700
   seconds, then print `block`; record whether the block was honoured;
   then with `timeout: 86400`, sleep 700 seconds; record the same, and
   look for any ceiling in the session's own diagnostics
-- [ ] Case 4, block and continue: print `{"decision":"block","reason":"…",
+- [x] Case 4, block and continue: print `{"decision":"block","reason":"…",
   "systemMessage":"…"}`; record that the agent resumed with the reason
   and that the person saw the system message
-- [ ] Case 5, the no-tool repeat: block repeatedly from a session whose
+- [x] Case 5, the no-tool repeat: block repeatedly from a session whose
   agent makes no tool call between turns; record how many consecutive
   blocks the host accepted, whether any `stop_hook_active` or similar
   field appeared in the input, and what ended the loop
-- [ ] Case 6, interrupt: while the `Stop` hook sleeps, press Escape, then
+- [x] Case 6, interrupt: while the `Stop` hook sleeps, press Escape, then
   in a second run Ctrl-C; record for each whether the process received a
   signal (trap and log `TERM`, `HUP`, `INT`), was killed outright, or
   kept running, and what happened to output printed after the interrupt
-- [ ] Case 7, hard termination: kill the hook's process from outside with
+- [x] Case 7, hard termination: kill the hook's process from outside with
   `SIGKILL`; record the session's behaviour
-- [ ] Case 8, `tool_response` shapes: run `docz create` successfully, a
+- [x] Case 8, `tool_response` shapes: run `docz create` successfully, a
   failing `docz create`, a command with very long output, and a compound
   command (`docz create … && echo done`); keep the four recorded JSON
   objects as fixtures under `plugins/docz-review/tests/fixtures/` (open
@@ -191,14 +200,14 @@ observation is written down with the Claude Code version it was made on.
   group Claude Code ignores it with a warning); record whether the hook ran for `docz list`,
   for `echo docz`, for `FOO=1 docz list`, and for `ls && docz list`,
   and note the Claude Code version
-- [ ] Case 10, the arming echo: run `echo "Created DESIGN: docs/x.md"`;
+- [x] Case 10, the arming echo: run `echo "Created DESIGN: docs/x.md"`;
   confirm the response text carries the line, so the arming parser's
   rule (validate every candidate through `docz inspect`) is the right
   defence rather than response-text trust
-- [ ] Write the drill up at `plugins/docz-review/docs/hook-drill.md` in
+- [x] Write the drill up at `plugins/docz-review/docs/hook-drill.md` in
   this repository: a table of case, observation,
   Claude Code version, and date
-- [ ] DESIGN-0024: add a row per observation to the Decisions section
+- [x] DESIGN-0024: add a row per observation to the Decisions section
   (timeout ceiling, interrupt behaviour, host continuation cap,
   `stop_hook_active`, `tool_response` shape, `if` support) and amend
   open questions 1, 2, 4, and 12 only where an observation contradicts
