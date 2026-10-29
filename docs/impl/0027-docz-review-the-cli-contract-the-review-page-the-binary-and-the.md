@@ -212,7 +212,7 @@ observation is written down with the Claude Code version it was made on.
   `stop_hook_active`, `tool_response` shape, `if` support) and amend
   open questions 1, 2, 4, and 12 only where an observation contradicts
   the resolved option; regenerate with `docz update design`
-- [ ] Delete the drill plugin; it is never committed or listed in the
+- [x] Delete the drill plugin; it is never committed or listed in the
   marketplace
 
 <!--docz:tasks:end-->
