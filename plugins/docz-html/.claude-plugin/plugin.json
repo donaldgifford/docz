@@ -1,0 +1,13 @@
+{
+  "name": "docz-html",
+  "version": "0.1.0",
+  "description": "Turns a docz document into one standalone HTML page in docz's theme, for readers outside the repository.",
+  "author": {
+    "name": "Donald Gifford",
+    "url": "https://github.com/donaldgifford"
+  },
+  "homepage": "https://github.com/donaldgifford/docz/tree/main/plugins/docz-html",
+  "repository": "https://github.com/donaldgifford/docz",
+  "license": "Apache-2.0",
+  "keywords": ["docz", "html", "documentation", "export"]
+}
