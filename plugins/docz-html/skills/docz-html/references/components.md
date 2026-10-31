@@ -61,7 +61,7 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
 
 ```html
 <header class="page-header">
-  <p class="eyebrow">Design · docz</p>
+  <p class="eyebrow">docz · Design</p>
   <h1>docz-html: standalone HTML pages</h1>
   <p class="summary">One paragraph: the scope and the ask.</p>
   <div class="meta">
@@ -75,10 +75,10 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
 </header>
 ```
 
-- The eyebrow is the type's label (RFC, ADR, Design, Implementation plan,
-  Investigation, Runbook, or a custom type's name), a middle dot, and the
-  repository's name: the last element of the GitHub `origin`, else the
-  root directory's name.
+- The eyebrow is the repository's name (the last element of the GitHub
+  `origin`, else the root directory's name), a middle dot, and the type's
+  label: RFC, ADR, Design, Implementation plan, Investigation, Runbook, or
+  a custom type's name (IMPL-0028 question 9).
 - The title is the frontmatter title, without the id.
 - The summary is one paragraph, chosen as `layout.md` says (The header
   summary), with its inline code and emphasis kept. Leave it out rather
