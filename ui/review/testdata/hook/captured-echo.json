@@ -1,0 +1,25 @@
+{
+  "session_id": "2b6e0d1c-5a3f-4c8e-b7d2-91f04e6a3c55",
+  "transcript_path": "/home/u/.claude/projects/-work-repo/2b6e0d1c-5a3f-4c8e-b7d2-91f04e6a3c55.jsonl",
+  "cwd": "/work/repo",
+  "prompt_id": "dc523795-e62e-46c5-984a-63497cc13a1d",
+  "permission_mode": "auto",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "echo \"Created DESIGN: docs/x.md\"",
+    "description": "Echo a fake docz-style creation line"
+  },
+  "tool_response": {
+    "stdout": "Created DESIGN: docs/x.md",
+    "stderr": "",
+    "interrupted": false,
+    "isImage": false,
+    "noOutputExpected": false
+  },
+  "tool_use_id": "toolu_018rfYYjUVYcrKWwE2mZu7cW",
+  "duration_ms": 23
+}

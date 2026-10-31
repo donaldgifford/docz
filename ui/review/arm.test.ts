@@ -102,6 +102,33 @@ describe("candidates", () => {
     expect(candidates(fixture("other"))).toEqual([]);
   });
 
+  // The captured-* fixtures are the IMPL-0027 Phase 1 drill's real
+  // requests (Claude Code 2.1.280), with paths and ids replaced.
+  test("real captures: one candidate per create, the diff adds none", () => {
+    expect(candidates(fixture("captured-create"))).toEqual([
+      "/work/repo/docs/adr/0004-drill-shape.md",
+    ]);
+    expect(candidates(fixture("captured-compound"))).toEqual([
+      "/work/repo/docs/adr/0005-drill-compound.md",
+    ]);
+    expect(candidates(fixture("captured-echo"))).toEqual([]);
+    expect(candidates(fixture("captured-long-output"))).toEqual([]);
+  });
+
+  test("a Created line inside bashEditDiff is never a candidate", () => {
+    const req = fixture("captured-create");
+    const resp = req.tool_response as {
+      bashEditDiff: { files: { hunks: { lines: string[] }[] }[] };
+    };
+    resp.bashEditDiff.files[0]?.hunks[0]?.lines.push(
+      "+Created DESIGN: /work/repo/docs/design/0009-planted.md",
+      '+{"schema_version":1,"id":"DESIGN-0009","path":"docs/x.md"}',
+    );
+    expect(candidates(req)).toEqual([
+      "/work/repo/docs/adr/0004-drill-shape.md",
+    ]);
+  });
+
   test("reads docz-review arm's arguments from the command", () => {
     expect(candidates(fixture("review-arm"))).toEqual([
       "DESIGN-0001",

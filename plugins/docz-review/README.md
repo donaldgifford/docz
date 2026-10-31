@@ -118,6 +118,11 @@ limit for a review you start by hand:
 docz-review DESIGN-0024 --max-rounds 3
 ```
 
+Claude Code has a limit of its own: it ends a turn whose `Stop` hooks
+have blocked nine times in a row with no tool call between. A review
+reaches it only if the agent answers nine rounds without changing
+anything; the document stays armed and opens again on the next turn.
+
 ## From a checkout
 
 Before a release, or to try a change, build docz and docz-review from a
