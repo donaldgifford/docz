@@ -471,7 +471,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
   test running it over the parity fixtures.
 - [x] `cmd/export_html_test.go`: each exit code, `--stdout`, `--dry-run`
   writing nothing, a second run reporting every page unchanged.
-- [ ] `ui/e2e/export-html.spec.ts` in the `ui-e2e` job: export the parity
+- [x] `ui/e2e/export-html.spec.ts` in the `ui-e2e` job: export the parity
   fixtures with the docz the job builds, open one page per type from
   `file://`, click every tab, toggle the mode, filter IMPL tasks, expand
   an open question, draw each widget, and assert no console error and no
