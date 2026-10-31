@@ -32,8 +32,15 @@ function fixture(name: string): string {
   return readFileSync(join(fixtureDir, name), "utf8");
 }
 
+// Outputs docz-review never reads: the bare list array, and the export
+// report, which the docz-html skill reads instead.
+const UNREAD = ["list", "export-html"];
+
 describe("parse functions", () => {
-  const files = readdirSync(fixtureDir).filter((f) => !f.startsWith("list"));
+  const files = readdirSync(fixtureDir).filter(
+    (f) =>
+      !UNREAD.some((name) => f.startsWith(`${name}-`) || f === `${name}.json`),
+  );
 
   it.each(files)("accepts the committed fixture %s", (file) => {
     const kind = (file.split("-")[0] ?? "").replace(".json", "");
