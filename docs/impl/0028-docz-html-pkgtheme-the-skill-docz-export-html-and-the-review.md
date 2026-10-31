@@ -511,7 +511,7 @@ selectable. Its own `minor`.
 
 - [x] Set `data-theme="paper"` on `ui/review.html`; docz-site stays on
   `classic`.
-- [ ] Add the light/dark toggle to the review page's header, sharing
+- [x] Add the light/dark toggle to the review page's header, sharing
   `docz:mode` with exported pages, and a theme selector storing
   `docz:theme`.
 - [ ] Re-render the review page's mermaid diagrams on a mode change

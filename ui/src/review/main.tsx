@@ -16,6 +16,7 @@ import "@fontsource/monaspace-neon/700.css";
 import "@/theme/tokens.css";
 
 import { createReviewClient, takeToken } from "@/review/api";
+import { applyStoredAppearance } from "@/review/appearance";
 import { ReviewApp } from "@/review/app";
 
 /*
@@ -25,6 +26,7 @@ import { ReviewApp } from "@/review/app";
  * stands in: the page has no routes of its own.
  */
 
+applyStoredAppearance();
 const token = takeToken();
 const root = document.getElementById("root");
 if (root === null) {
