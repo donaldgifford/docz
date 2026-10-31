@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "out": "build/html",
+  "dry_run": false,
+  "pages": [
+    {
+      "id": "RFC-0001",
+      "type": "rfc",
+      "source": "docs/rfc/0001-switch-the-ingest-queue-to-nats.md",
+      "path": "rfc/0001-switch-the-ingest-queue-to-nats.html",
+      "action": "wrote",
+      "hash": "sha256:25a390e0a49675851e818af6a3a9b63c6ee88285996f5c35d470d74742a11b8c",
+      "unresolved_links": [],
+      "problems": []
+    },
+    {
+      "id": "RFC-0002",
+      "type": "rfc",
+      "source": "docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md",
+      "path": "rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.html",
+      "action": "wrote",
+      "hash": "sha256:5bbe06555f4f572553bec21a97d6694f1507f1fed352382963ef0eb9f6db607a",
+      "unresolved_links": [
+        {
+          "href": "../adr/0002-api-first-refactor.md",
+          "text": "ADR-0002: API-first refactor",
+          "line": 140
+        }
+      ],
+      "problems": []
+    },
+    {
+      "id": "",
+      "type": "",
+      "source": "",
+      "path": "index.html",
+      "action": "wrote",
+      "hash": "sha256:281947ebb5b44613e8c50a90055207c0a37bf096b0738f5bc17688441d20bfe7",
+      "unresolved_links": [],
+      "problems": []
+    }
+  ],
+  "total": {
+    "pages": 3,
+    "wrote": 3,
+    "unchanged": 0,
+    "failed": 0
+  }
+}

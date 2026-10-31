@@ -465,7 +465,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
   `Version` from the build. Exit 0, 1 when a page failed, 2 for a usage
   or config error (unknown or disabled type, unknown theme or mermaid
   mode, no such document, `--stdout` with more than one page).
-- [ ] The text report (one line per page and a total) and the JSON
+- [x] The text report (one line per page and a total) and the JSON
   report; `api/cli/export-html.schema.json`, closed, `schema_version` 1,
   added to `Names` with `SchemaVersionExportHTML`, and the cmd contract
   test running it over the parity fixtures.

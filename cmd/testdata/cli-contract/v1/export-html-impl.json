@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "out": "build/html",
+  "dry_run": false,
+  "pages": [
+    {
+      "id": "IMPL-0001",
+      "type": "impl",
+      "source": "docs/impl/0001-phase-out-the-legacy-scanner.md",
+      "path": "impl/0001-phase-out-the-legacy-scanner.html",
+      "action": "wrote",
+      "hash": "sha256:9881f52045e3ee469200dc6b0d73b5ce67ce597bea2205a077935b1c0fe52144",
+      "unresolved_links": [],
+      "problems": []
+    },
+    {
+      "id": "IMPL-0002",
+      "type": "impl",
+      "source": "docs/impl/0002-registry-store-migration.md",
+      "path": "impl/0002-registry-store-migration.html",
+      "action": "wrote",
+      "hash": "sha256:030ae2a5a5bf58f271821108793cc60f7b9c421a8deb549acdf4fe87d4c99a2e",
+      "unresolved_links": [
+        {
+          "href": "../design/0002-registry-storage-backend.md",
+          "text": "DESIGN-0002: Registry storage backend",
+          "line": 202
+        },
+        {
+          "href": "../investigation/0006-multi-region-replication-options.md",
+          "text": "INV-0006: Multi-region replication options",
+          "line": 204
+        }
+      ],
+      "problems": []
+    },
+    {
+      "id": "",
+      "type": "",
+      "source": "",
+      "path": "index.html",
+      "action": "wrote",
+      "hash": "sha256:a9e0c30b017d8a8b2593d08e03e9543efc14137021144d5baa7a295bf40a112a",
+      "unresolved_links": [],
+      "problems": []
+    }
+  ],
+  "total": {
+    "pages": 3,
+    "wrote": 3,
+    "unchanged": 0,
+    "failed": 0
+  }
+}
