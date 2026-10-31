@@ -300,7 +300,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `pkg/export/html/doc.go` and `render.go` with the DESIGN-0025
+- [x] Add `pkg/export/html/doc.go` and `render.go` with the DESIGN-0025
   API: `MermaidMode`, `RenderOptions`, `Page`, `Link`, and
   `Render(src, opts)`. Reject CR line endings and a missing frontmatter
   block with sentinels, as `confluence.Render` does.
