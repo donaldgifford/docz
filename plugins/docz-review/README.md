@@ -39,9 +39,10 @@ it, inside Claude Code:
 /plugin install docz-review@docz
 ```
 
-Until docz 2.2.0 is released there is no binary to install this way;
-see [From a checkout](#from-a-checkout) to build and run both from
-source.
+Choose the user scope when the install asks, so reviews run in every
+repository. A local-scope install covers only the directory you
+installed from: in any other, the hooks never run and a turn ends
+without a review, with nothing to say why.
 
 docz-review needs docz 2.2.0 or later. Check what it found with:
 
@@ -199,7 +200,9 @@ install from both:
 ```
 
 To make the reference part of a project, list it in the project's
-`.claude/settings.json`:
+`.claude/settings.json`. This enables the plugin for the project but
+does not install it: each person still runs
+`/plugin install docz-review@docz` once, at user scope.
 
 ```json
 {
@@ -213,22 +216,34 @@ To make the reference part of a project, list it in the project's
 ```
 
 **Copy the directory.** Copy `plugins/docz-review/` from this repository
-into your marketplace's repository and add an entry to its
-`.claude-plugin/marketplace.json`:
+into your marketplace's repository, leaving out `tests/`: its tests
+import this repository's `ui/review/` and run only in a docz checkout.
+Add an entry to your `.claude-plugin/marketplace.json`, with `version`
+equal to the one in the plugin's `.claude-plugin/plugin.json` and any
+other fields your entries carry (`author`, `keywords`, `category`, and
+so on; the license is Apache-2.0):
 
 ```json
 {
   "name": "docz-review",
   "source": "./plugins/docz-review",
-  "description": "Blocking browser review of the docz documents an agent creates."
+  "version": "0.1.0",
+  "description": "Blocking browser review of the docz documents an agent creates.",
+  "license": "Apache-2.0"
 }
 ```
 
-Your users then run `/plugin install docz-review@<your marketplace>`.
-To resync, compare the `version` in this directory's
-`.claude-plugin/plugin.json` with your copy's and copy the directory
-again when it moves. The plugin's version changes whenever its hooks or
-skill do, independent of docz's releases.
+If your tooling reads `repository` from `plugin.json`, to build install
+lines for example, point it at your marketplace's repository;
+`homepage` can keep pointing here.
+
+Your users then run `/plugin install docz-review@<name>`, where `<name>`
+is the `name` in your `marketplace.json`, not the repository's. To
+resync, compare the `version` in this directory's `plugin.json` with
+your copy's; when it moves, copy the directory again, reapply your own
+changes (`tests/`, `repository`, anything your tooling generated), and
+follow your marketplace's usual version bump. The plugin's version
+changes whenever its hooks or skill do, independent of docz's releases.
 
 Either way, the binary is installed separately, as above.
 
@@ -240,7 +255,12 @@ From a trial on Claude Code 2.1.280, the session looks like this:
    nothing.
 2. The agent ends its turn. Claude Code shows its stop hooks running,
    and the page opens in your browser with every queued document.
-3. You ask for changes. The session shows your feedback as
+3. You select a passage and comment on it, or comment on the whole
+   document, and click **Add**: a comment counts once it is added, and
+   Submit and Approve wait while a comment box holds text. Submit is off
+   until the draft holds something, so approving is always the
+   **Approve** button.
+4. You ask for changes. The session shows your feedback as
    `Stop hook error:` followed by
    `docz review: <ID> <title>, round <N>: changes requested`, then each
    annotation as `[<region> › <heading>, line <N>] "<quote>"` with your
@@ -249,9 +269,9 @@ From a trial on Claude Code 2.1.280, the session looks like this:
    `Apply the annotations, then finish your turn so the next round can open.`
    A quote the page could not place in the source is marked
    `quote not found` and keeps its line as a hint.
-4. The agent makes the changes and ends its turn. The page opens again
+5. The agent makes the changes and ends its turn. The page opens again
    on round two, with what changed.
-5. You approve. The turn ends and the session shows nothing more from
+6. You approve. The turn ends and the session shows nothing more from
    the review. Approving does not change the document's `status:`; ask
    the agent, or run `docz status set <type> <id> <status>`.
 

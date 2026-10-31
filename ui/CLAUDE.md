@@ -578,7 +578,12 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   survives, so the warning is noise.
 - **The draft** (`draft.ts`) decides the outcome from the actionable set
   (an answer, comment, replace, delete, document comment, status change,
-  or finding to fix); Approve is enabled only while it is empty.
+  or finding to fix); Approve is enabled only while it is empty, and
+  Submit only while the draft holds something (`isEmptyDraft`), so an
+  approval always comes from the Approve button. Both are disabled while
+  a comment box holds text not yet added, and the selection popover is
+  held open once it has text, so a click that clears the selection
+  cannot throw a comment away (v2.2.1's trial lost one that way).
   `feedback.ts` writes the round's message, golden-tested under
   `src/review/testdata/feedback/` (`bunx vitest -u` regenerates).
 - **The server seam.** `api.ts` takes the token from `?t=` with

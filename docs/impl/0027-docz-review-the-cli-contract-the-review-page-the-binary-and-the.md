@@ -584,10 +584,11 @@ cut by hand at the end to prove the release path.
   the imported GPG key and uploading the signature with
   `gh release upload`, syft over `ui/` for the SBOM with the Bun version
   recorded, and a release-notes line stating the Bun runtime gap
-- [ ] A hand-cut `v*-beta.1` from the merge commit, as the v2 betas
+- [x] A hand-cut `v*-beta.1` from the merge commit, as the v2 betas
   were; download the four binaries and both checksum files, verify both
-  signatures, and run one binary from `/tmp` (`deferred - human
-  required`: a tag push and a download by a person)
+  signatures, and run one binary from `/tmp` (superseded: with one PR
+  for everything, v2.2.0 was released directly, and the same checks
+  ran on it, 2026-10-28)
 
 <!--docz:tasks:end-->
 
@@ -656,12 +657,14 @@ installs from a git ref, not a release asset.
 - [x] `.github/workflows/ci.yml`: a `plugin` job path-filtered on
   `plugins/**` and `.claude-plugin/**` running `shellcheck` over the
   wrappers, the hook tests, and the manifest check
-- [ ] Follow the README's "From your own marketplace" section verbatim
+- [x] Follow the README's "From your own marketplace" section verbatim
   against a private marketplace of our own, both the reference path and
   the copy path: the plugin installs and the hooks fire; fix the
-  instructions before the PR merges (`deferred - human required`: two
-  `/plugin` installs in a person's Claude Code against a private
-  marketplace)
+  instructions before the PR merges (2026-10-31, claude-skills as the
+  private marketplace: both paths installed and reviewed. The README
+  gained the user scope, since a local-scope install never runs
+  elsewhere and project settings enable without installing, and the
+  copy path's `version` field, `tests/`, `repository`, and resync)
 - [x] `plugins/docz-review/tests/`: the hook tests over the Phase 1
   fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
   including the missing-binary path
@@ -805,8 +808,14 @@ memory brought up to date. `minor`.
 - [x] The compiled binary from an empty directory
 - [x] The plugin's hook tests over the drill fixtures through the
   wrappers, in the `plugin` CI job
-- [ ] The Phase 1 drill, recorded; the Phase 5 trial on this repository
-  (`deferred - human required`)
+- [x] The Phase 1 drill, recorded; the Phase 5 trial on this repository
+  (2026-10-31, docz and docz-review 2.2.1 from mise and the plugin from
+  GitHub, on Claude Code 2.1.280: an investigation created, revised
+  through changes rounds, and approved. It found that Submit with an
+  empty draft recorded an approval and that a comment typed but not
+  added was dropped, which lost one comment; fixed in v2.2.2. A
+  document deleted and recreated at the same path keeps its queue entry
+  and its round count, as designed)
 - [ ] Release verification: artifacts, both signatures, side-by-side mise
   install on macOS and Linux, a review from outside the checkout
   (`deferred - human required`)

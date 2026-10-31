@@ -6,6 +6,7 @@ import {
   emptyDraft,
   inDocumentOrder,
   isAnswered,
+  isEmptyDraft,
   outcomeOf,
   toRecordParts,
   type AnnotationDraft,
@@ -68,6 +69,18 @@ describe("the actionable set", () => {
     expect(actionableItems(d, "Draft")).toEqual([]);
     expect(outcomeOf(d, "Draft")).toBe("approved");
     expect(canApprove(d, "Draft")).toBe(true);
+  });
+
+  it("only a draft with nothing in it is empty", () => {
+    const d = emptyDraft("Draft");
+    d.questions[1] = { note: "thinking" };
+    expect(isEmptyDraft(d, "Draft")).toBe(true);
+    d.annotations.push(note("ok", "looks-good", 4));
+    expect(isEmptyDraft(d, "Draft")).toBe(false);
+    const f = emptyDraft("Draft");
+    f.findings.push({ code: "references.no-link", line: 9, action: "dismiss" });
+    expect(isEmptyDraft(f, "Draft")).toBe(false);
+    expect(isEmptyDraft(emptyDraft("Draft"), "Approved")).toBe(false);
   });
 
   it("an unanswered card and empty Other text are not answers", () => {

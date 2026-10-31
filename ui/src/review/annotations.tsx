@@ -125,10 +125,13 @@ export function SelectionPopover({
   pending,
   onAdd,
   onCancel,
+  onComposing,
 }: {
   pending: PendingSelection;
   onAdd: (annotation: AnnotationDraft) => void;
   onCancel: () => void;
+  /** Told whether the text box holds words not yet added. */
+  onComposing?: (composing: boolean) => void;
 }) {
   const [mode, setMode] = useState<"comment" | "replace" | null>(null);
   const [text, setText] = useState("");
@@ -206,6 +209,7 @@ export function SelectionPopover({
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
+                onComposing?.(e.target.value.trim() !== "");
               }}
             />
           </label>
@@ -227,8 +231,11 @@ export function SelectionPopover({
 
 export function DocumentComment({
   onAdd,
+  onComposing,
 }: {
   onAdd: (annotation: AnnotationDraft) => void;
+  /** Told whether the text box holds words not yet added. */
+  onComposing?: (composing: boolean) => void;
 }) {
   const [text, setText] = useState("");
   return (
@@ -238,6 +245,7 @@ export function DocumentComment({
         e.preventDefault();
         onAdd({ id: newId(), kind: "document", text: text.trim() });
         setText("");
+        onComposing?.(false);
       }}
     >
       <label className="font-mono text-[12px] text-fg-tertiary">
@@ -247,6 +255,7 @@ export function DocumentComment({
           value={text}
           onChange={(e) => {
             setText(e.target.value);
+            onComposing?.(e.target.value.trim() !== "");
           }}
         />
       </label>
