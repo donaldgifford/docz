@@ -805,8 +805,14 @@ memory brought up to date. `minor`.
 - [x] The compiled binary from an empty directory
 - [x] The plugin's hook tests over the drill fixtures through the
   wrappers, in the `plugin` CI job
-- [ ] The Phase 1 drill, recorded; the Phase 5 trial on this repository
-  (`deferred - human required`)
+- [x] The Phase 1 drill, recorded; the Phase 5 trial on this repository
+  (2026-10-31, docz and docz-review 2.2.1 from mise and the plugin from
+  GitHub, on Claude Code 2.1.280: an investigation created, revised
+  through changes rounds, and approved. It found that Submit with an
+  empty draft recorded an approval and that a comment typed but not
+  added was dropped, which lost one comment; fixed in v2.2.2. A
+  document deleted and recreated at the same path keeps its queue entry
+  and its round count, as designed)
 - [ ] Release verification: artifacts, both signatures, side-by-side mise
   install on macOS and Linux, a review from outside the checkout
   (`deferred - human required`)
