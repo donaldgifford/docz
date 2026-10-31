@@ -156,7 +156,7 @@ phase proves the plumbing before the look moves.
   (`--color-t-*`), admonition (`--color-adm-*`), and hash-palette token
   `tokens.css` declares today, and for the two review rules
   (`::highlight(docz-review)`, the changed-region mark).
-- [ ] Write `pkg/theme/components.css`: the header, pills, sticky tab row,
+- [x] Write `pkg/theme/components.css`: the header, pills, sticky tab row,
   panels, cards, callouts (note, tip, important, warning, caution), tables
   with horizontal scroll, phase cards with the progress bar, step lists,
   expandables, the "not written yet" line, code blocks (dark in both
