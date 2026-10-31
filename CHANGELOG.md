@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
+## [unreleased]
+
+### Features
+
+- *(review)* Make arming on docz create opt-in
+
+### Documentation
+
+- *(review)* Document auto-arming and the plugin-free review
+
+### Miscellaneous Tasks
+
+- *(chart)* Bump docz to 1.3.0 for v2.3.0
+
 ## [2.2.2] - 2026-10-31
 
 ### Bug Fixes
