@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/net/html"
+
 	"github.com/donaldgifford/docz/v2/pkg/adr"
 	"github.com/donaldgifford/docz/v2/pkg/design"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/kinds"
@@ -140,7 +142,16 @@ func TestGoldenPages(t *testing.T) {
 		t.Run(golden, func(t *testing.T) {
 			t.Parallel()
 
-			got := themeBlock.ReplaceAll(renderFile(t, path, typ), []byte(string(themeOpen)+string(themeClose)))
+			page := renderFile(t, path, typ)
+			if _, err := html.ParseWithOptions(bytes.NewReader(page), html.ParseOptionEnableScripting(true)); err != nil {
+				t.Errorf("%s does not parse: %v", path, err)
+			}
+
+			if bytes.HasPrefix(page, []byte("error:")) {
+				t.Errorf("%s did not render: %s", path, page)
+			}
+
+			got := themeBlock.ReplaceAll(page, []byte(string(themeOpen)+string(themeClose)))
 			compare(t, golden, got)
 		})
 	}
