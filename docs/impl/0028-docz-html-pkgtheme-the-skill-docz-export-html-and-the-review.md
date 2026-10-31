@@ -469,7 +469,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
   report; `api/cli/export-html.schema.json`, closed, `schema_version` 1,
   added to `Names` with `SchemaVersionExportHTML`, and the cmd contract
   test running it over the parity fixtures.
-- [ ] `cmd/export_html_test.go`: each exit code, `--stdout`, `--dry-run`
+- [x] `cmd/export_html_test.go`: each exit code, `--stdout`, `--dry-run`
   writing nothing, a second run reporting every page unchanged.
 - [ ] `ui/e2e/export-html.spec.ts` in the `ui-e2e` job: export the parity
   fixtures with the docz the job builds, open one page per type from
