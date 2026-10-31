@@ -389,7 +389,7 @@ typed packages, plus the widgets from fenced blocks.
   questions, and decisions through `kinds`.
 - [x] Open questions: one expandable per question, the recommended option
   marked, a resolved question closed with its resolution shown.
-- [ ] A typed parse error falls back to the region's markdown and is
+- [x] A typed parse error falls back to the region's markdown and is
   appended to `Page.Problems`; it never fails `Render`.
 - [ ] Widgets: a `docz-flow`, `docz-stepper`, or `docz-scorecard` fence
   is decoded with yaml.v3 `KnownFields(true)` into the Go type for that
