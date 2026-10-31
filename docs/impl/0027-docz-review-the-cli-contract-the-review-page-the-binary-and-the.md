@@ -584,10 +584,11 @@ cut by hand at the end to prove the release path.
   the imported GPG key and uploading the signature with
   `gh release upload`, syft over `ui/` for the SBOM with the Bun version
   recorded, and a release-notes line stating the Bun runtime gap
-- [ ] A hand-cut `v*-beta.1` from the merge commit, as the v2 betas
+- [x] A hand-cut `v*-beta.1` from the merge commit, as the v2 betas
   were; download the four binaries and both checksum files, verify both
-  signatures, and run one binary from `/tmp` (`deferred - human
-  required`: a tag push and a download by a person)
+  signatures, and run one binary from `/tmp` (superseded: with one PR
+  for everything, v2.2.0 was released directly, and the same checks
+  ran on it, 2026-10-28)
 
 <!--docz:tasks:end-->
 
@@ -656,12 +657,14 @@ installs from a git ref, not a release asset.
 - [x] `.github/workflows/ci.yml`: a `plugin` job path-filtered on
   `plugins/**` and `.claude-plugin/**` running `shellcheck` over the
   wrappers, the hook tests, and the manifest check
-- [ ] Follow the README's "From your own marketplace" section verbatim
+- [x] Follow the README's "From your own marketplace" section verbatim
   against a private marketplace of our own, both the reference path and
   the copy path: the plugin installs and the hooks fire; fix the
-  instructions before the PR merges (`deferred - human required`: two
-  `/plugin` installs in a person's Claude Code against a private
-  marketplace)
+  instructions before the PR merges (2026-10-31, claude-skills as the
+  private marketplace: both paths installed and reviewed. The README
+  gained the user scope, since a local-scope install never runs
+  elsewhere and project settings enable without installing, and the
+  copy path's `version` field, `tests/`, `repository`, and resync)
 - [x] `plugins/docz-review/tests/`: the hook tests over the Phase 1
   fixtures through the wrappers (`bun test plugins/docz-review/tests/`),
   including the missing-binary path
