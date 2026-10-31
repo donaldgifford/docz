@@ -58,6 +58,6 @@ docz create design "Your Design Title"
 | DESIGN-0022 | Incident and root cause analysis: INC and RCA as built-in document types | Draft | 2026-10-16 | Donald Gifford | [0022-incident-and-root-cause-analysis-inc-and-rca-as-built-in.md](0022-incident-and-root-cause-analysis-inc-and-rca-as-built-in.md) |
 | DESIGN-0023 | A read-only MCP server in docz-api: OAuth 2.1 tokens, tools, and resources | Implemented | 2026-10-17 | Donald Gifford | [0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md](0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md) |
 | DESIGN-0024 | docz-review: a blocking review page for agent-written documents | Implemented | 2026-10-23 | Donald Gifford | [0024-docz-review-a-blocking-review-page-for-agent-written-documents.md](0024-docz-review-a-blocking-review-page-for-agent-written-documents.md) |
-| DESIGN-0025 | docz-html: standalone HTML pages from docz documents, and one themeable design for docz's HTML | Draft | 2026-10-31 | Donald Gifford | [0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md](0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md) |
+| DESIGN-0025 | docz-html: standalone HTML pages from docz documents, and one themeable design for docz's HTML | Implemented | 2026-10-31 | Donald Gifford | [0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md](0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

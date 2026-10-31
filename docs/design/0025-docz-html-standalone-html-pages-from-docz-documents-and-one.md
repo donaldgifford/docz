@@ -1,7 +1,7 @@
 ---
 id: DESIGN-0025
 title: "docz-html: standalone HTML pages from docz documents, and one themeable design for docz's HTML"
-status: In Review
+status: Implemented
 author: Donald Gifford
 created: 2026-10-31
 ---

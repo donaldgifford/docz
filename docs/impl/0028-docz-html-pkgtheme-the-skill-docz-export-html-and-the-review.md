@@ -1,7 +1,7 @@
 ---
 id: IMPL-0028
 title: "docz-html: pkg/theme, the skill, docz export html, and the review page on paper"
-status: Draft
+status: Completed
 author: Donald Gifford
 created: 2026-10-31
 ---
@@ -548,9 +548,11 @@ selectable. Its own `minor`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Set DESIGN-0025 to Implemented and this IMPL to Completed.
+- [x] Set DESIGN-0025 to Implemented and this IMPL to Completed.
 - [ ] Open the follow-up for docz-site on `paper` with the widgets as
-  React components, as an issue and a draft IMPL.
+  React components, as an issue and a draft IMPL. The draft is IMPL-0029;
+  the issue is outward-facing and waits for the owner. **deferred** -
+  human required
 - [ ] Regenerate the changelog as the last commit of each PR.
 
 <!--docz:tasks:end-->
