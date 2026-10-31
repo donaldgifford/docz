@@ -37,6 +37,13 @@
 // runtime draws, with a fallback readable without JavaScript. An invalid
 // block is shown as its source with each error and its line.
 //
+// [Export] is the repository run docz export html makes: every document
+// of the chosen types (or the named ones) rendered to a page under the
+// output directory, mirroring each type's directory below the docs
+// directory, an index page when there is more than one, links between the
+// exported pages kept relative, small images inlined, and a page whose
+// bytes already match left alone. [Hooks] narrate it through the context.
+//
 // Every page carries a Content-Security-Policy that loads nothing from the
 // network, outside the CDN mermaid mode. Nothing time-dependent is written:
 // the same input gives the same bytes, and [Page.Hash] is their SHA-256.

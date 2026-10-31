@@ -479,7 +479,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
 - [x] Rewrite `SKILL.md` for stage 2 per DESIGN-0025 §10 and delete the
   skill's theme copy, its sync recipe, and the drift check; bump the
   plugin to 0.2.0.
-- [ ] Document the command in `README.md`, `docs/` usage, `CLAUDE.md`
+- [x] Document the command in `README.md`, `docs/` usage, `CLAUDE.md`
   (the package, the command, the plugin), and the package's godoc.
 
 <!--docz:tasks:end-->

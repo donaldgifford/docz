@@ -24,6 +24,8 @@ the server and the frontend into this repository. Coming from v1, read
   block keeps a working custom type.
 - **A sixth built-in, `runbook`,** which ships disabled.
 - **`docz export confluence`** publishes documents to Confluence Cloud.
+- **`docz export html`** writes each document as one standalone HTML page,
+  tabbed by section, that opens from disk with no network request.
 - **Lint-clean output:** everything docz writes passes markdownlint under
   its default rules.
 - **docz-api and docz-site now live in this repository**, and one Helm chart,
@@ -132,6 +134,7 @@ docz update --dry-run  # preview changes without writing
 | `docz validate [type\|id\|path]` | Check documents, or one document, against their schema and report drift |
 | `docz inspect <id\|path>` | Report one document's structure: regions, headings, open questions, tasks |
 | `docz export confluence [id\|path...]` | Export documents to Confluence Cloud as pages ([Sync](#sync)) |
+| `docz export html [id\|path...]` | Export documents as standalone HTML pages ([HTML pages](#html-pages)) |
 | `docz template show <type>` | Print the resolved template to stdout |
 | `docz template export <type> [path]` | Write the resolved template to a file |
 | `docz template override <type>` | Copy the template into the local overrides directory |
@@ -203,8 +206,9 @@ directory, exits 2.
 
 ### Machine-readable output
 
-The JSON outputs of `docz inspect`, `docz validate`, `docz create`, and
-`docz list`, and the review record docz-review writes, are governed by the
+The JSON outputs of `docz inspect`, `docz validate`, `docz create`,
+`docz list`, and `docz export html`, and the review record docz-review
+writes, are governed by the
 JSON Schemas in [`api/cli/`](api/cli/). Every output but `list`'s bare array
 carries a `schema_version`; a consumer validates against the schema with
 `additionalProperties` relaxed and ignores fields it does not know.
@@ -219,6 +223,55 @@ carries a `schema_version`; a consumer validates against the schema with
 | `--out <dir>` | Also write each rendered page to `<dir>/<id>.xhtml` |
 | `--format <fmt>` | Output format: `text` (default), `json` |
 | `--strict` | Exit 1 when any page was skipped |
+
+### `docz export html` Flags
+
+| Flag | Description |
+| --- | --- |
+| `--type <name>` | Export one type; repeatable (default: every enabled type) |
+| `--out <dir>` | Output directory (default: `build/html` under the repository root) |
+| `--stdout` | Print the one page to stdout instead of writing it (exit 2 for more than one) |
+| `--theme <name>` | `paper` (default) or `classic` |
+| `--mermaid <mode>` | `embed` (default) inlines mermaid in each page with a diagram, `cdn` loads it from jsDelivr under subresource integrity, `source` leaves each diagram as its source |
+| `--format <fmt>` | Report format: `text` (default), `json` |
+| `--dry-run` | Render every page and report what would be written; write nothing |
+
+### HTML pages
+
+`docz export html` turns each document into one HTML file a reader without
+the repository can open: a header with the summary and status, a tab per
+section, and docz's theme inlined, with a light/dark toggle. Each region's
+kind decides its tab and layout, so an IMPL's phases are cards with
+progress and a task filter, a runbook's procedures are numbered steps, and
+open questions are expandables; an unmarked document gets its sections
+from its headings.
+
+```bash
+docz export html                 # every document, plus index.html
+docz export html DESIGN-0025     # one page
+docz export html IMPL-0028 --stdout > plan.html
+```
+
+Pages mirror each type's directory below `docs_dir` under
+`build/html/`, and a run of more than one page writes `index.html`, a tab
+per type listing every document. A page whose bytes already match is
+reported unchanged and not rewritten. Links to documents the run exports
+point at their pages, images under the repository of 1 MB or less are
+inlined, and any other relative link goes to the file on GitHub; a link
+that resolves nowhere is reported. Every page carries a
+Content-Security-Policy that loads nothing from the network, outside
+`--mermaid cdn`.
+
+Three fenced blocks draw as widgets: `docz-flow` (stages left to right),
+`docz-stepper` (scenarios walked over one list of steps), and
+`docz-scorecard` (weighted checks a reader scores). Each block's body is
+YAML against a closed schema, readable as-is on GitHub or in Confluence;
+an invalid block shows as its source with the error. The schemas are in
+[`plugins/docz-html/skills/docz-html/references/widgets.md`](plugins/docz-html/skills/docz-html/references/widgets.md).
+
+The `docz-html` Claude Code plugin (`/plugin install docz-html@docz`)
+drives the command and suggests changes to the markdown when a page would
+read better.
 
 ### `docz wiki init` Flags
 
@@ -1029,7 +1082,9 @@ whole-repository operations. A layer imports only the layers beneath it.
 | `pkg/doczcore/index` | The README index table and the splice between its markers, the latter as a pure function (`GenerateTable`, `Splice`, `UpdateReadme`) |
 | `pkg/doczcore/repo` | Whole-repository operations with typed reports and typed errors — what each `docz` command is one call to (`Open`, `Create`, `Update`, `Validate`, `Find`) |
 | `pkg/wiki` | MkDocs / Backstage TechDocs integration: write `mkdocs.yml`, then rebuild its nav from the docs tree (`Init`, `UpdateNav`) |
-| `pkg/export/confluence` | Confluence Cloud export: a document to storage format with no I/O, a v2 REST client through Atlassian's gateway, and the page-tree reconcile `docz export confluence` is one call to (`Render`, `NewHTTPClient`, `Export`). The one package allowed a third-party markdown parser, goldmark |
+| `pkg/export/confluence` | Confluence Cloud export: a document to storage format with no I/O, a v2 REST client through Atlassian's gateway, and the page-tree reconcile `docz export confluence` is one call to (`Render`, `NewHTTPClient`, `Export`) |
+| `pkg/export/html` | Standalone HTML pages: a document to one themed page with no I/O, and the repository run `docz export html` is one call to (`Render`, `Export`). With `pkg/export/confluence`, the only packages allowed a third-party markdown parser, goldmark |
+| `pkg/theme` | docz's HTML design as token sets: the `paper` and `classic` themes' CSS and the page runtime, standard library only (`CSS`, `Names`, `Runtime`) |
 
 > **Stability.** The five packages promoted at v1.0.0 — `config`, `document`,
 > `docparse`, `docwrite`, and `toc` — are **frozen** and take additions only
