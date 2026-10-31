@@ -189,7 +189,7 @@ phase proves the plumbing before the look moves.
   `docker-bake.hcl`, and `COPY --from=theme . /pkg/theme` in
   `Dockerfile.ui`'s build stage, laid out so the relative import resolves
   as it does on disk.
-- [ ] Add `pkg/theme/**` to the `ui` path filter in
+- [x] Add `pkg/theme/**` to the `ui` path filter in
   `.github/workflows/ci.yml`. The `go` filter already covers it through
   `pkg/**`.
 - [ ] Run `just ui ci` and the review e2e; confirm the bundle budget and

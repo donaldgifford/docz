@@ -75,6 +75,8 @@ jobs:
               - 'ui/**'
               - 'api/openapi.yaml'
               - 'api/cli/**'
+              # tokens.css imports the themes from here (DESIGN-0025).
+              - 'pkg/theme/**'
               - 'ui.just'
               - 'Dockerfile.ui'
             # The plugin's tests run its hooks against ui/review/ from source,
