@@ -324,7 +324,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   id, status, author, created), the tab row, the panels, and the footer
   (source path, content SHA-256, `Version`). Inline `theme.CSS` and
   `theme.Runtime` between `<!-- docz:theme -->` markers.
-- [ ] Render an empty region (only comments or whitespace) as the "not
+- [x] Render an empty region (only comments or whitespace) as the "not
   written yet" line.
 - [ ] Mermaid fences: `MermaidSource` writes a labelled code block;
   `MermaidEmbed` and `MermaidCDN` write a `<pre class="mermaid">` and set
