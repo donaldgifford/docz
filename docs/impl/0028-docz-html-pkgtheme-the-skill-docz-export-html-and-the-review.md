@@ -448,7 +448,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
 - [x] Images: a relative image under the root of 1 MB or less becomes a
   `data:` URL with its MIME type from the extension; a larger one goes
   through the resolver. A path outside the root is never read.
-- [ ] `index.html` when a run writes more than one page: one tab per type,
+- [x] `index.html` when a run writes more than one page: one tab per type,
   a table of id, title, status, and date in `docz list` order.
 - [ ] Mermaid: `pkg/export/html/assets/mermaid.min.js.gz`, written by a
   new `just vendor-mermaid` recipe from `ui/node_modules` at the version

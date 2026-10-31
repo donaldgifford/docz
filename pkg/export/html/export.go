@@ -164,6 +164,12 @@ func Export(ctx context.Context, rp *repo.Repo, opts ExportOptions) (Report, err
 		firePageDone(ctx, &res)
 	}
 
+	if len(entries) > 1 {
+		res := x.index(entries, rep.Pages)
+		rep.Pages = append(rep.Pages, res)
+		firePageDone(ctx, &res)
+	}
+
 	return rep, nil
 }
 

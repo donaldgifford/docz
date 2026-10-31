@@ -48,11 +48,11 @@ func TestExportWritesThenReportsUnchanged(t *testing.T) {
 		t.Errorf("Out = %q", first.Out)
 	}
 
-	if len(first.Pages) != 2 || len(done) != 2 {
-		t.Fatalf("%d pages, %d hook calls, want 2 and 2", len(first.Pages), len(done))
+	if len(first.Pages) != 3 || len(done) != 3 {
+		t.Fatalf("%d pages, %d hook calls, want two documents and the index", len(first.Pages), len(done))
 	}
 
-	for _, p := range first.Pages {
+	for _, p := range first.Pages[:2] {
 		if p.Action != ActionWrote || !strings.HasPrefix(p.Path, "rfc/") || !strings.HasSuffix(p.Path, ".html") {
 			t.Errorf("page %s %s at %s", p.ID, p.Action, p.Path)
 		}
@@ -143,5 +143,48 @@ func TestExportReportsAFailedPage(t *testing.T) {
 
 	if rep.Failed() != 1 || rep.Pages[0].Action != ActionFailed || !strings.Contains(rep.Pages[0].Error, "line endings") {
 		t.Errorf("first page %s %q, want it failed for its line endings; %d failed", rep.Pages[0].Action, rep.Pages[0].Error, rep.Failed())
+	}
+}
+
+func TestExportIndex(t *testing.T) {
+	t.Parallel()
+
+	rp := fixtureRepo(t, "rfc")
+
+	rep, err := Export(context.Background(), rp, ExportOptions{DryRun: true, Site: "fixture"})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	index := rep.Pages[len(rep.Pages)-1]
+	if index.Path != IndexPath || index.ID != "" || index.Action != ActionWrote {
+		t.Fatalf("last page %q %q %s, want the index", index.Path, index.ID, index.Action)
+	}
+
+	body := string(index.Body)
+
+	for _, want := range []string{
+		`<title>fixture documents</title>`,
+		`data-tab="rfcs"`,
+		"<th>ID</th>\n<th>Title</th>\n<th>Status</th>\n<th>Date</th>",
+		`<a href="` + rep.Pages[0].Path + `">` + rep.Pages[0].ID + `</a>`,
+		`<a href="` + rep.Pages[1].Path + `">` + rep.Pages[1].ID + `</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the index lacks %s", want)
+		}
+	}
+
+	if strings.Contains(body, "inferred from headings") {
+		t.Errorf("the index says its sections were inferred")
+	}
+
+	if len(index.Links) != 0 {
+		t.Errorf("the index has unresolved links: %v", index.Links)
+	}
+
+	one, err := Export(context.Background(), rp, ExportOptions{DryRun: true, IDs: []string{rep.Pages[0].ID}})
+	if err != nil || len(one.Pages) != 1 {
+		t.Errorf("a one-page run has %d pages (%v), want no index", len(one.Pages), err)
 	}
 }
