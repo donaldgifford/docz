@@ -401,11 +401,7 @@ nav.tabs.more.end {
 }
 
 nav.tabs.more.mid.end {
-  mask-image: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-fg-primary) 56px
-  );
+  mask-image: linear-gradient(90deg, transparent, var(--color-fg-primary) 56px);
 }
 
 section.panel {
@@ -851,6 +847,146 @@ pre.mermaid[data-processed="true"] {
 .diagram-error {
   color: var(--color-bad);
   font-size: 0.85rem;
+}
+
+/* Widgets: docz-flow, docz-stepper, docz-scorecard (DESIGN-0025 §6).
+   The fallback shows until the runtime draws; without JavaScript, or when
+   the island fails, it is all there is. */
+
+figure.widget {
+  margin: 1em 0 1.4em;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+figure.widget > figcaption {
+  margin: 0 0 8px;
+  color: var(--color-fg-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+html:not(.js) .widget-mount,
+.widget.drawn > .widget-fallback {
+  display: none;
+}
+
+.widget-fallback > :last-child {
+  margin-bottom: 0;
+}
+
+.widget-canvas svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-sans);
+}
+
+.widget-canvas svg .mono {
+  font-family: var(--font-mono);
+}
+
+.widget-canvas g.stage {
+  cursor: pointer;
+}
+
+.widget-canvas g.stage:focus {
+  outline: none;
+}
+
+.widget-canvas g.stage:focus-visible rect {
+  stroke: var(--color-fg-primary);
+  stroke-width: 2;
+}
+
+.widget-detail {
+  margin-top: 10px;
+}
+
+.widget-detail h4 {
+  margin: 0 0 0.3em;
+}
+
+.widget-detail > :last-child {
+  margin-bottom: 0;
+}
+
+.widget-choices,
+.widget-steps,
+.widget-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 10px;
+}
+
+.widget-nav {
+  margin: 10px 0 0;
+}
+
+.widget-choices button,
+.widget-steps button {
+  padding: 4px 11px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  background: var(--color-bg-base);
+  color: var(--color-fg-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.widget-choices button[aria-pressed="true"],
+.widget-steps button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.widget-steps button.fail {
+  border-color: var(--color-bad);
+  color: var(--color-bad);
+}
+
+.widget-steps button.fail[aria-pressed="true"] {
+  background: var(--color-bad);
+  color: var(--color-on-accent);
+}
+
+.widget-steps button.dead {
+  opacity: 0.55;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.widget-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-base);
+  color: var(--color-fg-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.widget-score {
+  margin: 0 0 10px;
+}
+
+tr.unmeasured td {
+  color: var(--color-fg-tertiary);
 }
 
 /* Footer */

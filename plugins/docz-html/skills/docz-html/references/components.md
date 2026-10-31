@@ -300,6 +300,7 @@ runtime draws:
 
 ```html
 <figure class="widget" data-widget="flow">
+  <figcaption>Request path</figcaption>
   <script type="application/json" data-widget="flow">
     {"title":"Request path","gates":[2],"stages":[…]}
   </script>
@@ -315,6 +316,7 @@ runtime draws:
 - The runtime finds every `script[type="application/json"][data-widget]`,
   draws into the sibling `.widget-mount`, marks the figure `drawn` (which
   hides the fallback), and redraws when the mode changes.
+- The `figcaption` is the block's `title`; leave it out when there is none.
 - The fallback is required. If the island fails to parse, or the reader
   has JavaScript off, the fallback is what they read. Each widget's
   fallback shape is in `widgets.md`.

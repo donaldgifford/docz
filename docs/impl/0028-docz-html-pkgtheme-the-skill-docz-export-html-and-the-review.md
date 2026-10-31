@@ -257,7 +257,7 @@ and 4 encode.
   the sibling mount point in tokens, redraws on the `docz:mode` event,
   and leaves the no-JS fallback (a definition list or table of the same
   data) in place when the island fails to parse.
-- [ ] Add widget styles to `components.css` and re-run the Phase 1
+- [x] Add widget styles to `components.css` and re-run the Phase 1
   completeness test.
 - [ ] Iterate over this repository's own documents, one per built-in type
   (DESIGN-0025, IMPL-0027, ADR-0005, INV-0030, an RFC, RUNBOOK-0004),
