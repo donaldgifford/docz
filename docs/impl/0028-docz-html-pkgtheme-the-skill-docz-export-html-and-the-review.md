@@ -136,7 +136,7 @@ phase proves the plumbing before the look moves.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `pkg/theme/doc.go` with the package comment: what a theme is
+- [x] Add `pkg/theme/doc.go` with the package comment: what a theme is
   (token values only), the two themes, the `data-theme` and `data-mode`
   selection, and that the files are part of the semver contract by name
   and token, not by byte.
