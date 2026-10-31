@@ -307,7 +307,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
 - [x] Resolve regions with `kinds.ResolveRegions(src, opts.Spec)`; set
   `Page.Inferred`, and say so in the header. A document with no regions
   gets one tab per H2.
-- [ ] Build the goldmark instance: GFM, footnotes, and a node renderer at
+- [x] Build the goldmark instance: GFM, footnotes, and a node renderer at
   priority 100 for headings (ids from `docparse.AnchorSlug` with
   github-slugger's duplicate rule, as `docparse.Headings` assigns them),
   GitHub alerts as callouts, task lists as disabled checkboxes, tables in

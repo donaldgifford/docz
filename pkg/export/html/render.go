@@ -111,17 +111,36 @@ func Render(src []byte, opts RenderOptions) (Page, error) {
 		return Page{}, fmt.Errorf("html: %w", err)
 	}
 
-	body := blankFrontmatter(src)
+	d := prepare(blankFrontmatter(src), &opts)
+	nr := d.md.nodes
+
+	panels, err := d.panels()
+	if err != nil {
+		return Page{}, fmt.Errorf("html: rendering: %w", err)
+	}
+
+	d.rendered = panels
+
+	return Page{
+		ID: fm.ID, Title: fm.Title, Type: opts.Type,
+		Links: nr.links, Inferred: d.inferred, Problems: nr.problems,
+	}, nil
+}
+
+// prepare resolves body's regions, cuts it into tabs, and parses it.
+func prepare(body []byte, opts *RenderOptions) *doc {
 	regions, inferred := kinds.ResolveRegions(body, opts.Spec)
 	d := &doc{
 		body:     body,
 		lines:    strings.Split(string(body), "\n"),
 		headings: docparse.Headings(body),
 		regions:  regions,
+		inferred: inferred,
 	}
 	d.tabs = outline(d.lines, regions, d.headings)
+	d.md = parseMarkdown(body, newNodeRenderer(opts, d.headings))
 
-	return Page{ID: fm.ID, Title: fm.Title, Type: opts.Type, Inferred: inferred}, nil
+	return d
 }
 
 // doc is one document on its way to a page.
@@ -130,7 +149,10 @@ type doc struct {
 	lines    []string
 	headings []docparse.Heading
 	regions  []docparse.Region
+	inferred bool
 	tabs     []tab
+	md       *markdown
+	rendered []panel
 }
 
 // blankFrontmatter returns a copy of src with the frontmatter block's lines
