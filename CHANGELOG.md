@@ -5,14 +5,25 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Bug Fixes
+
+- *(review)* Never approve from Submit or drop an unadded comment
+
 ### Documentation
 
 - *(review)* Record the full hook drill
 - *(impl)* Tick deleting the drill plugin
+- *(review)* Say when Submit and Approve are available
+- *(impl)* Record the docz-review trial on this repository
+- *(review)* Install at user scope, and what a copied plugin needs
 
 ### Testing
 
 - *(review)* Arm over the hook drill's real PostToolUse captures
+
+### Miscellaneous Tasks
+
+- *(chart)* 1.2.1 with appVersion 2.2.2 for the release
 
 ## [2.2.1] - 2026-10-30
 
