@@ -553,7 +553,7 @@ selectable. Its own `minor`.
   React components, as an issue and a draft IMPL. The draft is IMPL-0029;
   the issue is outward-facing and waits for the owner. **deferred** -
   human required
-- [ ] Regenerate the changelog as the last commit of each PR.
+- [x] Regenerate the changelog as the last commit of each PR.
 
 <!--docz:tasks:end-->
 
