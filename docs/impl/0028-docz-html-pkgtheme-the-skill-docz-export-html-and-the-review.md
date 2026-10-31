@@ -450,7 +450,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
   through the resolver. A path outside the root is never read.
 - [x] `index.html` when a run writes more than one page: one tab per type,
   a table of id, title, status, and date in `docz list` order.
-- [ ] Mermaid: `pkg/export/html/assets/mermaid.min.js.gz`, written by a
+- [x] Mermaid: `pkg/export/html/assets/mermaid.min.js.gz`, written by a
   new `just vendor-mermaid` recipe from `ui/node_modules` at the version
   `ui/bun.lock` pins, with a test that the embedded version string equals
   the lockfile's (question 1). `MermaidEmbed` inlines it only in a page

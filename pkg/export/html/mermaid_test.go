@@ -1,7 +1,12 @@
 package html
 
 import (
+	"crypto/sha512"
+	"encoding/base64"
 	stdhtml "html"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -23,7 +28,7 @@ func TestMermaidModes(t *testing.T) {
 			name:    "embed",
 			src:     diagram,
 			mode:    MermaidEmbed,
-			want:    []string{`<pre class="mermaid">graph LR`, "A --&gt; B&lt;script&gt;", "vendored in IMPL-0028 Phase 5", "securityLevel"},
+			want:    []string{`<pre class="mermaid">graph LR`, "A --&gt; B&lt;script&gt;", "__esbuild_esm_mermaid_nm", "securityLevel"},
 			notWant: []string{"cdn.jsdelivr.net"},
 		},
 		{
@@ -31,7 +36,7 @@ func TestMermaidModes(t *testing.T) {
 			src:       diagram,
 			mode:      MermaidCDN,
 			want:      []string{`<pre class="mermaid">`, "securityLevel"},
-			notWant:   []string{"vendored in IMPL-0028 Phase 5"},
+			notWant:   []string{"__esbuild_esm_mermaid_nm"},
 			cdnPolicy: true,
 		},
 		{
@@ -83,5 +88,36 @@ func TestMermaidModes(t *testing.T) {
 				t.Errorf("page has no CSP")
 			}
 		})
+	}
+}
+
+// TestVendoredMermaid holds the embedded mermaid to the version ui/bun.lock
+// pins and to the CDN mode's integrity hash, so the two modes draw with the
+// same bytes and a lockfile bump without just vendor-mermaid fails here.
+func TestVendoredMermaid(t *testing.T) {
+	t.Parallel()
+
+	lock, err := os.ReadFile(filepath.Join("..", "..", "..", "ui", "bun.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m := regexp.MustCompile(`"mermaid": \["mermaid@([^"]+)"`).FindSubmatch(lock)
+	if m == nil {
+		t.Fatal("ui/bun.lock pins no mermaid")
+	}
+
+	if string(m[1]) != mermaidVersion {
+		t.Errorf("mermaidVersion = %s, ui/bun.lock pins %s; run just vendor-mermaid and update the version and hash", mermaidVersion, m[1])
+	}
+
+	script := mermaidScript()
+	if !strings.Contains(script, `"`+mermaidVersion+`"`) {
+		t.Errorf("the embedded mermaid does not carry version %s", mermaidVersion)
+	}
+
+	sum := sha512.Sum384([]byte(script))
+	if got := "sha384-" + base64.StdEncoding.EncodeToString(sum[:]); got != mermaidIntegrity {
+		t.Errorf("the embedded mermaid hashes to %s, mermaidIntegrity is %s", got, mermaidIntegrity)
 	}
 }

@@ -168,7 +168,7 @@ func TestGoldenPages(t *testing.T) {
 				t.Errorf("%s did not render: %s", path, page)
 			}
 
-			got := themeBlock.ReplaceAll(page, []byte(string(themeOpen)+string(themeClose)))
+			got := themeBlock.ReplaceAll(cutMermaid(page), []byte(string(themeOpen)+string(themeClose)))
 			compare(t, golden, got)
 		})
 	}
@@ -180,5 +180,11 @@ func TestGoldenFullPage(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join("..", "..", "design", "testdata", "docz-design-0009.md")
-	compare(t, filepath.Join("testdata", "golden", "full-page.html"), renderFile(t, path, "design"))
+	compare(t, filepath.Join("testdata", "golden", "full-page.html"), cutMermaid(renderFile(t, path, "design")))
+}
+
+// cutMermaid replaces the inlined mermaid with a placeholder: it is 5.6 MB,
+// and TestVendoredMermaid pins its bytes.
+func cutMermaid(page []byte) []byte {
+	return bytes.ReplaceAll(page, []byte(mermaidScript()), []byte("/* mermaid "+mermaidVersion+" */"))
 }

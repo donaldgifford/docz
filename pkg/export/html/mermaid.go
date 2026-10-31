@@ -1,8 +1,12 @@
 package html
 
 import (
+	"bytes"
+	"compress/gzip"
 	_ "embed"
 	"html/template"
+	"io"
+	"sync"
 )
 
 // mermaidVersion is the mermaid the page draws with: the version ui/
@@ -22,13 +26,29 @@ const (
 //go:embed assets/mermaid-init.js
 var mermaidInit string
 
-// mermaidScript returns mermaid itself for MermaidEmbed. The vendored file
-// arrives with docz export html (IMPL-0028 Phase 5); until then it is a
-// stub that defines nothing, so an embedded page shows each diagram's
-// source.
-var mermaidScript = func() string {
-	return "/* mermaid " + mermaidVersion + " is vendored in IMPL-0028 Phase 5 */"
-}
+// mermaidGz is mermaid itself, gzipped by just vendor-mermaid from the
+// version ui/bun.lock pins.
+//
+//go:embed assets/mermaid.min.js.gz
+var mermaidGz []byte
+
+// mermaidScript returns mermaid itself for MermaidEmbed, decompressed the
+// first time a page needs it. The asset is checked by a test, so a failure
+// here is a broken build; it leaves a comment, and the page shows each
+// diagram's source.
+var mermaidScript = sync.OnceValue(func() string {
+	zr, err := gzip.NewReader(bytes.NewReader(mermaidGz))
+	if err != nil {
+		return "/* mermaid: " + err.Error() + " */"
+	}
+
+	b, err := io.ReadAll(zr)
+	if err != nil {
+		return "/* mermaid: " + err.Error() + " */"
+	}
+
+	return string(b)
+})
 
 // mermaidData is what the template reads to draw diagrams.
 type mermaidData struct {
