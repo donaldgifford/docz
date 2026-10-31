@@ -30,28 +30,42 @@ const contentsMin = 4
 func (d *doc) panels() ([]panel, error) {
 	out := make([]panel, 0, len(d.tabs))
 
-	skip := make(map[int]bool)
-	if err := d.findSummary(skip); err != nil {
+	if err := d.findSummary(d.skip); err != nil {
 		return nil, err
 	}
 
 	for _, tb := range d.tabs {
 		p := panel{Key: tb.Key, Label: tb.Label}
+		d.filtered = false
 
 		var body bytes.Buffer
 
-		for i, s := range tb.Sections {
+		for i := 0; i < len(tb.Sections); i++ {
+			s := tb.Sections[i]
 			if i == 0 && s.Heading != nil && strings.EqualFold(strings.TrimSpace(stripComments(s.Heading.Text)), tb.Label) {
-				skip[s.Heading.Line] = true
+				d.skip[s.Heading.Line] = true
 				p.Anchor = s.Heading.Slug
 			}
 
-			b, err := d.md.span(s.From, s.Through, skip)
-			if err != nil {
-				return nil, err
+			comp := componentOf(s)
+			if comp == compGoals {
+				j := i
+				for j < len(tb.Sections) && componentOf(tb.Sections[j]) == compGoals {
+					j++
+				}
+
+				if err := d.goals(&body, tb.Sections[i:j]); err != nil {
+					return nil, err
+				}
+
+				i = j - 1
+
+				continue
 			}
 
-			body.Write(b)
+			if err := d.writeSection(&body, s, comp); err != nil {
+				return nil, err
+			}
 		}
 
 		p.Body = body.Bytes()

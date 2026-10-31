@@ -33,7 +33,10 @@
 </section>
 <section class="panel" id="p-phases">
 <h2 class="panel-title">Phases</h2>
-<h4 id="phase-a-untidy"><strong>Phase A:</strong> Untidy</h4>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-a-untidy">
+<div class="phase-head"><h3><strong>Phase A:</strong> Untidy</h3><span class="progress">0 / 0</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
 <p>Prose between the heading and the first task, with no Tasks subheading anywhere
 in the phase.</p>
 <ul class="tasks">
@@ -48,6 +51,7 @@ in the phase.</p>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">Third messy task</div></li>
 </ul>
+</div>
 
 </section>
 <footer class="page-footer">

@@ -173,7 +173,8 @@ IMPL-0015 changelog block, IMPL-0016 api block).</li>
 <li><a href="#observation-8--consumer-contract-additive-and-the-consumer-cannot-compute-it-alone">Observation 8 — consumer contract: additive, and the consumer cannot compute it alone</a></li>
 <li><a href="#observation-9--sizing-against-comparable-past-work">Observation 9 — sizing against comparable past work</a></li>
 </ul>
-<h4 id="observation-1--the-read-side-is-one-additive-field">Observation 1 — the read side is one additive field</h4>
+<div class="card" id="observation-1--the-read-side-is-one-additive-field">
+<p class="card-label">Observation 1 — the read side is one additive field</p>
 <p><code>document.Frontmatter</code> (<code>pkg/doczcore/document/document.go</code>) is a plain
 yaml/v3 struct with five fields. yaml decoding is lenient — unknown keys are
 ignored — so a document carrying <code>updated:</code> today parses fine and the value
@@ -220,7 +221,9 @@ DESIGN-0007's semver rule. Its only consumers are:</p>
 <p>No golden in the repo asserts the <em>absence</em> of a sixth key, so the field
 lands without touching existing fixtures — unless the templates change
 (Observation 3).</p>
-<h4 id="observation-2--the-write-side-needs-a-capability-docwrite-does-not-have">Observation 2 — the write side needs a capability <code>docwrite</code> does not have</h4>
+</div>
+<div class="card" id="observation-2--the-write-side-needs-a-capability-docwrite-does-not-have">
+<p class="card-label">Observation 2 — the write side needs a capability <code>docwrite</code> does not have</p>
 <p><code>docwrite.SetStatus</code> (<code>pkg/doczcore/docwrite/status.go</code>, 221 lines + 318 of
 tests + 12 golden fixtures) is a byte-level value substitution: it locates
 <code>^status:[ \t]*</code> inside the frontmatter bounds, parses the scalar shape
@@ -250,7 +253,9 @@ helpers only where a consumer requires in-place, byte-preserving mutation&quot;
 general editor. A purpose-named <code>SetUpdated(path, Updated) (old Updated, err)</code> respects that stance; a generic <code>SetScalar(path, key, value)</code> is the
 general-editor slope and should be avoided even though it would be the same
 code. Same LF-only and byte-preservation contract as <code>SetStatus</code>.</p>
-<h4 id="observation-3--templates-add-the-field-at-birth-or-let-update-insert-it">Observation 3 — templates: add the field at birth, or let <code>update</code> insert it</h4>
+</div>
+<div class="card" id="observation-3--templates-add-the-field-at-birth-or-let-update-insert-it">
+<p class="card-label">Observation 3 — templates: add the field at birth, or let <code>update</code> insert it</p>
 <p>All six embedded templates share an identical frontmatter block ending in
 <code>created: {{ .Date }}</code> (<code>time.DateOnly</code> → <code>2026-09-12</code>). Two choices:</p>
 <ul>
@@ -270,7 +275,9 @@ default so the asymmetry would be visible.</li>
 </ul>
 <p>Adding it to the templates is the better product; the fixture cost is real
 but mechanical (<code>go test ./... -update</code>).</p>
-<h4 id="observation-4--docz-update-has-a-slot-for-the-pass-with-one-ordering-caveat">Observation 4 — <code>docz update</code> has a slot for the pass, with one ordering caveat</h4>
+</div>
+<div class="card" id="observation-4--docz-update-has-a-slot-for-the-pass-with-one-ordering-caveat">
+<p class="card-label">Observation 4 — <code>docz update</code> has a slot for the pass, with one ordering caveat</p>
 <p><code>Runner.updateType</code> (<code>cmd/update.go</code>) scans the type dir, runs the ToC pass
 if <code>toc.enabled</code>, then regenerates the README table. A &quot;stamp updated&quot; pass
 fits between the ToC pass and the table (so a new <code>Updated</code> column, if
@@ -287,7 +294,9 @@ the style of the ToC and README dry-run output.</li>
 <li>The pass is per-type, so <code>docz update rfc</code> stamps only RFCs — consistent
 with the ToC behavior.</li>
 </ul>
-<h4 id="observation-5--git-access-exists-but-is-minimal-extending-it-is-cheap">Observation 5 — git access exists but is minimal; extending it is cheap</h4>
+</div>
+<div class="card" id="observation-5--git-access-exists-but-is-minimal-extending-it-is-cheap">
+<p class="card-label">Observation 5 — git access exists but is minimal; extending it is cheap</p>
 <p><code>cmd/git.go</code> defines <code>GitResolver</code> with one method, <code>UserName(ctx)</code>, backed
 by <code>exec.CommandContext(ctx, &quot;git&quot;, &quot;config&quot;, &quot;user.name&quot;)</code> and a
 <code>staticGit</code> test double. There is no go-git dependency (<code>go.mod</code> has cobra
@@ -356,7 +365,9 @@ doc probed, since it has never been renamed. Use <code>--follow</code>.</li>
 &quot;unknown&quot;; the pass skips with a debug log, as <code>UserName</code> already degrades
 to <code>&quot;&quot;</code>.</li>
 </ul>
-<h4 id="observation-6--the-circularity-problem-and-why-date-and-sha-differ">Observation 6 — the circularity problem, and why date and sha differ</h4>
+</div>
+<div class="card" id="observation-6--the-circularity-problem-and-why-date-and-sha-differ">
+<p class="card-label">Observation 6 — the circularity problem, and why date and sha differ</p>
 <p>This is the finding that shapes the recommendation. Write the field from git
 history and the file now contains a value derived from its own history, so
 the next commit that includes the write is itself a &quot;commit that modified
@@ -405,7 +416,9 @@ DESIGN doc.</p>
 committed without running <code>docz update</code> first). The sha, if recorded at
 all, is only ever git-derived and therefore only ever written in a trailing
 commit.</p>
-<h4 id="observation-7--configuration-shape-and-defaults">Observation 7 — configuration shape and defaults</h4>
+</div>
+<div class="card" id="observation-7--configuration-shape-and-defaults">
+<p class="card-label">Observation 7 — configuration shape and defaults</p>
 <p>Turning this on in an existing repo produces a one-time diff on every
 document (34 files here) on the next <code>docz update</code>, plus a <code>docz update</code>
 that now needs git. That is exactly the situation the <code>changelog:</code> and
@@ -421,7 +434,9 @@ a v2 could flip it. A <code>sha: none | short | full</code> knob would sit in th
 block if the sha is ever recorded; it is deferred along with the sha
 (Recommendation). A per-type <code>updated_field</code> name (mirroring
 <code>status_field</code>) is possible but premature — see Decision 3.</p>
-<h4 id="observation-8--consumer-contract-additive-and-the-consumer-cannot-compute-it-alone">Observation 8 — consumer contract: additive, and the consumer cannot compute it alone</h4>
+</div>
+<div class="card" id="observation-8--consumer-contract-additive-and-the-consumer-cannot-compute-it-alone">
+<p class="card-label">Observation 8 — consumer contract: additive, and the consumer cannot compute it alone</p>
 <p>DESIGN-0008 R7 names &quot;the five typed frontmatter fields&quot; as docz-api's
 column contract and commits to coordinating breaking changes; adding a sixth
 is additive and needs a pin bump plus a <code>documents.updated DATE</code> column on
@@ -442,7 +457,9 @@ per document, and a per-document commit sha in the file is one commit
 stale by construction (Observation 6). A date satisfies sorting and display
 (docz-site's <code>updated_at</code> column); the sha mostly serves humans reading
 the raw file.</p>
-<h4 id="observation-9--sizing-against-comparable-past-work">Observation 9 — sizing against comparable past work</h4>
+</div>
+<div class="card" id="observation-9--sizing-against-comparable-past-work">
+<p class="card-label">Observation 9 — sizing against comparable past work</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -494,12 +511,12 @@ detection and the backfill walk still need git), landing at <strong>~3–3½ day
 Dropping the git-derived path entirely (stamp-on-dirty only, no backfill,
 no filter) is the smallest cut at ~2–2½ days, at the price of never
 populating the 34 existing docs unless someone edits them.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> Yes — feasible and mostly mechanical, at roughly four days, with
-one genuine design decision rather than an implementation risk.</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes — feasible and mostly mechanical, at roughly four days, with</p></div>
 <ul>
 <li>The read side is one additive struct field; no existing behavior or golden
 breaks unless the templates also change, and that cost is a fixture regen.</li>

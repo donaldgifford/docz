@@ -173,7 +173,8 @@ every hand-written <code>verify:</code> / deferred / skipped marker.</li>
 <li><a href="#observation-8-there-is-no-cli-task-surface-to-agree-with">Observation 8: there is no CLI task surface to agree with</a></li>
 <li><a href="#observation-9-sizing">Observation 9: sizing</a></li>
 </ul>
-<h4 id="observation-1-the-request-reverses-a-recorded-decision-and-the-reversal-is-justified">Observation 1: the request reverses a recorded decision, and the reversal is justified</h4>
+<div class="card" id="observation-1-the-request-reverses-a-recorded-decision-and-the-reversal-is-justified">
+<p class="card-label">Observation 1: the request reverses a recorded decision, and the reversal is justified</p>
 <p>IMPL-0014 Decision 3(d) dropped <code>ParsePlan</code> because every option was &quot;docz
 picking a workflow semantic it has no use for itself — the ambiguity was the
 signal that the semantics belong downstream.&quot; Two things changed:</p>
@@ -192,7 +193,9 @@ The plan model is interpretation and belongs in a new package layered on
 top, not in <code>docparse</code>. The &quot;API docz never calls&quot; smell is answered by
 giving the CLI a task surface (Observation 8) rather than by leaving the
 model consumer-only.</p>
-<h4 id="observation-2-what-already-exists-and-what-doczwork-already-solved">Observation 2: what already exists, and what <code>doczwork</code> already solved</h4>
+</div>
+<div class="card" id="observation-2-what-already-exists-and-what-doczwork-already-solved">
+<p class="card-label">Observation 2: what already exists, and what <code>doczwork</code> already solved</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -245,7 +248,9 @@ model consumer-only.</p>
 <code>MarkDone</code> relocates a task by exact text when lines shifted under it
 (<code>TaskMovedError</code> when the text is gone or ambiguous), and <code>DuplicatePhaseError</code>
 refuses a doc whose phase tokens collide. Both belong in the docz version.</p>
-<h4 id="observation-3-what-the-corpus-says-the-grammar-must-tolerate">Observation 3: what the corpus says the grammar must tolerate</h4>
+</div>
+<div class="card" id="observation-3-what-the-corpus-says-the-grammar-must-tolerate">
+<p class="card-label">Observation 3: what the corpus says the grammar must tolerate</p>
 <p>Surveyed with <code>grep</code>/<code>awk</code> over the 16 IMPL docs in this repo:</p>
 <div class="table-wrap">
 <table>
@@ -295,7 +300,9 @@ refuses a doc whose phase tokens collide. Both belong in the docz version.</p>
 </tbody>
 </table>
 </div>
-<h4 id="observation-4-the-hand-written-markers-that-must-parse-do-not-match-the-proposed-spelling">Observation 4: the hand-written markers that &quot;must parse&quot; do not match the proposed spelling</h4>
+</div>
+<div class="card" id="observation-4-the-hand-written-markers-that-must-parse-do-not-match-the-proposed-spelling">
+<p class="card-label">Observation 4: the hand-written markers that &quot;must parse&quot; do not match the proposed spelling</p>
 <p>The issue says hand-written markers in existing docs must parse. The corpus
 has exactly these:</p>
 <ul>
@@ -327,7 +334,9 @@ a <code>- [ ]</code> checkbox item, a skipped task keeps its positional ID — a
 property worth keeping.</p>
 </li>
 </ul>
-<h4 id="observation-5-starts-with-a-backticked-command-misclassifies-about-a-tenth-of-real-criteria">Observation 5: &quot;starts with a backticked command&quot; misclassifies about a tenth of real criteria</h4>
+</div>
+<div class="card" id="observation-5-starts-with-a-backticked-command-misclassifies-about-a-tenth-of-real-criteria">
+<p class="card-label">Observation 5: &quot;starts with a backticked command&quot; misclassifies about a tenth of real criteria</p>
 <p>tempy's phase gate runs every <code>Criterion.Executable</code> command and treats exit 0
 as pass. In this repo's IMPL docs the backtick-leading criteria are mostly
 commands (<code>docz …</code>, <code>make …</code>, <code>go …</code>, <code>grep …</code>), but roughly one in ten is a
@@ -342,7 +351,9 @@ and fail at the gate with &quot;command not found&quot; — a visible, recoverab
 failure, but noise on every legacy doc. tempy OQ-6 already chose the backtick
 rule for phase criteria (&quot;keep it simple for now&quot;), so docz should implement
 it as specified and document the caveat; docz itself never executes anything.</p>
-<h4 id="observation-6-write-back-needs-more-than-four-splices">Observation 6: write-back needs more than four splices</h4>
+</div>
+<div class="card" id="observation-6-write-back-needs-more-than-four-splices">
+<p class="card-label">Observation 6: write-back needs more than four splices</p>
 <ul>
 <li><strong>Bytes in, bytes out is consistent with ADR-0001.</strong> Decision 5 keeps
 path-based helpers &quot;only where a consumer requires in-place mutation&quot; and
@@ -366,7 +377,9 @@ is a decision (Open Question 5).</li>
 <li><strong>Line-ending policy carries over.</strong> <code>ErrUnsupportedLineEndings</code> (LF only,
 DESIGN-0005 Decision 7) applies to every new writer.</li>
 </ul>
-<h4 id="observation-7-diffplans-needs-an-identity-for-tasks-and-positional-ids-are-not-one">Observation 7: <code>DiffPlans</code> needs an identity for tasks, and positional IDs are not one</h4>
+</div>
+<div class="card" id="observation-7-diffplans-needs-an-identity-for-tasks-and-positional-ids-are-not-one">
+<p class="card-label">Observation 7: <code>DiffPlans</code> needs an identity for tasks, and positional IDs are not one</p>
 <p>&quot;Tasks added, removed, reordered&quot; cannot be computed from positional IDs
 alone: after an insertion at 2.3, every later task's ID shifts and a
 position-only diff reports the tail as &quot;changed&quot;. <code>doczwork</code> solved the
@@ -377,7 +390,9 @@ tempy's check 2 wants to reject anyway. Checkbox, deferred, and skipped
 changes are then reported per matched task ID; criteria diff by text per
 phase. tempy needs one predicate — &quot;the only change is this task's
 <code>Checked</code>&quot; — so <code>PlanDiff</code> should make that cheap to ask.</p>
-<h4 id="observation-8-there-is-no-cli-task-surface-to-agree-with">Observation 8: there is no CLI task surface to agree with</h4>
+</div>
+<div class="card" id="observation-8-there-is-no-cli-task-surface-to-agree-with">
+<p class="card-label">Observation 8: there is no CLI task surface to agree with</p>
 <p>The acceptance bullet &quot;<code>docz</code> (CLI) and <code>ParseImpl</code> report the same task IDs
 for the same doc&quot; has nothing on the CLI side today: no <code>cmd/</code> file imports
 <code>docparse.TaskItems</code> or <code>docwrite.CheckTask</code> — the checkbox primitive shipped
@@ -388,7 +403,9 @@ Decision 7 makes the CLI feature set the completeness benchmark; a thin
 over the new package makes the bullet testable and gives humans the same
 tool the worker uses — the <code>status set</code> pattern (IMPL-0011) already shows
 the shape: resolve the doc by ID, call the library, stable exit codes.</p>
-<h4 id="observation-9-sizing">Observation 9: sizing</h4>
+</div>
+<div class="card" id="observation-9-sizing">
+<p class="card-label">Observation 9: sizing</p>
 <p>Comparable past work: IMPL-0015 (changelog block + parser, 4 phases, ~26
 tasks) and IMPL-0016 (api block + <code>Title</code>, 4 phases, ~42 tasks). This is
 larger — a parser with a real grammar, five writers, a diff, a CLI family —
@@ -400,18 +417,12 @@ snapshots of real docs (this repo's IMPL-0009/0014/0017 for wrapping,
 docz-api IMPL-0004 for <code>Verify:</code>, IMPL-0006 for the prefix deferred marker,
 <code>doczwork</code>'s messy fixture), copied under <code>testdata/</code> rather than read from
 <code>docs/</code> so later edits to living docs cannot break the suite.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> Yes — feasible as one additive <code>minor</code> release, with the design
-having to settle nine things the issue leaves open. Nothing in the frozen
-surface changes: <code>docparse</code> stays facts-only, <code>docwrite</code> gains byte-level
-variants of what it already does, and the plan model lands in a new
-subpackage that composes them. The reversal of IMPL-0014 Decision 3(d) is
-real but sound under ADR-0001's own promotion rule now that two consumers
-need the grammar docz's template defines, and it is answered properly by
-giving the CLI a task surface so docz consumes the API it publishes.</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes — feasible as one additive <code>minor</code> release, with the design</p></div>
 <p>The parts the issue underestimates: task text wraps in most recent docs so
 the parser must fold continuation lines and the writers must handle
 multi-line targets; the only hand-written markers in the fleet do not match

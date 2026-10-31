@@ -89,36 +89,103 @@ func (m *markdown) startLine(n ast.Node) int {
 	return m.lineOf(off)
 }
 
-// span renders the top-level nodes that start on lines from through
-// through, except those starting on a line in skip, and closes any raw tag
-// left open inside the span.
-func (m *markdown) span(from, through int, skip map[int]bool) ([]byte, error) {
-	var out bytes.Buffer
+// replacer writes a top-level node some other way than the renderer
+// would: a component's typed markup in its place.
+type replacer func(w *bytes.Buffer, n ast.Node) error
 
-	r := m.md.Renderer()
-
+// spanTo renders the top-level nodes that start on lines from through
+// through to w, except those starting on a line in skip, and closes any raw
+// tag left open inside the span. A node starting on a line in replace is
+// written by its replacer instead.
+func (m *markdown) spanTo(w *bytes.Buffer, from, through int, skip map[int]bool, replace map[int]replacer) error {
 	for n := m.root.FirstChild(); n != nil; n = n.NextSibling() {
 		if _, ok := n.(*east.FootnoteList); ok {
 			continue
 		}
 
 		line := m.startLine(n)
-		if line < from || line > through {
+		if line < from || line > through || skip[line] {
 			continue
 		}
 
-		if skip[line] {
+		if f, ok := replace[line]; ok {
+			if err := f(w, n); err != nil {
+				return err
+			}
+
 			continue
 		}
 
-		if err := r.Render(&out, m.src, n); err != nil {
+		if err := m.md.Renderer().Render(w, m.src, n); err != nil {
+			return err
+		}
+	}
+
+	m.nodes.closeOpen(w)
+
+	return nil
+}
+
+// render writes n and everything under it.
+func (m *markdown) render(w *bytes.Buffer, n ast.Node) error {
+	return m.md.Renderer().Render(w, m.src, n)
+}
+
+// children writes what is under n without n itself: a heading's or a list
+// item's content.
+func (m *markdown) children(w *bytes.Buffer, n ast.Node) error {
+	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+		if err := m.render(w, c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// topAt is the top-level node starting on line, nil when none does.
+func (m *markdown) topAt(line int) ast.Node {
+	for n := m.root.FirstChild(); n != nil; n = n.NextSibling() {
+		if m.startLine(n) == line {
+			return n
+		}
+	}
+
+	return nil
+}
+
+// inline renders md, one line of markdown that is not in the source (a
+// typed reader's folded field), as inline content attributed to line.
+func (m *markdown) inline(md string, line int) ([]byte, error) {
+	src := []byte(md)
+	root := m.md.Parser().Parse(text.NewReader(src))
+
+	saved := m.nodes.line
+	m.nodes.line = func(int) int { return line }
+
+	defer func() { m.nodes.line = saved }()
+
+	var out bytes.Buffer
+
+	for n := root.FirstChild(); n != nil; n = n.NextSibling() {
+		if _, ok := n.(*ast.Paragraph); ok {
+			for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+				if err := m.md.Renderer().Render(&out, src, c); err != nil {
+					return nil, err
+				}
+			}
+
+			continue
+		}
+
+		if err := m.md.Renderer().Render(&out, src, n); err != nil {
 			return nil, err
 		}
 	}
 
 	m.nodes.closeOpen(&out)
 
-	return out.Bytes(), nil
+	return bytes.TrimSpace(out.Bytes()), nil
 }
 
 // footnotes renders the footnote list, empty when the document has none.

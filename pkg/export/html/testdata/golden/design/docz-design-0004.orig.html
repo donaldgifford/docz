@@ -81,7 +81,9 @@ testability blockers in <code>docz</code> today — <code>cmd/</code> package-le
 the 6+ scattered DocType definitions — without changing user-visible
 CLI behavior or the YAML config schema.</p>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
-<h4 id="goals">Goals</h4>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
 <ul>
 <li>Define a <code>Runner</code> struct that is the single injection surface for
 config, writers, logger, time, and git resolution.</li>
@@ -98,7 +100,9 @@ signal at internal API boundaries, with no YAML schema change.</li>
 <li>Enable <code>t.Parallel()</code> on every existing cmd-layer test by removing the
 <code>os.Chdir</code>, package-global, and <code>os.Pipe</code> patterns blocking it today.</li>
 </ul>
-<h4 id="non-goals">Non-Goals</h4>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
 <ul>
 <li>Adding new user-facing commands or flags (beyond the <code>--log-format</code> and
 <code>--log-level</code> already in IMPL-0009 scope).</li>
@@ -109,6 +113,8 @@ rejected below.</li>
 <li>Changing the <code>.docz.yaml</code> schema. Existing config files must continue
 to parse byte-identically.</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-background">

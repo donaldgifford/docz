@@ -183,7 +183,8 @@ strategy) as Open Questions for the design phase.</li>
 <li><a href="#observation-5--the-hard-part-is-visibilityauth-and-it-is-not-docz-specific">Observation 5 — the hard part is visibility/auth, and it is not docz-specific</a></li>
 <li><a href="#observation-6--why-docz-site-is-not-just-mkdocs-per-repo">Observation 6 — why docz-site is not &#34;just MkDocs per repo&#34;</a></li>
 </ul>
-<h4 id="observation-1--docz-hands-the-ingester-a-manifest-not-a-haystack">Observation 1 — docz hands the ingester a manifest, not a haystack</h4>
+<div class="card" id="observation-1--docz-hands-the-ingester-a-manifest-not-a-haystack">
+<p class="card-label">Observation 1 — docz hands the ingester a manifest, not a haystack</p>
 <p>The single biggest simplification: <code>.docz.yaml</code> <em>is</em> the per-repo manifest. To
 ingest a repo, docz-api reads one file and learns:</p>
 <ul>
@@ -199,7 +200,9 @@ already does. The output (<code>id</code>, <code>title</code>, <code>status</cod
 maps directly onto a registry row and a search document. No discovery, no
 metadata coercion. This is the work rfc-api cannot avoid and docz-api gets for
 free.</p>
-<h4 id="observation-2--the-rfc-apirfc-site-model-maps-cleanly-minus-the-hard-parsing">Observation 2 — the rfc-api/rfc-site model maps cleanly, minus the hard parsing</h4>
+</div>
+<div class="card" id="observation-2--the-rfc-apirfc-site-model-maps-cleanly-minus-the-hard-parsing">
+<p class="card-label">Observation 2 — the rfc-api/rfc-site model maps cleanly, minus the hard parsing</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -253,7 +256,9 @@ free.</p>
 </tbody>
 </table>
 </div>
-<h4 id="observation-3--proposed-architecture">Observation 3 — proposed architecture</h4>
+</div>
+<div class="card" id="observation-3--proposed-architecture">
+<p class="card-label">Observation 3 — proposed architecture</p>
 <p><strong>Onboarding.</strong> A GitHub App is installed on selected repos/orgs. Required
 permissions are minimal: <code>contents: read</code>, <code>metadata: read</code>; webhook events:
 <code>installation</code> / <code>installation_repositories</code>, <code>push</code>, and <code>release</code>. On install,
@@ -284,7 +289,9 @@ filtered views (&quot;all Approved designs across repos&quot;).</p>
 <strong>repos list → a repo → its doc types → a document</strong>, plus a global search box
 and a rendered reader (HTML + ToC + a status badge from frontmatter). Cross-repo
 views (by type or status) fall out of the Meilisearch facets for free.</p>
-<h4 id="observation-4--the-docz-side-enabler-dont-re-implement-the-parser">Observation 4 — the docz-side enabler: don't re-implement the parser</h4>
+</div>
+<div class="card" id="observation-4--the-docz-side-enabler-dont-re-implement-the-parser">
+<p class="card-label">Observation 4 — the docz-side enabler: don't re-implement the parser</p>
 <p>docz-api should not re-implement frontmatter/config parsing — that would drift
 from the CLI. Three options, in order of preference:</p>
 <ol>
@@ -301,7 +308,9 @@ the CLI installed and a checkout present.</li>
 </ol>
 <p>Option 1 is the cleanest and turns docz-api into a true peer of the CLI. This is
 a real, additive docz roadmap item, not a blocker for a prototype.</p>
-<h4 id="observation-5--the-hard-part-is-visibilityauth-and-it-is-not-docz-specific">Observation 5 — the hard part is visibility/auth, and it is not docz-specific</h4>
+</div>
+<div class="card" id="observation-5--the-hard-part-is-visibilityauth-and-it-is-not-docz-specific">
+<p class="card-label">Observation 5 — the hard part is visibility/auth, and it is not docz-specific</p>
 <p>The one piece that is <em>not</em> simplified: a viewer aggregating private-repo content
 must enforce that a site user only sees docs they are allowed to see. This is
 exactly rfc-api's hardest problem, and it splits into two layers:</p>
@@ -332,12 +341,15 @@ docz-api reads repo content), independent of how site <em>users</em> authenticat
 &quot;auth provider&quot; is strictly about the human reading the site, not about how the
 service pulls content. This must be decided early because it shapes the API,
 the session model, and the config surface.</p>
-<h4 id="observation-6--why-docz-site-is-not-just-mkdocs-per-repo">Observation 6 — why docz-site is not &quot;just MkDocs per repo&quot;</h4>
+</div>
+<div class="card" id="observation-6--why-docz-site-is-not-just-mkdocs-per-repo">
+<p class="card-label">Observation 6 — why docz-site is not &quot;just MkDocs per repo&quot;</p>
 <p>docz's existing <code>wiki</code> integration renders <strong>one repo</strong> as MkDocs/TechDocs.
 docz-site is deliberately different: it is <strong>cross-repo aggregation + unified
 search + a single URL</strong>. The two are complementary — per-repo TechDocs for deep
 single-project browsing, docz-site for the org-wide index. Worth stating in the
 design so the two features don't appear to overlap.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">

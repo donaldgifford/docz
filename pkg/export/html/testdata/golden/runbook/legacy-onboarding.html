@@ -31,7 +31,8 @@ installation event.</p>
 </nav>
 <section class="panel" id="p-overview">
 <h2 class="panel-title">Overview</h2>
-<h3 id="last-verified">Last Verified</h3>
+<div class="card" id="last-verified">
+<p class="card-label">Last Verified</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -54,6 +55,7 @@ installation event.</p>
 </div>
 <p><strong>Notes:</strong> Onboarded <code>acme/widgets</code> by hand while the App install was
 broken.</p>
+</div>
 <h3 id="overview">Overview</h3>
 <p><strong>Service:</strong> docz-api</p>
 <p><strong>Owner:</strong> Platform team</p>
@@ -62,9 +64,9 @@ broken.</p>
 <li>A repository was added to the App but never appeared in docz-site</li>
 </ul>
 <h3 id="prerequisites">Prerequisites</h3>
-<ul>
-<li><code>kubectl</code> access to the docz namespace</li>
-<li>The App's installation ID</li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>kubectl</code> access to the docz namespace</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">The App's installation ID</span></li>
 </ul>
 
 </section>
@@ -80,36 +82,43 @@ broken.</p>
 <pre><code class="language-sh">docz-api -onboard acme/widgets@12345
 </code></pre>
 <h5 id="verification">Verification</h5>
-<ul>
-<li>The repository is listed by <code>GET /api/v1/repos</code></li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">The repository is listed by <code>GET /api/v1/repos</code></span></li>
 </ul>
 <h5 id="rollback">Rollback</h5>
-<ol>
-<li>Delete the repository row; the next install event re-adds it.</li>
+<div class="callout bad"><p class="callout-title">Rollback</p>
+<ol class="steps">
+<li id="step-1-r1"><span class="step-id">1.R1</span> Delete the repository row; the next install event re-adds it.
+</li>
 </ol>
+</div>
 <h4 id="procedure-2-re-index-search">Procedure 2: Re-index search</h4>
 <h5 id="steps-1">Steps</h5>
-<ul>
-<li>Restart the API so it re-applies the index settings</li>
-<li>Push any change under <code>docs/</code> to trigger an ingest</li>
-</ul>
+<ol class="steps">
+</ol>
 
 </section>
 <section class="panel" id="p-scenarios">
 <h2 class="panel-title">Scenarios</h2>
 <h3 id="troubleshooting">Troubleshooting</h3>
-<h4 id="scenario-the-onboard-flag-exits-with-repo-not-found">Scenario: The onboard flag exits with &quot;repo not found&quot;</h4>
-<p><strong>Alert:</strong> none</p>
-<p><strong>Likely cause:</strong> the App is not installed on the repository</p>
+<details class="expand" id="scenario-the-onboard-flag-exits-with-repo-not-found"><summary>The onboard flag exits with &#34;repo not found&#34;</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>The onboard flag exits with &quot;repo not found&quot;</dd>
+<dt>Alert</dt><dd>none</dd>
+<dt>Likely cause</dt><dd>the App is not installed on the repository</dd>
+</dl>
 <h5 id="steps-2">Steps</h5>
-<ol>
-<li><p>Diagnose: list the installation's repositories.</p>
+<ol class="steps">
+<li id="step-s1-1"><span class="step-id">S1.1</span> Diagnose: list the installation's repositories.
 <pre><code class="language-sh">gh api /installation/repositories --jq &#39;.repositories[].full_name&#39;
 </code></pre>
 </li>
-<li><p>Resolve: add the repository to the installation, then retry Procedure 1.</p>
+<li id="step-s1-2"><span class="step-id">S1.2</span> Resolve: add the repository to the installation, then retry Procedure 1.
 </li>
 </ol>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-escalation">

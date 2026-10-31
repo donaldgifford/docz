@@ -140,7 +140,8 @@ if any, actually disables a type omitted from the user's config.</li>
 </section>
 <section class="panel" id="p-findings">
 <h2 class="panel-title" id="findings">Findings</h2>
-<h4 id="reproduction">Reproduction</h4>
+<div class="card" id="reproduction">
+<p class="card-label">Reproduction</p>
 <p>Empty temp dir, <code>.docz.yaml</code> mentions only <code>rfc</code>, then <code>docz init</code>:</p>
 <pre><code class="language-yaml"># .docz.yaml
 docs_dir: docs
@@ -164,7 +165,9 @@ Initialized docz successfully.
 </code></pre>
 <p><code>docz config</code> confirms the resolved config has all six types with
 <code>enabled: true</code>. The user's omissions had no effect.</p>
-<h4 id="root-cause">Root cause</h4>
+</div>
+<div class="card" id="root-cause">
+<p class="card-label">Root cause</p>
 <p>Three contributing facts:</p>
 <ol>
 <li><code>config.DefaultConfig()</code> at <code>internal/config/config.go:66</code> returns a
@@ -183,7 +186,9 @@ default-seeded type.</li>
 <p>The net effect: only an <em>explicit</em> <code>enabled: false</code> in the user's config
 suppresses a type. Omission is treated as &quot;use the default&quot;, and the default
 is <code>enabled: true</code>.</p>
-<h4 id="why-impl-0006-alone-does-not-fix-this">Why IMPL-0006 alone does not fix this</h4>
+</div>
+<div class="card" id="why-impl-0006-alone-does-not-fix-this">
+<p class="card-label">Why IMPL-0006 alone does not fix this</p>
 <p>IMPL-0006 Phase 1 swaps <code>DefaultConfig()</code> from a hand-built Go struct to a
 parse of the embedded <code>.docz.yaml.tmpl</code> template. That fixes drift between
 the in-binary defaults and what <code>init</code> writes to disk, but the template
@@ -196,14 +201,12 @@ operate on the same set.</p>
 <p>Therefore: IMPL-0006 as written normalizes the <em>plumbing</em>. The semantic
 question this investigation raises — does omission mean &quot;skip&quot; or &quot;use the
 default&quot; — is orthogonal and must be answered separately.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> Yes, the user's report is a real bug-shaped behavior, not a
-misconfiguration. The current contract is: <code>.docz.yaml</code> opts <em>out</em> by
-setting <code>enabled: false</code>, not in by listing. Most users (and the original
-DESIGN-0001 phrasing) would expect the opposite.</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes, the user's report is a real bug-shaped behavior, not a</p></div>
 <p>IMPL-0006 in its current form does not change this contract. A separate
 decision is required.</p>
 <h3 id="recommendation">Recommendation</h3>

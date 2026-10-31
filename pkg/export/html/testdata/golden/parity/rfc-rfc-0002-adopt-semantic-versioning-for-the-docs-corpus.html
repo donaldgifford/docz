@@ -155,20 +155,20 @@ the docs of releases or force noisy releases just to ship a typo fix.</p>
 <tbody>
 <tr>
 <td>Contributors forget to classify the bump type</td>
-<td>Medium</td>
-<td>High</td>
+<td class="medium">Medium</td>
+<td class="high">High</td>
 <td>add a PR template checkbox and a CI lint that fails on an unclassified docs change</td>
 </tr>
 <tr>
 <td>Tag sprawl makes the release list noisy</td>
-<td>Low</td>
-<td>Medium</td>
+<td class="low">Low</td>
+<td class="medium">Medium</td>
 <td>squash same-day PATCH tags in the changelog view, keep raw tags in git</td>
 </tr>
 <tr>
 <td>Consumers pin an old tag and miss a security-relevant doc fix</td>
-<td>High</td>
-<td>Low</td>
+<td class="high">High</td>
+<td class="low">Low</td>
 <td>publish a <code>docs-latest-secure</code> moving pointer alongside the semver tags</td>
 </tr>
 </tbody>
@@ -179,13 +179,13 @@ the docs of releases or force noisy releases just to ship a typo fix.</p>
 <section class="panel" id="p-success">
 <h2 class="panel-title">Success</h2>
 <h3 id="success-criteria">Success Criteria</h3>
-<ul>
-<li>docz-api and the wiki build both consume a pinned <code>docs-vX.Y.Z</code> tag
-instead of <code>main</code> within one quarter of this RFC shipping</li>
-<li>zero docs-only incidents attributable to a mid-merge read in the
-two quarters after rollout</li>
-<li>every merged doc change carries a changelog entry mapped to a tag</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">docz-api and the wiki build both consume a pinned <code>docs-vX.Y.Z</code> tag
+instead of <code>main</code> within one quarter of this RFC shipping</div>
+<div class="card ok">zero docs-only incidents attributable to a mid-merge read in the
+two quarters after rollout</div>
+<div class="card ok">every merged doc change carries a changelog entry mapped to a tag</div>
+</div>
 
 </section>
 <section class="panel" id="p-references">

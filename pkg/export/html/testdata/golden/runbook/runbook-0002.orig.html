@@ -84,7 +84,8 @@ queued.</p>
 <li><a href="#escalation">Escalation</a></li>
 <li><a href="#references">References</a></li>
 </ul>
-<h3 id="last-verified">Last Verified</h3>
+<div class="card" id="last-verified">
+<p class="card-label">Last Verified</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -107,6 +108,7 @@ queued.</p>
 </div>
 <p><strong>Notes:</strong> Not yet run end to end. Written from
 <code>deploy/tailscale-operator.md</code> and INV-0007's failure drill.</p>
+</div>
 <h3 id="overview">Overview</h3>
 <p><strong>Service:</strong> docz-api (<code>charts/docz</code>, the <code>api</code> workload)</p>
 <p><strong>Owner:</strong> @donaldgifford</p>
@@ -117,14 +119,14 @@ queued.</p>
 <li><code>DoczAPIIngestFailures</code> fires</li>
 </ul>
 <h3 id="prerequisites">Prerequisites</h3>
-<ul>
-<li>Admin on the GitHub App, for its settings page, Recent Deliveries, and
-the webhook secret</li>
-<li><code>kubectl</code> access to the namespace docz is installed in</li>
-<li>For the Tailscale edge: admin on the tailnet, for its policy file and
-DNS settings</li>
-<li>docz-api running with <code>LOG_FORMAT=json</code>, so its logs can be filtered
-with <code>jq</code></li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Admin on the GitHub App, for its settings page, Recent Deliveries, and
+the webhook secret</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>kubectl</code> access to the namespace docz is installed in</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">For the Tailscale edge: admin on the tailnet, for its policy file and
+DNS settings</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">docz-api running with <code>LOG_FORMAT=json</code>, so its logs can be filtered
+with <code>jq</code></span></li>
 </ul>
 
 </section>
@@ -134,29 +136,26 @@ with <code>jq</code></li>
 <h4 id="procedure-1-redeliver-and-confirm">Procedure 1: Redeliver and confirm</h4>
 <p>After a fix, replay the failed delivery and follow it through docz-api.</p>
 <h5 id="steps">Steps</h5>
-<ol>
-<li><p>In the GitHub App's settings, open Advanced, then Recent Deliveries.
-Pick the failed delivery and choose Redeliver. Note its delivery ID
-(the <code>X-GitHub-Delivery</code> header).</p>
+<ol class="steps">
+<li id="step-1-1"><span class="step-id">1.1</span> In the GitHub App's settings, open Advanced, then Recent Deliveries. Pick the failed delivery and choose Redeliver. Note its delivery ID (the <code>X-GitHub-Delivery</code> header).
 </li>
-<li><p>Find the delivery in docz-api's logs.</p>
+<li id="step-1-2"><span class="step-id">1.2</span> Find the delivery in docz-api's logs.
 <pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 10m \
   | jq -c &#39;select(.delivery == &#34;&lt;delivery-id&gt;&#34; or (.msg | test(&#34;webhook|ingest job&#34;)))&#39;
 </code></pre>
-<p><strong>Expected:</strong> no <code>webhook signature verification failed</code> line, and an
-<code>ingest job enqueued</code> line for the repository</p>
+<p class="expected"><b>Expected:</b> no <code>webhook signature verification failed</code> line, and an <code>ingest job enqueued</code> line for the repository</p>
 </li>
-<li><p>Follow the ingest the delivery queued to the end.</p>
+<li id="step-1-3"><span class="step-id">1.3</span> Follow the ingest the delivery queued to the end.
 <pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 10m \
   | jq -c &#39;select(.repo == &#34;&lt;owner&gt;/&lt;name&gt;&#34;)&#39;
 </code></pre>
-<p><strong>Expected:</strong> <code>processing ingest job</code>, then <code>ingest job complete</code></p>
+<p class="expected"><b>Expected:</b> <code>processing ingest job</code>, then <code>ingest job complete</code></p>
 </li>
 </ol>
 <h5 id="verification">Verification</h5>
-<ul>
-<li>GitHub shows the redelivery with a <code>202</code></li>
-<li>docz-site shows the change the delivery was for</li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">GitHub shows the redelivery with a <code>202</code></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">docz-site shows the change the delivery was for</span></li>
 </ul>
 <h5 id="rollback">Rollback</h5>
 <ol>
@@ -168,11 +167,13 @@ answered <code>200</code> and does no work.</li>
 <section class="panel" id="p-scenarios">
 <h2 class="panel-title">Scenarios</h2>
 <h3 id="troubleshooting">Troubleshooting</h3>
-<h4 id="scenario-github-reports-a-tls-eof-on-every-delivery">Scenario: GitHub reports a TLS EOF on every delivery</h4>
-<p><strong>Alert:</strong> none; GitHub's Recent Deliveries shows the failure</p>
-<p><strong>Likely cause:</strong> the Tailscale Funnel cannot serve TLS. Either the
-proxy's tag lacks the <code>funnel</code> node attribute, or the tailnet has HTTPS
-certificates turned off</p>
+<details class="expand" id="scenario-github-reports-a-tls-eof-on-every-delivery"><summary>GitHub reports a TLS EOF on every delivery</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>GitHub reports a TLS EOF on every delivery</dd>
+<dt>Alert</dt><dd>none; GitHub's Recent Deliveries shows the failure</dd>
+<dt>Likely cause</dt><dd>the Tailscale Funnel cannot serve TLS. Either the proxy's tag lacks the <code>funnel</code> node attribute, or the tailnet has HTTPS certificates turned off</dd>
+</dl>
 <h5 id="steps-1">Steps</h5>
 <ol>
 <li><p>Diagnose: confirm nothing reached docz-api. A TLS EOF fails before
@@ -200,10 +201,15 @@ turn them on.</p>
 <li><p>Run Procedure 1.</p>
 </li>
 </ol>
-<h4 id="scenario-the-ingress-has-no-hostname">Scenario: The Ingress has no hostname</h4>
-<p><strong>Alert:</strong> none; the GitHub App's webhook URL does not resolve</p>
-<p><strong>Likely cause:</strong> the Tailscale operator could not create the proxy for
-<code>api.ingress</code></p>
+</div>
+</details>
+<details class="expand" id="scenario-the-ingress-has-no-hostname"><summary>The Ingress has no hostname</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>The Ingress has no hostname</dd>
+<dt>Alert</dt><dd>none; the GitHub App's webhook URL does not resolve</dd>
+<dt>Likely cause</dt><dd>the Tailscale operator could not create the proxy for <code>api.ingress</code></dd>
+</dl>
 <h5 id="steps-2">Steps</h5>
 <ol>
 <li><p>Diagnose: read the Ingress status.</p>
@@ -223,10 +229,15 @@ or the tags it may assign. Then check that the hostname appears.</p>
 Procedure 1.</p>
 </li>
 </ol>
-<h4 id="scenario-deliveries-are-answered-401">Scenario: Deliveries are answered 401</h4>
-<p><strong>Alert:</strong> none; GitHub shows <code>401</code> responses</p>
-<p><strong>Likely cause:</strong> the GitHub App's webhook secret differs from the one
-docz-api holds, so the HMAC check fails before any work is done</p>
+</div>
+</details>
+<details class="expand" id="scenario-deliveries-are-answered-401"><summary>Deliveries are answered 401</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>Deliveries are answered 401</dd>
+<dt>Alert</dt><dd>none; GitHub shows <code>401</code> responses</dd>
+<dt>Likely cause</dt><dd>the GitHub App's webhook secret differs from the one docz-api holds, so the HMAC check fails before any work is done</dd>
+</dl>
 <h5 id="steps-3">Steps</h5>
 <ol>
 <li><p>Diagnose: find the verification failures.</p>
@@ -245,11 +256,15 @@ kubectl -n docz rollout status deploy/docz-api
 </code></pre>
 </li>
 </ol>
-<h4 id="scenario-deliveries-succeed-but-the-change-never-appears">Scenario: Deliveries succeed but the change never appears</h4>
-<p><strong>Alert:</strong> <code>DoczAPIIngestFailures</code></p>
-<p><strong>Likely cause:</strong> the ingest the delivery queued is failing. Usually the
-cause is a malformed <code>.docz.yaml</code> at HEAD, or the GitHub App lacking
-access to the repository</p>
+</div>
+</details>
+<details class="expand" id="scenario-deliveries-succeed-but-the-change-never-appears"><summary>Deliveries succeed but the change never appears</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>Deliveries succeed but the change never appears</dd>
+<dt>Alert</dt><dd><code>DoczAPIIngestFailures</code></dd>
+<dt>Likely cause</dt><dd>the ingest the delivery queued is failing. Usually the cause is a malformed <code>.docz.yaml</code> at HEAD, or the GitHub App lacking access to the repository</dd>
+</dl>
 <h5 id="steps-4">Steps</h5>
 <ol>
 <li><p>Diagnose: confirm the push was one docz-api acts on. Only a push to the
@@ -268,11 +283,15 @@ grant the App access to the repository. A new push re-enqueues the
 ingest.</p>
 </li>
 </ol>
-<h4 id="scenario-a-repository-stopped-re-ingesting-after-repeated-failures">Scenario: A repository stopped re-ingesting after repeated failures</h4>
-<p><strong>Alert:</strong> <code>DoczAPIIngestFailures</code>, then silence</p>
-<p><strong>Likely cause:</strong> the ingest exhausted its retries. Since INV-0007 the
-next trigger clears the finished task and re-enqueues, so a new push or
-delivery is all it takes</p>
+</div>
+</details>
+<details class="expand" id="scenario-a-repository-stopped-re-ingesting-after-repeated-failures"><summary>A repository stopped re-ingesting after repeated failures</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>A repository stopped re-ingesting after repeated failures</dd>
+<dt>Alert</dt><dd><code>DoczAPIIngestFailures</code>, then silence</dd>
+<dt>Likely cause</dt><dd>the ingest exhausted its retries. Since INV-0007 the next trigger clears the finished task and re-enqueues, so a new push or delivery is all it takes</dd>
+</dl>
 <h5 id="steps-5">Steps</h5>
 <ol>
 <li><p>Diagnose: confirm the task was exhausted rather than still retrying.</p>
@@ -287,6 +306,8 @@ delivery is all it takes</p>
 <code>cleared_state</code> it removed.</p>
 </li>
 </ol>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-escalation">

@@ -36,46 +36,51 @@
 document, so the parser's tolerances are pinned by something a person can
 read.</p>
 <h3 id="scope">Scope</h3>
-<h4 id="in-scope">In Scope</h4>
+<div class="grid g2">
+<div class="card ok" id="in-scope">
+<p class="card-label">In Scope</p>
 <ul>
 <li>The phase, task, and criteria grammar</li>
 <li>The shared field rules</li>
 </ul>
-<h4 id="out-of-scope">Out of Scope</h4>
+</div>
+<div class="card bad" id="out-of-scope">
+<p class="card-label">Out of Scope</p>
 <ul>
 <li>The CLI</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-phases">
 <h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
-<h4 id="phase-1-foundations">Phase 1: Foundations</h4>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-1-foundations">
+<div class="phase-head"><h3>Phase 1: Foundations</h3><span class="progress">1 / 3</span></div>
+<div class="bar"><i style="width: 33%"></i></div>
 <p>Sets up the packages the later phases build on.</p>
-<h5 id="tasks">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write the parser
-verify: <code>go test ./pkg/impl/...</code></div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Write the walker with a task description that
-wraps onto a second line
-<ul class="tasks">
-<li data-state="open"><input type="checkbox" disabled><div class="text">a nested note, which is not a task</div></li>
+<ul class="tasks" id="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write the parser</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Write the walker with a task description that wraps onto a second line</span></li>
+<li data-state="deferred"><input type="checkbox" disabled><span class="text">Bump the toolchain <span class="pill warn">deferred</span> <span class="note">needs a release owner</span></span></li>
 </ul>
-</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Bump the toolchain — deferred - human required: needs a release owner</div></li>
-</ul>
-<h5 id="success-criteria">Success Criteria</h5>
+<div class="callout ok" id="success-criteria"><p class="callout-title">Success criteria</p>
 <ul>
 <li><code>go test ./...</code> passes</li>
 <li>The parser reads every document in the corpus</li>
 </ul>
-<h4 id="phase-2b-cleanup">Phase 2B: Cleanup</h4>
-<h5 id="tasks-1">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text"><del>Delete the compatibility shim</del> — skipped: the shim shipped</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Update the docs
-<strong>verify:</strong> run the linter by hand</div></li>
+</div>
+</div>
+<div class="card phase" id="phase-2b-cleanup">
+<div class="phase-head"><h3>Phase 2B: Cleanup</h3><span class="progress">0 / 1</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks-1">
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Delete the compatibility shim</del> <span class="pill warn">skipped</span> <span class="note">the shim shipped</span></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Update the docs</span></li>
 </ul>
+</div>
 
 </section>
 <section class="panel" id="p-changes">

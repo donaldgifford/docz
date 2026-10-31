@@ -646,62 +646,62 @@ these.</p>
 <tbody>
 <tr>
 <td>Tool author bypasses dispatcher</td>
-<td>Critical — defeats the model</td>
-<td>Low if framework is the only registration path</td>
+<td class="high">Critical — defeats the model</td>
+<td class="low">Low if framework is the only registration path</td>
 <td>Tools registered only via framework's <code>RegisterTool</code>; lint catches in-package shortcuts; code review</td>
 </tr>
 <tr>
 <td>Signing key compromise</td>
-<td>Critical — forged tokens</td>
-<td>Low</td>
+<td class="high">Critical — forged tokens</td>
+<td class="low">Low</td>
 <td>Vault Transit + rotation + audit; revoke + cache-flush playbook</td>
 </tr>
 <tr>
 <td>OPA policy bug grants wrong scope</td>
-<td>High — unauthorized tool calls</td>
-<td>Medium without rigor</td>
+<td class="high">High — unauthorized tool calls</td>
+<td class="medium">Medium without rigor</td>
 <td>regal lint, policy test suite (allow + deny branches per rule), required review for <code>policies/</code> changes</td>
 </tr>
 <tr>
 <td>Egress proxy as SPOF</td>
-<td>Medium — agent network fails</td>
-<td>Low</td>
+<td class="medium">Medium — agent network fails</td>
+<td class="low">Low</td>
 <td>Sidecar with restart-on-failure; proxy down → agent's network is down (fail-closed, not bypass)</td>
 </tr>
 <tr>
 <td>Scope vocabulary churn</td>
-<td>Medium — registry rot</td>
-<td>High over time</td>
+<td class="medium">Medium — registry rot</td>
+<td class="high">High over time</td>
 <td>Treat scopes as a contract; semver; RFC for new ones; deprecation process with grace period</td>
 </tr>
 <tr>
 <td>Performance overhead at dispatch</td>
-<td>Low — microseconds</td>
-<td>Low</td>
+<td class="low">Low — microseconds</td>
+<td class="low">Low</td>
 <td>Compiled OPA queries cached; benchmark in CI; budget &lt;5ms p99</td>
 </tr>
 <tr>
 <td>Token theft from compromised sandbox</td>
-<td>Medium — limited window</td>
-<td>Medium</td>
+<td class="medium">Medium — limited window</td>
+<td class="medium">Medium</td>
 <td>Short lifetime (≤ wall-clock budget); <code>sandbox_instance_id</code> binding; audience scoping; future: replay-detection via jti tracking</td>
 </tr>
 <tr>
 <td>Rotation runbook drift</td>
-<td>Medium — operational mishap</td>
-<td>Medium</td>
+<td class="medium">Medium — operational mishap</td>
+<td class="medium">Medium</td>
 <td>Runbook tested quarterly; key rotation simulation as part of disaster-recovery drills</td>
 </tr>
 <tr>
 <td>Policy hot-reload requested mid-run</td>
-<td>Low — operational temptation</td>
-<td>Medium</td>
+<td class="low">Low — operational temptation</td>
+<td class="medium">Medium</td>
 <td>Policies are baked into images; the same trust-boundary argument the JWT is solving rules out hot-reload</td>
 </tr>
 <tr>
 <td>Cross-cluster federation needed</td>
-<td>Medium — JWT model insufficient</td>
-<td>Low for v1, growing later</td>
+<td class="medium">Medium — JWT model insufficient</td>
+<td class="low">Low for v1, growing later</td>
 <td>SPIFFE migration path documented in the sibling ADR; v2 work</td>
 </tr>
 </tbody>
@@ -713,49 +713,49 @@ these.</p>
 <h2 class="panel-title">Success</h2>
 <h3 id="success-criteria">Success Criteria</h3>
 <p><strong>Phase 1:</strong></p>
-<ul>
-<li>100% of tool dispatches in test agents go through the policy gate (verified by
-dispatcher unit tests + integration test)</li>
-<li>Zero tool calls succeed without a matching scope in chaos testing
-(deliberately misconfigured agent)</li>
-<li>Policy evaluation latency &lt;5ms p99 on a 50-rule policy bundle</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">100% of tool dispatches in test agents go through the policy gate (verified by
+dispatcher unit tests + integration test)</div>
+<div class="card ok">Zero tool calls succeed without a matching scope in chaos testing
+(deliberately misconfigured agent)</div>
+<div class="card ok">Policy evaluation latency &lt;5ms p99 on a 50-rule policy bundle</div>
+</div>
 <p><strong>Phase 2:</strong></p>
-<ul>
-<li>Triage bot AgentRun produces a valid JWT in &lt;100ms (controller-side including
-Vault Transit signing call)</li>
-<li>JWT verification at framework startup &lt;10ms</li>
-<li>Key rotation runbook executes cleanly in homelab (rehearsal)</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">Triage bot AgentRun produces a valid JWT in &lt;100ms (controller-side including
+Vault Transit signing call)</div>
+<div class="card ok">JWT verification at framework startup &lt;10ms</div>
+<div class="card ok">Key rotation runbook executes cleanly in homelab (rehearsal)</div>
+</div>
 <p><strong>Phase 3:</strong></p>
-<ul>
-<li>Egress allowlist enforced; chaos test confirms denied destinations return 403
-and are logged with denial context</li>
-<li>Filesystem writes outside <code>scopes.fs.write</code> fail with predictable errors</li>
-<li>Quota exhaustion produces a clean error, not a wedged pod</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">Egress allowlist enforced; chaos test confirms denied destinations return 403
+and are logged with denial context</div>
+<div class="card ok">Filesystem writes outside <code>scopes.fs.write</code> fail with predictable errors</div>
+<div class="card ok">Quota exhaustion produces a clean error, not a wedged pod</div>
+</div>
 <p><strong>Phase 4:</strong></p>
-<ul>
-<li>AWS-touching agents receive STS via JWT-auth on every run</li>
-<li>Audit log shows JWT-bound STS issuance with traceable AgentRun ID</li>
-<li>Implicit IRSA paths deprecated and removed from these agents</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">AWS-touching agents receive STS via JWT-auth on every run</div>
+<div class="card ok">Audit log shows JWT-bound STS issuance with traceable AgentRun ID</div>
+<div class="card ok">Implicit IRSA paths deprecated and removed from these agents</div>
+</div>
 <p><strong>Phase 5:</strong></p>
-<ul>
-<li>Scope vocabulary registry has 100% coverage of in-use scopes (lint passes)</li>
-<li>regal lint passes on all <code>policies/</code> directories</li>
-<li>Policy test suite covers every allow/deny branch (coverage reported in CI)</li>
-<li>Adding a new tool without registering its scope fails CI</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">Scope vocabulary registry has 100% coverage of in-use scopes (lint passes)</div>
+<div class="card ok">regal lint passes on all <code>policies/</code> directories</div>
+<div class="card ok">Policy test suite covers every allow/deny branch (coverage reported in CI)</div>
+<div class="card ok">Adding a new tool without registering its scope fails CI</div>
+</div>
 <p><strong>Org-level outcomes:</strong></p>
-<ul>
-<li>A security review can answer &quot;what is agent X authorized to do?&quot; by reading
-the AgentType spec, not by reading code</li>
-<li>Every tool call has a signed audit trail tying it to an AgentRun, principal,
-scope, and policy decision</li>
-<li>Vault JIT is the single AWS-creds issuance path for agents; no
-ambient-pod-identity backdoors</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">A security review can answer &quot;what is agent X authorized to do?&quot; by reading
+the AgentType spec, not by reading code</div>
+<div class="card ok">Every tool call has a signed audit trail tying it to an AgentRun, principal,
+scope, and policy decision</div>
+<div class="card ok">Vault JIT is the single AWS-creds issuance path for agents; no
+ambient-pod-identity backdoors</div>
+</div>
 
 </section>
 <section class="panel" id="p-references">

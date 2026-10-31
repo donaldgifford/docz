@@ -148,7 +148,8 @@ consumer's build.</li>
 <li><a href="#observation-6--dependency-and-embed-audit-the-four-package-core-is-clean">Observation 6 — dependency and embed audit: the four-package core is clean</a></li>
 <li><a href="#observation-7--the-wholesale-move-failure-mode-has-already-happened-once-in-miniature">Observation 7 — the wholesale-move failure mode has already happened once, in miniature</a></li>
 </ul>
-<h4 id="observation-1--the-consumer-demand-set-from-primary-sources">Observation 1 — the consumer demand set, from primary sources</h4>
+<div class="card" id="observation-1--the-consumer-demand-set-from-primary-sources">
+<p class="card-label">Observation 1 — the consumer demand set, from primary sources</p>
 <p><strong>docz-api</strong> (DESIGN-0008, R1–R9) is read-only and names its exact surface in
 the R2 table:</p>
 <ul>
@@ -181,7 +182,9 @@ from rendered headings and <em>strips</em> docz's <code>&lt;!--toc:start--&gt;</
 and per-repo MkDocs wiki output is explicitly complementary, not consumed.</p>
 <p>Across all three consumers there is <strong>zero demand</strong> for <code>template</code>, <code>index</code>,
 <code>wiki</code>, or the ToC-splice half of <code>toc</code>.</p>
-<h4 id="observation-2--per-package-matrix-cmd-requires-vs-consumers-require">Observation 2 — per-package matrix: <code>cmd/</code> requires vs consumers require</h4>
+</div>
+<div class="card" id="observation-2--per-package-matrix-cmd-requires-vs-consumers-require">
+<p class="card-label">Observation 2 — per-package matrix: <code>cmd/</code> requires vs consumers require</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -267,7 +270,9 @@ on <code>config</code>, <code>document</code>, <code>docwrite</code>'s status pr
 <code>toc</code>'s walker generalizes) <code>docparse</code>. Everything else <code>cmd/</code> needs is
 presentation: rendering templates, splicing marker blocks, formatting index
 tables, writing MkDocs nav.</p>
-<h4 id="observation-3--the-packages-nobody-outside-asks-for-are-also-the-cli-shaped-ones">Observation 3 — the packages nobody outside asks for are also the CLI-shaped ones</h4>
+</div>
+<div class="card" id="observation-3--the-packages-nobody-outside-asks-for-are-also-the-cli-shaped-ones">
+<p class="card-label">Observation 3 — the packages nobody outside asks for are also the CLI-shaped ones</p>
 <p>The three unpromoted-by-demand packages are exactly the ones whose APIs encode
 CLI decisions, confirming ADR-0001's &quot;CLI-shaped&quot; concern:</p>
 <ul>
@@ -287,7 +292,9 @@ Case 1 dissolves rather than needing mitigation).</li>
 <p>Freezing these under semver would buy no consumer anything and would convert
 every future CLI UX change (new outcome wording, a non-MkDocs wiki backend, a
 template layout change) into a public-API question.</p>
-<h4 id="observation-4--create-is-the-only-coupling-between-the-write-side-and-the-template-engine">Observation 4 — <code>Create</code> is the only coupling between the write side and the template engine</h4>
+</div>
+<div class="card" id="observation-4--create-is-the-only-coupling-between-the-write-side-and-the-template-engine">
+<p class="card-label">Observation 4 — <code>Create</code> is the only coupling between the write side and the template engine</p>
 <p>The single cross-<code>internal</code> edge in the tree is <code>docwrite → template</code>
 (<code>internal/docwrite/create.go</code> imports <code>internal/template</code> for <code>Resolve</code>,
 <code>Render</code>, <code>FilenameSlug</code>). Consequences:</p>
@@ -310,7 +317,9 @@ internal type.</li>
 <code>NNNN-slug.md</code> filename convention and the auto-increment scan — both
 already de facto public via <code>document.DoczFilePattern</code>.</li>
 </ul>
-<h4 id="observation-5--toc-vs-docparse-one-concern-splits-cleanly-in-half">Observation 5 — <code>toc</code> vs <code>docparse</code>: one concern splits cleanly in half</h4>
+</div>
+<div class="card" id="observation-5--toc-vs-docparse-one-concern-splits-cleanly-in-half">
+<p class="card-label">Observation 5 — <code>toc</code> vs <code>docparse</code>: one concern splits cleanly in half</p>
 <p><code>internal/toc</code> is two concerns in one package:</p>
 <ol>
 <li>a <strong>heading walk</strong> (<code>ParseHeadings</code>, <code>Heading</code>, <code>AnchorSlug</code>) — this is
@@ -326,7 +335,9 @@ marker blocks (DESIGN-0009 OQ8a strips them).</li>
 open point is whether <code>internal/toc</code> keeps its own walker or delegates to
 <code>docparse</code> (Open Question 3) — a private refactor either way, invisible to
 consumers and to CLI behavior.</p>
-<h4 id="observation-6--dependency-and-embed-audit-the-four-package-core-is-clean">Observation 6 — dependency and embed audit: the four-package core is clean</h4>
+</div>
+<div class="card" id="observation-6--dependency-and-embed-audit-the-four-package-core-is-clean">
+<p class="card-label">Observation 6 — dependency and embed audit: the four-package core is clean</p>
 <ul>
 <li>After <code>v0.6.0</code> R1 (viper removal), the demand-complete core
 <code>pkg/doczcore/{config,document,docparse,docwrite}</code> depends on
@@ -342,7 +353,9 @@ compiles <code>internal/template</code> + the embed into the consumer's binary v
 the legal public→internal import, but exposes none of it — see
 Observation 4.)</li>
 </ul>
-<h4 id="observation-7--the-wholesale-move-failure-mode-has-already-happened-once-in-miniature">Observation 7 — the wholesale-move failure mode has already happened once, in miniature</h4>
+</div>
+<div class="card" id="observation-7--the-wholesale-move-failure-mode-has-already-happened-once-in-miniature">
+<p class="card-label">Observation 7 — the wholesale-move failure mode has already happened once, in miniature</p>
 <p>The <code>v0.5.0</code> wholesale move of <code>config</code> carried some CLI-display helpers into
 the public, semver-governed surface: <code>TypesHelp()</code> (literally the <code>docz --help</code> body), <code>DefaultNavTitles()</code> (the wiki nav-title map), and
 <code>ResolveTypeAlias</code>. No consumer uses them; they are now frozen anyway. This is
@@ -350,6 +363,7 @@ the exact failure mode ADR-0001's full promotion would repeat at 10× scale
 with <code>template</code>/<code>index</code>/<code>wiki</code> — evidence that &quot;promote wholesale, review
 lightly&quot; (ADR-0001 OQ3a) leaks CLI shapes into the contract. What to do with
 these three already-public symbols at v1.0 is Open Question 4.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">

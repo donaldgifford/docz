@@ -64,6 +64,7 @@ aws-sdk-go-v2 pattern) was written for the Copilot provider but is generic.</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <p><strong>All layers — framework SDK, loop harness, and future ADK components — develop
 in this repo</strong>, structured so that extraction later is mechanical if a real
 trigger fires. We do <strong>not</strong> pre-build for the split: no speculative
@@ -71,6 +72,7 @@ sub-modules, no pre-carved package trees, no work that isn't clearly useful for
 the near-term goal. If we hold to the existing design principles and idiomatic
 Go, moving code later is cheap; optimizing for a split we may never do is
 premature.</p>
+</div>
 <p><strong>The near-term priority is explicit:</strong> get to &quot;run a workload from an IMPL doc
 as a donald loop&quot; (DESIGN-0002 through its self-hosting phase). Anything beyond
 what that requires is deferred until it is explicitly needed.</p>
@@ -110,7 +112,9 @@ and deploy tooling growing past what a library repo should carry.</li>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li>Atomic cross-layer changes while both surfaces churn — no release/pin/bump
 cycle between the core and the harness; RFC-0001's &quot;framework churn breaks the
@@ -122,7 +126,9 @@ repo-plumbing work in front of it.</li>
 <li>INV-0007's sub-module analysis gets adopted as living guidance instead of
 dying with the Copilot pivot.</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li>Root-module <code>go.sum</code> growth must be watched — the escalation rule (rule 3) is
 the containment, and it requires discipline to apply <em>when</em> a heavy dep lands,
@@ -133,30 +139,26 @@ future path-filtered matrix is available if <code>just ci</code> gets slow.</li>
 than it would have been with pre-separated repos. Accepted: that event may
 never come, and the layering rules bound its cost.</li>
 </ul>
-<h4 id="neutral">Neutral</h4>
+</div>
+<div class="card neutral" id="neutral">
+<p class="card-label">Neutral</p>
 <ul>
 <li>The private-repo posture (INV-0001 Q1) now covers all layers equally.</li>
 <li>RFC-0001 remains the ADK's product definition; only its placement assumption
 changes. Its phases still gate on their own prerequisites.</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-alternatives">
 <h2 class="panel-title">Alternatives</h2>
 <h3 id="alternatives-considered">Alternatives Considered</h3>
-<ul>
-<li><strong>Two repos now (original implicit plan).</strong> Rejected: pays the version-pinning
-and compat tax at peak churn, for a boundary we can't yet draw confidently —
-we likely won't know the right split line until the harness and first ADK
-pieces exist.</li>
-<li><strong>One repo, sub-modules everywhere from day one.</strong> Rejected: INV-0007 itself
-documents the release-ordering and CI overhead of multi-module repos; paying
-it before any heavy dependency exists is exactly the premature optimization
-this ADR declines.</li>
-<li><strong>Harness here, ADK in its own repo later regardless.</strong> Rejected as a standing
-commitment — it re-creates the churn tax the moment ADK work starts. If a
-trigger fires, the split happens then, on evidence.</li>
-</ul>
+<div class="grid g2">
+<div class="card"><p class="card-label">Two repos now (original implicit plan).</p><p>Rejected: pays the version-pinning and compat tax at peak churn, for a boundary we can't yet draw confidently — we likely won't know the right split line until the harness and first ADK pieces exist.</p></div>
+<div class="card"><p class="card-label">One repo, sub-modules everywhere from day one.</p><p>Rejected: INV-0007 itself documents the release-ordering and CI overhead of multi-module repos; paying it before any heavy dependency exists is exactly the premature optimization this ADR declines.</p></div>
+<div class="card"><p class="card-label">Harness here, ADK in its own repo later regardless.</p><p>Rejected as a standing commitment — it re-creates the churn tax the moment ADK work starts. If a trigger fires, the split happens then, on evidence.</p></div>
+</div>
 
 </section>
 <section class="panel" id="p-references">

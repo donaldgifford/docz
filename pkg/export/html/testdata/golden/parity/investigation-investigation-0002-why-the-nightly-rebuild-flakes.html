@@ -96,12 +96,15 @@ runs versus passing runs to confirm the race window.</li>
 <h2 class="panel-title" id="findings">Findings</h2>
 <p>The failures were not random. Once we had logging in place, a clear
 pattern emerged within three nights.</p>
-<h4 id="cache-directory-is-shared-across-jobs">Cache directory is shared across jobs</h4>
+<div class="card" id="cache-directory-is-shared-across-jobs">
+<p class="card-label">Cache directory is shared across jobs</p>
 <p>Both the rebuild job and the link checker mount the same
 <code>/opt/build-cache/docs</code> path, and neither job takes a lock before
 writing to it. When their schedules overlap by even a few minutes, one
 job can delete or truncate a file the other is mid-write on.</p>
-<h4 id="failure-signature-matches-a-truncated-manifest-read">Failure signature matches a truncated manifest read</h4>
+</div>
+<div class="card" id="failure-signature-matches-a-truncated-manifest-read">
+<p class="card-label">Failure signature matches a truncated manifest read</p>
 <p>The rebuild job's crash log consistently points at a JSON decode
 error on the cache manifest, not a missing file. That is consistent
 with a partial write being read by the other process.</p>
@@ -110,7 +113,9 @@ with a partial write being read by the other process.</p>
 2026-03-02T02:19:44Z ERROR rebuild: falling back to cold cache
 2026-03-02T02:19:47Z ERROR rebuild: exit status 1 (nondeterministic)
 </code></pre>
-<h4 id="overlap-window-correlates-with-failure-nights">Overlap window correlates with failure nights</h4>
+</div>
+<div class="card" id="overlap-window-correlates-with-failure-nights">
+<p class="card-label">Overlap window correlates with failure nights</p>
 <p>Cross-referencing job start times against the incident log confirmed
 the race window directly.</p>
 <ul>
@@ -121,14 +126,12 @@ the rebuild started or started more than five minutes after it.</li>
 <li>No failure was correlated with network errors, disk pressure, or a
 specific commit range.</li>
 </ul>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> Confirmed. The nightly rebuild flakes because the rebuild
-job and the link checker job share a build cache directory with no
-locking or job-scoped path, so an overlapping run can truncate the
-cache manifest mid-write and corrupt the other job's read.</p>
+<div class="verdict"><p class="card-label">Answer</p><p>Confirmed. The nightly rebuild flakes because the rebuild</p></div>
 <h3 id="recommendation">Recommendation</h3>
 <p>Give each job its own cache subdirectory (for example
 <code>/opt/build-cache/docs-rebuild</code> and <code>/opt/build-cache/link-checker</code>)

@@ -124,7 +124,9 @@ registry never drifts from the CLI's own notion of &quot;what docz docs exist in
 this tree.&quot;</p>
 </blockquote>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
-<h4 id="goals">Goals</h4>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
 <ul>
 <li><strong>Cross-repo registry.</strong> A Postgres store keyed by <code>(repo, doc_id)</code> holding
 every docz document across every onboarded repo, with its frontmatter, cached
@@ -153,7 +155,9 @@ unchanged — the site is built against these endpoints from the first slice.</l
 → serve one type, deferring full auth and webhooks, to prove the fetch → parse
 → upsert → serve loop end to end.</li>
 </ul>
-<h4 id="non-goals">Non-Goals</h4>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
 <ul>
 <li><strong>Rendering markdown to HTML.</strong> No <code>rendered_html</code> column, no server-side
 renderer. Rendering is docz-site's job (Decision 3). docz's mdp renderer is
@@ -180,6 +184,8 @@ not a replacement for per-repo TechDocs.</li>
 <li><strong>Write-back to repos.</strong> docz-api is read-only against GitHub content; it
 never opens PRs or mutates a source repo.</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-background">

@@ -101,6 +101,7 @@ implies.</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <ol>
 <li><p><strong>docz is an API package; the CLI is its first consumer.</strong> The API is
 extracted from what the docz CLI, docz-api, sdk-booty-sh, and tempy do
@@ -308,6 +309,7 @@ inventory and <code>pkg/impl</code> specification carry over into DESIGN-0014
 unchanged in substance. IMPL-0014 Decision 3 gets a note.</p>
 </li>
 </ol>
+</div>
 <h4 id="supporting-data">Supporting Data</h4>
 <div class="table-wrap">
 <table>
@@ -474,7 +476,9 @@ unchanged in substance. IMPL-0014 Decision 3 gets a note.</p>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li><strong>docz is usable as docz from a program.</strong> A consumer calls
 <code>repo.Update</code> or <code>impl.Parse</code> instead of copying <code>cmd/</code>.</li>
@@ -491,7 +495,9 @@ keep their policy; docz gives them exact lines to act on.</li>
 additive, so <code>main</code> behaves as v1.2.2 for CLI users throughout the
 build.</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li><strong>A larger frozen surface at v2.0.0.</strong> <code>repo</code>, <code>index</code>,
 <code>doctemplate</code>, and <code>wiki</code> become contract, including shapes ADR-0001 called
@@ -509,6 +515,8 @@ test suite, which already pins output and exit codes.</li>
 reason; reversing it needs the reason to be recorded as changed (two
 consumers, docz's own grammar), not forgotten. Done in Context.</li>
 </ul>
+</div>
+</div>
 <h4 id="neutral">Neutral</h4>
 <ul>
 <li><strong>No behaviour change for CLI users.</strong> The swap is a relocation; the
@@ -530,29 +538,14 @@ after this unit.</li>
 <section class="panel" id="p-alternatives">
 <h2 class="panel-title">Alternatives</h2>
 <h3 id="alternatives-considered">Alternatives Considered</h3>
-<ul>
-<li><strong>A. Promote on demand, again.</strong> Ship <code>pkg/impl</code> and the two <code>docwrite</code>
-byte cores for tempy and stop (DESIGN-0013 Phase A). <em>Pros:</em> smallest
-change. <em>Cons:</em> leaves the orchestration gap that produced the re-implementation
-in the first place; the next consumer gets the next drip; the CLI never
-becomes a consumer.</li>
-<li><strong>B. Typed models inside <code>doczcore</code></strong> (<code>pkg/doczcore/impl</code>). <em>Pros:</em> one
-import root. <em>Cons:</em> every consumer of the core compiles every type model;
-the core stops being type-agnostic; the &quot;pass-through&quot; story for custom
-types gets murky. Rejected in the DESIGN-0013 review.</li>
-<li><strong>C. A runtime type system</strong> (go-cty style, schema-driven types so custom
-types get models too). <em>Pros:</em> uniform. <em>Cons:</em> Go consumers want concrete
-structs; docz's grammars are fixed by its own templates; heavy machinery
-for six types.</li>
-<li><strong>D. Swap <code>cmd/</code> incrementally, command by command, releasing as we go.</strong>
-<em>Pros:</em> smaller PRs. <em>Cons:</em> the API is designed around what each command
-needs in isolation rather than as one unit, which is how today's shape
-happened; partial swaps leave <code>cmd/</code> on two code paths for months.</li>
-<li><strong>E. A separate library module.</strong> Rejected in ADR-0001 and again here
-(Decision 3).</li>
-<li><strong>F. This ADR.</strong> API first, layers and rules, one module, standalone type
-packages with <code>Doc</code>, primitives versus policy, whole API then swap.</li>
-</ul>
+<div class="grid g2">
+<div class="card"><p class="card-label">a. Promote on demand, again.</p><p>Ship <code>pkg/impl</code> and the two <code>docwrite</code> byte cores for tempy and stop (DESIGN-0013 Phase A). <em>Pros:</em> smallest change. <em>Cons:</em> leaves the orchestration gap that produced the re-implementation in the first place; the next consumer gets the next drip; the CLI never becomes a consumer.</p></div>
+<div class="card"><p class="card-label">b. Typed models inside <code>doczcore</code></p><p>(<code>pkg/doczcore/impl</code>). <em>Pros:</em> one import root. <em>Cons:</em> every consumer of the core compiles every type model; the core stops being type-agnostic; the &quot;pass-through&quot; story for custom types gets murky. Rejected in the DESIGN-0013 review.</p></div>
+<div class="card"><p class="card-label">c. A runtime type system</p><p>(go-cty style, schema-driven types so custom types get models too). <em>Pros:</em> uniform. <em>Cons:</em> Go consumers want concrete structs; docz's grammars are fixed by its own templates; heavy machinery for six types.</p></div>
+<div class="card"><p class="card-label">d. Swap <code>cmd/</code> incrementally, command by command, releasing as we go.</p><p><em>Pros:</em> smaller PRs. <em>Cons:</em> the API is designed around what each command needs in isolation rather than as one unit, which is how today's shape happened; partial swaps leave <code>cmd/</code> on two code paths for months.</p></div>
+<div class="card"><p class="card-label">e. A separate library module.</p><p>Rejected in ADR-0001 and again here (Decision 3).</p></div>
+<div class="card"><p class="card-label">f. This ADR.</p><p>API first, layers and rules, one module, standalone type packages with <code>Doc</code>, primitives versus policy, whole API then swap.</p></div>
+</div>
 
 </section>
 <section class="panel" id="p-open-questions">

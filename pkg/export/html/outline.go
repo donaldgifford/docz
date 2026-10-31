@@ -16,6 +16,9 @@ type section struct {
 	Kind string
 	// From and Through bound the span's lines.
 	From, Through int
+	// Body is the first line of the region itself: From until an intro
+	// before the region is attached, which moves From up and leaves Body.
+	Body int
 	// Heading is the span's first H2 to H6, nil when it has none.
 	Heading *docparse.Heading
 }
@@ -67,7 +70,7 @@ func outline(lines []string, regions []docparse.Region, headings []docparse.Head
 			continue
 		}
 
-		s := section{Kind: r.Kind, From: r.Start + 1, Through: r.End - 1}
+		s := section{Kind: r.Kind, From: r.Start + 1, Through: r.End - 1, Body: r.Start + 1}
 		s.Heading = firstHeading(headings, s.From, s.Through)
 		spans = append(spans, s)
 	}
@@ -103,9 +106,9 @@ func gapSections(lines []string, headings []docparse.Heading, from, through int,
 		case h != nil && (!hasContent(lines, start+1, end) || last && introduces):
 			// A heading that only introduces the regions under it is not a
 			// tab: it joins the next one, which shows it.
-			out = append(out, section{From: start, Through: end})
+			out = append(out, section{From: start, Through: end, Body: start})
 		case h != nil || hasContent(lines, start, end):
-			out = append(out, section{From: start, Through: end, Heading: h})
+			out = append(out, section{From: start, Through: end, Body: start, Heading: h})
 		}
 	}
 

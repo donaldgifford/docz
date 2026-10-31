@@ -140,7 +140,8 @@ format, since README and DESIGN-0003 disagree about the plugin name.</li>
 <li><a href="#observation-6-nothing-gates-drift-so-md051-in-a-downstream-ci-is-the-first-alarm">Observation 6: nothing gates drift, so MD051 in a downstream CI is the first alarm</a></li>
 <li><a href="#observation-7-side-finding-doubled-index-markers-in-two-generated-readmes">Observation 7 (side finding): doubled index markers in two generated READMEs</a></li>
 </ul>
-<h4 id="observation-1-docz-update-regenerates-toc-fences--the-excerpt-is-wrong">Observation 1: <code>docz update</code> regenerates ToC fences — the excerpt is wrong</h4>
+<div class="card" id="observation-1-docz-update-regenerates-toc-fences--the-excerpt-is-wrong">
+<p class="card-label">Observation 1: <code>docz update</code> regenerates ToC fences — the excerpt is wrong</p>
 <p>A fresh <code>docz create adr &quot;Repro stale toc&quot;</code> produces a fence populated from
 the template's headings (the create path runs the same update pass). Renaming
 the first two H2s after the fence makes the two ToC links dangle:</p>
@@ -174,7 +175,9 @@ splices a fresh list between the markers and writes the file only when the
 bytes changed. Nothing in the repo documents a reason <em>not</em> to regenerate;
 DESIGN-0003 Decision 4 is the opposite — it folded ToC generation into
 <code>docz update</code> instead of adding a standalone <code>docz toc</code> command.</p>
-<h4 id="observation-2-the-pass-is-silent-and-undocumented-where-an-agent-looks">Observation 2: the pass is silent and undocumented where an agent looks</h4>
+</div>
+<div class="card" id="observation-2-the-pass-is-silent-and-undocumented-where-an-agent-looks">
+<p class="card-label">Observation 2: the pass is silent and undocumented where an agent looks</p>
 <p>Every surface the other session would plausibly have consulted says &quot;README
 tables&quot; and nothing else:</p>
 <div class="table-wrap">
@@ -234,7 +237,9 @@ tables&quot; and nothing else:</p>
 glancing at a normal run's output, has three independent signals that
 <code>docz update</code> is README-only and zero that it is not. That is sufficient to
 explain the excerpt without any bug in the CLI.</p>
-<h4 id="observation-3-cases-where-a-fence-really-is-left-stale-with-no-signal">Observation 3: cases where a fence really is left stale, with no signal</h4>
+</div>
+<div class="card" id="observation-3-cases-where-a-fence-really-is-left-stale-with-no-signal">
+<p class="card-label">Observation 3: cases where a fence really is left stale, with no signal</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -300,7 +305,9 @@ explain the excerpt without any bug in the CLI.</p>
 <p>Rows 1–4 are the ones that would bite a real repo: the user sees a fence,
 runs <code>docz update</code>, and nothing happens, with no explanation. Row 1 is
 directly connected to Observation 5.</p>
-<h4 id="observation-4-md051-fires-right-after-a-successful-docz-update">Observation 4: MD051 fires right after a <em>successful</em> <code>docz update</code></h4>
+</div>
+<div class="card" id="observation-4-md051-fires-right-after-a-successful-docz-update">
+<p class="card-label">Observation 4: MD051 fires right after a <em>successful</em> <code>docz update</code></p>
 <p>Three heading shapes produce a ToC entry whose anchor GitHub (and therefore
 markdownlint, which uses GitHub's slug algorithm) does not generate:</p>
 <pre><code class="language-text">$ docz update adr &amp;&amp; sed -n &#39;/toc:start/,/toc:end/p&#39; docs/adr/0002-slug-cases.md
@@ -335,7 +342,9 @@ trigger it.)</li>
 <p><code>toc.go</code>'s package comment promises &quot;GitHub-compatible anchor slugs&quot;, so all
 three are bugs against docz's own stated contract, not a markdownlint
 configuration problem.</p>
-<h4 id="observation-5-the-marker-format-is-marksmans-and-readme-names-the-wrong-plugin">Observation 5: the marker format is Marksman's, and README names the wrong plugin</h4>
+</div>
+<div class="card" id="observation-5-the-marker-format-is-marksmans-and-readme-names-the-wrong-plugin">
+<p class="card-label">Observation 5: the marker format is Marksman's, and README names the wrong plugin</p>
 <p><code>README.md</code> lines 554–555 say the markers &quot;are compatible with the
 <a href="https://github.com/hedyhli/markdown-toc.nvim">markdown-toc.nvim</a> plugin, so
 documents edited in Neovim/lazyvim will work with both tools.&quot; They are not:</p>
@@ -355,7 +364,9 @@ ftplugins working around Marksman's ToC output, not mtoc configs.</li>
 <p>DESIGN-0003 (&quot;use the same markers as the lazyvim plugin&quot;) is right in
 spirit but never names the tool. The README attribution is simply wrong and
 should name Marksman, and both should say the match is exact.</p>
-<h4 id="observation-6-nothing-gates-drift-so-md051-in-a-downstream-ci-is-the-first-alarm">Observation 6: nothing gates drift, so MD051 in a downstream CI is the first alarm</h4>
+</div>
+<div class="card" id="observation-6-nothing-gates-drift-so-md051-in-a-downstream-ci-is-the-first-alarm">
+<p class="card-label">Observation 6: nothing gates drift, so MD051 in a downstream CI is the first alarm</p>
 <ul>
 <li>This repo ships <code>.markdownlint.yaml</code> with MD051 enabled but nothing in the
 <code>Makefile</code> or <code>.github/workflows/</code> runs markdownlint. Running
@@ -368,7 +379,9 @@ config exercise, not a one-line addition.</li>
 7), so it cannot gate CI. The <code>docz</code> skill's &quot;use <code>--dry-run</code> in CI to detect
 drift&quot; line is aspirational — a CI job would have to grep the output.</li>
 </ul>
-<h4 id="observation-7-side-finding-doubled-index-markers-in-two-generated-readmes">Observation 7 (side finding): doubled index markers in two generated READMEs</h4>
+</div>
+<div class="card" id="observation-7-side-finding-doubled-index-markers-in-two-generated-readmes">
+<p class="card-label">Observation 7 (side finding): doubled index markers in two generated READMEs</p>
 <p><code>index_investigation.md</code> and <code>index_plan.md</code> — alone among the embedded index
 headers — end with their own <code>&lt;!-- BEGIN/END DOCZ AUTO-GENERATED --&gt;</code> pair, and
 <code>internal/index.createNewReadme</code> appends another. Every <code>docz init</code> therefore
@@ -377,15 +390,12 @@ marker pairs; the splice only ever touches the first, and this repo's
 <code>docs/investigation/README.md</code> carries the empty second pair today. Cosmetic
 and unrelated to MD051, but it came out of the same header read and deserves
 its own issue.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> No — the claim is refuted. <code>docz update</code> (and <code>docz create</code>)
-regenerate <code>&lt;!--toc:start--&gt;</code> / <code>&lt;!--toc:end--&gt;</code> fences in every scanned
-document whenever <code>toc.enabled</code> is true, which it is by default. The
-reproduction took a document from two MD051 failures to zero with a single
-<code>docz update</code>, and the dry-run reported the change beforehand.</p>
+<div class="verdict no"><p class="card-label">Answer</p><p>No — the claim is refuted. <code>docz update</code> (and <code>docz create</code>)</p></div>
 <p>The other session reached the wrong conclusion because every surface it
 would have consulted — <code>docz update --help</code>, the <code>docz:update</code> skill, the
 umbrella <code>docz</code> skill, and the CLI's normal-run output — describes README

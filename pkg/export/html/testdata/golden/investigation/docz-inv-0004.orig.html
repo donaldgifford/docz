@@ -189,7 +189,8 @@ or a CLI-only operation.</li>
 <li><a href="#proposed-package-layout">Proposed package layout</a></li>
 <li><a href="#tui-vs-cli-mode-selection">TUI vs CLI mode selection</a></li>
 </ul>
-<h4 id="bubble-tea-v2--what-changed-and-what-we-need">Bubble Tea v2 — what changed and what we need</h4>
+<div class="card" id="bubble-tea-v2--what-changed-and-what-we-need">
+<p class="card-label">Bubble Tea v2 — what changed and what we need</p>
 <p>Bubble Tea v2 is a stable line as of April 2026. The breakage from v1 is
 manageable and well-documented: imports move from
 <code>github.com/charmbracelet/bubbletea</code> (still works but resolves to v2 via
@@ -203,7 +204,9 @@ first-class cell-based input handling, mouse support, and tighter
 integration with <code>lipgloss</code> for theming.</p>
 <p><strong>Implication:</strong> picking v2 today is the correct call. There's no
 &quot;should we wait for v3&quot; risk on a v2.0.x line that's already shipping.</p>
-<h4 id="bubbles-v2-components-catalog-vs-docz-workflows">Bubbles v2 components catalog vs docz workflows</h4>
+</div>
+<div class="card" id="bubbles-v2-components-catalog-vs-docz-workflows">
+<p class="card-label">Bubbles v2 components catalog vs docz workflows</p>
 <p>The components docz will actually use:</p>
 <ul>
 <li><code>list.Model</code> — for <code>docz list</code> filtered by type/status; for the
@@ -220,7 +223,9 @@ repos, mdp launch).</li>
 </ul>
 <p>We do not need <code>table.Model</code> — <code>list.Model</code> with custom delegate
 covers the table-ish &quot;rows of docs&quot; view at lower complexity.</p>
-<h4 id="glow--glamour-for-in-tui-markdown-rendering">Glow / Glamour for in-TUI markdown rendering</h4>
+</div>
+<div class="card" id="glow--glamour-for-in-tui-markdown-rendering">
+<p class="card-label">Glow / Glamour for in-TUI markdown rendering</p>
 <p>Glow itself is a TUI binary. Its underlying renderer is
 <code>github.com/charmbracelet/glamour</code>, which Glow exports for import. We
 want the renderer, not Glow. Glamour:</p>
@@ -233,7 +238,9 @@ stuff into the viewport, let the user scroll.</li>
 beyond a few columns are unreadable below ~80 columns. Acceptable
 for v1; documented as a known limitation.</li>
 </ul>
-<h4 id="mdp-integration-approach">mdp integration approach</h4>
+</div>
+<div class="card" id="mdp-integration-approach">
+<p class="card-label">mdp integration approach</p>
 <p>Originally there were three options here (shell out, vendor, public
 API) because mdp's server lived under <code>internal/server</code> and was not
 importable. That blocker is now gone: mdp <code>main</code> has factored the
@@ -254,7 +261,9 @@ on <code>main</code> today; no coordinated mdp release is required before
 IMPL-0010 starts. The remaining IMPL-0010 work is docz-side: choosing
 which <code>pkg/</code> symbols to depend on, designing <code>internal/preview/</code>'s
 public surface, and wiring the TUI <code>p</code> key to it.</p>
-<h4 id="lstk-reference-architecture">lstk reference architecture</h4>
+</div>
+<div class="card" id="lstk-reference-architecture">
+<p class="card-label">lstk reference architecture</p>
 <p>lstk's pattern is the one to copy:</p>
 <ul>
 <li><code>cmd/</code> holds Cobra commands as today (<code>root.go</code>, <code>start.go</code>,
@@ -279,7 +288,9 @@ size).</li>
 many &quot;screens&quot; via a router</strong>, not a fresh program per command. The
 top-level model holds a current-screen variant and dispatches
 <code>Update</code> to it. We adopt this pattern verbatim.</p>
-<h4 id="mapping-docz-workflows-to-tui-screens">Mapping docz workflows to TUI screens</h4>
+</div>
+<div class="card" id="mapping-docz-workflows-to-tui-screens">
+<p class="card-label">Mapping docz workflows to TUI screens</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -343,7 +354,9 @@ top-level model holds a current-screen variant and dispatches
 </tbody>
 </table>
 </div>
-<h4 id="proposed-package-layout">Proposed package layout</h4>
+</div>
+<div class="card" id="proposed-package-layout">
+<p class="card-label">Proposed package layout</p>
 <pre><code class="language-text">cmd/
   root.go              # Cobra root; RunE decides TUI vs CLI
   create.go list.go update.go template.go wiki.go config.go version.go
@@ -363,7 +376,9 @@ internal/
     styles/            # lipgloss styles
     keys/              # key bindings
 </code></pre>
-<h4 id="tui-vs-cli-mode-selection">TUI vs CLI mode selection</h4>
+</div>
+<div class="card" id="tui-vs-cli-mode-selection">
+<p class="card-label">TUI vs CLI mode selection</p>
 <p>The decision tree at root command's <code>RunE</code>:</p>
 <ol>
 <li>Subcommand present? → Cobra dispatches normally.</li>
@@ -375,18 +390,12 @@ usage and exit 0.</li>
 </ol>
 <p>Match lstk exactly. Document the env var alongside the flag in
 <code>--help</code>.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> Yes, v1 is well-shaped and reachable. The TUI work is real
-but bounded — about three weeks of focused implementation on top of the
-already-planned IMPL-0006 through IMPL-0009 cleanup. The dependency
-risk is low: Bubble Tea v2 is stable, Bubbles tracks it, Glamour is a
-mature import-only library, and mdp now exposes its renderer + theme +
-live-reload under <code>pkg/</code> (<code>mdp/pkg/parser</code>, <code>pkg/theme</code>,
-<code>pkg/livereload</code>) so docz can link it in-process. The integration is
-fully under our control end-to-end.</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes, v1 is well-shaped and reachable. The TUI work is real</p></div>
 <p>The two leverage points are:</p>
 <ol>
 <li><strong>Adopt lstk's pattern verbatim.</strong> A <code>cmd/root.go</code> that dispatches

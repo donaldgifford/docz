@@ -111,7 +111,9 @@ owns which responsibility.</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <p>The workflow owns loop control; the agent owns one task at a time.</p>
+</div>
 <p>Concretely:</p>
 <ol>
 <li><strong>The workflow derives position from the document.</strong> The next task is always
@@ -139,7 +141,9 @@ the commit/checkbox convention, and the result-block contract.</p>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li>Each clause the prompt used to hope for becomes a check with a named failure.
 Evaluation output feeds the next iteration's prompt, giving the agent precise
@@ -151,7 +155,9 @@ semantics change.</li>
 <li>Resume after any interruption, including loss of the Temporal namespace, costs
 at most one task's iterations.</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li>A rejected-but-committed iteration is discarded (reset to last good SHA)
 rather than fixed forward. This wastes tokens when the agent was close. Chosen
@@ -164,6 +170,8 @@ workflow must detect it.</li>
 <li>Mechanical checks run twice — in the runner (agent habit) and on the worker
 (authoritative). Accepted cost for a trustworthy gate.</li>
 </ul>
+</div>
+</div>
 <h4 id="neutral">Neutral</h4>
 <ul>
 <li>The manual donald-loop keeps working unchanged; nothing in this decision
@@ -177,18 +185,12 @@ it cannot run.</li>
 <section class="panel" id="p-alternatives">
 <h2 class="panel-title">Alternatives</h2>
 <h3 id="alternatives-considered">Alternatives Considered</h3>
-<ul>
-<li><strong>Keep the full prompt; wrap it in a Temporal activity for durability only.</strong>
-Rejected: gains restartability, none of the verification. The 75 iteration cap
-and agent-asserted completion remain.</li>
-<li><strong>Let the agent drive Temporal (agent calls signals/activities).</strong> Rejected:
-inverts the trust relationship; the component being verified would control the
-verifier.</li>
-<li><strong>Fix forward from rejected commits.</strong> Deferred, see Negative above.</li>
-<li><strong>Store task state in a database instead of the doc.</strong> Rejected: the doc is
-already the checkpoint humans read and the manual loop uses; two sources of
-truth would drift.</li>
-</ul>
+<div class="grid g2">
+<div class="card"><p class="card-label">Keep the full prompt; wrap it in a Temporal activity for durability only.</p><p>Rejected: gains restartability, none of the verification. The 75 iteration cap and agent-asserted completion remain.</p></div>
+<div class="card"><p class="card-label">Let the agent drive Temporal (agent calls signals/activities).</p><p>Rejected: inverts the trust relationship; the component being verified would control the verifier.</p></div>
+<div class="card"><p class="card-label">Fix forward from rejected commits.</p><p>Deferred, see Negative above.</p></div>
+<div class="card"><p class="card-label">Store task state in a database instead of the doc.</p><p>Rejected: the doc is already the checkpoint humans read and the manual loop uses; two sources of truth would drift.</p></div>
+</div>
 
 </section>
 <section class="panel" id="p-references">

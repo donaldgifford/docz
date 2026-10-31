@@ -7,6 +7,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/yuin/goldmark/ast"
 	east "github.com/yuin/goldmark/extension/ast"
@@ -44,6 +45,12 @@ type nodeRenderer struct {
 
 	// mermaid reports that a diagram was written for mermaid to draw.
 	mermaid bool
+
+	// tint is set while a risks region is written: its tables' likelihood
+	// and impact cells are classed by their first word. tinted holds the
+	// columns of the table being written that are.
+	tint   bool
+	tinted map[int]bool
 }
 
 // newNodeRenderer seeds the heading anchors from docparse, so an id on the
@@ -76,6 +83,7 @@ func (nr *nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindListItem, nr.listItem)
 	reg.Register(east.KindTaskCheckBox, nr.checkbox)
 	reg.Register(east.KindTable, nr.table)
+	reg.Register(east.KindTableCell, nr.tableCell)
 }
 
 // heading writes H2 to H6 one level down, with docz's anchor. The H1 is
@@ -451,15 +459,108 @@ func (*nodeRenderer) checkbox(util.BufWriter, []byte, ast.Node, bool) (ast.WalkS
 	return ast.WalkSkipChildren, nil
 }
 
-// table wraps a table so it scrolls sideways on a narrow screen.
-func (*nodeRenderer) table(w util.BufWriter, _ []byte, _ ast.Node, entering bool) (ast.WalkStatus, error) {
-	if entering {
-		put(w, "<div class=\"table-wrap\">\n<table>\n")
-	} else {
+// table wraps a table so it scrolls sideways on a narrow screen, and in a
+// risks region finds the columns to tint.
+func (nr *nodeRenderer) table(w util.BufWriter, src []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
 		put(w, "</table>\n</div>\n")
+
+		nr.tinted = nil
+
+		return ast.WalkContinue, nil
+	}
+
+	put(w, "<div class=\"table-wrap\">\n<table>\n")
+
+	if !nr.tint {
+		return ast.WalkContinue, nil
+	}
+
+	if head, ok := n.FirstChild().(*east.TableHeader); ok {
+		nr.tinted = make(map[int]bool)
+
+		i := 0
+		for c := head.FirstChild(); c != nil; c = c.NextSibling() {
+			name := strings.ToLower(plainText(c, src))
+			if strings.Contains(name, "likelihood") || strings.Contains(name, "impact") || strings.Contains(name, "severity") {
+				nr.tinted[i] = true
+			}
+
+			i++
+		}
 	}
 
 	return ast.WalkContinue, nil
+}
+
+// tableCell writes a cell as goldmark does, aligned by a style attribute,
+// with a tinted column's level as its class.
+func (nr *nodeRenderer) tableCell(w util.BufWriter, src []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+	cell, ok := n.(*east.TableCell)
+	if !ok {
+		return ast.WalkContinue, nil
+	}
+
+	tag := "td"
+	if _, head := n.Parent().(*east.TableHeader); head {
+		tag = "th"
+	}
+
+	if !entering {
+		put(w, "</"+tag+">\n")
+
+		return ast.WalkContinue, nil
+	}
+
+	put(w, "<"+tag)
+
+	if cell.Alignment != east.AlignNone {
+		put(w, ` style="text-align:`+cell.Alignment.String()+`"`)
+	}
+
+	if tag == "td" && nr.tinted[cellIndex(n)] {
+		if level := riskLevel(plainText(n, src)); level != "" {
+			put(w, ` class="`+level+`"`)
+		}
+	}
+
+	put(w, ">")
+
+	return ast.WalkContinue, nil
+}
+
+// cellIndex is a cell's column.
+func cellIndex(n ast.Node) int {
+	i := 0
+	for c := n.PreviousSibling(); c != nil; c = c.PreviousSibling() {
+		i++
+	}
+
+	return i
+}
+
+// riskLevel reads a likelihood or impact by its first word: High or
+// Critical is high, Medium medium, Low low, anything else nothing.
+func riskLevel(text string) string {
+	fields := strings.Fields(text)
+	if len(fields) == 0 {
+		return ""
+	}
+
+	word := strings.ToLower(strings.TrimFunc(fields[0], func(r rune) bool {
+		return !unicode.IsLetter(r)
+	}))
+
+	switch word {
+	case "high", "critical":
+		return "high"
+	case "medium", "moderate":
+		return "medium"
+	case "low":
+		return "low"
+	}
+
+	return ""
 }
 
 // blockLines joins a block node's lines.

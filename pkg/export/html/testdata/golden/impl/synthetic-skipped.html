@@ -37,35 +37,41 @@ written down keep pointing at the same work.</p>
 <section class="panel" id="p-phases">
 <h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
-<h4 id="phase-1-abandon-some-work">Phase 1: Abandon some work</h4>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-1-abandon-some-work">
+<div class="phase-head"><h3>Phase 1: Abandon some work</h3><span class="progress">2 / 3</span></div>
+<div class="bar"><i style="width: 66%"></i></div>
 <p>The interesting property is the numbering: tasks 1.2 and 1.4 are skipped, and
 1.3 and 1.5 keep the IDs they had before anyone gave up on their neighbours.</p>
-<h5 id="tasks">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Land the parser</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text"><del>Land the second parser</del> — skipped: the first one covers both cases</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Land the walker</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text"><del>Land the cache</del> - skipped:</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Land the writer
-verify: <code>go test ./...</code></div></li>
+<ul class="tasks" id="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Land the parser</span></li>
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Land the second parser</del> <span class="pill warn">skipped</span> <span class="note">the first one covers both cases</span></span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Land the walker</span></li>
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Land the cache</del> <span class="pill warn">skipped</span></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Land the writer</span></li>
 </ul>
-<h5 id="success-criteria">Success Criteria</h5>
+<div class="callout ok" id="success-criteria"><p class="callout-title">Success criteria</p>
 <ul>
 <li><code>go test ./...</code> passes</li>
 <li>No task ID changed when a task was skipped</li>
 </ul>
-<h4 id="phase-2-defer-the-rest">Phase 2: Defer the rest</h4>
-<h5 id="tasks-1">Tasks</h5>
-<ul class="tasks">
-<li data-state="open"><input type="checkbox" disabled><div class="text">Cut the release — deferred - human required: needs a release owner</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text"><strong>Deferred</strong> — waiting on the upstream fix</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Announce it</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text"><del>Backport to v1</del> — skipped: v1 is frozen</div></li>
+</div>
+</div>
+<div class="card phase" id="phase-2-defer-the-rest">
+<div class="phase-head"><h3>Phase 2: Defer the rest</h3><span class="progress">0 / 3</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks-1">
+<li data-state="deferred"><input type="checkbox" disabled><span class="text">Cut the release <span class="pill warn">deferred</span> <span class="note">needs a release owner</span></span></li>
+<li data-state="deferred"><input type="checkbox" disabled><span class="text"> <span class="pill warn">deferred</span> <span class="note">waiting on the upstream fix</span></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Announce it</span></li>
+<li data-state="skipped"><input type="checkbox" disabled><span class="text"><del>Backport to v1</del> <span class="pill warn">skipped</span> <span class="note">v1 is frozen</span></span></li>
 </ul>
-<h5 id="success-criteria-1">Success Criteria</h5>
+<div class="callout ok" id="success-criteria-1"><p class="callout-title">Success criteria</p>
 <ul>
 <li>The release is tagged</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-testing">

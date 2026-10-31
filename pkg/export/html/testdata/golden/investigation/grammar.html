@@ -83,21 +83,25 @@ Phase 1 needs the arithmetic settled before any goldens are captured.</p>
 </section>
 <section class="panel" id="p-findings">
 <h2 class="panel-title" id="findings">Findings</h2>
-<h4 id="the-offset-belongs-to-the-caller">The offset belongs to the caller</h4>
+<div class="card" id="the-offset-belongs-to-the-caller">
+<p class="card-label">The offset belongs to the caller</p>
 <p>Each reader reported a line one short of the file, because the region's start
 was never added: the reader cannot add it, since it was handed bytes and not
 a document.</p>
-<h4 id="adding-it-in-the-reader-double-counts-a-nested-region">Adding it in the reader double-counts a nested region</h4>
+</div>
+<div class="card" id="adding-it-in-the-reader-double-counts-a-nested-region">
+<p class="card-label">Adding it in the reader double-counts a nested region</p>
 <p>A region nested inside another had its parent's start added once by the
 walker and once by the reader, so the reported line sat two lines above the
 bullet a consumer wanted to jump to.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
 <p>The arithmetic is right once the region's start is added exactly once, by the
 caller that owns the region rather than by the reader that walked it.</p>
-<p><strong>Answer:</strong> Yes, with the shift applied by the caller.</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes, with the shift applied by the caller.</p></div>
 <h3 id="recommendation">Recommendation</h3>
 <p>Give kinds a Shift helper per value type and have every type package call it,
 so the conversion has one definition instead of five.</p>

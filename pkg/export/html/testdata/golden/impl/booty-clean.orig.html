@@ -34,15 +34,18 @@
 <section class="panel" id="p-phases">
 <h2 class="panel-title">Phases</h2>
 <h3 id="phases">Phases</h3>
-<h4 id="phase-a-one">Phase A: One</h4>
-<h5 id="tasks">Tasks</h5>
-<ul class="tasks">
-<li data-state="open"><input type="checkbox" disabled><div class="text">Only task</div></li>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-a-one">
+<div class="phase-head"><h3>Phase A: One</h3><span class="progress">0 / 1</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Only task</span></li>
 </ul>
 <h5 id="success-criteria">Success Criteria</h5>
 <ul>
 <li>The task is done</li>
 </ul>
+</div>
 
 </section>
 <footer class="page-footer">

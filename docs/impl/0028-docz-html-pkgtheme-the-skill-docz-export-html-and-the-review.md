@@ -378,7 +378,7 @@ typed packages, plus the widgets from fenced blocks.
   `pkg/doczcore/validate`'s catalogue and in every embedded template has
   a row or is listed as deliberately generic, and that every built-in
   template yields DESIGN-0025's tab list for its type.
-- [ ] Typed facts, switching on region kind and never on type name: phases
+- [x] Typed facts, switching on region kind and never on type name: phases
   through `impl.Parse` (tasks with state, progress as
   `impl.Doc.Progress` counts it, deferred and skipped pills with their
   notes, criteria in an ok callout, the filter); procedures and scenarios

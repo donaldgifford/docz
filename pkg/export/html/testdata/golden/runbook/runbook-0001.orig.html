@@ -81,7 +81,8 @@ carries <code>dont-release</code>, so nothing publishes on merge (ADR-0002 Decis
 <li><a href="#escalation">Escalation</a></li>
 <li><a href="#references">References</a></li>
 </ul>
-<h3 id="last-verified">Last Verified</h3>
+<div class="card" id="last-verified">
+<p class="card-label">Last Verified</p>
 <div class="table-wrap">
 <table>
 <thead>
@@ -105,6 +106,7 @@ carries <code>dont-release</code>, so nothing publishes on merge (ADR-0002 Decis
 <p><strong>Notes:</strong> Run end to end for <code>v2.0.0-beta.5</code>, install included. The
 <code>charts/docz</code> push did not fail with a 403, so that scenario was not
 exercised.</p>
+</div>
 <h3 id="overview">Overview</h3>
 <p><strong>Service:</strong> docz release pipeline (<code>prerelease.yml</code>, <code>ghcr.yml</code>, goreleaser)</p>
 <p><strong>Owner:</strong> @donaldgifford</p>
@@ -116,13 +118,13 @@ IMPL's release phase says to cut the next beta</li>
 move a pushed tag)</li>
 </ul>
 <h3 id="prerequisites">Prerequisites</h3>
-<ul>
-<li>Push access to <code>donaldgifford/docz</code>, and permission to push tags</li>
-<li><code>just</code>, <code>goreleaser</code>, <code>gh</code>, <code>helm</code> (4.x), <code>cosign</code>, and <code>docker</code>
-installed (<code>mise install</code> provides them)</li>
-<li><code>gh auth status</code> is logged in to github.com</li>
-<li>For the install procedure: <code>kind</code> and a local Docker daemon</li>
-<li>The previous beta's number, from <code>git tag --list 'v2.0.0-beta.*'</code></li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Push access to <code>donaldgifford/docz</code>, and permission to push tags</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>just</code>, <code>goreleaser</code>, <code>gh</code>, <code>helm</code> (4.x), <code>cosign</code>, and <code>docker</code>
+installed (<code>mise install</code> provides them)</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>gh auth status</code> is logged in to github.com</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">For the install procedure: <code>kind</code> and a local Docker daemon</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">The previous beta's number, from <code>git tag --list 'v2.0.0-beta.*'</code></span></li>
 </ul>
 
 </section>
@@ -133,41 +135,39 @@ installed (<code>mise install</code> provides them)</li>
 <p>Get <code>main</code> into the state the tag will record: the chart bumped and the
 release configuration valid.</p>
 <h5 id="steps">Steps</h5>
-<ol>
-<li><p>Before the PR merges, bump <code>charts/docz/Chart.yaml</code>: raise <code>version</code>,
-and set <code>appVersion</code> to the new beta <strong>without</strong> a <code>v</code> prefix. Then
-regenerate the chart docs and run its tests.</p>
+<ol class="steps">
+<li id="step-1-1"><span class="step-id">1.1</span> Before the PR merges, bump <code>charts/docz/Chart.yaml</code>: raise <code>version</code>, and set <code>appVersion</code> to the new beta <strong>without</strong> a <code>v</code> prefix. Then regenerate the chart docs and run its tests.
 <pre><code class="language-sh">just chart docs
 just chart unittest
 </code></pre>
-<p><strong>Expected:</strong> <code>appVersion: &quot;2.0.0-beta.N&quot;</code>; the unit tests pass</p>
+<p class="expected"><b>Expected:</b> <code>appVersion: &quot;2.0.0-beta.N&quot;</code>; the unit tests pass</p>
 </li>
-<li><p>Once the PR is merged, check out the merge commit on <code>main</code>.</p>
+<li id="step-1-2"><span class="step-id">1.2</span> Once the PR is merged, check out the merge commit on <code>main</code>.
 <pre><code class="language-sh">git checkout main &amp;&amp; git pull --ff-only --no-tags origin main
 gh pr view &lt;PR&gt; --json mergeCommit -q .mergeCommit.oid
 git rev-parse HEAD
 </code></pre>
-<p><strong>Expected:</strong> both commands print the same SHA</p>
+<p class="expected"><b>Expected:</b> both commands print the same SHA</p>
 </li>
-<li><p>Confirm the merge's own <code>release.yml</code> run published no chart.</p>
+<li id="step-1-3"><span class="step-id">1.3</span> Confirm the merge's own <code>release.yml</code> run published no chart.
 <pre><code class="language-sh">gh run list --workflow release.yml --commit &#34;$(git rev-parse HEAD)&#34; \
   --json databaseId -q &#39;.[0].databaseId&#39; | xargs gh run view \
   --json jobs -q &#39;.jobs[] | &#34;\(.name): \(.conclusion)&#34;&#39;
 </code></pre>
-<p><strong>Expected:</strong> every <code>Publish chart</code> job is <code>skipped</code></p>
+<p class="expected"><b>Expected:</b> every <code>Publish chart</code> job is <code>skipped</code></p>
 </li>
-<li><p>Validate the release configuration for both binaries.</p>
+<li id="step-1-4"><span class="step-id">1.4</span> Validate the release configuration for both binaries.
 <pre><code class="language-sh">just release-check
 just api release-check
 </code></pre>
-<p><strong>Expected:</strong> <code>1 configuration file(s) validated</code>, twice</p>
+<p class="expected"><b>Expected:</b> <code>1 configuration file(s) validated</code>, twice</p>
 </li>
 </ol>
 <h5 id="verification">Verification</h5>
-<ul>
-<li><code>HEAD</code> is the merge commit, and <code>charts/docz</code> carries the new bare
-<code>appVersion</code></li>
-<li>Both release checks pass</li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>HEAD</code> is the merge commit, and <code>charts/docz</code> carries the new bare
+<code>appVersion</code></span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Both release checks pass</span></li>
 </ul>
 <h5 id="rollback">Rollback</h5>
 <ol>
@@ -178,43 +178,39 @@ again.</li>
 <p>Push the tag, let <code>prerelease.yml</code> publish, and check every artifact it
 was supposed to produce.</p>
 <h5 id="steps-1">Steps</h5>
-<ol>
-<li><p>Tag the merge commit and push the tag.</p>
+<ol class="steps">
+<li id="step-2-1"><span class="step-id">2.1</span> Tag the merge commit and push the tag.
 <pre><code class="language-sh">just release v2.0.0-beta.N
 </code></pre>
-<p><strong>Expected:</strong> the tag appears with <code>git ls-remote --tags origin 'v2.0.0-beta.N'</code></p>
+<p class="expected"><b>Expected:</b> the tag appears with <code>git ls-remote --tags origin 'v2.0.0-beta.N'</code></p>
 </li>
-<li><p>Watch the pre-release run to the end.</p>
+<li id="step-2-2"><span class="step-id">2.2</span> Watch the pre-release run to the end.
 <pre><code class="language-sh">run=$(gh run list --workflow prerelease.yml -L 1 --json databaseId -q &#39;.[0].databaseId&#39;)
 gh run watch &#34;$run&#34; --exit-status --interval 30
 gh run view &#34;$run&#34; --json jobs -q &#39;.jobs[] | &#34;\(.name): \(.conclusion)&#34;&#39;
 </code></pre>
-<p><strong>Expected:</strong> every job <code>success</code>, except the ECR jobs and the chart
-component's image job, which are <code>skipped</code></p>
+<p class="expected"><b>Expected:</b> every job <code>success</code>, except the ECR jobs and the chart component's image job, which are <code>skipped</code></p>
 </li>
-<li><p>Check the GitHub release.</p>
+<li id="step-2-3"><span class="step-id">2.3</span> Check the GitHub release.
 <pre><code class="language-sh">gh release view v2.0.0-beta.N --json isPrerelease,assets -q &#39;&#34;prerelease=\(.isPrerelease)&#34;, (.assets[].name)&#39;
 </code></pre>
-<p><strong>Expected:</strong> <code>prerelease=true</code>, the <code>docz_*</code> and <code>docz-api_*</code> archives
-with their <code>.spdx.json</code> SBOMs, and <code>checksums.txt</code> with its <code>.sig</code></p>
+<p class="expected"><b>Expected:</b> <code>prerelease=true</code>, the <code>docz_*</code> and <code>docz-api_*</code> archives with their <code>.spdx.json</code> SBOMs, and <code>checksums.txt</code> with its <code>.sig</code></p>
 </li>
-<li><p>Check both images. The tag is bare semver, and <code>latest</code> must not have
-moved to this release.</p>
-<ol>
-<li><p>Inspect the new tag on each image.</p>
+<li id="step-2-4"><span class="step-id">2.4</span> Check both images. The tag is bare semver, and <code>latest</code> must not have moved to this release.
+<p class="expected"><b>Expected:</b> each image's <code>latest</code> digest differs from its beta digest</p>
+<ol class="steps">
+<li id="step-2-4-1"><span class="step-id">2.4.1</span> Inspect the new tag on each image.
 <pre><code class="language-sh">for img in docz-api docz-site; do
   docker buildx imagetools inspect &#34;ghcr.io/donaldgifford/${img}:2.0.0-beta.N&#34; \
     --format &#39;{{json .Manifest.Digest}}&#39;
 done
 </code></pre>
 </li>
-<li><p>Inspect <code>latest</code> the same way. Write <code>${img}</code>, not <code>$img</code>: zsh reads
-<code>$img:l</code> as a lower-case modifier.</p>
+<li id="step-2-4-2"><span class="step-id">2.4.2</span> Inspect <code>latest</code> the same way. Write <code>${img}</code>, not <code>$img</code>: zsh reads <code>$img:l</code> as a lower-case modifier.
 </li>
 </ol>
-<p><strong>Expected:</strong> each image's <code>latest</code> digest differs from its beta digest</p>
 </li>
-<li><p>Check each chart's metadata and supply-chain artifacts.</p>
+<li id="step-2-5"><span class="step-id">2.5</span> Check each chart's metadata and supply-chain artifacts.
 <pre><code class="language-sh">for c in docz:&lt;version&gt;; do
   helm show chart &#34;oci://ghcr.io/donaldgifford/charts/${c%%:*}&#34; --version &#34;${c##*:}&#34; \
     | grep -E &#39;^(name|version|appVersion|deprecated):&#39;
@@ -222,16 +218,14 @@ done
     | grep -oE &#39;sigstore.dev/cosign/sign|slsa.dev/provenance&#39; | sort -u
 done
 </code></pre>
-<p><strong>Expected:</strong> a bare <code>appVersion: 2.0.0-beta.N</code>, plus both a signature
-and SLSA provenance. A chart whose version did not change is skipped by
-the publish job's idempotency check and keeps its old artifacts</p>
+<p class="expected"><b>Expected:</b> a bare <code>appVersion: 2.0.0-beta.N</code>, plus both a signature and SLSA provenance. A chart whose version did not change is skipped by the publish job's idempotency check and keeps its old artifacts</p>
 </li>
 </ol>
 <h5 id="verification-1">Verification</h5>
-<ul>
-<li>The pre-release exists with both binaries' archives and signed checksums</li>
-<li>Both images are at the new bare tag, signed, and <code>latest</code> did not move</li>
-<li><code>charts/docz</code> is published at its new version, signed and attested</li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">The pre-release exists with both binaries' archives and signed checksums</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Both images are at the new bare tag, signed, and <code>latest</code> did not move</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text"><code>charts/docz</code> is published at its new version, signed and attested</span></li>
 </ul>
 <h5 id="rollback-1">Rollback</h5>
 <ol>
@@ -250,9 +244,8 @@ site reaches the API. This is optional for a beta (IMPL-0022 OQ 7). The
 whole product is tested by swapping a real environment to the beta before
 v2.0.0.</p>
 <h5 id="steps-2">Steps</h5>
-<ol>
-<li><p>Create a cluster and a values file with login off and a dummy GitHub
-App key.</p>
+<ol class="steps">
+<li id="step-3-1"><span class="step-id">3.1</span> Create a cluster and a values file with login off and a dummy GitHub App key. Never leave a top-level key such as <code>site:</code> with nothing under it. YAML reads it as <code>null</code>, which deletes the chart's whole block and fails the render with a nil pointer.
 <pre><code class="language-sh">kind create cluster --name docz-beta --wait 2m
 openssl genrsa -out /tmp/dummy.pem 2048
 cat &gt; /tmp/beta.yaml &lt;&lt;&#39;YAML&#39;
@@ -269,36 +262,30 @@ search:
     masterKey: &#34;smoke-test-master-key-0123456789&#34;
 YAML
 </code></pre>
-<p>Never leave a top-level key such as <code>site:</code> with nothing under it. YAML
-reads it as <code>null</code>, which deletes the chart's whole block and fails the
-render with a nil pointer.</p>
 </li>
-<li><p>Install the chart from OCI with no image override, so the chart's own
-<code>appVersion</code> picks the images.</p>
+<li id="step-3-2"><span class="step-id">3.2</span> Install the chart from OCI with no image override, so the chart's own <code>appVersion</code> picks the images.
 <pre><code class="language-sh">helm install docz oci://ghcr.io/donaldgifford/charts/docz --version &lt;version&gt; \
   --kube-context kind-docz-beta -n docz --create-namespace -f /tmp/beta.yaml \
   --set-file api.secrets.privateKey=/tmp/dummy.pem --wait --timeout 8m
 </code></pre>
-<p><strong>Expected:</strong> <code>STATUS: deployed</code>; every pod ready on the
-<code>2.0.0-beta.N</code> images</p>
+<p class="expected"><b>Expected:</b> <code>STATUS: deployed</code>; every pod ready on the <code>2.0.0-beta.N</code> images</p>
 </li>
-<li><p>Query the API through the site's Service, then run the chart's test
-hook.</p>
+<li id="step-3-3"><span class="step-id">3.3</span> Query the API through the site's Service, then run the chart's test hook.
 <pre><code class="language-sh">kubectl --context kind-docz-beta -n docz port-forward svc/docz-site 18080:80 &amp;
 curl -s -w &#39; %{http_code}\n&#39; localhost:18080/api/v1/repos
 kill %1
 helm test docz --kube-context kind-docz-beta -n docz
 </code></pre>
-<p><strong>Expected:</strong> <code>{&quot;repos&quot;:[]} 200</code>, and the test suite <code>Succeeded</code></p>
+<p class="expected"><b>Expected:</b> <code>{&quot;repos&quot;:[]} 200</code>, and the test suite <code>Succeeded</code></p>
 </li>
-<li><p>Delete the cluster.</p>
+<li id="step-3-4"><span class="step-id">3.4</span> Delete the cluster.
 <pre><code class="language-sh">kind delete cluster --name docz-beta
 </code></pre>
 </li>
 </ol>
 <h5 id="verification-2">Verification</h5>
-<ul>
-<li>The site answers <code>/api/v1/repos</code> with 200, and <code>helm test</code> succeeds</li>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">The site answers <code>/api/v1/repos</code> with 200, and <code>helm test</code> succeeds</span></li>
 </ul>
 <h5 id="rollback-2">Rollback</h5>
 <ol>
@@ -309,10 +296,13 @@ helm test docz --kube-context kind-docz-beta -n docz
 <section class="panel" id="p-scenarios">
 <h2 class="panel-title">Scenarios</h2>
 <h3 id="troubleshooting">Troubleshooting</h3>
-<h4 id="scenario-a-chart-push-fails-with-403-write_package">Scenario: A chart push fails with 403 write_package</h4>
-<p><strong>Alert:</strong> none; the <code>Publish chart</code> job fails</p>
-<p><strong>Likely cause:</strong> the GHCR package is new and this repository has no
-Actions access to it yet</p>
+<details class="expand" id="scenario-a-chart-push-fails-with-403-write_package"><summary>A chart push fails with 403 write_package</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>A chart push fails with 403 write_package</dd>
+<dt>Alert</dt><dd>none; the <code>Publish chart</code> job fails</dd>
+<dt>Likely cause</dt><dd>the GHCR package is new and this repository has no Actions access to it yet</dd>
+</dl>
 <h5 id="steps-3">Steps</h5>
 <ol>
 <li><p>Confirm the failure is the access grant, not a token or login problem.</p>
@@ -330,11 +320,15 @@ else in the run depends on it.</p>
 </code></pre>
 </li>
 </ol>
-<h4 id="scenario-pods-fail-to-pull-the-image-after-install">Scenario: Pods fail to pull the image after install</h4>
-<p><strong>Alert:</strong> none; pods sit in <code>ImagePullBackOff</code></p>
-<p><strong>Likely cause:</strong> a <code>v</code>-prefixed <code>appVersion</code>. The image tag is bare
-semver (<code>2.0.0-beta.N</code>), because the publish workflow's metadata action
-strips the <code>v</code>.</p>
+</div>
+</details>
+<details class="expand" id="scenario-pods-fail-to-pull-the-image-after-install"><summary>Pods fail to pull the image after install</summary>
+<div class="body">
+<dl>
+<dt>Symptom</dt><dd>Pods fail to pull the image after install</dd>
+<dt>Alert</dt><dd>none; pods sit in <code>ImagePullBackOff</code></dd>
+<dt>Likely cause</dt><dd>a <code>v</code>-prefixed <code>appVersion</code>. The image tag is bare semver (<code>2.0.0-beta.N</code>), because the publish workflow's metadata action strips the <code>v</code>.</dd>
+</dl>
 <h5 id="steps-4">Steps</h5>
 <ol>
 <li><p>Read the chart's <code>appVersion</code>.</p>
@@ -346,6 +340,8 @@ strips the <code>v</code>.</p>
 and cut the next beta. A published chart version is never overwritten.</p>
 </li>
 </ol>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-escalation">

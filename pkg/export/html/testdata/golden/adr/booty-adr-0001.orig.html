@@ -79,9 +79,11 @@ capability to a downstream agent B. The v1 case does not need this.</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <p>Use <strong>Vault-Transit-signed JWT</strong> as the v1 capability token format. Defer
 SPIFFE/SPIRE migration to v2, conditional on a real federation or cross-cluster
 identity requirement emerging.</p>
+</div>
 <p>Specifically:</p>
 <ul>
 <li>Signing: Vault Transit, key <code>agent-capability-token-v1</code></li>
@@ -104,7 +106,9 @@ map cleanly onto SPIFFE JWT-SVID claims with minimal renaming)</li>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li><strong>No new operational footprint.</strong> Vault is already in the stack (existing
 Vault JIT pattern). Using Vault Transit for signing adds one secrets-engine
@@ -119,7 +123,9 @@ SVIDs, registration entries) to onboard new team members to.</li>
 <li><strong>Faster v1.</strong> Phase 2 of the capability RFC (controller as token issuer) is
 days of work with JWT; would be weeks with SPIFFE bootstrapping.</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li><strong>No native federation.</strong> Cross-cluster or external-workload identity will
 require a migration. The RFC documents that migration target as v2 work.</li>
@@ -136,6 +142,8 @@ Transit public key with a 5-minute TTL. During key rotation, there is a window
 where a verifier might still trust the old key. SPIFFE has analogous
 trust-bundle caching.</li>
 </ul>
+</div>
+</div>
 <h4 id="neutral">Neutral</h4>
 <ul>
 <li><strong>Both options end up with claim-bearing tokens.</strong> The capability RFC's claim

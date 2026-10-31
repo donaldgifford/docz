@@ -83,23 +83,26 @@ replays goldens.</p>
 </section>
 <section class="panel" id="p-findings">
 <h2 class="panel-title" id="findings">Findings</h2>
-<h4 id="the-file-tree-is-most-of-every-golden">The file tree is most of every golden</h4>
+<div class="card" id="the-file-tree-is-most-of-every-golden">
+<p class="card-label">The file tree is most of every golden</p>
 <p>A golden records stdout, stderr, the exit code, and the whole file tree. In a
 collapsed repository every case's tree carries the other five types' documents,
 so a change to the RFC index table moves a line in the ADR goldens too. The
 per-type trees are what makes a failing diff name the command that broke.</p>
-<h4 id="collapsing-does-not-change-a-single-stdout">Collapsing does not change a single stdout</h4>
+</div>
+<div class="card" id="collapsing-does-not-change-a-single-stdout">
+<p class="card-label">Collapsing does not change a single stdout</p>
 <p>The 213 stdout and exit-code captures came back byte-identical. The hypothesis
 is right about coverage and wrong about cost: nothing is gained in what the
 suite measures, and the diffs stop being readable.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
 <p>Coverage is unchanged, so the collapse is possible; readability is not, so it is
 not worth doing. The seven repositories stay.</p>
-<p><strong>Answer:</strong> No, one repository per type is not required for coverage, but the
-per-type trees are what keeps a failing diff readable.</p>
+<div class="verdict no"><p class="card-label">Answer</p><p>No, one repository per type is not required for coverage, but the</p></div>
 
 </section>
 <section class="panel" id="p-references">

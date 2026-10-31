@@ -96,7 +96,9 @@
 DESIGN-0001.</p>
 <p><strong>Implements:</strong> DESIGN-0001</p>
 <h3 id="scope">Scope</h3>
-<h4 id="in-scope">In Scope</h4>
+<div class="grid g2">
+<div class="card ok" id="in-scope">
+<p class="card-label">In Scope</p>
 <ul>
 <li>All four built-in document types: RFC, ADR, DESIGN, IMPL</li>
 <li>Embedded default templates via <code>//go:embed</code></li>
@@ -108,6 +110,8 @@ DESIGN-0001.</p>
 <li>Template override resolution (explicit config &gt; local file &gt; embedded)</li>
 <li>Unit tests, integration tests, golden file tests</li>
 </ul>
+</div>
+</div>
 <h4 id="out-of-scope">Out of Scope</h4>
 <ul>
 <li>Claude Code plugin / skills (deferred to later phase)</li>
@@ -124,52 +128,27 @@ DESIGN-0001.</p>
 <h3 id="implementation-phases">Implementation Phases</h3>
 <p>Each phase builds on the previous one. A phase is complete when all its tasks
 are checked off and its success criteria are met.</p>
-<h4 id="phase-1-project-foundation">Phase 1: Project Foundation</h4>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-1-project-foundation">
+<div class="phase-head"><h3>Phase 1: Project Foundation</h3><span class="progress">13 / 13</span></div>
+<div class="bar"><i style="width: 100%"></i></div>
 <p>Set up the internal package structure, embedded templates, and configuration
 system. No CLI commands yet beyond the existing root command -- this phase is
 purely the internal libraries that all commands depend on.</p>
-<h5 id="tasks">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Fix <code>go.mod</code>: move <code>cobra</code> and <code>viper</code> from indirect to direct
-dependencies (run <code>go mod tidy</code>)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Create directory structure:
-<code>internal/config/</code>, <code>internal/document/</code>, <code>internal/index/</code>,
-<code>internal/template/</code>, <code>internal/template/templates/</code></div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write the four default document template files under
-<code>internal/template/templates/</code> (<code>rfc.md</code>, <code>adr.md</code>, <code>design.md</code>,
-<code>impl.md</code>) using the templates defined in DESIGN-0001</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write the four default index header template files under
-<code>internal/template/templates/</code> (<code>index_rfc.md</code>, <code>index_adr.md</code>,
-<code>index_design.md</code>, <code>index_impl.md</code>)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>internal/template/embed.go</code>: use <code>//go:embed templates/*.md</code>
-to embed all template files; export functions to retrieve a document
-template or index header template by type name</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>internal/template/template.go</code>: template resolution logic
-(config path &gt; local override &gt; embedded default), rendering a template
-with a <code>TemplateData</code> struct via <code>text/template</code></div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Define <code>TemplateData</code> struct with fields: <code>Number</code>, <code>Title</code>, <code>Date</code>,
-<code>Author</code>, <code>Status</code>, <code>Type</code>, <code>Prefix</code>, <code>Slug</code>, <code>Filename</code></div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement slug generation: title to kebab-case (lowercase, spaces to
-hyphens, strip non-alphanumeric except hyphens, trim leading/trailing
-hyphens)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>internal/config/config.go</code>: define <code>Config</code> struct matching
-the <code>.docz.yaml</code> schema from DESIGN-0001, including <code>TypeConfig</code> for
-each document type; implement <code>Load()</code> using two separate Viper
-instances -- one for <code>~/.docz.yaml</code> (global), one for repo root
-<code>.docz.yaml</code> (local). Load global first, then deep-merge local on
-top via <code>MergeConfigMap</code>. Deep merge means the repo config overrides
-only the keys it explicitly sets; unset keys inherit from global.
-Apply built-in defaults for any keys missing from both files</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>internal/document/document.go</code>: define <code>Frontmatter</code> struct,
-implement <code>ParseFrontmatter(fileContent []byte) (Frontmatter, error)</code>
-that splits on <code>---</code> delimiters and unmarshals YAML</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write unit tests for <code>internal/template/</code>: template resolution order,
-rendering with all placeholder variables, slug generation edge cases</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write unit tests for <code>internal/config/</code>: default values, loading from
-file, deep merge behavior (repo config key overrides global, unset keys
-inherit from global, both missing returns defaults)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write unit tests for <code>internal/document/</code>: frontmatter parsing with
-valid YAML, missing fields, no frontmatter, malformed delimiters</div></li>
+<ul class="tasks" id="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Fix <code>go.mod</code>: move <code>cobra</code> and <code>viper</code> from indirect to direct dependencies (run <code>go mod tidy</code>)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Create directory structure: <code>internal/config/</code>, <code>internal/document/</code>, <code>internal/index/</code>, <code>internal/template/</code>, <code>internal/template/templates/</code></span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write the four default document template files under <code>internal/template/templates/</code> (<code>rfc.md</code>, <code>adr.md</code>, <code>design.md</code>, <code>impl.md</code>) using the templates defined in DESIGN-0001</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write the four default index header template files under <code>internal/template/templates/</code> (<code>index_rfc.md</code>, <code>index_adr.md</code>, <code>index_design.md</code>, <code>index_impl.md</code>)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>internal/template/embed.go</code>: use <code>//go:embed templates/*.md</code> to embed all template files; export functions to retrieve a document template or index header template by type name</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>internal/template/template.go</code>: template resolution logic (config path &gt; local override &gt; embedded default), rendering a template with a <code>TemplateData</code> struct via <code>text/template</code></span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Define <code>TemplateData</code> struct with fields: <code>Number</code>, <code>Title</code>, <code>Date</code>, <code>Author</code>, <code>Status</code>, <code>Type</code>, <code>Prefix</code>, <code>Slug</code>, <code>Filename</code></span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement slug generation: title to kebab-case (lowercase, spaces to hyphens, strip non-alphanumeric except hyphens, trim leading/trailing hyphens)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>internal/config/config.go</code>: define <code>Config</code> struct matching the <code>.docz.yaml</code> schema from DESIGN-0001, including <code>TypeConfig</code> for each document type; implement <code>Load()</code> using two separate Viper instances -- one for <code>~/.docz.yaml</code> (global), one for repo root <code>.docz.yaml</code> (local). Load global first, then deep-merge local on top via <code>MergeConfigMap</code>. Deep merge means the repo config overrides only the keys it explicitly sets; unset keys inherit from global. Apply built-in defaults for any keys missing from both files</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>internal/document/document.go</code>: define <code>Frontmatter</code> struct, implement <code>ParseFrontmatter(fileContent []byte) (Frontmatter, error)</code> that splits on <code>---</code> delimiters and unmarshals YAML</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write unit tests for <code>internal/template/</code>: template resolution order, rendering with all placeholder variables, slug generation edge cases</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write unit tests for <code>internal/config/</code>: default values, loading from file, deep merge behavior (repo config key overrides global, unset keys inherit from global, both missing returns defaults)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write unit tests for <code>internal/document/</code>: frontmatter parsing with valid YAML, missing fields, no frontmatter, malformed delimiters</span></li>
 </ul>
 <h5 id="success-criteria">Success Criteria</h5>
 <ul>
@@ -181,49 +160,23 @@ exists</li>
 <li>Frontmatter parsing correctly extracts all five fields (id, title, status,
 author, created) from a well-formed document</li>
 </ul>
-<h4 id="phase-2-core-commands----init-create-version">Phase 2: Core Commands -- <code>init</code>, <code>create</code>, <code>version</code></h4>
+</div>
+<div class="card phase" id="phase-2-core-commands----init-create-version">
+<div class="phase-head"><h3>Phase 2: Core Commands -- <code>init</code>, <code>create</code>, <code>version</code></h3><span class="progress">10 / 10</span></div>
+<div class="bar"><i style="width: 100%"></i></div>
 <p>Wire up the internal packages to the first three Cobra commands. After this
 phase a user can initialize a repo and create documents.</p>
-<h5 id="tasks-1">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Move <code>main.go</code> to <code>cmd/docz/main.go</code> to follow the standard Go project
-layout (<code>cmd/&lt;name&gt;/main.go</code>). Update the <code>main</code> package to import
-<code>github.com/donaldgifford/docz/cmd</code>. The Makefile <code>build-core</code> target
-already points to <code>./cmd/$(PROJECT_NAME)</code> so this aligns with it</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>cmd/root.go</code>: replace boilerplate descriptions with actual docz
-descriptions; integrate config loading via <code>internal/config</code> in
-<code>initConfig()</code>; register <code>--docs-dir</code> and <code>--verbose</code> persistent flags;
-remove the placeholder <code>--toggle</code> flag</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/version.go</code>: define <code>var Version</code> and <code>var Commit</code> in the
-<code>cmd</code> package; Makefile ldflags will target
-<code>-X github.com/donaldgifford/docz/cmd.Version=...</code> and
-<code>-X github.com/donaldgifford/docz/cmd.Commit=...</code>; register <code>version</code>
-as subcommand of root that prints these values</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/init.go</code>: create <code>.docz.yaml</code> at repo root if it doesn't
-exist (write default config); create <code>docs/{rfc,adr,design,impl}/</code>
-directories (mkdir -p semantics); write default <code>README.md</code> index files
-into each directory using embedded index header templates with an empty
-auto-generated table section; skip existing README files unless <code>--force</code>
-is passed; register <code>--force</code> flag</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>internal/document/create.go</code>: scan target directory for
-<code>NNNN-*.md</code> files to find next ID number; build <code>TemplateData</code> from
-inputs; resolve and render the template; write the output file; return
-the created file path</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/create.go</code>: accept <code>&lt;type&gt; &lt;title&gt;</code> arguments; validate
-type is one of rfc/adr/design/impl; resolve author from <code>--author</code> flag,
-then config, then <code>git config user.name</code>, then &quot;Unknown&quot;; call
-<code>internal/document</code> create logic; print confirmation with file path and
-next-steps hints; register <code>--status</code>, <code>--author</code>, <code>--no-update</code> flags</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add author resolution helper: check flag, then config <code>author.default</code>,
-then <code>git config user.name</code> (exec <code>git config user.name</code> and trim),
-then fallback string</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write integration tests for <code>docz init</code>: test directory/file creation,
-idempotency (safe to run twice), <code>--force</code> overwrites READMEs</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write integration tests for <code>docz create</code>: test file creation with
-correct filename, frontmatter content, auto-increment IDs, duplicate
-filename rejection, invalid type rejection</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write golden file tests: render each of the four templates with sample
-data and compare against checked-in expected output files</div></li>
+<ul class="tasks" id="tasks-1">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Move <code>main.go</code> to <code>cmd/docz/main.go</code> to follow the standard Go project layout (<code>cmd/&lt;name&gt;/main.go</code>). Update the <code>main</code> package to import <code>github.com/donaldgifford/docz/cmd</code>. The Makefile <code>build-core</code> target already points to <code>./cmd/$(PROJECT_NAME)</code> so this aligns with it</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Update <code>cmd/root.go</code>: replace boilerplate descriptions with actual docz descriptions; integrate config loading via <code>internal/config</code> in <code>initConfig()</code>; register <code>--docs-dir</code> and <code>--verbose</code> persistent flags; remove the placeholder <code>--toggle</code> flag</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/version.go</code>: define <code>var Version</code> and <code>var Commit</code> in the <code>cmd</code> package; Makefile ldflags will target <code>-X github.com/donaldgifford/docz/cmd.Version=...</code> and <code>-X github.com/donaldgifford/docz/cmd.Commit=...</code>; register <code>version</code> as subcommand of root that prints these values</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/init.go</code>: create <code>.docz.yaml</code> at repo root if it doesn't exist (write default config); create <code>docs/{rfc,adr,design,impl}/</code> directories (mkdir -p semantics); write default <code>README.md</code> index files into each directory using embedded index header templates with an empty auto-generated table section; skip existing README files unless <code>--force</code> is passed; register <code>--force</code> flag</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>internal/document/create.go</code>: scan target directory for <code>NNNN-*.md</code> files to find next ID number; build <code>TemplateData</code> from inputs; resolve and render the template; write the output file; return the created file path</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/create.go</code>: accept <code>&lt;type&gt; &lt;title&gt;</code> arguments; validate type is one of rfc/adr/design/impl; resolve author from <code>--author</code> flag, then config, then <code>git config user.name</code>, then &quot;Unknown&quot;; call <code>internal/document</code> create logic; print confirmation with file path and next-steps hints; register <code>--status</code>, <code>--author</code>, <code>--no-update</code> flags</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Add author resolution helper: check flag, then config <code>author.default</code>, then <code>git config user.name</code> (exec <code>git config user.name</code> and trim), then fallback string</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write integration tests for <code>docz init</code>: test directory/file creation, idempotency (safe to run twice), <code>--force</code> overwrites READMEs</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write integration tests for <code>docz create</code>: test file creation with correct filename, frontmatter content, auto-increment IDs, duplicate filename rejection, invalid type rejection</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write golden file tests: render each of the four templates with sample data and compare against checked-in expected output files</span></li>
 </ul>
 <h5 id="success-criteria-1">Success Criteria</h5>
 <ul>
@@ -238,43 +191,19 @@ correct frontmatter and template content</li>
 <li><code>docz create badtype &quot;Title&quot;</code> exits with a clear error</li>
 <li><code>docz version</code> prints version and commit hash</li>
 </ul>
-<h4 id="phase-3-index-generation----update">Phase 3: Index Generation -- <code>update</code></h4>
+</div>
+<div class="card phase" id="phase-3-index-generation----update">
+<div class="phase-head"><h3>Phase 3: Index Generation -- <code>update</code></h3><span class="progress">6 / 6</span></div>
+<div class="bar"><i style="width: 100%"></i></div>
 <p>Implement the index/README generation system that reads YAML frontmatter from
 all documents in a type directory and produces an auto-generated table.</p>
-<h5 id="tasks-2">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>internal/index/index.go</code>:
-<ul>
-<li><code>ScanDocuments(dir string) ([]Frontmatter, error)</code> -- find all
-<code>NNNN-*.md</code> files in a directory, parse frontmatter from each, skip files
-without valid frontmatter (no error, silent skip), return sorted by ID</li>
-<li><code>GenerateTable(docs []Frontmatter) string</code> -- produce a markdown table
-with columns: ID, Title, Status, Date, Author, Link</li>
-<li><code>UpdateReadme(readmePath string, tableContent string) error</code> -- read
-existing README, find <code>&lt;!-- BEGIN DOCZ AUTO-GENERATED --&gt;</code> and
-<code>&lt;!-- END DOCZ AUTO-GENERATED --&gt;</code> markers, replace content between
-them with new table. If markers don't exist and the file exists, <strong>do
-not modify the file</strong> -- print a warning telling the user to run
-<code>docz init --force</code> or manually add the markers. If the file doesn't
-exist, create it with the default index header template plus the
-markers and table</li>
-</ul>
-</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/update.go</code>: accept optional <code>[type]</code> argument; if no type
-given, update all four; for each type, resolve the directory path from
-config, call <code>ScanDocuments</code> and <code>UpdateReadme</code>; register <code>--dry-run</code>
-flag that prints what would change without writing</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Wire <code>docz create</code> to automatically call <code>update</code> after creating a
-document (unless <code>--no-update</code> is passed)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write unit tests for <code>internal/index/</code>: table generation with 0, 1, and
-multiple documents; README update with existing markers; README without
-markers is not modified (warning emitted); README creation from scratch
-when file doesn't exist; preservation of content above the begin marker</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write integration tests for <code>docz update</code>: create several documents,
-run update, verify README contents; test <code>--dry-run</code> produces no file
-changes; test empty directory produces empty table</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write golden file tests for index generation: compare generated README
-output against checked-in expected files for various scenarios</div></li>
+<ul class="tasks" id="tasks-2">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>internal/index/index.go</code>:</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/update.go</code>: accept optional <code>[type]</code> argument; if no type given, update all four; for each type, resolve the directory path from config, call <code>ScanDocuments</code> and <code>UpdateReadme</code>; register <code>--dry-run</code> flag that prints what would change without writing</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Wire <code>docz create</code> to automatically call <code>update</code> after creating a document (unless <code>--no-update</code> is passed)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write unit tests for <code>internal/index/</code>: table generation with 0, 1, and multiple documents; README update with existing markers; README without markers is not modified (warning emitted); README creation from scratch when file doesn't exist; preservation of content above the begin marker</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write integration tests for <code>docz update</code>: create several documents, run update, verify README contents; test <code>--dry-run</code> produces no file changes; test empty directory produces empty table</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write golden file tests for index generation: compare generated README output against checked-in expected files for various scenarios</span></li>
 </ul>
 <h5 id="success-criteria-2">Success Criteria</h5>
 <ul>
@@ -288,43 +217,23 @@ preserved across updates</li>
 <li><code>docz create rfc &quot;Title&quot; --no-update</code> skips the index update</li>
 <li><code>docz update --dry-run</code> outputs what would change but writes nothing</li>
 </ul>
-<h4 id="phase-4-listing-and-template-management----list-template">Phase 4: Listing and Template Management -- <code>list</code>, <code>template</code></h4>
+</div>
+<div class="card phase" id="phase-4-listing-and-template-management----list-template">
+<div class="phase-head"><h3>Phase 4: Listing and Template Management -- <code>list</code>, <code>template</code></h3><span class="progress">10 / 10</span></div>
+<div class="bar"><i style="width: 100%"></i></div>
 <p>Add the remaining read-only commands for listing documents and managing
 templates.</p>
-<h5 id="tasks-3">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/list.go</code>: accept optional <code>[type]</code> argument; if no type
-given, list across all four types; use <code>internal/index.ScanDocuments</code> to
-read documents; display as a formatted table to stdout (ID, Title,
-Status, Date, Author, Type); register <code>--status</code> flag to filter by
-status (case-insensitive match); register <code>--format</code> flag supporting
-<code>table</code> (default), <code>json</code>, <code>csv</code> output</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement table formatter: aligned columns using <code>text/tabwriter</code></div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement JSON output: marshal document list as JSON array to stdout</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement CSV output: write CSV with header row to stdout</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/template.go</code> with three subcommands:
-<ul>
-<li><code>template show &lt;type&gt;</code> -- resolve the template for the given type and
-print it to stdout (raw template text, not rendered)</li>
-<li><code>template export &lt;type&gt; [path]</code> -- resolve the template and write it to
-a file at the given path (default: <code>./&lt;type&gt;.md</code>)</li>
-<li><code>template override &lt;type&gt;</code> -- copy the resolved template into the local
-overrides directory (<code>&lt;docs_dir&gt;/templates/&lt;type&gt;.md</code>) so the user can
-edit it; fail if the override file already exists</li>
-</ul>
-</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>cmd/config.go</code>: print the fully resolved configuration
-(merged repo + global + defaults) as YAML to stdout</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write unit tests for list formatting: table alignment, JSON structure,
-CSV correctness, status filtering</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write integration tests for <code>docz list</code>: list with documents present,
-list with no documents, list filtered by type and status, JSON and CSV
-output formats</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write integration tests for <code>docz template show/export/override</code>: verify
-correct template is printed/written, override creates file in correct
-location, override fails if file exists</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write integration test for <code>docz config</code>: verify merged output matches
-expected resolved config</div></li>
+<ul class="tasks" id="tasks-3">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/list.go</code>: accept optional <code>[type]</code> argument; if no type given, list across all four types; use <code>internal/index.ScanDocuments</code> to read documents; display as a formatted table to stdout (ID, Title, Status, Date, Author, Type); register <code>--status</code> flag to filter by status (case-insensitive match); register <code>--format</code> flag supporting <code>table</code> (default), <code>json</code>, <code>csv</code> output</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement table formatter: aligned columns using <code>text/tabwriter</code></span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement JSON output: marshal document list as JSON array to stdout</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement CSV output: write CSV with header row to stdout</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/template.go</code> with three subcommands:</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Implement <code>cmd/config.go</code>: print the fully resolved configuration (merged repo + global + defaults) as YAML to stdout</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write unit tests for list formatting: table alignment, JSON structure, CSV correctness, status filtering</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write integration tests for <code>docz list</code>: list with documents present, list with no documents, list filtered by type and status, JSON and CSV output formats</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write integration tests for <code>docz template show/export/override</code>: verify correct template is printed/written, override creates file in correct location, override fails if file exists</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Write integration test for <code>docz config</code>: verify merged output matches expected resolved config</span></li>
 </ul>
 <h5 id="success-criteria-3">Success Criteria</h5>
 <ul>
@@ -338,36 +247,24 @@ expected resolved config</div></li>
 <li><code>docz template override adr</code> creates <code>docs/templates/adr.md</code></li>
 <li><code>docz config</code> prints the fully resolved YAML configuration</li>
 </ul>
-<h4 id="phase-5-polish-error-handling-and-ci-readiness">Phase 5: Polish, Error Handling, and CI Readiness</h4>
+</div>
+<div class="card phase" id="phase-5-polish-error-handling-and-ci-readiness">
+<div class="phase-head"><h3>Phase 5: Polish, Error Handling, and CI Readiness</h3><span class="progress">11 / 11</span></div>
+<div class="bar"><i style="width: 100%"></i></div>
 <p>Harden the tool with edge case handling, improve user-facing output, ensure
 the Makefile build pipeline works end-to-end, and prepare for release.</p>
-<h5 id="tasks-4">Tasks</h5>
-<ul class="tasks">
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Audit all commands for consistent error messages: invalid arguments,
-missing directories, permission errors, file-already-exists errors</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>--verbose</code> flag behavior: when set, print additional context during
-operations (template resolution path chosen, config file locations
-checked, files scanned during update)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Validate config on load: warn on unknown keys, error on invalid type
-names, error on empty statuses list</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Handle edge cases in ID assignment: directories with non-sequential IDs,
-directories with only non-matching files, empty directories</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Handle edge cases in slug generation: titles with unicode, titles that
-are all special characters, very long titles (truncate slug at a
-reasonable length), empty title after slug conversion</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>Makefile</code> <code>build-core</code> target: update ldflags to target
-<code>github.com/donaldgifford/docz/cmd.Version</code> and
-<code>github.com/donaldgifford/docz/cmd.Commit</code> instead of <code>main.version</code>
-and <code>main.commit</code> (build path <code>./cmd/$(PROJECT_NAME)</code> is now correct
-after the <code>main.go</code> move in Phase 2)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>Makefile</code> targets for docz operations: <code>make docs-init</code>,
-<code>make docs-update</code>, etc. as convenience wrappers</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Ensure <code>make ci</code> passes: <code>lint</code>, <code>test</code>, <code>build</code>, <code>license-check</code> all
-succeed</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Ensure <code>make test-coverage</code> reports reasonable coverage across
-<code>internal/</code> packages (target: &gt;80%)</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Review and clean up any TODO/FIXME comments left during implementation</div></li>
-<li data-state="done"><input type="checkbox" checked disabled><div class="text">Verify <code>go vet ./...</code> and <code>golangci-lint run ./...</code> produce no warnings</div></li>
+<ul class="tasks" id="tasks-4">
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Audit all commands for consistent error messages: invalid arguments, missing directories, permission errors, file-already-exists errors</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Add <code>--verbose</code> flag behavior: when set, print additional context during operations (template resolution path chosen, config file locations checked, files scanned during update)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Validate config on load: warn on unknown keys, error on invalid type names, error on empty statuses list</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Handle edge cases in ID assignment: directories with non-sequential IDs, directories with only non-matching files, empty directories</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Handle edge cases in slug generation: titles with unicode, titles that are all special characters, very long titles (truncate slug at a reasonable length), empty title after slug conversion</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Update <code>Makefile</code> <code>build-core</code> target: update ldflags to target <code>github.com/donaldgifford/docz/cmd.Version</code> and <code>github.com/donaldgifford/docz/cmd.Commit</code> instead of <code>main.version</code> and <code>main.commit</code> (build path <code>./cmd/$(PROJECT_NAME)</code> is now correct after the <code>main.go</code> move in Phase 2)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Add <code>Makefile</code> targets for docz operations: <code>make docs-init</code>, <code>make docs-update</code>, etc. as convenience wrappers</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Ensure <code>make ci</code> passes: <code>lint</code>, <code>test</code>, <code>build</code>, <code>license-check</code> all succeed</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Ensure <code>make test-coverage</code> reports reasonable coverage across <code>internal/</code> packages (target: &gt;80%)</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Review and clean up any TODO/FIXME comments left during implementation</span></li>
+<li data-state="done"><input type="checkbox" checked disabled><span class="text">Verify <code>go vet ./...</code> and <code>golangci-lint run ./...</code> produce no warnings</span></li>
 </ul>
 <h5 id="success-criteria-4">Success Criteria</h5>
 <ul>
@@ -379,6 +276,7 @@ succeed</div></li>
 <li><code>--verbose</code> flag produces useful debugging output for each command</li>
 <li>The built binary at <code>build/bin/docz</code> runs correctly for all commands</li>
 </ul>
+</div>
 
 </section>
 <section class="panel" id="p-changes">

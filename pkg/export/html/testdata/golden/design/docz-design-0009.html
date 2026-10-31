@@ -100,7 +100,9 @@ cross-repo docz registry and viewer&quot;) and honors its locked decisions. It i
 written to seed a brand-new <code>docz-site</code> git repository, so it restates the
 essential context rather than assuming the docz or docz-api repos are open.</p>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
-<h4 id="goals">Goals</h4>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
 <ul>
 <li><strong>One URL for all docz documents.</strong> Navigate repos → a repo → its doc types →
 the documents of a type → open and read one document, with breadcrumbs
@@ -121,7 +123,9 @@ end-to-end before building the full navigation, search, and auth.</li>
 <li><strong>A responsive layout</strong> — sidebar navigation + content area — that degrades to
 a single column on small screens.</li>
 </ul>
-<h4 id="non-goals">Non-Goals</h4>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
 <ul>
 <li><strong>Authoring or editing documents.</strong> docz-site is read-only; docs are created
 and mutated by the docz CLI in their source repos.</li>
@@ -140,6 +144,8 @@ are complementary.</li>
 returns; the policy (GitHub repo access vs. OIDC group claims) lives in
 docz-api.</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-background">

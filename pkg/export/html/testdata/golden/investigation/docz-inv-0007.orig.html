@@ -148,7 +148,8 @@ extraction, path validation, filename classification).</li>
 <li><a href="#f6-globs-cannot-be-expanded-by-docz-in-the-consumers-model">F6. Globs cannot be expanded by docz in the consumer&#39;s model</a></li>
 <li><a href="#f7-wiki-exclude-and-api-additional_docs-disagree-about-examples">F7. wiki exclude and api additional_docs disagree about examples</a></li>
 </ul>
-<h4 id="f1-the-config-block-itself-is-genuinely-small">F1. The config block itself is genuinely small</h4>
+<div class="card" id="f1-the-config-block-itself-is-genuinely-small">
+<p class="card-label">F1. The config block itself is genuinely small</p>
 <p>The <code>changelog:</code> precedent is a fair estimate for the <code>api:</code> block. Everything
 <code>ChangelogConfig</code> needed lives in one package:</p>
 <ul>
@@ -163,7 +164,9 @@ extraction, path validation, filename classification).</li>
 <p><code>api:</code> is a deeper shape (a nested <code>index:</code> object and a string slice rather
 than two scalars), but nothing about it is structurally new. <strong>This half of the
 hypothesis holds.</strong></p>
-<h4 id="f2-there-is-no-public-way-to-get-a-title-out-of-a-frontmatter-less-markdown-file">F2. There is no public way to get a title out of a frontmatter-less markdown file</h4>
+</div>
+<div class="card" id="f2-there-is-no-public-way-to-get-a-title-out-of-a-frontmatter-less-markdown-file">
+<p class="card-label">F2. There is no public way to get a title out of a frontmatter-less markdown file</p>
 <p>This is the finding that breaks the assumption.</p>
 <p>Every document docz currently describes has YAML frontmatter, so a display
 title is always <code>Frontmatter.Title</code>. <code>additional_docs</code> points at
@@ -200,7 +203,9 @@ all of which <code>docparse</code> already implements and pins with goldens — 
 codebase, where it will drift. This is the precise failure mode ADR-0001's
 &quot;one definition module-wide&quot; rule exists to prevent (<code>docwrite.CheckTask</code>
 validating through <code>docparse.TaskItems</code> is the same rule applied earlier).</p>
-<h4 id="f3-the-path-validation-rules-exist-but-are-not-reusable">F3. The path-validation rules exist but are not reusable</h4>
+</div>
+<div class="card" id="f3-the-path-validation-rules-exist-but-are-not-reusable">
+<p class="card-label">F3. The path-validation rules exist but are not reusable</p>
 <p><code>additional_docs</code> entries are repo-relative paths fetched out of a git tree —
 byte for byte the same trust problem as <code>changelog.file</code>. IMPL-0015 hardened
 that path against traversal, host-dependent separator semantics, <code>~</code>
@@ -217,7 +222,9 @@ drift apart the next time one is hardened.</p>
 <p>Note this is <em>internal</em> reuse — no new export is required, since validation
 runs inside <code>Validate()</code> and the consumer only sees the error. That keeps the
 fix cheap.</p>
-<h4 id="f4-additional-docs-have-no-id-and-the-whole-downstream-contract-is-keyed-on-id">F4. Additional docs have no id, and the whole downstream contract is keyed on id</h4>
+</div>
+<div class="card" id="f4-additional-docs-have-no-id-and-the-whole-downstream-contract-is-keyed-on-id">
+<p class="card-label">F4. Additional docs have no id, and the whole downstream contract is keyed on id</p>
 <p>DESIGN-0009's route map addresses a document as:</p>
 <pre><code>/:owner/:repo/:type/:docId      e.g. .../design/DESIGN-0009
 </code></pre>
@@ -242,7 +249,9 @@ rather than discovering during implementation:</p>
 <p>This is a docz-site/docz-api concern, not a docz-CLI one — but it determines
 whether <code>additional_docs</code> needs to carry anything beyond a path (a slug? a
 title override? a nav position?), which <em>is</em> a docz config-schema question.</p>
-<h4 id="f5-the-ingestion-fetcher-filters-the-tree-by-type-dir-so-additional-docs-are-invisible-to-it">F5. The ingestion fetcher filters the tree by type dir, so additional docs are invisible to it</h4>
+</div>
+<div class="card" id="f5-the-ingestion-fetcher-filters-the-tree-by-type-dir-so-additional-docs-are-invisible-to-it">
+<p class="card-label">F5. The ingestion fetcher filters the tree by type dir, so additional docs are invisible to it</p>
 <p>DESIGN-0008 step 1 is explicit:</p>
 <blockquote>
 <p>filter to <code>.docz.yaml</code> and blobs under <code>docs_dir/&lt;type.dir&gt;/</code></p>
@@ -258,7 +267,9 @@ consumer picks up for free by reading the config — it changes the pipeline.</p
 fails it by construction. Any consumer loop written as &quot;scan dir → keep
 <code>IsDoczFile</code>&quot; silently drops all of them. Worth stating in the contract so it
 is not rediscovered as a bug.</p>
-<h4 id="f6-globs-cannot-be-expanded-by-docz-in-the-consumers-model">F6. Globs cannot be expanded by docz in the consumer's model</h4>
+</div>
+<div class="card" id="f6-globs-cannot-be-expanded-by-docz-in-the-consumers-model">
+<p class="card-label">F6. Globs cannot be expanded by docz in the consumer's model</p>
 <p>The natural next request after <code>additional_docs</code> is <code>docs/examples/*.md</code>. docz
 cannot expand that for docz-api: pattern expansion needs a listing, docz-api
 has a git tree rather than a filesystem, and <code>pkg/doczcore</code> is
@@ -268,13 +279,16 @@ case docz's role is to define the syntax and validate it, not to resolve it),
 or v1 ships literal paths only. The CLI could expand globs locally via
 <code>filepath.Glob</code> and diverge from the consumer — which would be worse than not
 supporting them.</p>
-<h4 id="f7-wiki-exclude-and-api-additional_docs-disagree-about-examples">F7. wiki exclude and api additional_docs disagree about examples</h4>
+</div>
+<div class="card" id="f7-wiki-exclude-and-api-additional_docs-disagree-about-examples">
+<p class="card-label">F7. wiki exclude and api additional_docs disagree about examples</p>
 <p><code>DefaultConfig()</code> sets <code>Wiki.Exclude: []string{&quot;templates&quot;, &quot;examples&quot;}</code>, and
 the drafted <code>api:</code> block lists <code>./docs/examples/README.md</code> as an additional
 doc. Both are defensible — the MkDocs nav and the docz-site surface are
 different products — but a reader will notice one config excluding what the
 other includes. Worth an explicit sentence rather than leaving it as apparent
 inconsistency.</p>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">

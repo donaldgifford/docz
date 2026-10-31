@@ -83,6 +83,7 @@ Issue #103 records the facts.</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <ol>
 <li><p><strong>Remove the <code>plan</code> registry entry</strong> from <code>pkg/doczcore/config/doctype.go</code>.
 <code>DocTypeNames()</code>, <code>TypesHelp()</code>, <code>DefaultConfig().Types</code>, and
@@ -131,6 +132,7 @@ Scope). The docz-api half of this decision stands as written.</p>
 </blockquote>
 </li>
 </ol>
+</div>
 <h4 id="supporting-data">Supporting Data</h4>
 <div class="table-wrap">
 <table>
@@ -200,7 +202,9 @@ Scope). The docz-api half of this decision stands as written.</p>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li><strong>One word, one meaning.</strong> &quot;Plan&quot; no longer names a docz type; the IMPL
 model's vocabulary (phases, tasks) has no built-in neighbour to collide
@@ -211,7 +215,9 @@ uses.</li>
 <li><strong>Custom-type support is exercised for real.</strong> The legacy-block fallback
 is the DESIGN-0006 path with a real config on it.</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li><strong>A removal from a frozen catalogue.</strong> <code>config.DocTypeNames()</code> and
 <code>LookupDocType</code> are v1.0 contract; dropping a value is a breaking change,
@@ -223,6 +229,8 @@ fixed.</li>
 A repo that wants PLAN back writes the template from scratch or copies it
 from git history.</li>
 </ul>
+</div>
+</div>
 <h4 id="neutral">Neutral</h4>
 <ul>
 <li><strong>Sequencing with #99</strong> (index header scaffolding) touches the same file;
@@ -236,20 +244,12 @@ its fallback can still produce a PLAN file that the CLI treats as custom.</li>
 <section class="panel" id="p-alternatives">
 <h2 class="panel-title">Alternatives</h2>
 <h3 id="alternatives-considered">Alternatives Considered</h3>
-<ul>
-<li><strong>A. Keep it disabled</strong> (status quo since v1.1.1). <em>Pros:</em> nothing to do.
-<em>Cons:</em> the confusion, the dead templates, the help text, and the tests
-stay; the naming problem recurs with every type package.</li>
-<li><strong>B. Deprecate, then remove in v2.</strong> Warn on load when <code>types.plan.enabled</code>
-is true for one minor, remove at the next major. <em>Pros:</em> semver-clean.
-<em>Cons:</em> a warning for a type with zero documents, and a v2 that has no
-other reason to exist.</li>
-<li><strong>C. Rename the built-in</strong> (<code>roadmap</code>, <code>outline</code>). <em>Pros:</em> keeps the slot.
-<em>Cons:</em> renames an unused type; the slot itself is what the fleet does not
-use.</li>
-<li><strong>D. This ADR.</strong> Remove it, document the custom-type fallback, decide the
-semver treatment explicitly.</li>
-</ul>
+<div class="grid g2">
+<div class="card"><p class="card-label">a. Keep it disabled</p><p>(status quo since v1.1.1). <em>Pros:</em> nothing to do. <em>Cons:</em> the confusion, the dead templates, the help text, and the tests stay; the naming problem recurs with every type package.</p></div>
+<div class="card"><p class="card-label">b. Deprecate, then remove in v2.</p><p>Warn on load when <code>types.plan.enabled</code> is true for one minor, remove at the next major. <em>Pros:</em> semver-clean. <em>Cons:</em> a warning for a type with zero documents, and a v2 that has no other reason to exist.</p></div>
+<div class="card"><p class="card-label">c. Rename the built-in</p><p>(<code>roadmap</code>, <code>outline</code>). <em>Pros:</em> keeps the slot. <em>Cons:</em> renames an unused type; the slot itself is what the fleet does not use.</p></div>
+<div class="card"><p class="card-label">d. This ADR.</p><p>Remove it, document the custom-type fallback, decide the semver treatment explicitly.</p></div>
+</div>
 
 </section>
 <section class="panel" id="p-open-questions">

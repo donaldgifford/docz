@@ -272,7 +272,8 @@ identify the highest-confidence (multi-agent agreement) issues.</p>
 </ul>
 <p>The findings are grouped by severity and theme. Items marked <strong>[multi-agent]</strong>
 were flagged independently by two or more review agents.</p>
-<h4 id="critical-testability-blockers">Critical: Testability blockers</h4>
+<div class="card" id="critical-testability-blockers">
+<p class="card-label">Critical: Testability blockers</p>
 <h5 id="f1-package-level-globals-in-cmd-prevent-parallel-testing-multi-agent">F1. Package-level globals in <code>cmd/</code> prevent parallel testing [multi-agent]</h5>
 <p><strong>Files:</strong> <code>cmd/root.go:29-34</code>, <code>cmd/init.go:14</code>, <code>cmd/create.go:16-20</code>,
 <code>cmd/update.go:16</code>, <code>cmd/list.go:19-22</code>, <code>cmd/wiki.go:16-21</code></p>
@@ -330,7 +331,9 @@ loading must <code>os.Chdir</code> into a temp dir and use <code>t.Cleanup</code
 process-wide state — tests cannot run in parallel even within a single test
 file. Fix: change <code>Load(configFile string)</code> to
 <code>Load(configFile, repoRoot string)</code> and read from <code>repoRoot</code> instead.</p>
-<h4 id="critical-correctness-bugs">Critical: Correctness bugs</h4>
+</div>
+<div class="card" id="critical-correctness-bugs">
+<p class="card-label">Critical: Correctness bugs</p>
 <h5 id="f7-config-validation-error-swallowed-at-startup-multi-agent">F7. Config validation error swallowed at startup [multi-agent]</h5>
 <p><strong>File:</strong> <code>cmd/root.go:72-79</code></p>
 <pre><code class="language-go">warnings, validErr := cfg.Validate()
@@ -388,7 +391,9 @@ trace is lost and the message provides no context about which operation failed.<
 <p>Returning both a usable value and an error is an unusual API contract that
 invites bugs in callers. The wiki package already checks <code>err != nil</code> and
 discards the value, but the contract should be one-or-the-other.</p>
-<h4 id="high-three-way-duplication-of-defaults-multi-agent">High: Three-way duplication of defaults [multi-agent]</h4>
+</div>
+<div class="card" id="high-three-way-duplication-of-defaults-multi-agent">
+<p class="card-label">High: Three-way duplication of defaults [multi-agent]</p>
 <h5 id="f12-cmdinitgowritedefaultconfig-hardcodes-yaml-that-duplicates-defaultconfig">F12. <code>cmd/init.go:writeDefaultConfig()</code> hardcodes YAML that duplicates <code>DefaultConfig()</code></h5>
 <p><strong>Files:</strong> <code>cmd/init.go:60-183</code> (100+ lines of literal YAML),
 <code>internal/config/config.go:66-144</code> (Go-literal version),
@@ -402,7 +407,9 @@ defaults.</p>
 <code>yaml.Marshal(config.DefaultConfig())</code>. Either derive <code>setDefaults</code> from the
 struct via reflection or remove it in favor of pre-defaulted struct
 unmarshalling.</p>
-<h4 id="high-library-returns-user-facing-strings">High: Library returns user-facing strings</h4>
+</div>
+<div class="card" id="high-library-returns-user-facing-strings">
+<p class="card-label">High: Library returns user-facing strings</p>
 <h5 id="f13-internalindex-returns-user-facing-messages-as-msg-err-multi-agent">F13. <code>internal/index</code> returns user-facing messages as <code>(msg, err)</code> [multi-agent]</h5>
 <p><strong>Files:</strong> <code>internal/index/index.go:92</code> (<code>UpdateReadme(...) (string, error)</code>),
 <code>internal/index/index.go:117</code> (<code>DryRunReadme</code>)</p>
@@ -412,7 +419,9 @@ starting with <code>&quot;Warning:&quot;</code> that the caller is supposed to i
 <p><strong>Fix:</strong> Return a typed result like
 <code>type UpdateOutcome { Action UpdateAction; Path string }</code>. The cmd layer formats
 the user-facing message.</p>
-<h4 id="high-domain-modeling--doctype-scattered">High: Domain modeling — <code>DocType</code> scattered</h4>
+</div>
+<div class="card" id="high-domain-modeling--doctype-scattered">
+<p class="card-label">High: Domain modeling — <code>DocType</code> scattered</p>
 <h5 id="f14-document-type-expressed-in-6-locations-with-no-compile-time-enforcement-multi-agent">F14. &quot;Document type&quot; expressed in 6+ locations with no compile-time enforcement [multi-agent]</h5>
 <div class="table-wrap">
 <table>
@@ -477,7 +486,9 @@ type names. Iterate that single method instead of the slice + map lookup.</p>
 <p>Should be <code>type DocType string</code> and <code>type Status string</code> with constants and
 validation methods. Currently every command does manual <code>strings.ToLower</code> +
 <code>ResolveTypeAlias</code> + map lookup + error wrapping.</p>
-<h4 id="high-stranded-business-logic-in-cmd">High: Stranded business logic in <code>cmd/</code></h4>
+</div>
+<div class="card" id="high-stranded-business-logic-in-cmd">
+<p class="card-label">High: Stranded business logic in <code>cmd/</code></p>
 <h5 id="f17-cmdwikigowritemkdocsyaml-is-business-logic-not-command-wiring">F17. <code>cmd/wiki.go:writeMkDocsYAML</code> is business logic, not command wiring</h5>
 <p><strong>File:</strong> <code>cmd/wiki.go:247-288</code></p>
 <p>Constructs the initial <code>mkdocs.yml</code> content by manual string building. Knows the
@@ -499,7 +510,9 @@ through <code>updateType</code> which also writes README.</p>
 <code>wiki.ReadMkDocs</code>, <code>wiki.ExistingNavOrder</code>, then either <code>MergeNavOrder</code> or
 <code>SortEntries</code>. Diverge only at the final output step.</p>
 <p><strong>Fix:</strong> Extract shared nav-building helper that returns <code>[]wiki.NavEntry</code>.</p>
-<h4 id="medium-package-boundary-issues">Medium: Package boundary issues</h4>
+</div>
+<div class="card" id="medium-package-boundary-issues">
+<p class="card-label">Medium: Package boundary issues</p>
 <h5 id="f20-internalindex-has-three-responsibilities">F20. <code>internal/index</code> has three responsibilities</h5>
 <p><strong>File:</strong> <code>internal/index/index.go</code></p>
 <p>Package currently handles:</p>
@@ -538,7 +551,9 @@ word-boundary truncation.</li>
 <p>Both exported, both named <code>Slugify</code>. Confusing for any code that imports both.</p>
 <p><strong>Fix:</strong> Rename to <code>template.FilenameSlug</code> and <code>toc.AnchorSlug</code>. Document the
 GitHub anchor algorithm reference in the toc one.</p>
-<h4 id="medium-stutter-and-naming">Medium: Stutter and naming</h4>
+</div>
+<div class="card" id="medium-stutter-and-naming">
+<p class="card-label">Medium: Stutter and naming</p>
 <h5 id="f24-templatetemplatedata-stutters-with-package-name-multi-agent">F24. <code>template.TemplateData</code> stutters with package name [multi-agent]</h5>
 <p><strong>File:</strong> <code>internal/template/template.go:14</code></p>
 <p>Reads as <code>template.TemplateData</code> — <code>templateTemplateData</code>. Per Go convention,
@@ -561,7 +576,9 @@ the package's purpose is clear from the import path. Rename to <code>template.Da
 Per Uber guide, named returns should be reserved for clarification or <code>defer</code>
 use. Inverted footgun: a future bare <code>return</code> silently returns whatever was
 assigned.</p>
-<h4 id="medium-mechanical--style-fixes">Medium: Mechanical / style fixes</h4>
+</div>
+<div class="card" id="medium-mechanical--style-fixes">
+<p class="card-label">Medium: Mechanical / style fixes</p>
 <h5 id="f28-osisnotexisterr-instead-of-errorsiserr-fserrnotexist-multi-agent">F28. <code>os.IsNotExist(err)</code> instead of <code>errors.Is(err, fs.ErrNotExist)</code> [multi-agent]</h5>
 <p><strong>Files:</strong> <code>cmd/wiki.go:120</code>, <code>internal/index/index.go:36,95,120</code></p>
 <p>The legacy form does not unwrap error chains. Modern idiom since Go 1.13 is
@@ -641,7 +658,9 @@ constant matching <code>formatJSON</code>.</p>
     TemplatesDir   = &#34;templates&#34;
 )
 </code></pre>
-<h4 id="medium-duplication-patterns">Medium: Duplication patterns</h4>
+</div>
+<div class="card" id="medium-duplication-patterns">
+<p class="card-label">Medium: Duplication patterns</p>
 <h5 id="f38-unknown-document-type-q-valid-types-s-error-repeated-4-times-multi-agent">F38. <code>unknown document type %q (valid types: %s)</code> error repeated 4 times [multi-agent]</h5>
 <p><strong>Files:</strong> <code>cmd/create.go:55-56</code>, <code>cmd/list.go:56-57</code>,
 <code>cmd/template.go:141-142</code>, <code>cmd/update.go:39-40</code></p>
@@ -662,7 +681,9 @@ if !ok || !tc.Enabled {
 }
 </code></pre>
 <p><strong>Fix:</strong> <code>Config.EnabledTypes() []string</code> (see F15).</p>
-<h4 id="medium-performance--actually-worth-fixing">Medium: Performance — actually worth fixing</h4>
+</div>
+<div class="card" id="medium-performance--actually-worth-fixing">
+<p class="card-label">Medium: Performance — actually worth fixing</p>
 <h5 id="f41-files-read-twice-during-docz-update-multi-agent">F41. Files read twice during <code>docz update</code> [multi-agent]</h5>
 <p><strong>Files:</strong> <code>cmd/update.go:70</code> + <code>cmd/update.go:113</code>,
 <code>internal/index/index.go:48</code></p>
@@ -680,7 +701,9 @@ headings := toc.ParseHeadings(string(data))           // called again, same cont
 </code></pre>
 <p><strong>Fix:</strong> Change <code>UpdateToC</code> to return headings:
 <code>UpdateToC(content string, minHeadings int) (updated string, headings []Heading, found bool)</code>.</p>
-<h4 id="low-performance--leave-alone">Low: Performance — leave alone</h4>
+</div>
+<div class="card" id="low-performance--leave-alone">
+<p class="card-label">Low: Performance — leave alone</p>
 <p>Per the performance review, these were considered and rejected as premature
 optimization for a CLI:</p>
 <ul>
@@ -695,7 +718,9 @@ with no measurable gain.</li>
 <li><code>internal/wiki/wiki.go:24</code> sequential directory walk — OS page cache handles
 this efficiently.</li>
 </ul>
-<h4 id="low-minor-cleanups">Low: Minor cleanups</h4>
+</div>
+<div class="card" id="low-minor-cleanups">
+<p class="card-label">Low: Minor cleanups</p>
 <h5 id="f43-run-vs-rune-inconsistency">F43. <code>Run</code> vs <code>RunE</code> inconsistency</h5>
 <p><strong>File:</strong> <code>cmd/version.go:21</code> uses <code>Run</code>; everything else uses <code>RunE</code>.</p>
 <p>Use <code>RunE</code> consistently. Costs nothing, future-proofs error returns.</p>
@@ -735,7 +760,9 @@ pre-defaulted struct unmarshalling.</p>
 <p>A nav entry can legally be a bare string in mkdocs.yml. The function only
 handles <code>map[string]any</code> items. A user-written <code>mkdocs.yml</code> with a top-level
 bare-string page could lose that entry on rewrite.</p>
-<h4 id="whats-already-good">What's already good</h4>
+</div>
+<div class="card" id="whats-already-good">
+<p class="card-label">What's already good</p>
 <p>The reviews explicitly called out the following as well-done patterns that
 should not change:</p>
 <ul>
@@ -755,13 +782,12 @@ tests, <code>t.TempDir()</code> for filesystem isolation.</li>
 <li><code>filepath.ToSlash</code> is correctly used in <code>internal/wiki/wiki.go:86</code> for
 cross-platform nav paths.</li>
 </ul>
+</div>
 
 </section>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
-<p><strong>Answer:</strong> Yes — there is significant, well-defined cleanup opportunity. The
-codebase is fundamentally sound (good package structure, solid test coverage, no
-concurrency or resource bugs) but suffers from three categories of debt:</p>
+<div class="verdict yes"><p class="card-label">Answer</p><p>Yes — there is significant, well-defined cleanup opportunity. The</p></div>
 <ol>
 <li><strong>Testability debt</strong> — package globals in <code>cmd/</code>, direct <code>os.Stdout</code> writes,
 implicit working-directory dependencies, and uninjected side-effects (time,

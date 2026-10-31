@@ -40,10 +40,12 @@ Realistic candidates:</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <p>Use <strong>Open Policy Agent (OPA) embedded as a Go library</strong> via
 <code>github.com/open-policy-agent/opa/rego</code> for evaluating agent capability-token
 scope checks at the framework's tool dispatcher and at out-of-process
 enforcement points (egress proxy, Vault JIT).</p>
+</div>
 <p>Policies are written in Rego, loaded from a <code>policies/</code> directory at framework
 startup, compiled once, and evaluated per call against cached compiled queries.</p>
 <p>The OPA daemon is <strong>not</strong> used. The framework links the OPA evaluator as a
@@ -108,7 +110,9 @@ glue.</p>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li><strong>Single policy language across IaC, K8s admission, agent capability, and
 egress.</strong> One Rego skill set serves four use cases.</li>
@@ -121,7 +125,9 @@ spaghetti without discipline, and the linter is the discipline.</li>
 <li><strong>Familiar idiom.</strong> OPA's <code>data.&lt;package&gt;.allow</code> and <code>input.&lt;...&gt;</code> patterns
 are widely documented; new engineers ramp in days.</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li><strong>Rego is its own language.</strong> New hires unfamiliar with it pay a learning
 cost. Mitigated by the existing Conftest usage — several team members already
@@ -136,7 +142,9 @@ Not a meaningful cost in a containerized deployment.</li>
 but assumes Rego literacy. Cedar has similar tooling but with a more
 approachable language. Net wash given the consistency benefit.</li>
 </ul>
-<h4 id="neutral">Neutral</h4>
+</div>
+<div class="card neutral" id="neutral">
+<p class="card-label">Neutral</p>
 <ul>
 <li><strong>Both OPA and Cedar are OSS, both have Go SDKs.</strong> Licensing and
 language-support concerns are equivalent.</li>
@@ -144,6 +152,8 @@ language-support concerns are equivalent.</li>
 <li><strong>Both are likely to remain healthy projects.</strong> OPA is CNCF graduated; Cedar
 is AWS-backed with growing community adoption. Neither is a survival risk.</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-alternatives">

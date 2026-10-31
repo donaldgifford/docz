@@ -102,7 +102,9 @@ scans the <code>docs/</code> directory and rebuilds the MkDocs <code>nav:</code>
 the current file structure — including docz-managed documents and any other
 markdown files in the docs tree.</p>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
-<h4 id="goals">Goals</h4>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
 <ul>
 <li>Generate a <code>mkdocs.yml</code> that works out of the box with <code>mkdocs serve</code> and
 Backstage TechDocs</li>
@@ -111,13 +113,17 @@ Backstage TechDocs</li>
 <li>Integrate with the existing <code>docz create</code> workflow so the nav stays current</li>
 <li>Support a reasonable default nav structure with zero configuration</li>
 </ul>
-<h4 id="non-goals">Non-Goals</h4>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
 <ul>
 <li>Building or serving the MkDocs site (use <code>mkdocs serve</code> / <code>mkdocs build</code>)</li>
 <li>Managing MkDocs themes, plugins, or extensions beyond <code>techdocs-core</code></li>
 <li>Supporting non-markdown content (images, PDFs are referenced but not tracked)</li>
 <li>Replacing MkDocs as the site generator</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-background">

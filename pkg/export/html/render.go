@@ -114,6 +114,7 @@ func Render(src []byte, opts RenderOptions) (Page, error) {
 	}
 
 	d := prepare(blankFrontmatter(src), &opts)
+	d.src = src
 	nr := d.md.nodes
 
 	panels, err := d.panels()
@@ -130,7 +131,7 @@ func Render(src []byte, opts RenderOptions) (Page, error) {
 
 	return Page{
 		ID: fm.ID, Title: fm.Title, Type: opts.Type, Body: out, Hash: hashOf(out),
-		Links: nr.links, Inferred: d.inferred, Problems: nr.problems,
+		Links: nr.links, Inferred: d.inferred, Problems: append(nr.problems, d.problems...),
 	}, nil
 }
 
@@ -143,6 +144,7 @@ func prepare(body []byte, opts *RenderOptions) *doc {
 		headings: docparse.Headings(body),
 		regions:  regions,
 		inferred: inferred,
+		skip:     make(map[int]bool),
 	}
 	d.tabs = outline(d.lines, regions, d.headings)
 	d.md = parseMarkdown(body, newNodeRenderer(opts, d.headings))
@@ -152,6 +154,7 @@ func prepare(body []byte, opts *RenderOptions) *doc {
 
 // doc is one document on its way to a page.
 type doc struct {
+	src      []byte // the source as given, for the type packages' Parse
 	body     []byte // the source, frontmatter lines blanked
 	lines    []string
 	headings []docparse.Heading
@@ -161,6 +164,14 @@ type doc struct {
 	md       *markdown
 	rendered []panel
 	summary  []byte
+
+	// skip holds the lines a panel leaves out: the header summary's
+	// paragraph, and each heading an element stands for.
+	skip map[int]bool
+	// filtered says the Phases panel has its filter bar.
+	filtered bool
+	facts    facts
+	problems []error
 }
 
 // blankFrontmatter returns a copy of src with the frontmatter block's lines

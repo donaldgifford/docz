@@ -552,56 +552,56 @@ signed; agent authors discover skills via Backstage.</p>
 <tbody>
 <tr>
 <td>Scope creep — ADK becomes a shelley clone with extra steps</td>
-<td>High — wasted effort, no differentiation</td>
-<td>Medium</td>
+<td class="high">High — wasted effort, no differentiation</td>
+<td class="medium">Medium</td>
 <td>Stay disciplined: ADK is the org-fit layer, not a coding-agent product. Reference agents are reference, not the focus</td>
 </tr>
 <tr>
 <td>Multi-tenant security mistake (cross-tenant data leak)</td>
-<td>Critical — privacy / compliance</td>
-<td>Low with RLS</td>
+<td class="high">Critical — privacy / compliance</td>
+<td class="low">Low with RLS</td>
 <td>Postgres RLS at the schema layer; security review before each tenant-touching change; integration tests that explicitly try to cross tenants</td>
 </tr>
 <tr>
 <td>Framework churn breaking the ADK</td>
-<td>Medium — stop-the-world refactors</td>
-<td>Medium until framework v1.0</td>
+<td class="medium">Medium — stop-the-world refactors</td>
+<td class="medium">Medium until framework v1.0</td>
 <td>ADK pins to framework versions; framework follows semver; ADK's CI runs against framework HEAD nightly to catch breakage early</td>
 </tr>
 <tr>
 <td>Becoming the bottleneck for new agents</td>
-<td>High — slows down agent dev</td>
-<td>Medium</td>
+<td class="high">High — slows down agent dev</td>
+<td class="medium">Medium</td>
 <td>Reference agents must be runnable without ADK changes; framework + bring-your-own-server is always a supported escape hatch</td>
 </tr>
 <tr>
 <td>Vault JIT integration complexity</td>
-<td>Medium — secret-management bugs</td>
-<td>Medium</td>
+<td class="medium">Medium — secret-management bugs</td>
+<td class="medium">Medium</td>
 <td>Reuse the agent platform's existing pattern verbatim; no new secret model in the ADK</td>
 </tr>
 <tr>
 <td>K8s controller bugs orphan harness pods</td>
-<td>Medium — resource leak</td>
-<td>Medium</td>
+<td class="medium">Medium — resource leak</td>
+<td class="medium">Medium</td>
 <td>Owner references; finalizers; periodic reconciliation; existing operator patterns from the homelab</td>
 </tr>
 <tr>
 <td>Reference agents diverge from production agents</td>
-<td>Medium — examples become stale</td>
-<td>High over time</td>
+<td class="medium">Medium — examples become stale</td>
+<td class="high">High over time</td>
 <td>Reference agents are the actual production agents (triage bot is shipped from the example dir); no parallel &quot;demo&quot; implementations</td>
 </tr>
 <tr>
 <td>Skill registry signing key compromise</td>
-<td>High — supply-chain attack on agents</td>
-<td>Low</td>
+<td class="high">High — supply-chain attack on agents</td>
+<td class="low">Low</td>
 <td>Sigstore + transparency log; key rotation runbook; audit log of every skill resolution</td>
 </tr>
 <tr>
 <td>ADK ships before framework hits v1 stability</td>
-<td>Medium — public surface churn</td>
-<td>High in early phases</td>
+<td class="medium">Medium — public surface churn</td>
+<td class="high">High in early phases</td>
 <td>ADK v0.x explicitly experimental; no public API guarantees until framework v1</td>
 </tr>
 </tbody>
@@ -613,41 +613,41 @@ signed; agent authors discover skills via Backstage.</p>
 <h2 class="panel-title">Success</h2>
 <h3 id="success-criteria">Success Criteria</h3>
 <p><strong>Phase 1:</strong></p>
-<ul>
-<li>Triage bot runs identically on the ADK and standalone (modulo config); the
-agent code is unaware of the deployment context</li>
-<li>Time from <code>adk new agent</code> to a running first iteration: &lt; 10 minutes for a
-developer who has never touched the ADK before</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">Triage bot runs identically on the ADK and standalone (modulo config); the
+agent code is unaware of the deployment context</div>
+<div class="card ok">Time from <code>adk new agent</code> to a running first iteration: &lt; 10 minutes for a
+developer who has never touched the ADK before</div>
+</div>
 <p><strong>Phase 2:</strong></p>
-<ul>
-<li>Tenant isolation verified by security review (RLS, audit log, JIT scope
-verification)</li>
-<li>Triage bot and price tracker both deployed via CRDs in homelab cluster,
-observable in Langfuse, with cost attribution by tenant</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">Tenant isolation verified by security review (RLS, audit log, JIT scope
+verification)</div>
+<div class="card ok">Triage bot and price tracker both deployed via CRDs in homelab cluster,
+observable in Langfuse, with cost attribution by tenant</div>
+</div>
 <p><strong>Phase 3:</strong></p>
-<ul>
-<li>Coding agent runs in Firecracker microVM (production-shape) and Apple
+<div class="grid g2">
+<div class="card ok">Coding agent runs in Firecracker microVM (production-shape) and Apple
 Virtualization (dev-shape) with identical observable behavior on a fixed test
-input</li>
-</ul>
+input</div>
+</div>
 <p><strong>Phase 4:</strong></p>
-<ul>
-<li>≥ 10 versioned, signed skills in the registry</li>
-<li>≥ 3 production agents on the ADK (triage, investigator, tracker port, plus any
-new ones since)</li>
-<li>Time-to-first-prototype for a new agent author: &lt; 1 day for chat- shaped, &lt; 2
-days for code-execution-shaped</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">≥ 10 versioned, signed skills in the registry</div>
+<div class="card ok">≥ 3 production agents on the ADK (triage, investigator, tracker port, plus any
+new ones since)</div>
+<div class="card ok">Time-to-first-prototype for a new agent author: &lt; 1 day for chat- shaped, &lt; 2
+days for code-execution-shaped</div>
+</div>
 <p><strong>Org-level outcomes:</strong></p>
-<ul>
-<li>Every new agent built in the org uses the ADK by default; building outside the
-ADK requires a justification doc</li>
-<li>Time to deploy a new agent to production: days, not weeks</li>
-<li>Single source of truth for agent observability, cost attribution, and audit
-(Langfuse + Postgres audit log)</li>
-</ul>
+<div class="grid g2">
+<div class="card ok">Every new agent built in the org uses the ADK by default; building outside the
+ADK requires a justification doc</div>
+<div class="card ok">Time to deploy a new agent to production: days, not weeks</div>
+<div class="card ok">Single source of truth for agent observability, cost attribution, and audit
+(Langfuse + Postgres audit log)</div>
+</div>
 
 </section>
 <section class="panel" id="p-references">

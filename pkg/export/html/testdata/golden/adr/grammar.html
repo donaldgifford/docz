@@ -43,8 +43,10 @@ and said nothing about it.</p>
 </section>
 <section class="panel" id="p-decision">
 <h2 class="panel-title" id="decision">Decision</h2>
+<div class="callout">
 <p>Regions are authoritative. A document that carries markers is read by them,
 and one that carries none is read by the heading table the type package ships.</p>
+</div>
 <h4 id="supporting-data">Supporting Data</h4>
 <p>Of the 41 documents in the corpus, 38 spell every heading the way the template
 does and 3 do not.</p>
@@ -52,33 +54,38 @@ does and 3 do not.</p>
 </section>
 <section class="panel" id="p-consequences">
 <h2 class="panel-title" id="consequences">Consequences</h2>
-<h4 id="positive">Positive</h4>
+<div class="grid g3">
+<div class="card ok" id="positive">
+<p class="card-label">Positive</p>
 <ul>
 <li>A renamed section becomes a finding instead of a silently empty field</li>
 <li>One parser reads a marked document and a legacy one</li>
 </ul>
-<h4 id="negative">Negative</h4>
+</div>
+<div class="card bad" id="negative">
+<p class="card-label">Negative</p>
 <ul>
 <li>Every document in the fleet eventually wants markers, which is a migration
 nobody has scheduled</li>
 </ul>
-<h4 id="neutral">Neutral</h4>
+</div>
+<div class="card neutral" id="neutral">
+<p class="card-label">Neutral</p>
 <ul>
 <li>The heading table is written out in the type package rather than derived</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-alternatives">
 <h2 class="panel-title">Alternatives</h2>
 <h3 id="alternatives-considered">Alternatives Considered</h3>
-<ul>
-<li><strong>a. Match on heading text only.</strong> Ship the table and stop. Rejected: a
-renamed section stays invisible, which is the problem.</li>
-<li><strong>b. Require markers everywhere.</strong> Every legacy document would have to be
-rewritten before it could be read at all.</li>
-<li><strong>c. Infer from position.</strong> The third section is the decision. Rejected: a
-document that adds a section moves every field after it.</li>
-</ul>
+<div class="grid g2">
+<div class="card"><p class="card-label">a. Match on heading text only.</p><p>Ship the table and stop. Rejected: a renamed section stays invisible, which is the problem.</p></div>
+<div class="card"><p class="card-label">b. Require markers everywhere.</p><p>Every legacy document would have to be rewritten before it could be read at all.</p></div>
+<div class="card"><p class="card-label">c. Infer from position.</p><p>The third section is the decision. Rejected: a document that adds a section moves every field after it.</p></div>
+</div>
 
 </section>
 <section class="panel" id="p-open-questions">

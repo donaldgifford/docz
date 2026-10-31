@@ -106,7 +106,9 @@ regions and <code>docz validate</code>) is a <strong>requirement</strong> of thi
 grammar locates its spans by region, the validator is part of the API, and
 no release carries one design without the other.</p>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
-<h4 id="goals">Goals</h4>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
 <ul>
 <li><strong>Specify the complete API once.</strong> After this design, building the
 library is an IMPL with phases, not further design.</li>
@@ -129,7 +131,9 @@ this API.</li>
 <li><strong>Traceable, not tracing.</strong> Context enters at L3 and hooks let a consumer
 instrument the library; docz imports no telemetry and logs nothing (§7).</li>
 </ul>
-<h4 id="non-goals">Non-Goals</h4>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
 <ul>
 <li>Typed models for RFC, ADR, DESIGN, or INV. The pattern is fixed (§2.9,
 §3); each waits for a consumer.</li>
@@ -147,6 +151,8 @@ release after the swap.</li>
 <li>Telemetry or logging inside the library. The CLI, docz-api, and tempy
 wire their own over the context and hooks in §7.</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-background">

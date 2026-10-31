@@ -33,8 +33,14 @@
 <h2 class="panel-title">Overview</h2>
 <h3 id="objective">Objective</h3>
 <h3 id="scope">Scope</h3>
-<h4 id="in-scope">In Scope</h4>
-<h4 id="out-of-scope">Out of Scope</h4>
+<div class="grid g2">
+<div class="card ok" id="in-scope">
+<p class="card-label">In Scope</p>
+</div>
+<div class="card bad" id="out-of-scope">
+<p class="card-label">Out of Scope</p>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-phases">
@@ -42,44 +48,54 @@
 <h3 id="implementation-phases">Implementation Phases</h3>
 <p>Each phase builds on the previous one. A phase is complete when all its tasks
 are checked off and its success criteria are met.</p>
-<h4 id="phase-1-">Phase 1: </h4>
-<h5 id="tasks">Tasks</h5>
-<ul class="tasks">
-<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Write unit tests for ...</div></li>
+<div class="filters" role="group" aria-label="Show tasks"><button type="button" data-filter="all">All</button><button type="button" data-filter="open">Open</button><button type="button" data-filter="done">Done</button></div>
+<div class="card phase" id="phase-1-">
+<div class="phase-head"><h3>Phase 1:</h3><span class="progress">0 / 3</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Task description</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Task description</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Write unit tests for ...</span></li>
 </ul>
-<h5 id="success-criteria">Success Criteria</h5>
+<div class="callout ok" id="success-criteria"><p class="callout-title">Success criteria</p>
 <ul>
 <li><code>go build ./...</code> succeeds with no errors</li>
 <li>...</li>
 </ul>
-<h4 id="phase-2-">Phase 2: </h4>
-<h5 id="tasks-1">Tasks</h5>
-<ul class="tasks">
-<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Write integration tests for ...</div></li>
+</div>
+</div>
+<div class="card phase" id="phase-2-">
+<div class="phase-head"><h3>Phase 2:</h3><span class="progress">0 / 3</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks-1">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Task description</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Task description</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Write integration tests for ...</span></li>
 </ul>
-<h5 id="success-criteria-1">Success Criteria</h5>
+<div class="callout ok" id="success-criteria-1"><p class="callout-title">Success criteria</p>
 <ul>
 <li>Feature X works end-to-end</li>
 <li>...</li>
 </ul>
-<h4 id="phase-3-">Phase 3: </h4>
-<h5 id="tasks-2">Tasks</h5>
-<ul class="tasks">
-<li data-state="open"><input type="checkbox" disabled><div class="text">Audit error messages for consistency</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Ensure <code>make ci</code> passes</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Review test coverage (target: &gt;80%)</div></li>
-<li data-state="open"><input type="checkbox" disabled><div class="text">Clean up any TODO/FIXME comments</div></li>
+</div>
+</div>
+<div class="card phase" id="phase-3-">
+<div class="phase-head"><h3>Phase 3:</h3><span class="progress">0 / 4</span></div>
+<div class="bar"><i style="width: 0%"></i></div>
+<ul class="tasks" id="tasks-2">
+<li data-state="open"><input type="checkbox" disabled><span class="text">Audit error messages for consistency</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Ensure <code>make ci</code> passes</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Review test coverage (target: &gt;80%)</span></li>
+<li data-state="open"><input type="checkbox" disabled><span class="text">Clean up any TODO/FIXME comments</span></li>
 </ul>
-<h5 id="success-criteria-2">Success Criteria</h5>
+<div class="callout ok" id="success-criteria-2"><p class="callout-title">Success criteria</p>
 <ul>
 <li><code>make ci</code> passes with zero errors</li>
 <li>Test coverage &gt;80% for all packages</li>
 <li>All error paths produce clear, actionable messages</li>
 </ul>
+</div>
+</div>
 
 </section>
 <section class="panel" id="p-changes">
