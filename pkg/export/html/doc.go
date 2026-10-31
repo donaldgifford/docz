@@ -23,6 +23,20 @@
 // or loaded from a pinned CDN URL under subresource integrity. Only a page
 // with a diagram carries mermaid.
 //
+// A region's tab and layout come from its kind, through one table: IMPL
+// phases as cards with progress and task state, runbook procedures as
+// numbered steps, ADR consequences and alternatives as cards, open
+// questions as expandables, and so on. The typed readings come from the
+// type packages, parsed only when a region they read is laid out, so a
+// custom type carrying a built-in's regions gets its layout. A layout that
+// cannot be used falls back to the region's markdown and is reported in
+// [Page.Problems].
+//
+// A docz-flow, docz-stepper, or docz-scorecard fence is a widget: its YAML
+// is checked against a closed schema and written as a JSON island the theme
+// runtime draws, with a fallback readable without JavaScript. An invalid
+// block is shown as its source with each error and its line.
+//
 // Every page carries a Content-Security-Policy that loads nothing from the
 // network, outside the CDN mermaid mode. Nothing time-dependent is written:
 // the same input gives the same bytes, and [Page.Hash] is their SHA-256.
