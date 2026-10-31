@@ -75,6 +75,22 @@ func TestExportWritesThenReportsUnchanged(t *testing.T) {
 	}
 }
 
+func TestExportAbsoluteDocsDir(t *testing.T) {
+	t.Parallel()
+
+	rp := fixtureRepo(t, "rfc")
+	rp.Cfg.DocsDir = filepath.Join(rp.Root, rp.Cfg.DocsDir)
+
+	rep, err := Export(context.Background(), rp, ExportOptions{DryRun: true})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if !strings.HasPrefix(rep.Pages[0].Path, "rfc/") {
+		t.Errorf("Path = %q with an absolute docs_dir, want it below the docs directory", rep.Pages[0].Path)
+	}
+}
+
 func TestExportDryRunWritesNothing(t *testing.T) {
 	t.Parallel()
 

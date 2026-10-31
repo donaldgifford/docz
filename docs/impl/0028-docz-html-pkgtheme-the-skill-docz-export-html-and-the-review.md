@@ -458,7 +458,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
   SRI hash and adds the origin to the CSP. The runtime re-renders
   diagrams on the `docz:mode` event and shows the source and error for a
   diagram that fails to parse.
-- [ ] `cmd/export.go`: `exportHTMLCmd` beside `exportConfluenceCmd`, with
+- [x] `cmd/export.go`: `exportHTMLCmd` beside `exportConfluenceCmd`, with
   `--out`, `--stdout`, `--theme`, `--mermaid`, `--format`, `--dry-run`;
   arguments resolved as `export confluence` resolves them; `blobResolver`
   as the resolver; `Site` from the GitHub remote's repository name;

@@ -29,6 +29,8 @@ const (
 	SchemaVersionValidate = 1
 	SchemaVersionCreate   = 1
 	SchemaVersionReview   = 1
+	// SchemaVersionExportHTML is docz export html --format json's.
+	SchemaVersionExportHTML = 1
 )
 
 // Names lists the governed schemas, in the order the design tabulates them.

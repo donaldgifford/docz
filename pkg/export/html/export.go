@@ -201,9 +201,14 @@ func entriesFor(ctx context.Context, rp *repo.Repo, opts *ExportOptions) ([]repo
 
 // pagePaths maps each document's repository-relative path to its page's
 // path under the output directory: the path below the docs directory with
-// .html for .md.
+// .html for .md. The docs directory may be absolute, as cmd/ makes it.
 func pagePaths(rp *repo.Repo, entries []repo.Entry) map[string]string {
-	docs := path.Clean(filepath.ToSlash(rp.Cfg.DocsDir))
+	docs := rp.Cfg.DocsDir
+	if rel, err := filepath.Rel(rp.Root, docs); err == nil && filepath.IsAbs(docs) {
+		docs = rel
+	}
+
+	docs = path.Clean(filepath.ToSlash(docs))
 	out := make(map[string]string, len(entries))
 
 	for i := range entries {
