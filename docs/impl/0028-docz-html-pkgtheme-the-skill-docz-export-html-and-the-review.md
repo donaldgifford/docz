@@ -304,7 +304,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   API: `MermaidMode`, `RenderOptions`, `Page`, `Link`, and
   `Render(src, opts)`. Reject CR line endings and a missing frontmatter
   block with sentinels, as `confluence.Render` does.
-- [ ] Resolve regions with `kinds.ResolveRegions(src, opts.Spec)`; set
+- [x] Resolve regions with `kinds.ResolveRegions(src, opts.Spec)`; set
   `Page.Inferred`, and say so in the header. A document with no regions
   gets one tab per H2.
 - [ ] Build the goldmark instance: GFM, footnotes, and a node renderer at

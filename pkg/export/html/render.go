@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/docparse"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/document"
 	"github.com/donaldgifford/docz/v2/pkg/doczcore/kinds"
 )
@@ -109,5 +111,45 @@ func Render(src []byte, opts RenderOptions) (Page, error) {
 		return Page{}, fmt.Errorf("html: %w", err)
 	}
 
-	return Page{ID: fm.ID, Title: fm.Title, Type: opts.Type}, nil
+	body := blankFrontmatter(src)
+	regions, inferred := kinds.ResolveRegions(body, opts.Spec)
+	d := &doc{
+		body:     body,
+		lines:    strings.Split(string(body), "\n"),
+		headings: docparse.Headings(body),
+		regions:  regions,
+	}
+	d.tabs = outline(d.lines, regions, d.headings)
+
+	return Page{ID: fm.ID, Title: fm.Title, Type: opts.Type, Inferred: inferred}, nil
+}
+
+// doc is one document on its way to a page.
+type doc struct {
+	body     []byte // the source, frontmatter lines blanked
+	lines    []string
+	headings []docparse.Heading
+	regions  []docparse.Region
+	tabs     []tab
+}
+
+// blankFrontmatter returns a copy of src with the frontmatter block's lines
+// emptied rather than removed, so every line number the page reports is the
+// document's own. The caller has already parsed the frontmatter, so both
+// delimiters exist. pkg/export/confluence's cutFrontmatter is its twin.
+func blankFrontmatter(src []byte) []byte {
+	open := bytes.Index(src, []byte("---"))
+	closeAt := bytes.Index(src[open+3:], []byte("\n---"))
+	end := open + 3 + closeAt + len("\n---")
+
+	if nl := bytes.IndexByte(src[end:], '\n'); nl >= 0 {
+		end += nl
+	} else {
+		end = len(src)
+	}
+
+	out := make([]byte, 0, len(src))
+	out = append(out, bytes.Repeat([]byte("\n"), bytes.Count(src[:end], []byte("\n")))...)
+
+	return append(out, src[end:]...)
 }
