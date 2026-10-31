@@ -293,6 +293,35 @@ docs-list: build
 docs-config: build
     @{{ bin }} config
 
+# ─── Plugins ───────────────────────────────────────────────────────
+
+# The docz-html skill inlines pkg/theme into every page it assembles, and a
+# marketplace install copies only the plugin's directory, so the skill
+# carries a copy (IMPL-0028 question 3). Stage 2 drops it.
+plugin_theme := "plugins/docz-html/skills/docz-html/theme"
+
+# Copy pkg/theme's CSS and runtime into the docz-html skill
+[group('plugin')]
+plugin-theme-sync:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    rm -rf "{{ plugin_theme }}"
+    mkdir -p "{{ plugin_theme }}/tokens"
+    cp pkg/theme/base.css pkg/theme/components.css pkg/theme/runtime.js "{{ plugin_theme }}/"
+    cp pkg/theme/tokens/*.css "{{ plugin_theme }}/tokens/"
+    echo "✓ {{ plugin_theme }} synced from pkg/theme"
+
+# Fail when the docz-html skill's theme copy differs from pkg/theme
+[group('plugin')]
+plugin-theme-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! diff -r --exclude='*.go' pkg/theme "{{ plugin_theme }}"; then
+        echo "✗ {{ plugin_theme }} differs from pkg/theme; run: just plugin-theme-sync" >&2
+        exit 1
+    fi
+    echo "✓ {{ plugin_theme }} matches pkg/theme"
+
 # ─── License compliance ────────────────────────────────────────────
 
 # Check dependency licenses against the allow list

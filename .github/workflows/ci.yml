@@ -85,6 +85,8 @@ jobs:
               - 'plugins/**'
               - '.claude-plugin/**'
               - 'ui/review/**'
+              # the docz-html skill's theme copy is checked against it
+              - 'pkg/theme/**'
 
   labeler:
     permissions:
@@ -513,8 +515,9 @@ jobs:
       # fields a marketplace install reads, and every listed source exists.
       - name: Check the manifests
         run: |
-          jq -e '.name and .version and .description' \
-            plugins/docz-review/.claude-plugin/plugin.json
+          for manifest in plugins/*/.claude-plugin/plugin.json; do
+            jq -e '.name and .version and .description' "${manifest}"
+          done
           jq -e '.hooks.PostToolUse and .hooks.Stop' \
             plugins/docz-review/hooks/hooks.json
           jq -e '.name == "docz" and (.plugins | length > 0)' \
@@ -532,6 +535,11 @@ jobs:
 
       - name: Set up just
         uses: extractions/setup-just@v4
+
+      # A marketplace install copies only the plugin directory, so the
+      # docz-html skill carries pkg/theme; the copy must match.
+      - name: Check the docz-html theme copy
+        run: just plugin-theme-check
 
       # The hooks run ui/review/main.ts from source, which needs ui's
       # dependencies and the generated CLI schemas.

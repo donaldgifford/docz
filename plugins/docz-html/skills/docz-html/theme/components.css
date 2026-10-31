@@ -1,0 +1,916 @@
+/*
+ * The components of an exported docz page (DESIGN-0025 §2–§4). Colour,
+ * radius, and font only through tokens, never a literal: theme_test.go
+ * fails on a hex, rgb(), hsl(), or named colour here, and on any token a
+ * theme does not define.
+ *
+ * Without JavaScript every panel shows, stacked, and the tab row is
+ * hidden; the runtime adds the `js` class to <html> and the tabs take
+ * over. Print looks like the no-JavaScript page.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--color-bg-base);
+  color: var(--color-fg-primary);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-link);
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-accent-bg);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1.2em 0 0.4em;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  margin-top: 0.2em;
+  font-size: 1.9rem;
+}
+
+h2 {
+  font-size: 1.45rem;
+}
+
+h3 {
+  font-size: 1.12rem;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 0.98rem;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 0.8em;
+}
+
+ul,
+ol {
+  padding-left: 1.4em;
+}
+
+li {
+  margin: 0.15em 0;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  margin: 1.5em 0;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--color-border-strong);
+  color: var(--color-fg-secondary);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  border: 1px solid var(--color-border-default);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-control);
+  padding: 0.05em 0.4em;
+}
+
+/* Code. Blocks stay dark in every theme and mode. */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--color-bg-elevated);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-control);
+}
+
+pre {
+  position: relative;
+  margin: 0.6em 0 1em;
+  padding: 12px 14px;
+  overflow: auto;
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  border-radius: var(--radius-control);
+  font: 0.8rem/1.55 var(--font-mono);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+
+pre .copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  font: 0.72rem var(--font-mono);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+pre:hover .copy,
+pre .copy:focus-visible {
+  opacity: 1;
+}
+
+/* Layout */
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+}
+
+.page-header {
+  padding: 28px 0 14px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.summary {
+  max-width: 760px;
+  margin: 0.4em 0 0.6em;
+  font-size: 1.05rem;
+  color: var(--color-fg-secondary);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.meta .mode-toggle {
+  margin-left: auto;
+}
+
+.inferred {
+  margin: 0.6em 0 0;
+  font-size: 0.85rem;
+  color: var(--color-fg-tertiary);
+}
+
+.btn,
+.mode-toggle {
+  padding: 5px 11px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-fg-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn:hover,
+.mode-toggle:hover {
+  background: var(--color-bg-hover);
+}
+
+html:not(.js) .mode-toggle {
+  display: none;
+}
+
+/* Pills: id, status, type, author, date, and the task markers. */
+
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  color: var(--color-fg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.pill.st-draft {
+  border-color: var(--color-st-draft);
+  color: var(--color-st-draft);
+}
+
+.pill.st-proposed {
+  border-color: var(--color-st-proposed);
+  color: var(--color-st-proposed);
+}
+
+.pill.st-active {
+  border-color: var(--color-st-active);
+  color: var(--color-st-active);
+}
+
+.pill.st-accepted {
+  border-color: var(--color-st-accepted);
+  color: var(--color-st-accepted);
+}
+
+.pill.st-adopted {
+  border-color: var(--color-st-adopted);
+  color: var(--color-st-adopted);
+}
+
+.pill.st-rejected {
+  border-color: var(--color-st-rejected);
+  color: var(--color-st-rejected);
+}
+
+.pill.st-superseded {
+  border-color: var(--color-st-superseded);
+  color: var(--color-st-superseded);
+}
+
+.pill.st-deprecated {
+  border-color: var(--color-st-deprecated);
+  color: var(--color-st-deprecated);
+}
+
+.pill.t-rfc {
+  color: var(--color-t-rfc);
+}
+
+.pill.t-adr {
+  color: var(--color-t-adr);
+}
+
+.pill.t-design {
+  color: var(--color-t-design);
+}
+
+.pill.t-impl {
+  color: var(--color-t-impl);
+}
+
+.pill.t-investigation {
+  color: var(--color-t-investigation);
+}
+
+.pill.t-runbook {
+  color: var(--color-t-runbook);
+}
+
+.pill.ok {
+  border-color: var(--color-ok);
+  color: var(--color-ok);
+}
+
+.pill.warn {
+  border-color: var(--color-warn);
+  color: var(--color-warn);
+}
+
+.pill.bad {
+  border-color: var(--color-bad);
+  color: var(--color-bad);
+}
+
+.pill.accent {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* Tabs */
+
+nav.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 8px 0 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: var(--color-bg-base);
+  border-bottom: 1px solid var(--color-border-default);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+html:not(.js) nav.tabs {
+  display: none;
+}
+
+nav.tabs button {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-fg-secondary);
+  font: inherit;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+nav.tabs button:hover {
+  color: var(--color-fg-primary);
+}
+
+nav.tabs button[aria-selected="true"] {
+  border-color: var(--color-border-default);
+  background: var(--color-bg-raised);
+  color: var(--color-fg-primary);
+  font-weight: 600;
+}
+
+nav.tabs button:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The fade on an overflowed edge. A mask reads only alpha, so any
+   opaque token serves. */
+nav.tabs.more {
+  mask-image: linear-gradient(
+    90deg,
+    var(--color-fg-primary) calc(100% - 56px),
+    transparent
+  );
+}
+
+nav.tabs.more.mid {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-fg-primary) 56px,
+    var(--color-fg-primary) calc(100% - 56px),
+    transparent
+  );
+}
+
+nav.tabs.more.end {
+  mask-image: none;
+}
+
+nav.tabs.more.mid.end {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-fg-primary) 56px
+  );
+}
+
+section.panel {
+  padding-top: 22px;
+}
+
+html.js section.panel {
+  display: none;
+}
+
+html.js section.panel.on {
+  display: block;
+}
+
+.panel-title {
+  margin-top: 0;
+}
+
+html.js .panel-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.heading-list {
+  margin: 0 0 1.2em;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.85rem;
+}
+
+.heading-list a {
+  color: var(--color-fg-secondary);
+  text-decoration: none;
+}
+
+.heading-list a:hover {
+  color: var(--color-link);
+}
+
+.empty {
+  color: var(--color-fg-muted);
+  font-style: italic;
+}
+
+/* Cards and grids */
+
+.grid {
+  display: grid;
+  gap: 12px;
+  margin: 0.6em 0 1em;
+}
+
+.g2 {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.g3 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.grid > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.card {
+  padding: 14px 16px;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+.card > :first-child {
+  margin-top: 0;
+}
+
+.card > :last-child {
+  margin-bottom: 0;
+}
+
+.card.ok {
+  border-top: 3px solid var(--color-ok);
+}
+
+.card.bad {
+  border-top: 3px solid var(--color-bad);
+}
+
+.card.neutral {
+  border-top: 3px solid var(--color-border-strong);
+}
+
+.card.accent {
+  border-color: var(--color-accent);
+}
+
+.card-label {
+  margin: 0 0 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg-tertiary);
+}
+
+/* Callouts: GitHub alerts, decisions, criteria, rollbacks. */
+
+.callout {
+  margin: 0.8em 0 1em;
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: var(--color-bg-raised);
+}
+
+.callout > :last-child {
+  margin-bottom: 0;
+}
+
+.callout-title {
+  margin: 0 0 0.3em;
+  font-weight: 600;
+}
+
+.callout.note {
+  border-color: var(--color-link);
+  background: var(--color-adm-note-bg);
+}
+
+.callout.tip,
+.callout.ok {
+  border-color: var(--color-ok);
+  background: var(--color-adm-tip-bg);
+}
+
+.callout.important {
+  border-color: var(--color-st-superseded);
+  background: var(--color-adm-important-bg);
+}
+
+.callout.warning {
+  border-color: var(--color-warn);
+  background: var(--color-adm-warning-bg);
+}
+
+.callout.caution,
+.callout.bad {
+  border-color: var(--color-bad);
+  background: var(--color-adm-caution-bg);
+}
+
+/* Expandables: open questions, scenarios. */
+
+details.expand {
+  margin: 8px 0;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+details.expand > summary {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+details.expand > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.expand > summary::after {
+  content: "+";
+  color: var(--color-fg-tertiary);
+  font-family: var(--font-mono);
+}
+
+details.expand[open] > summary::after {
+  content: "\2013";
+}
+
+details.expand > .body {
+  padding: 0 14px 12px;
+}
+
+.option {
+  margin: 4px 0;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-hairline);
+  border-radius: var(--radius-control);
+}
+
+.option.recommended {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-bg);
+}
+
+.resolution {
+  margin: 0.6em 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--color-ok);
+  background: var(--color-adm-tip-bg);
+}
+
+/* Tables */
+
+.table-wrap {
+  margin: 0.6em 0 1em;
+  overflow-x: auto;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+th,
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-border-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+th {
+  color: var(--color-fg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+td.high {
+  background: var(--color-adm-caution-bg);
+}
+
+td.medium {
+  background: var(--color-adm-warning-bg);
+}
+
+td.low {
+  background: var(--color-adm-tip-bg);
+}
+
+/* IMPL phases */
+
+.phase {
+  margin: 0 0 14px;
+}
+
+.phase-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+}
+
+.phase-head h3 {
+  margin: 0;
+}
+
+.progress {
+  margin-left: auto;
+  color: var(--color-fg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.bar {
+  height: 6px;
+  margin: 8px 0 10px;
+  overflow: hidden;
+  background: var(--color-bg-elevated);
+  border-radius: 3px;
+}
+
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--color-ok);
+}
+
+ul.tasks {
+  margin: 0.4em 0 0.8em;
+  padding: 0;
+  list-style: none;
+}
+
+ul.tasks li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 6px;
+  align-items: start;
+  margin: 3px 0;
+}
+
+ul.tasks ul.tasks {
+  grid-column: 2;
+}
+
+ul.tasks li[data-state="done"] > .text {
+  color: var(--color-fg-tertiary);
+}
+
+ul.tasks input {
+  margin-top: 0.3em;
+  accent-color: var(--color-ok);
+}
+
+.note {
+  display: block;
+  color: var(--color-fg-secondary);
+  font-size: 0.86rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+html:not(.js) .filters {
+  display: none;
+}
+
+.filters button {
+  padding: 4px 11px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  background: var(--color-bg-raised);
+  color: var(--color-fg-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.filters button[aria-pressed="true"] {
+  border-color: var(--color-fg-primary);
+  background: var(--color-fg-primary);
+  color: var(--color-bg-base);
+}
+
+[data-task-filter="open"] ul.tasks li[data-state="done"],
+[data-task-filter="done"] ul.tasks li:not([data-state="done"]) {
+  display: none;
+}
+
+/* Runbook steps */
+
+ol.steps {
+  margin: 0.4em 0 1em;
+  padding-left: 1.6em;
+}
+
+ol.steps > li {
+  margin: 0.5em 0;
+  padding-left: 0.3em;
+}
+
+ol.steps > li::marker {
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.step-id {
+  margin-right: 6px;
+  color: var(--color-fg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.expected {
+  margin: 0.3em 0 0;
+  color: var(--color-fg-secondary);
+  font-size: 0.9rem;
+}
+
+.expected b {
+  color: var(--color-ok);
+}
+
+/* An investigation's answer */
+
+.verdict {
+  margin: 0.6em 0 1em;
+  padding: 14px 16px;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+.verdict.yes {
+  border-color: var(--color-ok);
+}
+
+.verdict.no {
+  border-color: var(--color-bad);
+}
+
+.verdict.partial {
+  border-color: var(--color-warn);
+}
+
+.verdict > :last-child {
+  margin-bottom: 0;
+}
+
+/* Diagrams: the source shows until mermaid draws, and stays when it
+   cannot. */
+
+pre.mermaid {
+  background: var(--color-bg-raised);
+  color: var(--color-fg-secondary);
+  border: 1px solid var(--color-border-default);
+}
+
+pre.mermaid[data-processed="true"] {
+  padding: 12px;
+  text-align: center;
+}
+
+.diagram-error {
+  color: var(--color-bad);
+  font-size: 0.85rem;
+}
+
+/* Footer */
+
+.page-footer {
+  margin-top: 48px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-fg-tertiary);
+  font-size: 0.8rem;
+}
+
+.page-footer code {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+/* Small screens, motion, print */
+
+@media (max-width: 560px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .meta .mode-toggle {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+@media print {
+  nav.tabs,
+  .mode-toggle,
+  .filters,
+  pre .copy {
+    display: none !important;
+  }
+
+  html.js section.panel {
+    display: block;
+    break-before: page;
+  }
+
+  html.js .panel-title {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
+
+  details.expand > .body {
+    display: block;
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }
+}

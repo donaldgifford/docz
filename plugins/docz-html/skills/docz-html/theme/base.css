@@ -1,0 +1,13 @@
+/*
+ * The tokens an exported page needs that a theme does not vary: system
+ * font stacks, so a page is one file with nothing to fetch. ui/ never
+ * imports this file; docz-site and the review page bring their own
+ * bundled fonts under the same names.
+ */
+
+:root {
+  --font-sans:
+    -apple-system, system-ui, "Segoe UI", Inter, Roboto, "Helvetica Neue",
+    sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
