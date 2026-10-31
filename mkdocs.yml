@@ -35,6 +35,7 @@ nav:
         - 'DESIGN-0022: Incident and root cause analysis: INC and RCA as built-in document types': design/0022-incident-and-root-cause-analysis-inc-and-rca-as-built-in.md
         - 'DESIGN-0023: A read-only MCP server in docz-api: OAuth 2.1 tokens, tools, and resources': design/0023-a-read-only-mcp-server-in-docz-api-oauth-21-tokens-tools-and.md
         - 'DESIGN-0024: docz-review: a blocking review page for agent-written documents': design/0024-docz-review-a-blocking-review-page-for-agent-written-documents.md
+        - 'DESIGN-0025: docz-html: standalone HTML pages from docz documents, and one themeable design for docz''s HTML': design/0025-docz-html-standalone-html-pages-from-docz-documents-and-one.md
     - Implementation Plans:
         - Overview: impl/README.md
         - 'IMPL-0001: docz CLI Implementation': impl/0001-docz-cli-implementation.md
@@ -63,6 +64,7 @@ nav:
         - 'IMPL-0025: Pre-cut markdown and lint fixes': impl/0025-pre-cut-markdown-and-lint-fixes.md
         - 'IMPL-0026: A read-only MCP server in docz-api: tokens, scoped access, and the six tools': impl/0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md
         - 'IMPL-0027: docz-review: the CLI contract, the review page, the binary, and the plugin': impl/0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md
+        - 'IMPL-0028: docz-html: pkg/theme, the skill, docz export html, and the review page on paper': impl/0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
