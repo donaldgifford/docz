@@ -342,7 +342,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   rejections.
 - [x] `FuzzRender`: never panics, and the output parses with
   `golang.org/x/net/html` in the test only (question 7).
-- [ ] Add `pkg/export/html` to `test/consumer` with one inline document.
+- [x] Add `pkg/export/html` to `test/consumer` with one inline document.
 
 <!--docz:tasks:end-->
 
