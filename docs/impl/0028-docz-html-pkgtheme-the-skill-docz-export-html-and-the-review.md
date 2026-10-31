@@ -264,7 +264,7 @@ and 4 encode.
   plus one unmarked document and one with each widget added on a scratch
   copy. Each change to the theme lands in `pkg/theme`; each change to the
   layout or a widget's YAML lands in the references.
-- [ ] Amend DESIGN-0025 §3, §4, and §6 with what the loop changed, each
+- [x] Amend DESIGN-0025 §3, §4, and §6 with what the loop changed, each
   amendment dated (question 4).
 - [ ] Delete the `docz-html/` source directory from the working tree; it
   was never committed (question 5).

@@ -376,6 +376,20 @@ already reads its colours from the tokens at render time
 **Contrast.** `ui/src/theme/contrast.test.ts` checks token pairs against
 WCAG today; it runs over every theme and mode instead of one.
 
+> **Amended 2026-10-31 (IMPL-0028 Phases 1 and 2).** The token files
+> carry four more names than the table above: `--color-on-accent` (text on
+> an accent fill), `--color-code-fg` (code stays dark in every mode, so it
+> has its own foreground), and `--radius-card` / `--radius-control`, which
+> are how `paper` gets its rounded cards and `classic` its square ones.
+> The fonts are **not** tokens: `base.css` sets the system stacks for an
+> exported page only, so `ui/` keeps its bundled fonts. `paper`'s dark
+> values appear twice, under `data-mode="dark"` and under
+> `prefers-color-scheme: dark` with no `data-mode`, and a test holds the
+> two equal; `classic` is one block for every mode, and a test holds its
+> colours equal to `ui/`'s `@theme` values. The runtime's one global is
+> `docz` (`mode`, `setMode`, `onMode`, `palette`, `showTab`), and the
+> mode change is also a `docz:mode` event.
+
 ### 4. Layout by region kind
 
 A table maps each
@@ -434,6 +448,34 @@ An empty region (a template placeholder never filled in) renders as a
 muted "not written yet" line, not as an empty tab, so a Draft document's
 page shows what is missing.
 
+> **Amended 2026-10-31 (IMPL-0028 Phase 2).** Eight pages assembled by
+> hand from this table (one per built-in, an unmarked design, and one
+> carrying every widget) settled what it left open. The full rules are
+> the skill's `references/layout.md`, which Phase 4 encodes:
+>
+> - **The header summary is not repeated.** It is the first paragraph of
+>   the first summary-like region; the panel shows the rest.
+> - **Every heading's anchor lands on the page.** The panel title names
+>   the tab and takes the first region's anchor when the texts match;
+>   otherwise each region's heading is an `h3` with its anchor; a heading
+>   that becomes a card label puts its anchor on the card, an open
+>   question's on its `details`.
+> - **Nothing outside a region is dropped.** An H2 section outside every
+>   region becomes a tab of its own; a heading that only introduces the
+>   regions under it (`## Goals and Non-Goals`) gives its anchor to the
+>   tab's first element.
+> - **A child with a row of its own gets that row's tab**
+>   (`open-questions` inside `recommendation`).
+> - **Per kind:** alternatives are cards per H3, else per bold-led
+>   paragraph or item, `accent` only when chosen; a decision's callout
+>   holds its first block, paragraph or list; risk cells tint by first
+>   word, Critical as high; a runbook scenario is closed, its symptom,
+>   alert, and cause a definition list.
+> - **Open-question options come from the markdown**, with `recommended`
+>   from `kinds.OpenQuestions`: its option text loses the letter and keeps
+>   a stray `**` when the option is bold-wrapped (`- **a. …**`), which is a
+>   docz fix for Phase 4.
+
 ### 5. The runtime
 
 Plain JavaScript in `pkg/theme/runtime.js`: the mode toggle; tabs (click,
@@ -487,6 +529,24 @@ blocks live in the markdown:
   rather than break, and the Confluence export shows the source in an
   expand titled with the widget's name (open question 15);
 - `docz validate` can check a widget's YAML later, as it checks regions.
+
+> **Amended 2026-10-31 (IMPL-0028 Phase 2).** The three widgets' YAML is
+> settled in the skill's `references/widgets.md`, which Phase 4 encodes as
+> pinned schemas. Every schema is **closed** (an unknown key is an
+> error). `docz-flow`: `stages` (2 to 8, each `name`, `does`, optional
+> `note`), optional `title`, `gates` (**1-based** stage positions, as the
+> example above reads), `label`, `legend`, `alert`. `docz-stepper`:
+> `steps` (2 to 12, each `key`, `name`, `does`, optional `title`) and
+> `scenarios` (each `name`, optional `fails_at` naming a step key,
+> `fail_label`, `notes` keyed by step). `docz-scorecard`: `checks` (each
+> `id`, `name`, `target`, optional `weight` defaulting to 1, `fixes`,
+> `source`), optional `title`, `note`, and `example`; pasted results are
+> `{results: [{id, score 0..1 or null, observed, evidence}]}`, and the
+> total is points over the weights of the measured checks. On the page a
+> widget is a `figure.widget` holding the JSON island, an empty
+> `.widget-mount`, and a `.widget-fallback` with the same data as a list
+> or table; the runtime builds its DOM with `textContent` only, marks the
+> figure `drawn` to hide the fallback, and redraws on a mode change.
 
 ### 7. Mermaid
 
