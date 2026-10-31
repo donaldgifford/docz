@@ -35,6 +35,9 @@ type nodeRenderer struct {
 
 	// open is the stack of allowed raw tags opened and not yet closed.
 	open []string
+	// marks holds len(open) at the start of each open inline container,
+	// so a raw tag opened inside a paragraph closes inside it.
+	marks []int
 
 	links    []Link
 	problems []error
@@ -59,6 +62,8 @@ func newNodeRenderer(opts *RenderOptions, headings []docparse.Heading) *nodeRend
 // RegisterFuncs implements renderer.NodeRenderer.
 func (nr *nodeRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindHeading, nr.heading)
+	reg.Register(ast.KindParagraph, nr.paragraph)
+	reg.Register(ast.KindTextBlock, nr.textBlock)
 	reg.Register(ast.KindFencedCodeBlock, nr.fenced)
 	reg.Register(ast.KindCodeBlock, nr.codeBlock)
 	reg.Register(ast.KindHTMLBlock, nr.htmlBlock)
@@ -84,14 +89,72 @@ func (nr *nodeRenderer) heading(w util.BufWriter, src []byte, n ast.Node, enteri
 	level := min(h.Level+1, 6)
 
 	if !entering {
+		nr.closeInline(w)
 		putf(w, "</h%d>\n", level)
 
 		return ast.WalkContinue, nil
 	}
 
 	putf(w, `<h%d id="%s">`, level, html.EscapeString(nr.anchor(h, src)))
+	nr.openInline()
 
 	return ast.WalkContinue, nil
+}
+
+// paragraph writes a paragraph, closing any raw tag opened in it.
+func (nr *nodeRenderer) paragraph(w util.BufWriter, _ []byte, _ ast.Node, entering bool) (ast.WalkStatus, error) {
+	if entering {
+		put(w, "<p>")
+		nr.openInline()
+
+		return ast.WalkContinue, nil
+	}
+
+	nr.closeInline(w)
+	put(w, "</p>\n")
+
+	return ast.WalkContinue, nil
+}
+
+// textBlock writes a tight list item's text as goldmark does, closing any
+// raw tag opened in it.
+func (nr *nodeRenderer) textBlock(w util.BufWriter, _ []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+	if entering {
+		nr.openInline()
+
+		return ast.WalkContinue, nil
+	}
+
+	nr.closeInline(w)
+
+	if n.NextSibling() != nil && n.FirstChild() != nil {
+		put(w, "\n")
+	}
+
+	return ast.WalkContinue, nil
+}
+
+// openInline marks the start of an inline container.
+func (nr *nodeRenderer) openInline() {
+	nr.marks = append(nr.marks, len(nr.open))
+}
+
+// closeInline closes the raw tags opened since the matching openInline.
+func (nr *nodeRenderer) closeInline(w util.BufWriter) {
+	if len(nr.marks) == 0 {
+		return
+	}
+
+	m := nr.marks[len(nr.marks)-1]
+	nr.marks = nr.marks[:len(nr.marks)-1]
+
+	for i := len(nr.open) - 1; i >= m && i < len(nr.open); i-- {
+		put(w, "</"+nr.open[i]+">")
+	}
+
+	if m < len(nr.open) {
+		nr.open = nr.open[:m]
+	}
 }
 
 // anchor is the heading's id: docparse's for a heading it knows, else

@@ -336,7 +336,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   six type packages' corpora and the parity fixtures, the theme block
   replaced by its markers in the golden (question 6), regenerated with
   `-update`; one full-page golden with the theme inlined.
-- [ ] Unit tests: escaping of every interpolated field, the raw-HTML
+- [x] Unit tests: escaping of every interpolated field, the raw-HTML
   allow-list, the CSP present, no `http` URL in a page outside CDN mode,
   determinism (two renders, same bytes), CR and no-frontmatter
   rejections.
