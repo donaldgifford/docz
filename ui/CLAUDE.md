@@ -576,6 +576,20 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   badges; nothing is inserted into the sanitized markdown. Lightning CSS
   warns that it does not know `::highlight` while minifying; the rule
   survives, so the warning is noise.
+- **Appearance** (`appearance.ts`, IMPL-0028 Phase 6). The page is on
+  `paper` (`review.html`), with `classic` selectable. `main.tsx` calls
+  `applyStoredAppearance()` before the first render, so `data-theme` and
+  `data-mode` come from `docz:theme` and `docz:mode` (the key exported
+  pages use too); with no stored mode `data-mode` stays unset and the
+  theme's `prefers-color-scheme` block applies. `useAppearance` holds
+  both, dispatches `docz:mode`, and calls `refreshMermaidTheme` after a
+  change (never on mount), which re-initializes mermaid from the new
+  tokens and redraws every mounted diagram; docz-site never calls it.
+  The toggle shows only on paper, since classic has one look. The page
+  drops its token from the URL, so a reload shows the "open the link"
+  message: an e2e that reloads must `goto` the link again.
+  `e2e/review.spec.ts` runs every spec and full-rule axe under paper
+  light, paper dark, and classic.
 - **The draft** (`draft.ts`) decides the outcome from the actionable set
   (an answer, comment, replace, delete, document comment, status change,
   or finding to fix); Approve is enabled only while it is empty, and
@@ -691,7 +705,8 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   core view and tolerates zero serious/critical violations — new views
   belong in that sweep. jsdom can't compute color-contrast, so text
   token contrast (fg-/st-/t-/hash-/accent vs the three bg surfaces,
-  4.5:1) is enforced mathematically in `src/theme/contrast.test.ts`,
+  4.5:1) is enforced mathematically in `src/theme/contrast.test.ts`
+  (for tokens.css and for every theme and mode in `../pkg/theme/tokens`),
   and full-rule axe (contrast included) runs in `e2e/a11y.spec.ts`;
   changing `tokens.css` colors means keeping both green. Every
   top-level route needs exactly one `<main>` (RepoFrame provides it
