@@ -147,12 +147,12 @@ phase proves the plumbing before the look moves.
   `ui/`'s token names per DESIGN-0025 §3's mapping table; add
   `--color-ok`, `--color-link`, `--color-warn`, and `--color-bad`. Drop
   every "SSE" string and the framework catalogue's colours.
-- [ ] Move today's values out of `ui/src/theme/tokens.css` into
+- [x] Move today's values out of `ui/src/theme/tokens.css` into
   `pkg/theme/tokens/classic.css` unchanged, dark only (its light block
   repeats the dark values so a forced `data-mode="light"` is still
   readable), and add the four new tokens with values that match the
   existing status colours.
-- [ ] Give both themes values for every status (`--color-st-*`), type
+- [x] Give both themes values for every status (`--color-st-*`), type
   (`--color-t-*`), admonition (`--color-adm-*`), and hash-palette token
   `tokens.css` declares today, and for the two review rules
   (`::highlight(docz-review)`, the changed-region mark).
