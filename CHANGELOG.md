@@ -69,6 +69,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(impl)* IMPL-0029 draft, docz-site on paper with the widgets as React components
 - DESIGN-0025 Implemented and IMPL-0028 Completed (IMPL-0028 7.1)
 - *(impl)* Check off the changelog regen (IMPL-0028 7.3)
+- *(impl)* IMPL-0028's testing plan checked off
 
 ### Testing
 
