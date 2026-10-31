@@ -128,6 +128,66 @@ describe("ReviewApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("disables Submit while the draft is empty", async () => {
+    mount();
+    await screen.findByText("Postgres");
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Approve" })).toBeEnabled();
+    expect(
+      screen.getByText(/Nothing to submit: annotate the document/),
+    ).toBeInTheDocument();
+  });
+
+  it("holds Submit and Approve while a comment is typed but not added", async () => {
+    const user = userEvent.setup();
+    const server = mount();
+    await screen.findByText("Postgres");
+    selectWord("Postgres");
+    const popover = await screen.findByRole("dialog", {
+      name: "Annotate selection",
+    });
+    await user.click(within(popover).getByRole("button", { name: "Comment" }));
+    await user.type(within(popover).getByLabelText("Comment"), "Why not?");
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Approve" })).toBeDisabled();
+    expect(
+      screen.getByText(/Add or cancel the comment you are writing first/),
+    ).toBeInTheDocument();
+
+    // A click elsewhere clears the selection; the words stay.
+    document.getSelection()?.removeAllRanges();
+    act(() => {
+      document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    });
+    expect(screen.getByLabelText("Comment")).toHaveValue("Why not?");
+
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+    expect(
+      await screen.findByText(/This round is closed: changes/),
+    ).toBeInTheDocument();
+    expect(server.records[0]).toMatchObject({
+      outcome: "changes",
+      annotations: [{ kind: "comment", text: "Why not?" }],
+    });
+  });
+
+  it("holds Submit while a document comment is typed but not added", async () => {
+    const user = userEvent.setup();
+    mount();
+    await screen.findByText("Postgres");
+    await user.type(
+      screen.getByLabelText("Comment on the whole document"),
+      "Tighten it.",
+    );
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Approve" })).toBeDisabled();
+    await user.click(
+      screen.getByRole("button", { name: "Add document comment" }),
+    );
+    expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
+  });
+
   it("keeps the draft and says so when the file changed", async () => {
     const user = userEvent.setup();
     const server = mount();

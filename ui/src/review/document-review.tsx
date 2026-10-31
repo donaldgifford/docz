@@ -8,6 +8,7 @@ import {
   AnnotationList,
   DocumentComment,
   SelectionPopover,
+  type PendingSelection,
   useAnnotationPaint,
   useSelectionAnchor,
 } from "@/review/annotations";
@@ -16,6 +17,7 @@ import { compareRounds, markChangedRegions, RoundDiff } from "@/review/diff";
 import {
   canApprove,
   hasActionable,
+  isEmptyDraft,
   toRecordParts,
   type Draft,
 } from "@/review/draft";
@@ -107,6 +109,16 @@ export function DocumentReview({
   );
 
   const [pending, clearPending] = useSelectionAnchor(docRef, inspect.headings);
+  // A popover whose text box has words in it is held open, so a stray
+  // click that changes the selection cannot throw the words away.
+  const [held, setHeld] = useState<PendingSelection | null>(null);
+  const shown = held ?? pending;
+  const [writingDocument, setWritingDocument] = useState(false);
+  const writing = held !== null || writingDocument;
+  const closePopover = () => {
+    setHeld(null);
+    clearPending();
+  };
   useAnnotationPaint(docRef, draft.annotations, rendered.data);
   useEffect(() => {
     if (docRef.current !== null && comparison !== null) {
@@ -137,6 +149,12 @@ export function DocumentReview({
       }),
     );
   const actionable = hasActionable(draft, current);
+  const empty = isEmptyDraft(draft, current);
+  const hint = writing
+    ? "Add or cancel the comment you are writing first."
+    : empty
+      ? "Nothing to submit: annotate the document, or approve it."
+      : null;
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_340px] gap-8">
@@ -188,19 +206,23 @@ export function DocumentReview({
             onAdd={(a) => {
               onDraft({ ...draft, annotations: [...draft.annotations, a] });
             }}
+            onComposing={setWritingDocument}
           />
         </div>
 
         <article ref={docRef} className="doc-prose" aria-label="Document">
           {rendered.data?.content}
         </article>
-        {pending !== null && open && (
+        {shown !== null && open && (
           <SelectionPopover
-            pending={pending}
-            onCancel={clearPending}
+            pending={shown}
+            onCancel={closePopover}
+            onComposing={(composing) => {
+              setHeld(composing ? shown : null);
+            }}
             onAdd={(a) => {
               onDraft({ ...draft, annotations: [...draft.annotations, a] });
-              clearPending();
+              closePopover();
               document.getSelection()?.removeAllRanges();
             }}
           />
@@ -244,17 +266,20 @@ export function DocumentReview({
           <div className="flex flex-wrap gap-2">
             <ReviewButton
               variant="primary"
-              disabled={busy}
+              disabled={busy || writing || empty}
+              title={hint ?? undefined}
               onClick={() => void submit()}
             >
               Submit
             </ReviewButton>
             <ReviewButton
-              disabled={busy || !canApprove(draft, current)}
+              disabled={busy || writing || !canApprove(draft, current)}
               title={
-                actionable
-                  ? "The draft holds changes; submit them or discard the draft"
-                  : undefined
+                writing
+                  ? (hint ?? undefined)
+                  : actionable
+                    ? "The draft holds changes; submit them or discard the draft"
+                    : undefined
               }
               onClick={() => void run(() => actions.approve(key()))}
             >
@@ -278,6 +303,14 @@ export function DocumentReview({
             >
               Dismiss
             </ReviewButton>
+            {hint !== null && (
+              <p
+                data-review-hint
+                className="w-full font-mono text-[12px] text-fg-tertiary"
+              >
+                {hint}
+              </p>
+            )}
           </div>
         ) : (
           <p className="font-mono text-[12.5px] text-fg-tertiary">

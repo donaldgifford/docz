@@ -109,6 +109,21 @@ export function canApprove(draft: Draft, current: string): boolean {
   return !hasActionable(draft, current);
 }
 
+/**
+ * Whether the draft holds nothing at all: no answered question, no
+ * annotation of any kind, the document's own status, and no finding
+ * acted on. Submit is disabled then, because it would record an
+ * approval nobody chose; Approve is the way to say that.
+ */
+export function isEmptyDraft(draft: Draft, current: string): boolean {
+  return (
+    !Object.values(draft.questions).some(isAnswered) &&
+    draft.annotations.length === 0 &&
+    draft.status === current &&
+    draft.findings.length === 0
+  );
+}
+
 /** What a Submit of this draft records. */
 export function outcomeOf(
   draft: Draft,

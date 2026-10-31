@@ -153,6 +153,32 @@ test("answers, annotates, submits, and the message carries it all", async ({
   expect(message).not.toContain("quote ambiguous");
 });
 
+test("a comment typed but not added is never lost", async ({ page }) => {
+  await open(page);
+  const submit = page.getByRole("button", { name: "Submit" });
+  const approve = page.getByRole("button", { name: "Approve", exact: true });
+  // An empty draft has nothing to submit; approving is its own button.
+  await expect(submit).toBeDisabled();
+  await expect(approve).toBeEnabled();
+
+  const popover = await select(page, "Postgres for the store");
+  await popover.getByRole("button", { name: "Comment" }).click();
+  await popover.getByLabel("Comment").fill("Why not SQLite?");
+  await expect(submit).toBeDisabled();
+  await expect(approve).toBeDisabled();
+
+  // A click on the page clears the selection; the popover and its words stay.
+  await page
+    .getByRole("heading", { name: "Review cache", exact: true })
+    .click();
+  await expect(popover.getByLabel("Comment")).toHaveValue("Why not SQLite?");
+
+  await popover.getByRole("button", { name: "Add" }).click();
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.getByText(/This round is closed: changes/)).toBeVisible();
+});
+
 test("a forged data-line never becomes a coordinate", async ({
   page,
   request,
