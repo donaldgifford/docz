@@ -194,7 +194,7 @@ phase proves the plumbing before the look moves.
   `pkg/**`.
 - [x] Run `just ui ci` and the review e2e; confirm the bundle budget and
   that the site and the review page render as before.
-- [ ] Add `pkg/theme` to `test/consumer`: `Names`, `CSS` for each, and
+- [x] Add `pkg/theme` to `test/consumer`: `Names`, `CSS` for each, and
   `Runtime` non-empty, from an external module.
 
 <!--docz:tasks:end-->
