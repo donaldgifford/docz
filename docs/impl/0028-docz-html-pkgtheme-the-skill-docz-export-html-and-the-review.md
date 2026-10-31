@@ -266,7 +266,7 @@ and 4 encode.
   layout or a widget's YAML lands in the references.
 - [x] Amend DESIGN-0025 §3, §4, and §6 with what the loop changed, each
   amendment dated (question 4).
-- [ ] Delete the `docz-html/` source directory from the working tree; it
+- [x] Delete the `docz-html/` source directory from the working tree; it
   was never committed (question 5).
 - [ ] Review the hand-assembled pages in a browser in both modes and
   both themes, and sign off the layout table and the widgets' YAML.
