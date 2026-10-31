@@ -65,6 +65,7 @@ nav:
         - 'IMPL-0026: A read-only MCP server in docz-api: tokens, scoped access, and the six tools': impl/0026-a-read-only-mcp-server-in-docz-api-tokens-scoped-access-and-the.md
         - 'IMPL-0027: docz-review: the CLI contract, the review page, the binary, and the plugin': impl/0027-docz-review-the-cli-contract-the-review-page-the-binary-and-the.md
         - 'IMPL-0028: docz-html: pkg/theme, the skill, docz export html, and the review page on paper': impl/0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md
+        - 'IMPL-0029: docz-site on paper, with the widgets as React components': impl/0029-docz-site-on-paper-with-the-widgets-as-react-components.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
