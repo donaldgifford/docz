@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0007">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0007: Eliminate Redundant File Reads and Heading Parses</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Eliminate Redundant File Reads and Heading Parses</h1>
+<p class="summary"><strong>Status:</strong> In Progress
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-05-15</p>
+<div class="meta">
+<span class="pill">IMPL-0007</span>
+<span class="pill st-active">In Progress</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-15</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
+<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="phase-1-baseline-benchmarks" aria-controls="p-phase-1-baseline-benchmarks">Phase 1: Baseline benchmarks</button>
+<button type="button" data-tab="phase-2-cache-bytes-on-docentry" aria-controls="p-phase-2-cache-bytes-on-docentry">Phase 2: Cache bytes on DocEntry</button>
+<button type="button" data-tab="phase-3-refactor-updatetocs-to-use-cached-bytes" aria-controls="p-phase-3-refactor-updatetocs-to-use-cached-bytes">Phase 3: Refactor updateToCs to use cached bytes</button>
+<button type="button" data-tab="phase-4-change-updatetoc-api-to-return-heading" aria-controls="p-phase-4-change-updatetoc-api-to-return-heading">Phase 4: Change UpdateToC API to return []Heading</button>
+<button type="button" data-tab="phase-5-verify-and-ship" aria-controls="p-phase-5-verify-and-ship">Phase 5: Verify and ship</button>
+<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
+<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-objective">
+<h2 class="panel-title" id="objective">Objective</h2>
+<ul>
+<li><a href="#objective">Objective</a></li>
+<li><a href="#scope">Scope</a>
+<ul>
+<li><a href="#in-scope">In Scope</a></li>
+<li><a href="#out-of-scope">Out of Scope</a></li>
+</ul>
+</li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1-baseline-benchmarks">Phase 1: Baseline benchmarks</a>
+<ul>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-2-cache-bytes-on-docentry">Phase 2: Cache bytes on DocEntry</a>
+<ul>
+<li><a href="#tasks-1">Tasks</a></li>
+</ul>
+</li>
+<li><a href="#phase-3-refactor-updatetocs-to-use-cached-bytes">Phase 3: Refactor updateToCs to use cached bytes</a>
+<ul>
+<li><a href="#tasks-2">Tasks</a></li>
+<li><a href="#success-criteria-1">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-4-change-updatetoc-api-to-return-heading">Phase 4: Change UpdateToC API to return []Heading</a>
+<ul>
+<li><a href="#tasks-3">Tasks</a></li>
+<li><a href="#success-criteria-2">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-5-verify-and-ship">Phase 5: Verify and ship</a>
+<ul>
+<li><a href="#tasks-4">Tasks</a></li>
+<li><a href="#success-criteria-3">Success Criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#file-changes">File Changes</a></li>
+<li><a href="#testing-plan">Testing Plan</a></li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>Fix the three &quot;must-fix&quot; performance findings from INV-0002 Wave 3:</p>
+<ol>
+<li>During <code>docz update</code>, each document file is read twice (once for
+frontmatter scan, once for ToC update).</li>
+<li><code>toc.UpdateToC</code> parses headings internally then discards them, forcing
+the dry-run path to call <code>ParseHeadings</code> a second time.</li>
+<li>The <code>UpdateToC</code> API forces callers to re-parse to get heading metadata.</li>
+</ol>
+<p>The fix is architectural at the API boundary, not a micro-optimization.
+Effect: halves the file-read count and parse work on the <code>update</code> hot path.</p>
+<p><strong>Implements:</strong> INV-0002 (Wave 3 — Performance worth fixing)</p>
+
+</section>
+<section class="panel" id="p-scope">
+<h2 class="panel-title" id="scope">Scope</h2>
+<h4 id="in-scope">In Scope</h4>
+<ul>
+<li>Cache document bytes on <code>index.DocEntry</code> so callers don't re-read (F41)</li>
+<li>Change <code>toc.UpdateToC</code> to return <code>[]Heading</code> (F42)</li>
+<li>Update <code>cmd/update.go</code> to use the new APIs and stop re-reading files</li>
+<li>Add baseline + post-change benchmarks</li>
+</ul>
+<h4 id="out-of-scope">Out of Scope</h4>
+<ul>
+<li>Parallelizing the update loop (rejected as premature in INV-0002)</li>
+<li>Optimizing <code>Slugify</code>, <code>strings.Split</code>, or other &quot;do-not-touch&quot; items</li>
+<li>Moving <code>updateToCs</code> into <code>internal/toc</code> (that's IMPL-0008)</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-1-baseline-benchmarks">
+<h2 class="panel-title" id="phase-1-baseline-benchmarks">Phase 1: Baseline benchmarks</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Before changing anything, measure the current cost so we can prove the
+change is a win and prevent regressions.</p>
+<h5 id="tasks">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>BenchmarkScanDocuments</code> in <code>internal/index/index_test.go</code>
+(100 / 500 / 1000 generated docs with ~2KB bodies)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>BenchmarkUpdateToC</code> in <code>internal/toc/toc_test.go</code>
+(10 / 50 / 200 headings with realistic body text between them)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>BenchmarkCmdUpdate</code> in <code>cmd/update_test.go</code> that runs
+<code>updateType(&quot;rfc&quot;)</code> against a synthesized repo of 100 docs each
+carrying ToC markers and three H2 sections</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Record baseline numbers in this doc (committed inline below)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Confirm the benchmarks are deterministic — ran each 3× and
+confirmed variance is under 5% for the index and toc benchmarks;
+<code>BenchmarkCmdUpdate/100</code> was 7% (end-to-end disk + render +
+write churn, accepted as the headline number)</div></li>
+</ul>
+<p>Baseline numbers (Apple M5 Max, Go 1.25.7, darwin/arm64, medians of 3 runs):</p>
+<pre><code>BenchmarkScanDocuments/100-18   1539236 ns/op   1324656 B/op   10724 allocs/op
+BenchmarkScanDocuments/500-18   7865092 ns/op   6591693 B/op   53537 allocs/op
+BenchmarkScanDocuments/1000-18 16143180 ns/op  13181361 B/op  107053 allocs/op
+BenchmarkUpdateToC/10-18           7950 ns/op      8764 B/op     200 allocs/op
+BenchmarkUpdateToC/50-18          40365 ns/op     43254 B/op     929 allocs/op
+BenchmarkUpdateToC/200-18        164569 ns/op    177823 B/op    3639 allocs/op
+BenchmarkCmdUpdate/100-18       6575343 ns/op   1697682 B/op   18861 allocs/op
+</code></pre>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li>All three benchmarks compile and run</li>
+<li>Baseline numbers recorded in the doc for future comparison</li>
+<li>Benchmarks ignored by <code>go test ./...</code> (default — no <code>-bench</code> flag)</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-2-cache-bytes-on-docentry">
+<h2 class="panel-title" id="phase-2-cache-bytes-on-docentry">Phase 2: Cache bytes on DocEntry</h2>
+<p>Capture the file bytes during <code>ScanDocuments</code> and expose them so callers
+that need the file content don't have to re-read.</p>
+<h5 id="tasks-1">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>Content []byte</code> to <code>index.DocEntry</code> (after the existing
+<code>Filename</code> field)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>index.ScanDocuments</code>, populate <code>Content</code> from the bytes already
+read for <code>ParseFrontmatter</code> (no extra read)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Decision §1 honored: <code>Content</code> is always populated, no
+<code>ScanOptions</code> parameter introduced</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>index.GenerateTable</code> audit: it only reads <code>Frontmatter</code> +
+<code>Filename</code>, so the heavier <code>DocEntry</code> does not affect it</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Memory implication and ~10MB ceiling at CLI scale documented in
+<code>DocEntry</code>'s doc comment</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Regression test <code>TestScanDocuments_PopulatesContent</code> asserts
+<code>Content</code> equals the on-disk bytes byte-for-byte</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-3-refactor-updatetocs-to-use-cached-bytes">
+<h2 class="panel-title" id="phase-3-refactor-updatetocs-to-use-cached-bytes">Phase 3: Refactor updateToCs to use cached bytes</h2>
+<p>Stop re-reading files in <code>cmd/update.go:updateToCs</code>. The bytes are already
+on <code>DocEntry</code>.</p>
+<h5 id="tasks-2">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>cmd/update.go:updateToCs</code>, replaced <code>os.ReadFile(docPath)</code>
+with <code>doc.Content</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Removed the warning-on-read-error path (dead now that the read
+is gone)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Confirmed the <code>os.WriteFile</code> path still functions — only the read
+is eliminated, not the write</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">All existing <code>cmd/update_test.go</code> tests still pass with the new
+cached-bytes flow; behavior unchanged</div></li>
+</ul>
+<p>Post-Phase-3 measurement (Apple M5 Max, Go 1.25.7, medians of 3 runs):</p>
+<pre><code>BenchmarkCmdUpdate/100-18  5762997 ns/op  1600640 B/op  18361 allocs/op
+  (baseline:               6575343 ns/op  1697682 B/op  18861 allocs/op)
+</code></pre>
+<p>That's 12% faster wall-clock, ~97KB less, 500 fewer allocs. The
+heavier targets (<code>≥30%</code> wall-clock, <code>≥50%</code> fewer reads) split across
+phases: this phase delivers the file-read halving (100 reads of the
+doc bodies in <code>updateToCs</code> are gone — <code>index.ScanDocuments</code> reads
+them once and we reuse the bytes). The dry-run double-parse is
+addressed in Phase 4. The remaining non-dry-run cost is dominated by
+<code>os.WriteFile</code> on each touched doc and <code>index.UpdateReadme</code>'s splice;
+both are unavoidable at this layer.</p>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul>
+<li>A repo with 1000 docs runs <code>docz update</code> with 1000 file reads of doc
+bodies, not 2000 (eliminated the <code>os.ReadFile</code> per <code>updateToCs</code>
+iteration)</li>
+<li><code>BenchmarkCmdUpdate/100</code> shows measurable improvement: -12% wall
+clock, -500 allocs (target was ≥30%; the impl plan was optimistic
+for the non-dry-run path — most remaining cost is <code>os.WriteFile</code> and
+README splicing, not re-reads)</li>
+<li>All existing <code>cmd/update_test.go</code> tests pass</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-4-change-updatetoc-api-to-return-heading">
+<h2 class="panel-title" id="phase-4-change-updatetoc-api-to-return-heading">Phase 4: Change UpdateToC API to return []Heading</h2>
+<p>Make the heading metadata available to callers without forcing a second
+parse.</p>
+<h5 id="tasks-3">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Changed <code>toc.UpdateToC</code> signature per Decisions §5: returns a
+<code>toc.UpdateResult{Updated, Headings, Found}</code> struct</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>cmd/update.go:updateToCs</code> now consumes <code>res.Headings</code> in the
+dry-run branch instead of calling <code>toc.ParseHeadings</code> a second
+time on the same input</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Audited every <code>UpdateToC</code> call site (grep -rn 'UpdateToC' .) —
+<code>cmd/update.go</code>, <code>internal/toc/toc_test.go</code>, and
+<code>internal/toc/golden_test.go</code> all updated to the struct return</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Updated existing <code>TestUpdateToC</code> subtests for the new shape and
+added an assertion that <code>Headings</code> is surfaced (<code>len == 2</code> for
+the &quot;markers present with headings&quot; case)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Re-ran <code>BenchmarkUpdateToC</code> — costs ~8% more (10/50/200 sizes)
+due to the <code>[]Heading</code> slice now escaping to heap. The trade is
+deliberate: the dry-run path no longer double-parses, and the
+absolute regression is ~12µs even at 200 headings.</div></li>
+</ul>
+<p>Post-Phase-4 measurement (medians of 3 runs):</p>
+<pre><code>BenchmarkUpdateToC/10-18     8631 ns/op   8772 B/op    200 allocs/op
+  (baseline:                 7950 ns/op   8764 B/op    200 allocs/op)
+BenchmarkUpdateToC/50-18    43691 ns/op  43241 B/op    929 allocs/op
+  (baseline:                40365 ns/op  43254 B/op    929 allocs/op)
+BenchmarkUpdateToC/200-18  177013 ns/op 177750 B/op   3639 allocs/op
+  (baseline:               164569 ns/op 177823 B/op   3639 allocs/op)
+BenchmarkCmdUpdate/100-18 5819796 ns/op 1599305 B/op 18360 allocs/op
+  (baseline:              6575343 ns/op 1697682 B/op 18861 allocs/op)
+</code></pre>
+<p>The standalone <code>BenchmarkUpdateToC</code> regression is the price of the
+Headings slice escape; the dry-run path was previously walking
+ParseHeadings twice on the same input, so net dry-run cost on a
+200-heading doc drops from ~280µs (164µs UpdateToC + ~115µs second
+ParseHeadings) to ~177µs — a ~37% improvement on the path that
+actually paid the duplicate-parse cost.</p>
+<h5 id="success-criteria-2">Success Criteria</h5>
+<ul>
+<li><code>grep -rn 'ParseHeadings' .</code> shows one production call site inside
+<code>UpdateToC</code> itself (<code>internal/toc/toc.go:210</code>); the rest are
+comments or tests</li>
+<li>Dry-run <code>docz update --dry-run</code> no longer double-parses (the
+duplicate <code>toc.ParseHeadings(original)</code> call in
+<code>cmd/update.go:updateToCs</code> is gone)</li>
+<li><code>BenchmarkUpdateToC</code> slightly slower (≈8%) due to the returned
+slice escaping to heap — acceptable trade since the dry-run path
+net-wins ≈37%</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-5-verify-and-ship">
+<h2 class="panel-title" id="phase-5-verify-and-ship">Phase 5: Verify and ship</h2>
+<h5 id="tasks-4">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Re-ran all three benchmarks; post-change numbers recorded below</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Improvement targets: file-read halving met (1 read per doc, not
+2). Dry-run double-parse eliminated. ≥30% wall-clock on
+<code>BenchmarkCmdUpdate/100</code> not met — measured -13%; the impl plan
+target was optimistic for the non-dry-run path</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>make ci</code> green</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Smoke test: <code>docz update --dry-run</code> against this repo —
+produces correct dry-run output, no files modified</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Smoke test: <code>docz update</code> against this repo — README index
+files unchanged byte-for-byte (only the IMPL-0007 doc itself
+changed because we just edited it)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Open PR with <code>dont-release</code> label — PR #43</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">INV-0002 status already <code>In Progress</code>; no flip needed until all
+waves merge</div></li>
+</ul>
+<p>Post-change numbers (Apple M5 Max, Go 1.25.7, medians of 3 runs):</p>
+<pre><code>BenchmarkScanDocuments/100-18    1583260 ns/op  +3% vs baseline
+BenchmarkScanDocuments/500-18    8858672 ns/op  +13% (cost of bytes retention)
+BenchmarkScanDocuments/1000-18  18603353 ns/op  +15%
+BenchmarkUpdateToC/10-18            8182 ns/op  +3% (Headings escape)
+BenchmarkUpdateToC/50-18           41038 ns/op  +2%
+BenchmarkUpdateToC/200-18         166810 ns/op  +1%
+BenchmarkCmdUpdate/100-18        5714161 ns/op  -13% vs baseline (HEADLINE)
+                                 1602510 B/op   -95KB
+                                   18361 allocs -500
+</code></pre>
+<p>Interpretation:</p>
+<ul>
+<li><code>BenchmarkCmdUpdate/100</code> is the headline number and shows the
+end-to-end improvement: the <code>updateToCs</code> second-read elimination
+and dry-run double-parse removal deliver -13% wall-clock, -95KB,
+-500 allocs on the path that actually matters to users.</li>
+<li><code>BenchmarkScanDocuments</code> shows the cost side of Decisions §1: with
+bytes cached on <code>DocEntry.Content</code>, scan latency increases modestly
+(~13-15% at 500-1000 docs). This is the deliberate trade — pay the
+cost once during scan so callers don't pay it twice.</li>
+<li><code>BenchmarkUpdateToC</code> shows the ~2-3% cost of the new <code>[]Heading</code>
+escape; this is overwhelmed by the dry-run savings on the path
+that exercises the duplicate-parse codepath.</li>
+</ul>
+<p>The ≥30% wall-clock target from Phase 3 was optimistic: most of the
+remaining time in <code>runUpdate</code> is <code>os.WriteFile</code> per touched document
+and <code>index.UpdateReadme</code>'s splice work, neither of which is the
+subject of this wave. The architectural goal — halve the file-read
+count, surface heading metadata in the return value — is met.</p>
+<h5 id="success-criteria-3">Success Criteria</h5>
+<ul>
+<li><code>BenchmarkCmdUpdate/100</code> ≥30% faster than baseline</li>
+<li>No golden-file regression</li>
+<li>No memory leak under repeated invocation (sanity check)</li>
+</ul>
+
+</section>
+<section class="panel" id="p-file-changes">
+<h2 class="panel-title" id="file-changes">File Changes</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>internal/index/index.go</code></td>
+<td>Modify</td>
+<td>Add <code>DocEntry.Content</code>; populate in <code>ScanDocuments</code></td>
+</tr>
+<tr>
+<td><code>internal/index/index_test.go</code></td>
+<td>Modify</td>
+<td>Add benchmark; assert <code>Content</code> populated</td>
+</tr>
+<tr>
+<td><code>internal/toc/toc.go</code></td>
+<td>Modify</td>
+<td>Change <code>UpdateToC</code> signature to return headings</td>
+</tr>
+<tr>
+<td><code>internal/toc/toc_test.go</code></td>
+<td>Modify</td>
+<td>Update test cases; add benchmark</td>
+</tr>
+<tr>
+<td><code>cmd/update.go</code></td>
+<td>Modify</td>
+<td>Use cached <code>Content</code>; consume returned <code>headings</code></td>
+</tr>
+<tr>
+<td><code>cmd/update_test.go</code></td>
+<td>Modify</td>
+<td>Add <code>BenchmarkCmdUpdate</code>; verify no double-read</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing-plan">
+<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Benchmarks for <code>ScanDocuments</code>, <code>UpdateToC</code>, <code>runUpdate</code> —
+added in Phase 1, recorded baseline + post-change numbers above</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Correctness regression: golden files unchanged
+(<code>testdata/golden/toc/basic.md</code> re-asserted by
+<code>internal/toc/golden_test.go</code> against the new <code>UpdateResult</code>)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Edge cases covered by the existing <code>TestUpdateToC</code> subtests
+(markers-without-headings, no markers, only-begin-marker,
+below-threshold) and by <code>TestScanDocuments_PopulatesContent</code>
+asserting empty <code>Content</code> is byte-identical to disk</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Memory check: <code>BenchmarkScanDocuments/1000</code> reports
+~13MB/op B/op — acceptable for the 1000×~2KB synthesized docs
+profile and consistent with the Decisions §1 ~10MB CLI-scale
+ceiling</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<p>Resolved during INV-0002 planning review.</p>
+<ol>
+<li><strong><code>DocEntry.Content</code>:</strong> always populated. ~10MB ceiling at realistic
+CLI scale (1000 docs × ~10KB) is negligible.</li>
+<li><strong><code>fs.FS</code> parameter:</strong> defer to IMPL-0008, which restructures the
+<code>index</code> / <code>document</code> packages and is the natural point to introduce
+the abstraction.</li>
+<li><strong>Benchmark scale:</strong> 100 / 500 / 1000 sweep. Report the 100-doc
+number as the headline; the larger sizes catch regressions in the
+curve.</li>
+<li><strong>Memory implication on <code>DocEntry.Content</code>:</strong> no action needed for
+a one-shot CLI. Document the assumption in <code>DocEntry</code>'s doc comment
+so a future library consumer understands it.</li>
+<li><strong><code>UpdateToC</code> return shape:</strong> struct
+<code>UpdateResult{Updated string; Headings []Heading; Found bool}</code>.
+Easier to extend without breaking signature.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<ul>
+<li>Builds on IMPL-0006 (assumes Wave 2 helpers exist; specifically
+<code>EnabledTypes</code> simplifies the test setup)</li>
+<li>Independent of IMPL-0008; can ship before or after</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0002 — Wave 3, findings F41, F42</li>
+<li>Performance review notes — <code>cmd/update.go:131</code> (double parse),
+<code>cmd/update.go:112</code> (double read)</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/docz-impl-0007.orig.md</code>, sha256 <code>f7c6df910a94909bd77e13cfdb111f708127471be8dc0f110af4a28cfb5b48af</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

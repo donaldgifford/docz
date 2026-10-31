@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0001: Phase out the legacy scanner</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Phase out the legacy scanner</h1>
+<p class="summary"><strong>Implements:</strong></p>
+<div class="meta">
+<span class="pill">IMPL-0001</span>
+<span class="pill st-active">In Progress</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
+<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
+<button type="button" data-tab="phase-1" aria-controls="p-phase-1">Phase 1:</button>
+<button type="button" data-tab="phase-2" aria-controls="p-phase-2">Phase 2:</button>
+<button type="button" data-tab="phase-3" aria-controls="p-phase-3">Phase 3:</button>
+<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
+<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-objective">
+<h2 class="panel-title" id="objective">Objective</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<section class="panel" id="p-scope">
+<h2 class="panel-title" id="scope">Scope</h2>
+<h4 id="in-scope">In Scope</h4>
+<h4 id="out-of-scope">Out of Scope</h4>
+
+</section>
+<section class="panel" id="p-implementation-phases">
+<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
+<p>Each phase builds on the previous one. A phase is complete when all its tasks
+are checked off and its success criteria are met.</p>
+
+</section>
+<section class="panel" id="p-phase-1">
+<h2 class="panel-title" id="phase-1-">Phase 1:</h2>
+<h5 id="tasks">Tasks</h5>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Write unit tests for ...</div></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li><code>go build ./...</code> succeeds with no errors</li>
+<li>...</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-2">
+<h2 class="panel-title" id="phase-2-">Phase 2:</h2>
+<h5 id="tasks-1">Tasks</h5>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Task description</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Write integration tests for ...</div></li>
+</ul>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul>
+<li>Feature X works end-to-end</li>
+<li>...</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-3">
+<h2 class="panel-title" id="phase-3-">Phase 3:</h2>
+<h5 id="tasks-2">Tasks</h5>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">Audit error messages for consistency</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Ensure <code>make ci</code> passes</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Review test coverage (target: &gt;80%)</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Clean up any TODO/FIXME comments</div></li>
+</ul>
+<h5 id="success-criteria-2">Success Criteria</h5>
+<ul>
+<li><code>make ci</code> passes with zero errors</li>
+<li>Test coverage &gt;80% for all packages</li>
+<li>All error paths produce clear, actionable messages</li>
+</ul>
+
+</section>
+<section class="panel" id="p-file-changes">
+<h2 class="panel-title" id="file-changes">File Changes</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>Create</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Modify</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing-plan">
+<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">Unit tests for all exported functions</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Integration tests using <code>t.TempDir()</code> for filesystem operations</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Table-driven tests for functions with multiple input variations</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/impl/docs/impl/0001-phase-out-the-legacy-scanner.md</code>, sha256 <code>a7c60a54a03566c33e6d63e745cd6291aa7d119e71bf72f5601e39160ab212da</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

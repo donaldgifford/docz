@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0001: Grammar fixture</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Design</p>
+<h1>Grammar fixture</h1>
+<p class="summary">A design document that exercises every field of the design package in one
+place, so the shared field rules are pinned by something a person can read.</p>
+<div class="meta">
+<span class="pill">DESIGN-0001</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Test Author</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
+<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
+<button type="button" data-tab="background" aria-controls="p-background">Background</button>
+<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
+<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
+<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
+<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<section class="panel" id="p-goals">
+<h2 class="panel-title" id="goals">Goals</h2>
+<h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<ul>
+<li>Read every section of the DESIGN template into its own field</li>
+<li>Keep the detailed design region whole, numbered subsections and all</li>
+</ul>
+
+</section>
+<section class="panel" id="p-non-goals">
+<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<ul>
+<li>A grammar for the numbered subsections</li>
+</ul>
+
+</section>
+<section class="panel" id="p-background">
+<h2 class="panel-title" id="background">Background</h2>
+<p>Five type packages share one shape, and design is the one whose longest
+section has no structure docz reads.</p>
+
+</section>
+<section class="panel" id="p-detailed-design">
+<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
+<p>The package is a switch over region kinds and nothing else.</p>
+<h4 id="1-parsing">1. Parsing</h4>
+<p>Parse resolves the document's regions once and fills one field per kind,
+rebasing every line onto the document as it goes.</p>
+<h4 id="2-validating">2. Validating</h4>
+<p>Validate runs Parse and reports the three rules that need a typed model.</p>
+
+</section>
+<section class="panel" id="p-api-interface-changes">
+<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<p>Three exported functions — <code>Parse</code>, <code>Validate</code>, and <code>Headings</code> — plus the
+<code>Doc</code> value they are about.</p>
+
+</section>
+<section class="panel" id="p-data-model">
+<h2 class="panel-title" id="data-model">Data Model</h2>
+<p><code>Doc</code> holds one field per section and nothing is written to disk, so there is
+no schema to migrate.</p>
+
+</section>
+<section class="panel" id="p-testing-strategy">
+<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<p>A marked fixture, the same fixture with its markers stripped, and one case per
+finding code.</p>
+
+</section>
+<section class="panel" id="p-migration-rollout-plan">
+<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<p>The package ships with the v2 line, so no existing document has to change.</p>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h4 id="1-does-the-detailed-design-region-keep-its-subsections">1. Does the detailed design region keep its subsections?</h4>
+<blockquote>
+<p><strong>Resolved 2026-09-20: (a)</strong> The numbering is the author's, so a reader that
+split on it would be inventing a grammar.</p>
+</blockquote>
+<ul>
+<li>a. Report the region's body whole, headings included. <em>(recommendation)</em></li>
+<li>b. Split it into sections keyed by the number.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="2-where-does-an-unresolved-questions-finding-point">2. Where does an unresolved question's finding point?</h4>
+<ul>
+<li>a. At the question's own heading. <em>(recommendation)</em></li>
+<li>b. At the frontmatter status line that contradicts it.</li>
+<li>c. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Does the region keep its subsections?</td>
+<td>Yes, the body is reported whole</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0014</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../design/testdata/grammar.md</code>, sha256 <code>44b9f4637d1d073d131f8e071063b4da8294a68111c8a78bfedbc81e34e53bae</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

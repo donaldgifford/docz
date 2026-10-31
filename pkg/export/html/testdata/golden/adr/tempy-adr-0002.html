@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0002: Loop control belongs to the workflow, not the prompt</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Loop control belongs to the workflow, not the prompt</h1>
+<p class="summary">IMPL docs are executed today by a single donald-loop (Ralph loop) invocation
+whose prompt carries both the agent's job and the loop's control logic:</p>
+<div class="meta">
+<span class="pill">ADR-0002</span>
+<span class="pill st-proposed">Proposed</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-12</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="status" aria-controls="p-status">Status</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-status">
+<h2 class="panel-title" id="status">Status</h2>
+<p>Accepted</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Prompt clause</th>
+<th>Actually is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Start at first unchecked task, continue where you left off</td>
+<td>Resume logic</td>
+</tr>
+<tr>
+<td>Work phases sequentially</td>
+<td>Iteration order</td>
+</tr>
+<tr>
+<td>Run <code>just lint</code> / <code>just fmt</code> after each task</td>
+<td>Evaluation step</td>
+</tr>
+<tr>
+<td>Commit after each task, conventional commits</td>
+<td>Checkpoint, unverified</td>
+</tr>
+<tr>
+<td>Check off the task in the doc</td>
+<td>Completion marker, unverified</td>
+</tr>
+<tr>
+<td>If phase acceptance criteria all met, move on</td>
+<td>Phase gate</td>
+</tr>
+<tr>
+<td>Mark <code>deferred – human required</code></td>
+<td>Blocked state, no human signal</td>
+</tr>
+<tr>
+<td>Output <code>&lt;promise&gt;MVP COMPLETE&lt;/promise&gt;</code></td>
+<td>Completion condition, agent-asserted</td>
+</tr>
+<tr>
+<td><code>--max-iterations 75</code></td>
+<td>Run-wide cap, poor failure locality</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>This works with a human watching. Unattended, every one of these clauses is
+something the loop <em>hopes</em> the agent did. The characteristic failure is not an
+agent that fails; it is an agent that ticks a box after partial work and the
+loop moves on.</p>
+<p>Moving execution onto Temporal (DESIGN-0001) forces the question of which layer
+owns which responsibility.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<p>The workflow owns loop control; the agent owns one task at a time.</p>
+<p>Concretely:</p>
+<ol>
+<li><strong>The workflow derives position from the document.</strong> The next task is always
+computed by parsing the IMPL doc at <code>HEAD</code> of the work branch. The workflow
+keeps a cursor for efficiency, never as the source of truth.</li>
+<li><strong>Completion is verified, not asserted.</strong> A task is done only when the
+workflow observes that <code>HEAD</code> advanced, the task's checkbox flipped and no
+other task changed, and the repository's mechanical checks pass. The agent's
+own &quot;done&quot; status is a hint that triggers evaluation.</li>
+<li><strong>Git is the state boundary.</strong> The workflow records the last good SHA per
+task. A retry resets the branch to that SHA before the agent runs again. The
+workflow never carries file content, only references.</li>
+<li><strong>Blocked is a state, not a marker.</strong> The agent returns <code>blocked</code> with a
+reason; the workflow writes the deferred marker, exposes it via search
+attributes, and waits for a human <code>unblock</code> or <code>skip</code> signal.</li>
+<li><strong>Caps are per task and per run.</strong> Failure locality: the run reports which
+task exhausted its iterations.</li>
+<li><strong>Completion is computed.</strong> The run finishes when every task is done or
+skipped and every phase gate passes. The agent never emits a completion
+promise.</li>
+</ol>
+<p>The per-task prompt is reduced to skill routing, style, referenced design docs,
+the commit/checkbox convention, and the result-block contract.</p>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<h4 id="positive">Positive</h4>
+<ul>
+<li>Each clause the prompt used to hope for becomes a check with a named failure.
+Evaluation output feeds the next iteration's prompt, giving the agent precise
+feedback instead of a re-read of the whole doc.</li>
+<li>Runs survive worker restarts and agent crashes without corrupting the branch,
+because retries start from a recorded good SHA.</li>
+<li>The prompt shrinks by roughly two thirds and stops changing when the loop
+semantics change.</li>
+<li>Resume after any interruption, including loss of the Temporal namespace, costs
+at most one task's iterations.</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li>A rejected-but-committed iteration is discarded (reset to last good SHA)
+rather than fixed forward. This wastes tokens when the agent was close. Chosen
+deliberately: fixing forward lets untracked work accumulate on the branch.
+Open to revisiting once evaluation feedback proves reliable.</li>
+<li>The IMPL format gains conventions the workflow depends on: positional task
+IDs, the <code>verify:</code> continuation line, executable-vs-assertive success
+criteria. Agents must be told not to add, remove, or reorder tasks, and the
+workflow must detect it.</li>
+<li>Mechanical checks run twice — in the runner (agent habit) and on the worker
+(authoritative). Accepted cost for a trustworthy gate.</li>
+</ul>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li>The manual donald-loop keeps working unchanged; nothing in this decision
+requires it to be retired.</li>
+<li>Assertive success criteria still need a human or an explicit
+<code>--auto-confirm-criteria</code> opt-in. The workflow does not pretend to verify what
+it cannot run.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>Keep the full prompt; wrap it in a Temporal activity for durability only.</strong>
+Rejected: gains restartability, none of the verification. The 75 iteration cap
+and agent-asserted completion remain.</li>
+<li><strong>Let the agent drive Temporal (agent calls signals/activities).</strong> Rejected:
+inverts the trust relationship; the component being verified would control the
+verifier.</li>
+<li><strong>Fix forward from rejected commits.</strong> Deferred, see Negative above.</li>
+<li><strong>Store task state in a database instead of the doc.</strong> Rejected: the doc is
+already the checkpoint humans read and the manual loop uses; two sources of
+truth would drift.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0001 Temporal-orchestrated IMPL loop execution</li>
+<li><code>docs/reference/donald-loop-prompt.md</code> — the prompt being replaced</li>
+<li>ADR-0001 Run the IMPL loop worker as its own repository</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/tempy-adr-0002.md</code>, sha256 <code>ee918634b01457df9e86986018d726cf10e30cd5e8f3bd2cf07fbae5cfb556d2</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RUNBOOK-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RUNBOOK-0002: docz-api webhook deliveries fail</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Runbook</p>
+<h1>docz-api webhook deliveries fail</h1>
+<p class="summary">GitHub delivers <code>installation</code>, <code>installation_repositories</code>, and <code>push</code>
+events to docz-api's <code>POST /webhooks/github</code>. Each accepted delivery
+enqueues an ingest, and the worker then refetches the repository. This
+runbook finds where a delivery stopped: at the edge before it reached
+docz-api, at docz-api's signature check, or in the ingest the delivery
+queued.</p>
+<div class="meta">
+<span class="pill">RUNBOOK-0002</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-10-01</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="last-verified" aria-controls="p-last-verified">Last Verified</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="when-to-use" aria-controls="p-when-to-use">When to Use</button>
+<button type="button" data-tab="prerequisites" aria-controls="p-prerequisites">Prerequisites</button>
+<button type="button" data-tab="procedure-1-redeliver-and-confirm" aria-controls="p-procedure-1-redeliver-and-confirm">Procedure 1: Redeliver and confirm</button>
+<button type="button" data-tab="scenario-github-reports-a-tls-eof-on-every-delivery" aria-controls="p-scenario-github-reports-a-tls-eof-on-every-delivery">Scenario: GitHub reports a TLS EOF on every delivery</button>
+<button type="button" data-tab="scenario-the-ingress-has-no-hostname" aria-controls="p-scenario-the-ingress-has-no-hostname">Scenario: The Ingress has no hostname</button>
+<button type="button" data-tab="scenario-deliveries-are-answered-401" aria-controls="p-scenario-deliveries-are-answered-401">Scenario: Deliveries are answered 401</button>
+<button type="button" data-tab="scenario-deliveries-succeed-but-the-change-never-appears" aria-controls="p-scenario-deliveries-succeed-but-the-change-never-appears">Scenario: Deliveries succeed but the change never appears</button>
+<button type="button" data-tab="scenario-a-repository-stopped-re-ingesting-after-repeated-failures" aria-controls="p-scenario-a-repository-stopped-re-ingesting-after-repeated-failures">Scenario: A repository stopped re-ingesting after repeated failures</button>
+<button type="button" data-tab="escalation" aria-controls="p-escalation">Escalation</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-last-verified">
+<h2 class="panel-title" id="last-verified">Last Verified</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>PR</th>
+<th>Commit</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Notes:</strong> Not yet run end to end. Written from
+<code>deploy/tailscale-operator.md</code> and INV-0007's failure drill.</p>
+
+</section>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p><strong>Service:</strong> docz-api (<code>charts/docz</code>, the <code>api</code> workload)</p>
+<p><strong>Owner:</strong> @donaldgifford</p>
+
+</section>
+<section class="panel" id="p-when-to-use">
+<h2 class="panel-title" id="when-to-use">When to Use</h2>
+<ul>
+<li>The GitHub App's Recent Deliveries page shows failed deliveries</li>
+<li>A push to a repository's <code>docs/</code> did not appear in docz-site</li>
+<li><code>DoczAPIIngestFailures</code> fires</li>
+</ul>
+
+</section>
+<section class="panel" id="p-prerequisites">
+<h2 class="panel-title" id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Admin on the GitHub App, for its settings page, Recent Deliveries, and
+the webhook secret</li>
+<li><code>kubectl</code> access to the namespace docz is installed in</li>
+<li>For the Tailscale edge: admin on the tailnet, for its policy file and
+DNS settings</li>
+<li>docz-api running with <code>LOG_FORMAT=json</code>, so its logs can be filtered
+with <code>jq</code></li>
+</ul>
+
+</section>
+<section class="panel" id="p-procedure-1-redeliver-and-confirm">
+<h2 class="panel-title" id="procedure-1-redeliver-and-confirm">Procedure 1: Redeliver and confirm</h2>
+<h3 id="procedures">Procedures</h3>
+<p>After a fix, replay the failed delivery and follow it through docz-api.</p>
+<h5 id="steps">Steps</h5>
+<ol>
+<li><p>In the GitHub App's settings, open Advanced, then Recent Deliveries.
+Pick the failed delivery and choose Redeliver. Note its delivery ID
+(the <code>X-GitHub-Delivery</code> header).</p>
+</li>
+<li><p>Find the delivery in docz-api's logs.</p>
+<pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 10m \
+  | jq -c &#39;select(.delivery == &#34;&lt;delivery-id&gt;&#34; or (.msg | test(&#34;webhook|ingest job&#34;)))&#39;
+</code></pre>
+<p><strong>Expected:</strong> no <code>webhook signature verification failed</code> line, and an
+<code>ingest job enqueued</code> line for the repository</p>
+</li>
+<li><p>Follow the ingest the delivery queued to the end.</p>
+<pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 10m \
+  | jq -c &#39;select(.repo == &#34;&lt;owner&gt;/&lt;name&gt;&#34;)&#39;
+</code></pre>
+<p><strong>Expected:</strong> <code>processing ingest job</code>, then <code>ingest job complete</code></p>
+</li>
+</ol>
+<h5 id="verification">Verification</h5>
+<ul>
+<li>GitHub shows the redelivery with a <code>202</code></li>
+<li>docz-site shows the change the delivery was for</li>
+</ul>
+<h5 id="rollback">Rollback</h5>
+<ol>
+<li>Not applicable: redelivery is idempotent. A replayed delivery ID is
+answered <code>200</code> and does no work.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-github-reports-a-tls-eof-on-every-delivery">
+<h2 class="panel-title" id="scenario-github-reports-a-tls-eof-on-every-delivery">Scenario: GitHub reports a TLS EOF on every delivery</h2>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<p><strong>Alert:</strong> none; GitHub's Recent Deliveries shows the failure</p>
+<p><strong>Likely cause:</strong> the Tailscale Funnel cannot serve TLS. Either the
+proxy's tag lacks the <code>funnel</code> node attribute, or the tailnet has HTTPS
+certificates turned off</p>
+<h5 id="steps-1">Steps</h5>
+<ol>
+<li><p>Diagnose: confirm nothing reached docz-api. A TLS EOF fails before
+HTTP, so there is no webhook log line for the delivery's time.</p>
+<pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 30m | jq -c &#39;select(.msg | test(&#34;webhook&#34;))&#39;
+</code></pre>
+<p><strong>Expected:</strong> nothing near the failed delivery's timestamp</p>
+</li>
+<li><p>Diagnose: check Funnel on the operator's proxy pod.</p>
+<pre><code class="language-sh">kubectl -n tailscale exec &lt;proxy-pod&gt; -- tailscale funnel status
+</code></pre>
+<p><strong>Expected:</strong> a Funnel entry for the docz-api host. An empty result
+means the grant is missing</p>
+</li>
+<li><p>Resolve: add the <code>funnel</code> attribute for the proxy's tag in the tailnet
+policy file.</p>
+<pre><code class="language-json">&#34;nodeAttrs&#34;: [
+  { &#34;target&#34;: [&#34;tag:k8s&#34;], &#34;attr&#34;: [&#34;funnel&#34;] }
+]
+</code></pre>
+</li>
+<li><p>Resolve: in the admin console, open DNS, then HTTPS Certificates, and
+turn them on.</p>
+</li>
+<li><p>Run Procedure 1.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-the-ingress-has-no-hostname">
+<h2 class="panel-title" id="scenario-the-ingress-has-no-hostname">Scenario: The Ingress has no hostname</h2>
+<p><strong>Alert:</strong> none; the GitHub App's webhook URL does not resolve</p>
+<p><strong>Likely cause:</strong> the Tailscale operator could not create the proxy for
+<code>api.ingress</code></p>
+<h5 id="steps-2">Steps</h5>
+<ol>
+<li><p>Diagnose: read the Ingress status.</p>
+<pre><code class="language-sh">kubectl -n docz get ingress docz-api -o jsonpath=&#39;{.status.loadBalancer.ingress}&#39;
+</code></pre>
+<p><strong>Expected:</strong> a <code>*.ts.net</code> hostname. Empty means no proxy</p>
+</li>
+<li><p>Diagnose: read the operator's logs for the Ingress.</p>
+<pre><code class="language-sh">kubectl -n tailscale logs deploy/operator --since 1h | grep -i docz-api
+</code></pre>
+</li>
+<li><p>Resolve: fix what the operator reports. It is usually its OAuth client
+or the tags it may assign. Then check that the hostname appears.</p>
+</li>
+<li><p>Resolve: set the GitHub App's webhook URL to
+<code>https://&lt;tls-host&gt;.&lt;tailnet&gt;.ts.net/webhooks/github</code>, then run
+Procedure 1.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-deliveries-are-answered-401">
+<h2 class="panel-title" id="scenario-deliveries-are-answered-401">Scenario: Deliveries are answered 401</h2>
+<p><strong>Alert:</strong> none; GitHub shows <code>401</code> responses</p>
+<p><strong>Likely cause:</strong> the GitHub App's webhook secret differs from the one
+docz-api holds, so the HMAC check fails before any work is done</p>
+<h5 id="steps-3">Steps</h5>
+<ol>
+<li><p>Diagnose: find the verification failures.</p>
+<pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 1h \
+  | jq -c &#39;select(.msg == &#34;webhook signature verification failed&#34;)&#39;
+</code></pre>
+<p><strong>Expected:</strong> one line per failed delivery</p>
+</li>
+<li><p>Resolve: set one new secret in both places. Put it in the GitHub App's
+settings, then in the chart's <code>api.secrets.webhookSecret</code>, or in the
+<code>existingSecret</code> the release uses.</p>
+</li>
+<li><p>Resolve: roll the API so it reads the new secret, then run Procedure 1.</p>
+<pre><code class="language-sh">kubectl -n docz rollout restart deploy/docz-api
+kubectl -n docz rollout status deploy/docz-api
+</code></pre>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-deliveries-succeed-but-the-change-never-appears">
+<h2 class="panel-title" id="scenario-deliveries-succeed-but-the-change-never-appears">Scenario: Deliveries succeed but the change never appears</h2>
+<p><strong>Alert:</strong> <code>DoczAPIIngestFailures</code></p>
+<p><strong>Likely cause:</strong> the ingest the delivery queued is failing. Usually the
+cause is a malformed <code>.docz.yaml</code> at HEAD, or the GitHub App lacking
+access to the repository</p>
+<h5 id="steps-4">Steps</h5>
+<ol>
+<li><p>Diagnose: confirm the push was one docz-api acts on. Only a push to the
+default branch that touches <code>.docz.yaml</code>, <code>docs/</code>, or a watched file
+enqueues an ingest. A push for a repository that was never onboarded
+logs <code>push for unknown repo; skipping until onboarded</code>.</p>
+</li>
+<li><p>Diagnose: read the failed attempts. Each one logs its cause.</p>
+<pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 1h \
+  | jq -c &#39;select(.msg == &#34;ingest job attempt failed&#34;) | {repo, reason, retried, max_retry, err}&#39;
+</code></pre>
+<p><strong>Expected:</strong> the <code>err</code> field names the cause</p>
+</li>
+<li><p>Resolve: fix the cause at its source. Fix the <code>.docz.yaml</code> and push, or
+grant the App access to the repository. A new push re-enqueues the
+ingest.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-a-repository-stopped-re-ingesting-after-repeated-failures">
+<h2 class="panel-title" id="scenario-a-repository-stopped-re-ingesting-after-repeated-failures">Scenario: A repository stopped re-ingesting after repeated failures</h2>
+<p><strong>Alert:</strong> <code>DoczAPIIngestFailures</code>, then silence</p>
+<p><strong>Likely cause:</strong> the ingest exhausted its retries. Since INV-0007 the
+next trigger clears the finished task and re-enqueues, so a new push or
+delivery is all it takes</p>
+<h5 id="steps-5">Steps</h5>
+<ol>
+<li><p>Diagnose: confirm the task was exhausted rather than still retrying.</p>
+<pre><code class="language-sh">kubectl -n docz logs deploy/docz-api --since 24h \
+  | jq -c &#39;select(.component == &#34;asynq&#34; and (.msg | test(&#34;Retry exhausted&#34;)))&#39;
+</code></pre>
+</li>
+<li><p>Resolve: fix the cause, as in the previous scenario.</p>
+</li>
+<li><p>Resolve: run Procedure 1. The re-enqueue logs
+<code>cleared a finished ingest task and re-enqueued</code> with the
+<code>cleared_state</code> it removed.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-escalation">
+<h2 class="panel-title" id="escalation">Escalation</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Who</th>
+<th>When</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@donaldgifford</td>
+<td>A cause not listed here, or a fix that does not hold</td>
+<td>GitHub issue on <code>donaldgifford/docz</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>The Tailscale operator in front of docz-api:
+the Funnel edge and its tailnet policy</li>
+<li>INV-0007:
+why ingest failures used to be silent, and the self-heal</li>
+<li><a href="https://docs.github.com/en/webhooks/testing-and-troubleshooting-webhooks/redelivering-webhooks">GitHub: Redelivering webhooks</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../runbook/testdata/runbook-0002.md</code>, sha256 <code>3eeeea2ecf7961296f15e0f536da93ef6fd953cfe10cdf9beec79b0283986d1c</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

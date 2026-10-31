@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0009">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0009: docz-site: cross-repo docz viewer and search UI</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Design</p>
+<h1>docz-site: cross-repo docz viewer and search UI</h1>
+<p class="summary"><strong>Status:</strong> Draft
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-06-23</p>
+<div class="meta">
+<span class="pill">DESIGN-0009</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-06-23</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
+<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
+<button type="button" data-tab="background" aria-controls="p-background">Background</button>
+<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
+<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
+<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
+<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#goals-and-non-goals">Goals and Non-Goals</a>
+<ul>
+<li><a href="#goals">Goals</a></li>
+<li><a href="#non-goals">Non-Goals</a></li>
+</ul>
+</li>
+<li><a href="#background">Background</a></li>
+<li><a href="#detailed-design">Detailed Design</a>
+<ul>
+<li><a href="#tech-stack-proposal">Tech stack proposal</a></li>
+<li><a href="#information-architecture-and-route-map">Information architecture and route map</a></li>
+<li><a href="#search-ux-and-how-it-queries-docz-api">Search UX and how it queries docz-api</a></li>
+<li><a href="#document-reader-pipeline">Document reader pipeline</a></li>
+<li><a href="#auth-and-session-handling-against-docz-api">Auth and session handling against docz-api</a></li>
+<li><a href="#loading-empty-and-error-states">Loading, empty, and error states</a></li>
+<li><a href="#responsive-layout">Responsive layout</a></li>
+</ul>
+</li>
+<li><a href="#api--interface-changes">API / Interface Changes</a></li>
+<li><a href="#data-model">Data Model</a></li>
+<li><a href="#testing-strategy">Testing Strategy</a></li>
+<li><a href="#migration--rollout-plan">Migration / Rollout Plan</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-which-front-end-framework">1. Which front-end framework?</a></li>
+<li><a href="#2-which-markdown-renderer-library">2. Which markdown renderer library?</a></li>
+<li><a href="#3-ssr-or-spa">3. SSR or SPA?</a></li>
+<li><a href="#4-how-does-the-site-integrate-with-meilisearch-search">4. How does the site integrate with Meilisearch search?</a></li>
+<li><a href="#5-html-sanitization-approach">5. HTML sanitization approach?</a></li>
+<li><a href="#6-styling--design-system-choice">6. Styling / design-system choice?</a></li>
+<li><a href="#7-where-does-the-oidcoauth-token-exchange-happen">7. Where does the OIDC/OAuth token exchange happen?</a></li>
+<li><a href="#8-how-should-doczs-own-toc-markers-be-handled">8. How should docz's own ToC markers be handled?</a></li>
+</ul>
+</li>
+<li><a href="#references">References</a></li>
+</ul>
+<p><strong>docz-site</strong> is the web front end that lets a team browse, search, and read
+<em>all</em> of their docz documents from a single URL. docz is a CLI that generates
+and manages standardized per-repo documentation (RFCs, ADRs, design docs,
+implementation plans, plans, investigations) with typed YAML frontmatter
+(<code>id</code>, <code>title</code>, <code>status</code>, <code>author</code>, <code>created</code>), stable namespaced IDs
+(<code>RFC-0001</code>, <code>FW-0003</code>), and a <code>.docz.yaml</code> manifest per repo. Today each repo
+has its own doc tree and there is no single place to search &quot;all our ADRs&quot; or
+&quot;every Draft design across the org.&quot; docz-site is that single place.</p>
+<p>docz-site is a <strong>client</strong> of <strong>docz-api</strong> (designed separately in DESIGN-0008).
+docz-api is a Go service that uses a GitHub App to onboard repos, ingests each
+repo's <code>.docz.yaml</code> + doc files into a Postgres registry, indexes them in
+Meilisearch, and refreshes via webhooks. Critically for this design:</p>
+<ul>
+<li>docz-api <strong>caches raw markdown + metadata</strong> (Decision 2). It does <em>not</em> store
+rendered HTML and does <em>not</em> render server-side.</li>
+<li>docz-site therefore <strong>renders markdown → HTML client-side</strong> with a JS
+renderer (Decision 3). docz's own terminal renderer (<code>mdp</code>) is intentionally
+single-user neovim/terminal scope and is <em>not</em> reused here.</li>
+<li>docz-site <strong>stores no source data</strong> and <strong>never talks to GitHub directly for
+content</strong> — it reads everything from docz-api over HTTP/JSON.</li>
+</ul>
+<p>This document derives from INV-0005 (&quot;docz-api and docz-site: centralized
+cross-repo docz registry and viewer&quot;) and honors its locked decisions. It is
+written to seed a brand-new <code>docz-site</code> git repository, so it restates the
+essential context rather than assuming the docz or docz-api repos are open.</p>
+
+</section>
+<section class="panel" id="p-goals">
+<h2 class="panel-title" id="goals">Goals</h2>
+<h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<ul>
+<li><strong>One URL for all docz documents.</strong> Navigate repos → a repo → its doc types →
+the documents of a type → open and read one document, with breadcrumbs
+throughout.</li>
+<li><strong>Global search</strong> (Meilisearch-backed, via docz-api) with facets on <strong>repo</strong>,
+<strong>type</strong>, <strong>status</strong>, and <strong>author</strong>, and cross-repo views that fall out of
+those facets (e.g. &quot;all Approved designs across repos&quot;).</li>
+<li><strong>A faithful document reader.</strong> Fetch raw markdown from docz-api, render it to
+HTML client-side, <strong>sanitize</strong> the result (it is user content → XSS surface),
+highlight code, build a table of contents from headings, and show a
+frontmatter <strong>status badge</strong>.</li>
+<li><strong>Pluggable authentication</strong> (Decision 6) via OIDC/OAuth: <strong>GitHub</strong>
+(default/preferred), <strong>Okta</strong>, <strong>Keycloak</strong>. The user sees only the repos and
+docs they are authorized for; <strong>authorization is enforced server-side by
+docz-api</strong>, and the site reflects it.</li>
+<li><strong>A thin vertical slice first</strong> (Decision 8): render one repo's one type
+end-to-end before building the full navigation, search, and auth.</li>
+<li><strong>A responsive layout</strong> — sidebar navigation + content area — that degrades to
+a single column on small screens.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-non-goals">
+<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<ul>
+<li><strong>Authoring or editing documents.</strong> docz-site is read-only; docs are created
+and mutated by the docz CLI in their source repos.</li>
+<li><strong>Storing or persisting source data.</strong> No database; the site is a thin client
+over docz-api. (A bounded client-side query cache is in scope; durable storage
+is not.)</li>
+<li><strong>Talking to GitHub for content.</strong> Repo content always comes from docz-api.
+The GitHub App is docz-api's concern (DESIGN-0008); the site only uses GitHub
+as one <em>identity</em> provider.</li>
+<li><strong>Server-side markdown rendering</strong> (rejected by Decision 3) and <strong>reusing
+<code>mdp</code></strong> (its scope is single-user terminal preview).</li>
+<li><strong>Replacing per-repo MkDocs/TechDocs.</strong> docz's per-repo <code>wiki</code> output is for
+deep single-project browsing; docz-site is the org-wide cross-repo index. They
+are complementary.</li>
+<li><strong>Implementing the authorization policy.</strong> docz-site renders what docz-api
+returns; the policy (GitHub repo access vs. OIDC group claims) lives in
+docz-api.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-background">
+<h2 class="panel-title" id="background">Background</h2>
+<p>The viewer half of INV-0005 settled on a shape that this design fills in. The
+load-bearing conclusions:</p>
+<ul>
+<li><strong>The site is a thin client.</strong> All discovery, normalization, caching, and
+search live behind docz-api. The site's job is navigation, search UX, and a
+good reader.</li>
+<li><strong>Markdown is rendered in the browser</strong> (Decision 3). docz-api hands the site
+raw markdown plus the parsed frontmatter; the site owns the
+parse → render → sanitize → highlight → ToC pipeline. This keeps docz-api free
+of an HTML rendering stack and lets the reader evolve independently of the
+ingest service.</li>
+<li><strong>Auth is pluggable, authZ is server-enforced</strong> (Decision 6). The site lets a
+user log in through one of several providers, but it never decides <em>what</em> a
+user may see — every content endpoint on docz-api is already access-scoped, so
+an unauthorized repo simply does not appear in the API's responses. The site
+must therefore treat 401/403 as first-class states, not edge cases.</li>
+<li><strong>Cross-repo views are free.</strong> Because Meilisearch facets on repo/type/status/
+author, a view like &quot;all Approved designs&quot; is just a faceted search query — no
+special endpoint or UI mode.</li>
+</ul>
+<p>What this design adds on top of INV-0005 is the concrete front-end shape: tech
+stack, information architecture and routes, search UX, the reader pipeline, auth
+and session handling against docz-api, the standard loading/empty/error states,
+and the responsive layout.</p>
+
+</section>
+<section class="panel" id="p-detailed-design">
+<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
+<ul class="heading-list">
+<li><a href="#tech-stack-proposal">Tech stack proposal</a></li>
+<li><a href="#information-architecture-and-route-map">Information architecture and route map</a></li>
+<li><a href="#search-ux-and-how-it-queries-docz-api">Search UX and how it queries docz-api</a></li>
+<li><a href="#document-reader-pipeline">Document reader pipeline</a></li>
+<li><a href="#auth-and-session-handling-against-docz-api">Auth and session handling against docz-api</a></li>
+<li><a href="#loading-empty-and-error-states">Loading, empty, and error states</a></li>
+<li><a href="#responsive-layout">Responsive layout</a></li>
+</ul>
+<h4 id="tech-stack-proposal">Tech stack proposal</h4>
+<p>docz-site is a JavaScript/TypeScript single-page application (or SSR app — see
+Open Question 3). The working recommendation, to be confirmed:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Recommendation</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>React + Vite SPA (or Next.js)</td>
+<td>Exact choice is Open Question 1; SSR vs SPA is Open Question 3</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>TypeScript (strict)</td>
+<td>View-model interfaces below are the contract with docz-api</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>File- or config-based router</td>
+<td>Route map below</td>
+</tr>
+<tr>
+<td>Data fetching/cache</td>
+<td>TanStack Query</td>
+<td>Request dedup, caching, retries, stale-while-revalidate</td>
+</tr>
+<tr>
+<td>Markdown render</td>
+<td><code>markdown-it</code> <strong>or</strong> <code>react-markdown</code></td>
+<td>Open Question 2</td>
+</tr>
+<tr>
+<td>HTML sanitization</td>
+<td>DOMPurify</td>
+<td>Mandatory; see reader pipeline (Open Question 5)</td>
+</tr>
+<tr>
+<td>Syntax highlight</td>
+<td>Shiki <strong>or</strong> highlight.js</td>
+<td>Build the highlighted HTML, then sanitize</td>
+</tr>
+<tr>
+<td>Styling</td>
+<td>Tailwind + a small component set</td>
+<td>Open Question 6</td>
+</tr>
+<tr>
+<td>E2E tests</td>
+<td>Playwright</td>
+<td>Against a mocked/fixture docz-api</td>
+</tr>
+<tr>
+<td>Unit/component</td>
+<td>Vitest + Testing Library</td>
+<td>Includes the XSS sanitization suite</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The recommendation is a <strong>Vite + React SPA</strong> for the thin vertical slice: no
+server runtime to operate, fastest path to &quot;render one repo's one type,&quot; and a
+clean separation where docz-api is the only backend. SSR (Next.js/SvelteKit) is
+attractive later for SEO-able public docs, faster first paint, and a place to
+run a BFF token exchange (see Open Question 7) — hence keeping the framework
+choice open rather than locking it now.</p>
+<h4 id="information-architecture-and-route-map">Information architecture and route map</h4>
+<p>Navigation mirrors the docz mental model from INV-0005: <strong>repos → a repo → its
+doc types → a document</strong>, with a global search surface alongside.</p>
+<pre><code>/                               Landing / dashboard (recent + entry points)
+/repos                          List of onboarded repos the user may see
+/:owner/:repo                   Repo detail: the repo&#39;s doc types
+/:owner/:repo/:type             List of documents of one type in the repo
+/:owner/:repo/:type/:docId      Single document reader (e.g. .../design/DESIGN-0009)
+/search                         Global faceted search (repo/type/status/author)
+/login                          Provider selection / OIDC entry point
+/auth/callback                  OAuth/OIDC redirect handler
+*                               404 / not-found
+</code></pre>
+<p>Notes on the route shape:</p>
+<ul>
+<li><code>:owner/:repo</code> together identify a repo (e.g. <code>acme/platform</code>); this matches
+docz-api's <code>{owner}/{repo}</code> addressing and reads naturally in breadcrumbs.</li>
+<li><code>:type</code> is the docz type <em>name or id_prefix</em> as docz-api exposes it
+(<code>design</code>, <code>rfc</code>, or a custom <code>frameworks</code>). The registry is <strong>type-agnostic</strong>
+— driven entirely by each repo's <code>.docz.yaml</code>, never a hardcoded list of the
+six built-ins — so the site must render whatever types the API returns.</li>
+<li><code>:docId</code> is the stable frontmatter id (<code>DESIGN-0009</code>). It is unique within a
+repo, so <code>(owner, repo, docId)</code> is a stable permalink.</li>
+<li><strong>Cross-repo views are URLs into <code>/search</code></strong>, not new routes. &quot;All Approved
+designs across repos&quot; is <code>/search?type=design&amp;status=Approved</code> with no <code>repo</code>
+facet selected. This keeps the IA small and makes every view shareable.</li>
+</ul>
+<p><strong>Breadcrumbs</strong> are derived from the route everywhere below <code>/repos</code>:</p>
+<pre><code>Repos / acme/platform / Designs / DESIGN-0009
+</code></pre>
+<h4 id="search-ux-and-how-it-queries-docz-api">Search UX and how it queries docz-api</h4>
+<p>Search is the primary cross-repo surface. The <code>/search</code> page has:</p>
+<ul>
+<li>A query box (debounced, ~200 ms) bound to the URL <code>?q=</code>.</li>
+<li>A <strong>facets sidebar</strong> with four groups — repo, type, status, author — each a
+multi-select list of values with hit counts, bound to URL params
+(<code>?repo=…&amp;type=…&amp;status=…&amp;author=…</code>). Selecting facets is additive and
+reflected in the URL so a filtered view is a shareable link.</li>
+<li>A results list of <strong>search hits</strong>: title, repo, type badge, status badge,
+author, and a highlighted snippet; clicking a hit routes to the document
+reader.</li>
+</ul>
+<p>Every search interaction is one request to docz-api's search endpoint
+(<code>GET /api/v1/search</code>, below), which proxies to Meilisearch. <strong>Whether the site
+hits a docz-api proxy endpoint or talks to Meilisearch directly with a scoped
+search key is Open Question 4.</strong> The recommendation is to proxy through docz-api
+so that (a) the same access scoping that filters content endpoints also filters
+search results, (b) no Meilisearch key is exposed to the browser, and (c) the
+site has exactly one backend. The direct-Meilisearch alternative buys lower
+latency and Meilisearch's instant-search components at the cost of issuing
+per-session scoped keys and trusting the browser with filter constraints.</p>
+<p>Because facets come straight from Meilisearch, <strong>cross-repo views are search
+queries</strong> (see IA above): the <code>/search</code> page <em>is</em> the cross-repo view engine,
+and the repo/type pages are just pre-filtered entry points into it.</p>
+<h4 id="document-reader-pipeline">Document reader pipeline</h4>
+<p>The reader is the heart of the site and the part the thin vertical slice proves
+first. docz-api returns <strong>raw markdown + parsed metadata</strong>; the site does
+everything else, in this fixed order:</p>
+<pre><code>1. fetch          GET .../:type/:docId  → { metadata, raw_md } from docz-api
+2. parse FM       split frontmatter from body (api already parsed metadata;
+                  the body is the markdown below the --- block)
+3. render md      markdown → HTML via the chosen JS renderer (OQ 2)
+4. sanitize       HTML → safe HTML via DOMPurify (MANDATORY; see below)
+5. highlight      syntax-highlight code blocks (then ensure step 4 covered it)
+6. build ToC      walk rendered headings → nested ToC; add anchor ids
+7. status badge   render frontmatter status as a colored badge
+</code></pre>
+<p>Two ordering rules are load-bearing:</p>
+<ul>
+<li><strong>Sanitization is non-negotiable and runs after rendering.</strong> The content is
+user-authored markdown that becomes HTML, which is a stored-XSS surface
+(<code>&lt;script&gt;</code>, <code>onerror=</code>, <code>javascript:</code> URLs, malicious SVG). The rendered
+HTML is passed through DOMPurify with a conservative allow-list before it ever
+reaches the DOM. If syntax highlighting (step 5) emits raw HTML, it must be
+produced <em>before</em> the final sanitize pass, or run through a highlighter that
+only emits classed <code>&lt;span&gt;</code>s the sanitizer allows. The sanitization approach
+is Open Question 5; <em>that</em> it happens is not negotiable.</li>
+<li><strong>The ToC is generated from rendered headings, not from docz's own ToC
+markers.</strong> docz documents contain <code>&lt;!--toc:start--&gt;</code> / <code>&lt;!--toc:end--&gt;</code> marker
+blocks that the CLI maintains. Rather than parse or trust those markers, the
+reader builds the ToC by walking the rendered <code>&lt;h1..h4&gt;</code> nodes and assigning
+slugged anchor ids, so the ToC is always consistent with what is displayed
+(how to treat the literal marker block — strip it, ignore it, or render the
+CLI-generated list — is Open Question 8).</li>
+</ul>
+<p>The <strong>status badge</strong> maps the frontmatter <code>status</code> value to a color. The set of
+valid statuses is per-type and comes from each repo's <code>.docz.yaml</code>
+(<code>TypeConfig.Statuses</code>), surfaced through docz-api's metadata, so the badge uses
+a small status→color convention with a neutral default for unknown values
+rather than a hardcoded enum.</p>
+<h4 id="auth-and-session-handling-against-docz-api">Auth and session handling against docz-api</h4>
+<p>Authentication is <strong>pluggable</strong> (Decision 6): the site supports GitHub (default,
+preferred), Okta, and Keycloak behind one OIDC/OAuth-shaped flow. The site never
+makes authorization decisions — docz-api enforces them — so the front-end auth
+job is narrow: get the user signed in, attach the session to API calls, and
+react to 401/403.</p>
+<p>Login flow (provider-agnostic; GitHub default):</p>
+<pre><code>/login            user picks a provider (or is sent straight to the default)
+   │  redirect to provider authorize URL (coordinated with docz-api)
+   ▼
+provider          user authenticates (GitHub OAuth / Okta or Keycloak OIDC)
+   │  redirect back with code
+   ▼
+/auth/callback    code is exchanged for a session
+   │  (where the token exchange happens — a site BFF vs. docz-api —
+   │   is Open Question 7; recommendation: docz-api owns it)
+   ▼
+session           session cookie (httpOnly, SameSite) issued by docz-api;
+                  site holds no long-lived token in JS
+</code></pre>
+<p>Session handling:</p>
+<ul>
+<li>The session is carried as an <strong>httpOnly cookie</strong> set by docz-api (preferred)
+so no access token sits in JavaScript-readable storage. The site sends
+credentialed requests (<code>credentials: 'include'</code>) to docz-api.</li>
+<li>On <code>401</code>, the site routes to <code>/login</code>, preserving the intended destination as
+a return URL.</li>
+<li>On <code>403</code>, the site shows a &quot;you don't have access to this&quot; state — this is
+expected when a user follows a link to a repo/doc they cannot read.</li>
+<li>Because authZ is server-side, the <strong>repos list, type list, and search results
+are already filtered</strong> by docz-api to what the user may see. The site does not
+filter content itself; it only renders what comes back. This means an
+enumeration of repos is safe to show directly.</li>
+</ul>
+<h4 id="loading-empty-and-error-states">Loading, empty, and error states</h4>
+<p>Every data-bound view defines four states; the data layer (TanStack Query)
+drives them:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Trigger</th>
+<th>UI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Loading</td>
+<td>request in flight</td>
+<td>skeletons matching the target layout (list rows / reader)</td>
+</tr>
+<tr>
+<td>Empty</td>
+<td>request ok, zero results</td>
+<td>contextual empty message + a next action</td>
+</tr>
+<tr>
+<td>Error</td>
+<td>network / 5xx</td>
+<td>inline error with a retry button; non-destructive</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>401 → <code>/login</code>; 403 → no-access</td>
+<td>redirect (401) or an access-denied panel (403)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Examples: <code>/repos</code> with no onboarded repos shows &quot;No repos yet — onboard one
+with the docz GitHub App&quot;; a type page with no documents shows &quot;No designs in
+acme/platform yet&quot;; a search with zero hits shows the query and a &quot;clear facets&quot;
+action; a reader fetch error shows a retry without losing the breadcrumb.</p>
+<h4 id="responsive-layout">Responsive layout</h4>
+<p>The default layout is a persistent <strong>left sidebar</strong> (navigation/context) plus a
+<strong>content area</strong>; the reader adds a right-hand ToC rail on wide screens.</p>
+<pre><code>┌──────────────────────────────────────────────────────────────────────┐
+│  docz-site            [ global search…                 ]   ◍ user ▾    │  top bar
+├───────────────┬────────────────────────────────────────┬─────────────┤
+│  SIDEBAR      │  CONTENT                                 │  ON THIS    │
+│               │                                          │  PAGE       │
+│  Repos        │  Repos / acme/platform / Designs /       │             │
+│   acme/...    │  DESIGN-0009                             │  • Overview │
+│   acme/web    │                                          │  • Goals    │
+│   org/infra   │  # DESIGN 0009: docz-site …  [Draft]     │  • Detailed │
+│               │                                          │    Design   │
+│  Types        │  Overview                                │  • API      │
+│   Designs     │  docz-site is the web front end that …   │  • Data     │
+│   RFCs        │                                          │    Model    │
+│   ADRs        │  Goals and Non-Goals                     │  • …        │
+│               │  …                                       │             │
+└───────────────┴────────────────────────────────────────┴─────────────┘
+</code></pre>
+<p>Breakpoints:</p>
+<ul>
+<li><strong>Wide (≥1280px):</strong> sidebar + content + ToC rail (three columns).</li>
+<li><strong>Medium (≥768px):</strong> sidebar + content; ToC collapses into an &quot;On this page&quot;
+disclosure at the top of the reader.</li>
+<li><strong>Small (&lt;768px):</strong> sidebar collapses behind a hamburger; single content
+column; search moves into a full-screen overlay.</li>
+</ul>
+<p>The reader content column is width-capped (~72ch) for readability regardless of
+viewport.</p>
+
+</section>
+<section class="panel" id="p-api-interface-changes">
+<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<p>docz-site is a new app and defines no public API of its own. This section
+describes (1) the docz-api endpoints it <strong>consumes</strong> and (2) the site's own
+client routes (already listed in the route map above). Endpoint paths are
+illustrative and must be reconciled with DESIGN-0008.</p>
+<p><strong>Consumed docz-api endpoints:</strong></p>
+<pre><code>GET  /api/v1/repos
+       → [{ owner, name, default_branch, doc_type_count, updated_at }]
+       Access-scoped: only repos the session may read.
+
+GET  /api/v1/repos/:owner/:repo
+       → { owner, name, default_branch, docs_dir, doc_types: [...] }
+
+GET  /api/v1/repos/:owner/:repo/types
+       → [{ name, plural_label, id_prefix, statuses, doc_count }]
+       Type-agnostic: whatever .docz.yaml enables, incl. custom types.
+
+GET  /api/v1/repos/:owner/:repo/types/:type/docs
+       → [{ doc_id, title, status, author, created, path, updated_at }]
+
+GET  /api/v1/repos/:owner/:repo/types/:type/docs/:docId
+       → { metadata: { id, title, status, author, created, ... },
+           raw_md: &#34;…full markdown including frontmatter…&#34;,
+           git_sha }
+       The reader&#39;s source of truth: RAW markdown + parsed metadata.
+
+GET  /api/v1/search?q=&amp;repo=&amp;type=&amp;status=&amp;author=&amp;page=
+       → { hits: [{ repo, doc_id, type, title, status, author,
+                     snippet }],
+           facets: { repo: {...}, type: {...},
+                     status: {...}, author: {...} },
+           total }
+       Backed by Meilisearch; results access-scoped server-side.
+
+GET  /api/v1/auth/session   → { user } | 401
+POST /api/v1/auth/logout    → 204
+     (login/callback redirect endpoints per the auth flow above)
+</code></pre>
+<p>All content/search endpoints are <strong>access-scoped server-side</strong>; the site
+receives only authorized data and surfaces 401/403 as described.</p>
+<p><strong>Example: fetch and render one document.</strong> This is the thin-vertical-slice
+path — fetch raw markdown for <code>acme/platform / design / DESIGN-0009</code> and render
+it safely. Renderer-specific calls are illustrative.</p>
+<pre><code class="language-ts">import DOMPurify from &#34;dompurify&#34;;
+import { renderMarkdown } from &#34;./markdown&#34;; // wraps markdown-it / remark
+
+async function loadDoc(owner: string, repo: string, type: string, docId: string) {
+  const res = await fetch(
+    `/api/v1/repos/${owner}/${repo}/types/${type}/docs/${docId}`,
+    { credentials: &#34;include&#34; },
+  );
+  if (res.status === 401) throw new AuthError();      // → /login
+  if (res.status === 403) throw new ForbiddenError(); // → access-denied panel
+  if (!res.ok) throw new ApiError(res.status);
+
+  const doc: Doc = await res.json();
+
+  // 1. render markdown body → HTML (renderer also highlights code)
+  const rawHtml = renderMarkdown(stripFrontmatter(doc.rawMd));
+
+  // 2. SANITIZE — mandatory: this is user content → HTML
+  const safeHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
+
+  // 3. build ToC from rendered headings (not docz&#39;s toc markers)
+  const toc = buildToc(safeHtml);
+
+  return { metadata: doc.metadata, html: safeHtml, toc };
+}
+</code></pre>
+<pre><code class="language-tsx">function DocReader({ owner, repo, type, docId }: DocReaderProps) {
+  const { data, status } = useQuery({
+    queryKey: [&#34;doc&#34;, owner, repo, type, docId],
+    queryFn: () =&gt; loadDoc(owner, repo, type, docId),
+  });
+
+  if (status === &#34;pending&#34;) return &lt;ReaderSkeleton /&gt;;
+  if (status === &#34;error&#34;)   return &lt;ReaderError owner={owner} repo={repo} /&gt;;
+
+  return (
+    &lt;article&gt;
+      &lt;Breadcrumbs owner={owner} repo={repo} type={type} docId={docId} /&gt;
+      &lt;StatusBadge status={data.metadata.status} /&gt;
+      &lt;TableOfContents toc={data.toc} /&gt;
+      {/* html is already sanitized by loadDoc */}
+      &lt;div className=&#34;prose&#34; dangerouslySetInnerHTML={{ __html: data.html }} /&gt;
+    &lt;/article&gt;
+  );
+}
+</code></pre>
+
+</section>
+<section class="panel" id="p-data-model">
+<h2 class="panel-title" id="data-model">Data Model</h2>
+<p>The site is <strong>essentially stateless</strong> — a thin client with no database. The
+&quot;data model&quot; is (1) the TypeScript view-model shapes that mirror docz-api's JSON
+and (2) the client-side query cache.</p>
+<p><strong>View-model interfaces</strong> (the contract the site renders against):</p>
+<pre><code class="language-ts">interface Repo {
+  owner: string;
+  name: string;            // `${owner}/${name}` is the repo key
+  defaultBranch: string;
+  docsDir: string;
+  docTypeCount: number;
+  updatedAt: string;       // ISO-8601
+}
+
+interface DocType {
+  name: string;            // canonical type name, e.g. &#34;design&#34; or &#34;frameworks&#34;
+  pluralLabel: string;     // display label, e.g. &#34;Designs&#34;
+  idPrefix: string;        // e.g. &#34;DESIGN&#34;, &#34;FW&#34;
+  statuses: string[];      // valid statuses for this type (from .docz.yaml)
+  docCount: number;
+}
+
+interface DocSummary {     // a row in a type&#39;s document list
+  docId: string;           // stable frontmatter id, e.g. &#34;DESIGN-0009&#34;
+  title: string;
+  status: string;
+  author: string;
+  created: string;         // ISO-8601 date
+  path: string;            // repo-relative source path
+  updatedAt: string;
+}
+
+interface Doc {            // the full reader payload
+  metadata: {
+    id: string;
+    title: string;
+    status: string;
+    author: string;
+    created: string;
+    [k: string]: unknown;  // forward-compatible with extra frontmatter keys
+  };
+  rawMd: string;           // raw markdown incl. frontmatter; rendered client-side
+  gitSha: string;
+}
+
+interface SearchHit {
+  repo: string;            // `${owner}/${name}`
+  docId: string;
+  type: string;
+  title: string;
+  status: string;
+  author: string;
+  snippet: string;         // highlighted excerpt from Meilisearch
+}
+
+interface SearchResponse {
+  hits: SearchHit[];
+  facets: {
+    repo: Record&lt;string, number&gt;;
+    type: Record&lt;string, number&gt;;
+    status: Record&lt;string, number&gt;;
+    author: Record&lt;string, number&gt;;
+  };
+  total: number;
+}
+</code></pre>
+<p><code>status</code> and <code>type</code> are typed as <code>string</code> (not a closed enum) because the type
+and status sets are <strong>per-repo, driven by <code>.docz.yaml</code></strong> — the site must render
+whatever docz-api returns, including custom types and custom statuses.</p>
+<p><strong>Client-side caching.</strong> The only persisted-ish state is the in-memory query
+cache (TanStack Query): keyed by route params (<code>[&quot;repos&quot;]</code>,
+<code>[&quot;repo&quot;, owner, name]</code>, <code>[&quot;docs&quot;, owner, repo, type]</code>,
+<code>[&quot;doc&quot;, owner, repo, type, docId]</code>, <code>[&quot;search&quot;, params]</code>), with
+stale-while-revalidate so navigating back to a list is instant while a
+background refetch runs. Cache entries are dropped on logout. Rendered/sanitized
+HTML may be memoized per <code>docId</code> within a session to avoid re-parsing on
+re-mount; it is never written to durable storage. No localStorage of document
+content (it would duplicate access-scoped data outside docz-api's control); only
+UI preferences (theme, last provider) may be persisted.</p>
+
+</section>
+<section class="panel" id="p-testing-strategy">
+<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<ul>
+<li><strong>Component / unit (Vitest + Testing Library).</strong> Breadcrumbs derive correctly
+from route params; the status badge maps known statuses to colors and falls
+back gracefully for unknown ones; facet selection updates the URL and
+vice-versa; loading/empty/error/auth states render for each data-bound view;
+the four-state matrix is covered per route.</li>
+<li><strong>Markdown rendering + sanitization (the security-critical suite).</strong> A
+dedicated table of <strong>XSS payloads</strong> must be <em>neutralized</em> by the
+render → sanitize pipeline: <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>,
+<code>&lt;img src=x onerror=alert(1)&gt;</code>, <code>[x](javascript:alert(1))</code>,
+<code>&lt;a href=&quot;javascript:…&quot;&gt;</code>, event-handler attributes, <code>&lt;iframe&gt;</code>/<code>&lt;object&gt;</code>,
+and malicious inline SVG/MathML. Each test asserts the sanitized output
+contains no executable vector. Companion tests assert <em>benign</em> markdown
+(headings, tables, fenced code, links, images) survives intact and that ToC
+generation produces stable slugged anchors. These tests gate CI.</li>
+<li><strong>End-to-end (Playwright) against a mocked/fixture docz-api.</strong> Drive the real
+flows — <code>/repos</code> → repo → type → reader; faceted search; 401→<code>/login</code> and
+403→access-denied — against recorded fixture responses (and a contract check
+that fixtures match docz-api's documented schema). Cover the thin-vertical-
+slice happy path first.</li>
+<li><strong>Accessibility checks.</strong> Automated axe scans in component and e2e tests;
+keyboard navigation through sidebar, search, facets, and the in-page ToC;
+visible focus states; correct landmark/heading structure in the reader;
+color-contrast on status badges.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-migration-rollout-plan">
+<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<p>This is a <strong>greenfield repository</strong> with no existing users to migrate; &quot;rollout&quot;
+means the build order, which follows Decision 8 (thin vertical slice first).</p>
+<ol>
+<li><strong>Slice 1 — render one repo's one type, no auth/search/nav.</strong> Stand up the
+SPA, a single hardcoded route to a document reader, and the full reader
+pipeline (fetch raw md → render → <strong>sanitize</strong> → highlight → ToC → status
+badge) against a <strong>minimal docz-api</strong> (or fixtures) serving one repo's one
+type. This proves the end-to-end fetch→render→display loop and ships the
+security-critical sanitization suite from day one.</li>
+<li><strong>Slice 2 — full navigation.</strong> Add <code>/repos</code>, repo detail, type list, and
+breadcrumbs; wire the route map and the loading/empty/error states.</li>
+<li><strong>Slice 3 — search.</strong> Add <code>/search</code>, the facet sidebar, and the cross-repo
+views (which are just faceted queries). Resolve the proxy-vs-scoped-key
+question (Open Question 4).</li>
+<li><strong>Slice 4 — auth.</strong> Add the pluggable login flow (GitHub default; Okta /
+Keycloak), session handling, and 401/403 behavior, coordinated with
+docz-api. Until this lands, the site runs against an unauthenticated or
+single-tenant docz-api.</li>
+<li><strong>Slice 5 — polish.</strong> Responsive refinements, accessibility hardening,
+performance (code-split routes, prefetch on hover), and any SSR adoption if
+Open Question 3 lands on SSR.</li>
+</ol>
+<p>Each slice is independently shippable; nothing in a later slice is required for
+an earlier one to be useful.</p>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<ul class="heading-list">
+<li><a href="#1-which-front-end-framework">1. Which front-end framework?</a></li>
+<li><a href="#2-which-markdown-renderer-library">2. Which markdown renderer library?</a></li>
+<li><a href="#3-ssr-or-spa">3. SSR or SPA?</a></li>
+<li><a href="#4-how-does-the-site-integrate-with-meilisearch-search">4. How does the site integrate with Meilisearch search?</a></li>
+<li><a href="#5-html-sanitization-approach">5. HTML sanitization approach?</a></li>
+<li><a href="#6-styling--design-system-choice">6. Styling / design-system choice?</a></li>
+<li><a href="#7-where-does-the-oidcoauth-token-exchange-happen">7. Where does the OIDC/OAuth token exchange happen?</a></li>
+<li><a href="#8-how-should-doczs-own-toc-markers-be-handled">8. How should docz&#39;s own ToC markers be handled?</a></li>
+</ul>
+<p>Each question is numbered; option <code>a</code> is the recommendation, later letters are
+alternatives, and &quot;Other&quot; is free-form for review.</p>
+<h4 id="1-which-front-end-framework">1. Which front-end framework?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Vite + React SPA — no server runtime, fastest path to the
+thin vertical slice, docz-api as the only backend.</li>
+<li>b. Next.js (React + SSR) — SEO-able public docs, faster first paint, and a
+natural home for a BFF token exchange.</li>
+<li>c. SvelteKit — smaller bundles, built-in SSR, less boilerplate.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="2-which-markdown-renderer-library">2. Which markdown renderer library?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> <code>markdown-it</code> + plugins (anchors, footnotes, highlight) —
+framework-agnostic, mature, easy to feed into DOMPurify as an HTML string.</li>
+<li>b. <code>react-markdown</code> / <code>remark</code> — renders to React nodes (no <code>dangerouslySet…</code>
+for the common path), rich remark/rehype plugin ecosystem.</li>
+<li>c. <code>marked</code> — smallest/fastest, fewer plugins.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="3-ssr-or-spa">3. SSR or SPA?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> SPA for the MVP — operationally simplest, defers a server
+runtime; revisit once public/SEO docs are a requirement.</li>
+<li>b. SSR from the start — better first paint, SEO, and a server seam for auth.</li>
+<li>c. Static prerender + client hydration for public docs, SPA for private.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="4-how-does-the-site-integrate-with-meilisearch-search">4. How does the site integrate with Meilisearch search?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Proxy through a docz-api <code>/search</code> endpoint — the same
+server-side access scoping filters search results, no Meilisearch key reaches
+the browser, one backend.</li>
+<li>b. Direct Meilisearch instant-search with a per-session <strong>scoped tenant
+token</strong> issued by docz-api — lowest latency, native instant-search components,
+at the cost of trusting browser-side filter constraints.</li>
+<li>c. Hybrid: proxy for access-scoped queries, direct for public docs only.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="5-html-sanitization-approach">5. HTML sanitization approach?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> DOMPurify with a conservative allow-list, run after
+render and after highlighting — battle-tested, browser-native, configurable.</li>
+<li>b. A <code>rehype-sanitize</code> step in a remark/rehype pipeline (pairs with Open
+Question 2b) — sanitizes the AST before serialization.</li>
+<li>c. Server-side sanitization in docz-api before it serves markdown/HTML — moves
+the trust boundary off the client but conflicts with Decision 3 (client-side
+render).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="6-styling--design-system-choice">6. Styling / design-system choice?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Tailwind CSS + a headless component set (e.g. Radix) plus
+a <code>prose</code> typography preset for the reader — fast, consistent, accessible
+primitives.</li>
+<li>b. A batteries-included component library (MUI / Chakra / Mantine) — more
+out-of-the-box, heavier and more opinionated.</li>
+<li>c. Plain CSS modules / vanilla-extract — minimal deps, more hand-rolled UI.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="7-where-does-the-oidcoauth-token-exchange-happen">7. Where does the OIDC/OAuth token exchange happen?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> docz-api owns the exchange and issues an httpOnly session
+cookie — keeps tokens out of browser JS and centralizes auth with the access
+control that already lives in docz-api.</li>
+<li>b. A thin site BFF (requires SSR per Open Question 3b) performs the exchange
+and brokers the docz-api session — keeps provider secrets at the site edge.</li>
+<li>c. Public-client PKCE in the SPA with tokens in memory — no server seam, but
+the browser holds tokens.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="8-how-should-doczs-own-toc-markers-be-handled">8. How should docz's own ToC markers be handled?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Generate the ToC from rendered headings and <strong>strip</strong> the
+<code>&lt;!--toc:start--&gt;…&lt;!--toc:end--&gt;</code> marker block from the displayed body — one
+ToC, always consistent with what's shown.</li>
+<li>b. Render the CLI-generated ToC list verbatim (trust the marker block) and
+skip heading-walking.</li>
+<li>c. Render the marker block <em>and</em> a generated rail, accepting possible
+duplication.</li>
+<li>d. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0005 — &quot;docz-api and docz-site: centralized cross-repo docz registry and
+viewer&quot; (source investigation; locked Decisions 2, 3, 6, 8 honored here).</li>
+<li>DESIGN-0008 — docz-api (the service docz-site consumes: GitHub App ingestion,
+Postgres registry caching raw markdown + metadata, Meilisearch index, webhook
+refresh, access-scoped/auth endpoints).</li>
+<li>DESIGN-0007 — the docz shared parsing library (<code>pkg/…</code> extracted from
+<code>internal/config</code> + <code>internal/document</code>) that docz-api depends on so the
+registry never drifts from the CLI; consumed by docz-site transitively via
+docz-api.</li>
+<li>DESIGN-0006 — custom document type support (why the registry and the site must
+be <strong>type-agnostic</strong>, driven by each repo's <code>.docz.yaml</code>).</li>
+<li>Meilisearch — full-text search + faceting backing docz-api's <code>/search</code>.</li>
+<li>markdown-it / react-markdown / remark — candidate client-side markdown
+renderers (Open Question 2).</li>
+<li>DOMPurify — HTML sanitization for the reader's XSS surface (Open Question 5).</li>
+<li>TanStack Query — client-side request cache / data layer.</li>
+<li>Playwright — end-to-end testing against a mocked/fixture docz-api.</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../design/testdata/docz-design-0009.orig.md</code>, sha256 <code>5a5e5ef41e4299a38b293f0585e2134469b2df5c9b7b71b27b6a23248516729b</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

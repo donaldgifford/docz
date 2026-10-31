@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0001: pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>pkg/doczcore as the single public core; cmd as a thin CLI shell (v1.0.0)</h1>
+<p class="summary">docz began as a single CLI binary with all logic under <code>internal/</code>. As external
+consumers appeared — <strong>docz-api</strong> (DESIGN-0008, cross-repo registry/ingestion),
+<strong>docz-site</strong> (DESIGN-0009, viewer/search), and <strong>sdk-booty-sh</strong> (a doc-driven
+agent-loop harness) — we have been <strong>promoting packages from <code>internal/</code> to
+<code>pkg/doczcore/</code> one at a time, on demand</strong>:</p>
+<div class="meta">
+<span class="pill">ADR-0001</span>
+<span class="pill st-accepted">Accepted</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-07-03</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="status" aria-controls="p-status">Status</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="corner-cases" aria-controls="p-corner-cases">Corner Cases</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-status">
+<h2 class="panel-title" id="status">Status</h2>
+<ul>
+<li><a href="#status">Status</a></li>
+<li><a href="#context">Context</a>
+<ul>
+<li><a href="#what-the-code-looks-like-today-the-facts-that-make-this-feasible">What the code looks like today (the facts that make this feasible)</a></li>
+<li><a href="#the-benchmark">The benchmark</a></li>
+</ul>
+</li>
+<li><a href="#decision">Decision</a>
+<ul>
+<li><a href="#scope--what-moves">Scope — what moves</a></li>
+<li><a href="#the-compatibility-contract-what-v10-promises">The compatibility contract (what v1.0 promises)</a></li>
+</ul>
+</li>
+<li><a href="#consequences">Consequences</a>
+<ul>
+<li><a href="#positive">Positive</a></li>
+<li><a href="#negative">Negative</a></li>
+<li><a href="#neutral">Neutral</a></li>
+</ul>
+</li>
+<li><a href="#corner-cases">Corner Cases</a></li>
+<li><a href="#alternatives-considered">Alternatives Considered</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-package-granularity--subpackage-family-or-one-flat-package">1. Package granularity — subpackage family or one flat package?</a></li>
+<li><a href="#2-sequencing-against-the-in-flight-v060">2. Sequencing against the in-flight v0.6.0?</a></li>
+<li><a href="#3-how-do-we-treat-the-cli-shaped-packages-template-index-wiki-at-v10">3. How do we treat the CLI-shaped packages (template, index, wiki) at v1.0?</a></li>
+<li><a href="#4-toc-vs-docparse-overlap-in-the-public-api">4. toc vs docparse overlap in the public API?</a></li>
+<li><a href="#5-what-remains-in-internal-after-the-move">5. What remains in internal/ after the move?</a></li>
+<li><a href="#6-embedded-templates--how-public">6. Embedded templates — how public?</a></li>
+<li><a href="#7-post-10-compatibility--deprecation-policy">7. Post-1.0 compatibility &amp; deprecation policy?</a></li>
+</ul>
+</li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>Accepted (2026-07-03 — all seven open questions resolved; implemented by
+IMPL-0014)</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<ul>
+<li><code>v0.5.0</code> (DESIGN-0007 / IMPL-0013) promoted <code>config</code> + <code>document</code> (read side).</li>
+<li>A <code>v0.6.0</code> slate (the sdk-booty-sh requirements handoff,
+<code>docz-v0.6.0-requirements.md</code>) specified a viper-free <code>config.Load</code>, a new
+<code>pkg/doczcore/docparse</code>, and the <code>docwrite</code> promotion + <code>CheckTask</code> — but
+<strong>none of it exists in code</strong> (no IMPL doc, no <code>docparse</code> package, no
+<code>CheckTask</code>, viper still in <code>Load</code>; verified 2026-07-03). Per Open
+Question 2's resolution, no separate <code>v0.6.0</code> ships: the slate is part of
+the <code>v1.0.0</code> work.</li>
+</ul>
+<p>Each promotion is a separate PR with its own API review and import sweep. That
+per-consumer drip is repetitive, and it means the public surface is defined by
+&quot;whatever a consumer happened to need last,&quot; not by a coherent design.</p>
+<p>This ADR proposes ending that drip: <strong>establish <code>pkg/doczcore</code> as the single
+public core that both the docz CLI and every external consumer build on, and cut
+<code>v1.0.0</code> as the first stable, semver-governed release of that surface.</strong></p>
+<h4 id="what-the-code-looks-like-today-the-facts-that-make-this-feasible">What the code looks like today (the facts that make this feasible)</h4>
+<p>An audit of the current tree (<code>cmd/</code> + five <code>internal/</code> packages) shows the move
+is mechanically shallow:</p>
+<ul>
+<li><strong><code>cmd/</code> already imports only <code>internal/*</code>, <code>pkg/doczcore/*</code>, and stdlib/cobra.</strong>
+It calls into <code>internal/{docwrite,template,toc,index,wiki}</code> and
+<code>pkg/doczcore/{config,document}</code>. There is no third home for logic to hide in.</li>
+<li><strong>The internal dependency graph is shallow and one-directional.</strong> Every
+<code>internal/*</code> package depends only on <code>pkg/doczcore/{config,document}</code> plus
+stdlib. The single cross-internal edge is <code>docwrite → template</code> (used by
+<code>Create</code>).</li>
+<li><strong>The third-party dependency surface is already tiny.</strong> Of the five internal
+packages, only <code>wiki</code> pulls a non-stdlib dependency (<code>go.yaml.in/yaml/v3</code>,
+which is already a core dependency). <code>docwrite</code>, <code>index</code>, <code>template</code>, and <code>toc</code>
+are <strong>stdlib-only</strong>. With viper removed as part of this work, promoting these
+adds no new heavy dependency to a consumer's build.</li>
+<li><strong>One embed.</strong> <code>//go:embed</code> appears only in <code>internal/template</code>
+(<code>templates/*.md</code>, <code>templates/*.tmpl</code>); the embedded files travel with the
+package wherever it moves.</li>
+</ul>
+<h4 id="the-benchmark">The benchmark</h4>
+<p>The benchmark is twofold: (1) the docz CLI keeps working <strong>exactly as it does
+today</strong> — every command (<code>init</code>, <code>create</code>, <code>update</code>, <code>list</code>, <code>status</code>,
+<code>template</code>, <code>config</code>, <code>wiki</code>, <code>version</code>), output, and exit code unchanged —
+and (2) the public core is <strong>sufficient for every known external consumer</strong>
+(docz-api, docz-site via docz-api, sdk-booty-sh) to build on with zero parser
+drift. The CLI is <em>not</em> required to build on <code>pkg/doczcore</code> alone: <code>cmd/</code> +
+<code>internal/</code> presentation code layered over the public core satisfies (1), and
+the INV-0006 demand audit shows the four-package demand core (<code>config</code>,
+<code>document</code>, <code>docparse</code>, <code>docwrite</code>) satisfies (2); the adopted scope adds the
+<code>toc</code> splice on top (export-lean, Decision 2). This ADR does not remove or
+change any capability; it fixes where the public boundary sits and freezes
+the API behind it.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<blockquote>
+<p>Revised 2026-07-03 after the INV-0006 per-package demand audit and design
+review. The original draft moved <em>all</em> <code>internal/</code> packages public; the
+revision replaces that with a promotion rule and a smaller frozen core.</p>
+</blockquote>
+<ol>
+<li><p><strong>Promotion rule — public by default where demand exists, whole packages,
+named exceptions.</strong> Any package containing a symbol an external consumer
+requires is promoted <strong>whole</strong> into <code>pkg/doczcore/*</code> — package cohesion
+beats surface minimalism; we do not split a package to hide one function —
+UNLESS a specific, documented reason keeps machinery private. The embedded
+template engine is the canonical exception. Packages nothing external
+needs stay in <code>internal/</code>.</p>
+</li>
+<li><p><strong>Applied to today's tree</strong> (per the INV-0006 audit plus the export-lean
+review of 2026-07-03): the public core is
+<code>pkg/doczcore/{config,document,docparse,docwrite,toc}</code>, all landing in
+the <strong>single <code>v1.0.0</code> release</strong> — the planned <code>v0.6.0</code> never started, so
+its slate folds in here:</p>
+<ul>
+<li><code>config</code> goes <strong>viper-free</strong> (same <code>Load</code> signature, yaml-only —
+handoff R1);</li>
+<li><code>docparse</code> is <strong>created</strong> as the canonical markdown <strong>fact extractor</strong>
+— <code>Headings</code> + <code>TaskItems</code> checkbox items, both with byte-accurate
+1-based line numbers (handoff R2, revised by IMPL-0014 Q3: the
+<code>ParsePlan</code> plan/phase <em>interpretation</em> stays consumer-side in
+sdk-booty-sh — docz parses facts, consumers own meaning);</li>
+<li><code>docwrite</code> promotes <strong>whole</strong>: <code>SetStatus</code> as-is, the new <code>CheckTask</code>
+(handoff R3), and <code>Create</code>/<code>CreateOptions</code>/<code>CreateResult</code>;</li>
+<li><code>toc</code> promotes as the <strong>ToC-splice</strong> package (<code>GenerateToC</code>/
+<code>UpdateToC</code>/<code>UpdateFiles</code>, the markers), its heading walk delegating to
+<code>docparse</code> — one public parser (Open Question 4a); <code>toc</code>'s own
+<code>ParseHeadings</code>/<code>Heading</code>/<code>AnchorSlug</code> walker retires rather than going
+public.</li>
+</ul>
+<p><code>template</code>, <code>index</code>, and <code>wiki</code> remain <code>internal/</code>: zero consumer demand,
+CLI-shaped APIs, and (for <code>template</code>) the embed.</p>
+</li>
+<li><p><strong>Public packages may depend on <code>internal/</code> packages.</strong> This is standard
+Go — the stdlib does it pervasively — and it is how <code>docwrite.Create</code>
+keeps rendering via <code>internal/template</code> without the embed, template
+names, or render API entering the public contract.
+<code>CreateOptions</code>/<code>CreateResult</code> expose only <code>config</code> types, primitives,
+and <code>time.Time</code> (verified), so nothing internal leaks through the
+promoted signature.</p>
+</li>
+<li><p><strong><code>cmd/</code> + <code>internal/</code> are the CLI product; <code>pkg/doczcore</code> is the library
+product.</strong> &quot;Thin <code>cmd/</code>&quot; means no <em>core logic</em> in <code>cmd/</code> — cobra wiring,
+the <code>Runner</code>, flags, output formatting, exit codes only — not &quot;no
+<code>internal/</code>&quot;. <code>internal/</code> is the CLI's private half, not a third tier.</p>
+</li>
+<li><p><strong>API design principles for the public core:</strong></p>
+<ul>
+<li><strong>Bytes-in / values-out where possible.</strong> Parsing takes <code>[]byte</code>
+(<code>ParseFrontmatter</code>, <code>docparse.Headings</code>/<code>ParsePlan</code>), not paths, so
+consumers with no checkout (docz-api) stay first-class.</li>
+<li><strong>No library-defined interfaces.</strong> The core exports concrete functions
+and structs; consumers define their own small interfaces at the call
+site. Exported interfaces are the most expensive surface to freeze —
+adding a method breaks every external implementer.</li>
+<li><strong>Options/result structs over positional parameters</strong> for compound
+operations (<code>CreateOptions</code>/<code>CreateResult</code>) — fields evolve additively
+within the frozen contract.</li>
+<li><strong>Path-based write helpers only where a consumer requires in-place,
+byte-preserving mutation</strong> (<code>SetStatus</code>, <code>CheckTask</code>). Any future
+creation-style API for non-filesystem callers returns
+<code>(name, content)</code> rather than performing I/O.</li>
+</ul>
+</li>
+<li><p><strong><code>v1.0.0</code> is the first stable release</strong> of this surface, cut via the
+<code>major</code> release label (0.5.x → 1.0.0; no intermediate <code>v0.6.0</code>). Exported
+identifiers under <code>pkg/doczcore/*</code> become a semver-governed compatibility
+contract. sdk-booty-sh pins <code>v1.0.0</code> instead of the formerly planned
+<code>v0.6.0</code> tag.</p>
+</li>
+<li><p><strong>The CLI feature set is the completeness benchmark.</strong> v1.0 ships only
+with <strong>no CLI behavior change</strong>: commands, flags, outputs, and exit codes
+identical; only import paths and package homes move.</p>
+</li>
+</ol>
+<h4 id="scope--what-moves">Scope — what moves</h4>
+<p>All of this ships in the single <code>v1.0.0</code> release:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Package (today)</th>
+<th>v1.0 home</th>
+<th>Surface</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pkg/doczcore/config</code></td>
+<td>unchanged</td>
+<td>—</td>
+<td>already public (v0.5.0); goes viper-free in this work (handoff R1)</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/document</code></td>
+<td>unchanged</td>
+<td>—</td>
+<td>already public (v0.5.0); stays read-only</td>
+</tr>
+<tr>
+<td>— (new)</td>
+<td><code>pkg/doczcore/docparse</code></td>
+<td>new</td>
+<td>fact extractor: <code>Headings</code> + <code>TaskItems</code> with line numbers (handoff R2 as revised by IMPL-0014 Q3 — no plan model)</td>
+</tr>
+<tr>
+<td><code>internal/docwrite</code></td>
+<td><code>pkg/doczcore/docwrite</code></td>
+<td>small</td>
+<td><strong>whole package</strong>: <code>SetStatus</code>, new <code>CheckTask</code> (handoff R3), and <code>Create</code> implemented over <code>internal/template</code></td>
+</tr>
+<tr>
+<td><code>internal/toc</code></td>
+<td><code>pkg/doczcore/toc</code></td>
+<td>small</td>
+<td>the ToC-splice (<code>GenerateToC</code>/<code>UpdateToC</code>/<code>UpdateFiles</code>, markers); walk delegates to <code>docparse</code>; its private walker retires</td>
+</tr>
+<tr>
+<td><code>internal/template</code></td>
+<td><strong>stays <code>internal/</code></strong></td>
+<td>—</td>
+<td>the named exception: embed + render machinery stay out of the contract</td>
+</tr>
+<tr>
+<td><code>internal/index</code></td>
+<td><strong>stays <code>internal/</code></strong></td>
+<td>—</td>
+<td>zero external demand; <code>UpdateOutcome</code> is CLI wording (INV-0006 Obs 3)</td>
+</tr>
+<tr>
+<td><code>internal/wiki</code></td>
+<td><strong>stays <code>internal/</code></strong></td>
+<td>—</td>
+<td>MkDocs/site-specific; zero external demand</td>
+</tr>
+<tr>
+<td><code>cmd/*</code></td>
+<td>unchanged path</td>
+<td>—</td>
+<td>repoint the <code>docwrite</code>/<code>toc</code> imports; keep CLI/UX only</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="the-compatibility-contract-what-v10-promises">The compatibility contract (what v1.0 promises)</h4>
+<ul>
+<li><strong>Covered by semver:</strong> every exported identifier under <code>pkg/doczcore/*</code>.
+Breaking changes require a major bump with a deprecation window.</li>
+<li><strong>NOT covered:</strong> <code>cmd/</code>, any code that remains in <code>internal/</code>, <code>test/</code>, the
+CLI's stdout/stderr <strong>text</strong> and exit codes (these get a separate, looser
+CLI-stability note), and the <strong>contents/names of embedded templates</strong>.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<h4 id="positive">Positive</h4>
+<ul>
+<li><strong>One coherent public surface</strong>, designed as a whole rather than accreted
+per-consumer. Consumers import exactly the subpackage they need.</li>
+<li><strong>Ends the promotion drip.</strong> No more one-off promotion PRs; the next consumer
+need is already satisfied (or is a normal additive minor).</li>
+<li><strong><code>cmd/</code> becomes a clean, thin shell</strong> — a working reference implementation of
+the library and a forcing function that keeps logic out of the CLI layer.</li>
+<li><strong>Cheap moment to do it.</strong> The dependency surface is already stdlib + <code>yaml.v3</code>
+(viper leaves in the same release); the import graph is shallow; the move is
+mostly <code>git mv</code> + repoint. Pre-1.0 is the last window where the API can be
+reshaped without a major bump.</li>
+<li><strong>An explicit stability guarantee</strong> external consumers can pin — the point of a
+<code>v1.0.0</code>.</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li><strong><code>Create</code> and the <code>toc</code> splice become contract without a consumer.</strong>
+Promoting <code>docwrite</code> whole (cohesion) freezes <code>Create</code>'s observable
+conventions — the <code>NNNN-slug.md</code> filename shape, the auto-increment scan,
+the template-resolution tiers — and promoting <code>toc</code> freezes the splice API
+(<code>UpdateFiles</code> and its report categories included) before any external
+caller exists. Mitigated: options/result/report structs evolve additively,
+and the filename and ID conventions are already de facto frozen via the
+public <code>document.DoczFilePattern</code>.</li>
+<li><strong>Consumers of <code>docwrite</code> compile the embed.</strong> The <code>internal/template</code>
+dependency rides along in builds (not in the API). The cost is a handful of
+embedded markdown templates plus stdlib <code>text/template</code> — negligible, but
+nonzero for a consumer that only wants <code>SetStatus</code>.</li>
+<li><strong>Support burden.</strong> Public APIs invite bug reports and feature requests
+against code that was previously ours to change freely — now scoped to the
+five core packages rather than everything.</li>
+<li><strong>A softer &quot;single core&quot; story.</strong> The CLI is <em>not</em> a pure <code>pkg/doczcore</code>
+consumer; contributors must learn the rule (&quot;presentation stays internal&quot;)
+rather than a flat &quot;everything is public.&quot;</li>
+</ul>
+<p><em>The original draft's negatives — freezing CLI-shaped <code>template</code>/<code>index</code>/
+<code>wiki</code> APIs under semver, and the demand mismatch of promoting surface no
+consumer asked for — are resolved by the revised scope rather than accepted:
+those packages stay <code>internal/</code> (INV-0006).</em></p>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li><strong>Dependency graph barely changes.</strong> With viper removed in this release the
+public core depends on <code>yaml.v3</code> + stdlib only; <code>docparse</code>, <code>toc</code>, and the
+<code>docwrite</code> splice primitives are stdlib-only, and per-subpackage imports
+mean a consumer of <code>document</code> compiles none of the CLI's internal
+machinery.</li>
+<li><strong>Version jump is bookkeeping.</strong> The <code>major</code> label drives <code>v1.0.0</code> through the
+existing <code>pr-semver-bump</code> + goreleaser automation, same mechanism as prior tags.</li>
+<li><strong>No CLI behavior change.</strong> This is a relocation + freeze, not a feature change.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-corner-cases">
+<h2 class="panel-title" id="corner-cases">Corner Cases</h2>
+<ol>
+<li><strong>Embedded templates as public contract.</strong> Dissolved by the revised scope:
+<code>internal/template</code> does not move, so the <code>embed.FS</code>, template names, and
+template contents can never enter the contract through the public API —
+no mitigation needed (Open Question 6, now moot).</li>
+<li><strong><code>toc</code> vs <code>docparse</code> overlap.</strong> Resolved (Open Question 4a): <code>docparse</code>
+is the canonical — and only — public parser. <code>toc</code> promotes as the
+ToC-splice package (<code>GenerateToC</code>/<code>UpdateToC</code>/<code>UpdateFiles</code>, the markers
+<code>cmd/wiki.go</code> also uses) with its heading walk delegating to <code>docparse</code>
+(public <code>GenerateToC</code> takes <code>[]docparse.Heading</code>); <code>toc</code>'s own
+<code>ParseHeadings</code>/<code>Heading</code>/<code>AnchorSlug</code> walker retires.</li>
+<li><strong>CLI-shaped return types.</strong> <code>index.UpdateOutcome</code> (with an <code>Action</code> enum tuned
+to <code>cmd</code>'s user-facing wording) and <code>wiki</code>'s nav/mkdocs helpers encode CLI
+decisions. Freezing them as-is exports those decisions; redesigning them is the
+real cost (Open Question 3/5).</li>
+<li><strong><code>Create</code> needs <code>template</code> — and that's fine.</strong> <code>internal/docwrite.Create</code>
+is the only cross-internal edge (<code>docwrite → template</code>). A public package
+may legally import its own module's <code>internal/</code> packages (the stdlib does
+this pervasively), so the promoted <code>pkg/doczcore/docwrite</code> keeps rendering
+via <code>internal/template</code>. Consumers importing <code>docwrite</code> compile the embed
+and <code>text/template</code> into their binaries (both stdlib-backed — no new
+module dependencies), but none of it is importable or part of the
+contract. What <em>does</em> freeze with <code>Create</code> is observable behavior: the
+<code>NNNN-slug.md</code> filename convention and the auto-increment scan, both
+already de facto contract via the public <code>document.DoczFilePattern</code>.</li>
+<li><strong>Sequencing against the planned v0.6.0.</strong> Resolved (Open Question 2): the
+v0.6.0 slate was never started — no IMPL doc, no <code>docparse</code>, no
+<code>CheckTask</code>, viper still in <code>config.Load</code> (verified 2026-07-03) — so there
+is nothing to &quot;ship first.&quot; The slate is part of the <code>v1.0.0</code> work, and
+sdk-booty-sh pins <code>v1.0.0</code> instead of <code>v0.6.0</code>. Accepted trade-off: its
+wait extends by the width of the v1.0-only additions (<code>Create</code>, <code>toc</code>,
+the freeze), which is small relative to the slate itself.</li>
+<li><strong>Empty <code>internal/</code>?</strong> Moot under the revised scope — <code>internal/</code> remains
+populated (<code>template</code>, <code>index</code>, <code>toc</code> splice, <code>wiki</code>) as the CLI's private
+half (Open Question 5, resolved a).</li>
+<li><strong><code>test/consumer/</code> grows.</strong> The external-module smoke test should exercise the
+full v1.0 surface (import each subpackage, assert it compiles + runs from
+outside the module) so accidental surface narrowing is caught.</li>
+<li><strong>Naming / stutter.</strong> A flat <code>pkg/doczcore</code> package yields <code>doczcore.Config</code>,
+<code>doczcore.ParsePlan</code>, etc.; the subpackage family keeps <code>config.Config</code>,
+<code>docparse.ParsePlan</code>. This interacts with Open Question 1.</li>
+<li><strong>No regression to existing pins.</strong> <code>config</code> and <code>document</code> keep their existing
+import paths, so v0.5.0/v0.6.0 consumers are unaffected — the consolidation is
+additive for them.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>A. Status quo — promote on demand.</strong> Keep <code>internal/</code> as the default and
+promote a package only when a consumer needs it and its API passes review.
+<em>Pros:</em> minimal semver surface; maximum refactor freedom; each promotion gets a
+design checkpoint. <em>Cons:</em> the recurring per-consumer PR churn this ADR is
+reacting to; the public surface stays accretive rather than designed.</li>
+<li><strong>B. Separate <code>doczcore</code> module</strong> (<code>github.com/donaldgifford/docz-core</code>) with its
+own version line. <em>Pros:</em> fully decouples library semver from CLI releases.
+<em>Cons:</em> two modules, two release trains, <code>replace</code>/pin friction for the CLI
+itself; heavier than the problem warrants.</li>
+<li><strong>C. Flat single <code>pkg/doczcore</code> package.</strong> Collapse everything into one package.
+<em>Pros:</em> one import. <em>Cons:</em> no per-subpackage tree-shaking; a huge single API;
+massive rename churn. (Captured as Open Question 1.)</li>
+<li><strong>D. This ADR — subpackage family under <code>pkg/doczcore</code>, v1.0 freeze.</strong> Promote
+the remaining logic packages into the existing <code>pkg/doczcore/*</code> namespace and
+commit to semver at v1.0. Chosen as the base for discussion; the open questions
+below refine it.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<ul class="heading-list">
+<li><a href="#1-package-granularity--subpackage-family-or-one-flat-package">1. Package granularity — subpackage family or one flat package?</a></li>
+<li><a href="#2-sequencing-against-the-in-flight-v060">2. Sequencing against the in-flight v0.6.0?</a></li>
+<li><a href="#3-how-do-we-treat-the-cli-shaped-packages-template-index-wiki-at-v10">3. How do we treat the CLI-shaped packages (template, index, wiki) at v1.0?</a></li>
+<li><a href="#4-toc-vs-docparse-overlap-in-the-public-api">4. toc vs docparse overlap in the public API?</a></li>
+<li><a href="#5-what-remains-in-internal-after-the-move">5. What remains in internal/ after the move?</a></li>
+<li><a href="#6-embedded-templates--how-public">6. Embedded templates — how public?</a></li>
+<li><a href="#7-post-10-compatibility--deprecation-policy">7. Post-1.0 compatibility &amp; deprecation policy?</a></li>
+</ul>
+<blockquote>
+<p>Each question is numbered; option <code>a</code> is my recommendation, later letters are
+alternatives, and the final letter is a free-form &quot;other&quot; for you to fill in.
+Answer inline (e.g. <code>1a</code>, <code>3c</code>) and I'll lock the choices into a Decision before
+we build the implementation plan.</p>
+<p><strong>Update 2026-07-03:</strong> all seven questions are resolved — see the
+<a href="#decisions">Decisions</a> table. Implementation is planned in IMPL-0014.</p>
+</blockquote>
+<h4 id="1-package-granularity--subpackage-family-or-one-flat-package">1. Package granularity — subpackage family or one flat package?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a)</strong> — implied by the per-package promotion rule
+(Decision 1) and the INV-0006 per-package audit.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> Keep the <strong>subpackage family</strong>
+<code>pkg/doczcore/{config,document,docparse,docwrite,template,index,toc,wiki}</code>.
+Preserves the current split and the typed boundaries, keeps imports
+tree-shakeable (a consumer of <code>document</code> doesn't compile <code>wiki</code>), and is minimal
+churn (mostly <code>git mv</code> + repoint).</li>
+<li>b. Collapse to a <strong>single flat</strong> <code>pkg/doczcore</code> package — one import, but no
+tree-shaking, a very large single surface, and pervasive rename churn.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="2-sequencing-against-the-in-flight-v060">2. Sequencing against the in-flight <code>v0.6.0</code>?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (b), amended by fact-check</strong> — the premise of (a)
+was wrong: nothing of the v0.6.0 slate exists in code (no IMPL doc, no
+<code>docparse</code>, no <code>CheckTask</code>, viper still in <code>Load</code>), so there is nothing to
+ship first. The slate folds into the single <code>v1.0.0</code> release;
+sdk-booty-sh pins <code>v1.0.0</code>.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <strong>Ship <code>v0.6.0</code> (IMPL-0014) first</strong> to unblock sdk-booty-sh
+(it is waiting on the tag), then do this consolidation as <code>v1.0.0</code>. Two clean
+releases; the blocked consumer isn't held hostage to the big refactor.</li>
+<li>b. <strong>Fold everything into one <code>v1.0.0</code></strong> and drop the separate <code>v0.6.0</code> — fewer
+releases, but delays the waiting consumer behind the larger, riskier change.</li>
+<li>c. Other (e.g. ship <code>v0.6.0</code>, then a <code>v0.7.0</code> staging release, then <code>v1.0.0</code>).</li>
+</ul>
+<h4 id="3-how-do-we-treat-the-cli-shaped-packages-template-index-wiki-at-v10">3. How do we treat the CLI-shaped packages (<code>template</code>, <code>index</code>, <code>wiki</code>) at v1.0?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: none of the drafted options</strong> — they stay
+<code>internal/</code> (zero demand, INV-0006), while <code>docwrite</code> promotes <strong>whole</strong>
+(incl. <code>Create</code>, implemented over <code>internal/template</code>). See Decisions.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <strong>Promote with a light naming/doc review</strong> and accept the
+current shapes as v1.0 API (the benchmark is &quot;cmd works unchanged&quot;). Fastest path
+to v1.0; we can deprecate/refine later within semver.</li>
+<li>b. <strong>Redesign each for general public use</strong> before freezing (e.g. decouple
+<code>index.UpdateOutcome</code> from CLI wording, generalize <code>wiki</code> beyond MkDocs). Cleaner
+long-term API, materially more work, delays v1.0.</li>
+<li>c. <strong>Promote but mark <code>template</code>/<code>index</code>/<code>wiki</code> as <code>experimental</code>/<code>unstable</code></strong>
+(documented as <em>exempt</em> from the v1.0 compatibility guarantee) so the <em>needed</em>
+core (<code>config</code>/<code>document</code>/<code>docparse</code>/<code>docwrite</code>) is stable while the CLI-shaped
+packages keep refactor freedom. A middle path that limits the semver cost.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="4-toc-vs-docparse-overlap-in-the-public-api">4. <code>toc</code> vs <code>docparse</code> overlap in the public API?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a)</strong> — export-lean: the splice is document
+machinery (bytes-in content transforms), not CLI presentation, so it
+promotes to <code>pkg/doczcore/toc</code> delegating its walk to <code>docparse</code>. One
+public parser; <code>toc</code>'s own walker retires.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <code>docparse</code> is the <strong>canonical parser</strong>; keep a
+<code>pkg/doczcore/toc</code> for the <strong>ToC-splice</strong> concern
+(<code>GenerateToC</code>/<code>UpdateToC</code>/<code>UpdateFiles</code>) that <strong>delegates</strong> to <code>docparse</code> for
+the heading walk — one parser, ToC generation layered on top.</li>
+<li>b. <strong>Fold the ToC-splice into <code>docparse</code></strong> (single package owns both parse and
+ToC rendering) — fewer packages, but mixes &quot;parse&quot; and &quot;render&quot; concerns.</li>
+<li>c. Keep <code>toc</code> independent with its own walker (accept two parsers in public).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="5-what-remains-in-internal-after-the-move">5. What remains in <code>internal/</code> after the move?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a)</strong>, strengthened — <code>internal/</code> stays <em>populated</em>
+(<code>template</code>, <code>index</code>, <code>toc</code> splice, <code>wiki</code>), not merely available.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <strong>Keep <code>internal/</code> available</strong> as the sanctioned home for
+genuinely CLI-private helpers (none today, but the door stays open), while moving
+all current logic out. <code>cmd/</code> holds UX/wiring; <code>internal/</code> holds CLI-only glue if
+any arises.</li>
+<li>b. <strong>Delete <code>internal/</code> entirely</strong>; anything CLI-private lives directly in
+<code>cmd/</code>. Strongest &quot;single core&quot; statement, least flexibility.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="6-embedded-templates--how-public">6. Embedded templates — how public?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: moot</strong> — <code>template</code> never promotes; the embed stays
+private behind the <code>internal/</code> boundary.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> Move <code>templates/</code> with <code>pkg/doczcore/template</code>, keep the
+<code>embed.FS</code> <strong>package-private</strong>, and expose only accessor functions
+(<code>EmbeddedDocumentTemplate</code>, etc.). <strong>Exclude template file names/contents from
+the compatibility contract</strong> so we can edit built-in templates freely.</li>
+<li>b. <strong>Export the <code>embed.FS</code></strong> for full consumer access to raw templates — maximal
+flexibility for consumers, but freezes template names/paths as public contract.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="7-post-10-compatibility--deprecation-policy">7. Post-1.0 compatibility &amp; deprecation policy?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a), simplified — roll forward.</strong> Standard semver
+coverage as drafted; breaking changes ship in a major bump. No mandatory
+deprecation window — <code>Deprecated:</code> markers when practical, then roll
+forward.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> Standard semver: exported identifiers under
+<code>pkg/doczcore/*</code> are covered; <code>cmd/</code>, <code>internal/</code>, <code>test/</code>, CLI output <strong>text</strong>,
+and embedded template contents are <strong>not</strong>. Breaking changes ship in a major bump
+after a documented deprecation window (one minor with <code>Deprecated:</code> markers).</li>
+<li>b. A stricter/looser variant (specify).</li>
+<li>c. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<p>Resolved by review on 2026-07-03, grounded in the INV-0006 per-package demand
+audit and the export-lean review. All seven questions are closed; IMPL-0014
+carries the implementation plan.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Choice</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Package granularity</td>
+<td>(a) subpackage family</td>
+<td>implied by the per-package promotion rule; INV-0006 audits package-by-package</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sequencing vs <code>v0.6.0</code></td>
+<td>fold into one <code>v1.0.0</code></td>
+<td>nothing of the slate exists in code (verified 2026-07-03); no separate <code>v0.6.0</code> ships; sdk-booty-sh pins <code>v1.0.0</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>CLI-shaped packages at v1.0</td>
+<td><code>template</code>/<code>index</code>/<code>wiki</code> stay <code>internal/</code>; <code>docwrite</code> promotes whole</td>
+<td>zero external demand for the three (INV-0006); <code>Create</code> joins public <code>docwrite</code> at v1.0 over <code>internal/template</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>toc</code> vs <code>docparse</code></td>
+<td>(a) one parser, both public</td>
+<td><code>docparse</code> canonical; <code>toc</code> promotes as the splice package delegating to it; <code>toc</code>'s private walker retires</td>
+</tr>
+<tr>
+<td>5</td>
+<td>What remains in <code>internal/</code></td>
+<td>(a) keep <code>internal/</code>, populated</td>
+<td><code>template</code>, <code>index</code>, <code>wiki</code> — the CLI's private half</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Embedded templates</td>
+<td>moot</td>
+<td><code>template</code> never promotes; embed stays private</td>
+</tr>
+<tr>
+<td>—</td>
+<td>CLI-shaped <code>config</code> helpers</td>
+<td>keep</td>
+<td><code>TypesHelp</code>/<code>DefaultNavTitles</code>/<code>ResolveTypeAlias</code> stay public (export-lean); documented as CLI-support (INV-0006 Q4a)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Post-1.0 compat policy</td>
+<td>(a) simplified — roll forward</td>
+<td>standard semver coverage; breaking changes = major bump; no mandatory deprecation window (<code>Deprecated:</code> markers when practical)</td>
+</tr>
+<tr>
+<td>—</td>
+<td>API design principles</td>
+<td>adopted (Decision 5)</td>
+<td>bytes-in/values-out; no library-defined interfaces; options/result structs; path-writers only on consumer demand</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><strong>INV-0006</strong> — per-package core requirements audit (docz CLI vs docz-api,
+docz-site, sdk-booty-sh): the demand evidence behind the revised scope.</li>
+<li><strong>IMPL-0014</strong> — the implementation plan for this ADR (all six phases of
+the single <code>v1.0.0</code> release). Note: the IMPL-0014 id was once informally
+reserved for a standalone-<code>v0.6.0</code> plan that was never written; the id now
+belongs to the v1.0.0 plan.</li>
+<li><strong>ADR context / prior art</strong> — DESIGN-0007 (<code>pkg/doczcore</code> public surface,
+read-only stance), IMPL-0013 (<code>v0.5.0</code> promotion), and the
+<code>docz-v0.6.0-requirements.md</code> handoff (R1–R3), whose slate ships inside
+<code>v1.0.0</code>.</li>
+<li><strong>Consumers</strong> — DESIGN-0008 (docz-api), DESIGN-0009 (docz-site), the
+<code>sdk-booty-sh</code> v0.6.0 requirements handoff (loop harness).</li>
+<li><strong>Release mechanism</strong> — <code>pr-semver-bump</code> (<code>major</code> label → <code>v1.0.0</code>) + goreleaser,
+same path as prior tags.</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/docz-adr-0001.orig.md</code>, sha256 <code>32e70a09def6b3f3f1fecc6417617abfa9d627b735d9a875cb0746d6aad8b903</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

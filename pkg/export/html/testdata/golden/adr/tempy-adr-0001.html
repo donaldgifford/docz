@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0001: Run the IMPL loop worker as its own repository</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Run the IMPL loop worker as its own repository</h1>
+<p class="summary">The Temporal worker that executes docz IMPL docs (see DESIGN-0001) could live in
+one of three places: the homelab GitOps repository where Temporal itself is
+deployed, the docz repository alongside <code>docz-api</code> and <code>doczcore</code> which it
+depends on, or a repository of its own.</p>
+<div class="meta">
+<span class="pill">ADR-0001</span>
+<span class="pill st-proposed">Proposed</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-12</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="status" aria-controls="p-status">Status</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-status">
+<h2 class="panel-title" id="status">Status</h2>
+<p>Accepted</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>Forces at play:</p>
+<ul>
+<li>A Temporal worker is a deployable with a determinism contract. Workflow code
+changes need replay tests against recorded histories, and a worker version is
+pinned to a task queue during rollouts. That is easiest to reason about when
+the repository boundary is the worker boundary.</li>
+<li>The homelab repository holds cluster live state (ArgoCD/Kargo, Helm,
+Kustomize). Its commit stream is unrelated to workflow logic.</li>
+<li>The stated goal is to lift this worker to the work platform once proven. Code
+embedded in the homelab repository cannot be lifted without surgery.</li>
+<li>docz is a documentation lifecycle tool used by humans and CI in every
+repository. The worker pulls in Temporal SDK, Kubernetes client, git plumbing,
+and an agent runner image — a much larger dependency surface.</li>
+<li>Every comparable tool in this ecosystem (fwsync, sluice, champs,
+repo-guardian) is one repository with an engine package, a thin CLI, and a
+deployment.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<p>The Temporal worker, its CLI, and its agent runner image live in a dedicated
+repository, <code>tempy</code>. The repository is the worker: the IMPL loop is its first
+workflow package, and later workflows are added as packages that register on
+the same worker, not as new repositories or deployables. It imports <code>doczcore</code>
+as a versioned Go module. The homelab repository references the worker only by
+container image tag in its GitOps manifests.</p>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<h4 id="positive">Positive</h4>
+<ul>
+<li>One worker version ↔ one task queue ↔ one repository tag. Rollouts, rollbacks,
+and replay testing map onto git history directly.</li>
+<li>The repository can be moved to the work forge with a change of module path and
+runner image, nothing else.</li>
+<li>docz keeps its small dependency surface; <code>doczcore</code> changes needed by the
+worker are ordinary versioned releases.</li>
+<li>Same shape as every other tool: engine package, CLI, deployment.</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li>One more repository to bootstrap (docz config, justfile, CI, release).</li>
+<li><code>doczcore</code> changes require a release-then-bump cycle rather than an in-place
+edit. Acceptable; <code>go.work</code> covers local development.</li>
+</ul>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li>Shared Temporal worker scaffolding (client setup, interceptors, OTel and
+Langfuse wiring, search-attribute helpers, git activities) will be duplicated
+until a second worker exists. It is extracted into a library then, not before.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>Inside the homelab repository.</strong> Rejected: couples workflow versioning to
+cluster state commits; cannot be lifted to work.</li>
+<li><strong>Inside the docz repository next to <code>docz-api</code>.</strong> Rejected: drags a large
+runtime dependency surface into a tool that must stay light; release cadence
+of a worker differs from a CLI library.</li>
+<li><strong>A monorepo of all Temporal workers.</strong> Deferred: revisit when the SSO/IAM and
+Wiz workflows exist and the shared-scaffolding library is extracted.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0001 Temporal-orchestrated IMPL loop execution</li>
+<li>Homelab Temporal execution-plane RFC</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/tempy-adr-0001.md</code>, sha256 <code>2ac7fa30f67865eef04109ffa38a43cbd5a1bf5084f709cb99b8a5c072ec953d</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

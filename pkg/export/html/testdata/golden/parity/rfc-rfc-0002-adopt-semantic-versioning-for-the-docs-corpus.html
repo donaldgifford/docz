@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RFC-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RFC-0002: Adopt semantic versioning for the docs corpus</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · RFC</p>
+<h1>Adopt semantic versioning for the docs corpus</h1>
+<p class="summary">We want to adopt semantic versioning (MAJOR.MINOR.PATCH) for the docs
+corpus itself, independent of the software release cadence, so that
+downstream consumers like docz-api and the wiki build can pin a
+known-good snapshot instead of always tracking <code>main</code>. This RFC
+proposes a <code>docs-vX.Y.Z</code> tag cut on every merge that changes a
+published page, plus a small CLI helper to compute the next version
+from the change type.</p>
+<div class="meta">
+<span class="pill">RFC-0002</span>
+<span class="pill st-proposed">Proposed</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
+<button type="button" data-tab="problem-statement" aria-controls="p-problem-statement">Problem Statement</button>
+<button type="button" data-tab="proposed-solution" aria-controls="p-proposed-solution">Proposed Solution</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="risks-and-mitigations" aria-controls="p-risks-and-mitigations">Risks and Mitigations</button>
+<button type="button" data-tab="success-criteria" aria-controls="p-success-criteria">Success Criteria</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-summary">
+<h2 class="panel-title" id="summary">Summary</h2>
+<p><strong>Owner:</strong> docs-platform team</p>
+
+</section>
+<section class="panel" id="p-problem-statement">
+<h2 class="panel-title" id="problem-statement">Problem Statement</h2>
+<p>Right now the docs corpus has no version identity of its own. A
+consumer that checks out <code>main</code> today and one that checks out <code>main</code>
+next week can see materially different content for the same doc id,
+and there is no cheap way to tell them apart. This has caused at
+least two incidents where a generated site shipped a page that
+referenced a section which had since been renamed or removed.</p>
+<p>The pain shows up in a few different places:</p>
+<ul>
+<li>Downstream builds
+<ul>
+<li>docz-api serves whatever commit it last ingested, so a rollback
+on the API side does not roll back the docs it reads</li>
+<li>the wiki build has no concept of &quot;last known good,&quot; so a bad
+merge to a single RFC can break the entire nav</li>
+</ul>
+</li>
+<li>Contributor workflow
+<ul>
+<li>reviewers cannot easily diff &quot;what changed since the last
+release&quot; without hand-picking commit ranges</li>
+<li>there is no changelog entry that maps to a docs-only release</li>
+</ul>
+</li>
+</ul>
+<p>None of this is fatal today because the corpus is small, but it will
+not scale past a handful of consumers.</p>
+<h4 id="supporting-data">Supporting Data</h4>
+<p>Incident counts pulled from the last two quarters, grouped by root
+cause:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Quarter</th>
+<th>Docs-only incidents</th>
+<th>Root cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q1 2026</td>
+<td>2</td>
+<td>stale anchor after a heading rename</td>
+</tr>
+<tr>
+<td>Q2 2026</td>
+<td>3</td>
+<td>consumer read a doc mid-merge</td>
+</tr>
+<tr>
+<td>Q3 2026 (partial)</td>
+<td>1</td>
+<td>wiki nav referenced a moved page</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-proposed-solution">
+<h2 class="panel-title" id="proposed-solution">Proposed Solution</h2>
+<p>Tag the docs corpus independently of the module's Go version. A tag
+looks like <code>docs-v1.4.0</code> and follows semver rules scoped to doc
+content: a PATCH bump is a typo/formatting fix, a MINOR bump adds or
+substantially rewrites a doc, and a MAJOR bump removes or renames a
+published doc id (a breaking change for any consumer that pinned it).</p>
+<p>The tagging step would run in CI after merge to main, driven by a
+small config block:</p>
+<pre><code class="language-yaml">docs_release:
+  enabled: true
+  tag_prefix: docs-v
+  changelog_file: docs/CHANGELOG.md
+</code></pre>
+<p>and the actual tag is cut with a short script:</p>
+<pre><code class="language-bash">docz status set rfc RFC-0002 Accepted
+git tag -a &#34;docs-v${NEXT_VERSION}&#34; -m &#34;docs release ${NEXT_VERSION}&#34;
+git push origin &#34;docs-v${NEXT_VERSION}&#34;
+</code></pre>
+<p>Consumers then pin a tag instead of a branch, and can bump on their
+own schedule.</p>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<p>We considered dating the corpus instead of versioning it, e.g.
+<code>docs-2026-03-04</code>, which is simpler to generate but does not carry
+any signal about whether the change was breaking. We also considered
+piggybacking on the existing software release tags, but the docs and
+code change at different rates and coupling them would either starve
+the docs of releases or force noisy releases just to ship a typo fix.</p>
+
+</section>
+<section class="panel" id="p-risks-and-mitigations">
+<h2 class="panel-title" id="risks-and-mitigations">Risks and Mitigations</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contributors forget to classify the bump type</td>
+<td>Medium</td>
+<td>High</td>
+<td>add a PR template checkbox and a CI lint that fails on an unclassified docs change</td>
+</tr>
+<tr>
+<td>Tag sprawl makes the release list noisy</td>
+<td>Low</td>
+<td>Medium</td>
+<td>squash same-day PATCH tags in the changelog view, keep raw tags in git</td>
+</tr>
+<tr>
+<td>Consumers pin an old tag and miss a security-relevant doc fix</td>
+<td>High</td>
+<td>Low</td>
+<td>publish a <code>docs-latest-secure</code> moving pointer alongside the semver tags</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-success-criteria">
+<h2 class="panel-title" id="success-criteria">Success Criteria</h2>
+<ul>
+<li>docz-api and the wiki build both consume a pinned <code>docs-vX.Y.Z</code> tag
+instead of <code>main</code> within one quarter of this RFC shipping</li>
+<li>zero docs-only incidents attributable to a mid-merge read in the
+two quarters after rollout</li>
+<li>every merged doc change carries a changelog entry mapped to a tag</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>ADR-0002: API-first refactor</li>
+<li><a href="https://git-cliff.org/docs/configuration">git-cliff configuration docs</a></li>
+<li><a href="https://semver.org/">Semantic Versioning 2.0.0</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/rfc/docs/rfc/0002-adopt-semantic-versioning-for-the-docs-corpus.md</code>, sha256 <code>825d376386a01cf91cd64528d5ea05c59ab86e3fbae6e3e971604ce3ae78afe0</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

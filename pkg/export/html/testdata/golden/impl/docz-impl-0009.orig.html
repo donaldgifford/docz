@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0009">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0009: Runner Pattern and DocType Registry Refactor</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Runner Pattern and DocType Registry Refactor</h1>
+<p class="summary"><strong>Status:</strong> Completed
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-05-15</p>
+<div class="meta">
+<span class="pill">IMPL-0009</span>
+<span class="pill st-accepted">Completed</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-05-15</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
+<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="phase-1-author-design-doc" aria-controls="p-phase-1-author-design-doc">Phase 1: Author DESIGN doc</button>
+<button type="button" data-tab="phase-2-introduce-runner-struct-no-behavior-change" aria-controls="p-phase-2-introduce-runner-struct-no-behavior-change">Phase 2: Introduce Runner struct (no behavior change)</button>
+<button type="button" data-tab="phase-3-migrate-handlers-to-runner-methods-output-writers" aria-controls="p-phase-3-migrate-handlers-to-runner-methods-output-writers">Phase 3: Migrate handlers to Runner methods &#43; output writers</button>
+<button type="button" data-tab="phase-4-introduce-log-slog-logger-eliminate-if-verbose" aria-controls="p-phase-4-introduce-log-slog-logger-eliminate-if-verbose">Phase 4: Introduce log/slog logger; eliminate if verbose</button>
+<button type="button" data-tab="phase-5-inject-time-into-document-createoptions" aria-controls="p-phase-5-inject-time-into-document-createoptions">Phase 5: Inject time into document.CreateOptions</button>
+<button type="button" data-tab="phase-6-inject-git-resolution-propagate-cmd-context" aria-controls="p-phase-6-inject-git-resolution-propagate-cmd-context">Phase 6: Inject git resolution; propagate cmd.Context()</button>
+<button type="button" data-tab="phase-7-add-reporoot-to-config-load" aria-controls="p-phase-7-add-reporoot-to-config-load">Phase 7: Add repoRoot to config.Load</button>
+<button type="button" data-tab="phase-8-introduce-doctype-registry" aria-controls="p-phase-8-introduce-doctype-registry">Phase 8: Introduce DocType registry</button>
+<button type="button" data-tab="phase-9-drive-iteration-from-enabledtypes" aria-controls="p-phase-9-drive-iteration-from-enabledtypes">Phase 9: Drive iteration from EnabledTypes()</button>
+<button type="button" data-tab="phase-10-introduce-typed-doctype-and-status-strings" aria-controls="p-phase-10-introduce-typed-doctype-and-status-strings">Phase 10: Introduce typed DocType and Status strings</button>
+<button type="button" data-tab="phase-11-verify-and-ship" aria-controls="p-phase-11-verify-and-ship">Phase 11: Verify and ship</button>
+<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
+<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-objective">
+<h2 class="panel-title" id="objective">Objective</h2>
+<ul>
+<li><a href="#objective">Objective</a></li>
+<li><a href="#scope">Scope</a>
+<ul>
+<li><a href="#in-scope">In Scope</a></li>
+<li><a href="#out-of-scope">Out of Scope</a></li>
+</ul>
+</li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1-author-design-doc">Phase 1: Author DESIGN doc</a>
+<ul>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-2-introduce-runner-struct-no-behavior-change">Phase 2: Introduce Runner struct (no behavior change)</a>
+<ul>
+<li><a href="#tasks-1">Tasks</a></li>
+<li><a href="#success-criteria-1">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-3-migrate-handlers-to-runner-methods--output-writers">Phase 3: Migrate handlers to Runner methods + output writers</a>
+<ul>
+<li><a href="#tasks-2">Tasks</a></li>
+<li><a href="#success-criteria-2">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-4-introduce-logslog-logger-eliminate-if-verbose">Phase 4: Introduce log/slog logger; eliminate if verbose</a>
+<ul>
+<li><a href="#tasks-3">Tasks</a></li>
+<li><a href="#success-criteria-3">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-5-inject-time-into-documentcreateoptions">Phase 5: Inject time into document.CreateOptions</a>
+<ul>
+<li><a href="#tasks-4">Tasks</a></li>
+<li><a href="#success-criteria-4">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-6-inject-git-resolution-propagate-cmdcontext">Phase 6: Inject git resolution; propagate cmd.Context()</a>
+<ul>
+<li><a href="#tasks-5">Tasks</a></li>
+<li><a href="#success-criteria-5">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-7-add-reporoot-to-configload">Phase 7: Add repoRoot to config.Load</a>
+<ul>
+<li><a href="#tasks-6">Tasks</a></li>
+<li><a href="#success-criteria-6">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-8-introduce-doctype-registry">Phase 8: Introduce DocType registry</a>
+<ul>
+<li><a href="#tasks-7">Tasks</a></li>
+<li><a href="#success-criteria-7">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-9-drive-iteration-from-enabledtypes">Phase 9: Drive iteration from EnabledTypes()</a>
+<ul>
+<li><a href="#tasks-8">Tasks</a></li>
+<li><a href="#success-criteria-8">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-10-introduce-typed-doctype-and-status-strings">Phase 10: Introduce typed DocType and Status strings</a>
+<ul>
+<li><a href="#tasks-9">Tasks</a></li>
+<li><a href="#success-criteria-9">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-11-verify-and-ship">Phase 11: Verify and ship</a>
+<ul>
+<li><a href="#tasks-10">Tasks</a></li>
+<li><a href="#success-criteria-10">Success Criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#file-changes">File Changes</a></li>
+<li><a href="#testing-plan">Testing Plan</a></li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>The largest and most architectural of the INV-0002 waves. Eliminate the
+two systemic blockers to clean tests and clean extension:</p>
+<ol>
+<li><strong>Package-level globals in <code>cmd/</code></strong> — every flag and <code>appCfg</code> lives as
+a <code>var</code>, blocking parallel tests and forcing <code>os.Pipe</code> tricks for
+output capture.</li>
+<li><strong><code>DocType</code> scattered across 6+ locations</strong> — no single source of
+truth for the closed set of document types.</li>
+</ol>
+<p>Introduce a <code>Runner</code> struct that holds resolved config and writer
+dependencies, convert command handlers to methods on <code>Runner</code>, and replace
+the ad-hoc type definitions with a <code>DocType</code> registry. Add <code>log/slog</code>
+logging, injectable time + git resolution, and an explicit <code>repoRoot</code>
+parameter for <code>config.Load</code>.</p>
+<p>This wave is gated on a <strong>DESIGN doc</strong> that aligns on the Runner shape and
+DocType registry API before implementation begins.</p>
+<p><strong>Implements:</strong> INV-0002 (Wave 5 — Architecture refactor)</p>
+
+</section>
+<section class="panel" id="p-scope">
+<h2 class="panel-title" id="scope">Scope</h2>
+<h4 id="in-scope">In Scope</h4>
+<ul>
+<li>Author a DESIGN doc covering Runner pattern + DocType registry</li>
+<li>Introduce <code>cmd.Runner</code> struct (config + <code>io.Writer</code> for stdout/stderr +
+injected dependencies)</li>
+<li>Convert all command <code>runFoo</code> functions into <code>(*Runner).Foo()</code> methods</li>
+<li>Migrate <code>fmt.Printf</code> / <code>os.Stdout</code> calls to <code>cmd.Println</code> /
+<code>cmd.OutOrStdout()</code> (50+ sites, F2)</li>
+<li>Introduce <code>log/slog</code> logger; replace 20+ <code>if verbose { ... }</code> blocks (F3)</li>
+<li>Inject <code>time.Time</code> into <code>document.CreateOptions</code>; delete the package
+<code>timeNow</code> global (F4)</li>
+<li>Make <code>gitUserName</code> injectable; propagate <code>cmd.Context()</code> (F5)</li>
+<li>Add <code>repoRoot string</code> parameter to <code>config.Load</code>; eliminate <code>os.Chdir</code>
+in tests (F6)</li>
+<li>Introduce <code>DocType</code> registry: single struct bundling name, aliases,
+default <code>TypeConfig</code>, nav title, template name (F14)</li>
+<li>Drive type iteration from the registry instead of <code>ValidTypes()</code>
+hardcoded slice (F15)</li>
+<li>Introduce <code>type DocType string</code> and <code>type Status string</code> typed strings
+for compile-time signal (F16)</li>
+</ul>
+<h4 id="out-of-scope">Out of Scope</h4>
+<ul>
+<li>Adding new user-facing commands or flags</li>
+<li>Changing the YAML config schema (typed strings should not break
+user-written <code>.docz.yaml</code> files)</li>
+<li>Migrating from Cobra to a different CLI framework</li>
+<li>Internationalization / structured logging consumers</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-1-author-design-doc">
+<h2 class="panel-title" id="phase-1-author-design-doc">Phase 1: Author DESIGN doc</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Before writing any code, align on the architectural shape via a DESIGN
+document. This is the prerequisite gate.</p>
+<h5 id="tasks">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Create DESIGN doc: <code>docz create design &quot;Runner Pattern and DocType Registry&quot;</code>
+— DESIGN-0004 scaffolded 2026-05-27</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">DESIGN doc must cover:
+<ul>
+<li>Runner struct shape and lifecycle (constructed where? scoped per
+command vs. per process?) — DESIGN-0004 §A</li>
+<li>How flags bind to per-command options structs vs. Runner fields —
+DESIGN-0004 §B</li>
+<li>Output writers — single writer or stdout+stderr split, how <code>--quiet</code>
+integrates — DESIGN-0004 §C</li>
+<li>Logger handler: text or JSON, configurable level, where it's threaded
+— DESIGN-0004 §D</li>
+<li>DocType registry API: registration model (init-time or explicit?),
+aliasing model, lookup model — DESIGN-0004 §E</li>
+<li>Typed <code>DocType</code> / <code>Status</code> migration: where the alias is enforced,
+YAML tag compatibility, validation surface — DESIGN-0004 §F
+(revises this IMPL's Decision §3 — no custom YAML unmarshaler
+required)</li>
+<li>Library/pattern evaluation:
+<ul>
+<li><code>charmbracelet/fang</code> — DESIGN-0004 §G: rejected (experimental;
+no payoff for current scope)</li>
+<li>Bubble Tea v2 alongside Cobra — DESIGN-0004 §G: rejected (no TUI
+requirement today)</li>
+<li><code>localstack/lstk</code> — DESIGN-0004 §G: pattern reference for
+per-command options structs, not a dependency</li>
+</ul>
+</li>
+<li>Test strategy: how does a typical handler test look post-refactor?
+— DESIGN-0004 §H</li>
+<li>Migration plan: can the refactor land in one PR or must be split?
+— DESIGN-0004 §Migration: single PR for phases 2–11 with an 11-commit
+sequence</li>
+</ul>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">DESIGN doc reviewed and accepted (status: Approved) — flipped
+from <code>In Review</code> after the full Phases 2–11 implementation
+shipped lint-clean and race-clean, validating the design's
+load-bearing claims (Runner construction, DocType registry,
+<code>repoRoot</code> parameter, stacked-PR split). Frontmatter and
+narrative status updated together.</div></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li>DESIGN doc status is <code>Approved</code></li>
+<li>Any new open questions raised by the DESIGN doc are resolved or
+explicitly deferred (IMPL-0009's own decisions are already fixed in
+the Decisions section below)</li>
+<li>Approved by repository owner</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-2-introduce-runner-struct-no-behavior-change">
+<h2 class="panel-title" id="phase-2-introduce-runner-struct-no-behavior-change">Phase 2: Introduce Runner struct (no behavior change)</h2>
+<p>Establish the Runner shape with no functional change to handlers yet.</p>
+<h5 id="tasks-1">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Define <code>cmd.Runner</code> struct per the DESIGN doc, e.g.:</p>
+<pre><code>type Runner struct {
+    Cfg    config.Config
+    Out    io.Writer
+    Err    io.Writer
+    Logger *slog.Logger
+    Now    func() time.Time
+    Git    GitResolver
+}
+</code></pre>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add <code>NewRunner(cfg *config.Config) *Runner</code> with defaults
+(<code>os.Stdout</code>, <code>os.Stderr</code>, <code>slog.TextHandler</code> at <code>LevelInfo</code>,
+<code>time.Now</code>, <code>realGit{}</code>). Signature deviates from the DESIGN
+sketch — takes <code>*config.Config</code> per <code>gocritic hugeParam</code> (Config
+is ~240B); semantically equivalent (Runner stores <code>*cfg</code> as a
+value copy).</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add <code>GitResolver</code> interface plus <code>realGit</code>/<code>staticGit</code>
+implementations in <code>cmd/git.go</code>. (Bundled into Phase 2 because
+<code>Runner.Git</code> requires the type to compile; Phase 6 still owns
+the conversion of <code>cmd/create.go:gitUserName</code> callers.)</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add a single root-level <code>runner *Runner</code> global initialized in
+<code>PersistentPreRunE</code> — this is a temporary scaffolding step; later
+phases convert handlers one at a time.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Confirm all existing tests pass with no changes. New tests added:
+<code>cmd/runner_test.go</code> (<code>TestNewRunner_Defaults</code>,
+<code>TestRunner_DirectConstruction</code>, <code>TestPackageRunner_AssignedFromNewRunner</code>)
+and <code>cmd/git_test.go</code> (<code>TestStaticGit_UserName</code>,
+<code>TestRealGit_UserName_Smoke</code>).</p>
+</div></li>
+</ul>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>Runner</code> defined and importable</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">No handler converted yet — pure plumbing</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>make ci</code> green</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-3-migrate-handlers-to-runner-methods-output-writers">
+<h2 class="panel-title" id="phase-3-migrate-handlers-to-runner-methods--output-writers">Phase 3: Migrate handlers to Runner methods &#43; output writers</h2>
+<p>Convert command handlers from package-level functions to <code>Runner</code> methods.
+Per DESIGN-0004 §C, handlers write to <code>r.Out</code> / <code>r.Err</code> (NOT
+<code>cmd.OutOrStdout()</code> — the task wording below predates the DESIGN and is
+superseded).</p>
+<h5 id="tasks-2">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Convert <code>runCreate</code> → <code>(*Runner).Create</code> accepting context and
+args; output through <code>r.Out</code> (Phase 3e)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Convert <code>runUpdate</code>, <code>runList</code>, <code>runInit</code>, <code>runTemplateShow</code>,
+<code>runTemplateExport</code>, <code>runTemplateOverride</code>, <code>runWikiInit</code>,
+<code>runWikiUpdate</code>, <code>runConfig</code>, <code>runVersion</code> similarly (Phases 3a/3b/3c/3d/3f)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Replace <code>fmt.Printf</code> / <code>os.Stdout</code> sites with writes through
+<code>r.Out</code> (single residual at <code>cmd/root.go:79</code> is in the
+bootstrap path before the Runner exists — acceptable)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Replace <code>fmt.Fprintf(os.Stderr, ...)</code> sites with <code>r.Err</code> writes
+or <code>r.Logger.Debug</code> (Phase 4 work folded in)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update tests to construct a Runner with <code>bytes.Buffer</code> writers
+instead of <code>os.Pipe</code> tricks — finished in the cleanup commit:
+<code>installListRunner</code>, <code>setupWikiTestDir</code>, <code>newTemplateTestRunner</code>,
+<code>BenchmarkCmdUpdate</code>, and <code>config_test.go</code> all assemble a Runner
+with <code>Out</code> pointed at a <code>bytes.Buffer</code> or <code>io.Discard</code></div></li>
+</ul>
+<h5 id="success-criteria-2">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>grep -rn 'fmt\.Printf\|fmt\.Println\|os\.Stdout' cmd/*.go | grep -v _test.go</code>
+returns only <code>cmd/root.go:79</code> (bootstrap path)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">No test uses <code>os.Pipe</code> to capture output — verified with
+<code>grep -n 'os.Pipe' cmd/*_test.go</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Tests can run <code>t.Parallel()</code> (where the underlying handler is
+side-effect-free) — every cmd test that does not touch the
+package-level <code>runner</code>/<code>appCfg</code>/flag globals now calls
+<code>t.Parallel()</code>: <code>TestStaticGit_UserName</code> (+ subtests),
+<code>TestRealGit_UserName_{Smoke,CtxCancel}</code>,
+<code>TestFilterByStatus</code>, <code>TestOutputTable/JSON/CSV</code>, the
+<code>TestBuildLogger_*</code> family, <code>TestRunner_resolveAuthor</code>
+(+ subtests), and <code>TestRunner_Create_Parallel</code>. The remaining
+cmd tests still go through <code>runUpdate</code>/<code>runCreate</code>/<code>rootCmd.Execute</code>
+and therefore touch the shared globals, so they stay serial
+until per-command opts structs land in a follow-up RFC.</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-4-introduce-log-slog-logger-eliminate-if-verbose">
+<h2 class="panel-title" id="phase-4-introduce-logslog-logger-eliminate-if-verbose">Phase 4: Introduce log/slog logger; eliminate if verbose</h2>
+<p>Replace verbose-guard blocks with structured logging. (Note: the
+mechanical replacements landed alongside the Phase 3 conversions;
+the <code>--log-level</code> / <code>--log-format</code> flag wiring remains.)</p>
+<h5 id="tasks-3">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>Runner</code>, wire <code>Logger *slog.Logger</code> from the <code>--verbose</code> flag
+(verbose → debug level; default → info level). <code>NewRunner</code> still
+installs the safe default (TextHandler at LevelInfo, stderr); the
+flag-driven swap happens in <code>loadAndValidateConfig</code> via
+<code>buildLogger</code>, which then overwrites <code>r.Logger</code> before the global
+<code>runner</code> is published. This keeps <code>NewRunner</code> callable from tests
+with no flag plumbing.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Replace every <code>if verbose { fmt.Fprintf(os.Stderr, ...) }</code> block
+with <code>r.Logger.Debug(msg, &quot;key&quot;, value)</code> — done as part of
+Phase 3 conversions</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Internal packages remain quiet (no logger handle plumbed in —
+see DESIGN-0004 §D)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Decision §1 locked: <code>slog.TextHandler</code> default</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>--log-level</code> flag (debug/info/warn/error) and <code>--log-format</code>
+flag (text/json) with the JSON handler swap. Resolution order:
+explicit <code>--log-level</code> wins, else <code>--verbose</code>→debug, else info.
+Invalid values surface a startup error rather than silently
+defaulting.</div></li>
+</ul>
+<h5 id="success-criteria-3">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>grep -rn 'if verbose' cmd/*.go | grep -v _test.go</code> returns no
+matches</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>grep -rn '\bverbose\b' cmd/*.go | grep -v _test.go</code> returns
+only the <code>cmd/root.go</code> flag declaration and the buildLogger call
+site that consumes it</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Tests can capture log output by configuring a buffer-backed
+handler — <code>TestBuildLogger_*</code> cases use a <code>bytes.Buffer</code> as the
+slog Writer and assert on emitted records (text and JSON)</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-5-inject-time-into-document-createoptions">
+<h2 class="panel-title" id="phase-5-inject-time-into-documentcreateoptions">Phase 5: Inject time into document.CreateOptions</h2>
+<p>Eliminate the <code>internal/document/time.go</code> package global.</p>
+<h5 id="tasks-4">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>CreatedAt time.Time</code> to <code>document.CreateOptions</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>document.Create</code>, use <code>opts.CreatedAt</code> (with zero-value fallback
+to <code>time.Now()</code>) and remove the call to <code>currentDate()</code> /
+<code>timeNow()</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Delete <code>internal/document/time.go</code> and the <code>timeNow</code> package
+variable</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>cmd/create.go</code>, populate <code>opts.CreatedAt = r.Now()</code> inside
+<code>(*Runner).Create</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>internal/document/create_test.go</code> to pass <code>CreatedAt</code>
+directly; remove <code>t.Cleanup</code> time-restore patterns; add
+<code>TestCreate_ZeroCreatedAtFallsBackToNow</code> to cover the
+zero-value path</div></li>
+</ul>
+<h5 id="success-criteria-4">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>grep -rn 'timeNow' internal/</code> returns no matches</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Tests no longer mutate package globals to control time</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-6-inject-git-resolution-propagate-cmd-context">
+<h2 class="panel-title" id="phase-6-inject-git-resolution-propagate-cmdcontext">Phase 6: Inject git resolution; propagate cmd.Context()</h2>
+<h5 id="tasks-5">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Define <code>type GitResolver interface { UserName(ctx context.Context) string }</code>
+in <code>cmd/git.go</code> (Phase 2)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Implement <code>realGit struct{}</code> that calls
+<code>exec.CommandContext(ctx, &quot;git&quot;, &quot;config&quot;, &quot;user.name&quot;)</code> (Phase 2)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add a test-friendly <code>staticGit{Name string}</code> implementation (Phase 2)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>Runner</code>, hold <code>Git GitResolver</code> (Phase 2)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>(*Runner).resolveAuthor</code>, call <code>r.Git.UserName(ctx)</code>
+instead of the package-level <code>gitUserName()</code> (Phase 3e)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Delete <code>cmd/create.go:gitUserName</code> (Phase 3e)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Author-resolution unit test that passes <code>staticGit{Name: &quot;Test User&quot;}</code>.
+<code>TestRunner_resolveAuthor</code> (cmd/runner_test.go) is a five-row
+table covering: flag wins over everything; config default wins
+over git; git wins when both are empty; <code>from_git=false</code> skips
+git; git returning empty falls through to &quot;Unknown&quot;.</div></li>
+</ul>
+<h5 id="success-criteria-5">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>gitUserName</code> is gone</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Author resolution is fully unit-testable (Runner.resolveAuthor
+takes ctx + flagAuthor and reads only r.Cfg/r.Git)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>Ctrl+C</code> during <code>docz create</code> cancels the git lookup.
+<code>TestRealGit_UserName_CtxCancel</code> (cmd/git_test.go) passes an
+already-cancelled context and asserts the call returns &quot;&quot; within
+2s — a future regression that drops the ctx would time out
+instead of hanging the suite.</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-7-add-reporoot-to-config-load">
+<h2 class="panel-title" id="phase-7-add-reporoot-to-configload">Phase 7: Add repoRoot to config.Load</h2>
+<p>Eliminate <code>os.Chdir</code> in tests.</p>
+<h5 id="tasks-6">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Change <code>config.Load(configFile string) (Config, error)</code> to
+<code>config.Load(configFile, repoRoot string) (Config, error)</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>repoRoot</code> is the directory to scan for <code>.docz.yaml</code> (empty string
+= current working directory for back-compat default)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">In <code>loadAndValidateConfig</code> (cmd/root.go), pass <code>os.Getwd()</code>
+explicitly</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update tests in <code>internal/config/config_test.go</code> and
+<code>internal/config/parity_baseline_test.go</code> to pass <code>t.TempDir()</code>
+directly via the new repoRoot param; remove every <code>os.Chdir</code> +
+<code>t.Cleanup(os.Chdir)</code> pattern in these files</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Remove <code>os.Chdir</code> from <code>cmd/init_test.go</code>, <code>cmd/wiki_test.go</code>,
+and <code>cmd/template_test.go</code> — done by adding <code>Runner.RepoRoot</code>
+and an <code>inRepo(name)</code> helper for cwd-relative path resolution,
+plus a <code>--repo-root</code> Cobra flag with precedence
+<code>--repo-root &gt; dir(--config) &gt; os.Getwd()</code> so <code>root_test.go</code> and
+<code>inv0003_test.go</code> can drive <code>rootCmd.Execute()</code> without
+<code>os.Chdir</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Verify tests can run <code>t.Parallel()</code> now — <code>internal/*</code> already
+do (134 sites); the side-effect-free cmd tests
+(<code>git_test.go</code>, the <code>outputTable/JSON/CSV</code> table tests,
+<code>TestFilterByStatus</code>, the <code>TestBuildLogger_*</code> family,
+<code>TestRunner_resolveAuthor</code>, <code>TestRunner_Create_Parallel</code>) now
+do as well. The remaining cmd tests that exercise package-level
+<code>runner</code>/<code>appCfg</code>/flag globals stay serial pending the
+per-command opts struct refactor.</div></li>
+</ul>
+<h5 id="success-criteria-6">Success Criteria</h5>
+<ul>
+<li><code>grep -rn 'os\.Chdir' .</code> returns no matches in test code</li>
+<li>Tests run with <code>t.Parallel()</code> and pass</li>
+<li><code>make test</code> wall-clock time decreases noticeably</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-8-introduce-doctype-registry">
+<h2 class="panel-title" id="phase-8-introduce-doctype-registry">Phase 8: Introduce DocType registry</h2>
+<p>Replace the scattered type definitions with a single registration list.</p>
+<h5 id="tasks-7">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Define <code>internal/config/doctype.go</code> with the registry struct.
+Named <code>DocTypeDef</code> (not <code>DocType</code>) to leave <code>DocType</code> free for the
+typed-string in Phase 10 (DESIGN-0004 Open Question 2); <code>DefaultConfig</code>
+is a <code>func() TypeConfig</code> constructor so each lookup yields a fresh
+<code>Statuses</code> slice (DESIGN-0004 §E):</p>
+<pre><code class="language-go">type DocTypeDef struct {
+    Name          string
+    Aliases       []string
+    DefaultConfig func() TypeConfig
+    NavTitle      string
+    PluralLabel   string
+    TemplateName  string
+}
+</code></pre>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Define <code>var allDocTypes = []DocTypeDef{ ... }</code> listing all 6 types
+with their full metadata in one place</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add helpers: <code>AllDocTypes() []DocTypeDef</code> (returns <code>slices.Clone</code>),
+<code>LookupDocType(name string) (DocTypeDef, bool)</code> (case-insensitive,
+whitespace-trimmed, canonical + alias), <code>DocTypeNames() []string</code>
+(registry-declaration order — <code>ValidateType</code>'s error message and
+the existing <code>TestValidTypes</code> depend on this ordering)</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Derive <code>DefaultConfig().Types</code> from <code>allDocTypes</code> via <code>defaultTypesMap()</code></p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Derive <code>ValidTypes()</code> from <code>allDocTypes</code> (now delegates to <code>DocTypeNames()</code>)</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Derive <code>DefaultNavTitles()</code> from <code>allDocTypes</code> via <code>defaultNavTitlesMap()</code></p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Derive <code>typeAliases</code> from <code>allDocTypes</code> via <code>defaultTypeAliases()</code></p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Derive <code>TypesHelp()</code> text from <code>allDocTypes</code> — done by adding
+a <code>HelpDescription</code> field to <code>DocTypeDef</code> and rewriting
+<code>TypesHelp</code> as a registry walk that auto-appends <code>(alias: …)</code>
+from each entry's <code>Aliases</code>. The byte-for-byte output is
+unchanged.
+<code>TestDocTypeRegistry_TypesHelpDerivedFromRegistry</code> replaces the
+previous static-string guard with a registry-derived assertion
+that every name, every <code>HelpDescription</code>, and every alias
+reaches the rendered help.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add a test: every registered <code>DocTypeDef</code> has a corresponding
+<code>internal/template/templates/&lt;TemplateName&gt;.md</code> embedded file
+(<code>TestDocTypeRegistry_AllHaveEmbeddedTemplate</code>)</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add a test: every registered <code>DocTypeDef</code> has a corresponding
+<code>internal/template/templates/index_&lt;TemplateName&gt;.md</code>
+(<code>TestDocTypeRegistry_AllHaveEmbeddedIndexHeader</code>)</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p>Add the rest of the DESIGN-0004 §E consistency invariant tests:
+no duplicate canonical names, no alias collides with a canonical
+name, <code>DefaultConfig()</code> validates, every entry's <code>DefaultConfig()</code>
+ships non-empty <code>Statuses</code>, <code>DefaultConfig()</code> hands back a fresh
+<code>Statuses</code> backing array per call, <code>LookupDocType</code> resolves
+canonical/aliases case-insensitively, and the derived
+<code>DefaultConfig()</code> matches the registry literal field-for-field</p>
+</div></li>
+</ul>
+<h5 id="success-criteria-7">Success Criteria</h5>
+<ul>
+<li>Adding a new doc type requires editing exactly one location:
+<code>allDocTypes</code>, plus creating the two template files</li>
+<li>A test catches a registered type missing its embedded templates</li>
+<li>All existing behavior unchanged (golden files green)</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-9-drive-iteration-from-enabledtypes">
+<h2 class="panel-title" id="phase-9-drive-iteration-from-enabledtypes">Phase 9: Drive iteration from EnabledTypes()</h2>
+<p>Now that the registry is in place, <code>EnabledTypes()</code> should iterate the
+registry rather than the hardcoded <code>ValidTypes()</code> slice.</p>
+<h5 id="tasks-8">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>Config.EnabledTypes()</code> (from IMPL-0006) to iterate
+<code>allDocTypes</code> (via <code>DocTypeNames</code>) and filter by
+<code>Config.Types[name].Enabled</code>. The old sort step is dropped —
+registry-declaration order is now the canonical order.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Audit all remaining <code>ValidTypes()</code> call sites and replace with
+<code>EnabledTypes()</code> or <code>DocTypeNames()</code> as appropriate:
+- <code>cmd/list.go</code> (<code>docz list</code>) → <code>r.Cfg.EnabledTypes()</code> so disabled
+types are skipped instead of attempting to scan a directory
+the user removed
+- <code>cmd/template.go</code> (three help strings) → <code>config.DocTypeNames()</code>
+- <code>config.ValidateType</code> error message → <code>config.DocTypeNames()</code>
+- <code>config.Validate</code> membership set → <code>config.DocTypeNames()</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Delete <code>ValidTypes()</code> — no callers remain</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>TestValidTypes</code> → <code>TestDocTypeNames</code>; update
+<code>TestEnabledTypes</code> and <code>TestDefaultConfig</code> to assert registry order</div></li>
+</ul>
+<h5 id="success-criteria-8">Success Criteria</h5>
+<ul>
+<li><code>grep -rn 'ValidTypes' .</code> returns only one match: a historical comment
+in <code>doctype.go</code> documenting the consolidation</li>
+<li>All iteration goes through the registry</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-10-introduce-typed-doctype-and-status-strings">
+<h2 class="panel-title" id="phase-10-introduce-typed-doctype-and-status-strings">Phase 10: Introduce typed DocType and Status strings</h2>
+<p>Add typed-string definitions for compile-time signal at API boundaries.</p>
+<h5 id="tasks-9">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Define <code>type DocType string</code> (typed wrapper, not the struct)
+in <code>internal/config/doctype.go</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Define <code>type Status string</code> alongside <code>DocType</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">No registry rename needed — Phase 8 already named the struct
+<code>DocTypeDef</code>, so <code>DocType</code> is free for the typed-string wrapper
+(DESIGN-0004 Decision §2 resolves Open Question 2)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>document.CreateOptions.Type</code> to <code>config.DocType</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>template.Data.Type</code> (renamed from <code>TemplateData</code> in
+IMPL-0008) to <code>config.DocType</code> and <code>template.Data.Status</code> to
+<code>config.Status</code></div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>template.EmbeddedDocumentTemplate(docType config.DocType)</code>
+— <code>template.Resolve</code> keeps <code>string</code> (internal resolution path,
+not in §F's enforcement surface) and casts once at the embed
+call site</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update <code>document.Frontmatter.Status</code> to <code>config.Status</code>. No custom
+YAML marshaler needed — <code>go.yaml.in/yaml/v3</code> round-trips typed
+strings whose underlying kind is <code>string</code> transparently. DESIGN-0004
+§F revises Decision §3.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Verify YAML round-trip back-compat with two tests in
+<code>document_test.go</code>: <code>TestFrontmatter_TypedStatus_YAMLRoundTrip</code>
+pins the bare-scalar emit and field-level round trip;
+<code>TestFrontmatter_TypedStatus_LegacyYAMLParses</code> pins parsing of a
+pre-typed-string YAML fixture</div></li>
+</ul>
+<h5 id="success-criteria-9">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>DocType</code> and <code>Status</code> typed wrappers exist</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Function signatures across <code>internal/</code> use the typed forms</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>.docz.yaml</code> files written by any prior docz version still parse
+(no top-level field changed type — only Frontmatter.Status and
+template.Data fields, neither of which appear in <code>.docz.yaml</code>)</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-11-verify-and-ship">
+<h2 class="panel-title" id="phase-11-verify-and-ship">Phase 11: Verify and ship</h2>
+<h5 id="tasks-10">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Full <code>make ci</code> green</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Manual smoke test across all CLI commands —
+<code>version</code>, <code>--help</code>, <code>init</code>, <code>create rfc/adr/inv</code> (canonical
+and alias paths), <code>list</code> (no filter, type filter, <code>--status</code>),
+<code>update</code>, <code>template show</code>, <code>config</code>, <code>wiki update</code> all behave
+as expected against a <code>/tmp/docz-smoke</code> working directory</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Verify all tests can run with <code>t.Parallel()</code>. Every top-level
+<code>Test*</code> in <code>internal/*</code> plus their table-driven subtests now
+call <code>t.Parallel()</code> (134 sites). Three iterations of
+<code>go test -race -shuffle=on -count=3 ./...</code> are green. cmd/
+tests stay serial because they share package-level <code>runner</code> /
+<code>appCfg</code> / flag globals, but the pipe-discarding pattern
+(<code>_, w, _ := os.Pipe()</code>) that previously flaked under shuffle
+is fixed by capturing the read end and deferring its close —
+so even without parallelism the cmd/ suite is now
+order-independent</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update INV-0002 status — flipped to <code>Concluded</code>; Wave 4 marked
+done (PRs #44/#45/#46) and Wave 5 marked done (DESIGN-0004 +
+IMPL-0009 Phases 2-10) with item-by-item references</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Update the architecture section of CLAUDE.md to reflect the new
+structure (Runner pattern, DocType registry, typed strings,
+logger flag wiring all noted)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Document the DocType registration pattern in CONTRIBUTING.md
+and DEVELOPMENT.md (single-file edit + two templates,
+pointers to the Phase 8 consistency tests)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Open final PR(s) with <code>dont-release</code> label. PR #48 (this PR)
+stacks on PR #47 (DESIGN-0004) per Decisions §6. The
+<code>--log-level</code> and <code>--log-format</code> flags are new user-visible
+surface but ship behind their existing defaults (text + info),
+so the runtime behavior matches the prior release and the PR
+keeps the <code>dont-release</code> label. When PR #47 merges, GitHub will
+auto-rebase PR #48's base onto main.</div></li>
+</ul>
+<h5 id="success-criteria-10">Success Criteria</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>make ci</code> green</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">A new contributor can add a doc type by editing one file plus two
+template files (CONTRIBUTING.md &quot;Adding a New Built-In Document
+Type&quot; and DEVELOPMENT.md walkthrough both pin this)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Tests run in parallel — all internal/* tests, top-level and
+subtests, call <code>t.Parallel()</code>. <code>go test -race -shuffle=on -count=3 ./...</code> is green. cmd/ tests stay serial intentionally
+until the package-level globals are removed (out of scope here)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">No <code>cmd/</code> package-level globals remain except the threaded
+<code>*Runner</code> and the bound Cobra flag values
+(<code>cfgFile</code>, <code>docsDir</code>, <code>verbose</code>, <code>logLevel</code>, <code>logFormat</code>, and
+per-command flag vars like <code>createStatus</code>); the bound globals
+are CLI-flag plumbing rather than runtime state</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-file-changes">
+<h2 class="panel-title" id="file-changes">File Changes</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/design/00NN-runner-pattern-and-doctype-registry.md</code></td>
+<td>Create</td>
+<td>Prerequisite DESIGN doc</td>
+</tr>
+<tr>
+<td><code>cmd/runner.go</code></td>
+<td>Create</td>
+<td><code>Runner</code> struct, <code>NewRunner</code>, helpers</td>
+</tr>
+<tr>
+<td><code>cmd/git.go</code></td>
+<td>Create</td>
+<td><code>GitResolver</code> interface, <code>realGit</code>, tests use fakes</td>
+</tr>
+<tr>
+<td><code>cmd/root.go</code></td>
+<td>Modify</td>
+<td>Wire <code>Runner</code> into <code>PersistentPreRunE</code></td>
+</tr>
+<tr>
+<td><code>cmd/*.go</code></td>
+<td>Modify</td>
+<td>Convert handlers to <code>(*Runner).Foo</code> methods</td>
+</tr>
+<tr>
+<td><code>cmd/*_test.go</code></td>
+<td>Modify</td>
+<td>Use <code>cmd.SetOut(&amp;buf)</code>; pass test Runner</td>
+</tr>
+<tr>
+<td><code>internal/document/time.go</code></td>
+<td>Delete</td>
+<td><code>timeNow</code> global no longer needed</td>
+</tr>
+<tr>
+<td><code>internal/document/create.go</code></td>
+<td>Modify</td>
+<td>Use <code>opts.CreatedAt</code></td>
+</tr>
+<tr>
+<td><code>internal/config/config.go</code></td>
+<td>Modify</td>
+<td><code>Load(configFile, repoRoot string)</code></td>
+</tr>
+<tr>
+<td><code>internal/config/doctype.go</code></td>
+<td>Create</td>
+<td><code>DocType</code> registry struct + <code>allDocTypes</code> table</td>
+</tr>
+<tr>
+<td><code>internal/template/template.go</code></td>
+<td>Modify</td>
+<td>Use typed <code>DocType</code></td>
+</tr>
+<tr>
+<td>All test files</td>
+<td>Modify</td>
+<td>Remove <code>os.Chdir</code>; remove <code>os.Pipe</code> tricks</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing-plan">
+<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Every Runner method has a focused unit test using a constructed
+<code>Runner</code> with <code>bytes.Buffer</code> writers (cmd/runner_test.go:
+<code>TestNewRunner_Defaults</code>, <code>TestRunner_DirectConstruction</code>,
+<code>TestRunner_resolveAuthor</code>, <code>TestRunner_Create_Parallel</code>,
+<code>TestPackageRunner_AssignedFromNewRunner</code>, plus the
+<code>TestBuildLogger_*</code> family for the slog wiring)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">DocType registry consistency tests
+(<code>internal/config/doctype_test.go</code>):
+<ul>
+<li>Every <code>DocType.Name</code> matches an embedded template
+(<code>TestDocTypeRegistry_AllHaveEmbeddedTemplate</code>)</li>
+<li>Every <code>DocType.Name</code> matches an embedded index header
+(<code>TestDocTypeRegistry_AllHaveEmbeddedIndexHeader</code>)</li>
+<li>No alias collides with a canonical name
+(<code>TestDocTypeRegistry_NoAliasCollidesWithCanonical</code>)</li>
+<li><code>DefaultConfig().Types</code> is fully derivable from <code>allDocTypes</code>
+(<code>TestDocTypeRegistry_DerivedDefaultConfigMatchesHardcoded</code>)</li>
+</ul>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>t.Parallel()</code> regression test:
+<code>TestRunner_Create_Parallel</code> (cmd/runner_test.go) fires 10
+concurrent <code>(*Runner).Create</code> calls against distinct temp dirs,
+asserts all succeed, and spot-checks that each produced
+<code>docs/rfc/0001-concurrent-title.md</code> in its own dir — proving
+the handler itself is parallel-safe; only the cmd/ package
+globals block <code>t.Parallel()</code> at the wrapper layer.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Slog handler test: <code>TestBuildLogger_{VerboseSelectsDebug, DefaultDropsDebug, LogLevelOverridesVerbose, JSONFormat, InvalidFlagsError}</code> (Phase 4) capture log records into a
+bytes.Buffer and assert on emitted records.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Git resolver test: <code>TestRealGit_UserName_CtxCancel</code> (above).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">YAML back-compat test: <code>TestFrontmatter_TypedStatus_YAMLRoundTrip</code>
+and <code>TestFrontmatter_TypedStatus_LegacyYAMLParses</code> (Phase 10)
+cover both the new on-disk emit and parsing of legacy YAML.
+The pre-existing <code>TestParseFrontmatter</code> table also covers the
+<code>.docz.yaml</code> Config-level round trip indirectly through the
+golden-driven <code>internal/config</code> tests.</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<p>Resolved during INV-0002 planning review.</p>
+<ol>
+<li><strong><code>slog</code> default handler:</strong> <code>slog.TextHandler</code> for human-interactive
+use. Add <code>--log-format=json</code> as opt-in for users piping to log
+aggregators.</li>
+<li><strong><code>DocType</code> naming collision:</strong> registry struct is <code>config.DocTypeDef</code>;
+typed-string wrapper is <code>config.DocType</code>. Locked in via the DESIGN
+doc in Phase 1.</li>
+<li><strong><code>Status</code> typing at the YAML boundary:</strong> typed <code>Status string</code> at
+the in-memory boundary; plain string in YAML via a custom unmarshaler
+that wraps. Verify round-trip back-compat with a fixture test.</li>
+<li><strong><code>Runner</code> lifetime:</strong> per-process singleton, matching the current
+<code>appCfg</code> model. Revisit per-command construction if docz grows a
+daemon mode.</li>
+<li><strong>Library evaluation (<code>fang</code>, Bubble Tea v2, <code>localstack/lstk</code>):</strong>
+investigate during the DESIGN doc in Phase 1 (see the Phase 1 task
+list for the explicit comparison points). Note: at last check
+<code>fang</code> depended on Bubble Tea v1; consider using v2 components
+directly with Cobra. <code>localstack/lstk</code> is a useful reference for
+Runner pattern and command organization.</li>
+<li><strong>Wave 5 PR split:</strong> ship as a <strong>single PR</strong> (all phases 2–11
+together). Large but cohesive; full CI provides a clean revert
+target. Phase 1 (the DESIGN doc) ships separately as a prerequisite.</li>
+<li><strong><code>.docz.yaml</code> back-compat verification:</strong> collect 3–5 real-world
+fixtures (this repo's <code>.docz.yaml</code>, plus 2–3 synthetic edge cases)
+and add them as golden inputs to the parse test.</li>
+<li><strong>External <code>cmd/</code> importers:</strong> confirm none exist; document the
+assumption in the DESIGN doc. No build-tag fences or <code>internal/cmd</code>
+move needed.</li>
+<li><strong><code>slog.Attr</code> vs. shorthand:</strong> shorthand <code>slog.Info(msg, &quot;key&quot;, value)</code>
+by default. Switch specific call sites to <code>slog.Attr</code> only if
+profiling identifies a hot logging path (unlikely for a CLI).</li>
+<li><strong>Phase 8 (DocType registry) rollback strategy:</strong> revert the
+single Wave 5 PR if a compatibility issue surfaces. Branch
+protection plus the consistency tests should catch most issues
+pre-merge.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<ul>
+<li><strong>Prerequisite:</strong> DESIGN doc (Phase 1)</li>
+<li>Builds on IMPL-0005, IMPL-0006, IMPL-0007, IMPL-0008 — each makes the
+surface area smaller and the refactor easier</li>
+<li>This is the final wave; nothing depends on it landing</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0002 — Wave 5, findings F1–F6, F14–F16</li>
+<li>IMPL-0008 — provides the slim <code>cmd/</code> and <code>internal/document</code> shape
+this refactor builds on</li>
+<li>IMPL-0006 — provides <code>EnabledTypes()</code> and <code>ValidateType()</code> helpers</li>
+<li>Effective Go — package design, interface design</li>
+<li><code>log/slog</code> package docs (Go 1.21+) — structured logging API</li>
+<li>Cobra <code>Command.OutOrStdout</code> documentation</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/docz-impl-0009.orig.md</code>, sha256 <code>466e0182704f9b33308794c7f3635cd4a2330e42fefa9de5968a8fc49601d55f</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

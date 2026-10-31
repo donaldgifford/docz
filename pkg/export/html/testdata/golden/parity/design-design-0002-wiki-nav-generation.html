@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0002: Wiki nav generation</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Design</p>
+<h1>Wiki nav generation</h1>
+<p class="summary"><code>docz wiki</code> walks the configured docs directory and builds the <code>nav:</code>
+block of <code>mkdocs.yml</code> so contributors never hand-edit that list. The
+generator groups pages by their type directory, orders entries within
+each group, and resolves a human title for every page it finds, even
+when the page itself has no frontmatter at all.</p>
+<div class="meta">
+<span class="pill">DESIGN-0002</span>
+<span class="pill st-accepted">Approved</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
+<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
+<button type="button" data-tab="background" aria-controls="p-background">Background</button>
+<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
+<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
+<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
+<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p><strong>Status:</strong> this behavior already ships behind <code>docz wiki</code>; this
+document records the design after the fact so future changes have a
+baseline to diff against.</p>
+
+</section>
+<section class="panel" id="p-goals">
+<h2 class="panel-title" id="goals">Goals</h2>
+<h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<ul>
+<li>Build a complete MkDocs <code>nav:</code> tree from the configured <code>docs_dir</code>
+without requiring manual upkeep.</li>
+<li>Resolve a readable title for every page, even when frontmatter is
+missing or incomplete.
+<ul>
+<li>Fall back through frontmatter title, then the first H1, then the
+filename, in that order.
+<ul>
+<li>Never fail the whole wiki build just because one page lacks a
+title; degrade to the filename and keep going.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Keep generated output stable across repeated runs so the diff stays
+small when nothing meaningful changed.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-non-goals">
+<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<ul>
+<li>Rewriting the whole <code>mkdocs.yml</code> file. Only the <code>nav:</code> block is
+owned by the generator; theme and plugin config are left alone.</li>
+<li>Supporting non-MkDocs site generators, such as Hugo or Docusaurus,
+in this iteration.</li>
+<li>Reordering or renaming files on disk to make titles prettier.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-background">
+<h2 class="panel-title" id="background">Background</h2>
+<p>Contributors used to edit the <code>nav:</code> block by hand every time a
+document was added, renamed, or reclassified. That worked while the
+docs tree was small, but the list drifted constantly once <code>docz create</code> started running from CI and from local branches at the same
+time, and stale entries quietly pointed at pages that no longer
+existed.</p>
+<p>The README index table generator already solves a similar drift
+problem for the per-type listing pages, so this design reuses that
+generator's approach where the shapes line up: read the tree once,
+derive a small in-memory model, and splice the output back in rather
+than asking anyone to maintain it by hand.</p>
+
+</section>
+<section class="panel" id="p-detailed-design">
+<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
+<p>The generator makes two passes over the docs directory. The first
+pass walks every enabled type directory and every top-level page, and
+builds a flat list of candidate nav entries. The second pass resolves
+a title for each entry and assembles the nested tree that <code>mkdocs.yml</code>
+expects.</p>
+<p>Title resolution is the part most likely to surprise someone reading
+the output, so it is deliberately linear and cheap to reason about:</p>
+<pre><code class="language-go">func resolveTitle(page Page) string {
+    if page.Frontmatter.Title != &#34;&#34; {
+        return page.Frontmatter.Title
+    }
+    if h1 := docparse.Title(page.Content); h1 != &#34;&#34; {
+        return h1
+    }
+    return FilenameTitle(page.Path)
+}
+</code></pre>
+<p>Frontmatter wins when it is present because it is the most explicit
+signal an author can give. The first H1 comes next since most pages
+already have one, and it is usually a better title than the raw
+filename. The filename is the last resort, cleaned up by replacing
+dashes and underscores with spaces and title-casing the result, so a
+page never ends up with no nav label at all.</p>
+
+</section>
+<section class="panel" id="p-api-interface-changes">
+<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<p>No new CLI flags are introduced. <code>docz wiki</code> keeps its existing
+signature, and the title resolver described above is purely internal:
+callers only ever see the resolved string, never which of the three
+sources produced it. The only externally visible change is that pages
+without frontmatter now show up in the nav at all, instead of being
+silently skipped as they were before this generator existed.</p>
+
+</section>
+<section class="panel" id="p-data-model">
+<h2 class="panel-title" id="data-model">Data Model</h2>
+<p>The generator's in-memory representation is a small tree. Nothing here
+is persisted; it exists only for the duration of a single <code>docz wiki</code>
+run and is discarded once <code>mkdocs.yml</code> has been written.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Title</code></td>
+<td><code>string</code></td>
+<td>Resolved via frontmatter, H1, then filename</td>
+</tr>
+<tr>
+<td><code>Path</code></td>
+<td><code>string</code></td>
+<td>Repo-relative path to the rendered page</td>
+</tr>
+<tr>
+<td><code>Children</code></td>
+<td><code>[]NavEntry</code></td>
+<td>Populated for type directories with subpages</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing-strategy">
+<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<p>Title resolution precedence is covered by table-driven unit tests that
+pin the three fallback tiers independently: frontmatter present,
+frontmatter absent but an H1 present, and neither present. Golden
+fixture tests assemble a small synthetic docs tree and assert the
+generated <code>nav:</code> block byte for byte, so a change in ordering or
+indentation is caught immediately rather than surfacing as a review
+comment on a real <code>mkdocs.yml</code> diff.</p>
+
+</section>
+<section class="panel" id="p-migration-rollout-plan">
+<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<p>The generator only ever adds or updates the <code>nav:</code> block it owns, so
+existing repos do not need a migration step. On first run against a
+repo whose <code>mkdocs.yml</code> predates this feature, the block is inserted
+once and left under normal splice management afterward.</p>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h4 id="1-should-nested-type-directories-collapse-into-a-single-nav-group">1. Should nested type directories collapse into a single nav group?</h4>
+<ul>
+<li>a. Yes, flatten one level so the nav stays shallow even as more
+custom types are added. <em>(recommendation)</em></li>
+<li>b. No, mirror the on-disk directory structure exactly.</li>
+<li>c. Make it configurable per type via <code>.docz.yaml</code>.</li>
+</ul>
+<h4 id="2-how-should-title-collisions-across-pages-be-reported">2. How should title collisions across pages be reported?</h4>
+<ul>
+<li>a. Warn during <code>docz wiki</code> and continue with the filename-derived
+title for the later entry. <em>(recommendation)</em></li>
+<li>b. Fail the build so authors must resolve every collision by hand
+before the nav can regenerate.</li>
+<li>c. Silently dedupe by appending a numeric suffix to the title.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><a href="https://www.mkdocs.org/user-guide/configuration/#nav">MkDocs navigation configuration</a></li>
+<li>Custom Document Type Support</li>
+<li><a href="https://github.com/donaldgifford/docz/issues">docz issue tracker</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/design/docs/design/0002-wiki-nav-generation.md</code>, sha256 <code>9d41181ede78e69be9bd0c740762d936c1b7e0d42df38cd07c479bcfadec5044</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

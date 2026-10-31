@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0001: Wiki Init Template and Init Enabled Fix</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Wiki Init Template and Init Enabled Fix</h1>
+<p class="summary"><strong>Status:</strong> Concluded
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-04-02</p>
+<div class="meta">
+<span class="pill">INV-0001</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-04-02</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="question" aria-controls="p-question">Question</button>
+<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-question">
+<h2 class="panel-title" id="question">Question</h2>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#finding-1-ensuredocsindex-is-fully-hardcoded">Finding 1: ensureDocsIndex() is fully hardcoded</a></li>
+<li><a href="#finding-2-writemkdocsyaml-hardcodes-techdocs-core">Finding 2: writeMkDocsYAML() hardcodes techdocs-core</a></li>
+<li><a href="#finding-3-runinit-skips-enabled-check">Finding 3: runInit() skips enabled check</a></li>
+<li><a href="#finding-4-template-system-already-supports-wiki-style-templates">Finding 4: Template system already supports wiki-style templates</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#recommendation">Recommendation</a>
+<ul>
+<li><a href="#change-1-wiki-index-template">Change 1: Wiki index template</a></li>
+<li><a href="#change-2-configurable-mkdocs-plugins">Change 2: Configurable MkDocs plugins</a></li>
+<li><a href="#change-3-docz-init-respects-enabled-false">Change 3: docz init respects enabled: false</a></li>
+</ul>
+</li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>What changes are needed to (1) support a customizable template for the wiki
+<code>docs/index.md</code> homepage, (2) allow additional MkDocs plugins from <code>.docz.yaml</code>,
+and (3) fix <code>docz init</code> ignoring the <code>enabled: false</code> type config?</p>
+
+</section>
+<section class="panel" id="p-hypothesis">
+<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<p>These are three small, related improvements that can be addressed in a single
+branch without a full design doc. The wiki template and plugin changes extend
+the existing <code>WikiConfig</code>, and the init fix is a one-line guard.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>Dogfooding <code>docz</code> on its own repository revealed:</p>
+<ol>
+<li><p><strong><code>docs/index.md</code> is hardcoded</strong> — <code>ensureDocsIndex()</code> in <code>cmd/wiki.go</code>
+generates the homepage inline with a hardcoded format. There's no way to
+customize it via a template like the type-specific index headers
+(<code>index_rfc.md</code>, <code>index_adr.md</code>, etc.). Users who want a different homepage
+layout must manually edit after generation.</p>
+</li>
+<li><p><strong>MkDocs plugins are hardcoded</strong> — <code>writeMkDocsYAML()</code> always writes
+<code>plugins: [techdocs-core]</code>. Users who need additional plugins (e.g.
+<code>search</code>, <code>mermaid</code>, <code>awesome-pages</code>) must manually edit <code>mkdocs.yml</code> after
+init, and their additions survive <code>wiki update</code> (since it only touches
+<code>nav</code>), but there's no way to declare them upfront in <code>.docz.yaml</code>.</p>
+</li>
+<li><p><strong><code>docz init</code> ignores <code>enabled: false</code></strong> — <code>runInit()</code> iterates over
+<code>config.ValidTypes()</code> (hardcoded list of all 6 types) and creates
+directories + READMEs for every type, even when <code>enabled: false</code> is set in
+the config. Similarly, <code>ensureDocsIndex()</code> lists all types in the generated
+homepage regardless of enabled status.</p>
+</li>
+</ol>
+<p><strong>Triggered by:</strong> Dogfooding session on the docz repository</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Audit <code>cmd/wiki.go</code> — <code>ensureDocsIndex()</code> and <code>writeMkDocsYAML()</code> to
+understand exactly what's hardcoded</li>
+<li>Audit <code>cmd/init.go</code> — <code>runInit()</code> to confirm the enabled check is missing</li>
+<li>Review the existing template system (<code>internal/template/embed.go</code>) to
+understand how index headers are embedded and resolved</li>
+<li>Determine the right template approach for <code>docs/index.md</code></li>
+<li>Determine the config shape for additional MkDocs plugins</li>
+<li>Propose changes and open questions</li>
+</ol>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<h4 id="finding-1-ensuredocsindex-is-fully-hardcoded">Finding 1: <code>ensureDocsIndex()</code> is fully hardcoded</h4>
+<p><code>cmd/wiki.go:264-296</code> generates <code>docs/index.md</code> inline:</p>
+<pre><code class="language-go">var b strings.Builder
+b.WriteString(&#34;# &#34; + siteName + &#34;\n\n&#34;)
+b.WriteString(&#34;Welcome to the documentation for &#34; + siteName + &#34;.\n\n&#34;)
+b.WriteString(&#34;## Document Types\n\n&#34;)
+for _, typeName := range config.ValidTypes() {
+    // ...
+    b.WriteString(fmt.Sprintf(&#34;- [%s](%s/README.md)\n&#34;, navTitle, tc.Dir))
+}
+</code></pre>
+<p>Problems:</p>
+<ul>
+<li>No template — content is built with string concatenation</li>
+<li>Iterates <code>config.ValidTypes()</code> — doesn't check <code>enabled</code></li>
+<li>No override mechanism — users can't customize the homepage layout</li>
+</ul>
+<h4 id="finding-2-writemkdocsyaml-hardcodes-techdocs-core">Finding 2: <code>writeMkDocsYAML()</code> hardcodes <code>techdocs-core</code></h4>
+<p><code>cmd/wiki.go:246-262</code>:</p>
+<pre><code class="language-go">content := fmt.Sprintf(`site_name: %s
+site_description: %s
+
+plugins:
+    - techdocs-core
+
+nav:
+    - Home: index.md
+`, siteName, siteDesc)
+</code></pre>
+<p>The <code>techdocs-core</code> plugin is always written. Users who need additional plugins
+must edit the file manually. Since <code>wiki update</code> only modifies the <code>nav</code> key,
+extra plugins added manually are preserved — but there's no way to declare
+them upfront in config.</p>
+<h4 id="finding-3-runinit-skips-enabled-check">Finding 3: <code>runInit()</code> skips enabled check</h4>
+<p><code>cmd/init.go:36-46</code>:</p>
+<pre><code class="language-go">for _, typeName := range config.ValidTypes() {
+    typeDir := appCfg.TypeDir(typeName)
+    if err := os.MkdirAll(typeDir, 0o750); err != nil {
+        return fmt.Errorf(&#34;creating directory %s: %w&#34;, typeDir, err)
+    }
+    readmePath := filepath.Join(typeDir, &#34;README.md&#34;)
+    if err := writeIndexReadme(readmePath, typeName); err != nil {
+        return err
+    }
+}
+</code></pre>
+<p>No check for <code>appCfg.Types[typeName].Enabled</code>. Every type gets a directory
+and README regardless of config.</p>
+<h4 id="finding-4-template-system-already-supports-wiki-style-templates">Finding 4: Template system already supports wiki-style templates</h4>
+<p>The existing <code>internal/template/embed.go</code> uses <code>//go:embed templates/*.md</code> and
+provides <code>EmbeddedIndexHeader(typeName)</code> for type-specific index headers. Adding
+an embedded <code>wiki_index.md</code> template would follow the same pattern. The template
+could use <code>text/template</code> variables like <code>{{ .SiteName }}</code> and a list of enabled
+types.</p>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<p><strong>Answer:</strong> Three targeted changes are needed, all straightforward.</p>
+
+</section>
+<section class="panel" id="p-recommendation">
+<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h4 id="change-1-wiki-index-template">Change 1: Wiki index template</h4>
+<ul>
+<li>Add <code>internal/template/templates/wiki_index.md</code> with template variables:
+<code>{{ .SiteName }}</code>, <code>{{ .Types }}</code> (list of enabled types with nav titles and
+dirs)</li>
+<li>Add <code>EmbeddedWikiIndex()</code> to <code>internal/template/embed.go</code> (or a general
+accessor)</li>
+<li>Update <code>ensureDocsIndex()</code> in <code>cmd/wiki.go</code> to render the template instead of
+hardcoding. Skip disabled types in the type list.</li>
+<li>Allow override via <code>wiki.index_template</code> config path (same resolution pattern
+as type templates: config path → local file → embedded default)</li>
+</ul>
+<h4 id="change-2-configurable-mkdocs-plugins">Change 2: Configurable MkDocs plugins</h4>
+<ul>
+<li>Add <code>Plugins []string</code> field to <code>WikiConfig</code>:
+<pre><code class="language-yaml">wiki:
+  plugins:
+    - techdocs-core
+    - search
+</code></pre>
+</li>
+<li>Default: <code>[&quot;techdocs-core&quot;]</code></li>
+<li>Update <code>writeMkDocsYAML()</code> to write all configured plugins</li>
+<li><code>wiki update</code> already preserves non-nav fields, so manually-added plugins
+remain safe</li>
+</ul>
+<h4 id="change-3-docz-init-respects-enabled-false">Change 3: <code>docz init</code> respects <code>enabled: false</code></h4>
+<ul>
+<li>Add <code>if !appCfg.Types[typeName].Enabled { continue }</code> in <code>runInit()</code> loop</li>
+<li>Same guard in <code>ensureDocsIndex()</code> type list loop</li>
+<li>Same guard in <code>writeDefaultConfig()</code> — or leave that as-is since it's the
+reference config showing all available types</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<ol>
+<li><p><strong><code>writeDefaultConfig()</code> keeps all types in generated <code>.docz.yaml</code>.</strong> The
+config file serves as documentation. <code>docz init</code> and <code>wiki init</code> respect
+<code>enabled: false</code> when creating directories and listing types.</p>
+</li>
+<li><p><strong>Wiki index template uses the existing override pattern.</strong> Override at
+<code>&lt;docs_dir&gt;/templates/wiki_index.md</code>. No new config key needed.</p>
+</li>
+<li><p><strong><code>wiki.plugins</code> defaults to <code>[&quot;techdocs-core&quot;]</code>.</strong> Primary use case is
+Backstage TechDocs. Users who don't use Backstage can override.</p>
+</li>
+<li><p><strong><code>wiki update</code> does not sync plugins.</strong> Only <code>wiki init</code> writes plugins.
+Manual edits to plugins in <code>mkdocs.yml</code> are preserved.</p>
+</li>
+<li><p><strong>Wiki index template variables:</strong> <code>{{ .SiteName }}</code> and <code>{{ .Types }}</code>
+(slice of structs with <code>.Name</code>, <code>.NavTitle</code>, <code>.Dir</code> for each enabled type).
+Start with these and extend if needed.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><code>cmd/wiki.go</code> — <code>ensureDocsIndex()</code>, <code>writeMkDocsYAML()</code></li>
+<li><code>cmd/init.go</code> — <code>runInit()</code></li>
+<li><code>internal/template/embed.go</code> — template embedding pattern</li>
+<li><code>internal/config/config.go</code> — <code>WikiConfig</code> struct</li>
+<li>DESIGN-0002: Wiki Command for MkDocs TechDocs Integration</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0001.md</code>, sha256 <code>6f8c699a3d69a9d0eac3db5f155d86605c2ed281673e44170242cfe8991f1770</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

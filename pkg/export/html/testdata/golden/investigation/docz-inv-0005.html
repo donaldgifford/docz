@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0005">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0005: docz-api and docz-site: centralized cross-repo docz registry and viewer</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>docz-api and docz-site: centralized cross-repo docz registry and viewer</h1>
+<p class="summary"><strong>Status:</strong> Concluded
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-06-23</p>
+<div class="meta">
+<span class="pill">INV-0005</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-06-23</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="question" aria-controls="p-question">Question</button>
+<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-question">
+<h2 class="panel-title" id="question">Question</h2>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#observation-1--docz-hands-the-ingester-a-manifest-not-a-haystack">Observation 1 — docz hands the ingester a manifest, not a haystack</a></li>
+<li><a href="#observation-2--the-rfc-apirfc-site-model-maps-cleanly-minus-the-hard-parsing">Observation 2 — the rfc-api/rfc-site model maps cleanly, minus the hard parsing</a></li>
+<li><a href="#observation-3--proposed-architecture">Observation 3 — proposed architecture</a></li>
+<li><a href="#observation-4--the-docz-side-enabler-dont-re-implement-the-parser">Observation 4 — the docz-side enabler: don't re-implement the parser</a></li>
+<li><a href="#observation-5--the-hard-part-is-visibilityauth-and-it-is-not-docz-specific">Observation 5 — the hard part is visibility/auth, and it is not docz-specific</a></li>
+<li><a href="#observation-6--why-docz-site-is-not-just-mkdocs-per-repo">Observation 6 — why docz-site is not &quot;just MkDocs per repo&quot;</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#recommendation">Recommendation</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-how-does-docz-api-fetch-repo-content">1. How does docz-api fetch repo content?</a></li>
+<li><a href="#2-where-is-markdown-rendered-to-html">2. Where is markdown rendered to HTML?</a></li>
+<li><a href="#3-which-renderer">3. Which renderer?</a></li>
+<li><a href="#4-what-does-version-mean-for-a-doc">4. What does &quot;version&quot; mean for a doc?</a></li>
+<li><a href="#5-which-branches-are-ingested">5. Which branch(es) are ingested?</a></li>
+<li><a href="#6-what-is-the-visibility--access-model">6. What is the visibility / access model?</a></li>
+<li><a href="#7-how-does-the-api-obtain-the-doc-list-without-re-implementing-docz">7. How does the API obtain the doc list without re-implementing docz?</a></li>
+<li><a href="#8-scope-of-the-first-deliverable">8. Scope of the first deliverable?</a></li>
+</ul>
+</li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>Can we build a small companion service — <strong>docz-api</strong> — that uses a GitHub App
+to onboard repositories already using docz, ingests each repo's <code>.docz.yaml</code> to
+build a registry of documents (mapped to repos and doc types), caches their
+rendered content, and refreshes via webhooks on push/merge/release — paired with
+a <strong>docz-site</strong> front end that lets a team browse, search, and read <em>all</em> their
+docz documents from a single web URL?</p>
+<p>And specifically: does docz's existing structure (<code>.docz.yaml</code>, standardized
+directory layout, typed YAML frontmatter, stable IDs) make this materially
+<em>simpler</em> than a general system like rfc-api / rfc-site?</p>
+
+</section>
+<section class="panel" id="p-hypothesis">
+<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<p><strong>Yes — and meaningfully simpler than rfc-api.</strong> rfc-api spends most of its
+complexity on <em>discovery</em> and <em>normalization</em>: figuring out where docs live in
+an arbitrary repo and coercing inconsistent metadata into a common shape. docz
+already solves both problems at the source:</p>
+<ul>
+<li><code>.docz.yaml</code> is a <strong>manifest</strong> — it declares <code>docs_dir</code> and every type's
+<code>dir</code>, <code>id_prefix</code>, <code>statuses</code>, and <code>plural_label</code>. The API never has to guess
+where docs are.</li>
+<li>Every document carries <strong>typed, guaranteed frontmatter</strong> (<code>id</code>, <code>title</code>,
+<code>status</code>, <code>author</code>, <code>created</code>), so registry rows and search fields map almost
+one-to-one with no heuristic parsing.</li>
+<li>IDs are <strong>stable and namespaced</strong> (<code>RFC-0001</code>, <code>FW-0003</code>), giving a natural
+per-repo primary key and a clean cross-repo identity (<code>&lt;repo&gt;/&lt;id&gt;</code>).</li>
+</ul>
+<p>So docz-api is mostly &quot;fetch → parse known structure → upsert → index → render
+cache,&quot; with webhooks driving incremental refresh. The genuinely hard part is
+not docz-specific — it is the same problem rfc-api has: <strong>mapping who-can-see-
+what</strong> from GitHub repo access to site access.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>docz today produces beautifully structured docs <em>per repo</em>, and the <code>wiki</code>
+command can render a single repo's docs as MkDocs/TechDocs. What's missing is a
+<strong>cross-repo</strong> view: a team with docz in 15 repos has 15 separate doc trees and
+no single place to search &quot;all our ADRs&quot; or &quot;every Draft design across the org.&quot;
+This investigation validates whether a thin aggregation service modeled on
+rfc-api / rfc-site (Postgres registry + Meilisearch + a viewer) is the right
+shape, and what — if anything — docz itself must expose to support it cleanly.</p>
+<p><strong>Triggered by:</strong> the desire for one URL across all docz repos; relationship to
+the existing per-repo <code>wiki</code> (MkDocs/TechDocs) integration and the mdp renderer
+explored in [[0004-v1-release-plan-tui-markdown-preview-and-cli-parity]].</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<p>This is a <strong>desk / feasibility investigation</strong> (architecture validation), not an
+empirical spike with running code. The steps below are how the conclusion was
+reached and how a follow-on design would be de-risked:</p>
+<ol>
+<li>Enumerate exactly what docz already standardizes that an ingester can rely on
+(<code>.docz.yaml</code> schema, directory layout, frontmatter fields, index markers).</li>
+<li>Map the rfc-api / rfc-site component model onto docz and identify which parts
+collapse or disappear because docz removes discovery/normalization.</li>
+<li>Sketch the data model (Postgres), the ingestion + webhook refresh flow, the
+search index (Meilisearch), the render/cache strategy, and the docz-site
+navigation (repos → types → documents).</li>
+<li>Identify the docz-side prerequisite: how the API gets a doc list without
+re-implementing docz's parser (shared library vs. JSON export vs. shelling
+out).</li>
+<li>Surface the unavoidable risks (visibility/auth, versioning semantics, fetch
+strategy) as Open Questions for the design phase.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-environment">
+<h2 class="panel-title" id="environment">Environment</h2>
+<p>Proposed stack (assumed, to be confirmed in design):</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Proposed choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ingestion/onboarding</td>
+<td>GitHub App (installation tokens, webhooks)</td>
+</tr>
+<tr>
+<td>Site user auth</td>
+<td>Pluggable OIDC: GitHub (default), Okta, Keycloak</td>
+</tr>
+<tr>
+<td>API service</td>
+<td>Go (reuses docz's own parsing packages)</td>
+</tr>
+<tr>
+<td>Registry store</td>
+<td>PostgreSQL (caches raw markdown + metadata at ingest)</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Meilisearch (full-text + faceting)</td>
+</tr>
+<tr>
+<td>Markdown render</td>
+<td>JS renderer in docz-site (e.g. markdown-it)</td>
+</tr>
+<tr>
+<td>Front end</td>
+<td>docz-site (repos → types → docs nav + search + reader)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<ul class="heading-list">
+<li><a href="#observation-1--docz-hands-the-ingester-a-manifest-not-a-haystack">Observation 1 — docz hands the ingester a manifest, not a haystack</a></li>
+<li><a href="#observation-2--the-rfc-apirfc-site-model-maps-cleanly-minus-the-hard-parsing">Observation 2 — the rfc-api/rfc-site model maps cleanly, minus the hard parsing</a></li>
+<li><a href="#observation-3--proposed-architecture">Observation 3 — proposed architecture</a></li>
+<li><a href="#observation-4--the-docz-side-enabler-dont-re-implement-the-parser">Observation 4 — the docz-side enabler: don&#39;t re-implement the parser</a></li>
+<li><a href="#observation-5--the-hard-part-is-visibilityauth-and-it-is-not-docz-specific">Observation 5 — the hard part is visibility/auth, and it is not docz-specific</a></li>
+<li><a href="#observation-6--why-docz-site-is-not-just-mkdocs-per-repo">Observation 6 — why docz-site is not &#34;just MkDocs per repo&#34;</a></li>
+</ul>
+<h4 id="observation-1--docz-hands-the-ingester-a-manifest-not-a-haystack">Observation 1 — docz hands the ingester a manifest, not a haystack</h4>
+<p>The single biggest simplification: <code>.docz.yaml</code> <em>is</em> the per-repo manifest. To
+ingest a repo, docz-api reads one file and learns:</p>
+<ul>
+<li><code>docs_dir</code> — the root to scan.</li>
+<li>For each type: <code>dir</code>, <code>id_prefix</code>, <code>id_width</code>, <code>statuses</code>, <code>plural_label</code>,
+and (since IMPL-0012) <code>aliases</code>. This includes <strong>custom types</strong>, so the
+registry must be type-agnostic and driven entirely by the repo's config —
+never a hardcoded list of the six built-ins.</li>
+</ul>
+<p>Then for each enabled type it scans <code>&lt;docs_dir&gt;/&lt;dir&gt;/*.md</code> and parses
+frontmatter — the exact job docz's own <code>internal/document.ScanDocuments</code>
+already does. The output (<code>id</code>, <code>title</code>, <code>status</code>, <code>author</code>, <code>created</code>, path)
+maps directly onto a registry row and a search document. No discovery, no
+metadata coercion. This is the work rfc-api cannot avoid and docz-api gets for
+free.</p>
+<h4 id="observation-2--the-rfc-apirfc-site-model-maps-cleanly-minus-the-hard-parsing">Observation 2 — the rfc-api/rfc-site model maps cleanly, minus the hard parsing</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>rfc-api / rfc-site concern</th>
+<th>docz-api equivalent</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Discover where docs live</td>
+<td>Read <code>.docz.yaml</code></td>
+<td>Eliminated as a problem</td>
+</tr>
+<tr>
+<td>Normalize metadata</td>
+<td>Read typed frontmatter</td>
+<td>Eliminated; schema is fixed</td>
+</tr>
+<tr>
+<td>Registry store</td>
+<td>Postgres</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>Full-text search</td>
+<td>Meilisearch</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>Render markdown</td>
+<td>mdp → cached HTML</td>
+<td>Reuse docz's renderer</td>
+</tr>
+<tr>
+<td>Onboarding</td>
+<td>GitHub App install</td>
+<td>Simpler: one app, opt-in repos</td>
+</tr>
+<tr>
+<td>Refresh on change</td>
+<td>Webhooks (push/release)</td>
+<td>Same pattern</td>
+</tr>
+<tr>
+<td><strong>Access control</strong></td>
+<td><strong>Map GH repo access → site</strong></td>
+<td><strong>Unchanged; the hard part</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="observation-3--proposed-architecture">Observation 3 — proposed architecture</h4>
+<p><strong>Onboarding.</strong> A GitHub App is installed on selected repos/orgs. Required
+permissions are minimal: <code>contents: read</code>, <code>metadata: read</code>; webhook events:
+<code>installation</code> / <code>installation_repositories</code>, <code>push</code>, and <code>release</code>. On install,
+docz-api enumerates installed repos and ingests any that contain a <code>.docz.yaml</code>
+at the repo root.</p>
+<p><strong>Ingestion (docz-api).</strong> Per repo: fetch <code>.docz.yaml</code> + the doc files, parse,
+upsert into Postgres (caching the raw markdown + metadata), and index into
+Meilisearch. Markdown→HTML is <strong>not</strong> done here — docz-site renders client-side
+(Decision 3). Fetching can use the GitHub Git Trees/Contents API (no checkout)
+for small doc sets, or a shallow clone for large ones.</p>
+<p><strong>Data model (Postgres), sketch:</strong></p>
+<ul>
+<li><code>repos(id, installation_id, owner, name, default_branch, docs_dir, config_snapshot jsonb, last_synced_sha, updated_at)</code></li>
+<li><code>doc_types(id, repo_id, name, dir, id_prefix, plural_label, statuses jsonb)</code></li>
+<li><code>documents(id, repo_id, type, doc_id, title, status, author, created_at, path, git_sha, content_hash, raw_md, updated_at)</code> — unique on
+<code>(repo_id, doc_id)</code>. <code>raw_md</code> is the cached markdown; docz-site renders it to
+HTML client-side (Decision 3), so no <code>rendered_html</code> column is stored.</li>
+</ul>
+<p><strong>Refresh via webhooks.</strong> A <code>push</code> to the default branch touching <code>docs_dir</code>
+(or <code>.docz.yaml</code>) triggers a diff-based re-ingest of only the changed files;
+<code>.docz.yaml</code> changes re-sync the type set. A <code>release</code>/tag can optionally
+snapshot a version. Events are debounced. <code>content_hash</code> gates re-ingest so
+unchanged docs are not re-processed or re-indexed.</p>
+<p><strong>Search (Meilisearch).</strong> One index of documents with searchable <code>title</code>/<code>body</code>
+and facets on <code>repo</code>, <code>type</code>, <code>status</code>, <code>author</code>. Drives both global search and
+filtered views (&quot;all Approved designs across repos&quot;).</p>
+<p><strong>docz-site.</strong> Navigation mirrors the mental model the request describes:
+<strong>repos list → a repo → its doc types → a document</strong>, plus a global search box
+and a rendered reader (HTML + ToC + a status badge from frontmatter). Cross-repo
+views (by type or status) fall out of the Meilisearch facets for free.</p>
+<h4 id="observation-4--the-docz-side-enabler-dont-re-implement-the-parser">Observation 4 — the docz-side enabler: don't re-implement the parser</h4>
+<p>docz-api should not re-implement frontmatter/config parsing — that would drift
+from the CLI. Three options, in order of preference:</p>
+<ol>
+<li><strong>Extract a shared Go module.</strong> Promote the relevant pieces of
+<code>internal/config</code> (Load/Validate, type resolution) and <code>internal/document</code>
+(<code>ScanDocuments</code>, <code>LoadFrontmatter</code>) into a reusable <code>pkg/…</code> surface that both
+the docz CLI and docz-api import. One source of truth for &quot;what docz docs
+exist in this tree.&quot;</li>
+<li><strong>Machine-readable export.</strong> docz already has <code>docz list --format json</code>;
+a small <code>docz export --json</code> (whole-repo manifest: config + all types + all
+docs) would let the API consume docz's own output if a checkout is available.</li>
+<li><strong>Shell out</strong> to the docz binary — simplest but couples deployment to having
+the CLI installed and a checkout present.</li>
+</ol>
+<p>Option 1 is the cleanest and turns docz-api into a true peer of the CLI. This is
+a real, additive docz roadmap item, not a blocker for a prototype.</p>
+<h4 id="observation-5--the-hard-part-is-visibilityauth-and-it-is-not-docz-specific">Observation 5 — the hard part is visibility/auth, and it is not docz-specific</h4>
+<p>The one piece that is <em>not</em> simplified: a viewer aggregating private-repo content
+must enforce that a site user only sees docs they are allowed to see. This is
+exactly rfc-api's hardest problem, and it splits into two layers:</p>
+<ul>
+<li><strong>Authentication (who is this user?)</strong> is <strong>pluggable</strong> (Decision 6). The site
+supports three providers behind one OIDC-shaped abstraction: <strong>GitHub</strong>
+(default and preferred — the GitHub App already in play for ingestion doubles
+as the OAuth identity provider), <strong>Okta</strong>, and <strong>Keycloak</strong>. GitHub uses
+OAuth; Okta and Keycloak use standard OIDC. A single provider interface
+(<code>issuer</code>, <code>client_id/secret</code>, scopes/claims) keeps the three configurable
+rather than forked.</li>
+<li><strong>Authorization (what may they see?)</strong> is where the providers diverge and must
+be designed explicitly:
+<ul>
+<li><em>GitHub provider</em> — mirror GitHub access: a user sees a repo's docs only if
+their token can read that repo (checked/cached per session). This is the
+natural, tightest mapping.</li>
+<li><em>Okta / Keycloak providers</em> — there is no GitHub repo-permission signal, so
+authorization comes from <strong>OIDC group/role claims</strong> mapped to repos or repo
+groups in docz-api config (e.g. <code>group:platform → repos[…]</code>), or a coarser
+&quot;any authenticated org member sees all onboarded repos&quot; for an internal
+deployment.</li>
+</ul>
+</li>
+</ul>
+<p>Note the <strong>asymmetry</strong>: ingestion is <em>always</em> via the GitHub App (that is how
+docz-api reads repo content), independent of how site <em>users</em> authenticate. So
+&quot;auth provider&quot; is strictly about the human reading the site, not about how the
+service pulls content. This must be decided early because it shapes the API,
+the session model, and the config surface.</p>
+<h4 id="observation-6--why-docz-site-is-not-just-mkdocs-per-repo">Observation 6 — why docz-site is not &quot;just MkDocs per repo&quot;</h4>
+<p>docz's existing <code>wiki</code> integration renders <strong>one repo</strong> as MkDocs/TechDocs.
+docz-site is deliberately different: it is <strong>cross-repo aggregation + unified
+search + a single URL</strong>. The two are complementary — per-repo TechDocs for deep
+single-project browsing, docz-site for the org-wide index. Worth stating in the
+design so the two features don't appear to overlap.</p>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<p><strong>Answer: Yes — feasible, and simpler than rfc-api.</strong> Because docz standardizes
+location (<code>.docz.yaml</code>), structure (typed dirs), and metadata (frontmatter), the
+ingestion side of docz-api is largely mechanical, and the rfc-api/rfc-site
+architecture (GitHub App → Postgres registry → Meilisearch → viewer, refreshed by
+webhooks) maps cleanly onto it. The dominant remaining complexity is the
+visibility/auth model — now scoped to a <strong>pluggable provider abstraction</strong>
+(GitHub by default, plus Okta and Keycloak via OIDC; Decision 6) — which is
+inherent to any cross-repo viewer of private content and not unique to docz. A
+clean implementation also motivates a small, additive docz change: exposing the
+existing config/document parsing as a shared library so the API and CLI never
+diverge (Decision 7).</p>
+
+</section>
+<section class="panel" id="p-recommendation">
+<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<p>The open questions are resolved (see <a href="#decisions">Decisions</a>). Next steps:</p>
+<ol>
+<li><strong>Proceed to a DESIGN</strong> for docz-api (the service: GitHub App, ingestion,
+data model, webhook refresh, search) and either a combined or sibling DESIGN
+for docz-site (the viewer: nav, search, reader). One service design with the
+site as a section is likely enough to start.</li>
+<li><strong>Design the pluggable auth layer first</strong> (Decision 6) — the GitHub /
+Okta / Keycloak provider abstraction and, critically, the per-provider
+<em>authorization</em> mapping (GitHub repo access vs. OIDC group claims). It gates
+the API and the session model.</li>
+<li><strong>Scope the docz prerequisite</strong> (Observation 4 / Decisions 7): extract a
+shared <code>pkg/…</code> parsing library from <code>internal/config</code> + <code>internal/document</code>
+so docz-api and the CLI never diverge.</li>
+<li><strong>Build a thin vertical slice first</strong> (Decision 8): one repo onboarded by
+hand → ingest → one type rendered in a bare docz-site, deferring auth and
+webhooks, to prove the fetch→parse→render→serve loop before the full pipeline.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<ul class="heading-list">
+<li><a href="#1-how-does-docz-api-fetch-repo-content">1. How does docz-api fetch repo content?</a></li>
+<li><a href="#2-where-is-markdown-rendered-to-html">2. Where is markdown rendered to HTML?</a></li>
+<li><a href="#3-which-renderer">3. Which renderer?</a></li>
+<li><a href="#4-what-does-version-mean-for-a-doc">4. What does &#34;version&#34; mean for a doc?</a></li>
+<li><a href="#5-which-branches-are-ingested">5. Which branch(es) are ingested?</a></li>
+<li><a href="#6-what-is-the-visibility--access-model">6. What is the visibility / access model?</a></li>
+<li><a href="#7-how-does-the-api-obtain-the-doc-list-without-re-implementing-docz">7. How does the API obtain the doc list without re-implementing docz?</a></li>
+<li><a href="#8-scope-of-the-first-deliverable">8. Scope of the first deliverable?</a></li>
+</ul>
+<blockquote>
+<p><strong>Resolved 2026-06-23</strong> — see the <a href="#decisions">Decisions</a> table below for the
+chosen option per question. The menu of alternatives is kept for the record.</p>
+</blockquote>
+<p>Each question is numbered; option <code>a</code> is the recommendation, later letters are
+alternatives, and &quot;other&quot; is free-form for review.</p>
+<h4 id="1-how-does-docz-api-fetch-repo-content">1. How does docz-api fetch repo content?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> GitHub Git Trees / Contents API — no checkout, ideal for
+small doc sets and simple ops.</li>
+<li>b. Shallow <code>git clone</code> per refresh — better for large doc trees, heavier ops.</li>
+<li>c. Hybrid: Contents API by default, clone above a size threshold.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="2-where-is-markdown-rendered-to-html">2. Where is markdown rendered to HTML?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Render at ingest time and cache <code>rendered_html</code> in
+Postgres; invalidate on <code>content_hash</code> change.</li>
+<li>b. Store raw markdown only; render in docz-site at request time.</li>
+<li>c. Render client-side in the browser.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="3-which-renderer">3. Which renderer?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Reuse docz's mdp-based renderer for visual parity with the
+CLI preview.</li>
+<li>b. A server-side Go renderer in the API (e.g. goldmark) independent of mdp.</li>
+<li>c. A JS renderer in docz-site.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="4-what-does-version-mean-for-a-doc">4. What does &quot;version&quot; mean for a doc?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Track the default-branch HEAD as the single current
+version (MVP); store <code>git_sha</code> per doc.</li>
+<li>b. Snapshot versions on git tags / GitHub releases.</li>
+<li>c. Keep full per-doc history.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="5-which-branches-are-ingested">5. Which branch(es) are ingested?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Default branch only.</li>
+<li>b. Configurable per repo.</li>
+<li>c. All branches (preview/PR builds).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="6-what-is-the-visibility--access-model">6. What is the visibility / access model?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Mirror GitHub repo access: GitHub App for ingestion +
+user OAuth on the site, checking the viewer's repo access. Correct, and the
+main complexity.</li>
+<li>b. Org-internal single-tenant: trust any authenticated org member (simplest
+MVP).</li>
+<li>c. Public read-only (open-source docs only).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="7-how-does-the-api-obtain-the-doc-list-without-re-implementing-docz">7. How does the API obtain the doc list without re-implementing docz?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> Extract docz's <code>internal/config</code> + <code>internal/document</code>
+scanning into a shared <code>pkg/…</code> library imported by both CLI and API.</li>
+<li>b. Add a <code>docz export --json</code> whole-repo manifest the API consumes (requires a
+checkout / the binary).</li>
+<li>c. Re-implement frontmatter + config parsing in the API (risks drift).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="8-scope-of-the-first-deliverable">8. Scope of the first deliverable?</h4>
+<ul>
+<li><strong>a. (Recommended)</strong> A thin vertical slice: one hand-onboarded repo →
+ingest → render one type in a minimal docz-site, no auth/webhooks yet.</li>
+<li>b. Full ingestion pipeline + webhooks first, site second.</li>
+<li>c. Site/UX prototype first against mocked data.</li>
+<li>d. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<p>Resolved by user review on 2026-06-23. Recommendations accepted except
+Decisions 3 and 6, which were adjusted per reviewer guidance.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Topic</th>
+<th>Choice</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Repo content fetch</td>
+<td>(a) GitHub Git Trees / Contents API</td>
+<td>No checkout; simplest ops for typical doc-set sizes</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cache point</td>
+<td>(a) Cache at ingest</td>
+<td>Cache the raw markdown + metadata in Postgres at ingest (HTML itself is rendered client-side per Decision 3)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Markdown renderer</td>
+<td><strong>(c) JS renderer in docz-site</strong></td>
+<td>mdp is intentionally small for single-user neovim/terminal use and isn't a fit for a server-side multi-tenant renderer; render in the site instead</td>
+</tr>
+<tr>
+<td>4</td>
+<td>&quot;Version&quot; semantics</td>
+<td>(a) Default-branch HEAD as current version</td>
+<td>Simplest correct MVP; store <code>git_sha</code> per doc</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Branch scope</td>
+<td>(a) Default branch only</td>
+<td>Avoids preview/PR-branch noise</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Auth model</td>
+<td><strong>(a) GitHub default + pluggable OIDC</strong></td>
+<td>GitHub App OAuth is default/preferred; a generic OIDC provider abstraction must also support Okta and Keycloak. All three are required; authorization mapping differs per provider (see Observation 5)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Doc-list source</td>
+<td>(a) Shared <code>pkg/…</code> library from docz</td>
+<td>Single source of truth; API and CLI never drift</td>
+</tr>
+<tr>
+<td>8</td>
+<td>First deliverable</td>
+<td>(a) Thin vertical slice</td>
+<td>Prove fetch→parse→render→serve on one repo before the full pipeline</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>docz <code>.docz.yaml</code> schema and type model — <code>internal/config</code></li>
+<li>docz document scanning / frontmatter — <code>internal/document</code>
+(<code>ScanDocuments</code>, <code>LoadFrontmatter</code>)</li>
+<li>docz custom document types — DESIGN-0006 / IMPL-0012 (registry must be
+type-agnostic, driven by each repo's config)</li>
+<li>docz per-repo wiki (MkDocs/TechDocs) — the per-repo counterpart to docz-site</li>
+<li>mdp markdown renderer — [[0004-v1-release-plan-tui-markdown-preview-and-cli-parity]]
+(considered for server-side rendering but rejected in Decision 3 — it is
+intentionally scoped to single-user neovim/terminal use)</li>
+<li>Prior art: rfc-api / rfc-site (the general system docz-api simplifies)</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0005.md</code>, sha256 <code>3ec396c09d5143e6274f614b10aad7053ead1be37a80f6857daaef56af9f9c6a</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0002: Vendor the markdown walker</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Vendor the markdown walker</h1>
+<p class="summary">We are vendoring a small, line-oriented markdown walker directly into
+the tree instead of pulling in a full CommonMark parser as a third
+party dependency. The walker only needs to answer a handful of
+factual questions about a document (headings, task items, the title)
+and a hand-rolled scanner gets us there with far less surface area
+than a spec-complete parser would.</p>
+<div class="meta">
+<span class="pill">ADR-0002</span>
+<span class="pill st-accepted">Accepted</span>
+<span class="pill">Parity Fixture</span>
+<span class="pill">2026-03-04</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-summary">
+<h2 class="panel-title" id="summary">Summary</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p><code>docparse</code> needs to extract headings, checkbox task items, and an
+optional H1 title from arbitrary markdown files that live in a user's
+repo. We evaluated pulling in a CommonMark-compliant library early on,
+but every candidate we tried (<code>goldmark</code>, <code>blackfriday</code>, <code>mdp/parser</code>)
+pulls in an AST, a renderer, and a extension registry we would never
+use. The module's public surface is supposed to stay small and
+bytes-in/values-out (see ADR-0001 and INV-0006), and a general purpose
+parser drags in exactly the kind of interface-heavy dependency graph
+that philosophy is meant to avoid.</p>
+<p><strong>Status quo pain:</strong> every minor version bump of a CommonMark library
+we tested changed heading-anchor slugging or fence handling in some
+subtle way, which broke golden fixtures downstream in docz-api without
+any change on our side. We do not want our own release cadence coupled
+to a third party's.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<p>We will write and vendor a small, dependency-free line scanner inside
+<code>pkg/doczcore/docparse</code> that walks a document line by line and
+recognizes exactly the constructs docz cares about: ATX headings
+(H2-H6), GFM task-list checkboxes, and a single H1 or setext title.
+Anything outside that grammar (tables, nested blockquotes, inline
+HTML) is treated as opaque content and passed through unexamined.</p>
+<p>A rough sketch of the walker's inner loop looks like this:</p>
+<pre><code class="language-go">func Headings(content []byte) []Heading {
+    var out []Heading
+    inFence := false
+    for i, line := range splitLines(content) {
+        trimmed := bytes.TrimSpace(line)
+        if isFenceToggle(trimmed) {
+            inFence = !inFence
+            continue
+        }
+        if inFence {
+            continue
+        }
+        if h, ok := parseATXHeading(trimmed, i+1); ok {
+            out = append(out, h)
+        }
+    }
+    return out
+}
+</code></pre>
+<p>The scanner is intentionally line-oriented rather than block-oriented,
+which keeps it fast and keeps the mental model close to what a human
+reading the raw markdown would infer.</p>
+<h4 id="supporting-data">Supporting Data</h4>
+<p>We benchmarked the vendored walker against <code>goldmark</code> on the module's
+own <code>docs/</code> tree (currently 47 files) purely for heading and task-item
+extraction:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Time (47 files)</th>
+<th>Allocations</th>
+<th>Binary size delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vendored walker</td>
+<td>1.2ms</td>
+<td>340</td>
+<td>+0 KB (no dep)</td>
+</tr>
+<tr>
+<td>goldmark (AST walk)</td>
+<td>6.8ms</td>
+<td>5,100</td>
+<td>+740 KB</td>
+</tr>
+<tr>
+<td>blackfriday (visitor)</td>
+<td>4.1ms</td>
+<td>2,900</td>
+<td>+410 KB</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The vendored walker is roughly 5x faster for this narrow use case
+because it never builds an intermediate tree, and it adds nothing to
+the dependency graph docz-api and downstream consumers have to
+vet.</p>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<p>Vendoring the walker trades a wide, well-tested dependency surface for
+a narrow one we own outright. The tradeoffs mostly land where you
+would expect: less risk from upstream churn, more responsibility for
+edge cases we used to get for free.</p>
+<p><strong>Owner:</strong> docz core team</p>
+<h4 id="positive">Positive</h4>
+<ul>
+<li>No third-party markdown dependency to track for security advisories
+or breaking changes.</li>
+<li>The docz core team owns the entire parsing surface end to end.</li>
+<li>Fast and low-allocation, since there is no intermediate AST to
+build and discard for a handful of facts.</li>
+<li>Behavior is pinned by our own golden fixtures and fuzz tests
+instead of a moving upstream target.
+<ul>
+<li>This also means a fence-handling bug fix ships on our schedule,
+not whenever the upstream maintainer gets to a similar issue.</li>
+</ul>
+</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li>We now own bugs in markdown edge cases (nested fences, nonstandard
+list markers) that a mature parser would already have handled.</li>
+<li>The walker does not build a full AST, so any future feature that
+needs real nesting (for example arbitrary block quoting of
+headings) would require a rewrite rather than an incremental
+extension.</li>
+</ul>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li>The walker's grammar is deliberately narrower than CommonMark,
+which is fine for docz's own templates but means it is not a
+general purpose markdown tool and should not be marketed as one.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>A. Take the dependency.</strong> Pull in <code>goldmark</code> (the most actively
+maintained CommonMark implementation in Go) and walk its AST for the
+facts we need. Pro: spec compliance and battle-tested fence/table
+handling. Con: pulls a large transitive surface into a module whose
+whole pitch is a minimal, promoted API; version bumps upstream
+would ripple into our golden fixtures without any code change on
+our side.</li>
+<li><strong>B. Regex-only extraction.</strong> Skip a walker entirely and pull
+headings and task items with a handful of regular expressions. Pro:
+even less code than the line-oriented walker. Con: fence-awareness
+and duplicate-anchor slugging are genuinely stateful problems that
+regex handles poorly; we tried an early spike of this and it broke
+on the first document with a code block containing a <code>#</code> comment.</li>
+<li><strong>C. Shell out to a CLI markdown tool.</strong> Invoke <code>mdp</code> or a similar
+binary as a subprocess and parse its output. Pro: reuses an
+existing, tested renderer. Con: adds a runtime dependency outside
+the Go toolchain, complicates cross-platform builds, and is far
+slower than an in-process scan for a CLI that already runs on every
+<code>docz update</code>.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>ADR-0001: Use PostgreSQL for the registry store</li>
+<li>INV-0006: doczcore public-API philosophy</li>
+<li><a href="https://github.com/yuin/goldmark">goldmark</a></li>
+<li><a href="https://spec.commonmark.org/">CommonMark spec</a></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../../test/parity/fixtures/adr/docs/adr/0002-vendor-the-markdown-walker.md</code>, sha256 <code>dd4744e018203bd36260de7aeb91e52f0c29d3e8b16a97ba5308434d6eb461ee</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

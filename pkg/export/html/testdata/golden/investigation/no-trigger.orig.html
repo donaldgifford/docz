@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0011">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0011: One parity fixture repository per built-in type</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>One parity fixture repository per built-in type</h1>
+<p class="summary"><strong>Status:</strong> Concluded
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-09-20</p>
+<div class="meta">
+<span class="pill">INV-0011</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="question" aria-controls="p-question">Question</button>
+<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-question">
+<h2 class="panel-title" id="question">Question</h2>
+<p>Does <code>test/parity</code> need one fixture repository per built-in document type, or
+would a single repository carrying all six types record the same behaviour?</p>
+
+</section>
+<section class="panel" id="p-hypothesis">
+<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<p>One repository is enough. Every command under test takes a type name, so six
+types in one repository walk the same code paths six repositories would, and the
+suite would shed two thirds of its files.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>The suite was captured from the v1.2.2 release binary with seven fixture
+repositories: one per built-in type, plus one carrying a custom <code>frameworks</code>
+type. Each repository holds a template-faithful document and a messier
+hand-written one, which is 14 documents to keep in step for a suite that only
+replays goldens.</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Count the distinct command invocations each fixture repository contributes.</li>
+<li>Collapse the six type repositories into one and re-capture the goldens.</li>
+<li>Diff the collapsed goldens against the ones captured from v1.2.2.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-environment">
+<h2 class="panel-title" id="environment">Environment</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Go</td>
+<td>1.25.1</td>
+</tr>
+<tr>
+<td>docz</td>
+<td>v1.2.2</td>
+</tr>
+<tr>
+<td>Platform</td>
+<td>darwin/arm64</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<h4 id="the-file-tree-is-most-of-every-golden">The file tree is most of every golden</h4>
+<p>A golden records stdout, stderr, the exit code, and the whole file tree. In a
+collapsed repository every case's tree carries the other five types' documents,
+so a change to the RFC index table moves a line in the ADR goldens too. The
+per-type trees are what makes a failing diff name the command that broke.</p>
+<h4 id="collapsing-does-not-change-a-single-stdout">Collapsing does not change a single stdout</h4>
+<p>The 213 stdout and exit-code captures came back byte-identical. The hypothesis
+is right about coverage and wrong about cost: nothing is gained in what the
+suite measures, and the diffs stop being readable.</p>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<p>Coverage is unchanged, so the collapse is possible; readability is not, so it is
+not worth doing. The seven repositories stay.</p>
+<p><strong>Answer:</strong> No, one repository per type is not required for coverage, but the
+per-type trees are what keeps a failing diff readable.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><code>test/parity/README.md</code> — provenance of the captured goldens</li>
+<li>ADR-0002</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/no-trigger.orig.md</code>, sha256 <code>36cf4eb0c320fcb3b3f8867a4f884b3dc364ba34db1f4e5dfa5cf9a391faf560</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

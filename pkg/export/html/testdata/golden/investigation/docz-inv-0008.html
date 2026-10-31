@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0008">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0008: Last Updated frontmatter field: scope, git semantics, and effort</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Last Updated frontmatter field: scope, git semantics, and effort</h1>
+<p class="summary">How much work, and which changes, does it take to add a &quot;last updated&quot;
+frontmatter field to docz documents — at minimum a date, optionally the
+(short) sha of the last commit that modified the file — populated and kept
+current by <code>docz update</code> for any document that has changed?</p>
+<div class="meta">
+<span class="pill">INV-0008</span>
+<span class="pill st-accepted">Concluded</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-12</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="question" aria-controls="p-question">Question</button>
+<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-question">
+<h2 class="panel-title" id="question">Question</h2>
+<p>Three sub-questions fall out of that:</p>
+<ol>
+<li><strong>Surface:</strong> which packages, templates, commands, and consumer contracts
+does a sixth frontmatter field touch, and is any of it a breaking change?</li>
+<li><strong>Semantics:</strong> what does &quot;last commit that modified the file&quot; mean once
+the file <em>contains</em> the answer, and can <code>docz update</code> keep the field
+current without generating an endless stream of bookkeeping diffs?</li>
+<li><strong>Effort:</strong> what is the phased size of the work, and which parts are
+optional?</li>
+</ol>
+
+</section>
+<section class="panel" id="p-hypothesis">
+<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<p>The read side is trivial (one additive struct field). The write side is
+moderate: <code>docwrite</code> has never had to <em>insert</em> a frontmatter key, only
+rewrite one that exists. The hard part is not code volume but git
+semantics — a value derived from git history cannot describe the commit
+that contains it, so a naive implementation churns. The expected shape of
+the answer is &quot;date is cheap and stable, sha is cheap but inherently one
+commit behind,&quot; and the recommendation will lean on that asymmetry.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>Every docz document carries five typed frontmatter fields — <code>id</code>, <code>title</code>,
+<code>status</code>, <code>author</code>, <code>created</code> — and nothing records when it last changed.
+The README index tables and <code>docz list</code> show only <code>created</code>. docz-api's
+<code>documents</code> table (DESIGN-0008) has an <code>updated_at</code>, but it is the
+<strong>ingest</strong> timestamp, not the document's; and its <code>git_sha</code> is the <strong>blob</strong>
+sha of the file, not a commit. docz-site (DESIGN-0009) surfaces
+<code>updated_at</code> in its lists, so today a consumer's &quot;last updated&quot; is &quot;when we
+last synced,&quot; which is not what a reader wants.</p>
+<p>The natural home for the fix is the document itself: docz already owns the
+frontmatter schema, already has a byte-level frontmatter mutator (<code>SetStatus</code>,
+DESIGN-0005), and already runs a per-document pass in <code>docz update</code> (the
+ToC splice). This investigation sizes that path before a DESIGN doc commits
+to it.</p>
+<p><strong>Triggered by:</strong> a request to scope the feature ahead of a DESIGN doc; no
+issue yet.</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Map every code path that reads or writes frontmatter: <code>document.Frontmatter</code>
+and its consumers, the six embedded templates, <code>docwrite.SetStatus</code>'s
+locator machinery, and <code>cmd/update.go</code>'s per-type flow.</li>
+<li>Inventory docz's existing git access (<code>cmd/git.go</code>) and its test doubles,
+to see what a &quot;last commit for path&quot; lookup would need.</li>
+<li>Probe git directly in this repo for the facts an implementation depends
+on: what <code>git log -1 -- path</code> reports, its per-file cost across all 34
+documents, how a bookkeeping-only commit looks in the history, whether
+<code>-G</code> can filter such commits natively, and how dirty / untracked / shallow
+states behave.</li>
+<li>Model the update loop on paper for both &quot;date&quot; and &quot;sha&quot; and check
+whether each converges (no diff on a second run) or churns.</li>
+<li>Check the consumer contract (DESIGN-0008 R7, R10, R11) for what an
+additive frontmatter field means downstream, and whether docz-api could
+derive the value itself instead.</li>
+<li>Size the phases against comparable past work (IMPL-0011 status set,
+IMPL-0015 changelog block, IMPL-0016 api block).</li>
+</ol>
+
+</section>
+<section class="panel" id="p-environment">
+<h2 class="panel-title" id="environment">Environment</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>docz</td>
+<td><code>main</code> at <code>e359500</code> (v1.2.2)</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>1.26.4 (<code>go.mod</code>)</td>
+</tr>
+<tr>
+<td>git</td>
+<td>system git; POSIX ERE for <code>-G</code> (no PCRE lookahead)</td>
+</tr>
+<tr>
+<td>Repo</td>
+<td>34 docz documents across 6 type dirs; full (non-shallow) clone</td>
+</tr>
+<tr>
+<td>Frontmatter keys</td>
+<td>exactly <code>id</code>, <code>title</code>, <code>status</code>, <code>author</code>, <code>created</code> in all 34</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<ul class="heading-list">
+<li><a href="#observation-1--the-read-side-is-one-additive-field">Observation 1 — the read side is one additive field</a></li>
+<li><a href="#observation-2--the-write-side-needs-a-capability-docwrite-does-not-have">Observation 2 — the write side needs a capability docwrite does not have</a></li>
+<li><a href="#observation-3--templates-add-the-field-at-birth-or-let-update-insert-it">Observation 3 — templates: add the field at birth, or let update insert it</a></li>
+<li><a href="#observation-4--docz-update-has-a-slot-for-the-pass-with-one-ordering-caveat">Observation 4 — docz update has a slot for the pass, with one ordering caveat</a></li>
+<li><a href="#observation-5--git-access-exists-but-is-minimal-extending-it-is-cheap">Observation 5 — git access exists but is minimal; extending it is cheap</a></li>
+<li><a href="#observation-6--the-circularity-problem-and-why-date-and-sha-differ">Observation 6 — the circularity problem, and why date and sha differ</a></li>
+<li><a href="#observation-7--configuration-shape-and-defaults">Observation 7 — configuration shape and defaults</a></li>
+<li><a href="#observation-8--consumer-contract-additive-and-the-consumer-cannot-compute-it-alone">Observation 8 — consumer contract: additive, and the consumer cannot compute it alone</a></li>
+<li><a href="#observation-9--sizing-against-comparable-past-work">Observation 9 — sizing against comparable past work</a></li>
+</ul>
+<h4 id="observation-1--the-read-side-is-one-additive-field">Observation 1 — the read side is one additive field</h4>
+<p><code>document.Frontmatter</code> (<code>pkg/doczcore/document/document.go</code>) is a plain
+yaml/v3 struct with five fields. yaml decoding is lenient — unknown keys are
+ignored — so a document carrying <code>updated:</code> today parses fine and the value
+is simply dropped. Adding a typed field is additive under ADR-0001 and
+DESIGN-0007's semver rule. Its only consumers are:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Consumer</th>
+<th>Reads</th>
+<th>Change needed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cmd/list.go</code> <code>listEntry</code></td>
+<td><code>Created</code> → <code>date</code></td>
+<td>add <code>updated</code> to text + JSON output</td>
+</tr>
+<tr>
+<td><code>internal/index</code> <code>GenerateTable</code></td>
+<td><code>Created</code> → <code>Date</code> column</td>
+<td>new <code>Updated</code> column (Decision 6)</td>
+</tr>
+<tr>
+<td><code>document.DocEntry</code></td>
+<td>embeds Frontmatter</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>internal/wiki</code></td>
+<td>title only</td>
+<td>none</td>
+</tr>
+<tr>
+<td>docz-api (<code>ParseFrontmatter</code>)</td>
+<td>five fields</td>
+<td>pin bump + new column; see Observation 8</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>No golden in the repo asserts the <em>absence</em> of a sixth key, so the field
+lands without touching existing fixtures — unless the templates change
+(Observation 3).</p>
+<h4 id="observation-2--the-write-side-needs-a-capability-docwrite-does-not-have">Observation 2 — the write side needs a capability <code>docwrite</code> does not have</h4>
+<p><code>docwrite.SetStatus</code> (<code>pkg/doczcore/docwrite/status.go</code>, 221 lines + 318 of
+tests + 12 golden fixtures) is a byte-level value substitution: it locates
+<code>^status:[ \t]*</code> inside the frontmatter bounds, parses the scalar shape
+(bare / <code>&quot;…&quot;</code> / <code>'…'</code>, trailing <code># comment</code>), and splices only the value
+bytes so the diff is one line. Two properties matter here:</p>
+<ul>
+<li><strong>The locator is status-specific in name only.</strong> <code>frontmatterBounds</code>,
+<code>nextLine</code>, <code>parseStatusValue</code>, <code>quotedValue</code>, and <code>bareValueLen</code> are
+key-agnostic; only <code>statusKeyRE</code> hard-codes the key. Generalizing to
+<code>findScalarValue(content, key)</code> is a mechanical refactor with <code>SetStatus</code>
+becoming a thin wrapper, and the existing goldens prove the refactor
+byte-identical for free.</li>
+<li><strong>There is no insert path.</strong> A missing key is <code>ErrStatusFieldMissing</code>, by
+design — <code>status:</code> is always present because every template emits it. An
+<code>updated:</code> field will be absent from every one of the 34 existing docs,
+from any doc created by an on-disk template override
+(<code>docs/templates/&lt;type&gt;.md</code>) that predates the field, and from any doc
+hand-authored without it. So the mutator must <strong>upsert</strong>: rewrite the
+value when the key exists, otherwise insert a new <code>key: value</code> line. The
+obvious insertion point is directly after the <code>created:</code> line (keeps the
+two dates adjacent), falling back to just before the closing <code>---</code>.</li>
+</ul>
+<p>That upsert is the first thing <code>docwrite</code> would do that is not a
+single-value substitution. ADR-0001 Decision 5 admits &quot;path-based write
+helpers only where a consumer requires in-place, byte-preserving mutation&quot;
+(<code>SetStatus</code>, <code>CheckTask</code>) — the package is deliberately narrow, not a
+general editor. A purpose-named <code>SetUpdated(path, Updated) (old Updated, err)</code> respects that stance; a generic <code>SetScalar(path, key, value)</code> is the
+general-editor slope and should be avoided even though it would be the same
+code. Same LF-only and byte-preservation contract as <code>SetStatus</code>.</p>
+<h4 id="observation-3--templates-add-the-field-at-birth-or-let-update-insert-it">Observation 3 — templates: add the field at birth, or let <code>update</code> insert it</h4>
+<p>All six embedded templates share an identical frontmatter block ending in
+<code>created: {{ .Date }}</code> (<code>time.DateOnly</code> → <code>2026-09-12</code>). Two choices:</p>
+<ul>
+<li><strong>Add <code>updated: {{ .Date }}</code> to the templates.</strong> New docs carry the field
+from creation (<code>created == updated</code> on day one), and the upsert's insert
+path is only exercised for pre-existing and override-template docs. Cost:
+six template edits, regeneration of the 14 docwrite fixtures that embed
+frontmatter, and touch-ups in the ten test files that assert <code>created:</code>
+literally (<code>cmd/list_test.go</code>, <code>cmd/update_test.go</code>, <code>cmd/wiki_test.go</code>,
+<code>internal/wiki/*_test.go</code>, <code>document/*_test.go</code>, <code>docwrite/create_test.go</code>,
+<code>toc/golden_test.go</code>). Also makes the claude-skills plugin templates stale
+again (claude-skills #95 already tracks template drift).</li>
+<li><strong>Leave templates alone.</strong> Zero fixture churn; the field appears only
+after the first <code>docz update</code>. Simpler, but a freshly created doc lies by
+omission until then, and <code>docz create</code> already runs the index update by
+default so the asymmetry would be visible.</li>
+</ul>
+<p>Adding it to the templates is the better product; the fixture cost is real
+but mechanical (<code>go test ./... -update</code>).</p>
+<h4 id="observation-4--docz-update-has-a-slot-for-the-pass-with-one-ordering-caveat">Observation 4 — <code>docz update</code> has a slot for the pass, with one ordering caveat</h4>
+<p><code>Runner.updateType</code> (<code>cmd/update.go</code>) scans the type dir, runs the ToC pass
+if <code>toc.enabled</code>, then regenerates the README table. A &quot;stamp updated&quot; pass
+fits between the ToC pass and the table (so a new <code>Updated</code> column, if
+added, sees fresh values). Caveats:</p>
+<ul>
+<li><code>document.ScanDocuments</code> caches <code>DocEntry.Content</code>, and the ToC pass
+writes back to disk <strong>without refreshing that cache</strong>. The stamp pass must
+therefore read from disk itself (as <code>SetStatus</code> does) rather than reuse
+<code>doc.Content</code>, or run before the ToC pass. Reading from disk is the safer
+choice — it also makes the pass correct for a doc the ToC pass just
+changed.</li>
+<li><code>--dry-run</code> needs a &quot;Would set updated in &lt;path&gt;: &lt;old&gt; → &lt;new&gt;&quot; line in
+the style of the ToC and README dry-run output.</li>
+<li>The pass is per-type, so <code>docz update rfc</code> stamps only RFCs — consistent
+with the ToC behavior.</li>
+</ul>
+<h4 id="observation-5--git-access-exists-but-is-minimal-extending-it-is-cheap">Observation 5 — git access exists but is minimal; extending it is cheap</h4>
+<p><code>cmd/git.go</code> defines <code>GitResolver</code> with one method, <code>UserName(ctx)</code>, backed
+by <code>exec.CommandContext(ctx, &quot;git&quot;, &quot;config&quot;, &quot;user.name&quot;)</code> and a
+<code>staticGit</code> test double. There is no go-git dependency (<code>go.mod</code> has cobra
+and yaml only) and none is warranted. The lookup this feature needs:</p>
+<pre><code class="language-text">git log -1 --format=&#39;%H%x09%cI&#39; -- &lt;path&gt;      # last commit touching path
+git diff --quiet HEAD -- &lt;path&gt;                # exit 1 =&gt; modified, uncommitted
+git status --porcelain -- &lt;path&gt;               # &#39;?? path&#39; =&gt; untracked
+git rev-parse --is-shallow-repository          # true =&gt; history is truncated
+</code></pre>
+<p>Measured in this repo:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>git log -1</code> for one doc</td>
+<td><code>004491f</code>, <code>2026-08-30T06:35:26-04:00</code></td>
+</tr>
+<tr>
+<td><code>git log -1</code> across all 34 docs, sequential</td>
+<td>0.19 s total (~5 ms each)</td>
+</tr>
+<tr>
+<td><code>git log -p</code> full history for one doc (594 lines)</td>
+<td>8 ms</td>
+</tr>
+<tr>
+<td><code>git diff --quiet HEAD -- path</code>, clean / dirty</td>
+<td>exit 0 / exit 1</td>
+</tr>
+<tr>
+<td><code>git log -1</code> for an untracked path</td>
+<td>empty output</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Cost is a non-issue at doc-set scale. The interface grows by two or three
+methods (<code>LastChange</code>, <code>IsDirty</code>, <code>IsShallow</code>) that live in <code>cmd/</code>, keeping
+<code>pkg/doczcore</code> free of git — consistent with the bytes-in/values-out rule
+(ADR-0001 Decision 5): <code>docwrite</code> receives the resolved date and sha, it
+does not compute them. Tests for the update pass use the stub; one
+integration test guarded by <code>exec.LookPath(&quot;git&quot;)</code> can <code>git init</code> a
+<code>t.TempDir()</code> to exercise the real resolver (a new pattern in <code>cmd/</code>, but
+small).</p>
+<p>Edge states the resolver must classify, because each one produces a
+<em>wrong</em> value if ignored:</p>
+<ul>
+<li><strong>Untracked file:</strong> no history; <code>git log</code> is empty. Skip (or stamp today,
+see Observation 6).</li>
+<li><strong>Modified, uncommitted:</strong> <code>git log -1</code> returns the <em>previous</em> commit —
+stale sha, stale date. Must be detected via <code>diff --quiet</code>.</li>
+<li><strong>Shallow clone (CI default — <code>ci.yml</code> uses <code>actions/checkout</code> at
+default depth 1):</strong> <code>git log -1 -- path</code> silently returns the shallow
+boundary commit for any file whose real last change is older. <code>docz update</code> in a shallow clone would rewrite every stamp to the boundary
+commit's date. Must warn and skip, or require <code>fetch-depth: 0</code>.</li>
+<li><strong>Renames:</strong> a title change renames the file; <code>--follow</code> keeps history
+across it. Measured: identical output with and without <code>--follow</code> for the
+doc probed, since it has never been renamed. Use <code>--follow</code>.</li>
+<li><strong>No git at all</strong> (exported tarball, non-git consumer): resolver returns
+&quot;unknown&quot;; the pass skips with a debug log, as <code>UserName</code> already degrades
+to <code>&quot;&quot;</code>.</li>
+</ul>
+<h4 id="observation-6--the-circularity-problem-and-why-date-and-sha-differ">Observation 6 — the circularity problem, and why date and sha differ</h4>
+<p>This is the finding that shapes the recommendation. Write the field from git
+history and the file now contains a value derived from its own history, so
+the next commit that includes the write is itself a &quot;commit that modified
+the file.&quot;</p>
+<p>Model it. Doc <code>D</code> gets a content edit in commit <code>A</code>; <code>docz update</code> runs:</p>
+<pre><code class="language-text">run 1:  git log -1 → A          write  updated: date(A) / sha A     → diff
+commit B  (&#34;docs: docz update&#34;)
+run 2:  git log -1 → B          write  updated: date(B) / sha B     → diff
+commit C
+run 3:  git log -1 → C          …                                    → diff
+</code></pre>
+<p>Every run after every commit produces a new diff. <strong>Naive git-derived
+stamping never converges.</strong> Two ways out, and they differ by field:</p>
+<p><strong>a. Filter bookkeeping commits.</strong> Define &quot;last commit that modified the
+file&quot; as the last commit whose diff to the file touches anything <em>other
+than</em> the <code>updated:</code> line. With that filter run 2 skips <code>B</code> (its diff is
+one <code>updated:</code> line), finds <code>A</code>, computes the same value, writes nothing.
+Converged. The filter cannot be expressed with <code>git log -G</code>: git's <code>-G</code>
+takes a POSIX ERE and rejects lookahead (<code>-G'^(?!updated:)'</code> → <code>fatal: invalid regex</code>). It has to be done in Go over <code>git log -p --format=%x00%H -- path</code> (8 ms for a full history here), inspecting <code>+</code>/<code>-</code> lines per
+commit and stopping at the first substantive one. Typically the first or
+second commit qualifies. Note the filter must be narrow: the status flip in
+<code>004491f</code> is a one-line frontmatter diff (<code>-status: Draft</code> /
+<code>+status: Implemented</code>) and it <strong>is</strong> a real update — only the <code>updated:</code>
+line itself is bookkeeping.</p>
+<p>Even with the filter, <strong>sha is always one commit behind</strong>: the sha is
+unknowable until the commit exists, so the stamp for content commit <code>A'</code>
+can only be written <em>after</em> <code>A'</code> — in a trailing bookkeeping commit. One
+trailing commit per content commit is the floor for any sha-in-file design.
+(The blob sha is worse: embedding a hash of the content in the content is
+circular by construction.)</p>
+<p><strong>b. Stamp at edit time — which only works for the date.</strong> A date needs no
+commit to exist: if <code>docz update</code> stamps <em>today</em> on any doc that is dirty
+relative to <code>HEAD</code> (or untracked), the stamp goes into the same commit as
+the edit. On the next run the doc is clean, the git-derived date of that
+commit equals the stamp (same day), nothing is written. <strong>No trailing
+commit, no churn.</strong> The sha has no equivalent — the value the user wants
+does not exist yet at stamp time.</p>
+<p>Residual edge: edit on day 1, commit on day 2 → stamp says day 1, commit
+says day 2; a later git-derived pass would &quot;correct&quot; it with one trailing
+commit. Tolerable, and avoidable by treating the stamped value as
+authoritative when it is within a day of the commit — a detail for the
+DESIGN doc.</p>
+<p>The practical model is a <strong>hybrid</strong>: dirty or untracked → stamp today
+(edit-time semantics); clean → git-derived with the bookkeeping filter
+(handles the one-time backfill of the 34 existing docs, and any edit
+committed without running <code>docz update</code> first). The sha, if recorded at
+all, is only ever git-derived and therefore only ever written in a trailing
+commit.</p>
+<h4 id="observation-7--configuration-shape-and-defaults">Observation 7 — configuration shape and defaults</h4>
+<p>Turning this on in an existing repo produces a one-time diff on every
+document (34 files here) on the next <code>docz update</code>, plus a <code>docz update</code>
+that now needs git. That is exactly the situation the <code>changelog:</code> and
+<code>api:</code> blocks solved with the dormancy pattern (DESIGN-0010 Decision 7): an
+opt-in block that is inert until <code>enabled: true</code>. A shape consistent with
+<code>toc:</code>:</p>
+<pre><code class="language-yaml">updated:
+  enabled: false        # dormant by default in v1.x
+</code></pre>
+<p><code>toc.enabled</code> defaults to true, but ToC regeneration is idempotent and
+git-free; this pass is neither, so default-off is the right v1.x call and
+a v2 could flip it. A <code>sha: none | short | full</code> knob would sit in this
+block if the sha is ever recorded; it is deferred along with the sha
+(Recommendation). A per-type <code>updated_field</code> name (mirroring
+<code>status_field</code>) is possible but premature — see Decision 3.</p>
+<h4 id="observation-8--consumer-contract-additive-and-the-consumer-cannot-compute-it-alone">Observation 8 — consumer contract: additive, and the consumer cannot compute it alone</h4>
+<p>DESIGN-0008 R7 names &quot;the five typed frontmatter fields&quot; as docz-api's
+column contract and commits to coordinating breaking changes; adding a sixth
+is additive and needs a pin bump plus a <code>documents.updated DATE</code> column on
+the docz-api side (the <code>created DATE</code> pattern), and an R12 clause in the
+R-series ratifying the field's semantics, as R10 and R11 did for their
+surfaces.</p>
+<p>The alternative — &quot;don't put it in the file, let the consumer derive it&quot; —
+does not hold up for docz-api. Its ingestion is deliberately checkout-less
+(DESIGN-0008 Decision 1: Git Trees / Contents API, no clone), so it cannot
+run <code>git log</code>. Deriving last-modified would mean one GitHub Commits API call
+per document per ingest against the rate limit. The frontmatter field is
+the mechanism that carries a git-derived fact to a consumer that has no
+git. That is the strongest argument for the feature living in docz rather
+than downstream.</p>
+<p>The same reasoning says the <strong>sha is of marginal value to consumers</strong>:
+docz-api already stores <code>last_synced_sha</code> per repo and the blob <code>git_sha</code>
+per document, and a per-document commit sha in the file is one commit
+stale by construction (Observation 6). A date satisfies sorting and display
+(docz-site's <code>updated_at</code> column); the sha mostly serves humans reading
+the raw file.</p>
+<h4 id="observation-9--sizing-against-comparable-past-work">Observation 9 — sizing against comparable past work</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Scope</th>
+<th>Comparable</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>docwrite</code>: generalize the scalar locator, add upsert/insert, <code>SetUpdated</code>, goldens, fuzz</td>
+<td>IMPL-0011 <code>SetStatus</code></td>
+<td>~1 day</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>document.Frontmatter.Updated</code>, <code>docz list</code> output, six templates, fixture regen, README docs</td>
+<td>small</td>
+<td>~½ day</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>config.UpdatedConfig</code> block, defaults, <code>docz_yaml.tmpl</code>, <code>.docz.example.yaml</code>, json/yaml tag parity test</td>
+<td>IMPL-0015 block</td>
+<td>~½ day</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>cmd/</code>: <code>GitResolver</code> extension (last-change walk with bookkeeping filter, dirty, shallow), update pass, dry-run, stub + one <code>git init</code> integration test</td>
+<td>new pattern</td>
+<td>~1–1½ days</td>
+</tr>
+<tr>
+<td>5</td>
+<td>DESIGN doc, IMPL doc, DESIGN-0008 R12, <code>test/consumer</code> proof, <code>minor</code> release, docz-api follow-up issue</td>
+<td>IMPL-0016 tail</td>
+<td>~½ day</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Roughly <strong>3½–4 days</strong> for date + optional sha with the hybrid model. The
+<strong>date-only</strong> cut — the scope the Recommendation settles on — drops the sha
+plumbing and the <code>sha:</code> config knob but not Phase 4's git work (dirty
+detection and the backfill walk still need git), landing at <strong>~3–3½ days</strong>.
+Dropping the git-derived path entirely (stamp-on-dirty only, no backfill,
+no filter) is the smallest cut at ~2–2½ days, at the price of never
+populating the 34 existing docs unless someone edits them.</p>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<p><strong>Answer:</strong> Yes — feasible and mostly mechanical, at roughly four days, with
+one genuine design decision rather than an implementation risk.</p>
+<ul>
+<li>The read side is one additive struct field; no existing behavior or golden
+breaks unless the templates also change, and that cost is a fixture regen.</li>
+<li>The write side needs <code>docwrite</code>'s first insert capability. The existing
+<code>SetStatus</code> machinery generalizes cleanly; the insert is the new code, and
+it should be exposed as a purpose-named <code>SetUpdated</code>, not a generic field
+editor.</li>
+<li><code>docz update</code> has a natural slot for the pass; the ToC pass's stale
+content cache means the stamp pass must read from disk.</li>
+<li>Git access is a small extension of the existing <code>GitResolver</code>; cost is
+~5 ms per document. Shallow clones, dirty files, and untracked files each
+produce silently wrong values unless explicitly classified.</li>
+<li><strong>The date and the sha are not the same feature.</strong> A date can be stamped
+before commit and converges with no bookkeeping commits. A sha can only
+ever name the <em>previous</em> content commit and costs one trailing commit per
+change, forever. Any git-derived value also needs a bookkeeping-commit
+filter to converge, and that filter cannot be expressed in <code>git log</code>
+itself.</li>
+<li>The field belongs in docz, not downstream: docz-api ingests without a
+checkout and cannot derive it.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-recommendation">
+<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<ul class="heading-list">
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#1-field-name">1. Field name?</a></li>
+<li><a href="#2-sha-representation-if-recorded">2. Sha representation, if recorded?</a></li>
+<li><a href="#3-configurable-key-name-per-type-updated_field-like-status_field">3. Configurable key name per type (updated_field, like status_field)?</a></li>
+<li><a href="#4-date-source-for-the-git-derived-path">4. Date source for the git-derived path?</a></li>
+<li><a href="#5-what-does-docz-update-do-in-a-shallow-clone">5. What does docz update do in a shallow clone?</a></li>
+<li><a href="#6-add-an-updated-column-to-the-readme-index-tables">6. Add an Updated column to the README index tables?</a></li>
+</ul>
+<p><strong>Do the <code>updated</code> date field first; defer the sha to a later follow-up.</strong>
+The date is the part consumers need (sorting and display, Observation 8),
+it converges without bookkeeping commits (Observation 6), and it carries
+none of the sha's trailing-commit cost. The sha is a separate, later
+decision that can be added without a breaking change once the date has
+shipped and the backfill diff is behind existing repos.</p>
+<ol>
+<li><strong>Write a DESIGN doc for an opt-in <code>updated:</code> config block</strong> that adds an
+<code>updated: YYYY-MM-DD</code> frontmatter field, using the hybrid model from
+Observation 6: stamp today when a doc is dirty or untracked; git-derived
+(committer date, bookkeeping-line filter) when clean, which is what
+backfills the 34 existing docs.</li>
+<li><strong>Leave the sha out of that DESIGN doc entirely</strong> — no <code>updated_sha:</code>
+key, no <code>sha:</code> config knob, no sha plumbing in the git resolver. Carry
+the trailing-commit analysis (Observation 6) forward so the follow-up
+starts from it rather than rediscovering it. When it comes, the shape is
+already decided: a separate <code>updated_sha:</code> key (Decision 2), so <code>updated</code>
+stays a clean date for docz-api's column.</li>
+<li><strong>Add the field to the six templates</strong> so new docs carry it from
+creation, and have <code>docz status set</code> stamp it too — a status flip is a
+real update, and the command already rewrites the file.</li>
+<li><strong>Add the <code>Updated</code> column to the README index tables in the same
+release</strong> (Decision 6), accepting the one-time re-render of every table.</li>
+<li><strong>Default <code>enabled: false</code> in v1.x</strong> (dormancy pattern); consider flipping
+the default in v2 once the backfill diff is behind existing repos.</li>
+<li><strong>Guard the failure modes explicitly</strong>: warn once and skip the pass on a
+shallow clone (Decision 5), classify dirty/untracked before consulting
+history, degrade to no-op when git is absent.</li>
+<li>Ratify the field for consumers as <strong>DESIGN-0008 R12</strong> and file the
+docz-api column follow-up alongside the release.</li>
+</ol>
+<h4 id="decisions">Decisions</h4>
+<p>All six open questions were resolved <strong>(a)</strong> on 2026-09-12 in review. The
+lettered options are kept below for the alternatives, which record what
+was weighed.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Field name</td>
+<td><code>updated</code> — symmetric with <code>created</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sha representation</td>
+<td>a separate <code>updated_sha:</code> key — <strong>deferred with the sha itself</strong>; decided now so the follow-up does not reopen it</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Per-type key override</td>
+<td>no — fixed key</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Date source</td>
+<td>committer date (<code>%cI</code>)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Shallow clone</td>
+<td>warn once and skip the pass</td>
+</tr>
+<tr>
+<td>6</td>
+<td>README <code>Updated</code> column</td>
+<td>yes, in the same release — refined by DESIGN-0012 Decision 5 to &quot;only when the block is enabled,&quot; so dormant repos never re-render</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Open questions as put to review, recommended option first (all resolved
+<strong>a</strong>):</p>
+<h4 id="1-field-name">1. Field name?</h4>
+<ul>
+<li>a. <code>updated</code> — symmetric with <code>created</code>, both bare dates; the pair reads
+naturally in the frontmatter.</li>
+<li>b. <code>last_updated</code> — matches the request wording; longer, and no other key
+is prefixed.</li>
+<li>c. <code>modified</code> — filesystem connotation, which is exactly the semantics
+this is <em>not</em> (mtime is meaningless after a checkout).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="2-sha-representation-if-recorded">2. Sha representation, if recorded?</h4>
+<ul>
+<li>a. A separate <code>updated_sha:</code> key holding the short sha — keeps <code>updated</code>
+a clean <code>DATE</code> for docz-api's column; sha length via config.</li>
+<li>b. A combined scalar such as <code>2026-09-12 (004491f)</code> — one key, but every
+consumer has to parse it.</li>
+<li>c. Full 40-char sha in its own key — unambiguous forever, ugly in a doc.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="3-configurable-key-name-per-type-updated_field-like-status_field">3. Configurable key name per type (<code>updated_field</code>, like <code>status_field</code>)?</h4>
+<ul>
+<li>a. No — fixed key in v1; <code>status_field</code> exists for legacy repos that
+predate docz and there is no such legacy for a brand-new field.</li>
+<li>b. Yes, mirror <code>status_field</code> from day one for symmetry.</li>
+<li>c. Global (not per-type) override only.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="4-date-source-for-the-git-derived-path">4. Date source for the git-derived path?</h4>
+<ul>
+<li>a. Committer date (<code>%cI</code>) — what <code>git log</code> shows by default and what a
+reader means by &quot;when did this land.&quot;</li>
+<li>b. Author date (<code>%aI</code>) — survives rebases and cherry-picks, but can
+predate the commit by days.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="5-what-does-docz-update-do-in-a-shallow-clone">5. What does <code>docz update</code> do in a shallow clone?</h4>
+<ul>
+<li>a. Warn once and skip the pass — never write a value known to be wrong.</li>
+<li>b. Skip only docs whose last-change walk hits the shallow boundary.</li>
+<li>c. Hard error, forcing <code>fetch-depth: 0</code>.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="6-add-an-updated-column-to-the-readme-index-tables">6. Add an <code>Updated</code> column to the README index tables?</h4>
+<ul>
+<li>a. Yes, in the same release — it is the reason a human wants the field —
+accepting that every README table in every repo re-renders once.</li>
+<li>b. Defer to a follow-up so the frontmatter change lands alone.</li>
+<li>c. Only when the block is enabled (column presence keyed on config).</li>
+<li>d. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0005 — status set CLI primitive; the byte-preservation contract
+<code>SetUpdated</code> must inherit</li>
+<li>ADR-0001 — public core scope; Decision 5's narrow-<code>docwrite</code> and
+bytes-in/values-out rules</li>
+<li>DESIGN-0004 §A / §H — Runner pattern and the <code>GitResolver</code> seam</li>
+<li>DESIGN-0007 / DESIGN-0008 R7, R10, R11 — the frontmatter column contract
+and the R-series pattern for ratifying a new surface</li>
+<li>DESIGN-0008 Decision 1 — checkout-less ingestion (why docz-api cannot
+derive the value)</li>
+<li>DESIGN-0009 — docz-site's <code>updated_at</code> in document lists</li>
+<li>DESIGN-0010 Decision 7 — the dormancy pattern for opt-in config blocks</li>
+<li>IMPL-0011 — <code>SetStatus</code> (the closest comparable for Phase 1)</li>
+<li>claude-skills #95 — bundled-template drift, which Phase 2 would extend</li>
+<li><code>cmd/git.go</code>, <code>cmd/update.go</code>, <code>pkg/doczcore/docwrite/status.go</code>,
+<code>pkg/doczcore/document/document.go</code> — the code paths inventoried</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0008.md</code>, sha256 <code>9d6b392e224c7d243c5321a90497f5fbda5fea8f2a031d343f3114be5a336807</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

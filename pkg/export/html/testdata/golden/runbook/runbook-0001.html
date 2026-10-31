@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="RUNBOOK-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>RUNBOOK-0001: Cut a v2 beta release</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Runbook</p>
+<h1>Cut a v2 beta release</h1>
+<p class="summary">This runbook cuts a <code>v2.0.0-beta.N</code> release of docz, docz-api, docz-site,
+and the <code>charts/docz</code> chart from one tag, and checks what the tag published.
+Betas on the v2 line are cut by hand from a merge commit on <code>main</code>. Every PR
+carries <code>dont-release</code>, so nothing publishes on merge (ADR-0002 Decision 6).</p>
+<div class="meta">
+<span class="pill">RUNBOOK-0001</span>
+<span class="pill st-active">Active</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-10-01</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="last-verified" aria-controls="p-last-verified">Last Verified</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="when-to-use" aria-controls="p-when-to-use">When to Use</button>
+<button type="button" data-tab="prerequisites" aria-controls="p-prerequisites">Prerequisites</button>
+<button type="button" data-tab="procedure-1-prepare" aria-controls="p-procedure-1-prepare">Procedure 1: Prepare</button>
+<button type="button" data-tab="procedure-2-tag-and-verify" aria-controls="p-procedure-2-tag-and-verify">Procedure 2: Tag and verify</button>
+<button type="button" data-tab="procedure-3-install-and-smoke-test" aria-controls="p-procedure-3-install-and-smoke-test">Procedure 3: Install and smoke-test</button>
+<button type="button" data-tab="scenario-a-chart-push-fails-with-403-write-package" aria-controls="p-scenario-a-chart-push-fails-with-403-write-package">Scenario: A chart push fails with 403 write_package</button>
+<button type="button" data-tab="scenario-pods-fail-to-pull-the-image-after-install" aria-controls="p-scenario-pods-fail-to-pull-the-image-after-install">Scenario: Pods fail to pull the image after install</button>
+<button type="button" data-tab="escalation" aria-controls="p-escalation">Escalation</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-last-verified">
+<h2 class="panel-title" id="last-verified">Last Verified</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>PR</th>
+<th>Commit</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-09-25</td>
+<td>#137</td>
+<td>e41203e</td>
+<td>@donaldgifford</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Notes:</strong> Run end to end for <code>v2.0.0-beta.5</code>, install included. The
+<code>charts/docz</code> push did not fail with a 403, so that scenario was not
+exercised.</p>
+
+</section>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p><strong>Service:</strong> docz release pipeline (<code>prerelease.yml</code>, <code>ghcr.yml</code>, goreleaser)</p>
+<p><strong>Owner:</strong> @donaldgifford</p>
+
+</section>
+<section class="panel" id="p-when-to-use">
+<h2 class="panel-title" id="when-to-use">When to Use</h2>
+<ul>
+<li>A PR that should ship has merged to <code>main</code> with a merge commit, and its
+IMPL's release phase says to cut the next beta</li>
+<li>A beta needs re-cutting after a broken publish (tag a new <code>N</code>; never
+move a pushed tag)</li>
+</ul>
+
+</section>
+<section class="panel" id="p-prerequisites">
+<h2 class="panel-title" id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Push access to <code>donaldgifford/docz</code>, and permission to push tags</li>
+<li><code>just</code>, <code>goreleaser</code>, <code>gh</code>, <code>helm</code> (4.x), <code>cosign</code>, and <code>docker</code>
+installed (<code>mise install</code> provides them)</li>
+<li><code>gh auth status</code> is logged in to github.com</li>
+<li>For the install procedure: <code>kind</code> and a local Docker daemon</li>
+<li>The previous beta's number, from <code>git tag --list 'v2.0.0-beta.*'</code></li>
+</ul>
+
+</section>
+<section class="panel" id="p-procedure-1-prepare">
+<h2 class="panel-title" id="procedure-1-prepare">Procedure 1: Prepare</h2>
+<h3 id="procedures">Procedures</h3>
+<p>Get <code>main</code> into the state the tag will record: the chart bumped and the
+release configuration valid.</p>
+<h5 id="steps">Steps</h5>
+<ol>
+<li><p>Before the PR merges, bump <code>charts/docz/Chart.yaml</code>: raise <code>version</code>,
+and set <code>appVersion</code> to the new beta <strong>without</strong> a <code>v</code> prefix. Then
+regenerate the chart docs and run its tests.</p>
+<pre><code class="language-sh">just chart docs
+just chart unittest
+</code></pre>
+<p><strong>Expected:</strong> <code>appVersion: &quot;2.0.0-beta.N&quot;</code>; the unit tests pass</p>
+</li>
+<li><p>Once the PR is merged, check out the merge commit on <code>main</code>.</p>
+<pre><code class="language-sh">git checkout main &amp;&amp; git pull --ff-only --no-tags origin main
+gh pr view &lt;PR&gt; --json mergeCommit -q .mergeCommit.oid
+git rev-parse HEAD
+</code></pre>
+<p><strong>Expected:</strong> both commands print the same SHA</p>
+</li>
+<li><p>Confirm the merge's own <code>release.yml</code> run published no chart.</p>
+<pre><code class="language-sh">gh run list --workflow release.yml --commit &#34;$(git rev-parse HEAD)&#34; \
+  --json databaseId -q &#39;.[0].databaseId&#39; | xargs gh run view \
+  --json jobs -q &#39;.jobs[] | &#34;\(.name): \(.conclusion)&#34;&#39;
+</code></pre>
+<p><strong>Expected:</strong> every <code>Publish chart</code> job is <code>skipped</code></p>
+</li>
+<li><p>Validate the release configuration for both binaries.</p>
+<pre><code class="language-sh">just release-check
+just api release-check
+</code></pre>
+<p><strong>Expected:</strong> <code>1 configuration file(s) validated</code>, twice</p>
+</li>
+</ol>
+<h5 id="verification">Verification</h5>
+<ul>
+<li><code>HEAD</code> is the merge commit, and <code>charts/docz</code> carries the new bare
+<code>appVersion</code></li>
+<li>Both release checks pass</li>
+</ul>
+<h5 id="rollback">Rollback</h5>
+<ol>
+<li>Nothing has been published yet. Fix forward on a branch and merge
+again.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-procedure-2-tag-and-verify">
+<h2 class="panel-title" id="procedure-2-tag-and-verify">Procedure 2: Tag and verify</h2>
+<p>Push the tag, let <code>prerelease.yml</code> publish, and check every artifact it
+was supposed to produce.</p>
+<h5 id="steps-1">Steps</h5>
+<ol>
+<li><p>Tag the merge commit and push the tag.</p>
+<pre><code class="language-sh">just release v2.0.0-beta.N
+</code></pre>
+<p><strong>Expected:</strong> the tag appears with <code>git ls-remote --tags origin 'v2.0.0-beta.N'</code></p>
+</li>
+<li><p>Watch the pre-release run to the end.</p>
+<pre><code class="language-sh">run=$(gh run list --workflow prerelease.yml -L 1 --json databaseId -q &#39;.[0].databaseId&#39;)
+gh run watch &#34;$run&#34; --exit-status --interval 30
+gh run view &#34;$run&#34; --json jobs -q &#39;.jobs[] | &#34;\(.name): \(.conclusion)&#34;&#39;
+</code></pre>
+<p><strong>Expected:</strong> every job <code>success</code>, except the ECR jobs and the chart
+component's image job, which are <code>skipped</code></p>
+</li>
+<li><p>Check the GitHub release.</p>
+<pre><code class="language-sh">gh release view v2.0.0-beta.N --json isPrerelease,assets -q &#39;&#34;prerelease=\(.isPrerelease)&#34;, (.assets[].name)&#39;
+</code></pre>
+<p><strong>Expected:</strong> <code>prerelease=true</code>, the <code>docz_*</code> and <code>docz-api_*</code> archives
+with their <code>.spdx.json</code> SBOMs, and <code>checksums.txt</code> with its <code>.sig</code></p>
+</li>
+<li><p>Check both images. The tag is bare semver, and <code>latest</code> must not have
+moved to this release.</p>
+<ol>
+<li><p>Inspect the new tag on each image.</p>
+<pre><code class="language-sh">for img in docz-api docz-site; do
+  docker buildx imagetools inspect &#34;ghcr.io/donaldgifford/${img}:2.0.0-beta.N&#34; \
+    --format &#39;{{json .Manifest.Digest}}&#39;
+done
+</code></pre>
+</li>
+<li><p>Inspect <code>latest</code> the same way. Write <code>${img}</code>, not <code>$img</code>: zsh reads
+<code>$img:l</code> as a lower-case modifier.</p>
+</li>
+</ol>
+<p><strong>Expected:</strong> each image's <code>latest</code> digest differs from its beta digest</p>
+</li>
+<li><p>Check each chart's metadata and supply-chain artifacts.</p>
+<pre><code class="language-sh">for c in docz:&lt;version&gt;; do
+  helm show chart &#34;oci://ghcr.io/donaldgifford/charts/${c%%:*}&#34; --version &#34;${c##*:}&#34; \
+    | grep -E &#39;^(name|version|appVersion|deprecated):&#39;
+  cosign tree &#34;ghcr.io/donaldgifford/charts/${c%%:*}:${c##*:}&#34; \
+    | grep -oE &#39;sigstore.dev/cosign/sign|slsa.dev/provenance&#39; | sort -u
+done
+</code></pre>
+<p><strong>Expected:</strong> a bare <code>appVersion: 2.0.0-beta.N</code>, plus both a signature
+and SLSA provenance. A chart whose version did not change is skipped by
+the publish job's idempotency check and keeps its old artifacts</p>
+</li>
+</ol>
+<h5 id="verification-1">Verification</h5>
+<ul>
+<li>The pre-release exists with both binaries' archives and signed checksums</li>
+<li>Both images are at the new bare tag, signed, and <code>latest</code> did not move</li>
+<li><code>charts/docz</code> is published at its new version, signed and attested</li>
+</ul>
+<h5 id="rollback-1">Rollback</h5>
+<ol>
+<li><p>Do not delete or move the tag: a consumer may already have pulled it.</p>
+</li>
+<li><p>Mark the GitHub release as broken in its notes.</p>
+<pre><code class="language-sh">gh release edit v2.0.0-beta.N --notes &#34;Broken: see v2.0.0-beta.N+1&#34;
+</code></pre>
+</li>
+<li><p>Fix forward and cut the next beta with this runbook.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-procedure-3-install-and-smoke-test">
+<h2 class="panel-title" id="procedure-3-install-and-smoke-test">Procedure 3: Install and smoke-test</h2>
+<p>Install the published chart on a throwaway kind cluster and check that the
+site reaches the API. This is optional for a beta (IMPL-0022 OQ 7). The
+whole product is tested by swapping a real environment to the beta before
+v2.0.0.</p>
+<h5 id="steps-2">Steps</h5>
+<ol>
+<li><p>Create a cluster and a values file with login off and a dummy GitHub
+App key.</p>
+<pre><code class="language-sh">kind create cluster --name docz-beta --wait 2m
+openssl genrsa -out /tmp/dummy.pem 2048
+cat &gt; /tmp/beta.yaml &lt;&lt;&#39;YAML&#39;
+auth:
+  providers: &#34;none&#34;
+api:
+  config:
+    appId: &#34;12345&#34;
+    githubApiBase: &#34;http://127.0.0.1:1&#34;
+  secrets:
+    webhookSecret: &#34;dummy-webhook-secret&#34;
+search:
+  meili:
+    masterKey: &#34;smoke-test-master-key-0123456789&#34;
+YAML
+</code></pre>
+<p>Never leave a top-level key such as <code>site:</code> with nothing under it. YAML
+reads it as <code>null</code>, which deletes the chart's whole block and fails the
+render with a nil pointer.</p>
+</li>
+<li><p>Install the chart from OCI with no image override, so the chart's own
+<code>appVersion</code> picks the images.</p>
+<pre><code class="language-sh">helm install docz oci://ghcr.io/donaldgifford/charts/docz --version &lt;version&gt; \
+  --kube-context kind-docz-beta -n docz --create-namespace -f /tmp/beta.yaml \
+  --set-file api.secrets.privateKey=/tmp/dummy.pem --wait --timeout 8m
+</code></pre>
+<p><strong>Expected:</strong> <code>STATUS: deployed</code>; every pod ready on the
+<code>2.0.0-beta.N</code> images</p>
+</li>
+<li><p>Query the API through the site's Service, then run the chart's test
+hook.</p>
+<pre><code class="language-sh">kubectl --context kind-docz-beta -n docz port-forward svc/docz-site 18080:80 &amp;
+curl -s -w &#39; %{http_code}\n&#39; localhost:18080/api/v1/repos
+kill %1
+helm test docz --kube-context kind-docz-beta -n docz
+</code></pre>
+<p><strong>Expected:</strong> <code>{&quot;repos&quot;:[]} 200</code>, and the test suite <code>Succeeded</code></p>
+</li>
+<li><p>Delete the cluster.</p>
+<pre><code class="language-sh">kind delete cluster --name docz-beta
+</code></pre>
+</li>
+</ol>
+<h5 id="verification-2">Verification</h5>
+<ul>
+<li>The site answers <code>/api/v1/repos</code> with 200, and <code>helm test</code> succeeds</li>
+</ul>
+<h5 id="rollback-2">Rollback</h5>
+<ol>
+<li>Not applicable: the cluster is throwaway. Delete it.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-a-chart-push-fails-with-403-write-package">
+<h2 class="panel-title" id="scenario-a-chart-push-fails-with-403-write_package">Scenario: A chart push fails with 403 write_package</h2>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<p><strong>Alert:</strong> none; the <code>Publish chart</code> job fails</p>
+<p><strong>Likely cause:</strong> the GHCR package is new and this repository has no
+Actions access to it yet</p>
+<h5 id="steps-3">Steps</h5>
+<ol>
+<li><p>Confirm the failure is the access grant, not a token or login problem.</p>
+<pre><code class="language-sh">gh run view &lt;run&gt; --log-failed | grep -i &#39;write_package\|403&#39;
+</code></pre>
+<p><strong>Expected:</strong> a <code>403</code> naming <code>write_package</code></p>
+</li>
+<li><p>In GitHub, open Packages, then <code>charts/&lt;name&gt;</code>, then Package settings,
+then Manage Actions access. Add <code>donaldgifford/docz</code> with the <strong>Write</strong>
+role.</p>
+</li>
+<li><p>Re-run only the failed job. The chart job is idempotent, and nothing
+else in the run depends on it.</p>
+<pre><code class="language-sh">gh run rerun &lt;run&gt; --failed
+</code></pre>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-scenario-pods-fail-to-pull-the-image-after-install">
+<h2 class="panel-title" id="scenario-pods-fail-to-pull-the-image-after-install">Scenario: Pods fail to pull the image after install</h2>
+<p><strong>Alert:</strong> none; pods sit in <code>ImagePullBackOff</code></p>
+<p><strong>Likely cause:</strong> a <code>v</code>-prefixed <code>appVersion</code>. The image tag is bare
+semver (<code>2.0.0-beta.N</code>), because the publish workflow's metadata action
+strips the <code>v</code>.</p>
+<h5 id="steps-4">Steps</h5>
+<ol>
+<li><p>Read the chart's <code>appVersion</code>.</p>
+<pre><code class="language-sh">helm show chart oci://ghcr.io/donaldgifford/charts/docz --version &lt;version&gt; | grep appVersion
+</code></pre>
+<p><strong>Expected:</strong> no leading <code>v</code></p>
+</li>
+<li><p>If it has one, fix <code>charts/docz/Chart.yaml</code>, bump the chart <code>version</code>,
+and cut the next beta. A published chart version is never overwritten.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-escalation">
+<h2 class="panel-title" id="escalation">Escalation</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Who</th>
+<th>When</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>@donaldgifford</td>
+<td>Any publish job fails for a reason not listed here</td>
+<td>GitHub issue on <code>donaldgifford/docz</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>IMPL-0021: Phase 6,
+the beta.5 release this runbook writes down</li>
+<li>ADR-0002:
+hand-cut betas (Decision 6)</li>
+<li>DESIGN-0018:
+the chart and its publish path</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../runbook/testdata/runbook-0001.md</code>, sha256 <code>c234cf969e86b895929f0c51beca0f3b9c74ee97b1aee4577ed71b2600b9ae52</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

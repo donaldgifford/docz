@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0002: Read ADR sections by region rather than by heading</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Read ADR sections by region rather than by heading</h1>
+<p class="summary">Locate an ADR's sections by their docz region markers, and fall back to the
+heading table only for a document that carries none. What a reader sees does
+not change; what changes is that renaming a section stops silently emptying a
+field.</p>
+<div class="meta">
+<span class="pill">ADR-0002</span>
+<span class="pill st-proposed">Proposed</span>
+<span class="pill">Test Author</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-summary">
+<h2 class="panel-title" id="summary">Summary</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>Every field of the typed model used to be found by matching heading text, so a
+document whose author wrote &quot;## The Decision&quot; parsed with an empty decision
+and said nothing about it.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<p>Regions are authoritative. A document that carries markers is read by them,
+and one that carries none is read by the heading table the type package ships.</p>
+<h4 id="supporting-data">Supporting Data</h4>
+<p>Of the 41 documents in the corpus, 38 spell every heading the way the template
+does and 3 do not.</p>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<h4 id="positive">Positive</h4>
+<ul>
+<li>A renamed section becomes a finding instead of a silently empty field</li>
+<li>One parser reads a marked document and a legacy one</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li>Every document in the fleet eventually wants markers, which is a migration
+nobody has scheduled</li>
+</ul>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li>The heading table is written out in the type package rather than derived</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>a. Match on heading text only.</strong> Ship the table and stop. Rejected: a
+renamed section stays invisible, which is the problem.</li>
+<li><strong>b. Require markers everywhere.</strong> Every legacy document would have to be
+rewritten before it could be read at all.</li>
+<li><strong>c. Infer from position.</strong> The third section is the decision. Rejected: a
+document that adds a section moves every field after it.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h4 id="1-where-does-the-fallback-heading-table-live">1. Where does the fallback heading table live?</h4>
+<ul>
+<li>a. In the type package, written out and pinned to the template by a test
+<em>(recommendation)</em></li>
+<li>b. In the core, derived from the embedded template at run time</li>
+</ul>
+<blockquote>
+<p><strong>Resolved 2026-09-20: (a).</strong> A type package's production imports stop at
+the core, so deriving the table would mean importing the template embed.</p>
+</blockquote>
+<h4 id="2-is-an-unmarked-region-a-warning-or-an-error">2. Is an unmarked region a warning or an error?</h4>
+<ul>
+<li>a. A warning, since inference is permanent rather than a migration aid</li>
+<li>b. An error once every document in the corpus carries markers</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>ADR-0001 — the layer rules
+this decision works inside</li>
+<li>DESIGN-0014 — the field rules
+every type package follows</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/grammar.md</code>, sha256 <code>267760bf9ac0b533239c54beb3eab82e4e5017eba78ea4dd41a383467d4b50b4</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

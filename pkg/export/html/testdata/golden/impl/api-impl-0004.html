@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0004">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0004: Adapt the helm chart, CI, and observability scaffolding</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Adapt the helm chart, CI, and observability scaffolding</h1>
+<p class="summary"><strong>Status:</strong> Completed <strong>Author:</strong> Donald Gifford <strong>Date:</strong> 2026-07-13</p>
+<div class="meta">
+<span class="pill">IMPL-0004</span>
+<span class="pill st-accepted">Completed</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-07-13</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
+<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="executor-conventions-read-first" aria-controls="p-executor-conventions-read-first">Executor conventions (read first)</button>
+<button type="button" data-tab="reference-the-docz-api-target-surface" aria-controls="p-reference-the-docz-api-target-surface">Reference: the docz-api target surface</button>
+<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
+<button type="button" data-tab="phase-1-repo-plumbing-quick-fixes" aria-controls="p-phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</button>
+<button type="button" data-tab="phase-2-chart-core-helpers-deployment-values" aria-controls="p-phase-2-chart-core-helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</button>
+<button type="button" data-tab="phase-3-backing-services-store-queue-rewire-meilisearch" aria-controls="p-phase-3-backing-services-store-queue-rewire-meilisearch">Phase 3: Backing services — store/queue rewire &#43; Meilisearch</button>
+<button type="button" data-tab="phase-4-chart-observability-tests-and-docs" aria-controls="p-phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</button>
+<button type="button" data-tab="phase-5-ci-and-release-consolidation" aria-controls="p-phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</button>
+<button type="button" data-tab="phase-6-local-monitoring-stack" aria-controls="p-phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</button>
+<button type="button" data-tab="phase-7-contrib-rewrite" aria-controls="p-phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</button>
+<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-objective">
+<h2 class="panel-title" id="objective">Objective</h2>
+<ul>
+<li><a href="#objective">Objective</a></li>
+<li><a href="#scope">Scope</a>
+<ul>
+<li><a href="#in-scope">In Scope</a></li>
+<li><a href="#out-of-scope">Out of Scope</a></li>
+</ul>
+</li>
+<li><a href="#open-questions">Open Questions</a></li>
+<li><a href="#executor-conventions-read-first">Executor conventions (read first)</a></li>
+<li><a href="#reference-the-docz-api-target-surface">Reference: the docz-api target surface</a></li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</a>
+<ul>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-2-chart-core--helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</a>
+<ul>
+<li><a href="#tasks-1">Tasks</a></li>
+<li><a href="#success-criteria-1">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-3-backing-services--storequeue-rewire--meilisearch">Phase 3: Backing services — store/queue rewire + Meilisearch</a>
+<ul>
+<li><a href="#tasks-2">Tasks</a></li>
+<li><a href="#success-criteria-2">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</a>
+<ul>
+<li><a href="#tasks-3">Tasks</a></li>
+<li><a href="#success-criteria-3">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</a>
+<ul>
+<li><a href="#tasks-4">Tasks</a></li>
+<li><a href="#success-criteria-4">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</a>
+<ul>
+<li><a href="#tasks-5">Tasks</a></li>
+<li><a href="#success-criteria-5">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</a>
+<ul>
+<li><a href="#tasks-6">Tasks</a></li>
+<li><a href="#success-criteria-6">Success Criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#testing-plan">Testing Plan</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>Turn the scaffolding audited in INV-0004 into a working, shippable docz-api Helm
+chart + container publish pipeline + local observability stack. Work happens on
+the existing <code>feat/helm-chart</code> branch.</p>
+<p><strong>Implements:</strong> INV-0004 (audit conclusions and the four recommended
+workstreams).</p>
+
+</section>
+<section class="panel" id="p-scope">
+<h2 class="panel-title" id="scope">Scope</h2>
+<h4 id="in-scope">In Scope</h4>
+<ul>
+<li>Schema-tag and <code>docker-bake.hcl</code> quick fixes (INV-0004 Obs. 1, 4).</li>
+<li>Rewriting <code>charts/docz-api/</code> so it renders, installs, and configures docz-api
+correctly, including Meilisearch (Obs. 2).</li>
+<li>Consolidating <code>ci2.yml</code>/<code>release2.yml</code> into <code>ci.yml</code>/<code>release.yml</code>, with GHCR
+image + OCI chart publishing (Obs. 3).</li>
+<li>Replacing <code>deploy/compose.dev.yaml</code> with a working local monitoring stack and
+a docz-api keycloak realm (Obs. 5).</li>
+<li>Rewriting <code>contrib/</code> (dashboard, alerts, README) in docz-api vocabulary (Obs.
+6).</li>
+</ul>
+<h4 id="out-of-scope">Out of Scope</h4>
+<ul>
+<li>Any Go code changes (no new metrics, no OTel middleware — that is the separate
+OTel design doc; the alert/dashboard set here uses only the four existing
+metrics).</li>
+<li>ECR-side AWS setup (workflow stays gated off behind
+<code>vars.ECR_PUBLISH_ENABLED</code>).</li>
+<li>Publishing the first real image/chart release (happens naturally when this
+branch merges and a release fires).</li>
+<li>docz-site consumption of the chart.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<p><strong>RESOLVED 2026-07-13: all ten questions answered <code>a</code> (the recommendation).</strong>
+The <code>a</code> options below are binding for execution — every &quot;per OQ-Xa&quot; reference in
+the phase tasks is authoritative. The alternatives are kept for the record.</p>
+<p><strong>OQ-1 — Meilisearch deployment mode default (Phase 3).</strong> How should the chart
+provide Meilisearch?</p>
+<ul>
+<li><strong>a. Mirror the store/queue pattern: <code>search.meili.mode: baked | external</code>,
+default <code>baked</code>.</strong> A single-pod StatefulSet + PVC + Service + master-key
+Secret, exactly like the baked Postgres/Valkey. Consistent values API, works
+out-of-the-box on homelab, external escape hatch for real deployments.</li>
+<li>b. External-only: the chart never runs Meili; operator supplies
+<code>search.meili.host</code> + an existing secret. Least chart code, but the chart no
+longer installs standalone.</li>
+<li>c. Subchart dependency on the official meilisearch chart. Pulls in a foreign
+values surface and version coupling; overkill at this scale.</li>
+</ul>
+<p><strong>OQ-2 — CloudNativePG store mode (Phase 3).</strong> The copied chart supports
+<code>store.postgres.mode: cnpg</code> (CNPG Cluster + PgBouncer Pooler CRs).</p>
+<ul>
+<li><strong>a. Keep it, renamed to docz-api identity.</strong> The templates already exist and
+only need the db/user/labels rename; homelab infra runs CNPG, so this is the
+mode production will actually use.</li>
+<li>b. Delete the three <code>store-cnpg-*.yaml</code> templates now (YAGNI) and re-add when
+infra needs them. Less to test, but throws away working code we want within a
+phase or two of deploying.</li>
+</ul>
+<p><strong>OQ-3 — Tailscale option (Phase 2).</strong> The chart carries an optional tailscale
+sidecar/funnel (off by default).</p>
+<ul>
+<li><strong>a. Keep it as an off-by-default option, rebranded</strong> (hostname default
+<code>docz-api</code>, drop the repo-guardian-only env it force-sets). Infra will front
+docz-api with tailscale, so the option earns its keep; disabled it renders
+nothing.</li>
+<li>b. Remove all tailscale templates/values now and re-add in an infra-specific
+PR later.</li>
+</ul>
+<p><strong>OQ-4 — GPG signing in the release workflow (Phase 5).</strong> <code>release2.yml</code> imports
+a GPG key for goreleaser artifact signing; the secrets (<code>GPG_PRIVATE_KEY</code>,
+<code>GPG_FINGERPRINT</code>) don't exist in this repo and <code>.goreleaser.yml</code> has no signing
+config.</p>
+<ul>
+<li><strong>a. Omit GPG for now.</strong> Keep goreleaser exactly as today (unsigned archives);
+images and charts are already cosign-signed + SLSA-attested by the publish
+workflows, which is the supply-chain story that matters.</li>
+<li>b. Add GPG: create the secrets, add a <code>signs:</code> block to <code>.goreleaser.yml</code>,
+keep the import step. More setup, marginal benefit over cosign.</li>
+</ul>
+<p><strong>OQ-5 — CI consolidation shape (Phase 5).</strong></p>
+<ul>
+<li><strong>a. Merge into the existing <code>ci.yml</code></strong> — one <code>CI</code> workflow: keep ci.yml's
+Trivy/SBOM/Codecov/just/openapi pieces, graft in ci2's paths-filter gating and
+the docker/helm/alerts jobs, delete <code>ci2.yml</code>. One status surface, one file to
+maintain.</li>
+<li>b. Keep a separate <code>charts.yml</code> workflow for helm/docker jobs (smaller files,
+but two workflows share the paths-filter logic and PR checks split across two
+workflow names).</li>
+<li>c. Adopt <code>ci2.yml</code> wholesale and port ci.yml's extras into it (same result as
+(a) with more churn and a period of duplicate-named workflows).</li>
+</ul>
+<p><strong>OQ-6 — Queue values naming (Phase 3).</strong> The chart deploys the Valkey image;
+docz-api reads <code>REDIS_URL</code>.</p>
+<ul>
+<li><strong>a. Keep <code>queue.valkey.*</code> values keys and the valkey image; emit the DSN as
+<code>REDIS_URL</code>.</strong> The values name describes what gets deployed; the env var is
+what the app needs. Zero template churn beyond the secret key.</li>
+<li>b. Rename keys to <code>queue.redis.*</code> and switch to the <code>redis</code> image to match the
+app's vocabulary (more renaming; the chart's valkey works identically over the
+wire).</li>
+</ul>
+<p><strong>OQ-7 — Local monitoring stack placement (Phase 6).</strong></p>
+<ul>
+<li><strong>a. New standalone <code>deploy/compose.monitoring.yaml</code></strong> (single YAML doc,
+project <code>docz-api-monitoring</code>): prometheus/grafana/otel-collector/jaeger/
+loki/alloy always-on, keycloak behind an <code>auth</code> profile; scrapes the app at
+<code>host.docker.internal:8080</code>, so it works unchanged alongside BOTH the host-run
+dev loop (<code>just run</code>) and the containerized local env (<code>just local-up</code>, which
+publishes 8080). No duplicated postgres/meili.</li>
+<li>b. Fold the monitoring services into <code>compose.local.yaml</code> behind profiles
+(couples monitoring to the local env; the host-run dev loop can't use it).</li>
+<li>c. Keep <code>compose.dev.yaml</code>'s two-document structure as two separate files, one
+duplicating the local env (rejected by INV-0004 — pure duplication).</li>
+</ul>
+<p><strong>OQ-8 — Keycloak in local dev (Phase 6).</strong></p>
+<ul>
+<li><strong>a. Keep it, behind the <code>auth</code> profile, with a rewritten docz-api realm</strong>:
+realm <code>docz-api</code>, a confidential client <code>docz-api</code> (standard flow, redirect
+<code>http://localhost:8080/auth/callback</code>), one seeded test user. This is the only
+way to exercise the OIDC provider path locally.</li>
+<li>b. Drop keycloak from local dev entirely (GitHub OAuth covers the login path;
+OIDC stays tested only by unit tests).</li>
+</ul>
+<p><strong>OQ-9 — Chart <code>appVersion</code> policy (Phase 2, then ongoing).</strong></p>
+<ul>
+<li><strong>a. Pin <code>appVersion</code> manually to the latest docz-api release tag (currently
+<code>v0.4.0</code>) and bump it by hand in the same PR as a chart-version bump when the
+chart should track a newer app.</strong> Simple, explicit, matches how the OpenAPI
+spec version is managed.
+<ul>
+<li><strong>Correction (post-v0.6.0):</strong> &quot;the release tag&quot; is the wrong string.
+<code>appVersion</code> is the default <strong>image tag</strong>, and the publish workflow's
+<code>type=semver,pattern={{version}}</code> strips the leading <code>v</code> — so the git tag
+<code>v0.6.0</code> publishes <code>ghcr.io/donaldgifford/docz-api:0.6.0</code>. Charts 0.3.2–0.5.0
+shipped a <code>v</code>-prefixed <code>appVersion</code> and their default image ref 404s
+(ImagePullBackOff on any install that does not set <code>image.tag</code>). It went
+unnoticed because <code>ci/ci-values.yaml</code> overrides the image to busybox, so
+neither <code>helm template</code> nor <code>ct lint</code> ever resolves the real ref, and the
+unittest pinned the broken string as its expectation. Pin <strong>bare semver</strong>
+(<code>0.6.0</code>); <code>deployment_test.yaml</code> now asserts the shape as well as the value.</li>
+</ul>
+</li>
+<li>b. Automate: have the release workflow rewrite <code>appVersion</code> on each app
+release. Couples chart releases to app releases and creates bot commits;
+revisit if manual bumping proves annoying.</li>
+</ul>
+<p><strong>OQ-10 — PR <code>:dev</code> image pushes (Phase 5).</strong> ci2's docker job pushes a
+multi-arch <code>:dev</code> image to GHCR on every PR.</p>
+<ul>
+<li><strong>a. Keep it.</strong> An always-fresh <code>ghcr.io/donaldgifford/docz-api:dev</code> lets the
+chart (and later the site) be tested against a real registry image before any
+release exists; it's how repo-guardian works and costs one mutable tag.</li>
+<li>b. Build-only on PRs (<code>type=cacheonly</code>), push nothing until release. Saves a
+mutable tag; loses the pull-testing ability.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-executor-conventions-read-first">
+<h2 class="panel-title" id="executor-conventions-read-first">Executor conventions (read first)</h2>
+<p>These are hard rules for whoever (or whatever) executes the phases:</p>
+<ol>
+<li><strong>Task runner is <code>just</code>, never <code>make</code>.</strong> There is no Makefile. New recipes go
+in <code>justfile</code> following its existing <code>[group('…')]</code> style.</li>
+<li><strong>Commit after every numbered task</strong> with a conventional-commit message
+(<code>feat(helm): …</code>, <code>chore(ci): …</code>, <code>docs(deploy): …</code>). Check the task off in
+this document in the same commit. Do not push unless asked.</li>
+<li><strong>Every task's verification command must pass before committing.</strong> If a
+verification fails, fix it before moving on — do not check off the task.</li>
+<li><strong>Never commit secrets.</strong> <code>.env*</code> (except <code>*.example</code>), <code>deploy/secrets/</code>,
+<code>secrets/</code>, and <code>*.pem</code> are gitignored — leave them that way. Example files
+carry placeholders only.</li>
+<li><strong>Do not touch</strong> <code>api/openapi.yaml</code> (served verbatim on the wire — no editor
+modelines), anything under <code>internal/</code> or <code>cmd/</code> (no Go changes in this
+impl), or <code>.goreleaser.yml</code> (unless OQ-4 = b).</li>
+<li><strong>sed on this machine is GNU sed</strong>: use <code>sed -i 's/old/new/g' file</code> (no <code>''</code>
+argument after <code>-i</code>). When in doubt, use the Edit tool instead.</li>
+<li><strong>Lint gates:</strong> <code>just lint-actions</code> after workflow edits; <code>yamllint</code> on
+touched YAML (<code>charts/.yamllint.yml</code> governs <code>charts/</code>, and its ignore of
+<code>charts/docz-api/templates/</code> is intentional — Go-templated files are not
+valid YAML); <code>markdownlint-cli2</code> + <code>prettier --write</code> on touched markdown;
+<code>just fmt</code> never touches the chart.</li>
+<li><strong>helm-unittest plugin:</strong> <code>just helm-unittest</code> needs the plugin. If
+<code>helm plugin list</code> doesn't show <code>unittest</code>, run
+<code>helm plugin install https://github.com/helm-unittest/helm-unittest</code>.</li>
+<li><strong>Known wrinkle — Helm 4:</strong> <code>mise.toml</code> pins <code>helm = &quot;4.2.2&quot;</code>. If the
+unittest plugin or <code>ct</code> misbehaves under Helm 4, do not debug forever: pin
+<code>helm = &quot;3.19.0&quot;</code> in <code>mise.toml</code>, <code>mise install</code>, note it in the commit
+message, and continue.</li>
+<li><strong>The GHCR image does not exist yet.</strong> <code>ghcr.io/donaldgifford/docz-api</code> gets
+its first push when this branch merges and a release/PR build runs. Until
+then a real <code>helm install</code> of the chart will ImagePullBackoff on the default
+image — expected; <code>ct install</code> uses <code>ci/ci-values.yaml</code> (busybox) precisely
+so CI doesn't depend on it.</li>
+<li><strong>Renders must be verified with the ci values</strong>, because required values
+intentionally have no defaults:
+<code>helm template docz-api charts/docz-api -f charts/docz-api/ci/ci-values.yaml</code>.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-reference-the-docz-api-target-surface">
+<h2 class="panel-title" id="reference-the-docz-api-target-surface">Reference: the docz-api target surface</h2>
+<p>Copy values from here; do not invent names. (Derivation: INV-0004 Obs. 0.)</p>
+<p><strong>Env the chart must set</strong> (→ = source):</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Required</th>
+<th>Source in chart</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>yes</td>
+<td>store secret (baked/cnpg/external)</td>
+</tr>
+<tr>
+<td><code>REDIS_URL</code></td>
+<td>yes</td>
+<td>queue secret (baked/external)</td>
+</tr>
+<tr>
+<td><code>MEILI_HOST</code></td>
+<td>yes</td>
+<td>computed service URL or <code>search.meili.host</code></td>
+</tr>
+<tr>
+<td><code>MEILI_API_KEY</code></td>
+<td>yes</td>
+<td>meili secret</td>
+</tr>
+<tr>
+<td><code>GITHUB_APP_ID</code></td>
+<td>yes</td>
+<td>app secret key <code>app-id</code></td>
+</tr>
+<tr>
+<td><code>GITHUB_APP_PRIVATE_KEY</code></td>
+<td>yes</td>
+<td>mounted PEM path or app secret key <code>private-key</code></td>
+</tr>
+<tr>
+<td><code>GITHUB_WEBHOOK_SECRET</code></td>
+<td>yes</td>
+<td>app secret key <code>webhook-secret</code></td>
+</tr>
+<tr>
+<td><code>SESSION_SECRET</code></td>
+<td>yes</td>
+<td>app secret key <code>session-secret</code></td>
+</tr>
+<tr>
+<td><code>AUTH_REDIRECT_BASE</code></td>
+<td>yes</td>
+<td><code>config.authRedirectBase</code> (plain value)</td>
+</tr>
+<tr>
+<td><code>GITHUB_OAUTH_CLIENT_ID</code></td>
+<td>yes*</td>
+<td><code>config.githubOAuthClientID</code> (plain value)</td>
+</tr>
+<tr>
+<td><code>GITHUB_OAUTH_CLIENT_SECRET</code></td>
+<td>yes*</td>
+<td>app secret key <code>oauth-client-secret</code></td>
+</tr>
+<tr>
+<td><code>HTTP_ADDR</code></td>
+<td>no</td>
+<td><code>&quot;:{{ .Values.config.port }}&quot;</code></td>
+</tr>
+<tr>
+<td><code>AUTH_PROVIDERS</code></td>
+<td>no</td>
+<td><code>config.authProviders</code> (default <code>github</code>)</td>
+</tr>
+<tr>
+<td><code>LOG_LEVEL</code> / <code>LOG_FORMAT</code></td>
+<td>no</td>
+<td><code>config.logLevel</code> / <code>config.logFormat</code></td>
+</tr>
+<tr>
+<td><code>SESSION_TTL</code> / <code>INGEST_DEBOUNCE</code> / <code>GITHUB_API_BASE</code></td>
+<td>no</td>
+<td><code>config.*</code>, emit only when set</td>
+</tr>
+<tr>
+<td><code>OTEL_EXPORTER_OTLP_ENDPOINT</code> / <code>OTEL_SERVICE_NAME</code> / <code>OTEL_SAMPLE_RATE</code></td>
+<td>no</td>
+<td><code>otel.*</code>, emit only when set</td>
+</tr>
+<tr>
+<td><code>METRICS_ENABLED</code></td>
+<td>no</td>
+<td><code>metrics.enabled</code> (default true)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>* required because <code>AUTH_PROVIDERS</code> defaults to <code>github</code>.</p>
+<p><strong>Fixed facts:</strong> everything serves on one port <code>:8080</code> — API, <code>/healthz</code>
+(liveness), <code>/readyz</code> (readiness), <code>/metrics</code>, <code>/openapi.yaml</code>. No separate
+metrics port. Container is distroless nonroot, UID/GID <strong>65532</strong>, read-only
+rootfs. Metrics that exist (nothing else does):
+<code>docz_api_http_requests_total{method,route,status}</code> (status = full code, e.g.
+<code>&quot;200&quot;</code>), <code>docz_api_http_request_duration_seconds</code> (histogram, {method,route}),
+<code>docz_api_ingest_jobs_total{reason,status}</code> (status = <code>success</code> | <code>failure</code>;
+reason = <code>onboard</code> | <code>repo_added</code> | <code>push</code>),
+<code>docz_api_ingest_job_duration_seconds{reason}</code> (histogram), plus Go/process
+collectors.</p>
+
+</section>
+<section class="panel" id="p-implementation-phases">
+<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
+<p>Each phase builds on the previous one. A phase is complete when all its tasks
+are checked off and its success criteria are met.</p>
+
+</section>
+<section class="panel" id="p-phase-1-repo-plumbing-quick-fixes">
+<h2 class="panel-title" id="phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</h2>
+<p>Small, independent corrections from INV-0004 Obs. 1 and 4, plus the justfile
+recipes later phases need for verification. No chart-template changes here.</p>
+<h5 id="tasks">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>1.1 Schema tags.</strong> Insert as line 1: in root <code>compose.yaml</code> →
+<code># yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json</code>;
+in <code>.codecov.yml</code> →
+<code># yaml-language-server: $schema=https://json.schemastore.org/codecov.json</code>;
+in <code>sqlc.yaml</code> →
+<code># yaml-language-server: $schema=https://json.schemastore.org/sqlc-2.0.json</code>.
+In <code>ct.yaml</code>, DELETE the existing modeline (it points at the helm-unittest
+schema; no chart-testing schema exists on SchemaStore). Do NOT tag
+<code>charts/docz-api/tests/*</code> / <code>values.yaml</code> /
+<code>contrib/prometheus/alerts.yaml</code> here — those files are rewritten in
+Phases 4 and 7 and get their modelines then. Verify:
+<code>yamllint compose.yaml .codecov.yml sqlc.yaml ct.yaml</code> passes and
+<code>grep -L &quot;yaml-language-server&quot; compose.yaml .codecov.yml sqlc.yaml</code>
+prints nothing.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>1.2 Restore bake build args.</strong> In <code>docker-bake.hcl</code>, add to
+<code>target &quot;_common&quot;</code>:</p>
+<pre><code class="language-hcl">args = {
+  VERSION = &#34;${VERSION}&#34;
+  COMMIT  = &#34;${COMMIT_SHA}&#34;
+  DATE    = &#34;${BUILD_DATE}&#34;
+}
+</code></pre>
+<p>Verify: <code>docker buildx bake dev --print | jq '.target.dev.args'</code> shows all
+three keys.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>1.3 Feed the args in the publish workflows.</strong> In <code>ghcr.yml</code> and
+<code>ecr.yml</code> <code>image</code> jobs, add before the bake step:</p>
+<pre><code class="language-yaml">- name: Compute build metadata
+  run: |
+    echo &#34;VERSION=${{ inputs.tag }}&#34; &gt;&gt; &#34;$GITHUB_ENV&#34;
+    echo &#34;COMMIT_SHA=${{ github.sha }}&#34; &gt;&gt; &#34;$GITHUB_ENV&#34;
+    echo &#34;BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)&#34; &gt;&gt; &#34;$GITHUB_ENV&#34;
+</code></pre>
+<p>(bake reads variables from same-named env vars). Verify: <code>just lint-actions</code>
+passes.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>1.4 Delete the orphan</strong> <code>deploy/.env.dev.example</code> (byte-copy of
+<code>.env.local.example</code>, referenced by nothing). It is untracked — plain
+<code>rm</code>.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>1.5 justfile recipes.</strong> Add a <code># ─── Helm ───</code> section:</p>
+<pre><code class="language-make">[group(&#39;helm&#39;)]
+helm-lint:
+    @helm lint charts/docz-api -f charts/docz-api/ci/ci-values.yaml
+
+[group(&#39;helm&#39;)]
+helm-template:
+    @helm template docz-api charts/docz-api -f charts/docz-api/ci/ci-values.yaml
+
+[group(&#39;helm&#39;)]
+helm-unittest:
+    @helm unittest charts/docz-api
+
+[group(&#39;helm&#39;)]
+helm-docs:
+    @helm-docs --chart-search-root=charts
+</code></pre>
+<p>and under the lint group:</p>
+<pre><code class="language-make">[group(&#39;lint&#39;)]
+lint-alerts:
+    @promtool check rules contrib/prometheus/alerts.yaml
+</code></pre>
+<p>(ci values on lint/template because required values deliberately have no
+defaults.) Verify: <code>just --list</code> shows the five recipes. They are NOT expected
+to pass yet (chart broken until Phase 2; alerts rewritten in Phase 7) —
+<code>just lint-alerts</code> SHOULD pass already (the copied rules are syntactically
+valid; it's the metric names that are wrong).</p>
+</div></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li><code>yamllint</code> clean on the four retagged files; <code>just lint-actions</code> passes.</li>
+<li><code>docker buildx bake dev --print</code> shows VERSION/COMMIT/DATE args reaching the
+Dockerfile.</li>
+<li><code>deploy/.env.dev.example</code> gone; <code>just --list</code> shows the helm + lint-alerts
+recipes.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-2-chart-core-helpers-deployment-values">
+<h2 class="panel-title" id="phase-2-chart-core--helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</h2>
+<p>Make the chart render and describe docz-api: one helper namespace, the real env
+surface, correct identity/security, single port. (INV-0004 Obs. 2a, 2b, 2d, 2f;
+OQ-3, OQ-9.)</p>
+<h5 id="tasks-1">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.1 Unify helpers under <code>docz-api.*</code>.</strong> In <code>charts/docz-api/</code>, rename
+every <code>repo-guardian.</code> template define/include to <code>docz-api.</code>:
+<code>grep -rl 'repo-guardian\.' charts/docz-api/templates | xargs sed -i 's/repo-guardian\./docz-api./g'</code>.
+Verify: <code>grep -r 'repo-guardian\.' charts/docz-api/templates</code> prints
+nothing.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.2 Delete repo-guardian-only templates + tests:</strong>
+<code>templates/configmap.yaml</code> (PR templates),
+<code>templates/policy-configmap.yaml</code> (guardian.hcl),
+<code>tests/configmap_test.yaml</code>, <code>tests/policy_test.yaml</code>,
+<code>docs/homelab-smoke.md</code>, <code>docs/publishing-to-ecr.md</code> (the ECR runbook is
+re-homed in Phase 5). Remove their Deployment references: the
+templates/policy volumes + volumeMounts, and the <code>GUARDIAN_CONFIG</code>,
+<code>TEMPLATE_DIR</code>, <code>STRICT_TEMPLATES</code> env entries, and any
+<code>validateTemplatingVars</code>-style helper plus its <code>_helpers.tpl</code> definition.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.3 Rewrite <code>values.yaml</code></strong> to the target surface (add the modeline
+<code># yaml-language-server: $schema=values.schema.json</code> as line 1). Target
+top-level keys — keep the existing repo-guardian layout where it matches,
+delete everything not listed: <code>replicaCount</code>; <code>image</code>
+(<code>repository: ghcr.io/donaldgifford/docz-api</code>, <code>tag: &quot;&quot;</code> → defaults to
+appVersion, <code>pullPolicy</code>); <code>imagePullSecrets</code>;
+<code>nameOverride</code>/<code>fullnameOverride</code>; <code>serviceAccount</code>; <code>podAnnotations</code>;
+<code>podSecurityContext</code> (<code>runAsNonRoot: true</code>, <code>runAsUser: 65532</code>,
+<code>runAsGroup: 65532</code>, <code>fsGroup: 65532</code>,
+<code>seccompProfile: {type: RuntimeDefault}</code>); <code>securityContext</code>
+(<code>readOnlyRootFilesystem: true</code>, <code>allowPrivilegeEscalation: false</code>,
+<code>capabilities: {drop: [ALL]}</code>); <code>service</code> (<code>type: ClusterIP</code>, <code>port: 80</code> —
+ONE port; delete <code>httpPort</code>/<code>metricsPort</code>); <code>resources</code>; <code>probes</code> (keep —
+<code>/healthz</code> + <code>/readyz</code> on port <code>http</code> are already correct); <code>config</code>
+(<code>appId: &quot;&quot;</code>, <code>port: 8080</code>, <code>logLevel: info</code>, <code>logFormat: json</code>,
+<code>authRedirectBase: &quot;&quot;</code>, <code>authProviders: github</code>,
+<code>githubOAuthClientID: &quot;&quot;</code>, <code>githubApiBase: &quot;&quot;</code>, <code>sessionTTL: &quot;&quot;</code>,
+<code>ingestDebounce: &quot;&quot;</code>); <code>otel</code> (<code>endpoint: &quot;&quot;</code>, <code>serviceName: &quot;&quot;</code>,
+<code>sampleRate: &quot;&quot;</code>); <code>metrics</code> (<code>enabled: true</code>); <code>secrets</code>
+(<code>existingSecret: &quot;&quot;</code>, <code>webhookSecret: &quot;&quot;</code>, <code>privateKey: &quot;&quot;</code>,
+<code>privateKeyAsFile: true</code>, <code>sessionSecret: &quot;&quot;</code>, <code>oauthClientSecret: &quot;&quot;</code>);
+<code>store</code> (unchanged structure for now — Phase 3 touches its internals);
+<code>queue</code> (same); <code>search</code> (NEW — placeholder <code>meili: {mode: baked}</code> filled
+out in Phase 3); <code>tailscale</code> (per OQ-3a: keep, <code>enabled: false</code>, default
+<code>hostname: docz-api</code>); <code>serviceMonitor</code>; <code>prometheusRule</code>; <code>extraEnv</code>;
+<code>autoscaling</code> (<code>enabled: false</code>, <code>minReplicas: 1</code>, <code>maxReplicas: 3</code>,
+<code>targetCPUUtilizationPercentage: 80</code>); <code>ingress</code> (<code>enabled: false</code>,
+standard helm-create block); <code>httpRoute</code> (<code>enabled: false</code>, standard
+block).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.4 Rewrite <code>templates/deployment.yaml</code> env + mounts + ports</strong> to the
+Reference table exactly: keep the app-secret refs for
+<code>GITHUB_APP_ID</code>/<code>GITHUB_WEBHOOK_SECRET</code>; private key — when
+<code>secrets.privateKeyAsFile</code> mount the secret at
+<code>/etc/docz-api/private-key/</code> and set
+<code>GITHUB_APP_PRIVATE_KEY=/etc/docz-api/private-key/private-key.pem</code>, else
+env-from-secret; <code>HTTP_ADDR: &quot;:{{ .Values.config.port }}&quot;</code>;
+<code>DATABASE_URL</code>/<code>REDIS_URL</code>/<code>MEILI_HOST</code>/<code>MEILI_API_KEY</code> via the
+store/queue/search secret helpers (Phase 3 makes the secrets emit these
+keys — render-only consistency is enough for this phase);
+<code>SESSION_SECRET</code> + <code>GITHUB_OAUTH_CLIENT_SECRET</code> from the app secret;
+<code>AUTH_REDIRECT_BASE</code> required-checked from <code>config.authRedirectBase</code>
+(<code>{{ required &quot;config.authRedirectBase is required&quot; … }}</code>); plain-value
+optionals emitted only when non-empty (<code>with</code> blocks); <code>extraEnv</code>
+passthrough kept. Ports: delete the <code>metrics</code> containerPort; one port
+<code>http</code> = <code>config.port</code>. Update the <code>reservedEnvVars</code> helper list in
+<code>_helpers.tpl</code> to exactly the env names this deployment now sets. Delete
+tailscale's force-set of <code>WEBHOOK_IP_ALLOWLIST*</code>/<code>TRUST_PROXY_HEADERS</code>
+(repo-guardian-only) while keeping the sidecar per OQ-3a.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.5 <code>templates/secret.yaml</code>:</strong> add keys <code>session-secret</code>
+(<code>secrets.sessionSecret</code>) and <code>oauth-client-secret</code>
+(<code>secrets.oauthClientSecret</code>) beside the existing <code>app-id</code>,
+<code>webhook-secret</code>, <code>private-key</code>; keep the <code>existingSecret</code> bypass
+(document in values comments that an existing secret must carry all five
+keys).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.6 <code>templates/service.yaml</code>:</strong> single <code>http</code> port (<code>service.port</code> →
+targetPort <code>http</code>); delete the metrics port.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.7 Fix the four helm-create leftovers</strong> (they now find the <code>docz-api.*</code>
+helpers from 2.1): <code>tests/test-connection.yaml</code> — point the wget at
+<code>/healthz</code> (<code>…:{{ .Values.service.port }}/healthz</code>);
+<code>hpa.yaml</code>/<code>ingress.yaml</code>/<code>httproute.yaml</code> — leave gated off by the new
+<code>autoscaling</code>/<code>ingress</code>/<code>httpRoute</code> values from 2.3 and make sure the
+values keys they reference all exist.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.8 <code>Chart.yaml</code>:</strong> <code>appVersion: &quot;v0.4.0&quot;</code> (per OQ-9a — latest release
+tag), keep <code>version: 0.1.0</code> (first published chart version).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.9 Rewrite <code>templates/NOTES.txt</code></strong> for docz-api: deployed message, how
+to port-forward
+(<code>kubectl port-forward svc/… 8080:{{ .Values.service.port }}</code>), probe/spec
+URLs (<code>/healthz</code>, <code>/readyz</code>, <code>/openapi.yaml</code>), webhook endpoint
+<code>/webhooks/github</code> (+ tailscale funnel URL block only when enabled).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>2.10 Update <code>ci/ci-values.yaml</code>:</strong> keep busybox + <code>sleep 900</code> + nulled
+probes, and add dummies for every <code>required</code> value so render/lint pass:
+<code>config.appId: &quot;000000&quot;</code>,
+<code>config.authRedirectBase: &quot;http://localhost:8080&quot;</code>,
+<code>config.githubOAuthClientID: &quot;ci-dummy&quot;</code>, and
+<code>secrets.webhookSecret/privateKey/sessionSecret/oauthClientSecret: &quot;ci-dummy&quot;</code>.</div></li>
+</ul>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul>
+<li><code>just helm-template</code> renders with zero errors (impossible before — the
+undefined-helper failure from INV-0004 Obs. 2a is gone).</li>
+<li><code>just helm-lint</code> passes.</li>
+<li><code>grep -ri 'repo-guardian' charts/docz-api/templates</code> prints nothing;
+<code>grep -rn 'LISTEN_ADDR\|STORE_DSN\|QUEUE_VALKEY_DSN\|GITHUB_PRIVATE_KEY' charts/docz-api/templates</code>
+prints nothing.</li>
+<li>Rendered deployment shows <code>runAsUser: 65532</code>, one containerPort, and every
+required env var from the Reference table
+(<code>just helm-template | grep -A2 'name: MEILI_HOST'</code> etc. spot-checks).</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-3-backing-services-store-queue-rewire-meilisearch">
+<h2 class="panel-title" id="phase-3-backing-services--storequeue-rewire--meilisearch">Phase 3: Backing services — store/queue rewire &#43; Meilisearch</h2>
+<p>Make the deployed dependencies actually reachable by docz-api, and add the
+missing third dependency. (INV-0004 Obs. 2b, 2c, 2h; OQ-1, OQ-2, OQ-6.)</p>
+<h5 id="tasks-2">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>3.1 Store rename + rewire.</strong> In <code>store-postgres.yaml</code>,
+<code>store-postgres-secret.yaml</code>, <code>store-cnpg-cluster.yaml</code> (kept per OQ-2a):
+db + user <code>repoguardian</code> → <code>doczapi</code>; the emitted secret key <code>STORE_DSN</code> →
+<code>DATABASE_URL</code> (same <code>postgres://…?sslmode=disable</code> DSN shape); update the
+store secret-key helper in <code>_helpers.tpl</code> accordingly; external mode keys
+become <code>store.external.existingSecret</code> + <code>store.external.secretKey</code>
+(default <code>DATABASE_URL</code>).</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>3.2 Queue rewire</strong> (per OQ-6a: keep valkey image + <code>queue.valkey.*</code>
+keys): in <code>queue-valkey-secret.yaml</code> the emitted key <code>QUEUE_VALKEY_DSN</code> →
+<code>REDIS_URL</code>; external mode <code>queue.external.existingSecret</code> +
+<code>queue.external.secretKey</code> (default <code>REDIS_URL</code>).</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>3.3 Meilisearch templates</strong> (per OQ-1a — mirror the baked pattern): new
+<code>templates/search-meili.yaml</code> — StatefulSet (image
+<code>getmeili/meilisearch:v1.12</code>, env <code>MEILI_MASTER_KEY</code> from the meili
+secret, <code>MEILI_ENV: production</code>, <code>MEILI_NO_ANALYTICS: &quot;true&quot;</code>, volume
+<code>/meili_data</code> via volumeClaimTemplate, liveness/readiness
+<code>httpGet /health</code> port 7700) + headless Service
+<code>&lt;fullname&gt;-meilisearch:7700</code>; new <code>templates/search-meili-secret.yaml</code> —
+key <code>MEILI_API_KEY</code> from <code>search.meili.masterKey</code> (required when baked).
+Values:</p>
+<pre><code class="language-yaml">search:
+  meili:
+    mode: baked # baked | external
+    masterKey: &#34;&#34; # required in baked mode
+    storage: 5Gi
+    host: &#34;&#34; # external mode: http(s)://host:port
+    external:
+      existingSecret: &#34;&#34;
+      secretKey: MEILI_API_KEY
+</code></pre>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>3.4 Wire the deployment:</strong> <code>MEILI_HOST</code> =
+<code>http://&lt;fullname&gt;-meilisearch:7700</code> in baked mode, <code>search.meili.host</code> in
+external mode (helper mirroring the store/queue pattern); <code>MEILI_API_KEY</code>
+from the mode-appropriate secret. Add <code>search.meili.masterKey: &quot;ci-dummy&quot;</code>
+to <code>ci/ci-values.yaml</code>.</p>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><p><strong>3.5 Mode-matrix render check</strong> (all must render cleanly):</p>
+<pre><code class="language-sh">just helm-template
+helm template docz-api charts/docz-api -f charts/docz-api/ci/ci-values.yaml \
+  --set store.postgres.mode=external --set store.external.existingSecret=x \
+  --set queue.valkey.mode=external --set queue.external.existingSecret=x \
+  --set search.meili.mode=external --set search.meili.host=http://meili:7700 \
+  --set search.meili.external.existingSecret=x
+helm template docz-api charts/docz-api -f charts/docz-api/ci/ci-values.yaml \
+  --set store.postgres.mode=cnpg
+</code></pre>
+</div></li>
+</ul>
+<h5 id="success-criteria-2">Success Criteria</h5>
+<ul>
+<li>All three renders in 3.5 succeed; the default render contains a Meili
+StatefulSet + Service and env <code>DATABASE_URL</code>, <code>REDIS_URL</code>, <code>MEILI_HOST</code>,
+<code>MEILI_API_KEY</code> sourced from secrets whose keys match
+(<code>just helm-template | grep -B1 -A3 'DATABASE_URL\|REDIS_URL\|MEILI_'</code>).</li>
+<li><code>grep -rn 'repoguardian\|STORE_DSN\|QUEUE_VALKEY_DSN' charts/docz-api</code> prints
+nothing.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-4-chart-observability-tests-and-docs">
+<h2 class="panel-title" id="phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</h2>
+<p>Point monitoring at reality, then freeze the chart's behavior with a rewritten
+test suite and docs. (INV-0004 Obs. 2e, 2g.)</p>
+<h5 id="tasks-3">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>4.1 <code>templates/servicemonitor.yaml</code>:</strong> scrape port <code>http</code> (docz-api
+serves <code>/metrics</code> on the main listener), add <code>path: /metrics</code>; gate the
+whole template on <code>metrics.enabled</code> AND <code>serviceMonitor.enabled</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>4.2 Rewrite <code>templates/prometheusrule.yaml</code>:</strong> group <code>docz-api.rules</code>
+replacing all 8 <code>RepoGuardian*</code> alerts with exactly these (severity labels
+<code>warning</code> unless noted; keep the <code>prometheusRule.labels</code> merge behavior):
+<ul>
+<li><code>DoczAPIDown</code> (critical): <code>up{job=~&quot;.*docz-api.*&quot;} == 0</code> for 5m.</li>
+<li><code>DoczAPIHighErrorRate</code>:
+<code>sum(rate(docz_api_http_requests_total{status=~&quot;5..&quot;}[5m])) / sum(rate(docz_api_http_requests_total[5m])) &gt; 0.05</code>
+for 10m.</li>
+<li><code>DoczAPISlowRequests</code>:
+<code>histogram_quantile(0.99, sum by (le) (rate(docz_api_http_request_duration_seconds_bucket[5m]))) &gt; 2</code>
+for 10m.</li>
+<li><code>DoczAPIIngestFailures</code>:
+<code>sum by (reason) (increase(docz_api_ingest_jobs_total{status=&quot;failure&quot;}[30m])) &gt; 2</code>
+for 0m.</li>
+<li><code>DoczAPISlowIngest</code>:
+<code>histogram_quantile(0.99, sum by (le) (rate(docz_api_ingest_job_duration_seconds_bucket[30m]))) &gt; 120</code>
+for 15m.</li>
+</ul>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>4.3 Rewrite the helm-unittest suite</strong> (<code>tests/</code>): delete the remaining
+repo-guardian suites and write fresh ones, each starting with
+<code># yaml-language-server: $schema=https://json.schemastore.org/helm-testsuite.json</code>:
+<code>deployment_test.yaml</code> (image ref honors repository+tag/appVersion;
+securityContext 65532; single containerPort; probe paths),
+<code>deployment_env_test.yaml</code> (every Reference-table env present with correct
+secretKeyRef name+key; optionals absent when unset, present when set;
+extraEnv passthrough), <code>secret_test.yaml</code> (five keys; existingSecret
+bypass), <code>backend_shapes_test.yaml</code> (store baked/cnpg/external × queue
+baked/external × search baked/external render the right objects/refs),
+<code>service_test.yaml</code> (one port, selector labels),
+<code>servicemonitor_test.yaml</code> (port http, path /metrics, gating),
+<code>prometheusrule_test.yaml</code> (five alert names present, no <code>repo_guardian_</code>
+strings), <code>serviceaccount_test.yaml</code> (keep, rename expectations). Verify
+continuously with <code>just helm-unittest</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>4.4 <code>values.schema.json</code> rewrite:</strong> title &quot;docz-api Helm chart values&quot;;
+enums for <code>store.postgres.mode</code> (baked|cnpg|external), <code>queue.valkey.mode</code>
+(baked|external), <code>search.meili.mode</code> (baked|external), <code>config.logLevel</code>
+(debug|info|warn|error), <code>config.logFormat</code> (text|json); types for the
+value blocks introduced in 2.3. Keep it permissive elsewhere
+(<code>additionalProperties: true</code>) — it's a guardrail, not a straitjacket.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>4.5 Docs:</strong> rewrite <code>README.md.gotmpl</code> for docz-api (what it deploys,
+the three dependency modes, secrets contract incl. the five-key
+existing-secret shape, OCI install
+<code>helm install docz-api oci://ghcr.io/donaldgifford/charts/docz-api</code>,
+cosign verify with cert-identity-regexp
+<code>^https://github.com/donaldgifford/docz-api/.+</code>), regenerate with
+<code>just helm-docs</code>; fix <code>CHANGELOG.md</code> header and <code>cliff.toml</code>'s
+<code>[changelog].header</code> string to say docz-api.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>4.6 Full local gate:</strong>
+<code>just helm-lint &amp;&amp; just helm-template &amp;&amp; just helm-unittest</code> all green;
+<code>grep -ri 'repo.guardian\|repo_guardian' charts/</code> prints nothing
+(case-insensitive, both spellings).</div></li>
+</ul>
+<h5 id="success-criteria-3">Success Criteria</h5>
+<ul>
+<li><code>just helm-unittest</code> passes with the rewritten suite (≥ 8 suite files).</li>
+<li><code>just helm-docs</code> produces a README with no repo-guardian text; committed
+README matches regeneration (<code>git diff --exit-code charts/docz-api/README.md</code>
+after running it).</li>
+<li>Rendered PrometheusRule contains only <code>docz_api_*</code>/<code>up</code> expressions.</li>
+<li><code>ct lint --config ct.yaml</code> passes locally.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-5-ci-and-release-consolidation">
+<h2 class="panel-title" id="phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</h2>
+<p>One CI workflow, one release workflow, publishing wired in. (INV-0004 Obs. 3;
+OQ-4, OQ-5, OQ-10.)</p>
+<h5 id="tasks-4">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>5.1 Merge <code>ci2.yml</code> into <code>ci.yml</code></strong> (per OQ-5a). Final <code>ci.yml</code> job set:
+<code>changes</code> (dorny/paths-filter from ci2, filters
+go/docker/helm/workflows/alerts), existing <code>Label PR</code>, existing <code>Lint</code>
+(golangci + openapi via mise), <code>lint-alerts</code> (NEW: mise step +
+<code>just lint-alerts</code>, gated on alerts/workflows changes), existing <code>Test Go</code>
+(just test-coverage + Codecov), existing <code>Security Scan</code> (govulncheck +
+Trivy — keep Trivy), existing <code>Build</code> (goreleaser snapshot
+<ul>
+<li>SBOM), <code>docker-build</code> (from ci2: QEMU/buildx/bake; PR pushes <code>:dev</code> per
+OQ-10a, post-merge cacheonly; gated on go/docker/workflows), <code>helm-unittest</code>
+(from ci2, plugin install step + <code>helm lint</code>), <code>helm-test</code> (from ci2: ct +
+kind; gated on helm/workflows). Convert every <code>make X</code> to <code>just X</code>; do NOT
+port ci2's broken <code>labeler</code> job (its only step misuses actions/labeler with
+a checkout name; <code>Label PR</code> + <code>pr-labels.yml</code> already cover labeling).
+Delete <code>ci2.yml</code>. Verify: <code>just lint-actions</code>.</li>
+</ul>
+</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>5.2 Merge <code>release2.yml</code> into <code>release.yml</code>:</strong> append the <code>publish-ghcr</code>
+and <code>publish-ecr</code> jobs (with their permissions blocks and explanatory
+comments verbatim — the nested-SLSA permissions ceilings are
+load-bearing), keep the existing bump-version + release jobs untouched,
+and per OQ-4a do NOT port the GPG import step. Delete <code>release2.yml</code>.
+Verify: <code>just lint-actions</code>;
+<code>git grep -l 'pr-semver-bump' .github/workflows</code> shows only <code>release.yml</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>5.3 Re-home the ECR setup doc:</strong> create
+<code>docs/operations/ecr-publish-setup.md</code> (adapted from the deleted chart doc
+/ ecr.yml's comment: IAM OIDC role trust for
+<code>repo:donaldgifford/docz-api:*</code>, two ECR repos, the three secrets, the
+<code>ECR_PUBLISH_ENABLED</code> repo variable) so <code>ecr.yml</code>'s reference is real. Run
+<code>prettier --write</code> + <code>markdownlint-cli2</code> on it.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>5.4 Sanity-check workflow wiring:</strong> <code>.github/workflows</code> contains no
+<code>make</code> invocations (<code>git grep -nE '\bmake [a-z-]+' .github/workflows</code> →
+empty), no duplicate workflow <code>name:</code> values
+(<code>grep -h '^name:' .github/workflows/*.yml | sort | uniq -d</code> → empty).</div></li>
+</ul>
+<h5 id="success-criteria-4">Success Criteria</h5>
+<ul>
+<li>Exactly one CI workflow and one Release workflow; <code>ci2.yml</code>/<code>release2.yml</code>
+deleted; <code>just lint-actions</code> green.</li>
+<li>On push, the CI run is green end-to-end <strong>including</strong> docker-build,
+helm-unittest, and helm-test (chart-testing on kind) — the branch's chart now
+survives <code>ct install</code>.</li>
+<li>Publish workflows reference the bake args env (Phase 1.3) and remain
+dispatchable standalone.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-6-local-monitoring-stack">
+<h2 class="panel-title" id="phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</h2>
+<p>Replace the malformed <code>compose.dev.yaml</code> with a working, docz-api-branded
+monitoring stack. (INV-0004 Obs. 5; OQ-7, OQ-8.)</p>
+<h5 id="tasks-5">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.1 Delete <code>deploy/compose.dev.yaml</code></strong> (untracked; plain <code>rm</code>).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.2 Create <code>deploy/compose.monitoring.yaml</code></strong> (per OQ-7a): single YAML
+document, modeline + <code>name: docz-api-monitoring</code>; services prometheus
+(<code>prom/prometheus</code>, 9090, mount <code>./dev/prometheus/prometheus.yaml</code> →
+<code>/etc/prometheus/prometheus.yml</code>,
+<code>extra_hosts: [&quot;host.docker.internal:host-gateway&quot;]</code>), grafana
+(<code>grafana/grafana</code>, 3000, mount <code>./dev/grafana/provisioning</code>,
+anonymous-admin env), otel-collector
+(<code>otel/opentelemetry-collector-contrib</code>, 4317+4318, mount
+<code>./dev/otel/otel-collector.yaml</code>), jaeger (<code>jaegertracing/all-in-one</code>,
+16686), loki (<code>grafana/loki</code>, 3100), alloy (<code>grafana/alloy</code>, 12345,
+docker.sock mount) — all always-on; keycloak
+(<code>quay.io/keycloak/keycloak:26</code>, 8180,
+<code>start-dev --import-realm --http-port=8180</code>, mount <code>./dev/keycloak</code> →
+import dir) behind <code>profiles: [auth]</code> (OQ-8a). All mounts are <code>./dev/…</code> —
+correct relative to <code>deploy/</code>. No postgres/meili/app services. Verify:
+<code>docker compose -f deploy/compose.monitoring.yaml config -q</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.3 Fix <code>deploy/dev/prometheus/prometheus.yaml</code>:</strong> job <code>docz-api</code>,
+target <code>host.docker.internal:8080</code>, <code>metrics_path: /metrics</code>, external
+label <code>service: docz-api</code>; keep the otel-collector self-scrape.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.4 Fix grafana provisioning:</strong> in <code>datasources.yaml</code> pin
+<code>uid: prometheus</code> and <code>uid: loki</code> explicitly (dashboard panels bind those
+uids); in <code>dashboards.yaml</code> provider/folder → <code>docz-api</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.5 Rewrite the overview dashboard</strong>
+(<code>deploy/dev/grafana/provisioning/dashboards/docz-api-overview.json</code>):
+title &quot;docz-api overview&quot;, uid <code>docz-api-overview</code>, tags <code>[&quot;docz-api&quot;]</code>;
+fix every query to the <code>docz_api_</code> prefix; DELETE the in-flight panel (no
+such metric); fix the Loki panel to <code>{service=&quot;docz-api&quot;} | json</code> and the
+Jaeger link to service <code>docz-api</code>; ADD an ingest row: rate by
+reason/status
+(<code>sum by (reason, status) (rate(docz_api_ingest_jobs_total[5m]))</code>) and p95
+duration
+(<code>histogram_quantile(0.95, sum by (le, reason) (rate(docz_api_ingest_job_duration_seconds_bucket[15m])))</code>).
+Verify JSON: <code>jq empty &lt;file&gt;</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.6 Otel-collector + alloy:</strong> in <code>otel-collector.yaml</code> delete the
+metrics pipeline + prometheusremotewrite exporter (docz-api is pull-based;
+the pipeline is dead weight per INV-0004 Obs. 5e) and rebrand comments; in
+<code>config.alloy</code> rebrand comments (rfc-api → docz-api). Verify: monitoring
+stack starts
+(<code>docker compose -f deploy/compose.monitoring.yaml up -d --wait</code> then
+<code>down</code>). <strong>Done:</strong> <code>up -d --wait</code> returns rc=0 with all six always-on
+containers Healthy; jaeger UI + prometheus <code>/-/ready</code> both 200. Two latent
+breakages in the copied stack (surfaced by this task's &quot;stack starts&quot;
+verify) were also fixed: (a) jaeger <code>all-in-one:latest</code> moved to v2/EOL and
+its badger store can't <code>mkdir</code> under the root-owned volume as the non-root
+image user — pinned to <code>1.76.0</code> + switched to <code>SPAN_STORAGE_TYPE: memory</code>
+(dev backend; traces inspected live, not persisted) and dropped the
+<code>jaeger_data</code> volume; (b) the standalone <code>loki</code> exporter was removed from
+collector-contrib — swapped for <code>otlphttp/loki</code> → Loki's native OTLP ingest
+(<code>http://loki:3100/otlp</code>).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.7 Rewrite the keycloak realm</strong>
+(<code>deploy/dev/keycloak/docz-api-realm.json</code>, per OQ-8a): realm <code>docz-api</code>;
+ONE confidential client <code>docz-api</code> (<code>publicClient: false</code>,
+<code>standardFlowEnabled: true</code>, secret <code>dev-docz-api-secret</code>,
+<code>redirectUris: [&quot;http://localhost:8080/auth/callback&quot;]</code>); one test user
+(<code>dev</code> / <code>dev-password</code>, email <code>dev@localhost</code> marked verified —
+docz-api's OIDC provider drops unverified emails). Delete the
+<code>rfc-api</code>/<code>rfc-site</code> clients. Verify: <code>jq empty</code> + stack boots with
+<code>--profile auth</code> and
+<code>curl -fsS localhost:8180/realms/docz-api/.well-known/openid-configuration</code>
+returns the issuer. <strong>Done:</strong> realm rewritten (dropped both rfc clients +
+the rfc-flavored realm roles); <code>jq empty</code> clean; <code>--profile auth</code>
+<code>up -d --wait</code> rc=0, keycloak Up, issuer =
+<code>http://localhost:8180/realms/docz-api</code> with matching auth/token endpoints.
+<strong>Also fixed a latent 6.2 bug:</strong> the copied <code>quay.io/keycloak/keycloak:26</code>
+tag doesn't exist (quay publishes only full version tags, no floating major)
+— pinned to <code>26.7.0</code>. <code>deploy/</code> is now fully rfc-api-clean.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.8 justfile + env plumbing:</strong> recipes <code>monitor-up</code>
+(<code>docker compose -f deploy/compose.monitoring.yaml up -d --wait</code> + echo of
+the UI URLs), <code>monitor-auth-up</code> (same with <code>--profile auth</code>),
+<code>monitor-down</code> (<code>--profile auth down</code>), <code>monitor-logs</code>. In <code>.env.example</code>
+add commented <code>OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318</code>,
+<code>LOG_FORMAT=json</code> (needed for the alloy/loki log path), and a commented
+keycloak block (<code>AUTH_PROVIDERS=github,keycloak</code>,
+<code>KEYCLOAK_ISSUER=http://localhost:8180/realms/docz-api</code>,
+<code>KEYCLOAK_CLIENT_ID=docz-api</code>,
+<code>KEYCLOAK_CLIENT_SECRET=dev-docz-api-secret</code>). <strong>Done:</strong> four <code>[group('monitor')]</code>
+recipes added (mirroring the <code>local-*</code> <code>*_compose</code>-var style); smoke-tested
+<code>just monitor-up</code> (all backends Healthy + URL echo) → <code>just monitor-down</code>.
+<code>.env.example</code> gets a dedicated &quot;Local monitoring stack&quot; block with the
+concrete dev keycloak values + <code>LOG_FORMAT=json</code>. <strong>Deviation:</strong> the OTEL
+endpoint is <code>localhost:4318</code> <strong>without</strong> the <code>http://</code> scheme the task text
+shows — docz-api's telemetry uses <code>otlptracehttp.WithEndpoint</code>, which takes
+host:port (a scheme is parsed as the hostname and breaks export); this
+matches the pre-existing correct entry.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>6.9 Docs:</strong> DEVELOPMENT.md — new &quot;Local monitoring stack&quot; subsection
+(what runs where: grafana :3000, prometheus :9090, jaeger :16686, keycloak
+:8180; how it pairs with <code>just run</code> AND <code>just local-up</code>; the
+OTEL/LOG_FORMAT env to set; keycloak login walkthrough); deploy/README.md
+— Layout entries for <code>compose.monitoring.yaml</code> + <code>dev/</code>. prettier +
+markdownlint clean. <strong>Done:</strong> DEVELOPMENT.md gets the subsection with a
+backend/URL/purpose table + both run-mode env guidance + the keycloak
+walkthrough; deploy/README.md Layout gains <code>compose.monitoring.yaml</code> +
+<code>dev/</code> entries. <code>prettier --check</code> + <code>markdownlint-cli2</code> both clean (URLs
+backticked to satisfy MD034).</div></li>
+</ul>
+<h5 id="success-criteria-5">Success Criteria</h5>
+<ul>
+<li><code>docker compose -f deploy/compose.monitoring.yaml config -q</code> passes; stack
+comes up healthy with and without <code>--profile auth</code>.</li>
+<li>With the app running (<code>just run</code> or <code>just local-up</code>) and
+<code>OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318</code>: prometheus target
+<code>docz-api</code> is UP, the grafana overview dashboard shows request data after a
+few curls, and a traced request appears in Jaeger.</li>
+<li>Keycloak path: with the commented env enabled, <code>/auth/login?provider=keycloak</code>
+completes a login round-trip with the seeded dev user.</li>
+<li>No <code>rfc-api</code>/<code>rfcapi</code> strings remain: <code>grep -ri 'rfc-api\|rfcapi' deploy/</code> →
+empty.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-7-contrib-rewrite">
+<h2 class="panel-title" id="phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</h2>
+<p>Operator-facing assets in docz-api vocabulary. (INV-0004 Obs. 6.)</p>
+<h5 id="tasks-6">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>7.1 Rewrite <code>contrib/prometheus/alerts.yaml</code>:</strong> modeline
+<code># yaml-language-server: $schema=https://json.schemastore.org/prometheus.rules.json</code>;
+one group <code>docz-api</code> containing the same five alerts as Phase 4.2 (same
+names/expressions — the chart's PrometheusRule and this file are the same
+pack in two formats; note that in a header comment) plus
+<code>DoczAPINoScrapes</code>: <code>absent(up{job=&quot;docz-api&quot;}) == 1</code> for 10m (with a
+comment that the <code>job</code> label must match the operator's scrape config).
+Verify: <code>just lint-alerts</code>. <strong>Done:</strong> header comment cross-references the
+chart; group <code>docz-api</code> has the five shared alerts (plain Prometheus
+annotation templating, no Helm escapes) + <code>DoczAPINoScrapes</code>.
+<code>promtool check rules</code> → &quot;6 rules found&quot;.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>7.2 Rewrite the dashboard</strong> as
+<code>contrib/grafana/docz-api-dashboard.json</code>: start from the Phase 6.5
+overview dashboard; convert to import-style (add an <code>__inputs</code> block with
+<code>DS_PROMETHEUS</code>, replace pinned datasource uids with <code>${DS_PROMETHEUS}</code>;
+drop the Loki/Jaeger panels — operators may not run those); title
+&quot;docz-api&quot;, uid <code>docz-api</code>, tags <code>[&quot;docz-api&quot;]</code>. Verify: <code>jq empty</code>.
+<strong>Done:</strong> import-style with <code>__inputs</code>/<code>__requires</code>; the five Prometheus
+panels (rate/latency/error + ingest rate/p95) all reference
+<code>${DS_PROMETHEUS}</code>; Loki + Jaeger panels dropped. <code>jq empty</code> clean; every
+query uses <code>docz_api_*</code>; title/uid/tags = <code>docz-api</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>7.3 Rewrite <code>contrib/README.md</code>:</strong> document the four <code>docz_api_*</code>
+metrics + label sets (from the Reference section) and the Go/process
+defaults, scrape target <code>:8080/metrics</code> (+ <code>METRICS_ENABLED</code>), example
+PromQL (error rate, p99 latency, ingest failure rate), dashboard import
+instructions pointing at the REAL filename
+(<code>contrib/grafana/docz-api-dashboard.json</code>), alert-pack usage (file for
+vanilla prometheus, chart <code>prometheusRule.enabled</code> for operator setups).
+prettier + markdownlint clean. <strong>Done:</strong> the four <code>docz_api_*</code> metrics
+(verified against <code>internal/telemetry/metrics.go</code>) with exact label sets +
+the <code>go_*</code>/<code>process_*</code> note; <code>:8080/metrics</code> single-port + <code>METRICS_ENABLED</code>
++ outside-the-auth-gate; PromQL for 5xx rate / p99 latency / ingest failure
+rate; import instructions naming the real JSON; two-path alert usage.
+<code>prettier --check</code> + <code>markdownlint-cli2</code> clean.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><strong>7.4 Final sweep:</strong>
+<code>grep -ri 'repo_guardian\|repo-guardian\|valkey' contrib/</code> → empty;
+<code>just lint-alerts</code> green; <code>docz update</code> to refresh doc indexes if any docs
+changed. <strong>Done:</strong> contrib sweep clean; <code>just lint-alerts</code> → &quot;6 rules
+found&quot;; <code>docz update</code> ran (index READMEs idempotent — no drift; only a
+cosmetic TOC reformat in this doc).</div></li>
+</ul>
+<h5 id="success-criteria-6">Success Criteria</h5>
+<ul>
+<li><code>just lint-alerts</code> passes on the rewritten rules; every expression uses only
+metrics docz-api emits (the four <code>docz_api_*</code> names + <code>up</code>/<code>absent</code>).</li>
+<li>Dashboard JSON is valid and every query uses <code>docz_api_*</code>.</li>
+<li><code>contrib/README.md</code> references only files that exist.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-testing-plan">
+<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<p>Final end-to-end verification once all phases are checked off:</p>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>just ci</code> (lint + test + build + license-check) green — proves no Go
+regression (there should be zero Go diffs:
+<code>git diff main --stat -- '*.go'</code> is empty). <strong>Done:</strong> <code>git diff main --name-only -- '*.go'</code> empty; <code>just ci</code> → &quot;✓ CI pipeline complete&quot;.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>just helm-lint &amp;&amp; just helm-unittest &amp;&amp; just helm-template</code> green.
+<strong>Done:</strong> helm-lint 0 failed; helm-unittest 8 suites / 58 tests pass;
+helm-template renders. <code>just helm-docs</code> regen → no README drift.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>ct lint --config ct.yaml</code> green locally. <strong>Done:</strong> &quot;All charts linted
+successfully&quot;.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Full CI run on the pushed branch green, including docker-build,
+helm-unittest, and helm-test (kind install). <strong>Locally verified to its
+runnable extent:</strong> <code>just lint-actions</code> (actionlint) rc=0 — all 12
+workflows valid; the chart/docker jobs' local equivalents (helm-unittest,
+helm-lint, ct lint, docker bake config) pass. The remote GH Actions run
+itself is an out-of-band step gated on a branch push (not performed — the
+loop was authorized to commit per task, not push).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Monitoring smoke: <code>just monitor-up</code> + <code>just run</code> +
+<code>OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318</code> → prometheus target
+UP, dashboard shows traffic, trace visible in Jaeger; <code>just monitor-down</code>.
+<strong>Done:</strong> ran the built binary against the stack (OTEL → localhost:4318);
+Prometheus <code>docz-api</code> target <code>health=up</code>,
+<code>docz_api_http_requests_total{route,method,status}</code> increments (the exact
+series the dashboard queries), 30 <code>docz-api</code> traces in Jaeger with chi
+route-template span names. <code>monitor-down</code> clean. (Endpoint is <code>localhost:4318</code>
+<strong>without</strong> scheme — <code>otlptracehttp.WithEndpoint</code> takes host:port.)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Keycloak smoke: <code>just monitor-auth-up</code> + keycloak env →
+<code>/auth/login?provider=keycloak</code> round-trip with the <code>dev</code> user.
+<strong>Server-side verified:</strong> <code>--profile auth</code> up healthy; issuer
+<code>http://localhost:8180/realms/docz-api</code> + auth/token endpoints resolve; the
+confidential <code>docz-api</code> client + verified <code>dev</code>/<code>dev-password</code> user are
+seeded. The interactive browser code-exchange round-trip is an out-of-band
+step (needs a browser) — every server-side prerequisite is confirmed.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>grep -ri 'repo.guardian\|repo_guardian\|rfc-api\|rfcapi' charts/ contrib/ deploy/ .github/</code>
+→ empty. <strong>Done:</strong> SWEEP CLEAN.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">No secrets staged:
+<code>git diff --cached --name-only | grep -E '\.env$|\.pem$|secrets/'</code> → empty
+at every commit. <strong>Done:</strong> no secret-shaped files tracked or in any
+<code>main..HEAD</code> commit; <code>deploy/secrets/github-app.pem</code> correctly gitignored.</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0004 — Helm chart and CI scaffolding audit (the source of every finding
+cited by phase).</li>
+<li>Upstream chart/workflows: <code>github.com/donaldgifford/repo-guardian</code>.</li>
+<li>Chart consumer path once published:
+<code>oci://ghcr.io/donaldgifford/charts/docz-api</code> (chart),
+<code>ghcr.io/donaldgifford/docz-api</code> (image).</li>
+<li>docz-api surfaces: <code>internal/config/</code> (env contract),
+<code>internal/telemetry/metrics.go</code> (metric names/labels), <code>cmd/docz-api/main.go</code>
+(single-port serving), <code>Dockerfile</code> (distroless nonroot 65532).</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/api-impl-0004.md</code>, sha256 <code>72e6e24b670fb44a3a1749e45762b768012c14b716b6bf081ab89f2a15ca3eb4</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

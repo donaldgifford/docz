@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0002: docz is an API package whose first consumer is the CLI</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>docz is an API package whose first consumer is the CLI</h1>
+<p class="summary">docz is a Go API package. The <code>docz</code> CLI is its first consumer, not its
+product. Every operation the CLI performs is a library call with a typed
+result, laid out in layers with fixed dependency rules, in one module, with a
+standalone <code>pkg/&lt;type&gt;</code> package per document type whose root type is <code>Doc</code>.
+docz ships primitives; consumers own policy. The whole API is built first as
+one unit (DESIGN-0014) and <code>cmd/</code> is swapped onto it last. This supersedes
+the parts of ADR-0001 that kept <code>template</code>, <code>index</code>, and <code>wiki</code> internal and
+dropped the plan model, and it lifts ADR-0001's freeze for the new packages
+until v2.0.0 is cut. This work does not cut it: it ships <code>v2.0.0-beta.N</code>
+pre-releases, and v2.0.0 proper waits for docz-api and then the UI to move
+into this repo, after the CLI.</p>
+<div class="meta">
+<span class="pill">ADR-0002</span>
+<span class="pill st-accepted">Accepted</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-09-14</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-summary">
+<h2 class="panel-title" id="summary">Summary</h2>
+<p class="empty">Not written yet.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>ADR-0001 (2026-07-03) made <code>pkg/doczcore/{config,document,docparse,docwrite,toc}</code>
+the public core and froze it at v1.0.0. It was a promotion on demand: only
+what an external consumer had asked for went public, and <code>internal/</code>
+(<code>template</code>, <code>index</code>, <code>wiki</code>) stayed the CLI's private half. That was right
+for the demand at the time, and it left the read side and the byte-level
+mutators in good shape.</p>
+<p>What it did not do is make docz <em>usable as docz</em> from a program. The
+orchestration that makes <code>docz update</code>, <code>docz create</code>, <code>docz init</code>, and
+<code>docz status set</code> do their jobs lives in <code>cmd/</code>; a consumer that wants any of
+it re-implements it. INV-0010 found that happening: sdk-booty-sh carries its
+own 260-line IMPL plan model over <code>docparse</code>, tempy's IMPL-0001 is blocked on
+issue #100 asking docz for one, and docz-api (no checkout) can only reach
+facts. IMPL-0014 Decision 3(d) had dropped the plan model on principle —
+&quot;docz picking a workflow semantic it has no use for itself&quot; — and the same
+principle now cuts the other way: two consumers have the same need, the
+grammar is docz's own template, and the CLI has no task surface only because
+nothing forced one.</p>
+<p>DESIGN-0013 (2026-09-13) worked the problem from first principles and its
+review settled the direction: rather than promote one more package on
+demand, decide what docz <em>is</em>. If docz were built again today it would be an
+API package with the CLI as its first consumer — every command one library
+call plus printing — and that shape is reachable additively from today's
+tree. This ADR records that decision; DESIGN-0014 specifies the API it
+implies.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<ol>
+<li><p><strong>docz is an API package; the CLI is its first consumer.</strong> The API is
+extracted from what the docz CLI, docz-api, sdk-booty-sh, and tempy do
+with docz today and specified on its own terms (DESIGN-0014), not around
+any one of them. Every operation the CLI performs is reachable as a Go
+API with typed results. <code>cmd/</code> is flags → one call → print. &quot;First
+consumer&quot; means the CLI is the first tool converted onto the API and the
+proof of its shape: each command reduces to a single call, anything a
+command does beyond that line is a gap in the library, and the converted
+CLI must reproduce v1.x's inputs and outputs across every built-in type
+(Decision 6).</p>
+<pre><code class="language-go">// cmd/update.go after the swap — the whole handler.
+func (r *Runner) Update(types []string, dryRun bool) error {
+    rep, err := r.Repo.Update(types, repo.UpdateOptions{DryRun: dryRun})
+    if err != nil {
+        return err
+    }
+    return r.printUpdate(rep) // wording lives here and nowhere else
+}
+</code></pre>
+</li>
+<li><p><strong>Layers with fixed dependency rules.</strong> The library is five layers; a
+layer imports only layers beneath it.</p>
+<pre class="mermaid">block-beta
+  columns 2
+  L4[&#34;L4 Presentation — cmd/: cobra, flags, text/json/csv, exit codes, logging&#34;]:2
+  L3[&#34;L3 Repository operations — pkg/doczcore/repo, index, doctemplate; pkg/wiki&#34;]
+  L2[&#34;L2 Interpretation — pkg/impl · rfc · adr · design · investigation (Doc), doczcore/validate, doczcore/kinds&#34;]
+  L1[&#34;L1 Mutation primitives — docwrite byte cores · toc splice · create&#34;]:2
+  L0[&#34;L0 Facts — document (frontmatter, scan) · docparse (headings, tasks, title) · config&#34;]:2
+</pre>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Statement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R1</td>
+<td>A layer imports only layers below it. L3 and L2 sit side by side: a repository operation may parse a typed document; a type package never needs the repository.</td>
+</tr>
+<tr>
+<td>R2</td>
+<td><code>pkg/doczcore/*</code> is type-agnostic. <code>pkg/&lt;type&gt;</code> imports <code>doczcore</code>; <code>doczcore</code> never imports a type package.</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>Any operation that needs no filesystem takes <code>[]byte</code> and returns values. Path-based variants exist only where in-place mutation is the point, and they call the byte core.</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>Results are typed structs and enums. English wording, exit codes, and formatting exist only in L4.</td>
+</tr>
+<tr>
+<td>R5</td>
+<td><code>internal/</code> holds only what has a documented reason to stay private. After the swap, nothing does: the template embed moves with <code>doctemplate</code> and stays unexported there.</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>No library-defined interfaces. Consumers define their own at the call site.</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>A type package's grammar is a contract over region <em>kinds</em>, not over the type name or the template file (restated 2026-09-19, Open Question 5). <code>impl.Parse</code> reads <code>phase</code>, <code>tasks</code>, and <code>criteria</code> regions and never asks which type declared them, so any type whose documents carry those kinds parses with it. A document that carries no markers at all is read by inference from the built-in headings and flagged (DESIGN-0015 §6, amended 2026-09-20); one that carries markers but lacks the kinds has left the contract, whatever its headings say.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li>
+<li><p><strong>One module, at major version 2.</strong> docz stays a single module with one
+version line. Go compiles per imported package, so a consumer of
+<code>pkg/impl</code> pays for nothing else; a second module would add a release
+train and <code>replace</code> friction for the CLI itself with no isolation gain.
+ADR-0001 Alternative B stays rejected. The API ships on the <strong>v2 line</strong>,
+so the module path becomes <code>github.com/donaldgifford/docz/v2</code> with the
+first landing of this work; every tag this work cuts is a
+<code>v2.0.0-beta.N</code> pre-release (Decision 6), and no consumer rewrites
+imports when v2.0.0 proper follows. The v1.x
+tags stay importable at the old path indefinitely — docz-api's and
+sdk-booty-sh's v1 pins are untouched, and neither moves to v2 until
+that is decided on its own — and a <code>v1</code> branch is cut from v1.2.2 only
+if a patch is ever needed there. The order of work is the API, then the
+CLI, then consumers.</p>
+</li>
+<li><p><strong>Standalone <code>pkg/&lt;type&gt;</code> packages with <code>Doc</code> as the root type.</strong> Per-type
+interpretation lives in a sibling of <code>doczcore</code>, one package per document
+type, starting with <code>pkg/impl</code>. The root type of every type package is
+<code>Doc</code> — <code>impl.Doc</code> now, <code>rfc.Doc</code> or <code>adr.Doc</code> if they ever exist — a
+naming convention, not an interface. There is no registry, no dispatcher,
+and no runtime type system: a caller knows which type it asked for.</p>
+<pre><code class="language-go">package impl // import &#34;github.com/donaldgifford/docz/v2/pkg/impl&#34;
+
+// Parse interprets an IMPL document. It never touches the filesystem.
+func Parse(doc []byte) (Doc, error)
+
+type Doc struct {
+    ID     string
+    Title  string
+    Status config.Status
+    Phases []Phase
+}
+</code></pre>
+<p>Types with no package keep the generic facts API (<code>document</code>,
+<code>docparse</code>, <code>config</code>), which already works on every type including
+custom ones. A type package is a view over region kinds (R7), not over
+a type name: a custom type whose documents carry the kinds a package
+reads gets that package too, and no generics or dispatch are involved
+(Open Question 5).</p>
+<blockquote>
+<p><strong>Amended 2026-09-19.</strong> Every built-in type is a structured type and
+ships its package in the DESIGN-0014 unit: <code>pkg/impl</code>, <code>pkg/rfc</code>,
+<code>pkg/adr</code>, <code>pkg/design</code>, <code>pkg/investigation</code>, with the readers they
+share (open questions, references, decisions, criteria, alternatives)
+in <code>pkg/doczcore/kinds</code>. &quot;Types with no package&quot; now means custom
+types on their own schema. Unstructured markdown is not a type; it
+reaches a consumer through the <code>api:</code> block's additional docs. The
+convention above is unchanged: one package per type, <code>Doc</code> as the
+root, no registry.</p>
+</blockquote>
+</li>
+<li><p><strong>Primitives in docz, policy in consumers.</strong> docz reports facts, gives
+typed structure with byte-accurate lines, and performs byte-minimal
+mutations. What a consumer <em>does</em> with that — iteration budgets, gates,
+the deferred/skipped lifecycle, diff and retry policy — is the consumer's
+code, in the consumer's repo. The line is drawn by three questions:</p>
+<pre class="mermaid">flowchart TD
+  q1{&#34;Is it a fact of the bytes&lt;br/&gt;or of the type&#39;s grammar?&#34;}
+  q2{&#34;Would docz&#39;s own CLI&lt;br/&gt;call it?&#34;}
+  q3{&#34;Does it encode a workflow&lt;br/&gt;choice docz does not make?&#34;}
+  docz[[&#34;docz: pkg/…&#34;]]
+  consumer[[&#34;consumer code&#34;]]
+  q1 -- yes --&gt; docz
+  q1 -- no --&gt; q2
+  q2 -- yes --&gt; docz
+  q2 -- no --&gt; q3
+  q3 -- yes --&gt; consumer
+  q3 -- no --&gt; docz
+</pre>
+<p><code>impl.Parse</code> and <code>docwrite.SetTaskStateBytes</code> are docz. A writer that
+appends <code>— deferred: &lt;note&gt;</code> to a task is a consumer's few lines over
+<code>Task.EndLine</code>. ADR-0001's &quot;a public API docz itself never calls is a
+smell&quot; survives as the second question.</p>
+</li>
+<li><p><strong>Build the whole API, then swap <code>cmd/</code>.</strong> The unit of delivery is the
+complete API specified in DESIGN-0014 and DESIGN-0015 — every package,
+type, function, and error, including the promoted <code>index</code>,
+<code>doctemplate</code>, and <code>wiki</code>, the new <code>repo</code> core, <code>pkg/impl</code>, the region
+walker, and the validator. Packages land on <code>main</code> additively
+under <code>dont-release</code> PRs as they are built; the CLI keeps its current
+code paths throughout. No external consumer is part of this work: the
+API is step one, and the CLI's migration onto it is both step two and
+the validation of step one. tempy, docz-api, and sdk-booty-sh are
+awareness only — the packages they rely on shape the API (DESIGN-0014
+§5) — and their moves happen in their own repos, afterwards. The final
+step is one PR that re-points <code>cmd/</code> at the library with no change to
+commands, flags, output, or exit codes (ADR-0001 Decision 7, the CLI
+benchmark, still binding). Its acceptance test is functional parity with
+v1.2.2 (DESIGN-0014 §4): every command run over every built-in type —
+rfc, adr, design, impl, investigation — and one custom type, comparing
+outputs, exit codes, and written files against goldens captured from the
+v1.2.2 binary. The only permitted deltas are the region markers in
+created documents (DESIGN-0015) and the commands that are new. <code>plan</code>
+is not in the suite: it leaves the catalogue in the same release
+(ADR-0003).</p>
+<p><strong>Nothing in this work cuts v2.0.0.</strong> Every PR in it, the swap
+included, is <code>dont-release</code>; the swap is tagged <code>v2.0.0-beta.1</code> by hand
+and later betas follow as needed (Open Question 3). The <code>major</code> label
+is reserved for v2.0.0 proper, which is a different milestone: docz-api
+moves into this repo and builds from <code>cmd/docz-api</code>, then the UI
+follows, so one chart ships the API and the UI together. Each of those
+is its own design, sequenced after the CLI, and this ADR does not
+specify them.</p>
+</li>
+<li><p><strong>Supersession and the freeze.</strong> This ADR supersedes ADR-0001 Decision 2's
+retention of <code>template</code>, <code>index</code>, and <code>wiki</code> in <code>internal/</code> and IMPL-0014
+Decision 3(d)'s drop of the plan model. It keeps Decisions 1 (whole-package
+promotion), 3 (public may import internal — moot after the swap, still
+legal), 5 (API principles, now rules R3, R4, R6), and 7 (CLI benchmark).
+ADR-0001 Decision 6's v1.0.0 freeze continues to bind the five original
+packages: the v2 line carries their v1 shapes forward unchanged, and the
+one breaking change it makes to them is <code>plan</code> leaving the catalogue
+(ADR-0003). The freeze <strong>does not apply</strong> to packages added under this
+ADR until v2.0.0 proper ships — which this work does not cut (Decision
+6): they are marked experimental, may change between betas, and freeze
+at v2.0.0. The beta window is deliberate: docz-api moving into the repo
+is the last chance to reshape them cheaply. From v2.0.0 forward this
+ADR governs the whole surface and ADR-0001 is superseded in part.</p>
+<pre class="mermaid">stateDiagram-v2
+  direction LR
+  [*] --&gt; Frozen: five packages, v1.0.0 (ADR-0001)
+  [*] --&gt; Experimental: new package lands on main (dont-release)
+  Experimental --&gt; Experimental: change between pre-release pins
+  Experimental --&gt; Experimental: cmd swap ships as v2.0.0-beta.1
+  Experimental --&gt; Frozen: v2.0.0 cut, after docz-api and the UI move in
+  Frozen --&gt; Frozen: additive minors only
+</pre>
+</li>
+<li><p><strong>Record keeping.</strong> ADR-0001 gets a dated amendment pointing here (its
+status stays Accepted; only parts are superseded — see Open Question 2).
+DESIGN-0013 is Abandoned with a pointer to this ADR and DESIGN-0014; its
+inventory and <code>pkg/impl</code> specification carry over into DESIGN-0014
+unchanged in substance. IMPL-0014 Decision 3 gets a note.</p>
+</li>
+</ol>
+<h4 id="supporting-data">Supporting Data</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Fact</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public packages</td>
+<td>5 (<code>config</code>, <code>document</code>, <code>docparse</code>, <code>docwrite</code>, <code>toc</code>)</td>
+<td>ADR-0001</td>
+</tr>
+<tr>
+<td>CLI-private packages</td>
+<td>3 (<code>internal/{index,template,wiki}</code>)</td>
+<td>ADR-0001 Decision 2</td>
+</tr>
+<tr>
+<td><code>cmd/</code> non-test lines</td>
+<td>4 643 across 11 files; <code>wiki.go</code> 368, <code>status.go</code> 291, <code>update.go</code> 196, <code>create.go</code> 160, <code>init.go</code> 135</td>
+<td><code>wc -l cmd/*.go</code> (2026-09-14)</td>
+</tr>
+<tr>
+<td>Orchestration with no library equivalent</td>
+<td><code>updateType</code>, <code>Create</code>, <code>Init</code>/<code>writeIndexReadme</code>, <code>statusSet</code>/<code>findByID</code>, <code>WikiInit</code>/<code>updateWikiNav</code>, <code>TemplateExport</code>/<code>Override</code></td>
+<td>DESIGN-0013 §3 inventory</td>
+</tr>
+<tr>
+<td>Commands reducible to one call today</td>
+<td><code>config</code>, <code>template show</code>, <code>version</code></td>
+<td>DESIGN-0013 §2</td>
+</tr>
+<tr>
+<td>Consumers re-implementing docz</td>
+<td>sdk-booty-sh <code>doczwork</code> (260 lines over <code>docparse</code>, pinned v1.0.0); tempy IMPL-0001 blocked on #100</td>
+<td>INV-0010 Obs 1, 2</td>
+</tr>
+<tr>
+<td><code>cmd/</code> callers of <code>docwrite.CheckTask</code></td>
+<td>0</td>
+<td>INV-0010 Obs 8</td>
+</tr>
+<tr>
+<td>IMPL docs in the fleet the grammar must parse</td>
+<td>docz 17, docz-api 10, sdk-booty-sh 3</td>
+<td>INV-0010 Obs 3</td>
+</tr>
+<tr>
+<td>Module dependencies of the public core</td>
+<td>stdlib + <code>yaml.v3</code></td>
+<td>ADR-0001 Neutral</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="what-this-supersedes-in-adr-0001">What this supersedes in ADR-0001</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>ADR-0001 item</th>
+<th>Status under this ADR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Decision 1 — whole-package promotion where demand exists</td>
+<td>Kept; demand is now the CLI's own needs (Decision 1 above)</td>
+</tr>
+<tr>
+<td>Decision 2 — the five-package core</td>
+<td>Kept as the frozen base</td>
+</tr>
+<tr>
+<td>Decision 2 — <code>template</code>, <code>index</code>, <code>wiki</code> stay <code>internal/</code></td>
+<td><strong>Superseded</strong>: promoted as <code>doctemplate</code>, <code>index</code>, <code>wiki</code> (DESIGN-0014)</td>
+</tr>
+<tr>
+<td>Decision 3 — public may import <code>internal/</code></td>
+<td>Kept; unused after the swap</td>
+</tr>
+<tr>
+<td>Decision 4 — <code>cmd/</code> + <code>internal/</code> are the CLI product</td>
+<td><strong>Superseded</strong>: <code>cmd/</code> is the CLI product; <code>internal/</code> is empty unless R5 justifies an entry</td>
+</tr>
+<tr>
+<td>Decision 5 — API principles</td>
+<td>Kept as R3, R4, R6</td>
+</tr>
+<tr>
+<td>Decision 6 — v1.0.0 freeze</td>
+<td>Kept for the five packages, whose shapes carry into v2.0.0 unchanged (ADR-0003 excepted); <strong>does not apply</strong> to new packages before v2.0.0</td>
+</tr>
+<tr>
+<td>Decision 7 — CLI feature set is the benchmark</td>
+<td>Kept; it is the acceptance test of the swap PR</td>
+</tr>
+<tr>
+<td>IMPL-0014 Decision 3(d) — no plan model</td>
+<td><strong>Superseded</strong>: <code>pkg/impl</code> under R2 and R7</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="the-compatibility-contract-before-and-after-the-swap">The compatibility contract, before and after the swap</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Before the swap</th>
+<th>After the swap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Module path</td>
+<td><code>github.com/donaldgifford/docz</code></td>
+<td><code>github.com/donaldgifford/docz/v2</code> from the first landing; v1.x tags keep the old path</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/{config,document,docparse,docwrite,toc}</code></td>
+<td>frozen (v1.0.0)</td>
+<td>frozen; additions only</td>
+</tr>
+<tr>
+<td><code>config.DocTypeNames()</code></td>
+<td>six names</td>
+<td>five; <code>plan</code> removed (ADR-0003)</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/{repo,index,doctemplate}</code>, <code>pkg/impl</code>, <code>pkg/wiki</code></td>
+<td>experimental; may change between pins</td>
+<td>experimental through the betas; frozen at v2.0.0</td>
+</tr>
+<tr>
+<td><code>cmd/</code> behaviour (commands, flags, text, exit codes)</td>
+<td>unchanged</td>
+<td>unchanged by the swap; the looser CLI-stability note applies as before</td>
+</tr>
+<tr>
+<td><code>.docz.yaml</code></td>
+<td>unchanged</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td>Embedded template contents and names</td>
+<td>not contract</td>
+<td>not contract (the embed stays unexported inside <code>doctemplate</code>)</td>
+</tr>
+<tr>
+<td><code>internal/</code></td>
+<td>not contract</td>
+<td>empty</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<h4 id="positive">Positive</h4>
+<ul>
+<li><strong>docz is usable as docz from a program.</strong> A consumer calls
+<code>repo.Update</code> or <code>impl.Parse</code> instead of copying <code>cmd/</code>.</li>
+<li><strong>One design, built once.</strong> The API is specified as a whole and landed as a
+whole, so the promotion drip ADR-0001 tried to end actually ends.</li>
+<li><strong>The CLI becomes the reference consumer</strong> and the forcing function that
+keeps logic out of the shell; the swap PR's diff <em>is</em> the proof.</li>
+<li><strong>Type packages are additive and isolated.</strong> Adding <code>pkg/rfc</code> later is a
+package that follows R2 and R7, not a redesign; <code>doczcore</code> never learns
+what a phase is.</li>
+<li><strong>Consumers stay in charge of their workflows.</strong> tempy and sdk-booty-sh
+keep their policy; docz gives them exact lines to act on.</li>
+<li><strong>The CLI is untouched until the swap.</strong> Every landing before it is
+additive, so <code>main</code> behaves as v1.2.2 for CLI users throughout the
+build.</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li><strong>A larger frozen surface at v2.0.0.</strong> <code>repo</code>, <code>index</code>,
+<code>doctemplate</code>, and <code>wiki</code> become contract, including shapes ADR-0001 called
+CLI-flavoured (<code>index.UpdateOutcome</code>'s action enum). Mitigated by R4 —
+enums and reports are typed, wording is not exported — and by the beta
+window, which lasts until v2.0.0 is cut and in which they may still
+change.</li>
+<li><strong>Two contracts in the meantime.</strong> Until v2.0.0, the tree carries a
+frozen tier and an experimental tier and contributors must know which is
+which (Open Question 1).</li>
+<li><strong>The swap is one large PR.</strong> Every command's tests must pass
+byte-for-byte on the new code paths. Mitigated by the existing <code>cmd/</code>
+test suite, which already pins output and exit codes.</li>
+<li><strong><code>ParsePlan</code>'s reversal.</strong> IMPL-0014 dropped a plan model for a stated
+reason; reversing it needs the reason to be recorded as changed (two
+consumers, docz's own grammar), not forgotten. Done in Context.</li>
+</ul>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li><strong>No behaviour change for CLI users.</strong> The swap is a relocation; the
+release notes are for library consumers.</li>
+<li><strong>Dependencies do not change.</strong> The promoted packages are stdlib +
+<code>yaml.v3</code>, like the core.</li>
+<li><strong>Release mechanics.</strong> <code>dont-release</code> on every PR in this work, the
+swap included: a <code>patch</code> or <code>minor</code> label after the module path flips
+would tag a v1 version on a <code>/v2</code> module, which <code>go get</code> rejects, and
+<code>major</code> is reserved for v2.0.0 proper. Pre-releases are annotated tags
+cut by hand (<code>make release TAG=v2.0.0-beta.N</code>); goreleaser already marks
+a suffixed tag as a pre-release (<code>prerelease: auto</code>), and <code>release.yml</code>
+gains a tag trigger for them in step 0 so a beta builds binaries (Open
+Question 3). IMPL-0017's <code>updated:</code> field retargets to the v2 line,
+after this unit.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>A. Promote on demand, again.</strong> Ship <code>pkg/impl</code> and the two <code>docwrite</code>
+byte cores for tempy and stop (DESIGN-0013 Phase A). <em>Pros:</em> smallest
+change. <em>Cons:</em> leaves the orchestration gap that produced the re-implementation
+in the first place; the next consumer gets the next drip; the CLI never
+becomes a consumer.</li>
+<li><strong>B. Typed models inside <code>doczcore</code></strong> (<code>pkg/doczcore/impl</code>). <em>Pros:</em> one
+import root. <em>Cons:</em> every consumer of the core compiles every type model;
+the core stops being type-agnostic; the &quot;pass-through&quot; story for custom
+types gets murky. Rejected in the DESIGN-0013 review.</li>
+<li><strong>C. A runtime type system</strong> (go-cty style, schema-driven types so custom
+types get models too). <em>Pros:</em> uniform. <em>Cons:</em> Go consumers want concrete
+structs; docz's grammars are fixed by its own templates; heavy machinery
+for six types.</li>
+<li><strong>D. Swap <code>cmd/</code> incrementally, command by command, releasing as we go.</strong>
+<em>Pros:</em> smaller PRs. <em>Cons:</em> the API is designed around what each command
+needs in isolation rather than as one unit, which is how today's shape
+happened; partial swaps leave <code>cmd/</code> on two code paths for months.</li>
+<li><strong>E. A separate library module.</strong> Rejected in ADR-0001 and again here
+(Decision 3).</li>
+<li><strong>F. This ADR.</strong> API first, layers and rules, one module, standalone type
+packages with <code>Doc</code>, primitives versus policy, whole API then swap.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<ul class="heading-list">
+<li><a href="#1-how-is-not-yet-frozen-signalled-on-the-new-packages">1. How is &#34;not yet frozen&#34; signalled on the new packages?</a></li>
+<li><a href="#2-how-is-adr-0001s-record-amended">2. How is ADR-0001&#39;s record amended?</a></li>
+<li><a href="#3-how-are-pre-releases-cut-before-v200">3. How are pre-releases cut before v2.0.0?</a></li>
+<li><a href="#4-does-the-swap-ship-a-first-party-consumer-of-the-type-layer">4. Does the swap ship a first-party consumer of the type layer?</a></li>
+<li><a href="#5-are-document-types-built-on-generics">5. Are document types built on generics?</a></li>
+</ul>
+<blockquote>
+<p>Each question is numbered; option <code>a</code> is my recommendation, later letters
+are alternatives, and the last is a free-form &quot;other&quot;.</p>
+</blockquote>
+<h4 id="1-how-is-not-yet-frozen-signalled-on-the-new-packages">1. How is &quot;not yet frozen&quot; signalled on the new packages?</h4>
+<blockquote>
+<p><strong>Resolved 2026-09-19: (a).</strong> Low stakes while docz is its own only
+consumer; the <code>EXPERIMENTAL</code> line costs nothing and <code>go doc</code> shows it.
+With the module already at <code>/v2</code>, the pseudo-version says pre-release
+too.</p>
+</blockquote>
+<ul>
+<li>a. <strong>Package doc comment plus release notes.</strong> Each new package's doc
+comment opens with an <code>EXPERIMENTAL</code> line pointing at this ADR; the
+v2.0.0 cut removes it. No import-path churn, no build tags; <code>go doc</code> shows it.
+<em>(recommendation)</em></li>
+<li>b. Land them under an <code>x/</code> path (<code>pkg/x/repo</code>) and move to the final path
+at the swap — visible in the import path, but every beta consumer rewrites
+imports at GA.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="2-how-is-adr-0001s-record-amended">2. How is ADR-0001's record amended?</h4>
+<blockquote>
+<p><strong>Resolved 2026-09-19: (a).</strong></p>
+</blockquote>
+<ul>
+<li>a. <strong>Dated amendment note in ADR-0001, status stays Accepted.</strong> The
+DESIGN-0007 pattern: a block under Decision stating which items ADR-0002
+supersedes, with a link. Most of ADR-0001 still governs the five packages.
+<em>(recommendation)</em></li>
+<li>b. Flip ADR-0001 to Superseded and let this ADR restate the surviving
+decisions in full.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="3-how-are-pre-releases-cut-before-v200">3. How are pre-releases cut before v2.0.0?</h4>
+<blockquote>
+<p><strong>Resolved 2026-09-19: (b) — manual <code>v2.0.0-beta.N</code> tags; nothing in
+this work cuts v2.0.0.</strong> The swap is tagged <code>v2.0.0-beta.1</code> from its
+<code>main</code> merge commit with <code>make release TAG=…</code>, and further betas follow
+as the API settles; between tags a v2 pseudo-version
+(<code>v2.0.0-0.&lt;timestamp&gt;-&lt;sha&gt;</code>) is available without cutting anything.
+Every PR stays <code>dont-release</code>. Two mechanics land in step 0:
+<code>release.yml</code> gains an <code>on: push: tags</code> trigger for <code>v*-beta.*</code> so a beta
+builds and publishes binaries (goreleaser's <code>prerelease: auto</code> already
+marks it), and <code>pr-semver-bump</code>'s behaviour with a pre-release as the
+latest tag is checked, since the eventual <code>major</code> must produce v2.0.0
+and not v3.0.0 — if it cannot, v2.0.0 is tagged by hand the same way.
+That eventual cut is not this work's (Decision 6).</p>
+</blockquote>
+<ul>
+<li>a. <strong>Pseudo-versions, no tags.</strong> <code>go get github.com/donaldgifford/docz/v2@&lt;sha&gt;</code>
+on the <code>main</code> commit that carries what the consumer needs. Nothing to cut,
+nothing to clean up, and the release workflow's base version is untouched.
+A tag is added only if a consumer wants a human-readable version.
+<em>(recommendation)</em></li>
+<li>b. Manual <code>v2.0.0-beta.N</code> tags on <code>main</code> merge commits via <code>make release TAG=…</code> — readable, but confirm first that <code>pr-semver-bump</code> does not adopt a
+pre-release tag as the base for the next bump.</li>
+<li>c. A tag-triggered pre-release workflow with binaries — more than a library
+pin needs.</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="4-does-the-swap-ship-a-first-party-consumer-of-the-type-layer">4. Does the swap ship a first-party consumer of the type layer?</h4>
+<p>&quot;First consumer is the CLI&quot; read literally means <code>pkg/impl</code> should have a
+CLI caller when it freezes.</p>
+<blockquote>
+<p><strong>Resolved 2026-09-19: (e) — the question was mis-framed.</strong> &quot;First
+consumer&quot; does not mean a first-party caller of <code>pkg/impl</code>. It means the
+CLI is the first tool converted onto the API, and the proof is functional
+parity with v1.2.2 across rfc, adr, design, impl, and investigation
+(Decisions 1 and 6, DESIGN-0014 §4). <code>docz validate</code> still ships in the
+swap because DESIGN-0015 is part of the unit, not as validation of the
+type layer; <code>docz task list</code> stays optional. The API is independent of
+every consumer it was extracted from, and custom types must have the
+same functionality as the built-ins — Open Question 5.</p>
+</blockquote>
+<ul>
+<li>a. <strong>Yes: <code>docz validate</code>.</strong> DESIGN-0015's validator composes
+<code>repo.Validate</code> with <code>impl.Validate</code>, which runs <code>impl.Parse</code>, so the
+swap PR ships a first-party caller of the type layer that also gates the
+corpus. The CLI and the library agree on task IDs by construction.
+<em>(recommendation, revised 2026-09-19)</em></li>
+<li>b. <code>docz task list &lt;impl-id&gt; [--format text|json]</code> — read-only over
+<code>impl.Parse</code> and <code>repo.Find</code>, about a hundred lines, no writers;
+<code>check</code> / <code>uncheck</code> wait for a later minor.</li>
+<li>c. Both a and b in the swap.</li>
+<li>d. No new command in the swap; tempy is the first consumer of <code>pkg/impl</code>
+in practice and the CLI follows later.</li>
+<li>e. Other.</li>
+</ul>
+<h4 id="5-are-document-types-built-on-generics">5. Are document types built on generics?</h4>
+<p>Raised 2026-09-19 with the v2 decision: custom types (DESIGN-0006) must
+have the same functionality as the built-ins, from the CLI and from the
+API, and <code>plan</code> becomes the first type that exists only as a custom type
+(ADR-0003). What &quot;the same functionality&quot; is, per surface:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Functionality</th>
+<th>Built-in type</th>
+<th>Custom type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>create</code>, <code>list</code>, <code>update</code>, <code>status set</code>, <code>init</code>, <code>template</code>, <code>wiki</code>, and the <code>repo</code> methods behind them</td>
+<td>yes</td>
+<td>yes today (DESIGN-0006); unchanged by this ADR</td>
+</tr>
+<tr>
+<td><code>validate</code> against a schema; <code>validate --fix</code></td>
+<td>from the embedded template</td>
+<td>from its own template, the same way (DESIGN-0015 §3)</td>
+</tr>
+<tr>
+<td>Facts and regions (<code>document</code>, <code>docparse</code>)</td>
+<td>yes</td>
+<td>yes; type-agnostic by R2</td>
+</tr>
+<tr>
+<td><code>impl.Parse</code> — phases, tasks, criteria; <code>docz task list</code></td>
+<td>IMPL</td>
+<td>any document whose template carries the <code>phase</code>, <code>tasks</code>, and <code>criteria</code> regions</td>
+</tr>
+<tr>
+<td>A Go struct named after the type</td>
+<td><code>pkg/impl</code>, in docz</td>
+<td>needs Go code: the consumer's own package over <code>docparse.Regions</code>, written the way <code>pkg/impl</code> is</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Resolved 2026-09-19: (a).</strong> R7 and Decision 4 restated above; DESIGN-0014
+§2.9 notes that <code>impl.Parse</code> is keyed on kinds. Where the set of kinds a
+type must carry is <em>declared</em> — template or config — is DESIGN-0015 Open
+Question 1, reopened the same day.</p>
+</blockquote>
+<ul>
+<li>a. <strong>Types are data; type packages are views; no generics.</strong> A document
+type is a <code>types.&lt;name&gt;</code> config entry plus a template, and the template's
+regions are its schema (DESIGN-0015). A built-in differs from a custom
+type only in shipping a default entry and an embedded template — the
+registry in <code>doctype.go</code> is a table of defaults, not a type system.
+Everything in L0, L1, L3, and <code>validate</code> is type-agnostic and already
+runs on any type, which is the first three rows above. A type package is
+a Go <em>view</em> over a set of region kinds: <code>impl.Parse</code> reads <code>phase</code>,
+<code>tasks</code>, and <code>criteria</code> regions and never looks at the type name, so a
+custom <code>runbook</code> whose template carries those kinds parses with it and
+<code>docz task list</code> works on it. R7 is restated to say so: the grammar is a
+contract over region kinds, not over the type name or the template file.
+The last row is the only thing a custom type cannot have from docz, and
+no design can give it, because a named Go struct is Go code; the
+extension point is that L0 is public and <code>pkg/impl</code> is the worked
+example. Go generics do not enter: a type parameter is fixed at compile
+time and a custom type is declared at run time in <code>.docz.yaml</code>, so there
+is nothing to instantiate one with, and mapping a type name to a <code>T</code>
+needs the registry or <code>switch</code> Decision 4 removed — whose arms could only
+ever be the built-in packages anyway. <em>(recommendation)</em></li>
+<li>b. <strong>A generic document shell.</strong> <code>document.Doc[B any]{Frontmatter; Body B}</code>
+with <code>impl.Doc = document.Doc[impl.Body]</code> and a custom type as
+<code>Doc[[]docparse.Region]</code>. One spelling across types, but <code>repo.Find</code>
+still cannot return a typed body without knowing <code>B</code> at compile time,
+every consumer writes <code>document.Doc[impl.Body]</code>, and a type parameter
+with one instantiation per package is the generics anti-pattern.</li>
+<li>c. <strong>A runtime type system</strong> (Alternative C): every type, built-ins
+included, is a schema and <code>impl.Doc</code> is a projection over a generic value
+tree. Uniform, but Go consumers want structs, and it is heavy machinery
+for five types.</li>
+<li>d. <strong>A library interface</strong> (<code>Document</code> with <code>ID()</code>, <code>Title()</code>, <code>Status()</code>)
+that every <code>Doc</code> implements, with a <code>docparse</code>-backed implementation for
+custom types. Breaks R6, and the methods would exist only to satisfy it.</li>
+<li>e. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>ADR-0001
+— the decisions kept, superseded, and amended above</li>
+<li>ADR-0003 — the
+<code>plan</code> type removal that lands alongside this work</li>
+<li>DESIGN-0014
+— the API this ADR implies, specified as one unit</li>
+<li>DESIGN-0015
+— structured regions and <code>docz validate</code>, a requirement of that unit</li>
+<li>DESIGN-0013
+— Abandoned; the first-principles working that led here</li>
+<li>INV-0010
+— consumer demand and corpus facts</li>
+<li>IMPL-0014
+Decision 3(d) — the plan-model drop this ADR reverses</li>
+<li><a href="https://github.com/donaldgifford/docz/issues/100">Issue #100</a> — tempy's
+request; <a href="https://github.com/donaldgifford/docz/issues/103">Issue #103</a> —
+remove the <code>plan</code> type</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/docz-adr-0002.md</code>, sha256 <code>d04b824d36444f15904cebdc1a2d960d73590bfd6593eef072f2a170939832a4</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+<script>/* mermaid 12.0.0 is vendored in IMPL-0028 Phase 5 */</script>
+<script>/*
+ * Draws every pre.mermaid with the mermaid global, in the theme's tokens,
+ * and draws again when the mode changes (DESIGN-0025 §7). The theme
+ * variables follow ui/'s mermaidThemeFromTokens. A diagram whose source
+ * fails to parse keeps its source, with the error beneath it, rather than
+ * leaving a blank box. securityLevel strict keeps a diagram's labels from
+ * carrying script or links.
+ */
+(function () {
+  "use strict";
+  if (!window.mermaid || !window.docz) return;
+
+  var blocks = Array.prototype.slice.call(document.querySelectorAll("pre.mermaid"));
+  blocks.forEach(function (pre) {
+    pre.setAttribute("data-source", pre.textContent);
+  });
+
+  function themeVariables() {
+    var p = window.docz.palette([
+      "--color-bg-raised",
+      "--color-bg-elevated",
+      "--color-border-strong",
+      "--color-fg-primary",
+      "--color-fg-tertiary",
+    ]);
+    var raised = p["--color-bg-raised"];
+    var elevated = p["--color-bg-elevated"];
+    var border = p["--color-border-strong"];
+    var fg = p["--color-fg-primary"];
+    return {
+      primaryColor: elevated,
+      primaryBorderColor: border,
+      primaryTextColor: fg,
+      secondaryColor: raised,
+      secondaryBorderColor: border,
+      tertiaryColor: raised,
+      tertiaryBorderColor: border,
+      mainBkg: elevated,
+      nodeBorder: border,
+      lineColor: p["--color-fg-tertiary"],
+      clusterBkg: raised,
+      clusterBorder: border,
+      titleColor: fg,
+      edgeLabelBackground: raised,
+      fontFamily: "monospace",
+      fontSize: "14px",
+    };
+  }
+
+  var run = 0;
+
+  function draw() {
+    run++;
+    window.mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: themeVariables(),
+    });
+    blocks.forEach(function (pre, i) {
+      var source = pre.getAttribute("data-source");
+      var next = pre.nextElementSibling;
+      if (next && next.classList.contains("diagram-error")) next.remove();
+      window.mermaid
+        .render("docz-mermaid-" + run + "-" + i, source)
+        .then(function (out) {
+          pre.innerHTML = out.svg;
+          pre.setAttribute("data-processed", "true");
+        })
+        .catch(function (err) {
+          pre.textContent = source;
+          pre.removeAttribute("data-processed");
+          var msg = document.createElement("p");
+          msg.className = "diagram-error";
+          msg.textContent = "Diagram failed to render: " + (err && err.message ? err.message : String(err));
+          pre.insertAdjacentElement("afterend", msg);
+        });
+    });
+  }
+
+  draw();
+  window.docz.onMode(draw);
+})();
+</script>
+</body>
+</html>

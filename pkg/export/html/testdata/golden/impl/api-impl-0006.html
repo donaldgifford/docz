@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0006">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0006: Error observability: log every failure, self-heal the queue, optional no-auth mode</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Error observability: log every failure, self-heal the queue, optional no-auth mode</h1>
+<p class="summary"><strong>Status:</strong> Draft
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-08-22</p>
+<div class="meta">
+<span class="pill">IMPL-0006</span>
+<span class="pill st-active">In Progress</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-08-22</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
+<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="phase-1-queue-failure-visibility-errorhandler-logger-comment-fix" aria-controls="p-phase-1-queue-failure-visibility-errorhandler-logger-comment-fix">Phase 1: Queue failure visibility — ErrorHandler, Logger, comment fix</button>
+<button type="button" data-tab="phase-2-queue-self-heal-un-swallow-the-archived-task-conflict" aria-controls="p-phase-2-queue-self-heal-un-swallow-the-archived-task-conflict">Phase 2: Queue self-heal — un-swallow the archived-task conflict</button>
+<button type="button" data-tab="phase-3-boot-time-github-app-credential-self-check" aria-controls="p-phase-3-boot-time-github-app-credential-self-check">Phase 3: Boot-time GitHub App credential self-check</button>
+<button type="button" data-tab="phase-4-the-four-mute-http-sinks" aria-controls="p-phase-4-the-four-mute-http-sinks">Phase 4: The four mute HTTP sinks</button>
+<button type="button" data-tab="phase-5-auth-providers-none-first-setup-no-auth-mode" aria-controls="p-phase-5-auth-providers-none-first-setup-no-auth-mode">Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode</button>
+<button type="button" data-tab="phase-6-deliberate-failure-verification-deploy-close-out" aria-controls="p-phase-6-deliberate-failure-verification-deploy-close-out">Phase 6: Deliberate-failure verification, deploy, close-out</button>
+<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
+<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-objective">
+<h2 class="panel-title" id="objective">Objective</h2>
+<ul>
+<li><a href="#objective">Objective</a></li>
+<li><a href="#scope">Scope</a>
+<ul>
+<li><a href="#in-scope">In Scope</a></li>
+<li><a href="#out-of-scope">Out of Scope</a></li>
+</ul>
+</li>
+<li><a href="#implementation-phases">Implementation Phases</a>
+<ul>
+<li><a href="#phase-1-queue-failure-visibility--errorhandler-logger-comment-fix">Phase 1: Queue failure visibility — ErrorHandler, Logger, comment fix</a>
+<ul>
+<li><a href="#tasks">Tasks</a></li>
+<li><a href="#success-criteria">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-2-queue-self-heal--un-swallow-the-archived-task-conflict">Phase 2: Queue self-heal — un-swallow the archived-task conflict</a>
+<ul>
+<li><a href="#tasks-1">Tasks</a></li>
+<li><a href="#success-criteria-1">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-3-boot-time-github-app-credential-self-check">Phase 3: Boot-time GitHub App credential self-check</a>
+<ul>
+<li><a href="#tasks-2">Tasks</a></li>
+<li><a href="#success-criteria-2">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-4-the-four-mute-http-sinks">Phase 4: The four mute HTTP sinks</a>
+<ul>
+<li><a href="#tasks-3">Tasks</a></li>
+<li><a href="#success-criteria-3">Success Criteria</a></li>
+</ul>
+</li>
+<li>Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode
+<ul>
+<li><a href="#tasks-4">Tasks</a></li>
+<li><a href="#success-criteria-4">Success Criteria</a></li>
+</ul>
+</li>
+<li><a href="#phase-6-deliberate-failure-verification-deploy-close-out">Phase 6: Deliberate-failure verification, deploy, close-out</a>
+<ul>
+<li><a href="#tasks-5">Tasks</a></li>
+<li><a href="#success-criteria-5">Success Criteria</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#file-changes">File Changes</a></li>
+<li><a href="#testing-plan">Testing Plan</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#open-questions">Open Questions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>Implement INV-0007's recommendations so that <strong>no error terminates in a sink
+that cannot report it</strong>, the queue <strong>recovers on its own</strong> after retry
+exhaustion, credential problems surface <strong>at boot</strong>, and first setup can
+optionally skip login auth entirely. The acceptance bar is INV-0007's own
+origin story run in reverse: a deliberately failing ingest must be fully
+diagnosable <strong>from structured logs alone</strong> — no <code>redis-cli</code>, no asynq CLI, no
+decoding a stored task record — and a fixed root cause must self-heal on the
+next trigger without an operator touching Valkey.</p>
+<p><strong>Implements:</strong> INV-0007 recommendations 1–6 (F1–F7)</p>
+
+</section>
+<section class="panel" id="p-scope">
+<h2 class="panel-title" id="scope">Scope</h2>
+<h4 id="in-scope">In Scope</h4>
+<ul>
+<li><code>asynq.Config.ErrorHandler</code> + <code>Logger</code> (slog adapter) + <code>LogLevel</code> in
+<code>internal/queue</code>; correct the false comment at the <code>handleIngest</code> failure
+site; raise the coalesce log to Info.</li>
+<li>Archived-task conflict handling on the enqueue path (<code>Inspector</code> check →
+delete + re-enqueue), killing the 90-day silent swallow (F4).</li>
+<li>Boot-time GitHub App self-check (<code>AppsTransport</code> JWT → <code>GET /app</code>) in
+<code>internal/githubapp</code>, wired into <code>run()</code>.</li>
+<li>Logging at the four mute HTTP sinks (F7): <code>authorize</code> middleware, <code>session</code>
+middleware (with <code>ErrSessionNotFound</code> discrimination), <code>webhook</code> body-read +
+payload-parse, <code>writeJSON</code> in <code>httpapi</code>/<code>authhttp</code>.</li>
+<li><code>AUTH_PROVIDERS=none</code> (F6): config validation, anonymous-session gate,
+chart gating, docs. SPA untouched by design.</li>
+<li>Deliberate-failure verification + the EKS redeploy that closes INV-0007
+OQ-1 from logs.</li>
+</ul>
+<h4 id="out-of-scope">Out of Scope</h4>
+<ul>
+<li>The active-window drop's <em>mechanical</em> fix (INV-0007 OQ-5) — this plan makes
+it <strong>visible</strong> (Info log), not impossible; see OQ-6 below.</li>
+<li>Periodic full resync / webhook replay (the standing backstop idea from the
+funnel incidents) — separate feature, separate doc.</li>
+<li>RFC 7807 error envelopes, log sampling, or any log-pipeline work.</li>
+<li>Tailscale/ingress topology changes (handled elsewhere).</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-1-queue-failure-visibility-errorhandler-logger-comment-fix">
+<h2 class="panel-title" id="phase-1-queue-failure-visibility--errorhandler-logger-comment-fix">Phase 1: Queue failure visibility — ErrorHandler, Logger, comment fix</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>The one-change-site fix for F1 + F7.5: every failed attempt logs through
+slog, and asynq's internal errors stop bypassing the structured pipeline.</p>
+<h5 id="tasks">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add an slog-backed <code>asynq.Logger</code> adapter in <code>internal/queue</code>
+(five methods, <code>Debug</code>…<code>Fatal</code>; map <code>Fatal</code> → <code>slog.Error</code> since slog
+has no fatal level and asynq only calls it during startup config
+validation). Set <code>Logger</code> + <code>LogLevel</code> (map from <code>LOG_LEVEL</code>) in the
+<code>asynq.Config</code> at <code>worker.go:54-59</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>ErrorHandler: asynq.ErrorHandlerFunc(...)</code> in the same <code>Config</code>
+block: <code>slog.Error(&quot;ingest job failed&quot;, &quot;task_id&quot;, …, &quot;type&quot;, task.Type(), &quot;err&quot;, err)</code> — unmarshal the payload for <code>repo</code>/<code>reason</code>
+attrs when it parses (best-effort; never fail the handler on a
+malformed payload).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Rewrite the false comment at <code>worker.go:106-107</code> to state the real
+contract: the returned error reaches asynq, which hands it to <strong>our</strong>
+<code>ErrorHandler</code> (F1: asynq itself never logs it).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Raise the coalesce log at <code>client.go:95</code> from Debug to Info and extend
+its message to name the active-window caveat (<code>client.go:70-73</code>), so
+the one place a push can vanish is visible at default log level.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Unit tests: capture slog output (swap <code>slog.SetDefault</code> handler for a
+recording one) — a failing fake ingestor produces an ErrorHandler line
+per attempt carrying repo + error; the Logger adapter routes asynq
+levels to slog levels.</div></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li>A job that fails N attempts emits N structured <code>ingest job failed</code> lines
+(repo, reason, error) plus the terminal archive WARN — proven by a queue
+integration test asserting on captured log records.</li>
+<li><code>LOG_FORMAT=json</code> produces <strong>zero</strong> non-JSON lines from the queue
+subsystem under a Redis outage (asynq's &quot;Dequeue error&quot; path now routes
+through the adapter) — proven by stopping the testcontainer Redis
+mid-test and scanning stderr.</li>
+<li><code>just ci</code> green.</li>
+</ul>
+<p><strong>Phase 1 complete (2026-08-24).</strong> All five tasks done; <code>just ci</code> green;
+<code>golangci-lint --build-tags=integration</code> clean. Two criteria were met by a
+different proof than written, deliberately:</p>
+<ul>
+<li><strong>&quot;N lines for N attempts&quot;</strong> is proven for the <strong>first</strong> attempt only
+(<code>TestFailedIngestLogsTheError</code>). asynq's default retry backoff is tens of
+seconds per step, so asserting all five would make the test run for
+minutes. The hook is per-attempt by construction (asynq calls
+<code>ErrorHandler</code> from <code>handleFailedMessage</code>, on every failure including the
+last), so one real attempt through real Redis proves the wiring; the
+multi-attempt lifecycle is covered end-to-end by the Phase 6 drill.</li>
+<li><strong>JSON purity</strong> is proven structurally rather than by scanning stderr:
+<code>TestAsynqInternalErrorsReachSlog</code> points a worker at an unreachable Redis
+and asserts <code>component=asynq</code> records arrive through slog. Setting
+<code>Config.Logger</code> means asynq has no path to stderr at all, so this asserts
+the cause rather than the symptom — and it avoids stopping the container
+<code>TestMain</code> shares with every other case in the package.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-2-queue-self-heal-un-swallow-the-archived-task-conflict">
+<h2 class="panel-title" id="phase-2-queue-self-heal--un-swallow-the-archived-task-conflict">Phase 2: Queue self-heal — un-swallow the archived-task conflict</h2>
+<p>Kills F4: retry exhaustion must never silently eat future triggers.</p>
+<h5 id="tasks-1">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add an <code>*asynq.Inspector</code> to <code>queue.Client</code> (same parsed redis opts;
+close it in <code>Client.Close</code> via the existing <code>errors.Join</code>).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">On <code>ErrTaskIDConflict</code>/<code>ErrDuplicateTask</code> in <code>EnqueueIngest</code>: call
+<code>Inspector.GetTaskInfo(queueName, taskID)</code>. State
+pending/scheduled/retry → today's coalesce (now Info, Phase 1). State
+<strong>archived</strong> → <code>DeleteTask</code> + re-enqueue once (single retry, no loop);
+log Info <code>&quot;archived ingest task cleared; re-enqueued&quot;</code>. State
+<strong>active</strong> → keep coalesce semantics but log the drop caveat (OQ-6
+defers the mechanical fix). <code>GetTaskInfo</code> error → log Warn, treat as
+coalesced (fail open: never turn a webhook 202 into a 500 over an
+inspection).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Unit test the state-dispatch with a fake inspector seam (consumer-side
+interface, matching house style).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Integration test (<code>queue_integration_test.go</code>, real Redis): drive a
+task to archived via a failing fake ingestor, then enqueue the same
+repo → assert the archived task is deleted, a fresh task runs, and
+the success path completes. Assert the pending-state coalesce still
+works (existing burst test keeps passing).</div></li>
+</ul>
+<h5 id="success-criteria-1">Success Criteria</h5>
+<ul>
+<li>The INV-0007 F4 scenario is dead: after retry exhaustion, the <strong>next</strong>
+trigger ingests (proven by the new integration test), with an Info line
+explaining what happened.</li>
+<li>No behavior change for the healthy coalesce path (existing debounce/burst
+integration tests unchanged and green).</li>
+</ul>
+<p><strong>Phase 2 complete (2026-08-24).</strong> All four tasks done; unit + integration
+suites and <code>golangci-lint --build-tags=integration</code> green.</p>
+<p><strong>Scope grew during implementation.</strong> Probing the conflict path turned up a
+second, worse instance of the same trap, now recorded as INV-0007 <strong>F4b</strong>:
+<code>Retention(24h)</code> made asynq keep the task key after every <em>successful</em> run
+(<code>markAsComplete</code> HSETs the key; the no-retention path DELs it), so the
+completed state held the repo's id for 24 hours and every push in that
+window was silently dropped — <strong>one ingest per repo per day, on the happy
+path</strong>. <code>TestReingestAfterSuccessfulRun</code> fails against the pre-fix code.</p>
+<p>The fix therefore covers both terminal states rather than archived alone,
+and drops <code>Retention</code> so a success frees the id immediately; the inspector
+path still clears ids left behind by earlier deployments. The decision is a
+pure <code>classifyConflict</code> function so the state table is unit-tested directly
+rather than through a re-implementation.</p>
+<p><code>TestReingestAfterArchivedRun</code> archives the task via the inspector instead
+of waiting out five retries of asynq's default backoff, which would take
+minutes.</p>
+
+</section>
+<section class="panel" id="p-phase-3-boot-time-github-app-credential-self-check">
+<h2 class="panel-title" id="phase-3-boot-time-github-app-credential-self-check">Phase 3: Boot-time GitHub App credential self-check</h2>
+<p>F5's fix: bad App credentials fail the deploy, not the fifth silent retry.</p>
+<h5 id="tasks-2">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Add <code>githubapp.SelfCheck(ctx, appID, pemKey, apiBase) (slug string, err error)</code>: <code>ghinstallation.NewAppsTransport</code> (app JWT, not an
+installation transport) → go-github <code>Apps.Get(ctx, &quot;&quot;)</code> → return the
+app slug. Honor <code>apiBase</code> exactly as <code>NewClient</code> does.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Wire into <code>run()</code> after config load, bounded by a short context
+(reuse the <code>oidcDiscoveryTimeout</code> precedent): log
+<code>&quot;github app authenticated&quot; slug=…</code> on success; on failure apply the
+OQ-1 decision (recommendation: fail boot on credential rejection,
+warn-and-continue on transport errors, discriminated via
+<code>*github.ErrorResponse</code> status).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Skip the check in <code>-migrate</code> mode (no GitHub involvement); run it for
+serve and <code>-onboard</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Unit tests with a stub <code>http.RoundTripper</code> (house pattern from
+<code>githubapp</code>): 200 → slug; 401 → credential-shaped error; connection
+refused → transport-shaped error.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Document the health-check trio in <code>deploy/README.md</code> (and the chart
+README's probes note): <code>/healthz</code> = liveness (&quot;pod is up&quot;, bare
+200); <code>/readyz</code> = readiness (&quot;dependencies connected, can accept
+traffic&quot; — postgres/meili/redis, 503 names the offender); the boot
+self-check = startup credential validation (crashes the boot on bad
+creds, in <strong>neither</strong> probe — GitHub down must not pull the read
+API from rotation).</div></li>
+</ul>
+<h5 id="success-criteria-2">Success Criteria</h5>
+<ul>
+<li>A deploy with a mangled PEM or wrong app id logs one unambiguous
+credential error at boot and (per OQ-1a) exits nonzero — observable in
+<code>kubectl logs</code> within seconds of pod start, no ingest attempt needed.</li>
+<li>A valid deploy logs the authenticated app slug once at startup.</li>
+<li>GitHub being temporarily unreachable does not crash-loop an otherwise
+healthy API (transport errors warn only).</li>
+</ul>
+<p><strong>Phase 3 complete (2026-08-24).</strong> All five tasks done; <code>just lint</code> and the
+full unit suite green.</p>
+<p>Implementation note beyond the plan: a malformed PEM fails inside
+<code>ghinstallation.NewAppsTransport</code> — before any HTTP request — so that path is
+classified as <code>ErrCredentialsRejected</code> too. It is the single most likely
+credential fault when moving between secret stores, and checking only the
+API response would have missed it entirely. Rate limiting is excluded from
+the rejection class explicitly (<code>*github.RateLimitError</code> /
+<code>*github.AbuseRateLimitError</code> arrive as 4xx but are transient), so throttling
+can never be mistaken for a bad key and crash-loop a deploy.</p>
+
+</section>
+<section class="panel" id="p-phase-4-the-four-mute-http-sinks">
+<h2 class="panel-title" id="phase-4-the-four-mute-http-sinks">Phase 4: The four mute HTTP sinks</h2>
+<p>F7's fix: every wrapped error chain now terminates in a logging sink.</p>
+<h5 id="tasks-3">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>internal/authorize/authorize.go:52</code> — <code>slog.Error(&quot;authorize failed&quot;, &quot;err&quot;, err)</code> before the 500. (The chain carries the store context;
+nothing else needed.)</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>internal/session/middleware.go:33-35</code> — discriminate:
+<code>errors.Is(err, ErrSessionNotFound)</code> → 401 quietly (expected churn);
+anything else (Redis down, corrupt JSON) → <code>slog.Error</code> + the OQ-2
+status decision (recommendation: 503 with the standard error
+envelope, because &quot;session backend down&quot; is not &quot;logged out&quot;).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>internal/webhook/webhook.go:96</code> — log Warn on body-read failure
+(names the <code>MaxBytesReader</code> cap case); <code>:126</code> — log Error on
+<code>ParseWebHook</code> failure with the event header (post-HMAC ⇒ provably
+GitHub ⇒ schema drift or unsubscribed event).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>internal/httpapi/handler.go:112-113</code> and
+<code>internal/authhttp/handler.go:90-91</code> — route marshal failures through
+the existing <code>serverError</code> helpers (which log) instead of the silent
+<code>writeError</code>/inline 500. Leave the error-envelope-marshal fallback
+(<code>authhttp:105</code>) as-is but add a <code>slog.Error</code> (practically
+unreachable; one line buys completeness).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Unit tests per sink with a recording slog handler: erroring fake
+authorizer / lookuper / marshal-poisoned DTO (<code>json.RawMessage</code> with
+invalid bytes) each produce exactly one error record; the
+session-middleware test pins 401-stays-quiet for
+<code>ErrSessionNotFound</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Contract test still green; if OQ-2a (503) is chosen, confirm the spec
+needs no change (the contract test exercises defined scenarios only;
+5xx paths are not specced per-op today).</div></li>
+</ul>
+<h5 id="success-criteria-3">Success Criteria</h5>
+<ul>
+<li>A Postgres outage on <code>/api/v1</code> and a Redis outage on the session gate
+each produce structured error logs naming the failing dependency (proven
+by unit tests; observed live in Phase 6).</li>
+<li>Review of the four cited sites shows no error path that neither logs nor
+delegates to a logging helper; <code>just lint</code> green.</li>
+<li>401 behavior for genuinely missing/expired sessions is byte-identical
+(contract test unchanged on that path).</li>
+</ul>
+<p><strong>Phase 4 complete (2026-08-24).</strong> All six tasks done; <code>just lint</code> (0 issues)
+and the full unit suite — including the OpenAPI contract test — green.</p>
+<p>Implementation notes beyond the plan:</p>
+<ul>
+<li>The session-gate outage status is a new <strong>503 <code>{&quot;error&quot;:&quot;session unavailable&quot;}</code></strong> (OQ-2a), written by a dedicated <code>writeSessionUnavailable</code>
+helper alongside the existing 401 one. The distinction matters downstream:
+docz-site drives its login UI off 401, so answering 401 during a Redis blip
+would bounce every signed-in user to the login screen for the duration of
+the outage. The 401 path for a genuinely absent session is byte-identical.</li>
+<li>The webhook body-read sink logs at <strong>Warn with headers only</strong> — that
+failure happens <em>before</em> HMAC verification, so the payload is unverified
+and must not be logged. The <code>ParseWebHook</code> sink logs at Error and says so
+in its comment, because HMAC has already passed there: the payload
+provably came from GitHub, making it schema drift rather than a bad caller.</li>
+<li>The <code>writeJSON</code> marshal sinks in <code>httpapi</code> and <code>authhttp</code> now route through
+each package's existing <code>serverError</code> helper rather than a new one, so the
+response envelope and the log line stay in one place per package.</li>
+<li>No spec change was needed: the contract test exercises defined scenarios
+only, and 5xx paths are not specced per-op today.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-5-auth-providers-none-first-setup-no-auth-mode">
+<h2 class="panel-title" id="phase-5-auth_providersnone--first-setup-no-auth-mode">Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode</h2>
+<p>F6: one knob to run the read surface open, so first setup fights only the
+GitHub App credentials. Loud opt-in, documented as such.</p>
+<h5 id="tasks-4">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>internal/config</code>: accept the literal <code>none</code> in <code>AUTH_PROVIDERS</code>
+(OQ-3 spelling). <code>validate.go</code>: under <code>none</code> (which must be the
+<em>only</em> entry — <code>none,okta</code> is a config error), skip provider
+credential checks, <code>AUTH_REDIRECT_BASE</code>, and <code>SESSION_SECRET</code>
+requirements. Add an <code>AuthDisabled()</code> helper alongside
+<code>AuthEnabled</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>cmd/docz-api</code>: when disabled, <code>buildAuthProviders</code> returns an empty
+registry; <code>runServer</code> swaps <code>session.Middleware</code> for an
+anonymous-identity injector (synthetic <code>session.Session</code> with
+provider <code>none</code>, subject <code>anonymous</code>, injected via the same ctx key
+so <code>FromContext</code> and <code>/api/v1/auth/session</code> work unchanged) composed
+over the same <code>authorize.Middleware</code>. Skip <code>MountPublic</code> (no
+<code>/auth/login</code>/<code>/auth/callback</code> routes — 404, the absent-route
+precedent from search; OQ-4). Log one startup Warn:
+<code>&quot;auth disabled (AUTH_PROVIDERS=none): the read API is open&quot;</code>.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Session store: still constructed (Redis is required anyway for the
+queue) but the cookie path is never exercised; logout becomes a no-op
+revoke on the synthetic id — verify it 200s harmlessly rather than
+500s.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Chart: gate the <code>required</code> on <code>config.authRedirectBase</code> (and the
+session-secret Secret key) off <code>has &quot;none&quot; $providers</code>; extend the
+<code>docz-api.authProviders</code> helper docs; <code>values.yaml</code> comment block +
+README.md.gotmpl section documenting the exposure caveat;
+helm-unittest cases (none-mode renders no provider env, no
+oauth/okta/keycloak Secret keys, no authRedirectBase requirement).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Contract test: a none-mode handler variant asserting <code>/api/v1</code> reads
+succeed with no cookie and <code>/api/v1/auth/session</code> returns the
+synthetic identity (spec shape unchanged — <code>sessionDTO</code> already fits;
+no spec version bump expected, confirm during implementation).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Docs: <code>deploy/README.md</code> first-setup section rewritten to lead with
+none-mode (&quot;get ingest working first, add login after&quot;), plus the
+revert path (set real providers, redeploy).</div></li>
+</ul>
+<h5 id="success-criteria-4">Success Criteria</h5>
+<ul>
+<li><code>AUTH_PROVIDERS=none</code> with <strong>no</strong> session secret, redirect base, or
+provider credentials boots clean, serves <code>/api/v1</code> reads without a
+cookie, and returns the synthetic identity on <code>/api/v1/auth/session</code> —
+proven by the contract-test variant.</li>
+<li>Default (<code>github</code>) behavior is byte-identical: full test suite + contract
+test green with no fixture churn outside the new none-mode cases.</li>
+<li><code>just helm-unittest</code> green with the new cases; a none-mode
+<code>helm template</code> renders no provider env vars and no provider Secret keys.</li>
+<li>The docz-site, pointed at a none-mode API, renders docs with no login
+panel (manual smoke; the SPA's login UI is 401-driven and none-mode
+never 401s).</li>
+</ul>
+<p><strong>Phase 5 complete (2026-08-25).</strong> All six tasks done; <code>just lint</code> (0 issues),
+the full unit suite, <code>just helm-lint</code> / <code>helm-template</code> / <code>helm-unittest</code>
+(80 tests) and <code>just lint-openapi</code> (100/100) all green. Chart bumped to
+<strong>0.5.0</strong>, spec to <strong>1.2.1</strong> (editorial — see below).</p>
+<p>The one success criterion that cannot be proven here is the docz-site smoke
+(&quot;no login panel against a none-mode API&quot;) — it needs a browser against a
+running pair. It is carried into Phase 6's live verification rather than
+claimed.</p>
+<p>Implementation notes beyond the plan:</p>
+<ul>
+<li><code>AuthDisabled()</code> requires <code>none</code> to be the <strong>only</strong> entry; <code>none,github</code> is
+a config error naming the conflict, not a silent precedence rule. Two
+incompatible shapes cannot both be described at once, and guessing which
+one the operator meant is exactly the kind of ambiguity that produces a
+&quot;why is my API open?&quot; incident.</li>
+<li><code>session.AnonymousMiddleware</code> lives in <code>internal/session</code> because the
+context key is unexported there — which is the point: the synthetic session
+goes in through the <em>same</em> key as a real one, so <code>authorize</code>, every handler,
+and <code>/api/v1/auth/session</code> need no no-auth branch. The anonymous identity is
+<code>provider &quot;none&quot; / subject &quot;anonymous&quot;</code>, and its session id is never in
+Redis, so logout is a harmless no-op delete of an absent key (verified, not
+assumed).</li>
+<li><strong>The spec gained an editorial note</strong> (<code>1.2.1</code>) rather than staying silent.
+A generated client works against either mode — only the auth requirement
+changes, never a request or response shape — and saying so in the
+<code>sessionCookie</code> description is what makes that safe to rely on. No version
+bump beyond patch: nothing about the wire contract changed.</li>
+<li>The chart gates on a new <code>docz-api.authDisabled</code> helper so both the
+Deployment env and the Secret key list stay in one decision. Every surface
+that documents none-mode (values.yaml, chart README, <code>deploy/README.md</code>,
+<code>.env.production.example</code>) also states the exposure — an open read API is
+the whole trade, and it should not be discoverable only by reading
+templates.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-6-deliberate-failure-verification-deploy-close-out">
+<h2 class="panel-title" id="phase-6-deliberate-failure-verification-deploy-close-out">Phase 6: Deliberate-failure verification, deploy, close-out</h2>
+<p>INV-0007's origin story, rerun against the fixed binary — the phase that
+proves &quot;we are actually covering the error exposure required&quot; instead of
+assuming it.</p>
+<h5 id="tasks-5">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Local deliberate-failure drill (compose stack): onboard a repo whose
+fetch <strong>must</strong> fail (no <code>.docz.yaml</code>), watch <code>just run</code> logs only:
+confirm N per-attempt error lines with the real cause, the terminal
+archive WARN, and — after &quot;fixing&quot; the repo — a next trigger that
+self-heals through the Phase 2 path. <strong>No Redis inspection allowed</strong>;
+if any step needs it, that's a Phase 1/2 bug to fix before shipping.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Repeat the drill with <code>LOG_FORMAT=json</code> piped through <code>jq -e</code> to
+prove every queue-subsystem line parses (Phase 1's second criterion,
+end to end).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Release: minor version bump (new env mode + logging surface), chart
+version bump for the Phase 5 template changes; <code>pr-semver</code> label
+<code>minor</code>.</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text"><strong>deferred - blocked, no cluster available</strong> — redeploy the new image +
+chart; re-trigger the INV-0007 failing repo; <strong>close INV-0007 OQ-1 from
+the logs</strong> — record the actual root cause in INV-0007 (edit the OQ, note
+&quot;answered via the Phase 6 deploy&quot;). Confirmed blocked on 2026-08-26, not
+assumed: no reachable cluster context (only the unreachable homelab
+ones) and no AWS credentials, and the operator confirmed there is no
+cluster to use at present. INV-0007's runbook path — reading the archived
+task straight out of Valkey — needs the same access, so OQ-1 cannot be
+answered by any route until a cluster exists. Nothing in the branch
+depends on this; it is the last verification step, not a prerequisite.</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Downstream: file the docz-site configuration issue for the auth/no-auth
+surface — donaldgifford/docz-site#17 (none-mode login UI, the new 503
+versus 401 split, re-vendoring the spec at <code>1.2.1</code>).</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Close-out: mark INV-0007 recommendations 1–6 as implemented in the
+INV; update CLAUDE.md (new conventions: asynq Logger/ErrorHandler
+contract, SelfCheck at boot, none-mode); <code>docz update</code>.</div></li>
+</ul>
+<h5 id="success-criteria-5">Success Criteria</h5>
+<ul>
+<li>The full failure lifecycle — first failure, every retry, exhaustion,
+root-cause identification, fix, self-heal — is reconstructed <strong>from
+structured logs alone</strong> in both drills. Valkey is never opened.</li>
+<li>INV-0007 OQ-1 is answered and recorded, from production logs, not from
+the stored task record.</li>
+<li>CI green, release published, EKS running the new version with the
+failing repo ingested (or its genuine blocker named in the logs).</li>
+</ul>
+<p><strong>Phase 6 complete except the EKS redeploy (2026-08-25).</strong> Everything that
+can be proven without cluster access is proven; the one remaining task is
+marked <code>deferred - human required</code> above.</p>
+<p><strong>The drill (both tasks 1 and 2, run as one <code>LOG_FORMAT=json</code> session).</strong>
+Local compose stack (real Postgres/Redis/Meilisearch) plus the real
+<code>donaldgifford-docz-api</code> GitHub App. <code>-onboard donaldgifford/no-such-docz-repo@145915803</code> forced a permanent fetch failure.
+Reading <strong>only</strong> <code>/tmp/drill.log</code> — Valkey was never opened — the full
+lifecycle was reconstructed:</p>
+<ul>
+<li>boot: <code>github app authenticated app_slug=donaldgifford-docz-api</code> (fix 2)</li>
+<li>6 x <code>ingest job attempt failed</code> at ERROR, <code>retried</code> 0→5, each naming the
+real cause: <code>GET https://api.github.com/repos/donaldgifford/no-such-docz-repo: 404 Not Found</code> (fix 1)</li>
+<li><code>WARN Retry exhausted for task id=ingest:donaldgifford/no-such-docz-repo</code>
+with <code>component=asynq</code> — the operator's original production line, now
+preceded by six lines that say <em>why</em> (fix 5)</li>
+<li>next trigger: <code>cleared a finished ingest task and re-enqueued cleared_state=archived</code> — the swallow is gone (fix 3)</li>
+<li>a healthy repo ingests: <code>ingest job complete docs_upserted=16</code></li>
+<li>a 5-trigger burst: <code>ingest job enqueued</code> once, four
+<code>ingest job coalesced into an existing task</code> at <strong>Info</strong> carrying the live
+<code>state</code> (<code>active</code> / <code>scheduled</code>) (fix 5 / F7.6)</li>
+</ul>
+<p><code>jq -e . /tmp/drill.log</code> succeeded on all 33 lines, so every queue-subsystem
+line — including asynq's own internals — parses as structured JSON.</p>
+<p><strong>Post-phase review (2026-08-25).</strong> Two independent reviewers went over the
+whole branch diff. They found five real defects, all now fixed with regression
+tests; both reviewers independently found the first one, which is why it is
+listed first:</p>
+<ol>
+<li><strong>The chart's <code>authDisabled</code> helper used <code>has &quot;none&quot;</code></strong> (membership) where
+the binary requires <code>none</code> to be the <em>only</em> entry. <code>authProviders: &quot;none,github&quot;</code> therefore rendered a manifest that dropped <code>SESSION_SECRET</code>
+and <code>AUTH_REDIRECT_BASE</code> while still emitting <code>GITHUB_OAUTH_*</code> — it
+installed cleanly and then crash-looped on the binary's own validation. The
+helper now <code>fail</code>s at render time with the same message, which is the house
+rule (catch it at <code>helm install</code>, not in CrashLoopBackOff).</li>
+<li><strong><code>isCredentialRejection</code> classified any 4xx as permanent.</strong> go-github only
+produces a typed <code>*RateLimitError</code> when the response carries the matching
+headers, so a throttled response from a proxy, CDN, or GHES front end
+arrived as a plain <code>*ErrorResponse</code> and failed startup — precisely the
+crash-loop the boot check is supposed to prevent. A first attempt excluded
+<code>408</code>/<code>429</code> by status code; <strong>a third review pass found that incomplete</strong>,
+because GitHub documents <code>403</code> as a primary rate-limit status too, so a bare
+<code>403</code> still crash-looped. The permanent set is now <strong>401 only</strong>: <code>GET /app</code>
+authenticates the App with a JWT and needs no permissions, so a bad key is
+the only thing 401 can mean there. The two misclassifications are not
+symmetric — calling a transient failure permanent takes down the read API
+for an ingest-only problem, while calling a permanent one transient costs a
+single startup warning now that every ingest attempt logs its own cause.</li>
+<li><strong><code>DeleteTask</code> returning <code>ErrTaskNotFound</code> aborted the clear-and-retry.</strong>
+Two pushes seconds apart both classify <code>clearAndRetry</code>; the loser found the
+task already gone and answered 500. Because <code>RecordDelivery</code> had already
+recorded the delivery id, GitHub's redelivery was deduped to a no-op rather
+than retrying. &quot;Already gone&quot; is the state this path wants, so it now falls
+through to the re-enqueue.</li>
+<li><strong>An undecodable session was a 503 dead end.</strong> <code>Lookup</code> wraps a JSON decode
+failure, which the gate treated as an outage — but <code>/api/v1/auth/logout</code>
+sits behind that same gate, and docz-site only offers login on a 401, so the
+holder could never recover. A new <code>ErrSessionCorrupt</code> sentinel keeps that
+case on the 401 path (logged at Warn); only a backend that cannot answer
+gets the 503.</li>
+<li><strong><code>resolveTaskIDConflict</code> dereferenced a nil <code>TaskInfo</code></strong> that
+<code>classifyConflict</code> explicitly accepts. Unreachable through the real
+<code>*asynq.Inspector</code>, but the seam exists to be swapped, and the test suite
+pins <code>(nil, nil)</code> as supported.</li>
+</ol>
+<p>A third pass adversarially verified those five fixes rather than trusting
+them. It confirmed four sound (checking asynq's actual <code>ErrTaskNotFound</code>
+sentinel, Go's double-<code>%w</code> behavior, every legitimate chart provider
+combination, and that no nil path remained) and found fix 2 incomplete, which
+is folded into item 2 above. It also caught that the corrupt-session test
+built its error with a single <code>%w</code> while production uses two — a test weaker
+than the code it guards, now pinned to the real shape.</p>
+<p>Each of the four fixes with a new test was then proven by reverting the
+production change and confirming the test actually fails — a test that passes
+against the broken code proves nothing. All four failed as intended. That
+exercise found one more gap worth recording: the corrupt-session fix has two
+halves, and reverting the <strong>producer</strong> half alone (<code>Store.Lookup</code> no longer
+labelling the error) left the whole <code>internal/session</code> package green, because
+the middleware test injects the sentinel itself through a fake. A refactor of
+<code>Lookup</code>'s error wrapping would therefore have pushed corrupt sessions back
+onto the 503 dead end with a fully passing suite.
+<code>TestLookupCorruptValueIsLabelled</code> (integration, real Redis: seed a non-JSON
+value, assert <code>ErrSessionCorrupt</code> and <em>not</em> <code>ErrSessionNotFound</code>) closes it,
+and was itself verified by the same revert drill.</p>
+<p><strong>Integration suites.</strong> <code>just test-integration</code> (the <code>//go:build integration</code>
+tests, which CI does not run) is green across all 16 packages, including the
+testcontainers-backed <code>queue</code> (real Redis — debounce, drain, and the new
+archived-task self-heal), <code>store</code>, <code>search</code>, and <code>e2e</code> suites.</p>
+<p><strong>Release.</strong> Chart <code>0.5.0</code> (Phase 5 template changes) and OpenAPI <code>1.2.1</code>
+(editorial). The binary version comes from the release tag, so the <code>minor</code>
+bump is the tag itself plus the <code>minor</code> semver label on the PR — both are
+release-time actions, not repo edits.</p>
+<p><strong>What the EKS step is still for.</strong> INV-0007 OQ-1 (the actual root cause of
+the triggering production failure) is the one question that cannot be
+answered locally: it needs the fixed binary running in the cluster and one
+re-trigger of the failing repo. With fix 1 in place the cause now appears
+directly in <code>kubectl logs</code>. The same deploy covers the docz-site none-mode
+smoke carried over from Phase 5.</p>
+
+</section>
+<section class="panel" id="p-file-changes">
+<h2 class="panel-title" id="file-changes">File Changes</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>internal/queue/worker.go</code></td>
+<td><code>Logger</code>/<code>LogLevel</code>/<code>ErrorHandler</code> in Config; comment fix</td>
+</tr>
+<tr>
+<td><code>internal/queue/logger.go</code> (new)</td>
+<td>slog-backed <code>asynq.Logger</code> adapter</td>
+</tr>
+<tr>
+<td><code>internal/queue/client.go</code></td>
+<td>Inspector; conflict state-dispatch; coalesce log Info</td>
+</tr>
+<tr>
+<td><code>internal/queue/queue_integration_test.go</code></td>
+<td>archived self-heal + log-capture cases</td>
+</tr>
+<tr>
+<td><code>internal/githubapp/selfcheck.go</code> (new)</td>
+<td><code>SelfCheck</code> via <code>AppsTransport</code> + <code>Apps.Get</code></td>
+</tr>
+<tr>
+<td><code>cmd/docz-api/main.go</code></td>
+<td>boot self-check; none-mode gate swap; startup Warn</td>
+</tr>
+<tr>
+<td><code>cmd/docz-api/auth.go</code></td>
+<td>empty registry under none-mode</td>
+</tr>
+<tr>
+<td><code>internal/config/validate.go</code></td>
+<td><code>none</code> semantics; conditional requireds</td>
+</tr>
+<tr>
+<td><code>internal/config/config.go</code></td>
+<td><code>AuthDisabled</code> helper</td>
+</tr>
+<tr>
+<td><code>internal/authorize/authorize.go</code></td>
+<td>log before 500</td>
+</tr>
+<tr>
+<td><code>internal/session/middleware.go</code></td>
+<td>error discrimination + log; OQ-2 status</td>
+</tr>
+<tr>
+<td><code>internal/webhook/webhook.go</code></td>
+<td>body-read Warn; parse Error</td>
+</tr>
+<tr>
+<td><code>internal/httpapi/handler.go</code></td>
+<td><code>writeJSON</code> → <code>serverError</code></td>
+</tr>
+<tr>
+<td><code>internal/authhttp/handler.go</code></td>
+<td><code>writeJSON</code> → <code>serverError</code>; envelope fallback log</td>
+</tr>
+<tr>
+<td><code>internal/httpapi/openapi_contract_test.go</code></td>
+<td>none-mode handler variant</td>
+</tr>
+<tr>
+<td><code>charts/docz-api/templates/*</code> + <code>values.yaml</code> + tests</td>
+<td>none-mode gating + unittest cases</td>
+</tr>
+<tr>
+<td><code>deploy/README.md</code>, <code>charts/docz-api/README.md.gotmpl</code></td>
+<td>none-mode + caveat docs</td>
+</tr>
+<tr>
+<td><code>CLAUDE.md</code>, <code>docs/investigation/0007-*.md</code></td>
+<td>conventions; OQ-1 answer</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing-plan">
+<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<ul>
+<li><strong>Log assertions</strong> are the novel surface: a small recording
+<code>slog.Handler</code> helper (swapped via <code>slog.SetDefault</code>, restored per test)
+shared by the queue/middleware/sink tests. Standard library only, per
+house rules.</li>
+<li><strong>Queue</strong>: unit (adapter level-mapping, ErrorHandler attrs, conflict
+state-dispatch on a fake inspector) + integration (real Redis: archived
+self-heal, burst coalesce regression, JSON-purity under Redis outage).</li>
+<li><strong>githubapp</strong>: stub RoundTripper trio (200 / 401 / connection refused).</li>
+<li><strong>Sinks</strong>: one unit test per sink asserting exactly one error record and
+unchanged HTTP behavior (except the OQ-2 decision, pinned by its own
+test).</li>
+<li><strong>none-mode</strong>: contract-test variant (open reads + synthetic session) and
+helm-unittest render cases; default-mode fixtures untouched proves
+no-regression.</li>
+<li><strong>Phase 6</strong> is manual-but-scripted: both drills recorded in the PR
+description with log excerpts.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<ul>
+<li>No new Go modules: <code>asynq</code> (ErrorHandler/Logger/Inspector),
+<code>ghinstallation/v2</code> (<code>NewAppsTransport</code>), go-github (<code>Apps.Get</code>) are all
+already direct deps — verified against the module cache
+(asynq <code>v0.26.0</code>, ghinstallation <code>v2.19.0</code>).</li>
+<li>Chart changes ride the existing helpers (<code>docz-api.authProviders</code>).</li>
+<li>Phase 6's EKS step needs the cluster access already in use for testing.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<p>Numbered for review; <code>a</code> is the recommendation. Reply with a letter per
+question, or &quot;other: …&quot;.</p>
+<p><strong>All answered <code>a</code> (2026-08-22).</strong> OQ-1a comes with a probe-semantics note
+from review: the operator asked whether <code>/healthz</code> vs <code>/readyz</code> should be
+made more explicit — <code>/healthz</code> = &quot;pod is up&quot;, <code>/readyz</code> = &quot;dependencies
+connected, can accept traffic&quot;. That is exactly the current semantics
+(liveness is a bare 200; readiness checks postgres/meili/redis and 503s
+naming the offender), so no endpoint changes — but the distinction gets
+<strong>documented</strong>, and the boot self-check is deliberately a <em>third</em> thing:
+startup credential validation, in <strong>neither</strong> probe. GitHub stays out of
+<code>/readyz</code> on purpose (readiness gates traffic routing; the read API serves
+fine with GitHub down), and a credential failure crashes the boot rather
+than flapping readiness. A doc task was added to Phase 3.</p>
+<ol>
+<li><p><strong>Boot self-check failure mode (Phase 3)</strong> — what does a failed
+<code>GET /app</code> do to startup?</p>
+<ul>
+<li><strong>a. Discriminate: credential rejection (4xx from GitHub) fails the
+boot; transport errors (DNS, refused, timeout) log Warn and
+continue.</strong> Bad creds are permanent and deserve a crash-loop an
+operator sees immediately; a GitHub blip is transient and should not
+take down an otherwise healthy read API. <em>(Recommended.)</em> <strong>Answered: (a).</strong></li>
+<li>b. Always fail fast — simplest, matches the OIDC-discovery precedent
+exactly, but a GitHub outage at pod-restart time crash-loops the
+whole API.</li>
+<li>c. Always warn-only — never blocks a deploy, but a mangled key still
+reaches the first real ingest before anyone notices (a softer version
+of today's F5).</li>
+</ul>
+</li>
+<li><p><strong>Session-lookup infra errors (Phase 4)</strong> — Redis down / corrupt JSON
+currently 401s. After logging, what status?</p>
+<ul>
+<li><strong>a. 503 with the standard <code>{&quot;error&quot;:…}</code> envelope.</strong> Honest (&quot;service
+can't answer authn right now&quot; ≠ &quot;you are logged out&quot;), and it stops
+the SPA from bouncing users to the login panel during a Redis blip.
+5xx is not per-op specced, so no OpenAPI change. <em>(Recommended.)</em> <strong>Answered: (a).</strong></li>
+<li>b. Keep 401, just add the Error log — zero behavior change, but the
+SPA logs everyone out for the duration of any Redis hiccup.</li>
+<li>c. 500 — same honesty as (a) with a less precise status code.</li>
+</ul>
+</li>
+<li><p><strong>No-auth switch spelling (Phase 5)</strong> — how does the operator say &quot;no
+login auth&quot;?</p>
+<ul>
+<li><strong>a. <code>AUTH_PROVIDERS=none</code>, required to be the sole entry.</strong> One
+existing knob, reads naturally next to <code>github,okta</code>, impossible to
+enable by omission (the default stays <code>github</code>), and the chart's
+provider-gating helper handles it for free. <em>(Recommended.)</em> <strong>Answered: (a).</strong></li>
+<li>b. A separate <code>AUTH_DISABLED=true</code> boolean — more explicit, but two
+knobs can now contradict each other (<code>AUTH_DISABLED=true</code> +
+<code>AUTH_PROVIDERS=okta</code>) and both sides need precedence rules.</li>
+<li>c. Empty <code>AUTH_PROVIDERS</code> means disabled — smallest change, but a
+typo'd provider list could silently open the API; <code>none</code> keeps
+&quot;open&quot; an explicit word.</li>
+</ul>
+</li>
+<li><p><strong><code>/auth/login</code> + <code>/auth/callback</code> in none-mode (Phase 5)</strong> — mounted
+or not?</p>
+<ul>
+<li><strong>a. Not mounted → 404.</strong> The absent-route precedent (the search
+route is absent when no searcher is wired); nothing advertises the
+endpoints, and the SPA never links them (its login UI is 401-driven
+and none-mode never 401s). <em>(Recommended.)</em> <strong>Answered: (a).</strong></li>
+<li>b. Mounted, returning 503 + an &quot;auth disabled&quot; envelope — friendlier
+to a human poking with curl, at the cost of a bespoke handler for a
+mode meant to be temporary.</li>
+</ul>
+</li>
+<li><p><strong>Synthetic identity shape (Phase 5)</strong> — what does
+<code>/api/v1/auth/session</code> return in none-mode?</p>
+<ul>
+<li><strong>a. <code>{provider: &quot;none&quot;, subject: &quot;anonymous&quot;}</code> with empty
+email/login/groups</strong>, via the normal <code>sessionDTO</code> — the SPA renders
+its session menu unchanged, no spec change. <em>(Recommended.)</em> <strong>Answered: (a).</strong></li>
+<li>b. 404/absent endpoint in none-mode — cleaner conceptually, but the
+SPA treats a session-endpoint failure as logged-out and may render
+login affordances that lead nowhere (404 per OQ-4a).</li>
+</ul>
+</li>
+<li><p><strong>The active-window drop (INV-0007 OQ-5)</strong> — a trigger landing while
+the repo's job is <em>running</em> is still dropped (asynq holds the task id
+until completion). This plan logs it (Phase 1); fix it too?</p>
+<ul>
+<li><strong>a. Defer to a follow-up.</strong> Rare (requires a push inside the
+seconds-long ingest window), now visible at Info, and an eventual
+periodic-resync backstop erases the class entirely; a dirty-flag
+re-enqueue in the worker completion path is real complexity for a
+shrinking gap. <em>(Recommended.)</em> <strong>Answered: (a).</strong></li>
+<li>b. Fix now: on active-state conflict, re-enqueue with
+<code>ProcessIn(debounce)</code> under a <em>different</em> task id (e.g.
+<code>ingest:&lt;repo&gt;:followup</code>), accepting the second-slot bookkeeping.</li>
+</ul>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0007 — the findings this implements (F1–F7, recommendations 1–6)</li>
+<li><code>docs/impl/0005-*.md</code> — house phase/OQ format precedent</li>
+<li>asynq <code>v0.26.0</code> — <code>server.go</code> (<code>ErrorHandler</code> :278, <code>Logger</code> :191),
+<code>inspector.go</code> (<code>GetTaskInfo</code> :240, <code>DeleteTask</code> :617),
+<code>processor.go:335-349</code>, <code>internal/rdb/rdb.go:98-108,841</code></li>
+<li>ghinstallation <code>v2.19.0</code> — <code>appsTransport.go:48</code> (<code>NewAppsTransport</code>)</li>
+<li>CLAUDE.md — Phase 4 queue conventions; Phase 6 auth architecture</li>
+<li>docz-site <code>src/api/fetcher.ts</code> — 401-driven login UI (why the SPA needs
+no none-mode changes)</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/api-impl-0006.md</code>, sha256 <code>17e7aa77382d62ffcde69a58d3395b94a4096e713d16b0e5aec6c9f94721958d</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="ADR-0003">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>ADR-0003: Develop SDK, harness, and ADK layers in one repo; defer repo split</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · ADR</p>
+<h1>Develop SDK, harness, and ADK layers in one repo; defer repo split</h1>
+<p class="summary">The original plan was two artifacts in two places: this repo as the
+&quot;lower-level&quot; framework SDK (<code>pkg/llm</code>, <code>pkg/agent</code>, <code>pkg/skill</code>,
+<code>pkg/llmhttp</code>), and the Agent Dev Kit as a product layer built on top of it —
+with RFC-0001
+assuming its own repository (&quot;reference agents … under <code>examples/</code> in the ADK
+repo&quot;) and its risk table budgeting for cross-repo version pinning and a nightly
+CI run against framework HEAD.</p>
+<div class="meta">
+<span class="pill">ADR-0003</span>
+<span class="pill st-accepted">Accepted</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-07-02</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="status" aria-controls="p-status">Status</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
+<button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
+<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-status">
+<h2 class="panel-title" id="status">Status</h2>
+<p>Accepted (2026-07-02)</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>Two things eroded that boundary:</p>
+<ul>
+<li>DESIGN-0002
+pulled RFC-0001's <code>adk run</code> slice — the doc-driven loop harness (<code>pkg/loop</code>,
+<code>pkg/tool</code>, <code>cmd/dloop</code>) — into this repo, because the short-term goal (run
+workloads from an IMPL doc via donald loops) needs none of the ADK's
+multi-tenant machinery and can't wait for it.</li>
+<li>Both surfaces are still churning. RFC-0001's own top risk — &quot;framework churn
+breaking the ADK&quot; — exists <em>because</em> of the repo split: every core change
+would need a release, a pin bump, and a compat window before the layer above
+could use it.</li>
+</ul>
+<p>Meanwhile the standard Go mechanics for &quot;one repo, isolated weight&quot; are already
+documented in this repo:
+INV-0007's
+Axis A analysis (sub-modules per heavy component — the otel-contrib /
+aws-sdk-go-v2 pattern) was written for the Copilot provider but is generic.</p>
+
+</section>
+<section class="panel" id="p-decision">
+<h2 class="panel-title" id="decision">Decision</h2>
+<p><strong>All layers — framework SDK, loop harness, and future ADK components — develop
+in this repo</strong>, structured so that extraction later is mechanical if a real
+trigger fires. We do <strong>not</strong> pre-build for the split: no speculative
+sub-modules, no pre-carved package trees, no work that isn't clearly useful for
+the near-term goal. If we hold to the existing design principles and idiomatic
+Go, moving code later is cheap; optimizing for a split we may never do is
+premature.</p>
+<p><strong>The near-term priority is explicit:</strong> get to &quot;run a workload from an IMPL doc
+as a donald loop&quot; (DESIGN-0002 through its self-hosting phase). Anything beyond
+what that requires is deferred until it is explicitly needed.</p>
+<h4 id="layering-rules-the-split-insurance">Layering rules (the split insurance)</h4>
+<ol>
+<li><strong>One-way imports.</strong> Higher layers import lower layers, never the reverse:
+<code>cmd/*</code> → harness (<code>pkg/loop</code>, <code>pkg/tool</code>) → framework core (<code>pkg/llm</code>,
+<code>pkg/agent</code>, <code>pkg/skill</code>, <code>pkg/llmhttp</code>). The core must never import harness
+or ADK packages. This is the only invariant that makes a future extraction a
+<code>git filter-repo</code> + import-path rewrite instead of a refactor.</li>
+<li><strong>Per-layer <code>internal/</code>.</strong> The existing convention (INV-0006) continues to
+apply within each layer.</li>
+<li><strong>Sub-module escalation, on demand only.</strong> The moment a component drags in a
+heavy dependency tree (<code>client-go</code>, Postgres drivers, River, a controller
+runtime), that component gets its own <code>go.mod</code> (INV-0007 Option A3) so
+<code>pkg/llm</code>-only consumers never carry it in <code>go.sum</code>. The harness's
+dependencies (hashicorp/hcl, docz) are light enough to live in the root
+module; a future <code>adk-server</code> / <code>adk-controller</code> almost certainly is not.</li>
+<li><strong>No new shared abstractions without two consumers.</strong> Layer boundaries are
+kept honest by need, not by anticipation — same spirit as the framework's &quot;no
+fallbacks / no premature generalization&quot; decisions.</li>
+</ol>
+<h4 id="split-triggers-when-to-revisit-this-adr">Split triggers (when to revisit this ADR)</h4>
+<p>Revisit — do not preemptively act on — a repo split when one of these becomes
+real:</p>
+<ul>
+<li><strong>Public release of the SDK core</strong> (INV-0001 Q1's deferred decision). A repo
+can't be partially published; this is the natural forcing function.</li>
+<li><strong>Uncontainable dependency weight</strong> — a heavy component whose isolation needs
+exceed what sub-modules handle cleanly.</li>
+<li><strong>Divergent release cadence or ownership</strong> — a layer needs its own versioning
+story or maintainer set.</li>
+<li><strong>Operational artifacts overwhelm the library repo</strong> — helm charts, images,
+and deploy tooling growing past what a library repo should carry.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-consequences">
+<h2 class="panel-title" id="consequences">Consequences</h2>
+<h4 id="positive">Positive</h4>
+<ul>
+<li>Atomic cross-layer changes while both surfaces churn — no release/pin/bump
+cycle between the core and the harness; RFC-0001's &quot;framework churn breaks the
+ADK&quot; risk largely dissolves.</li>
+<li>One docz suite (IDs keep cross-referencing), one CI, one set of conventions,
+one <code>CLAUDE.md</code>.</li>
+<li>Fastest path to the actual goal: donald-loop workloads running, without
+repo-plumbing work in front of it.</li>
+<li>INV-0007's sub-module analysis gets adopted as living guidance instead of
+dying with the Copilot pivot.</li>
+</ul>
+<h4 id="negative">Negative</h4>
+<ul>
+<li>Root-module <code>go.sum</code> growth must be watched — the escalation rule (rule 3) is
+the containment, and it requires discipline to apply <em>when</em> a heavy dep lands,
+not after consumers already carry it.</li>
+<li>CI blast radius: every layer shares the gate. Acceptable at current scale; a
+future path-filtered matrix is available if <code>just ci</code> gets slow.</li>
+<li>If the public-release trigger fires, the split becomes a bigger one-time event
+than it would have been with pre-separated repos. Accepted: that event may
+never come, and the layering rules bound its cost.</li>
+</ul>
+<h4 id="neutral">Neutral</h4>
+<ul>
+<li>The private-repo posture (INV-0001 Q1) now covers all layers equally.</li>
+<li>RFC-0001 remains the ADK's product definition; only its placement assumption
+changes. Its phases still gate on their own prerequisites.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-alternatives-considered">
+<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<ul>
+<li><strong>Two repos now (original implicit plan).</strong> Rejected: pays the version-pinning
+and compat tax at peak churn, for a boundary we can't yet draw confidently —
+we likely won't know the right split line until the harness and first ADK
+pieces exist.</li>
+<li><strong>One repo, sub-modules everywhere from day one.</strong> Rejected: INV-0007 itself
+documents the release-ordering and CI overhead of multi-module repos; paying
+it before any heavy dependency exists is exactly the premature optimization
+this ADR declines.</li>
+<li><strong>Harness here, ADK in its own repo later regardless.</strong> Rejected as a standing
+commitment — it re-creates the churn tax the moment ADK work starts. If a
+trigger fires, the split happens then, on evidence.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>RFC-0001 Agent Dev Kit on the Agentic Go Framework
+— placement assumption amended by this ADR</li>
+<li>DESIGN-0002 Doc-Driven Agent Loop Harness v1 Design
+— the first ADK slice landing in-repo</li>
+<li>INV-0008 Doc-Driven Agent Loop Harness Scoping
+— the scoping that pulled the slice forward</li>
+<li>INV-0007 Distribution Model for the Copilot SDK Provider
+— Axis A sub-module analysis, adopted here as the escalation mechanism</li>
+<li>INV-0001 Agentic Go Framework Scoping
+— Q1: private module, public release deferred (the main split trigger)</li>
+<li>External precedent:
+<a href="https://github.com/open-telemetry/opentelemetry-go-contrib">opentelemetry-go-contrib</a>,
+<a href="https://github.com/aws/aws-sdk-go-v2">aws-sdk-go-v2</a> — multi-module monorepos
+via per-component <code>go.mod</code></li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../adr/testdata/booty-adr-0003.md</code>, sha256 <code>2910e12d9fa8110e73aa8b5b35f9cc2fcd58e797a1910b11fd4582636c7f5302</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0002">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0002: Wiki Command for MkDocs TechDocs Integration</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Design</p>
+<h1>Wiki Command for MkDocs TechDocs Integration</h1>
+<p class="summary"><strong>Status:</strong> Implemented
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-03-11</p>
+<div class="meta">
+<span class="pill">DESIGN-0002</span>
+<span class="pill st-accepted">Implemented</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-03-11</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
+<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
+<button type="button" data-tab="background" aria-controls="p-background">Background</button>
+<button type="button" data-tab="cli-interface" aria-controls="p-cli-interface">CLI Interface</button>
+<button type="button" data-tab="nav-generation" aria-controls="p-nav-generation">Nav Generation</button>
+<button type="button" data-tab="configuration" aria-controls="p-configuration">Configuration</button>
+<button type="button" data-tab="implementation" aria-controls="p-implementation">Implementation</button>
+<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#goals-and-non-goals">Goals and Non-Goals</a>
+<ul>
+<li><a href="#goals">Goals</a></li>
+<li><a href="#non-goals">Non-Goals</a></li>
+</ul>
+</li>
+<li><a href="#background">Background</a>
+<ul>
+<li><a href="#backstage-techdocs-mkdocsyml-format">Backstage TechDocs mkdocs.yml Format</a></li>
+</ul>
+</li>
+<li><a href="#cli-interface">CLI Interface</a>
+<ul>
+<li><a href="#command-structure">Command Structure</a></li>
+<li><a href="#docz-wiki-init">docz wiki init</a>
+<ul>
+<li><a href="#generated-mkdocsyml">Generated mkdocs.yml</a></li>
+<li><a href="#flags">Flags</a></li>
+</ul>
+</li>
+<li><a href="#docz-wiki-update">docz wiki update</a>
+<ul>
+<li><a href="#flags-1">Flags</a></li>
+</ul>
+</li>
+<li><a href="#integration-with-docz-create">Integration with docz create</a></li>
+</ul>
+</li>
+<li><a href="#nav-generation">Nav Generation</a>
+<ul>
+<li><a href="#directory-scanning">Directory Scanning</a></li>
+<li><a href="#nav-structure">Nav Structure</a></li>
+<li><a href="#directory-title-mapping">Directory Title Mapping</a></li>
+<li><a href="#ordering">Ordering</a></li>
+<li><a href="#handling-docsindexmd">Handling docs/index.md</a></li>
+<li><a href="#edge-cases">Edge Cases</a></li>
+</ul>
+</li>
+<li><a href="#configuration">Configuration</a>
+<ul>
+<li><a href="#new-config-keys">New Config Keys</a></li>
+<li><a href="#wikiconfig-struct">WikiConfig Struct</a></li>
+</ul>
+</li>
+<li><a href="#implementation">Implementation</a>
+<ul>
+<li><a href="#package-layout">Package Layout</a></li>
+<li><a href="#key-types">Key Types</a></li>
+<li><a href="#mkdocs-yaml-handling">MkDocs YAML Handling</a></li>
+<li><a href="#nav-serialization">Nav Serialization</a></li>
+<li><a href="#title-extraction-from-documents">Title Extraction from Documents</a></li>
+</ul>
+</li>
+<li><a href="#testing-strategy">Testing Strategy</a></li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>Add a <code>docz wiki</code> command group that generates and maintains a <code>mkdocs.yml</code>
+file compatible with Backstage's TechDocs plugin. The <code>wiki update</code> command
+scans the <code>docs/</code> directory and rebuilds the MkDocs <code>nav:</code> section to reflect
+the current file structure — including docz-managed documents and any other
+markdown files in the docs tree.</p>
+
+</section>
+<section class="panel" id="p-goals">
+<h2 class="panel-title" id="goals">Goals</h2>
+<h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<ul>
+<li>Generate a <code>mkdocs.yml</code> that works out of the box with <code>mkdocs serve</code> and
+Backstage TechDocs</li>
+<li>Automatically maintain the <code>nav:</code> section as documents are added or removed</li>
+<li>Include all markdown files in the docs directory, not just docz-managed types</li>
+<li>Integrate with the existing <code>docz create</code> workflow so the nav stays current</li>
+<li>Support a reasonable default nav structure with zero configuration</li>
+</ul>
+
+</section>
+<section class="panel" id="p-non-goals">
+<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<ul>
+<li>Building or serving the MkDocs site (use <code>mkdocs serve</code> / <code>mkdocs build</code>)</li>
+<li>Managing MkDocs themes, plugins, or extensions beyond <code>techdocs-core</code></li>
+<li>Supporting non-markdown content (images, PDFs are referenced but not tracked)</li>
+<li>Replacing MkDocs as the site generator</li>
+</ul>
+
+</section>
+<section class="panel" id="p-background">
+<h2 class="panel-title" id="background">Background</h2>
+<p>Backstage's TechDocs plugin reads a <code>mkdocs.yml</code> at the repo root to generate
+documentation sites. The nav section must be maintained manually, which creates
+drift — documents get created via <code>docz create</code> but the nav doesn't update.
+Teams either forget to update the nav or maintain it by hand, leading to stale
+or missing pages.</p>
+<p>Since <code>docz</code> already knows the full structure of the docs directory (it manages
+document types, scans for frontmatter, and maintains README indexes), it's in
+the best position to keep the MkDocs nav in sync automatically.</p>
+<h4 id="backstage-techdocs-mkdocsyml-format">Backstage TechDocs <code>mkdocs.yml</code> Format</h4>
+<p>A typical TechDocs-compatible <code>mkdocs.yml</code>:</p>
+<pre><code class="language-yaml">site_name: My Service
+site_description: Documentation for My Service
+
+plugins:
+  - techdocs-core
+
+nav:
+  - Home: index.md
+  - RFCs:
+      - Overview: rfc/README.md
+      - &#34;RFC-0001: API Rate Limiting&#34;: rfc/0001-api-rate-limiting.md
+  - ADRs:
+      - Overview: adr/README.md
+      - &#34;ADR-0001: Use PostgreSQL&#34;: adr/0001-use-postgresql.md
+  - Architecture:
+      - Overview: architecture/README.md
+      - System Diagram: architecture/system-diagram.md
+</code></pre>
+<p>Key constraints:</p>
+<ul>
+<li><code>plugins: [techdocs-core]</code> is required for Backstage</li>
+<li>Nav paths are relative to the <code>docs_dir</code> (defaults to <code>docs/</code>)</li>
+<li>Nav entries can be nested for grouping</li>
+<li>The title in nav can differ from the document title</li>
+</ul>
+
+</section>
+<section class="panel" id="p-cli-interface">
+<h2 class="panel-title" id="cli-interface">CLI Interface</h2>
+<h4 id="command-structure">Command Structure</h4>
+<pre><code>docz wiki
+  init                    Create mkdocs.yml with TechDocs defaults
+  update                  Rebuild the nav section from docs/ contents
+</code></pre>
+<h4 id="docz-wiki-init"><code>docz wiki init</code></h4>
+<p>Creates a <code>mkdocs.yml</code> at the repo root with sensible TechDocs defaults.
+If the project hasn't been initialized with <code>docz init</code>, it runs <code>docz init</code>
+automatically before creating the mkdocs file.</p>
+<pre><code class="language-bash">docz wiki init
+# → Initialized docz (if needed)
+# → Created mkdocs.yml
+
+docz wiki init --site-name &#34;My Service&#34;
+# → Created mkdocs.yml with site_name: My Service
+
+docz wiki init --force
+# → Overwrote existing mkdocs.yml
+</code></pre>
+<p>If <code>mkdocs.yml</code> already exists and <code>--force</code> is not passed, the command fails
+with a clear error message.</p>
+<h5 id="generated-mkdocsyml">Generated <code>mkdocs.yml</code></h5>
+<pre><code class="language-yaml">site_name: &lt;repo-name&gt;
+site_description: Documentation for &lt;repo-name&gt;
+
+plugins:
+  - techdocs-core
+
+nav:
+  - Home: index.md
+  # nav is populated by `docz wiki update`
+</code></pre>
+<p>The <code>site_name</code> defaults to the directory name of the repository root (e.g.,
+<code>my-service</code>). It can be overridden with <code>--site-name</code>.</p>
+<h5 id="flags">Flags</h5>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--force</code></td>
+<td>Overwrite existing <code>mkdocs.yml</code></td>
+</tr>
+<tr>
+<td><code>--site-name &lt;name&gt;</code></td>
+<td>Set <code>site_name</code> (default: repo directory name)</td>
+</tr>
+<tr>
+<td><code>--site-description &lt;desc&gt;</code></td>
+<td>Set <code>site_description</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="docz-wiki-update"><code>docz wiki update</code></h4>
+<p>Scans the <code>docs/</code> directory and regenerates the <code>nav:</code> section of <code>mkdocs.yml</code>.
+All other fields (<code>site_name</code>, <code>plugins</code>, <code>theme</code>, etc.) are preserved.</p>
+<pre><code class="language-bash">docz wiki update
+# → Updated nav in mkdocs.yml (23 pages)
+
+docz wiki update --dry-run
+# → Prints what the nav would look like without writing
+</code></pre>
+<h5 id="flags-1">Flags</h5>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Print the generated nav to stdout without modifying <code>mkdocs.yml</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="integration-with-docz-create">Integration with <code>docz create</code></h4>
+<p>When <code>docz create</code> runs and auto-updates the type index, it should also call
+<code>docz wiki update</code> if a <code>mkdocs.yml</code> exists at the repo root. This keeps the
+nav current without requiring a separate command.</p>
+<p>This is controlled by a new config key:</p>
+<pre><code class="language-yaml">wiki:
+  auto_update: true   # default: true if mkdocs.yml exists
+</code></pre>
+
+</section>
+<section class="panel" id="p-nav-generation">
+<h2 class="panel-title" id="nav-generation">Nav Generation</h2>
+<ul class="heading-list">
+<li><a href="#directory-scanning">Directory Scanning</a></li>
+<li><a href="#nav-structure">Nav Structure</a></li>
+<li><a href="#directory-title-mapping">Directory Title Mapping</a></li>
+<li><a href="#ordering">Ordering</a></li>
+<li><a href="#handling-docsindexmd">Handling docs/index.md</a></li>
+<li><a href="#edge-cases">Edge Cases</a></li>
+</ul>
+<h4 id="directory-scanning">Directory Scanning</h4>
+<p><code>wiki update</code> walks the docs directory recursively. For each directory and
+file it encounters:</p>
+<ol>
+<li><p><strong>Directories</strong> become nav groups. The group title is derived from:</p>
+<ul>
+<li>The directory name, title-cased (e.g., <code>rfc</code> → <code>RFCs</code>, <code>design</code> → <code>Design</code>)</li>
+<li>Docz-managed types use their configured display name</li>
+</ul>
+</li>
+<li><p><strong><code>README.md</code> / <code>index.md</code></strong> files in a directory become the &quot;Overview&quot;
+entry for that group</p>
+</li>
+<li><p><strong>Docz documents</strong> (<code>NNNN-*.md</code>) use their frontmatter title as the nav
+entry title (e.g., <code>&quot;RFC-0001: API Rate Limiting&quot;</code>)</p>
+</li>
+<li><p><strong>Other markdown files</strong> use their filename converted to title case, or
+their first H1 heading if present</p>
+</li>
+<li><p><strong>Non-markdown files</strong> are ignored</p>
+</li>
+</ol>
+<h4 id="nav-structure">Nav Structure</h4>
+<p>The nav is organized by top-level directories under <code>docs/</code>:</p>
+<pre><code class="language-yaml">nav:
+  - Home: index.md
+  - RFCs:
+      - Overview: rfc/README.md
+      - &#34;RFC-0001: API Rate Limiting&#34;: rfc/0001-api-rate-limiting.md
+      - &#34;RFC-0002: Event Sourcing&#34;: rfc/0002-event-sourcing.md
+  - ADRs:
+      - Overview: adr/README.md
+      - &#34;ADR-0001: Use PostgreSQL&#34;: adr/0001-use-postgresql.md
+  - Design:
+      - Overview: design/README.md
+      - &#34;DESIGN-0001: Auth Flow&#34;: design/0001-auth-flow.md
+  - Implementation Plans:
+      - Overview: impl/README.md
+      - &#34;IMPL-0001: Auth Implementation&#34;: impl/0001-auth-implementation.md
+  - Plans:
+      - Overview: plan/README.md
+      - &#34;PLAN-0001: Q1 Roadmap&#34;: plan/0001-q1-roadmap.md
+  - Investigations:
+      - Overview: investigation/README.md
+      - &#34;INV-0001: pgvector Performance&#34;: investigation/0001-pgvector-performance.md
+  - Architecture:
+      - System Overview: architecture/system-overview.md
+      - Deployment: architecture/deployment.md
+</code></pre>
+<h4 id="directory-title-mapping">Directory Title Mapping</h4>
+<p>Docz-managed type directories use human-friendly pluralized names:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Nav Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rfc</code></td>
+<td>RFCs</td>
+</tr>
+<tr>
+<td><code>adr</code></td>
+<td>ADRs</td>
+</tr>
+<tr>
+<td><code>design</code></td>
+<td>Design</td>
+</tr>
+<tr>
+<td><code>impl</code></td>
+<td>Implementation Plans</td>
+</tr>
+<tr>
+<td><code>plan</code></td>
+<td>Plans</td>
+</tr>
+<tr>
+<td><code>investigation</code></td>
+<td>Investigations</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Non-docz directories use title-cased directory names. A directory named
+<code>architecture</code> becomes <code>Architecture</code>, <code>getting-started</code> becomes
+<code>Getting Started</code>.</p>
+<p>These defaults can be overridden in config via <code>wiki.nav_titles</code>.</p>
+<h4 id="ordering">Ordering</h4>
+<p>Within each section:</p>
+<ol>
+<li><code>README.md</code> / <code>index.md</code> always comes first (as &quot;Overview&quot;)</li>
+<li>Docz documents are sorted by their numeric ID (ascending)</li>
+<li>Other files are sorted alphabetically</li>
+</ol>
+<p>Top-level sections on <code>wiki init</code> are ordered alphabetically:</p>
+<ol>
+<li><code>index.md</code> (Home) always first</li>
+<li>All other sections sorted alphabetically</li>
+</ol>
+<p>On <code>wiki update</code>, existing section order is preserved. New sections are
+appended alphabetically at the end.</p>
+<h4 id="handling-docsindexmd">Handling <code>docs/index.md</code></h4>
+<p>If <code>docs/index.md</code> does not exist, <code>wiki init</code> creates a minimal one:</p>
+<pre><code class="language-markdown"># &lt;site_name&gt;
+
+Welcome to the documentation for &lt;site_name&gt;.
+
+## Document Types
+
+- [RFCs](rfc/README.md) — High-level proposals
+- [ADRs](adr/README.md) — Architecture decisions
+- [Design](design/README.md) — Detailed designs
+- [Implementation](impl/README.md) — Implementation plans
+- [Plans](plan/README.md) — Planning documents
+- [Investigations](investigation/README.md) — Research spikes
+</code></pre>
+<h4 id="edge-cases">Edge Cases</h4>
+<ul>
+<li><strong>Empty directories</strong> — Skipped in the nav (no group created)</li>
+<li><strong>Deeply nested directories</strong> — Supported at arbitrary depth</li>
+<li><strong>Files without frontmatter</strong> — Use filename-derived titles</li>
+<li><strong><code>mkdocs.yml</code> missing</strong> — <code>wiki update</code> errors with a message to run
+<code>wiki init</code> first</li>
+<li><strong><code>docs/</code> directory missing</strong> — <code>wiki init</code> runs <code>docz init</code> automatically;
+<code>wiki update</code> errors with a message to run <code>wiki init</code> first</li>
+<li><strong>Excluded directories</strong> — <code>templates/</code> and <code>examples/</code> are excluded by
+default (configurable)</li>
+</ul>
+
+</section>
+<section class="panel" id="p-configuration">
+<h2 class="panel-title" id="configuration">Configuration</h2>
+<h4 id="new-config-keys">New Config Keys</h4>
+<pre><code class="language-yaml">wiki:
+  auto_update: true           # auto-run wiki update after docz create
+  mkdocs_path: mkdocs.yml     # path to mkdocs.yml (relative to repo root)
+  exclude:                    # directories to exclude from nav
+    - templates
+    - examples
+  nav_titles:                 # override directory-to-nav-title mapping
+    rfc: &#34;Request for Comments&#34;
+    architecture: &#34;System Architecture&#34;
+</code></pre>
+<h4 id="wikiconfig-struct"><code>WikiConfig</code> Struct</h4>
+<pre><code class="language-go">type WikiConfig struct {
+    AutoUpdate bool              `mapstructure:&#34;auto_update&#34; yaml:&#34;auto_update&#34;`
+    MkDocsPath string            `mapstructure:&#34;mkdocs_path&#34; yaml:&#34;mkdocs_path&#34;`
+    Exclude    []string          `mapstructure:&#34;exclude&#34;     yaml:&#34;exclude&#34;`
+    NavTitles  map[string]string `mapstructure:&#34;nav_titles&#34;  yaml:&#34;nav_titles&#34;`
+}
+</code></pre>
+
+</section>
+<section class="panel" id="p-implementation">
+<h2 class="panel-title" id="implementation">Implementation</h2>
+<ul class="heading-list">
+<li><a href="#package-layout">Package Layout</a></li>
+<li><a href="#key-types">Key Types</a></li>
+<li><a href="#mkdocs-yaml-handling">MkDocs YAML Handling</a></li>
+<li><a href="#nav-serialization">Nav Serialization</a></li>
+<li><a href="#title-extraction-from-documents">Title Extraction from Documents</a></li>
+</ul>
+<h4 id="package-layout">Package Layout</h4>
+<pre><code>internal/
+  wiki/
+    wiki.go       # NavEntry, ScanDocs(), BuildNav()
+    mkdocs.go     # ReadMkDocs(), WriteMkDocs(), UpdateNav()
+    titles.go     # Directory title mapping, frontmatter title extraction
+cmd/
+  wiki.go         # docz wiki init, docz wiki update
+</code></pre>
+<h4 id="key-types">Key Types</h4>
+<pre><code class="language-go">// NavEntry represents a single entry in the MkDocs nav.
+type NavEntry struct {
+    Title    string
+    Path     string     // relative to docs_dir, e.g. &#34;rfc/0001-my-rfc.md&#34;
+    Children []NavEntry // non-nil for directory groups
+}
+</code></pre>
+<h4 id="mkdocs-yaml-handling">MkDocs YAML Handling</h4>
+<p>Reading and writing <code>mkdocs.yml</code> must preserve fields that <code>docz</code> doesn't
+manage (theme, extra plugins, markdown_extensions, etc.). The approach:</p>
+<ol>
+<li>Read the file as a <code>map[string]interface{}</code></li>
+<li>Replace only the <code>nav</code> key</li>
+<li>Write back the full map, preserving key order where possible</li>
+</ol>
+<p>This avoids defining a struct for every possible MkDocs field. The <code>nav</code> key
+is the only one <code>docz wiki update</code> modifies.</p>
+<h4 id="nav-serialization">Nav Serialization</h4>
+<p>MkDocs nav entries are serialized as a list of single-key maps in YAML:</p>
+<pre><code class="language-yaml">nav:
+  - Home: index.md
+  - RFCs:
+      - Overview: rfc/README.md
+</code></pre>
+<p>In Go, this is <code>[]interface{}</code> where each element is either:</p>
+<ul>
+<li><code>map[string]string</code> for a leaf: <code>{&quot;Home&quot;: &quot;index.md&quot;}</code></li>
+<li><code>map[string][]interface{}</code> for a group: <code>{&quot;RFCs&quot;: [...]}</code></li>
+</ul>
+<h4 id="title-extraction-from-documents">Title Extraction from Documents</h4>
+<p>For docz-managed documents, read frontmatter and construct the title as
+<code>&quot;&lt;PREFIX&gt;-&lt;ID&gt;: &lt;Title&gt;&quot;</code> (e.g., <code>&quot;RFC-0001: API Rate Limiting&quot;</code>).</p>
+<p>For non-docz markdown files, use a two-pass approach:</p>
+<ol>
+<li>Try to read the first <code># Heading</code> from the file</li>
+<li>Fall back to converting the filename to title case
+(e.g., <code>system-overview.md</code> → <code>System Overview</code>)</li>
+</ol>
+
+</section>
+<section class="panel" id="p-testing-strategy">
+<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<ul>
+<li><strong>Unit tests</strong> for nav generation from a mock directory tree</li>
+<li><strong>Unit tests</strong> for title extraction (frontmatter, H1, filename fallback)</li>
+<li><strong>Unit tests</strong> for MkDocs YAML read/write (preserve unknown fields)</li>
+<li><strong>Integration tests</strong> for <code>wiki init</code> (creates mkdocs.yml and index.md)</li>
+<li><strong>Integration tests</strong> for <code>wiki update</code> (scans real directories, writes nav)</li>
+<li><strong>Golden file tests</strong> for nav output given a known directory structure</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<ol>
+<li><p><strong>Ordering behavior</strong> — <code>wiki init</code> generates the nav in alphabetical order.
+<code>wiki update</code> preserves the existing section order in <code>mkdocs.yml</code> and
+appends new sections alphabetically at the end. This lets users manually
+reorder sections and have that order survive updates.</p>
+</li>
+<li><p><strong><code>wiki init</code> runs <code>docz init</code></strong> — If the project hasn't been initialized
+with <code>docz init</code>, <code>wiki init</code> runs it automatically rather than erroring.
+This reduces friction for new setups.</p>
+</li>
+<li><p><strong>Arbitrary nesting depth</strong> — Deeply nested non-docz directories are
+supported at arbitrary depth. No flattening or depth limit is imposed.</p>
+</li>
+<li><p><strong>Config-based exclusion list</strong> — The <code>wiki.exclude</code> key in <code>.docz.yaml</code>
+controls which directories are excluded from the nav. Defaults to
+<code>[templates, examples]</code>.</p>
+</li>
+<li><p><strong>Nav titles for <code>impl</code> and <code>investigation</code></strong> — <code>impl</code> maps to
+&quot;Implementation Plans&quot; and <code>investigation</code> maps to &quot;Investigations&quot;.</p>
+</li>
+</ol>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><a href="https://backstage.io/docs/features/techdocs/">Backstage TechDocs</a></li>
+<li><a href="https://www.mkdocs.org/user-guide/configuration/">MkDocs Configuration</a></li>
+<li><a href="https://www.mkdocs.org/user-guide/writing-your-docs/#configure-pages-and-navigation">MkDocs Nav</a></li>
+<li>DESIGN-0001: docz CLI Tool</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../design/testdata/docz-design-0002.orig.md</code>, sha256 <code>924e90632ec749853dab30e42ec9ddb1073a416b8f55ce2b2ccbd07e00dfd27b</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

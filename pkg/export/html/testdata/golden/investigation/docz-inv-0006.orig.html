@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="INV-0006">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>INV-0006: Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Investigation</p>
+<h1>Per-package core requirements: docz CLI vs docz-api, docz-site, sdk-booty-sh</h1>
+<p class="summary"><strong>Status:</strong> Open
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-07-03</p>
+<div class="meta">
+<span class="pill">INV-0006</span>
+<span class="pill st-active">Open</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-07-03</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="question" aria-controls="p-question">Question</button>
+<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
+<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
+<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
+<button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
+<button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
+<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-question">
+<h2 class="panel-title" id="question">Question</h2>
+<ul>
+<li><a href="#question">Question</a></li>
+<li><a href="#hypothesis">Hypothesis</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#approach">Approach</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#findings">Findings</a>
+<ul>
+<li><a href="#observation-1--the-consumer-demand-set-from-primary-sources">Observation 1 — the consumer demand set, from primary sources</a></li>
+<li><a href="#observation-2--per-package-matrix-cmd-requires-vs-consumers-require">Observation 2 — per-package matrix: cmd/ requires vs consumers require</a></li>
+<li><a href="#observation-3--the-packages-nobody-outside-asks-for-are-also-the-cli-shaped-ones">Observation 3 — the packages nobody outside asks for are also the CLI-shaped ones</a></li>
+<li><a href="#observation-4--create-is-the-only-coupling-between-the-write-side-and-the-template-engine">Observation 4 — Create is the only coupling between the write side and the template engine</a></li>
+<li><a href="#observation-5--toc-vs-docparse-one-concern-splits-cleanly-in-half">Observation 5 — toc vs docparse: one concern splits cleanly in half</a></li>
+<li><a href="#observation-6--dependency-and-embed-audit-the-four-package-core-is-clean">Observation 6 — dependency and embed audit: the four-package core is clean</a></li>
+<li><a href="#observation-7--the-wholesale-move-failure-mode-has-already-happened-once-in-miniature">Observation 7 — the wholesale-move failure mode has already happened once, in miniature</a></li>
+</ul>
+</li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#recommendation">Recommendation</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-scope-of-the-v10-public-core">1. Scope of the v1.0 public core?</a></li>
+<li><a href="#2-where-does-create-live-at-v10">2. Where does Create live at v1.0?</a></li>
+<li><a href="#3-one-parser--does-internaltoc-delegate-to-docparse">3. One parser — does internal/toc delegate to docparse?</a></li>
+<li><a href="#4-the-already-public-cli-shaped-config-helpers-at-v10">4. The already-public CLI-shaped config helpers at v1.0?</a></li>
+</ul>
+</li>
+<li><a href="#decisions">Decisions</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<p>For every package the docz CLI is built from — <code>pkg/doczcore/{config,document}</code>
+(public since <code>v0.5.0</code>), <code>internal/{docwrite,template,index,toc,wiki}</code>, and the
+planned <code>pkg/doczcore/docparse</code> (<code>v0.6.0</code>) — exactly which exported surface does
+(a) <code>cmd/</code> require for the CLI to keep working as it does today, and (b) each
+external consumer (<strong>docz-api</strong>, <strong>docz-site</strong>, <strong>sdk-booty-sh</strong>) require?</p>
+<p>Concretely: does any external consumer need the embedded templates, README
+index generation, ToC splicing, or MkDocs wiki machinery — or is the
+demand-complete public core exactly the four parse/config/write-primitive
+packages (<code>config</code>, <code>document</code>, <code>docparse</code>, <code>docwrite</code>)?</p>
+
+</section>
+<section class="panel" id="p-hypothesis">
+<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<p>External consumers need only the parsing/config core plus the two byte-level
+write primitives (<code>SetStatus</code>, <code>CheckTask</code>). Embedded templates, README index
+tables, ToC splicing, and MkDocs nav are <strong>CLI presentation concerns</strong> with
+zero external demand. If confirmed, ADR-0001's &quot;move everything public&quot; scope
+is wider than demand, and the idiomatic Go resolution is a smaller frozen
+<code>pkg/doczcore</code> core with the presentation packages remaining in <code>internal/</code> —
+the CLI goal (&quot;works exactly as today&quot;) does not require promoting them.</p>
+
+</section>
+<section class="panel" id="p-context">
+<h2 class="panel-title" id="context">Context</h2>
+<p>ADR-0001 (Proposed) would end the per-consumer promotion drip by moving all
+five remaining <code>internal/</code> packages into <code>pkg/doczcore/*</code> and cutting <code>v1.0.0</code>
+as a semver freeze, with <code>cmd/</code> reduced to a thin shell. Its own &quot;Demand
+mismatch&quot; consequence flags that the known consumers never asked for
+<code>template</code>, <code>index</code>, or <code>wiki</code> — but that claim was stated from memory, not
+audited. This investigation grounds it symbol-by-symbol against the code and
+the three consumer requirement sources, so the ADR's scope (and its Open
+Question 3) can be resolved on evidence.</p>
+<p><strong>Triggered by:</strong> ADR-0001; DESIGN-0008 (docz-api), DESIGN-0009 (docz-site),
+the sdk-booty-sh <code>v0.6.0</code> requirements handoff (<code>docz-v0.6.0-requirements.md</code>).</p>
+
+</section>
+<section class="panel" id="p-approach">
+<h2 class="panel-title" id="approach">Approach</h2>
+<ol>
+<li>Enumerate the exported surface of each package with <code>go doc -all</code> (the two
+public packages plus all five <code>internal/</code> packages).</li>
+<li>Map <code>cmd/</code>'s actual per-symbol usage:
+<code>grep -oE '(doctemplate|index|toc|wiki|docwrite)\.[A-Z]\w*' cmd/*.go</code>
+(non-test files only), plus the import graph of <code>internal/*</code>.</li>
+<li>Extract each consumer's requirements from its primary source: DESIGN-0008
+Requirements R1–R9 (including its exact-symbol table), DESIGN-0009's
+decisions and non-goals, and <code>docz-v0.6.0-requirements.md</code> R1–R3.</li>
+<li>Diff the requirement sets per package; audit third-party dependencies and
+<code>//go:embed</code> usage to check what each promotion would drag into a
+consumer's build.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-environment">
+<h2 class="panel-title" id="environment">Environment</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>docz tree</td>
+<td>post-<code>v0.5.0</code>, commit <code>eb5c027</code> (branch <code>docs/adr-doczcore-v1-single-core</code>)</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>1.26.4</td>
+</tr>
+<tr>
+<td>Consumer sources</td>
+<td>DESIGN-0008 (docz-api), DESIGN-0009 (docz-site, Draft), <code>docz-v0.6.0-requirements.md</code> (sdk-booty-sh handoff)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-findings">
+<h2 class="panel-title" id="findings">Findings</h2>
+<ul class="heading-list">
+<li><a href="#observation-1--the-consumer-demand-set-from-primary-sources">Observation 1 — the consumer demand set, from primary sources</a></li>
+<li><a href="#observation-2--per-package-matrix-cmd-requires-vs-consumers-require">Observation 2 — per-package matrix: cmd/ requires vs consumers require</a></li>
+<li><a href="#observation-3--the-packages-nobody-outside-asks-for-are-also-the-cli-shaped-ones">Observation 3 — the packages nobody outside asks for are also the CLI-shaped ones</a></li>
+<li><a href="#observation-4--create-is-the-only-coupling-between-the-write-side-and-the-template-engine">Observation 4 — Create is the only coupling between the write side and the template engine</a></li>
+<li><a href="#observation-5--toc-vs-docparse-one-concern-splits-cleanly-in-half">Observation 5 — toc vs docparse: one concern splits cleanly in half</a></li>
+<li><a href="#observation-6--dependency-and-embed-audit-the-four-package-core-is-clean">Observation 6 — dependency and embed audit: the four-package core is clean</a></li>
+<li><a href="#observation-7--the-wholesale-move-failure-mode-has-already-happened-once-in-miniature">Observation 7 — the wholesale-move failure mode has already happened once, in miniature</a></li>
+</ul>
+<h4 id="observation-1--the-consumer-demand-set-from-primary-sources">Observation 1 — the consumer demand set, from primary sources</h4>
+<p><strong>docz-api</strong> (DESIGN-0008, R1–R9) is read-only and names its exact surface in
+the R2 table:</p>
+<ul>
+<li><code>doczcore/config</code>: <code>Load</code>, <code>(*Config).Validate</code>, <code>EnabledTypes</code>, <code>TypeDir</code>,
+<code>ValidateType</code>; types <code>Config</code>, <code>TypeConfig</code> (fields <code>Enabled</code>, <code>Dir</code>,
+<code>IDPrefix</code>, <code>IDWidth</code>, <code>Statuses</code>, <code>PluralLabel</code>, <code>Aliases</code>), <code>DocType</code>,
+<code>Status</code>; sentinel <code>ErrUnknownType</code>.</li>
+<li><code>doczcore/document</code>: <code>ParseFrontmatter</code> (bytes-in is load-bearing — R3, the
+no-checkout ingest path), <code>IsDoczFile</code>; types <code>Frontmatter</code>, <code>DocEntry</code>
+(with <code>Content []byte</code> — R5); sentinel <code>ErrNoFrontmatter</code>. <code>ScanDocuments</code> /
+<code>LoadFrontmatter</code> are nice-to-have only.</li>
+<li>Explicitly <strong>not</strong> required: <code>docz export --json</code> (R8), any write API
+(ingest is read-only, Decisions 4/5).</li>
+</ul>
+<p><strong>sdk-booty-sh</strong> (<code>docz-v0.6.0-requirements.md</code>, R1–R3):</p>
+<ul>
+<li>R1: <code>config.Load</code> with the same signature, <strong>viper-free</strong> (yaml.v3-only), so
+importing <code>pkg/doczcore/...</code> compiles no viper tree.</li>
+<li>R2: a new public <code>pkg/doczcore/docparse</code> — <code>Headings</code> (with 1-based <code>Line</code>,
+which <code>internal/toc.Heading</code> lacks) and <code>ParsePlan</code> (phases + checkbox tasks
+with <code>Checked</code> and <code>Line</code>).</li>
+<li>R3: promote <code>docwrite</code> with <code>SetStatus</code> as-is and a new <code>CheckTask(path, line)</code> — byte-preserving, LF-only. The write surface is deliberately
+&quot;status + checkbox only&quot;; a general markdown editor is a stated non-goal.
+<strong><code>Create</code> is not requested.</strong></li>
+</ul>
+<p><strong>docz-site</strong> (DESIGN-0009) imports <strong>no Go code at all</strong>. It is a
+TypeScript thin client of docz-api: markdown is rendered client-side
+(markdown-it/remark + DOMPurify, Decision 3), the reader builds its own ToC
+from rendered headings and <em>strips</em> docz's <code>&lt;!--toc:start--&gt;</code> markers (OQ8a),
+and per-repo MkDocs wiki output is explicitly complementary, not consumed.</p>
+<p>Across all three consumers there is <strong>zero demand</strong> for <code>template</code>, <code>index</code>,
+<code>wiki</code>, or the ToC-splice half of <code>toc</code>.</p>
+<h4 id="observation-2--per-package-matrix-cmd-requires-vs-consumers-require">Observation 2 — per-package matrix: <code>cmd/</code> requires vs consumers require</h4>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th><code>cmd/</code> requires (non-test call sites)</th>
+<th>docz-api</th>
+<th>sdk-booty-sh</th>
+<th>docz-site</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pkg/doczcore/config</code></td>
+<td>every command file: <code>Load</code>, <code>DefaultConfig</code>, <code>Validate</code>, <code>ValidateType</code>, <code>EnabledTypes</code>, <code>TypeDir</code>, <code>DocTypeNames</code>, <code>TypesHelp</code>, <code>DefaultNavTitles</code>, registry lookups, constants</td>
+<td>R2 symbol list, R4 type resolution, R7 stable schema</td>
+<td>R1 viper-free <code>Load</code></td>
+<td>— (via API)</td>
+<td><strong>public</strong> (already); <code>v0.6.0</code> removes viper</td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/document</code></td>
+<td><code>list</code>/<code>status</code>/<code>update</code>: <code>ScanDocuments</code>, <code>LoadFrontmatter</code>, <code>IsDoczFile</code>, types</td>
+<td>R2/R3/R5 (<code>ParseFrontmatter</code> bytes-in, <code>DocEntry.Content</code>)</td>
+<td>baseline reads</td>
+<td>—</td>
+<td><strong>public</strong> (already); stays read-only</td>
+</tr>
+<tr>
+<td><code>internal/docwrite</code></td>
+<td><code>create.go</code>: <code>Create</code>/<code>CreateOptions</code>; <code>status.go</code>: <code>SetStatus</code> + <code>ErrUnsupportedLineEndings</code></td>
+<td>none (read-only)</td>
+<td>R3: <code>SetStatus</code> + <code>CheckTask</code> — <strong>not <code>Create</code></strong></td>
+<td>—</td>
+<td><strong>split</strong>: <code>SetStatus</code>/<code>CheckTask</code> public (<code>v0.6.0</code>); <code>Create</code> has no external demand</td>
+</tr>
+<tr>
+<td><code>internal/template</code></td>
+<td><code>init</code> (<code>EmbeddedDoczYAML</code>, <code>ResolveIndexHeader</code>), <code>template</code> (<code>Resolve</code>), <code>update</code> (<code>ResolveIndexHeader</code>), <code>wiki</code> (<code>ResolveWikiIndex</code>, <code>RenderWikiIndex</code>, <code>WikiIndex*</code>); via <code>docwrite.Create</code> (<code>Resolve</code>, <code>Render</code>, <code>FilenameSlug</code>)</td>
+<td>none</td>
+<td>none</td>
+<td>renders client-side</td>
+<td><strong>internal</strong></td>
+</tr>
+<tr>
+<td><code>internal/index</code></td>
+<td><code>update.go</code>: <code>GenerateTable</code>, <code>UpdateReadme</code>, <code>DryRunReadme</code>, <code>UpdateOutcome</code> + <code>Action</code> enum</td>
+<td>none</td>
+<td>none</td>
+<td>none</td>
+<td><strong>internal</strong></td>
+</tr>
+<tr>
+<td><code>internal/toc</code></td>
+<td><code>update.go</code>: <code>FileInput</code>, <code>UpdateFiles</code>, markers; <code>wiki.go</code>: <code>BeginMarker</code>/<code>EndMarker</code></td>
+<td>none</td>
+<td>heading <strong>walk</strong> only, generalized as <code>docparse</code> with <code>Line</code></td>
+<td>builds own ToC; strips markers</td>
+<td>walk → <strong><code>docparse</code> (public)</strong>; splice stays <strong>internal</strong></td>
+</tr>
+<tr>
+<td><code>internal/wiki</code></td>
+<td><code>wiki.go</code> only: <code>ScanDocs</code>, <code>BuildNav</code>, <code>MergeNavOrder</code>, <code>NavToYAML</code>, <code>ReadMkDocs</code>/<code>WriteMkDocs</code>, <code>CreateMkDocs</code>, titles</td>
+<td>none</td>
+<td>none</td>
+<td>complementary non-goal</td>
+<td><strong>internal</strong></td>
+</tr>
+<tr>
+<td><code>pkg/doczcore/docparse</code> (planned)</td>
+<td>none today (CLI adoption is an explicit <code>v0.6.0</code> non-goal)</td>
+<td>—</td>
+<td>R2 (the driver)</td>
+<td>—</td>
+<td><strong>public</strong> (new, <code>v0.6.0</code>)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The CLI's requirement set and the consumers' requirement set overlap <strong>only</strong>
+on <code>config</code>, <code>document</code>, <code>docwrite</code>'s status primitive, and (indirectly, once
+<code>toc</code>'s walker generalizes) <code>docparse</code>. Everything else <code>cmd/</code> needs is
+presentation: rendering templates, splicing marker blocks, formatting index
+tables, writing MkDocs nav.</p>
+<h4 id="observation-3--the-packages-nobody-outside-asks-for-are-also-the-cli-shaped-ones">Observation 3 — the packages nobody outside asks for are also the CLI-shaped ones</h4>
+<p>The three unpromoted-by-demand packages are exactly the ones whose APIs encode
+CLI decisions, confirming ADR-0001's &quot;CLI-shaped&quot; concern:</p>
+<ul>
+<li><code>index.UpdateOutcome</code>'s <code>Action</code> enum (<code>ActionCreated</code>, <code>ActionNoMarkers</code>,
+<code>ActionDryRunUpdated</code>, …) exists so <code>cmd/update.go</code> can choose user-facing
+wording — six of its consts appear in <code>cmd/</code> conditionals.</li>
+<li><code>wiki</code>'s entire surface is MkDocs-specific (<code>CreateMkDocs</code>, <code>ReadMkDocs</code>,
+<code>WriteMkDocs</code>, <code>NavToYAML</code>) and exists for <code>cmd/wiki.go</code> alone.</li>
+<li><code>template</code>'s embed accessors are barely used even in-repo:
+<code>EmbeddedDocumentTemplate</code> and <code>EmbeddedWikiIndex</code> are called <strong>only inside
+the package itself</strong> (tier-3 fallbacks of <code>Resolve</code>/<code>ResolveWikiIndex</code>);
+the single direct <code>cmd/</code> embed call is <code>EmbeddedDoczYAML</code> in <code>init.go</code>.
+The embedded FS is already an implementation detail — keeping it internal
+costs nothing and avoids freezing template names/contents (ADR-0001 Corner
+Case 1 dissolves rather than needing mitigation).</li>
+</ul>
+<p>Freezing these under semver would buy no consumer anything and would convert
+every future CLI UX change (new outcome wording, a non-MkDocs wiki backend, a
+template layout change) into a public-API question.</p>
+<h4 id="observation-4--create-is-the-only-coupling-between-the-write-side-and-the-template-engine">Observation 4 — <code>Create</code> is the only coupling between the write side and the template engine</h4>
+<p>The single cross-<code>internal</code> edge in the tree is <code>docwrite → template</code>
+(<code>internal/docwrite/create.go</code> imports <code>internal/template</code> for <code>Resolve</code>,
+<code>Render</code>, <code>FilenameSlug</code>). Consequences:</p>
+<ul>
+<li>The <code>v0.6.0</code> public <code>docwrite</code> (<code>SetStatus</code> + <code>CheckTask</code>) is
+<strong>stdlib-only</strong> and byte-splice-shaped — it never touches the template
+engine or the embed.</li>
+<li>Promoting <code>Create</code> does <strong>not</strong> force <code>template</code> public: a public package
+may import its own module's <code>internal/</code> packages (standard Go; the stdlib
+does this pervasively). A public <code>docwrite.Create</code> keeps rendering via
+<code>internal/template</code>; consumers compile the embed into their binaries but
+cannot import it, and template names/contents stay out of the contract.
+<em>(An earlier draft of this observation claimed the promotion &quot;forces
+<code>template</code> public&quot; — that was wrong and is corrected here.)</em></li>
+<li><code>CreateOptions</code>/<code>CreateResult</code> expose only <code>config</code> types, primitives, and
+<code>time.Time</code> (verified against <code>create.go</code>); <code>internal/template</code> types
+appear only in the function body, so the promoted signature leaks no
+internal type.</li>
+<li>What promoting <code>Create</code> <strong>does</strong> freeze is its observable behavior: the
+<code>NNNN-slug.md</code> filename convention and the auto-increment scan — both
+already de facto public via <code>document.DoczFilePattern</code>.</li>
+</ul>
+<h4 id="observation-5--toc-vs-docparse-one-concern-splits-cleanly-in-half">Observation 5 — <code>toc</code> vs <code>docparse</code>: one concern splits cleanly in half</h4>
+<p><code>internal/toc</code> is two concerns in one package:</p>
+<ol>
+<li>a <strong>heading walk</strong> (<code>ParseHeadings</code>, <code>Heading</code>, <code>AnchorSlug</code>) — this is
+what sdk-booty-sh needs generalized, but with line numbers <code>toc.Heading</code>
+doesn't carry, so <code>v0.6.0</code> R2 already specifies a richer <code>docparse.Heading</code>
+rather than reusing it;</li>
+<li>a <strong>ToC splice</strong> (<code>GenerateToC</code>, <code>UpdateToC</code>, <code>UpdateFiles</code>, the
+<code>BeginMarker</code>/<code>EndMarker</code> consts) — used by <code>cmd/update.go</code> and
+<code>cmd/wiki.go</code>, and by nothing external. docz-site deliberately ignores the
+marker blocks (DESIGN-0009 OQ8a strips them).</li>
+</ol>
+<p>So the public parser is <code>docparse</code>; the splice is CLI presentation. The only
+open point is whether <code>internal/toc</code> keeps its own walker or delegates to
+<code>docparse</code> (Open Question 3) — a private refactor either way, invisible to
+consumers and to CLI behavior.</p>
+<h4 id="observation-6--dependency-and-embed-audit-the-four-package-core-is-clean">Observation 6 — dependency and embed audit: the four-package core is clean</h4>
+<ul>
+<li>After <code>v0.6.0</code> R1 (viper removal), the demand-complete core
+<code>pkg/doczcore/{config,document,docparse,docwrite}</code> depends on
+<code>go.yaml.in/yaml/v3</code> (config, document) and stdlib <strong>only</strong>; <code>docparse</code> and
+<code>docwrite</code> are stdlib-only by their specs.</li>
+<li>The heavyweight bits stay behind: the one <code>//go:embed</code> lives in
+<code>internal/template</code>; <code>internal/wiki</code> carries the only other <code>yaml.v3</code>
+import; <code>index</code> and <code>toc</code> are stdlib-only but CLI-shaped.</li>
+<li>A consumer importing <code>config</code>/<code>document</code>/<code>docparse</code> pulls no template
+engine, no embed, no MkDocs machinery — the acceptance criterion
+sdk-booty-sh already states for R1. (<code>docwrite</code>, once it includes <code>Create</code>,
+compiles <code>internal/template</code> + the embed into the consumer's binary via
+the legal public→internal import, but exposes none of it — see
+Observation 4.)</li>
+</ul>
+<h4 id="observation-7--the-wholesale-move-failure-mode-has-already-happened-once-in-miniature">Observation 7 — the wholesale-move failure mode has already happened once, in miniature</h4>
+<p>The <code>v0.5.0</code> wholesale move of <code>config</code> carried some CLI-display helpers into
+the public, semver-governed surface: <code>TypesHelp()</code> (literally the <code>docz --help</code> body), <code>DefaultNavTitles()</code> (the wiki nav-title map), and
+<code>ResolveTypeAlias</code>. No consumer uses them; they are now frozen anyway. This is
+the exact failure mode ADR-0001's full promotion would repeat at 10× scale
+with <code>template</code>/<code>index</code>/<code>wiki</code> — evidence that &quot;promote wholesale, review
+lightly&quot; (ADR-0001 OQ3a) leaks CLI shapes into the contract. What to do with
+these three already-public symbols at v1.0 is Open Question 4.</p>
+
+</section>
+<section class="panel" id="p-conclusion">
+<h2 class="panel-title" id="conclusion">Conclusion</h2>
+<p><strong>Answer: Yes — the hypothesis is confirmed.</strong></p>
+<p>The demand-complete public core is exactly
+<code>pkg/doczcore/{config,document,docparse,docwrite}</code> — which is precisely where
+the tree stands after <code>v0.6.0</code> ships. Symbol-by-symbol, no external consumer
+needs the embedded templates, README index generation, ToC splicing, or MkDocs
+wiki machinery: docz-api's R2 table names only <code>config</code> + <code>document</code> symbols,
+sdk-booty-sh's slate adds only <code>docparse</code> + <code>docwrite</code>'s two byte-splice
+primitives, and docz-site imports no Go at all.</p>
+<p>The two goals in play — <strong>the CLI works exactly as today</strong> and <strong>external
+services build on a shared core</strong> — do not require promoting
+<code>template</code>/<code>index</code>/<code>toc</code>/<code>wiki</code>. The CLI is satisfied by <code>cmd/</code> + <code>internal/</code>
+presentation layered over the public core; the consumers are satisfied by the
+four-package core alone. ADR-0001's full-promotion scope is therefore wider
+than either goal demands, and its cost (freezing CLI-shaped APIs under semver)
+buys consistency, not capability. The idiomatic Go shape for this repo is the
+standard library-with-CLI layout: a deliberate, frozen <code>pkg/</code> surface plus an
+<code>internal/</code> that exists precisely to keep product-private code out of the
+contract.</p>
+
+</section>
+<section class="panel" id="p-recommendation">
+<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<ol>
+<li><strong>Revise ADR-0001 before acceptance</strong>: scope v1.0.0 as the freeze of the
+four-package core; <code>template</code>, <code>index</code>, <code>toc</code> (splice), and <code>wiki</code> remain
+<code>internal/</code>, and <code>docwrite</code> promotes <strong>whole</strong> (incl. <code>Create</code>,
+implemented over <code>internal/template</code> — Observation 4). This resolves
+ADR-0001 OQ3 (presentation stays internal; cohesion for <code>docwrite</code>),
+makes OQ6 (embed publicity) moot, and reframes &quot;thin <code>cmd/</code>&quot; as &quot;no <em>core
+logic</em> in <code>cmd/</code>&quot; rather than &quot;no <code>internal/</code> at all.
+<em>(Done 2026-07-03 — ADR-0001 revised; see its Decisions table.)</em></li>
+<li><strong>Ship <code>v0.6.0</code> first, unchanged</strong> (ADR-0001 OQ2a) — it already builds the
+entire demand-complete core and unblocks sdk-booty-sh.</li>
+<li><strong>v1.0.0 becomes mostly a contract release</strong>: the freeze declaration, API
+doc hygiene and package docs over the four packages, expanding
+<code>test/consumer/</code> to exercise the full v1.0 surface (incl. <code>docparse</code> +
+<code>docwrite</code>), a stance on the already-public CLI-shaped config helpers
+(Open Question 4), and the CLI-stability note.</li>
+<li>Resolve the Open Questions below, then fold the outcome into ADR-0001's
+Decision section and cut the implementation plan.</li>
+</ol>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<blockquote>
+<p>Each question is numbered; option <code>a</code> is my recommendation, later letters
+are alternatives, and the final letter is a free-form &quot;other.&quot;</p>
+</blockquote>
+<h4 id="1-scope-of-the-v10-public-core">1. Scope of the v1.0 public core?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a)</strong> — via the promotion rule adopted in ADR-0001
+Decision 1 (&quot;public by default where demand exists, whole packages, named
+exceptions&quot;): <code>template</code>/<code>index</code>/<code>toc</code> splice/<code>wiki</code> have nothing external
+demand requires, so they stay <code>internal/</code>.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <strong>Four-package core</strong>
+<code>pkg/doczcore/{config,document,docparse,docwrite}</code>; <code>template</code>/<code>index</code>/
+<code>toc</code>/<code>wiki</code> stay <code>internal/</code>. Demand-complete, zero unwanted semver
+surface, CLI unchanged, idiomatic <code>internal/</code> use.</li>
+<li>b. Full promotion per the ADR-0001 draft (all packages public, <code>cmd/</code>
+imports only <code>pkg/doczcore/*</code>).</li>
+<li>c. Full promotion with <code>template</code>/<code>index</code>/<code>wiki</code> documented as
+experimental/exempt from the compatibility guarantee (ADR-0001 OQ3c).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="2-where-does-create-live-at-v10">2. Where does <code>Create</code> live at v1.0?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (b)</strong> — package cohesion beats surface minimalism:
+splitting <code>docwrite</code> to hide one function leaves a confusing twin-package
+layout (public <code>docwrite</code> + an internal rump), and <code>Create</code> is plausibly
+wanted by future consumers anyway. The cost cited against (b) in the
+original draft was overstated — see Observation 4: the template engine
+stays private behind the public→internal import.</p>
+</blockquote>
+<ul>
+<li>a. <strong>Stays internal.</strong> When <code>SetStatus</code>/<code>CheckTask</code> move out in <code>v0.6.0</code>,
+what's left of <code>internal/docwrite</code> is <code>Create</code> alone — keep it (optionally
+renamed, e.g. <code>internal/doccreate</code>). Minimal surface, but a twin-package
+layout every contributor must re-learn.</li>
+<li><strong>b. (Chosen)</strong> Promote <code>Create</code> into public <code>docwrite</code> at v1.0 — the whole
+package promotes; the embed rides along in consumer <em>builds</em> via the legal
+public→internal import, while <code>template</code>'s API, names, and contents stay
+private (Observation 4).</li>
+<li>c. Defer: promote <code>Create</code> only when a consumer asks (a normal additive
+minor later, possibly with a template-injection seam instead of the embed).</li>
+<li>d. Other.</li>
+</ul>
+<h4 id="3-one-parser--does-internaltoc-delegate-to-docparse">3. One parser — does <code>internal/toc</code> delegate to <code>docparse</code>?</h4>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a)</strong> — delegate; and the export-lean ADR-0001
+revision goes further: the splice itself promotes to <code>pkg/doczcore/toc</code>
+(superseding this INV's demand-only &quot;stays internal&quot; verdict), with
+<code>docparse</code> as the single public parser and <code>toc</code>'s own walker retired.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <strong>Delegate.</strong> Refactor <code>internal/toc</code> to consume
+<code>docparse.Headings</code> for its walk (keeping the splice + markers internal),
+during or immediately after the <code>v0.6.0</code> work so the two walkers never
+drift on fence/slug behavior. Private refactor; invisible to consumers and
+CLI output.</li>
+<li>b. Keep two walkers (<code>toc</code> as-is) — allowed by the <code>v0.6.0</code> handoff
+(&quot;internal/toc can stay as-is or delegate&quot;), but risks slug/fence
+divergence between what the CLI splices and what consumers parse.</li>
+<li>c. Other.</li>
+</ul>
+<h4 id="4-the-already-public-cli-shaped-config-helpers-at-v10">4. The already-public CLI-shaped <code>config</code> helpers at v1.0?</h4>
+<p><code>TypesHelp()</code>, <code>DefaultNavTitles()</code>, and <code>ResolveTypeAlias</code> shipped with the
+<code>v0.5.0</code> wholesale move; no consumer uses them.</p>
+<blockquote>
+<p><strong>Resolved 2026-07-03: (a)</strong> — keep, consistent with the export-lean rule;
+document them as CLI-support helpers in the package doc.</p>
+</blockquote>
+<ul>
+<li><strong>a. (Recommended)</strong> <strong>Keep them</strong> — they're small, already frozen, and
+harmless; document them as CLI-support helpers in the package doc so the
+core's intent stays legible.</li>
+<li>b. Deprecate at v1.0 (<code>Deprecated:</code> markers) and remove at v2 — cleaner
+long-term core, bookkeeping now.</li>
+<li>c. Remove <strong>before</strong> v1.0 while still in <code>v0.x</code> (a <code>v0.7.0</code> with removals;
+breaking-in-0.x is legal and no consumer is affected, but it contradicts
+the additive-minor posture of <code>v0.6.0</code> and needs its own release).</li>
+<li>d. Other.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-decisions">
+<h2 class="panel-title" id="decisions">Decisions</h2>
+<p>Resolved by user review on 2026-07-03 and folded into ADR-0001's revised
+Decision section; all four questions are closed. Note: this INV's matrix
+records the <strong>demand-only</strong> verdicts; the adopted ADR-0001 scope goes further
+under the export-lean rule — <code>Create</code> and the <code>toc</code> splice promote too, and
+the entire former <code>v0.6.0</code> slate (viper-free <code>Load</code>, <code>docparse</code>, <code>CheckTask</code>)
+ships inside the single <code>v1.0.0</code> release with no intermediate tag.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Choice</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>v1.0 core scope</td>
+<td>(a) as demand floor</td>
+<td>adopted scope adds <code>toc</code>: <code>pkg/doczcore/{config,document,docparse,docwrite,toc}</code>; <code>template</code>/<code>index</code>/<code>wiki</code> stay <code>internal/</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>Create</code> at v1.0</td>
+<td>(b) promote <code>docwrite</code> whole</td>
+<td>cohesion over splitting; implemented over <code>internal/template</code>, embed stays private (Observation 4)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>toc</code> → <code>docparse</code> delegation</td>
+<td>(a) delegate</td>
+<td>and the splice promotes to public <code>pkg/doczcore/toc</code> (ADR-0001 export-lean); <code>toc</code>'s walker retires</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CLI-shaped <code>config</code> helpers</td>
+<td>(a) keep</td>
+<td>documented as CLI-support helpers in the package doc</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li><strong>ADR-0001</strong> — pkg/doczcore as the single public core (the trigger; this
+INV grounds its &quot;Demand mismatch&quot; consequence and OQ3/OQ4/OQ5/OQ6; revised
+2026-07-03 with the promotion rule and Decisions this INV informed).</li>
+<li><strong>DESIGN-0008</strong> — docz-api: Requirements R1–R9, incl. the exact-symbol R2
+table and R8 (&quot;no <code>docz export --json</code>&quot;).</li>
+<li><strong>DESIGN-0009</strong> — docz-site: thin client of docz-api; client-side rendering
+(Decision 3), own-ToC-from-rendered-headings (OQ8a), MkDocs wiki as
+complementary non-goal.</li>
+<li><strong><code>docz-v0.6.0-requirements.md</code></strong> — sdk-booty-sh handoff: R1 viper-free
+<code>config.Load</code>, R2 <code>docparse</code>, R3 <code>docwrite</code> promotion + <code>CheckTask</code>;
+non-goals (no general editor, no new CLI commands).</li>
+<li><strong>DESIGN-0007 / IMPL-0013</strong> — the <code>v0.5.0</code> promotion (read-only stance,
+minimal-surface goal, <code>internal/docwrite</code> split precedent).</li>
+<li><strong>INV-0005</strong> — Decision 7 (shared library over re-implemented parser).</li>
+<li>Audit method: <code>go doc -all</code> per package;
+<code>grep -oE '(doctemplate|index|toc|wiki|docwrite)\.[A-Z]\w*' cmd/*.go</code>
+(non-test); <code>grep -rn 'docz/internal' internal/</code> (cross-internal edges);
+<code>grep -rn 'yaml' internal/ pkg/</code> (dependency audit).</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../investigation/testdata/docz-inv-0006.orig.md</code>, sha256 <code>366258e6b5eb1a3a79db9dbd70e94c8891d59b27afe25b106006a8793e4dcb60</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

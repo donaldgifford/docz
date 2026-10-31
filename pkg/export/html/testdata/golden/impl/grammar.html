@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="IMPL-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>IMPL-0001: Grammar fixture</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Implementation plan</p>
+<h1>Grammar fixture</h1>
+<p class="summary"><strong>Implements:</strong> DESIGN-0014 / DESIGN-0015</p>
+<div class="meta">
+<span class="pill">IMPL-0001</span>
+<span class="pill st-active">In Progress</span>
+<span class="pill">Test Author</span>
+<span class="pill">2026-09-20</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
+<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="phase-1-foundations" aria-controls="p-phase-1-foundations">Phase 1: Foundations</button>
+<button type="button" data-tab="phase-2b-cleanup" aria-controls="p-phase-2b-cleanup">Phase 2B: Cleanup</button>
+<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
+<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-objective">
+<h2 class="panel-title" id="objective">Objective</h2>
+<p>Exercise every rule of the DESIGN-0014 section 3 task grammar in one
+document, so the parser's tolerances are pinned by something a person can
+read.</p>
+
+</section>
+<section class="panel" id="p-scope">
+<h2 class="panel-title" id="scope">Scope</h2>
+<h4 id="in-scope">In Scope</h4>
+<ul>
+<li>The phase, task, and criteria grammar</li>
+<li>The shared field rules</li>
+</ul>
+<h4 id="out-of-scope">Out of Scope</h4>
+<ul>
+<li>The CLI</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-1-foundations">
+<h2 class="panel-title" id="phase-1-foundations">Phase 1: Foundations</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Sets up the packages the later phases build on.</p>
+<h5 id="tasks">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Write the parser
+verify: <code>go test ./pkg/impl/...</code></div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Write the walker with a task description that
+wraps onto a second line
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">a nested note, which is not a task</div></li>
+</ul>
+</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Bump the toolchain — deferred - human required: needs a release owner</div></li>
+</ul>
+<h5 id="success-criteria">Success Criteria</h5>
+<ul>
+<li><code>go test ./...</code> passes</li>
+<li>The parser reads every document in the corpus</li>
+</ul>
+
+</section>
+<section class="panel" id="p-phase-2b-cleanup">
+<h2 class="panel-title" id="phase-2b-cleanup">Phase 2B: Cleanup</h2>
+<h5 id="tasks-1">Tasks</h5>
+<ul class="tasks">
+<li data-state="done"><input type="checkbox" checked disabled><div class="text"><del>Delete the compatibility shim</del> — skipped: the shim shipped</div></li>
+<li data-state="open"><input type="checkbox" disabled><div class="text">Update the docs
+<strong>verify:</strong> run the linter by hand</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-file-changes">
+<h2 class="panel-title" id="file-changes">File Changes</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pkg/impl/parse.go</code></td>
+<td>Add</td>
+<td>The parser</td>
+</tr>
+<tr>
+<td><code>pkg/impl/walk.go</code></td>
+<td>Add</td>
+<td>The task grammar</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</section>
+<section class="panel" id="p-testing-plan">
+<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<ul class="tasks">
+<li data-state="open"><input type="checkbox" disabled><div class="text">Unit tests for the grammar</div></li>
+<li data-state="done"><input type="checkbox" checked disabled><div class="text">Golden fixtures</div></li>
+</ul>
+
+</section>
+<section class="panel" id="p-dependencies">
+<h2 class="panel-title" id="dependencies">Dependencies</h2>
+<p>None.</p>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>DESIGN-0014</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../impl/testdata/grammar.md</code>, sha256 <code>6d69aa1bb5a6ae361987217dbb2a3fb2d515161e7cccdaab3439509f8d3e49e8</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

@@ -332,7 +332,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   file arrives in Phase 5; until then the embed mode is tested with a
   stub.
 - [x] Compute `Page.Hash` over the body; write nothing time-dependent.
-- [ ] Goldens under `testdata/golden/`: `Render` over every `.md` in the
+- [x] Goldens under `testdata/golden/`: `Render` over every `.md` in the
   six type packages' corpora and the parity fixtures, the theme block
   replaced by its markers in the golden (question 6), regenerated with
   `-update`; one full-page golden with the theme inlined.
