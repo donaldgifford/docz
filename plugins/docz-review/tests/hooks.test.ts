@@ -96,6 +96,7 @@ function setup() {
     HOME: state,
     DOCZ_REVIEW_DOCZ: fake.bin,
     DOCZ_REVIEW_STATE_DIR: state,
+    DOCZ_REVIEW_AUTO_ARM: "1",
   };
   const request = (name: string) => {
     const req = JSON.parse(
@@ -115,12 +116,20 @@ function setup() {
 
 describe("without the binary", () => {
   test("arm.sh tells the person after docz create, on stdout", () => {
-    const r = hook("arm.sh", readFixture("create-text"), { PATH: BARE_PATH });
+    const r = hook("arm.sh", readFixture("create-text"), {
+      PATH: BARE_PATH,
+      DOCZ_REVIEW_AUTO_ARM: "1",
+    });
     expect(r.code).toBe(0);
     const out = JSON.parse(r.stdout) as { systemMessage: string };
     expect(out.systemMessage).toContain(
       "docz-review is not installed, so this document will not be reviewed; see https://",
     );
+  });
+
+  test("arm.sh stays silent after docz create without auto-arming", () => {
+    const r = hook("arm.sh", readFixture("create-text"), { PATH: BARE_PATH });
+    expect(r).toMatchObject({ code: 0, stdout: "", stderr: "" });
   });
 
   test("arm.sh stays silent after any other command", () => {
@@ -145,6 +154,26 @@ describe("arm.sh", () => {
     const r = hook("arm.sh", s.request("create-text"), s.env);
     expect(r).toMatchObject({ code: 0, stdout: "" });
     expect(s.pending()).toContain("ADR-0001\tpending\tround 0");
+  });
+
+  test("without auto-arming, docz create arms nothing", () => {
+    const s = setup();
+    const r = hook("arm.sh", s.request("create-text"), {
+      ...s.env,
+      DOCZ_REVIEW_AUTO_ARM: "",
+    });
+    expect(r).toMatchObject({ code: 0, stdout: "" });
+    expect(s.pending()).toContain("no documents under review");
+  });
+
+  test("without auto-arming, docz-review arm still arms", () => {
+    const s = setup();
+    const r = hook("arm.sh", s.request("review-arm"), {
+      ...s.env,
+      DOCZ_REVIEW_AUTO_ARM: "",
+    });
+    expect(r).toMatchObject({ code: 0, stdout: "" });
+    expect(s.pending()).toContain("DESIGN-0001\tpending");
   });
 
   test("arms what docz-review arm named", () => {

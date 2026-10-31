@@ -7,6 +7,7 @@ import { INSPECT } from "@/review/testing";
 
 import {
   armFromHook,
+  autoArmEnabled,
   candidates,
   createdPaths,
   type HookRequest,
@@ -29,7 +30,7 @@ const inspectOf = (id: string, type: string, path: string) => ({
 });
 
 /** A request from the fixture with its cwd pointed at a real directory. */
-function setup(name: string) {
+function setup(name: string, autoArm = true) {
   const cwd = realpathSync(mkdtempSync(join(tmpdir(), "arm-repo-")));
   const base = mkdtempSync(join(tmpdir(), "arm-state-"));
   const req = fixture(name);
@@ -56,7 +57,11 @@ function setup(name: string) {
     inspect: [{ code: 1, stderr: "Error: no document\n" }],
   });
   const run = () =>
-    armFromHook(JSON.stringify(req), { docz: new Docz(fake.bin), base });
+    armFromHook(JSON.stringify(req), {
+      docz: new Docz(fake.bin),
+      base,
+      autoArm,
+    });
   const session = () =>
     new Session({ base, root: cwd, session: req.session_id as string });
   return { cwd, base, run, session, fake };
@@ -72,47 +77,47 @@ describe("candidates", () => {
   });
 
   test("reads the JSON envelope docz create printed", () => {
-    expect(candidates(fixture("create-json"))).toEqual([
+    expect(candidates(fixture("create-json"), true)).toEqual([
       "docs/design/0001-review-cache.md",
     ]);
   });
 
   test("reads Created lines when there is no envelope", () => {
-    expect(candidates(fixture("create-text"))).toEqual([
+    expect(candidates(fixture("create-text"), true)).toEqual([
       "/work/repo/docs/adr/0001-use-valkey.md",
     ]);
-    expect(candidates(fixture("compound"))).toEqual([
+    expect(candidates(fixture("compound"), true)).toEqual([
       "/work/repo/docs/design/0002-a.md",
       "/work/repo/docs/adr/0002-b.md",
     ]);
   });
 
   test("finds the Created line in long, truncated output", () => {
-    expect(candidates(fixture("long-output"))).toEqual([
+    expect(candidates(fixture("long-output"), true)).toEqual([
       "/work/repo/docs/rfc/0001-long.md",
     ]);
   });
 
   test("an echo of the line arms nothing: no docz word in the command", () => {
-    expect(candidates(fixture("echo"))).toEqual([]);
+    expect(candidates(fixture("echo"), true)).toEqual([]);
   });
 
   test("a failed create and an unrelated command have no candidates", () => {
-    expect(candidates(fixture("create-failure"))).toEqual([]);
-    expect(candidates(fixture("other"))).toEqual([]);
+    expect(candidates(fixture("create-failure"), true)).toEqual([]);
+    expect(candidates(fixture("other"), true)).toEqual([]);
   });
 
   // The captured-* fixtures are the IMPL-0027 Phase 1 drill's real
   // requests (Claude Code 2.1.280), with paths and ids replaced.
   test("real captures: one candidate per create, the diff adds none", () => {
-    expect(candidates(fixture("captured-create"))).toEqual([
+    expect(candidates(fixture("captured-create"), true)).toEqual([
       "/work/repo/docs/adr/0004-drill-shape.md",
     ]);
-    expect(candidates(fixture("captured-compound"))).toEqual([
+    expect(candidates(fixture("captured-compound"), true)).toEqual([
       "/work/repo/docs/adr/0005-drill-compound.md",
     ]);
-    expect(candidates(fixture("captured-echo"))).toEqual([]);
-    expect(candidates(fixture("captured-long-output"))).toEqual([]);
+    expect(candidates(fixture("captured-echo"), true)).toEqual([]);
+    expect(candidates(fixture("captured-long-output"), true)).toEqual([]);
   });
 
   test("a Created line inside bashEditDiff is never a candidate", () => {
@@ -124,13 +129,13 @@ describe("candidates", () => {
       "+Created DESIGN: /work/repo/docs/design/0009-planted.md",
       '+{"schema_version":1,"id":"DESIGN-0009","path":"docs/x.md"}',
     );
-    expect(candidates(req)).toEqual([
+    expect(candidates(req, true)).toEqual([
       "/work/repo/docs/adr/0004-drill-shape.md",
     ]);
   });
 
   test("reads docz-review arm's arguments from the command", () => {
-    expect(candidates(fixture("review-arm"))).toEqual([
+    expect(candidates(fixture("review-arm"), true)).toEqual([
       "DESIGN-0001",
       "docs/adr/0001-use-valkey.md",
     ]);
@@ -228,6 +233,7 @@ describe("armFromHook", () => {
       armFromHook(JSON.stringify(two), {
         docz: new Docz(one.fake.bin),
         base: one.base,
+        autoArm: true,
       }),
     ]);
     expect(results.map((r) => r.armed.length)).toEqual([1, 1]);
@@ -245,7 +251,36 @@ describe("armFromHook", () => {
     const res = await armFromHook("not json", {
       docz: new Docz(fake.bin),
       base: mkdtempSync(join(tmpdir(), "arm-state-")),
+      autoArm: true,
     });
     expect(res.stdout).toBe("");
+  });
+});
+
+describe("auto-arming", () => {
+  test("is off unless DOCZ_REVIEW_AUTO_ARM turns it on", () => {
+    expect(autoArmEnabled({})).toBe(false);
+    for (const v of ["", "0", "false", "no", "off", "2"]) {
+      expect(autoArmEnabled({ DOCZ_REVIEW_AUTO_ARM: v })).toBe(false);
+    }
+    for (const v of ["1", "true", "TRUE", " yes ", "On"]) {
+      expect(autoArmEnabled({ DOCZ_REVIEW_AUTO_ARM: v })).toBe(true);
+    }
+  });
+
+  test("off: docz create names no candidate, docz-review arm still does", () => {
+    expect(candidates(fixture("create-json"), false)).toEqual([]);
+    expect(candidates(fixture("captured-compound"), false)).toEqual([]);
+    expect(candidates(fixture("review-arm"), false)).toEqual([
+      "DESIGN-0001",
+      "docs/adr/0001-use-valkey.md",
+    ]);
+  });
+
+  test("off: a created document is not recorded and nothing is said", async () => {
+    const { run, session } = setup("create-json", false);
+    const res = await run();
+    expect(res).toEqual({ armed: [], dropped: [], stdout: "" });
+    expect(session().read().entries).toEqual([]);
   });
 });
