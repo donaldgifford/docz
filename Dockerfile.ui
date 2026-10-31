@@ -2,8 +2,9 @@
 # slim Bun runtime to serve. The runtime image contains only dist/ and
 # one bundled server file — no node_modules, no sources.
 #
-# The build context is ui/, and docz-api's spec arrives as the named
-# context `spec` (DESIGN-0017 OQ 3), so nothing else outside ui/ is sent:
+# The build context is ui/; docz-api's spec arrives as the named context
+# `spec` (DESIGN-0017 OQ 3) and the themes as `theme` (DESIGN-0025), so
+# nothing else outside ui/ is sent:
 #
 #   docker buildx bake dev-ui                       # from the repository root
 #   just ui docker-build                            # the same, without bake
@@ -22,6 +23,9 @@ COPY --from=spec openapi.yaml /api/openapi.yaml
 # gen-cli reads the CLI's JSON schemas from ../api/cli the same way; the
 # review page's types come from them and `tsc -b` checks that page too.
 COPY --from=spec cli /api/cli
+# tokens.css imports the themes from ../../../pkg/theme (DESIGN-0025 §3),
+# which from /app/src/theme is /pkg/theme: the named context `theme`.
+COPY --from=theme . /pkg/theme
 # The orval client and the CLI types are generated, never committed
 # (src/api/__generated__ and src/cli/__generated__ are gitignored) —
 # regenerate both before building.

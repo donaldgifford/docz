@@ -153,7 +153,7 @@ preview:
 # named context the Dockerfile copies (DESIGN-0017 OQ 3). The bake spelling,
 # from the repository root, is `docker buildx bake dev-ui`.
 docker-build:
-    docker build -f ../Dockerfile.ui --build-context spec=../api -t donaldgifford/docz-site:dev .
+    docker build -f ../Dockerfile.ui --build-context spec=../api --build-context theme=../pkg/theme -t donaldgifford/docz-site:dev .
 
 local_compose := "docker compose -f ../deploy/ui/compose.local.yaml"
 

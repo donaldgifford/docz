@@ -185,7 +185,7 @@ phase proves the plumbing before the look moves.
   `ui/review.html`.
 - [x] Add the repository root's `pkg/theme` to `server.fs.allow` in
   `ui/vite.config.ts`, beside Vite's default.
-- [ ] Add `theme = "pkg/theme"` to the `-ui` bake targets' `contexts` in
+- [x] Add `theme = "pkg/theme"` to the `-ui` bake targets' `contexts` in
   `docker-bake.hcl`, and `COPY --from=theme . /pkg/theme` in
   `Dockerfile.ui`'s build stage, laid out so the relative import resolves
   as it does on disk.
