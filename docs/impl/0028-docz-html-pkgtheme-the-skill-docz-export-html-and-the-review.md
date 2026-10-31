@@ -173,7 +173,7 @@ phase proves the plumbing before the look moves.
   `Names()` (`paper`, `classic`), `CSS(name)` (tokens then components;
   `ErrUnknownTheme` wrapped with the name and the valid names), and
   `Runtime()`.
-- [ ] Write `pkg/theme/theme_test.go`: every `var(--…)` in
+- [x] Write `pkg/theme/theme_test.go`: every `var(--…)` in
   `components.css` and every `--…` `runtime.js` reads is defined by every
   theme in both modes; neither file contains a hex, `rgb(`, `hsl(`, or
   named colour; `CSS` for each name starts with that theme's selector;
