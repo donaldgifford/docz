@@ -15,6 +15,12 @@
  * Admonition backgrounds are each status colour mixed 12% into
  * --color-bg-base, precomputed as hex so contrast tests can check text
  * on them: round(base*(1-p) + kind*p) per channel.
+ *
+ * Every text colour holds 4.5:1 on bg-base, bg-raised, and bg-elevated,
+ * and each admonition's label on its tint (ui/src/theme/contrast.test.ts,
+ * IMPL-0028 Phase 6). The skill's palette did not, so the colours that
+ * failed were moved toward black in light and toward white in dark just
+ * far enough to pass; the tints keep the values they were mixed from.
  */
 
 :root[data-theme="paper"] {
@@ -35,11 +41,11 @@
 
   --color-fg-primary: #1b1a17;
   --color-fg-secondary: #5b584f;
-  --color-fg-tertiary: #8a8678;
-  --color-fg-muted: #8a8678;
+  --color-fg-tertiary: #6c695e;
+  --color-fg-muted: #6c695e;
   --color-fg-prose: #2b2a26;
 
-  --color-accent: #b4532a;
+  --color-accent: #a94e27;
   --color-accent-dim: #8f3f1e;
   --color-accent-bg: rgba(180, 83, 42, 0.1);
   --color-accent-border: rgba(180, 83, 42, 0.3);
@@ -47,17 +53,17 @@
 
   --color-ok: #2f6f5e;
   --color-link: #3b5c9a;
-  --color-warn: #b8860b;
+  --color-warn: #856108;
   --color-bad: #a63d3d;
 
-  --color-st-draft: #b8860b;
+  --color-st-draft: #856108;
   --color-st-proposed: #3b5c9a;
   --color-st-active: #2f6f5e;
   --color-st-accepted: #2f6f5e;
   --color-st-adopted: #2f6f5e;
   --color-st-rejected: #a63d3d;
-  --color-st-superseded: #8a5aa8;
-  --color-st-deprecated: #8a8678;
+  --color-st-superseded: #7f539b;
+  --color-st-deprecated: #6c695e;
 
   --color-adm-note-bg: #e0e3e7;
   --color-adm-tip-bg: #dee5df;
@@ -66,27 +72,27 @@
   --color-adm-caution-bg: #ecdfdb;
 
   --color-t-rfc: #3b5c9a;
-  --color-t-adr: #9a6b12;
-  --color-t-design: #1f7a8c;
-  --color-t-impl: #b4532a;
+  --color-t-adr: #8c6110;
+  --color-t-design: #1d7384;
+  --color-t-impl: #a94e27;
   --color-t-investigation: #6e4fa8;
   --color-t-mandate: #a63d3d;
   --color-t-guide: #2f6f5e;
-  --color-t-principle: #2b6f9e;
-  --color-t-policy: #8a5aa8;
-  --color-t-framework: #2a7f72;
-  --color-t-working: #b4532a;
+  --color-t-principle: #2b6e9c;
+  --color-t-policy: #8456a1;
+  --color-t-framework: #277569;
+  --color-t-working: #a94e27;
   --color-t-runbook: #b03a7d;
   --color-t-docs: #5b584f;
 
   --color-hash-0: #3b5c9a;
   --color-hash-1: #2f6f5e;
-  --color-hash-2: #9a6b12;
+  --color-hash-2: #8c6110;
   --color-hash-3: #a63d3d;
-  --color-hash-4: #8a5aa8;
-  --color-hash-5: #2a7f72;
-  --color-hash-6: #b4532a;
-  --color-hash-7: #1f7a8c;
+  --color-hash-4: #8456a1;
+  --color-hash-5: #277569;
+  --color-hash-6: #a94e27;
+  --color-hash-7: #1d7384;
 
   /* Code blocks stay dark in both modes, so one highlighting theme
      serves both. */
@@ -112,8 +118,8 @@
 
   --color-fg-primary: #ebe8df;
   --color-fg-secondary: #b3ae9f;
-  --color-fg-tertiary: #8f8b80;
-  --color-fg-muted: #7d7a70;
+  --color-fg-tertiary: #959186;
+  --color-fg-muted: #939188;
   --color-fg-prose: #d6d2c7;
 
   --color-accent: #e07a4a;
@@ -125,16 +131,16 @@
   --color-ok: #5fb39b;
   --color-link: #7f9fe0;
   --color-warn: #d9a93a;
-  --color-bad: #d96a6a;
+  --color-bad: #db7373;
 
   --color-st-draft: #d9a93a;
   --color-st-proposed: #7f9fe0;
   --color-st-active: #5fb39b;
   --color-st-accepted: #5fb39b;
   --color-st-adopted: #5fb39b;
-  --color-st-rejected: #d96a6a;
+  --color-st-rejected: #db7373;
   --color-st-superseded: #b78fd6;
-  --color-st-deprecated: #8f8b80;
+  --color-st-deprecated: #959186;
 
   --color-adm-note-bg: #222732;
   --color-adm-tip-bg: #1e2a2a;
@@ -147,7 +153,7 @@
   --color-t-design: #4fb8cc;
   --color-t-impl: #e07a4a;
   --color-t-investigation: #b78fd6;
-  --color-t-mandate: #d96a6a;
+  --color-t-mandate: #db7373;
   --color-t-guide: #5fb39b;
   --color-t-principle: #6fb0e0;
   --color-t-policy: #c49ae0;
@@ -159,7 +165,7 @@
   --color-hash-0: #7f9fe0;
   --color-hash-1: #5fb39b;
   --color-hash-2: #d9a93a;
-  --color-hash-3: #d96a6a;
+  --color-hash-3: #db7373;
   --color-hash-4: #b78fd6;
   --color-hash-5: #5fc4b4;
   --color-hash-6: #e07a4a;
@@ -188,8 +194,8 @@
 
     --color-fg-primary: #ebe8df;
     --color-fg-secondary: #b3ae9f;
-    --color-fg-tertiary: #8f8b80;
-    --color-fg-muted: #7d7a70;
+    --color-fg-tertiary: #959186;
+    --color-fg-muted: #939188;
     --color-fg-prose: #d6d2c7;
 
     --color-accent: #e07a4a;
@@ -201,16 +207,16 @@
     --color-ok: #5fb39b;
     --color-link: #7f9fe0;
     --color-warn: #d9a93a;
-    --color-bad: #d96a6a;
+    --color-bad: #db7373;
 
     --color-st-draft: #d9a93a;
     --color-st-proposed: #7f9fe0;
     --color-st-active: #5fb39b;
     --color-st-accepted: #5fb39b;
     --color-st-adopted: #5fb39b;
-    --color-st-rejected: #d96a6a;
+    --color-st-rejected: #db7373;
     --color-st-superseded: #b78fd6;
-    --color-st-deprecated: #8f8b80;
+    --color-st-deprecated: #959186;
 
     --color-adm-note-bg: #222732;
     --color-adm-tip-bg: #1e2a2a;
@@ -223,7 +229,7 @@
     --color-t-design: #4fb8cc;
     --color-t-impl: #e07a4a;
     --color-t-investigation: #b78fd6;
-    --color-t-mandate: #d96a6a;
+    --color-t-mandate: #db7373;
     --color-t-guide: #5fb39b;
     --color-t-principle: #6fb0e0;
     --color-t-policy: #c49ae0;
@@ -235,7 +241,7 @@
     --color-hash-0: #7f9fe0;
     --color-hash-1: #5fb39b;
     --color-hash-2: #d9a93a;
-    --color-hash-3: #d96a6a;
+    --color-hash-3: #db7373;
     --color-hash-4: #b78fd6;
     --color-hash-5: #5fc4b4;
     --color-hash-6: #e07a4a;

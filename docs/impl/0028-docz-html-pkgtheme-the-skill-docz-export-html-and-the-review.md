@@ -516,7 +516,7 @@ selectable. Its own `minor`.
   `docz:theme`.
 - [x] Re-render the review page's mermaid diagrams on a mode change
   through `mermaidThemeFromTokens`.
-- [ ] Extend `ui/src/theme/contrast.test.ts` to every theme and mode, and
+- [x] Extend `ui/src/theme/contrast.test.ts` to every theme and mode, and
   fix any pair below its threshold in the token files.
 - [ ] Run the review e2e under `paper` light, `paper` dark, and `classic`.
 - [ ] Rebuild the review binary (`just ui build-review`) and walk through

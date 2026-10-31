@@ -14,6 +14,38 @@ const tokensCss = readFileSync(
 );
 
 /*
+ * The themes (DESIGN-0025 §3, IMPL-0028 Phase 6) live in pkg/theme. Each
+ * mode is one top-level block: classic has one for every mode, paper one
+ * for light and one for dark. Paper's prefers-color-scheme block repeats
+ * the dark values, which pkg/theme's theme_test.go holds equal, so it is
+ * not checked twice here. tokens.css's @theme values are classic's and
+ * stay checked as the source Tailwind reads.
+ */
+const themeDir = resolve(process.cwd(), "../pkg/theme/tokens");
+const classicCss = readFileSync(resolve(themeDir, "classic.css"), "utf8");
+const paperCss = readFileSync(resolve(themeDir, "paper.css"), "utf8");
+
+/** The body of the top-level block whose selector is exactly `selector`. */
+function block(css: string, selector: string): string {
+  const start = css.indexOf(`\n${selector} {`);
+  if (start < 0) {
+    throw new Error(`no block ${selector}`);
+  }
+  const end = css.indexOf("\n}", start);
+  return css.slice(start, end);
+}
+
+const THEMES: [string, string][] = [
+  ["tokens.css", tokensCss],
+  ["classic", block(classicCss, ':root[data-theme="classic"]')],
+  ["paper light", block(paperCss, ':root[data-theme="paper"]')],
+  [
+    "paper dark",
+    block(paperCss, ':root[data-theme="paper"][data-mode="dark"]'),
+  ],
+];
+
+/*
  * Text color contrast (IMPL-0001 Phase 4): every token that renders
  * text — the fg scale, accent (links), and the st-/t-/hash- badge
  * palettes (~11px badge text) — must hold WCAG AA for normal text
@@ -22,7 +54,9 @@ const tokensCss = readFileSync(
  * instead; real-browser axe (full rules) runs in the e2e suite.
  */
 
-const TEXT_TOKEN = /^(st|t|hash|fg)-|^accent$/;
+// ok, link, warn, and bad are pkg/theme's own: text in exported pages
+// and on the review page, which tokens.css never had.
+const TEXT_TOKEN = /^(st|t|hash|fg)-|^(accent|ok|link|warn|bad)$/;
 const SURFACES = ["bg-base", "bg-raised", "bg-elevated"] as const;
 const AA_NORMAL_TEXT = 4.5;
 
@@ -50,8 +84,8 @@ function contrastRatio(a: string, b: string): number {
   return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
 }
 
-describe("text token contrast", () => {
-  const tokens = parseTokens(tokensCss);
+describe.each(THEMES)("%s text token contrast", (_, css) => {
+  const tokens = parseTokens(css);
   const textTokens = [...tokens.keys()].filter((name) => TEXT_TOKEN.test(name));
 
   it("finds the token families it means to check", () => {
@@ -81,8 +115,8 @@ describe("text token contrast", () => {
   });
 });
 
-describe("admonition tint contrast", () => {
-  const tokens = parseTokens(tokensCss);
+describe.each(THEMES)("%s admonition tint contrast", (_, css) => {
+  const tokens = parseTokens(css);
   // Each alert kind renders its label in the mapped status color and
   // its body in fg-prose (the reader body color, DESIGN-0005), both on
   // the precomputed adm-*-bg tint (tokens.css keeps those as literal
