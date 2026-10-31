@@ -476,7 +476,7 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
   `file://`, click every tab, toggle the mode, filter IMPL tasks, expand
   an open question, draw each widget, and assert no console error and no
   network request.
-- [ ] Rewrite `SKILL.md` for stage 2 per DESIGN-0025 §10 and delete the
+- [x] Rewrite `SKILL.md` for stage 2 per DESIGN-0025 §10 and delete the
   skill's theme copy, its sync recipe, and the drift check; bump the
   plugin to 0.2.0.
 - [ ] Document the command in `README.md`, `docs/` usage, `CLAUDE.md`

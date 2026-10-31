@@ -85,8 +85,6 @@ jobs:
               - 'plugins/**'
               - '.claude-plugin/**'
               - 'ui/review/**'
-              # the docz-html skill's theme copy is checked against it
-              - 'pkg/theme/**'
 
   labeler:
     permissions:
@@ -535,11 +533,6 @@ jobs:
 
       - name: Set up just
         uses: extractions/setup-just@v4
-
-      # A marketplace install copies only the plugin directory, so the
-      # docz-html skill carries pkg/theme; the copy must match.
-      - name: Check the docz-html theme copy
-        run: just plugin-theme-check
 
       # The hooks run ui/review/main.ts from source, which needs ui's
       # dependencies and the generated CLI schemas.
