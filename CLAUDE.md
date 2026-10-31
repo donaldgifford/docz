@@ -269,6 +269,31 @@ created. It is three pieces, and `ui/CLAUDE.md` has the detail.
   of `ui/`; a step after it signs that checksum file with the release GPG
   key and uploads the signature.
 
+## docz-html (`plugins/docz-html/`, `pkg/theme`)
+
+docz-html (DESIGN-0025, IMPL-0028) turns one docz document into one
+standalone HTML page in docz's theme. It is the marketplace's second
+plugin, with its own version in `plugin.json`, and is at **stage 1**: a
+skill that has the agent assemble the page by hand from
+`docz inspect --format json`, against `references/components.md`,
+`layout.md` (region kind to tab and component, anchors, the header
+summary, per-kind details), and `widgets.md` (the closed YAML of
+`docz-flow`, `docz-stepper`, `docz-scorecard`). Stage 2 switches it to
+`docz export html` once that exists, and the Go renderer encodes what the
+references settled.
+
+- **The theme copy.** A marketplace install copies only the plugin's
+  directory, so `skills/docz-html/theme/` is a copy of `pkg/theme`'s CSS
+  and runtime, written by `just plugin-theme-sync` and compared by
+  `just plugin-theme-check` in the `plugin` CI job, whose filter includes
+  `pkg/theme/**`. Edit `pkg/theme`, then sync; never edit the copy.
+- **Widgets** are drawn by `pkg/theme/runtime.js` from a
+  `figure.widget` holding a `script[type="application/json"][data-widget]`
+  island, an empty `.widget-mount`, and a `.widget-fallback`. The drawers
+  build DOM with `textContent` only, mark the figure `drawn` (hiding the
+  fallback), and redraw on a mode change; an island that fails to parse
+  or draw leaves the fallback.
+
 ## Helm chart (`charts/docz`)
 
 One chart deploys everything (IMPL-0021, DESIGN-0018): `api.*` and `site.*`
