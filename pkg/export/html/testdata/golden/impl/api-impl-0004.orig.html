@@ -27,7 +27,6 @@
 <button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="executor-conventions-read-first" aria-controls="p-executor-conventions-read-first">Executor conventions (read first)</button>
 <button type="button" data-tab="reference-the-docz-api-target-surface" aria-controls="p-reference-the-docz-api-target-surface">Reference: the docz-api target surface</button>
-<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
 <button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
 <button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
@@ -410,23 +409,11 @@ reason = <code>onboard</code> | <code>repo_added</code> | <code>push</code>),
 collectors.</p>
 
 </section>
-<section class="panel" id="p-implementation-phases">
-<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
-<p>Each phase builds on the previous one. A phase is complete when all its tasks
-are checked off and its success criteria are met.</p>
-
-</section>
 <section class="panel" id="p-phases">
 <h2 class="panel-title">Phases</h2>
-<ul class="heading-list">
-<li><a href="#phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</a></li>
-<li><a href="#phase-2-chart-core--helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</a></li>
-<li><a href="#phase-3-backing-services--storequeue-rewire--meilisearch">Phase 3: Backing services — store/queue rewire &#43; Meilisearch</a></li>
-<li><a href="#phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</a></li>
-<li><a href="#phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</a></li>
-<li><a href="#phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</a></li>
-<li><a href="#phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</a></li>
-</ul>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Each phase builds on the previous one. A phase is complete when all its tasks
+are checked off and its success criteria are met.</p>
 <h4 id="phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</h4>
 <p>Small, independent corrections from INV-0004 Obs. 1 and 4, plus the justfile
 recipes later phases need for verification. No chart-template changes here.</p>

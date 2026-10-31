@@ -374,7 +374,7 @@ typed packages, plus the widgets from fenced blocks.
 - [x] Add `layout.go`: the region-kind table as data (kind → tab name,
   order, widget), tabs in the order their first region appears, an
   unknown kind as a tab named by its heading.
-- [ ] Pin the table: a test that every kind in
+- [x] Pin the table: a test that every kind in
   `pkg/doczcore/validate`'s catalogue and in every embedded template has
   a row or is listed as deliberately generic, and that every built-in
   template yields DESIGN-0025's tab list for its type.

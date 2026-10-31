@@ -75,6 +75,19 @@ func TestOutline(t *testing.T) {
 			want: "overview=Overview",
 		},
 		{
+			name: "an H2 with a paragraph over deeper regions opens their tab",
+			src: "## Implementation Phases\n\nEach phase builds on the last.\n\n" +
+				"<!--docz:phase:start-->\n### Phase 1: A\n\n- [ ] t\n<!--docz:phase:end-->\n\n" +
+				"<!--docz:references:start-->\n## References\n\n- r\n<!--docz:references:end-->\n",
+			want: "phases=Phases references=References",
+		},
+		{
+			name: "an H2 with a paragraph over a peer region keeps its tab",
+			src: "## Notes\n\nA note.\n\n" +
+				"<!--docz:references:start-->\n## References\n\n- r\n<!--docz:references:end-->\n",
+			want: "notes=Notes references=References",
+		},
+		{
 			name: "duplicate labels get distinct keys",
 			src:  "## Notes\n\na\n\n## Notes\n\nb\n",
 			want: "notes=Notes notes-2=Notes",

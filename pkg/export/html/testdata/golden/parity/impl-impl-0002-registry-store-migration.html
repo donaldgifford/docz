@@ -28,7 +28,6 @@ transitions.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
 <button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
 <button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
 <button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
@@ -56,14 +55,11 @@ rollout</li>
 </ul>
 
 </section>
-<section class="panel" id="p-implementation-phases">
-<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
-<p>Each phase builds on the previous one. A phase is complete when all its tasks
-are checked off and its success criteria are met.</p>
-
-</section>
 <section class="panel" id="p-phases">
 <h2 class="panel-title">Phases</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
+<p>Each phase builds on the previous one. A phase is complete when all its tasks
+are checked off and its success criteria are met.</p>
 <h4 id="phase-0-schema-and-migrations">Phase 0: Schema and migrations</h4>
 <p>Stand up the Postgres schema and the migration tooling that later phases
 depend on. No production traffic touches Postgres yet, so this phase is

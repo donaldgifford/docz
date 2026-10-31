@@ -39,18 +39,28 @@ type tab struct {
 func outline(lines []string, regions []docparse.Region, headings []docparse.Heading) []tab {
 	var spans []section
 
-	gap := func(from, through int) {
-		spans = append(spans, gapSections(lines, headings, from, through)...)
+	// gap splits the text before a region, or after the last; next is the
+	// region that follows, nil after the last.
+	gap := func(from, through int, next *docparse.Region) {
+		introduces := false
+
+		if next != nil {
+			h := firstHeading(headings, next.Start+1, next.End-1)
+			introduces = h != nil && h.Level > 2
+		}
+
+		spans = append(spans, gapSections(lines, headings, from, through, introduces)...)
 	}
 
 	next := 1
 
-	for _, r := range regions {
+	for i := range regions {
+		r := regions[i]
 		if r.Depth != 0 {
 			continue
 		}
 
-		gap(next, r.Start-1)
+		gap(next, r.Start-1, &regions[i])
 
 		next = r.End + 1
 		if r.Kind == docparse.TocKind {
@@ -62,16 +72,20 @@ func outline(lines []string, regions []docparse.Region, headings []docparse.Head
 		spans = append(spans, s)
 	}
 
-	gap(next, len(lines))
+	gap(next, len(lines), nil)
 
 	return tabsOf(attachIntros(spans))
 }
 
 // gapSections splits text outside every region at its H2s. A piece that
 // opens with an H2 and has content under it is a section labelled by it; a
-// piece before the first H2, or an H2 with nothing under it, is an intro
-// section (Heading nil), kept only when it has content.
-func gapSections(lines []string, headings []docparse.Heading, from, through int) []section {
+// piece before the first H2, an H2 with nothing under it, and, when
+// introduces is set, the last H2 piece, are intro sections (Heading nil),
+// kept only when they have content. introduces says the region after the
+// gap opens with a heading deeper than H2, so the gap's last H2 is the
+// heading over it ("## Implementation Phases" over "### Phase 1") and its
+// paragraph opens that region's tab.
+func gapSections(lines []string, headings []docparse.Heading, from, through int, introduces bool) []section {
 	if from > through {
 		return nil
 	}
@@ -80,13 +94,13 @@ func gapSections(lines []string, headings []docparse.Heading, from, through int)
 
 	start := from
 
-	flush := func(end int, h *docparse.Heading) {
+	flush := func(end int, h *docparse.Heading, last bool) {
 		if start > end {
 			return
 		}
 
 		switch {
-		case h != nil && !hasContent(lines, start+1, end):
+		case h != nil && (!hasContent(lines, start+1, end) || last && introduces):
 			// A heading that only introduces the regions under it is not a
 			// tab: it joins the next one, which shows it.
 			out = append(out, section{From: start, Through: end})
@@ -103,11 +117,11 @@ func gapSections(lines []string, headings []docparse.Heading, from, through int)
 			continue
 		}
 
-		flush(h.Line-1, open)
+		flush(h.Line-1, open, false)
 		start, open = h.Line, h
 	}
 
-	flush(through, open)
+	flush(through, open, true)
 
 	return out
 }

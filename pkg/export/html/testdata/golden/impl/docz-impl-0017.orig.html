@@ -23,7 +23,6 @@
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
 <button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
 <button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
 <button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
@@ -136,24 +135,14 @@ warning.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-implementation-phases">
-<h2 class="panel-title" id="implementation-phases">Implementation Phases</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<h3 id="implementation-phases">Implementation Phases</h3>
 <p>Each phase builds on the previous one. A phase is complete when all its
 tasks are checked off and its success criteria are met. Phases are commit
 boundaries inside one <code>minor</code> PR (Decision 2); every phase ends with
 <code>make fmt</code>, <code>make lint</code>, <code>make ci</code> green and a go-review pass over the
 phase's diff.</p>
-
-</section>
-<section class="panel" id="p-phases">
-<h2 class="panel-title">Phases</h2>
-<ul class="heading-list">
-<li><a href="#phase-1-docwritesetupdated">Phase 1: docwrite.SetUpdated</a></li>
-<li><a href="#phase-2-read-side-and-the-updated-config-block">Phase 2: read side and the updated: config block</a></li>
-<li><a href="#phase-3-git-resolver-and-the-stream-parser">Phase 3: git resolver and the stream parser</a></li>
-<li><a href="#phase-4-cli-integration">Phase 4: CLI integration</a></li>
-<li><a href="#phase-5-living-docs-consumer-contract-release-dogfood">Phase 5: living docs, consumer contract, release, dogfood</a></li>
-</ul>
 <h4 id="phase-1-docwritesetupdated">Phase 1: <code>docwrite.SetUpdated</code></h4>
 <p>The byte-level write primitive, in <code>pkg/doczcore/docwrite</code>. Built first
 because Phases 4 and 5 call it and its golden suite is the proof that the
