@@ -247,7 +247,7 @@ and 4 encode.
   page from the references with the theme inlined; write it under
   `build/html/`; never edit the document to suit the page except to
   improve the markdown itself.
-- [ ] Define the three widgets' YAML in
+- [x] Define the three widgets' YAML in
   `skills/docz-html/references/widgets.md`, starting from DESIGN-0025
   §6's `docz-flow` example and the source skill's `SSE.initFlow`,
   `initStepper`, and `initScorecard` options, every field named,
