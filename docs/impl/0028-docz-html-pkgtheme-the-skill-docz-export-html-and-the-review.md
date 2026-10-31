@@ -519,7 +519,7 @@ selectable. Its own `minor`.
 - [x] Extend `ui/src/theme/contrast.test.ts` to every theme and mode, and
   fix any pair below its threshold in the token files.
 - [x] Run the review e2e under `paper` light, `paper` dark, and `classic`.
-- [ ] Rebuild the review binary (`just ui build-review`) and walk through
+- [x] Rebuild the review binary (`just ui build-review`) and walk through
   a review in each.
 - [ ] Bump the docz-review plugin version if its README shows the look.
 - [ ] Run a review on the new theme in a real session before the
