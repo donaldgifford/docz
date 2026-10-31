@@ -340,7 +340,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   allow-list, the CSP present, no `http` URL in a page outside CDN mode,
   determinism (two renders, same bytes), CR and no-frontmatter
   rejections.
-- [ ] `FuzzRender`: never panics, and the output parses with
+- [x] `FuzzRender`: never panics, and the output parses with
   `golang.org/x/net/html` in the test only (question 7).
 - [ ] Add `pkg/export/html` to `test/consumer` with one inline document.
 
