@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 
 import { reviewFake } from "./scripts/review-fake";
 
@@ -54,6 +54,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
+    // src/theme/tokens.css imports the themes from ../pkg/theme
+    // (DESIGN-0025 §3). Setting allow replaces Vite's default, so the
+    // workspace root is listed again beside it.
+    fs: {
+      allow: [
+        searchForWorkspaceRoot(process.cwd()),
+        fileURLToPath(new URL("../pkg/theme", import.meta.url)),
+      ],
+    },
     proxy: {
       "/api": doczApiUrl,
       "/auth": doczApiUrl,

@@ -183,7 +183,7 @@ phase proves the plumbing before the look moves.
   the `@theme` declarations so Tailwind still generates every utility,
   and set `data-theme="classic"` on `<html>` in `ui/index.html` and
   `ui/review.html`.
-- [ ] Add the repository root's `pkg/theme` to `server.fs.allow` in
+- [x] Add the repository root's `pkg/theme` to `server.fs.allow` in
   `ui/vite.config.ts`, beside Vite's default.
 - [ ] Add `theme = "pkg/theme"` to the `-ui` bake targets' `contexts` in
   `docker-bake.hcl`, and `COPY --from=theme . /pkg/theme` in
