@@ -3,9 +3,9 @@ name: review
 description: >-
   Queue docz documents for a browser review at the end of this turn, or
   list what is already queued. Use when the user asks to review a docz
-  document (an RFC, ADR, design, IMPL, investigation, or runbook) the
-  agent did not just create with `docz create`, or asks what is waiting
-  for review.
+  document (an RFC, ADR, design, IMPL, investigation, or runbook),
+  including one the agent just created, or asks what is waiting for
+  review.
 argument-hint: "[<id|path>...]"
 allowed-tools: Bash(docz-review arm *), Bash(docz-review pending*)
 ---
@@ -13,8 +13,10 @@ allowed-tools: Bash(docz-review arm *), Bash(docz-review pending*)
 # Review docz documents
 
 The docz-review plugin opens a review page when a turn ends, for every
-document queued in this session. `docz create` queues what it creates on
-its own. This skill queues anything else, and reports the queue.
+document queued in this session. This skill queues documents and reports
+the queue. `docz create` queues what it creates on its own only when
+`DOCZ_REVIEW_AUTO_ARM` is on, so a document the agent just created is
+usually queued here too; queueing one twice is harmless.
 
 ## With arguments
 
