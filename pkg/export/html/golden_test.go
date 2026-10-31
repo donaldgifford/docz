@@ -68,8 +68,21 @@ func corpus(t *testing.T) map[string]string {
 		}
 	}
 
+	pages, err := filepath.Glob(filepath.Join("testdata", "pages", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, m := range pages {
+		out[m] = customType
+	}
+
 	return out
 }
+
+// customType is the type testdata/pages renders as: no built-in's, and no
+// heading spec, so its layouts come from its markers' kinds alone.
+const customType = "frameworks"
 
 // goldenName is a corpus path's golden file: the type package or fixture
 // and the file's base name.
@@ -80,6 +93,10 @@ func goldenName(path, typ string) string {
 		fixture := filepath.Base(filepath.Dir(filepath.Dir(filepath.Dir(path))))
 
 		return filepath.Join("testdata", "golden", "parity", fixture+"-"+typ+"-"+base+".html")
+	}
+
+	if typ == customType {
+		return filepath.Join("testdata", "golden", "pages", base+".html")
 	}
 
 	return filepath.Join("testdata", "golden", typ, base+".html")

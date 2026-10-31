@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0001: A stepper widget</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · frameworks</p>
+<h1>A stepper widget</h1>
+<div class="meta">
+<span class="pill">DESIGN-0001</span>
+<span class="pill st-draft">Draft</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p>What happens to a token.</p>
+<figure class="widget" data-widget="stepper">
+<figcaption>A token request</figcaption>
+<script type="application/json" data-widget="stepper">{"title":"A token request","steps":[{"key":"parse","name":"Parse","does":"Reads the bearer token from the Authorization header."},{"key":"verify","name":"Verify","title":"Verify the signature","does":"Checks the signature against the issuer's JWKS."},{"key":"scope","name":"Scope","does":"Resolves the repositories the token's scopes allow."}],"scenarios":[{"name":"A valid token","notes":{"scope":"Two repositories match public:read."}},{"name":"An expired token","fails_at":"verify","fail_label":"Rejected","notes":{"verify":"exp is 40 s in the past, beyond the 30 s skew."}}]}</script>
+<div class="widget-mount"></div>
+<div class="widget-fallback table-wrap">
+<table>
+<thead><tr><th>Step</th><th>What it does</th><th>A valid token</th><th>An expired token</th></tr></thead>
+<tbody>
+<tr><td>Parse</td><td>Reads the bearer token from the Authorization header.</td><td></td><td></td></tr>
+<tr><td>Verify</td><td>Checks the signature against the issuer&#39;s JWKS.</td><td></td><td class="high">Rejected: exp is 40 s in the past, beyond the 30 s skew.</td></tr>
+<tr><td>Scope</td><td>Resolves the repositories the token&#39;s scopes allow.</td><td>Two repositories match public:read.</td><td>Never reached</td></tr>
+</tbody>
+</table>
+</div>
+</figure>
+
+</section>
+<footer class="page-footer">
+From <code>testdata/pages/widget-stepper.md</code>, sha256 <code>1b5cda8a42aa120a3020e91ab807ac91ac08b05f2100d790b21e9354b1893eb9</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

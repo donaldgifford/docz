@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0001: A flow widget</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · frameworks</p>
+<h1>A flow widget</h1>
+<div class="meta">
+<span class="pill">DESIGN-0001</span>
+<span class="pill st-draft">Draft</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<p>The request path.</p>
+<figure class="widget" data-widget="flow">
+<figcaption>Request path</figcaption>
+<script type="application/json" data-widget="flow">{"title":"Request path","stages":[{"name":"Ingress","does":"Terminates TLS, routes by host"},{"name":"Auth","does":"Verifies the bearer token","note":"30 s clock skew"},{"name":"Handler","does":"Reads through the store"}],"gates":[2],"label":"Every request, left to right.","legend":"Every request passes all three.","alert":"A token past its skew is rejected."}</script>
+<div class="widget-mount"></div>
+<div class="widget-fallback">
+<p class="note">Every request, left to right.</p>
+<ol>
+<li><b>Ingress</b>: Terminates TLS, routes by host</li>
+<li><b>Auth</b> <span class="pill ok">gate</span>: Verifies the bearer token <span class="note">30 s clock skew</span></li>
+<li><b>Handler</b>: Reads through the store</li>
+</ol>
+<p class="note">Every request passes all three.</p>
+<div class="callout bad"><p>A token past its skew is rejected.</p></div>
+</div>
+</figure>
+
+</section>
+<footer class="page-footer">
+From <code>testdata/pages/widget-flow.md</code>, sha256 <code>3251a35266c5e35d99c16ccad52f0f9f025c201258347224f71f575ae92ee807</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

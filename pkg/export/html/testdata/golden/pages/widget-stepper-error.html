@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0001: An invalid stepper widget</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · frameworks</p>
+<h1>An invalid stepper widget</h1>
+<div class="meta">
+<span class="pill">DESIGN-0001</span>
+<span class="pill st-draft">Draft</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<div class="callout caution"><p class="callout-title">Invalid docz-stepper block</p>
+<ul>
+<li>line 9: steps[0].key: &#34;Parse&#34; is not [a-z0-9-]+</li>
+<li>line 9: scenarios[0].fails_at: &#34;scope&#34; is no step&#39;s key</li>
+</ul>
+</div>
+<pre><code class="language-yaml">steps:
+  - key: Parse
+    name: Parse
+    does: Reads it.
+  - key: verify
+    name: Verify
+    does: Checks it.
+scenarios:
+  - name: Expired
+    fails_at: scope
+</code></pre>
+
+</section>
+<footer class="page-footer">
+From <code>testdata/pages/widget-stepper-error.md</code>, sha256 <code>79feae0dc9135c8b2a8a1978cbbaae65f20d7d48fd517af188550f7828f112c7</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>

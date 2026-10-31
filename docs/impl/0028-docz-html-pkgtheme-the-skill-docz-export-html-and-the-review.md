@@ -396,7 +396,7 @@ typed packages, plus the widgets from fenced blocks.
   widget (question 2), validated, and written as the JSON island, the
   mount point, and the no-JS fallback; an invalid block renders as its
   source with the error and is recorded with its line in `Page.Problems`.
-- [ ] Goldens for the typed layouts: one per type from the corpora, one
+- [x] Goldens for the typed layouts: one per type from the corpora, one
   custom type carrying IMPL regions (it gets phases), one per widget, one
   per widget error.
 - [ ] Confluence: a widget fence in `pkg/export/confluence/nodes.go`

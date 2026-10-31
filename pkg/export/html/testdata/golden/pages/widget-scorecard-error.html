@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-doc="DESIGN-0001">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0001: An invalid scorecard widget</title>
+<!-- docz:theme --><!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · frameworks</p>
+<h1>An invalid scorecard widget</h1>
+<div class="meta">
+<span class="pill">DESIGN-0001</span>
+<span class="pill st-draft">Draft</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+<p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<div class="callout caution"><p class="callout-title">Invalid docz-scorecard block</p>
+<ul>
+<li>line 9: checks[0].weight: must be greater than 0</li>
+<li>line 9: example.results[0].id: &#34;C9&#34; is no check&#39;s id</li>
+<li>line 9: example.results[0].score: must be between 0 and 1, or null</li>
+</ul>
+</div>
+<pre><code class="language-yaml">checks:
+  - id: C1
+    name: Signed
+    target: All signed
+    weight: 0
+example:
+  results:
+    - id: C9
+      score: 2
+</code></pre>
+
+</section>
+<footer class="page-footer">
+From <code>testdata/pages/widget-scorecard-error.md</code>, sha256 <code>25cde4d0c3605d233a137205bf24d19d1e9691c27a20cdd8fea84824adc2ae9b</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme --><!-- /docz:theme -->
+</body>
+</html>
