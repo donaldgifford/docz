@@ -246,9 +246,14 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
   JavaScript.
 - `data-state` is `done`, `open`, `deferred`, or `skipped`. A deferred or
   skipped task carries a `warn` pill and its note, and counts as neither
-  done nor open: the progress is done over done plus open. A task is
-  deferred or skipped when its text ends `**deferred** - <note>` or
-  `**skipped** - <note>`.
+  done nor open: the progress, and the bar, are done over done plus open.
+  The markers are read exactly as docz reads them. A task is deferred
+  when its text holds `deferred` (bold or not) followed by a dash; the
+  note is the rest of the text (`**deferred** - human required`, or
+  `` (`deferred - human required`: …) `` mid-sentence). A task is skipped
+  when its whole text is struck through and followed by `skipped:` and the
+  note (`~~Add a cache~~ - skipped: not needed`); show the struck text in
+  `del`.
 - The bar's width is the one `style` attribute allowed on the page: done
   over total, as a percentage.
 

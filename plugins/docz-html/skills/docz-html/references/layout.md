@@ -25,7 +25,9 @@ when the document carries no markers and docz found them from headings.
    - a heading that only introduces the regions under it (`## Goals and
      Non-Goals` above the `goals` and `non-goals` regions, `## Procedures`
      above the procedures) is not repeated: its anchor goes on the first
-     element of the tab, and any paragraph under it opens that tab.
+     element after the panel title, and any paragraph under it opens that
+     tab;
+   - a thematic break (`---`) between regions is dropped.
 6. The `toc` region is dropped. The tabs and each panel's heading list
    replace it.
 7. A document with no regions at all, marked or inferred, gets one tab per
@@ -42,14 +44,20 @@ Every heading's anchor (from `docz inspect`) must land on the page, so a
 `#slug` link anywhere still works:
 
 - The panel title names the **tab**, and carries the anchor of the first
-  region's heading when that heading's text is the tab label.
+  region's heading when that heading's text is the tab label, compared
+  without case.
 - Otherwise each region's own heading is written as an `h3` with its
   anchor, in document order: a tab holding `summary` and `context` shows
   both headings.
 - A heading that becomes a card's label puts its anchor on the card, and
   an open question's anchor goes on its `details`.
-- Headings below a region's heading keep their level, shifted so the
-  panel title is the only `h2`, and keep their anchors.
+- Every heading in a region moves down by the same amount as the
+  region's own heading, so the panel title is the only `h2` and the
+  nesting is kept (`## Detailed Design` → `h3`, its `###`s → `h4`).
+- A phase's `#### Tasks` and `#### Success Criteria` anchors go on its
+  `ul.tasks` and its criteria callout.
+- Take a heading's text from the markdown line, not from `inspect`'s
+  `text`, which drops inline code.
 - The heading list counts the panel's `h3`s only and lists them; card
   labels are not counted.
 
@@ -84,6 +92,8 @@ paragraph before its first list, table, or heading gives no summary.
 - **Open questions.** Options come from the markdown (each `- a.`
   item); `recommended` comes from `docz inspect`, whatever spelling the
   document used. Unresolved questions are open, resolved ones closed.
+  Each resolution or revision paragraph (`> **Resolved …**`,
+  `> **Revised …**`) is its own `p.resolution`, in document order.
 
 ## Region kinds
 

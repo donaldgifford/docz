@@ -259,7 +259,7 @@ and 4 encode.
   data) in place when the island fails to parse.
 - [x] Add widget styles to `components.css` and re-run the Phase 1
   completeness test.
-- [ ] Iterate over this repository's own documents, one per built-in type
+- [x] Iterate over this repository's own documents, one per built-in type
   (DESIGN-0025, IMPL-0027, ADR-0005, INV-0030, an RFC, RUNBOOK-0004),
   plus one unmarked document and one with each widget added on a scratch
   copy. Each change to the theme lands in `pkg/theme`; each change to the
