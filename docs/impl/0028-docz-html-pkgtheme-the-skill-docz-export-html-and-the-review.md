@@ -178,7 +178,7 @@ phase proves the plumbing before the look moves.
   theme in both modes; neither file contains a hex, `rgb(`, `hsl(`, or
   named colour; `CSS` for each name starts with that theme's selector;
   an unknown name is `ErrUnknownTheme`. `t.Parallel()` throughout.
-- [ ] Import the token files from `ui/src/theme/tokens.css` after its
+- [x] Import the token files from `ui/src/theme/tokens.css` after its
   `@theme static` block (`@import "../../../pkg/theme/tokens/…"`), keep
   the `@theme` declarations so Tailwind still generates every utility,
   and set `data-theme="classic"` on `<html>` in `ui/index.html` and
