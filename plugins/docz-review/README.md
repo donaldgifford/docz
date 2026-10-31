@@ -240,7 +240,12 @@ From a trial on Claude Code 2.1.280, the session looks like this:
    nothing.
 2. The agent ends its turn. Claude Code shows its stop hooks running,
    and the page opens in your browser with every queued document.
-3. You ask for changes. The session shows your feedback as
+3. You select a passage and comment on it, or comment on the whole
+   document, and click **Add**: a comment counts once it is added, and
+   Submit and Approve wait while a comment box holds text. Submit is off
+   until the draft holds something, so approving is always the
+   **Approve** button.
+4. You ask for changes. The session shows your feedback as
    `Stop hook error:` followed by
    `docz review: <ID> <title>, round <N>: changes requested`, then each
    annotation as `[<region> › <heading>, line <N>] "<quote>"` with your
@@ -249,9 +254,9 @@ From a trial on Claude Code 2.1.280, the session looks like this:
    `Apply the annotations, then finish your turn so the next round can open.`
    A quote the page could not place in the source is marked
    `quote not found` and keeps its line as a hint.
-4. The agent makes the changes and ends its turn. The page opens again
+5. The agent makes the changes and ends its turn. The page opens again
    on round two, with what changed.
-5. You approve. The turn ends and the session shows nothing more from
+6. You approve. The turn ends and the session shows nothing more from
    the review. Approving does not change the document's `status:`; ask
    the agent, or run `docz status set <type> <id> <status>`.
 
