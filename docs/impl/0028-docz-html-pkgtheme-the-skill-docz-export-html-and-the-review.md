@@ -252,7 +252,7 @@ and 4 encode.
   §6's `docz-flow` example and the source skill's `SSE.initFlow`,
   `initStepper`, and `initScorecard` options, every field named,
   required or optional, and typed.
-- [ ] Add the widget drawers to `pkg/theme/runtime.js`: each finds its
+- [x] Add the widget drawers to `pkg/theme/runtime.js`: each finds its
   `<script type="application/json" data-widget="…">` island, draws into
   the sibling mount point in tokens, redraws on the `docz:mode` event,
   and leaves the no-JS fallback (a definition list or table of the same
