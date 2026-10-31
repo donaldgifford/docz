@@ -509,7 +509,7 @@ selectable. Its own `minor`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Set `data-theme="paper"` on `ui/review.html`; docz-site stays on
+- [x] Set `data-theme="paper"` on `ui/review.html`; docz-site stays on
   `classic`.
 - [ ] Add the light/dark toggle to the review page's header, sharing
   `docz:mode` with exported pages, and a theme selector storing
