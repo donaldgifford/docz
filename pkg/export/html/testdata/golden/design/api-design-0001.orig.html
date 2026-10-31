@@ -24,15 +24,13 @@
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
-<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
-<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
-<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
-<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
@@ -125,11 +123,8 @@ consumes the shared Go parsing library extracted from the docz CLI in
 registry never drifts from the CLI's own notion of &quot;what docz docs exist in
 this tree.&quot;</p>
 </blockquote>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li><strong>Cross-repo registry.</strong> A Postgres store keyed by <code>(repo, doc_id)</code> holding
 every docz document across every onboarded repo, with its frontmatter, cached
@@ -158,10 +153,7 @@ unchanged — the site is built against these endpoints from the first slice.</l
 → serve one type, deferring full auth and webhooks, to prove the fetch → parse
 → upsert → serve loop end to end.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li><strong>Rendering markdown to HTML.</strong> No <code>rendered_html</code> column, no server-side
 renderer. Rendering is docz-site's job (Decision 3). docz's mdp renderer is
@@ -230,17 +222,9 @@ surface. Both the CLI and docz-api depend on it, so the registry's view of a
 repo is byte-for-byte the CLI's view.</p>
 
 </section>
-<section class="panel" id="p-detailed-design">
-<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
-<ul class="heading-list">
-<li><a href="#service-shape-and-package-layout">Service shape and package layout</a></li>
-<li><a href="#consuming-the-docz-parsing-library-pkgdoczcore">Consuming the docz parsing library (pkg/doczcore)</a></li>
-<li><a href="#github-app-setup-and-onboarding">GitHub App setup and onboarding</a></li>
-<li><a href="#ingestion-pipeline">Ingestion pipeline</a></li>
-<li><a href="#auth-and-session-model">Auth and session model</a></li>
-<li><a href="#search">Search</a></li>
-<li><a href="#component--sequence-overview">Component / sequence overview</a></li>
-</ul>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
 <h4 id="service-shape-and-package-layout">Service shape and package layout</h4>
 <p>docz-api is a single Go binary (<code>cmd/docz-api/</code>) over library code in
 <code>internal/</code>, consistent with this repo's conventions (<code>slog</code> for logs, no
@@ -606,8 +590,9 @@ as the job queue, and separately holds the session store; Postgres and
 Meilisearch are the durable stores.</p>
 
 </section>
-<section class="panel" id="p-api-interface-changes">
-<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
 <p>This is a greenfield service, so &quot;interface changes&quot; means the initial HTTP/JSON
 surface plus the config surface. All responses are JSON; all read endpoints are
 authorization-filtered to the session's allowed repos.</p>
@@ -836,7 +821,7 @@ configuration (an endpoint/credentials for the authZ service) is added then.</p>
 
 </section>
 <section class="panel" id="p-data-model">
-<h2 class="panel-title" id="data-model">Data Model</h2>
+<h2 class="panel-title" id="data-model">Data model</h2>
 <p>The Postgres schema refines the INV-0005 sketch. All timestamps are
 <code>timestamptz</code>. JSONB columns hold the config snapshot and per-type <code>statuses</code>
 exactly as parsed, so the registry can answer &quot;what types/statuses did this repo
@@ -970,8 +955,9 @@ filterable facets; <code>created</code> / <code>updated_at</code> are sortable.<
 </ul>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <ul>
 <li><p><strong>Unit — parsing / ingest mapping.</strong> Given fixture bytes for <code>.docz.yaml</code> and
 a set of <code>*.md</code> docs, assert the parse (via the DESIGN-0007 library) → row
@@ -1018,8 +1004,9 @@ hand-edited.</p>
 </ul>
 
 </section>
-<section class="panel" id="p-migration-rollout-plan">
-<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
 <p>docz-api is a <strong>greenfield repository</strong>; this document is its seed design. There
 is no in-place migration of an existing system — &quot;rollout&quot; is the order in which
 the service is built and shipped.</p>
@@ -1071,7 +1058,7 @@ early.</p>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-reconcile-the-api-path-shape-and-versioning-with-docz-site">1. Reconcile the API path shape and versioning with docz-site?</a></li>
 <li><a href="#2-how-is-the-docz-parsing-library-pinned-while-building">2. How is the docz parsing library pinned while building?</a></li>

@@ -22,18 +22,18 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="problem-statement" aria-controls="p-problem-statement">Problem Statement</button>
-<button type="button" data-tab="proposed-solution" aria-controls="p-proposed-solution">Proposed Solution</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
 <button type="button" data-tab="design" aria-controls="p-design">Design</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="risks-and-mitigations" aria-controls="p-risks-and-mitigations">Risks and Mitigations</button>
-<button type="button" data-tab="success-criteria" aria-controls="p-success-criteria">Success Criteria</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#summary">Summary</a></li>
 <li><a href="#problem-statement">Problem Statement</a></li>
@@ -69,6 +69,7 @@
 <li><a href="#success-criteria">Success Criteria</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="summary">Summary</h3>
 <p>Build an <strong>Agent Dev Kit (ADK)</strong> on top of the agentic Go framework — the
 opinionated, batteries-included product layer that turns the framework (a
 library) into a complete development and operations environment for agents.
@@ -95,8 +96,9 @@ risk below is largely dissolved by co-location.</p>
 </blockquote>
 
 </section>
-<section class="panel" id="p-problem-statement">
-<h2 class="panel-title" id="problem-statement">Problem Statement</h2>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
 <p>The agentic Go framework will give us a clean library for building agents. It
 will not give us:</p>
 <ul>
@@ -123,8 +125,9 @@ layer and only the agent-specific logic differs.</p>
 <p>The framework alone is necessary but not sufficient.</p>
 
 </section>
-<section class="panel" id="p-proposed-solution">
-<h2 class="panel-title" id="proposed-solution">Proposed Solution</h2>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
 <p>The ADK is six components, each built on the agentic framework:</p>
 <ol>
 <li><strong><code>adk-server</code></strong> — HTTP server with conversation persistence, multi-tenant
@@ -427,8 +430,9 @@ tenant), bundle_uri</li>
 isolation at the database layer, not just the application.</p>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <p><strong>Just ship the framework, no kit.</strong> Each agent team builds their own server,
 persistence, CLI, deployment, sandbox, and observability wiring. Fastest path
 for the framework itself, slowest path for every downstream consumer. We've
@@ -531,8 +535,9 @@ platform-specific paths.</p>
 signed; agent authors discover skills via Backstage.</p>
 
 </section>
-<section class="panel" id="p-risks-and-mitigations">
-<h2 class="panel-title" id="risks-and-mitigations">Risks and Mitigations</h2>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -603,8 +608,9 @@ signed; agent authors discover skills via Backstage.</p>
 </div>
 
 </section>
-<section class="panel" id="p-success-criteria">
-<h2 class="panel-title" id="success-criteria">Success Criteria</h2>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
 <p><strong>Phase 1:</strong></p>
 <ul>
 <li>Triage bot runs identically on the ADK and standalone (modulo config); the

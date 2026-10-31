@@ -22,16 +22,15 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
 <button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#summary">Summary</a></li>
 <li><a href="#context">Context</a></li>
@@ -57,6 +56,7 @@
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="summary">Summary</h3>
 <p><code>plan</code> leaves the built-in document type registry: no <code>PLAN</code> prefix, no
 <code>plan</code> directory, no embedded <code>plan.md</code> or <code>index_plan.md</code>, five built-in
 types instead of six. Nobody has ever written a PLAN document; phased
@@ -65,10 +65,7 @@ block in <code>.docz.yaml</code> keeps working as a custom type and only loses
 <code>docz create plan</code> until it supplies its own template. The removal ships on
 the v2 line with the API, first in the beta that carries the <code>cmd/</code> swap
 (ADR-0002); the v1 line keeps <code>plan</code> as it is.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>docz shipped with six built-in types. PLAN was meant to sit between RFC
 (proposal) and IMPL (phased execution), a slot every repo in the fleet fills
 with DESIGN + IMPL instead. DESIGN-0011 turned it off by default in v1.1.1
@@ -236,8 +233,9 @@ its fallback can still produce a PLAN file that the CLI treats as custom.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>A. Keep it disabled</strong> (status quo since v1.1.1). <em>Pros:</em> nothing to do.
 <em>Cons:</em> the confusion, the dead templates, the help text, and the tests
@@ -255,7 +253,7 @@ semver treatment explicitly.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <blockquote>
 <p>Each question is numbered; option <code>a</code> is my recommendation, later letters
 are alternatives, and the last is a free-form &quot;other&quot;.</p>

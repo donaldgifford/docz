@@ -24,30 +24,22 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
 <p>Does <code>test/parity</code> need one fixture repository per built-in document type, or
 would a single repository carrying all six types record the same behaviour?</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>One repository is enough. Every command under test takes a type name, so six
 types in one repository walk the same code paths six repositories would, and the
 suite would shed two thirds of its files.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>The suite was captured from the v1.2.2 release binary with seven fixture
 repositories: one per built-in type, plus one carrying a custom <code>frameworks</code>
 type. Each repository holds a template-faithful document and a messier
@@ -62,10 +54,7 @@ replays goldens.</p>
 <li>Collapse the six type repositories into one and re-capture the goldens.</li>
 <li>Diff the collapsed goldens against the ones captured from v1.2.2.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>

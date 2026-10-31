@@ -22,23 +22,18 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="phase-1-docwrite-setupdated" aria-controls="p-phase-1-docwrite-setupdated">Phase 1: docwrite.SetUpdated</button>
-<button type="button" data-tab="phase-2-read-side-and-the-updated-config-block" aria-controls="p-phase-2-read-side-and-the-updated-config-block">Phase 2: read side and the updated: config block</button>
-<button type="button" data-tab="phase-3-git-resolver-and-the-stream-parser" aria-controls="p-phase-3-git-resolver-and-the-stream-parser">Phase 3: git resolver and the stream parser</button>
-<button type="button" data-tab="phase-4-cli-integration" aria-controls="p-phase-4-cli-integration">Phase 4: CLI integration</button>
-<button type="button" data-tab="phase-5-living-docs-consumer-contract-release-dogfood" aria-controls="p-phase-5-living-docs-consumer-contract-release-dogfood">Phase 5: living docs, consumer contract, release, dogfood</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#objective">Objective</a></li>
 <li><a href="#scope">Scope</a>
@@ -99,6 +94,7 @@
 <li><a href="#decisions">Decisions</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="objective">Objective</h3>
 <p>Implement DESIGN-0012: an opt-in <code>updated:</code> config block and an
 <code>updated: YYYY-MM-DD</code> frontmatter field that <code>docz update</code> backfills from git
 and keeps current, stamped at edit time so the pass converges without
@@ -107,10 +103,7 @@ config block, and <code>docwrite</code> function), ratified for consumers as
 DESIGN-0008 R12, with docz-api #36 waiting on the tag.</p>
 <p><strong>Implements:</strong> DESIGN-0012 (all eight decisions locked 2026-09-12), scoped
 by INV-0008 (Concluded).</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li><code>docwrite.SetUpdated</code> — the package's first upsert (rewrite in place, or
@@ -152,8 +145,16 @@ boundaries inside one <code>minor</code> PR (Decision 2); every phase ends with
 phase's diff.</p>
 
 </section>
-<section class="panel" id="p-phase-1-docwrite-setupdated">
-<h2 class="panel-title" id="phase-1-docwritesetupdated">Phase 1: docwrite.SetUpdated</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<ul class="heading-list">
+<li><a href="#phase-1-docwritesetupdated">Phase 1: docwrite.SetUpdated</a></li>
+<li><a href="#phase-2-read-side-and-the-updated-config-block">Phase 2: read side and the updated: config block</a></li>
+<li><a href="#phase-3-git-resolver-and-the-stream-parser">Phase 3: git resolver and the stream parser</a></li>
+<li><a href="#phase-4-cli-integration">Phase 4: CLI integration</a></li>
+<li><a href="#phase-5-living-docs-consumer-contract-release-dogfood">Phase 5: living docs, consumer contract, release, dogfood</a></li>
+</ul>
+<h4 id="phase-1-docwritesetupdated">Phase 1: <code>docwrite.SetUpdated</code></h4>
 <p>The byte-level write primitive, in <code>pkg/doczcore/docwrite</code>. Built first
 because Phases 4 and 5 call it and its golden suite is the proof that the
 status locator refactor changed nothing.</p>
@@ -223,10 +224,7 @@ green.</li>
 <code>document.ParseFrontmatter</code> with <code>Updated</code> set and no other field changed.</li>
 <li><code>make ci</code> green.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-read-side-and-the-updated-config-block">
-<h2 class="panel-title" id="phase-2-read-side-and-the-updated-config-block">Phase 2: read side and the updated: config block</h2>
+<h4 id="phase-2-read-side-and-the-updated-config-block">Phase 2: read side and the <code>updated:</code> config block</h4>
 <p><code>document.Frontmatter.Updated</code>, <code>config.UpdatedConfig</code>, defaults, the
 generated-config template, and the JSON data field in <code>docz list</code>. Nothing
 here changes runtime behavior; it is the schema Phases 4 and 5 build on.</p>
@@ -271,10 +269,7 @@ round-trips to <code>DefaultConfig()</code>.</li>
 one without, omits it.</li>
 <li><code>make ci</code> green.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-3-git-resolver-and-the-stream-parser">
-<h2 class="panel-title" id="phase-3-git-resolver-and-the-stream-parser">Phase 3: git resolver and the stream parser</h2>
+<h4 id="phase-3-git-resolver-and-the-stream-parser">Phase 3: git resolver and the stream parser</h4>
 <p>Everything that talks to git, in <code>cmd/</code> — plus the pure <code>git log -p</code>
 stream parser in its own <code>internal/gitlog</code> package (Decision 1). Built before the CLI
 integration so Phase 4 is wired against a tested resolver and a scriptable
@@ -350,10 +345,7 @@ git ≥ 2.21 for <code>%cs</code>).</li>
 interface and stub.</li>
 <li><code>make ci</code> green.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-4-cli-integration">
-<h2 class="panel-title" id="phase-4-cli-integration">Phase 4: CLI integration</h2>
+<h4 id="phase-4-cli-integration">Phase 4: CLI integration</h4>
 <p>The stamp pass, the two command-time stamps, and the enabled-only layouts.
 This is where DESIGN-0012's convergence table becomes a test table.</p>
 <h5 id="tasks-3">Tasks</h5>
@@ -420,10 +412,7 @@ nothing else; a real run prints only the README lines.</li>
 <li><code>cmd/</code> tests remain serial; <code>internal/*</code> and <code>pkg/*</code> tests remain parallel.</li>
 <li><code>make ci</code> green.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-5-living-docs-consumer-contract-release-dogfood">
-<h2 class="panel-title" id="phase-5-living-docs-consumer-contract-release-dogfood">Phase 5: living docs, consumer contract, release, dogfood</h2>
+<h4 id="phase-5-living-docs-consumer-contract-release-dogfood">Phase 5: living docs, consumer contract, release, dogfood</h4>
 <p>Ships <code>v1.3.0</code>, then flips statuses and enables the block in this repo.</p>
 <h5 id="tasks-4">Tasks</h5>
 <ul class="tasks">
@@ -481,8 +470,9 @@ converged (<code>docz update --dry-run</code> silent on <code>main</code>).</li>
 </ul>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -608,8 +598,9 @@ converged (<code>docz update --dry-run</code> silent on <code>main</code>).</li>
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text"><code>docwrite</code>: status goldens byte-identical; updated goldens; error
 table with on-disk-unchanged assertions; <code>FuzzSetUpdated</code></div></li>
@@ -642,7 +633,7 @@ module dependencies — <code>go.mod</code> stays cobra + yaml</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-where-does-the-git-log--p-stream-parser-live">1. Where does the git log -p stream parser live?</a></li>
 <li><a href="#2-pr-and-release-strategy">2. PR and release strategy?</a></li>

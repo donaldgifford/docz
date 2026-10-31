@@ -26,32 +26,22 @@ pipeline's status checks.</p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
-<p class="empty">Not written yet.</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>Two concurrent nightly jobs (the docs rebuild and the link checker) are
 racing on a shared cache directory. If the theory holds, failures
 should cluster on nights when both jobs happen to overlap in their
 scheduling window, and the failure signature should point at a missing
 or partially written file rather than a network timeout.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>The nightly rebuild has been in place for about six months without
 issue. Failures started showing up after we added a second scheduled
 job (the link checker) that runs on an overlapping cron window and
@@ -71,10 +61,7 @@ full logs for each.</li>
 <li>Compare timestamps between the two jobs' cache writes on failing
 runs versus passing runs to confirm the race window.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -142,10 +129,7 @@ specific commit range.</li>
 job and the link checker job share a build cache directory with no
 locking or job-scoped path, so an overlapping run can truncate the
 cache manifest mid-write and corrupt the other job's read.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <p>Give each job its own cache subdirectory (for example
 <code>/opt/build-cache/docs-rebuild</code> and <code>/opt/build-cache/link-checker</code>)
 so the two jobs never touch the same files, and stagger the cron

@@ -33,11 +33,11 @@ func TestOutline(t *testing.T) {
 		want string
 	}{
 		{
-			name: "regions in order, ToC dropped",
+			name: "regions go to their row's tab, ToC dropped",
 			src: "# T\n\n<!--toc:start-->\n- [A](#a)\n<!--toc:end-->\n\n" +
 				"<!--docz:summary:start-->\n## Summary\n\nx\n<!--docz:summary:end-->\n\n" +
 				"<!--docz:problem:start-->\n## Problem Statement\n\ny\n<!--docz:problem:end-->\n",
-			want: "summary=Summary problem-statement=Problem Statement",
+			want: "overview=Overview problem=Problem",
 		},
 		{
 			name: "no regions: one tab per H2",
@@ -48,18 +48,31 @@ func TestOutline(t *testing.T) {
 			name: "an H2 outside every region is a tab of its own",
 			src: "<!--docz:summary:start-->\n## Summary\n\nx\n<!--docz:summary:end-->\n\n" +
 				"## Extra\n\ny\n",
-			want: "summary=Summary extra=Extra",
+			want: "overview=Overview extra=Extra",
 		},
 		{
-			name: "a region with no heading is labelled by its kind",
-			src:  "<!--docz:non-goals:start-->\n- a\n<!--docz:non-goals:end-->\n",
-			want: "non-goals=Non goals",
+			name: "an unknown kind with no heading is labelled by its kind",
+			src:  "<!--docz:threat-model:start-->\n- a\n<!--docz:threat-model:end-->\n",
+			want: "threat-model=Threat model",
+		},
+		{
+			name: "an unknown kind is a tab named by its heading",
+			src: "<!--docz:summary:start-->\n## Summary\n\nx\n<!--docz:summary:end-->\n\n" +
+				"<!--docz:threat-model:start-->\n## Threats\n\ny\n<!--docz:threat-model:end-->\n",
+			want: "overview=Overview threats=Threats",
+		},
+		{
+			name: "regions sharing a tab join it where its first region is",
+			src: "<!--docz:summary:start-->\n## Summary\n\nx\n<!--docz:summary:end-->\n\n" +
+				"<!--docz:proposal:start-->\n## Proposal\n\ny\n<!--docz:proposal:end-->\n\n" +
+				"<!--docz:goals:start-->\n## Goals\n\n- g\n<!--docz:goals:end-->\n",
+			want: "overview=Overview proposal=Proposal",
 		},
 		{
 			name: "a heading that only introduces regions joins the next tab",
 			src: "## Goals and Non-Goals\n\n<!--docz:goals:start-->\n### Goals\n\n- a\n<!--docz:goals:end-->\n\n" +
 				"<!--docz:non-goals:start-->\n### Non-Goals\n\n- b\n<!--docz:non-goals:end-->\n",
-			want: "goals=Goals non-goals=Non-Goals",
+			want: "overview=Overview",
 		},
 		{
 			name: "duplicate labels get distinct keys",

@@ -23,24 +23,17 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="executor-conventions-read-first" aria-controls="p-executor-conventions-read-first">Executor conventions (read first)</button>
 <button type="button" data-tab="reference-the-docz-api-target-surface" aria-controls="p-reference-the-docz-api-target-surface">Reference: the docz-api target surface</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="phase-1-repo-plumbing-quick-fixes" aria-controls="p-phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</button>
-<button type="button" data-tab="phase-2-chart-core-helpers-deployment-values" aria-controls="p-phase-2-chart-core-helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</button>
-<button type="button" data-tab="phase-3-backing-services-store-queue-rewire-meilisearch" aria-controls="p-phase-3-backing-services-store-queue-rewire-meilisearch">Phase 3: Backing services — store/queue rewire &#43; Meilisearch</button>
-<button type="button" data-tab="phase-4-chart-observability-tests-and-docs" aria-controls="p-phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</button>
-<button type="button" data-tab="phase-5-ci-and-release-consolidation" aria-controls="p-phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</button>
-<button type="button" data-tab="phase-6-local-monitoring-stack" aria-controls="p-phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</button>
-<button type="button" data-tab="phase-7-contrib-rewrite" aria-controls="p-phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#objective">Objective</a></li>
 <li><a href="#scope">Scope</a>
@@ -101,15 +94,13 @@
 <li><a href="#testing-plan">Testing Plan</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="objective">Objective</h3>
 <p>Turn the scaffolding audited in INV-0004 into a working, shippable docz-api Helm
 chart + container publish pipeline + local observability stack. Work happens on
 the existing <code>feat/helm-chart</code> branch.</p>
 <p><strong>Implements:</strong> INV-0004 (audit conclusions and the four recommended
 workstreams).</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li>Schema-tag and <code>docker-bake.hcl</code> quick fixes (INV-0004 Obs. 1, 4).</li>
@@ -136,7 +127,7 @@ branch merges and a release fires).</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <p><strong>RESOLVED 2026-07-13: all ten questions answered <code>a</code> (the recommendation).</strong>
 The <code>a</code> options below are binding for execution — every &quot;per OQ-Xa&quot; reference in
 the phase tasks is authoritative. The alternatives are kept for the record.</p>
@@ -425,8 +416,18 @@ collectors.</p>
 are checked off and its success criteria are met.</p>
 
 </section>
-<section class="panel" id="p-phase-1-repo-plumbing-quick-fixes">
-<h2 class="panel-title" id="phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<ul class="heading-list">
+<li><a href="#phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</a></li>
+<li><a href="#phase-2-chart-core--helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</a></li>
+<li><a href="#phase-3-backing-services--storequeue-rewire--meilisearch">Phase 3: Backing services — store/queue rewire &#43; Meilisearch</a></li>
+<li><a href="#phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</a></li>
+<li><a href="#phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</a></li>
+<li><a href="#phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</a></li>
+<li><a href="#phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</a></li>
+</ul>
+<h4 id="phase-1-repo-plumbing-quick-fixes">Phase 1: Repo plumbing quick fixes</h4>
 <p>Small, independent corrections from INV-0004 Obs. 1 and 4, plus the justfile
 recipes later phases need for verification. No chart-template changes here.</p>
 <h5 id="tasks">Tasks</h5>
@@ -509,10 +510,7 @@ Dockerfile.</li>
 <li><code>deploy/.env.dev.example</code> gone; <code>just --list</code> shows the helm + lint-alerts
 recipes.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-chart-core-helpers-deployment-values">
-<h2 class="panel-title" id="phase-2-chart-core--helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</h2>
+<h4 id="phase-2-chart-core--helpers-deployment-values">Phase 2: Chart core — helpers, deployment, values</h4>
 <p>Make the chart render and describe docz-api: one helper namespace, the real env
 surface, correct identity/security, single port. (INV-0004 Obs. 2a, 2b, 2d, 2f;
 OQ-3, OQ-9.)</p>
@@ -620,10 +618,7 @@ prints nothing.</li>
 required env var from the Reference table
 (<code>just helm-template | grep -A2 'name: MEILI_HOST'</code> etc. spot-checks).</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-3-backing-services-store-queue-rewire-meilisearch">
-<h2 class="panel-title" id="phase-3-backing-services--storequeue-rewire--meilisearch">Phase 3: Backing services — store/queue rewire &#43; Meilisearch</h2>
+<h4 id="phase-3-backing-services--storequeue-rewire--meilisearch">Phase 3: Backing services — store/queue rewire + Meilisearch</h4>
 <p>Make the deployed dependencies actually reachable by docz-api, and add the
 missing third dependency. (INV-0004 Obs. 2b, 2c, 2h; OQ-1, OQ-2, OQ-6.)</p>
 <h5 id="tasks-2">Tasks</h5>
@@ -688,10 +683,7 @@ StatefulSet + Service and env <code>DATABASE_URL</code>, <code>REDIS_URL</code>,
 <li><code>grep -rn 'repoguardian\|STORE_DSN\|QUEUE_VALKEY_DSN' charts/docz-api</code> prints
 nothing.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-4-chart-observability-tests-and-docs">
-<h2 class="panel-title" id="phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</h2>
+<h4 id="phase-4-chart-observability-tests-and-docs">Phase 4: Chart observability, tests, and docs</h4>
 <p>Point monitoring at reality, then freeze the chart's behavior with a rewritten
 test suite and docs. (INV-0004 Obs. 2e, 2g.)</p>
 <h5 id="tasks-3">Tasks</h5>
@@ -761,10 +753,7 @@ after running it).</li>
 <li>Rendered PrometheusRule contains only <code>docz_api_*</code>/<code>up</code> expressions.</li>
 <li><code>ct lint --config ct.yaml</code> passes locally.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-5-ci-and-release-consolidation">
-<h2 class="panel-title" id="phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</h2>
+<h4 id="phase-5-ci-and-release-consolidation">Phase 5: CI and release consolidation</h4>
 <p>One CI workflow, one release workflow, publishing wired in. (INV-0004 Obs. 3;
 OQ-4, OQ-5, OQ-10.)</p>
 <h5 id="tasks-4">Tasks</h5>
@@ -814,10 +803,7 @@ survives <code>ct install</code>.</li>
 <li>Publish workflows reference the bake args env (Phase 1.3) and remain
 dispatchable standalone.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-6-local-monitoring-stack">
-<h2 class="panel-title" id="phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</h2>
+<h4 id="phase-6-local-monitoring-stack">Phase 6: Local monitoring stack</h4>
 <p>Replace the malformed <code>compose.dev.yaml</code> with a working, docz-api-branded
 monitoring stack. (INV-0004 Obs. 5; OQ-7, OQ-8.)</p>
 <h5 id="tasks-5">Tasks</h5>
@@ -931,10 +917,7 @@ completes a login round-trip with the seeded dev user.</li>
 <li>No <code>rfc-api</code>/<code>rfcapi</code> strings remain: <code>grep -ri 'rfc-api\|rfcapi' deploy/</code> →
 empty.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-7-contrib-rewrite">
-<h2 class="panel-title" id="phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</h2>
+<h4 id="phase-7-contrib-rewrite">Phase 7: contrib/ rewrite</h4>
 <p>Operator-facing assets in docz-api vocabulary. (INV-0004 Obs. 6.)</p>
 <h5 id="tasks-6">Tasks</h5>
 <ul class="tasks">
@@ -988,8 +971,9 @@ metrics docz-api emits (the four <code>docz_api_*</code> names + <code>up</code>
 </ul>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <p>Final end-to-end verification once all phases are checked off:</p>
 <ul class="tasks">
 <li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>just ci</code> (lint + test + build + license-check) green — proves no Go

@@ -23,18 +23,18 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="problem-statement" aria-controls="p-problem-statement">Problem Statement</button>
-<button type="button" data-tab="proposed-solution" aria-controls="p-proposed-solution">Proposed Solution</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
 <button type="button" data-tab="design" aria-controls="p-design">Design</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="risks-and-mitigations" aria-controls="p-risks-and-mitigations">Risks and Mitigations</button>
-<button type="button" data-tab="success-criteria" aria-controls="p-success-criteria">Success Criteria</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#summary">Summary</a></li>
 <li><a href="#problem-statement">Problem Statement</a></li>
@@ -64,6 +64,7 @@
 <li><a href="#success-criteria">Success Criteria</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="summary">Summary</h3>
 <p>Stand up a Slack bot in <code>#aws-access-support</code> that triages AWS access errors
 pasted by developers, resolves their identity context (Slack → Okta → AWS roles
 via SSO), and either provides self-serve guidance, files a routed JSM ticket
@@ -74,8 +75,9 @@ wrong region, SCP blocks) that make up the bulk of access support volume, not
 for the rare deep policy-chain analysis case.</p>
 
 </section>
-<section class="panel" id="p-problem-statement">
-<h2 class="panel-title" id="problem-statement">Problem Statement</h2>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
 <p>The org has ~1,500 developers across 200+ AWS accounts authenticating via
 Okta-federated SSO, with permissions enforced through a mix of permission sets,
 identity-based policies, resource policies, permissions boundaries, and SCPs
@@ -120,8 +122,9 @@ slowest part of the pipeline. A 1-minute self-serve answer becomes a 4-hour wait
 for a human to read the same error and reach the same conclusion.</p>
 
 </section>
-<section class="panel" id="p-proposed-solution">
-<h2 class="panel-title" id="proposed-solution">Proposed Solution</h2>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
 <p>A Slack bot in <code>#aws-access-support</code> (and bot-allowed in any team channel on
 @-mention) that:</p>
 <ol>
@@ -403,8 +406,9 @@ accidental cross-team data exposure</li>
 </ul>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <p><strong>Generic LLM-with-AWS-docs helper bot.</strong> Off-the-shelf chatbots can explain
 what <code>s3:CreateBucket</code> does in the abstract. They can't tell a developer that
 the SCP <code>DenyS3BucketCreationOutsideApprovedAccounts</code> on OU <code>Tier2-Apps</code> is
@@ -495,8 +499,9 @@ for permission-set escalations</li>
 exception workflow ticket open with approver paged&quot; &lt;5 minutes.</p>
 
 </section>
-<section class="panel" id="p-risks-and-mitigations">
-<h2 class="panel-title" id="risks-and-mitigations">Risks and Mitigations</h2>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -567,8 +572,9 @@ exception workflow ticket open with approver paged&quot; &lt;5 minutes.</p>
 </div>
 
 </section>
-<section class="panel" id="p-success-criteria">
-<h2 class="panel-title" id="success-criteria">Success Criteria</h2>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
 <p><strong>Phase 1 (deterministic):</strong></p>
 <ul>
 <li>≥50% of threads resolved self-serve in &lt;60 seconds median</li>

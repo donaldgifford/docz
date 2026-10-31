@@ -25,19 +25,15 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
 <button type="button" data-tab="options" aria-controls="p-options">Options</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <p><strong>Resolution:</strong> Option A (replace-on-presence) implemented as IMPL-0006
 Phase 5. <code>internal/config.applyTypesReplaceOnPresence</code> filters
 <code>cfg.Types</code> to the user-listed set when the repo-root <code>.docz.yaml</code>
@@ -71,6 +67,7 @@ enumerated in this doc, now living in <code>cmd/inv0003_test.go</code>.</p>
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>When <code>.docz.yaml</code> lists only a subset of doc types (e.g. only <code>rfc</code>), should
 <code>docz init</code> and <code>docz update</code> operate on only those listed types? If so, what
 is the smallest change that yields that behavior without breaking the &quot;no
@@ -78,10 +75,7 @@ config file → scaffold everything&quot; default?</p>
 <p>The user-facing concern is concrete: a project that only wants <code>rfc</code> runs
 <code>docz init</code> and watches all six default type directories (<code>rfc</code>, <code>adr</code>,
 <code>design</code>, <code>impl</code>, <code>plan</code>, <code>investigation</code>) get scaffolded anyway.</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>Init and update both iterate <code>config.ValidTypes()</code> (the hardcoded built-in
 list) and check <code>appCfg.Types[name].Enabled</code>. Because <code>DefaultConfig()</code>
 pre-seeds every built-in type with <code>enabled: true</code>, and Viper deep-merges the
@@ -89,10 +83,7 @@ user's config onto those defaults, omitting a type from <code>.docz.yaml</code> 
 disable it — the default seed survives the merge.</p>
 <p>If the hypothesis is correct, the fix is a semantics change at the config
 layer, not at the command sites.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>A user noticed that <code>docz init</code> and <code>docz update</code> ignore the apparent intent
 of their <code>.docz.yaml</code>: even when only <code>rfc</code> is listed, every type is
 scaffolded and indexed. They asked whether they were misconfiguring the file.</p>
@@ -116,10 +107,7 @@ command-side iteration in <code>cmd/init.go</code>, <code>cmd/update.go</code>, 
 if any, actually disables a type omitted from the user's config.</li>
 <li>Enumerate options for fixing the semantics and pick a recommendation.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -218,6 +206,42 @@ setting <code>enabled: false</code>, not in by listing. Most users (and the orig
 DESIGN-0001 phrasing) would expect the opposite.</p>
 <p>IMPL-0006 in its current form does not change this contract. A separate
 decision is required.</p>
+<h3 id="recommendation">Recommendation</h3>
+<p>Adopt option <strong>A</strong>, and ship it as a small, standalone follow-up — call it
+IMPL-0010 — that lands <em>after</em> IMPL-0006 Phase 1 (so the defaults template
+is already the source of truth) and <em>before</em> IMPL-0006 Phase 5 (so
+<code>EnabledTypes()</code> lands on the corrected semantics).</p>
+<p>Scope of the IMPL-0010 follow-up:</p>
+<ol>
+<li>In <code>config.Load</code>, after merging the file, detect whether the user file
+had a <code>types:</code> key at all. If yes, intersect <code>appCfg.Types</code> with the
+user's listed type names — drop any default-seeded types the user did
+not mention.</li>
+<li>Document the new contract in <code>internal/config/config.go</code> and in the
+<code>docz init</code> long-help text: &quot;If <code>.docz.yaml</code> lists <code>types:</code>, only those
+types are scaffolded and updated. Omit the <code>types:</code> block to fall back
+to the full default set.&quot;</li>
+<li>Add the e2e tests requested by the user (see &quot;Tests to add&quot; below).</li>
+<li>Update INV-0002 Wave 2 cross-references so future readers see the
+complete picture.</li>
+</ol>
+<h4 id="tests-to-add-drives-the-e2e-portion-of-the-users-request">Tests to add (drives the e2e portion of the user's request)</h4>
+<ul>
+<li>E2E: temp dir + rfc-only <code>.docz.yaml</code> + <code>docz init</code> → assert that only
+<code>docs/rfc/</code> exists and no other type dirs were created.</li>
+<li>E2E: same fixture + <code>docz update</code> → assert only <code>docs/rfc/README.md</code>
+is touched; no <code>docs/adr/README.md</code> etc. is created.</li>
+<li>E2E: no <code>.docz.yaml</code> present + <code>docz init</code> → assert all six default type
+dirs scaffolded (regression guard for the green-field UX).</li>
+<li>E2E: <code>.docz.yaml</code> with <code>types: {rfc: {...}, adr: {enabled: false}}</code> →
+assert only rfc is created and adr is <em>not</em> (existing semantics
+preserved).</li>
+<li>E2E: incremental scenario — start with rfc-only, run <code>docz init</code>, then
+append an <code>adr:</code> block to <code>.docz.yaml</code>, re-run <code>docz init</code>, assert
+<code>docs/adr/</code> is added without disturbing <code>docs/rfc/</code>.</li>
+</ul>
+<p>These belong in <code>cmd/init_test.go</code> and <code>cmd/update_test.go</code> as
+<code>TestInit_RespectsListedTypes_*</code> cases using <code>t.TempDir()</code>.</p>
 
 </section>
 <section class="panel" id="p-options">
@@ -256,45 +280,6 @@ to work; a config that sets neither acts like option B (silent init).</li>
 <li><strong>Cons:</strong> Two flags is one too many. Confusing to document. Same UX
 failure mode as option B on first run.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
-<p>Adopt option <strong>A</strong>, and ship it as a small, standalone follow-up — call it
-IMPL-0010 — that lands <em>after</em> IMPL-0006 Phase 1 (so the defaults template
-is already the source of truth) and <em>before</em> IMPL-0006 Phase 5 (so
-<code>EnabledTypes()</code> lands on the corrected semantics).</p>
-<p>Scope of the IMPL-0010 follow-up:</p>
-<ol>
-<li>In <code>config.Load</code>, after merging the file, detect whether the user file
-had a <code>types:</code> key at all. If yes, intersect <code>appCfg.Types</code> with the
-user's listed type names — drop any default-seeded types the user did
-not mention.</li>
-<li>Document the new contract in <code>internal/config/config.go</code> and in the
-<code>docz init</code> long-help text: &quot;If <code>.docz.yaml</code> lists <code>types:</code>, only those
-types are scaffolded and updated. Omit the <code>types:</code> block to fall back
-to the full default set.&quot;</li>
-<li>Add the e2e tests requested by the user (see &quot;Tests to add&quot; below).</li>
-<li>Update INV-0002 Wave 2 cross-references so future readers see the
-complete picture.</li>
-</ol>
-<h4 id="tests-to-add-drives-the-e2e-portion-of-the-users-request">Tests to add (drives the e2e portion of the user's request)</h4>
-<ul>
-<li>E2E: temp dir + rfc-only <code>.docz.yaml</code> + <code>docz init</code> → assert that only
-<code>docs/rfc/</code> exists and no other type dirs were created.</li>
-<li>E2E: same fixture + <code>docz update</code> → assert only <code>docs/rfc/README.md</code>
-is touched; no <code>docs/adr/README.md</code> etc. is created.</li>
-<li>E2E: no <code>.docz.yaml</code> present + <code>docz init</code> → assert all six default type
-dirs scaffolded (regression guard for the green-field UX).</li>
-<li>E2E: <code>.docz.yaml</code> with <code>types: {rfc: {...}, adr: {enabled: false}}</code> →
-assert only rfc is created and adr is <em>not</em> (existing semantics
-preserved).</li>
-<li>E2E: incremental scenario — start with rfc-only, run <code>docz init</code>, then
-append an <code>adr:</code> block to <code>.docz.yaml</code>, re-run <code>docz init</code>, assert
-<code>docs/adr/</code> is added without disturbing <code>docs/rfc/</code>.</li>
-</ul>
-<p>These belong in <code>cmd/init_test.go</code> and <code>cmd/update_test.go</code> as
-<code>TestInit_RespectsListedTypes_*</code> cases using <code>t.TempDir()</code>.</p>
 
 </section>
 <section class="panel" id="p-references">

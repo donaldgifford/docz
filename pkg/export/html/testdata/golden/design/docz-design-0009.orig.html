@@ -26,15 +26,13 @@
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
-<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
-<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
-<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
-<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
 <section class="panel" id="p-overview">
@@ -102,11 +100,8 @@ content</strong> — it reads everything from docz-api over HTTP/JSON.</li>
 cross-repo docz registry and viewer&quot;) and honors its locked decisions. It is
 written to seed a brand-new <code>docz-site</code> git repository, so it restates the
 essential context rather than assuming the docz or docz-api repos are open.</p>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li><strong>One URL for all docz documents.</strong> Navigate repos → a repo → its doc types →
 the documents of a type → open and read one document, with breadcrumbs
@@ -127,10 +122,7 @@ end-to-end before building the full navigation, search, and auth.</li>
 <li><strong>A responsive layout</strong> — sidebar navigation + content area — that degrades to
 a single column on small screens.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li><strong>Authoring or editing documents.</strong> docz-site is read-only; docs are created
 and mutated by the docz CLI in their source repos.</li>
@@ -179,17 +171,9 @@ and session handling against docz-api, the standard loading/empty/error states,
 and the responsive layout.</p>
 
 </section>
-<section class="panel" id="p-detailed-design">
-<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
-<ul class="heading-list">
-<li><a href="#tech-stack-proposal">Tech stack proposal</a></li>
-<li><a href="#information-architecture-and-route-map">Information architecture and route map</a></li>
-<li><a href="#search-ux-and-how-it-queries-docz-api">Search UX and how it queries docz-api</a></li>
-<li><a href="#document-reader-pipeline">Document reader pipeline</a></li>
-<li><a href="#auth-and-session-handling-against-docz-api">Auth and session handling against docz-api</a></li>
-<li><a href="#loading-empty-and-error-states">Loading, empty, and error states</a></li>
-<li><a href="#responsive-layout">Responsive layout</a></li>
-</ul>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
 <h4 id="tech-stack-proposal">Tech stack proposal</h4>
 <p>docz-site is a JavaScript/TypeScript single-page application (or SSR app — see
 Open Question 3). The working recommendation, to be confirmed:</p>
@@ -458,8 +442,9 @@ column; search moves into a full-screen overlay.</li>
 viewport.</p>
 
 </section>
-<section class="panel" id="p-api-interface-changes">
-<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
 <p>docz-site is a new app and defines no public API of its own. This section
 describes (1) the docz-api endpoints it <strong>consumes</strong> and (2) the site's own
 client routes (already listed in the route map above). Endpoint paths are
@@ -551,7 +536,7 @@ async function loadDoc(owner: string, repo: string, type: string, docId: string)
 
 </section>
 <section class="panel" id="p-data-model">
-<h2 class="panel-title" id="data-model">Data Model</h2>
+<h2 class="panel-title" id="data-model">Data model</h2>
 <p>The site is <strong>essentially stateless</strong> — a thin client with no database. The
 &quot;data model&quot; is (1) the TypeScript view-model shapes that mirror docz-api's JSON
 and (2) the client-side query cache.</p>
@@ -632,8 +617,9 @@ content (it would duplicate access-scoped data outside docz-api's control); only
 UI preferences (theme, last provider) may be persisted.</p>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <ul>
 <li><strong>Component / unit (Vitest + Testing Library).</strong> Breadcrumbs derive correctly
 from route params; the status badge maps known statuses to colors and falls
@@ -661,8 +647,9 @@ color-contrast on status badges.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-migration-rollout-plan">
-<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
 <p>This is a <strong>greenfield repository</strong> with no existing users to migrate; &quot;rollout&quot;
 means the build order, which follows Decision 8 (thin vertical slice first).</p>
 <ol>
@@ -690,7 +677,7 @@ an earlier one to be useful.</p>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-which-front-end-framework">1. Which front-end framework?</a></li>
 <li><a href="#2-which-markdown-renderer-library">2. Which markdown renderer library?</a></li>

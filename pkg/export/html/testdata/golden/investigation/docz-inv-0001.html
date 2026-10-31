@@ -24,18 +24,15 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -60,20 +57,15 @@
 <li><a href="#decisions">Decisions</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>What changes are needed to (1) support a customizable template for the wiki
 <code>docs/index.md</code> homepage, (2) allow additional MkDocs plugins from <code>.docz.yaml</code>,
 and (3) fix <code>docz init</code> ignoring the <code>enabled: false</code> type config?</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>These are three small, related improvements that can be addressed in a single
 branch without a full design doc. The wiki template and plugin changes extend
 the existing <code>WikiConfig</code>, and the init fix is a one-line guard.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>Dogfooding <code>docz</code> on its own repository revealed:</p>
 <ol>
 <li><p><strong><code>docs/index.md</code> is hardcoded</strong> — <code>ensureDocsIndex()</code> in <code>cmd/wiki.go</code>
@@ -173,10 +165,7 @@ types.</p>
 <section class="panel" id="p-conclusion">
 <h2 class="panel-title" id="conclusion">Conclusion</h2>
 <p><strong>Answer:</strong> Three targeted changes are needed, all straightforward.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <h4 id="change-1-wiki-index-template">Change 1: Wiki index template</h4>
 <ul>
 <li>Add <code>internal/template/templates/wiki_index.md</code> with template variables:

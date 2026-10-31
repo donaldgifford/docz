@@ -28,21 +28,14 @@ queued.</p>
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="last-verified" aria-controls="p-last-verified">Last Verified</button>
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="when-to-use" aria-controls="p-when-to-use">When to Use</button>
-<button type="button" data-tab="prerequisites" aria-controls="p-prerequisites">Prerequisites</button>
-<button type="button" data-tab="procedure-1-redeliver-and-confirm" aria-controls="p-procedure-1-redeliver-and-confirm">Procedure 1: Redeliver and confirm</button>
-<button type="button" data-tab="scenario-github-reports-a-tls-eof-on-every-delivery" aria-controls="p-scenario-github-reports-a-tls-eof-on-every-delivery">Scenario: GitHub reports a TLS EOF on every delivery</button>
-<button type="button" data-tab="scenario-the-ingress-has-no-hostname" aria-controls="p-scenario-the-ingress-has-no-hostname">Scenario: The Ingress has no hostname</button>
-<button type="button" data-tab="scenario-deliveries-are-answered-401" aria-controls="p-scenario-deliveries-are-answered-401">Scenario: Deliveries are answered 401</button>
-<button type="button" data-tab="scenario-deliveries-succeed-but-the-change-never-appears" aria-controls="p-scenario-deliveries-succeed-but-the-change-never-appears">Scenario: Deliveries succeed but the change never appears</button>
-<button type="button" data-tab="scenario-a-repository-stopped-re-ingesting-after-repeated-failures" aria-controls="p-scenario-a-repository-stopped-re-ingesting-after-repeated-failures">Scenario: A repository stopped re-ingesting after repeated failures</button>
+<button type="button" data-tab="procedures" aria-controls="p-procedures">Procedures</button>
+<button type="button" data-tab="scenarios" aria-controls="p-scenarios">Scenarios</button>
 <button type="button" data-tab="escalation" aria-controls="p-escalation">Escalation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-last-verified">
-<h2 class="panel-title" id="last-verified">Last Verified</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#last-verified">Last Verified</a></li>
 <li><a href="#overview">Overview</a></li>
@@ -91,6 +84,7 @@ queued.</p>
 <li><a href="#escalation">Escalation</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="last-verified">Last Verified</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -113,25 +107,16 @@ queued.</p>
 </div>
 <p><strong>Notes:</strong> Not yet run end to end. Written from
 <code>deploy/tailscale-operator.md</code> and INV-0007's failure drill.</p>
-
-</section>
-<section class="panel" id="p-overview">
-<h2 class="panel-title" id="overview">Overview</h2>
+<h3 id="overview">Overview</h3>
 <p><strong>Service:</strong> docz-api (<code>charts/docz</code>, the <code>api</code> workload)</p>
 <p><strong>Owner:</strong> @donaldgifford</p>
-
-</section>
-<section class="panel" id="p-when-to-use">
-<h2 class="panel-title" id="when-to-use">When to Use</h2>
+<h3 id="when-to-use">When to Use</h3>
 <ul>
 <li>The GitHub App's Recent Deliveries page shows failed deliveries</li>
 <li>A push to a repository's <code>docs/</code> did not appear in docz-site</li>
 <li><code>DoczAPIIngestFailures</code> fires</li>
 </ul>
-
-</section>
-<section class="panel" id="p-prerequisites">
-<h2 class="panel-title" id="prerequisites">Prerequisites</h2>
+<h3 id="prerequisites">Prerequisites</h3>
 <ul>
 <li>Admin on the GitHub App, for its settings page, Recent Deliveries, and
 the webhook secret</li>
@@ -143,9 +128,10 @@ with <code>jq</code></li>
 </ul>
 
 </section>
-<section class="panel" id="p-procedure-1-redeliver-and-confirm">
-<h2 class="panel-title" id="procedure-1-redeliver-and-confirm">Procedure 1: Redeliver and confirm</h2>
+<section class="panel" id="p-procedures">
+<h2 class="panel-title">Procedures</h2>
 <h3 id="procedures">Procedures</h3>
+<h4 id="procedure-1-redeliver-and-confirm">Procedure 1: Redeliver and confirm</h4>
 <p>After a fix, replay the failed delivery and follow it through docz-api.</p>
 <h5 id="steps">Steps</h5>
 <ol>
@@ -179,9 +165,10 @@ answered <code>200</code> and does no work.</li>
 </ol>
 
 </section>
-<section class="panel" id="p-scenario-github-reports-a-tls-eof-on-every-delivery">
-<h2 class="panel-title" id="scenario-github-reports-a-tls-eof-on-every-delivery">Scenario: GitHub reports a TLS EOF on every delivery</h2>
+<section class="panel" id="p-scenarios">
+<h2 class="panel-title">Scenarios</h2>
 <h3 id="troubleshooting">Troubleshooting</h3>
+<h4 id="scenario-github-reports-a-tls-eof-on-every-delivery">Scenario: GitHub reports a TLS EOF on every delivery</h4>
 <p><strong>Alert:</strong> none; GitHub's Recent Deliveries shows the failure</p>
 <p><strong>Likely cause:</strong> the Tailscale Funnel cannot serve TLS. Either the
 proxy's tag lacks the <code>funnel</code> node attribute, or the tailnet has HTTPS
@@ -213,10 +200,7 @@ turn them on.</p>
 <li><p>Run Procedure 1.</p>
 </li>
 </ol>
-
-</section>
-<section class="panel" id="p-scenario-the-ingress-has-no-hostname">
-<h2 class="panel-title" id="scenario-the-ingress-has-no-hostname">Scenario: The Ingress has no hostname</h2>
+<h4 id="scenario-the-ingress-has-no-hostname">Scenario: The Ingress has no hostname</h4>
 <p><strong>Alert:</strong> none; the GitHub App's webhook URL does not resolve</p>
 <p><strong>Likely cause:</strong> the Tailscale operator could not create the proxy for
 <code>api.ingress</code></p>
@@ -239,10 +223,7 @@ or the tags it may assign. Then check that the hostname appears.</p>
 Procedure 1.</p>
 </li>
 </ol>
-
-</section>
-<section class="panel" id="p-scenario-deliveries-are-answered-401">
-<h2 class="panel-title" id="scenario-deliveries-are-answered-401">Scenario: Deliveries are answered 401</h2>
+<h4 id="scenario-deliveries-are-answered-401">Scenario: Deliveries are answered 401</h4>
 <p><strong>Alert:</strong> none; GitHub shows <code>401</code> responses</p>
 <p><strong>Likely cause:</strong> the GitHub App's webhook secret differs from the one
 docz-api holds, so the HMAC check fails before any work is done</p>
@@ -264,10 +245,7 @@ kubectl -n docz rollout status deploy/docz-api
 </code></pre>
 </li>
 </ol>
-
-</section>
-<section class="panel" id="p-scenario-deliveries-succeed-but-the-change-never-appears">
-<h2 class="panel-title" id="scenario-deliveries-succeed-but-the-change-never-appears">Scenario: Deliveries succeed but the change never appears</h2>
+<h4 id="scenario-deliveries-succeed-but-the-change-never-appears">Scenario: Deliveries succeed but the change never appears</h4>
 <p><strong>Alert:</strong> <code>DoczAPIIngestFailures</code></p>
 <p><strong>Likely cause:</strong> the ingest the delivery queued is failing. Usually the
 cause is a malformed <code>.docz.yaml</code> at HEAD, or the GitHub App lacking
@@ -290,10 +268,7 @@ grant the App access to the repository. A new push re-enqueues the
 ingest.</p>
 </li>
 </ol>
-
-</section>
-<section class="panel" id="p-scenario-a-repository-stopped-re-ingesting-after-repeated-failures">
-<h2 class="panel-title" id="scenario-a-repository-stopped-re-ingesting-after-repeated-failures">Scenario: A repository stopped re-ingesting after repeated failures</h2>
+<h4 id="scenario-a-repository-stopped-re-ingesting-after-repeated-failures">Scenario: A repository stopped re-ingesting after repeated failures</h4>
 <p><strong>Alert:</strong> <code>DoczAPIIngestFailures</code>, then silence</p>
 <p><strong>Likely cause:</strong> the ingest exhausted its retries. Since INV-0007 the
 next trigger clears the finished task and re-enqueues, so a new push or

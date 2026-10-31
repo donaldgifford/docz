@@ -25,14 +25,12 @@
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
 <button type="button" data-tab="cli-interface" aria-controls="p-cli-interface">CLI Interface</button>
 <button type="button" data-tab="nav-generation" aria-controls="p-nav-generation">Nav Generation</button>
 <button type="button" data-tab="configuration" aria-controls="p-configuration">Configuration</button>
 <button type="button" data-tab="implementation" aria-controls="p-implementation">Implementation</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
@@ -102,11 +100,8 @@ file compatible with Backstage's TechDocs plugin. The <code>wiki update</code> c
 scans the <code>docs/</code> directory and rebuilds the MkDocs <code>nav:</code> section to reflect
 the current file structure — including docz-managed documents and any other
 markdown files in the docs tree.</p>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li>Generate a <code>mkdocs.yml</code> that works out of the box with <code>mkdocs serve</code> and
 Backstage TechDocs</li>
@@ -115,10 +110,7 @@ Backstage TechDocs</li>
 <li>Integrate with the existing <code>docz create</code> workflow so the nav stays current</li>
 <li>Support a reasonable default nav structure with zero configuration</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li>Building or serving the MkDocs site (use <code>mkdocs serve</code> / <code>mkdocs build</code>)</li>
 <li>Managing MkDocs themes, plugins, or extensions beyond <code>techdocs-core</code></li>
@@ -489,8 +481,9 @@ is the only one <code>docz wiki update</code> modifies.</p>
 </ol>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <ul>
 <li><strong>Unit tests</strong> for nav generation from a mock directory tree</li>
 <li><strong>Unit tests</strong> for title extraction (frontmatter, H1, filename fallback)</li>

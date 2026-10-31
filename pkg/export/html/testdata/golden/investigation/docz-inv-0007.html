@@ -25,26 +25,20 @@ require changes to docz's internals and public surface?</strong></p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
 <p>The working assumption going in was &quot;there is not much we have to do.&quot; This
 investigation is a concrete audit of that assumption.</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>Mostly additive. <code>ChangelogConfig</code> (DESIGN-0010 / IMPL-0015) is the exact
 precedent — a new struct, a <code>DefaultConfig()</code> entry, a normalization pass, an
 enabled-only validator, a <code>docz_yaml.tmpl</code> block — and nothing outside
@@ -53,10 +47,7 @@ follow the same shape and be similarly self-contained.</p>
 <p><strong>The hypothesis is partly wrong.</strong> The config half is as small as expected;
 the <em>parsing</em> half is not, because additional docs are the first documents docz
 would describe that have neither frontmatter nor a docz filename.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p><strong>Triggered by:</strong> DESIGN-0011 (<code>api:</code> block), which in turn serves DESIGN-0008
 (docz-api ingestion) and DESIGN-0009 (docz-site route map). The immediate
 prompt was the <code>api:</code> section drafted in <code>.docz.example.yaml</code>.</p>
@@ -80,10 +71,7 @@ assumptions that additional docs would violate.</li>
 <li>Grep the public packages for the specific capabilities implied (title
 extraction, path validation, filename classification).</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -296,10 +284,7 @@ addition to the frozen public surface and one internal refactor:</p>
 shipping the config without the title extractor would push H1 parsing into
 docz-api, which is the duplication ADR-0001 exists to prevent — so they should
 ship together.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <ol>
 <li><strong>Ship the config block and the title extractor in the same minor release.</strong>
 Splitting them guarantees docz-api writes its own H1 parser in the gap.</li>
@@ -318,7 +303,7 @@ criterion rather than an inference from this INV.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <h4 id="1-where-should-the-h1title-extractor-live">1. Where should the H1/title extractor live?</h4>
 <p>The one new public symbol this feature actually requires (F2). It must be
 bytes-in, must be fence-aware, and must not disturb <code>docparse.Headings</code>'

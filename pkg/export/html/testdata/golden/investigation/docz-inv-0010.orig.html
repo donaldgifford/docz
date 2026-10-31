@@ -22,19 +22,15 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -71,16 +67,14 @@
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>Issue #100 asks <code>pkg/doczcore</code> for an IMPL plan model — <code>ParseImpl</code>,
 <code>SetTaskState</code>, <code>SetDeferred</code>, <code>SetSkipped</code>, a byte-level <code>SetStatus</code>, and
 <code>DiffPlans</code> — all pure over a <code>[]byte</code> document. What does that require of
 docz, does it fit the frozen v1 surface and ADR-0001's facts-versus-
 interpretation rule, which parts already exist, what does the real IMPL
 corpus say the grammar has to tolerate, and how big is the work?</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>Feasible as one additive <code>minor</code> release, with three costs the issue does not
 mention: it reverses IMPL-0014 Decision 3(d), which deliberately kept the
 plan/phase model <em>out</em> of docz; the grammar has enough unstated edge cases
@@ -91,10 +85,7 @@ compares CLI task IDs with the library's has no CLI to compare against.
 Roughly half of the read side already exists in <code>docparse</code> and in
 sdk-booty-sh's <code>doczwork</code>, and the write side is an extension of <code>docwrite</code>'s
 byte-preserving splices.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>Issue #100 (opened 2026-09-13) is the docz half of <strong>tempy</strong> — a Temporal-
 orchestrated worker that executes docz IMPL docs task by task
 (<code>~/code/tempy</code>, DESIGN-0001 &quot;Temporal-orchestrated IMPL loop execution&quot;,
@@ -138,10 +129,7 @@ every hand-written <code>verify:</code> / deferred / skipped marker.</li>
 <li>Check the CLI for any task surface the acceptance bullet could mean.</li>
 <li>Size the work against IMPL-0015 / IMPL-0016 (four phases each).</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -431,10 +419,7 @@ the proposed spelling; the criteria heuristic misfires on about a tenth of
 legacy criteria; <code>DiffPlans</code> needs text-based matching; tempy's <code>unblock</code>
 needs a marker remover the issue does not list; and the CLI-agreement
 acceptance bullet needs a CLI to exist.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <ol>
 <li><strong>Write DESIGN-0013 from this investigation</strong> with the decisions below
 locked, including a dated amendment to ADR-0001 Decision 2 recording why
@@ -461,7 +446,7 @@ IMPL-0001 task; file one in sdk-booty-sh to migrate <code>doczwork</code> onto
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-where-does-the-model-live-and-what-are-the-names">1. Where does the model live, and what are the names?</a></li>
 <li><a href="#2-how-is-the-reversal-of-impl-0014-decision-3d-recorded">2. How is the reversal of IMPL-0014 Decision 3(d) recorded?</a></li>

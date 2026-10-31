@@ -27,24 +27,19 @@ transitions.</p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="phase-0-schema-and-migrations" aria-controls="p-phase-0-schema-and-migrations">Phase 0: Schema and migrations</button>
-<button type="button" data-tab="phase-1-dual-write" aria-controls="p-phase-1-dual-write">Phase 1: Dual write</button>
-<button type="button" data-tab="phase-2-cut-over-and-delete-the-file-path" aria-controls="p-phase-2-cut-over-and-delete-the-file-path">Phase 2: Cut over and delete the file path</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="objective">Objective</h3>
 <p><strong>Implements:</strong> DESIGN-0002</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li>Schema design for the <code>documents</code> and <code>document_events</code> tables</li>
@@ -67,8 +62,9 @@ rollout</li>
 are checked off and its success criteria are met.</p>
 
 </section>
-<section class="panel" id="p-phase-0-schema-and-migrations">
-<h2 class="panel-title" id="phase-0-schema-and-migrations">Phase 0: Schema and migrations</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<h4 id="phase-0-schema-and-migrations">Phase 0: Schema and migrations</h4>
 <p>Stand up the Postgres schema and the migration tooling that later phases
 depend on. No production traffic touches Postgres yet, so this phase is
 purely additive and can ship without a feature flag.</p>
@@ -93,10 +89,7 @@ purely additive and can ship without a feature flag.</p>
 <li><code>docz-api migrate up</code> applies cleanly against a fresh Postgres 15 instance</li>
 <li><code>docz-api migrate down</code> leaves the database in its prior state</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-1-dual-write">
-<h2 class="panel-title" id="phase-1-dual-write">Phase 1: Dual write</h2>
+<h4 id="phase-1-dual-write">Phase 1: Dual write</h4>
 <p>Write to both the flat-file registry and Postgres on every create, update,
 and status change. Reads still come from the flat-file store, so a bug in
 the Postgres path cannot take down the API.</p>
@@ -118,10 +111,7 @@ file write fails, partial write)</div></li>
 <li>The reconciliation job runs in CI against a seeded fixture set</li>
 <li>No increase in p99 write latency versus the file-only baseline</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-cut-over-and-delete-the-file-path">
-<h2 class="panel-title" id="phase-2-cut-over-and-delete-the-file-path">Phase 2: Cut over and delete the file path</h2>
+<h4 id="phase-2-cut-over-and-delete-the-file-path">Phase 2: Cut over and delete the file path</h4>
 <p>Flip reads to Postgres, watch error budgets for a full release cycle, and
 then delete the flat-file registry code entirely.</p>
 <h5 id="tasks-2">Tasks</h5>
@@ -139,8 +129,9 @@ then delete the flat-file registry code entirely.</p>
 </ul>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -176,8 +167,9 @@ then delete the flat-file registry code entirely.</p>
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">Unit tests for the Postgres store against a real database, not mocks</div></li>
 <li data-state="open"><input type="checkbox" disabled><div class="text">Integration tests for the dual-write path covering partial failures</div></li>

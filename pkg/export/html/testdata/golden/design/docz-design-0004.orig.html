@@ -26,16 +26,14 @@
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
-<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
-<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
-<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
-<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
 <button type="button" data-tab="decisions-locked-or-revised" aria-controls="p-decisions-locked-or-revised">Decisions Locked or Revised</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
 <section class="panel" id="p-overview">
@@ -82,11 +80,8 @@ internal API boundaries. The refactor eliminates the two systemic
 testability blockers in <code>docz</code> today — <code>cmd/</code> package-level globals and
 the 6+ scattered DocType definitions — without changing user-visible
 CLI behavior or the YAML config schema.</p>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li>Define a <code>Runner</code> struct that is the single injection surface for
 config, writers, logger, time, and git resolution.</li>
@@ -103,10 +98,7 @@ signal at internal API boundaries, with no YAML schema change.</li>
 <li>Enable <code>t.Parallel()</code> on every existing cmd-layer test by removing the
 <code>os.Chdir</code>, package-global, and <code>os.Pipe</code> patterns blocking it today.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li>Adding new user-facing commands or flags (beyond the <code>--log-format</code> and
 <code>--log-level</code> already in IMPL-0009 scope).</li>
@@ -145,18 +137,9 @@ titles. No single source of truth.</li>
 is the prerequisite gate that locks in shape before code lands.</p>
 
 </section>
-<section class="panel" id="p-detailed-design">
-<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
-<ul class="heading-list">
-<li><a href="#a-runner-struct-shape-and-lifecycle">A. Runner struct shape and lifecycle</a></li>
-<li><a href="#b-flags-binding-model">B. Flags binding model</a></li>
-<li><a href="#c-output-writers-and---quiet">C. Output writers and --quiet</a></li>
-<li><a href="#d-logger-handler-choice">D. Logger handler choice</a></li>
-<li><a href="#e-doctype-registry-api">E. DocType registry API</a></li>
-<li><a href="#f-typed-doctype-and-status-strings">F. Typed DocType and Status strings</a></li>
-<li><a href="#g-librarypattern-evaluation-cobra-only">G. Library/pattern evaluation (Cobra-only)</a></li>
-<li><a href="#h-test-strategy">H. Test strategy</a></li>
-</ul>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
 <h4 id="a-runner-struct-shape-and-lifecycle">A. Runner struct shape and lifecycle</h4>
 <p>The exact field set:</p>
 <pre><code class="language-go">// cmd/runner.go
@@ -475,8 +458,9 @@ shared stderr.</li>
 <code>os.Chdir</code>, eliminating the final process-wide state mutation.</p>
 
 </section>
-<section class="panel" id="p-api-interface-changes">
-<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -546,7 +530,7 @@ handles the typed-string round trip without a custom unmarshaler.</p>
 
 </section>
 <section class="panel" id="p-data-model">
-<h2 class="panel-title" id="data-model">Data Model</h2>
+<h2 class="panel-title" id="data-model">Data model</h2>
 <p>No persisted-data schema changes. The in-memory <code>Config</code> and
 <code>Frontmatter</code> structs gain typed-string field types (<code>DocType</code>,
 <code>Status</code>) but the YAML representation is byte-identical.</p>
@@ -555,8 +539,9 @@ DocType metadata. All previously hardcoded lookup tables (<code>typeAliases</cod
 <code>defaultNavTitles</code>, etc.) are derived at package init.</p>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <ul>
 <li><strong>Per-handler unit tests:</strong> one focused test per <code>(*Runner).Xxx</code>
 method, using a struct-literal Runner with <code>bytes.Buffer</code> writers.</li>
@@ -575,8 +560,9 @@ parameterized golden test. Includes the typed-string round trip.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-migration-rollout-plan">
-<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
 <p>Per Decision §6: phases 2–11 ship as a <strong>single PR</strong>. DESIGN-0004
 (Phase 1) ships separately as the prerequisite gate.</p>
 <p>The single-PR call is validated by the phase interdependencies:
@@ -653,7 +639,7 @@ profiled hot path.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ol>
 <li><strong><code>--log-format=json</code> test coverage scope.</strong> Do we add a single
 smoke test or a full parameterized matrix? Recommendation: single

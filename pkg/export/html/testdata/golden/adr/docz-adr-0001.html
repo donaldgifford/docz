@@ -27,12 +27,12 @@ agent-loop harness) — we have been <strong>promoting packages from <code>inter
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="status" aria-controls="p-status">Status</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
 <button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
 <button type="button" data-tab="corner-cases" aria-controls="p-corner-cases">Corner Cases</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
@@ -42,8 +42,9 @@ agent-loop harness) — we have been <strong>promoting packages from <code>inter
 IMPL-0014)</p>
 
 </section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="context">Context</h3>
 <ul>
 <li><code>v0.5.0</code> (DESIGN-0007 / IMPL-0013) promoted <code>config</code> + <code>document</code> (read side).</li>
 <li>A <code>v0.6.0</code> slate (the sdk-booty-sh requirements handoff,
@@ -361,8 +362,9 @@ additive for them.</li>
 </ol>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>A. Status quo — promote on demand.</strong> Keep <code>internal/</code> as the default and
 promote a package only when a consumer needs it and its API passes review.
@@ -384,7 +386,7 @@ below refine it.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-package-granularity--subpackage-family-or-one-flat-package">1. Package granularity — subpackage family or one flat package?</a></li>
 <li><a href="#2-sequencing-against-the-in-flight-v060">2. Sequencing against the in-flight v0.6.0?</a></li>

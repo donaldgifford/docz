@@ -23,31 +23,21 @@ the kinds readers, without the offset being applied twice?</p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
-<p class="empty">Not written yet.</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>It can. Every reader numbers lines from the start of the bytes it was handed,
 so one addition of the region's start is enough at any depth.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>The five type packages all publish a Line a consumer acts on, and IMPL-0018
 Phase 1 needs the arithmetic settled before any goldens are captured.</p>
 <p><strong>Triggered by:</strong> DESIGN-0014 / issue #101</p>
@@ -60,10 +50,7 @@ Phase 1 needs the arithmetic settled before any goldens are captured.</p>
 <li>Instrument every reader and record the line it reports.</li>
 <li>Compare each reported line against the file the fixture was read from.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -111,16 +98,13 @@ bullet a consumer wanted to jump to.</p>
 <p>The arithmetic is right once the region's start is added exactly once, by the
 caller that owns the region rather than by the reader that walked it.</p>
 <p><strong>Answer:</strong> Yes, with the shift applied by the caller.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <p>Give kinds a Shift helper per value type and have every type package call it,
 so the conversion has one definition instead of five.</p>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <h4 id="1-should-the-readers-report-document-lines-themselves">1. Should the readers report document lines themselves?</h4>
 <ul>
 <li>a. No, the caller shifts them. <em>(recommendation)</em></li>

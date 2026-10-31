@@ -371,7 +371,7 @@ typed packages, plus the widgets from fenced blocks.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Add `layout.go`: the region-kind table as data (kind → tab name,
+- [x] Add `layout.go`: the region-kind table as data (kind → tab name,
   order, widget), tabs in the order their first region appears, an
   unknown kind as a tab named by its heading.
 - [ ] Pin the table: a test that every kind in

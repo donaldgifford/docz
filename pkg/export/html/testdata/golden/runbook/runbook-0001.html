@@ -25,20 +25,15 @@ carries <code>dont-release</code>, so nothing publishes on merge (ADR-0002 Decis
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="last-verified" aria-controls="p-last-verified">Last Verified</button>
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="when-to-use" aria-controls="p-when-to-use">When to Use</button>
-<button type="button" data-tab="prerequisites" aria-controls="p-prerequisites">Prerequisites</button>
-<button type="button" data-tab="procedure-1-prepare" aria-controls="p-procedure-1-prepare">Procedure 1: Prepare</button>
-<button type="button" data-tab="procedure-2-tag-and-verify" aria-controls="p-procedure-2-tag-and-verify">Procedure 2: Tag and verify</button>
-<button type="button" data-tab="procedure-3-install-and-smoke-test" aria-controls="p-procedure-3-install-and-smoke-test">Procedure 3: Install and smoke-test</button>
-<button type="button" data-tab="scenario-a-chart-push-fails-with-403-write-package" aria-controls="p-scenario-a-chart-push-fails-with-403-write-package">Scenario: A chart push fails with 403 write_package</button>
-<button type="button" data-tab="scenario-pods-fail-to-pull-the-image-after-install" aria-controls="p-scenario-pods-fail-to-pull-the-image-after-install">Scenario: Pods fail to pull the image after install</button>
+<button type="button" data-tab="procedures" aria-controls="p-procedures">Procedures</button>
+<button type="button" data-tab="scenarios" aria-controls="p-scenarios">Scenarios</button>
 <button type="button" data-tab="escalation" aria-controls="p-escalation">Escalation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-last-verified">
-<h2 class="panel-title" id="last-verified">Last Verified</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="last-verified">Last Verified</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -62,26 +57,17 @@ carries <code>dont-release</code>, so nothing publishes on merge (ADR-0002 Decis
 <p><strong>Notes:</strong> Run end to end for <code>v2.0.0-beta.5</code>, install included. The
 <code>charts/docz</code> push did not fail with a 403, so that scenario was not
 exercised.</p>
-
-</section>
-<section class="panel" id="p-overview">
-<h2 class="panel-title" id="overview">Overview</h2>
+<h3 id="overview">Overview</h3>
 <p><strong>Service:</strong> docz release pipeline (<code>prerelease.yml</code>, <code>ghcr.yml</code>, goreleaser)</p>
 <p><strong>Owner:</strong> @donaldgifford</p>
-
-</section>
-<section class="panel" id="p-when-to-use">
-<h2 class="panel-title" id="when-to-use">When to Use</h2>
+<h3 id="when-to-use">When to Use</h3>
 <ul>
 <li>A PR that should ship has merged to <code>main</code> with a merge commit, and its
 IMPL's release phase says to cut the next beta</li>
 <li>A beta needs re-cutting after a broken publish (tag a new <code>N</code>; never
 move a pushed tag)</li>
 </ul>
-
-</section>
-<section class="panel" id="p-prerequisites">
-<h2 class="panel-title" id="prerequisites">Prerequisites</h2>
+<h3 id="prerequisites">Prerequisites</h3>
 <ul>
 <li>Push access to <code>donaldgifford/docz</code>, and permission to push tags</li>
 <li><code>just</code>, <code>goreleaser</code>, <code>gh</code>, <code>helm</code> (4.x), <code>cosign</code>, and <code>docker</code>
@@ -92,9 +78,10 @@ installed (<code>mise install</code> provides them)</li>
 </ul>
 
 </section>
-<section class="panel" id="p-procedure-1-prepare">
-<h2 class="panel-title" id="procedure-1-prepare">Procedure 1: Prepare</h2>
+<section class="panel" id="p-procedures">
+<h2 class="panel-title">Procedures</h2>
 <h3 id="procedures">Procedures</h3>
+<h4 id="procedure-1-prepare">Procedure 1: Prepare</h4>
 <p>Get <code>main</code> into the state the tag will record: the chart bumped and the
 release configuration valid.</p>
 <h5 id="steps">Steps</h5>
@@ -139,10 +126,7 @@ just api release-check
 <li>Nothing has been published yet. Fix forward on a branch and merge
 again.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-procedure-2-tag-and-verify">
-<h2 class="panel-title" id="procedure-2-tag-and-verify">Procedure 2: Tag and verify</h2>
+<h4 id="procedure-2-tag-and-verify">Procedure 2: Tag and verify</h4>
 <p>Push the tag, let <code>prerelease.yml</code> publish, and check every artifact it
 was supposed to produce.</p>
 <h5 id="steps-1">Steps</h5>
@@ -212,10 +196,7 @@ the publish job's idempotency check and keeps its old artifacts</p>
 <li><p>Fix forward and cut the next beta with this runbook.</p>
 </li>
 </ol>
-
-</section>
-<section class="panel" id="p-procedure-3-install-and-smoke-test">
-<h2 class="panel-title" id="procedure-3-install-and-smoke-test">Procedure 3: Install and smoke-test</h2>
+<h4 id="procedure-3-install-and-smoke-test">Procedure 3: Install and smoke-test</h4>
 <p>Install the published chart on a throwaway kind cluster and check that the
 site reaches the API. This is optional for a beta (IMPL-0022 OQ 7). The
 whole product is tested by swapping a real environment to the beta before
@@ -277,9 +258,10 @@ helm test docz --kube-context kind-docz-beta -n docz
 </ol>
 
 </section>
-<section class="panel" id="p-scenario-a-chart-push-fails-with-403-write-package">
-<h2 class="panel-title" id="scenario-a-chart-push-fails-with-403-write_package">Scenario: A chart push fails with 403 write_package</h2>
+<section class="panel" id="p-scenarios">
+<h2 class="panel-title">Scenarios</h2>
 <h3 id="troubleshooting">Troubleshooting</h3>
+<h4 id="scenario-a-chart-push-fails-with-403-write_package">Scenario: A chart push fails with 403 write_package</h4>
 <p><strong>Alert:</strong> none; the <code>Publish chart</code> job fails</p>
 <p><strong>Likely cause:</strong> the GHCR package is new and this repository has no
 Actions access to it yet</p>
@@ -300,10 +282,7 @@ else in the run depends on it.</p>
 </code></pre>
 </li>
 </ol>
-
-</section>
-<section class="panel" id="p-scenario-pods-fail-to-pull-the-image-after-install">
-<h2 class="panel-title" id="scenario-pods-fail-to-pull-the-image-after-install">Scenario: Pods fail to pull the image after install</h2>
+<h4 id="scenario-pods-fail-to-pull-the-image-after-install">Scenario: Pods fail to pull the image after install</h4>
 <p><strong>Alert:</strong> none; pods sit in <code>ImagePullBackOff</code></p>
 <p><strong>Likely cause:</strong> a <code>v</code>-prefixed <code>appVersion</code>. The image tag is bare
 semver (<code>2.0.0-beta.N</code>), because the publish workflow's metadata action

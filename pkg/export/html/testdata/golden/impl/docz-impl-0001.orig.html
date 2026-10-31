@@ -25,22 +25,17 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="phase-1-project-foundation" aria-controls="p-phase-1-project-foundation">Phase 1: Project Foundation</button>
-<button type="button" data-tab="phase-2-core-commands-init-create-version" aria-controls="p-phase-2-core-commands-init-create-version">Phase 2: Core Commands -- init, create, version</button>
-<button type="button" data-tab="phase-3-index-generation-update" aria-controls="p-phase-3-index-generation-update">Phase 3: Index Generation -- update</button>
-<button type="button" data-tab="phase-4-listing-and-template-management-list-template" aria-controls="p-phase-4-listing-and-template-management-list-template">Phase 4: Listing and Template Management -- list, template</button>
-<button type="button" data-tab="phase-5-polish-error-handling-and-ci-readiness" aria-controls="p-phase-5-polish-error-handling-and-ci-readiness">Phase 5: Polish, Error Handling, and CI Readiness</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
 <button type="button" data-tab="resolved-decisions" aria-controls="p-resolved-decisions">Resolved Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#objective">Objective</a></li>
 <li><a href="#scope">Scope</a>
@@ -97,13 +92,11 @@
 <li><a href="#resolved-decisions">Resolved Decisions</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="objective">Objective</h3>
 <p>Implement the <code>docz</code> CLI tool as described in
 DESIGN-0001.</p>
 <p><strong>Implements:</strong> DESIGN-0001</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li>All four built-in document types: RFC, ADR, DESIGN, IMPL</li>
@@ -133,8 +126,16 @@ DESIGN-0001.</p>
 are checked off and its success criteria are met.</p>
 
 </section>
-<section class="panel" id="p-phase-1-project-foundation">
-<h2 class="panel-title" id="phase-1-project-foundation">Phase 1: Project Foundation</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
+<ul class="heading-list">
+<li><a href="#phase-1-project-foundation">Phase 1: Project Foundation</a></li>
+<li><a href="#phase-2-core-commands----init-create-version">Phase 2: Core Commands -- init, create, version</a></li>
+<li><a href="#phase-3-index-generation----update">Phase 3: Index Generation -- update</a></li>
+<li><a href="#phase-4-listing-and-template-management----list-template">Phase 4: Listing and Template Management -- list, template</a></li>
+<li><a href="#phase-5-polish-error-handling-and-ci-readiness">Phase 5: Polish, Error Handling, and CI Readiness</a></li>
+</ul>
+<h4 id="phase-1-project-foundation">Phase 1: Project Foundation</h4>
 <p>Set up the internal package structure, embedded templates, and configuration
 system. No CLI commands yet beyond the existing root command -- this phase is
 purely the internal libraries that all commands depend on.</p>
@@ -191,10 +192,7 @@ exists</li>
 <li>Frontmatter parsing correctly extracts all five fields (id, title, status,
 author, created) from a well-formed document</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-core-commands-init-create-version">
-<h2 class="panel-title" id="phase-2-core-commands----init-create-version">Phase 2: Core Commands -- init, create, version</h2>
+<h4 id="phase-2-core-commands----init-create-version">Phase 2: Core Commands -- <code>init</code>, <code>create</code>, <code>version</code></h4>
 <p>Wire up the internal packages to the first three Cobra commands. After this
 phase a user can initialize a repo and create documents.</p>
 <h5 id="tasks-1">Tasks</h5>
@@ -251,10 +249,7 @@ correct frontmatter and template content</li>
 <li><code>docz create badtype &quot;Title&quot;</code> exits with a clear error</li>
 <li><code>docz version</code> prints version and commit hash</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-3-index-generation-update">
-<h2 class="panel-title" id="phase-3-index-generation----update">Phase 3: Index Generation -- update</h2>
+<h4 id="phase-3-index-generation----update">Phase 3: Index Generation -- <code>update</code></h4>
 <p>Implement the index/README generation system that reads YAML frontmatter from
 all documents in a type directory and produces an auto-generated table.</p>
 <h5 id="tasks-2">Tasks</h5>
@@ -304,10 +299,7 @@ preserved across updates</li>
 <li><code>docz create rfc &quot;Title&quot; --no-update</code> skips the index update</li>
 <li><code>docz update --dry-run</code> outputs what would change but writes nothing</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-4-listing-and-template-management-list-template">
-<h2 class="panel-title" id="phase-4-listing-and-template-management----list-template">Phase 4: Listing and Template Management -- list, template</h2>
+<h4 id="phase-4-listing-and-template-management----list-template">Phase 4: Listing and Template Management -- <code>list</code>, <code>template</code></h4>
 <p>Add the remaining read-only commands for listing documents and managing
 templates.</p>
 <h5 id="tasks-3">Tasks</h5>
@@ -357,10 +349,7 @@ expected resolved config</div></li>
 <li><code>docz template override adr</code> creates <code>docs/templates/adr.md</code></li>
 <li><code>docz config</code> prints the fully resolved YAML configuration</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-5-polish-error-handling-and-ci-readiness">
-<h2 class="panel-title" id="phase-5-polish-error-handling-and-ci-readiness">Phase 5: Polish, Error Handling, and CI Readiness</h2>
+<h4 id="phase-5-polish-error-handling-and-ci-readiness">Phase 5: Polish, Error Handling, and CI Readiness</h4>
 <p>Harden the tool with edge case handling, improve user-facing output, ensure
 the Makefile build pipeline works end-to-end, and prepare for release.</p>
 <h5 id="tasks-4">Tasks</h5>
@@ -403,15 +392,9 @@ succeed</div></li>
 </ul>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
-<ul class="heading-list">
-<li><a href="#phase-1">Phase 1</a></li>
-<li><a href="#phase-2">Phase 2</a></li>
-<li><a href="#phase-3">Phase 3</a></li>
-<li><a href="#phase-4">Phase 4</a></li>
-<li><a href="#phase-5">Phase 5</a></li>
-</ul>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <p>Key files that will be created or modified, organized by phase.</p>
 <h4 id="phase-1">Phase 1</h4>
 <div class="table-wrap">
@@ -655,8 +638,9 @@ succeed</div></li>
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <p>Tests are distributed across phases but follow a consistent strategy:</p>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">Unit tests for every exported function in <code>internal/</code> packages</div></li>

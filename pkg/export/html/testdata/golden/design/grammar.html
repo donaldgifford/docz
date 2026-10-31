@@ -24,34 +24,25 @@ place, so the shared field rules are pinned by something a person can read.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
-<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
-<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
-<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
-<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
 <section class="panel" id="p-overview">
 <h2 class="panel-title" id="overview">Overview</h2>
-<p class="empty">Not written yet.</p>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li>Read every section of the DESIGN template into its own field</li>
 <li>Keep the detailed design region whole, numbered subsections and all</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li>A grammar for the numbered subsections</li>
 </ul>
@@ -63,8 +54,9 @@ place, so the shared field rules are pinned by something a person can read.</p>
 section has no structure docz reads.</p>
 
 </section>
-<section class="panel" id="p-detailed-design">
-<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
 <p>The package is a switch over region kinds and nothing else.</p>
 <h4 id="1-parsing">1. Parsing</h4>
 <p>Parse resolves the document's regions once and fills one field per kind,
@@ -73,31 +65,34 @@ rebasing every line onto the document as it goes.</p>
 <p>Validate runs Parse and reports the three rules that need a typed model.</p>
 
 </section>
-<section class="panel" id="p-api-interface-changes">
-<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
 <p>Three exported functions — <code>Parse</code>, <code>Validate</code>, and <code>Headings</code> — plus the
 <code>Doc</code> value they are about.</p>
 
 </section>
 <section class="panel" id="p-data-model">
-<h2 class="panel-title" id="data-model">Data Model</h2>
+<h2 class="panel-title" id="data-model">Data model</h2>
 <p><code>Doc</code> holds one field per section and nothing is written to disk, so there is
 no schema to migrate.</p>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <p>A marked fixture, the same fixture with its markers stripped, and one case per
 finding code.</p>
 
 </section>
-<section class="panel" id="p-migration-rollout-plan">
-<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
 <p>The package ships with the v2 line, so no existing document has to change.</p>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <h4 id="1-does-the-detailed-design-region-keep-its-subsections">1. Does the detailed design region keep its subsections?</h4>
 <blockquote>
 <p><strong>Resolved 2026-09-20: (a)</strong> The numbering is the author's, so a reader that

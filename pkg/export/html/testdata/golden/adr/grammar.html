@@ -25,21 +25,17 @@ field.</p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
 <button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
-<p class="empty">Not written yet.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="summary">Summary</h3>
+<h3 id="context">Context</h3>
 <p>Every field of the typed model used to be found by matching heading text, so a
 document whose author wrote &quot;## The Decision&quot; parsed with an empty decision
 and said nothing about it.</p>
@@ -72,8 +68,9 @@ nobody has scheduled</li>
 </ul>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>a. Match on heading text only.</strong> Ship the table and stop. Rejected: a
 renamed section stays invisible, which is the problem.</li>
@@ -85,7 +82,7 @@ document that adds a section moves every field after it.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <h4 id="1-where-does-the-fallback-heading-table-live">1. Where does the fallback heading table live?</h4>
 <ul>
 <li>a. In the type package, written out and pinned to the template by a test

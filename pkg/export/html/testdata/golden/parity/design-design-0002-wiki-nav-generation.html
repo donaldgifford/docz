@@ -27,15 +27,13 @@ when the page itself has no frontmatter at all.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
-<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
-<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
-<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
-<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
 <section class="panel" id="p-overview">
@@ -43,11 +41,8 @@ when the page itself has no frontmatter at all.</p>
 <p><strong>Status:</strong> this behavior already ships behind <code>docz wiki</code>; this
 document records the design after the fact so future changes have a
 baseline to diff against.</p>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li>Build a complete MkDocs <code>nav:</code> tree from the configured <code>docs_dir</code>
 without requiring manual upkeep.</li>
@@ -66,10 +61,7 @@ title; degrade to the filename and keep going.</li>
 <li>Keep generated output stable across repeated runs so the diff stays
 small when nothing meaningful changed.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li>Rewriting the whole <code>mkdocs.yml</code> file. Only the <code>nav:</code> block is
 owned by the generator; theme and plugin config are left alone.</li>
@@ -93,8 +85,9 @@ derive a small in-memory model, and splice the output back in rather
 than asking anyone to maintain it by hand.</p>
 
 </section>
-<section class="panel" id="p-detailed-design">
-<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
 <p>The generator makes two passes over the docs directory. The first
 pass walks every enabled type directory and every top-level page, and
 builds a flat list of candidate nav entries. The second pass resolves
@@ -120,8 +113,9 @@ dashes and underscores with spaces and title-casing the result, so a
 page never ends up with no nav label at all.</p>
 
 </section>
-<section class="panel" id="p-api-interface-changes">
-<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
 <p>No new CLI flags are introduced. <code>docz wiki</code> keeps its existing
 signature, and the title resolver described above is purely internal:
 callers only ever see the resolved string, never which of the three
@@ -131,7 +125,7 @@ silently skipped as they were before this generator existed.</p>
 
 </section>
 <section class="panel" id="p-data-model">
-<h2 class="panel-title" id="data-model">Data Model</h2>
+<h2 class="panel-title" id="data-model">Data model</h2>
 <p>The generator's in-memory representation is a small tree. Nothing here
 is persisted; it exists only for the duration of a single <code>docz wiki</code>
 run and is discarded once <code>mkdocs.yml</code> has been written.</p>
@@ -165,8 +159,9 @@ run and is discarded once <code>mkdocs.yml</code> has been written.</p>
 </div>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <p>Title resolution precedence is covered by table-driven unit tests that
 pin the three fallback tiers independently: frontmatter present,
 frontmatter absent but an H1 present, and neither present. Golden
@@ -176,8 +171,9 @@ indentation is caught immediately rather than surfacing as a review
 comment on a real <code>mkdocs.yml</code> diff.</p>
 
 </section>
-<section class="panel" id="p-migration-rollout-plan">
-<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
 <p>The generator only ever adds or updates the <code>nav:</code> block it owns, so
 existing repos do not need a migration step. On first run against a
 repo whose <code>mkdocs.yml</code> predates this feature, the block is inserted
@@ -185,7 +181,7 @@ once and left under normal splice management afterward.</p>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <h4 id="1-should-nested-type-directories-collapse-into-a-single-nav-group">1. Should nested type directories collapse into a single nav group?</h4>
 <ul>
 <li>a. Yes, flatten one level so the nav stays shallow even as more

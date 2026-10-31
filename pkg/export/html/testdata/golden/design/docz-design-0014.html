@@ -36,25 +36,19 @@ no release carries one design without the other.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="goals" aria-controls="p-goals">Goals</button>
-<button type="button" data-tab="non-goals" aria-controls="p-non-goals">Non-Goals</button>
 <button type="button" data-tab="background" aria-controls="p-background">Background</button>
-<button type="button" data-tab="detailed-design" aria-controls="p-detailed-design">Detailed Design</button>
-<button type="button" data-tab="api-interface-changes" aria-controls="p-api-interface-changes">API / Interface Changes</button>
-<button type="button" data-tab="data-model" aria-controls="p-data-model">Data Model</button>
-<button type="button" data-tab="testing-strategy" aria-controls="p-testing-strategy">Testing Strategy</button>
-<button type="button" data-tab="migration-rollout-plan" aria-controls="p-migration-rollout-plan">Migration / Rollout Plan</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
 <section class="panel" id="p-overview">
 <h2 class="panel-title" id="overview">Overview</h2>
-<p class="empty">Not written yet.</p>
-
-</section>
-<section class="panel" id="p-goals">
-<h2 class="panel-title" id="goals">Goals</h2>
 <h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<h4 id="goals">Goals</h4>
 <ul>
 <li><strong>Specify the complete API once.</strong> After this design, building the
 library is an IMPL with phases, not further design.</li>
@@ -77,10 +71,7 @@ this API.</li>
 <li><strong>Traceable, not tracing.</strong> Context enters at L3 and hooks let a consumer
 instrument the library; docz imports no telemetry and logs nothing (§7).</li>
 </ul>
-
-</section>
-<section class="panel" id="p-non-goals">
-<h2 class="panel-title" id="non-goals">Non-Goals</h2>
+<h4 id="non-goals">Non-Goals</h4>
 <ul>
 <li>Typed models for RFC, ADR, DESIGN, or INV. The pattern is fixed (§2.9,
 §3); each waits for a consumer.</li>
@@ -174,17 +165,9 @@ to §1 below is: three packages move out of <code>internal/</code>, two packages
 new, one package grows four functions, and <code>cmd/</code> shrinks.</p>
 
 </section>
-<section class="panel" id="p-detailed-design">
-<h2 class="panel-title" id="detailed-design">Detailed Design</h2>
-<ul class="heading-list">
-<li><a href="#1-module-layout-and-dependency-graph">1. Module layout and dependency graph</a></li>
-<li><a href="#2-package-specifications">2. Package specifications</a></li>
-<li><a href="#3-the-impl-grammar">3. The IMPL grammar</a></li>
-<li><a href="#4-the-cmd-swap">4. The cmd swap</a></li>
-<li><a href="#5-consumer-map">5. Consumer map</a></li>
-<li><a href="#6-enforcing-the-layer-rules">6. Enforcing the layer rules</a></li>
-<li><a href="#7-context-cancellation-and-hooks">7. Context, cancellation, and hooks</a></li>
-</ul>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
 <h4 id="1-module-layout-and-dependency-graph">1. Module layout and dependency graph</h4>
 <pre><code class="language-text">github.com/donaldgifford/docz/v2
 ├── pkg/doczcore/
@@ -1597,8 +1580,9 @@ on the context automatically for a consumer that uses them.</p>
 reports; whether they need hooks of their own is Open Question 12.</p>
 
 </section>
-<section class="panel" id="p-api-interface-changes">
-<h2 class="panel-title" id="api--interface-changes">API / Interface Changes</h2>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -1730,7 +1714,7 @@ is contract from then on.</p>
 
 </section>
 <section class="panel" id="p-data-model">
-<h2 class="panel-title" id="data-model">Data Model</h2>
+<h2 class="panel-title" id="data-model">Data model</h2>
 <pre class="mermaid">classDiagram
   class Repo {
     Root string
@@ -1898,8 +1882,9 @@ holds no handle to the filesystem. <code>Repo</code> is two fields and is safe t
 construct per call.</p>
 
 </section>
-<section class="panel" id="p-testing-strategy">
-<h2 class="panel-title" id="testing-strategy">Testing Strategy</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
 <ul>
 <li><strong><code>pkg/impl</code></strong>: golden fixtures snapshotted under <code>pkg/impl/testdata/</code>
 (never read from <code>docs/</code>): docz IMPL-0009 and IMPL-0017 (wrapping),
@@ -1966,8 +1951,9 @@ same fixtures parsed unmigrated must yield the same facts with
 </ul>
 
 </section>
-<section class="panel" id="p-migration-rollout-plan">
-<h2 class="panel-title" id="migration--rollout-plan">Migration / Rollout Plan</h2>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
 <pre class="mermaid">timeline
   title Build the whole API, then swap — every landing under dont-release until the last
   section Module path
@@ -2095,7 +2081,7 @@ meanwhile.</p>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-phase-and-task-grammar">1. Phase and task grammar</a></li>
 <li><a href="#2-continuation-folding-and-verify-lines">2. Continuation folding and verify lines</a></li>

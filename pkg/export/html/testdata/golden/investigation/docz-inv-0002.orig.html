@@ -23,18 +23,14 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -158,14 +154,12 @@
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>What architectural debt, idiomatic-Go gaps, style violations, and performance
 issues exist in the docz codebase today, and how should they be prioritized into
 a cleanup roadmap that improves testability, extensibility, and maintainability
 without breaking the existing public surface?</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>The codebase predates the team's standardized Go style guides and architecture
 patterns, so we expect to find:</p>
 <ol>
@@ -185,10 +179,7 @@ belongs in <code>internal/</code> packages.</li>
 </ol>
 <p>We expect most issues to be mechanical fixes; the larger architectural items
 (Runner pattern, DocType registry) will need a dedicated design doc.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>The docz codebase (~4,200 LOC across <code>cmd/</code> and <code>internal/</code>) was written before
 the team adopted standardized go-development style guides, the Uber Go Style
 Guide as a reference, and structured architecture-review practices. Dogfooding
@@ -222,10 +213,7 @@ stringly-typed code, magic constants, Cobra-specific conventions (<code>Run</cod
 </ol>
 <p>All four agents read the same set of files; findings were cross-referenced to
 identify the highest-confidence (multi-agent agreement) issues.</p>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -791,18 +779,7 @@ hand-rolled <code>itoa</code>), three-way duplication of defaults, and 50+ direc
 defaults-drift category has already produced two real bugs (PR #30, PR #31) and
 will produce more. The testability and domain-modeling work unblocks future
 feature work.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
-<ul class="heading-list">
-<li><a href="#wave-1--mechanical-wins-1-pr-1-day">Wave 1 — Mechanical wins (1 PR, ~1 day)</a></li>
-<li><a href="#wave-2--correctness-and-duplication-1-pr-1-day">Wave 2 — Correctness and duplication (1 PR, ~1 day)</a></li>
-<li><a href="#wave-3--performance-worth-fixing-1-pr-half-day">Wave 3 — Performance worth fixing (1 PR, ~half day)</a></li>
-<li><a href="#wave-4--stranded-business-logic-2-prs-2-days--done-impl-0008">Wave 4 — Stranded business logic (2 PRs, ~2 days) — Done (IMPL-0008)</a></li>
-<li><a href="#wave-5--architecture-refactor--done-design-0004--impl-0009">Wave 5 — Architecture refactor — Done (DESIGN-0004 &#43; IMPL-0009)</a></li>
-<li><a href="#low-priority--defer">Low priority / defer</a></li>
-</ul>
+<h3 id="recommendation">Recommendation</h3>
 <p>A phased refactor in five waves, ordered by impact-to-effort and by what
 unblocks subsequent work:</p>
 <h4 id="wave-1--mechanical-wins-1-pr-1-day">Wave 1 — Mechanical wins (1 PR, ~1 day)</h4>

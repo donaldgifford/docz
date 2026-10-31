@@ -22,18 +22,14 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -67,6 +63,7 @@
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>How much work, and which changes, does it take to add a &quot;last updated&quot;
 frontmatter field to docz documents — at minimum a date, optionally the
 (short) sha of the last commit that modified the file — populated and kept
@@ -81,10 +78,7 @@ current without generating an endless stream of bookkeeping diffs?</li>
 <li><strong>Effort:</strong> what is the phased size of the work, and which parts are
 optional?</li>
 </ol>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>The read side is trivial (one additive struct field). The write side is
 moderate: <code>docwrite</code> has never had to <em>insert</em> a frontmatter key, only
 rewrite one that exists. The hard part is not code volume but git
@@ -92,10 +86,7 @@ semantics — a value derived from git history cannot describe the commit
 that contains it, so a naive implementation churns. The expected shape of
 the answer is &quot;date is cheap and stable, sha is cheap but inherently one
 commit behind,&quot; and the recommendation will lean on that asymmetry.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>Every docz document carries five typed frontmatter fields — <code>id</code>, <code>title</code>,
 <code>status</code>, <code>author</code>, <code>created</code> — and nothing records when it last changed.
 The README index tables and <code>docz list</code> show only <code>created</code>. docz-api's
@@ -134,10 +125,7 @@ derive the value itself instead.</li>
 <li>Size the phases against comparable past work (IMPL-0011 status set,
 IMPL-0015 changelog block, IMPL-0016 api block).</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -533,19 +521,7 @@ itself.</li>
 <li>The field belongs in docz, not downstream: docz-api ingests without a
 checkout and cannot derive it.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
-<ul class="heading-list">
-<li><a href="#decisions">Decisions</a></li>
-<li><a href="#1-field-name">1. Field name?</a></li>
-<li><a href="#2-sha-representation-if-recorded">2. Sha representation, if recorded?</a></li>
-<li><a href="#3-configurable-key-name-per-type-updated_field-like-status_field">3. Configurable key name per type (updated_field, like status_field)?</a></li>
-<li><a href="#4-date-source-for-the-git-derived-path">4. Date source for the git-derived path?</a></li>
-<li><a href="#5-what-does-docz-update-do-in-a-shallow-clone">5. What does docz update do in a shallow clone?</a></li>
-<li><a href="#6-add-an-updated-column-to-the-readme-index-tables">6. Add an Updated column to the README index tables?</a></li>
-</ul>
+<h3 id="recommendation">Recommendation</h3>
 <p><strong>Do the <code>updated</code> date field first; defer the sha to a later follow-up.</strong>
 The date is the part consumers need (sorting and display, Observation 8),
 it converges without bookkeeping commits (Observation 6), and it carries

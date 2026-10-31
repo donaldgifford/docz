@@ -23,22 +23,23 @@ value with one field per section rather than as markdown it has to walk itself.<
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="problem-statement" aria-controls="p-problem-statement">Problem Statement</button>
-<button type="button" data-tab="proposed-solution" aria-controls="p-proposed-solution">Proposed Solution</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
-<button type="button" data-tab="risks-and-mitigations" aria-controls="p-risks-and-mitigations">Risks and Mitigations</button>
-<button type="button" data-tab="success-criteria" aria-controls="p-success-criteria">Success Criteria</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
-<p class="empty">Not written yet.</p>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="summary">Summary</h3>
 
 </section>
-<section class="panel" id="p-problem-statement">
-<h2 class="panel-title" id="problem-statement">Problem Statement</h2>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
 <p>Every consumer that wants the risks out of a proposal parses the table itself,
 and each one disagrees about which column is which.</p>
 <h4 id="supporting-data">Supporting Data</h4>
@@ -46,14 +47,16 @@ and each one disagrees about which column is which.</p>
 the mitigation column as the third rather than the fourth.</p>
 
 </section>
-<section class="panel" id="p-proposed-solution">
-<h2 class="panel-title" id="proposed-solution">Proposed Solution</h2>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
 <p>Ship <code>pkg/rfc</code> with one field per section of the template, the shared sections
 read by the <code>kinds</code> package so they mean the same thing in every type.</p>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>A. Leave the parsing to each consumer.</strong> Rejected: three readers already
 disagree about the risks table, which is the problem rather than the fix.</li>
@@ -63,8 +66,9 @@ know which heading held the risks.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-risks-and-mitigations">
-<h2 class="panel-title" id="risks-and-mitigations">Risks and Mitigations</h2>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -105,8 +109,9 @@ know which heading held the risks.</li>
 </div>
 
 </section>
-<section class="panel" id="p-success-criteria">
-<h2 class="panel-title" id="success-criteria">Success Criteria</h2>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
 <ul>
 <li><code>go test ./pkg/rfc/...</code> passes</li>
 <li>Every RFC in the corpus parses with no finding its author did not earn</li>
@@ -114,7 +119,7 @@ know which heading held the risks.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <h4 id="1-should-the-risks-table-be-read-by-column-name">1. Should the risks table be read by column name?</h4>
 <ul>
 <li>a. No, by position <em>(recommendation)</em>: the corpus spells the headers four

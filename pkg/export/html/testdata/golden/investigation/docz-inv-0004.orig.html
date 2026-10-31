@@ -25,18 +25,14 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -66,6 +62,7 @@
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>What does v1 of docz need to ship — and in what order — to give us a CLI
 that also opens a Bubble Tea v2 TUI when run interactively, with in-TUI
 markdown preview (Glow/Glamour) and a &quot;press a key to open this in the
@@ -79,10 +76,7 @@ args → TUI; args → CLI&quot;, or do we need a <code>docz tui</code> subcomma
 <li>What's the minimum TUI surface that earns the v1 label — and what
 intentionally waits for v1.x?</li>
 </ol>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <ul>
 <li>Bubble Tea v2 is stable enough (v2.0.6, April 2026) and lstk is a
 proven production reference, so the framework choice is low-risk.</li>
@@ -101,10 +95,7 @@ open here as a result.</li>
 to land the architectural cleanup, then layer the TUI in IMPL-0010
 (preview integration) and IMPL-0011 (full TUI surface).</li>
 </ul>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>The user wants docz to feel modern: keep the scriptable CLI for CI and
 power-use, but pop into a real TUI when you launch it from a terminal.
 The TUI should be able to do everything the CLI does (create docs, list,
@@ -135,10 +126,7 @@ or a CLI-only operation.</li>
 <li>Sketch the package layout and the CLI/TUI handoff.</li>
 <li>Phase the work into IMPL docs.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -413,10 +401,7 @@ pattern, output injection, slog) is a prerequisite.</li>
 resolved. mdp's <code>pkg/</code> namespace exists on <code>main</code> today, so IMPL-0010
 lands the library-import path directly — no shell-out fallback, no
 mdp-side prerequisite, no coordinated release.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <h4 id="prerequisites-hard-gate">Prerequisites (hard gate)</h4>
 <p><strong>No design or implementation work for v1 starts until IMPL-0006,
 IMPL-0007, IMPL-0008, and IMPL-0009 are all merged to <code>main</code> with

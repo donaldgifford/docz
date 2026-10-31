@@ -155,13 +155,32 @@ func attachIntros(spans []section) []section {
 	return out
 }
 
-// tabsOf gives each section a tab of its own, keyed uniquely.
+// tabsOf places each section in a tab: the tab its kind's row names, which
+// it shares with every other section naming that tab, or else a tab of its
+// own labelled by its heading. Tabs appear in the order of their first
+// section, and keys are unique.
 func tabsOf(spans []section) []tab {
 	taken := make(map[string]bool)
-	out := make([]tab, 0, len(spans))
+	byLabel := make(map[string]int)
+
+	var out []tab
 
 	for _, s := range spans {
-		label := sectionLabel(s)
+		r, shared := rowFor(s.Kind)
+		label := r.Tab
+
+		if !shared {
+			label = sectionLabel(s)
+		} else if i, ok := byLabel[label]; ok {
+			out[i].Sections = append(out[i].Sections, s)
+
+			continue
+		}
+
+		if shared {
+			byLabel[label] = len(out)
+		}
+
 		out = append(out, tab{Key: uniqueKey(taken, tabKey(label)), Label: label, Sections: []section{s}})
 	}
 

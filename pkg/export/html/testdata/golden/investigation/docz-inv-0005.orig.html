@@ -25,20 +25,16 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -72,6 +68,7 @@
 <li><a href="#decisions">Decisions</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>Can we build a small companion service — <strong>docz-api</strong> — that uses a GitHub App
 to onboard repositories already using docz, ingests each repo's <code>.docz.yaml</code> to
 build a registry of documents (mapped to repos and doc types), caches their
@@ -81,10 +78,7 @@ docz documents from a single web URL?</p>
 <p>And specifically: does docz's existing structure (<code>.docz.yaml</code>, standardized
 directory layout, typed YAML frontmatter, stable IDs) make this materially
 <em>simpler</em> than a general system like rfc-api / rfc-site?</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p><strong>Yes — and meaningfully simpler than rfc-api.</strong> rfc-api spends most of its
 complexity on <em>discovery</em> and <em>normalization</em>: figuring out where docs live in
 an arbitrary repo and coercing inconsistent metadata into a common shape. docz
@@ -103,10 +97,7 @@ per-repo primary key and a clean cross-repo identity (<code>&lt;repo&gt;/&lt;id&
 cache,&quot; with webhooks driving incremental refresh. The genuinely hard part is
 not docz-specific — it is the same problem rfc-api has: <strong>mapping who-can-see-
 what</strong> from GitHub repo access to site access.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>docz today produces beautifully structured docs <em>per repo</em>, and the <code>wiki</code>
 command can render a single repo's docs as MkDocs/TechDocs. What's missing is a
 <strong>cross-repo</strong> view: a team with docz in 15 repos has 15 separate doc trees and
@@ -138,10 +129,7 @@ out).</li>
 <li>Surface the unavoidable risks (visibility/auth, versioning semantics, fetch
 strategy) as Open Questions for the design phase.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <p>Proposed stack (assumed, to be confirmed in design):</p>
 <div class="table-wrap">
 <table>
@@ -365,10 +353,7 @@ inherent to any cross-repo viewer of private content and not unique to docz. A
 clean implementation also motivates a small, additive docz change: exposing the
 existing config/document parsing as a shared library so the API and CLI never
 diverge (Decision 7).</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <p>The open questions are resolved (see <a href="#decisions">Decisions</a>). Next steps:</p>
 <ol>
 <li><strong>Proceed to a DESIGN</strong> for docz-api (the service: GitHub App, ingestion,
@@ -389,7 +374,7 @@ webhooks, to prove the fetch→parse→render→serve loop before the full pipel
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-how-does-docz-api-fetch-repo-content">1. How does docz-api fetch repo content?</a></li>
 <li><a href="#2-where-is-markdown-rendered-to-html">2. Where is markdown rendered to HTML?</a></li>

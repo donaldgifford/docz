@@ -22,16 +22,15 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
 <button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#summary">Summary</a></li>
 <li><a href="#context">Context</a></li>
@@ -61,6 +60,7 @@
 </li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="summary">Summary</h3>
 <p>docz is a Go API package. The <code>docz</code> CLI is its first consumer, not its
 product. Every operation the CLI performs is a library call with a typed
 result, laid out in layers with fixed dependency rules, in one module, with a
@@ -72,10 +72,7 @@ dropped the plan model, and it lifts ADR-0001's freeze for the new packages
 until v2.0.0 is cut. This work does not cut it: it ships <code>v2.0.0-beta.N</code>
 pre-releases, and v2.0.0 proper waits for docz-api and then the UI to move
 into this repo, after the CLI.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>ADR-0001 (2026-07-03) made <code>pkg/doczcore/{config,document,docparse,docwrite,toc}</code>
 the public core and froze it at v1.0.0. It was a promotion on demand: only
 what an external consumer had asked for went public, and <code>internal/</code>
@@ -530,8 +527,9 @@ after this unit.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>A. Promote on demand, again.</strong> Ship <code>pkg/impl</code> and the two <code>docwrite</code>
 byte cores for tempy and stop (DESIGN-0013 Phase A). <em>Pros:</em> smallest
@@ -558,7 +556,7 @@ packages with <code>Doc</code>, primitives versus policy, whole API then swap.</
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <ul class="heading-list">
 <li><a href="#1-how-is-not-yet-frozen-signalled-on-the-new-packages">1. How is &#34;not yet frozen&#34; signalled on the new packages?</a></li>
 <li><a href="#2-how-is-adr-0001s-record-amended">2. How is ADR-0001&#39;s record amended?</a></li>

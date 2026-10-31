@@ -24,21 +24,21 @@ stops meaning what it meant.</p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="phase-1-already-underway" aria-controls="p-phase-1-already-underway">Phase 1: Already underway</button>
-<button type="button" data-tab="phase-2-not-started" aria-controls="p-phase-2-not-started">Phase 2: Not started</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
-<p class="empty">Not written yet.</p>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="objective">Objective</h3>
 
 </section>
-<section class="panel" id="p-phase-1-already-underway">
-<h2 class="panel-title" id="phase-1-already-underway">Phase 1: Already underway</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
+<h4 id="phase-1-already-underway">Phase 1: Already underway</h4>
 <p>Tasks 1 and 2 were checked off, then &quot;Handle the CRLF case&quot; was inserted
 between them and the rest. Every task after the insertion shifts by one, so
 what was 1.3 is now 1.4. A consumer that recorded &quot;1.3 is done&quot; is now wrong,
@@ -57,10 +57,7 @@ verify: <code>go test ./pkg/doczcore/docparse/...</code></div></li>
 <ul>
 <li><code>make ci</code> is green</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-not-started">
-<h2 class="panel-title" id="phase-2-not-started">Phase 2: Not started</h2>
+<h4 id="phase-2-not-started">Phase 2: Not started</h4>
 <h5 id="tasks-1">Tasks</h5>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">Wire it into the CLI</div></li>
@@ -72,8 +69,9 @@ verify: <code>go test ./pkg/doczcore/docparse/...</code></div></li>
 </ul>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -99,8 +97,9 @@ verify: <code>go test ./pkg/doczcore/docparse/...</code></div></li>
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">A golden for the shifted IDs</div></li>
 </ul>

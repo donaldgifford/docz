@@ -24,27 +24,16 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
-<button type="button" data-tab="phase-1-author-design-doc" aria-controls="p-phase-1-author-design-doc">Phase 1: Author DESIGN doc</button>
-<button type="button" data-tab="phase-2-introduce-runner-struct-no-behavior-change" aria-controls="p-phase-2-introduce-runner-struct-no-behavior-change">Phase 2: Introduce Runner struct (no behavior change)</button>
-<button type="button" data-tab="phase-3-migrate-handlers-to-runner-methods-output-writers" aria-controls="p-phase-3-migrate-handlers-to-runner-methods-output-writers">Phase 3: Migrate handlers to Runner methods &#43; output writers</button>
-<button type="button" data-tab="phase-4-introduce-log-slog-logger-eliminate-if-verbose" aria-controls="p-phase-4-introduce-log-slog-logger-eliminate-if-verbose">Phase 4: Introduce log/slog logger; eliminate if verbose</button>
-<button type="button" data-tab="phase-5-inject-time-into-document-createoptions" aria-controls="p-phase-5-inject-time-into-document-createoptions">Phase 5: Inject time into document.CreateOptions</button>
-<button type="button" data-tab="phase-6-inject-git-resolution-propagate-cmd-context" aria-controls="p-phase-6-inject-git-resolution-propagate-cmd-context">Phase 6: Inject git resolution; propagate cmd.Context()</button>
-<button type="button" data-tab="phase-7-add-reporoot-to-config-load" aria-controls="p-phase-7-add-reporoot-to-config-load">Phase 7: Add repoRoot to config.Load</button>
-<button type="button" data-tab="phase-8-introduce-doctype-registry" aria-controls="p-phase-8-introduce-doctype-registry">Phase 8: Introduce DocType registry</button>
-<button type="button" data-tab="phase-9-drive-iteration-from-enabledtypes" aria-controls="p-phase-9-drive-iteration-from-enabledtypes">Phase 9: Drive iteration from EnabledTypes()</button>
-<button type="button" data-tab="phase-10-introduce-typed-doctype-and-status-strings" aria-controls="p-phase-10-introduce-typed-doctype-and-status-strings">Phase 10: Introduce typed DocType and Status strings</button>
-<button type="button" data-tab="phase-11-verify-and-ship" aria-controls="p-phase-11-verify-and-ship">Phase 11: Verify and ship</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#objective">Objective</a></li>
 <li><a href="#scope">Scope</a>
@@ -129,6 +118,7 @@
 <li><a href="#dependencies">Dependencies</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="objective">Objective</h3>
 <p>The largest and most architectural of the INV-0002 waves. Eliminate the
 two systemic blockers to clean tests and clean extension:</p>
 <ol>
@@ -146,10 +136,7 @@ parameter for <code>config.Load</code>.</p>
 <p>This wave is gated on a <strong>DESIGN doc</strong> that aligns on the Runner shape and
 DocType registry API before implementation begins.</p>
 <p><strong>Implements:</strong> INV-0002 (Wave 5 — Architecture refactor)</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li>Author a DESIGN doc covering Runner pattern + DocType registry</li>
@@ -181,9 +168,10 @@ user-written <code>.docz.yaml</code> files)</li>
 </ul>
 
 </section>
-<section class="panel" id="p-phase-1-author-design-doc">
-<h2 class="panel-title" id="phase-1-author-design-doc">Phase 1: Author DESIGN doc</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
+<h4 id="phase-1-author-design-doc">Phase 1: Author DESIGN doc</h4>
 <p>Before writing any code, align on the architectural shape via a DESIGN
 document. This is the prerequisite gate.</p>
 <h5 id="tasks">Tasks</h5>
@@ -238,10 +226,7 @@ explicitly deferred (IMPL-0009's own decisions are already fixed in
 the Decisions section below)</li>
 <li>Approved by repository owner</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-introduce-runner-struct-no-behavior-change">
-<h2 class="panel-title" id="phase-2-introduce-runner-struct-no-behavior-change">Phase 2: Introduce Runner struct (no behavior change)</h2>
+<h4 id="phase-2-introduce-runner-struct-no-behavior-change">Phase 2: Introduce <code>Runner</code> struct (no behavior change)</h4>
 <p>Establish the Runner shape with no functional change to handlers yet.</p>
 <h5 id="tasks-1">Tasks</h5>
 <ul class="tasks">
@@ -285,10 +270,7 @@ and <code>cmd/git_test.go</code> (<code>TestStaticGit_UserName</code>,
 <li data-state="done"><input type="checkbox" checked disabled><div class="text">No handler converted yet — pure plumbing</div></li>
 <li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>make ci</code> green</div></li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-3-migrate-handlers-to-runner-methods-output-writers">
-<h2 class="panel-title" id="phase-3-migrate-handlers-to-runner-methods--output-writers">Phase 3: Migrate handlers to Runner methods &#43; output writers</h2>
+<h4 id="phase-3-migrate-handlers-to-runner-methods--output-writers">Phase 3: Migrate handlers to Runner methods + output writers</h4>
 <p>Convert command handlers from package-level functions to <code>Runner</code> methods.
 Per DESIGN-0004 §C, handlers write to <code>r.Out</code> / <code>r.Err</code> (NOT
 <code>cmd.OutOrStdout()</code> — the task wording below predates the DESIGN and is
@@ -329,10 +311,7 @@ cmd tests still go through <code>runUpdate</code>/<code>runCreate</code>/<code>r
 and therefore touch the shared globals, so they stay serial
 until per-command opts structs land in a follow-up RFC.</div></li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-4-introduce-log-slog-logger-eliminate-if-verbose">
-<h2 class="panel-title" id="phase-4-introduce-logslog-logger-eliminate-if-verbose">Phase 4: Introduce log/slog logger; eliminate if verbose</h2>
+<h4 id="phase-4-introduce-logslog-logger-eliminate-if-verbose">Phase 4: Introduce <code>log/slog</code> logger; eliminate <code>if verbose</code></h4>
 <p>Replace verbose-guard blocks with structured logging. (Note: the
 mechanical replacements landed alongside the Phase 3 conversions;
 the <code>--log-level</code> / <code>--log-format</code> flag wiring remains.)</p>
@@ -368,10 +347,7 @@ site that consumes it</div></li>
 handler — <code>TestBuildLogger_*</code> cases use a <code>bytes.Buffer</code> as the
 slog Writer and assert on emitted records (text and JSON)</div></li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-5-inject-time-into-document-createoptions">
-<h2 class="panel-title" id="phase-5-inject-time-into-documentcreateoptions">Phase 5: Inject time into document.CreateOptions</h2>
+<h4 id="phase-5-inject-time-into-documentcreateoptions">Phase 5: Inject time into <code>document.CreateOptions</code></h4>
 <p>Eliminate the <code>internal/document/time.go</code> package global.</p>
 <h5 id="tasks-4">Tasks</h5>
 <ul class="tasks">
@@ -393,10 +369,7 @@ zero-value path</div></li>
 <li data-state="done"><input type="checkbox" checked disabled><div class="text"><code>grep -rn 'timeNow' internal/</code> returns no matches</div></li>
 <li data-state="done"><input type="checkbox" checked disabled><div class="text">Tests no longer mutate package globals to control time</div></li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-6-inject-git-resolution-propagate-cmd-context">
-<h2 class="panel-title" id="phase-6-inject-git-resolution-propagate-cmdcontext">Phase 6: Inject git resolution; propagate cmd.Context()</h2>
+<h4 id="phase-6-inject-git-resolution-propagate-cmdcontext">Phase 6: Inject git resolution; propagate <code>cmd.Context()</code></h4>
 <h5 id="tasks-5">Tasks</h5>
 <ul class="tasks">
 <li data-state="done"><input type="checkbox" checked disabled><div class="text">Define <code>type GitResolver interface { UserName(ctx context.Context) string }</code>
@@ -425,10 +398,7 @@ already-cancelled context and asserts the call returns &quot;&quot; within
 2s — a future regression that drops the ctx would time out
 instead of hanging the suite.</div></li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-7-add-reporoot-to-config-load">
-<h2 class="panel-title" id="phase-7-add-reporoot-to-configload">Phase 7: Add repoRoot to config.Load</h2>
+<h4 id="phase-7-add-reporoot-to-configload">Phase 7: Add <code>repoRoot</code> to <code>config.Load</code></h4>
 <p>Eliminate <code>os.Chdir</code> in tests.</p>
 <h5 id="tasks-6">Tasks</h5>
 <ul class="tasks">
@@ -464,10 +434,7 @@ per-command opts struct refactor.</div></li>
 <li>Tests run with <code>t.Parallel()</code> and pass</li>
 <li><code>make test</code> wall-clock time decreases noticeably</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-8-introduce-doctype-registry">
-<h2 class="panel-title" id="phase-8-introduce-doctype-registry">Phase 8: Introduce DocType registry</h2>
+<h4 id="phase-8-introduce-doctype-registry">Phase 8: Introduce <code>DocType</code> registry</h4>
 <p>Replace the scattered type definitions with a single registration list.</p>
 <h5 id="tasks-7">Tasks</h5>
 <ul class="tasks">
@@ -537,10 +504,7 @@ canonical/aliases case-insensitively, and the derived
 <li>A test catches a registered type missing its embedded templates</li>
 <li>All existing behavior unchanged (golden files green)</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-9-drive-iteration-from-enabledtypes">
-<h2 class="panel-title" id="phase-9-drive-iteration-from-enabledtypes">Phase 9: Drive iteration from EnabledTypes()</h2>
+<h4 id="phase-9-drive-iteration-from-enabledtypes">Phase 9: Drive iteration from <code>EnabledTypes()</code></h4>
 <p>Now that the registry is in place, <code>EnabledTypes()</code> should iterate the
 registry rather than the hardcoded <code>ValidTypes()</code> slice.</p>
 <h5 id="tasks-8">Tasks</h5>
@@ -567,10 +531,7 @@ the user removed
 in <code>doctype.go</code> documenting the consolidation</li>
 <li>All iteration goes through the registry</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-10-introduce-typed-doctype-and-status-strings">
-<h2 class="panel-title" id="phase-10-introduce-typed-doctype-and-status-strings">Phase 10: Introduce typed DocType and Status strings</h2>
+<h4 id="phase-10-introduce-typed-doctype-and-status-strings">Phase 10: Introduce typed <code>DocType</code> and <code>Status</code> strings</h4>
 <p>Add typed-string definitions for compile-time signal at API boundaries.</p>
 <h5 id="tasks-9">Tasks</h5>
 <ul class="tasks">
@@ -606,10 +567,7 @@ pre-typed-string YAML fixture</div></li>
 (no top-level field changed type — only Frontmatter.Status and
 template.Data fields, neither of which appear in <code>.docz.yaml</code>)</div></li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-11-verify-and-ship">
-<h2 class="panel-title" id="phase-11-verify-and-ship">Phase 11: Verify and ship</h2>
+<h4 id="phase-11-verify-and-ship">Phase 11: Verify and ship</h4>
 <h5 id="tasks-10">Tasks</h5>
 <ul class="tasks">
 <li data-state="done"><input type="checkbox" checked disabled><div class="text">Full <code>make ci</code> green</div></li>
@@ -662,8 +620,9 @@ are CLI-flag plumbing rather than runtime state</div></li>
 </ul>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -739,8 +698,9 @@ are CLI-flag plumbing rather than runtime state</div></li>
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul class="tasks">
 <li data-state="done"><input type="checkbox" checked disabled><div class="text">Every Runner method has a focused unit test using a constructed
 <code>Runner</code> with <code>bytes.Buffer</code> writers (cmd/runner_test.go:

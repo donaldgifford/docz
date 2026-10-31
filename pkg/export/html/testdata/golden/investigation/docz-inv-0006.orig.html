@@ -25,20 +25,16 @@
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="decisions" aria-controls="p-decisions">Decisions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#question">Question</a></li>
 <li><a href="#hypothesis">Hypothesis</a></li>
@@ -69,6 +65,7 @@
 <li><a href="#decisions">Decisions</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="question">Question</h3>
 <p>For every package the docz CLI is built from — <code>pkg/doczcore/{config,document}</code>
 (public since <code>v0.5.0</code>), <code>internal/{docwrite,template,index,toc,wiki}</code>, and the
 planned <code>pkg/doczcore/docparse</code> (<code>v0.6.0</code>) — exactly which exported surface does
@@ -78,10 +75,7 @@ external consumer (<strong>docz-api</strong>, <strong>docz-site</strong>, <stron
 index generation, ToC splicing, or MkDocs wiki machinery — or is the
 demand-complete public core exactly the four parse/config/write-primitive
 packages (<code>config</code>, <code>document</code>, <code>docparse</code>, <code>docwrite</code>)?</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p>External consumers need only the parsing/config core plus the two byte-level
 write primitives (<code>SetStatus</code>, <code>CheckTask</code>). Embedded templates, README index
 tables, ToC splicing, and MkDocs nav are <strong>CLI presentation concerns</strong> with
@@ -89,10 +83,7 @@ zero external demand. If confirmed, ADR-0001's &quot;move everything public&quot
 is wider than demand, and the idiomatic Go resolution is a smaller frozen
 <code>pkg/doczcore</code> core with the presentation packages remaining in <code>internal/</code> —
 the CLI goal (&quot;works exactly as today&quot;) does not require promoting them.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>ADR-0001 (Proposed) would end the per-consumer promotion drip by moving all
 five remaining <code>internal/</code> packages into <code>pkg/doczcore/*</code> and cutting <code>v1.0.0</code>
 as a semver freeze, with <code>cmd/</code> reduced to a thin shell. Its own &quot;Demand
@@ -120,10 +111,7 @@ decisions and non-goals, and <code>docz-v0.6.0-requirements.md</code> R1–R3.</
 <code>//go:embed</code> usage to check what each promotion would drag into a
 consumer's build.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -385,10 +373,7 @@ buys consistency, not capability. The idiomatic Go shape for this repo is the
 standard library-with-CLI layout: a deliberate, frozen <code>pkg/</code> surface plus an
 <code>internal/</code> that exists precisely to keep product-private code out of the
 contract.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
+<h3 id="recommendation">Recommendation</h3>
 <ol>
 <li><strong>Revise ADR-0001 before acceptance</strong>: scope v1.0.0 as the freeze of the
 four-package core; <code>template</code>, <code>index</code>, <code>toc</code> (splice), and <code>wiki</code> remain
@@ -411,7 +396,7 @@ Decision section and cut the implementation plan.</li>
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <blockquote>
 <p>Each question is numbered; option <code>a</code> is my recommendation, later letters
 are alternatives, and the final letter is a free-form &quot;other.&quot;</p>

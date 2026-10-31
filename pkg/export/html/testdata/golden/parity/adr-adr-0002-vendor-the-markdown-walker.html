@@ -27,20 +27,16 @@ than a spec-complete parser would.</p>
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
 <button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
-<p class="empty">Not written yet.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="summary">Summary</h3>
+<h3 id="context">Context</h3>
 <p><code>docparse</code> needs to extract headings, checkbox task items, and an
 optional H1 title from arbitrary markdown files that live in a user's
 repo. We evaluated pulling in a CommonMark-compliant library early on,
@@ -169,8 +165,9 @@ general purpose markdown tool and should not be marketed as one.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>A. Take the dependency.</strong> Pull in <code>goldmark</code> (the most actively
 maintained CommonMark implementation in Go) and walk its AST for the

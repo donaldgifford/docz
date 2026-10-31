@@ -114,7 +114,7 @@ func (d *doc) contents(tb tab, title string) []docparse.Heading {
 // summaryKinds are the regions whose lead paragraph can be the header
 // summary, in no order: the first one in the document wins.
 var summaryKinds = map[string]bool{
-	"summary": true, "overview": true, "objective": true,
+	kindSummary: true, "overview": true, "objective": true,
 	"question": true, "hypothesis": true, "context": true,
 }
 

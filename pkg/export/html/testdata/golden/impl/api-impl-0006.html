@@ -24,22 +24,16 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
-<button type="button" data-tab="phase-1-queue-failure-visibility-errorhandler-logger-comment-fix" aria-controls="p-phase-1-queue-failure-visibility-errorhandler-logger-comment-fix">Phase 1: Queue failure visibility — ErrorHandler, Logger, comment fix</button>
-<button type="button" data-tab="phase-2-queue-self-heal-un-swallow-the-archived-task-conflict" aria-controls="p-phase-2-queue-self-heal-un-swallow-the-archived-task-conflict">Phase 2: Queue self-heal — un-swallow the archived-task conflict</button>
-<button type="button" data-tab="phase-3-boot-time-github-app-credential-self-check" aria-controls="p-phase-3-boot-time-github-app-credential-self-check">Phase 3: Boot-time GitHub App credential self-check</button>
-<button type="button" data-tab="phase-4-the-four-mute-http-sinks" aria-controls="p-phase-4-the-four-mute-http-sinks">Phase 4: The four mute HTTP sinks</button>
-<button type="button" data-tab="phase-5-auth-providers-none-first-setup-no-auth-mode" aria-controls="p-phase-5-auth-providers-none-first-setup-no-auth-mode">Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode</button>
-<button type="button" data-tab="phase-6-deliberate-failure-verification-deploy-close-out" aria-controls="p-phase-6-deliberate-failure-verification-deploy-close-out">Phase 6: Deliberate-failure verification, deploy, close-out</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
-<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open Questions</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#objective">Objective</a></li>
 <li><a href="#scope">Scope</a>
@@ -94,6 +88,7 @@
 <li><a href="#open-questions">Open Questions</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="objective">Objective</h3>
 <p>Implement INV-0007's recommendations so that <strong>no error terminates in a sink
 that cannot report it</strong>, the queue <strong>recovers on its own</strong> after retry
 exhaustion, credential problems surface <strong>at boot</strong>, and first setup can
@@ -103,10 +98,7 @@ diagnosable <strong>from structured logs alone</strong> — no <code>redis-cli</
 decoding a stored task record — and a fixed root cause must self-heal on the
 next trigger without an operator touching Valkey.</p>
 <p><strong>Implements:</strong> INV-0007 recommendations 1–6 (F1–F7)</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li><code>asynq.Config.ErrorHandler</code> + <code>Logger</code> (slog adapter) + <code>LogLevel</code> in
@@ -135,9 +127,10 @@ funnel incidents) — separate feature, separate doc.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-phase-1-queue-failure-visibility-errorhandler-logger-comment-fix">
-<h2 class="panel-title" id="phase-1-queue-failure-visibility--errorhandler-logger-comment-fix">Phase 1: Queue failure visibility — ErrorHandler, Logger, comment fix</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
+<h4 id="phase-1-queue-failure-visibility--errorhandler-logger-comment-fix">Phase 1: Queue failure visibility — ErrorHandler, Logger, comment fix</h4>
 <p>The one-change-site fix for F1 + F7.5: every failed attempt logs through
 slog, and asynq's internal errors stop bypassing the structured pipeline.</p>
 <h5 id="tasks">Tasks</h5>
@@ -191,10 +184,7 @@ and asserts <code>component=asynq</code> records arrive through slog. Setting
 the cause rather than the symptom — and it avoids stopping the container
 <code>TestMain</code> shares with every other case in the package.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-queue-self-heal-un-swallow-the-archived-task-conflict">
-<h2 class="panel-title" id="phase-2-queue-self-heal--un-swallow-the-archived-task-conflict">Phase 2: Queue self-heal — un-swallow the archived-task conflict</h2>
+<h4 id="phase-2-queue-self-heal--un-swallow-the-archived-task-conflict">Phase 2: Queue self-heal — un-swallow the archived-task conflict</h4>
 <p>Kills F4: retry exhaustion must never silently eat future triggers.</p>
 <h5 id="tasks-1">Tasks</h5>
 <ul class="tasks">
@@ -242,10 +232,7 @@ rather than through a re-implementation.</p>
 <p><code>TestReingestAfterArchivedRun</code> archives the task via the inspector instead
 of waiting out five retries of asynq's default backoff, which would take
 minutes.</p>
-
-</section>
-<section class="panel" id="p-phase-3-boot-time-github-app-credential-self-check">
-<h2 class="panel-title" id="phase-3-boot-time-github-app-credential-self-check">Phase 3: Boot-time GitHub App credential self-check</h2>
+<h4 id="phase-3-boot-time-github-app-credential-self-check">Phase 3: Boot-time GitHub App credential self-check</h4>
 <p>F5's fix: bad App credentials fail the deploy, not the fifth silent retry.</p>
 <h5 id="tasks-2">Tasks</h5>
 <ul class="tasks">
@@ -290,10 +277,7 @@ API response would have missed it entirely. Rate limiting is excluded from
 the rejection class explicitly (<code>*github.RateLimitError</code> /
 <code>*github.AbuseRateLimitError</code> arrive as 4xx but are transient), so throttling
 can never be mistaken for a bad key and crash-loop a deploy.</p>
-
-</section>
-<section class="panel" id="p-phase-4-the-four-mute-http-sinks">
-<h2 class="panel-title" id="phase-4-the-four-mute-http-sinks">Phase 4: The four mute HTTP sinks</h2>
+<h4 id="phase-4-the-four-mute-http-sinks">Phase 4: The four mute HTTP sinks</h4>
 <p>F7's fix: every wrapped error chain now terminates in a logging sink.</p>
 <h5 id="tasks-3">Tasks</h5>
 <ul class="tasks">
@@ -353,10 +337,7 @@ response envelope and the log line stay in one place per package.</li>
 <li>No spec change was needed: the contract test exercises defined scenarios
 only, and 5xx paths are not specced per-op today.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-5-auth-providers-none-first-setup-no-auth-mode">
-<h2 class="panel-title" id="phase-5-auth_providersnone--first-setup-no-auth-mode">Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode</h2>
+<h4 id="phase-5-auth_providersnone--first-setup-no-auth-mode">Phase 5: AUTH_PROVIDERS=none — first-setup no-auth mode</h4>
 <p>F6: one knob to run the read surface open, so first setup fights only the
 GitHub App credentials. Loud opt-in, documented as such.</p>
 <h5 id="tasks-4">Tasks</h5>
@@ -442,10 +423,7 @@ that documents none-mode (values.yaml, chart README, <code>deploy/README.md</cod
 the whole trade, and it should not be discoverable only by reading
 templates.</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-6-deliberate-failure-verification-deploy-close-out">
-<h2 class="panel-title" id="phase-6-deliberate-failure-verification-deploy-close-out">Phase 6: Deliberate-failure verification, deploy, close-out</h2>
+<h4 id="phase-6-deliberate-failure-verification-deploy-close-out">Phase 6: Deliberate-failure verification, deploy, close-out</h4>
 <p>INV-0007's origin story, rerun against the fixed binary — the phase that
 proves &quot;we are actually covering the error exposure required&quot; instead of
 assuming it.</p>
@@ -589,8 +567,9 @@ directly in <code>kubectl logs</code>. The same deploy covers the docz-site none
 smoke carried over from Phase 5.</p>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -677,8 +656,9 @@ smoke carried over from Phase 5.</p>
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul>
 <li><strong>Log assertions</strong> are the novel surface: a small recording
 <code>slog.Handler</code> helper (swapped via <code>slog.SetDefault</code>, restored per test)
@@ -712,7 +692,7 @@ already direct deps — verified against the module cache
 
 </section>
 <section class="panel" id="p-open-questions">
-<h2 class="panel-title" id="open-questions">Open Questions</h2>
+<h2 class="panel-title" id="open-questions">Open questions</h2>
 <p>Numbered for review; <code>a</code> is the recommendation. Reply with a letter per
 question, or &quot;other: …&quot;.</p>
 <p><strong>All answered <code>a</code> (2026-08-22).</strong> OQ-1a comes with a probe-semantics note

@@ -22,18 +22,18 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="summary" aria-controls="p-summary">Summary</button>
-<button type="button" data-tab="problem-statement" aria-controls="p-problem-statement">Problem Statement</button>
-<button type="button" data-tab="proposed-solution" aria-controls="p-proposed-solution">Proposed Solution</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="problem" aria-controls="p-problem">Problem</button>
+<button type="button" data-tab="proposal" aria-controls="p-proposal">Proposal</button>
 <button type="button" data-tab="design" aria-controls="p-design">Design</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
 <button type="button" data-tab="implementation-phases" aria-controls="p-implementation-phases">Implementation Phases</button>
-<button type="button" data-tab="risks-and-mitigations" aria-controls="p-risks-and-mitigations">Risks and Mitigations</button>
-<button type="button" data-tab="success-criteria" aria-controls="p-success-criteria">Success Criteria</button>
+<button type="button" data-tab="risks" aria-controls="p-risks">Risks</button>
+<button type="button" data-tab="success" aria-controls="p-success">Success</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-summary">
-<h2 class="panel-title" id="summary">Summary</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
 <ul>
 <li><a href="#summary">Summary</a></li>
 <li><a href="#problem-statement">Problem Statement</a></li>
@@ -63,6 +63,7 @@
 <li><a href="#success-criteria">Success Criteria</a></li>
 <li><a href="#references">References</a></li>
 </ul>
+<h3 id="summary">Summary</h3>
 <p>Introduce a <strong>capability token</strong> model — a controller-signed JWT issued at
 AgentRun creation that establishes cryptographic provenance for the agent's
 runtime environment and carries scoped claims for tool calls, network egress,
@@ -76,8 +77,9 @@ filtering mechanisms into a single cryptographically grounded authorization
 story without inventing new infrastructure.</p>
 
 </section>
-<section class="panel" id="p-problem-statement">
-<h2 class="panel-title" id="problem-statement">Problem Statement</h2>
+<section class="panel" id="p-problem">
+<h2 class="panel-title">Problem</h2>
+<h3 id="problem-statement">Problem Statement</h3>
 <p>The framework and ADK currently have three security mechanisms operating
 independently:</p>
 <ol>
@@ -122,8 +124,9 @@ Vault's JWT auth backend formalizes the existing implicit trust; the framework's
 dispatcher gate enforces uniformly across the tool inventory.</p>
 
 </section>
-<section class="panel" id="p-proposed-solution">
-<h2 class="panel-title" id="proposed-solution">Proposed Solution</h2>
+<section class="panel" id="p-proposal">
+<h2 class="panel-title">Proposal</h2>
+<h3 id="proposed-solution">Proposed Solution</h3>
 <p>A controller-issued, Vault-Transit-signed JWT carries the agent's identity,
 provenance, and scoped permissions for the duration of an AgentRun. The JWT is:</p>
 <ul>
@@ -504,8 +507,9 @@ operator chooses to resume.</p>
 </div>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <p><strong>No capability model (status quo).</strong> Three orthogonal mechanisms, no
 cryptographic provenance, retrofit cost grows with tool inventory. Rejected —
 this is what the RFC is solving.</p>
@@ -625,8 +629,9 @@ updating the relevant policy, (c) passing lint + tests. No code path bypasses
 these.</p>
 
 </section>
-<section class="panel" id="p-risks-and-mitigations">
-<h2 class="panel-title" id="risks-and-mitigations">Risks and Mitigations</h2>
+<section class="panel" id="p-risks">
+<h2 class="panel-title">Risks</h2>
+<h3 id="risks-and-mitigations">Risks and Mitigations</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -703,8 +708,9 @@ these.</p>
 </div>
 
 </section>
-<section class="panel" id="p-success-criteria">
-<h2 class="panel-title" id="success-criteria">Success Criteria</h2>
+<section class="panel" id="p-success">
+<h2 class="panel-title">Success</h2>
+<h3 id="success-criteria">Success Criteria</h3>
 <p><strong>Phase 1:</strong></p>
 <ul>
 <li>100% of tool dispatches in test agents go through the policy gate (verified by

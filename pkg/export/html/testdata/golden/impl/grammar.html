@@ -22,24 +22,20 @@
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="scope" aria-controls="p-scope">Scope</button>
-<button type="button" data-tab="phase-1-foundations" aria-controls="p-phase-1-foundations">Phase 1: Foundations</button>
-<button type="button" data-tab="phase-2b-cleanup" aria-controls="p-phase-2b-cleanup">Phase 2B: Cleanup</button>
-<button type="button" data-tab="file-changes" aria-controls="p-file-changes">File Changes</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="changes" aria-controls="p-changes">Changes</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="objective">Objective</h3>
 <p>Exercise every rule of the DESIGN-0014 section 3 task grammar in one
 document, so the parser's tolerances are pinned by something a person can
 read.</p>
-
-</section>
-<section class="panel" id="p-scope">
-<h2 class="panel-title" id="scope">Scope</h2>
+<h3 id="scope">Scope</h3>
 <h4 id="in-scope">In Scope</h4>
 <ul>
 <li>The phase, task, and criteria grammar</li>
@@ -51,9 +47,10 @@ read.</p>
 </ul>
 
 </section>
-<section class="panel" id="p-phase-1-foundations">
-<h2 class="panel-title" id="phase-1-foundations">Phase 1: Foundations</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
+<h4 id="phase-1-foundations">Phase 1: Foundations</h4>
 <p>Sets up the packages the later phases build on.</p>
 <h5 id="tasks">Tasks</h5>
 <ul class="tasks">
@@ -72,10 +69,7 @@ wraps onto a second line
 <li><code>go test ./...</code> passes</li>
 <li>The parser reads every document in the corpus</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2b-cleanup">
-<h2 class="panel-title" id="phase-2b-cleanup">Phase 2B: Cleanup</h2>
+<h4 id="phase-2b-cleanup">Phase 2B: Cleanup</h4>
 <h5 id="tasks-1">Tasks</h5>
 <ul class="tasks">
 <li data-state="done"><input type="checkbox" checked disabled><div class="text"><del>Delete the compatibility shim</del> — skipped: the shim shipped</div></li>
@@ -84,8 +78,9 @@ wraps onto a second line
 </ul>
 
 </section>
-<section class="panel" id="p-file-changes">
-<h2 class="panel-title" id="file-changes">File Changes</h2>
+<section class="panel" id="p-changes">
+<h2 class="panel-title">Changes</h2>
+<h3 id="file-changes">File Changes</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -116,8 +111,9 @@ wraps onto a second line
 </div>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">Unit tests for the grammar</div></li>
 <li data-state="done"><input type="checkbox" checked disabled><div class="text">Golden fixtures</div></li>

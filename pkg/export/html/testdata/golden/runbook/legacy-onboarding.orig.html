@@ -24,18 +24,15 @@ installation event.</p>
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="last-verified" aria-controls="p-last-verified">Last Verified</button>
 <button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
-<button type="button" data-tab="when-to-use" aria-controls="p-when-to-use">When to Use</button>
-<button type="button" data-tab="prerequisites" aria-controls="p-prerequisites">Prerequisites</button>
-<button type="button" data-tab="procedure-1-onboard-by-hand" aria-controls="p-procedure-1-onboard-by-hand">Procedure 1: Onboard by hand</button>
-<button type="button" data-tab="procedure-2-re-index-search" aria-controls="p-procedure-2-re-index-search">Procedure 2: Re-index search</button>
-<button type="button" data-tab="scenario-the-onboard-flag-exits-with-repo-not-found" aria-controls="p-scenario-the-onboard-flag-exits-with-repo-not-found">Scenario: The onboard flag exits with &#34;repo not found&#34;</button>
+<button type="button" data-tab="procedures" aria-controls="p-procedures">Procedures</button>
+<button type="button" data-tab="scenarios" aria-controls="p-scenarios">Scenarios</button>
 <button type="button" data-tab="escalation" aria-controls="p-escalation">Escalation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-last-verified">
-<h2 class="panel-title" id="last-verified">Last Verified</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="last-verified">Last Verified</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -58,32 +55,24 @@ installation event.</p>
 </div>
 <p><strong>Notes:</strong> Onboarded <code>acme/widgets</code> by hand while the App install was
 broken.</p>
-
-</section>
-<section class="panel" id="p-overview">
-<h2 class="panel-title" id="overview">Overview</h2>
+<h3 id="overview">Overview</h3>
 <p><strong>Service:</strong> docz-api</p>
 <p><strong>Owner:</strong> Platform team</p>
-
-</section>
-<section class="panel" id="p-when-to-use">
-<h2 class="panel-title" id="when-to-use">When to Use</h2>
+<h3 id="when-to-use">When to Use</h3>
 <ul>
 <li>A repository was added to the App but never appeared in docz-site</li>
 </ul>
-
-</section>
-<section class="panel" id="p-prerequisites">
-<h2 class="panel-title" id="prerequisites">Prerequisites</h2>
+<h3 id="prerequisites">Prerequisites</h3>
 <ul>
 <li><code>kubectl</code> access to the docz namespace</li>
 <li>The App's installation ID</li>
 </ul>
 
 </section>
-<section class="panel" id="p-procedure-1-onboard-by-hand">
-<h2 class="panel-title" id="procedure-1-onboard-by-hand">Procedure 1: Onboard by hand</h2>
+<section class="panel" id="p-procedures">
+<h2 class="panel-title">Procedures</h2>
 <h3 id="procedures">Procedures</h3>
+<h4 id="procedure-1-onboard-by-hand">Procedure 1: Onboard by hand</h4>
 <p>Written before the template, so its steps are headings.</p>
 <h5 id="steps">Steps</h5>
 <h6 id="step-1-find-the-installation-id">Step 1: Find the installation ID</h6>
@@ -99,10 +88,7 @@ broken.</p>
 <ol>
 <li>Delete the repository row; the next install event re-adds it.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-procedure-2-re-index-search">
-<h2 class="panel-title" id="procedure-2-re-index-search">Procedure 2: Re-index search</h2>
+<h4 id="procedure-2-re-index-search">Procedure 2: Re-index search</h4>
 <h5 id="steps-1">Steps</h5>
 <ul>
 <li>Restart the API so it re-applies the index settings</li>
@@ -110,9 +96,10 @@ broken.</p>
 </ul>
 
 </section>
-<section class="panel" id="p-scenario-the-onboard-flag-exits-with-repo-not-found">
-<h2 class="panel-title" id="scenario-the-onboard-flag-exits-with-repo-not-found">Scenario: The onboard flag exits with &#34;repo not found&#34;</h2>
+<section class="panel" id="p-scenarios">
+<h2 class="panel-title">Scenarios</h2>
 <h3 id="troubleshooting">Troubleshooting</h3>
+<h4 id="scenario-the-onboard-flag-exits-with-repo-not-found">Scenario: The onboard flag exits with &quot;repo not found&quot;</h4>
 <p><strong>Alert:</strong> none</p>
 <p><strong>Likely cause:</strong> the App is not installed on the repository</p>
 <h5 id="steps-2">Steps</h5>

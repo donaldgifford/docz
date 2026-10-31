@@ -27,25 +27,19 @@ left stale, are those cases documented anywhere — in the repo, in
 </div>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="question" aria-controls="p-question">Question</button>
-<button type="button" data-tab="hypothesis" aria-controls="p-hypothesis">Hypothesis</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="approach" aria-controls="p-approach">Approach</button>
-<button type="button" data-tab="environment" aria-controls="p-environment">Environment</button>
 <button type="button" data-tab="findings" aria-controls="p-findings">Findings</button>
 <button type="button" data-tab="conclusion" aria-controls="p-conclusion">Conclusion</button>
-<button type="button" data-tab="recommendation" aria-controls="p-recommendation">Recommendation</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-question">
-<h2 class="panel-title" id="question">Question</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="question">Question</h3>
 <p>The practical goal behind the question: keep markdownlint rule
 <code>MD051/link-fragments</code> enabled on documentation directories and have
 docz-managed documents pass it without hand-editing generated ToCs.</p>
-
-</section>
-<section class="panel" id="p-hypothesis">
-<h2 class="panel-title" id="hypothesis">Hypothesis</h2>
+<h3 id="hypothesis">Hypothesis</h3>
 <p><code>docz update</code> does regenerate ToC fences — DESIGN-0003 and IMPL-0003 shipped
 exactly that, and <code>CLAUDE.md</code> describes the pass. The other session's
 conclusion most likely came from the surfaces an agent reads first:
@@ -54,10 +48,7 @@ index tables, and a normal run prints nothing about ToCs. Any MD051 failures
 it saw on docz-managed files were more likely caused by anchor-slug
 divergences from GitHub (issue #82 is one) or by files the update pass
 skips silently, not by a missing feature.</p>
-
-</section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<h3 id="context">Context</h3>
 <p>An excerpt from another session (working in a different repo with docz
 v1.2.2) stated:</p>
 <blockquote>
@@ -103,10 +94,7 @@ reports today and what else a lint gate would trip on.</li>
 <li>Check which editor tool actually emits the <code>&lt;!--toc:start--&gt;</code> marker
 format, since README and DESIGN-0003 disagree about the plugin name.</li>
 </ol>
-
-</section>
-<section class="panel" id="p-environment">
-<h2 class="panel-title" id="environment">Environment</h2>
+<h3 id="environment">Environment</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -420,20 +408,7 @@ downstream repo's markdownlint is the first place drift becomes visible.</li>
 <p>Nowhere in the repo is there a documented reason for <em>not</em> regenerating;
 DESIGN-0003 documents the opposite. The gaps are in <code>--help</code>, the generated
 config, the skills plugin, and the README's plugin attribution.</p>
-
-</section>
-<section class="panel" id="p-recommendation">
-<h2 class="panel-title" id="recommendation">Recommendation</h2>
-<ul class="heading-list">
-<li><a href="#decisions">Decisions</a></li>
-<li><a href="#1-should-docz-update-report-toc-changes-in-normal-non-dry-run-output">1. Should docz update report ToC changes in normal (non-dry-run) output?</a></li>
-<li><a href="#2-should-docz-recognise-marker-spelling-variants-such-as-the-spaced-mtoc-form">2. Should docz recognise marker spelling variants such as the spaced mtoc form?</a></li>
-<li><a href="#3-how-far-should-the-slug-fidelity-fix-go">3. How far should the slug-fidelity fix go?</a></li>
-<li><a href="#4-should-docz-update-gain-a-ci-gating-mode">4. Should docz update gain a CI-gating mode?</a></li>
-<li><a href="#5-should-this-repo-run-markdownlint-in-ci-now">5. Should this repo run markdownlint in CI now?</a></li>
-<li><a href="#6-where-do-the-documentation-fixes-land">6. Where do the documentation fixes land?</a></li>
-<li><a href="#7-what-to-do-with-the-doubled-index-marker-pair-observation-7">7. What to do with the doubled index-marker pair (Observation 7)?</a></li>
-</ul>
+<h3 id="recommendation">Recommendation</h3>
 <p>In priority order. Items 1–2 are what closes the loop on the excerpt; 3 is
 what actually makes MD051 pass; 4–5 make drift visible before a downstream
 lint job does.</p>

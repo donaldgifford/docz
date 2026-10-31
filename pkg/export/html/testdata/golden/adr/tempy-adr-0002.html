@@ -24,10 +24,10 @@ whose prompt carries both the agent's job and the loop's control logic:</p>
 </header>
 <nav class="tabs" aria-label="Sections">
 <button type="button" data-tab="status" aria-controls="p-status">Status</button>
-<button type="button" data-tab="context" aria-controls="p-context">Context</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
 <button type="button" data-tab="decision" aria-controls="p-decision">Decision</button>
 <button type="button" data-tab="consequences" aria-controls="p-consequences">Consequences</button>
-<button type="button" data-tab="alternatives-considered" aria-controls="p-alternatives-considered">Alternatives Considered</button>
+<button type="button" data-tab="alternatives" aria-controls="p-alternatives">Alternatives</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
 <section class="panel" id="p-status">
@@ -35,8 +35,9 @@ whose prompt carries both the agent's job and the loop's control logic:</p>
 <p>Accepted</p>
 
 </section>
-<section class="panel" id="p-context">
-<h2 class="panel-title" id="context">Context</h2>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="context">Context</h3>
 <div class="table-wrap">
 <table>
 <thead>
@@ -158,8 +159,9 @@ it cannot run.</li>
 </ul>
 
 </section>
-<section class="panel" id="p-alternatives-considered">
-<h2 class="panel-title" id="alternatives-considered">Alternatives Considered</h2>
+<section class="panel" id="p-alternatives">
+<h2 class="panel-title">Alternatives</h2>
+<h3 id="alternatives-considered">Alternatives Considered</h3>
 <ul>
 <li><strong>Keep the full prompt; wrap it in a Temporal activity for durability only.</strong>
 Rejected: gains restartability, none of the verification. The 75 iteration cap

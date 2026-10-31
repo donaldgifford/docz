@@ -24,21 +24,21 @@ written down keep pointing at the same work.</p>
 <p class="inferred">Sections were inferred from headings; this document carries no region markers.</p>
 </header>
 <nav class="tabs" aria-label="Sections">
-<button type="button" data-tab="objective" aria-controls="p-objective">Objective</button>
-<button type="button" data-tab="phase-1-abandon-some-work" aria-controls="p-phase-1-abandon-some-work">Phase 1: Abandon some work</button>
-<button type="button" data-tab="phase-2-defer-the-rest" aria-controls="p-phase-2-defer-the-rest">Phase 2: Defer the rest</button>
-<button type="button" data-tab="testing-plan" aria-controls="p-testing-plan">Testing Plan</button>
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="phases" aria-controls="p-phases">Phases</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
 <button type="button" data-tab="dependencies" aria-controls="p-dependencies">Dependencies</button>
 <button type="button" data-tab="references" aria-controls="p-references">References</button>
 </nav>
-<section class="panel" id="p-objective">
-<h2 class="panel-title" id="objective">Objective</h2>
-<p class="empty">Not written yet.</p>
+<section class="panel" id="p-overview">
+<h2 class="panel-title">Overview</h2>
+<h3 id="objective">Objective</h3>
 
 </section>
-<section class="panel" id="p-phase-1-abandon-some-work">
-<h2 class="panel-title" id="phase-1-abandon-some-work">Phase 1: Abandon some work</h2>
+<section class="panel" id="p-phases">
+<h2 class="panel-title">Phases</h2>
 <h3 id="implementation-phases">Implementation Phases</h3>
+<h4 id="phase-1-abandon-some-work">Phase 1: Abandon some work</h4>
 <p>The interesting property is the numbering: tasks 1.2 and 1.4 are skipped, and
 1.3 and 1.5 keep the IDs they had before anyone gave up on their neighbours.</p>
 <h5 id="tasks">Tasks</h5>
@@ -55,10 +55,7 @@ verify: <code>go test ./...</code></div></li>
 <li><code>go test ./...</code> passes</li>
 <li>No task ID changed when a task was skipped</li>
 </ul>
-
-</section>
-<section class="panel" id="p-phase-2-defer-the-rest">
-<h2 class="panel-title" id="phase-2-defer-the-rest">Phase 2: Defer the rest</h2>
+<h4 id="phase-2-defer-the-rest">Phase 2: Defer the rest</h4>
 <h5 id="tasks-1">Tasks</h5>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">Cut the release — deferred - human required: needs a release owner</div></li>
@@ -72,8 +69,9 @@ verify: <code>go test ./...</code></div></li>
 </ul>
 
 </section>
-<section class="panel" id="p-testing-plan">
-<h2 class="panel-title" id="testing-plan">Testing Plan</h2>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-plan">Testing Plan</h3>
 <ul class="tasks">
 <li data-state="open"><input type="checkbox" disabled><div class="text">The skipped tasks are in neither progress count</div></li>
 </ul>
