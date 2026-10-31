@@ -227,10 +227,10 @@ and 4 encode.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Create `plugins/docz-html/` beside `plugins/docz-review/`:
+- [x] Create `plugins/docz-html/` beside `plugins/docz-review/`:
   `.claude-plugin/plugin.json` (its own version, 0.1.0), `README.md`, and
   `skills/docz-html/SKILL.md`.
-- [ ] Add the plugin to `.claude-plugin/marketplace.json`.
+- [x] Add the plugin to `.claude-plugin/marketplace.json`.
 - [ ] Give the skill a copy of the theme it can read after a marketplace
   install, `skills/docz-html/theme/`, written by a new `just
   plugin-theme-sync` recipe, with a drift check in the `plugin` CI job
