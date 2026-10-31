@@ -140,7 +140,7 @@ phase proves the plumbing before the look moves.
   (token values only), the two themes, the `data-theme` and `data-mode`
   selection, and that the files are part of the semver contract by name
   and token, not by byte.
-- [ ] Port the source design's palette into `pkg/theme/tokens/paper.css`
+- [x] Port the source design's palette into `pkg/theme/tokens/paper.css`
   under `:root[data-theme="paper"]`, with the light values on the plain
   selector, the dark values under `[data-mode="dark"]`, and a
   `@media (prefers-color-scheme: dark)` block for no `data-mode`. Use
