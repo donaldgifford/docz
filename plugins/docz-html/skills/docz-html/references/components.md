@@ -75,12 +75,14 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
 </header>
 ```
 
-- The eyebrow is the type's label and the repository name.
+- The eyebrow is the type's label (RFC, ADR, Design, Implementation plan,
+  Investigation, Runbook, or a custom type's name), a middle dot, and the
+  repository's name: the last element of the GitHub `origin`, else the
+  root directory's name.
 - The title is the frontmatter title, without the id.
-- The summary is the first region of `summary`, `overview`, `objective`,
-  `question`, `hypothesis`, or `context`, as one paragraph of plain text
-  (inline code and emphasis kept). Leave the summary out rather than
-  writing one.
+- The summary is one paragraph, chosen as `layout.md` says (The header
+  summary), with its inline code and emphasis kept. Leave it out rather
+  than writing one.
 - `.inferred` appears only when `docz inspect` reports `inferred: true`.
 - The status pill's class:
 
@@ -168,7 +170,7 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
 ## Expandables
 
 ```html
-<details class="expand" id="q-3">
+<details class="expand" id="3-how-does-the-stage-1-skill-read-the-theme">
   <summary>3. How does the stage-1 skill read the theme?</summary>
   <div class="body">
     <ul>
@@ -180,8 +182,8 @@ elements: `p`, `ul`/`ol`, `table`, `pre><code`, `blockquote`, `a`, `code`,
 </details>
 ```
 
-- An open question is one expandable. Mark the option the document
-  recommends (`*(recommendation)*`) with `recommended`.
+- An open question is one expandable, carrying its heading's anchor.
+  Mark the option `docz inspect` reports as `recommended`.
 - A resolved question shows its resolution in `.resolution` and is closed;
   an unresolved one has the `open` attribute.
 - A runbook scenario is one expandable too, titled with its name.
@@ -320,8 +322,9 @@ runtime draws:
 - The fallback is required. If the island fails to parse, or the reader
   has JavaScript off, the fallback is what they read. Each widget's
   fallback shape is in `widgets.md`.
-- A block whose YAML is invalid is not a widget: show its source as a
-  code block under a `callout caution` naming the error and the line.
+- A block whose YAML is invalid is not a widget: a `callout caution`
+  titled "Invalid docz-flow block" (the widget's name) naming each error
+  and the block's line, then the source as a code block.
 
 ## Footer
 

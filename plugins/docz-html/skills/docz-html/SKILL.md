@@ -48,6 +48,11 @@ It gives you everything the layout needs:
   footer.
 
 A region's markdown is the lines strictly between its `start` and `end`.
+Take the structure (which regions, where they start and end, the
+anchors, the tasks, the questions) from `inspect`, never from your own
+reading of the headings. Turning a region's markdown into HTML is yours to
+do, by hand or with a small script and a markdown library; escape raw
+HTML in the document rather than passing it through.
 Run `docz validate <id>` too: a finding usually means a region the page
 cannot lay out, and is worth telling the user about.
 

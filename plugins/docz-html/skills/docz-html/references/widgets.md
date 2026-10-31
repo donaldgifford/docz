@@ -49,7 +49,9 @@ legend: Every request passes all three.
 | `legend` | string | no | A line below the flow |
 | `alert` | string | no | A line below the legend, in the bad colour, for what goes wrong |
 
-Fallback: the stages as an ordered list, a gate marked with a pill.
+Fallback: `label` as a `p.note`, the stages as an ordered list with a
+gate marked by a pill, `legend` as a `p.note`, and `alert` in a
+`callout bad`.
 
 ```html
 <div class="widget-fallback">
@@ -109,7 +111,10 @@ scenarios:
 | `scenarios[].fail_label` | string | no | What the failing step's note is called; `Denied` when absent |
 | `scenarios[].notes` | map of step key to string | no | What happens at that step in this scenario; every key is a step's |
 
-Fallback: a table, one row per step and one column per scenario.
+Fallback: a table, one row per step and one column per scenario. The
+failing step's cell is `td.high` holding the fail label and its note (the
+label alone when there is no note); a cell after it reads "Never
+reached".
 
 ```html
 <div class="widget-fallback table-wrap">
@@ -188,7 +193,9 @@ points over the sum of the weights of the checks that have a non-null
 score, and a check with no result or a null score is shown as not
 measured and counts in neither sum.
 
-Fallback: the checks as a table, without scores.
+Fallback: the checks as a table, without scores. `fixes` is a link to
+the tab it names (`<a href="#p-testing" data-tab="testing">`) when one
+exists, else text.
 
 ```html
 <div class="widget-fallback table-wrap">

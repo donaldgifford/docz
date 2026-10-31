@@ -16,23 +16,80 @@ when the document carries no markers and docz found them from headings.
    the region's first heading. Nothing is dropped.
 4. A region's children (depth 1 and deeper) are placed by their parent's
    row: `positive` inside `consequences`, `tasks` inside `phase`, `steps`
-   inside `procedure`.
-5. The `toc` region is dropped. The tabs and each panel's heading list
+   inside `procedure`. A child whose kind has a row of its own that its
+   parent's row does not mention (`open-questions` inside
+   `recommendation`) gets that row's tab instead.
+5. Text outside every region is not dropped either:
+   - an H2 section outside every region becomes a tab of its own,
+     labelled with the heading, like rule 3;
+   - a heading that only introduces the regions under it (`## Goals and
+     Non-Goals` above the `goals` and `non-goals` regions, `## Procedures`
+     above the procedures) is not repeated: its anchor goes on the first
+     element of the tab, and any paragraph under it opens that tab.
+6. The `toc` region is dropped. The tabs and each panel's heading list
    replace it.
-6. A document with no regions at all, marked or inferred, gets one tab per
+7. A document with no regions at all, marked or inferred, gets one tab per
    H2, labelled with the heading.
-7. A region left as a template placeholder becomes `p.empty`, "Not
+8. A region left as a template placeholder becomes `p.empty`, "Not
    written yet.", in its tab, rather than an empty tab.
-8. A region's markdown is rendered in full inside its component, except
-   what the component itself takes over (the first heading becomes the
-   card label or the panel title, the `**Answer:**` line becomes the
-   verdict).
+9. A region's markdown is rendered in full inside its component, except
+   what the component takes over: the heading, the header summary's
+   paragraph, and the `**Answer:**` line, which becomes the verdict.
+
+## Headings and anchors
+
+Every heading's anchor (from `docz inspect`) must land on the page, so a
+`#slug` link anywhere still works:
+
+- The panel title names the **tab**, and carries the anchor of the first
+  region's heading when that heading's text is the tab label.
+- Otherwise each region's own heading is written as an `h3` with its
+  anchor, in document order: a tab holding `summary` and `context` shows
+  both headings.
+- A heading that becomes a card's label puts its anchor on the card, and
+  an open question's anchor goes on its `details`.
+- Headings below a region's heading keep their level, shifted so the
+  panel title is the only `h2`, and keep their anchors.
+- The heading list counts the panel's `h3`s only and lists them; card
+  labels are not counted.
+
+## The header summary
+
+The first paragraph of the first `summary`, `overview`, `objective`,
+`question`, `hypothesis`, or `context` region is the header summary. It is
+**not repeated** in the panel; the rest of the region is. A region with no
+paragraph before its first list, table, or heading gives no summary.
+
+## Per-kind details
+
+- **Alternatives.** One card per H3; with no H3s, one per bold-led
+  paragraph or list item, the bold text as the label. `card accent` only
+  for an alternative the document says was chosen; rejected and deferred
+  ones are plain cards.
+- **Decision.** The callout holds the decision's first block, a
+  paragraph or a list; the rest follows as text.
+- **Risks.** A likelihood or impact cell is tinted by its first word:
+  High or Critical is `high`, Medium `medium`, Low `low`; anything else
+  stays plain.
+- **Success criteria.** A bold group label (`**Phase 1:**`) stays as a
+  paragraph, followed by the cards for its items.
+- **Procedures.** Each procedure's heading as an `h3` with its anchor,
+  its intro paragraph, then `Steps`, `Verification`, and `Rollback` as
+  `h4`s. A verification item holding a code block keeps the block inside
+  its `li`, after the `span.text`.
+- **Scenarios.** Closed by default. The summary is the scenario's name
+  without the `Scenario:` prefix. Symptom, alert, and likely cause are a
+  `dl` (`dt` the label, `dd` the text).
+- **Last verified.** The card holds the table and the notes.
+- **Open questions.** Options come from the markdown (each `- a.`
+  item); `recommended` comes from `docz inspect`, whatever spelling the
+  document used. Unresolved questions are open, resolved ones closed.
 
 ## Region kinds
 
 | Region kinds | Tab | Component |
 | --- | --- | --- |
-| `summary`, `overview`, `objective`, `question`, `hypothesis`, `context` | Overview | The first of these is the header summary as well; each is text in the panel |
+| `summary`, `overview`, `objective`, `question`, `hypothesis`, `context` | Overview | Text; the first paragraph of the first is the header summary instead |
 | `goals`, `non-goals` | Overview | `grid g2`: `card ok` Goals, `card neutral` Non-goals |
 | `scope` with `in-scope`, `out-of-scope` | Overview | `grid g2`: `card ok` In scope, `card bad` Out of scope |
 | `when` (runbook) | Overview | Text |
@@ -42,9 +99,9 @@ when the document carries no markers and docz found them from headings.
 | `background` | Background | Text |
 | `proposal` | Proposal | Text |
 | `detailed-design` | Design | Text; its H3s in the heading list |
-| `decision` (ADR) | Decision | A `callout` holding the decision's first paragraph, then the rest as text |
+| `decision` (ADR) | Decision | A `callout` holding the decision's first block, then the rest as text |
 | `consequences` with `positive`, `negative`, `neutral` | Consequences | `grid g3`: `card ok`, `card bad`, `card neutral` |
-| `alternatives` | Alternatives | One `card` per alternative (each H3), the chosen one `card accent` |
+| `alternatives` | Alternatives | One `card` per alternative, the chosen one `card accent` |
 | `risks` | Risks | The table, likelihood and impact cells tinted `high`/`medium`/`low` |
 | `criteria` at depth 0 (RFC) | Success | One `card ok` per criterion |
 | `api-changes` | Interfaces | Text; each contract in a code block |
@@ -91,6 +148,9 @@ reads region kinds, never type names.
   heading.
 - A relative link to another document: a link to its page when you are
   writing that page in the same run, else its GitHub blob URL (the
-  repository's `origin` and default branch).
+  repository's `origin` and default branch, `main` when `origin/HEAD` is
+  not set).
+- A relative link to a file that does not exist, or in a repository with
+  no GitHub `origin`, becomes its text alone and is listed in your report.
 - An image: a relative image under 1 MB inlined as a `data:` URL, else its
   blob URL. Nothing is fetched from the network when the page opens.

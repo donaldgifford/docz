@@ -616,6 +616,24 @@ details.expand > .body {
   background: var(--color-adm-tip-bg);
 }
 
+/* Definition lists: a runbook scenario's symptom, alert, and cause. */
+
+dl {
+  margin: 0.4em 0 1em;
+}
+
+dt {
+  color: var(--color-fg-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 0.1em 0 0.6em;
+}
+
 /* Tables */
 
 .table-wrap {
