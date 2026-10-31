@@ -598,18 +598,19 @@ selectable. Its own `minor`.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] `pkg/theme`: token completeness across themes and modes, no literal
+- [x] `pkg/theme`: token completeness across themes and modes, no literal
   colours, accessors.
-- [ ] `pkg/export/html`: goldens over every corpus document and the
+- [x] `pkg/export/html`: goldens over every corpus document and the
   parity fixtures, typed-layout and widget goldens, the kind-table pin,
   escaping and CSP units, `FuzzRender` with an HTML parse in the test.
-- [ ] `cmd`: exit codes, `--stdout`, `--dry-run`, unchanged on rerun, the
+- [x] `cmd`: exit codes, `--stdout`, `--dry-run`, unchanged on rerun, the
   JSON report against its schema.
-- [ ] `pkg/export/confluence`: the widget expand golden.
-- [ ] `test/consumer`: both new packages from an external module.
-- [ ] `ui`: contrast over every theme and mode; the review e2e under three
+- [x] `pkg/export/confluence`: the widget expand golden.
+- [x] `test/consumer`: both new packages from an external module.
+- [x] `ui`: contrast over every theme and mode; the review e2e under three
   settings; the export Playwright spec.
-- [ ] Plugin: the theme drift check while stage 1 lasts.
+- [x] Plugin: the theme drift check while stage 1 lasts (removed with
+  the theme copy at stage 2, 5.12).
 
 <!--docz:testing:end-->
 
