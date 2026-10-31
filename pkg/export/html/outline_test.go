@@ -77,3 +77,32 @@ func TestOutline(t *testing.T) {
 		})
 	}
 }
+
+func TestContents(t *testing.T) {
+	t.Parallel()
+
+	src := "## Design\n\n### A\n\n### B\n\n#### B.1\n\n### C\n\n### D\n\n### E\n\n## Few\n\n### X\n"
+	_, d := renderBody(t, src, &RenderOptions{})
+
+	panels, err := d.panels()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := make([]string, 0, len(panels[0].Contents))
+	for _, h := range panels[0].Contents {
+		got = append(got, h.Slug)
+	}
+
+	if strings.Join(got, " ") != "a b c d e" {
+		t.Errorf("Design contents = %v, want the five H3s", got)
+	}
+
+	if panels[0].Anchor != "design" {
+		t.Errorf("Design title anchor = %q, want design", panels[0].Anchor)
+	}
+
+	if len(panels[1].Contents) != 0 {
+		t.Errorf("Few contents = %v, want none for one heading", panels[1].Contents)
+	}
+}

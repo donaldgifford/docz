@@ -315,7 +315,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   `span`, `details`, `summary`, and comments and region markers dropped.
   Reuse nothing from `pkg/export/confluence` by import; copy the
   allow-list with a comment naming its twin.
-- [ ] Drop the ToC region; render the tab row and an in-panel heading
+- [x] Drop the ToC region; render the tab row and an in-panel heading
   list instead.
 - [ ] Write the page skeleton as an embedded `html/template`: doctype,
   `lang`, charset, viewport, the CSP `<meta>` of DESIGN-0025 §8,
