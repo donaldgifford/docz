@@ -162,7 +162,7 @@ phase proves the plumbing before the look moves.
   expandables, the "not written yet" line, code blocks (dark in both
   modes), and the print rules (every panel shown, tabs hidden). Colour
   only through tokens; no literal colour anywhere.
-- [ ] Write `pkg/theme/runtime.js` without the widgets: the mode toggle
+- [x] Write `pkg/theme/runtime.js` without the widgets: the mode toggle
   (`docz:mode`), tabs (click, `#p-<tab>` and `data-tab` links,
   ←/→/Home/End, overflow fade, last tab as `docz:<id>:tab`), copy buttons
   on code, the IMPL task filter (`docz:<id>:filter`), opening the
