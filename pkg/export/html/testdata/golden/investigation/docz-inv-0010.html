@@ -432,34 +432,44 @@ IMPL-0001 task; file one in sdk-booty-sh to migrate <code>doczwork</code> onto
 <li><a href="#8-cli-surface-in-the-first-release">8. CLI surface in the first release</a></li>
 <li><a href="#9-release-sequencing-against-impl-0017">9. Release sequencing against IMPL-0017</a></li>
 </ul>
-<h4 id="1-where-does-the-model-live-and-what-are-the-names">1. Where does the model live, and what are the names?</h4>
+<details class="expand" id="1-where-does-the-model-live-and-what-are-the-names" open>
+<summary>1. Where does the model live, and what are the names?</summary>
+<div class="body">
 <ul>
-<li>a. <strong>New subpackage <code>pkg/doczcore/impl</code>, identifiers without the <code>Impl</code>
+<li class="option recommended">a. <strong>New subpackage <code>pkg/doczcore/impl</code>, identifiers without the <code>Impl</code>
 prefix</strong> — <code>impl.Parse</code>, <code>impl.Plan</code>, <code>impl.Phase</code>, <code>impl.Task</code>,
 <code>impl.Criterion</code>, <code>impl.TaskState</code>, <code>impl.Diff</code>, <code>impl.PlanDiff</code>. Matches the
 doc type's name (<code>docz create impl</code>), avoids <code>impl.ImplPlan</code> /
 <code>impl.ParseImpl</code> stutter, and <code>Plan.Status</code> is typed <code>config.Status</code> like
 <code>document.Frontmatter.Status</code> (DESIGN-0004 §F). <em>(recommendation)</em></li>
-<li>b. Same package, the issue's identifiers verbatim (<code>ParseImpl</code>, <code>ImplPlan</code>,
+<li class="option">b. Same package, the issue's identifiers verbatim (<code>ParseImpl</code>, <code>ImplPlan</code>,
 <code>DiffPlans</code>, <code>Status string</code>) — matches tempy's design prose today.</li>
-<li>c. Package <code>implplan</code> (no stutter, clearer in prose, longer import).</li>
-<li>d. Split across <code>docparse</code> (types + <code>Parse</code>) and <code>docwrite</code> (writers) —
+<li class="option">c. Package <code>implplan</code> (no stutter, clearer in prose, longer import).</li>
+<li class="option">d. Split across <code>docparse</code> (types + <code>Parse</code>) and <code>docwrite</code> (writers) —
 puts interpretation into the frozen fact package.</li>
-<li>e. Other.</li>
+<li class="option">e. Other.</li>
 </ul>
-<h4 id="2-how-is-the-reversal-of-impl-0014-decision-3d-recorded">2. How is the reversal of IMPL-0014 Decision 3(d) recorded?</h4>
+</div>
+</details>
+<details class="expand" id="2-how-is-the-reversal-of-impl-0014-decision-3d-recorded" open>
+<summary>2. How is the reversal of IMPL-0014 Decision 3(d) recorded?</summary>
+<div class="body">
 <ul>
-<li>a. <strong>Dated amendment to ADR-0001 Decision 2</strong> (the DESIGN-0007 amendment
+<li class="option recommended">a. <strong>Dated amendment to ADR-0001 Decision 2</strong> (the DESIGN-0007 amendment
 pattern), plus a note in IMPL-0014's Decisions table and in <code>CLAUDE.md</code> /
 the API-philosophy memory: facts stay in <code>docparse</code>; interpretation that
 docz's own template defines may ship in a sibling package when more than
 one consumer needs it. <em>(recommendation)</em></li>
-<li>b. A new ADR-0002 superseding that clause of ADR-0001.</li>
-<li>c. Other.</li>
+<li class="option">b. A new ADR-0002 superseding that clause of ADR-0001.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="3-what-is-a-phase-and-what-is-a-task">3. What is a phase, and what is a task?</h4>
+</div>
+</details>
+<details class="expand" id="3-what-is-a-phase-and-what-is-a-task" open>
+<summary>3. What is a phase, and what is a task?</summary>
+<div class="body">
 <ul>
-<li>a. <strong>A phase is a level-3 heading matching <code>^Phase\s+([^\s/:]+):</code></strong> (inline
+<li class="option recommended">a. <strong>A phase is a level-3 heading matching <code>^Phase\s+([^\s/:]+):</code></strong> (inline
 markdown already stripped, so bold headings match), anywhere in the doc;
 its span ends at the next heading of level ≤ 3. Tasks are <code>Indent == 0</code>
 checkbox items inside the phase's <code>#### Tasks</code> sub-span, or the whole
@@ -468,90 +478,116 @@ phase span when there is no such subheading; criteria come from
 is the heading token (<code>1</code>, <code>A</code>, <code>2B</code>); a duplicate token is an error.
 <code>### Phase 1</code> without a colon (IMPL-0001/0002 File Changes) and
 <code>### In Scope</code> are not phases. <em>(recommendation)</em></li>
-<li>b. <code>doczwork</code>-literal: every level-3 heading is a phase, token with ordinal
+<li class="option">b. <code>doczwork</code>-literal: every level-3 heading is a phase, token with ordinal
 fallback — hand-written docs with odd headings still parse, but <code>In Scope</code>
 becomes phase 1 in every template-generated doc.</li>
-<li>c. Only under <code>## Implementation Phases</code>; two-mode contract keyed to an
+<li class="option">c. Only under <code>## Implementation Phases</code>; two-mode contract keyed to an
 English heading.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="4-how-are-continuation-lines-and-verify-handled">4. How are continuation lines and <code>verify:</code> handled?</h4>
+</div>
+</details>
+<details class="expand" id="4-how-are-continuation-lines-and-verify-handled" open>
+<summary>4. How are continuation lines and <code>verify:</code> handled?</summary>
+<div class="body">
 <ul>
-<li>a. <strong>Fold continuations, extract <code>verify:</code> case-insensitively.</strong> <code>Task.Text</code>
+<li class="option recommended">a. <strong>Fold continuations, extract <code>verify:</code> case-insensitively.</strong> <code>Task.Text</code>
 = first line plus every following line that is more indented than the
 bullet, non-blank, not a nested bullet, joined with single spaces — minus
 the <code>verify:</code> line and any marker. A <code>verify:</code> / <code>Verify:</code> continuation
 line anywhere in the task yields <code>Task.Verify</code> = the contents of its first
 backtick span; prose after the span is ignored. docz-api's four hand-written
 lines parse unchanged. <em>(recommendation)</em></li>
-<li>b. Exact lowercase <code>verify:</code> as the only recognised form, whole remainder
+<li class="option">b. Exact lowercase <code>verify:</code> as the only recognised form, whole remainder
 must be one backtick span — strict and simple; the docz-api lines do not
 parse.</li>
-<li>c. <code>Text</code> stays first-line-only (<code>docparse</code> literal) and <code>verify:</code> must be
+<li class="option">c. <code>Text</code> stays first-line-only (<code>docparse</code> literal) and <code>verify:</code> must be
 the first continuation line — cheapest, but truncates most tasks written
 since IMPL-0009.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="5-marker-grammar-idempotency-and-clearing-a-deferral">5. Marker grammar, idempotency, and clearing a deferral</h4>
+</div>
+</details>
+<details class="expand" id="5-marker-grammar-idempotency-and-clearing-a-deferral" open>
+<summary>5. Marker grammar, idempotency, and clearing a deferral</summary>
+<div class="body">
 <ul>
-<li>a. <strong>Lenient parse, canonical write, explicit clear.</strong> Parse <code>deferred</code>
+<li class="option recommended">a. <strong>Lenient parse, canonical write, explicit clear.</strong> Parse <code>deferred</code>
 followed by <code>-</code> / <code>–</code> / <code>—</code>, optional emphasis, as a prefix or suffix of the
 task text (folding a wrapped reason); parse <code>~~…~~</code> plus <code>skipped:</code> after any
 dash. Write only the canonical trailing <code>deferred – human required: &lt;reason&gt;</code> and <code>~~text~~ — skipped: &lt;note&gt;</code>. Same marker with the same
 reason → bytes unchanged; different reason → replaced. Add
 <code>ClearDeferred(doc, taskID)</code> for tempy's <code>unblock</code>. <em>(recommendation)</em></li>
-<li>b. Canonical spellings only, in both directions; docz-api IMPL-0006 is
+<li class="option">b. Canonical spellings only, in both directions; docz-api IMPL-0006 is
 hand-fixed; <code>unblock</code> is modelled as <code>SetDeferred</code> with an empty reason.</li>
-<li>c. Lenient parse, but a different reason on an already-marked task is an
+<li class="option">c. Lenient parse, but a different reason on an already-marked task is an
 error rather than a replacement.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="6-criteria-classification">6. Criteria classification</h4>
+</div>
+</details>
+<details class="expand" id="6-criteria-classification" open>
+<summary>6. Criteria classification</summary>
+<div class="body">
 <ul>
-<li>a. <strong>As specified</strong>: <code>Executable</code> when the bullet text starts with a
+<li class="option recommended">a. <strong>As specified</strong>: <code>Executable</code> when the bullet text starts with a
 backtick span, <code>Command</code> = the span; everything else assertive. Document
 the caveat that symbol-subject criteria (about a tenth in this repo)
 classify as executable, and that docz never runs them — the consumer
 gate reports the failure. <em>(recommendation)</em></li>
-<li>b. Stricter: executable only when the span's first token contains no <code>/</code>,
+<li class="option">b. Stricter: executable only when the span's first token contains no <code>/</code>,
 <code>.</code>, uppercase, or leading <code>--</code> — fewer false positives, heuristics on
 heuristics.</li>
-<li>c. Executable only when the criterion is <em>entirely</em> a backtick span (no
+<li class="option">c. Executable only when the criterion is <em>entirely</em> a backtick span (no
 trailing prose) — clean, but &quot;<code>make ci</code> passes&quot; stops being executable.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="7-diffplans-matching-and-shape">7. <code>DiffPlans</code> matching and shape</h4>
+</div>
+</details>
+<details class="expand" id="7-diffplans-matching-and-shape" open>
+<summary>7. <code>DiffPlans</code> matching and shape</summary>
+<div class="body">
 <ul>
-<li>a. <strong>Phases by token, tasks by text.</strong> Within a matched phase, tasks are
+<li class="option recommended">a. <strong>Phases by token, tasks by text.</strong> Within a matched phase, tasks are
 aligned by normalised <code>Text</code> (LCS); a reworded task is removed + added;
 <code>PlanDiff</code> reports <code>TasksAdded</code> / <code>TasksRemoved</code> / <code>TasksReordered</code> as
 task refs, per-matched-ID <code>Checked</code> / <code>Deferred</code> / <code>Skipped</code> changes,
 per-phase criteria changes, plus <code>Empty()</code> and <code>OnlyChecked(taskID)</code> for
 tempy's check 2. <em>(recommendation)</em></li>
-<li>b. Positional IDs only — cheaper, cannot distinguish an insertion from a
+<li class="option">b. Positional IDs only — cheaper, cannot distinguish an insertion from a
 reword of every later task.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="8-cli-surface-in-the-first-release">8. CLI surface in the first release</h4>
+</div>
+</details>
+<details class="expand" id="8-cli-surface-in-the-first-release" open>
+<summary>8. CLI surface in the first release</summary>
+<div class="body">
 <ul>
-<li>a. <strong><code>docz task list|check|uncheck|defer|undefer|skip &lt;impl-id&gt; [task-id]</code></strong>
+<li class="option recommended">a. <strong><code>docz task list|check|uncheck|defer|undefer|skip &lt;impl-id&gt; [task-id]</code></strong>
 as thin wrappers over <code>impl</code> with <code>--format text|json</code> and the <code>status set</code>
 exit-code pattern — makes the CLI/library agreement a test and gives the
 API a first-party caller. <em>(recommendation)</em></li>
-<li>b. <code>docz task list</code> only; writers stay library-only until a human needs
+<li class="option">b. <code>docz task list</code> only; writers stay library-only until a human needs
 them.</li>
-<li>c. No CLI; drop the acceptance bullet.</li>
-<li>d. Other.</li>
+<li class="option">c. No CLI; drop the acceptance bullet.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="9-release-sequencing-against-impl-0017">9. Release sequencing against IMPL-0017</h4>
+</div>
+</details>
+<details class="expand" id="9-release-sequencing-against-impl-0017" open>
+<summary>9. Release sequencing against IMPL-0017</summary>
+<div class="body">
 <ul>
-<li>a. <strong>#100 ships first as v1.3.0</strong>; IMPL-0017 (<code>updated:</code> field) retargets
+<li class="option recommended">a. <strong>#100 ships first as v1.3.0</strong>; IMPL-0017 (<code>updated:</code> field) retargets
 to v1.4.0, its title and DESIGN-0012 rollout text edited in the same docs
 PR that lands DESIGN-0013. <em>(recommendation)</em></li>
-<li>b. Both in one v1.3.0 — couples an unstarted feature to tempy's critical
+<li class="option">b. Both in one v1.3.0 — couples an unstarted feature to tempy's critical
 path.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-references">

@@ -533,39 +533,44 @@ after this unit.</li>
 <p>Each question is numbered; option <code>a</code> is my recommendation, later letters
 are alternatives, and the last is a free-form &quot;other&quot;.</p>
 </blockquote>
-<h4 id="1-how-is-not-yet-frozen-signalled-on-the-new-packages">1. How is &quot;not yet frozen&quot; signalled on the new packages?</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong> Low stakes while docz is its own only
+<details class="expand" id="1-how-is-not-yet-frozen-signalled-on-the-new-packages">
+<summary>1. How is &quot;not yet frozen&quot; signalled on the new packages?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong> Low stakes while docz is its own only
 consumer; the <code>EXPERIMENTAL</code> line costs nothing and <code>go doc</code> shows it.
 With the module already at <code>/v2</code>, the pseudo-version says pre-release
 too.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Package doc comment plus release notes.</strong> Each new package's doc
+<li class="option recommended">a. <strong>Package doc comment plus release notes.</strong> Each new package's doc
 comment opens with an <code>EXPERIMENTAL</code> line pointing at this ADR; the
 v2.0.0 cut removes it. No import-path churn, no build tags; <code>go doc</code> shows it.
 <em>(recommendation)</em></li>
-<li>b. Land them under an <code>x/</code> path (<code>pkg/x/repo</code>) and move to the final path
+<li class="option">b. Land them under an <code>x/</code> path (<code>pkg/x/repo</code>) and move to the final path
 at the swap — visible in the import path, but every beta consumer rewrites
 imports at GA.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="2-how-is-adr-0001s-record-amended">2. How is ADR-0001's record amended?</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong></p>
-</blockquote>
+</div>
+</details>
+<details class="expand" id="2-how-is-adr-0001s-record-amended">
+<summary>2. How is ADR-0001's record amended?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong></p>
 <ul>
-<li>a. <strong>Dated amendment note in ADR-0001, status stays Accepted.</strong> The
+<li class="option recommended">a. <strong>Dated amendment note in ADR-0001, status stays Accepted.</strong> The
 DESIGN-0007 pattern: a block under Decision stating which items ADR-0002
 supersedes, with a link. Most of ADR-0001 still governs the five packages.
 <em>(recommendation)</em></li>
-<li>b. Flip ADR-0001 to Superseded and let this ADR restate the surviving
+<li class="option">b. Flip ADR-0001 to Superseded and let this ADR restate the surviving
 decisions in full.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="3-how-are-pre-releases-cut-before-v200">3. How are pre-releases cut before v2.0.0?</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (b) — manual <code>v2.0.0-beta.N</code> tags; nothing in
+</div>
+</details>
+<details class="expand" id="3-how-are-pre-releases-cut-before-v200">
+<summary>3. How are pre-releases cut before v2.0.0?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (b) — manual <code>v2.0.0-beta.N</code> tags; nothing in
 this work cuts v2.0.0.</strong> The swap is tagged <code>v2.0.0-beta.1</code> from its
 <code>main</code> merge commit with <code>make release TAG=…</code>, and further betas follow
 as the API settles; between tags a v2 pseudo-version
@@ -577,24 +582,26 @@ marks it), and <code>pr-semver-bump</code>'s behaviour with a pre-release as the
 latest tag is checked, since the eventual <code>major</code> must produce v2.0.0
 and not v3.0.0 — if it cannot, v2.0.0 is tagged by hand the same way.
 That eventual cut is not this work's (Decision 6).</p>
-</blockquote>
 <ul>
-<li>a. <strong>Pseudo-versions, no tags.</strong> <code>go get github.com/donaldgifford/docz/v2@&lt;sha&gt;</code>
+<li class="option recommended">a. <strong>Pseudo-versions, no tags.</strong> <code>go get github.com/donaldgifford/docz/v2@&lt;sha&gt;</code>
 on the <code>main</code> commit that carries what the consumer needs. Nothing to cut,
 nothing to clean up, and the release workflow's base version is untouched.
 A tag is added only if a consumer wants a human-readable version.
 <em>(recommendation)</em></li>
-<li>b. Manual <code>v2.0.0-beta.N</code> tags on <code>main</code> merge commits via <code>make release TAG=…</code> — readable, but confirm first that <code>pr-semver-bump</code> does not adopt a
+<li class="option">b. Manual <code>v2.0.0-beta.N</code> tags on <code>main</code> merge commits via <code>make release TAG=…</code> — readable, but confirm first that <code>pr-semver-bump</code> does not adopt a
 pre-release tag as the base for the next bump.</li>
-<li>c. A tag-triggered pre-release workflow with binaries — more than a library
+<li class="option">c. A tag-triggered pre-release workflow with binaries — more than a library
 pin needs.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="4-does-the-swap-ship-a-first-party-consumer-of-the-type-layer">4. Does the swap ship a first-party consumer of the type layer?</h4>
+</div>
+</details>
+<details class="expand" id="4-does-the-swap-ship-a-first-party-consumer-of-the-type-layer">
+<summary>4. Does the swap ship a first-party consumer of the type layer?</summary>
+<div class="body">
 <p>&quot;First consumer is the CLI&quot; read literally means <code>pkg/impl</code> should have a
 CLI caller when it freezes.</p>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (e) — the question was mis-framed.</strong> &quot;First
+<p class="resolution"><strong>Resolved 2026-09-19: (e) — the question was mis-framed.</strong> &quot;First
 consumer&quot; does not mean a first-party caller of <code>pkg/impl</code>. It means the
 CLI is the first tool converted onto the API, and the proof is functional
 parity with v1.2.2 across rfc, adr, design, impl, and investigation
@@ -603,22 +610,25 @@ swap because DESIGN-0015 is part of the unit, not as validation of the
 type layer; <code>docz task list</code> stays optional. The API is independent of
 every consumer it was extracted from, and custom types must have the
 same functionality as the built-ins — Open Question 5.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Yes: <code>docz validate</code>.</strong> DESIGN-0015's validator composes
+<li class="option recommended">a. <strong>Yes: <code>docz validate</code>.</strong> DESIGN-0015's validator composes
 <code>repo.Validate</code> with <code>impl.Validate</code>, which runs <code>impl.Parse</code>, so the
 swap PR ships a first-party caller of the type layer that also gates the
 corpus. The CLI and the library agree on task IDs by construction.
 <em>(recommendation, revised 2026-09-19)</em></li>
-<li>b. <code>docz task list &lt;impl-id&gt; [--format text|json]</code> — read-only over
+<li class="option">b. <code>docz task list &lt;impl-id&gt; [--format text|json]</code> — read-only over
 <code>impl.Parse</code> and <code>repo.Find</code>, about a hundred lines, no writers;
 <code>check</code> / <code>uncheck</code> wait for a later minor.</li>
-<li>c. Both a and b in the swap.</li>
-<li>d. No new command in the swap; tempy is the first consumer of <code>pkg/impl</code>
+<li class="option">c. Both a and b in the swap.</li>
+<li class="option">d. No new command in the swap; tempy is the first consumer of <code>pkg/impl</code>
 in practice and the CLI follows later.</li>
-<li>e. Other.</li>
+<li class="option">e. Other.</li>
 </ul>
-<h4 id="5-are-document-types-built-on-generics">5. Are document types built on generics?</h4>
+</div>
+</details>
+<details class="expand" id="5-are-document-types-built-on-generics">
+<summary>5. Are document types built on generics?</summary>
+<div class="body">
 <p>Raised 2026-09-19 with the v2 decision: custom types (DESIGN-0006) must
 have the same functionality as the built-ins, from the CLI and from the
 API, and <code>plan</code> becomes the first type that exists only as a custom type
@@ -661,14 +671,12 @@ API, and <code>plan</code> becomes the first type that exists only as a custom t
 </tbody>
 </table>
 </div>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong> R7 and Decision 4 restated above; DESIGN-0014
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong> R7 and Decision 4 restated above; DESIGN-0014
 §2.9 notes that <code>impl.Parse</code> is keyed on kinds. Where the set of kinds a
 type must carry is <em>declared</em> — template or config — is DESIGN-0015 Open
 Question 1, reopened the same day.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Types are data; type packages are views; no generics.</strong> A document
+<li class="option recommended">a. <strong>Types are data; type packages are views; no generics.</strong> A document
 type is a <code>types.&lt;name&gt;</code> config entry plus a template, and the template's
 regions are its schema (DESIGN-0015). A built-in differs from a custom
 type only in shipping a default entry and an embedded template — the
@@ -688,21 +696,23 @@ time and a custom type is declared at run time in <code>.docz.yaml</code>, so th
 is nothing to instantiate one with, and mapping a type name to a <code>T</code>
 needs the registry or <code>switch</code> Decision 4 removed — whose arms could only
 ever be the built-in packages anyway. <em>(recommendation)</em></li>
-<li>b. <strong>A generic document shell.</strong> <code>document.Doc[B any]{Frontmatter; Body B}</code>
+<li class="option">b. <strong>A generic document shell.</strong> <code>document.Doc[B any]{Frontmatter; Body B}</code>
 with <code>impl.Doc = document.Doc[impl.Body]</code> and a custom type as
 <code>Doc[[]docparse.Region]</code>. One spelling across types, but <code>repo.Find</code>
 still cannot return a typed body without knowing <code>B</code> at compile time,
 every consumer writes <code>document.Doc[impl.Body]</code>, and a type parameter
 with one instantiation per package is the generics anti-pattern.</li>
-<li>c. <strong>A runtime type system</strong> (Alternative C): every type, built-ins
+<li class="option">c. <strong>A runtime type system</strong> (Alternative C): every type, built-ins
 included, is a schema and <code>impl.Doc</code> is a projection over a generic value
 tree. Uniform, but Go consumers want structs, and it is heavy machinery
 for five types.</li>
-<li>d. <strong>A library interface</strong> (<code>Document</code> with <code>ID()</code>, <code>Title()</code>, <code>Status()</code>)
+<li class="option">d. <strong>A library interface</strong> (<code>Document</code> with <code>ID()</code>, <code>Title()</code>, <code>Status()</code>)
 that every <code>Doc</code> implements, with a <code>docparse</code>-backed implementation for
 custom types. Breaks R6, and the methods would exist only to satisfy it.</li>
-<li>e. Other.</li>
+<li class="option">e. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-references">

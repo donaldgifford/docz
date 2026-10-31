@@ -1089,166 +1089,216 @@ future SpiceDB-backed middleware.</p>
 </blockquote>
 <p>Each question is numbered; option <code>a</code> is the recommendation, later letters are
 alternatives, and <strong>Other</strong> is free-form for review.</p>
-<h4 id="1-reconcile-the-api-path-shape-and-versioning-with-docz-site">1. Reconcile the API path shape and versioning with docz-site?</h4>
+<details class="expand" id="1-reconcile-the-api-path-shape-and-versioning-with-docz-site" open>
+<summary>1. Reconcile the API path shape and versioning with docz-site?</summary>
+<div class="body">
 <p>The seed (DESIGN-0008) and docz-site (DESIGN-0009) disagree on the URL shape.
 docz-site is the consumer, so the consumer's shape should win.</p>
 <ul>
-<li><strong>a. (Recommended)</strong> Adopt <code>/api/v1/…</code> with the <strong>type-nested</strong> doc path
+<li class="option recommended"><strong>a. (Recommended)</strong> Adopt <code>/api/v1/…</code> with the <strong>type-nested</strong> doc path
 <code>…/repos/{owner}/{name}/types/{type}/docs/{doc_id}</code> exactly as DESIGN-0009
 expects, and add <code>GET /api/v1/auth/session</code>. Optionally also expose a flat
 <code>…/repos/{owner}/{name}/docs/{doc_id}</code> alias for non-site consumers.</li>
-<li>b. Keep the seed's unversioned <code>/api/…</code> with a flat doc path and instead
+<li class="option">b. Keep the seed's unversioned <code>/api/…</code> with a flat doc path and instead
 change DESIGN-0009 to match the server.</li>
-<li>c. Versioned <code>/api/v1/…</code> but flat doc path (<code>…/docs/{doc_id}</code>), pushing a
+<li class="option">c. Versioned <code>/api/v1/…</code> but flat doc path (<code>…/docs/{doc_id}</code>), pushing a
 small change onto docz-site's route map.</li>
 <li>Other.</li>
 </ul>
-<h4 id="2-how-is-the-docz-parsing-library-pinned-while-building">2. How is the docz parsing library pinned while building?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-01.</strong> DESIGN-0007 shipped as <strong>docz <code>v0.5.0</code></strong>, so the tag
+</div>
+</details>
+<details class="expand" id="2-how-is-the-docz-parsing-library-pinned-while-building">
+<summary>2. How is the docz parsing library pinned while building?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-01.</strong> DESIGN-0007 shipped as <strong>docz <code>v0.5.0</code></strong>, so the tag
 exists up front and no prototyping <code>replace</code> is needed — docz-api pins
 <code>require github.com/donaldgifford/docz v0.5.0</code> from the first commit (the
 end-state of option b). The R1–R7 surface was verified against the published
 tag. This supersedes the original recommendation (a), which assumed the tag
 did not yet exist.</p>
-</blockquote>
 <p>DESIGN-0007 had to ship <code>pkg/doczcore</code> before docz-api could import it; the
 slice should not be blocked waiting for a tag.</p>
 <ul>
-<li>a. Local <code>replace github.com/donaldgifford/docz =&gt; ../docz</code> during
+<li class="option">a. Local <code>replace github.com/donaldgifford/docz =&gt; ../docz</code> during
 prototyping, then pin a published tag (<code>require … vX.Y.Z</code>) before the first
 non-prototype release; no <code>replace</code> survives release. <em>(Was recommended while
 the tag was unpublished; now moot — the tag exists.)</em></li>
-<li><strong>b. (Chosen)</strong> Consume the published tag directly (<code>require … v0.5.0</code>), no
+<li class="option"><strong>b. (Chosen)</strong> Consume the published tag directly (<code>require … v0.5.0</code>), no
 <code>replace</code> — now that DESIGN-0007 has shipped, ingestion work is unblocked
 immediately.</li>
-<li>c. Vendor a docz checkout (<code>go mod vendor</code>) for hermetic builds, still via the
+<li class="option">c. Vendor a docz checkout (<code>go mod vendor</code>) for hermetic builds, still via the
 public import path.</li>
 <li>Other.</li>
 </ul>
-<h4 id="3-http-router--framework">3. HTTP router / framework?</h4>
+</div>
+</details>
+<details class="expand" id="3-http-router--framework" open>
+<summary>3. HTTP router / framework?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> <code>chi</code> — lightweight, idiomatic <code>net/http</code> middleware and
+<li class="option recommended"><strong>a. (Recommended)</strong> <code>chi</code> — lightweight, idiomatic <code>net/http</code> middleware and
 URL params, no framework lock-in, plays well with <code>slog</code> and stdlib handlers.</li>
-<li>b. Standard-library <code>net/http</code> with the Go 1.22+ pattern router — zero
+<li class="option">b. Standard-library <code>net/http</code> with the Go 1.22+ pattern router — zero
 dependencies, at the cost of hand-rolling some middleware.</li>
-<li>c. <code>echo</code> or <code>gin</code> — batteries-included routing/binding, heavier and more
+<li class="option">c. <code>echo</code> or <code>gin</code> — batteries-included routing/binding, heavier and more
 opinionated.</li>
 <li>Other.</li>
 </ul>
-<h4 id="4-postgres-access-layer">4. Postgres access layer?</h4>
+</div>
+</details>
+<details class="expand" id="4-postgres-access-layer" open>
+<summary>4. Postgres access layer?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> <code>sqlc</code> (compile-time-checked SQL → typed Go) over <code>pgx</code> —
+<li class="option recommended"><strong>a. (Recommended)</strong> <code>sqlc</code> (compile-time-checked SQL → typed Go) over <code>pgx</code> —
 explicit SQL, no ORM surprises, fits the small fixed schema and the JSONB
 columns well.</li>
-<li>b. <code>pgx</code> with hand-written queries and a thin repository layer — maximum
+<li class="option">b. <code>pgx</code> with hand-written queries and a thin repository layer — maximum
 control, more boilerplate.</li>
-<li>c. <code>sqlx</code> — light struct-scanning over <code>database/sql</code>, simplest to start.</li>
-<li>d. <code>gorm</code> — full ORM; fastest to scaffold, least transparent for the
+<li class="option">c. <code>sqlx</code> — light struct-scanning over <code>database/sql</code>, simplest to start.</li>
+<li class="option">d. <code>gorm</code> — full ORM; fastest to scaffold, least transparent for the
 transactional upsert/reconcile path.</li>
 <li>Other.</li>
 </ul>
-<h4 id="5-database-migration-tool">5. Database migration tool?</h4>
+</div>
+</details>
+<details class="expand" id="5-database-migration-tool" open>
+<summary>5. Database migration tool?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> <code>goose</code> — simple, Go-native, embeddable so the binary can
+<li class="option recommended"><strong>a. (Recommended)</strong> <code>goose</code> — simple, Go-native, embeddable so the binary can
 run <code>migrate up</code> on deploy; SQL or Go migrations.</li>
-<li>b. <code>golang-migrate</code> — widely used, CLI + library, large driver set.</li>
-<li>c. <code>atlas</code> — declarative schema-as-source with generated migrations; more
+<li class="option">b. <code>golang-migrate</code> — widely used, CLI + library, large driver set.</li>
+<li class="option">c. <code>atlas</code> — declarative schema-as-source with generated migrations; more
 power, more concepts.</li>
 <li>Other.</li>
 </ul>
-<h4 id="6-rest-or-graphql-for-the-json-api">6. REST or GraphQL for the JSON API?</h4>
+</div>
+</details>
+<details class="expand" id="6-rest-or-graphql-for-the-json-api" open>
+<summary>6. REST or GraphQL for the JSON API?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Plain REST/JSON as specified above. The resource shape
+<li class="option recommended"><strong>a. (Recommended)</strong> Plain REST/JSON as specified above. The resource shape
 (repos → types → docs + search) is shallow and well-bounded; REST keeps the
 server simple, is trivially cacheable, and is enough for docz-site's needs.</li>
-<li>b. GraphQL — one flexible endpoint lets docz-site shape exactly the data it
+<li class="option">b. GraphQL — one flexible endpoint lets docz-site shape exactly the data it
 needs and avoids over-fetching across the nav tree.</li>
-<li>c. REST now, add a GraphQL gateway later only if the site's query patterns
+<li class="option">c. REST now, add a GraphQL gateway later only if the site's query patterns
 prove awkward.</li>
 <li>Other.</li>
 </ul>
-<h4 id="7-synchronous-ingest-or-a-background-worker">7. Synchronous ingest or a background worker?</h4>
+</div>
+</details>
+<details class="expand" id="7-synchronous-ingest-or-a-background-worker" open>
+<summary>7. Synchronous ingest or a background worker?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> In-process background worker. Webhooks enqueue an ingest
+<li class="option recommended"><strong>a. (Recommended)</strong> In-process background worker. Webhooks enqueue an ingest
 job and return <code>202</code> immediately; a worker does fetch/parse/upsert/index.
 Keeps webhook handling fast and lets debounce/coalesce live in one place. Also
 where a future shallow-clone path for very large repos would land. Start with
 an in-process queue; promote to a durable queue only if needed.</li>
-<li>b. Fully synchronous ingest inside the webhook handler — simplest for the thin
+<li class="option">b. Fully synchronous ingest inside the webhook handler — simplest for the thin
 slice, but risks GitHub webhook timeouts on large repos.</li>
-<li>c. External/durable queue (Postgres-backed job table, NATS, or SQS) from day
+<li class="option">c. External/durable queue (Postgres-backed job table, NATS, or SQS) from day
 one for durability and retry.</li>
 <li>Other.</li>
 </ul>
-<h4 id="8-where-are-sessions-stored">8. Where are sessions stored?</h4>
+</div>
+</details>
+<details class="expand" id="8-where-are-sessions-stored" open>
+<summary>8. Where are sessions stored?</summary>
+<div class="body">
 <ul>
-<li>a. Postgres <code>sessions</code> table. One store to operate and supports server-side
+<li class="option">a. Postgres <code>sessions</code> table. One store to operate and supports server-side
 revocation, at the cost of manual expiry sweeps.</li>
-<li><strong>b. (Chosen)</strong> Redis — faster session reads and natural TTL eviction. A
+<li class="option"><strong>b. (Chosen)</strong> Redis — faster session reads and natural TTL eviction. A
 second datastore, but it is being added anyway for the ingest worker queue
 (Decision 7), so sessions ride along on the same instance.</li>
-<li>c. Stateless signed JWT cookies — no session store, but revocation and
+<li class="option">c. Stateless signed JWT cookies — no session store, but revocation and
 refreshing the cached allowed-repo set become awkward.</li>
 <li>Other.</li>
 </ul>
-<h4 id="9-webhook-retry--idempotency-strategy">9. Webhook retry / idempotency strategy?</h4>
+</div>
+</details>
+<details class="expand" id="9-webhook-retry--idempotency-strategy" open>
+<summary>9. Webhook retry / idempotency strategy?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Idempotency on <code>X-GitHub-Delivery</code> (recorded in
+<li class="option recommended"><strong>a. (Recommended)</strong> Idempotency on <code>X-GitHub-Delivery</code> (recorded in
 <code>webhook_deliveries</code>) plus reconcile against <code>last_synced_sha</code>, so a replayed
 or duplicate delivery is a no-op. Rely on GitHub's own redelivery for
 transient failures.</li>
-<li>b. A durable job table with explicit retry/backoff and a dead-letter for
+<li class="option">b. A durable job table with explicit retry/backoff and a dead-letter for
 poison deliveries.</li>
-<li>c. At-least-once with no dedup, accepting that the content_hash gate makes
+<li class="option">c. At-least-once with no dedup, accepting that the content_hash gate makes
 re-ingest cheap and mostly harmless.</li>
 <li>Other.</li>
 </ul>
-<h4 id="10-how-is-oktakeycloak-group-to-repo-authorization-configured">10. How is Okta/Keycloak group to repo authorization configured?</h4>
+</div>
+</details>
+<details class="expand" id="10-how-is-oktakeycloak-group-to-repo-authorization-configured" open>
+<summary>10. How is Okta/Keycloak group to repo authorization configured?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> A service-config mapping file per provider
+<li class="option recommended"><strong>a. (Recommended)</strong> A service-config mapping file per provider
 (<code>*_GROUP_REPO_MAP</code>) of <code>group → [repos…]</code>, hot-reloadable, plus a coarse &quot;any
 authenticated member sees all&quot; toggle for internal deployments.</li>
-<li>b. Database-backed <code>repo_groups</code> tables managed through an admin API — more
+<li class="option">b. Database-backed <code>repo_groups</code> tables managed through an admin API — more
 operable at scale, more to build.</li>
-<li>c. Encode the mapping directly in OIDC claims (a custom claim listing repo
+<li class="option">c. Encode the mapping directly in OIDC claims (a custom claim listing repo
 slugs) so the provider owns it entirely.</li>
 <li>Other.</li>
 </ul>
-<h4 id="11-meilisearch-api-key-scoping-for-any-direct-site-access">11. Meilisearch API-key scoping for any direct site access?</h4>
+</div>
+</details>
+<details class="expand" id="11-meilisearch-api-key-scoping-for-any-direct-site-access" open>
+<summary>11. Meilisearch API-key scoping for any direct site access?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> docz-site never talks to Meilisearch directly; all search
+<li class="option recommended"><strong>a. (Recommended)</strong> docz-site never talks to Meilisearch directly; all search
 goes through docz-api with a server-side <code>repo IN (allowed…)</code> filter, and only
 the API holds the Meilisearch admin/index key. No key reaches the browser.</li>
-<li>b. Issue Meilisearch <strong>tenant tokens</strong> (scoped, short-lived, with an embedded
+<li class="option">b. Issue Meilisearch <strong>tenant tokens</strong> (scoped, short-lived, with an embedded
 filter) so docz-site can query Meilisearch directly for lower latency, at the
 cost of trusting the embedded filter.</li>
-<li>c. A separate read-only Meilisearch key with no embedded filter, relying on
+<li class="option">c. A separate read-only Meilisearch key with no embedded filter, relying on
 the API to never expose it — weakest option.</li>
 <li>Other.</li>
 </ul>
-<h4 id="12-tagrelease-version-snapshots-now-or-stay-head-only">12. Tag/release version snapshots now, or stay HEAD-only?</h4>
+</div>
+</details>
+<details class="expand" id="12-tagrelease-version-snapshots-now-or-stay-head-only" open>
+<summary>12. Tag/release version snapshots now, or stay HEAD-only?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Stay HEAD-only for now (honors Decision 4): the default
+<li class="option recommended"><strong>a. (Recommended)</strong> Stay HEAD-only for now (honors Decision 4): the default
 branch HEAD is the single current version, <code>git_sha</code> is stored per doc, and
 the <code>release</code> webhook is wired but only logged. Add snapshots later behind a
 schema extension.</li>
-<li>b. Add a <code>doc_versions</code> table now and snapshot on <code>release</code>, paying the
+<li class="option">b. Add a <code>doc_versions</code> table now and snapshot on <code>release</code>, paying the
 storage/complexity cost up front.</li>
-<li>c. Keep full per-doc history (every HEAD change) rather than just tagged
+<li class="option">c. Keep full per-doc history (every HEAD change) rather than just tagged
 snapshots.</li>
 <li>Other.</li>
 </ul>
-<h4 id="13-multi-org--multi-tenant-model">13. Multi-org / multi-tenant model?</h4>
+</div>
+</details>
+<details class="expand" id="13-multi-org--multi-tenant-model" open>
+<summary>13. Multi-org / multi-tenant model?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Single logical tenant per deployment; multiple GitHub
+<li class="option recommended"><strong>a. (Recommended)</strong> Single logical tenant per deployment; multiple GitHub
 installations (orgs) coexist in one registry, separated only by authorization.
 Simplest, and fits the &quot;one team, many repos&quot; target.</li>
-<li>b. Hard multi-tenancy with a <code>tenant_id</code> on every table and per-tenant
+<li class="option">b. Hard multi-tenancy with a <code>tenant_id</code> on every table and per-tenant
 isolation — needed only if docz-api is offered as a shared/hosted service.</li>
-<li>c. One deployment per org, no cross-org concept at all.</li>
+<li class="option">c. One deployment per org, no cross-org concept at all.</li>
 <li>Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-decisions">

@@ -402,116 +402,130 @@ we build the implementation plan.</p>
 <p><strong>Update 2026-07-03:</strong> all seven questions are resolved — see the
 <a href="#decisions">Decisions</a> table. Implementation is planned in IMPL-0014.</p>
 </blockquote>
-<h4 id="1-package-granularity--subpackage-family-or-one-flat-package">1. Package granularity — subpackage family or one flat package?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a)</strong> — implied by the per-package promotion rule
+<details class="expand" id="1-package-granularity--subpackage-family-or-one-flat-package">
+<summary>1. Package granularity — subpackage family or one flat package?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (a)</strong> — implied by the per-package promotion rule
 (Decision 1) and the INV-0006 per-package audit.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> Keep the <strong>subpackage family</strong>
+<li class="option recommended"><strong>a. (Recommended)</strong> Keep the <strong>subpackage family</strong>
 <code>pkg/doczcore/{config,document,docparse,docwrite,template,index,toc,wiki}</code>.
 Preserves the current split and the typed boundaries, keeps imports
 tree-shakeable (a consumer of <code>document</code> doesn't compile <code>wiki</code>), and is minimal
 churn (mostly <code>git mv</code> + repoint).</li>
-<li>b. Collapse to a <strong>single flat</strong> <code>pkg/doczcore</code> package — one import, but no
+<li class="option">b. Collapse to a <strong>single flat</strong> <code>pkg/doczcore</code> package — one import, but no
 tree-shaking, a very large single surface, and pervasive rename churn.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="2-sequencing-against-the-in-flight-v060">2. Sequencing against the in-flight <code>v0.6.0</code>?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (b), amended by fact-check</strong> — the premise of (a)
+</div>
+</details>
+<details class="expand" id="2-sequencing-against-the-in-flight-v060">
+<summary>2. Sequencing against the in-flight <code>v0.6.0</code>?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (b), amended by fact-check</strong> — the premise of (a)
 was wrong: nothing of the v0.6.0 slate exists in code (no IMPL doc, no
 <code>docparse</code>, no <code>CheckTask</code>, viper still in <code>Load</code>), so there is nothing to
 ship first. The slate folds into the single <code>v1.0.0</code> release;
 sdk-booty-sh pins <code>v1.0.0</code>.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <strong>Ship <code>v0.6.0</code> (IMPL-0014) first</strong> to unblock sdk-booty-sh
+<li class="option recommended"><strong>a. (Recommended)</strong> <strong>Ship <code>v0.6.0</code> (IMPL-0014) first</strong> to unblock sdk-booty-sh
 (it is waiting on the tag), then do this consolidation as <code>v1.0.0</code>. Two clean
 releases; the blocked consumer isn't held hostage to the big refactor.</li>
-<li>b. <strong>Fold everything into one <code>v1.0.0</code></strong> and drop the separate <code>v0.6.0</code> — fewer
+<li class="option">b. <strong>Fold everything into one <code>v1.0.0</code></strong> and drop the separate <code>v0.6.0</code> — fewer
 releases, but delays the waiting consumer behind the larger, riskier change.</li>
-<li>c. Other (e.g. ship <code>v0.6.0</code>, then a <code>v0.7.0</code> staging release, then <code>v1.0.0</code>).</li>
+<li class="option">c. Other (e.g. ship <code>v0.6.0</code>, then a <code>v0.7.0</code> staging release, then <code>v1.0.0</code>).</li>
 </ul>
-<h4 id="3-how-do-we-treat-the-cli-shaped-packages-template-index-wiki-at-v10">3. How do we treat the CLI-shaped packages (<code>template</code>, <code>index</code>, <code>wiki</code>) at v1.0?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: none of the drafted options</strong> — they stay
+</div>
+</details>
+<details class="expand" id="3-how-do-we-treat-the-cli-shaped-packages-template-index-wiki-at-v10">
+<summary>3. How do we treat the CLI-shaped packages (<code>template</code>, <code>index</code>, <code>wiki</code>) at v1.0?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: none of the drafted options</strong> — they stay
 <code>internal/</code> (zero demand, INV-0006), while <code>docwrite</code> promotes <strong>whole</strong>
 (incl. <code>Create</code>, implemented over <code>internal/template</code>). See Decisions.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <strong>Promote with a light naming/doc review</strong> and accept the
+<li class="option recommended"><strong>a. (Recommended)</strong> <strong>Promote with a light naming/doc review</strong> and accept the
 current shapes as v1.0 API (the benchmark is &quot;cmd works unchanged&quot;). Fastest path
 to v1.0; we can deprecate/refine later within semver.</li>
-<li>b. <strong>Redesign each for general public use</strong> before freezing (e.g. decouple
+<li class="option">b. <strong>Redesign each for general public use</strong> before freezing (e.g. decouple
 <code>index.UpdateOutcome</code> from CLI wording, generalize <code>wiki</code> beyond MkDocs). Cleaner
 long-term API, materially more work, delays v1.0.</li>
-<li>c. <strong>Promote but mark <code>template</code>/<code>index</code>/<code>wiki</code> as <code>experimental</code>/<code>unstable</code></strong>
+<li class="option">c. <strong>Promote but mark <code>template</code>/<code>index</code>/<code>wiki</code> as <code>experimental</code>/<code>unstable</code></strong>
 (documented as <em>exempt</em> from the v1.0 compatibility guarantee) so the <em>needed</em>
 core (<code>config</code>/<code>document</code>/<code>docparse</code>/<code>docwrite</code>) is stable while the CLI-shaped
 packages keep refactor freedom. A middle path that limits the semver cost.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="4-toc-vs-docparse-overlap-in-the-public-api">4. <code>toc</code> vs <code>docparse</code> overlap in the public API?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a)</strong> — export-lean: the splice is document
+</div>
+</details>
+<details class="expand" id="4-toc-vs-docparse-overlap-in-the-public-api">
+<summary>4. <code>toc</code> vs <code>docparse</code> overlap in the public API?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (a)</strong> — export-lean: the splice is document
 machinery (bytes-in content transforms), not CLI presentation, so it
 promotes to <code>pkg/doczcore/toc</code> delegating its walk to <code>docparse</code>. One
 public parser; <code>toc</code>'s own walker retires.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <code>docparse</code> is the <strong>canonical parser</strong>; keep a
+<li class="option recommended"><strong>a. (Recommended)</strong> <code>docparse</code> is the <strong>canonical parser</strong>; keep a
 <code>pkg/doczcore/toc</code> for the <strong>ToC-splice</strong> concern
 (<code>GenerateToC</code>/<code>UpdateToC</code>/<code>UpdateFiles</code>) that <strong>delegates</strong> to <code>docparse</code> for
 the heading walk — one parser, ToC generation layered on top.</li>
-<li>b. <strong>Fold the ToC-splice into <code>docparse</code></strong> (single package owns both parse and
+<li class="option">b. <strong>Fold the ToC-splice into <code>docparse</code></strong> (single package owns both parse and
 ToC rendering) — fewer packages, but mixes &quot;parse&quot; and &quot;render&quot; concerns.</li>
-<li>c. Keep <code>toc</code> independent with its own walker (accept two parsers in public).</li>
-<li>d. Other.</li>
+<li class="option">c. Keep <code>toc</code> independent with its own walker (accept two parsers in public).</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="5-what-remains-in-internal-after-the-move">5. What remains in <code>internal/</code> after the move?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a)</strong>, strengthened — <code>internal/</code> stays <em>populated</em>
+</div>
+</details>
+<details class="expand" id="5-what-remains-in-internal-after-the-move">
+<summary>5. What remains in <code>internal/</code> after the move?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (a)</strong>, strengthened — <code>internal/</code> stays <em>populated</em>
 (<code>template</code>, <code>index</code>, <code>toc</code> splice, <code>wiki</code>), not merely available.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <strong>Keep <code>internal/</code> available</strong> as the sanctioned home for
+<li class="option recommended"><strong>a. (Recommended)</strong> <strong>Keep <code>internal/</code> available</strong> as the sanctioned home for
 genuinely CLI-private helpers (none today, but the door stays open), while moving
 all current logic out. <code>cmd/</code> holds UX/wiring; <code>internal/</code> holds CLI-only glue if
 any arises.</li>
-<li>b. <strong>Delete <code>internal/</code> entirely</strong>; anything CLI-private lives directly in
+<li class="option">b. <strong>Delete <code>internal/</code> entirely</strong>; anything CLI-private lives directly in
 <code>cmd/</code>. Strongest &quot;single core&quot; statement, least flexibility.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="6-embedded-templates--how-public">6. Embedded templates — how public?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: moot</strong> — <code>template</code> never promotes; the embed stays
+</div>
+</details>
+<details class="expand" id="6-embedded-templates--how-public">
+<summary>6. Embedded templates — how public?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: moot</strong> — <code>template</code> never promotes; the embed stays
 private behind the <code>internal/</code> boundary.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> Move <code>templates/</code> with <code>pkg/doczcore/template</code>, keep the
+<li class="option recommended"><strong>a. (Recommended)</strong> Move <code>templates/</code> with <code>pkg/doczcore/template</code>, keep the
 <code>embed.FS</code> <strong>package-private</strong>, and expose only accessor functions
 (<code>EmbeddedDocumentTemplate</code>, etc.). <strong>Exclude template file names/contents from
 the compatibility contract</strong> so we can edit built-in templates freely.</li>
-<li>b. <strong>Export the <code>embed.FS</code></strong> for full consumer access to raw templates — maximal
+<li class="option">b. <strong>Export the <code>embed.FS</code></strong> for full consumer access to raw templates — maximal
 flexibility for consumers, but freezes template names/paths as public contract.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="7-post-10-compatibility--deprecation-policy">7. Post-1.0 compatibility &amp; deprecation policy?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a), simplified — roll forward.</strong> Standard semver
+</div>
+</details>
+<details class="expand" id="7-post-10-compatibility--deprecation-policy">
+<summary>7. Post-1.0 compatibility &amp; deprecation policy?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (a), simplified — roll forward.</strong> Standard semver
 coverage as drafted; breaking changes ship in a major bump. No mandatory
 deprecation window — <code>Deprecated:</code> markers when practical, then roll
 forward.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> Standard semver: exported identifiers under
+<li class="option recommended"><strong>a. (Recommended)</strong> Standard semver: exported identifiers under
 <code>pkg/doczcore/*</code> are covered; <code>cmd/</code>, <code>internal/</code>, <code>test/</code>, CLI output <strong>text</strong>,
 and embedded template contents are <strong>not</strong>. Breaking changes ship in a major bump
 after a documented deprecation window (one minor with <code>Deprecated:</code> markers).</li>
-<li>b. A stricter/looser variant (specify).</li>
-<li>c. Other.</li>
+<li class="option">b. A stricter/looser variant (specify).</li>
+<li class="option">c. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-decisions">

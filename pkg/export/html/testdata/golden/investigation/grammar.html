@@ -109,19 +109,25 @@ so the conversion has one definition instead of five.</p>
 </section>
 <section class="panel" id="p-open-questions">
 <h2 class="panel-title" id="open-questions">Open questions</h2>
-<h4 id="1-should-the-readers-report-document-lines-themselves">1. Should the readers report document lines themselves?</h4>
+<details class="expand" id="1-should-the-readers-report-document-lines-themselves">
+<summary>1. Should the readers report document lines themselves?</summary>
+<div class="body">
 <ul>
-<li>a. No, the caller shifts them. <em>(recommendation)</em></li>
-<li>b. Yes, pass the region into every reader.</li>
+<li class="option recommended">a. No, the caller shifts them. <em>(recommendation)</em></li>
+<li class="option">b. Yes, pass the region into every reader.</li>
 </ul>
-<blockquote>
-<p><strong>Resolved 2026-09-20: (a)</strong> the readers stay bytes-in, values-out.</p>
-</blockquote>
-<h4 id="2-does-a-third-level-of-nesting-need-a-rule-of-its-own">2. Does a third level of nesting need a rule of its own?</h4>
+<p class="resolution"><strong>Resolved 2026-09-20: (a)</strong> the readers stay bytes-in, values-out.</p>
+</div>
+</details>
+<details class="expand" id="2-does-a-third-level-of-nesting-need-a-rule-of-its-own" open>
+<summary>2. Does a third level of nesting need a rule of its own?</summary>
+<div class="body">
 <ul>
-<li>a. No, the arithmetic is the same at any depth. <em>(recommendation)</em></li>
-<li>b. Yes, cap the nesting at two.</li>
+<li class="option recommended">a. No, the arithmetic is the same at any depth. <em>(recommendation)</em></li>
+<li class="option">b. Yes, cap the nesting at two.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-decisions">

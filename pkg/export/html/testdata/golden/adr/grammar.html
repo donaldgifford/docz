@@ -90,21 +90,27 @@ nobody has scheduled</li>
 </section>
 <section class="panel" id="p-open-questions">
 <h2 class="panel-title" id="open-questions">Open questions</h2>
-<h4 id="1-where-does-the-fallback-heading-table-live">1. Where does the fallback heading table live?</h4>
+<details class="expand" id="1-where-does-the-fallback-heading-table-live">
+<summary>1. Where does the fallback heading table live?</summary>
+<div class="body">
 <ul>
-<li>a. In the type package, written out and pinned to the template by a test
+<li class="option recommended">a. In the type package, written out and pinned to the template by a test
 <em>(recommendation)</em></li>
-<li>b. In the core, derived from the embedded template at run time</li>
+<li class="option">b. In the core, derived from the embedded template at run time</li>
 </ul>
-<blockquote>
-<p><strong>Resolved 2026-09-20: (a).</strong> A type package's production imports stop at
+<p class="resolution"><strong>Resolved 2026-09-20: (a).</strong> A type package's production imports stop at
 the core, so deriving the table would mean importing the template embed.</p>
-</blockquote>
-<h4 id="2-is-an-unmarked-region-a-warning-or-an-error">2. Is an unmarked region a warning or an error?</h4>
+</div>
+</details>
+<details class="expand" id="2-is-an-unmarked-region-a-warning-or-an-error" open>
+<summary>2. Is an unmarked region a warning or an error?</summary>
+<div class="body">
 <ul>
-<li>a. A warning, since inference is permanent rather than a migration aid</li>
-<li>b. An error once every document in the corpus carries markers</li>
+<li class="option">a. A warning, since inference is permanent rather than a migration aid</li>
+<li class="option">b. An error once every document in the corpus carries markers</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-references">

@@ -318,45 +318,51 @@ criterion rather than an inference from this INV.</li>
 </section>
 <section class="panel" id="p-open-questions">
 <h2 class="panel-title" id="open-questions">Open questions</h2>
-<h4 id="1-where-should-the-h1title-extractor-live">1. Where should the H1/title extractor live?</h4>
+<details class="expand" id="1-where-should-the-h1title-extractor-live" open>
+<summary>1. Where should the H1/title extractor live?</summary>
+<div class="body">
 <p>The one new public symbol this feature actually requires (F2). It must be
 bytes-in, must be fence-aware, and must not disturb <code>docparse.Headings</code>'
 frozen H2–H6 contract.</p>
 <ul>
-<li><strong>a. (Recommendation) <code>docparse.Title(content []byte) string</code></strong> — a new
+<li class="option recommended"><strong>a. (Recommendation) <code>docparse.Title(content []byte) string</code></strong> — a new
 function in <code>docparse</code> returning the first H1's stripped text, or <code>&quot;&quot;</code> when
 there is none. <code>docparse</code> is already the module's markdown fact extractor,
 is already fence-aware, already has <code>AnchorSlug</code> and inline-markdown
 stripping to reuse, and its no-error / facts-not-interpretation contract fits
 a &quot;&quot; return exactly. <code>Headings</code> keeps excluding H1, so nothing existing
 changes.</li>
-<li><strong>b. <code>docparse.Headings</code> starts including H1</strong> with a <code>Level: 1</code> entry, and
+<li class="option"><strong>b. <code>docparse.Headings</code> starts including H1</strong> with a <code>Level: 1</code> entry, and
 consumers filter. Truthful to the name, but it is a <strong>breaking behavior
 change</strong> to a frozen function — every existing caller (<code>toc</code>, and any
 consumer ToC) would suddenly emit the document title as a ToC entry.</li>
-<li><strong>c. <code>document.Title(content []byte) string</code></strong> — put it beside
+<li class="option"><strong>c. <code>document.Title(content []byte) string</code></strong> — put it beside
 <code>ParseFrontmatter</code>, arguing that &quot;title&quot; is a document concern rather than a
 markdown fact. Keeps docz-api's imports to one package, but splits markdown
 parsing across two packages and duplicates fence handling (the same tension
 DESIGN-0010 Decision 1 already navigated for <code>ParseChangelog</code>).</li>
-<li><strong>d. <code>document.DocTitle(content []byte, filename string) string</code></strong> — the
+<li class="option"><strong>d. <code>document.DocTitle(content []byte, filename string) string</code></strong> — the
 full <code>internal/wiki</code> fallback chain promoted: frontmatter <code>ID: Title</code>, then
 H1, then title-cased filename. Most useful to the consumer, but it bakes a
 presentation policy (&quot;<code>ID: Title</code>&quot;) into the frozen core, which ADR-0001
 says belongs consumer-side.</li>
 <li><strong>e.</strong> Ship nothing; let docz-api extract the H1 itself.</li>
 </ul>
-<h4 id="2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additional_docs">2. Should the path-validation rules be shared between <code>changelog.file</code> and <code>additional_docs</code>?</h4>
+</div>
+</details>
+<details class="expand" id="2-should-the-path-validation-rules-be-shared-between-changelogfile-and-additional_docs" open>
+<summary>2. Should the path-validation rules be shared between <code>changelog.file</code> and <code>additional_docs</code>?</summary>
+<div class="body">
 <p>Both are repo-relative paths a consumer fetches from a git tree, and F3 shows
 the hardened rules are currently locked inside <code>validateChangelog</code>.</p>
 <ul>
-<li><strong>a. (Recommendation) Extract one unexported
+<li class="option recommended"><strong>a. (Recommendation) Extract one unexported
 <code>validateRepoRelativePath(field, value string) error</code></strong> and call it from
 both, each wrapping its own sentinel. One hardening history, no new public
 API, and the error text stays field-specific.</li>
-<li><strong>b. Duplicate the switch</strong> into <code>validateAPI</code>. Zero refactor risk today,
+<li class="option"><strong>b. Duplicate the switch</strong> into <code>validateAPI</code>. Zero refactor risk today,
 guaranteed drift the next time either is hardened.</li>
-<li><strong>c. Export it as <code>config.ValidateRepoPath</code></strong> so docz-api can pre-validate
+<li class="option"><strong>c. Export it as <code>config.ValidateRepoPath</code></strong> so docz-api can pre-validate
 paths itself. Adds public surface to the frozen package for a case the
 consumer gets for free via <code>Validate()</code>.</li>
 <li><strong>d.</strong> Relax the rules for <code>additional_docs</code> (allow <code>..</code>), on the grounds
@@ -364,24 +370,30 @@ that these are explicitly-listed files rather than a computed path. Not
 recommended — it reintroduces exactly the traversal the changelog validator
 rejects, for the same fetch-from-tree consumer.</li>
 </ul>
-<h4 id="3-does-docz-need-to-expose-the-urlroute-mapping">3. Does docz need to expose the URL/route mapping?</h4>
+</div>
+</details>
+<details class="expand" id="3-does-docz-need-to-expose-the-urlroute-mapping" open>
+<summary>3. Does docz need to expose the URL/route mapping?</summary>
+<div class="body">
 <p>F4 shows the drafted URL shape does not match DESIGN-0009's route map. Whoever
 owns that mapping owns a compatibility surface.</p>
 <ul>
-<li><strong>a. (Recommendation) No — docz stores and validates config only.</strong> Route
+<li class="option recommended"><strong>a. (Recommendation) No — docz stores and validates config only.</strong> Route
 construction is docz-site's concern; docz-api serves paths and titles.
 Consistent with ADR-0001 (facts, not interpretation) and keeps docz out of
 the site's URL-versioning problem. DESIGN-0011 still documents the
 <em>intended</em> mapping as non-normative prose so the three repos agree.</li>
-<li><strong>b. docz exposes a helper</strong> (e.g. <code>config.APIDocRoute(path) string</code>)
+<li class="option"><strong>b. docz exposes a helper</strong> (e.g. <code>config.APIDocRoute(path) string</code>)
 implementing the &quot;strip <code>docs/</code>, keep folders&quot; rule. One definition, but it
 freezes a site URL policy into a Go library that ships on a different
 release cadence than the site.</li>
-<li><strong>c. <code>additional_docs</code> entries become objects</strong> carrying an explicit
+<li class="option"><strong>c. <code>additional_docs</code> entries become objects</strong> carrying an explicit
 <code>route:</code>/<code>slug:</code> per file, so no mapping rule is needed at all. Most
 flexible and most verbose; also the only option that must be decided
 <em>before</em> the schema ships, since string→object is a breaking change.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-decisions">

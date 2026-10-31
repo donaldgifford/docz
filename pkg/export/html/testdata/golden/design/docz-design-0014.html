@@ -2183,206 +2183,230 @@ Decisions table. DESIGN-0015's own questions remain open.</p>
 </tbody>
 </table>
 </div>
-<h4 id="1-phase-and-task-grammar">1. Phase and task grammar</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a)</strong>, after checking the assumptions against
+<details class="expand" id="1-phase-and-task-grammar">
+<summary>1. Phase and task grammar</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a)</strong>, after checking the assumptions against
 <code>internal/template/templates/impl.md</code>: the template's phase title is an
 HTML comment placeholder, so comments are stripped before the token
 regex and an empty title is the <code>impl.phase.no-title</code> warning; the
 <code>#### Tasks</code> and <code>#### Success Criteria</code> headings sit inside their
 regions; the <code>---</code> separators between phases sit outside every region.
 DESIGN-0015 §1, §5, and §6 carry the same corrections.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Phases are <code>phase</code> regions; the token comes from the first level-3
+<li class="option recommended">a. <strong>Phases are <code>phase</code> regions; the token comes from the first level-3
 heading inside; <code>tasks</code> and <code>criteria</code> are nested regions; top-level
 checkbox items only; a duplicate token is an error</strong> — §3 as amended by
 DESIGN-0015 §5. <em>(recommendation)</em></li>
-<li>b. The heading heuristics as DESIGN-0013 had them (<code>^Phase\s+…:</code> finds
+<li class="option">b. The heading heuristics as DESIGN-0013 had them (<code>^Phase\s+…:</code> finds
 the span, <code>#### Tasks</code> scopes the list), kept as a permanent fallback
 beside the regions — two grammars to maintain.</li>
-<li>c. Every level-3 heading is a phase with ordinal fallback (sdk-booty-sh
+<li class="option">c. Every level-3 heading is a phase with ordinal fallback (sdk-booty-sh
 today).</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="2-continuation-folding-and-verify-lines">2. Continuation folding and verify lines</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong> The worked example in §3 shows the fold,
+</div>
+</details>
+<details class="expand" id="2-continuation-folding-and-verify-lines">
+<summary>2. Continuation folding and verify lines</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong> The worked example in §3 shows the fold,
 the verify extraction, and the marker removal on a real-shaped task.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Fold continuations into <code>Text</code>; verify is case-insensitive, first
+<li class="option recommended">a. <strong>Fold continuations into <code>Text</code>; verify is case-insensitive, first
 backtick span, trailing prose ignored</strong> — the four hand-written docz-api
 lines parse. <em>(recommendation)</em></li>
-<li>b. Strict lowercase <code>verify:</code> whose remainder is exactly one backtick
+<li class="option">b. Strict lowercase <code>verify:</code> whose remainder is exactly one backtick
 span.</li>
-<li>c. First-line-only <code>Text</code> (the facts literal) — truncates most recent
+<li class="option">c. First-line-only <code>Text</code> (the facts literal) — truncates most recent
 tasks.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="3-marker-parsing-on-the-read-side">3. Marker parsing on the read side</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong></p>
-</blockquote>
+</div>
+</details>
+<details class="expand" id="3-marker-parsing-on-the-read-side">
+<summary>3. Marker parsing on the read side</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong></p>
 <ul>
-<li>a. <strong>Lenient</strong>: <code>deferred</code> after any dash, prefix or suffix, emphasis
+<li class="option recommended">a. <strong>Lenient</strong>: <code>deferred</code> after any dash, prefix or suffix, emphasis
 tolerated; strikethrough plus <code>skipped:</code> after any dash. Canonical
 spellings are documented for writers (consumers), not enforced by the
 parser. <em>(recommendation)</em></li>
-<li>b. Canonical suffix forms only; docz-api IMPL-0006 is hand-fixed.</li>
-<li>c. Other.</li>
+<li class="option">b. Canonical suffix forms only; docz-api IMPL-0006 is hand-fixed.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="4-criteria-classification">4. Criteria classification</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong></p>
-</blockquote>
+</div>
+</details>
+<details class="expand" id="4-criteria-classification">
+<summary>4. Criteria classification</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong></p>
 <ul>
-<li>a. <strong>As issue #100 states</strong>: executable iff the bullet starts with a
+<li class="option recommended">a. <strong>As issue #100 states</strong>: executable iff the bullet starts with a
 backtick span; the caveat that symbol-subject criteria (about a tenth in
 this repo) classify as executable is documented, and docz never runs
 anything. <em>(recommendation)</em></li>
-<li>b. Executable only when the whole bullet is a backtick span.</li>
-<li>c. Token heuristics on the span.</li>
-<li>d. Other.</li>
+<li class="option">b. Executable only when the whole bullet is a backtick span.</li>
+<li class="option">c. Token heuristics on the span.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="5-creation-without-io">5. Creation without I/O</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong></p>
-</blockquote>
+</div>
+</details>
+<details class="expand" id="5-creation-without-io">
+<summary>5. Creation without I/O</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong></p>
 <ul>
-<li>a. <strong><code>NextNumber(dir, width)</code> plus <code>Render(opts, number)</code></strong>, with <code>Create</code>
+<li class="option recommended">a. <strong><code>NextNumber(dir, width)</code> plus <code>Render(opts, number)</code></strong>, with <code>Create</code>
 composed from them. Two small functions; a no-checkout consumer supplies
 its own number (it knows its tree) and gets <code>Rendered{Filename, Content}</code>
 to commit through its own API. <em>(recommendation)</em></li>
-<li>b. One <code>Prepare(opts) (Rendered, error)</code> that scans for the next number
+<li class="option">b. One <code>Prepare(opts) (Rendered, error)</code> that scans for the next number
 itself — fewer names, but it needs the filesystem, which defeats the
 purpose.</li>
-<li>c. Neither now; <code>Create</code> stays the only creation entry point until a
+<li class="option">c. Neither now; <code>Create</code> stays the only creation entry point until a
 consumer asks.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="6-resolving-a-document-by-id">6. Resolving a document by ID</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong></p>
-</blockquote>
+</div>
+</details>
+<details class="expand" id="6-resolving-a-document-by-id">
+<summary>6. Resolving a document by ID</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong></p>
 <ul>
-<li>a. <strong>Both <code>Find(id)</code> and <code>FindIn(type, id)</code>.</strong> <code>Find</code> derives the type
+<li class="option recommended">a. <strong>Both <code>Find(id)</code> and <code>FindIn(type, id)</code>.</strong> <code>Find</code> derives the type
 from the prefix through <code>ValidateType</code> (which already resolves
 <code>id_prefix</code> tokens, and <code>validateResolution</code> guarantees uniqueness) and
 serves consumers that only hold an ID, such as <code>task list</code>; <code>FindIn</code>
 mirrors <code>status set &lt;type&gt; &lt;id&gt;</code> exactly. <em>(recommendation)</em></li>
-<li>b. <code>FindIn</code> only; callers split the prefix themselves.</li>
-<li>c. <code>Find</code> only; <code>status set</code> ignores its <code>&lt;type&gt;</code> argument beyond
+<li class="option">b. <code>FindIn</code> only; callers split the prefix themselves.</li>
+<li class="option">c. <code>Find</code> only; <code>status set</code> ignores its <code>&lt;type&gt;</code> argument beyond
 validation.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="7-where-the-status-no-op-short-circuit-lives">7. Where the status no-op short-circuit lives</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong> DESIGN-0005 Decision 8 is superseded for
+</div>
+</details>
+<details class="expand" id="7-where-the-status-no-op-short-circuit-lives">
+<summary>7. Where the status no-op short-circuit lives</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong> DESIGN-0005 Decision 8 is superseded for
 the library path; the CLI's output is unchanged because it prints from
 the result.</p>
-</blockquote>
 <p>DESIGN-0005 Decision 8 put &quot;current equals new → no write&quot; in <code>cmd/</code>.</p>
 <ul>
-<li>a. <strong>In <code>repo.SetStatus</code>, reported as <code>Changed: false</code>.</strong> It is not
+<li class="option recommended">a. <strong>In <code>repo.SetStatus</code>, reported as <code>Changed: false</code>.</strong> It is not
 wording; it is the operation's semantics, and every consumer wants the
 same rule. <code>cmd/</code> output is unchanged because it prints from the result.
 <em>(recommendation)</em></li>
-<li>b. Keep it in <code>cmd/</code>; <code>repo.SetStatus</code> always writes when called, like
+<li class="option">b. Keep it in <code>cmd/</code>; <code>repo.SetStatus</code> always writes when called, like
 the <code>docwrite</code> helper.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="8-how-much-of-wiki-is-orchestration">8. How much of wiki is orchestration</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong></p>
-</blockquote>
+</div>
+</details>
+<details class="expand" id="8-how-much-of-wiki-is-orchestration">
+<summary>8. How much of wiki is orchestration</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong></p>
 <ul>
-<li>a. <strong><code>Init</code> and <code>UpdateNav</code> live in <code>pkg/wiki</code>.</strong> They are the two things
+<li class="option recommended">a. <strong><code>Init</code> and <code>UpdateNav</code> live in <code>pkg/wiki</code>.</strong> They are the two things
 a consumer would otherwise copy from <code>cmd/wiki.go</code>, and the primitives
 stay exported for anyone who wants a different composition.
 <em>(recommendation)</em></li>
-<li>b. Primitives only; the orchestration stays in <code>cmd/wiki.go</code> and <code>wiki</code>
+<li class="option">b. Primitives only; the orchestration stays in <code>cmd/wiki.go</code> and <code>wiki</code>
 is the one command with no single-call equivalent.</li>
-<li>c. Put <code>Init</code> and <code>UpdateNav</code> on <code>repo</code> — but then <code>doczcore</code> imports
+<li class="option">c. Put <code>Init</code> and <code>UpdateNav</code> on <code>repo</code> — but then <code>doczcore</code> imports
 <code>pkg/wiki</code>, breaking R1's sibling rule.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="9-error-shapes-in-repo">9. Error shapes in repo</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (b)</strong> — typed errors everywhere. Review rationale:
+</div>
+</details>
+<details class="expand" id="9-error-shapes-in-repo">
+<summary>9. Error shapes in repo</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (b)</strong> — typed errors everywhere. Review rationale:
 a typed API should deliver all of its benefits, and a caller that can
 <code>errors.As</code> into <code>NotFoundError{Type, ID}</code> should not have to re-derive
 those facts from a message. <code>UnknownTypeError</code> unwraps to the frozen
 <code>config.ErrUnknownType</code> so <code>errors.Is</code> keeps working. §2.8 and the
 <code>status set</code> row in §4 are updated.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Sentinels for the yes/no cases (<code>ErrNotFound</code>, <code>ErrTypeDisabled</code>,
+<li class="option recommended">a. <strong>Sentinels for the yes/no cases (<code>ErrNotFound</code>, <code>ErrTypeDisabled</code>,
 <code>ErrExists</code>) and one typed <code>InvalidStatusError</code> carrying the allowed
 list</strong>, with <code>config.ErrUnknownType</code> passing through. <code>cmd/</code> maps them to
 exit codes with <code>errors.Is</code>/<code>errors.As</code> and keeps its current messages.
 <em>(recommendation)</em></li>
-<li>b. Typed errors everywhere (<code>NotFoundError{Type, ID}</code> …) — richer, more
+<li class="option">b. Typed errors everywhere (<code>NotFoundError{Type, ID}</code> …) — richer, more
 surface to freeze.</li>
-<li>c. Sentinels everywhere; the allowed-status list is re-derived by the
+<li class="option">c. Sentinels everywhere; the allowed-status list is re-derived by the
 caller from <code>Cfg</code>.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="10-generic-facts-for-the-next-type-package">10. Generic facts for the next type package</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: superseded by DESIGN-0015.</strong> The question asked
+</div>
+</details>
+<details class="expand" id="10-generic-facts-for-the-next-type-package">
+<summary>10. Generic facts for the next type package</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: superseded by DESIGN-0015.</strong> The question asked
 whether to add two helpers ahead of a second type package: a
 level-2-heading span reader (<code>docparse.Sections</code>) and an ID-prefix-to-type
 mapper (<code>document.Kind</code>). Regions make the first redundant — typed spans
 are exactly what the next package wants, and heading spans are the
 heuristic being retired — and <code>Repo.Find</code> already does the second
 through <code>config.ValidateType</code>. Both are dropped.</p>
-<p><strong>Amended 2026-09-19.</strong> The second type package did not wait: every
+<p class="resolution"><strong>Amended 2026-09-19.</strong> The second type package did not wait: every
 built-in is a structured type and ships its package in this unit (§2.9).
 What they share — open questions, references, decisions, criteria,
 alternatives, fields, list items — lives in <code>pkg/doczcore/kinds</code> (§2.12),
 and <code>docparse</code> gains the two facts they need, <code>ListItems</code> and <code>Tables</code>.
 <code>document.Kind</code> stays dropped.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Defer</strong> <code>docparse.Sections</code> and <code>document.Kind</code> until a second type
+<li class="option recommended">a. <strong>Defer</strong> <code>docparse.Sections</code> and <code>document.Kind</code> until a second type
 package exists; the shapes are noted so they are not redesigned.
 <em>(recommendation)</em></li>
-<li>b. Add <code>docparse.Sections</code> now — small, but a frozen API with no caller.</li>
-<li>c. Other.</li>
+<li class="option">b. Add <code>docparse.Sections</code> now — small, but a frozen API with no caller.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="11-delivery-granularity">11. Delivery granularity</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: one IMPL covering this design and DESIGN-0015
+</div>
+</details>
+<details class="expand" id="11-delivery-granularity">
+<summary>11. Delivery granularity</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: one IMPL covering this design and DESIGN-0015
 together</strong>, a phase per rollout step with the swap last. Designs and
 IMPLs are not one-to-one: designs that ship as a unit are consumed by a
 single IMPL.</p>
-</blockquote>
 <ul>
-<li>a. <strong>One IMPL document with a phase per rollout step</strong> (five phases, the
+<li class="option recommended">a. <strong>One IMPL document with a phase per rollout step</strong> (five phases, the
 swap last), so the unit of delivery matches the unit of design and the
 acceptance criteria of the last phase are the swap's. <em>(recommendation)</em></li>
-<li>b. One IMPL per package, tracked in a parent issue.</li>
-<li>c. Other.</li>
+<li class="option">b. One IMPL per package, tracked in a parent issue.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="12-hooks-for-wiki">12. Hooks for wiki</h4>
-<blockquote>
-<p><strong>Resolved 2026-09-19: (a).</strong> Hooks would give the wiki almost nothing:
+</div>
+</details>
+<details class="expand" id="12-hooks-for-wiki">
+<summary>12. Hooks for wiki</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-09-19: (a).</strong> Hooks would give the wiki almost nothing:
 <code>UpdateNav</code> is one YAML read, a title walk over the docs tree, and one
 YAML write, and the two debug lines <code>cmd/wiki.go</code> logs today are
 derivable from <code>NavReport</code> after the call. Cancelling the title walk on
 a large tree is what matters, and the context covers that.</p>
-</blockquote>
 <ul>
-<li>a. <strong>None; the nav report is enough.</strong> <code>wiki.Init</code> and <code>UpdateNav</code> take a
+<li class="option recommended">a. <strong>None; the nav report is enough.</strong> <code>wiki.Init</code> and <code>UpdateNav</code> take a
 context for cancellation and return reports; the two debug lines
 <code>cmd/wiki.go</code> logs today are derivable from <code>NavReport</code> after the call.
 A <code>wiki.Hooks</code> can be added later without breaking anything.
 <em>(recommendation)</em></li>
-<li>b. A <code>wiki.Hooks</code> mirroring <code>repo.Hooks</code> from day one, so both L3
+<li class="option">b. A <code>wiki.Hooks</code> mirroring <code>repo.Hooks</code> from day one, so both L3
 packages instrument the same way.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-references">

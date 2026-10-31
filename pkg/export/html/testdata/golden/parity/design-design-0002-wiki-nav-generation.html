@@ -188,21 +188,29 @@ once and left under normal splice management afterward.</p>
 </section>
 <section class="panel" id="p-open-questions">
 <h2 class="panel-title" id="open-questions">Open questions</h2>
-<h4 id="1-should-nested-type-directories-collapse-into-a-single-nav-group">1. Should nested type directories collapse into a single nav group?</h4>
+<details class="expand" id="1-should-nested-type-directories-collapse-into-a-single-nav-group" open>
+<summary>1. Should nested type directories collapse into a single nav group?</summary>
+<div class="body">
 <ul>
-<li>a. Yes, flatten one level so the nav stays shallow even as more
+<li class="option recommended">a. Yes, flatten one level so the nav stays shallow even as more
 custom types are added. <em>(recommendation)</em></li>
-<li>b. No, mirror the on-disk directory structure exactly.</li>
-<li>c. Make it configurable per type via <code>.docz.yaml</code>.</li>
+<li class="option">b. No, mirror the on-disk directory structure exactly.</li>
+<li class="option">c. Make it configurable per type via <code>.docz.yaml</code>.</li>
 </ul>
-<h4 id="2-how-should-title-collisions-across-pages-be-reported">2. How should title collisions across pages be reported?</h4>
+</div>
+</details>
+<details class="expand" id="2-how-should-title-collisions-across-pages-be-reported" open>
+<summary>2. How should title collisions across pages be reported?</summary>
+<div class="body">
 <ul>
-<li>a. Warn during <code>docz wiki</code> and continue with the filename-derived
+<li class="option recommended">a. Warn during <code>docz wiki</code> and continue with the filename-derived
 title for the later entry. <em>(recommendation)</em></li>
-<li>b. Fail the build so authors must resolve every collision by hand
+<li class="option">b. Fail the build so authors must resolve every collision by hand
 before the nav can regenerate.</li>
-<li>c. Silently dedupe by appending a numeric suffix to the title.</li>
+<li class="option">c. Silently dedupe by appending a numeric suffix to the title.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-references">

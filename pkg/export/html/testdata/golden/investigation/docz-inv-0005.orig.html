@@ -403,72 +403,104 @@ chosen option per question. The menu of alternatives is kept for the record.</p>
 </blockquote>
 <p>Each question is numbered; option <code>a</code> is the recommendation, later letters are
 alternatives, and &quot;other&quot; is free-form for review.</p>
-<h4 id="1-how-does-docz-api-fetch-repo-content">1. How does docz-api fetch repo content?</h4>
+<details class="expand" id="1-how-does-docz-api-fetch-repo-content" open>
+<summary>1. How does docz-api fetch repo content?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> GitHub Git Trees / Contents API — no checkout, ideal for
+<li class="option recommended"><strong>a. (Recommended)</strong> GitHub Git Trees / Contents API — no checkout, ideal for
 small doc sets and simple ops.</li>
-<li>b. Shallow <code>git clone</code> per refresh — better for large doc trees, heavier ops.</li>
-<li>c. Hybrid: Contents API by default, clone above a size threshold.</li>
-<li>d. Other.</li>
+<li class="option">b. Shallow <code>git clone</code> per refresh — better for large doc trees, heavier ops.</li>
+<li class="option">c. Hybrid: Contents API by default, clone above a size threshold.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="2-where-is-markdown-rendered-to-html">2. Where is markdown rendered to HTML?</h4>
+</div>
+</details>
+<details class="expand" id="2-where-is-markdown-rendered-to-html" open>
+<summary>2. Where is markdown rendered to HTML?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Render at ingest time and cache <code>rendered_html</code> in
+<li class="option recommended"><strong>a. (Recommended)</strong> Render at ingest time and cache <code>rendered_html</code> in
 Postgres; invalidate on <code>content_hash</code> change.</li>
-<li>b. Store raw markdown only; render in docz-site at request time.</li>
-<li>c. Render client-side in the browser.</li>
-<li>d. Other.</li>
+<li class="option">b. Store raw markdown only; render in docz-site at request time.</li>
+<li class="option">c. Render client-side in the browser.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="3-which-renderer">3. Which renderer?</h4>
+</div>
+</details>
+<details class="expand" id="3-which-renderer" open>
+<summary>3. Which renderer?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Reuse docz's mdp-based renderer for visual parity with the
+<li class="option recommended"><strong>a. (Recommended)</strong> Reuse docz's mdp-based renderer for visual parity with the
 CLI preview.</li>
-<li>b. A server-side Go renderer in the API (e.g. goldmark) independent of mdp.</li>
-<li>c. A JS renderer in docz-site.</li>
-<li>d. Other.</li>
+<li class="option">b. A server-side Go renderer in the API (e.g. goldmark) independent of mdp.</li>
+<li class="option">c. A JS renderer in docz-site.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="4-what-does-version-mean-for-a-doc">4. What does &quot;version&quot; mean for a doc?</h4>
+</div>
+</details>
+<details class="expand" id="4-what-does-version-mean-for-a-doc" open>
+<summary>4. What does &quot;version&quot; mean for a doc?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Track the default-branch HEAD as the single current
+<li class="option recommended"><strong>a. (Recommended)</strong> Track the default-branch HEAD as the single current
 version (MVP); store <code>git_sha</code> per doc.</li>
-<li>b. Snapshot versions on git tags / GitHub releases.</li>
-<li>c. Keep full per-doc history.</li>
-<li>d. Other.</li>
+<li class="option">b. Snapshot versions on git tags / GitHub releases.</li>
+<li class="option">c. Keep full per-doc history.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="5-which-branches-are-ingested">5. Which branch(es) are ingested?</h4>
+</div>
+</details>
+<details class="expand" id="5-which-branches-are-ingested" open>
+<summary>5. Which branch(es) are ingested?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Default branch only.</li>
-<li>b. Configurable per repo.</li>
-<li>c. All branches (preview/PR builds).</li>
-<li>d. Other.</li>
+<li class="option recommended"><strong>a. (Recommended)</strong> Default branch only.</li>
+<li class="option">b. Configurable per repo.</li>
+<li class="option">c. All branches (preview/PR builds).</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="6-what-is-the-visibility--access-model">6. What is the visibility / access model?</h4>
+</div>
+</details>
+<details class="expand" id="6-what-is-the-visibility--access-model" open>
+<summary>6. What is the visibility / access model?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Mirror GitHub repo access: GitHub App for ingestion +
+<li class="option recommended"><strong>a. (Recommended)</strong> Mirror GitHub repo access: GitHub App for ingestion +
 user OAuth on the site, checking the viewer's repo access. Correct, and the
 main complexity.</li>
-<li>b. Org-internal single-tenant: trust any authenticated org member (simplest
+<li class="option">b. Org-internal single-tenant: trust any authenticated org member (simplest
 MVP).</li>
-<li>c. Public read-only (open-source docs only).</li>
-<li>d. Other.</li>
+<li class="option">c. Public read-only (open-source docs only).</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="7-how-does-the-api-obtain-the-doc-list-without-re-implementing-docz">7. How does the API obtain the doc list without re-implementing docz?</h4>
+</div>
+</details>
+<details class="expand" id="7-how-does-the-api-obtain-the-doc-list-without-re-implementing-docz" open>
+<summary>7. How does the API obtain the doc list without re-implementing docz?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Extract docz's <code>internal/config</code> + <code>internal/document</code>
+<li class="option recommended"><strong>a. (Recommended)</strong> Extract docz's <code>internal/config</code> + <code>internal/document</code>
 scanning into a shared <code>pkg/…</code> library imported by both CLI and API.</li>
-<li>b. Add a <code>docz export --json</code> whole-repo manifest the API consumes (requires a
+<li class="option">b. Add a <code>docz export --json</code> whole-repo manifest the API consumes (requires a
 checkout / the binary).</li>
-<li>c. Re-implement frontmatter + config parsing in the API (risks drift).</li>
-<li>d. Other.</li>
+<li class="option">c. Re-implement frontmatter + config parsing in the API (risks drift).</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="8-scope-of-the-first-deliverable">8. Scope of the first deliverable?</h4>
+</div>
+</details>
+<details class="expand" id="8-scope-of-the-first-deliverable" open>
+<summary>8. Scope of the first deliverable?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> A thin vertical slice: one hand-onboarded repo →
+<li class="option recommended"><strong>a. (Recommended)</strong> A thin vertical slice: one hand-onboarded repo →
 ingest → render one type in a minimal docz-site, no auth/webhooks yet.</li>
-<li>b. Full ingestion pipeline + webhooks first, site second.</li>
-<li>c. Site/UX prototype first against mocked data.</li>
-<li>d. Other.</li>
+<li class="option">b. Full ingestion pipeline + webhooks first, site second.</li>
+<li class="option">c. Site/UX prototype first against mocked data.</li>
+<li class="option">d. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-decisions">

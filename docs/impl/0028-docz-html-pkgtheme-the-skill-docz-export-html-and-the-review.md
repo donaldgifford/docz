@@ -387,7 +387,7 @@ typed packages, plus the widgets from fenced blocks.
   the Last Verified card); consequences through `adr.Parse`; the verdict
   through `investigation.Parse`; alternatives, risks, criteria, open
   questions, and decisions through `kinds`.
-- [ ] Open questions: one expandable per question, the recommended option
+- [x] Open questions: one expandable per question, the recommended option
   marked, a resolved question closed with its resolution shown.
 - [ ] A typed parse error falls back to the region's markdown and is
   appended to `Page.Problems`; it never fails `Render`.

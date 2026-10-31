@@ -415,82 +415,90 @@ Decision section and cut the implementation plan.</li>
 <p>Each question is numbered; option <code>a</code> is my recommendation, later letters
 are alternatives, and the final letter is a free-form &quot;other.&quot;</p>
 </blockquote>
-<h4 id="1-scope-of-the-v10-public-core">1. Scope of the v1.0 public core?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a)</strong> — via the promotion rule adopted in ADR-0001
+<details class="expand" id="1-scope-of-the-v10-public-core">
+<summary>1. Scope of the v1.0 public core?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (a)</strong> — via the promotion rule adopted in ADR-0001
 Decision 1 (&quot;public by default where demand exists, whole packages, named
 exceptions&quot;): <code>template</code>/<code>index</code>/<code>toc</code> splice/<code>wiki</code> have nothing external
 demand requires, so they stay <code>internal/</code>.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <strong>Four-package core</strong>
+<li class="option recommended"><strong>a. (Recommended)</strong> <strong>Four-package core</strong>
 <code>pkg/doczcore/{config,document,docparse,docwrite}</code>; <code>template</code>/<code>index</code>/
 <code>toc</code>/<code>wiki</code> stay <code>internal/</code>. Demand-complete, zero unwanted semver
 surface, CLI unchanged, idiomatic <code>internal/</code> use.</li>
-<li>b. Full promotion per the ADR-0001 draft (all packages public, <code>cmd/</code>
+<li class="option">b. Full promotion per the ADR-0001 draft (all packages public, <code>cmd/</code>
 imports only <code>pkg/doczcore/*</code>).</li>
-<li>c. Full promotion with <code>template</code>/<code>index</code>/<code>wiki</code> documented as
+<li class="option">c. Full promotion with <code>template</code>/<code>index</code>/<code>wiki</code> documented as
 experimental/exempt from the compatibility guarantee (ADR-0001 OQ3c).</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="2-where-does-create-live-at-v10">2. Where does <code>Create</code> live at v1.0?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (b)</strong> — package cohesion beats surface minimalism:
+</div>
+</details>
+<details class="expand" id="2-where-does-create-live-at-v10">
+<summary>2. Where does <code>Create</code> live at v1.0?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (b)</strong> — package cohesion beats surface minimalism:
 splitting <code>docwrite</code> to hide one function leaves a confusing twin-package
 layout (public <code>docwrite</code> + an internal rump), and <code>Create</code> is plausibly
 wanted by future consumers anyway. The cost cited against (b) in the
 original draft was overstated — see Observation 4: the template engine
 stays private behind the public→internal import.</p>
-</blockquote>
 <ul>
-<li>a. <strong>Stays internal.</strong> When <code>SetStatus</code>/<code>CheckTask</code> move out in <code>v0.6.0</code>,
+<li class="option">a. <strong>Stays internal.</strong> When <code>SetStatus</code>/<code>CheckTask</code> move out in <code>v0.6.0</code>,
 what's left of <code>internal/docwrite</code> is <code>Create</code> alone — keep it (optionally
 renamed, e.g. <code>internal/doccreate</code>). Minimal surface, but a twin-package
 layout every contributor must re-learn.</li>
-<li><strong>b. (Chosen)</strong> Promote <code>Create</code> into public <code>docwrite</code> at v1.0 — the whole
+<li class="option"><strong>b. (Chosen)</strong> Promote <code>Create</code> into public <code>docwrite</code> at v1.0 — the whole
 package promotes; the embed rides along in consumer <em>builds</em> via the legal
 public→internal import, while <code>template</code>'s API, names, and contents stay
 private (Observation 4).</li>
-<li>c. Defer: promote <code>Create</code> only when a consumer asks (a normal additive
+<li class="option">c. Defer: promote <code>Create</code> only when a consumer asks (a normal additive
 minor later, possibly with a template-injection seam instead of the embed).</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="3-one-parser--does-internaltoc-delegate-to-docparse">3. One parser — does <code>internal/toc</code> delegate to <code>docparse</code>?</h4>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a)</strong> — delegate; and the export-lean ADR-0001
+</div>
+</details>
+<details class="expand" id="3-one-parser--does-internaltoc-delegate-to-docparse">
+<summary>3. One parser — does <code>internal/toc</code> delegate to <code>docparse</code>?</summary>
+<div class="body">
+<p class="resolution"><strong>Resolved 2026-07-03: (a)</strong> — delegate; and the export-lean ADR-0001
 revision goes further: the splice itself promotes to <code>pkg/doczcore/toc</code>
 (superseding this INV's demand-only &quot;stays internal&quot; verdict), with
 <code>docparse</code> as the single public parser and <code>toc</code>'s own walker retired.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <strong>Delegate.</strong> Refactor <code>internal/toc</code> to consume
+<li class="option recommended"><strong>a. (Recommended)</strong> <strong>Delegate.</strong> Refactor <code>internal/toc</code> to consume
 <code>docparse.Headings</code> for its walk (keeping the splice + markers internal),
 during or immediately after the <code>v0.6.0</code> work so the two walkers never
 drift on fence/slug behavior. Private refactor; invisible to consumers and
 CLI output.</li>
-<li>b. Keep two walkers (<code>toc</code> as-is) — allowed by the <code>v0.6.0</code> handoff
+<li class="option">b. Keep two walkers (<code>toc</code> as-is) — allowed by the <code>v0.6.0</code> handoff
 (&quot;internal/toc can stay as-is or delegate&quot;), but risks slug/fence
 divergence between what the CLI splices and what consumers parse.</li>
-<li>c. Other.</li>
+<li class="option">c. Other.</li>
 </ul>
-<h4 id="4-the-already-public-cli-shaped-config-helpers-at-v10">4. The already-public CLI-shaped <code>config</code> helpers at v1.0?</h4>
+</div>
+</details>
+<details class="expand" id="4-the-already-public-cli-shaped-config-helpers-at-v10">
+<summary>4. The already-public CLI-shaped <code>config</code> helpers at v1.0?</summary>
+<div class="body">
 <p><code>TypesHelp()</code>, <code>DefaultNavTitles()</code>, and <code>ResolveTypeAlias</code> shipped with the
 <code>v0.5.0</code> wholesale move; no consumer uses them.</p>
-<blockquote>
-<p><strong>Resolved 2026-07-03: (a)</strong> — keep, consistent with the export-lean rule;
+<p class="resolution"><strong>Resolved 2026-07-03: (a)</strong> — keep, consistent with the export-lean rule;
 document them as CLI-support helpers in the package doc.</p>
-</blockquote>
 <ul>
-<li><strong>a. (Recommended)</strong> <strong>Keep them</strong> — they're small, already frozen, and
+<li class="option recommended"><strong>a. (Recommended)</strong> <strong>Keep them</strong> — they're small, already frozen, and
 harmless; document them as CLI-support helpers in the package doc so the
 core's intent stays legible.</li>
-<li>b. Deprecate at v1.0 (<code>Deprecated:</code> markers) and remove at v2 — cleaner
+<li class="option">b. Deprecate at v1.0 (<code>Deprecated:</code> markers) and remove at v2 — cleaner
 long-term core, bookkeeping now.</li>
-<li>c. Remove <strong>before</strong> v1.0 while still in <code>v0.x</code> (a <code>v0.7.0</code> with removals;
+<li class="option">c. Remove <strong>before</strong> v1.0 while still in <code>v0.x</code> (a <code>v0.7.0</code> with removals;
 breaking-in-0.x is legal and no consumer is affected, but it contradicts
 the additive-minor posture of <code>v0.6.0</code> and needs its own release).</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-decisions">

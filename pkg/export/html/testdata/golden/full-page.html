@@ -2029,86 +2029,118 @@ an earlier one to be useful.</p>
 </ul>
 <p>Each question is numbered; option <code>a</code> is the recommendation, later letters are
 alternatives, and &quot;Other&quot; is free-form for review.</p>
-<h4 id="1-which-front-end-framework">1. Which front-end framework?</h4>
+<details class="expand" id="1-which-front-end-framework" open>
+<summary>1. Which front-end framework?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Vite + React SPA — no server runtime, fastest path to the
+<li class="option recommended"><strong>a. (Recommended)</strong> Vite + React SPA — no server runtime, fastest path to the
 thin vertical slice, docz-api as the only backend.</li>
-<li>b. Next.js (React + SSR) — SEO-able public docs, faster first paint, and a
+<li class="option">b. Next.js (React + SSR) — SEO-able public docs, faster first paint, and a
 natural home for a BFF token exchange.</li>
-<li>c. SvelteKit — smaller bundles, built-in SSR, less boilerplate.</li>
-<li>d. Other.</li>
+<li class="option">c. SvelteKit — smaller bundles, built-in SSR, less boilerplate.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="2-which-markdown-renderer-library">2. Which markdown renderer library?</h4>
+</div>
+</details>
+<details class="expand" id="2-which-markdown-renderer-library" open>
+<summary>2. Which markdown renderer library?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> <code>markdown-it</code> + plugins (anchors, footnotes, highlight) —
+<li class="option recommended"><strong>a. (Recommended)</strong> <code>markdown-it</code> + plugins (anchors, footnotes, highlight) —
 framework-agnostic, mature, easy to feed into DOMPurify as an HTML string.</li>
-<li>b. <code>react-markdown</code> / <code>remark</code> — renders to React nodes (no <code>dangerouslySet…</code>
+<li class="option">b. <code>react-markdown</code> / <code>remark</code> — renders to React nodes (no <code>dangerouslySet…</code>
 for the common path), rich remark/rehype plugin ecosystem.</li>
-<li>c. <code>marked</code> — smallest/fastest, fewer plugins.</li>
-<li>d. Other.</li>
+<li class="option">c. <code>marked</code> — smallest/fastest, fewer plugins.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="3-ssr-or-spa">3. SSR or SPA?</h4>
+</div>
+</details>
+<details class="expand" id="3-ssr-or-spa" open>
+<summary>3. SSR or SPA?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> SPA for the MVP — operationally simplest, defers a server
+<li class="option recommended"><strong>a. (Recommended)</strong> SPA for the MVP — operationally simplest, defers a server
 runtime; revisit once public/SEO docs are a requirement.</li>
-<li>b. SSR from the start — better first paint, SEO, and a server seam for auth.</li>
-<li>c. Static prerender + client hydration for public docs, SPA for private.</li>
-<li>d. Other.</li>
+<li class="option">b. SSR from the start — better first paint, SEO, and a server seam for auth.</li>
+<li class="option">c. Static prerender + client hydration for public docs, SPA for private.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="4-how-does-the-site-integrate-with-meilisearch-search">4. How does the site integrate with Meilisearch search?</h4>
+</div>
+</details>
+<details class="expand" id="4-how-does-the-site-integrate-with-meilisearch-search" open>
+<summary>4. How does the site integrate with Meilisearch search?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Proxy through a docz-api <code>/search</code> endpoint — the same
+<li class="option recommended"><strong>a. (Recommended)</strong> Proxy through a docz-api <code>/search</code> endpoint — the same
 server-side access scoping filters search results, no Meilisearch key reaches
 the browser, one backend.</li>
-<li>b. Direct Meilisearch instant-search with a per-session <strong>scoped tenant
+<li class="option">b. Direct Meilisearch instant-search with a per-session <strong>scoped tenant
 token</strong> issued by docz-api — lowest latency, native instant-search components,
 at the cost of trusting browser-side filter constraints.</li>
-<li>c. Hybrid: proxy for access-scoped queries, direct for public docs only.</li>
-<li>d. Other.</li>
+<li class="option">c. Hybrid: proxy for access-scoped queries, direct for public docs only.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="5-html-sanitization-approach">5. HTML sanitization approach?</h4>
+</div>
+</details>
+<details class="expand" id="5-html-sanitization-approach" open>
+<summary>5. HTML sanitization approach?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> DOMPurify with a conservative allow-list, run after
+<li class="option recommended"><strong>a. (Recommended)</strong> DOMPurify with a conservative allow-list, run after
 render and after highlighting — battle-tested, browser-native, configurable.</li>
-<li>b. A <code>rehype-sanitize</code> step in a remark/rehype pipeline (pairs with Open
+<li class="option">b. A <code>rehype-sanitize</code> step in a remark/rehype pipeline (pairs with Open
 Question 2b) — sanitizes the AST before serialization.</li>
-<li>c. Server-side sanitization in docz-api before it serves markdown/HTML — moves
+<li class="option">c. Server-side sanitization in docz-api before it serves markdown/HTML — moves
 the trust boundary off the client but conflicts with Decision 3 (client-side
 render).</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="6-styling--design-system-choice">6. Styling / design-system choice?</h4>
+</div>
+</details>
+<details class="expand" id="6-styling--design-system-choice" open>
+<summary>6. Styling / design-system choice?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Tailwind CSS + a headless component set (e.g. Radix) plus
+<li class="option recommended"><strong>a. (Recommended)</strong> Tailwind CSS + a headless component set (e.g. Radix) plus
 a <code>prose</code> typography preset for the reader — fast, consistent, accessible
 primitives.</li>
-<li>b. A batteries-included component library (MUI / Chakra / Mantine) — more
+<li class="option">b. A batteries-included component library (MUI / Chakra / Mantine) — more
 out-of-the-box, heavier and more opinionated.</li>
-<li>c. Plain CSS modules / vanilla-extract — minimal deps, more hand-rolled UI.</li>
-<li>d. Other.</li>
+<li class="option">c. Plain CSS modules / vanilla-extract — minimal deps, more hand-rolled UI.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="7-where-does-the-oidcoauth-token-exchange-happen">7. Where does the OIDC/OAuth token exchange happen?</h4>
+</div>
+</details>
+<details class="expand" id="7-where-does-the-oidcoauth-token-exchange-happen" open>
+<summary>7. Where does the OIDC/OAuth token exchange happen?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> docz-api owns the exchange and issues an httpOnly session
+<li class="option recommended"><strong>a. (Recommended)</strong> docz-api owns the exchange and issues an httpOnly session
 cookie — keeps tokens out of browser JS and centralizes auth with the access
 control that already lives in docz-api.</li>
-<li>b. A thin site BFF (requires SSR per Open Question 3b) performs the exchange
+<li class="option">b. A thin site BFF (requires SSR per Open Question 3b) performs the exchange
 and brokers the docz-api session — keeps provider secrets at the site edge.</li>
-<li>c. Public-client PKCE in the SPA with tokens in memory — no server seam, but
+<li class="option">c. Public-client PKCE in the SPA with tokens in memory — no server seam, but
 the browser holds tokens.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
-<h4 id="8-how-should-doczs-own-toc-markers-be-handled">8. How should docz's own ToC markers be handled?</h4>
+</div>
+</details>
+<details class="expand" id="8-how-should-doczs-own-toc-markers-be-handled" open>
+<summary>8. How should docz's own ToC markers be handled?</summary>
+<div class="body">
 <ul>
-<li><strong>a. (Recommended)</strong> Generate the ToC from rendered headings and <strong>strip</strong> the
+<li class="option recommended"><strong>a. (Recommended)</strong> Generate the ToC from rendered headings and <strong>strip</strong> the
 <code>&lt;!--toc:start--&gt;…&lt;!--toc:end--&gt;</code> marker block from the displayed body — one
 ToC, always consistent with what's shown.</li>
-<li>b. Render the CLI-generated ToC list verbatim (trust the marker block) and
+<li class="option">b. Render the CLI-generated ToC list verbatim (trust the marker block) and
 skip heading-walking.</li>
-<li>c. Render the marker block <em>and</em> a generated rail, accepting possible
+<li class="option">c. Render the marker block <em>and</em> a generated rail, accepting possible
 duplication.</li>
-<li>d. Other.</li>
+<li class="option">d. Other.</li>
 </ul>
+</div>
+</details>
 
 </section>
 <section class="panel" id="p-references">
