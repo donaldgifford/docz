@@ -72,8 +72,17 @@ func (*storage) heading(w util.BufWriter, _ []byte, n ast.Node, entering bool) (
 	return ast.WalkContinue, nil
 }
 
-// fenced writes a fenced block as a code macro, or a mermaid fence as the
-// viewer macro with its source folded beneath it.
+// widgetTitles maps a docz widget's fence to the expand its YAML is folded
+// into: Confluence cannot draw a widget, and the YAML is readable.
+var widgetTitles = map[string]string{
+	"docz-flow":      "Flow",
+	"docz-stepper":   "Stepper",
+	"docz-scorecard": "Scorecard",
+}
+
+// fenced writes a fenced block as a code macro, a docz widget as its YAML
+// in a collapsed expand titled with the widget's name, or a mermaid fence
+// as the viewer macro with its source folded beneath it.
 func (s *storage) fenced(w util.BufWriter, src []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkSkipChildren, nil
@@ -86,6 +95,12 @@ func (s *storage) fenced(w util.BufWriter, src []byte, n ast.Node, entering bool
 
 	lang := strings.ToLower(string(f.Language(src)))
 	body := blockLines(n, src)
+
+	if title, ok := widgetTitles[lang]; ok {
+		writeExpand(w, title, func() { writeCode(w, "yaml", body) })
+
+		return ast.WalkSkipChildren, nil
+	}
 
 	if lang != "mermaid" {
 		writeCode(w, codeLanguage(lang), body)

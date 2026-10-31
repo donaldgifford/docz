@@ -399,7 +399,7 @@ typed packages, plus the widgets from fenced blocks.
 - [x] Goldens for the typed layouts: one per type from the corpora, one
   custom type carrying IMPL regions (it gets phases), one per widget, one
   per widget error.
-- [ ] Confluence: a widget fence in `pkg/export/confluence/nodes.go`
+- [x] Confluence: a widget fence in `pkg/export/confluence/nodes.go`
   renders as a collapsed expand titled with the widget's name (`Flow`,
   `Stepper`, `Scorecard`) holding the YAML in a code macro, with a
   golden.
