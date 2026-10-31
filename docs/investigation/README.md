@@ -44,6 +44,7 @@ Design docs, plans, and implementation docs can reference investigations by ID
 | INV-0027 | Interactive mode | Concluded | 2026-10-10 | Donald Gifford | [0027-interactive-mode.md](0027-interactive-mode.md) |
 | INV-0028 | A document graph from the references docz already parses | Concluded | 2026-10-10 | Donald Gifford | [0028-a-document-graph-from-the-references-docz-already-parses.md](0028-a-document-graph-from-the-references-docz-already-parses.md) |
 | INV-0029 | Executable acceptance in docz documents | Concluded | 2026-10-10 | Donald Gifford | [0029-executable-acceptance-in-docz-documents.md](0029-executable-acceptance-in-docz-documents.md) |
+| INV-0030 | docz-review follow-ups after v2.3.0 | Open | 2026-10-31 | Donald Gifford | [0030-docz-review-follow-ups-after-v230.md](0030-docz-review-follow-ups-after-v230.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->
 <!-- BEGIN DOCZ AUTO-GENERATED -->
