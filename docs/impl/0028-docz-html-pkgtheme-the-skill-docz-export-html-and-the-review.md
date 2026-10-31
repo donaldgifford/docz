@@ -238,7 +238,7 @@ and 4 encode.
 - [x] Write `skills/docz-html/references/components.md`: the page
   skeleton (header, tab row, panels, footer), each component's markup and
   classes, and the JSON island contract for widgets.
-- [ ] Write `skills/docz-html/references/layout.md`: DESIGN-0025 §4's
+- [x] Write `skills/docz-html/references/layout.md`: DESIGN-0025 §4's
   region-kind table and per-type tabs, as the instructions the agent
   follows to place each region.
 - [ ] Write the stage-1 `SKILL.md`: when to make a page; read the document
