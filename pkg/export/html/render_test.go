@@ -1,6 +1,9 @@
 package html
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"strings"
 	"testing"
 )
@@ -31,5 +34,27 @@ func TestRenderEmptyRegion(t *testing.T) {
 
 	if strings.Count(body, "Not written yet.") != 1 {
 		t.Errorf("a written region is marked as not written yet")
+	}
+}
+
+func TestRenderDeterministic(t *testing.T) {
+	t.Parallel()
+
+	const src = "## Summary\n\nA page.\n\n```mermaid\ngraph LR\n  A --> B\n```\n"
+
+	first := page(t, src, &RenderOptions{Version: "v1"})
+	second := page(t, src, &RenderOptions{Version: "v1"})
+
+	if !bytes.Equal(first.Body, second.Body) || first.Hash != second.Hash {
+		t.Fatalf("two renders of one document differ")
+	}
+
+	sum := sha256.Sum256(first.Body)
+	if want := "sha256:" + hex.EncodeToString(sum[:]); first.Hash != want {
+		t.Errorf("Hash = %q, want %q", first.Hash, want)
+	}
+
+	if other := page(t, src, &RenderOptions{Version: "v2"}); other.Hash == first.Hash {
+		t.Errorf("a different body hashes the same")
 	}
 }

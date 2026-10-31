@@ -331,7 +331,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   a flag the template reads to inline or link the script. The vendored
   file arrives in Phase 5; until then the embed mode is tested with a
   stub.
-- [ ] Compute `Page.Hash` over the body; write nothing time-dependent.
+- [x] Compute `Page.Hash` over the body; write nothing time-dependent.
 - [ ] Goldens under `testdata/golden/`: `Render` over every `.md` in the
   six type packages' corpora and the parity fixtures, the theme block
   replaced by its markers in the golden (question 6), regenerated with

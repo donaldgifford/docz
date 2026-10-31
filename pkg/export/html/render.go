@@ -2,6 +2,8 @@ package html
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -127,7 +129,7 @@ func Render(src []byte, opts RenderOptions) (Page, error) {
 	}
 
 	return Page{
-		ID: fm.ID, Title: fm.Title, Type: opts.Type, Body: out,
+		ID: fm.ID, Title: fm.Title, Type: opts.Type, Body: out, Hash: hashOf(out),
 		Links: nr.links, Inferred: d.inferred, Problems: nr.problems,
 	}, nil
 }
@@ -180,4 +182,13 @@ func blankFrontmatter(src []byte) []byte {
 	out = append(out, bytes.Repeat([]byte("\n"), bytes.Count(src[:end], []byte("\n")))...)
 
 	return append(out, src[end:]...)
+}
+
+// hashOf is "sha256:<hex>" of a page body. The page holds nothing
+// time-dependent, so one document and one set of options always hash the
+// same.
+func hashOf(body []byte) string {
+	sum := sha256.Sum256(body)
+
+	return "sha256:" + hex.EncodeToString(sum[:])
 }
