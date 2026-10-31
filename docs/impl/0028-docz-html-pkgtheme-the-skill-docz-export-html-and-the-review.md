@@ -169,7 +169,7 @@ phase proves the plumbing before the look moves.
   expandable an in-page link points into, and a `docz:mode` event other
   code (mermaid, widgets) listens to. Every storage access in a `try`.
   Plain ES2020, no build step, no globals beyond one `docz` object.
-- [ ] Add `pkg/theme/theme.go`: `//go:embed` of the three kinds of file,
+- [x] Add `pkg/theme/theme.go`: `//go:embed` of the three kinds of file,
   `Names()` (`paper`, `classic`), `CSS(name)` (tokens then components;
   `ErrUnknownTheme` wrapped with the name and the valid names), and
   `Runtime()`.
