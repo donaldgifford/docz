@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import type { Mermaid, MermaidConfig } from "mermaid";
 
@@ -48,12 +48,47 @@ const SVG_CACHE = new Map<string, string>();
 let mermaidPromise: Promise<Mermaid> | undefined;
 let renderSeq = 0;
 
-function getMermaid(): Promise<Mermaid> {
-  mermaidPromise ??= import("mermaid").then((mod) => {
-    mod.default.initialize(mermaidInitConfig());
-    return mod.default;
-  });
-  return mermaidPromise;
+/*
+ * The theme generation. A page that changes its theme or mode
+ * (docz-review, IMPL-0028 Phase 6) calls refreshMermaidTheme after the
+ * attributes move: mermaid is initialized again from the new tokens the
+ * next time it renders, the cache (keyed by generation) misses, and
+ * every mounted block renders again. docz-site never calls it, so it
+ * initializes once.
+ */
+let themeVersion = 0;
+let initializedVersion = -1;
+const themeListeners = new Set<() => void>();
+
+function subscribeTheme(onChange: () => void): () => void {
+  themeListeners.add(onChange);
+  return () => {
+    themeListeners.delete(onChange);
+  };
+}
+
+const currentTheme = () => themeVersion;
+
+/** refreshMermaidTheme redraws every diagram from the current tokens. */
+export function refreshMermaidTheme(): void {
+  themeVersion += 1;
+  SVG_CACHE.clear();
+  for (const fn of themeListeners) {
+    fn();
+  }
+}
+
+const cacheKey = (version: number, source: string) =>
+  `${String(version)}\n${source}`;
+
+async function getMermaid(): Promise<Mermaid> {
+  mermaidPromise ??= import("mermaid").then((mod) => mod.default);
+  const mermaid = await mermaidPromise;
+  if (initializedVersion !== themeVersion) {
+    mermaid.initialize(mermaidInitConfig());
+    initializedVersion = themeVersion;
+  }
+  return mermaid;
 }
 
 /*
@@ -105,9 +140,9 @@ const MERMAID_LOOK = "classic";
  * The exact config we ship — exported so tests exercise it, not a copy.
  *
  * `layout` is resolved per page load (IMPL-0006 OQ-1): ELK by default,
- * `dagre` when the deployment says so through DOCZ_MERMAID_LAYOUT. The
- * module memoizes `mermaidPromise`, so this runs once, which is right —
- * the value cannot change without a new document. ELK arrives as its
+ * `dagre` when the deployment says so through DOCZ_MERMAID_LAYOUT. This
+ * runs once per theme generation, so once on docz-site, and the layout
+ * cannot change without a new document either way. ELK arrives as its
  * own ~436 KB gzipped chunk behind the same dynamic import as mermaid
  * itself, and mermaid only fetches it when the layout is `elk`; neither
  * may ever become eager, and the chunk assertion in
@@ -182,6 +217,7 @@ export function mermaidThemeFromTokens(): Record<string, string> {
 
 interface RenderState {
   source: string;
+  version: number;
   svg: string | undefined;
   failed: boolean;
 }
@@ -196,14 +232,21 @@ export function MermaidBlock({
   /** The review render's `data-line` stamp, carried to the root. */
   line?: string;
 }) {
+  const version = useSyncExternalStore(subscribeTheme, currentTheme);
   const [state, setState] = useState<RenderState>(() => ({
     source,
-    svg: SVG_CACHE.get(source),
+    version,
+    svg: SVG_CACHE.get(cacheKey(version, source)),
     failed: false,
   }));
-  // Source changed under the same mount — adjust during render.
-  if (state.source !== source) {
-    setState({ source, svg: SVG_CACHE.get(source), failed: false });
+  // Source or theme changed under the same mount — adjust during render.
+  if (state.source !== source || state.version !== version) {
+    setState({
+      source,
+      version,
+      svg: SVG_CACHE.get(cacheKey(version, source)),
+      failed: false,
+    });
   }
   const hostRef = useRef<HTMLDivElement>(null);
 
@@ -223,20 +266,20 @@ export function MermaidBlock({
           `docz-mermaid-${String(renderSeq)}`,
           source,
         );
-        SVG_CACHE.set(source, svg);
+        SVG_CACHE.set(cacheKey(version, source), svg);
         if (!cancelled) {
-          setState({ source, svg, failed: false });
+          setState({ source, version, svg, failed: false });
         }
       } catch {
         if (!cancelled) {
-          setState({ source, svg: undefined, failed: true });
+          setState({ source, version, svg: undefined, failed: true });
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [needsRender, source]);
+  }, [needsRender, source, version]);
 
   useEffect(() => {
     if (state.svg !== undefined && hostRef.current !== null) {
@@ -280,4 +323,6 @@ export function MermaidBlock({
 export function _resetMermaidBlock(): void {
   SVG_CACHE.clear();
   mermaidPromise = undefined;
+  themeVersion = 0;
+  initializedVersion = -1;
 }

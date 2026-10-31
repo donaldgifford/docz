@@ -1,7 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MermaidBlock, _resetMermaidBlock } from "@/markdown/mermaid-block";
+import {
+  MermaidBlock,
+  _resetMermaidBlock,
+  refreshMermaidTheme,
+} from "@/markdown/mermaid-block";
 
 /*
  * mermaid can't actually render in jsdom (no SVG measurement), so the
@@ -20,6 +24,7 @@ const SOURCE = "flowchart TD\n  A --> B";
 beforeEach(() => {
   _resetMermaidBlock();
   mermaidMock.render.mockReset();
+  mermaidMock.initialize.mockReset();
 });
 
 describe("MermaidBlock", () => {
@@ -72,5 +77,26 @@ describe("MermaidBlock", () => {
     });
     expect(fallback.textContent).toContain("flowchart TD");
     expect(container.querySelector("svg")).toBeNull();
+  });
+
+  it("draws again from the new tokens after a theme refresh", async () => {
+    mermaidMock.render
+      .mockResolvedValueOnce({ svg: "<svg><text>light</text></svg>" })
+      .mockResolvedValueOnce({ svg: "<svg><text>dark</text></svg>" });
+    render(<MermaidBlock source={SOURCE} />);
+    const img = await screen.findByRole("img");
+    await waitFor(() => {
+      expect(img.textContent).toBe("light");
+    });
+    expect(mermaidMock.initialize).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      refreshMermaidTheme();
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("img").textContent).toBe("dark");
+    });
+    expect(mermaidMock.initialize).toHaveBeenCalledTimes(2);
+    expect(mermaidMock.render).toHaveBeenCalledTimes(2);
   });
 });

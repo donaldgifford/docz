@@ -514,7 +514,7 @@ selectable. Its own `minor`.
 - [x] Add the light/dark toggle to the review page's header, sharing
   `docz:mode` with exported pages, and a theme selector storing
   `docz:theme`.
-- [ ] Re-render the review page's mermaid diagrams on a mode change
+- [x] Re-render the review page's mermaid diagrams on a mode change
   through `mermaidThemeFromTokens`.
 - [ ] Extend `ui/src/theme/contrast.test.ts` to every theme and mode, and
   fix any pair below its threshold in the token files.

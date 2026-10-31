@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 /*
  * The review page's theme and mode (DESIGN-0025 §3, IMPL-0028 Phase 6).
@@ -99,7 +105,8 @@ export interface Appearance {
 /**
  * useAppearance holds the theme and mode, writes them to <html> and to
  * storage, and calls onChange after the attributes move, so a caller
- * that reads tokens (mermaid) reads the new ones. A mode change also
+ * that reads tokens (mermaid) reads the new ones; not on mount, where
+ * main.tsx already applied them before anything rendered. A change also
  * dispatches docz:mode on the document, as an exported page's runtime
  * does.
  */
@@ -108,6 +115,7 @@ export function useAppearance(onChange?: () => void): Appearance {
   const [stored, setStored] = useState<Mode | null>(storedMode);
   const system = useSyncExternalStore(subscribeSystem, systemMode);
   const mode = stored ?? system;
+  const mounted = useRef(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -120,7 +128,10 @@ export function useAppearance(onChange?: () => void): Appearance {
     document.dispatchEvent(
       new CustomEvent("docz:mode", { detail: { mode, theme } }),
     );
-    onChange?.();
+    if (mounted.current) {
+      onChange?.();
+    }
+    mounted.current = true;
   }, [theme, stored, mode, onChange]);
 
   const setTheme = useCallback((next: Theme) => {

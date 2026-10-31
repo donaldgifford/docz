@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
+import { refreshMermaidTheme } from "@/markdown/mermaid-block";
 import {
   newSubmissionId,
   StaleError,
@@ -40,7 +41,7 @@ const statusOf = (doc: ReviewDocument) => doc.inspect.frontmatter?.status ?? "";
 
 export function ReviewApp({ client }: { client: ReviewClient }) {
   const queryClient = useQueryClient();
-  const appearance = useAppearance();
+  const appearance = useAppearance(refreshMermaidTheme);
   const session = useQuery({
     queryKey: SESSION_KEY,
     queryFn: () => client.session(),
