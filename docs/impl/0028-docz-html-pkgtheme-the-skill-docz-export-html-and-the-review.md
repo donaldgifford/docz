@@ -235,7 +235,7 @@ and 4 encode.
   install, `skills/docz-html/theme/`, written by a new `just
   plugin-theme-sync` recipe, with a drift check in the `plugin` CI job
   (question 3).
-- [ ] Write `skills/docz-html/references/components.md`: the page
+- [x] Write `skills/docz-html/references/components.md`: the page
   skeleton (header, tab row, panels, footer), each component's markup and
   classes, and the JSON island contract for widgets.
 - [ ] Write `skills/docz-html/references/layout.md`: DESIGN-0025 §4's
