@@ -12,7 +12,16 @@
 //
 // The page skeleton is an html/template, so every interpolated value is
 // escaped by construction. The theme (pkg/theme) is inlined between
-// <!-- docz:theme --> markers.
+// <!-- docz:theme --> markers. A raw inline tag left open closes inside its
+// own paragraph, heading, or list text, and links keep only http, https,
+// mailto, an anchor the page has, or what [RenderOptions.Resolve] returns;
+// the rest are text and are reported in [Page.Links].
+//
+// A mermaid fence follows [RenderOptions.Mermaid]: [MermaidSource] shows
+// the source as a labelled code block, and [MermaidEmbed] and [MermaidCDN]
+// write it for mermaid to draw in the theme's colours, with mermaid inlined
+// or loaded from a pinned CDN URL under subresource integrity. Only a page
+// with a diagram carries mermaid.
 //
 // Every page carries a Content-Security-Policy that loads nothing from the
 // network, outside the CDN mermaid mode. Nothing time-dependent is written:
