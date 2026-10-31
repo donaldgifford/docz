@@ -143,7 +143,16 @@ func Export(ctx context.Context, rp *repo.Repo, opts ExportOptions) (Report, err
 		defer root.Close() //nolint:errcheck // read and write errors are reported per page.
 	}
 
-	x := &exporter{rp: rp, opts: &opts, root: root, specs: make(map[string]kinds.HeadingSpec), pages: pagePaths(rp, entries)}
+	src, err := os.OpenRoot(rp.Root)
+	if err != nil {
+		return rep, fmt.Errorf("html: repository root: %w", err)
+	}
+	defer src.Close() //nolint:errcheck // only read from.
+
+	x := &exporter{
+		rp: rp, opts: &opts, root: root, src: src,
+		specs: make(map[string]kinds.HeadingSpec), pages: pagePaths(rp, entries),
+	}
 
 	for i := range entries {
 		if err := ctx.Err(); err != nil {
@@ -207,9 +216,11 @@ func pagePaths(rp *repo.Repo, entries []repo.Entry) map[string]string {
 
 // exporter is one run's state.
 type exporter struct {
-	rp    *repo.Repo
-	opts  *ExportOptions
-	root  *os.Root
+	rp   *repo.Repo
+	opts *ExportOptions
+	root *os.Root
+	// src is the repository root, the only place an image is read from.
+	src   *os.Root
 	specs map[string]kinds.HeadingSpec
 	// pages maps an exported document's repository-relative path to its
 	// page's path under the output directory.
@@ -250,7 +261,7 @@ func (x *exporter) page(ctx context.Context, e *repo.Entry) PageResult {
 
 	p, err := Render(content, RenderOptions{
 		Theme: x.opts.Theme, Mermaid: x.opts.Mermaid, Spec: x.spec(ctx, e.Type), Type: e.Type,
-		Source: src, Resolve: x.opts.Resolve, Site: x.opts.Site, Version: x.opts.Version,
+		Source: src, Resolve: x.resolve, Site: x.opts.Site, Version: x.opts.Version,
 	})
 	if err != nil {
 		return failed(&res, err)

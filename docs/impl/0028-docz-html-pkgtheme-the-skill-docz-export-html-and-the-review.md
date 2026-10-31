@@ -442,10 +442,10 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
 - [x] "Unchanged": compare the render with the bytes on disk and skip the
   write when equal.
 - [x] Hooks `{PageDone}` in the `WithHooks`/`HooksFrom` shape.
-- [ ] Links: `#slug` within the page; a relative link to a document this
+- [x] Links: `#slug` within the page; a relative link to a document this
   run exports becomes a relative link to its page; anything else goes
   through `RenderOptions.Resolve`, and an unresolved link is reported.
-- [ ] Images: a relative image under the root of 1 MB or less becomes a
+- [x] Images: a relative image under the root of 1 MB or less becomes a
   `data:` URL with its MIME type from the extension; a larger one goes
   through the resolver. A path outside the root is never read.
 - [ ] `index.html` when a run writes more than one page: one tab per type,
