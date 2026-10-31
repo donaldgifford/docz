@@ -192,7 +192,7 @@ phase proves the plumbing before the look moves.
 - [x] Add `pkg/theme/**` to the `ui` path filter in
   `.github/workflows/ci.yml`. The `go` filter already covers it through
   `pkg/**`.
-- [ ] Run `just ui ci` and the review e2e; confirm the bundle budget and
+- [x] Run `just ui ci` and the review e2e; confirm the bundle budget and
   that the site and the review page render as before.
 - [ ] Add `pkg/theme` to `test/consumer`: `Names`, `CSS` for each, and
   `Runtime` non-empty, from an external module.
