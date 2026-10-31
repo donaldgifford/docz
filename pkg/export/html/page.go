@@ -44,6 +44,7 @@ type pageData struct {
 	Inferred                             bool
 	Panels                               []panelData
 	Source, SHA256, Version              string
+	Mermaid                              *mermaidData
 	CSS                                  template.CSS
 	Runtime                              template.JS
 	ThemeOpen, ThemeClose                template.HTML
@@ -111,7 +112,7 @@ func writePage(src []byte, fm *document.Frontmatter, d *doc, opts RenderOptions)
 	data := pageData{
 		Theme: name, ID: fm.ID, Title: fm.Title, FullTitle: fullTitle(fm),
 		Eyebrow:  eyebrow(opts.Site, opts.Type),
-		CSP:      csp,
+		Mermaid:  mermaidFor(opts.Mermaid, d.md.nodes.mermaid),
 		Summary:  trusted(d.summary),
 		Pills:    pills(fm),
 		Inferred: d.inferred,
@@ -132,6 +133,8 @@ func writePage(src []byte, fm *document.Frontmatter, d *doc, opts RenderOptions)
 			Key: p.Key, Label: p.Label, Anchor: p.Anchor, Contents: p.Contents, Body: trusted(body),
 		})
 	}
+
+	data.CSP = pagePolicy(data.Mermaid)
 
 	var out bytes.Buffer
 	if err := pageTemplate.Execute(&out, data); err != nil {

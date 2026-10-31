@@ -55,5 +55,13 @@ From <code>{{.Source}}</code>, sha256 <code>{{.SHA256}}</code>.
 {{.ThemeOpen}}
 <script>{{.Runtime}}</script>
 {{.ThemeClose}}
+{{- with .Mermaid}}
+{{- if .URL}}
+<script src="{{.URL}}" integrity="{{.Integrity}}" crossorigin="anonymous"></script>
+{{- else}}
+<script>{{.Inline}}</script>
+{{- end}}
+<script>{{.Init}}</script>
+{{- end}}
 </body>
 </html>

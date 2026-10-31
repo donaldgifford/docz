@@ -38,6 +38,9 @@ type nodeRenderer struct {
 
 	links    []Link
 	problems []error
+
+	// mermaid reports that a diagram was written for mermaid to draw.
+	mermaid bool
 }
 
 // newNodeRenderer seeds the heading anchors from docparse, so an id on the
@@ -433,4 +436,20 @@ func put(w io.Writer, s string) {
 
 func putf(w io.Writer, format string, args ...any) {
 	_, _ = fmt.Fprintf(w, format, args...) //nolint:errcheck // as put.
+}
+
+// writeMermaid writes a mermaid fence: a labelled code block in
+// MermaidSource mode, else a pre.mermaid holding the escaped source for the
+// page's mermaid to draw.
+func (nr *nodeRenderer) writeMermaid(w util.BufWriter, body []byte) {
+	if nr.opts.Mermaid == MermaidSource {
+		put(w, `<p class="card-label">Diagram (mermaid source)</p>`+"\n")
+		writeCode(w, "mermaid", body)
+
+		return
+	}
+
+	nr.mermaid = true
+
+	put(w, `<pre class="mermaid">`+html.EscapeString(string(body))+"</pre>\n")
 }

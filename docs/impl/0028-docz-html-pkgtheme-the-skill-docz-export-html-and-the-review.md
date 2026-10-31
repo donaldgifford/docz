@@ -326,7 +326,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   `theme.Runtime` between `<!-- docz:theme -->` markers.
 - [x] Render an empty region (only comments or whitespace) as the "not
   written yet" line.
-- [ ] Mermaid fences: `MermaidSource` writes a labelled code block;
+- [x] Mermaid fences: `MermaidSource` writes a labelled code block;
   `MermaidEmbed` and `MermaidCDN` write a `<pre class="mermaid">` and set
   a flag the template reads to inline or link the script. The vendored
   file arrives in Phase 5; until then the embed mode is tested with a

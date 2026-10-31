@@ -183,9 +183,3 @@ func (nr *nodeRenderer) nodeLine(n ast.Node) int {
 
 	return nr.line(start)
 }
-
-// writeMermaid writes a mermaid fence as a labelled code block.
-func (nr *nodeRenderer) writeMermaid(w util.BufWriter, body []byte) {
-	_ = nr
-	writeCode(w, "mermaid", body)
-}
