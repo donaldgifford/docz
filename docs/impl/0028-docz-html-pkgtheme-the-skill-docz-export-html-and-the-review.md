@@ -241,7 +241,7 @@ and 4 encode.
 - [x] Write `skills/docz-html/references/layout.md`: DESIGN-0025 §4's
   region-kind table and per-type tabs, as the instructions the agent
   follows to place each region.
-- [ ] Write the stage-1 `SKILL.md`: when to make a page; read the document
+- [x] Write the stage-1 `SKILL.md`: when to make a page; read the document
   with `docz inspect <id> --format json` for its regions, headings, tasks,
   and open questions rather than re-parsing the markdown; assemble the
   page from the references with the theme inlined; write it under
