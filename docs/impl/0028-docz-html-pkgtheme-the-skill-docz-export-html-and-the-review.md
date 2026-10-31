@@ -317,7 +317,7 @@ region's markdown. Phase 4 adds the typed layouts on top.
   allow-list with a comment naming its twin.
 - [x] Drop the ToC region; render the tab row and an in-panel heading
   list instead.
-- [ ] Write the page skeleton as an embedded `html/template`: doctype,
+- [x] Write the page skeleton as an embedded `html/template`: doctype,
   `lang`, charset, viewport, the CSP `<meta>` of DESIGN-0025 §8,
   `data-theme` and no `data-mode`, the header (eyebrow from `Site` and the
   type's label, title, the summary region's first paragraph, pills for

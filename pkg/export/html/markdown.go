@@ -3,6 +3,7 @@ package html
 import (
 	"bytes"
 	"sort"
+	"strings"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -89,9 +90,9 @@ func (m *markdown) startLine(n ast.Node) int {
 }
 
 // span renders the top-level nodes that start on lines from through
-// through, skipping the heading on line skip (0 for none), and closes any
-// raw tag left open inside the span.
-func (m *markdown) span(from, through, skip int) ([]byte, error) {
+// through, except those starting on a line in skip, and closes any raw tag
+// left open inside the span.
+func (m *markdown) span(from, through int, skip map[int]bool) ([]byte, error) {
 	var out bytes.Buffer
 
 	r := m.md.Renderer()
@@ -106,7 +107,7 @@ func (m *markdown) span(from, through, skip int) ([]byte, error) {
 			continue
 		}
 
-		if h, ok := n.(*ast.Heading); ok && line == skip && h.Level > 1 {
+		if skip[line] {
 			continue
 		}
 
@@ -150,4 +151,43 @@ func walk(n ast.Node, visit func(ast.Node) bool) {
 	}); err != nil {
 		return
 	}
+}
+
+// leadParagraph finds the first top-level block after the heading on lines
+// from through through. When it is a paragraph, it returns the paragraph's
+// inline content rendered and its line; otherwise nil and 0.
+func (m *markdown) leadParagraph(from, through int) ([]byte, int, error) {
+	for n := m.root.FirstChild(); n != nil; n = n.NextSibling() {
+		line := m.startLine(n)
+		if line < from || line > through {
+			continue
+		}
+
+		switch n.(type) {
+		case *ast.Heading:
+			continue
+		case *ast.HTMLBlock:
+			if isComment(strings.TrimSpace(string(blockLines(n, m.src)))) {
+				continue
+			}
+
+			return nil, 0, nil
+		case *ast.Paragraph:
+		default:
+			return nil, 0, nil
+		}
+
+		var out bytes.Buffer
+		for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+			if err := m.md.Renderer().Render(&out, m.src, c); err != nil {
+				return nil, 0, err
+			}
+		}
+
+		m.nodes.closeOpen(&out)
+
+		return bytes.TrimSpace(out.Bytes()), line, nil
+	}
+
+	return nil, 0, nil
 }

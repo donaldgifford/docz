@@ -68,8 +68,9 @@ func outline(lines []string, regions []docparse.Region, headings []docparse.Head
 }
 
 // gapSections splits text outside every region at its H2s. A piece that
-// opens with an H2 is a section labelled by it; a piece before the first
-// H2 is an intro section (Heading nil), kept only when it has content.
+// opens with an H2 and has content under it is a section labelled by it; a
+// piece before the first H2, or an H2 with nothing under it, is an intro
+// section (Heading nil), kept only when it has content.
 func gapSections(lines []string, headings []docparse.Heading, from, through int) []section {
 	if from > through {
 		return nil
@@ -84,7 +85,12 @@ func gapSections(lines []string, headings []docparse.Heading, from, through int)
 			return
 		}
 
-		if h != nil || hasContent(lines, start, end) {
+		switch {
+		case h != nil && !hasContent(lines, start+1, end):
+			// A heading that only introduces the regions under it is not a
+			// tab: it joins the next one, which shows it.
+			out = append(out, section{From: start, Through: end})
+		case h != nil || hasContent(lines, start, end):
 			out = append(out, section{From: start, Through: end, Heading: h})
 		}
 	}
@@ -119,6 +125,8 @@ func attachIntros(spans []section) []section {
 		if s.Kind == "" && s.Heading == nil {
 			if pending == nil {
 				pending = &spans[i]
+			} else {
+				pending.Through = s.Through
 			}
 
 			continue

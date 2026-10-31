@@ -30,15 +30,19 @@ const contentsMin = 4
 func (d *doc) panels() ([]panel, error) {
 	out := make([]panel, 0, len(d.tabs))
 
+	skip := make(map[int]bool)
+	if err := d.findSummary(skip); err != nil {
+		return nil, err
+	}
+
 	for _, tb := range d.tabs {
 		p := panel{Key: tb.Key, Label: tb.Label}
 
 		var body bytes.Buffer
 
 		for i, s := range tb.Sections {
-			skip := 0
 			if i == 0 && s.Heading != nil && strings.EqualFold(strings.TrimSpace(stripComments(s.Heading.Text)), tb.Label) {
-				skip = s.Heading.Line
+				skip[s.Heading.Line] = true
 				p.Anchor = s.Heading.Slug
 			}
 
@@ -105,4 +109,39 @@ func (d *doc) contents(tb tab, title string) []docparse.Heading {
 	}
 
 	return out
+}
+
+// summaryKinds are the regions whose lead paragraph can be the header
+// summary, in no order: the first one in the document wins.
+var summaryKinds = map[string]bool{
+	"summary": true, "overview": true, "objective": true,
+	"question": true, "hypothesis": true, "context": true,
+}
+
+// findSummary sets the header summary from the first summary-like region's
+// lead paragraph and adds that paragraph's line to skip, so the panel does
+// not repeat it. A region that opens with anything but a paragraph gives
+// no summary.
+func (d *doc) findSummary(skip map[int]bool) error {
+	for _, tb := range d.tabs {
+		for _, s := range tb.Sections {
+			if !summaryKinds[s.Kind] {
+				continue
+			}
+
+			para, line, err := d.md.leadParagraph(s.From, s.Through)
+			if err != nil {
+				return err
+			}
+
+			if line > 0 {
+				d.summary = para
+				skip[line] = true
+			}
+
+			return nil
+		}
+	}
+
+	return nil
 }

@@ -56,6 +56,12 @@ func TestOutline(t *testing.T) {
 			want: "non-goals=Non goals",
 		},
 		{
+			name: "a heading that only introduces regions joins the next tab",
+			src: "## Goals and Non-Goals\n\n<!--docz:goals:start-->\n### Goals\n\n- a\n<!--docz:goals:end-->\n\n" +
+				"<!--docz:non-goals:start-->\n### Non-Goals\n\n- b\n<!--docz:non-goals:end-->\n",
+			want: "goals=Goals non-goals=Non-Goals",
+		},
+		{
 			name: "duplicate labels get distinct keys",
 			src:  "## Notes\n\na\n\n## Notes\n\nb\n",
 			want: "notes=Notes notes-2=Notes",

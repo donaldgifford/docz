@@ -121,8 +121,13 @@ func Render(src []byte, opts RenderOptions) (Page, error) {
 
 	d.rendered = panels
 
+	out, err := writePage(src, &fm, d, opts)
+	if err != nil {
+		return Page{}, err
+	}
+
 	return Page{
-		ID: fm.ID, Title: fm.Title, Type: opts.Type,
+		ID: fm.ID, Title: fm.Title, Type: opts.Type, Body: out,
 		Links: nr.links, Inferred: d.inferred, Problems: nr.problems,
 	}, nil
 }
@@ -153,6 +158,7 @@ type doc struct {
 	tabs     []tab
 	md       *markdown
 	rendered []panel
+	summary  []byte
 }
 
 // blankFrontmatter returns a copy of src with the frontmatter block's lines
