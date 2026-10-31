@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark/util"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // A widget is a fenced block whose info string names it and whose body is
