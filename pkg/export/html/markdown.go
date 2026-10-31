@@ -62,8 +62,14 @@ func (m *markdown) lineOf(off int) int {
 }
 
 // startLine is the line a node starts on: its own first line, else its
-// first descendant's that has one. A node with neither is 0.
+// first descendant's that has one. A fence starts on its info string's
+// line, which an empty fence has and a first line it does not. A node with
+// neither is 0.
 func (m *markdown) startLine(n ast.Node) int {
+	if f, ok := n.(*ast.FencedCodeBlock); ok && f.Info != nil {
+		return m.lineOf(f.Info.Segment.Start)
+	}
+
 	off := -1
 
 	walk(n, func(c ast.Node) bool {

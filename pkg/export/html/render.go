@@ -147,7 +147,14 @@ func prepare(body []byte, opts *RenderOptions) *doc {
 		skip:     make(map[int]bool),
 	}
 	d.tabs = outline(d.lines, regions, d.headings)
-	d.md = parseMarkdown(body, newNodeRenderer(opts, d.headings))
+	nr := newNodeRenderer(opts, d.headings)
+	nr.tabs = make(map[string]string, len(d.tabs))
+
+	for _, t := range d.tabs {
+		nr.tabs[strings.ToLower(t.Label)] = t.Key
+	}
+
+	d.md = parseMarkdown(body, nr)
 
 	return d
 }

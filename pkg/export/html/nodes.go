@@ -51,6 +51,10 @@ type nodeRenderer struct {
 	// columns of the table being written that are.
 	tint   bool
 	tinted map[int]bool
+
+	// tabs maps each tab's label, lower-cased, to its key, so a widget can
+	// link a tab it names.
+	tabs map[string]string
 }
 
 // newNodeRenderer seeds the heading anchors from docparse, so an id on the
@@ -205,6 +209,12 @@ func (nr *nodeRenderer) fenced(w util.BufWriter, src []byte, n ast.Node, enterin
 
 	lang := strings.ToLower(string(f.Language(src)))
 	body := blockLines(n, src)
+
+	if _, ok := widgetNames[lang]; ok {
+		nr.writeWidget(w, lang, body, nr.line(f.Info.Segment.Start)+1)
+
+		return ast.WalkSkipChildren, nil
+	}
 
 	if lang == "mermaid" {
 		nr.writeMermaid(w, body)
