@@ -521,7 +521,8 @@ selectable. Its own `minor`.
 - [x] Run the review e2e under `paper` light, `paper` dark, and `classic`.
 - [x] Rebuild the review binary (`just ui build-review`) and walk through
   a review in each.
-- [ ] Bump the docz-review plugin version if its README shows the look.
+- [x] Bump the docz-review plugin version if its README shows the look.
+  It does not (no screenshot or description of the page), so 0.2.0 stays.
 - [ ] Run a review on the new theme in a real session before the
   release. **deferred** - human required
 
