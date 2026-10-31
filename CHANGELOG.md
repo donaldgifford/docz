@@ -5,9 +5,97 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(theme)* Pkg/theme package documentation
+- *(theme)* Paper token file, light and dark
+- *(theme)* Classic token file from docz-site's tokens
+- *(theme)* Components stylesheet and page font tokens
+- *(theme)* Page runtime for mode, tabs, copy, and the task filter
+- *(theme)* Names, CSS, and Runtime over the embedded files
+- *(ui)* Import pkg/theme's token files; both pages on classic
+- *(plugin)* Docz-html plugin skeleton (IMPL-0028 2.1)
+- *(plugin)* List docz-html in the docz marketplace (IMPL-0028 2.2)
+- *(plugin)* The stage-1 docz-html skill (IMPL-0028 2.6)
+- *(theme)* Docz-flow, docz-stepper, and docz-scorecard drawers (IMPL-0028 2.8)
+- *(theme)* Widget styles (IMPL-0028 2.9)
+- *(plugin)* What the first design loop taught the docz-html references (IMPL-0028 2.10)
+- *(plugin)* The last page's findings in the docz-html references (IMPL-0028 2.10)
+- *(export/html)* The Render API and its input checks (IMPL-0028 3.1)
+- *(export/html)* Tabs from regions, inferred or marked (IMPL-0028 3.2)
+- *(export/html)* Goldmark rendering with docz's anchors and a closed raw-HTML list (IMPL-0028 3.3)
+- *(export/html)* A heading list per panel in place of the ToC (IMPL-0028 3.4)
+- *(export/html)* The page skeleton, theme inlined (IMPL-0028 3.5)
+- *(export/html)* Mermaid in three modes (IMPL-0028 3.7)
+- *(export/html)* Page.Hash over the body (IMPL-0028 3.8)
+- *(export/html)* The region-kind layout table (IMPL-0028 4.1)
+- *(export/html)* Typed layouts by region kind (IMPL-0028 4.3)
+- *(export/html)* Open questions as expandables (IMPL-0028 4.4)
+- *(export/html)* Docz-flow, docz-stepper, and docz-scorecard widgets (IMPL-0028 4.6)
+- *(export/confluence)* Fold a docz widget's YAML into an expand (IMPL-0028 4.8)
+- *(export/html)* Export writes a repository's pages (IMPL-0028 5.1-5.3)
+- *(export/html)* Link exported pages and inline small images (IMPL-0028 5.4-5.5)
+- *(export/html)* An index page for a multi-page run (IMPL-0028 5.6)
+- *(export/html)* Vendor mermaid 12.0.0 for MermaidEmbed (IMPL-0028 5.7)
+- *(cmd)* Docz export html (IMPL-0028 5.8)
+- *(api/cli)* The export-html JSON contract (IMPL-0028 5.9)
+- *(docz-html)* Stage 2, the skill drives docz export html (IMPL-0028 5.12)
+- *(review)* The review page on the paper theme (IMPL-0028 6.1)
+- *(review)* A light/dark toggle sharing docz:mode and a theme selector (IMPL-0028 6.2)
+- *(review)* Redraw mermaid diagrams from the new tokens on a mode change (IMPL-0028 6.3)
+- *(theme)* Every theme and mode held to 4.5:1, paper's failing colours moved (IMPL-0028 6.4)
+
+### Bug Fixes
+
+- *(plugin)* Eyebrow names the repository first, as IMPL-0028 question 9 settled
+- *(export/html)* Import yaml from go.yaml.in like the rest of pkg/
+
 ### Documentation
 
 - *(investigation)* INV-0030, docz-review follow-ups after v2.3.0
+- DESIGN-0025 and IMPL-0028, docz-html
+- *(impl)* IMPL-0028 1.13, ui CI green on classic
+- CLAUDE.md for pkg/theme (IMPL-0028 Phase 1)
+- *(plugin)* Docz-html components reference (IMPL-0028 2.4)
+- *(plugin)* Docz-html layout reference (IMPL-0028 2.5)
+- *(plugin)* The docz-flow, docz-stepper, and docz-scorecard schemas (IMPL-0028 2.7)
+- *(design)* DESIGN-0025 amendments from the Phase 2 loop (IMPL-0028 2.11)
+- CLAUDE.md for the docz-html plugin (IMPL-0028 Phase 2)
+- Pkg/export/html in CLAUDE.md and its package doc (IMPL-0028 Phase 3)
+- Layouts by region kind and widgets in CLAUDE.md and the package doc (IMPL-0028 Phase 4)
+- Docz export html in the README, CLAUDE.md, and the package doc (IMPL-0028 5.13)
+- *(impl)* The docz-review README shows no look, so no plugin bump (IMPL-0028 6.7)
+- The review page's appearance and the per-theme contrast gate (IMPL-0028 Phase 6)
+- *(impl)* IMPL-0029 draft, docz-site on paper with the widgets as React components
+- DESIGN-0025 Implemented and IMPL-0028 Completed (IMPL-0028 7.1)
+- *(impl)* Check off the changelog regen (IMPL-0028 7.3)
+
+### Testing
+
+- *(theme)* Completeness, literal colours, classic parity, accessors
+- *(consumer)* Pkg/theme from an external module
+- *(export/html)* An empty region reads as not written yet (IMPL-0028 3.6)
+- *(export/html)* Golden pages over every corpus document (IMPL-0028 3.9)
+- *(export/html)* Escaping, the raw-HTML list, CSP, no network, rejections (IMPL-0028 3.10)
+- *(export/html)* FuzzRender, the page parsed with x/net/html (IMPL-0028 3.11)
+- *(consumer)* Render a page through pkg/export/html (IMPL-0028 3.12)
+- *(export/html)* Every golden page parses as HTML (IMPL-0028 Phase 3)
+- *(export/html)* Pin the layout table to the catalogue and templates (IMPL-0028 4.2)
+- *(export/html)* A typed parse error falls back to text (IMPL-0028 4.5)
+- *(export/html)* Goldens for typed layouts and widgets (IMPL-0028 4.7)
+- *(cmd)* Docz export html exit codes, --stdout, --dry-run, and reruns (IMPL-0028 5.10)
+- *(ui)* Docz export html pages in chromium from file:// (IMPL-0028 5.11)
+- *(ui)* Skip the export-html fixtures docz-review never parses
+- *(review)* The review e2e and full-rule axe under paper light, paper dark, and classic (IMPL-0028 6.5)
+
+### Miscellaneous Tasks
+
+- *(ui)* Allow the dev server to read pkg/theme
+- *(ui)* Send pkg/theme to the image build as the theme context
+- Run the ui jobs when pkg/theme changes
+- *(plugin)* Sync pkg/theme into the docz-html skill, checked in CI (IMPL-0028 2.3)
+- Drop the docz-html source skill from the working tree (IMPL-0028 2.12)
+- *(review)* Rebuilt binary walked through in paper light, paper dark, and classic (IMPL-0028 6.6)
 
 ## [2.3.0] - 2026-10-31
 
