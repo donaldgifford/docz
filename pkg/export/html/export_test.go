@@ -1,0 +1,147 @@
+package html
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/donaldgifford/docz/v2/pkg/doczcore/repo"
+)
+
+// fixtureRepo copies a parity fixture into a temporary directory and opens
+// it, so a test may write beside it.
+func fixtureRepo(t *testing.T, name string) *repo.Repo {
+	t.Helper()
+
+	dir := t.TempDir()
+	if err := os.CopyFS(dir, os.DirFS(filepath.Join("..", "..", "..", "test", "parity", "fixtures", name))); err != nil {
+		t.Fatal(err)
+	}
+
+	rp, err := repo.Open(context.Background(), dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return rp
+}
+
+func TestExportWritesThenReportsUnchanged(t *testing.T) {
+	t.Parallel()
+
+	rp := fixtureRepo(t, "rfc")
+
+	var done []string
+
+	ctx := WithHooks(context.Background(), &Hooks{PageDone: func(r PageResult) { done = append(done, r.ID) }})
+
+	first, err := Export(ctx, rp, ExportOptions{Version: "test"})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if first.Out != filepath.Join(rp.Root, DefaultOut) {
+		t.Errorf("Out = %q", first.Out)
+	}
+
+	if len(first.Pages) != 2 || len(done) != 2 {
+		t.Fatalf("%d pages, %d hook calls, want 2 and 2", len(first.Pages), len(done))
+	}
+
+	for _, p := range first.Pages {
+		if p.Action != ActionWrote || !strings.HasPrefix(p.Path, "rfc/") || !strings.HasSuffix(p.Path, ".html") {
+			t.Errorf("page %s %s at %s", p.ID, p.Action, p.Path)
+		}
+
+		body, err := os.ReadFile(filepath.Join(first.Out, filepath.FromSlash(p.Path)))
+		if err != nil || !bytes.Equal(body, p.Body) {
+			t.Errorf("%s on disk differs from the report: %v", p.Path, err)
+		}
+	}
+
+	second, err := Export(context.Background(), rp, ExportOptions{Version: "test"})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	for _, p := range second.Pages {
+		if p.Action != ActionUnchanged {
+			t.Errorf("second run: %s %s, want unchanged", p.Path, p.Action)
+		}
+	}
+}
+
+func TestExportDryRunWritesNothing(t *testing.T) {
+	t.Parallel()
+
+	rp := fixtureRepo(t, "adr")
+
+	rep, err := Export(context.Background(), rp, ExportOptions{DryRun: true, Out: "site"})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if !rep.DryRun || len(rep.Pages) == 0 || rep.Failed() != 0 {
+		t.Fatalf("dry run %v, %d pages, %d failed", rep.DryRun, len(rep.Pages), rep.Failed())
+	}
+
+	if _, err := os.Stat(filepath.Join(rp.Root, "site")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("a dry run created the output directory: %v", err)
+	}
+}
+
+func TestExportByIDAndErrors(t *testing.T) {
+	t.Parallel()
+
+	rp := fixtureRepo(t, "impl")
+
+	rep, err := Export(context.Background(), rp, ExportOptions{IDs: []string{"IMPL-0001"}, DryRun: true})
+	if err != nil || len(rep.Pages) != 1 || rep.Pages[0].ID != "IMPL-0001" {
+		t.Fatalf("Export(IMPL-0001) = %d pages, %v", len(rep.Pages), err)
+	}
+
+	var nf *repo.NotFoundError
+	if _, err := Export(context.Background(), rp, ExportOptions{IDs: []string{"IMPL-0099"}}); !errors.As(err, &nf) {
+		t.Errorf("a missing id: %v, want a NotFoundError", err)
+	}
+
+	var ut *repo.UnknownTypeError
+	if _, err := Export(context.Background(), rp, ExportOptions{Types: []string{"nope"}}); !errors.As(err, &ut) {
+		t.Errorf("an unknown type: %v, want an UnknownTypeError", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if _, err := Export(ctx, rp, ExportOptions{DryRun: true}); !errors.Is(err, context.Canceled) {
+		t.Errorf("a cancelled run: %v", err)
+	}
+}
+
+func TestExportReportsAFailedPage(t *testing.T) {
+	t.Parallel()
+
+	rp := fixtureRepo(t, "design")
+	entries, err := rp.List(context.Background(), []string{"design"})
+	if err != nil || len(entries) == 0 {
+		t.Fatal(err)
+	}
+
+	crlf := strings.ReplaceAll(string(entries[0].Content), "\n", "\r\n")
+	if err := os.WriteFile(rp.Path(entries[0].Path), []byte(crlf), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	rep, err := Export(context.Background(), rp, ExportOptions{DryRun: true})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if rep.Failed() != 1 || rep.Pages[0].Action != ActionFailed || !strings.Contains(rep.Pages[0].Error, "line endings") {
+		t.Errorf("first page %s %q, want it failed for its line endings; %d failed", rep.Pages[0].Action, rep.Pages[0].Error, rep.Failed())
+	}
+}

@@ -432,16 +432,16 @@ and the browser test. The skill moves to stage 2. This is the `minor`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `export.go` in the package: `ExportOptions`, `Report` (per page:
+- [x] `export.go` in the package: `ExportOptions`, `Report` (per page:
   id, path, action `wrote`/`unchanged`/`failed`, hash, unresolved links,
   problems), and `Export(ctx, rp, opts)`, listing through `repo.List` and
   `repo.Find`, resolving each document's spec through `repo.Template`,
   checking `ctx` between documents, and writing only under `Out`
   (`build/html` relative to the root when empty), mirroring each type's
   directory.
-- [ ] "Unchanged": compare the render with the bytes on disk and skip the
+- [x] "Unchanged": compare the render with the bytes on disk and skip the
   write when equal.
-- [ ] Hooks `{PageDone}` in the `WithHooks`/`HooksFrom` shape.
+- [x] Hooks `{PageDone}` in the `WithHooks`/`HooksFrom` shape.
 - [ ] Links: `#slug` within the page; a relative link to a document this
   run exports becomes a relative link to its page; anything else goes
   through `RenderOptions.Resolve`, and an unresolved link is reported.
