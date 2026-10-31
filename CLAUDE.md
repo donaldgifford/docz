@@ -245,7 +245,8 @@ created. It is three pieces, and `ui/CLAUDE.md` has the detail.
   `Origin` and a JSON body, because a forged submission is a prompt
   injection into the agent.
 - **The plugin** is `plugins/docz-review/`: a `PostToolUse` hook on `Bash`
-  that arms what `docz create` or `docz-review arm` named, a `Stop` hook
+  that arms what `docz-review arm` named, and what `docz create` reported
+  only while `DOCZ_REVIEW_AUTO_ARM` is on (off by default), a `Stop` hook
   that runs `docz-review --pending --hook` for up to 24 hours, and the
   `/docz-review:review` skill. The repository root's
   `.claude-plugin/marketplace.json` makes this repository the `docz`

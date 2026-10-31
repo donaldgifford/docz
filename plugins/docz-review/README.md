@@ -1,7 +1,8 @@
 # docz-review
 
 A Claude Code plugin that holds the end of a turn until you have reviewed
-every docz document the agent created in it. When the turn ends, a page
+the docz documents queued in it: the ones you asked to review, and, if
+you turn it on, every one the agent created. When the turn ends, a page
 opens in your browser with each document rendered, its open questions as
 choices, its validation findings, and room to comment on any passage.
 Approve, ask for changes, or dismiss each one. Changes go back to the
@@ -50,8 +51,8 @@ docz-review needs docz 2.2.0 or later. Check what it found with:
 docz-review --version
 ```
 
-Without the binary the plugin never blocks a session. After a
-`docz create` it shows one message naming this page; at the end of a
+Without the binary the plugin never blocks a session. With auto-arming
+on, a `docz create` shows one message naming this page; at the end of a
 turn it writes one line to stderr, which Claude Code shows only with
 `claude --debug`.
 
@@ -68,16 +69,58 @@ timeout. See [the hook drill](docs/hook-drill.md) for what was observed.
 
 A document is queued for review, or armed, in two ways:
 
-- **`docz create`** run by the agent. The hook reads the path from the
-  command's output. Pass `--format json` to `docz create` so the hook
-  reads a JSON envelope rather than a `Created` line.
-- **`/docz-review:review <id|path>...`** for a document the agent did
-  not create in this session, such as one it edited. With no arguments
-  the skill lists what is queued.
+- **`/docz-review:review <id|path>...`**, or asking the agent to review
+  a document, which runs the same skill. It queues the documents for
+  the end of the turn. With no arguments the skill lists what is
+  queued.
+- **`docz create`** run by the agent, **only with auto-arming on**. The
+  hook reads the path from the command's output. Pass `--format json`
+  to `docz create` so the hook reads a JSON envelope rather than a
+  `Created` line.
 
 Each candidate is checked through `docz inspect` before it is recorded.
 One that does not resolve is named in a message to you and skipped. A
-session that never runs either sees nothing.
+session that does neither sees nothing.
+
+### Auto-arming
+
+Auto-arming is off by default, because a review holds the end of the
+turn until you answer it. Without it, ask the agent to create a
+document, and review it when you are ready with
+`/docz-review:review <id>`. To review every document the agent creates,
+set `DOCZ_REVIEW_AUTO_ARM` to `1` (or `true`, `yes`, `on`) in the
+environment Claude Code starts with:
+
+```bash
+DOCZ_REVIEW_AUTO_ARM=1 claude
+```
+
+or in the `env` block of your Claude Code settings, `~/.claude/settings.json`
+for every repository or `.claude/settings.json` for one:
+
+```json
+{
+  "env": { "DOCZ_REVIEW_AUTO_ARM": "1" }
+}
+```
+
+The hooks read it each time they run, so a change applies from the next
+session that has it.
+
+## Without the plugin
+
+The binary reviews a document on its own. From a Claude Code prompt,
+
+```text
+! docz-review DESIGN-0031
+```
+
+opens the page, waits for you, and prints your feedback into the
+conversation, where the agent acts on it. Each run is one round: run it
+again once the agent has made the changes. Run it with `!` rather than
+asking the agent to, since a Bash tool call times out long before a
+review needs to. From a terminal it prints the same feedback, and
+`--json` prints the review records instead.
 
 ## States
 
@@ -155,8 +198,12 @@ provides.
    ```bash
    cd ~/docz-review-test/repo
    PATH="$HOME/docz-review-test/bin:$PATH" \
-     DOCZ_REVIEW_DOCZ="$HOME/docz-review-test/bin/docz" claude
+     DOCZ_REVIEW_DOCZ="$HOME/docz-review-test/bin/docz" \
+     DOCZ_REVIEW_AUTO_ARM=1 claude
    ```
+
+   `DOCZ_REVIEW_AUTO_ARM=1` makes step 4's `docz create` queue the
+   document; leave it out to try `/docz-review:review` instead.
 
    For a scratch repository, `git init` and `docz init` in an empty
    directory are enough; nothing has to be pushed.
@@ -182,7 +229,7 @@ log under `~/.claude/debug/` names each hook that ran and each one an
 and removing it starts every review over.
 
 To check the missing-binary path, give Claude Code a `PATH` with docz
-but not docz-review. A `docz create` then shows
+but not docz-review, and auto-arming on. A `docz create` then shows
 `docz-review is not installed, so this document will not be reviewed`,
 and the turn ends without a review.
 
@@ -249,10 +296,12 @@ Either way, the binary is installed separately, as above.
 
 ## What to expect
 
-From a trial on Claude Code 2.1.280, the session looks like this:
+From a trial on Claude Code 2.1.280, with auto-arming on, the session
+looks like this:
 
 1. The agent runs `docz create`. The hook queues the document and says
-   nothing.
+   nothing. Without auto-arming, `/docz-review:review <id>` queues it
+   instead.
 2. The agent ends its turn. Claude Code shows its stop hooks running,
    and the page opens in your browser with every queued document.
 3. You select a passage and comment on it, or comment on the whole

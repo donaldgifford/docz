@@ -5,9 +5,10 @@
  * to EOF and recognises two commands by word presence alone, never running
  * or interpreting the shell text:
  *
- *   docz create          the path in the JSON envelope `--format json`
- *                        printed, else every `Created <TYPE>: <path>` line
  *   docz-review arm ...  the explicit form the plugin's skill uses
+ *   docz create          the path in the JSON envelope `--format json`
+ *                        printed, else every `Created <TYPE>: <path>` line,
+ *                        only while DOCZ_REVIEW_AUTO_ARM is on
  *
  * Every candidate is validated through `docz inspect --repo-root <cwd>`
  * before it is recorded. One that does not resolve is dropped and named
@@ -135,14 +136,31 @@ function envelopePath(block: string): string | null {
   }
 }
 
-/** The candidates a request names, in order, without duplicates. */
-export function candidates(req: HookRequest): string[] {
+/** The values of DOCZ_REVIEW_AUTO_ARM that turn auto-arming on. */
+const ON = new Set(["1", "true", "yes", "on"]);
+
+/**
+ * Whether `docz create` arms what it created. Off unless
+ * DOCZ_REVIEW_AUTO_ARM is 1, true, yes, or on, in any case: a review
+ * blocks the end of a turn, so it is something a person asks for.
+ */
+export function autoArmEnabled(
+  env: Record<string, string | undefined>,
+): boolean {
+  return ON.has((env.DOCZ_REVIEW_AUTO_ARM ?? "").trim().toLowerCase());
+}
+
+/**
+ * The candidates a request names, in order, without duplicates. What
+ * `docz create` reported counts only under `autoArm`.
+ */
+export function candidates(req: HookRequest, autoArm: boolean): string[] {
   if (req.tool_name !== "Bash" || typeof req.tool_input?.command !== "string") {
     return [];
   }
   const command = req.tool_input.command;
   const found: string[] = [];
-  if (hasWord(command, "docz")) {
+  if (autoArm && hasWord(command, "docz")) {
     found.push(...createdPaths(responseText(req.tool_response)));
   }
   if (hasWord(command, "docz-review")) {
@@ -155,6 +173,8 @@ export interface ArmDeps {
   docz: Docz;
   /** The state directory (stateRoot). */
   base: string;
+  /** Whether `docz create` arms what it created (autoArmEnabled). */
+  autoArm: boolean;
 }
 
 /** Resolves each target through `docz inspect`, keeping the failures. */
@@ -200,7 +220,7 @@ export async function armFromHook(
   } catch {
     return { armed: [], dropped: [], stdout: "" };
   }
-  const found = candidates(req);
+  const found = candidates(req, deps.autoArm);
   if (found.length === 0) {
     return { armed: [], dropped: [], stdout: "" };
   }

@@ -21,7 +21,7 @@ import { parseArgs } from "node:util";
 
 import { SUPPORTED } from "@/cli/validate";
 
-import { armFromHook, resolveTargets } from "./arm";
+import { armFromHook, autoArmEnabled, resolveTargets } from "./arm";
 import { Docz, resolveDocz } from "./docz";
 import { Lease, LeaseHeldError } from "./lease";
 import { Review } from "./round";
@@ -190,6 +190,7 @@ async function arm(io: Io, flags: Flags, targets: string[]): Promise<number> {
     const res = await armFromHook(raw, {
       docz: new Docz(bin),
       base: stateRoot(io.env),
+      autoArm: autoArmEnabled(io.env),
     });
     io.out(res.stdout);
     return 0;

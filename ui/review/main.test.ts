@@ -39,6 +39,7 @@ function world(docs = [A, B, C]) {
   const env = {
     DOCZ_REVIEW_DOCZ: fake.bin,
     DOCZ_REVIEW_STATE_DIR: base,
+    DOCZ_REVIEW_AUTO_ARM: "1",
     PATH: "",
   };
   const run = async (

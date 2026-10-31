@@ -1,6 +1,6 @@
 {
   "name": "docz-review",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Blocks the end of a turn on a browser review of every docz document the agent created, and feeds the reviewer's answers back as the next instruction.",
   "author": {
     "name": "Donald Gifford",

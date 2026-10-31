@@ -59,8 +59,9 @@ created: 2026-10-23
 ## Overview
 
 `docz-review` is a local, opt-in review step for documents an agent writes
-in a Claude Code session. A `PostToolUse` hook arms it when `docz create`
-runs; a `Stop` hook opens a page at the end of the agent's turn; the
+in a Claude Code session. A `PostToolUse` hook arms it when the person
+asks for a review, or, with auto-arming on, when `docz create` runs; a
+`Stop` hook opens a page at the end of the agent's turn; the
 person answers open questions by letter, annotates passages, and submits;
 the review returns to the agent as one message through the hook's
 `decision: block` output, and the rounds repeat until the person approves.
@@ -325,7 +326,8 @@ reads the request to EOF, and recognises two commands in
 `tool_input.command`, checked only by whether `docz` or `docz-review`
 appears as a word; it never executes or interprets the shell text:
 
-1. **`docz create`.** When `tool_response` carries the JSON envelope
+1. **`docz create`**, only while `DOCZ_REVIEW_AUTO_ARM` is on (amended
+   2026-10-31, below). When `tool_response` carries the JSON envelope
    `docz create --format json` printed, the `path` field is the
    candidate. Otherwise every `Created <TYPE>: <path>` line in the
    response text is a candidate (one per creation; a command that only
@@ -2190,6 +2192,15 @@ each decision it touches, so none is amended:
 | `stop_hook_active` is `false` on the first request and `true` after a block. The host ends a turn after nine consecutive blocks with no tool call between (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`); a tool call resets the count, fifteen honoured in a row | Question 4: `--max-rounds` bounds a review, since the agent edits between rounds; docz-review ignores `stop_hook_active` |
 | `tool_response` is `{stdout, stderr, interrupted, isImage, noOutputExpected}` plus `bashEditDiff` for a command that wrote files, `stdout` capped at 30,000 characters; a failed command fires `PostToolUseFailure` | Section 2's arming parser, unchanged: no diff line can start a `Created` line or an envelope |
 | A `systemMessage` beside a block is shown to the person as `Stop says:`, the reason as `Stop hook error:`; the agent sees only the reason | Section 2's hook output |
+
+**Amended 2026-10-31: auto-arming is opt-in.** A review holds the end of
+the turn, and someone who installs the plugin may want to create
+documents freely and review them later. `docz create` now arms only while
+`DOCZ_REVIEW_AUTO_ARM` is `1`, `true`, `yes`, or `on`; otherwise a
+document is armed by `docz-review arm`, through `/docz-review:review`,
+which is unchanged. The variable is read by `docz-review arm --from-hook`
+(`autoArmEnabled`), and `arm.sh` reads it too, so its missing-binary
+message follows the same rule. Plugin 0.2.0.
 
 <!--docz:decisions:end-->
 
