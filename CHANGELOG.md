@@ -28,6 +28,7 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(ui)* Gen-themes reads the dark block with includes
 - *(site)* The topbar, logo, and palette scrim read the theme's tokens
+- *(theme)* The runtime's cssEscape fallback escapes backslashes too
 
 ### Refactor
 
