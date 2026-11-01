@@ -17,7 +17,9 @@ import {
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { DocSurface } from "@/components/doc-surface";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
+import { typeColor } from "@/lib/colors";
 import { recordRecentDoc } from "@/lib/recentDocs";
 import { useRenderedMarkdown } from "@/markdown/useRenderedMarkdown";
 
@@ -326,9 +328,11 @@ export function Component() {
 
       {format === "html" ? (
         fragment !== undefined ? (
-          <DocPane html={fragment.html} />
+          <DocPane html={fragment.html} accent={typeColor(doc.type)} />
         ) : (
-          <article className="doc-prose">{rendered.data?.content}</article>
+          <DocSurface accent={typeColor(doc.type)}>
+            <article className="doc-prose">{rendered.data?.content}</article>
+          </DocSurface>
         )
       ) : (
         /* eslint-disable jsx-a11y/no-noninteractive-tabindex --

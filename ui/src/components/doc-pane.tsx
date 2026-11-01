@@ -8,6 +8,7 @@ import {
 import { createRoot, type Root } from "react-dom/client";
 import { useNavigate, useSearchParams } from "react-router";
 
+import { accentProperties } from "@/components/doc-surface";
 import { defaultTheme } from "@/lib/theme";
 import { MermaidBlock } from "@/markdown/mermaid-block";
 
@@ -52,12 +53,12 @@ function siteRoute(anchor: HTMLAnchorElement): string | undefined {
  * the XSS suite here holds the fragment path to the same bar.
  *
  * After it lands the pane renders the fragment in the deployment's
- * document theme, mounts pkg/theme's runtime inside it with the tab kept
+ * document theme, with the type's colour as its accent (DESIGN-0026 §8), mounts pkg/theme's runtime inside it with the tab kept
  * in ?tab= instead of the hash, draws each pre.mermaid with the site's
  * own mermaid, and routes clicks on links the server resolved to site
  * routes through the router.
  */
-export function DocPane({ html }: { html: string }) {
+export function DocPane({ html, accent }: { html: string; accent?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -65,8 +66,14 @@ export function DocPane({ html }: { html: string }) {
   // The tab at mount time, read from the effect without making the tab a
   // reason to remount; later moves go through showTab below.
   const initialTab = useEffectEvent(() => tab);
-  // A tab the reader opens goes into ?tab=, replacing the entry.
+  // A tab the reader opens goes into ?tab=, replacing the entry. The tab
+  // the runtime opens while mounting is not the reader's, so a plain
+  // document URL stays plain.
+  const mounting = useRef(false);
   const keepTab = useEffectEvent((next: string) => {
+    if (mounting.current || next === tab) {
+      return;
+    }
     setParams(
       (prev) => {
         const out = new URLSearchParams(prev);
@@ -88,12 +95,19 @@ export function DocPane({ html }: { html: string }) {
       return;
     }
     el.setAttribute("data-theme", defaultTheme());
+    if (accent !== undefined) {
+      for (const [name, value] of Object.entries(accentProperties(accent))) {
+        (el as HTMLElement).style.setProperty(name, value);
+      }
+    }
 
+    mounting.current = true;
     const mounted = window.docz.mount(el, {
       hash: false,
       tab: initialTab(),
       onTab: keepTab,
     });
+    mounting.current = false;
     showTab.current = mounted.showTab;
 
     const roots: Root[] = [];
@@ -114,7 +128,7 @@ export function DocPane({ html }: { html: string }) {
         for (const root of roots) root.unmount();
       });
     };
-  }, [html]);
+  }, [html, accent]);
 
   // Back and forward move ?tab= without a remount.
   useEffect(() => {

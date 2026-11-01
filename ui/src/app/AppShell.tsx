@@ -1,14 +1,43 @@
-import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { useEffect, useState, type CSSProperties } from "react";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useMatches,
+  useNavigate,
+} from "react-router";
 
 import { useGetSession } from "@/api/__generated__/docz-api";
 import { AppearanceControls } from "@/components/appearance-controls";
 import { CommandPalette } from "@/components/command-palette";
 import { SessionMenu } from "@/components/session-menu";
 import { useAppearance } from "@/lib/appearance";
+import { typeColor } from "@/lib/colors";
 import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
 import { refreshMermaidTheme } from "@/lib/mermaid-theme";
 import { enabledNavLinks } from "@/lib/navLinks";
+
+/**
+ * The accent of a type's routes (DESIGN-0026 §8): a type page and its
+ * documents take the type's colour, the one its directory filter chip
+ * shows, as --type-accent, and the shell's accent follows it, so the logo,
+ * the breadcrumb's leaf, the active sidebar item, and the repository mark
+ * read it. Every other route keeps the shell's own accent.
+ */
+function typeAccentStyle(type: string | undefined): CSSProperties | undefined {
+  if (type === undefined) {
+    return undefined;
+  }
+  return {
+    "--type-accent": typeColor(type),
+    "--color-accent": "var(--type-accent)",
+    "--color-accent-bg":
+      "color-mix(in srgb, var(--type-accent) 10%, transparent)",
+    "--color-accent-border":
+      "color-mix(in srgb, var(--type-accent) 30%, transparent)",
+  } as CSSProperties;
+}
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
@@ -52,8 +81,12 @@ export function AppShell() {
   // The shell's mode (DESIGN-0026 §2); a change redraws every mounted
   // diagram from the new tokens.
   const appearance = useAppearance(undefined, refreshMermaidTheme);
+  const type = useMatches()
+    .map((match) => match.params.type)
+    .find((param) => param !== undefined);
   return (
-    <>
+    // display: contents, so the wrapper only carries the accent.
+    <div className="contents" style={typeAccentStyle(type)}>
       <header className="sticky top-0 z-50 flex h-10 items-center gap-6 border-b border-border-default bg-bg-raised px-4">
         <Link to="/" className="flex items-center gap-[0.55rem]">
           <span
@@ -124,6 +157,6 @@ export function AppShell() {
       <RestoreAfterLogin />
       <Outlet />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-    </>
+    </div>
   );
 }

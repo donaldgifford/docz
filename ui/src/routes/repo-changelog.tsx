@@ -9,6 +9,7 @@ import {
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { DocSurface } from "@/components/doc-surface";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { changelogConfig } from "@/lib/changelogConfig";
 import { useRenderedSource } from "@/markdown/useRenderedMarkdown";
@@ -185,7 +186,11 @@ export function Component() {
     if (rendered.data === undefined) {
       return <ChangelogSkeleton />;
     }
-    return <article className="doc-prose">{rendered.data.content}</article>;
+    return (
+      <DocSurface>
+        <article className="doc-prose">{rendered.data.content}</article>
+      </DocSurface>
+    );
   })();
 
   return (

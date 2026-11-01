@@ -10,6 +10,8 @@ import {
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { DocSurface } from "@/components/doc-surface";
+import { typeColor } from "@/lib/colors";
 import { usePrefetchDoc } from "@/hooks/usePrefetchDoc";
 import { resolveDocType, typeBlurb } from "@/lib/docTypes";
 import { arr } from "@/lib/wire";
@@ -192,39 +194,41 @@ export function Component() {
       {docType === undefined || docs === undefined ? (
         <TypeSkeleton />
       ) : (
-        <article className="doc-prose">
-          <h1 className="mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary">
-            {docType.plural_label}
-          </h1>
-          <p className="mb-7 text-[14px] text-fg-tertiary">
-            {typeBlurb(docType)}
-          </p>
-
-          <h2 id="creating">Creating a new {docType.name}</h2>
-          {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
-              scrollable region must be keyboard-reachable (see MarkdownPre) */}
-          <pre
-            role="region"
-            aria-label="code block"
-            tabIndex={0}
-            className="overflow-x-auto"
-          >
-            <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
-          </pre>
-          {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
-
-          <GenMarker>begin docz auto-generated</GenMarker>
-          <h2 id="all">All {docType.plural_label}</h2>
-          {docs.length === 0 ? (
-            <p className="font-mono text-[14px] text-fg-muted">
-              No {docType.name} documents yet —{" "}
-              <code>docz create {docType.name}</code> scaffolds the first one.
+        <DocSurface accent={typeColor(docType.name)}>
+          <article className="doc-prose">
+            <h1 className="mb-4 font-serif text-[clamp(1.7rem,4vw,2.3rem)] leading-[1.15] font-bold text-fg-primary">
+              {docType.plural_label}
+            </h1>
+            <p className="mb-7 text-[14px] text-fg-tertiary">
+              {typeBlurb(docType)}
             </p>
-          ) : (
-            <DocsTable repoId={repoId} docType={docType} docs={docs} />
-          )}
-          <GenMarker>end docz auto-generated</GenMarker>
-        </article>
+
+            <h2 id="creating">Creating a new {docType.name}</h2>
+            {/* eslint-disable jsx-a11y/no-noninteractive-tabindex --
+              scrollable region must be keyboard-reachable (see MarkdownPre) */}
+            <pre
+              role="region"
+              aria-label="code block"
+              tabIndex={0}
+              className="overflow-x-auto"
+            >
+              <code>{`$ docz create ${docType.name} "Your ${docType.name} title"`}</code>
+            </pre>
+            {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
+
+            <GenMarker>begin docz auto-generated</GenMarker>
+            <h2 id="all">All {docType.plural_label}</h2>
+            {docs.length === 0 ? (
+              <p className="font-mono text-[14px] text-fg-muted">
+                No {docType.name} documents yet —{" "}
+                <code>docz create {docType.name}</code> scaffolds the first one.
+              </p>
+            ) : (
+              <DocsTable repoId={repoId} docType={docType} docs={docs} />
+            )}
+            <GenMarker>end docz auto-generated</GenMarker>
+          </article>
+        </DocSurface>
       )}
     </RepoFrame>
   );

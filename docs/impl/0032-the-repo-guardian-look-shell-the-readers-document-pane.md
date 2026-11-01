@@ -224,13 +224,13 @@ A document in the reader is its exported page.
   note.
 - [x] The breadcrumb, metadata table, lifecycle, and view switch stay
   above the pane; "html" shows the fragment.
-- [ ] The reader's pages, index, and changelog render inside a
+- [x] The reader's pages, index, and changelog render inside a
   `.docz-page`.
-- [ ] `--type-accent` on a type's routes from `typeColor()`; the eyebrow,
+- [x] `--type-accent` on a type's routes from `typeColor()`; the eyebrow,
   breadcrumb leaf, active sidebar item, and repository mark read it, and
   the pane's `--color-accent` takes it. `--color-t-*` per shell mode and
   document theme, held to 4.5:1.
-- [ ] The XSS suite over a hostile fragment; axe over the reader.
+- [x] The XSS suite over a hostile fragment; axe over the reader.
 - [ ] e2e: tabs, the IMPL filter, a question, a widget, a diagram, an
   in-app link, and both modes.
 

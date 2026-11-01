@@ -107,8 +107,8 @@ test("the diagram chunks stay off diagram-free docs", async ({ page }) => {
 
   await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // The reader (and Shiki) are fully loaded; mermaid and ELK never were.
-  await expect(page.locator(".doc-prose pre").first()).toBeVisible();
+  // The document pane is mounted; mermaid and ELK never loaded.
+  await expect(page.locator(".docz-page.js")).toBeVisible();
   expect(diagramRequests).toHaveLength(0);
 });
 

@@ -76,7 +76,7 @@ test("the reader draws each widget and shows an invalid block's errors", async (
   // A document with no widget never loads the chunk.
   await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("article")).toBeVisible();
+  await expect(page.locator(".docz-page.js")).toBeVisible();
   expect(chunks).toEqual([]);
 
   await page.goto("/donaldgifford/docz-site/pages/guides/markdown-specimen.md");

@@ -10,6 +10,7 @@ import {
   SessionRequiredRedirect,
 } from "@/components/query-states";
 import { RepoFrame } from "@/components/repo-frame";
+import { DocSurface } from "@/components/doc-surface";
 import { useRepoDocIndex } from "@/hooks/useRepoDocIndex";
 import { apiConfig } from "@/lib/apiConfig";
 import { pageSourceKeys, pageSourcePath } from "@/lib/pagePaths";
@@ -157,7 +158,9 @@ export function Component() {
     }
     return (
       <>
-        <article className="doc-prose">{rendered.data.content}</article>
+        <DocSurface>
+          <article className="doc-prose">{rendered.data.content}</article>
+        </DocSurface>
         <div
           data-testid="page-meta"
           className="mt-10 border-t border-border-hairline pt-3 font-mono text-[12px] text-fg-muted"
