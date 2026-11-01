@@ -203,7 +203,7 @@ repository.
   (`dropTopLevelBlock`, as `AccessNormalizer` does), in `runCase`'s
   both-sides list, with a unit test in `parity_norm_test.go`. v1.2.2
   never wrote the block, so it is a permitted additive delta.
-- [ ] Tests: the default, normalisation (`" Classic "` becomes
+- [x] Tests: the default, normalisation (`" Classic "` becomes
   `classic`), an unknown value (a warning and `paper`), `ParseBytes` equal to
   `Load` (`parsebytes_test.go`), and `TestConfigJSON_MarshaledShape`
   updated for the new field.
