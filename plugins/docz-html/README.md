@@ -50,3 +50,27 @@ the change to the markdown.
 Stage 1 carried a copy of docz's theme and had the agent assemble the
 page by hand; `docz export html` inlines the theme itself, so the copy is
 gone.
+
+## Evals
+
+`evals/` is a `claude plugin eval` suite of seven cases: two explicit, two
+implicit, one contextual, and two near-miss negatives (a summary of a
+docz document, and HTML for a file that is not one). Each case's
+`scaffold.sh` seeds the run's empty workspace from `evals/fixture/repo/`,
+a small docz repository about a rate limiter whose IMPL has one deliberate
+`docz validate` finding. The graders check what happened, not only what
+was said: that `docz validate` ran before `docz export html`, that the
+page exists under `build/html/`, that the classic theme is on the page,
+that no `.html` file was edited, that the page was not opened unasked,
+and that neither negative fires the skill.
+
+From the repository root:
+
+```bash
+just plugin-eval docz-html                    # every case, 3 runs, with a no-plugin baseline
+just plugin-eval docz-html --runs 1 -j 4      # a quicker pass
+just plugin-eval docz-html --case docz-html-imp-002 --ablation none
+```
+
+The recipe builds docz and runs the suite against that binary. Each run
+is a Claude session on your own credential, so the suite is not in CI.

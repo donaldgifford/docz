@@ -183,6 +183,20 @@ parity-capture:
     [ -n "$tmp" ] && rm -rf "$tmp" || true
     echo "✓ Goldens captured into test/parity/testdata (record provenance in test/parity/README.md)"
 
+# ─── Plugin evals ──────────────────────────────────────────────────
+#
+# Runs a plugin's eval suite (plugins/<name>/evals/) with `claude plugin
+# eval`, against this checkout's docz: build/bin goes first on PATH for the
+# scaffold scripts, which copy docz to where the sandboxed agent finds it
+# (plugins/docz-html/evals/fixture/setup.sh says why). Every run is a
+# claude child on your own credential, so this is local only and not in
+# `ci`. Extra arguments pass through: --case, --runs, --ablation none, -j 4.
+
+# Run a plugin's eval suite against this checkout's docz
+[group('test')]
+plugin-eval plugin *args: build
+    @PATH="{{ absolute_path(bin_dir) }}:$PATH" claude plugin eval plugins/{{ plugin }} --scaffold --trust-plugin --no-publish --allow-tools "Bash(docz *)" Edit {{ args }}
+
 # ─── Corpus validation (IMPL-0018 Phase 5) ─────────────────────────
 #
 # Non-strict on purpose (DESIGN-0015, IMPL-0018 Open Question 7): errors fail

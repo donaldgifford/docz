@@ -298,6 +298,15 @@ plugin job's drift check went with it.
   fallback), and redraw on a mode change; an island that fails to parse
   or draw leaves the fallback. `pkg/export/html/widgets.go` writes the
   figure from a validated block.
+- **The skill's evals.** `plugins/docz-html/evals/` is a seven-case
+  `claude plugin eval` suite over a fixture repository in
+  `evals/fixture/repo/`, run with `just plugin-eval docz-html` (local only:
+  each run is a Claude session). The run's sandboxed Bash gets a login
+  PATH, not the caller's, and cannot read the home directory or `/tmp`, so
+  `evals/fixture/setup.sh` copies the build's docz into the run's own
+  `$HOME/.nix-profile/bin`, the first entry of that PATH. An export is
+  graded by the page existing (`file_exists`), never by the command being
+  called, because a `docz` that is not found still counts as a call.
 - **The browser test.** `ui/e2e/export-html.spec.ts` (in `just ui e2e`,
   so the `ui-e2e` job, which builds docz first) exports copies of the
   parity fixtures with that docz and opens pages from `file://`: every
