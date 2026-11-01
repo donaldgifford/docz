@@ -491,7 +491,8 @@ docz-site, and in a review.
   (Open Question 10). It stays in the index as the record.
 - [x] Mark DESIGN-0025's rollout complete, with this plan as step 5.
 - [ ] Close #214, #213, and #209 from the final PR, and comment on #212
-  that Phase 5's components are in place.
+  that Phase 5's components are in place. `deferred - human required`:
+  the PR body carries the `Closes` lines once the PR is opened.
 - [x] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the
   plugin README against what shipped.
 - [ ] Regenerate the changelog as the last commit of every PR.
@@ -536,24 +537,26 @@ docz-site, and in a review.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Config: the default, normalisation, an unknown value, `ParseBytes`
+- [x] Config: the default, normalisation, an unknown value, `ParseBytes`
   equal to `Load`, the JSON shape, and the consumer module.
-- [ ] Parity: `HTMLNormalizer` unit-tested and `just parity` green.
-- [ ] CLI contract: `inspect` and `export-html` fixtures validated against
+- [x] Parity: `HTMLNormalizer` unit-tested and `just parity` green.
+- [x] CLI contract: `inspect` and `export-html` fixtures validated against
   their closed schemas with the new field.
-- [ ] Export: the key picks the theme, `--theme` overrides it, and there
+- [x] Export: the key picks the theme, `--theme` overrides it, and there
   is a golden per theme.
-- [ ] Review: a session per theme from the repository's key, axe on each,
+- [x] Review: a session per theme from the repository's key, axe on each,
   and no theme selector.
-- [ ] Site: `resolveTheme` both ends, readiness on a bad `DOCZ_THEME`,
+- [x] Site: `resolveTheme` both ends, readiness on a bad `DOCZ_THEME`,
   the selector, stored over injected, mermaid and Shiki per theme, and
   axe per theme and mode.
-- [ ] Chart: `site.config.theme` set and unset.
-- [ ] Contrast: every theme and mode, including the new one.
-- [ ] Widgets: shared fixtures agree with the Go validator, the XSS
+- [x] Chart: `site.config.theme` set and unset.
+- [x] Contrast: every theme and mode, including the new one.
+- [x] Widgets: shared fixtures agree with the Go validator, the XSS
   suite, the axe sweep, the bundle budget, and e2e in the reader and the
   review.
-- [ ] Plugin: `just plugin-eval docz-html` with the new case.
+- [x] Plugin: `just plugin-eval docz-html` with the new case. Run
+  2026-11-01 on plugin 0.3.0: 8 of 8 cases, mean delta 0.27; 0.3.1
+  changed reference text only (`charcoal` named).
 
 <!--docz:testing:end-->
 
