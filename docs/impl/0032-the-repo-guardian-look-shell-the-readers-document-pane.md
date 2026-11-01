@@ -258,7 +258,7 @@ A document in the reader is its exported page.
 - [x] The review e2e under both modes.
 - [x] `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and DESIGN-0025's
   §3 note on the site's theme.
-- [ ] Regenerate the changelog as the last commit.
+- [x] Regenerate the changelog as the last commit.
 
 <!--docz:tasks:end-->
 

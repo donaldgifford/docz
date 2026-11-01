@@ -23,6 +23,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(site)* Validate widget blocks in TypeScript, held to Go by a shared corpus
 - *(site)* Mark docz-* widget fences after sanitize and before Shiki
 - *(site)* Draw docz-flow, docz-stepper, and docz-scorecard in React
+- *(export/html)* Render a fragment for a host page to embed, and docz export html --fragment
+- *(theme)* Docz.mount runs the runtime inside one element, for a host page that embeds a fragment
+- *(api)* Serve each document as a docz-html fragment for the reader (spec 1.8.0)
+- *(site)* Generate page.css, pkg/theme scoped to .docz-page, beside the theme list
+- *(site)* The shell in repo-guardian's look, light and dark, with no theme selector
+- *(site)* Restyle the shell's chrome to repo-guardian's density
+- *(site)* The reader shows a document as its docz-html fragment
+- *(site)* Pages in a .docz-page, and each type's colour as the accent
+- *(review)* The review page wears the shell, its document in the repository's theme
 
 ### Bug Fixes
 
@@ -54,6 +63,9 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(design)* DESIGN-0025's rollout is complete, IMPL-0030 its step 5
 - CLAUDE.md and the plugin README match what IMPL-0030 shipped
 - *(impl)* IMPL-0030's testing plan is met
+- *(impl)* IMPL-0030 is Completed, merged as #217
+- *(design)* DESIGN-0026 and IMPL-0032, the shell in repo-guardian's look and the reader's documents as docz-html pages
+- The shell, the document pane, and the review page's column (IMPL-0032)
 
 ### Styling
 
@@ -76,6 +88,8 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - *(site)* The XSS suite covers the widget path
 - *(site)* The widget XSS helper guards instead of asserting
 - *(site)* E2e draws each widget in the reader and on the review page
+- *(site)* MSW serves each demo document's fragment, rendered by docz-api's own renderer
+- *(site)* E2e over the reader's document pane in both shell modes
 
 ### Miscellaneous Tasks
 
