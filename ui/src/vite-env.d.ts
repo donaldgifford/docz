@@ -10,6 +10,12 @@ interface ImportMetaEnv {
    * DOCZ_MERMAID_LAYOUT wins over this.
    */
   readonly VITE_MERMAID_LAYOUT?: string;
+  /**
+   * Build-time default theme, a pkg/theme name. Untrusted like any env
+   * var — `src/lib/theme.ts` validates it. The runtime DOCZ_THEME and a
+   * reader's stored pick both win over this.
+   */
+  readonly VITE_THEME?: string;
 }
 
 interface ImportMeta {

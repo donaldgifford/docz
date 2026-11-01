@@ -21,7 +21,7 @@ import {
   type ReviewSession,
   takeToken,
 } from "@/review/api";
-import { applyStoredMode, applyTheme } from "@/review/appearance";
+import { applyStoredMode, applyTheme } from "@/lib/appearance";
 import { ReviewApp, SESSION_KEY } from "@/review/app";
 
 /*

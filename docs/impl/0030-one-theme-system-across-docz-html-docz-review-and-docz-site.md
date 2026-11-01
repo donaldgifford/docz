@@ -306,7 +306,7 @@ surface is checked under each.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Move the mode half of `src/review/appearance.ts` to
+- [x] Move the mode half of `src/review/appearance.ts` to
   `src/lib/appearance.ts`, shared by the review page and the site. The
   site adds a theme half that the review page does not import: stored
   `docz:theme`, then the injected default, then `paper`.

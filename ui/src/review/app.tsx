@@ -9,7 +9,7 @@ import {
   type ReviewClient,
   type ReviewDocument,
 } from "@/review/api";
-import { useAppearance } from "@/review/appearance";
+import { useAppearance } from "@/lib/appearance";
 import { AppearanceControls, ReviewButton } from "@/review/controls";
 import { DocumentReview } from "@/review/document-review";
 import { emptyDraft, type Draft } from "@/review/draft";

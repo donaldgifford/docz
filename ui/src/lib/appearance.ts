@@ -6,14 +6,18 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { THEMES_WITH_MODES } from "@/theme/__generated__/themes";
+
 /*
- * The review page's appearance (DESIGN-0025 §3 as amended by IMPL-0030).
- * The theme is the repository's: docz inspect reports `html.theme`, the
- * server passes it in the session, and the page sets data-theme from it
- * and offers no other. The mode is the reader's: data-mode, remembered
- * under docz:mode, the key every exported page's runtime uses too. With
- * no stored mode the page follows the system, and data-mode stays unset
- * so the theme's prefers-color-scheme block applies.
+ * The appearance shared by docz-site and the review page (DESIGN-0025 §3
+ * as amended by IMPL-0030): data-theme and data-mode on <html>, the
+ * attributes pkg/theme's token blocks select on. Who picks the theme
+ * differs by surface and lives elsewhere: the review page takes the
+ * repository's from its session, and the site reads src/lib/theme.ts.
+ * The mode is always the reader's: data-mode, remembered under
+ * docz:mode, the key every exported page's runtime uses too. With no
+ * stored mode the page follows the system, and data-mode stays unset so
+ * the theme's prefers-color-scheme block applies.
  */
 
 export type Mode = "light" | "dark";
@@ -22,14 +26,11 @@ const MODE_KEY = "docz:mode";
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /**
- * Themes with a light and a dark look. The others have one look in
- * every mode, so the toggle would do nothing on them.
+ * hasModes says whether the light/dark toggle means anything on theme:
+ * a theme without a dark block has one look in every mode.
  */
-const THEMES_WITH_MODES: ReadonlySet<string> = new Set(["paper"]);
-
-/** hasModes says whether the light/dark toggle means anything on theme. */
 export function hasModes(theme: string): boolean {
-  return THEMES_WITH_MODES.has(theme);
+  return (THEMES_WITH_MODES as readonly string[]).includes(theme);
 }
 
 function isMode(value: string | null): value is Mode {

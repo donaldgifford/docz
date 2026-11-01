@@ -8,7 +8,7 @@ import {
   hasModes,
   storedMode,
   useAppearance,
-} from "@/review/appearance";
+} from "@/lib/appearance";
 import { AppearanceControls } from "@/review/controls";
 
 const root = document.documentElement;

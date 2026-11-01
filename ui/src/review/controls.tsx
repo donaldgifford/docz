@@ -1,6 +1,6 @@
 import type { ComponentPropsWithoutRef } from "react";
 
-import { type Appearance, hasModes } from "@/review/appearance";
+import { type Appearance, hasModes } from "@/lib/appearance";
 
 /*
  * The review page's one button, in docz-site's chrome: mono, sharp
