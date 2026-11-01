@@ -495,7 +495,7 @@ docz-site, and in a review.
   the PR body carries the `Closes` lines once the PR is opened.
 - [x] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the
   plugin README against what shipped.
-- [ ] Regenerate the changelog as the last commit of every PR.
+- [x] Regenerate the changelog as the last commit of every PR.
 
 <!--docz:tasks:end-->
 
