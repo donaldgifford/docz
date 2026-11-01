@@ -445,13 +445,13 @@ docz-site, and in a review.
   valid and invalid block with an `.errors.golden` listing the expected
   errors and lines, written by the Go tests with `-update` and read by
   the UI tests, so either side drifting fails a test.
-- [ ] `Flow`, `Stepper`, and `Scorecard` components drawn from tokens
+- [x] `Flow`, `Stepper`, and `Scorecard` components drawn from tokens
   only, with `textContent`-equivalent rendering (no
   `dangerouslySetInnerHTML`, no `innerHTML`). They redraw on a theme or
   mode change, and are lazy-loaded so the bundle budget holds.
-- [ ] An invalid block renders as a caution callout naming each error at
+- [x] An invalid block renders as a caution callout naming each error at
   its line, followed by the YAML, as the export does.
-- [ ] `MarkdownPre` routes marked blocks to the components, and the
+- [x] `MarkdownPre` routes marked blocks to the components, and the
   review render mode keeps `data-line` on the widget root, as
   `MermaidBlock` does, so annotations anchor to it.
 - [ ] Extend the XSS suite (`processor.xss.test.tsx`) to the widget path:
