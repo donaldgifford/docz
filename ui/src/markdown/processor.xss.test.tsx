@@ -290,8 +290,10 @@ async function drawn(
     const figure = container.querySelector<HTMLElement>(
       `figure[data-widget="${name}"]`,
     );
-    expect(figure).not.toBeNull();
-    return figure as HTMLElement;
+    if (figure === null) {
+      throw new Error(`no ${name} widget yet`);
+    }
+    return figure;
   });
 }
 
