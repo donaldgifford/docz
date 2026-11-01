@@ -13,6 +13,7 @@
  * @theme values below, which Tailwind still needs to generate every
  * utility and which equal classic's (pkg/theme's TestClassicMatchesUITokens).
  * index.html and review.html set data-theme. */
+@import "../../../pkg/theme/tokens/charcoal.css";
 @import "../../../pkg/theme/tokens/classic.css";
 @import "../../../pkg/theme/tokens/paper.css";
 

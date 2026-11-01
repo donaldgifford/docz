@@ -398,7 +398,7 @@ offer it.
   and warn may need the same, and each move is noted in the file.
 - [x] `pkg/export/html`: a full-page golden per theme, the theme cut to
   its markers as today.
-- [ ] `ui/src/theme/tokens.css` imports the new file, and docz-site's
+- [x] `ui/src/theme/tokens.css` imports the new file, and docz-site's
   selector offers it with no change to the selector.
 - [ ] The e2e and axe runs of Phases 2 and 3 cover it through the theme
   list, with no new spec.
