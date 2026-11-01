@@ -134,8 +134,9 @@ theme (`charcoal` or `classic` today). The value becomes the site's
 `DOCZ_THEME`, rendered only when set, and the schema accepts only the names
 `pkg/theme` has, so a typo fails `helm install` instead of the site's
 `/readyz`. There is no theme selector in the topbar, only the light/dark
-toggle. Exported pages and docz-review take their theme from each
-repository's `.docz.yaml` `html.theme`, which this value does not touch.
+toggle. Exported pages and docz-review's document column take their
+theme from each repository's `.docz.yaml` `html.theme`, which this value
+does not touch.
 
 ## Login providers
 

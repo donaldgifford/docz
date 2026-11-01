@@ -175,20 +175,45 @@ the move changed about the repository.
   via `COPY --from=spec openapi.yaml /api/openapi.yaml`, laid out so orval's
   `../api/openapi.yaml` resolves inside the stage, and `api/cli/` the same way
   for `gen-cli`, since `tsc -b` checks the review page too. `pkg/theme` arrives
-  as a second named context, `theme`, copied to `/pkg/theme` so
-  `src/theme/tokens.css`'s `@import "../../../pkg/theme/tokens/…"` resolves
-  (IMPL-0028); `just ui docker-build` passes the same `--build-context`, and
-  `vite.config.ts` lists `../pkg/theme` in `server.fs.allow` beside the
-  workspace root. `tokens.css` keeps its `@theme` block, whose values equal
-  `classic`'s, because Tailwind generates the utilities from it; the
-  unlayered theme blocks override it. `index.html` sets
-  `data-theme="classic"`; `review.html` sets `paper` (IMPL-0028 Phase 6),
-  and the review page renders in the repository's `html.theme`, which
-  `docz inspect` reports and the session carries (IMPL-0030), with no theme
-  selector and, on paper, a light/dark toggle sharing `docz:mode` with
-  exported pages (`src/review/appearance.ts`); a mode change redraws mermaid through
-  `refreshMermaidTheme`. `contrast.test.ts` holds every theme and mode to
-  4.5:1, reading `pkg/theme`. Only the spec, the CLI schemas, and the themes cross the boundary; `.dockerignore` excludes `ui` from the api image's root context.
+  as a second named context, `theme`, copied to `/pkg/theme`, where
+  `gen-themes` reads the token files and writes `page.css` (pkg/theme
+  scoped to `.docz-page`) and the pane imports `runtime.js`
+  (IMPL-0028, IMPL-0032); `just ui docker-build` passes the same
+  `--build-context`, and `vite.config.ts` lists `../pkg/theme` in
+  `server.fs.allow` beside the workspace root. **Both pages wear the
+  shell** (DESIGN-0026): `ui/src/theme/shell.css`, repo-guardian's look in
+  light and dark, with no `data-theme` on `<html>` and no theme selector;
+  `tokens.css`'s `@theme` values are the shell's dark set. **A document's
+  theme sits on its own `.docz-page`**: the deployment's `DOCZ_THEME` in
+  the reader, the repository's `html.theme` (which `docz inspect` reports
+  and the session carries, IMPL-0030) in the review page's document
+  column. The light/dark toggle shares `docz:mode` with exported pages,
+  and a mode change redraws mermaid through `refreshMermaidTheme`.
+  `contrast.test.ts` holds the shell in both modes and every theme and
+  mode to 4.5:1, reading `pkg/theme`. Only the spec, the CLI schemas, and
+  the themes cross the boundary; `.dockerignore` excludes `ui` from the
+  api image's root context.
+- **The reader shows a document as its docz-html fragment** (DESIGN-0026,
+  IMPL-0032). `pkg/export/html`'s `RenderOptions.Fragment` writes the
+  page's `div.wrap` inside one `div.docz-page` with no stylesheet, runtime,
+  mermaid loader, or mode toggle (`docz export html --fragment`; the page
+  and the fragment share one template, so the page goldens pin both).
+  docz-api serves it at `GET /api/v1/repos/{owner}/{name}/types/{type}/docs/{doc_id}/html`
+  (`internal/httpapi/fragment.go`, spec 1.8.0): the type's heading spec
+  from its embedded template, `html.theme` from the config snapshot,
+  relative links mapped to docz-site's routes, and the same 404 as
+  `getDoc` for a hidden document. `pkg/theme/runtime.js`'s
+  `docz.mount(scope, opts)` runs the runtime inside one element (`hash`,
+  `tab`, `onTab`; returns `showTab`, `unmount`) and starts itself only when
+  `<html>` has `data-doc`, so exported pages are unchanged. `ui`'s
+  `DocPane` injects the fragment, mounts the runtime with the tab in
+  `?tab=`, draws `pre.mermaid` with the site's mermaid, routes `/`-paths
+  in-app, and falls back to the site's own render with a note when the
+  fragment fails. `TestUIFragmentFixtures` and `TestUIHostileFragments`
+  (`internal/httpapi/ui_fixtures_test.go`, `-update`) render the MSW demo
+  documents and the XSS payloads through the handler's `renderFragment`
+  into `ui/src/mocks/__generated__/`, so the site's tests embed what
+  docz-api sends; both files are in the `go` path filter.
 - **Three components publish from one tag.** Bake has `-api` and `-ui` target
   families, and `ghcr.yml`/`ecr.yml` take a `component` input
   (`api`|`ui`|`chart`) resolved in one table. `api` and `ui` are images only,
@@ -310,9 +335,10 @@ plugin job's drift check went with it.
   build DOM with `textContent` only, mark the figure `drawn` (hiding the
   fallback), and redraw on a mode change; an island that fails to parse
   or draw leaves the fallback. `pkg/export/html/widgets.go` writes the
-  figure from a validated block. docz-site's reader and docz-review draw
-  the same blocks in React (`ui/src/markdown/widgets/`, IMPL-0030 Phase
-  5) through a TypeScript port of the validator, held to `widgets.go` by
+  figure from a validated block. The reader's document pane gets that
+  figure in its fragment and the runtime draws it (IMPL-0032); docz-site's
+  pages and fallback render and docz-review draw the same blocks in React
+  (`ui/src/markdown/widgets/`, IMPL-0030 Phase 5) through a TypeScript port of the validator, held to `widgets.go` by
   the shared corpus `pkg/export/html/testdata/widgets/` (`*.yaml` with a
   `.json.golden` or `.errors.golden` each; `widgets_corpus_test.go` is
   the Go side, `validate.test.ts` the UI's), so a block draws, or fails
@@ -1060,11 +1086,13 @@ version + document consumption). `api/README.md` is the consumer-facing guide.
   UI (OQ-3d). `info.version` is **SemVer from `1.0.0`** (OQ-5a), bumped by hand on
   any specced wire change (patch = editorial, minor = additive, major = breaking),
   independent of the binary version — the consumer-pin signal. **Currently
-  `1.6.2`** (INV-0021: `comments_lost` counts every comment without an
-  anchor after the last update, remembered ones included; `1.6.1` was
-  IMPL-0025: `git_sha` on `Document` described as a blob SHA, a
-  cache key and not a commit, which is why docz-site's reader no longer
-  shows it, #169). The docz-site
+  `1.8.0`** (IMPL-0032: the `html` route serving a document as a
+  docz-html fragment; `1.7.0` was IMPL-0026's bearer scheme and the
+  OAuth routes; `1.6.2` was INV-0021: `comments_lost` counts every
+  comment without an anchor after the last update, remembered ones
+  included; `1.6.1` was IMPL-0025: `git_sha` on `Document` described as
+  a blob SHA, a cache key and not a commit, which is why docz-site's
+  reader no longer shows it, #169). The docz-site
   vendors the file (or fetches the served spec at a pinned version) and generates
   a typed client; see `api/README.md`.
 - **Spec lint/format (OQ-7b):** `just lint-openapi` runs **`vacuum`** (`aqua:

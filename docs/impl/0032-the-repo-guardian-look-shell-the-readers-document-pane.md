@@ -256,7 +256,7 @@ A document in the reader is its exported page.
 - [x] The review page's chrome on the shell; its document column a
   `.docz-page` in the session's theme.
 - [x] The review e2e under both modes.
-- [ ] `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and DESIGN-0025's
+- [x] `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and DESIGN-0025's
   §3 note on the site's theme.
 - [ ] Regenerate the changelog as the last commit.
 
@@ -291,11 +291,11 @@ A document in the reader is its exported page.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Fragment goldens and `FuzzRender` over fragments.
-- [ ] The endpoint in the OpenAPI contract test.
-- [ ] The rewriter's unit tests and the `page.css` drift check.
-- [ ] Contrast, XSS, and axe in `ui`.
-- [ ] e2e for the reader and the review page in both modes.
+- [x] Fragment goldens and `FuzzRender` over fragments.
+- [x] The endpoint in the OpenAPI contract test.
+- [x] The rewriter's unit tests and the `page.css` drift check.
+- [x] Contrast, XSS, and axe in `ui`.
+- [x] e2e for the reader and the review page in both modes.
 
 <!--docz:testing:end-->
 
