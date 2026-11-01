@@ -64,5 +64,6 @@ docz create impl "Your Implementation Title"
 | IMPL-0029 | docz-site on paper, with the widgets as React components | Cancelled | 2026-10-31 | Donald Gifford | [0029-docz-site-on-paper-with-the-widgets-as-react-components.md](0029-docz-site-on-paper-with-the-widgets-as-react-components.md) |
 | IMPL-0030 | One theme system across docz-html, docz-review, and docz-site, with the widgets in the reader | Completed | 2026-11-01 | Donald Gifford | [0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md](0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md) |
 | IMPL-0031 | The review page laid out like docz-html's exported page | Draft | 2026-11-01 | Donald Gifford | [0031-the-review-page-laid-out-like-docz-htmls-exported-page.md](0031-the-review-page-laid-out-like-docz-htmls-exported-page.md) |
+| IMPL-0032 | The repo-guardian-look shell, the reader's document pane from pkg/export/html, and per-type accents | Draft | 2026-11-01 | Donald Gifford | [0032-the-repo-guardian-look-shell-the-readers-document-pane.md](0032-the-repo-guardian-look-shell-the-readers-document-pane.md) |
 <!-- markdownlint-restore -->
 <!-- END DOCZ AUTO-GENERATED -->

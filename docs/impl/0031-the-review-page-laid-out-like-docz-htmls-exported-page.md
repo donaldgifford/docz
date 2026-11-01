@@ -432,6 +432,10 @@ review page and the export differ on purpose.
   renderer, but it loses the review render mode (`data-line`, region
   wrappers), the sanitizer, and the highlights, so anchoring breaks.
 
+> **Resolved 2026-11-01: (a).** DESIGN-0026 Open Question 1: the reader
+> embeds the export's fragment, which has nothing to anchor, and the
+> review page keeps its render and builds the components over it.
+
 ### 2. Do hidden panels stay mounted?
 
 - a. Yes. Every panel is in the DOM with `hidden`, so `Range`s, the
@@ -500,6 +504,10 @@ review page and the export differ on purpose.
 - a. Not in this plan. File a follow-up once the review page has shipped
   and the components in `src/layout/` have been used in anger.
 - b. Yes, as a sixth phase, reusing the same components.
+
+> **Resolved 2026-11-01: neither.** The reader shows the export's own
+> page instead, from a fragment docz-api renders (DESIGN-0026, IMPL-0032),
+> so these components stay the review page's.
 
 <!--docz:open-questions:end-->
 
