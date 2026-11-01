@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/donaldgifford/docz/schemas/cli/inspect/v1",
-  "$version": "1.0",
+  "$version": "1.1",
   "title": "docz inspect",
   "description": "Output of `docz inspect <id|path> --format json`: one document's structure, read once.",
   "type": "object",
@@ -80,6 +80,10 @@
     "content": {
       "type": "string",
       "description": "The bytes every other field was read from"
+    },
+    "theme": {
+      "type": "string",
+      "description": "The repository's html.theme, the pkg/theme theme its HTML renders in (since $version 1.1; absent from an older docz, which a consumer reads as paper)"
     }
   },
   "required": [

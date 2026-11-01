@@ -6,6 +6,7 @@
   "id": "",
   "schema": "design",
   "content_sha256": "1fd8e9d3fffa23bc0341a8b2882118ca4fc98faa853cedd12c29a06e84e4c637",
+  "theme": "paper",
   "frontmatter": null,
   "statuses": [
     "Draft",

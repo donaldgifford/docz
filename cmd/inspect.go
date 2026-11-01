@@ -38,6 +38,7 @@ type inspectOutput struct {
 	ID            string              `json:"id"`
 	Schema        string              `json:"schema"`
 	ContentSHA256 string              `json:"content_sha256"`
+	Theme         string              `json:"theme"`
 	Frontmatter   *inspectFrontmatter `json:"frontmatter"`
 	Statuses      []string            `json:"statuses"`
 	Inferred      bool                `json:"inferred"`
@@ -248,6 +249,7 @@ func buildInspect(ctx context.Context, rp *repo.Repo, report *repo.DocumentRepor
 		ID:            documentID(rp, report),
 		Schema:        report.Schema,
 		ContentSHA256: report.ContentSHA256,
+		Theme:         rp.Cfg.HTML.Theme,
 		Statuses:      append([]string{}, rp.Cfg.Types[report.Type].Statuses...),
 		Inferred:      inferred,
 		Regions:       make([]inspectRegion, 0, len(regions)),

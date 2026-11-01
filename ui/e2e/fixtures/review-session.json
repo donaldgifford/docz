@@ -8,6 +8,7 @@
       "id": "DESIGN-0001",
       "schema": "design",
       "content_sha256": "2f2efe60b30022982e697a7385b6a5aa9e6d87431468efb72beff2bedb706e25",
+      "theme": "paper",
       "frontmatter": {
         "id": "DESIGN-0001",
         "title": "Review cache",
@@ -294,6 +295,7 @@
       "id": "DESIGN-0002",
       "schema": "design",
       "content_sha256": "d5aaef88e1d8377bd04e4c0333ec3be8f739ca6e7b0f1ef63c9404f960ae22f8",
+      "theme": "paper",
       "frontmatter": {
         "id": "DESIGN-0002",
         "title": "Unmarked notes",
@@ -476,6 +478,7 @@
       "id": "DESIGN-0003",
       "schema": "design",
       "content_sha256": "461afe07ded4ac5a0bd68dfe388ea3819542f675e26c986c4b5308fff40b94aa",
+      "theme": "paper",
       "frontmatter": null,
       "statuses": [
         "Draft",
@@ -605,6 +608,7 @@
       "id": "IMPL-0001",
       "schema": "impl",
       "content_sha256": "eed5301f3248a247ee32cd4d7934d47d73f43d68f17fc36b48be9bd1a256fc2c",
+      "theme": "paper",
       "frontmatter": {
         "id": "IMPL-0001",
         "title": "Ship the cache",

@@ -250,7 +250,7 @@ review session, and neither surface offers a theme selector.
 - [x] The `export-html` JSON report gains `theme` (the theme the run
   used). `api/cli/export-html.schema.json` takes an additive `$version`
   bump, and the contract fixtures are regenerated with `-update`.
-- [ ] `docz inspect --format json` gains a top-level `theme`, the
+- [x] `docz inspect --format json` gains a top-level `theme`, the
   repository's resolved theme. `api/cli/inspect.schema.json` takes an
   additive `$version` bump; `SchemaVersionInspect` stays 1. The review
   fixture is regenerated (`just build && just ui gen-review-fixture`) so
