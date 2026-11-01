@@ -603,6 +603,156 @@
     "inspect": {
       "schema_version": 1,
       "docz_version": "fixture",
+      "path": "docs/design/0004-widget-blocks.md",
+      "type": "design",
+      "id": "DESIGN-0004",
+      "schema": "design",
+      "content_sha256": "17cb0385f9c01fd8695eaaf94821bcf6e03792b0bc31a706c163bf788136d281",
+      "theme": "paper",
+      "frontmatter": {
+        "id": "DESIGN-0004",
+        "title": "Widget blocks",
+        "status": "Draft",
+        "author": "Fixture Author",
+        "created": "2026-03-04"
+      },
+      "statuses": [
+        "Draft",
+        "In Review",
+        "Approved",
+        "Implemented",
+        "Abandoned"
+      ],
+      "inferred": true,
+      "regions": [
+        {
+          "kind": "overview",
+          "start": 10,
+          "end": 30,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "detailed-design",
+          "start": 30,
+          "end": 56,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "testing",
+          "start": 56,
+          "end": 80,
+          "depth": 0,
+          "closed": true
+        },
+        {
+          "kind": "open-questions",
+          "start": 80,
+          "end": 91,
+          "depth": 0,
+          "closed": true
+        }
+      ],
+      "headings": [
+        {
+          "level": 2,
+          "text": "Overview",
+          "anchor": "overview",
+          "line": 11
+        },
+        {
+          "level": 2,
+          "text": "Detailed Design",
+          "anchor": "detailed-design",
+          "line": 31
+        },
+        {
+          "level": 2,
+          "text": "Testing Strategy",
+          "anchor": "testing-strategy",
+          "line": 57
+        },
+        {
+          "level": 2,
+          "text": "Open Questions",
+          "anchor": "open-questions",
+          "line": 81
+        }
+      ],
+      "open_questions": [],
+      "tasks": [],
+      "content": "---\nid: DESIGN-0004\ntitle: \"Widget blocks\"\nstatus: Draft\nauthor: Fixture Author\ncreated: 2026-03-04\n---\n\n# DESIGN-0004: Widget blocks\n\n## Overview\n\nEach widget fence a document can carry, and one that is invalid.\n\n```docz-flow\ntitle: Request path\nlabel: Every request, left to right.\ngates: [2]\nstages:\n  - name: Ingress\n    does: Terminates TLS, routes by host\n  - name: Auth\n    does: Verifies the bearer token\n    note: 30 s clock skew\n  - name: Handler\n    does: Reads through the store\nlegend: Every request passes all three.\nalert: A token past its skew is rejected.\n```\n\n## Detailed Design\n\n```docz-stepper\ntitle: A token request\nsteps:\n  - key: parse\n    name: Parse\n    does: Reads the bearer token from the Authorization header.\n  - key: verify\n    name: Verify\n    title: Verify the signature\n    does: Checks the signature against the issuer's JWKS.\n  - key: scope\n    name: Scope\n    does: Resolves the repositories the token's scopes allow.\nscenarios:\n  - name: A valid token\n    notes:\n      scope: Two repositories match public:read.\n  - name: An expired token\n    fails_at: verify\n    fail_label: Rejected\n    notes:\n      verify: exp is 40 s in the past, beyond the 30 s skew.\n```\n\n## Testing Strategy\n\n```docz-scorecard\ntitle: Release readiness\nnote: Measured from the release checklist.\nchecks:\n  - id: C1\n    name: Signed artifacts\n    target: Every archive and image signed\n    weight: 2\n  - id: C2\n    name: SBOM attached\n    target: An SBOM per archive\nexample:\n  generated_at: \"2026-03-04\"\n  subject: docz v2.3.0\n  results:\n    - id: C1\n      score: 1\n      observed: cosign signatures on all images\n    - id: C2\n      score: null\n```\n\n## Open Questions\n\n```docz-flow\ngates: [4]\nstages:\n  - name: Ingress\n    does: Terminates TLS\n    colour: blue\n  - name: Auth\n```\n"
+    },
+    "findings": [
+      {
+        "code": "region.inferred",
+        "severity": "warning",
+        "line": 0,
+        "detail": "regions inferred from headings: detailed-design, open-questions, overview, testing; not found, looked for api-changes (## api / interface changes), background (## background), data-model (## data model), goals (### goals), non-goals (### non-goals), references (## references), rollout (## migration / rollout plan)"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "api-changes",
+        "detail": "the schema requires a \"api-changes\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "background",
+        "detail": "the schema requires a \"background\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "data-model",
+        "detail": "the schema requires a \"data-model\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "goals",
+        "detail": "the schema requires a \"goals\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "non-goals",
+        "detail": "the schema requires a \"non-goals\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "references",
+        "detail": "the schema requires a \"references\" region"
+      },
+      {
+        "code": "region.missing",
+        "severity": "error",
+        "line": 0,
+        "kind": "rollout",
+        "detail": "the schema requires a \"rollout\" region"
+      },
+      {
+        "code": "toc.missing",
+        "severity": "warning",
+        "line": 0,
+        "kind": "toc",
+        "detail": "the schema requires a table of contents and the document has no marker pair"
+      }
+    ]
+  },
+  {
+    "inspect": {
+      "schema_version": 1,
+      "docz_version": "fixture",
       "path": "docs/impl/0001-ship-the-cache.md",
       "type": "impl",
       "id": "IMPL-0001",

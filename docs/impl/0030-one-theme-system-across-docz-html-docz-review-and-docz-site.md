@@ -459,7 +459,7 @@ docz-site, and in a review.
   field, and a forged marker attribute in raw HTML.
 - [x] The markdown specimen gains a section per widget, and the axe
   sweep (`src/a11y/axe.test.tsx`) covers a valid and an invalid one.
-- [ ] e2e: each widget draws in the reader and the review page, and each
+- [x] e2e: each widget draws in the reader and the review page, and each
   invalid fixture shows its source and errors.
 - [ ] Update `ui/CLAUDE.md` (the markdown pipeline section) and the
   plugin's `references/widgets.md` to say where each widget is drawn.
