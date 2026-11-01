@@ -169,8 +169,9 @@ site. docz-api serves one per document (§ API).
 ### 5. The scoped stylesheet
 
 `pkg/theme`'s token files and `components.css` style a whole page: `:root`,
-`html.js`, `body`, `h1`, `table`. `ui/scripts/gen-page-css.ts` rewrites
-them for the pane into `ui/src/theme/__generated__/page.css`:
+`html.js`, `body`, `h1`, `table`. `ui/scripts/gen-themes.ts` rewrites
+them for the pane through `ui/src/theme/scope-css.ts` into
+`ui/src/theme/__generated__/page.css`, beside the theme list:
 
 | In `pkg/theme` | In `page.css` |
 | --- | --- |
@@ -178,14 +179,16 @@ them for the pane into `ui/src/theme/__generated__/page.css`:
 | `:root[data-theme="x"][data-mode="dark"]` | `:root[data-mode="dark"] .docz-page[data-theme="x"]` |
 | `:root[data-theme="x"]:not([data-mode])` | `:root:not([data-mode]) .docz-page[data-theme="x"]` |
 | `html.js X`, `html:not(.js) X` | `.docz-page.js X`, `.docz-page:not(.js) X` |
-| `body` | `.docz-page` |
+| `:root`, `html`, `body` | `.docz-page` |
 | any other selector `S` | `.docz-page S` |
 
 The rewriter handles the two shapes the files use, flat rules and rules
 inside `@media`, and fails on anything else, so a new shape in
 `pkg/theme` is a build error rather than a silent leak into the shell. The
-output is committed and checked like the generated theme list, and the
-`ui` job's path filter already covers `pkg/theme/**`.
+output is generated and gitignored like the theme list, so `gen-themes`
+in `just ui ci` and the image build writes it and `gen-themes-check` is
+its drift gate, and the `ui` job's path filter already covers
+`pkg/theme/**`.
 
 ### 6. The runtime, mounted
 

@@ -31,7 +31,10 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   place and no longer vendored (generated dir is gitignored)
 - `bun run gen-themes` — writes `src/theme/__generated__/themes.ts`
   (`THEMES`, `ThemeName`, `DEFAULT_THEME`, `THEMES_WITH_MODES`) from
-  `../pkg/theme/tokens/*.css`; gitignored like the client, run by
+  `../pkg/theme/tokens/*.css`, and `page.css` beside it: pkg/theme's
+  base, tokens, and components scoped to `.docz-page` by
+  `src/theme/scope-css.ts` (DESIGN-0026 §5), which refuses any CSS shape
+  it does not know; gitignored like the client, run by
   `just ui ci`, the image build, and CI, with `gen-themes-check` as the
   drift gate. A theme added to `pkg/theme` reaches every list in the UI
   (the selector, `hasModes`, the server's `DOCZ_THEME` check, the e2e
