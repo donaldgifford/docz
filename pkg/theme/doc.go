@@ -5,9 +5,11 @@
 // A theme is a set of token values and nothing else. Every component and
 // the runtime read colours, radii, and fonts only through custom
 // properties, so a theme changes how a page looks without a component
-// changing. There are two:
+// changing. There are three:
 //
 //   - paper, the default: a warm palette with light and dark values.
+//   - charcoal: a neutral dark look from repo-guardian's DESIGN-0036,
+//     naming IBM Plex Sans and JetBrains Mono ahead of the system fonts.
 //   - classic: docz-site's dark look, its values unchanged from
 //     ui/src/theme/tokens.css.
 //

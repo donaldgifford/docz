@@ -129,7 +129,7 @@ To take GitHub webhooks through a Tailscale operator Ingress on the API, see
 ## Theme
 
 The site renders in `paper` unless `site.config.theme` names another
-`pkg/theme` theme (`classic` today). The value becomes the site's
+`pkg/theme` theme (`charcoal` or `classic` today). The value becomes the site's
 `DOCZ_THEME`, rendered only when set, and the schema accepts only the names
 `pkg/theme` has, so a typo fails `helm install` instead of the site's
 `/readyz`. It is a default: a reader's own pick in the topbar wins and

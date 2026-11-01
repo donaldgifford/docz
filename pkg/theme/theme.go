@@ -26,17 +26,21 @@ var (
 
 	//go:embed tokens/classic.css
 	classicTokens string
+
+	//go:embed tokens/charcoal.css
+	charcoalTokens string
 )
 
 // names is the one list of themes, in the order Names reports them; the
 // first is the default.
-var names = []string{"paper", "classic"}
+var names = []string{"paper", "charcoal", "classic"}
 
 // tokens maps each theme to its token file. theme_test.go holds its keys
 // equal to names.
 var tokens = map[string]string{
-	"paper":   paperTokens,
-	"classic": classicTokens,
+	"paper":    paperTokens,
+	"charcoal": charcoalTokens,
+	"classic":  classicTokens,
 }
 
 // sheets is each theme's full stylesheet, built once.
@@ -51,8 +55,9 @@ func buildSheets() map[string]string {
 	return out
 }
 
-// Names lists the themes in a stable order: "paper", then "classic". The
-// first is the default. The slice is the caller's to keep.
+// Names lists the themes in a stable order: "paper", the default, first,
+// then the rest by name ("charcoal", "classic"), the order docz-site's
+// generated theme list uses. The slice is the caller's to keep.
 func Names() []string {
 	return slices.Clone(names)
 }

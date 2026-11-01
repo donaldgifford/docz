@@ -224,7 +224,7 @@ func TestNames(t *testing.T) {
 	t.Parallel()
 
 	got := Names()
-	if want := []string{"paper", "classic"}; !slices.Equal(got, want) {
+	if want := []string{"paper", "charcoal", "classic"}; !slices.Equal(got, want) {
 		t.Fatalf("Names() = %v, want %v", got, want)
 	}
 	got[0] = "changed"
@@ -273,7 +273,7 @@ func TestCSSUnknownTheme(t *testing.T) {
 				t.Errorf("CSS(%q) returned a stylesheet with its error", name)
 			}
 			msg := err.Error()
-			for _, want := range []string{`"` + name + `"`, "paper", "classic"} {
+			for _, want := range []string{`"` + name + `"`, "paper", "charcoal", "classic"} {
 				if !strings.Contains(msg, want) {
 					t.Errorf("CSS(%q) error %q does not mention %s", name, msg, want)
 				}

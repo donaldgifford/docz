@@ -375,7 +375,7 @@ offer it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/theme/tokens/charcoal.css` (Open Question 6: named for the look,
+- [x] `pkg/theme/tokens/charcoal.css` (Open Question 6: named for the look,
   not the project it came from), one block for every
   mode like `classic`, mapping repo-guardian DESIGN-0036's values onto
   docz's token names. Background `#17191d`, panel `#1f2227`, panel-2
@@ -383,15 +383,15 @@ offer it.
   Foreground `#e8eaed`, muted `#9aa1ab`, accent `#5fa8f5`, ok `#3fb950`,
   warn `#d9a020`, bad `#f2554d`, and info `#7aa7ff` go to `fg-*`,
   `accent`/`link`, and the state and status tokens. Radii are 3px.
-- [ ] Derive the tokens DESIGN-0036 has no value for from its set: the
+- [x] Derive the tokens DESIGN-0036 has no value for from its set: the
   type colours `--color-t-*`, the status pills `--color-st-*`, the
   admonition tints `--color-adm-*-bg` (precomputed hex, as the contrast
   test needs), `--color-hash-*`, and `--color-code-bg`/`--color-code-fg`.
   Each choice is recorded in a comment in the file.
-- [ ] Fonts: IBM Plex Sans and JetBrains Mono named first in the theme's
+- [x] Fonts: IBM Plex Sans and JetBrains Mono named first in the theme's
   font stacks, the system fonts after. Nothing is embedded, so a page
   stays network-free and its size does not change (Open Question 6).
-- [ ] `pkg/theme`: register the theme in `Names()` and `CSS()`;
+- [x] `pkg/theme`: register the theme in `Names()` and `CSS()`;
   `theme_test.go`'s every-token check covers it with no new test.
 - [ ] `ui/src/theme/contrast.test.ts` passes for it at 4.5:1 on the three
   surfaces. DESIGN-0036 already moved its bad tone once for AA, so muted
