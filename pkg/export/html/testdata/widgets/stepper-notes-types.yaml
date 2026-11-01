@@ -1,0 +1,7 @@
+steps:
+  - {key: a, name: A, does: x}
+  - {key: b, name: B, does: y}
+scenarios:
+  - {name: S, notes: [a]}
+  - {name: T, notes: {a: [1], b: 2}}
+  - {name: U, notes: x}

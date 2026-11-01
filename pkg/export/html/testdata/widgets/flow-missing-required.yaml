@@ -1,0 +1,5 @@
+stages:
+  - {name: a, does: b}
+  - {name: c}
+  - {name: '  ', does: x}
+  - does: y

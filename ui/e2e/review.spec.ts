@@ -1,6 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { THEMES_WITH_MODES } from "../src/theme/__generated__/themes";
+import { APPEARANCES } from "./appearances";
+
 /*
  * docz-review's page in a real browser (DESIGN-0024 section 7: the
  * proof that anchors survive formatting, wraps, Unicode, repetition,
@@ -8,9 +11,11 @@ import { expect, test, type Page } from "@playwright/test";
  * runs over e2e/fixtures/review-session.json. The fake keeps state, so
  * the specs run serially and reset it first.
  *
- * Every spec runs under each appearance (IMPL-0028 Phase 6): paper
- * light, paper dark, and classic, stored where the page reads them, and
- * each setting is also held to full-rule axe, contrast included.
+ * Every spec runs under each appearance in e2e/appearances.ts (every
+ * pkg/theme theme, both modes where it has them). The theme is the fixture repository's html.theme, set through
+ * the fake's reset as `docz inspect` would report it (IMPL-0030), and the
+ * mode is stored where the page reads it; each setting is also held to
+ * full-rule axe, contrast included.
  */
 
 const ORIGIN = "http://127.0.0.1:4174";
@@ -24,21 +29,23 @@ test.beforeEach(async ({ request }) => {
 
 interface Setting {
   name: string;
-  theme: "paper" | "classic";
+  theme: string;
   mode: "light" | "dark";
 }
+
+// A theme without modes is dark in every mode, so the stored mode is
+// "dark", which is also what the page reports for it.
+const SETTINGS: Setting[] = APPEARANCES.map((appearance) => ({
+  name: appearance.label,
+  theme: appearance.theme,
+  mode: appearance.mode ?? "dark",
+}));
 
 const PAPER_LIGHT: Setting = {
   name: "paper light",
   theme: "paper",
   mode: "light",
 };
-
-const SETTINGS: Setting[] = [
-  PAPER_LIGHT,
-  { name: "paper dark", theme: "paper", mode: "dark" },
-  { name: "classic", theme: "classic", mode: "dark" },
-];
 
 let setting = PAPER_LIGHT;
 
@@ -111,12 +118,22 @@ async function comment(page: Page, text: string) {
 
 for (const each of SETTINGS) {
   test.describe(each.name, () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, request }) => {
       setting = each;
-      await page.addInitScript((s: Setting) => {
-        localStorage.setItem("docz:theme", s.theme);
-        localStorage.setItem("docz:mode", s.mode);
-      }, each);
+      await request.post(`${ORIGIN}/__fake/reset?theme=${each.theme}`);
+      await page.addInitScript((mode: Setting["mode"]) => {
+        localStorage.setItem("docz:mode", mode);
+      }, each.mode);
+    });
+
+    test("offers no theme selector, and a toggle only where it means something", async ({
+      page,
+    }) => {
+      await open(page);
+      await expect(page.getByLabel("Theme")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(
+        (THEMES_WITH_MODES as readonly string[]).includes(each.theme) ? 1 : 0,
+      );
     });
 
     test("passes full-rule axe", async ({ page }) => {
@@ -318,8 +335,4 @@ test("with no stored choice it follows the system, then keeps the reader's", asy
   // The page drops its token from the URL, so reopen the link.
   await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
   await expect(html).toHaveAttribute("data-mode", "light");
-  await page.getByLabel("Theme").selectOption("classic");
-  await page.goto(`${ORIGIN}/review.html?t=${TOKEN}`);
-  await expect(html).toHaveAttribute("data-theme", "classic");
-  await expect(page.getByRole("button", { name: /Switch to/ })).toHaveCount(0);
 });

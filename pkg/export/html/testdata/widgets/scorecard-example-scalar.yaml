@@ -1,0 +1,2 @@
+checks: [{id: C, name: N, target: T}]
+example: x

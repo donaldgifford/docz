@@ -23,6 +23,8 @@ import {
   trace,
 } from "@opentelemetry/api";
 
+import { DEFAULT_THEME, THEMES } from "../src/theme/__generated__/themes";
+
 import { createMetrics } from "./metrics";
 import {
   initTracing,
@@ -164,6 +166,19 @@ export function resolveMermaidLayout(raw: string | undefined): string {
   return KNOWN_MERMAID_LAYOUTS.has(layout) ? layout : DEFAULT_MERMAID_LAYOUT;
 }
 
+// The site's default theme (DESIGN-0025 §3, IMPL-0030): the deployment
+// picks it, since one site shows many repositories and never reads a
+// repository's html.theme. A closed set generated from pkg/theme's token
+// files, so only a theme name pkg/theme has can reach the inline
+// <script>; the SPA re-validates on read (src/lib/theme.ts).
+const KNOWN_THEMES: ReadonlySet<string> = new Set(THEMES);
+
+/** Whitelist-validate DOCZ_THEME; empty/garbage → "paper". */
+export function resolveTheme(raw: string | undefined): string {
+  const theme = (raw ?? "").trim().toLowerCase();
+  return KNOWN_THEMES.has(theme) ? theme : DEFAULT_THEME;
+}
+
 // Logging config (DESIGN-0006). Same whitelist-with-fallback discipline
 // as everything above: bad config degrades to the default rather than
 // failing startup, because a typo in a log level must never be the
@@ -255,6 +270,7 @@ export function invalidConfigVars(env: ConfigEnv): string[] {
   // normalised input IS the fallback.
   const closedSet: readonly [string, (raw: string) => string][] = [
     ["DOCZ_MERMAID_LAYOUT", resolveMermaidLayout],
+    ["DOCZ_THEME", resolveTheme],
     ["DOCZ_LOG_LEVEL", resolveLogLevel],
     ["DOCZ_LOG_FORMAT", resolveLogFormat],
   ];
@@ -310,6 +326,7 @@ export interface RuntimeConfig {
   authProviders: string[];
   nav: NavLink[];
   mermaidLayout: string;
+  theme: string;
 }
 
 /** The inline <script> that publishes the runtime config to the SPA. */
@@ -323,6 +340,7 @@ export function runtimeConfigScript(config: RuntimeConfig): string {
     authProviders: config.authProviders,
     nav: config.nav,
     mermaidLayout: config.mermaidLayout,
+    theme: config.theme,
   }).replaceAll("</", "<\\/");
   return `<script>window.__DOCZ_CONFIG__=${json};</script>`;
 }
@@ -348,6 +366,7 @@ export function injectRuntimeConfig(html: string, script: string): string {
 const AUTH_PROVIDERS = resolveAuthProviders(process.env.DOCZ_AUTH_PROVIDERS);
 const NAV_LINKS = resolveNavLinks(process.env.DOCZ_NAV_LINKS);
 const MERMAID_LAYOUT = resolveMermaidLayout(process.env.DOCZ_MERMAID_LAYOUT);
+const THEME = resolveTheme(process.env.DOCZ_THEME);
 const LOG_LEVEL = resolveLogLevel(process.env.DOCZ_LOG_LEVEL);
 const LOG_FORMAT = resolveLogFormat(process.env.DOCZ_LOG_FORMAT);
 
@@ -370,6 +389,7 @@ const CONFIG_SCRIPT = runtimeConfigScript({
   authProviders: AUTH_PROVIDERS,
   nav: NAV_LINKS,
   mermaidLayout: MERMAID_LAYOUT,
+  theme: THEME,
 });
 
 async function proxy(
@@ -718,6 +738,7 @@ if (import.meta.main) {
     auth_providers: AUTH_PROVIDERS.join(","),
     nav_links: NAV_LINKS.length,
     mermaid_layout: MERMAID_LAYOUT,
+    theme: THEME,
     proxy_target: DOCZ_API_URL ?? "(none — API proxy disabled)",
     log_level: LOG_LEVEL,
     log_format: LOG_FORMAT,

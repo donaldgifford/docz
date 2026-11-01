@@ -6,6 +6,7 @@
   "id": "IMPL-0001",
   "schema": "impl",
   "content_sha256": "a7c60a54a03566c33e6d63e745cd6291aa7d119e71bf72f5601e39160ab212da",
+  "theme": "paper",
   "frontmatter": {
     "id": "IMPL-0001",
     "title": "Phase out the legacy scanner",

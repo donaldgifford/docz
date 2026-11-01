@@ -4,6 +4,11 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import {
+  THEMES as GENERATED_THEMES,
+  THEMES_WITH_MODES,
+} from "./__generated__/themes";
+
 // Read the file directly: vitest's CSS stubbing swallows `?raw` imports
 // of .css files (verified — they arrive as ""), and import.meta.url is
 // not a file: URL under jsdom. The node types are referenced per-file;
@@ -14,16 +19,17 @@ const tokensCss = readFileSync(
 );
 
 /*
- * The themes (DESIGN-0025 §3, IMPL-0028 Phase 6) live in pkg/theme. Each
- * mode is one top-level block: classic has one for every mode, paper one
- * for light and one for dark. Paper's prefers-color-scheme block repeats
- * the dark values, which pkg/theme's theme_test.go holds equal, so it is
- * not checked twice here. tokens.css's @theme values are classic's and
- * stay checked as the source Tailwind reads.
+ * The themes (DESIGN-0025 §3, IMPL-0028 Phase 6) live in pkg/theme, and
+ * the list comes from the generated THEMES, so a theme added there is
+ * checked here with no edit (IMPL-0030 Phase 4). Each mode is one
+ * top-level block: a theme without modes has one for every mode, a
+ * theme with them one for light and one for dark. Paper's
+ * prefers-color-scheme block repeats the dark values, which pkg/theme's
+ * theme_test.go holds equal, so it is not checked twice here.
+ * tokens.css's @theme values are classic's and stay checked as the
+ * source Tailwind reads.
  */
 const themeDir = resolve(process.cwd(), "../pkg/theme/tokens");
-const classicCss = readFileSync(resolve(themeDir, "classic.css"), "utf8");
-const paperCss = readFileSync(resolve(themeDir, "paper.css"), "utf8");
 
 /** The body of the top-level block whose selector is exactly `selector`. */
 function block(css: string, selector: string): string {
@@ -37,12 +43,16 @@ function block(css: string, selector: string): string {
 
 const THEMES: [string, string][] = [
   ["tokens.css", tokensCss],
-  ["classic", block(classicCss, ':root[data-theme="classic"]')],
-  ["paper light", block(paperCss, ':root[data-theme="paper"]')],
-  [
-    "paper dark",
-    block(paperCss, ':root[data-theme="paper"][data-mode="dark"]'),
-  ],
+  ...GENERATED_THEMES.flatMap((name): [string, string][] => {
+    const css = readFileSync(resolve(themeDir, `${name}.css`), "utf8");
+    const root = `:root[data-theme="${name}"]`;
+    return THEMES_WITH_MODES.includes(name)
+      ? [
+          [`${name} light`, block(css, root)],
+          [`${name} dark`, block(css, `${root}[data-mode="dark"]`)],
+        ]
+      : [[name, block(css, root)]];
+  }),
 ];
 
 /*
@@ -113,6 +123,55 @@ describe.each(THEMES)("%s text token contrast", (_, css) => {
       ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
     }
   });
+});
+
+/*
+ * The accent tint (IMPL-0030 Phase 3): a selected nav item and a
+ * pressed toggle set accent text on --color-accent-bg, a translucent
+ * fill, so the pair is checked on that fill composited over the two
+ * surfaces those controls sit on (the page and a raised panel; none
+ * sits on bg-elevated). Real-browser axe found paper light 0.05 short
+ * of AA here.
+ */
+const TINT_SURFACES = ["bg-base", "bg-raised"] as const;
+
+function composite(rgba: string, bg: string): string {
+  const match = /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/.exec(rgba);
+  if (match === null) {
+    throw new Error(`not an rgba() value: ${rgba}`);
+  }
+  const alpha = Number(match[4]);
+  return `#${[1, 2, 3]
+    .map((i) => {
+      const fg = Number(match[i]);
+      const under = parseInt(bg.slice(2 * i - 1, 2 * i + 1), 16);
+      return Math.round(alpha * fg + (1 - alpha) * under)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+}
+
+describe.each(THEMES)("%s accent tint contrast", (_, css) => {
+  const tokens = parseTokens(css);
+  const tint = /--color-accent-bg:\s*(rgba\([^)]*\))/.exec(css)?.[1];
+
+  it.each(TINT_SURFACES)(
+    "accent holds 4.5:1 on accent-bg over %s",
+    (surface) => {
+      const accent = tokens.get("accent");
+      const bg = tokens.get(surface);
+      if (accent === undefined || bg === undefined || tint === undefined) {
+        throw new Error("accent, accent-bg, or the surface is missing");
+      }
+      const fill = composite(tint, bg);
+      const ratio = contrastRatio(accent, fill);
+      expect(
+        ratio,
+        `--color-accent (${accent}) on accent-bg over --color-${surface} (${fill}) is ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+    },
+  );
 });
 
 describe.each(THEMES)("%s admonition tint contrast", (_, css) => {

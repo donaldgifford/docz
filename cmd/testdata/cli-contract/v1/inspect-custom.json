@@ -6,6 +6,7 @@
   "id": "FW-0001",
   "schema": "frameworks",
   "content_sha256": "6bb35f2f3862ea1fc10030c0b15de6a26bc8b4d4c122b2974b74482dd1bfceab",
+  "theme": "paper",
   "frontmatter": {
     "id": "FW-0001",
     "title": "Adopt the internal auth framework",

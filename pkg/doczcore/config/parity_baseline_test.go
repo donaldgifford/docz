@@ -73,7 +73,7 @@ func TestDoczYAMLTemplate_EmitsEveryTopLevelBlock(t *testing.T) {
 	// a template line should fail here.
 	for _, key := range []string{
 		"docs_dir:", "types:", "index:", "author:",
-		"wiki:", "toc:", "changelog:", "api:", "sync:",
+		"wiki:", "toc:", "changelog:", "api:", "sync:", "access:", "html:",
 	} {
 		if !strings.Contains(rendered, "\n"+key) && !strings.HasPrefix(rendered, key) {
 			t.Errorf("rendered .docz.yaml is missing the %q block:\n%s", key, rendered)

@@ -126,6 +126,17 @@ Register the same URL as the provider's redirect URI.
 To take GitHub webhooks through a Tailscale operator Ingress on the API, see
 [`deploy/tailscale-operator.md`](https://github.com/donaldgifford/docz/blob/main/deploy/tailscale-operator.md).
 
+## Theme
+
+The site renders in `paper` unless `site.config.theme` names another
+`pkg/theme` theme (`charcoal` or `classic` today). The value becomes the site's
+`DOCZ_THEME`, rendered only when set, and the schema accepts only the names
+`pkg/theme` has, so a typo fails `helm install` instead of the site's
+`/readyz`. It is a default: a reader's own pick in the topbar wins and
+holds across reloads. Exported pages and docz-review take their theme from
+each repository's `.docz.yaml` `html.theme`, which this value does not
+touch.
+
 ## Login providers
 
 `auth.providers` is one comma-separated list of `github`, `okta`, and
@@ -454,7 +465,7 @@ gh attestation verify \
 | serviceMonitor.enabled | bool | `false` | Create Prometheus Operator ServiceMonitors: one per workload, and in baked mode one for Meilisearch with the master key as its bearer token. |
 | serviceMonitor.interval | string | `"30s"` | Scrape interval |
 | serviceMonitor.labels | object | `{}` | Additional labels for every ServiceMonitor |
-| site | object | `{"affinity":{},"autoscaling":{"enabled":false,"maxReplicas":3,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":0},"config":{"doczApiUrl":"","logFormat":"json","logLevel":"info","mermaidLayout":"elk","navLinks":[],"port":8080},"extraEnv":[],"extraVolumeMounts":[],"extraVolumes":[],"httpRoute":{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[],"rules":[]},"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/donaldgifford/docz-site","tag":""},"ingress":{"annotations":{},"className":"","enabled":false,"hosts":[],"tls":[]},"livenessProbe":{"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":5,"periodSeconds":15},"nodeSelector":{},"otel":{"serviceName":"docz-site"},"podAnnotations":{},"podLabels":{},"podSecurityContext":{"fsGroup":1000,"runAsGroup":1000,"runAsNonRoot":true,"runAsUser":1000,"seccompProfile":{"type":"RuntimeDefault"}},"readinessProbe":{"httpGet":{"path":"/readyz","port":"http"},"initialDelaySeconds":5,"periodSeconds":10},"replicaCount":1,"resources":{"limits":{"cpu":"250m","memory":"128Mi"},"requests":{"cpu":"25m","memory":"64Mi"}},"revisionHistoryLimit":3,"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true},"service":{"port":80,"type":"ClusterIP"},"serviceAccount":{"annotations":{},"create":true,"name":""},"tolerations":[]}` | docz-site: the frontend. Always installed. |
+| site | object | `{"affinity":{},"autoscaling":{"enabled":false,"maxReplicas":3,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":0},"config":{"doczApiUrl":"","logFormat":"json","logLevel":"info","mermaidLayout":"elk","navLinks":[],"port":8080,"theme":""},"extraEnv":[],"extraVolumeMounts":[],"extraVolumes":[],"httpRoute":{"annotations":{},"enabled":false,"hostnames":[],"parentRefs":[],"rules":[]},"image":{"pullPolicy":"IfNotPresent","repository":"ghcr.io/donaldgifford/docz-site","tag":""},"ingress":{"annotations":{},"className":"","enabled":false,"hosts":[],"tls":[]},"livenessProbe":{"httpGet":{"path":"/healthz","port":"http"},"initialDelaySeconds":5,"periodSeconds":15},"nodeSelector":{},"otel":{"serviceName":"docz-site"},"podAnnotations":{},"podLabels":{},"podSecurityContext":{"fsGroup":1000,"runAsGroup":1000,"runAsNonRoot":true,"runAsUser":1000,"seccompProfile":{"type":"RuntimeDefault"}},"readinessProbe":{"httpGet":{"path":"/readyz","port":"http"},"initialDelaySeconds":5,"periodSeconds":10},"replicaCount":1,"resources":{"limits":{"cpu":"250m","memory":"128Mi"},"requests":{"cpu":"25m","memory":"64Mi"}},"revisionHistoryLimit":3,"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true},"service":{"port":80,"type":"ClusterIP"},"serviceAccount":{"annotations":{},"create":true,"name":""},"tolerations":[]}` | docz-site: the frontend. Always installed. |
 | site.affinity | object | `{}` | Affinity rules |
 | site.autoscaling | object | `{"enabled":false,"maxReplicas":3,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":0}` | Horizontal Pod Autoscaler. Off by default. |
 | site.autoscaling.enabled | bool | `false` | Enable a HorizontalPodAutoscaler |
@@ -462,13 +473,14 @@ gh attestation verify \
 | site.autoscaling.minReplicas | int | `1` | Minimum replicas |
 | site.autoscaling.targetCPUUtilizationPercentage | int | `80` | Target average CPU utilization (percent) |
 | site.autoscaling.targetMemoryUtilizationPercentage | int | `0` | Target average memory utilization (percent). Unset → no memory metric. |
-| site.config | object | `{"doczApiUrl":"","logFormat":"json","logLevel":"info","mermaidLayout":"elk","navLinks":[],"port":8080}` | docz-site runtime configuration. The site is a static SPA served by a small Bun process that also reverse-proxies the API surface, so the browser and API share one origin (no CORS, first-party session cookie). |
+| site.config | object | `{"doczApiUrl":"","logFormat":"json","logLevel":"info","mermaidLayout":"elk","navLinks":[],"port":8080,"theme":""}` | docz-site runtime configuration. The site is a static SPA served by a small Bun process that also reverse-proxies the API surface, so the browser and API share one origin (no CORS, first-party session cookie). |
 | site.config.doczApiUrl | string | `""` | Absolute base URL of the docz-api the site proxies to (DOCZ_API_URL). Empty derives this release's own API Service, http://<fullname>-api.<namespace>.svc.cluster.local:<api.service.port>; set it only to point the site at an API outside this release. |
 | site.config.logFormat | string | `"json"` | Log output format (DOCZ_LOG_FORMAT): `json` (one object per line, for a log aggregator) or `text` (readable, for local runs). |
 | site.config.logLevel | string | `"info"` | Log verbosity (DOCZ_LOG_LEVEL): `debug`, `info`, `warn`, or `error`. `debug` adds a line per request plus the proxied `/auth/*` flow — the level to reach for when troubleshooting an Okta or Keycloak login. Credential-bearing values (`code`, `state`, cookies) are redacted at every level, enforced by a test. The values schema constrains this to the four names so a typo fails at install; at runtime an unrecognized level falls back to `info`, never to something noisier. |
 | site.config.mermaidLayout | string | `"elk"` | Diagram layout engine (DOCZ_MERMAID_LAYOUT): `elk` or `dagre`. mermaid 12 made ELK the default and so is it here; `dagre` restores the pre-12 layout without rebuilding the image. Injected into the SPA at runtime and whitelist-validated at both ends, so anything unrecognized falls back to `elk` — the values schema constrains it to the two names so a typo fails at install rather than silently rendering the default. |
 | site.config.navLinks | list | `[]` | Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}` links rendered between Repos and the session menu. Injected into the SPA at runtime as JSON, whitelist-validated by the server (short label charset, same-origin app-path hrefs, cap 6); invalid entries degrade to fewer/no pins, never a broken page. Empty → no pins and the env var is omitted. |
 | site.config.port | int | `8080` | Container HTTP listen port (drives the PORT env var and the Service targetPort). The SPA, /healthz, /readyz, and the API proxy are all served here. |
+| site.config.theme | string | `""` | The site's default theme (DOCZ_THEME), a theme pkg/theme has: `paper` (light and dark) or `classic` (dark). Empty sets no variable and the site defaults to `paper`. A reader may pick another in the topbar, kept in their browser. A repository's `.docz.yaml` `html.theme` sets `docz export html` and docz-review, never the site, which shows many repositories (DESIGN-0025 §3). |
 | site.extraEnv | list | `[]` | Additional environment variables |
 | site.extraVolumeMounts | list | `[]` | Additional volume mounts |
 | site.extraVolumes | list | `[]` | Additional volumes |

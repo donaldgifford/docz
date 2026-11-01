@@ -6,6 +6,7 @@
   "id": "DESIGN-0001",
   "schema": "design",
   "content_sha256": "5bd162da5acc6ddec5efb1799be54e674d3e791b02b470787e5f2965c84d5494",
+  "theme": "paper",
   "frontmatter": {
     "id": "DESIGN-0001",
     "title": "Token refresh flow",

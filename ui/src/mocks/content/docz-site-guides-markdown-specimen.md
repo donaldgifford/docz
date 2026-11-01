@@ -326,6 +326,83 @@ flowchart TD
   class U work
 ```
 
+## Widgets
+
+Three fences draw as interactive widgets from closed YAML, the same
+blocks `docz export html` draws on an exported page. Each loads with the
+widget chunk, only on a page that has one.
+
+```docz-flow
+title: "Figure 3: from push to page"
+label: Select a stage for what it does.
+stages:
+  - name: Webhook
+    does: GitHub tells docz-api a push landed on the default branch.
+  - name: Queue
+    does: The push becomes an ingest job, debounced per repository.
+    note: A burst of pushes is one job.
+  - name: Ingest
+    does: The worker fetches the tree and reconciles the documents.
+  - name: Serve
+    does: The reader and the API serve the new revision.
+gates: [3]
+legend: The outlined stage is a gate; nothing after it runs on a failure.
+```
+
+```docz-stepper
+title: "Figure 4: a token through the gate"
+steps:
+  - key: auth
+    name: Authenticate
+    does: The bearer token's signature, issuer, and audience are checked.
+  - key: scope
+    name: Authorize
+    does: The token's scopes are matched against the repository's.
+  - key: serve
+    name: Serve
+    does: The document is returned.
+scenarios:
+  - name: Allowed
+    notes:
+      scope: public:read covers a public repository.
+  - name: Denied
+    fails_at: scope
+    fail_label: Not found
+    notes:
+      scope: A repository the scopes do not reach answers as missing.
+```
+
+```docz-scorecard
+title: "Figure 5: repository health"
+note: Weights favour the checks that block a release.
+checks:
+  - id: C1
+    name: Has a .docz.yaml
+    target: present
+    weight: 2
+  - id: C2
+    name: Validates clean
+    target: zero findings
+  - id: C3
+    name: Exports
+    target: every page
+example:
+  subject: donaldgifford/docz-site
+  results:
+    - {id: C1, score: 1, observed: present}
+    - {id: C2, score: 0.5, observed: 3 warnings, evidence: docz validate}
+    - {id: C3, score: null}
+```
+
+A block that breaks its schema is not drawn. It shows each error at its
+document line, then the YAML, as the export does:
+
+```docz-flow
+title: An invalid flow
+stages:
+  - {name: Only, does: One stage is too few., colour: red}
+```
+
 ## Tables
 
 | Left aligned | Centered | Right aligned |

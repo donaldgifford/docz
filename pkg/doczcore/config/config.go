@@ -182,6 +182,7 @@ type Config struct {
 	API       APIConfig             `                        yaml:"api"       json:"api"`
 	Sync      SyncConfig            `                        yaml:"sync"      json:"sync"`
 	Access    AccessConfig          `                        yaml:"access"    json:"access"`
+	HTML      HTMLConfig            `                        yaml:"html"      json:"html"`
 }
 
 // DefaultConfig returns the built-in default configuration. The per-type
@@ -236,6 +237,9 @@ func DefaultConfig() Config {
 		Access: AccessConfig{
 			Scopes: []string{ScopePublicRead},
 		},
+		// The theme `docz export html` and docz-review render in
+		// (DESIGN-0025 §3).
+		HTML: HTMLConfig{Theme: DefaultTheme},
 	}
 }
 
@@ -298,6 +302,7 @@ func Load(configFile, repoRoot string) (Config, error) {
 	normalizeAPI(&cfg)
 	normalizeSync(&cfg)
 	normalizeAccess(&cfg)
+	normalizeHTML(&cfg)
 
 	return cfg, nil
 }
@@ -535,6 +540,8 @@ func (c *Config) Validate() ([]string, error) {
 		return warnings, err
 	}
 
+	warnings = append(warnings, c.validateHTML()...)
+
 	return warnings, nil
 }
 
@@ -768,6 +775,7 @@ func parseBytes(data []byte, defaults *Config) (Config, error) {
 	normalizeAPI(&cfg)
 	normalizeSync(&cfg)
 	normalizeAccess(&cfg)
+	normalizeHTML(&cfg)
 
 	return cfg, nil
 }

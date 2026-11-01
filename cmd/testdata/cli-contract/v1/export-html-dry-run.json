@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "out": "build/html",
+  "theme": "paper",
   "dry_run": true,
   "pages": [
     {
@@ -9,7 +10,7 @@
       "source": "docs/impl/0001-phase-out-the-legacy-scanner.md",
       "path": "impl/0001-phase-out-the-legacy-scanner.html",
       "action": "wrote",
-      "hash": "sha256:2435ea8bb973b08cb6950ade9638f05a32375226afca2e8851b0daafdcbae9ea",
+      "hash": "sha256:e6896f1414d3c2ce2501d60246545185300f78900ba300cc97585a9020caf7d1",
       "unresolved_links": [],
       "problems": []
     }

@@ -18,6 +18,7 @@ import (
 	"github.com/donaldgifford/docz/v2/pkg/investigation"
 	"github.com/donaldgifford/docz/v2/pkg/rfc"
 	"github.com/donaldgifford/docz/v2/pkg/runbook"
+	"github.com/donaldgifford/docz/v2/pkg/theme"
 )
 
 var update = flag.Bool("update", false, "regenerate the golden pages")
@@ -176,11 +177,39 @@ func TestGoldenPages(t *testing.T) {
 
 // TestGoldenFullPage keeps one page whole, theme and all, so the inlining
 // itself is pinned.
+// TestGoldenFullPage pins one whole page per theme, the inlined theme
+// included, so a token change in any theme shows in a diff here
+// (IMPL-0030 Phase 4). The default keeps the name full-page.html.
 func TestGoldenFullPage(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join("..", "..", "design", "testdata", "docz-design-0009.md")
-	compare(t, filepath.Join("testdata", "golden", "full-page.html"), cutMermaid(renderFile(t, path, "design")))
+
+	src, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, name := range theme.Names() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			p, err := Render(src, RenderOptions{
+				Spec: specs["design"](), Type: "design", Source: filepath.ToSlash(path),
+				Site: "docz", Version: "test", Theme: name,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			golden := "full-page.html"
+			if name != theme.Names()[0] {
+				golden = "full-page-" + name + ".html"
+			}
+
+			compare(t, filepath.Join("testdata", "golden", golden), cutMermaid(p.Body))
+		})
+	}
 }
 
 // cutMermaid replaces the inlined mermaid with a placeholder: it is 5.6 MB,

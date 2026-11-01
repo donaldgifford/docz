@@ -1,0 +1,5 @@
+line 1: example.results[0].score: must be between 0 and 1, or null
+line 1: example.results[1].score: must be between 0 and 1, or null
+line 1: example.results[2].score: required
+line 1: example.results[3].id: "C9" is no check's id
+line 1: example.results[4].id: required

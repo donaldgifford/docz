@@ -1,0 +1,3077 @@
+<!doctype html>
+<html lang="en" data-theme="classic" data-doc="DESIGN-0009">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; script-src &#39;unsafe-inline&#39;; img-src data: https:">
+<title>DESIGN-0009: docz-site: cross-repo docz viewer and search UI</title>
+<!-- docz:theme -->
+<style>/*
+ * The tokens an exported page needs that a theme does not vary: system
+ * font stacks, so a page is one file with nothing to fetch. ui/ never
+ * imports this file; docz-site and the review page bring their own
+ * bundled fonts under the same names.
+ */
+
+:root {
+  --font-sans:
+    -apple-system, system-ui, "Segoe UI", Inter, Roboto, "Helvetica Neue",
+    sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+/*
+ * classic: docz-site's dark look (DESIGN-0025 §3), every value moved
+ * unchanged from the @theme block in ui/src/theme/tokens.css, which
+ * theme_test.go checks. It is dark only: the one block below matches
+ * whatever data-mode a page sets, so a forced data-mode="light" is the
+ * same readable dark page rather than a half-themed one.
+ *
+ * The tokens docz-site never had (--color-ok, --color-link,
+ * --color-warn, --color-bad, --color-on-accent, --color-code-fg, and the
+ * radii) take the nearest existing value: the status colours, the base
+ * background, the primary text, and the sharp corners docz-site uses
+ * everywhere.
+ */
+
+:root[data-theme="classic"] {
+  color-scheme: dark;
+
+  --radius-card: 0;
+  --radius-control: 0;
+
+  --color-bg-base: #0c1017;
+  --color-bg-raised: #121722;
+  --color-bg-elevated: #181e2b;
+  --color-bg-hover: #1e2635;
+  --color-bg-active: #252e40;
+
+  --color-border-hairline: #1b2230;
+  --color-border-default: #252e3f;
+  --color-border-strong: #34405a;
+
+  --color-fg-primary: #e8ebf0;
+  --color-fg-secondary: #afb6c2;
+  --color-fg-tertiary: #8a92a5;
+  --color-fg-muted: #7e8695;
+  --color-fg-prose: #c6ccd6;
+
+  --color-accent: #7dcfff;
+  --color-accent-dim: #3d7fb8;
+  --color-accent-bg: rgba(125, 207, 255, 0.1);
+  --color-accent-border: rgba(125, 207, 255, 0.3);
+  --color-on-accent: #0c1017;
+
+  --color-ok: #9ece6a;
+  --color-link: #7aa2f7;
+  --color-warn: #e0af68;
+  --color-bad: #f7768e;
+
+  --color-st-draft: #e0af68;
+  --color-st-proposed: #7aa2f7;
+  --color-st-active: #9ece6a;
+  --color-st-accepted: #9ece6a;
+  --color-st-adopted: #9ece6a;
+  --color-st-rejected: #f7768e;
+  --color-st-superseded: #bb9af7;
+  --color-st-deprecated: #7a84ad;
+
+  --color-adm-note-bg: #192232;
+  --color-adm-tip-bg: #1e2721;
+  --color-adm-important-bg: #212132;
+  --color-adm-warning-bg: #252321;
+  --color-adm-caution-bg: #281c25;
+
+  --color-t-rfc: #7aa2f7;
+  --color-t-adr: #e0af68;
+  --color-t-design: #2ac3de;
+  --color-t-impl: #ff9e64;
+  --color-t-investigation: #9d7cd8;
+  --color-t-mandate: #f7768e;
+  --color-t-guide: #9ece6a;
+  --color-t-principle: #7dcfff;
+  --color-t-policy: #bb9af7;
+  --color-t-framework: #73daca;
+  --color-t-working: #ff9e64;
+  --color-t-runbook: #ff79c6;
+  --color-t-docs: #c0caf5;
+
+  --color-hash-0: #7aa2f7;
+  --color-hash-1: #9ece6a;
+  --color-hash-2: #e0af68;
+  --color-hash-3: #f7768e;
+  --color-hash-4: #bb9af7;
+  --color-hash-5: #73daca;
+  --color-hash-6: #ff9e64;
+  --color-hash-7: #2ac3de;
+
+  --color-code-bg: #161b28;
+  --color-code-fg: #e8ebf0;
+}
+
+/*
+ * The components of an exported docz page (DESIGN-0025 §2–§4). Colour,
+ * radius, and font only through tokens, never a literal: theme_test.go
+ * fails on a hex, rgb(), hsl(), or named colour here, and on any token a
+ * theme does not define.
+ *
+ * Without JavaScript every panel shows, stacked, and the tab row is
+ * hidden; the runtime adds the `js` class to <html> and the tabs take
+ * over. Print looks like the no-JavaScript page.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--color-bg-base);
+  color: var(--color-fg-primary);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-link);
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-accent-bg);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1.2em 0 0.4em;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  margin-top: 0.2em;
+  font-size: 1.9rem;
+}
+
+h2 {
+  font-size: 1.45rem;
+}
+
+h3 {
+  font-size: 1.12rem;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 0.98rem;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 0.8em;
+}
+
+ul,
+ol {
+  padding-left: 1.4em;
+}
+
+li {
+  margin: 0.15em 0;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  margin: 1.5em 0;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--color-border-strong);
+  color: var(--color-fg-secondary);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  border: 1px solid var(--color-border-default);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-control);
+  padding: 0.05em 0.4em;
+}
+
+/* Code. Blocks stay dark in every theme and mode. */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--color-bg-elevated);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-control);
+}
+
+pre {
+  position: relative;
+  margin: 0.6em 0 1em;
+  padding: 12px 14px;
+  overflow: auto;
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  border-radius: var(--radius-control);
+  font: 0.8rem/1.55 var(--font-mono);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+
+pre .copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  font: 0.72rem var(--font-mono);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+pre:hover .copy,
+pre .copy:focus-visible {
+  opacity: 1;
+}
+
+/* Layout */
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+}
+
+.page-header {
+  padding: 28px 0 14px;
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.summary {
+  max-width: 760px;
+  margin: 0.4em 0 0.6em;
+  font-size: 1.05rem;
+  color: var(--color-fg-secondary);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.meta .mode-toggle {
+  margin-left: auto;
+}
+
+.inferred {
+  margin: 0.6em 0 0;
+  font-size: 0.85rem;
+  color: var(--color-fg-tertiary);
+}
+
+.btn,
+.mode-toggle {
+  padding: 5px 11px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-fg-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn:hover,
+.mode-toggle:hover {
+  background: var(--color-bg-hover);
+}
+
+html:not(.js) .mode-toggle {
+  display: none;
+}
+
+/* Pills: id, status, type, author, date, and the task markers. */
+
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  color: var(--color-fg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.pill.st-draft {
+  border-color: var(--color-st-draft);
+  color: var(--color-st-draft);
+}
+
+.pill.st-proposed {
+  border-color: var(--color-st-proposed);
+  color: var(--color-st-proposed);
+}
+
+.pill.st-active {
+  border-color: var(--color-st-active);
+  color: var(--color-st-active);
+}
+
+.pill.st-accepted {
+  border-color: var(--color-st-accepted);
+  color: var(--color-st-accepted);
+}
+
+.pill.st-adopted {
+  border-color: var(--color-st-adopted);
+  color: var(--color-st-adopted);
+}
+
+.pill.st-rejected {
+  border-color: var(--color-st-rejected);
+  color: var(--color-st-rejected);
+}
+
+.pill.st-superseded {
+  border-color: var(--color-st-superseded);
+  color: var(--color-st-superseded);
+}
+
+.pill.st-deprecated {
+  border-color: var(--color-st-deprecated);
+  color: var(--color-st-deprecated);
+}
+
+.pill.t-rfc {
+  color: var(--color-t-rfc);
+}
+
+.pill.t-adr {
+  color: var(--color-t-adr);
+}
+
+.pill.t-design {
+  color: var(--color-t-design);
+}
+
+.pill.t-impl {
+  color: var(--color-t-impl);
+}
+
+.pill.t-investigation {
+  color: var(--color-t-investigation);
+}
+
+.pill.t-runbook {
+  color: var(--color-t-runbook);
+}
+
+.pill.ok {
+  border-color: var(--color-ok);
+  color: var(--color-ok);
+}
+
+.pill.warn {
+  border-color: var(--color-warn);
+  color: var(--color-warn);
+}
+
+.pill.bad {
+  border-color: var(--color-bad);
+  color: var(--color-bad);
+}
+
+.pill.accent {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* Tabs */
+
+nav.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 8px 0 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: var(--color-bg-base);
+  border-bottom: 1px solid var(--color-border-default);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+html:not(.js) nav.tabs {
+  display: none;
+}
+
+nav.tabs button {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-fg-secondary);
+  font: inherit;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+nav.tabs button:hover {
+  color: var(--color-fg-primary);
+}
+
+nav.tabs button[aria-selected="true"] {
+  border-color: var(--color-border-default);
+  background: var(--color-bg-raised);
+  color: var(--color-fg-primary);
+  font-weight: 600;
+}
+
+nav.tabs button:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The fade on an overflowed edge. A mask reads only alpha, so any
+   opaque token serves. */
+nav.tabs.more {
+  mask-image: linear-gradient(
+    90deg,
+    var(--color-fg-primary) calc(100% - 56px),
+    transparent
+  );
+}
+
+nav.tabs.more.mid {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-fg-primary) 56px,
+    var(--color-fg-primary) calc(100% - 56px),
+    transparent
+  );
+}
+
+nav.tabs.more.end {
+  mask-image: none;
+}
+
+nav.tabs.more.mid.end {
+  mask-image: linear-gradient(90deg, transparent, var(--color-fg-primary) 56px);
+}
+
+section.panel {
+  padding-top: 22px;
+}
+
+html.js section.panel {
+  display: none;
+}
+
+html.js section.panel.on {
+  display: block;
+}
+
+.panel-title {
+  margin-top: 0;
+}
+
+html.js .panel-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.heading-list {
+  margin: 0 0 1.2em;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.85rem;
+}
+
+.heading-list a {
+  color: var(--color-fg-secondary);
+  text-decoration: none;
+}
+
+.heading-list a:hover {
+  color: var(--color-link);
+}
+
+.empty {
+  color: var(--color-fg-muted);
+  font-style: italic;
+}
+
+/* Cards and grids */
+
+.grid {
+  display: grid;
+  gap: 12px;
+  margin: 0.6em 0 1em;
+}
+
+.g2 {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.g3 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.grid > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.card {
+  padding: 14px 16px;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+.card > :first-child {
+  margin-top: 0;
+}
+
+.card > :last-child {
+  margin-bottom: 0;
+}
+
+.card.ok {
+  border-top: 3px solid var(--color-ok);
+}
+
+.card.bad {
+  border-top: 3px solid var(--color-bad);
+}
+
+.card.neutral {
+  border-top: 3px solid var(--color-border-strong);
+}
+
+.card.accent {
+  border-color: var(--color-accent);
+}
+
+.card-label {
+  margin: 0 0 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg-tertiary);
+}
+
+/* Callouts: GitHub alerts, decisions, criteria, rollbacks. */
+
+.callout {
+  margin: 0.8em 0 1em;
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: var(--color-bg-raised);
+}
+
+.callout > :last-child {
+  margin-bottom: 0;
+}
+
+.callout-title {
+  margin: 0 0 0.3em;
+  font-weight: 600;
+}
+
+.callout.note {
+  border-color: var(--color-link);
+  background: var(--color-adm-note-bg);
+}
+
+.callout.tip,
+.callout.ok {
+  border-color: var(--color-ok);
+  background: var(--color-adm-tip-bg);
+}
+
+.callout.important {
+  border-color: var(--color-st-superseded);
+  background: var(--color-adm-important-bg);
+}
+
+.callout.warning {
+  border-color: var(--color-warn);
+  background: var(--color-adm-warning-bg);
+}
+
+.callout.caution,
+.callout.bad {
+  border-color: var(--color-bad);
+  background: var(--color-adm-caution-bg);
+}
+
+/* Expandables: open questions, scenarios. */
+
+details.expand {
+  margin: 8px 0;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+details.expand > summary {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+details.expand > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.expand > summary::after {
+  content: "+";
+  color: var(--color-fg-tertiary);
+  font-family: var(--font-mono);
+}
+
+details.expand[open] > summary::after {
+  content: "\2013";
+}
+
+details.expand > .body {
+  padding: 0 14px 12px;
+}
+
+.option {
+  margin: 4px 0;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-hairline);
+  border-radius: var(--radius-control);
+}
+
+.option.recommended {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-bg);
+}
+
+.resolution {
+  margin: 0.6em 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--color-ok);
+  background: var(--color-adm-tip-bg);
+}
+
+/* Definition lists: a runbook scenario's symptom, alert, and cause. */
+
+dl {
+  margin: 0.4em 0 1em;
+}
+
+dt {
+  color: var(--color-fg-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 0.1em 0 0.6em;
+}
+
+/* Tables */
+
+.table-wrap {
+  margin: 0.6em 0 1em;
+  overflow-x: auto;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+th,
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--color-border-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+th {
+  color: var(--color-fg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+td.high {
+  background: var(--color-adm-caution-bg);
+}
+
+td.medium {
+  background: var(--color-adm-warning-bg);
+}
+
+td.low {
+  background: var(--color-adm-tip-bg);
+}
+
+/* IMPL phases */
+
+.phase {
+  margin: 0 0 14px;
+}
+
+.phase-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+}
+
+.phase-head h3 {
+  margin: 0;
+}
+
+.progress {
+  margin-left: auto;
+  color: var(--color-fg-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.bar {
+  height: 6px;
+  margin: 8px 0 10px;
+  overflow: hidden;
+  background: var(--color-bg-elevated);
+  border-radius: 3px;
+}
+
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--color-ok);
+}
+
+ul.tasks {
+  margin: 0.4em 0 0.8em;
+  padding: 0;
+  list-style: none;
+}
+
+ul.tasks li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 6px;
+  align-items: start;
+  margin: 3px 0;
+}
+
+ul.tasks ul.tasks {
+  grid-column: 2;
+}
+
+ul.tasks li[data-state="done"] > .text {
+  color: var(--color-fg-tertiary);
+}
+
+ul.tasks input {
+  margin-top: 0.3em;
+  accent-color: var(--color-ok);
+}
+
+.note {
+  display: block;
+  color: var(--color-fg-secondary);
+  font-size: 0.86rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+html:not(.js) .filters {
+  display: none;
+}
+
+.filters button {
+  padding: 4px 11px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  background: var(--color-bg-raised);
+  color: var(--color-fg-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.filters button[aria-pressed="true"] {
+  border-color: var(--color-fg-primary);
+  background: var(--color-fg-primary);
+  color: var(--color-bg-base);
+}
+
+[data-task-filter="open"] ul.tasks li[data-state="done"],
+[data-task-filter="done"] ul.tasks li:not([data-state="done"]) {
+  display: none;
+}
+
+/* Runbook steps */
+
+ol.steps {
+  margin: 0.4em 0 1em;
+  padding-left: 1.6em;
+}
+
+ol.steps > li {
+  margin: 0.5em 0;
+  padding-left: 0.3em;
+}
+
+ol.steps > li::marker {
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.step-id {
+  margin-right: 6px;
+  color: var(--color-fg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.expected {
+  margin: 0.3em 0 0;
+  color: var(--color-fg-secondary);
+  font-size: 0.9rem;
+}
+
+.expected b {
+  color: var(--color-ok);
+}
+
+/* An investigation's answer */
+
+.verdict {
+  margin: 0.6em 0 1em;
+  padding: 14px 16px;
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+.verdict.yes {
+  border-color: var(--color-ok);
+}
+
+.verdict.no {
+  border-color: var(--color-bad);
+}
+
+.verdict.partial {
+  border-color: var(--color-warn);
+}
+
+.verdict > :last-child {
+  margin-bottom: 0;
+}
+
+/* Diagrams: the source shows until mermaid draws, and stays when it
+   cannot. */
+
+pre.mermaid {
+  background: var(--color-bg-raised);
+  color: var(--color-fg-secondary);
+  border: 1px solid var(--color-border-default);
+}
+
+pre.mermaid[data-processed="true"] {
+  padding: 12px;
+  text-align: center;
+}
+
+.diagram-error {
+  color: var(--color-bad);
+  font-size: 0.85rem;
+}
+
+/* Widgets: docz-flow, docz-stepper, docz-scorecard (DESIGN-0025 §6).
+   The fallback shows until the runtime draws; without JavaScript, or when
+   the island fails, it is all there is. */
+
+figure.widget {
+  margin: 1em 0 1.4em;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+figure.widget > figcaption {
+  margin: 0 0 8px;
+  color: var(--color-fg-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+html:not(.js) .widget-mount,
+.widget.drawn > .widget-fallback {
+  display: none;
+}
+
+.widget-fallback > :last-child {
+  margin-bottom: 0;
+}
+
+.widget-canvas svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-sans);
+}
+
+.widget-canvas svg .mono {
+  font-family: var(--font-mono);
+}
+
+.widget-canvas g.stage {
+  cursor: pointer;
+}
+
+.widget-canvas g.stage:focus {
+  outline: none;
+}
+
+.widget-canvas g.stage:focus-visible rect {
+  stroke: var(--color-fg-primary);
+  stroke-width: 2;
+}
+
+.widget-detail {
+  margin-top: 10px;
+}
+
+.widget-detail h4 {
+  margin: 0 0 0.3em;
+}
+
+.widget-detail > :last-child {
+  margin-bottom: 0;
+}
+
+.widget-choices,
+.widget-steps,
+.widget-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 10px;
+}
+
+.widget-nav {
+  margin: 10px 0 0;
+}
+
+.widget-choices button,
+.widget-steps button {
+  padding: 4px 11px;
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  background: var(--color-bg-base);
+  color: var(--color-fg-secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.widget-choices button[aria-pressed="true"],
+.widget-steps button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.widget-steps button.fail {
+  border-color: var(--color-bad);
+  color: var(--color-bad);
+}
+
+.widget-steps button.fail[aria-pressed="true"] {
+  background: var(--color-bad);
+  color: var(--color-on-accent);
+}
+
+.widget-steps button.dead {
+  opacity: 0.55;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.widget-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-base);
+  color: var(--color-fg-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.widget-score {
+  margin: 0 0 10px;
+}
+
+tr.unmeasured td {
+  color: var(--color-fg-tertiary);
+}
+
+/* Footer */
+
+.page-footer {
+  margin-top: 48px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-default);
+  color: var(--color-fg-tertiary);
+  font-size: 0.8rem;
+}
+
+.page-footer code {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+/* Small screens, motion, print */
+
+@media (max-width: 560px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .meta .mode-toggle {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+@media print {
+  nav.tabs,
+  .mode-toggle,
+  .filters,
+  pre .copy {
+    display: none !important;
+  }
+
+  html.js section.panel {
+    display: block;
+    break-before: page;
+  }
+
+  html.js .panel-title {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
+
+  details.expand > .body {
+    display: block;
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }
+}
+</style>
+<!-- /docz:theme -->
+</head>
+<body>
+<div class="wrap">
+<header class="page-header">
+<p class="eyebrow">docz · Design</p>
+<h1>docz-site: cross-repo docz viewer and search UI</h1>
+<p class="summary"><strong>Status:</strong> Draft
+<strong>Author:</strong> Donald Gifford
+<strong>Date:</strong> 2026-06-23</p>
+<div class="meta">
+<span class="pill">DESIGN-0009</span>
+<span class="pill st-draft">Draft</span>
+<span class="pill">Donald Gifford</span>
+<span class="pill">2026-06-23</span>
+<button type="button" class="mode-toggle">Dark</button>
+</div>
+</header>
+<nav class="tabs" aria-label="Sections">
+<button type="button" data-tab="overview" aria-controls="p-overview">Overview</button>
+<button type="button" data-tab="background" aria-controls="p-background">Background</button>
+<button type="button" data-tab="design" aria-controls="p-design">Design</button>
+<button type="button" data-tab="interfaces" aria-controls="p-interfaces">Interfaces</button>
+<button type="button" data-tab="data-model" aria-controls="p-data-model">Data model</button>
+<button type="button" data-tab="testing" aria-controls="p-testing">Testing</button>
+<button type="button" data-tab="rollout" aria-controls="p-rollout">Rollout</button>
+<button type="button" data-tab="open-questions" aria-controls="p-open-questions">Open questions</button>
+<button type="button" data-tab="references" aria-controls="p-references">References</button>
+</nav>
+<section class="panel" id="p-overview">
+<h2 class="panel-title" id="overview">Overview</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#goals-and-non-goals">Goals and Non-Goals</a>
+<ul>
+<li><a href="#goals">Goals</a></li>
+<li><a href="#non-goals">Non-Goals</a></li>
+</ul>
+</li>
+<li><a href="#background">Background</a></li>
+<li><a href="#detailed-design">Detailed Design</a>
+<ul>
+<li><a href="#tech-stack-proposal">Tech stack proposal</a></li>
+<li><a href="#information-architecture-and-route-map">Information architecture and route map</a></li>
+<li><a href="#search-ux-and-how-it-queries-docz-api">Search UX and how it queries docz-api</a></li>
+<li><a href="#document-reader-pipeline">Document reader pipeline</a></li>
+<li><a href="#auth-and-session-handling-against-docz-api">Auth and session handling against docz-api</a></li>
+<li><a href="#loading-empty-and-error-states">Loading, empty, and error states</a></li>
+<li><a href="#responsive-layout">Responsive layout</a></li>
+</ul>
+</li>
+<li><a href="#api--interface-changes">API / Interface Changes</a></li>
+<li><a href="#data-model">Data Model</a></li>
+<li><a href="#testing-strategy">Testing Strategy</a></li>
+<li><a href="#migration--rollout-plan">Migration / Rollout Plan</a></li>
+<li><a href="#open-questions">Open Questions</a>
+<ul>
+<li><a href="#1-which-front-end-framework">1. Which front-end framework?</a></li>
+<li><a href="#2-which-markdown-renderer-library">2. Which markdown renderer library?</a></li>
+<li><a href="#3-ssr-or-spa">3. SSR or SPA?</a></li>
+<li><a href="#4-how-does-the-site-integrate-with-meilisearch-search">4. How does the site integrate with Meilisearch search?</a></li>
+<li><a href="#5-html-sanitization-approach">5. HTML sanitization approach?</a></li>
+<li><a href="#6-styling--design-system-choice">6. Styling / design-system choice?</a></li>
+<li><a href="#7-where-does-the-oidcoauth-token-exchange-happen">7. Where does the OIDC/OAuth token exchange happen?</a></li>
+<li><a href="#8-how-should-doczs-own-toc-markers-be-handled">8. How should docz's own ToC markers be handled?</a></li>
+</ul>
+</li>
+<li><a href="#references">References</a></li>
+</ul>
+<p><strong>docz-site</strong> is the web front end that lets a team browse, search, and read
+<em>all</em> of their docz documents from a single URL. docz is a CLI that generates
+and manages standardized per-repo documentation (RFCs, ADRs, design docs,
+implementation plans, plans, investigations) with typed YAML frontmatter
+(<code>id</code>, <code>title</code>, <code>status</code>, <code>author</code>, <code>created</code>), stable namespaced IDs
+(<code>RFC-0001</code>, <code>FW-0003</code>), and a <code>.docz.yaml</code> manifest per repo. Today each repo
+has its own doc tree and there is no single place to search &quot;all our ADRs&quot; or
+&quot;every Draft design across the org.&quot; docz-site is that single place.</p>
+<p>docz-site is a <strong>client</strong> of <strong>docz-api</strong> (designed separately in DESIGN-0008).
+docz-api is a Go service that uses a GitHub App to onboard repos, ingests each
+repo's <code>.docz.yaml</code> + doc files into a Postgres registry, indexes them in
+Meilisearch, and refreshes via webhooks. Critically for this design:</p>
+<ul>
+<li>docz-api <strong>caches raw markdown + metadata</strong> (Decision 2). It does <em>not</em> store
+rendered HTML and does <em>not</em> render server-side.</li>
+<li>docz-site therefore <strong>renders markdown → HTML client-side</strong> with a JS
+renderer (Decision 3). docz's own terminal renderer (<code>mdp</code>) is intentionally
+single-user neovim/terminal scope and is <em>not</em> reused here.</li>
+<li>docz-site <strong>stores no source data</strong> and <strong>never talks to GitHub directly for
+content</strong> — it reads everything from docz-api over HTTP/JSON.</li>
+</ul>
+<p>This document derives from INV-0005 (&quot;docz-api and docz-site: centralized
+cross-repo docz registry and viewer&quot;) and honors its locked decisions. It is
+written to seed a brand-new <code>docz-site</code> git repository, so it restates the
+essential context rather than assuming the docz or docz-api repos are open.</p>
+<h3 id="goals-and-non-goals">Goals and Non-Goals</h3>
+<div class="grid g2">
+<div class="card ok" id="goals">
+<p class="card-label">Goals</p>
+<ul>
+<li><strong>One URL for all docz documents.</strong> Navigate repos → a repo → its doc types →
+the documents of a type → open and read one document, with breadcrumbs
+throughout.</li>
+<li><strong>Global search</strong> (Meilisearch-backed, via docz-api) with facets on <strong>repo</strong>,
+<strong>type</strong>, <strong>status</strong>, and <strong>author</strong>, and cross-repo views that fall out of
+those facets (e.g. &quot;all Approved designs across repos&quot;).</li>
+<li><strong>A faithful document reader.</strong> Fetch raw markdown from docz-api, render it to
+HTML client-side, <strong>sanitize</strong> the result (it is user content → XSS surface),
+highlight code, build a table of contents from headings, and show a
+frontmatter <strong>status badge</strong>.</li>
+<li><strong>Pluggable authentication</strong> (Decision 6) via OIDC/OAuth: <strong>GitHub</strong>
+(default/preferred), <strong>Okta</strong>, <strong>Keycloak</strong>. The user sees only the repos and
+docs they are authorized for; <strong>authorization is enforced server-side by
+docz-api</strong>, and the site reflects it.</li>
+<li><strong>A thin vertical slice first</strong> (Decision 8): render one repo's one type
+end-to-end before building the full navigation, search, and auth.</li>
+<li><strong>A responsive layout</strong> — sidebar navigation + content area — that degrades to
+a single column on small screens.</li>
+</ul>
+</div>
+<div class="card neutral" id="non-goals">
+<p class="card-label">Non-Goals</p>
+<ul>
+<li><strong>Authoring or editing documents.</strong> docz-site is read-only; docs are created
+and mutated by the docz CLI in their source repos.</li>
+<li><strong>Storing or persisting source data.</strong> No database; the site is a thin client
+over docz-api. (A bounded client-side query cache is in scope; durable storage
+is not.)</li>
+<li><strong>Talking to GitHub for content.</strong> Repo content always comes from docz-api.
+The GitHub App is docz-api's concern (DESIGN-0008); the site only uses GitHub
+as one <em>identity</em> provider.</li>
+<li><strong>Server-side markdown rendering</strong> (rejected by Decision 3) and <strong>reusing
+<code>mdp</code></strong> (its scope is single-user terminal preview).</li>
+<li><strong>Replacing per-repo MkDocs/TechDocs.</strong> docz's per-repo <code>wiki</code> output is for
+deep single-project browsing; docz-site is the org-wide cross-repo index. They
+are complementary.</li>
+<li><strong>Implementing the authorization policy.</strong> docz-site renders what docz-api
+returns; the policy (GitHub repo access vs. OIDC group claims) lives in
+docz-api.</li>
+</ul>
+</div>
+</div>
+
+</section>
+<section class="panel" id="p-background">
+<h2 class="panel-title" id="background">Background</h2>
+<p>The viewer half of INV-0005 settled on a shape that this design fills in. The
+load-bearing conclusions:</p>
+<ul>
+<li><strong>The site is a thin client.</strong> All discovery, normalization, caching, and
+search live behind docz-api. The site's job is navigation, search UX, and a
+good reader.</li>
+<li><strong>Markdown is rendered in the browser</strong> (Decision 3). docz-api hands the site
+raw markdown plus the parsed frontmatter; the site owns the
+parse → render → sanitize → highlight → ToC pipeline. This keeps docz-api free
+of an HTML rendering stack and lets the reader evolve independently of the
+ingest service.</li>
+<li><strong>Auth is pluggable, authZ is server-enforced</strong> (Decision 6). The site lets a
+user log in through one of several providers, but it never decides <em>what</em> a
+user may see — every content endpoint on docz-api is already access-scoped, so
+an unauthorized repo simply does not appear in the API's responses. The site
+must therefore treat 401/403 as first-class states, not edge cases.</li>
+<li><strong>Cross-repo views are free.</strong> Because Meilisearch facets on repo/type/status/
+author, a view like &quot;all Approved designs&quot; is just a faceted search query — no
+special endpoint or UI mode.</li>
+</ul>
+<p>What this design adds on top of INV-0005 is the concrete front-end shape: tech
+stack, information architecture and routes, search UX, the reader pipeline, auth
+and session handling against docz-api, the standard loading/empty/error states,
+and the responsive layout.</p>
+
+</section>
+<section class="panel" id="p-design">
+<h2 class="panel-title">Design</h2>
+<h3 id="detailed-design">Detailed Design</h3>
+<h4 id="tech-stack-proposal">Tech stack proposal</h4>
+<p>docz-site is a JavaScript/TypeScript single-page application (or SSR app — see
+Open Question 3). The working recommendation, to be confirmed:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Recommendation</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>React + Vite SPA (or Next.js)</td>
+<td>Exact choice is Open Question 1; SSR vs SPA is Open Question 3</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>TypeScript (strict)</td>
+<td>View-model interfaces below are the contract with docz-api</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>File- or config-based router</td>
+<td>Route map below</td>
+</tr>
+<tr>
+<td>Data fetching/cache</td>
+<td>TanStack Query</td>
+<td>Request dedup, caching, retries, stale-while-revalidate</td>
+</tr>
+<tr>
+<td>Markdown render</td>
+<td><code>markdown-it</code> <strong>or</strong> <code>react-markdown</code></td>
+<td>Open Question 2</td>
+</tr>
+<tr>
+<td>HTML sanitization</td>
+<td>DOMPurify</td>
+<td>Mandatory; see reader pipeline (Open Question 5)</td>
+</tr>
+<tr>
+<td>Syntax highlight</td>
+<td>Shiki <strong>or</strong> highlight.js</td>
+<td>Build the highlighted HTML, then sanitize</td>
+</tr>
+<tr>
+<td>Styling</td>
+<td>Tailwind + a small component set</td>
+<td>Open Question 6</td>
+</tr>
+<tr>
+<td>E2E tests</td>
+<td>Playwright</td>
+<td>Against a mocked/fixture docz-api</td>
+</tr>
+<tr>
+<td>Unit/component</td>
+<td>Vitest + Testing Library</td>
+<td>Includes the XSS sanitization suite</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The recommendation is a <strong>Vite + React SPA</strong> for the thin vertical slice: no
+server runtime to operate, fastest path to &quot;render one repo's one type,&quot; and a
+clean separation where docz-api is the only backend. SSR (Next.js/SvelteKit) is
+attractive later for SEO-able public docs, faster first paint, and a place to
+run a BFF token exchange (see Open Question 7) — hence keeping the framework
+choice open rather than locking it now.</p>
+<h4 id="information-architecture-and-route-map">Information architecture and route map</h4>
+<p>Navigation mirrors the docz mental model from INV-0005: <strong>repos → a repo → its
+doc types → a document</strong>, with a global search surface alongside.</p>
+<pre><code>/                               Landing / dashboard (recent + entry points)
+/repos                          List of onboarded repos the user may see
+/:owner/:repo                   Repo detail: the repo&#39;s doc types
+/:owner/:repo/:type             List of documents of one type in the repo
+/:owner/:repo/:type/:docId      Single document reader (e.g. .../design/DESIGN-0009)
+/search                         Global faceted search (repo/type/status/author)
+/login                          Provider selection / OIDC entry point
+/auth/callback                  OAuth/OIDC redirect handler
+*                               404 / not-found
+</code></pre>
+<p>Notes on the route shape:</p>
+<ul>
+<li><code>:owner/:repo</code> together identify a repo (e.g. <code>acme/platform</code>); this matches
+docz-api's <code>{owner}/{repo}</code> addressing and reads naturally in breadcrumbs.</li>
+<li><code>:type</code> is the docz type <em>name or id_prefix</em> as docz-api exposes it
+(<code>design</code>, <code>rfc</code>, or a custom <code>frameworks</code>). The registry is <strong>type-agnostic</strong>
+— driven entirely by each repo's <code>.docz.yaml</code>, never a hardcoded list of the
+six built-ins — so the site must render whatever types the API returns.</li>
+<li><code>:docId</code> is the stable frontmatter id (<code>DESIGN-0009</code>). It is unique within a
+repo, so <code>(owner, repo, docId)</code> is a stable permalink.</li>
+<li><strong>Cross-repo views are URLs into <code>/search</code></strong>, not new routes. &quot;All Approved
+designs across repos&quot; is <code>/search?type=design&amp;status=Approved</code> with no <code>repo</code>
+facet selected. This keeps the IA small and makes every view shareable.</li>
+</ul>
+<p><strong>Breadcrumbs</strong> are derived from the route everywhere below <code>/repos</code>:</p>
+<pre><code>Repos / acme/platform / Designs / DESIGN-0009
+</code></pre>
+<h4 id="search-ux-and-how-it-queries-docz-api">Search UX and how it queries docz-api</h4>
+<p>Search is the primary cross-repo surface. The <code>/search</code> page has:</p>
+<ul>
+<li>A query box (debounced, ~200 ms) bound to the URL <code>?q=</code>.</li>
+<li>A <strong>facets sidebar</strong> with four groups — repo, type, status, author — each a
+multi-select list of values with hit counts, bound to URL params
+(<code>?repo=…&amp;type=…&amp;status=…&amp;author=…</code>). Selecting facets is additive and
+reflected in the URL so a filtered view is a shareable link.</li>
+<li>A results list of <strong>search hits</strong>: title, repo, type badge, status badge,
+author, and a highlighted snippet; clicking a hit routes to the document
+reader.</li>
+</ul>
+<p>Every search interaction is one request to docz-api's search endpoint
+(<code>GET /api/v1/search</code>, below), which proxies to Meilisearch. <strong>Whether the site
+hits a docz-api proxy endpoint or talks to Meilisearch directly with a scoped
+search key is Open Question 4.</strong> The recommendation is to proxy through docz-api
+so that (a) the same access scoping that filters content endpoints also filters
+search results, (b) no Meilisearch key is exposed to the browser, and (c) the
+site has exactly one backend. The direct-Meilisearch alternative buys lower
+latency and Meilisearch's instant-search components at the cost of issuing
+per-session scoped keys and trusting the browser with filter constraints.</p>
+<p>Because facets come straight from Meilisearch, <strong>cross-repo views are search
+queries</strong> (see IA above): the <code>/search</code> page <em>is</em> the cross-repo view engine,
+and the repo/type pages are just pre-filtered entry points into it.</p>
+<h4 id="document-reader-pipeline">Document reader pipeline</h4>
+<p>The reader is the heart of the site and the part the thin vertical slice proves
+first. docz-api returns <strong>raw markdown + parsed metadata</strong>; the site does
+everything else, in this fixed order:</p>
+<pre><code>1. fetch          GET .../:type/:docId  → { metadata, raw_md } from docz-api
+2. parse FM       split frontmatter from body (api already parsed metadata;
+                  the body is the markdown below the --- block)
+3. render md      markdown → HTML via the chosen JS renderer (OQ 2)
+4. sanitize       HTML → safe HTML via DOMPurify (MANDATORY; see below)
+5. highlight      syntax-highlight code blocks (then ensure step 4 covered it)
+6. build ToC      walk rendered headings → nested ToC; add anchor ids
+7. status badge   render frontmatter status as a colored badge
+</code></pre>
+<p>Two ordering rules are load-bearing:</p>
+<ul>
+<li><strong>Sanitization is non-negotiable and runs after rendering.</strong> The content is
+user-authored markdown that becomes HTML, which is a stored-XSS surface
+(<code>&lt;script&gt;</code>, <code>onerror=</code>, <code>javascript:</code> URLs, malicious SVG). The rendered
+HTML is passed through DOMPurify with a conservative allow-list before it ever
+reaches the DOM. If syntax highlighting (step 5) emits raw HTML, it must be
+produced <em>before</em> the final sanitize pass, or run through a highlighter that
+only emits classed <code>&lt;span&gt;</code>s the sanitizer allows. The sanitization approach
+is Open Question 5; <em>that</em> it happens is not negotiable.</li>
+<li><strong>The ToC is generated from rendered headings, not from docz's own ToC
+markers.</strong> docz documents contain <code>&lt;!--toc:start--&gt;</code> / <code>&lt;!--toc:end--&gt;</code> marker
+blocks that the CLI maintains. Rather than parse or trust those markers, the
+reader builds the ToC by walking the rendered <code>&lt;h1..h4&gt;</code> nodes and assigning
+slugged anchor ids, so the ToC is always consistent with what is displayed
+(how to treat the literal marker block — strip it, ignore it, or render the
+CLI-generated list — is Open Question 8).</li>
+</ul>
+<p>The <strong>status badge</strong> maps the frontmatter <code>status</code> value to a color. The set of
+valid statuses is per-type and comes from each repo's <code>.docz.yaml</code>
+(<code>TypeConfig.Statuses</code>), surfaced through docz-api's metadata, so the badge uses
+a small status→color convention with a neutral default for unknown values
+rather than a hardcoded enum.</p>
+<h4 id="auth-and-session-handling-against-docz-api">Auth and session handling against docz-api</h4>
+<p>Authentication is <strong>pluggable</strong> (Decision 6): the site supports GitHub (default,
+preferred), Okta, and Keycloak behind one OIDC/OAuth-shaped flow. The site never
+makes authorization decisions — docz-api enforces them — so the front-end auth
+job is narrow: get the user signed in, attach the session to API calls, and
+react to 401/403.</p>
+<p>Login flow (provider-agnostic; GitHub default):</p>
+<pre><code>/login            user picks a provider (or is sent straight to the default)
+   │  redirect to provider authorize URL (coordinated with docz-api)
+   ▼
+provider          user authenticates (GitHub OAuth / Okta or Keycloak OIDC)
+   │  redirect back with code
+   ▼
+/auth/callback    code is exchanged for a session
+   │  (where the token exchange happens — a site BFF vs. docz-api —
+   │   is Open Question 7; recommendation: docz-api owns it)
+   ▼
+session           session cookie (httpOnly, SameSite) issued by docz-api;
+                  site holds no long-lived token in JS
+</code></pre>
+<p>Session handling:</p>
+<ul>
+<li>The session is carried as an <strong>httpOnly cookie</strong> set by docz-api (preferred)
+so no access token sits in JavaScript-readable storage. The site sends
+credentialed requests (<code>credentials: 'include'</code>) to docz-api.</li>
+<li>On <code>401</code>, the site routes to <code>/login</code>, preserving the intended destination as
+a return URL.</li>
+<li>On <code>403</code>, the site shows a &quot;you don't have access to this&quot; state — this is
+expected when a user follows a link to a repo/doc they cannot read.</li>
+<li>Because authZ is server-side, the <strong>repos list, type list, and search results
+are already filtered</strong> by docz-api to what the user may see. The site does not
+filter content itself; it only renders what comes back. This means an
+enumeration of repos is safe to show directly.</li>
+</ul>
+<h4 id="loading-empty-and-error-states">Loading, empty, and error states</h4>
+<p>Every data-bound view defines four states; the data layer (TanStack Query)
+drives them:</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Trigger</th>
+<th>UI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Loading</td>
+<td>request in flight</td>
+<td>skeletons matching the target layout (list rows / reader)</td>
+</tr>
+<tr>
+<td>Empty</td>
+<td>request ok, zero results</td>
+<td>contextual empty message + a next action</td>
+</tr>
+<tr>
+<td>Error</td>
+<td>network / 5xx</td>
+<td>inline error with a retry button; non-destructive</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>401 → <code>/login</code>; 403 → no-access</td>
+<td>redirect (401) or an access-denied panel (403)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Examples: <code>/repos</code> with no onboarded repos shows &quot;No repos yet — onboard one
+with the docz GitHub App&quot;; a type page with no documents shows &quot;No designs in
+acme/platform yet&quot;; a search with zero hits shows the query and a &quot;clear facets&quot;
+action; a reader fetch error shows a retry without losing the breadcrumb.</p>
+<h4 id="responsive-layout">Responsive layout</h4>
+<p>The default layout is a persistent <strong>left sidebar</strong> (navigation/context) plus a
+<strong>content area</strong>; the reader adds a right-hand ToC rail on wide screens.</p>
+<pre><code>┌──────────────────────────────────────────────────────────────────────┐
+│  docz-site            [ global search…                 ]   ◍ user ▾    │  top bar
+├───────────────┬────────────────────────────────────────┬─────────────┤
+│  SIDEBAR      │  CONTENT                                 │  ON THIS    │
+│               │                                          │  PAGE       │
+│  Repos        │  Repos / acme/platform / Designs /       │             │
+│   acme/...    │  DESIGN-0009                             │  • Overview │
+│   acme/web    │                                          │  • Goals    │
+│   org/infra   │  # DESIGN 0009: docz-site …  [Draft]     │  • Detailed │
+│               │                                          │    Design   │
+│  Types        │  Overview                                │  • API      │
+│   Designs     │  docz-site is the web front end that …   │  • Data     │
+│   RFCs        │                                          │    Model    │
+│   ADRs        │  Goals and Non-Goals                     │  • …        │
+│               │  …                                       │             │
+└───────────────┴────────────────────────────────────────┴─────────────┘
+</code></pre>
+<p>Breakpoints:</p>
+<ul>
+<li><strong>Wide (≥1280px):</strong> sidebar + content + ToC rail (three columns).</li>
+<li><strong>Medium (≥768px):</strong> sidebar + content; ToC collapses into an &quot;On this page&quot;
+disclosure at the top of the reader.</li>
+<li><strong>Small (&lt;768px):</strong> sidebar collapses behind a hamburger; single content
+column; search moves into a full-screen overlay.</li>
+</ul>
+<p>The reader content column is width-capped (~72ch) for readability regardless of
+viewport.</p>
+
+</section>
+<section class="panel" id="p-interfaces">
+<h2 class="panel-title">Interfaces</h2>
+<h3 id="api--interface-changes">API / Interface Changes</h3>
+<p>docz-site is a new app and defines no public API of its own. This section
+describes (1) the docz-api endpoints it <strong>consumes</strong> and (2) the site's own
+client routes (already listed in the route map above). Endpoint paths are
+illustrative and must be reconciled with DESIGN-0008.</p>
+<p><strong>Consumed docz-api endpoints:</strong></p>
+<pre><code>GET  /api/v1/repos
+       → [{ owner, name, default_branch, doc_type_count, updated_at }]
+       Access-scoped: only repos the session may read.
+
+GET  /api/v1/repos/:owner/:repo
+       → { owner, name, default_branch, docs_dir, doc_types: [...] }
+
+GET  /api/v1/repos/:owner/:repo/types
+       → [{ name, plural_label, id_prefix, statuses, doc_count }]
+       Type-agnostic: whatever .docz.yaml enables, incl. custom types.
+
+GET  /api/v1/repos/:owner/:repo/types/:type/docs
+       → [{ doc_id, title, status, author, created, path, updated_at }]
+
+GET  /api/v1/repos/:owner/:repo/types/:type/docs/:docId
+       → { metadata: { id, title, status, author, created, ... },
+           raw_md: &#34;…full markdown including frontmatter…&#34;,
+           git_sha }
+       The reader&#39;s source of truth: RAW markdown + parsed metadata.
+
+GET  /api/v1/search?q=&amp;repo=&amp;type=&amp;status=&amp;author=&amp;page=
+       → { hits: [{ repo, doc_id, type, title, status, author,
+                     snippet }],
+           facets: { repo: {...}, type: {...},
+                     status: {...}, author: {...} },
+           total }
+       Backed by Meilisearch; results access-scoped server-side.
+
+GET  /api/v1/auth/session   → { user } | 401
+POST /api/v1/auth/logout    → 204
+     (login/callback redirect endpoints per the auth flow above)
+</code></pre>
+<p>All content/search endpoints are <strong>access-scoped server-side</strong>; the site
+receives only authorized data and surfaces 401/403 as described.</p>
+<p><strong>Example: fetch and render one document.</strong> This is the thin-vertical-slice
+path — fetch raw markdown for <code>acme/platform / design / DESIGN-0009</code> and render
+it safely. Renderer-specific calls are illustrative.</p>
+<pre><code class="language-ts">import DOMPurify from &#34;dompurify&#34;;
+import { renderMarkdown } from &#34;./markdown&#34;; // wraps markdown-it / remark
+
+async function loadDoc(owner: string, repo: string, type: string, docId: string) {
+  const res = await fetch(
+    `/api/v1/repos/${owner}/${repo}/types/${type}/docs/${docId}`,
+    { credentials: &#34;include&#34; },
+  );
+  if (res.status === 401) throw new AuthError();      // → /login
+  if (res.status === 403) throw new ForbiddenError(); // → access-denied panel
+  if (!res.ok) throw new ApiError(res.status);
+
+  const doc: Doc = await res.json();
+
+  // 1. render markdown body → HTML (renderer also highlights code)
+  const rawHtml = renderMarkdown(stripFrontmatter(doc.rawMd));
+
+  // 2. SANITIZE — mandatory: this is user content → HTML
+  const safeHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } });
+
+  // 3. build ToC from rendered headings (not docz&#39;s toc markers)
+  const toc = buildToc(safeHtml);
+
+  return { metadata: doc.metadata, html: safeHtml, toc };
+}
+</code></pre>
+<pre><code class="language-tsx">function DocReader({ owner, repo, type, docId }: DocReaderProps) {
+  const { data, status } = useQuery({
+    queryKey: [&#34;doc&#34;, owner, repo, type, docId],
+    queryFn: () =&gt; loadDoc(owner, repo, type, docId),
+  });
+
+  if (status === &#34;pending&#34;) return &lt;ReaderSkeleton /&gt;;
+  if (status === &#34;error&#34;)   return &lt;ReaderError owner={owner} repo={repo} /&gt;;
+
+  return (
+    &lt;article&gt;
+      &lt;Breadcrumbs owner={owner} repo={repo} type={type} docId={docId} /&gt;
+      &lt;StatusBadge status={data.metadata.status} /&gt;
+      &lt;TableOfContents toc={data.toc} /&gt;
+      {/* html is already sanitized by loadDoc */}
+      &lt;div className=&#34;prose&#34; dangerouslySetInnerHTML={{ __html: data.html }} /&gt;
+    &lt;/article&gt;
+  );
+}
+</code></pre>
+
+</section>
+<section class="panel" id="p-data-model">
+<h2 class="panel-title" id="data-model">Data model</h2>
+<p>The site is <strong>essentially stateless</strong> — a thin client with no database. The
+&quot;data model&quot; is (1) the TypeScript view-model shapes that mirror docz-api's JSON
+and (2) the client-side query cache.</p>
+<p><strong>View-model interfaces</strong> (the contract the site renders against):</p>
+<pre><code class="language-ts">interface Repo {
+  owner: string;
+  name: string;            // `${owner}/${name}` is the repo key
+  defaultBranch: string;
+  docsDir: string;
+  docTypeCount: number;
+  updatedAt: string;       // ISO-8601
+}
+
+interface DocType {
+  name: string;            // canonical type name, e.g. &#34;design&#34; or &#34;frameworks&#34;
+  pluralLabel: string;     // display label, e.g. &#34;Designs&#34;
+  idPrefix: string;        // e.g. &#34;DESIGN&#34;, &#34;FW&#34;
+  statuses: string[];      // valid statuses for this type (from .docz.yaml)
+  docCount: number;
+}
+
+interface DocSummary {     // a row in a type&#39;s document list
+  docId: string;           // stable frontmatter id, e.g. &#34;DESIGN-0009&#34;
+  title: string;
+  status: string;
+  author: string;
+  created: string;         // ISO-8601 date
+  path: string;            // repo-relative source path
+  updatedAt: string;
+}
+
+interface Doc {            // the full reader payload
+  metadata: {
+    id: string;
+    title: string;
+    status: string;
+    author: string;
+    created: string;
+    [k: string]: unknown;  // forward-compatible with extra frontmatter keys
+  };
+  rawMd: string;           // raw markdown incl. frontmatter; rendered client-side
+  gitSha: string;
+}
+
+interface SearchHit {
+  repo: string;            // `${owner}/${name}`
+  docId: string;
+  type: string;
+  title: string;
+  status: string;
+  author: string;
+  snippet: string;         // highlighted excerpt from Meilisearch
+}
+
+interface SearchResponse {
+  hits: SearchHit[];
+  facets: {
+    repo: Record&lt;string, number&gt;;
+    type: Record&lt;string, number&gt;;
+    status: Record&lt;string, number&gt;;
+    author: Record&lt;string, number&gt;;
+  };
+  total: number;
+}
+</code></pre>
+<p><code>status</code> and <code>type</code> are typed as <code>string</code> (not a closed enum) because the type
+and status sets are <strong>per-repo, driven by <code>.docz.yaml</code></strong> — the site must render
+whatever docz-api returns, including custom types and custom statuses.</p>
+<p><strong>Client-side caching.</strong> The only persisted-ish state is the in-memory query
+cache (TanStack Query): keyed by route params (<code>[&quot;repos&quot;]</code>,
+<code>[&quot;repo&quot;, owner, name]</code>, <code>[&quot;docs&quot;, owner, repo, type]</code>,
+<code>[&quot;doc&quot;, owner, repo, type, docId]</code>, <code>[&quot;search&quot;, params]</code>), with
+stale-while-revalidate so navigating back to a list is instant while a
+background refetch runs. Cache entries are dropped on logout. Rendered/sanitized
+HTML may be memoized per <code>docId</code> within a session to avoid re-parsing on
+re-mount; it is never written to durable storage. No localStorage of document
+content (it would duplicate access-scoped data outside docz-api's control); only
+UI preferences (theme, last provider) may be persisted.</p>
+
+</section>
+<section class="panel" id="p-testing">
+<h2 class="panel-title">Testing</h2>
+<h3 id="testing-strategy">Testing Strategy</h3>
+<ul>
+<li><strong>Component / unit (Vitest + Testing Library).</strong> Breadcrumbs derive correctly
+from route params; the status badge maps known statuses to colors and falls
+back gracefully for unknown ones; facet selection updates the URL and
+vice-versa; loading/empty/error/auth states render for each data-bound view;
+the four-state matrix is covered per route.</li>
+<li><strong>Markdown rendering + sanitization (the security-critical suite).</strong> A
+dedicated table of <strong>XSS payloads</strong> must be <em>neutralized</em> by the
+render → sanitize pipeline: <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>,
+<code>&lt;img src=x onerror=alert(1)&gt;</code>, <code>[x](javascript:alert(1))</code>,
+<code>&lt;a href=&quot;javascript:…&quot;&gt;</code>, event-handler attributes, <code>&lt;iframe&gt;</code>/<code>&lt;object&gt;</code>,
+and malicious inline SVG/MathML. Each test asserts the sanitized output
+contains no executable vector. Companion tests assert <em>benign</em> markdown
+(headings, tables, fenced code, links, images) survives intact and that ToC
+generation produces stable slugged anchors. These tests gate CI.</li>
+<li><strong>End-to-end (Playwright) against a mocked/fixture docz-api.</strong> Drive the real
+flows — <code>/repos</code> → repo → type → reader; faceted search; 401→<code>/login</code> and
+403→access-denied — against recorded fixture responses (and a contract check
+that fixtures match docz-api's documented schema). Cover the thin-vertical-
+slice happy path first.</li>
+<li><strong>Accessibility checks.</strong> Automated axe scans in component and e2e tests;
+keyboard navigation through sidebar, search, facets, and the in-page ToC;
+visible focus states; correct landmark/heading structure in the reader;
+color-contrast on status badges.</li>
+</ul>
+
+</section>
+<section class="panel" id="p-rollout">
+<h2 class="panel-title">Rollout</h2>
+<h3 id="migration--rollout-plan">Migration / Rollout Plan</h3>
+<p>This is a <strong>greenfield repository</strong> with no existing users to migrate; &quot;rollout&quot;
+means the build order, which follows Decision 8 (thin vertical slice first).</p>
+<ol>
+<li><strong>Slice 1 — render one repo's one type, no auth/search/nav.</strong> Stand up the
+SPA, a single hardcoded route to a document reader, and the full reader
+pipeline (fetch raw md → render → <strong>sanitize</strong> → highlight → ToC → status
+badge) against a <strong>minimal docz-api</strong> (or fixtures) serving one repo's one
+type. This proves the end-to-end fetch→render→display loop and ships the
+security-critical sanitization suite from day one.</li>
+<li><strong>Slice 2 — full navigation.</strong> Add <code>/repos</code>, repo detail, type list, and
+breadcrumbs; wire the route map and the loading/empty/error states.</li>
+<li><strong>Slice 3 — search.</strong> Add <code>/search</code>, the facet sidebar, and the cross-repo
+views (which are just faceted queries). Resolve the proxy-vs-scoped-key
+question (Open Question 4).</li>
+<li><strong>Slice 4 — auth.</strong> Add the pluggable login flow (GitHub default; Okta /
+Keycloak), session handling, and 401/403 behavior, coordinated with
+docz-api. Until this lands, the site runs against an unauthenticated or
+single-tenant docz-api.</li>
+<li><strong>Slice 5 — polish.</strong> Responsive refinements, accessibility hardening,
+performance (code-split routes, prefetch on hover), and any SSR adoption if
+Open Question 3 lands on SSR.</li>
+</ol>
+<p>Each slice is independently shippable; nothing in a later slice is required for
+an earlier one to be useful.</p>
+
+</section>
+<section class="panel" id="p-open-questions">
+<h2 class="panel-title" id="open-questions">Open questions</h2>
+<ul class="heading-list">
+<li><a href="#1-which-front-end-framework">1. Which front-end framework?</a></li>
+<li><a href="#2-which-markdown-renderer-library">2. Which markdown renderer library?</a></li>
+<li><a href="#3-ssr-or-spa">3. SSR or SPA?</a></li>
+<li><a href="#4-how-does-the-site-integrate-with-meilisearch-search">4. How does the site integrate with Meilisearch search?</a></li>
+<li><a href="#5-html-sanitization-approach">5. HTML sanitization approach?</a></li>
+<li><a href="#6-styling--design-system-choice">6. Styling / design-system choice?</a></li>
+<li><a href="#7-where-does-the-oidcoauth-token-exchange-happen">7. Where does the OIDC/OAuth token exchange happen?</a></li>
+<li><a href="#8-how-should-doczs-own-toc-markers-be-handled">8. How should docz&#39;s own ToC markers be handled?</a></li>
+</ul>
+<p>Each question is numbered; option <code>a</code> is the recommendation, later letters are
+alternatives, and &quot;Other&quot; is free-form for review.</p>
+<details class="expand" id="1-which-front-end-framework" open>
+<summary>1. Which front-end framework?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Vite + React SPA — no server runtime, fastest path to the
+thin vertical slice, docz-api as the only backend.</li>
+<li class="option">b. Next.js (React + SSR) — SEO-able public docs, faster first paint, and a
+natural home for a BFF token exchange.</li>
+<li class="option">c. SvelteKit — smaller bundles, built-in SSR, less boilerplate.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="2-which-markdown-renderer-library" open>
+<summary>2. Which markdown renderer library?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> <code>markdown-it</code> + plugins (anchors, footnotes, highlight) —
+framework-agnostic, mature, easy to feed into DOMPurify as an HTML string.</li>
+<li class="option">b. <code>react-markdown</code> / <code>remark</code> — renders to React nodes (no <code>dangerouslySet…</code>
+for the common path), rich remark/rehype plugin ecosystem.</li>
+<li class="option">c. <code>marked</code> — smallest/fastest, fewer plugins.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="3-ssr-or-spa" open>
+<summary>3. SSR or SPA?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> SPA for the MVP — operationally simplest, defers a server
+runtime; revisit once public/SEO docs are a requirement.</li>
+<li class="option">b. SSR from the start — better first paint, SEO, and a server seam for auth.</li>
+<li class="option">c. Static prerender + client hydration for public docs, SPA for private.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="4-how-does-the-site-integrate-with-meilisearch-search" open>
+<summary>4. How does the site integrate with Meilisearch search?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Proxy through a docz-api <code>/search</code> endpoint — the same
+server-side access scoping filters search results, no Meilisearch key reaches
+the browser, one backend.</li>
+<li class="option">b. Direct Meilisearch instant-search with a per-session <strong>scoped tenant
+token</strong> issued by docz-api — lowest latency, native instant-search components,
+at the cost of trusting browser-side filter constraints.</li>
+<li class="option">c. Hybrid: proxy for access-scoped queries, direct for public docs only.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="5-html-sanitization-approach" open>
+<summary>5. HTML sanitization approach?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> DOMPurify with a conservative allow-list, run after
+render and after highlighting — battle-tested, browser-native, configurable.</li>
+<li class="option">b. A <code>rehype-sanitize</code> step in a remark/rehype pipeline (pairs with Open
+Question 2b) — sanitizes the AST before serialization.</li>
+<li class="option">c. Server-side sanitization in docz-api before it serves markdown/HTML — moves
+the trust boundary off the client but conflicts with Decision 3 (client-side
+render).</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="6-styling--design-system-choice" open>
+<summary>6. Styling / design-system choice?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Tailwind CSS + a headless component set (e.g. Radix) plus
+a <code>prose</code> typography preset for the reader — fast, consistent, accessible
+primitives.</li>
+<li class="option">b. A batteries-included component library (MUI / Chakra / Mantine) — more
+out-of-the-box, heavier and more opinionated.</li>
+<li class="option">c. Plain CSS modules / vanilla-extract — minimal deps, more hand-rolled UI.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="7-where-does-the-oidcoauth-token-exchange-happen" open>
+<summary>7. Where does the OIDC/OAuth token exchange happen?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> docz-api owns the exchange and issues an httpOnly session
+cookie — keeps tokens out of browser JS and centralizes auth with the access
+control that already lives in docz-api.</li>
+<li class="option">b. A thin site BFF (requires SSR per Open Question 3b) performs the exchange
+and brokers the docz-api session — keeps provider secrets at the site edge.</li>
+<li class="option">c. Public-client PKCE in the SPA with tokens in memory — no server seam, but
+the browser holds tokens.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+<details class="expand" id="8-how-should-doczs-own-toc-markers-be-handled" open>
+<summary>8. How should docz's own ToC markers be handled?</summary>
+<div class="body">
+<ul>
+<li class="option recommended"><strong>a. (Recommended)</strong> Generate the ToC from rendered headings and <strong>strip</strong> the
+<code>&lt;!--toc:start--&gt;…&lt;!--toc:end--&gt;</code> marker block from the displayed body — one
+ToC, always consistent with what's shown.</li>
+<li class="option">b. Render the CLI-generated ToC list verbatim (trust the marker block) and
+skip heading-walking.</li>
+<li class="option">c. Render the marker block <em>and</em> a generated rail, accepting possible
+duplication.</li>
+<li class="option">d. Other.</li>
+</ul>
+</div>
+</details>
+
+</section>
+<section class="panel" id="p-references">
+<h2 class="panel-title" id="references">References</h2>
+<ul>
+<li>INV-0005 — &quot;docz-api and docz-site: centralized cross-repo docz registry and
+viewer&quot; (source investigation; locked Decisions 2, 3, 6, 8 honored here).</li>
+<li>DESIGN-0008 — docz-api (the service docz-site consumes: GitHub App ingestion,
+Postgres registry caching raw markdown + metadata, Meilisearch index, webhook
+refresh, access-scoped/auth endpoints).</li>
+<li>DESIGN-0007 — the docz shared parsing library (<code>pkg/…</code> extracted from
+<code>internal/config</code> + <code>internal/document</code>) that docz-api depends on so the
+registry never drifts from the CLI; consumed by docz-site transitively via
+docz-api.</li>
+<li>DESIGN-0006 — custom document type support (why the registry and the site must
+be <strong>type-agnostic</strong>, driven by each repo's <code>.docz.yaml</code>).</li>
+<li>Meilisearch — full-text search + faceting backing docz-api's <code>/search</code>.</li>
+<li>markdown-it / react-markdown / remark — candidate client-side markdown
+renderers (Open Question 2).</li>
+<li>DOMPurify — HTML sanitization for the reader's XSS surface (Open Question 5).</li>
+<li>TanStack Query — client-side request cache / data layer.</li>
+<li>Playwright — end-to-end testing against a mocked/fixture docz-api.</li>
+</ul>
+
+</section>
+<footer class="page-footer">
+From <code>../../design/testdata/docz-design-0009.md</code>, sha256 <code>e70ef22f9010d19b0329b4dbf736dc509301f75c4a2737ea2267656befbb31fa</code>. Rendered by docz test.
+</footer>
+</div>
+<!-- docz:theme -->
+<script>/*
+ * The runtime of an exported docz page (DESIGN-0025 §5). Plain ES2020, no
+ * build step, one global: `docz`. A page works without it: every panel
+ * shows, stacked. With it, the page gains:
+ *
+ *   - the light/dark toggle (.mode-toggle), remembered as docz:mode;
+ *   - tabs (nav.tabs button[data-tab] over section.panel#p-<tab>), with
+ *     click, #p-<tab> and data-tab links, arrow keys, Home and End, a fade
+ *     on an overflowed edge, and the last tab remembered per document as
+ *     docz:<id>:tab;
+ *   - a copy button on every code block;
+ *   - the IMPL task filter (.filters button[data-filter]), remembered as
+ *     docz:<id>:filter;
+ *   - in-page links that open the tab and the expandable they point into;
+ *   - the docz-flow, docz-stepper, and docz-scorecard widgets, each drawn
+ *     from a JSON island and redrawn when the mode changes.
+ *
+ * The document id is <html data-doc>. Colours are read only through
+ * docz.palette(), so the theme decides them. Every storage access is in a
+ * try: file:// pages and private windows throw.
+ */
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var doc = root.getAttribute("data-doc") || "doc";
+  var dark = window.matchMedia
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+  var modeListeners = [];
+
+  function $(sel, ctx) {
+    return (ctx || document).querySelector(sel);
+  }
+
+  function $$(sel, ctx) {
+    return Array.prototype.slice.call((ctx || document).querySelectorAll(sel));
+  }
+
+  function load(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function save(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (e) {
+      /* storage is optional */
+    }
+  }
+
+  /* Mode */
+
+  function mode() {
+    var set = root.getAttribute("data-mode");
+    if (set === "light" || set === "dark") return set;
+    return dark && dark.matches ? "dark" : "light";
+  }
+
+  function announce() {
+    var m = mode();
+    modeListeners.forEach(function (fn) {
+      try {
+        fn(m);
+      } catch (e) {
+        if (window.console) console.error(e);
+      }
+    });
+    document.dispatchEvent(
+      new CustomEvent("docz:mode", { detail: { mode: m } }),
+    );
+  }
+
+  function setMode(m) {
+    root.setAttribute("data-mode", m);
+    save("docz:mode", m);
+    labelToggle();
+    announce();
+  }
+
+  function labelToggle() {
+    var next = mode() === "dark" ? "Light" : "Dark";
+    $$(".mode-toggle").forEach(function (b) {
+      b.textContent = next;
+      b.setAttribute("aria-label", "Switch to " + next.toLowerCase() + " mode");
+    });
+  }
+
+  var stored = load("docz:mode");
+  if (stored === "light" || stored === "dark") {
+    root.setAttribute("data-mode", stored);
+  }
+  if (dark && dark.addEventListener) {
+    dark.addEventListener("change", function () {
+      if (!root.hasAttribute("data-mode")) {
+        labelToggle();
+        announce();
+      }
+    });
+  }
+
+  /* Palette: a token's value now. Call it while drawing; never cache it
+     across a mode change. */
+
+  function palette(names) {
+    var style = getComputedStyle(root);
+    var out = {};
+    names.forEach(function (n) {
+      out[n] = style.getPropertyValue(n).trim();
+    });
+    return out;
+  }
+
+  /* Tabs */
+
+  var nav = $("nav.tabs");
+
+  function tabButton(name) {
+    return nav ? $('button[data-tab="' + cssEscape(name) + '"]', nav) : null;
+  }
+
+  function cssEscape(s) {
+    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/["\\]/g, '\\$&');
+  }
+
+  function edges() {
+    if (!nav) return;
+    var more = nav.scrollWidth > nav.clientWidth + 2;
+    nav.classList.toggle("more", more);
+    nav.classList.toggle("mid", nav.scrollLeft > 8);
+    nav.classList.toggle(
+      "end",
+      nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 8,
+    );
+  }
+
+  function showTab(name, keepScroll) {
+    var button = tabButton(name);
+    if (!button) return false;
+    $$("button[data-tab]", nav).forEach(function (b) {
+      var on = b === button;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.tabIndex = on ? 0 : -1;
+    });
+    $$("section.panel").forEach(function (p) {
+      p.classList.toggle("on", p.id === "p-" + name);
+    });
+    save("docz:" + doc + ":tab", name);
+    if (button.scrollIntoView) {
+      button.scrollIntoView({ block: "nearest", inline: "center" });
+    }
+    if (!keepScroll) window.scrollTo(0, 0);
+    edges();
+    return true;
+  }
+
+  function panelOf(el) {
+    while (el && !(el.matches && el.matches("section.panel"))) {
+      el = el.parentElement;
+    }
+    return el;
+  }
+
+  function reveal(el) {
+    var panel = panelOf(el);
+    if (panel && panel.id.indexOf("p-") === 0) {
+      showTab(panel.id.slice(2), true);
+    }
+    for (var p = el; p; p = p.parentElement) {
+      if (p.tagName === "DETAILS") p.open = true;
+    }
+    el.scrollIntoView({ block: "start" });
+  }
+
+  function restore() {
+    var hash = decodeURIComponent(location.hash.slice(1));
+    if (hash) {
+      if (hash.indexOf("p-") === 0 && showTab(hash.slice(2))) return;
+      if (showTab(hash)) return;
+      var target = document.getElementById(hash);
+      if (target) {
+        reveal(target);
+        return;
+      }
+    }
+    var last = load("docz:" + doc + ":tab");
+    if (last && showTab(last)) return;
+    var first = nav && $("button[data-tab]", nav);
+    if (first) showTab(first.getAttribute("data-tab"));
+  }
+
+  if (nav) {
+    nav.setAttribute("role", "tablist");
+    $$("button[data-tab]", nav).forEach(function (b) {
+      b.setAttribute("role", "tab");
+      b.addEventListener("click", function () {
+        showTab(b.getAttribute("data-tab"));
+      });
+    });
+    nav.addEventListener("keydown", function (e) {
+      var buttons = $$("button[data-tab]", nav);
+      var i = buttons.indexOf(document.activeElement);
+      if (i < 0) return;
+      var j = -1;
+      if (e.key === "ArrowRight") j = i + 1;
+      else if (e.key === "ArrowLeft") j = i - 1;
+      else if (e.key === "Home") j = 0;
+      else if (e.key === "End") j = buttons.length - 1;
+      if (j < 0 || j >= buttons.length) return;
+      e.preventDefault();
+      buttons[j].focus();
+      showTab(buttons[j].getAttribute("data-tab"), true);
+    });
+    nav.addEventListener(
+      "wheel",
+      function (e) {
+        if (
+          Math.abs(e.deltaY) > Math.abs(e.deltaX) &&
+          nav.scrollWidth > nav.clientWidth
+        ) {
+          nav.scrollLeft += e.deltaY;
+          e.preventDefault();
+        }
+      },
+      { passive: false },
+    );
+    nav.addEventListener("scroll", edges, { passive: true });
+    window.addEventListener("resize", edges);
+  }
+
+  /* In-page links: a tab name switches tabs; any other #id opens the tab
+     and the expandables that hold it. */
+
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest
+      ? e.target.closest("a[href^='#'], [data-tab]")
+      : null;
+    if (!a || (nav && nav.contains(a))) return;
+    var name = a.getAttribute("data-tab");
+    if (!name) {
+      name = decodeURIComponent(a.getAttribute("href").slice(1));
+    }
+    if (name.indexOf("p-") === 0 && tabButton(name.slice(2))) {
+      name = name.slice(2);
+    }
+    if (tabButton(name)) {
+      e.preventDefault();
+      showTab(name);
+      return;
+    }
+    var target = document.getElementById(name);
+    if (target) {
+      e.preventDefault();
+      reveal(target);
+      if (history.replaceState) history.replaceState(null, "", "#" + name);
+    }
+  });
+
+  /* Copy buttons */
+
+  function addCopy(pre) {
+    var code = $("code", pre);
+    if (!code || $(".copy", pre)) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "copy";
+    b.textContent = "Copy";
+    b.addEventListener("click", function () {
+      var done = function (label) {
+        b.textContent = label;
+        setTimeout(function () {
+          b.textContent = "Copy";
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code.textContent).then(
+          function () {
+            done("Copied");
+          },
+          function () {
+            done("Failed");
+          },
+        );
+      } else {
+        done("Failed");
+      }
+    });
+    pre.appendChild(b);
+  }
+
+  /* IMPL task filter */
+
+  function setFilter(panel, value) {
+    panel.setAttribute("data-task-filter", value);
+    $$(".filters button[data-filter]", panel).forEach(function (b) {
+      b.setAttribute(
+        "aria-pressed",
+        b.getAttribute("data-filter") === value ? "true" : "false",
+      );
+    });
+  }
+
+  function initFilters() {
+    var saved = load("docz:" + doc + ":filter");
+    $$(".filters").forEach(function (bar) {
+      var panel = panelOf(bar) || bar.parentElement;
+      bar.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-filter]");
+        if (!b) return;
+        var value = b.getAttribute("data-filter");
+        setFilter(panel, value);
+        save("docz:" + doc + ":filter", value);
+      });
+      setFilter(panel, saved === "open" || saved === "done" ? saved : "all");
+    });
+  }
+
+  /* Widgets (DESIGN-0025 §6): a figure.widget holding a JSON island
+     (script[type="application/json"][data-widget]), an empty
+     .widget-mount, and a .widget-fallback. A drawer builds its DOM with
+     createElement and textContent only, so no document text is ever
+     parsed as markup, and marks the figure drawn, which hides the
+     fallback. An island that fails to parse or to draw leaves the
+     fallback in place. SVG colours are read through palette() on every
+     draw, so a mode change redraws them. */
+
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  var widgetCount = 0;
+
+  var TOKENS = [
+    "--color-bg-raised",
+    "--color-bg-elevated",
+    "--color-border-default",
+    "--color-fg-primary",
+    "--color-fg-secondary",
+    "--color-accent",
+    "--color-on-accent",
+    "--color-ok",
+    "--color-bad",
+  ];
+
+  function colours() {
+    var p = palette(TOKENS);
+    return {
+      raised: p["--color-bg-raised"],
+      elevated: p["--color-bg-elevated"],
+      line: p["--color-border-default"],
+      ink: p["--color-fg-primary"],
+      ink2: p["--color-fg-secondary"],
+      accent: p["--color-accent"],
+      onAccent: p["--color-on-accent"],
+      ok: p["--color-ok"],
+      bad: p["--color-bad"],
+    };
+  }
+
+  function h(tag, attrs, text) {
+    var e = document.createElement(tag);
+    setAttrs(e, attrs);
+    if (text !== undefined && text !== null) e.textContent = String(text);
+    return e;
+  }
+
+  function s(tag, attrs, text) {
+    var e = document.createElementNS(SVG_NS, tag);
+    setAttrs(e, attrs);
+    if (text !== undefined && text !== null) e.textContent = String(text);
+    return e;
+  }
+
+  function setAttrs(e, attrs) {
+    if (!attrs) return;
+    Object.keys(attrs).forEach(function (k) {
+      if (attrs[k] !== undefined && attrs[k] !== null) {
+        e.setAttribute(k, String(attrs[k]));
+      }
+    });
+  }
+
+  function clear(e) {
+    while (e.firstChild) e.removeChild(e.firstChild);
+  }
+
+  function button(label, attrs) {
+    var b = h("button", attrs, label);
+    b.type = "button";
+    return b;
+  }
+
+  function activate(e, fn) {
+    e.addEventListener("click", fn);
+    e.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        fn();
+      }
+    });
+  }
+
+  function isList(v, min) {
+    return Array.isArray(v) && v.length >= (min || 0);
+  }
+
+  function str(v) {
+    return typeof v === "string" && v !== "";
+  }
+
+  /* docz-flow */
+
+  function drawFlow(mount, data) {
+    var stages = data.stages;
+    if (!isList(stages, 2))
+      throw new Error("docz-flow: stages needs two or more");
+    stages.forEach(function (st) {
+      if (!st || !str(st.name) || !str(st.does)) {
+        throw new Error("docz-flow: every stage needs name and does");
+      }
+    });
+    var gates = isList(data.gates) ? data.gates : [];
+    var id = "docz-w" + ++widgetCount;
+    var hot = -1;
+
+    var holder = h("div", { class: "widget-canvas" });
+    var detail = h("div", { class: "widget-detail", "aria-live": "polite" });
+    if (str(data.label))
+      mount.appendChild(h("p", { class: "note" }, data.label));
+    mount.appendChild(holder);
+    mount.appendChild(detail);
+
+    function showDetail() {
+      clear(detail);
+      if (hot < 0) {
+        detail.appendChild(h("p", { class: "note" }, "Select a stage."));
+        return;
+      }
+      var st = stages[hot];
+      detail.appendChild(h("h4", null, st.name));
+      detail.appendChild(h("p", null, st.does));
+      if (str(st.note)) detail.appendChild(h("p", { class: "note" }, st.note));
+    }
+
+    function draw() {
+      var c = colours();
+      var n = stages.length;
+      var W = 640;
+      var gap = W / n;
+      var H = 100 + (str(data.legend) ? 20 : 0) + (str(data.alert) ? 20 : 0);
+      var svg = s("svg", {
+        viewBox: "0 0 " + W + " " + H,
+        role: "group",
+        "aria-label": str(data.title) ? data.title : "Flow",
+      });
+      var marker = s("marker", {
+        id: id + "-arrow",
+        markerWidth: 8,
+        markerHeight: 8,
+        refX: 7,
+        refY: 4,
+        orient: "auto",
+      });
+      marker.appendChild(s("path", { d: "M0,0 L8,4 L0,8 z", fill: c.ink2 }));
+      var defs = s("defs");
+      defs.appendChild(marker);
+      svg.appendChild(defs);
+
+      stages.forEach(function (st, i) {
+        var x = gap * i + 6;
+        var w = gap - 12;
+        var on = hot === i;
+        var gate = gates.indexOf(i + 1) >= 0;
+        var g = s("g", {
+          class: "stage",
+          tabindex: 0,
+          role: "button",
+          "aria-pressed": on ? "true" : "false",
+          "aria-label": st.name + (gate ? " (gate)" : ""),
+        });
+        g.appendChild(
+          s("rect", {
+            x: x,
+            y: 14,
+            width: w,
+            height: 54,
+            rx: 9,
+            fill: on ? c.accent : c.raised,
+            stroke: on ? c.accent : gate ? c.ok : c.line,
+            "stroke-width": gate && !on ? 2 : 1,
+          }),
+        );
+        var words = st.name.split(" ");
+        g.appendChild(
+          s(
+            "text",
+            {
+              x: x + w / 2,
+              y: 37,
+              "font-size": 11,
+              "font-weight": 600,
+              "text-anchor": "middle",
+              fill: on ? c.onAccent : c.ink,
+            },
+            words[0],
+          ),
+        );
+        if (words.length > 1) {
+          g.appendChild(
+            s(
+              "text",
+              {
+                x: x + w / 2,
+                y: 53,
+                "font-size": 10,
+                "text-anchor": "middle",
+                fill: on ? c.onAccent : c.ink2,
+              },
+              words.slice(1).join(" "),
+            ),
+          );
+        }
+        activate(g, function () {
+          hot = i;
+          draw();
+          showDetail();
+          var again = holder.querySelectorAll("g.stage")[i];
+          if (again) again.focus();
+        });
+        svg.appendChild(g);
+        if (i < n - 1) {
+          svg.appendChild(
+            s("line", {
+              x1: x + w,
+              y1: 41,
+              x2: x + gap + 4,
+              y2: 41,
+              stroke: c.ink2,
+              "marker-end": "url(#" + id + "-arrow)",
+            }),
+          );
+        }
+      });
+
+      var y = 92;
+      if (str(data.legend)) {
+        svg.appendChild(
+          s("text", { x: 6, y: y, "font-size": 11, fill: c.ink2 }, data.legend),
+        );
+        y += 20;
+      }
+      if (str(data.alert)) {
+        svg.appendChild(
+          s("text", { x: 6, y: y, "font-size": 11, fill: c.bad }, data.alert),
+        );
+      }
+      clear(holder);
+      holder.appendChild(svg);
+    }
+
+    draw();
+    showDetail();
+    return draw;
+  }
+
+  /* docz-stepper */
+
+  function drawStepper(mount, data) {
+    var steps = data.steps;
+    var scenarios = data.scenarios;
+    if (!isList(steps, 2))
+      throw new Error("docz-stepper: steps needs two or more");
+    if (!isList(scenarios, 1))
+      throw new Error("docz-stepper: scenarios needs one or more");
+    steps.forEach(function (st) {
+      if (!st || !str(st.key) || !str(st.name) || !str(st.does)) {
+        throw new Error("docz-stepper: every step needs key, name, and does");
+      }
+    });
+    scenarios.forEach(function (sc) {
+      if (!sc || !str(sc.name))
+        throw new Error("docz-stepper: every scenario needs a name");
+    });
+    var scen = 0;
+    var step = 0;
+
+    var choices = h("div", {
+      class: "widget-choices",
+      role: "group",
+      "aria-label": "Scenario",
+    });
+    var canvas = h("div", { class: "widget-canvas" });
+    var row = h("div", {
+      class: "widget-steps",
+      role: "group",
+      "aria-label": "Step",
+    });
+    var body = h("div", { class: "widget-detail", "aria-live": "polite" });
+    mount.appendChild(choices);
+    mount.appendChild(canvas);
+    mount.appendChild(row);
+    mount.appendChild(body);
+
+    scenarios.forEach(function (sc, i) {
+      var b = button(sc.name, { "data-i": i });
+      b.addEventListener("click", function () {
+        scen = i;
+        step = 0;
+        render();
+      });
+      choices.appendChild(b);
+    });
+
+    function failIndex() {
+      var key = scenarios[scen].fails_at;
+      if (!str(key)) return -1;
+      for (var i = 0; i < steps.length; i++) {
+        if (steps[i].key === key) return i;
+      }
+      return -1;
+    }
+
+    function pipe() {
+      var c = colours();
+      var fail = failIndex();
+      var n = steps.length;
+      var W = 640;
+      var gap = W / n;
+      var svg = s("svg", {
+        viewBox: "0 0 " + W + " 80",
+        "aria-hidden": "true",
+      });
+      steps.forEach(function (st, i) {
+        var cx = gap * i + gap / 2;
+        var dead = fail > -1 && i > fail;
+        var isFail = i === fail;
+        var cur = i === step;
+        if (i < n - 1) {
+          svg.appendChild(
+            s("line", {
+              x1: cx + 16,
+              y1: 30,
+              x2: cx + gap - 16,
+              y2: 30,
+              stroke: dead || isFail ? c.line : c.ok,
+              "stroke-width": 2,
+              "stroke-dasharray": dead || isFail ? "4 4" : "0",
+            }),
+          );
+        }
+        var fill = isFail ? c.bad : cur ? c.accent : dead ? c.elevated : c.ok;
+        svg.appendChild(
+          s("circle", {
+            cx: cx,
+            cy: 30,
+            r: 14,
+            fill: fill,
+            stroke: isFail ? c.bad : cur ? c.accent : c.line,
+          }),
+        );
+        svg.appendChild(
+          s(
+            "text",
+            {
+              x: cx,
+              y: 34,
+              "font-size": 11,
+              "text-anchor": "middle",
+              class: "mono",
+              fill: dead && !cur ? c.ink2 : c.onAccent,
+            },
+            isFail ? "✕" : String(i + 1),
+          ),
+        );
+        svg.appendChild(
+          s(
+            "text",
+            {
+              x: cx,
+              y: 64,
+              "font-size": 10,
+              "text-anchor": "middle",
+              fill: c.ink2,
+            },
+            st.key,
+          ),
+        );
+      });
+      clear(canvas);
+      canvas.appendChild(svg);
+    }
+
+    function render() {
+      var sc = scenarios[scen];
+      var fail = failIndex();
+      var notes = sc.notes && typeof sc.notes === "object" ? sc.notes : {};
+      $$("button", choices).forEach(function (b, i) {
+        b.setAttribute("aria-pressed", i === scen ? "true" : "false");
+      });
+      clear(row);
+      steps.forEach(function (st, i) {
+        var b = button(st.name + (i === fail ? " ✕" : ""), {
+          "aria-pressed": i === step ? "true" : "false",
+          class: i === fail ? "fail" : i > fail && fail > -1 ? "dead" : null,
+        });
+        b.addEventListener("click", function () {
+          step = i;
+          render();
+        });
+        row.appendChild(b);
+      });
+
+      var st = steps[step];
+      clear(body);
+      body.appendChild(h("h4", null, str(st.title) ? st.title : st.name));
+      body.appendChild(h("p", null, st.does));
+      var note = notes[st.key];
+      if (str(note)) {
+        var failing = step === fail;
+        var box = h("div", { class: failing ? "callout bad" : "callout ok" });
+        box.appendChild(
+          h(
+            "p",
+            { class: "callout-title" },
+            failing
+              ? str(sc.fail_label)
+                ? sc.fail_label
+                : "Denied"
+              : "In this scenario",
+          ),
+        );
+        box.appendChild(h("p", null, note));
+        body.appendChild(box);
+      }
+      if (fail > -1 && step > fail) {
+        var never = h("div", { class: "callout warning" });
+        never.appendChild(
+          h("p", null, "Never reached: stopped at step " + (fail + 1) + "."),
+        );
+        body.appendChild(never);
+      }
+      var nav = h("div", { class: "widget-nav" });
+      var back = button("Back", { class: "btn" });
+      var next = button("Next", { class: "btn" });
+      back.disabled = step === 0;
+      next.disabled = step === steps.length - 1;
+      back.addEventListener("click", function () {
+        step = Math.max(0, step - 1);
+        render();
+      });
+      next.addEventListener("click", function () {
+        step = Math.min(steps.length - 1, step + 1);
+        render();
+      });
+      nav.appendChild(back);
+      nav.appendChild(next);
+      nav.appendChild(
+        h("span", { class: "progress" }, step + 1 + " / " + steps.length),
+      );
+      body.appendChild(nav);
+      pipe();
+    }
+
+    render();
+    return pipe;
+  }
+
+  /* docz-scorecard */
+
+  function score(checks, results) {
+    var byId = {};
+    (isList(results) ? results : []).forEach(function (r) {
+      if (r && str(r.id)) byId[r.id] = r;
+    });
+    var points = 0;
+    var weights = 0;
+    var rows = checks.map(function (c) {
+      var w = typeof c.weight === "number" && c.weight > 0 ? c.weight : 1;
+      var r = byId[c.id];
+      var measured =
+        r && typeof r.score === "number" && r.score >= 0 && r.score <= 1;
+      if (measured) {
+        points += r.score * w;
+        weights += w;
+      }
+      return { check: c, weight: w, result: r, measured: measured };
+    });
+    return { rows: rows, points: points, weights: weights };
+  }
+
+  function drawScorecard(mount, data, index) {
+    var checks = data.checks;
+    if (!isList(checks, 1))
+      throw new Error("docz-scorecard: checks needs one or more");
+    checks.forEach(function (c) {
+      if (!c || !str(c.id) || !str(c.name) || !str(c.target)) {
+        throw new Error(
+          "docz-scorecard: every check needs id, name, and target",
+        );
+      }
+    });
+    var key = "docz:" + doc + ":scorecard:" + index;
+
+    var input = h("textarea", {
+      class: "widget-input",
+      rows: 6,
+      spellcheck: "false",
+      "aria-label": "Results as JSON",
+      placeholder: '{"results": [{"id": "' + checks[0].id + '", "score": 1}]}',
+    });
+    var bar = h("div", { class: "widget-nav" });
+    var run = button("Score", { class: "btn" });
+    var clearB = button("Clear", { class: "btn" });
+    var out = h("div", { class: "widget-detail", "aria-live": "polite" });
+    bar.appendChild(run);
+    if (data.example && typeof data.example === "object") {
+      var ex = button("Load the example", { class: "btn" });
+      ex.addEventListener("click", function () {
+        input.value = JSON.stringify(data.example, null, 2);
+        render(data.example, "example, not real results");
+      });
+      bar.appendChild(ex);
+    }
+    bar.appendChild(clearB);
+    mount.appendChild(input);
+    mount.appendChild(bar);
+    mount.appendChild(out);
+
+    function fixes(text) {
+      if (!str(text)) return null;
+      var name = text.toLowerCase().replace(/\s+/g, "-");
+      if (tabButton(name)) {
+        return h("a", { href: "#p-" + name, "data-tab": name }, text);
+      }
+      return document.createTextNode(text);
+    }
+
+    function render(results, label) {
+      clear(out);
+      var sc = score(checks, results.results);
+      var pct = sc.weights ? Math.round((sc.points / sc.weights) * 100) : 0;
+      var measured = sc.rows.filter(function (r) {
+        return r.measured;
+      }).length;
+
+      var total = h("div", { class: "card widget-score" });
+      var head = h("div", { class: "phase-head" });
+      head.appendChild(
+        h("h3", null, sc.points.toFixed(1) + " / " + sc.weights.toFixed(1)),
+      );
+      head.appendChild(h("span", { class: "pill" }, label));
+      if (str(results.subject))
+        head.appendChild(h("span", { class: "pill" }, results.subject));
+      if (str(results.generated_at)) {
+        head.appendChild(h("span", { class: "pill" }, results.generated_at));
+      }
+      total.appendChild(head);
+      var meter = h("div", { class: "bar" });
+      var fill = h("i");
+      fill.style.width = pct + "%";
+      meter.appendChild(fill);
+      total.appendChild(meter);
+      var summary =
+        pct +
+        "% of the target, measured on " +
+        measured +
+        " of " +
+        checks.length +
+        " checks.";
+      if (str(data.note)) summary += " " + data.note;
+      total.appendChild(h("p", { class: "note" }, summary));
+      out.appendChild(total);
+
+      var wrap = h("div", { class: "table-wrap" });
+      var table = h("table");
+      var thead = h("thead");
+      var tr = h("tr");
+      ["#", "Check", "Observed", "Target", "Points", "Fixes it"].forEach(
+        function (t) {
+          tr.appendChild(h("th", null, t));
+        },
+      );
+      thead.appendChild(tr);
+      table.appendChild(thead);
+      var tbody = h("tbody");
+      sc.rows.forEach(function (row) {
+        var c = row.check;
+        var r = row.result || {};
+        var tr2 = h("tr", { class: row.measured ? null : "unmeasured" });
+        tr2.appendChild(h("td", null, c.id));
+        var name = h("td");
+        name.appendChild(h("b", null, c.name));
+        if (str(c.source)) {
+          name.appendChild(document.createTextNode(" "));
+          name.appendChild(h("span", { class: "pill" }, c.source));
+        }
+        tr2.appendChild(name);
+        var obs = h("td", null, str(r.observed) ? r.observed : "");
+        if (str(r.evidence))
+          obs.appendChild(h("span", { class: "note" }, r.evidence));
+        tr2.appendChild(obs);
+        tr2.appendChild(h("td", null, c.target));
+        var cls = !row.measured
+          ? null
+          : r.score >= 1
+            ? "low"
+            : r.score > 0
+              ? "medium"
+              : "high";
+        tr2.appendChild(
+          h(
+            "td",
+            { class: cls },
+            row.measured
+              ? (r.score * row.weight).toFixed(1) + " of " + row.weight
+              : "not measured",
+          ),
+        );
+        var fx = h("td");
+        var link = fixes(c.fixes);
+        if (link) fx.appendChild(link);
+        tr2.appendChild(fx);
+        tbody.appendChild(tr2);
+      });
+      table.appendChild(tbody);
+      wrap.appendChild(table);
+      out.appendChild(wrap);
+    }
+
+    function fromInput(label) {
+      var parsed;
+      try {
+        parsed = JSON.parse(input.value);
+      } catch (e) {
+        clear(out);
+        var box = h("div", { class: "callout caution" });
+        box.appendChild(h("p", null, "Not valid JSON: " + e.message));
+        out.appendChild(box);
+        return;
+      }
+      if (!parsed || !isList(parsed.results)) {
+        clear(out);
+        var miss = h("div", { class: "callout caution" });
+        miss.appendChild(h("p", null, "The JSON needs a results list."));
+        out.appendChild(miss);
+        return;
+      }
+      save(key, input.value);
+      render(parsed, label);
+    }
+
+    run.addEventListener("click", function () {
+      fromInput("pasted");
+    });
+    clearB.addEventListener("click", function () {
+      input.value = "";
+      clear(out);
+      try {
+        window.localStorage.removeItem(key);
+      } catch (e) {
+        /* storage is optional */
+      }
+    });
+    var saved = load(key);
+    if (saved) {
+      input.value = saved;
+      fromInput("saved in this browser");
+    }
+    return null;
+  }
+
+  var DRAWERS = {
+    flow: drawFlow,
+    stepper: drawStepper,
+    scorecard: drawScorecard,
+  };
+
+  function initWidgets() {
+    var redraws = [];
+    $$('script[type="application/json"][data-widget]').forEach(
+      function (island, i) {
+        var name = island.getAttribute("data-widget");
+        var fig = island.parentElement;
+        var mount = fig && $(".widget-mount", fig);
+        var drawer = DRAWERS[name];
+        if (!mount || !drawer) return;
+        try {
+          var data = JSON.parse(island.textContent);
+          if (!data || typeof data !== "object")
+            throw new Error(name + ": not an object");
+          var redraw = drawer(mount, data, i);
+          fig.classList.add("drawn");
+          if (redraw) redraws.push(redraw);
+        } catch (e) {
+          clear(mount);
+          if (window.console)
+            console.warn("docz " + name + " widget:", e.message);
+        }
+      },
+    );
+    if (redraws.length) {
+      modeListeners.push(function () {
+        redraws.forEach(function (fn) {
+          fn();
+        });
+      });
+    }
+  }
+
+  /* Print shows every expandable open, and puts them back afterwards. */
+
+  var openedForPrint = [];
+  window.addEventListener("beforeprint", function () {
+    openedForPrint = $$("details:not([open])");
+    openedForPrint.forEach(function (d) {
+      d.open = true;
+    });
+  });
+  window.addEventListener("afterprint", function () {
+    openedForPrint.forEach(function (d) {
+      d.open = false;
+    });
+    openedForPrint = [];
+  });
+
+  /* Start */
+
+  function start() {
+    root.classList.add("js");
+    $$(".mode-toggle").forEach(function (b) {
+      b.addEventListener("click", function () {
+        setMode(mode() === "dark" ? "light" : "dark");
+      });
+    });
+    labelToggle();
+    $$("pre:not(.mermaid)").forEach(addCopy);
+    initFilters();
+    initWidgets();
+    restore();
+    setTimeout(edges, 0);
+  }
+
+  window.docz = {
+    mode: mode,
+    setMode: setMode,
+    onMode: function (fn) {
+      modeListeners.push(fn);
+    },
+    palette: palette,
+    showTab: showTab,
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
+</script>
+<!-- /docz:theme -->
+</body>
+</html>

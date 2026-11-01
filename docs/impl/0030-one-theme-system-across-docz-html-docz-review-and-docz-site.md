@@ -174,44 +174,44 @@ repository.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Amend DESIGN-0025 §3 with the contract above: defaults by surface,
+- [x] Amend DESIGN-0025 §3 with the contract above: defaults by surface,
   no theme selector where the repository decides, the light/dark toggle
   kept, `pkg/theme.Names()` as the one list, and per-origin storage
   accepted. Record the answers to this plan's open questions there.
-- [ ] Amend DESIGN-0024 so the review page renders in the repository's
+- [x] Amend DESIGN-0024 so the review page renders in the repository's
   theme, and drop the theme selector IMPL-0028 Phase 6 added.
-- [ ] `pkg/doczcore/config`: a new `HTMLConfig{Theme string}` in `html.go`,
+- [x] `pkg/doczcore/config`: a new `HTMLConfig{Theme string}` in `html.go`,
   on `Config` as `HTML` (yaml and json tags `html` and `theme`, so
   `TestJSONTags_MirrorYAML` passes), the place left for later page
   settings (Open Question 1). `DefaultConfig()` sets `HTML.Theme` to
   `paper`.
-- [ ] `normalizeHTML`, run on both `Load` paths and on `ParseBytes`
+- [x] `normalizeHTML`, run on both `Load` paths and on `ParseBytes`
   after `normalizeAccess`: trim, lower-case, and backfill an empty value
   to `paper`.
-- [ ] `validateHTML`, called from `Validate()`, checks the value against
+- [x] `validateHTML`, called from `Validate()`, checks the value against
   `pkg/theme.Names()`. `config` imports `pkg/theme` (stdlib only), and
   `layer_test.go` allows that one edge by name, with a comment saying why
   (Open Question 2). An unknown name is a validation **warning**, and the
   value falls back to `paper`, so docz-api never refuses a repository's
   ingest over it (Open Question 3). `cmd/` prints the warning as it
   prints the others.
-- [ ] `docz_yaml.tmpl`: write `html:` with `theme: paper` and a comment that names
+- [x] `docz_yaml.tmpl`: write `html:` with `theme: paper` and a comment that names
   the themes and says it sets `docz export html` and docz-review, not
   docz-site. `DefaultConfigYAML()` and `docz init` pick it up.
-- [ ] `test/parity`: an `HTMLNormalizer` that drops the `html:` block and
+- [x] `test/parity`: an `HTMLNormalizer` that drops the `html:` block and
   its comment from a generated `.docz.yaml` and from `docz config`
   (`dropTopLevelBlock`, as `AccessNormalizer` does), in `runCase`'s
   both-sides list, with a unit test in `parity_norm_test.go`. v1.2.2
   never wrote the block, so it is a permitted additive delta.
-- [ ] Tests: the default, normalisation (`" Classic "` becomes
+- [x] Tests: the default, normalisation (`" Classic "` becomes
   `classic`), an unknown value (a warning and `paper`), `ParseBytes` equal to
   `Load` (`parsebytes_test.go`), and `TestConfigJSON_MarshaledShape`
   updated for the new field.
-- [ ] `test/consumer`: assert `DefaultConfig().Theme`, and that
+- [x] `test/consumer`: assert `DefaultConfig().Theme`, and that
   `ParseBytes` reads the key, through the public path.
-- [ ] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
+- [x] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
   `test/archive` still passes.
-- [ ] Update `CLAUDE.md` (the config bullet and the parity list).
+- [x] Update `CLAUDE.md` (the config bullet and the parity list).
 
 <!--docz:tasks:end-->
 
@@ -240,42 +240,42 @@ review session, and neither surface offers a theme selector.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `cmd/export_html.go`: `--theme` defaults to empty, which means
+- [x] `cmd/export_html.go`: `--theme` defaults to empty, which means
   `Cfg.HTML.Theme`. An explicit `--theme` still wins and is still checked
   against `theme.Names()` (exit 2). The `--help` text says where the
   default comes from.
-- [ ] `pkg/export/html`: `ExportOptions.Theme` empty means the
+- [x] `pkg/export/html`: `ExportOptions.Theme` empty means the
   repository's `Cfg.HTML.Theme`, so a consumer calling `Export` without the
   CLI gets the same default. A test covers both paths.
-- [ ] The `export-html` JSON report gains `theme` (the theme the run
+- [x] The `export-html` JSON report gains `theme` (the theme the run
   used). `api/cli/export-html.schema.json` takes an additive `$version`
   bump, and the contract fixtures are regenerated with `-update`.
-- [ ] `docz inspect --format json` gains a top-level `theme`, the
+- [x] `docz inspect --format json` gains a top-level `theme`, the
   repository's resolved theme. `api/cli/inspect.schema.json` takes an
   additive `$version` bump; `SchemaVersionInspect` stays 1. The review
   fixture is regenerated (`just build && just ui gen-review-fixture`) so
   `cmd/review_fixture_test.go` passes.
-- [ ] docz-review server (`ui/review/`): pass the inspected theme to the
+- [x] docz-review server (`ui/review/`): pass the inspected theme to the
   page in the session payload. A docz too old to report one means
   `paper`, with no refusal and no `SUPPORTED.minDocz` bump (Open
   Question 4).
-- [ ] Review page: `main.tsx` sets `data-theme` from the session before
+- [x] Review page: `main.tsx` sets `data-theme` from the session before
   the first render. Delete the theme half of `appearance.ts`
   (`THEMES`, `storedTheme`, `setTheme`, the `docz:theme` key) and the
   selector in `AppearanceControls`. The light/dark toggle stays, shown
   on every theme that has a dark block, which is `paper` today.
-- [ ] `ui/e2e/review.spec.ts`: open a session per theme by giving the
+- [x] `ui/e2e/review.spec.ts`: open a session per theme by giving the
   fixture repository a different `theme` (replacing the `docz:theme`
   init scripts), with full-rule axe on each. The e2e that stored a theme
   is removed.
-- [ ] `ui/e2e/export-html.spec.ts`: a fixture with `html: {theme: classic}`
+- [x] `ui/e2e/export-html.spec.ts`: a fixture with `html: {theme: classic}`
   exports classic pages with no `--theme`.
-- [ ] Plugin `docz-html`: `SKILL.md` says the theme comes from
+- [x] Plugin `docz-html`: `SKILL.md` says the theme comes from
   `.docz.yaml`, with `classic` (or `--theme`) for a one-off, and the
   `argument-hint` follows. Version to 0.3.0. The eval case
   `docz-html-exp-002` still passes, and a case where the fixture's key
   picks the theme is added.
-- [ ] Update `ui/CLAUDE.md` (Appearance) and `CLAUDE.md` (docz-html,
+- [x] Update `ui/CLAUDE.md` (Appearance) and `CLAUDE.md` (docz-html,
   docz-review).
 
 <!--docz:tasks:end-->
@@ -306,45 +306,45 @@ surface is checked under each.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Move the mode half of `src/review/appearance.ts` to
+- [x] Move the mode half of `src/review/appearance.ts` to
   `src/lib/appearance.ts`, shared by the review page and the site. The
   site adds a theme half that the review page does not import: stored
   `docz:theme`, then the injected default, then `paper`.
-- [ ] `scripts/gen-themes.ts` writes `src/theme/__generated__/themes.ts`
+- [x] `scripts/gen-themes.ts` writes `src/theme/__generated__/themes.ts`
   (gitignored, like the CLI types) from the file names under
   `pkg/theme/tokens/`, run before `typecheck`, `test`, and `build` and
   checked by a `gen-themes-check` in `just ui ci`. `Dockerfile.ui`
   already has `pkg/theme` as the `theme` named context (Open Question 5).
-- [ ] `server/serve.ts`: `resolveTheme(DOCZ_THEME)` validated against that
+- [x] `server/serve.ts`: `resolveTheme(DOCZ_THEME)` validated against that
   generated list, into `__DOCZ_CONFIG__.theme`. An unknown
   value falls back to `paper` and is reported by `invalidConfigVars`, so
   readiness fails on a typo as it does for the other whitelisted
   variables. `src/lib/theme.ts` re-validates on read (both ends, as the
   nav pins do), then `VITE_THEME`, then `paper`.
-- [ ] `index.html` keeps a `data-theme` for the no-JavaScript first
+- [x] `index.html` keeps a `data-theme` for the no-JavaScript first
   paint, and `src/main.tsx` applies the resolved theme and stored mode
   before the first render.
-- [ ] `AppShell` topbar: a labelled theme selector over the theme list
+- [x] `AppShell` topbar: a labelled theme selector over the theme list
   and the light/dark toggle, between the nav pins and `SessionMenu`. The
   toggle shows only on a theme with a dark block. A change redraws
   mermaid through `refreshMermaidTheme`.
-- [ ] Shiki's contrast nudge: `theme-contrast.ts` pins `CODE_BG` to
+- [x] Shiki's contrast nudge: `theme-contrast.ts` pins `CODE_BG` to
   classic's `--color-code-bg`, and paper's is darker (`#0f1419`). Check
   every theme's `--color-code-bg` in `theme-contrast.test.tsx` (read from
   `pkg/theme/tokens`), so a theme whose code surface is lighter fails
   there.
-- [ ] Find and replace colours the site hardcodes outside the tokens.
+- [x] Find and replace colours the site hardcodes outside the tokens.
   `mermaid-block.tsx` falls back to classic hex when a token is
   unreadable, which is fine as a fallback, but no rendered surface may
   depend on it.
-- [ ] Chart: `site.config.theme` (enum in `values.schema.json` from the
+- [x] Chart: `site.config.theme` (enum in `values.schema.json` from the
   theme list, empty by default) renders `DOCZ_THEME` only when set;
   helm-unittest for both, and `just chart docs`.
-- [ ] `e2e/a11y.spec.ts` and the rendering specs run under every theme
+- [x] `e2e/a11y.spec.ts` and the rendering specs run under every theme
   and, on paper, both modes. Full-rule axe passes on every core view.
-- [ ] The markdown specimen is checked under each theme, and any
+- [x] The markdown specimen is checked under each theme, and any
   screenshot in a spec is regenerated.
-- [ ] Update `ui/CLAUDE.md` (themes, runtime config, Toolchain notes) and
+- [x] Update `ui/CLAUDE.md` (themes, runtime config, Toolchain notes) and
   the chart README.
 
 <!--docz:tasks:end-->
@@ -375,7 +375,7 @@ offer it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/theme/tokens/charcoal.css` (Open Question 6: named for the look,
+- [x] `pkg/theme/tokens/charcoal.css` (Open Question 6: named for the look,
   not the project it came from), one block for every
   mode like `classic`, mapping repo-guardian DESIGN-0036's values onto
   docz's token names. Background `#17191d`, panel `#1f2227`, panel-2
@@ -383,26 +383,26 @@ offer it.
   Foreground `#e8eaed`, muted `#9aa1ab`, accent `#5fa8f5`, ok `#3fb950`,
   warn `#d9a020`, bad `#f2554d`, and info `#7aa7ff` go to `fg-*`,
   `accent`/`link`, and the state and status tokens. Radii are 3px.
-- [ ] Derive the tokens DESIGN-0036 has no value for from its set: the
+- [x] Derive the tokens DESIGN-0036 has no value for from its set: the
   type colours `--color-t-*`, the status pills `--color-st-*`, the
   admonition tints `--color-adm-*-bg` (precomputed hex, as the contrast
   test needs), `--color-hash-*`, and `--color-code-bg`/`--color-code-fg`.
   Each choice is recorded in a comment in the file.
-- [ ] Fonts: IBM Plex Sans and JetBrains Mono named first in the theme's
+- [x] Fonts: IBM Plex Sans and JetBrains Mono named first in the theme's
   font stacks, the system fonts after. Nothing is embedded, so a page
   stays network-free and its size does not change (Open Question 6).
-- [ ] `pkg/theme`: register the theme in `Names()` and `CSS()`;
+- [x] `pkg/theme`: register the theme in `Names()` and `CSS()`;
   `theme_test.go`'s every-token check covers it with no new test.
-- [ ] `ui/src/theme/contrast.test.ts` passes for it at 4.5:1 on the three
+- [x] `ui/src/theme/contrast.test.ts` passes for it at 4.5:1 on the three
   surfaces. DESIGN-0036 already moved its bad tone once for AA, so muted
   and warn may need the same, and each move is noted in the file.
-- [ ] `pkg/export/html`: a full-page golden per theme, the theme cut to
+- [x] `pkg/export/html`: a full-page golden per theme, the theme cut to
   its markers as today.
-- [ ] `ui/src/theme/tokens.css` imports the new file, and docz-site's
+- [x] `ui/src/theme/tokens.css` imports the new file, and docz-site's
   selector offers it with no change to the selector.
-- [ ] The e2e and axe runs of Phases 2 and 3 cover it through the theme
+- [x] The e2e and axe runs of Phases 2 and 3 cover it through the theme
   list, with no new spec.
-- [ ] Mention the theme in the plugin's `references/` and in
+- [x] Mention the theme in the plugin's `references/` and in
   `docz_yaml.tmpl`'s comment.
 
 <!--docz:tasks:end-->
@@ -432,12 +432,12 @@ docz-site, and in a review.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] A remark step, `widget-marker.ts`, beside `mermaid-marker.ts`, that
+- [x] A remark step, `widget-marker.ts`, beside `mermaid-marker.ts`, that
   marks `docz-flow`, `docz-stepper`, and `docz-scorecard` fences after
   sanitize and before Shiki. It moves the source onto a data attribute
   as mermaid's does, so sanitize never sees component markup and Shiki
   never replaces the block.
-- [ ] Validate each block in TypeScript with the rules of
+- [x] Validate each block in TypeScript with the rules of
   `pkg/export/html/widgets.go`: the same closed fields, required fields,
   and cross-references, and the same error text at the same document
   lines. The rules are ported by hand and kept in step by a shared
@@ -445,23 +445,23 @@ docz-site, and in a review.
   valid and invalid block with an `.errors.golden` listing the expected
   errors and lines, written by the Go tests with `-update` and read by
   the UI tests, so either side drifting fails a test.
-- [ ] `Flow`, `Stepper`, and `Scorecard` components drawn from tokens
+- [x] `Flow`, `Stepper`, and `Scorecard` components drawn from tokens
   only, with `textContent`-equivalent rendering (no
   `dangerouslySetInnerHTML`, no `innerHTML`). They redraw on a theme or
   mode change, and are lazy-loaded so the bundle budget holds.
-- [ ] An invalid block renders as a caution callout naming each error at
+- [x] An invalid block renders as a caution callout naming each error at
   its line, followed by the YAML, as the export does.
-- [ ] `MarkdownPre` routes marked blocks to the components, and the
+- [x] `MarkdownPre` routes marked blocks to the components, and the
   review render mode keeps `data-line` on the widget root, as
   `MermaidBlock` does, so annotations anchor to it.
-- [ ] Extend the XSS suite (`processor.xss.test.tsx`) to the widget path:
+- [x] Extend the XSS suite (`processor.xss.test.tsx`) to the widget path:
   script, an event handler, and a `javascript:` URL in every string
   field, and a forged marker attribute in raw HTML.
-- [ ] The markdown specimen gains a section per widget, and the axe
+- [x] The markdown specimen gains a section per widget, and the axe
   sweep (`src/a11y/axe.test.tsx`) covers a valid and an invalid one.
-- [ ] e2e: each widget draws in the reader and the review page, and each
+- [x] e2e: each widget draws in the reader and the review page, and each
   invalid fixture shows its source and errors.
-- [ ] Update `ui/CLAUDE.md` (the markdown pipeline section) and the
+- [x] Update `ui/CLAUDE.md` (the markdown pipeline section) and the
   plugin's `references/widgets.md` to say where each widget is drawn.
 
 <!--docz:tasks:end-->
@@ -487,14 +487,15 @@ docz-site, and in a review.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Set IMPL-0029 to `Cancelled`, with a line at its top pointing here
+- [x] Set IMPL-0029 to `Cancelled`, with a line at its top pointing here
   (Open Question 10). It stays in the index as the record.
-- [ ] Mark DESIGN-0025's rollout complete, with this plan as step 5.
+- [x] Mark DESIGN-0025's rollout complete, with this plan as step 5.
 - [ ] Close #214, #213, and #209 from the final PR, and comment on #212
-  that Phase 5's components are in place.
-- [ ] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the
+  that Phase 5's components are in place. `deferred - human required`:
+  the PR body carries the `Closes` lines once the PR is opened.
+- [x] Check `CLAUDE.md`, `ui/CLAUDE.md`, the chart README, and the
   plugin README against what shipped.
-- [ ] Regenerate the changelog as the last commit of every PR.
+- [x] Regenerate the changelog as the last commit of every PR.
 
 <!--docz:tasks:end-->
 
@@ -536,24 +537,26 @@ docz-site, and in a review.
 <!--docz:testing:start-->
 ## Testing Plan
 
-- [ ] Config: the default, normalisation, an unknown value, `ParseBytes`
+- [x] Config: the default, normalisation, an unknown value, `ParseBytes`
   equal to `Load`, the JSON shape, and the consumer module.
-- [ ] Parity: `HTMLNormalizer` unit-tested and `just parity` green.
-- [ ] CLI contract: `inspect` and `export-html` fixtures validated against
+- [x] Parity: `HTMLNormalizer` unit-tested and `just parity` green.
+- [x] CLI contract: `inspect` and `export-html` fixtures validated against
   their closed schemas with the new field.
-- [ ] Export: the key picks the theme, `--theme` overrides it, and there
+- [x] Export: the key picks the theme, `--theme` overrides it, and there
   is a golden per theme.
-- [ ] Review: a session per theme from the repository's key, axe on each,
+- [x] Review: a session per theme from the repository's key, axe on each,
   and no theme selector.
-- [ ] Site: `resolveTheme` both ends, readiness on a bad `DOCZ_THEME`,
+- [x] Site: `resolveTheme` both ends, readiness on a bad `DOCZ_THEME`,
   the selector, stored over injected, mermaid and Shiki per theme, and
   axe per theme and mode.
-- [ ] Chart: `site.config.theme` set and unset.
-- [ ] Contrast: every theme and mode, including the new one.
-- [ ] Widgets: shared fixtures agree with the Go validator, the XSS
+- [x] Chart: `site.config.theme` set and unset.
+- [x] Contrast: every theme and mode, including the new one.
+- [x] Widgets: shared fixtures agree with the Go validator, the XSS
   suite, the axe sweep, the bundle budget, and e2e in the reader and the
   review.
-- [ ] Plugin: `just plugin-eval docz-html` with the new case.
+- [x] Plugin: `just plugin-eval docz-html` with the new case. Run
+  2026-11-01 on plugin 0.3.0: 8 of 8 cases, mean delta 0.27; 0.3.1
+  changed reference text only (`charcoal` named).
 
 <!--docz:testing:end-->
 

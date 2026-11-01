@@ -849,6 +849,10 @@ var syncKey = regexp.MustCompile(`^sync:[ \t]*$`)
 
 var accessKey = regexp.MustCompile(`^access:[ \t]*$`)
 
+// htmlKey matches the top-level `html:` key and nothing indented under
+// another block.
+var htmlKey = regexp.MustCompile(`^html:[ \t]*$`)
+
 // SyncNormalizer removes the `sync:` block (DESIGN-0020, IMPL-0023) from a
 // generated `.docz.yaml` and from `docz config` output: the key, its
 // indented body, and the comment run and blank line that introduce it in
@@ -869,6 +873,15 @@ func SyncNormalizer() Normalizer {
 // nothing a case observes reads it.
 func AccessNormalizer() Normalizer {
 	return Normalizer{Name: "access", Apply: dropTopLevelBlock(accessKey)}
+}
+
+// HTMLNormalizer removes the `html:` block (DESIGN-0025 §3, IMPL-0030)
+// from a generated `.docz.yaml` and from `docz config` output, as
+// AccessNormalizer removes `access:`. The ninth permitted delta, additive
+// in the same way: v1.2.2 never wrote the block, its one key is the theme
+// `docz export html` reads, and nothing a case observes reads it.
+func HTMLNormalizer() Normalizer {
+	return Normalizer{Name: "html", Apply: dropTopLevelBlock(htmlKey)}
 }
 
 // dropTopLevelBlock returns an Apply that removes every top-level yaml key

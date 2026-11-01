@@ -5,7 +5,7 @@ description: >-
   IMPL, investigation, or runbook) in docz's theme, for a reader outside
   the repository. Use when the user asks for an HTML version, a
   walkthrough page, a page to share, or "docz html" for a document.
-argument-hint: "<id|path> [classic]"
+argument-hint: "<id|path> [theme]"
 allowed-tools: Bash(docz export html *), Bash(docz validate *), Bash(open build/html/*), Read, Edit
 ---
 
@@ -17,8 +17,11 @@ repository can open: no network, no build step, the theme inlined.
 and how to make it read better.
 
 The document is `$ARGUMENTS` (an id like `DESIGN-0025` or a path under
-`docs/`). A second argument `classic` picks the classic theme; otherwise
-the page is `paper`.
+`docs/`). The theme is the repository's: `.docz.yaml`'s `html.theme`
+(`paper` when it names none), which `docz export html` reads by itself,
+so pass no flag for it. A second argument naming a theme (`charcoal`,
+`classic`, or `paper`), or a user asking for one, is a one-off: pass
+`--theme` for that run and leave `.docz.yaml` alone.
 
 ## When
 
@@ -41,8 +44,8 @@ document (it has no docz frontmatter and no id).
 2. Export:
 
    ```bash
-   docz export html <id>             # paper
-   docz export html <id> --theme classic
+   docz export html <id>                  # the repository's html.theme
+   docz export html <id> --theme classic  # a one-off in another theme
    ```
 
    The page is written under `build/html/`, at the document's path below

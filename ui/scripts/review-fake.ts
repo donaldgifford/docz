@@ -8,7 +8,8 @@
  * Beside the API it answers three test hooks, unauthenticated because
  * they exist only here: GET /__fake/records (the review records so far),
  * GET /__fake/feedback (the round's message for them), and
- * POST /__fake/reset (a fresh fake).
+ * POST /__fake/reset (a fresh fake; `?theme=<name>` gives the fixture
+ * repository that html.theme, as `docz inspect` would report it).
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -38,13 +39,13 @@ function load(): Captured[] {
   return JSON.parse(readFileSync(capture, "utf8")) as Captured[];
 }
 
-function documents(entries: Captured[]): ReviewDocument[] {
+function documents(entries: Captured[], theme?: string): ReviewDocument[] {
   return entries.map(({ inspect, findings }) => ({
     key: inspect.id,
     round: `round-${inspect.id}-1`,
     round_number: 1,
     state: "open",
-    inspect,
+    inspect: theme === undefined ? inspect : { ...inspect, theme },
     findings,
     previous: null,
     draft: null,
@@ -103,10 +104,12 @@ export function reviewFake(): Plugin {
       });
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? "";
-        if (url === "/__fake/reset" && req.method === "POST") {
+        if (url.startsWith("/__fake/reset") && req.method === "POST") {
+          const theme =
+            new URL(url, "http://fake").searchParams.get("theme") ?? undefined;
           fake = new FakeReviewServer({
             token: DEV_TOKEN,
-            documents: documents(entries),
+            documents: documents(entries, theme),
           });
           res.end("{}");
           return;

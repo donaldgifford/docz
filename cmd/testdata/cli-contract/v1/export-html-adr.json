@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "out": "build/html",
+  "theme": "paper",
   "dry_run": false,
   "pages": [
     {
@@ -9,7 +10,7 @@
       "source": "docs/adr/0001-use-postgresql-for-the-registry-store.md",
       "path": "adr/0001-use-postgresql-for-the-registry-store.html",
       "action": "wrote",
-      "hash": "sha256:53598a7c17118dee020f6bdb8bd8aec78f286e8d29746f40f7a9efba758cdaee",
+      "hash": "sha256:ca4c0728de7e84b31194be011cb6244fc68be56ad5cec1d2c9fcb3dce52e9dfa",
       "unresolved_links": [],
       "problems": []
     },
@@ -19,7 +20,7 @@
       "source": "docs/adr/0002-vendor-the-markdown-walker.md",
       "path": "adr/0002-vendor-the-markdown-walker.html",
       "action": "wrote",
-      "hash": "sha256:9bc17a61f72f59e17543e91c4b43e74851d8e341afff78db87a62e5e8cc1e31e",
+      "hash": "sha256:21a2bedb7fcecfb9fa52ee8d9306421113112687c838144e66c264a87ce040be",
       "unresolved_links": [
         {
           "href": "../inv/0006-doczcore-public-api-philosophy.md",
@@ -35,7 +36,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:4f6ad880167e22b678236ffd9ed57925b6c6f2a85f6d8af087f2bf4be35dd374",
+      "hash": "sha256:840105b627202c178d28e16d1ade4d96ef0fc47a22beeebd7f7df16a30d9d24c",
       "unresolved_links": [],
       "problems": []
     }

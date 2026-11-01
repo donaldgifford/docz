@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "out": "build/html",
+  "theme": "paper",
   "dry_run": false,
   "pages": [
     {
@@ -9,7 +10,7 @@
       "source": "docs/design/0001-token-refresh-flow.md",
       "path": "design/0001-token-refresh-flow.html",
       "action": "wrote",
-      "hash": "sha256:19d98e73e9a623362ce4a77ce2bc70020f55711ed533ef84207483a627161d88",
+      "hash": "sha256:e9ba15e836c279cdf71158be8158eedef29f0a0fb0a931ebf97d33436f3b488c",
       "unresolved_links": [],
       "problems": []
     },
@@ -19,7 +20,7 @@
       "source": "docs/design/0002-wiki-nav-generation.md",
       "path": "design/0002-wiki-nav-generation.html",
       "action": "wrote",
-      "hash": "sha256:a0f652e3184d46d6125c7968eb58f0d380028cac76622c57db654f80f8849ab2",
+      "hash": "sha256:7bbc32e48c678bf5497cfce796ecf35000bd60357cf5a2d117d3e827a89a1015",
       "unresolved_links": [
         {
           "href": "0006-custom-document-type-support.md",
@@ -35,7 +36,7 @@
       "source": "",
       "path": "index.html",
       "action": "wrote",
-      "hash": "sha256:3b3ad8166f0013f12ad121b882cf5b1235e118419e348a9b19e693f9664a6023",
+      "hash": "sha256:8b1af791ba72afd5b14d86671b872f0675110349dc7ba419b9adb674ca904b05",
       "unresolved_links": [],
       "problems": []
     }

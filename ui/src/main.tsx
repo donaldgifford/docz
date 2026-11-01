@@ -24,6 +24,14 @@ import "@/theme/tokens.css";
 
 import { createQueryClient } from "@/app/query-client";
 import { router } from "@/app/router";
+import { applyStoredMode, applyTheme } from "@/lib/appearance";
+import { storedTheme } from "@/lib/theme";
+
+// The theme and mode go on <html> before anything renders, so the first
+// paint is the reader's pick, else the deployment's default (IMPL-0030);
+// index.html's data-theme is only the no-JavaScript fallback.
+applyTheme(storedTheme());
+applyStoredMode();
 
 async function bootstrap(): Promise<void> {
   if (import.meta.env.VITE_API_MODE === "msw") {

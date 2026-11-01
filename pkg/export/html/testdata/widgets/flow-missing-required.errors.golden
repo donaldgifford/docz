@@ -1,0 +1,3 @@
+line 1: stages[1].does: required
+line 1: stages[2].name: required
+line 1: stages[3].name: required

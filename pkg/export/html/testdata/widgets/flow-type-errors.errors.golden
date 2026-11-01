@@ -1,0 +1,9 @@
+line 2: cannot unmarshal !!seq into string
+line 3: cannot unmarshal !!map into string
+line 4: cannot unmarshal !!str `x` into int
+line 4: cannot unmarshal !!bool `true` into int
+line 4: cannot unmarshal !!str `2` into int
+line 6: cannot unmarshal !!str `a`
+line 7: cannot unmarshal !!seq
+line 8: field x not found
+line 8: cannot unmarshal !!seq into string

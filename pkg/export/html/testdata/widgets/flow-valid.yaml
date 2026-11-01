@@ -1,0 +1,13 @@
+title: Where a request goes
+label: Each stage runs in order.
+stages:
+  - name: Webhook
+    does: GitHub tells docz-api a push landed.
+  - name: Queue
+    does: The push becomes an ingest job, debounced.
+    note: A burst of pushes is one job.
+  - name: Ingest
+    does: The worker fetches the tree and reconciles.
+gates: [2]
+legend: The green stage is a gate.
+alert: A failed ingest retries five times.

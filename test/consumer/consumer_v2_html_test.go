@@ -18,8 +18,8 @@ import (
 
 func TestExternalConsumerReadsTheThemes(t *testing.T) {
 	names := theme.Names()
-	if !slices.Equal(names, []string{"paper", "classic"}) {
-		t.Fatalf("theme.Names() = %v, want [paper classic]", names)
+	if !slices.Equal(names, []string{"paper", "charcoal", "classic"}) {
+		t.Fatalf("theme.Names() = %v, want [paper charcoal classic]", names)
 	}
 
 	for _, name := range names {

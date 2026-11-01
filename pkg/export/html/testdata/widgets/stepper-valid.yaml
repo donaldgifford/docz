@@ -1,0 +1,21 @@
+title: A request through the gate
+steps:
+  - key: auth
+    name: Authenticate
+    title: Who is asking
+    does: The bearer token is checked.
+  - key: scope
+    name: Authorize
+    does: The scopes are matched against the repository.
+  - key: serve
+    name: Serve
+    does: The document is returned.
+scenarios:
+  - name: Allowed
+    notes:
+      scope: public:read covers it.
+  - name: Denied
+    fails_at: scope
+    fail_label: Forbidden
+    notes:
+      scope: The token lacks the scope.

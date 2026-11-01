@@ -390,6 +390,9 @@ jobs:
       - name: Generate CLI types
         run: just ui gen-cli
 
+      - name: Generate the theme list
+        run: just ui gen-themes
+
       - name: Lint
         run: just ui lint
 
@@ -424,6 +427,9 @@ jobs:
 
       - name: Generated CLI types drift check
         run: just ui gen-cli-check
+
+      - name: Theme list drift check
+        run: just ui gen-themes-check
 
       # The four docz-review binaries, with the host's run from an empty
       # directory: the page and a lazy chunk must come from the binary.
@@ -476,6 +482,9 @@ jobs:
 
       - name: Generate CLI types
         run: just ui gen-cli
+
+      - name: Generate the theme list
+        run: just ui gen-themes
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium

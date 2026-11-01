@@ -29,6 +29,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - `bun run gen-api` — orval regenerates `src/api/__generated__/` from
   docz-api's spec at the repository root, `../api/openapi.yaml`, read in
   place and no longer vendored (generated dir is gitignored)
+- `bun run gen-themes` — writes `src/theme/__generated__/themes.ts`
+  (`THEMES`, `ThemeName`, `DEFAULT_THEME`, `THEMES_WITH_MODES`) from
+  `../pkg/theme/tokens/*.css`; gitignored like the client, run by
+  `just ui ci`, the image build, and CI, with `gen-themes-check` as the
+  drift gate. A theme added to `pkg/theme` reaches every list in the UI
+  (the selector, `hasModes`, the server's `DOCZ_THEME` check, the e2e
+  matrix) through this file alone
 - `just local-up` / `just local-down` — build + run the site container
   (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
   stack's network; re-run `local-up` after changes to rebuild/recreate
@@ -74,6 +81,24 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
   `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped (sharp
   corners); only `rounded-pill` exists. Don't add other CSS entrypoints.
+- **Themes** (IMPL-0030 Phase 3, DESIGN-0025 §3). The site renders in
+  any `pkg/theme` theme, `paper` by default. `src/lib/theme.ts`
+  resolves the theme as the reader's pick (`docz:theme` in
+  localStorage) → runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) →
+  build-time `VITE_THEME` → `paper`, each validated against the
+  generated `THEMES`, so an unknown name falls through like an invalid
+  mermaid layout. `server/serve.ts`'s `resolveTheme` checks
+  `DOCZ_THEME` at startup and an unknown value is a config error that
+  fails `/readyz`, beside the other runtime variables. `index.html` paints
+  `data-theme="paper"` and `src/main.tsx` applies the stored theme and
+  mode before the first render. The topbar's `AppearanceControls` is a
+  theme select plus the light/dark toggle (shown only when `hasModes`,
+  `src/lib/appearance.ts`, shared with docz-review); a change calls
+  `refreshMermaidTheme`, whose signal lives in
+  `src/lib/mermaid-theme.ts` so the eager bundle never imports
+  `mermaid-block`. No component may carry a literal colour: the header
+  is `bg-bg-base/90`, the logo `text-(--color-on-accent)`, the palette
+  scrim `bg-bg-base/65`.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
@@ -166,6 +191,26 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   when the layout is elk; e2e asserts both directions, and the
   diagram-free chunk assertion matches `elk` as well as `mermaid`
   because the ELK filename contains neither the word nor the library.
+  Widgets (IMPL-0030 Phase 5): `widget-marker.ts` runs beside the
+  mermaid marker (post-sanitize, pre-Shiki) and moves a `docz-flow`,
+  `docz-stepper`, or `docz-scorecard` fence's YAML onto
+  `data-widget-source` with its name and fence line; MarkdownPre routes
+  it to `WidgetBlock`, which lazy-loads `widgets/widget-view.tsx` (the
+  `yaml` parser, `validate.ts`, and the three components, one chunk that
+  e2e asserts never loads on a widget-free page) and shows the YAML as
+  code until it arrives. `validate.ts` is a port of
+  `pkg/export/html/widgets.go`, held to it by the shared corpus under
+  `pkg/export/html/testdata/widgets/` (same JSON, same error lines); a
+  change to either side changes the corpus. A valid block is
+  `figure.widget[data-widget]`, an invalid one `div.widget-invalid` with
+  a caution callout listing each error at its document line, then the
+  YAML. Components use token utilities only, so a theme or mode change
+  needs no redraw, and never a `style` attribute: the XSS gate allows
+  one only inside Shiki, which is why the scorecard bar is a
+  `<progress>`. Every string is a React text child. The reader hook
+  renders with `preserveLines`, so error lines are document lines on
+  both surfaces; the review mode carries `data-line` to the widget
+  root as MermaidBlock does.
   h2–h4 map to `markdown-heading.tsx`, which appends the
   hover/focus-revealed copy-link button (a labeled BUTTON, not a
   link — the underline rule for prose links stays untouched).
@@ -576,20 +621,30 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   badges; nothing is inserted into the sanitized markdown. Lightning CSS
   warns that it does not know `::highlight` while minifying; the rule
   survives, so the warning is noise.
-- **Appearance** (`appearance.ts`, IMPL-0028 Phase 6). The page is on
-  `paper` (`review.html`), with `classic` selectable. `main.tsx` calls
-  `applyStoredAppearance()` before the first render, so `data-theme` and
-  `data-mode` come from `docz:theme` and `docz:mode` (the key exported
-  pages use too); with no stored mode `data-mode` stays unset and the
-  theme's `prefers-color-scheme` block applies. `useAppearance` holds
-  both, dispatches `docz:mode`, and calls `refreshMermaidTheme` after a
-  change (never on mount), which re-initializes mermaid from the new
-  tokens and redraws every mounted diagram; docz-site never calls it.
-  The toggle shows only on paper, since classic has one look. The page
+- **Appearance** (`appearance.ts`, IMPL-0030 Phase 2). The theme is the
+  repository's: `docz inspect` reports `.docz.yaml`'s `html.theme` as
+  `theme`, the server passes it in the session (`sessionTheme`, the first
+  document's, `paper` for a docz too old to say), and `main.tsx` fetches
+  the session BEFORE the first render, sets `data-theme` from it, and
+  seeds the query cache, so the page never paints in `review.html`'s
+  `paper` first. There is no theme selector and no `docz:theme` key.
+  The mode is the reader's: `applyStoredMode()` sets `data-mode` from
+  `docz:mode` (the key exported pages use too) before the first render;
+  with nothing stored `data-mode` stays unset and the theme's
+  `prefers-color-scheme` block applies. `useAppearance(theme, onChange)`
+  dispatches `docz:mode` and calls `refreshMermaidTheme` after a change
+  (never on mount), which re-initializes mermaid from the new tokens and
+  redraws every mounted diagram; docz-site never calls it. The toggle
+  shows only on a theme with modes (`hasModes`, `paper` today). The page
   drops its token from the URL, so a reload shows the "open the link"
   message: an e2e that reloads must `goto` the link again.
   `e2e/review.spec.ts` runs every spec and full-rule axe under paper
-  light, paper dark, and classic.
+  light, paper dark, and classic, picking the theme through
+  `POST /__fake/reset?theme=<name>`, which gives the fixture repository
+  that `html.theme`. `fake-server.ts` imports `sessionTheme` by a
+  RELATIVE path: `vite.config.ts` loads it through
+  `scripts/review-fake.ts`, where `@/` does not resolve, so only type
+  imports there may use the alias.
 - **The draft** (`draft.ts`) decides the outcome from the actionable set
   (an answer, comment, replace, delete, document comment, status change,
   or finding to fix); Approve is enabled only while it is empty, and
@@ -708,7 +763,15 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   4.5:1) is enforced mathematically in `src/theme/contrast.test.ts`
   (for tokens.css and for every theme and mode in `../pkg/theme/tokens`),
   and full-rule axe (contrast included) runs in `e2e/a11y.spec.ts`;
-  changing `tokens.css` colors means keeping both green. Every
+  changing `tokens.css` colors means keeping both green. The math also
+  holds accent on its translucent `accent-bg` tint composited over
+  `bg-base` and `bg-raised` (a selected nav item, a pressed toggle),
+  which real-browser axe caught 0.05 short on paper light. The a11y and
+  rendering specs run once per look in `e2e/appearances.ts`'s
+  `APPEARANCES` (every theme, both modes where it has them), stored
+  through `useAppearance(page, appearance)` before the first script;
+  a check on a themed colour reads the token from the page rather
+  than naming one theme's value. Every
   top-level route needs exactly one `<main>` (RepoFrame provides it
   for repo-scoped pages). Doc-prose links stay underlined
   (link-in-text-block). vitest stubs CSS imports even with `?raw` —

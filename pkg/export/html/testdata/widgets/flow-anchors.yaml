@@ -1,0 +1,5 @@
+title: &t Shared
+label: *t
+stages:
+  - {name: a, does: b}
+  - {name: c, does: d}

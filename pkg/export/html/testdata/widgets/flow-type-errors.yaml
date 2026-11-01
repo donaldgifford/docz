@@ -1,0 +1,7 @@
+title: [a]
+label: {a: 1}
+gates: [x, true, "2", null]
+stages:
+  - a
+  - [b]
+  - {name: a, x: 1, does: [1]}

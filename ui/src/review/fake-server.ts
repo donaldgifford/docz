@@ -7,6 +7,10 @@ import type {
   Submission,
   SubmissionKey,
 } from "@/review/api";
+// Relative, not "@/": vite.config.ts loads this file through
+// scripts/review-fake.ts, where the alias does not resolve, so only type
+// imports may use it.
+import { sessionTheme } from "./api";
 import type { Draft } from "@/review/draft";
 
 /*
@@ -145,6 +149,7 @@ export class FakeReviewServer {
   private session(): ReviewSession {
     return {
       deadline: this.deadline,
+      theme: sessionTheme([...this.entries.values()].map((e) => e.served)),
       documents: [...this.entries.values()].map((e) => ({
         ...e.served,
         draft: this.drafts.get(e.served.key) ?? e.served.draft,

@@ -2,10 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { useGetSession } from "@/api/__generated__/docz-api";
+import { AppearanceControls } from "@/components/appearance-controls";
 import { CommandPalette } from "@/components/command-palette";
 import { SessionMenu } from "@/components/session-menu";
+import { useAppearance } from "@/lib/appearance";
 import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
+import { refreshMermaidTheme } from "@/lib/mermaid-theme";
 import { enabledNavLinks } from "@/lib/navLinks";
+import { useSiteTheme } from "@/lib/theme";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
@@ -46,13 +50,17 @@ export function AppShell() {
   // navLinks.ts, so every href is a same-origin app path. Read per
   // render (cheap, ≤6 entries) so tests can vary the injected config.
   const pins = enabledNavLinks();
+  // The reader's theme, else the deployment's (src/lib/theme.ts); a
+  // change redraws every mounted diagram from the new tokens.
+  const [theme, setTheme] = useSiteTheme();
+  const appearance = useAppearance(theme, refreshMermaidTheme);
   return (
     <>
-      <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-[rgba(12,16,23,0.88)] px-5 backdrop-blur-[10px]">
+      <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-bg-base/90 px-5 backdrop-blur-[10px]">
         <Link to="/" className="flex items-center gap-[0.55rem]">
           <span
             aria-hidden
-            className="grid size-[22px] place-items-center bg-accent font-mono text-[14px] font-bold text-bg-base"
+            className="grid size-[22px] place-items-center bg-accent font-mono text-[14px] font-bold text-(--color-on-accent)"
           >
             D
           </span>
@@ -110,6 +118,12 @@ export function AppShell() {
               {pin.label}
             </NavLink>
           ))}
+          <AppearanceControls
+            theme={theme}
+            mode={appearance.mode}
+            onTheme={setTheme}
+            onToggleMode={appearance.toggleMode}
+          />
           <SessionMenu />
         </nav>
       </header>

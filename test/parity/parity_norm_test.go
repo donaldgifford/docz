@@ -830,3 +830,47 @@ func TestAccessNormalizer(t *testing.T) {
 		})
 	}
 }
+
+// TestHTMLNormalizer covers the ninth permitted delta: the `html:` block
+// v2 writes (IMPL-0030) that v1.2.2 never did.
+func TestHTMLNormalizer(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "drops the generated block with its comments and blank",
+			in: "access:\n  scopes:\n    - public:read\n\n# The HTML docz writes.\n# docz-site is themed by its deployment.\n" +
+				"html:\n  theme: paper\n",
+			want: "access:\n  scopes:\n    - public:read\n",
+		},
+		{
+			name: "drops a docz config block followed by another key",
+			in:   "access:\n  scopes: []\nhtml:\n  theme: paper\nnext: 1\n",
+			want: "access:\n  scopes: []\nnext: 1\n",
+		},
+		{
+			name: "leaves an indented html key alone",
+			in:   "types:\n  html:\n    dir: html\n",
+			want: "types:\n  html:\n    dir: html\n",
+		},
+		{
+			name: "is a no-op on a v1.2.2 golden",
+			in:   "api:\n  enabled: false\n",
+			want: "api:\n  enabled: false\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := Normalize(tt.in, HTMLNormalizer()); got != tt.want {
+				t.Errorf("HTMLNormalizer()\ngot:\n%q\nwant:\n%q", got, tt.want)
+			}
+		})
+	}
+}

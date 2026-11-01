@@ -26,7 +26,9 @@
     "gen-api:check": "scripts/gen-api-check.sh",
     "gen-cli": "bun scripts/gen-cli.ts",
     "gen-review-fixture": "bun scripts/gen-review-fixture.ts",
-    "gen-cli:check": "scripts/gen-cli-check.sh"
+    "gen-cli:check": "scripts/gen-cli-check.sh",
+    "gen-themes": "bun scripts/gen-themes.ts",
+    "gen-themes:check": "scripts/gen-themes-check.sh"
   },
   "dependencies": {
     "@fontsource-variable/mona-sans": "5.3.0",
@@ -60,7 +62,8 @@
     "shiki": "^4.3.1",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
-    "unist-util-visit-parents": "^6.0.2"
+    "unist-util-visit-parents": "^6.0.2",
+    "yaml": "^2.9.0"
   },
   "overrides": {
     "dompurify": "^3.4.17",

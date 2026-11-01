@@ -1,0 +1,131 @@
+/*
+ * charcoal: a neutral dark look in the design repo-guardian's
+ * DESIGN-0036 set out (IMPL-0030 Phase 4), named for the look rather
+ * than the project it came from. Like classic it is dark only: the one
+ * block below matches whatever data-mode a page sets.
+ *
+ * Taken from DESIGN-0036 as written: background #17191d (bg-base),
+ * panel #1f2227 (bg-raised), panel-2 #262a30 (bg-elevated), border
+ * #31363d (border-default), foreground #e8eaed (fg-primary), muted
+ * #9aa1ab (fg-muted), accent #5fa8f5 (accent and link), ok #3fb950,
+ * warn #d9a020, info #7aa7ff (st-proposed), and 3px radii.
+ *
+ * Moved for AA (4.5:1 on all three surfaces, contrast.test.ts):
+ *   bad #f2554d is 4.25:1 on bg-elevated, so it lightens to #f4645c
+ *   (4.69:1), the same kind of move DESIGN-0036 already made once.
+ *
+ * Derived, since DESIGN-0036 has no value for them:
+ *   bg-hover/bg-active step up from panel-2 by the gap between panel
+ *     and panel-2 (#2c3037, #33373e).
+ *   border-hairline sits between panel and border (#2a2e34);
+ *     border-strong one step above border (#424851).
+ *   fg-secondary, fg-tertiary, and fg-prose are spaced between
+ *     foreground and muted (#c3c8cf, #a9afb8, #d4d7dc).
+ *   accent-dim is the accent darkened (#3f7fc4); accent-bg and
+ *     accent-border are the accent at 10% and 30%, as in the other
+ *     themes; on-accent is the background.
+ *   st-*: draft takes warn, proposed info, active/accepted/adopted ok,
+ *     rejected bad, deprecated muted, superseded a violet (#b392f0)
+ *     in the same lightness as info.
+ *   adm-*-bg: each alert's label colour at 10% over bg-base, kept as
+ *     hex for the contrast test.
+ *   t-* and hash-*: the DESIGN-0036 hues first (info, warn, ok, bad,
+ *     accent), then cyan, orange, violet, teal, and pink at the same
+ *     lightness. Violet #a371f7 was 4.30:1 on bg-elevated and lightens
+ *     to #ad80f8.
+ *   code-bg is darker than the background (#121418) so a block reads
+ *     as inset; code-fg is the foreground.
+ */
+
+:root[data-theme="charcoal"] {
+  color-scheme: dark;
+
+  --radius-card: 3px;
+  --radius-control: 3px;
+
+  --color-bg-base: #17191d;
+  --color-bg-raised: #1f2227;
+  --color-bg-elevated: #262a30;
+  --color-bg-hover: #2c3037;
+  --color-bg-active: #33373e;
+
+  --color-border-hairline: #2a2e34;
+  --color-border-default: #31363d;
+  --color-border-strong: #424851;
+
+  --color-fg-primary: #e8eaed;
+  --color-fg-secondary: #c3c8cf;
+  --color-fg-tertiary: #a9afb8;
+  --color-fg-muted: #9aa1ab;
+  --color-fg-prose: #d4d7dc;
+
+  --color-accent: #5fa8f5;
+  --color-accent-dim: #3f7fc4;
+  --color-accent-bg: rgba(95, 168, 245, 0.1);
+  --color-accent-border: rgba(95, 168, 245, 0.3);
+  --color-on-accent: #17191d;
+
+  --color-ok: #3fb950;
+  --color-link: #5fa8f5;
+  --color-warn: #d9a020;
+  --color-bad: #f4645c;
+
+  --color-st-draft: #d9a020;
+  --color-st-proposed: #7aa7ff;
+  --color-st-active: #3fb950;
+  --color-st-accepted: #3fb950;
+  --color-st-adopted: #3fb950;
+  --color-st-rejected: #f4645c;
+  --color-st-superseded: #b392f0;
+  --color-st-deprecated: #9aa1ab;
+
+  --color-adm-note-bg: #212734;
+  --color-adm-tip-bg: #1b2922;
+  --color-adm-important-bg: #272532;
+  --color-adm-warning-bg: #2a261d;
+  --color-adm-caution-bg: #2d2023;
+
+  --color-t-rfc: #7aa7ff;
+  --color-t-adr: #d9a020;
+  --color-t-design: #39c5cf;
+  --color-t-impl: #f0883e;
+  --color-t-investigation: #ad80f8;
+  --color-t-mandate: #f4645c;
+  --color-t-guide: #3fb950;
+  --color-t-principle: #5fa8f5;
+  --color-t-policy: #b392f0;
+  --color-t-framework: #56d4bc;
+  --color-t-working: #f0883e;
+  --color-t-runbook: #f778ba;
+  --color-t-docs: #c9d1d9;
+
+  --color-hash-0: #7aa7ff;
+  --color-hash-1: #3fb950;
+  --color-hash-2: #d9a020;
+  --color-hash-3: #f4645c;
+  --color-hash-4: #b392f0;
+  --color-hash-5: #56d4bc;
+  --color-hash-6: #f0883e;
+  --color-hash-7: #39c5cf;
+
+  --color-code-bg: #121418;
+  --color-code-fg: #e8eaed;
+}
+
+/*
+ * Fonts: IBM Plex Sans and JetBrains Mono first, the system stacks
+ * after. Nothing is embedded, so a page stays one network-free file and
+ * shows the named font only where the reader has it installed. The
+ * stacks sit in their own block, not the token block above, because no
+ * other theme names fonts: a theme that does not keeps the surface's
+ * own (base.css on an exported page, the bundled fonts in docz-site).
+ * html[data-theme] outranks base.css's :root and is unlayered, so it
+ * also wins over docz-site's @theme fonts.
+ */
+html[data-theme="charcoal"] {
+  --font-sans:
+    "IBM Plex Sans", -apple-system, system-ui, "Segoe UI", Inter, Roboto,
+    "Helvetica Neue", sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}

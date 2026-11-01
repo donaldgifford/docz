@@ -101,6 +101,17 @@ func TestLayerRules_CoreNeverImportsATypePackage(t *testing.T) {
 					t.Errorf("%s imports %s; the core never imports an exporter", pkg, dep)
 				}
 
+				// The one pkg/ package outside doczcore the core may
+				// import is pkg/theme, by name: config checks html.theme
+				// against theme.Names() at load, so a typo is caught in
+				// every consumer (IMPL-0030 open question 2). pkg/theme is
+				// stdlib-only and imports nothing of docz's.
+				if strings.HasPrefix(dep, modulePath+"/pkg/") &&
+					!strings.HasPrefix(dep, modulePath+"/pkg/doczcore/") &&
+					dep != modulePath+"/pkg/theme" {
+					t.Errorf("%s imports %s; the core imports only pkg/theme outside doczcore", pkg, dep)
+				}
+
 				// cmd/ is the CLI shell. A core package reaching into it
 				// would make the library depend on its own first consumer.
 				if strings.HasPrefix(dep, modulePath+"/cmd") {

@@ -1,0 +1,5 @@
+steps:
+  - {key: a, name: A, does: x}
+  - {key: b, name: B, does: y}
+scenarios:
+  - {name: S, fails_at: c}

@@ -125,6 +125,7 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
 			},
 		},
 		Access: config.AccessConfig{Scopes: []string{"platform-team:read"}},
+		HTML:   config.HTMLConfig{Theme: "classic"},
 	}
 
 	got, err := json.MarshalIndent(cfg, "", "  ")
@@ -221,6 +222,9 @@ func TestConfigJSON_MarshaledShape(t *testing.T) {
     "scopes": [
       "platform-team:read"
     ]
+  },
+  "html": {
+    "theme": "classic"
   }
 }`
 	if string(got) != want {

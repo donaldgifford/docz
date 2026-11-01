@@ -390,6 +390,38 @@ WCAG today; it runs over every theme and mode instead of one.
 > `docz` (`mode`, `setMode`, `onMode`, `palette`, `showTab`), and the
 > mode change is also a `docz:mode` event.
 
+> **Amended 2026-11-01 (IMPL-0030).** One theme system across the three
+> surfaces, with the default set by whoever owns the surface:
+>
+> | Surface | Default from | Theme selector | Light/dark toggle |
+> | --- | --- | --- | --- |
+> | `docz export html` | the repository's `html.theme` in `.docz.yaml`; `--theme` overrides it for one run | none | kept |
+> | docz-review | the repository's `html.theme`, through `docz inspect --format json` | none (the one IMPL-0028 Phase 6 added is removed) | kept |
+> | docz-site | the deployment's `DOCZ_THEME` (the chart's `site.config.theme`) | in the topbar | kept |
+>
+> The repository decides for the two surfaces that show one repository,
+> so a reader of those gets no selector; the light/dark mode stays the
+> reader's preference. docz-site shows many repositories and never reads
+> a repository's key. `pkg/theme.Names()` is the one list every check and
+> every selector uses, so a theme added there needs no change on any
+> surface to be usable. A choice kept in `localStorage` is per origin and
+> never travels between surfaces (docz-site is one origin, each review
+> session is `127.0.0.1` on a random port, an exported page is
+> `file://`); that is accepted, not worked around.
+>
+> IMPL-0030's open questions, settled: the key lives in an `html:` block
+> (1b); `pkg/doczcore/config` imports `pkg/theme` to check it (2a); an
+> unknown name is a validation warning and falls back to `paper`, so
+> docz-api never refuses an ingest over it (3a); a docz too old to report
+> the theme leaves the review page on `paper` (4a); docz-site generates its
+> theme list from `pkg/theme/tokens/` at build time (5a); the third theme
+> is `charcoal`, repo-guardian DESIGN-0036's look, with IBM Plex Sans and
+> JetBrains Mono named first in its stacks and nothing embedded (6c);
+> docz-site does not adopt the themes' radii (7a); each phase is a
+> `dont-release` PR and the last `minor` (8a); the TypeScript widget rules
+> are held to `widgets.go` by a shared corpus (9a); and IMPL-0029 is
+> cancelled in its favour (10a).
+
 ### 4. Layout by region kind
 
 A table maps each
@@ -737,6 +769,10 @@ relative path resolves inside the image. The `ui` CI path filter gains
 
 None in the first release (open question 12): flags only.
 
+> **Amended 2026-11-01 (IMPL-0030).** An `html:` block with one key,
+> `theme`, sets the default theme for `docz export html` and docz-review
+> (section 3's amendment). The other flags stay flags.
+
 <!--docz:api-changes:end-->
 
 <!--docz:data-model:start-->
@@ -797,6 +833,12 @@ Each step is one PR; the first that adds a command is labelled `minor`.
    over both themes. `minor`, since the default look changes.
 5. **docz-site on `paper`**, `classic` selectable, and the widgets as
    React components reading the same fenced blocks. `minor`.
+
+> **Complete 2026-11-01.** Steps 1–4 shipped in v2.4.0 (IMPL-0028).
+> Step 5 is IMPL-0030: docz-site on `paper` with `classic` and
+> `charcoal` selectable, the review page in the repository's
+> `html.theme`, and the three widgets drawn in the reader and the
+> review from the blocks the export draws.
 
 The `docz-html/` source directory is removed from the branch before the
 first PR merges; nothing from it is committed except what step 1 ports.
@@ -950,6 +992,9 @@ first PR merges; nothing from it is committed except what step 1 ports.
 - c. Other.
 
 > **Resolved 2026-10-31: (a).**
+>
+> **Revised 2026-11-01 (IMPL-0030).** `classic` stays a theme, but the
+> review page shows the repository's `html.theme` and has no selector.
 
 ### 12. Does `.docz.yaml` configure the export?
 
@@ -960,6 +1005,10 @@ first PR merges; nothing from it is committed except what step 1 ports.
 - c. Other.
 
 > **Resolved 2026-10-31: (a).**
+>
+> **Revised 2026-11-01 (IMPL-0030).** An `html:` block with `theme` only:
+> the theme is the one setting both the export and the review page need
+> to agree on for every run.
 
 ### 13. Are the two new packages stable at their first release?
 

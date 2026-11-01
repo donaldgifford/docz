@@ -1,0 +1,4 @@
+checks:
+  - {id: C, name: N, target: T, weight: heavy}
+  - {id: D, name: N, target: T, weight: true}
+  - {id: E, name: N, target: T, weight: 2}

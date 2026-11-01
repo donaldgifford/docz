@@ -159,6 +159,15 @@ describe("axe: core views", () => {
         container.querySelectorAll('[data-mermaid-fallback="failed"]'),
       ).toHaveLength(3);
     });
+    // The three widgets drawn and the invalid one explained (IMPL-0030),
+    // so the sweep sees a valid and an invalid block.
+    await waitFor(
+      () => {
+        expect(container.querySelectorAll("figure.widget")).toHaveLength(3);
+        expect(container.querySelectorAll(".widget-invalid")).toHaveLength(1);
+      },
+      { timeout: 10_000 },
+    );
     await expectNoAxeViolations();
   });
 

@@ -24,12 +24,13 @@ import type { DoczInspect } from "@/cli/__generated__/inspect";
 import type { DoczReview } from "@/cli/__generated__/review";
 import type { Finding } from "@/cli/__generated__/validate";
 import { ContractError, parseReview } from "@/cli/validate";
-import type {
-  DocumentState,
-  ReviewDocument,
-  ReviewSession,
-  Submission,
-  SubmissionKey,
+import {
+  type DocumentState,
+  type ReviewDocument,
+  type ReviewSession,
+  type Submission,
+  type SubmissionKey,
+  sessionTheme,
 } from "@/review/api";
 import type { Draft } from "@/review/draft";
 import { type FeedbackDocument, feedbackMessage } from "@/review/feedback";
@@ -166,6 +167,7 @@ export class Review {
   view(): ReviewSession {
     return {
       deadline: this.opts.deadline.toISOString(),
+      theme: sessionTheme([...this.docs.values()]),
       documents: [...this.docs.values()].map((d): ReviewDocument => ({
         key: d.entry.id,
         round: d.round,

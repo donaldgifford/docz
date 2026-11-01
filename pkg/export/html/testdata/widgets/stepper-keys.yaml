@@ -1,0 +1,10 @@
+steps:
+  - {key: A, name: A, does: x}
+  - {key: A, name: B, does: y}
+  - {key: '', name: '', does: ' '}
+  - {key: ok, name: C, does: z}
+  - {key: ok, name: D, does: w}
+scenarios:
+  - {name: S, notes: {zz: n, aa: m, ok: fine}}
+  - {name: S}
+  - {fails_at: q}

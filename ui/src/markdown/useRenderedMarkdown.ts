@@ -67,7 +67,12 @@ export function useRenderedSource(
     ],
     queryFn: () =>
       renderMarkdown(
-        preprocessDoczMarkdown(source?.raw ?? "", { stripLeadingH1 }),
+        // preserveLines: the parser's positions are then document
+        // lines, which a widget block's errors name (IMPL-0030).
+        preprocessDoczMarkdown(source?.raw ?? "", {
+          stripLeadingH1,
+          preserveLines: true,
+        }),
         {
           xrefs,
           links:

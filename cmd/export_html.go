@@ -70,6 +70,9 @@ otherwise reported unresolved.
 diagram, cdn loads it from jsDelivr under subresource integrity, and source
 leaves each diagram as its source.
 
+Pages render in the theme .docz.yaml names as html.theme (paper when it
+names none); --theme overrides it for one run.
+
 Exit codes:
   0  every page rendered
   1  a page failed
@@ -84,7 +87,8 @@ func init() {
 	f.StringArrayVar(&exportHTMLTypes, "type", nil, "export one type (repeatable); default: every enabled type")
 	f.StringVar(&exportHTMLOut, "out", "", "output directory (default: build/html under the repository root)")
 	f.BoolVar(&exportHTMLStdout, "stdout", false, "print the one page to stdout instead of writing it")
-	f.StringVar(&exportHTMLTheme, "theme", "paper", "theme: "+strings.Join(theme.Names(), ", "))
+	f.StringVar(&exportHTMLTheme, "theme", "",
+		"theme for this run: "+strings.Join(theme.Names(), ", ")+" (default: html.theme in .docz.yaml)")
 	f.StringVar(&exportHTMLMermaid, "mermaid", "embed", "mermaid diagrams: embed, cdn, or source")
 	f.StringVar(&exportHTMLFormat, "format", formatText, "report format: text or json")
 	f.BoolVar(&exportHTMLDryRun, "dry-run", false, "report what would be written; write nothing")
@@ -115,7 +119,9 @@ func (r *Runner) exportHTML(ctx context.Context, opts *exportHTMLOpts, args []st
 		return exitErrorf(errExitCode2, "invalid --mermaid %q (want embed, cdn, or source)", opts.mermaid)
 	}
 
-	if !slices.Contains(theme.Names(), opts.theme) {
+	// An empty --theme is the repository's html.theme, which config has
+	// already checked; an explicit one is checked here.
+	if opts.theme != "" && !slices.Contains(theme.Names(), opts.theme) {
 		return exitErrorf(errExitCode2, "unknown --theme %q (want one of %s)", opts.theme, strings.Join(theme.Names(), ", "))
 	}
 
@@ -189,6 +195,7 @@ func (r *Runner) printOnePage(report *html.Report) error {
 type exportHTMLOutput struct {
 	SchemaVersion int               `json:"schema_version"`
 	Out           string            `json:"out"`
+	Theme         string            `json:"theme"`
 	DryRun        bool              `json:"dry_run"`
 	Pages         []html.PageResult `json:"pages"`
 	Total         exportHTMLTotal   `json:"total"`
@@ -238,7 +245,7 @@ func (r *Runner) printExportHTMLReport(format string, report *html.Report) error
 
 		//nolint:wrapcheck // the writer's error, as every JSON output.
 		return enc.Encode(exportHTMLOutput{
-			SchemaVersion: clischema.SchemaVersionExportHTML, Out: filepath.ToSlash(out), DryRun: report.DryRun,
+			SchemaVersion: clischema.SchemaVersionExportHTML, Out: filepath.ToSlash(out), Theme: report.Theme, DryRun: report.DryRun,
 			Pages: pages, Total: totalOf(report),
 		})
 	}

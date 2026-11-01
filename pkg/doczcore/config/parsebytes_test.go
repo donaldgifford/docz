@@ -43,6 +43,10 @@ var parseBytesCases = []struct {
 		yaml: "access:\n  scopes: [\" Platform-Team:read \", platform-team:read, public:read]\n",
 	},
 	{
+		name: "html theme folds, and an unknown one falls back",
+		yaml: "html:\n  theme: \" Neon \"\n",
+	},
+	{
 		name: "empty file",
 		yaml: "",
 	},

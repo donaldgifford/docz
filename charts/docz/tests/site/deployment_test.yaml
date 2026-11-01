@@ -134,6 +134,34 @@ tests:
             name: DOCZ_MERMAID_LAYOUT
             value: "dagre"
 
+  - it: should omit DOCZ_THEME by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_THEME
+          any: true
+
+  - it: should set DOCZ_THEME from config.theme
+    set:
+      site:
+        config:
+          theme: "classic"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DOCZ_THEME
+            value: "classic"
+
+  - it: should reject a theme pkg/theme does not have
+    set:
+      site:
+        config:
+          theme: "neon"
+    asserts:
+      - failedTemplate: {}
+
   - it: should default DOCZ_LOG_LEVEL to info and DOCZ_LOG_FORMAT to json
     asserts:
       - contains:

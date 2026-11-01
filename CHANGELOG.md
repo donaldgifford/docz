@@ -5,20 +5,83 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/).
 ## [unreleased]
 
+### Features
+
+- *(config)* The html.theme key, checked against pkg/theme (IMPL-0030)
+- *(export/html)* An empty Theme is the repository's html.theme
+- *(export)* --theme defaults to html.theme, and the JSON report names the theme
+- *(inspect)* Report the repository's html.theme as theme
+- *(review)* The session carries the repository's theme
+- *(review)* Render in the session's theme, with no theme selector
+- *(docz-html)* The theme comes from .docz.yaml; plugin 0.3.0 and an eval for it
+- *(site)* DOCZ_THEME sets the site's default theme, validated at both ends
+- *(site)* Paper first paint, and the resolved theme and mode before the first render
+- *(site)* A theme selector and the light/dark toggle in the topbar
+- *(chart)* Site.config.theme renders DOCZ_THEME only when set
+- *(theme)* Charcoal, a neutral dark theme from repo-guardian's DESIGN-0036
+- *(site)* Tokens.css imports charcoal, which the selector offers unchanged
+- *(site)* Validate widget blocks in TypeScript, held to Go by a shared corpus
+- *(site)* Mark docz-* widget fences after sanitize and before Shiki
+- *(site)* Draw docz-flow, docz-stepper, and docz-scorecard in React
+
+### Bug Fixes
+
+- *(ui)* Gen-themes reads the dark block with includes
+- *(site)* The topbar, logo, and palette scrim read the theme's tokens
+- *(theme)* The runtime's cssEscape fallback escapes backslashes too
+
+### Refactor
+
+- *(ui)* The mode half moves to src/lib/appearance, and the site gets a theme half
+
 ### Documentation
 
 - *(investigation)* INV-0031, the docz-review trial on its own repository
 - *(impl)* IMPL-0030, one theme system across docz-html, docz-review, and docz-site
 - *(impl)* IMPL-0030's open questions resolved
 - *(impl)* IMPL-0031, the review page laid out like docz-html's exported page
+- *(design)* Amend DESIGN-0025 with the one theme system (IMPL-0030)
+- *(design)* Amend DESIGN-0024, the review page in the repository's theme
+- CLAUDE.md on the html.theme key
+- CLAUDE.md files on the repository's theme in export and review
+- *(impl)* The specimen checked under paper light, paper dark, and classic
+- *(ui)* Themes, the generated theme list, and the chart's site.config.theme
+- Charcoal in the docz-html plugin's references and the .docz.yaml comment
+- CLAUDE.md describes the charcoal theme
+- *(site)* The markdown specimen draws each widget, and axe sweeps them
+- Say where each widget is drawn
+- *(impl)* Cancel IMPL-0029, its scope taken by IMPL-0030
+- *(design)* DESIGN-0025's rollout is complete, IMPL-0030 its step 5
+- CLAUDE.md and the plugin README match what IMPL-0030 shipped
+- *(impl)* IMPL-0030's testing plan is met
+
+### Styling
+
+- *(site)* Format the widget view test
 
 ### Testing
 
 - *(docz-html)* A claude plugin eval suite for the skill
+- *(parity)* HTMLNormalizer drops the html: block v1.2.2 never wrote
+- *(config)* Html.theme default, folding, the unknown-name warning, ParseBytes parity
+- *(consumer)* The html.theme key through the public path
+- *(review)* E2e per theme from the fixture repository's html.theme
+- *(export)* Html.theme classic exports classic pages with no --theme
+- *(ui)* Hold every theme's code surface to the lifted Shiki colours
+- *(ui)* Axe and rendering specs run under every theme and mode
+- *(ui)* Contrast.test.ts takes its themes from the generated list
+- *(export/html)* A whole-page golden per theme
+- *(ui)* The review spec runs under every appearance in the theme list
+- *(site)* Drop the marker test's unused hast import
+- *(site)* The XSS suite covers the widget path
+- *(site)* The widget XSS helper guards instead of asserting
+- *(site)* E2e draws each widget in the reader and on the review page
 
 ### Miscellaneous Tasks
 
 - *(claude)* Enable docz-review from the docz marketplace in project settings
+- This repository's .docz.yaml names its html theme
+- *(ui)* Generate the theme list from pkg/theme/tokens
 
 ## [2.4.0] - 2026-11-01
 

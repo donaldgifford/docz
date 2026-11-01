@@ -1,6 +1,6 @@
 {
   "name": "docz-html",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "Turns a docz document into one standalone HTML page in docz's theme, for readers outside the repository.",
   "author": {
     "name": "Donald Gifford",

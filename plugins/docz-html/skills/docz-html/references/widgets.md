@@ -2,8 +2,18 @@
 
 A widget is a fenced block in the document whose info string names it and
 whose body is YAML. Any renderer that does not know the widget shows the
-YAML, which is readable on GitHub, in MkDocs, and in Confluence; the page
-draws it.
+YAML, which is readable on GitHub and in MkDocs. Three surfaces draw it
+from the same block, with the same rules and the same error lines:
+
+- **`docz export html`** writes the figure below, and `pkg/theme`'s
+  runtime draws it in the exported page.
+- **docz-site's reader** draws it in React (`ui/src/markdown/widgets/`),
+  loading the widget code only on a document that has a widget.
+- **docz-review** draws it the same way, keeping the block's
+  `data-line` so a comment on it has a line.
+
+Confluence does not draw one: the export folds each block into a
+collapsed expand titled Flow, Stepper, or Scorecard holding the YAML.
 
 Three widgets exist: `docz-flow`, `docz-stepper`, and `docz-scorecard`.
 Each schema below is **closed**: a key it does not list is an error, as is

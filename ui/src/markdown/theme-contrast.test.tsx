@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { render } from "@testing-library/react";
@@ -89,6 +89,42 @@ describe("liftThemeContrast", () => {
     expect(contrastRatio(onDark, "#161b28")).toBeLessThan(5.5);
     const onLight = liftColor("#c0c0c0", "#ffffff");
     expect(contrastRatio(onLight, "#ffffff")).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+/*
+ * The lift runs once, against CODE_BG (classic's code surface). Every
+ * theme in pkg/theme keeps code dark, so a foreground lifted to AA on
+ * classic's must also reach AA on each theme's own --color-code-bg; a
+ * theme whose code surface is lighter fails here (IMPL-0030 Phase 3).
+ */
+describe("every pkg/theme code surface", () => {
+  const tokensDir = resolve(process.cwd(), "../pkg/theme/tokens");
+  const surfaces = readdirSync(tokensDir)
+    .filter((f) => f.endsWith(".css"))
+    .flatMap((file) =>
+      [
+        ...readFileSync(resolve(tokensDir, file), "utf8").matchAll(
+          /--color-code-bg:\s*(#[0-9a-fA-F]{6})/g,
+        ),
+      ].map((m): [string, string] => [file, (m[1] ?? "").toLowerCase()]),
+    );
+
+  it("finds a code surface in every theme", () => {
+    expect(new Set(surfaces.map(([file]) => file)).size).toBe(
+      readdirSync(tokensDir).filter((f) => f.endsWith(".css")).length,
+    );
+  });
+
+  it.each(surfaces)("%s %s holds every lifted foreground to AA", (_, bg) => {
+    for (const entry of entriesOf(liftThemeContrast(tokyoNight))) {
+      const fg = hexForeground(entry);
+      if (fg === null) continue;
+      expect(
+        contrastRatio(fg, bg),
+        `${JSON.stringify(entry.scope)} ${fg} on ${bg}`,
+      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+    }
   });
 });
 
