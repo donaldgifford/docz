@@ -67,6 +67,7 @@ nav:
         - 'IMPL-0028: docz-html: pkg/theme, the skill, docz export html, and the review page on paper': impl/0028-docz-html-pkgtheme-the-skill-docz-export-html-and-the-review.md
         - 'IMPL-0029: docz-site on paper, with the widgets as React components': impl/0029-docz-site-on-paper-with-the-widgets-as-react-components.md
         - 'IMPL-0030: One theme system across docz-html, docz-review, and docz-site, with the widgets in the reader': impl/0030-one-theme-system-across-docz-html-docz-review-and-docz-site.md
+        - 'IMPL-0031: The review page laid out like docz-html''s exported page': impl/0031-the-review-page-laid-out-like-docz-htmls-exported-page.md
     - Investigations:
         - Overview: investigation/README.md
         - 'INV-0001: Wiki Init Template and Init Enabled Fix': investigation/0001-wiki-init-template-and-init-enabled-fix.md
