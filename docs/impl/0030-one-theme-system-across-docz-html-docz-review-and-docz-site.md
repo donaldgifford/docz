@@ -321,7 +321,7 @@ surface is checked under each.
   readiness fails on a typo as it does for the other whitelisted
   variables. `src/lib/theme.ts` re-validates on read (both ends, as the
   nav pins do), then `VITE_THEME`, then `paper`.
-- [ ] `index.html` keeps a `data-theme` for the no-JavaScript first
+- [x] `index.html` keeps a `data-theme` for the no-JavaScript first
   paint, and `src/main.tsx` applies the resolved theme and stored mode
   before the first render.
 - [ ] `AppShell` topbar: a labelled theme selector over the theme list
