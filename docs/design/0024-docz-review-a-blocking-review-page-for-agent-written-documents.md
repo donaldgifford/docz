@@ -678,6 +678,15 @@ IMPL tasks render with their state but are not toggled from the page in
 the first release. No Tailwind, no CodeMirror: the page uses docz-site's
 theme and components, and editing in the page is a non-goal.
 
+> **Amended 2026-11-01 (IMPL-0030, DESIGN-0025 §3).** The page renders in
+> the repository's theme: `docz inspect --format json` reports the
+> `.docz.yaml` key `html.theme` as a top-level `theme`, the server passes
+> it to the page, and the page sets `data-theme` from it before the first
+> paint. A docz too old to report it leaves the page on `paper`. The theme
+> selector IMPL-0028 Phase 6 added is removed, because the repository has
+> made the choice; the light/dark toggle stays, since the mode is the
+> reader's preference, stored per origin as `docz:mode`.
+
 ### 6. The local server
 
 `ui/review/server.ts` is a Bun HTTP server in the shape of

@@ -178,7 +178,7 @@ repository.
   no theme selector where the repository decides, the light/dark toggle
   kept, `pkg/theme.Names()` as the one list, and per-origin storage
   accepted. Record the answers to this plan's open questions there.
-- [ ] Amend DESIGN-0024 so the review page renders in the repository's
+- [x] Amend DESIGN-0024 so the review page renders in the repository's
   theme, and drop the theme selector IMPL-0028 Phase 6 added.
 - [ ] `pkg/doczcore/config`: a new `HTMLConfig{Theme string}` in `html.go`,
   on `Config` as `HTML` (yaml and json tags `html` and `theme`, so
