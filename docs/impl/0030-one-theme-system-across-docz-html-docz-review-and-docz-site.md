@@ -207,7 +207,7 @@ repository.
   `classic`), an unknown value (a warning and `paper`), `ParseBytes` equal to
   `Load` (`parsebytes_test.go`), and `TestConfigJSON_MarshaledShape`
   updated for the new field.
-- [ ] `test/consumer`: assert `DefaultConfig().Theme`, and that
+- [x] `test/consumer`: assert `DefaultConfig().Theme`, and that
   `ParseBytes` reads the key, through the public path.
 - [ ] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
   `test/archive` still passes.
