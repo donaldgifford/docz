@@ -344,7 +344,7 @@ surface is checked under each.
   and, on paper, both modes. Full-rule axe passes on every core view.
 - [x] The markdown specimen is checked under each theme, and any
   screenshot in a spec is regenerated.
-- [ ] Update `ui/CLAUDE.md` (themes, runtime config, Toolchain notes) and
+- [x] Update `ui/CLAUDE.md` (themes, runtime config, Toolchain notes) and
   the chart README.
 
 <!--docz:tasks:end-->

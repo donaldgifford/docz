@@ -128,6 +128,17 @@ Register the same URL as the provider's redirect URI.
 To take GitHub webhooks through a Tailscale operator Ingress on the API, see
 [`deploy/tailscale-operator.md`](https://github.com/donaldgifford/docz/blob/main/deploy/tailscale-operator.md).
 
+## Theme
+
+The site renders in `paper` unless `site.config.theme` names another
+`pkg/theme` theme (`classic` today). The value becomes the site's
+`DOCZ_THEME`, rendered only when set, and the schema accepts only the names
+`pkg/theme` has, so a typo fails `helm install` instead of the site's
+`/readyz`. It is a default: a reader's own pick in the topbar wins and
+holds across reloads. Exported pages and docz-review take their theme from
+each repository's `.docz.yaml` `html.theme`, which this value does not
+touch.
+
 ## Login providers
 
 `auth.providers` is one comma-separated list of `github`, `okta`, and

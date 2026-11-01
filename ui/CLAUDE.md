@@ -29,6 +29,13 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
 - `bun run gen-api` — orval regenerates `src/api/__generated__/` from
   docz-api's spec at the repository root, `../api/openapi.yaml`, read in
   place and no longer vendored (generated dir is gitignored)
+- `bun run gen-themes` — writes `src/theme/__generated__/themes.ts`
+  (`THEMES`, `ThemeName`, `DEFAULT_THEME`, `THEMES_WITH_MODES`) from
+  `../pkg/theme/tokens/*.css`; gitignored like the client, run by
+  `just ui ci`, the image build, and CI, with `gen-themes-check` as the
+  drift gate. A theme added to `pkg/theme` reaches every list in the UI
+  (the selector, `hasModes`, the server's `DOCZ_THEME` check, the e2e
+  matrix) through this file alone
 - `just local-up` / `just local-down` — build + run the site container
   (`deploy/compose.local.yaml`, :8090) joined to the docz-api local
   stack's network; re-run `local-up` after changes to rebuild/recreate
@@ -74,6 +81,24 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
   `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped (sharp
   corners); only `rounded-pill` exists. Don't add other CSS entrypoints.
+- **Themes** (IMPL-0030 Phase 3, DESIGN-0025 §3). The site renders in
+  any `pkg/theme` theme, `paper` by default. `src/lib/theme.ts`
+  resolves the theme as the reader's pick (`docz:theme` in
+  localStorage) → runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) →
+  build-time `VITE_THEME` → `paper`, each validated against the
+  generated `THEMES`, so an unknown name falls through like an invalid
+  mermaid layout. `server/serve.ts`'s `resolveTheme` checks
+  `DOCZ_THEME` at startup and an unknown value is a config error that
+  fails `/readyz`, beside the other runtime variables. `index.html` paints
+  `data-theme="paper"` and `src/main.tsx` applies the stored theme and
+  mode before the first render. The topbar's `AppearanceControls` is a
+  theme select plus the light/dark toggle (shown only when `hasModes`,
+  `src/lib/appearance.ts`, shared with docz-review); a change calls
+  `refreshMermaidTheme`, whose signal lives in
+  `src/lib/mermaid-theme.ts` so the eager bundle never imports
+  `mermaid-block`. No component may carry a literal colour: the header
+  is `bg-bg-base/90`, the logo `text-(--color-on-accent)`, the palette
+  scrim `bg-bg-base/65`.
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s
@@ -718,7 +743,15 @@ runs it too), `just ui gen-cli` / `gen-cli-check`, and
   4.5:1) is enforced mathematically in `src/theme/contrast.test.ts`
   (for tokens.css and for every theme and mode in `../pkg/theme/tokens`),
   and full-rule axe (contrast included) runs in `e2e/a11y.spec.ts`;
-  changing `tokens.css` colors means keeping both green. Every
+  changing `tokens.css` colors means keeping both green. The math also
+  holds accent on its translucent `accent-bg` tint composited over
+  `bg-base` and `bg-raised` (a selected nav item, a pressed toggle),
+  which real-browser axe caught 0.05 short on paper light. The a11y and
+  rendering specs run once per look in `e2e/appearances.ts`'s
+  `APPEARANCES` (every theme, both modes where it has them), stored
+  through `useAppearance(page, appearance)` before the first script;
+  a check on a themed colour reads the token from the page rather
+  than naming one theme's value. Every
   top-level route needs exactly one `<main>` (RepoFrame provides it
   for repo-scoped pages). Doc-prose links stay underlined
   (link-in-text-block). vitest stubs CSS imports even with `?raw` —
