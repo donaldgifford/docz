@@ -26,8 +26,9 @@ const tokensCss = readFileSync(
  * theme with them one for light and one for dark. Paper's
  * prefers-color-scheme block repeats the dark values, which pkg/theme's
  * theme_test.go holds equal, so it is not checked twice here.
- * tokens.css's @theme values are classic's and stay checked as the
- * source Tailwind reads.
+ * The shell (DESIGN-0026 §2) is checked in both modes, and tokens.css's
+ * @theme values, its dark set (shell.test.ts), as the source Tailwind
+ * reads.
  */
 const themeDir = resolve(process.cwd(), "../pkg/theme/tokens");
 
@@ -41,8 +42,15 @@ function block(css: string, selector: string): string {
   return css.slice(start, end);
 }
 
+const shellCss = readFileSync(
+  resolve(process.cwd(), "src/theme/shell.css"),
+  "utf8",
+);
+
 const THEMES: [string, string][] = [
   ["tokens.css", tokensCss],
+  ["shell light", block(shellCss, ":root")],
+  ["shell dark", block(shellCss, ':root[data-mode="dark"]')],
   ...GENERATED_THEMES.flatMap((name): [string, string][] => {
     const css = readFileSync(resolve(themeDir, `${name}.css`), "utf8");
     const root = `:root[data-theme="${name}"]`;

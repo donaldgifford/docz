@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-import { APPEARANCES, useAppearance } from "./appearances";
+import { SHELL_MODES, useShellMode } from "./appearances";
 
 /*
  * Full-rule axe in a real browser — including color-contrast, which
@@ -25,10 +25,10 @@ async function expectNoBlockingViolations(page: Page): Promise<void> {
   ).toEqual([]);
 }
 
-for (const appearance of APPEARANCES) {
+for (const appearance of SHELL_MODES) {
   test.describe(appearance.label, () => {
     test("directory passes full-rule axe", async ({ page }) => {
-      await useAppearance(page, appearance);
+      await useShellMode(page, appearance);
       await page.goto("/");
       await expect(
         page.getByText("docz-site: cross-repo docz reader and search UI"),
@@ -37,7 +37,7 @@ for (const appearance of APPEARANCES) {
     });
 
     test("reader passes full-rule axe", async ({ page }) => {
-      await useAppearance(page, appearance);
+      await useShellMode(page, appearance);
       await page.goto("/donaldgifford/docz-site/design/DESIGN-0001");
       await expect(
         page.getByRole("heading", {
@@ -49,7 +49,7 @@ for (const appearance of APPEARANCES) {
     });
 
     test("markdown specimen page passes full-rule axe", async ({ page }) => {
-      await useAppearance(page, appearance);
+      await useShellMode(page, appearance);
       // docs/guides/markdown-specimen.md renders every pipeline construct
       // on one page; this is the only sweep that sees real mermaid output
       // and real color-contrast for all of them.
@@ -69,7 +69,7 @@ for (const appearance of APPEARANCES) {
     });
 
     test("repos and type page pass full-rule axe", async ({ page }) => {
-      await useAppearance(page, appearance);
+      await useShellMode(page, appearance);
       await page.goto("/repos");
       await expect(
         page.getByRole("heading", { name: "Repositories" }),

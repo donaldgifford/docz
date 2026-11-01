@@ -128,14 +128,14 @@ To take GitHub webhooks through a Tailscale operator Ingress on the API, see
 
 ## Theme
 
-The site renders in `paper` unless `site.config.theme` names another
-`pkg/theme` theme (`charcoal` or `classic` today). The value becomes the site's
+The site's shell has one look, in light and dark (DESIGN-0026). Documents
+render in `paper` unless `site.config.theme` names another `pkg/theme`
+theme (`charcoal` or `classic` today). The value becomes the site's
 `DOCZ_THEME`, rendered only when set, and the schema accepts only the names
 `pkg/theme` has, so a typo fails `helm install` instead of the site's
-`/readyz`. It is a default: a reader's own pick in the topbar wins and
-holds across reloads. Exported pages and docz-review take their theme from
-each repository's `.docz.yaml` `html.theme`, which this value does not
-touch.
+`/readyz`. There is no theme selector in the topbar, only the light/dark
+toggle. Exported pages and docz-review take their theme from each
+repository's `.docz.yaml` `html.theme`, which this value does not touch.
 
 ## Login providers
 
@@ -480,7 +480,7 @@ gh attestation verify \
 | site.config.mermaidLayout | string | `"elk"` | Diagram layout engine (DOCZ_MERMAID_LAYOUT): `elk` or `dagre`. mermaid 12 made ELK the default and so is it here; `dagre` restores the pre-12 layout without rebuilding the image. Injected into the SPA at runtime and whitelist-validated at both ends, so anything unrecognized falls back to `elk` — the values schema constrains it to the two names so a typo fails at install rather than silently rendering the default. |
 | site.config.navLinks | list | `[]` | Topbar nav pins (DOCZ_NAV_LINKS): a list of `{label, href}` links rendered between Repos and the session menu. Injected into the SPA at runtime as JSON, whitelist-validated by the server (short label charset, same-origin app-path hrefs, cap 6); invalid entries degrade to fewer/no pins, never a broken page. Empty → no pins and the env var is omitted. |
 | site.config.port | int | `8080` | Container HTTP listen port (drives the PORT env var and the Service targetPort). The SPA, /healthz, /readyz, and the API proxy are all served here. |
-| site.config.theme | string | `""` | The site's default theme (DOCZ_THEME), a theme pkg/theme has: `paper` (light and dark) or `classic` (dark). Empty sets no variable and the site defaults to `paper`. A reader may pick another in the topbar, kept in their browser. A repository's `.docz.yaml` `html.theme` sets `docz export html` and docz-review, never the site, which shows many repositories (DESIGN-0025 §3). |
+| site.config.theme | string | `""` | The theme the site shows documents in (DOCZ_THEME), a theme pkg/theme has: `paper` (light and dark), `charcoal`, or `classic` (dark). Empty sets no variable and documents render in `paper`. The site's shell has its own look with a light/dark toggle and no theme selector (DESIGN-0026). A repository's `.docz.yaml` `html.theme` sets `docz export html` and docz-review, never the site, which shows many repositories (DESIGN-0025 §3). |
 | site.extraEnv | list | `[]` | Additional environment variables |
 | site.extraVolumeMounts | list | `[]` | Additional volume mounts |
 | site.extraVolumes | list | `[]` | Additional volumes |

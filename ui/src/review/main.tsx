@@ -4,14 +4,12 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 
 // The site's self-hosted fonts and its one stylesheet (src/main.tsx).
-import "@fontsource-variable/mona-sans/wght.css";
-import "@fontsource-variable/mona-sans/wght-italic.css";
+import "@fontsource-variable/ibm-plex-sans/wght.css";
+import "@fontsource-variable/ibm-plex-sans/wght-italic.css";
+import "@fontsource-variable/jetbrains-mono/wght.css";
+import "@fontsource-variable/jetbrains-mono/wght-italic.css";
 import "@fontsource-variable/source-serif-4/wght.css";
 import "@fontsource-variable/source-serif-4/wght-italic.css";
-import "@fontsource/monaspace-neon/400.css";
-import "@fontsource/monaspace-neon/400-italic.css";
-import "@fontsource/monaspace-neon/600.css";
-import "@fontsource/monaspace-neon/700.css";
 
 import "@/theme/tokens.css";
 

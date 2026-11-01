@@ -35,7 +35,7 @@ export function ReviewButton({
  */
 export function AppearanceControls({ appearance }: { appearance: Appearance }) {
   const { theme, mode, toggleMode } = appearance;
-  if (!hasModes(theme)) {
+  if (theme === undefined || !hasModes(theme)) {
     return null;
   }
   const next = mode === "dark" ? "light" : "dark";

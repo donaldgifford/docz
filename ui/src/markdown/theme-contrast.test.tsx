@@ -33,13 +33,27 @@ function hexForeground(entry: RawSetting): string | null {
 }
 
 describe("liftThemeContrast", () => {
-  it("mirrors tokens.css --color-code-bg", () => {
-    const css = readFileSync(
-      resolve(process.cwd(), "src/theme/tokens.css"),
-      "utf8",
+  it("is the lightest code surface the shell or a pkg/theme theme has", () => {
+    const sources = [
+      resolve(process.cwd(), "src/theme/shell.css"),
+      ...readdirSync(resolve(process.cwd(), "../pkg/theme/tokens")).map(
+        (file) => resolve(process.cwd(), "../pkg/theme/tokens", file),
+      ),
+    ];
+    const surfaces = sources.flatMap((file) =>
+      [
+        ...readFileSync(file, "utf8").matchAll(
+          /--color-code-bg:\s*(#[0-9a-fA-F]{6})/g,
+        ),
+      ].map((m) => (m[1] ?? "").toLowerCase()),
     );
-    const token = /--color-code-bg:\s*(#[0-9a-fA-F]{6})/.exec(css)?.[1];
-    expect(token?.toLowerCase()).toBe(CODE_BG);
+    expect(surfaces).toContain(CODE_BG);
+    // Lifting against the lightest dark surface clears every darker one.
+    for (const bg of surfaces) {
+      expect(contrastRatio("#ffffff", bg)).toBeGreaterThanOrEqual(
+        contrastRatio("#ffffff", CODE_BG),
+      );
+    }
   });
 
   it("brings every tokyo-night foreground to AA on the code surface", () => {

@@ -4,33 +4,28 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 
 // Self-hosted fonts (@fontsource) — the site must make no third-party
-// font requests. DESIGN-0005 stack as amended: Source Serif 4
-// (variable) carries reader prose, its headings, and pull quotes;
-// Mona Sans (variable) carries UI chrome and page titles outside the
-// article; Monaspace Neon carries every mono surface, with its true
-// italic so Shiki's italic scopes render as designed. Both variable
-// families ship a weight axis plus a matching italic file. Keep this
-// set in sync with mockup.html's <link> list.
-import "@fontsource-variable/mona-sans/wght.css";
-import "@fontsource-variable/mona-sans/wght-italic.css";
+// font requests. The shell is repo-guardian's (DESIGN-0026 §2): IBM
+// Plex Sans for chrome and JetBrains Mono for every mono surface, its
+// true italic so Shiki's italic scopes render as designed. Source Serif
+// 4 still sets markdown the reader renders itself (a document whose
+// fragment failed, the repo home, the changelog, and published pages).
+// Each variable family ships a weight axis and a matching italic file.
+import "@fontsource-variable/ibm-plex-sans/wght.css";
+import "@fontsource-variable/ibm-plex-sans/wght-italic.css";
+import "@fontsource-variable/jetbrains-mono/wght.css";
+import "@fontsource-variable/jetbrains-mono/wght-italic.css";
 import "@fontsource-variable/source-serif-4/wght.css";
 import "@fontsource-variable/source-serif-4/wght-italic.css";
-import "@fontsource/monaspace-neon/400.css";
-import "@fontsource/monaspace-neon/400-italic.css";
-import "@fontsource/monaspace-neon/600.css";
-import "@fontsource/monaspace-neon/700.css";
 
 import "@/theme/tokens.css";
 
 import { createQueryClient } from "@/app/query-client";
 import { router } from "@/app/router";
-import { applyStoredMode, applyTheme } from "@/lib/appearance";
-import { storedTheme } from "@/lib/theme";
+import { applyStoredMode } from "@/lib/appearance";
 
-// The theme and mode go on <html> before anything renders, so the first
-// paint is the reader's pick, else the deployment's default (IMPL-0030);
-// index.html's data-theme is only the no-JavaScript fallback.
-applyTheme(storedTheme());
+// The mode goes on <html> before anything renders, so the first paint is
+// the reader's mode (DESIGN-0026 §2); with none stored, shell.css follows
+// the system.
 applyStoredMode();
 
 async function bootstrap(): Promise<void> {

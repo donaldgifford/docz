@@ -140,8 +140,9 @@ match: the topbar at header height on the page background, the sidebar's
 groups with their labels, square type and status badges, the palette and
 menus with the overlay elevation. `ui/src/theme/tokens.css`'s `@theme`
 values become the shell's dark set, since Tailwind needs one set to
-generate utilities from, and `TestClassicMatchesUITokens` moves to
-comparing classic with its own file only.
+generate utilities from (`shell.test.ts` pins them), and
+`TestClassicMatchesUITokens` is removed: classic stays as it is, with no
+mirror in `ui/`.
 
 ### 3. The document pane
 

@@ -9,7 +9,6 @@ import { useAppearance } from "@/lib/appearance";
 import { peekReturnTo, takeReturnTo } from "@/lib/authReturn";
 import { refreshMermaidTheme } from "@/lib/mermaid-theme";
 import { enabledNavLinks } from "@/lib/navLinks";
-import { useSiteTheme } from "@/lib/theme";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
@@ -50,10 +49,9 @@ export function AppShell() {
   // navLinks.ts, so every href is a same-origin app path. Read per
   // render (cheap, ≤6 entries) so tests can vary the injected config.
   const pins = enabledNavLinks();
-  // The reader's theme, else the deployment's (src/lib/theme.ts); a
-  // change redraws every mounted diagram from the new tokens.
-  const [theme, setTheme] = useSiteTheme();
-  const appearance = useAppearance(theme, refreshMermaidTheme);
+  // The shell's mode (DESIGN-0026 §2); a change redraws every mounted
+  // diagram from the new tokens.
+  const appearance = useAppearance(undefined, refreshMermaidTheme);
   return (
     <>
       <header className="sticky top-0 z-50 flex h-[52px] items-center gap-6 border-b border-border-default bg-bg-base/90 px-5 backdrop-blur-[10px]">
@@ -119,9 +117,7 @@ export function AppShell() {
             </NavLink>
           ))}
           <AppearanceControls
-            theme={theme}
             mode={appearance.mode}
-            onTheme={setTheme}
             onToggleMode={appearance.toggleMode}
           />
           <SessionMenu />

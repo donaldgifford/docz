@@ -1,0 +1,216 @@
+/*
+ * The shell (DESIGN-0026 §2): the site's chrome in repo-guardian's look,
+ * light and dark. These are repo-guardian's tokens, copied in rather
+ * than imported, and mapped onto docz's --color-* names so every
+ * existing utility keeps working: graphite surfaces, a sky accent, IBM
+ * Plex Sans and JetBrains Mono (tokens.css), and 3px corners.
+ *
+ * Mapping: background → bg-base, card → bg-raised, secondary → bg-elevated,
+ * border → border-default, foreground → fg-primary, muted-foreground →
+ * fg-muted, primary → accent, success/warning/destructive → ok/warn/bad,
+ * info → st-proposed. Steps repo-guardian has no name for (bg-hover,
+ * bg-active, border-hairline, border-strong, fg-secondary, fg-tertiary,
+ * fg-prose) sit between its neighbours at the same hue.
+ *
+ * The type, hash, and status colours keep the hues of the directory's
+ * filter chips, each lightened (dark) or darkened (light) along its own
+ * hue until it holds 4.6:1 on all three surfaces; contrast.test.ts holds
+ * them to 4.5:1. adm-*-bg is each alert's label colour at 10% over
+ * bg-base, kept as hex for that test, and each label is darkened or
+ * lightened further where it would not hold 4.5:1 on its own tint.
+ * Code stays dark in both modes, as in pkg/theme, because the reader's
+ * Shiki theme is a dark one.
+ *
+ * The shell's mode is data-mode on <html>: unset follows the system, and
+ * tokens.css's @theme block holds the dark values so Tailwind has a
+ * source for every utility. A document is not styled here: the reader
+ * embeds it inside .docz-page, which page.css styles in the document's
+ * own theme.
+ */
+:root {
+  color-scheme: light;
+  --color-bg-base: #f6f7f9;
+  --color-bg-raised: #ffffff;
+  --color-bg-elevated: #edeff2;
+  --color-bg-hover: #e8eaed;
+  --color-bg-active: #d9dde3;
+  --color-border-hairline: #e8eaed;
+  --color-border-default: #d9dde3;
+  --color-border-strong: #b8bec7;
+  --color-fg-primary: #1a1e23;
+  --color-fg-secondary: #333840;
+  --color-fg-tertiary: #464e58;
+  --color-fg-muted: #515b67;
+  --color-fg-prose: #262a31;
+  --color-accent: #1963b3;
+  --color-accent-dim: #3a4c6d;
+  --color-accent-bg: rgba(25, 99, 179, 0.1);
+  --color-accent-border: rgba(25, 99, 179, 0.3);
+  --color-on-accent: #ffffff;
+  --color-ok: #196629;
+  --color-link: #1963b3;
+  --color-warn: #835107;
+  --color-bad: #a7241b;
+  --color-st-draft: #835107;
+  --color-st-proposed: #2757b0;
+  --color-st-active: #196629;
+  --color-st-accepted: #196629;
+  --color-st-adopted: #196629;
+  --color-st-rejected: #a7241b;
+  --color-st-superseded: #7757a9;
+  --color-st-deprecated: #515b67;
+  --color-adm-note-bg: #e1e7f2;
+  --color-adm-tip-bg: #e0e9e4;
+  --color-adm-important-bg: #e9e7f1;
+  --color-adm-warning-bg: #ebe6e1;
+  --color-adm-caution-bg: #eee2e3;
+  --color-t-rfc: #4467b7;
+  --color-t-adr: #8e6110;
+  --color-t-design: #037688;
+  --color-t-impl: #aa5109;
+  --color-t-investigation: #7b59b2;
+  --color-t-mandate: #ba3f5b;
+  --color-t-guide: #4c7604;
+  --color-t-principle: #14719d;
+  --color-t-policy: #7b5ab1;
+  --color-t-framework: #03796c;
+  --color-t-working: #aa5109;
+  --color-t-runbook: #b73686;
+  --color-t-docs: #616990;
+  --color-hash-0: #4467b7;
+  --color-hash-1: #4c7604;
+  --color-hash-2: #8e6110;
+  --color-hash-3: #ba3f5b;
+  --color-hash-4: #7b5ab1;
+  --color-hash-5: #03796c;
+  --color-hash-6: #aa5109;
+  --color-hash-7: #037688;
+  --color-code-bg: #101215;
+  --color-code-fg: #e8eaed;
+}
+
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --color-bg-base: #17191c;
+  --color-bg-raised: #202328;
+  --color-bg-elevated: #262a31;
+  --color-bg-hover: #2d3137;
+  --color-bg-active: #32373e;
+  --color-border-hairline: #262a31;
+  --color-border-default: #32373e;
+  --color-border-strong: #474e57;
+  --color-fg-primary: #e8eaed;
+  --color-fg-secondary: #c6cbd2;
+  --color-fg-tertiary: #abb2bb;
+  --color-fg-muted: #9aa2ac;
+  --color-fg-prose: #d3d8de;
+  --color-accent: #61a8f5;
+  --color-accent-dim: #1963b3;
+  --color-accent-bg: rgba(97, 168, 245, 0.1);
+  --color-accent-border: rgba(97, 168, 245, 0.3);
+  --color-on-accent: #17191c;
+  --color-ok: #40ba52;
+  --color-link: #61a8f5;
+  --color-warn: #d99f21;
+  --color-bad: #f7756e;
+  --color-st-draft: #d99f21;
+  --color-st-proposed: #7aa7ff;
+  --color-st-active: #40ba52;
+  --color-st-accepted: #40ba52;
+  --color-st-adopted: #40ba52;
+  --color-st-rejected: #f7756e;
+  --color-st-superseded: #ab8be3;
+  --color-st-deprecated: #9aa2ac;
+  --color-adm-note-bg: #212733;
+  --color-adm-tip-bg: #1b2921;
+  --color-adm-important-bg: #262430;
+  --color-adm-warning-bg: #2a261c;
+  --color-adm-caution-bg: #2d2224;
+  --color-t-rfc: #7aa2f7;
+  --color-t-adr: #e0af68;
+  --color-t-design: #2ac3de;
+  --color-t-impl: #ff9e64;
+  --color-t-investigation: #a281dd;
+  --color-t-mandate: #f7768e;
+  --color-t-guide: #9ece6a;
+  --color-t-principle: #7dcfff;
+  --color-t-policy: #bb9af7;
+  --color-t-framework: #73daca;
+  --color-t-working: #ff9e64;
+  --color-t-runbook: #ff79c6;
+  --color-t-docs: #c0caf5;
+  --color-hash-0: #7aa2f7;
+  --color-hash-1: #9ece6a;
+  --color-hash-2: #e0af68;
+  --color-hash-3: #f7768e;
+  --color-hash-4: #bb9af7;
+  --color-hash-5: #73daca;
+  --color-hash-6: #ff9e64;
+  --color-hash-7: #2ac3de;
+  --color-code-bg: #101215;
+  --color-code-fg: #e8eaed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]) {
+    color-scheme: dark;
+    --color-bg-base: #17191c;
+    --color-bg-raised: #202328;
+    --color-bg-elevated: #262a31;
+    --color-bg-hover: #2d3137;
+    --color-bg-active: #32373e;
+    --color-border-hairline: #262a31;
+    --color-border-default: #32373e;
+    --color-border-strong: #474e57;
+    --color-fg-primary: #e8eaed;
+    --color-fg-secondary: #c6cbd2;
+    --color-fg-tertiary: #abb2bb;
+    --color-fg-muted: #9aa2ac;
+    --color-fg-prose: #d3d8de;
+    --color-accent: #61a8f5;
+    --color-accent-dim: #1963b3;
+    --color-accent-bg: rgba(97, 168, 245, 0.1);
+    --color-accent-border: rgba(97, 168, 245, 0.3);
+    --color-on-accent: #17191c;
+    --color-ok: #40ba52;
+    --color-link: #61a8f5;
+    --color-warn: #d99f21;
+    --color-bad: #f7756e;
+    --color-st-draft: #d99f21;
+    --color-st-proposed: #7aa7ff;
+    --color-st-active: #40ba52;
+    --color-st-accepted: #40ba52;
+    --color-st-adopted: #40ba52;
+    --color-st-rejected: #f7756e;
+    --color-st-superseded: #ab8be3;
+    --color-st-deprecated: #9aa2ac;
+    --color-adm-note-bg: #212733;
+    --color-adm-tip-bg: #1b2921;
+    --color-adm-important-bg: #262430;
+    --color-adm-warning-bg: #2a261c;
+    --color-adm-caution-bg: #2d2224;
+    --color-t-rfc: #7aa2f7;
+    --color-t-adr: #e0af68;
+    --color-t-design: #2ac3de;
+    --color-t-impl: #ff9e64;
+    --color-t-investigation: #a281dd;
+    --color-t-mandate: #f7768e;
+    --color-t-guide: #9ece6a;
+    --color-t-principle: #7dcfff;
+    --color-t-policy: #bb9af7;
+    --color-t-framework: #73daca;
+    --color-t-working: #ff9e64;
+    --color-t-runbook: #ff79c6;
+    --color-t-docs: #c0caf5;
+    --color-hash-0: #7aa2f7;
+    --color-hash-1: #9ece6a;
+    --color-hash-2: #e0af68;
+    --color-hash-3: #f7768e;
+    --color-hash-4: #bb9af7;
+    --color-hash-5: #73daca;
+    --color-hash-6: #ff9e64;
+    --color-hash-7: #2ac3de;
+    --color-code-bg: #101215;
+    --color-code-fg: #e8eaed;
+  }
+}

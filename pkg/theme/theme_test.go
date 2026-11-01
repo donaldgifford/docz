@@ -3,8 +3,6 @@ package theme
 import (
 	"errors"
 	"maps"
-	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -180,42 +178,6 @@ func TestComponentsAndRuntimeHaveNoLiteralColour(t *testing.T) {
 	for _, s := range jsStringRE.FindAllString(js, -1) {
 		if hexRE.MatchString(s) || funcRE.MatchString(s) || namedRE.MatchString(s) {
 			t.Errorf("runtime.js: literal colour in %s; read it with docz.palette", s)
-		}
-	}
-}
-
-// TestClassicMatchesUITokens holds classic to docz-site's look: every
-// colour ui/src/theme/tokens.css declares in its @theme block has the
-// same value in classic.css.
-func TestClassicMatchesUITokens(t *testing.T) {
-	t.Parallel()
-
-	raw, err := os.ReadFile(filepath.Join("..", "..", "ui", "src", "theme", "tokens.css"))
-	if err != nil {
-		t.Fatalf("read ui tokens: %v", err)
-	}
-	src := commentRE.ReplaceAllString(string(raw), "")
-	start := strings.Index(src, "@theme static {")
-	if start < 0 {
-		t.Fatal("ui tokens.css: no @theme static block")
-	}
-	end := strings.Index(src[start:], "\n}")
-	ui := make(map[string]string)
-	for _, d := range declRE.FindAllStringSubmatch(src[start:start+end], -1) {
-		if strings.HasPrefix(d[1], "--color-") {
-			ui[d[1]] = strings.TrimSpace(d[2])
-		}
-	}
-	if len(ui) == 0 {
-		t.Fatal("ui tokens.css: no --color-* tokens found")
-	}
-
-	classic := modes(t, "classic")["light"]
-	for k, v := range ui {
-		if got, ok := classic[k]; !ok {
-			t.Errorf("classic.css does not define %s", k)
-		} else if !strings.EqualFold(got, v) {
-			t.Errorf("classic.css %s = %s, ui tokens.css has %s", k, got, v)
 		}
 	}
 }

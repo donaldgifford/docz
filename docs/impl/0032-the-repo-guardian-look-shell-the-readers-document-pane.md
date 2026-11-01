@@ -178,12 +178,12 @@ onto `.docz-page`.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `ui/src/theme/shell.css`: repo-guardian's tokens mapped onto
+- [x] `ui/src/theme/shell.css`: repo-guardian's tokens mapped onto
   docz's names, light and dark, with the source noted at the top;
   `@fontsource/ibm-plex-sans` and `@fontsource/jetbrains-mono`.
-- [ ] `tokens.css`'s `@theme` takes the shell's dark set; `<html>` drops
+- [x] `tokens.css`'s `@theme` takes the shell's dark set; `<html>` drops
   `data-theme`; `index.html`'s first paint sets only the mode.
-- [ ] Remove the theme selector and `docz:theme`; `DOCZ_THEME` names the
+- [x] Remove the theme selector and `docz:theme`; `DOCZ_THEME` names the
   document theme. Update `src/lib/theme.ts`, `appearance.ts`, the
   generated theme list's users, and the chart README.
 - [x] `src/theme/scope-css.ts` and `src/theme/__generated__/page.css`,
@@ -192,7 +192,7 @@ onto `.docz-page`.
   refuses.
 - [ ] Restyle the topbar, sidebar, directory, search, palette, menus,
   and badges to the shell's look.
-- [ ] `contrast.test.ts`: the shell in both modes; the document themes
+- [x] `contrast.test.ts`: the shell in both modes; the document themes
   inside `.docz-page`.
 
 <!--docz:tasks:end-->

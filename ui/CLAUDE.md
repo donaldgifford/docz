@@ -84,24 +84,29 @@ Bun is the package manager and script runner (pinned in `mise.toml`).
   Token names keep mockup prefixes, so utilities read `bg-bg-raised`,
   `text-fg-tertiary`, `text-t-rfc`. Radius scale is wiped (sharp
   corners); only `rounded-pill` exists. Don't add other CSS entrypoints.
-- **Themes** (IMPL-0030 Phase 3, DESIGN-0025 §3). The site renders in
-  any `pkg/theme` theme, `paper` by default. `src/lib/theme.ts`
-  resolves the theme as the reader's pick (`docz:theme` in
-  localStorage) → runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) →
-  build-time `VITE_THEME` → `paper`, each validated against the
-  generated `THEMES`, so an unknown name falls through like an invalid
-  mermaid layout. `server/serve.ts`'s `resolveTheme` checks
-  `DOCZ_THEME` at startup and an unknown value is a config error that
-  fails `/readyz`, beside the other runtime variables. `index.html` paints
-  `data-theme="paper"` and `src/main.tsx` applies the stored theme and
-  mode before the first render. The topbar's `AppearanceControls` is a
-  theme select plus the light/dark toggle (shown only when `hasModes`,
-  `src/lib/appearance.ts`, shared with docz-review); a change calls
-  `refreshMermaidTheme`, whose signal lives in
-  `src/lib/mermaid-theme.ts` so the eager bundle never imports
-  `mermaid-block`. No component may carry a literal colour: the header
-  is `bg-bg-base/90`, the logo `text-(--color-on-accent)`, the palette
-  scrim `bg-bg-base/65`.
+- **The shell and the document theme** (DESIGN-0026). The site's
+  chrome is `src/theme/shell.css`: repo-guardian's tokens, copied in and
+  mapped onto docz's `--color-*` names, light at `:root`, dark under
+  `data-mode="dark"` and again for the system's dark preference with no
+  `data-mode`, with IBM Plex Sans and JetBrains Mono (`@fontsource-variable`).
+  `<html>` carries no `data-theme`; `tokens.css`'s `@theme` values are the
+  shell's dark set (`shell.test.ts` pins it), and the type, status, and
+  hash colours keep the filter chips' hues, fitted per mode to 4.5:1
+  (`contrast.test.ts` checks both modes). Code stays dark in both modes.
+  There is no theme selector and no `docz:theme`: the topbar's
+  `AppearanceControls` is the light/dark toggle alone
+  (`useAppearance(undefined, refreshMermaidTheme)`; the review page passes
+  its session's theme, which is the only caller that sets `data-theme`).
+  `src/lib/theme.ts`'s `defaultTheme()` is the theme documents render in:
+  runtime `__DOCZ_CONFIG__.theme` (from `DOCZ_THEME`) → build-time
+  `VITE_THEME` → `paper`, each validated against the generated `THEMES`.
+  `server/serve.ts`'s `resolveTheme` checks `DOCZ_THEME` at startup and an
+  unknown value is a config error that fails `/readyz`. `refreshMermaidTheme`'s
+  signal lives in `src/lib/mermaid-theme.ts` so the eager bundle never
+  imports `mermaid-block`. No component may carry a literal colour: the
+  header is `bg-bg-base/90`, the logo `text-(--color-on-accent)`, the
+  palette scrim `bg-bg-base/65`. The site's e2e specs loop over
+  `SHELL_MODES`; the review spec over every theme (`e2e/appearances.ts`).
 - `tsconfig.json` is solution-style → `tsconfig.app.json` (browser code,
   strict + `noUncheckedIndexedAccess`) + `tsconfig.node.json` (config
   files). New config files at the repo root go in `tsconfig.node.json`'s

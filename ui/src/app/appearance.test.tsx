@@ -7,9 +7,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { routes } from "@/app/router";
 
 /*
- * The topbar's appearance controls (IMPL-0030 Phase 3): the deployment's
- * default theme, a reader's pick stored under docz:theme, and the
- * light/dark toggle on a theme with modes.
+ * The topbar's appearance (DESIGN-0026 §2): the shell has one look with a
+ * light/dark toggle, no theme selector, and no data-theme on <html>.
  */
 
 const root = document.documentElement;
@@ -29,28 +28,26 @@ function mountAt(path: string) {
 afterEach(() => {
   delete window.__DOCZ_CONFIG__;
   root.removeAttribute("data-mode");
-  root.setAttribute("data-theme", "paper");
+  root.removeAttribute("data-theme");
 });
 
 describe("topbar appearance", () => {
-  it("starts on the deployment's theme", async () => {
+  it("offers the toggle and no theme selector, whatever DOCZ_THEME says", async () => {
     window.__DOCZ_CONFIG__ = { theme: "classic" };
     mountAt("/repos");
-    const select = await screen.findByLabelText("Theme");
-    expect((select as HTMLSelectElement).value).toBe("classic");
-    expect(root.getAttribute("data-theme")).toBe("classic");
-    expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
+    expect(
+      await screen.findByRole("button", { name: /Switch to/ }),
+    ).toBeVisible();
+    expect(screen.queryByLabelText("Theme")).toBeNull();
+    expect(root.hasAttribute("data-theme")).toBe(false);
   });
 
-  it("stores the reader's pick and offers the toggle on paper", async () => {
-    window.__DOCZ_CONFIG__ = { theme: "classic" };
+  it("stores the toggled mode on <html>", async () => {
     const user = userEvent.setup();
     mountAt("/repos");
-    await user.selectOptions(await screen.findByLabelText("Theme"), "paper");
-    expect(localStorage.getItem("docz:theme")).toBe("paper");
-    expect(root.getAttribute("data-theme")).toBe("paper");
-    await user.click(screen.getByRole("button", { name: /Switch to/ }));
+    await user.click(await screen.findByRole("button", { name: /Switch to/ }));
     expect(localStorage.getItem("docz:mode")).not.toBeNull();
     expect(root.hasAttribute("data-mode")).toBe(true);
+    expect(localStorage.getItem("docz:theme")).toBeNull();
   });
 });

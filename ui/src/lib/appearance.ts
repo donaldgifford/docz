@@ -10,11 +10,11 @@ import { THEMES_WITH_MODES } from "@/theme/__generated__/themes";
 
 /*
  * The appearance shared by docz-site and the review page (DESIGN-0025 §3
- * as amended by IMPL-0030): data-theme and data-mode on <html>, the
- * attributes pkg/theme's token blocks select on. Who picks the theme
- * differs by surface and lives elsewhere: the review page takes the
- * repository's from its session, and the site reads src/lib/theme.ts.
- * The mode is always the reader's: data-mode, remembered under
+ * as amended by IMPL-0030 and DESIGN-0026): data-mode on <html>, and on
+ * the review page data-theme too, the attributes the token blocks select
+ * on. The review page takes its theme from its session; the site's
+ * <html> carries none, since its shell has one look (shell.css) with a
+ * light and a dark set. The mode is always the reader's: data-mode, remembered under
  * docz:mode, the key every exported page's runtime uses too. With no
  * stored mode the page follows the system, and data-mode stays unset so
  * the theme's prefers-color-scheme block applies.
@@ -97,22 +97,23 @@ function systemMode(): Mode {
 }
 
 export interface Appearance {
-  theme: string;
+  /** The theme on <html>, or undefined for the site's shell. */
+  theme: string | undefined;
   /** The mode in effect: the stored one, else the system's. */
   mode: Mode;
   toggleMode: () => void;
 }
 
 /**
- * useAppearance holds the mode for the session's theme, writes both to
- * <html>, stores a toggled mode, and calls onChange after the attributes
+ * useAppearance holds the mode, writes it and the theme (when there is
+ * one) to <html>, stores a toggled mode, and calls onChange after the attributes
  * move, so a caller that reads tokens (mermaid) reads the new ones; not
  * on mount, where main.tsx already applied them before anything
  * rendered. A change also dispatches docz:mode on the document, as an
  * exported page's runtime does.
  */
 export function useAppearance(
-  theme: string,
+  theme: string | undefined,
   onChange?: () => void,
 ): Appearance {
   const [stored, setStored] = useState<Mode | null>(storedMode);
@@ -121,7 +122,9 @@ export function useAppearance(
   const mounted = useRef(false);
 
   useEffect(() => {
-    applyTheme(theme);
+    if (theme !== undefined) {
+      applyTheme(theme);
+    }
     writeMode(stored);
     document.dispatchEvent(
       new CustomEvent("docz:mode", { detail: { mode, theme } }),

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultTheme, parseTheme, storedTheme } from "@/lib/theme";
+import { defaultTheme, parseTheme } from "@/lib/theme";
 
 afterEach(() => {
   delete window.__DOCZ_CONFIG__;
@@ -38,19 +38,5 @@ describe("defaultTheme", () => {
   it("lets an invalid injected value fall through", () => {
     window.__DOCZ_CONFIG__ = { theme: "neon" };
     expect(defaultTheme()).toBe("paper");
-  });
-});
-
-describe("storedTheme", () => {
-  it("prefers the reader's valid pick over the default", () => {
-    window.__DOCZ_CONFIG__ = { theme: "classic" };
-    localStorage.setItem("docz:theme", "paper");
-    expect(storedTheme()).toBe("paper");
-  });
-
-  it("ignores a stored value it does not know", () => {
-    window.__DOCZ_CONFIG__ = { theme: "classic" };
-    localStorage.setItem("docz:theme", "neon");
-    expect(storedTheme()).toBe("classic");
   });
 });
