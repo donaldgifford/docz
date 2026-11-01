@@ -174,7 +174,7 @@ repository.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Amend DESIGN-0025 §3 with the contract above: defaults by surface,
+- [x] Amend DESIGN-0025 §3 with the contract above: defaults by surface,
   no theme selector where the repository decides, the light/dark toggle
   kept, `pkg/theme.Names()` as the one list, and per-origin storage
   accepted. Record the answers to this plan's open questions there.
