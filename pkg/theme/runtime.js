@@ -15,15 +15,18 @@
  *   - the docz-flow, docz-stepper, and docz-scorecard widgets, each drawn
  *     from a JSON island and redrawn when the mode changes.
  *
- * The document id is <html data-doc>. Colours are read only through
- * docz.palette(), so the theme decides them. Every storage access is in a
- * try: file:// pages and private windows throw.
+ * A standalone page starts itself: <html data-doc> names the document.
+ * A host page that embeds a fragment (DESIGN-0026) calls
+ * docz.mount(el, opts) on its div.docz-page instead, which runs all of the
+ * above but the toggle inside el, keyed by el's data-doc; mode stays on
+ * <html> either way. Colours are read only through docz.palette(), from
+ * the element the document sits in, so the theme decides them. Every
+ * storage access is in a try: file:// pages and private windows throw.
  */
 (function () {
   "use strict";
 
   var root = document.documentElement;
-  var doc = root.getAttribute("data-doc") || "doc";
   var dark = window.matchMedia
     ? window.matchMedia("(prefers-color-scheme: dark)")
     : null;
@@ -61,8 +64,12 @@
     return dark && dark.matches ? "dark" : "light";
   }
 
+  var announced = null;
+
   function announce() {
     var m = mode();
+    if (m === announced) return;
+    announced = m;
     modeListeners.forEach(function (fn) {
       try {
         fn(m);
@@ -94,6 +101,14 @@
   if (stored === "light" || stored === "dark") {
     root.setAttribute("data-mode", stored);
   }
+  announced = mode();
+  /* A host page may set data-mode itself; follow it. */
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      labelToggle();
+      announce();
+    }).observe(root, { attributes: true, attributeFilter: ["data-mode"] });
+  }
   if (dark && dark.addEventListener) {
     dark.addEventListener("change", function () {
       if (!root.hasAttribute("data-mode")) {
@@ -106,8 +121,8 @@
   /* Palette: a token's value now. Call it while drawing; never cache it
      across a mode change. */
 
-  function palette(names) {
-    var style = getComputedStyle(root);
+  function palette(names, el) {
+    var style = getComputedStyle(el || root);
     var out = {};
     names.forEach(function (n) {
       out[n] = style.getPropertyValue(n).trim();
@@ -115,150 +130,11 @@
     return out;
   }
 
-  /* Tabs */
-
-  var nav = $("nav.tabs");
-
-  function tabButton(name) {
-    return nav ? $('button[data-tab="' + cssEscape(name) + '"]', nav) : null;
-  }
-
   function cssEscape(s) {
-    return window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/["\\]/g, '\\$&');
+    return window.CSS && CSS.escape
+      ? CSS.escape(s)
+      : s.replace(/["\\]/g, "\\$&");
   }
-
-  function edges() {
-    if (!nav) return;
-    var more = nav.scrollWidth > nav.clientWidth + 2;
-    nav.classList.toggle("more", more);
-    nav.classList.toggle("mid", nav.scrollLeft > 8);
-    nav.classList.toggle(
-      "end",
-      nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 8,
-    );
-  }
-
-  function showTab(name, keepScroll) {
-    var button = tabButton(name);
-    if (!button) return false;
-    $$("button[data-tab]", nav).forEach(function (b) {
-      var on = b === button;
-      b.setAttribute("aria-selected", on ? "true" : "false");
-      b.tabIndex = on ? 0 : -1;
-    });
-    $$("section.panel").forEach(function (p) {
-      p.classList.toggle("on", p.id === "p-" + name);
-    });
-    save("docz:" + doc + ":tab", name);
-    if (button.scrollIntoView) {
-      button.scrollIntoView({ block: "nearest", inline: "center" });
-    }
-    if (!keepScroll) window.scrollTo(0, 0);
-    edges();
-    return true;
-  }
-
-  function panelOf(el) {
-    while (el && !(el.matches && el.matches("section.panel"))) {
-      el = el.parentElement;
-    }
-    return el;
-  }
-
-  function reveal(el) {
-    var panel = panelOf(el);
-    if (panel && panel.id.indexOf("p-") === 0) {
-      showTab(panel.id.slice(2), true);
-    }
-    for (var p = el; p; p = p.parentElement) {
-      if (p.tagName === "DETAILS") p.open = true;
-    }
-    el.scrollIntoView({ block: "start" });
-  }
-
-  function restore() {
-    var hash = decodeURIComponent(location.hash.slice(1));
-    if (hash) {
-      if (hash.indexOf("p-") === 0 && showTab(hash.slice(2))) return;
-      if (showTab(hash)) return;
-      var target = document.getElementById(hash);
-      if (target) {
-        reveal(target);
-        return;
-      }
-    }
-    var last = load("docz:" + doc + ":tab");
-    if (last && showTab(last)) return;
-    var first = nav && $("button[data-tab]", nav);
-    if (first) showTab(first.getAttribute("data-tab"));
-  }
-
-  if (nav) {
-    nav.setAttribute("role", "tablist");
-    $$("button[data-tab]", nav).forEach(function (b) {
-      b.setAttribute("role", "tab");
-      b.addEventListener("click", function () {
-        showTab(b.getAttribute("data-tab"));
-      });
-    });
-    nav.addEventListener("keydown", function (e) {
-      var buttons = $$("button[data-tab]", nav);
-      var i = buttons.indexOf(document.activeElement);
-      if (i < 0) return;
-      var j = -1;
-      if (e.key === "ArrowRight") j = i + 1;
-      else if (e.key === "ArrowLeft") j = i - 1;
-      else if (e.key === "Home") j = 0;
-      else if (e.key === "End") j = buttons.length - 1;
-      if (j < 0 || j >= buttons.length) return;
-      e.preventDefault();
-      buttons[j].focus();
-      showTab(buttons[j].getAttribute("data-tab"), true);
-    });
-    nav.addEventListener(
-      "wheel",
-      function (e) {
-        if (
-          Math.abs(e.deltaY) > Math.abs(e.deltaX) &&
-          nav.scrollWidth > nav.clientWidth
-        ) {
-          nav.scrollLeft += e.deltaY;
-          e.preventDefault();
-        }
-      },
-      { passive: false },
-    );
-    nav.addEventListener("scroll", edges, { passive: true });
-    window.addEventListener("resize", edges);
-  }
-
-  /* In-page links: a tab name switches tabs; any other #id opens the tab
-     and the expandables that hold it. */
-
-  document.addEventListener("click", function (e) {
-    var a = e.target.closest
-      ? e.target.closest("a[href^='#'], [data-tab]")
-      : null;
-    if (!a || (nav && nav.contains(a))) return;
-    var name = a.getAttribute("data-tab");
-    if (!name) {
-      name = decodeURIComponent(a.getAttribute("href").slice(1));
-    }
-    if (name.indexOf("p-") === 0 && tabButton(name.slice(2))) {
-      name = name.slice(2);
-    }
-    if (tabButton(name)) {
-      e.preventDefault();
-      showTab(name);
-      return;
-    }
-    var target = document.getElementById(name);
-    if (target) {
-      e.preventDefault();
-      reveal(target);
-      if (history.replaceState) history.replaceState(null, "", "#" + name);
-    }
-  });
 
   /* Copy buttons */
 
@@ -292,33 +168,6 @@
     pre.appendChild(b);
   }
 
-  /* IMPL task filter */
-
-  function setFilter(panel, value) {
-    panel.setAttribute("data-task-filter", value);
-    $$(".filters button[data-filter]", panel).forEach(function (b) {
-      b.setAttribute(
-        "aria-pressed",
-        b.getAttribute("data-filter") === value ? "true" : "false",
-      );
-    });
-  }
-
-  function initFilters() {
-    var saved = load("docz:" + doc + ":filter");
-    $$(".filters").forEach(function (bar) {
-      var panel = panelOf(bar) || bar.parentElement;
-      bar.addEventListener("click", function (e) {
-        var b = e.target.closest("button[data-filter]");
-        if (!b) return;
-        var value = b.getAttribute("data-filter");
-        setFilter(panel, value);
-        save("docz:" + doc + ":filter", value);
-      });
-      setFilter(panel, saved === "open" || saved === "done" ? saved : "all");
-    });
-  }
-
   /* Widgets (DESIGN-0025 §6): a figure.widget holding a JSON island
      (script[type="application/json"][data-widget]), an empty
      .widget-mount, and a .widget-fallback. A drawer builds its DOM with
@@ -343,8 +192,8 @@
     "--color-bad",
   ];
 
-  function colours() {
-    var p = palette(TOKENS);
+  function colours(el) {
+    var p = palette(TOKENS, el);
     return {
       raised: p["--color-bg-raised"],
       elevated: p["--color-bg-elevated"],
@@ -411,7 +260,7 @@
 
   /* docz-flow */
 
-  function drawFlow(mount, data) {
+  function drawFlow(mount, data, index, ctx) {
     var stages = data.stages;
     if (!isList(stages, 2))
       throw new Error("docz-flow: stages needs two or more");
@@ -444,7 +293,7 @@
     }
 
     function draw() {
-      var c = colours();
+      var c = colours(ctx.el);
       var n = stages.length;
       var W = 640;
       var gap = W / n;
@@ -566,7 +415,7 @@
 
   /* docz-stepper */
 
-  function drawStepper(mount, data) {
+  function drawStepper(mount, data, index, ctx) {
     var steps = data.steps;
     var scenarios = data.scenarios;
     if (!isList(steps, 2))
@@ -622,7 +471,7 @@
     }
 
     function pipe() {
-      var c = colours();
+      var c = colours(ctx.el);
       var fail = failIndex();
       var n = steps.length;
       var W = 640;
@@ -789,7 +638,7 @@
     return { rows: rows, points: points, weights: weights };
   }
 
-  function drawScorecard(mount, data, index) {
+  function drawScorecard(mount, data, index, ctx) {
     var checks = data.checks;
     if (!isList(checks, 1))
       throw new Error("docz-scorecard: checks needs one or more");
@@ -800,7 +649,7 @@
         );
       }
     });
-    var key = "docz:" + doc + ":scorecard:" + index;
+    var key = "docz:" + ctx.doc + ":scorecard:" + index;
 
     var input = h("textarea", {
       class: "widget-input",
@@ -976,9 +825,223 @@
     scorecard: drawScorecard,
   };
 
-  function initWidgets() {
+  /* Mount: everything one document needs, inside one element. scope is
+     the document for a standalone page, or a host's div.docz-page. With
+     opts.hash false the URL's hash is the host's: it is neither read nor
+     written, and opts.tab names the tab to open first. opts.onTab hears
+     each tab shown. Returns { showTab, unmount }. */
+
+  function mount(scope, opts) {
+    opts = opts || {};
+    var standalone = scope.nodeType === 9;
+    var host = standalone ? scope.documentElement : scope;
+    var useHash = opts.hash !== false;
+    var doc = host.getAttribute("data-doc") || "doc";
+    var cleanup = [];
+
+    function q(sel) {
+      return $(sel, scope);
+    }
+
+    function qq(sel) {
+      return $$(sel, scope);
+    }
+
+    function on(target, type, fn, o) {
+      target.addEventListener(type, fn, o);
+      cleanup.push(function () {
+        target.removeEventListener(type, fn, o);
+      });
+    }
+
+    /* Tabs */
+
+    var nav = q("nav.tabs");
+
+    function tabButton(name) {
+      return nav ? $('button[data-tab="' + cssEscape(name) + '"]', nav) : null;
+    }
+
+    function edges() {
+      if (!nav) return;
+      var more = nav.scrollWidth > nav.clientWidth + 2;
+      nav.classList.toggle("more", more);
+      nav.classList.toggle("mid", nav.scrollLeft > 8);
+      nav.classList.toggle(
+        "end",
+        nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 8,
+      );
+    }
+
+    function toTop() {
+      if (standalone) {
+        window.scrollTo(0, 0);
+      } else if (host.getBoundingClientRect().top < 0) {
+        host.scrollIntoView({ block: "start" });
+      }
+    }
+
+    function showTab(name, keepScroll) {
+      var button = tabButton(name);
+      if (!button) return false;
+      $$("button[data-tab]", nav).forEach(function (b) {
+        var on = b === button;
+        b.setAttribute("aria-selected", on ? "true" : "false");
+        b.tabIndex = on ? 0 : -1;
+      });
+      qq("section.panel").forEach(function (p) {
+        p.classList.toggle("on", p.id === "p-" + name);
+      });
+      save("docz:" + doc + ":tab", name);
+      if (button.scrollIntoView) {
+        button.scrollIntoView({ block: "nearest", inline: "center" });
+      }
+      if (!keepScroll) toTop();
+      edges();
+      if (opts.onTab) opts.onTab(name);
+      return true;
+    }
+
+    function panelOf(el) {
+      while (el && !(el.matches && el.matches("section.panel"))) {
+        el = el.parentElement;
+      }
+      return el;
+    }
+
+    function byId(id) {
+      return standalone ? document.getElementById(id) : q("#" + cssEscape(id));
+    }
+
+    function reveal(el) {
+      var panel = panelOf(el);
+      if (panel && panel.id.indexOf("p-") === 0) {
+        showTab(panel.id.slice(2), true);
+      }
+      for (var p = el; p; p = p.parentElement) {
+        if (p.tagName === "DETAILS") p.open = true;
+      }
+      el.scrollIntoView({ block: "start" });
+    }
+
+    function restore() {
+      if (opts.tab && showTab(opts.tab, true)) return;
+      var hash = useHash ? decodeURIComponent(location.hash.slice(1)) : "";
+      if (hash) {
+        if (hash.indexOf("p-") === 0 && showTab(hash.slice(2))) return;
+        if (showTab(hash)) return;
+        var target = byId(hash);
+        if (target) {
+          reveal(target);
+          return;
+        }
+      }
+      var last = load("docz:" + doc + ":tab");
+      if (last && showTab(last, !standalone)) return;
+      var first = nav && $("button[data-tab]", nav);
+      if (first) showTab(first.getAttribute("data-tab"), !standalone);
+    }
+
+    if (nav) {
+      nav.setAttribute("role", "tablist");
+      $$("button[data-tab]", nav).forEach(function (b) {
+        b.setAttribute("role", "tab");
+        on(b, "click", function () {
+          showTab(b.getAttribute("data-tab"));
+        });
+      });
+      on(nav, "keydown", function (e) {
+        var buttons = $$("button[data-tab]", nav);
+        var i = buttons.indexOf(document.activeElement);
+        if (i < 0) return;
+        var j = -1;
+        if (e.key === "ArrowRight") j = i + 1;
+        else if (e.key === "ArrowLeft") j = i - 1;
+        else if (e.key === "Home") j = 0;
+        else if (e.key === "End") j = buttons.length - 1;
+        if (j < 0 || j >= buttons.length) return;
+        e.preventDefault();
+        buttons[j].focus();
+        showTab(buttons[j].getAttribute("data-tab"), true);
+      });
+      on(
+        nav,
+        "wheel",
+        function (e) {
+          if (
+            Math.abs(e.deltaY) > Math.abs(e.deltaX) &&
+            nav.scrollWidth > nav.clientWidth
+          ) {
+            nav.scrollLeft += e.deltaY;
+            e.preventDefault();
+          }
+        },
+        { passive: false },
+      );
+      on(nav, "scroll", edges, { passive: true });
+      on(window, "resize", edges);
+    }
+
+    /* In-page links: a tab name switches tabs; any other #id opens the tab
+       and the expandables that hold it. */
+
+    on(scope, "click", function (e) {
+      var a = e.target.closest
+        ? e.target.closest("a[href^='#'], [data-tab]")
+        : null;
+      if (!a || (nav && nav.contains(a))) return;
+      var name = a.getAttribute("data-tab");
+      if (!name) {
+        name = decodeURIComponent(a.getAttribute("href").slice(1));
+      }
+      if (name.indexOf("p-") === 0 && tabButton(name.slice(2))) {
+        name = name.slice(2);
+      }
+      if (tabButton(name)) {
+        e.preventDefault();
+        showTab(name);
+        return;
+      }
+      var target = byId(name);
+      if (target) {
+        e.preventDefault();
+        reveal(target);
+        if (useHash && history.replaceState) {
+          history.replaceState(null, "", "#" + name);
+        }
+      }
+    });
+
+    /* IMPL task filter */
+
+    function setFilter(panel, value) {
+      panel.setAttribute("data-task-filter", value);
+      $$(".filters button[data-filter]", panel).forEach(function (b) {
+        b.setAttribute(
+          "aria-pressed",
+          b.getAttribute("data-filter") === value ? "true" : "false",
+        );
+      });
+    }
+
+    var saved = load("docz:" + doc + ":filter");
+    qq(".filters").forEach(function (bar) {
+      var panel = panelOf(bar) || bar.parentElement;
+      on(bar, "click", function (e) {
+        var b = e.target.closest("button[data-filter]");
+        if (!b) return;
+        var value = b.getAttribute("data-filter");
+        setFilter(panel, value);
+        save("docz:" + doc + ":filter", value);
+      });
+      setFilter(panel, saved === "open" || saved === "done" ? saved : "all");
+    });
+
+    /* Widgets */
+
+    var ctx = { el: host, doc: doc };
     var redraws = [];
-    $$('script[type="application/json"][data-widget]').forEach(
+    qq('script[type="application/json"][data-widget]').forEach(
       function (island, i) {
         var name = island.getAttribute("data-widget");
         var fig = island.parentElement;
@@ -989,7 +1052,7 @@
           var data = JSON.parse(island.textContent);
           if (!data || typeof data !== "object")
             throw new Error(name + ": not an object");
-          var redraw = drawer(mount, data, i);
+          var redraw = drawer(mount, data, i, ctx);
           fig.classList.add("drawn");
           if (redraw) redraws.push(redraw);
         } catch (e) {
@@ -1000,12 +1063,32 @@
       },
     );
     if (redraws.length) {
-      modeListeners.push(function () {
+      var redrawAll = function () {
         redraws.forEach(function (fn) {
           fn();
         });
+      };
+      modeListeners.push(redrawAll);
+      cleanup.push(function () {
+        var at = modeListeners.indexOf(redrawAll);
+        if (at >= 0) modeListeners.splice(at, 1);
       });
     }
+
+    host.classList.add("js");
+    qq("pre:not(.mermaid)").forEach(addCopy);
+    restore();
+    setTimeout(edges, 0);
+
+    return {
+      showTab: showTab,
+      unmount: function () {
+        cleanup.forEach(function (fn) {
+          fn();
+        });
+        cleanup = [];
+      },
+    };
   }
 
   /* Print shows every expandable open, and puts them back afterwards. */
@@ -1026,19 +1109,16 @@
 
   /* Start */
 
+  var page = null;
+
   function start() {
-    root.classList.add("js");
     $$(".mode-toggle").forEach(function (b) {
       b.addEventListener("click", function () {
         setMode(mode() === "dark" ? "light" : "dark");
       });
     });
     labelToggle();
-    $$("pre:not(.mermaid)").forEach(addCopy);
-    initFilters();
-    initWidgets();
-    restore();
-    setTimeout(edges, 0);
+    page = mount(document);
   }
 
   window.docz = {
@@ -1048,12 +1128,18 @@
       modeListeners.push(fn);
     },
     palette: palette,
-    showTab: showTab,
+    showTab: function (name, keepScroll) {
+      return page ? page.showTab(name, keepScroll) : false;
+    },
+    mount: mount,
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", start);
-  } else {
-    start();
+  /* Only a standalone page starts itself; a host mounts each fragment. */
+  if (root.hasAttribute("data-doc")) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", start);
+    } else {
+      start();
+    }
   }
 })();

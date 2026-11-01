@@ -110,7 +110,7 @@ runtime can run inside an element.
   `FuzzRenderFragment`, which allows no running script and no style.
 - [x] `docz export html --fragment`, writing `.html` fragments, with the
   JSON report unchanged.
-- [ ] `runtime.js`: `docz.mount(root, {hash})`, every per-page lookup
+- [x] `runtime.js`: `docz.mount(root, {hash})`, every per-page lookup
   inside `root`, the tab memory keyed by `root`'s `data-doc`, `js` class
   on `root`; auto-start only when `<html>` has `data-doc`. The standalone
   pages' e2e (`export-html.spec.ts`) still passes unchanged.

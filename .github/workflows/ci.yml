@@ -77,6 +77,8 @@ jobs:
               - 'api/cli/**'
               # tokens.css imports the themes from here (DESIGN-0025).
               - 'pkg/theme/**'
+              # runtime.test.ts mounts the runtime on this fragment golden.
+              - 'pkg/export/html/testdata/golden/fragment.html'
               - 'ui.just'
               - 'Dockerfile.ui'
             # The plugin's tests run its hooks against ui/review/ from source,
