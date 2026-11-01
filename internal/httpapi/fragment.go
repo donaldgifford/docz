@@ -67,15 +67,7 @@ func (h *Handler) getDocHTML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := html.Render([]byte(row.Document.RawMd), html.RenderOptions{
-		Theme:    snapshotTheme(repo.ConfigSnapshot),
-		Spec:     headingSpec(canonical),
-		Type:     canonical,
-		Source:   row.Document.Path,
-		Site:     repo.Name,
-		Resolve:  siteResolver(&repo, types, pages),
-		Fragment: true,
-	})
+	out, err := renderFragment(&repo, &row.Document, types, pages)
 	if err != nil {
 		// A stored document always has frontmatter and LF endings (ingest
 		// parsed it), so a failure here is the server's, not the caller's.
@@ -83,15 +75,36 @@ func (h *Handler) getDocHTML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeJSON(w, out)
+}
+
+// renderFragment renders one stored document as the reader's fragment.
+// The UI's MSW fixtures are generated through it too.
+func renderFragment(
+	repo *store.Repo, doc *store.Document, types []store.DocType, pages []store.ListRepoPagesRow,
+) (DocumentHTMLDTO, error) {
+	page, err := html.Render([]byte(doc.RawMd), html.RenderOptions{
+		Theme:    snapshotTheme(repo.ConfigSnapshot),
+		Spec:     headingSpec(doc.Type),
+		Type:     doc.Type,
+		Source:   doc.Path,
+		Site:     repo.Name,
+		Resolve:  siteResolver(repo, types, pages),
+		Fragment: true,
+	})
+	if err != nil {
+		return DocumentHTMLDTO{}, err
+	}
+
 	problems := make([]string, 0, len(page.Problems))
 	for _, p := range page.Problems {
 		problems = append(problems, p.Error())
 	}
 
-	writeJSON(w, DocumentHTMLDTO{
-		DocID: row.Document.DocID, HTML: string(page.Body), Hash: page.Hash,
+	return DocumentHTMLDTO{
+		DocID: doc.DocID, HTML: string(page.Body), Hash: page.Hash,
 		Inferred: page.Inferred, Problems: problems,
-	})
+	}, nil
 }
 
 // headingSpec is a built-in type's heading spec, derived from its embedded

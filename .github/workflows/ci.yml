@@ -48,6 +48,10 @@ jobs:
               - 'test/**'
               # cmd/review_fixture_test.go reads the review page's capture
               - 'ui/e2e/fixtures/review-**'
+              # internal/httpapi renders the MSW demo documents into this
+              # JSON and fails when it is stale (IMPL-0032).
+              - 'ui/src/mocks/content/**'
+              - 'ui/src/mocks/__generated__/fragments.json'
               - 'justfile'
               - '*.just'
               - '.golangci.yml'

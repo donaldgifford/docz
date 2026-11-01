@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { getDoc, listRepos, listTypes } from "@/api/__generated__/docz-api";
-import { DEMO_DOCS } from "@/mocks/fixtures";
+import {
+  getDoc,
+  getDocHtml,
+  listRepos,
+  listTypes,
+} from "@/api/__generated__/docz-api";
+import { DEMO_DOCS, DEMO_FRAGMENTS } from "@/mocks/fixtures";
 
 describe("demo-org fixtures", () => {
   it("serves the curated repo list", async () => {
@@ -11,6 +16,29 @@ describe("demo-org fixtures", () => {
       "donaldgifford/docz-site",
       "donaldgifford/docz-api",
     ]);
+  });
+
+  it("has a fragment for every demo document, and only those", () => {
+    expect(Object.keys(DEMO_FRAGMENTS).sort()).toEqual(
+      DEMO_DOCS.map((d) => `${d.repo}/${d.doc_id}`).sort(),
+    );
+  });
+
+  it("serves a document's fragment, with links to the site's routes", async () => {
+    const response = await getDocHtml(
+      "donaldgifford",
+      "docz-api",
+      "rfc",
+      "RFC-0001",
+    );
+    if (response.status !== 200) throw new Error("expected 200");
+    expect(response.data.html).toMatch(/^<div class="docz-page"/);
+    expect(response.data.html).toContain(
+      'href="/donaldgifford/docz-api/design/DESIGN-0001#goals"',
+    );
+    await expect(
+      getDocHtml("donaldgifford", "docz-api", "rfc", "RFC-0099"),
+    ).rejects.toThrow("doc not found");
   });
 
   it("serves this repo's real DESIGN-0001 with raw_md", async () => {

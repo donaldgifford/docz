@@ -148,9 +148,11 @@ docz-api serves each document's fragment.
   `/{owner}/{name}/pages/{path}` for its pages.
 - [x] The OpenAPI contract test covers it; 404 for an unknown or
   disallowed document, as the document route.
-- [ ] `just ui gen-api` regenerates the client; an MSW handler serves a
-  fragment rendered from the fixtures (`just ui gen-fragments`, from a
-  built docz).
+- [x] `just ui gen-api` regenerates the client; an MSW handler serves a
+  fragment for each demo document from
+  `ui/src/mocks/__generated__/fragments.json`, which
+  `TestUIFragmentFixtures` renders through the handler's own
+  `renderFragment` (`-update`) and fails on when stale.
 
 <!--docz:tasks:end-->
 
