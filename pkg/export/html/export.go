@@ -33,8 +33,8 @@ const (
 )
 
 // ExportOptions configures one Export. The zero value exports every
-// enabled type to <root>/build/html in the paper theme with mermaid
-// embedded.
+// enabled type to <root>/build/html in the repository's html.theme with
+// mermaid embedded.
 type ExportOptions struct {
 	// Types limits the run to these type tokens; empty means every enabled
 	// type. IDs, when set, wins.
@@ -44,8 +44,11 @@ type ExportOptions struct {
 	// Out is the directory the pages go to, relative to the repository
 	// root when not absolute. Empty means DefaultOut.
 	Out string
-	// Theme, Mermaid, Site, and Version are passed to every Render.
-	Theme   string
+	// Theme is the pkg/theme name every page renders in. Empty means the
+	// repository's html.theme (DESIGN-0025 §3), so a consumer calling
+	// Export without the CLI gets the default the CLI gets.
+	Theme string
+	// Mermaid, Site, and Version are passed to every Render.
 	Mermaid MermaidMode
 	Site    string
 	Version string
@@ -85,6 +88,8 @@ type PageResult struct {
 type Report struct {
 	// Out is the output directory as the run resolved it.
 	Out string `json:"out"`
+	// Theme is the theme the run rendered in.
+	Theme string `json:"theme"`
 	// DryRun says nothing was written.
 	DryRun bool `json:"dry_run"`
 	// Pages are the documents' pages in docz list order, then the index
@@ -122,7 +127,15 @@ func Export(ctx context.Context, rp *repo.Repo, opts ExportOptions) (Report, err
 		out = filepath.Join(rp.Root, out)
 	}
 
-	rep := Report{Out: out, DryRun: opts.DryRun}
+	if opts.Theme == "" && rp.Cfg != nil {
+		opts.Theme = rp.Cfg.HTML.Theme
+	}
+
+	if opts.Theme == "" {
+		opts.Theme = config.DefaultTheme
+	}
+
+	rep := Report{Out: out, Theme: opts.Theme, DryRun: opts.DryRun}
 
 	entries, err := entriesFor(ctx, rp, &opts)
 	if err != nil {

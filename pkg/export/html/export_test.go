@@ -204,3 +204,42 @@ func TestExportIndex(t *testing.T) {
 		t.Errorf("a one-page run has %d pages (%v), want no index", len(one.Pages), err)
 	}
 }
+
+// TestExportThemeFromConfig pins DESIGN-0025 §3: an empty Theme is the
+// repository's html.theme, and an explicit one wins.
+func TestExportThemeFromConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name, cfg, opt, want string
+	}{
+		{name: "default config is paper", want: "paper"},
+		{name: "the key picks the theme", cfg: "classic", want: "classic"},
+		{name: "an explicit theme wins", cfg: "classic", opt: "paper", want: "paper"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			rp := fixtureRepo(t, "adr")
+			if tt.cfg != "" {
+				rp.Cfg.HTML.Theme = tt.cfg
+			}
+
+			rep, err := Export(context.Background(), rp, ExportOptions{DryRun: true, Theme: tt.opt})
+			if err != nil {
+				t.Fatalf("Export: %v", err)
+			}
+
+			if rep.Theme != tt.want {
+				t.Errorf("Report.Theme = %q, want %q", rep.Theme, tt.want)
+			}
+
+			marker := `data-theme="` + tt.want + `"`
+			if !bytes.Contains(rep.Pages[0].Body, []byte(marker)) {
+				t.Errorf("page has no %s", marker)
+			}
+		})
+	}
+}
