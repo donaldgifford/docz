@@ -9,6 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 - *(investigation)* INV-0031, the docz-review trial on its own repository
 
+### Testing
+
+- *(docz-html)* A claude plugin eval suite for the skill
+
 ## [2.4.0] - 2026-11-01
 
 ### Features
