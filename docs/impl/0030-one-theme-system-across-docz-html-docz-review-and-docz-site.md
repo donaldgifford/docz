@@ -180,22 +180,22 @@ repository.
   accepted. Record the answers to this plan's open questions there.
 - [x] Amend DESIGN-0024 so the review page renders in the repository's
   theme, and drop the theme selector IMPL-0028 Phase 6 added.
-- [ ] `pkg/doczcore/config`: a new `HTMLConfig{Theme string}` in `html.go`,
+- [x] `pkg/doczcore/config`: a new `HTMLConfig{Theme string}` in `html.go`,
   on `Config` as `HTML` (yaml and json tags `html` and `theme`, so
   `TestJSONTags_MirrorYAML` passes), the place left for later page
   settings (Open Question 1). `DefaultConfig()` sets `HTML.Theme` to
   `paper`.
-- [ ] `normalizeHTML`, run on both `Load` paths and on `ParseBytes`
+- [x] `normalizeHTML`, run on both `Load` paths and on `ParseBytes`
   after `normalizeAccess`: trim, lower-case, and backfill an empty value
   to `paper`.
-- [ ] `validateHTML`, called from `Validate()`, checks the value against
+- [x] `validateHTML`, called from `Validate()`, checks the value against
   `pkg/theme.Names()`. `config` imports `pkg/theme` (stdlib only), and
   `layer_test.go` allows that one edge by name, with a comment saying why
   (Open Question 2). An unknown name is a validation **warning**, and the
   value falls back to `paper`, so docz-api never refuses a repository's
   ingest over it (Open Question 3). `cmd/` prints the warning as it
   prints the others.
-- [ ] `docz_yaml.tmpl`: write `html:` with `theme: paper` and a comment that names
+- [x] `docz_yaml.tmpl`: write `html:` with `theme: paper` and a comment that names
   the themes and says it sets `docz export html` and docz-review, not
   docz-site. `DefaultConfigYAML()` and `docz init` pick it up.
 - [ ] `test/parity`: an `HTMLNormalizer` that drops the `html:` block and

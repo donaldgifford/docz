@@ -172,3 +172,10 @@ access:
 {{- range .Access.Scopes }}
     - {{ . }}
 {{- end }}
+
+# The HTML docz writes for this repository (DESIGN-0025 §3). theme sets
+# the look of `docz export html` pages and the docz-review page: paper
+# (light and dark) or classic (dark). docz-site is themed by its
+# deployment, not by this file.
+html:
+  theme: {{ .HTML.Theme }}
