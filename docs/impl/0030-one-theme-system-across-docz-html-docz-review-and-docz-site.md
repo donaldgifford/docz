@@ -27,7 +27,7 @@ created: 2026-11-01
   - [Phase 3: docz-site on the theme system](#phase-3-docz-site-on-the-theme-system)
     - [Tasks](#tasks-2)
     - [Success Criteria](#success-criteria-2)
-  - [Phase 4: A third theme in repo-guardian's design](#phase-4-a-third-theme-in-repo-guardians-design)
+  - [Phase 4: charcoal, a third theme in repo-guardian's design](#phase-4-charcoal-a-third-theme-in-repo-guardians-design)
     - [Tasks](#tasks-3)
     - [Success Criteria](#success-criteria-3)
   - [Phase 5: The widgets in the reader and the review page](#phase-5-the-widgets-in-the-reader-and-the-review-page)
@@ -90,7 +90,7 @@ its Phase 1 is this document's Phase 3, and its Phase 2 is Phase 5.
 
 **What changes:**
 
-- A `theme` key in `.docz.yaml` sets the theme for `docz export html` and
+- An `html.theme` key in `.docz.yaml` sets the theme for `docz export html` and
   docz-review. `--theme` overrides it for one export. Neither surface
   offers a reader a theme selector, since the repository has made the
   choice. Both keep the light/dark toggle, because that is the reader's
@@ -117,7 +117,7 @@ its Phase 1 is this document's Phase 3, and its Phase 2 is Phase 5.
 
 - Amending DESIGN-0025 §3 and DESIGN-0024 (the review page) with the
   theme contract.
-- The `theme` key in `pkg/doczcore/config`, written by `docz init`,
+- The `html:` block and its `theme` key in `pkg/doczcore/config`, written by `docz init`,
   printed by `docz config`, served in docz-api's `config_snapshot` by its
   json tag, and dropped from the parity comparison by a normaliser.
 - `docz export html` taking its default theme from the key.
@@ -146,9 +146,9 @@ its Phase 1 is this document's Phase 3, and its Phase 2 is Phase 5.
   origin, and nothing here works around that.
 - docz-site's wiped radius scale. `--radius-card` and `--radius-control`
   apply to exported pages and the review page. Whether the site adopts
-  them is Open Question 7.
+  them was Open Question 7, settled no.
 - New widgets, or widget fields the export does not read.
-- docz-api behaviour. The `theme` key reaches `config_snapshot` through
+- docz-api behaviour. The `html:` block reaches `config_snapshot` through
   its json tag and nothing on the server reads it. The widgets are
   markdown, so the API serves them already.
 
@@ -160,6 +160,7 @@ its Phase 1 is this document's Phase 3, and its Phase 2 is Phase 5.
 Each phase builds on the previous one. A phase is complete when all its tasks
 are checked off and its success criteria are met. Each phase is one PR
 labelled `dont-release`, and the last is labelled `minor` (Open Question 8).
+The open questions are settled; each answer is recorded under its question.
 
 ---
 
@@ -179,30 +180,36 @@ repository.
   accepted. Record the answers to this plan's open questions there.
 - [ ] Amend DESIGN-0024 so the review page renders in the repository's
   theme, and drop the theme selector IMPL-0028 Phase 6 added.
-- [ ] `pkg/doczcore/config`: add `Theme string` to `Config` (the yaml and
-  json tags `theme`, so `TestJSONTags_MirrorYAML` passes) at the place
-  Open Question 1 settles. `DefaultConfig()` sets it to `paper`.
-- [ ] `normalizeTheme`, run on both `Load` paths and on `ParseBytes`
+- [ ] `pkg/doczcore/config`: a new `HTMLConfig{Theme string}` in `html.go`,
+  on `Config` as `HTML` (yaml and json tags `html` and `theme`, so
+  `TestJSONTags_MirrorYAML` passes), the place left for later page
+  settings (Open Question 1). `DefaultConfig()` sets `HTML.Theme` to
+  `paper`.
+- [ ] `normalizeHTML`, run on both `Load` paths and on `ParseBytes`
   after `normalizeAccess`: trim, lower-case, and backfill an empty value
   to `paper`.
-- [ ] Validate the value against `pkg/theme.Names()`, at the layer and
-  severity Open Questions 2 and 3 settle. `TestLayerRules_*` is updated
-  for whatever edge that adds, with a comment saying why it is allowed.
-- [ ] `docz_yaml.tmpl`: write `theme: paper` with a comment that names
+- [ ] `validateHTML`, called from `Validate()`, checks the value against
+  `pkg/theme.Names()`. `config` imports `pkg/theme` (stdlib only), and
+  `layer_test.go` allows that one edge by name, with a comment saying why
+  (Open Question 2). An unknown name is a validation **warning**, and the
+  value falls back to `paper`, so docz-api never refuses a repository's
+  ingest over it (Open Question 3). `cmd/` prints the warning as it
+  prints the others.
+- [ ] `docz_yaml.tmpl`: write `html:` with `theme: paper` and a comment that names
   the themes and says it sets `docz export html` and docz-review, not
   docz-site. `DefaultConfigYAML()` and `docz init` pick it up.
-- [ ] `test/parity`: a `ThemeNormalizer` that drops the line and its
-  comment from a generated `.docz.yaml` and from `docz config`, in
-  `runCase`'s both-sides list beside `AccessNormalizer`, with a unit test
-  in `parity_norm_test.go`. v1.2.2 never wrote the key, so it is a
-  permitted additive delta.
+- [ ] `test/parity`: an `HTMLNormalizer` that drops the `html:` block and
+  its comment from a generated `.docz.yaml` and from `docz config`
+  (`dropTopLevelBlock`, as `AccessNormalizer` does), in `runCase`'s
+  both-sides list, with a unit test in `parity_norm_test.go`. v1.2.2
+  never wrote the block, so it is a permitted additive delta.
 - [ ] Tests: the default, normalisation (`" Classic "` becomes
-  `classic`), an unknown value per Open Question 3, `ParseBytes` equal to
+  `classic`), an unknown value (a warning and `paper`), `ParseBytes` equal to
   `Load` (`parsebytes_test.go`), and `TestConfigJSON_MarshaledShape`
   updated for the new field.
 - [ ] `test/consumer`: assert `DefaultConfig().Theme`, and that
   `ParseBytes` reads the key, through the public path.
-- [ ] This repository's own `.docz.yaml` gains `theme: paper`, and
+- [ ] This repository's own `.docz.yaml` gains `html: {theme: paper}`, and
   `test/archive` still passes.
 - [ ] Update `CLAUDE.md` (the config bullet and the parity list).
 
@@ -211,10 +218,10 @@ repository.
 <!--docz:criteria:start-->
 #### Success Criteria
 
-- A fresh `docz init` writes `theme: paper`, `docz config` prints it, and
+- A fresh `docz init` writes `html:` with `theme: paper`, `docz config` prints it, and
   `docz validate --strict` on a fresh repository is still clean.
-- A repository with no `theme` key loads as `paper`, and a key naming no
-  theme behaves as Open Question 3 settles.
+- A repository with no `html:` block loads as `paper`, and a key naming
+  no theme loads as `paper` with one validation warning.
 - `just parity`, `just test-consumer`, and `just lint-generated` pass,
   and so does `just ci`.
 
@@ -234,11 +241,11 @@ review session, and neither surface offers a theme selector.
 #### Tasks
 
 - [ ] `cmd/export_html.go`: `--theme` defaults to empty, which means
-  `Cfg.Theme`. An explicit `--theme` still wins and is still checked
+  `Cfg.HTML.Theme`. An explicit `--theme` still wins and is still checked
   against `theme.Names()` (exit 2). The `--help` text says where the
   default comes from.
 - [ ] `pkg/export/html`: `ExportOptions.Theme` empty means the
-  repository's `Cfg.Theme`, so a consumer calling `Export` without the
+  repository's `Cfg.HTML.Theme`, so a consumer calling `Export` without the
   CLI gets the same default. A test covers both paths.
 - [ ] The `export-html` JSON report gains `theme` (the theme the run
   used). `api/cli/export-html.schema.json` takes an additive `$version`
@@ -250,7 +257,8 @@ review session, and neither surface offers a theme selector.
   `cmd/review_fixture_test.go` passes.
 - [ ] docz-review server (`ui/review/`): pass the inspected theme to the
   page in the session payload. A docz too old to report one means
-  `paper` (Open Question 4).
+  `paper`, with no refusal and no `SUPPORTED.minDocz` bump (Open
+  Question 4).
 - [ ] Review page: `main.tsx` sets `data-theme` from the session before
   the first render. Delete the theme half of `appearance.ts`
   (`THEMES`, `storedTheme`, `setTheme`, the `docz:theme` key) and the
@@ -260,7 +268,7 @@ review session, and neither surface offers a theme selector.
   fixture repository a different `theme` (replacing the `docz:theme`
   init scripts), with full-rule axe on each. The e2e that stored a theme
   is removed.
-- [ ] `ui/e2e/export-html.spec.ts`: a fixture with `theme: classic`
+- [ ] `ui/e2e/export-html.spec.ts`: a fixture with `html: {theme: classic}`
   exports classic pages with no `--theme`.
 - [ ] Plugin `docz-html`: `SKILL.md` says the theme comes from
   `.docz.yaml`, with `classic` (or `--theme`) for a one-off, and the
@@ -275,7 +283,7 @@ review session, and neither surface offers a theme selector.
 <!--docz:criteria:start-->
 #### Success Criteria
 
-- With `theme: classic` in `.docz.yaml`, `docz export html` writes
+- With `html: {theme: classic}` in `.docz.yaml`, `docz export html` writes
   classic pages with no flag, `--theme paper` overrides it, and the JSON
   report names the theme used.
 - A review session in that repository renders in classic, with no theme
@@ -302,8 +310,13 @@ surface is checked under each.
   `src/lib/appearance.ts`, shared by the review page and the site. The
   site adds a theme half that the review page does not import: stored
   `docz:theme`, then the injected default, then `paper`.
-- [ ] `server/serve.ts`: `resolveTheme(DOCZ_THEME)` validated against the
-  theme list (Open Question 5), into `__DOCZ_CONFIG__.theme`. An unknown
+- [ ] `scripts/gen-themes.ts` writes `src/theme/__generated__/themes.ts`
+  (gitignored, like the CLI types) from the file names under
+  `pkg/theme/tokens/`, run before `typecheck`, `test`, and `build` and
+  checked by a `gen-themes-check` in `just ui ci`. `Dockerfile.ui`
+  already has `pkg/theme` as the `theme` named context (Open Question 5).
+- [ ] `server/serve.ts`: `resolveTheme(DOCZ_THEME)` validated against that
+  generated list, into `__DOCZ_CONFIG__.theme`. An unknown
   value falls back to `paper` and is reported by `invalidConfigVars`, so
   readiness fails on a typo as it does for the other whitelisted
   variables. `src/lib/theme.ts` re-validates on read (both ends, as the
@@ -353,7 +366,7 @@ surface is checked under each.
 ---
 
 <!--docz:phase:start-->
-### Phase 4: A third theme in repo-guardian's design
+### Phase 4: `charcoal`, a third theme in repo-guardian's design
 
 The first theme added under the contract. If the earlier phases are
 right, this is token values and fonts, and no surface needs a change to
@@ -362,7 +375,8 @@ offer it.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] `pkg/theme/tokens/<name>.css` (Open Question 6), one block for every
+- [ ] `pkg/theme/tokens/charcoal.css` (Open Question 6: named for the look,
+  not the project it came from), one block for every
   mode like `classic`, mapping repo-guardian DESIGN-0036's values onto
   docz's token names. Background `#17191d`, panel `#1f2227`, panel-2
   `#262a30`, and border `#31363d` go to the `bg-*` and border tokens.
@@ -374,9 +388,9 @@ offer it.
   admonition tints `--color-adm-*-bg` (precomputed hex, as the contrast
   test needs), `--color-hash-*`, and `--color-code-bg`/`--color-code-fg`.
   Each choice is recorded in a comment in the file.
-- [ ] Fonts, as Open Question 6 settles: IBM Plex Sans and JetBrains Mono
-  named first in the theme's stacks with the system fonts after, or
-  subset `woff2` embedded.
+- [ ] Fonts: IBM Plex Sans and JetBrains Mono named first in the theme's
+  font stacks, the system fonts after. Nothing is embedded, so a page
+  stays network-free and its size does not change (Open Question 6).
 - [ ] `pkg/theme`: register the theme in `Names()` and `CSS()`;
   `theme_test.go`'s every-token check covers it with no new test.
 - [ ] `ui/src/theme/contrast.test.ts` passes for it at 4.5:1 on the three
@@ -396,7 +410,7 @@ offer it.
 <!--docz:criteria:start-->
 #### Success Criteria
 
-- `theme: <name>` in `.docz.yaml` exports pages and opens review
+- `html: {theme: charcoal}` in `.docz.yaml` exports pages and opens review
   sessions in the new theme, and docz-site's selector offers it, all
   without changing any surface's code.
 - Every token is defined, every text colour passes 4.5:1, and full-rule
@@ -426,7 +440,11 @@ docz-site, and in a review.
 - [ ] Validate each block in TypeScript with the rules of
   `pkg/export/html/widgets.go`: the same closed fields, required fields,
   and cross-references, and the same error text at the same document
-  lines. How the two are kept in step is Open Question 9.
+  lines. The rules are ported by hand and kept in step by a shared
+  corpus (Open Question 9): `pkg/export/html/testdata/widgets/` holds each
+  valid and invalid block with an `.errors.golden` listing the expected
+  errors and lines, written by the Go tests with `-update` and read by
+  the UI tests, so either side drifting fails a test.
 - [ ] `Flow`, `Stepper`, and `Scorecard` components drawn from tokens
   only, with `textContent`-equivalent rendering (no
   `dangerouslySetInnerHTML`, no `innerHTML`). They redraw on a theme or
@@ -469,8 +487,8 @@ docz-site, and in a review.
 <!--docz:tasks:start-->
 #### Tasks
 
-- [ ] Set IMPL-0029's status per Open Question 10, and add a line at its
-  top pointing here.
+- [ ] Set IMPL-0029 to `Cancelled`, with a line at its top pointing here
+  (Open Question 10). It stays in the index as the record.
 - [ ] Mark DESIGN-0025's rollout complete, with this plan as step 5.
 - [ ] Close #214, #213, and #209 from the final PR, and comment on #212
   that Phase 5's components are in place.
@@ -497,19 +515,19 @@ docz-site, and in a review.
 | File | Action | Description |
 | --- | --- | --- |
 | `docs/design/0025-*.md`, `docs/design/0024-*.md` | Modify | The theme contract |
-| `pkg/doczcore/config/config.go`, `theme.go` | Modify, Create | The `theme` key, normalisation, validation |
-| `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl` | Modify | `theme: paper` |
-| `pkg/doczcore/layer_test.go` | Modify | Any edge Open Question 2 adds |
-| `test/parity/parity.go` | Modify | `ThemeNormalizer` |
+| `pkg/doczcore/config/config.go`, `html.go` | Modify, Create | The `html:` block, normalisation, validation |
+| `pkg/doczcore/doctemplate/templates/docz_yaml.tmpl` | Modify | `html:` with `theme: paper` |
+| `pkg/doczcore/layer_test.go` | Modify | Allow `config` → `pkg/theme` |
+| `test/parity/parity.go` | Modify | `HTMLNormalizer` |
 | `cmd/export_html.go`, `cmd/inspect.go` | Modify | Default from the config; `theme` in the JSON |
 | `pkg/export/html/export.go` | Modify | `Theme` empty means the config's |
 | `api/cli/inspect.schema.json`, `export-html.schema.json` | Modify | Additive `theme` |
 | `ui/review/*`, `ui/src/review/*` | Modify | The repository's theme; selector removed |
-| `ui/src/lib/appearance.ts`, `theme.ts` | Create | Shared mode; the site's theme |
+| `ui/src/lib/appearance.ts`, `theme.ts`, `ui/scripts/gen-themes.ts` | Create | Shared mode; the site's theme; the generated theme list |
 | `ui/server/serve.ts` | Modify | `DOCZ_THEME` |
 | `ui/src/app/AppShell.tsx` | Modify | Selector and toggle |
 | `charts/docz/values.yaml`, `templates/site-*.yaml` | Modify | `site.config.theme` |
-| `pkg/theme/tokens/<name>.css`, `pkg/theme/theme.go` | Create, Modify | The third theme |
+| `pkg/theme/tokens/charcoal.css`, `pkg/theme/theme.go` | Create, Modify | The third theme |
 | `ui/src/markdown/widget-marker.ts`, `widgets/*` | Create | Marker, validation, components |
 | `plugins/docz-html/*` | Modify | The key; 0.3.0 |
 
@@ -520,7 +538,7 @@ docz-site, and in a review.
 
 - [ ] Config: the default, normalisation, an unknown value, `ParseBytes`
   equal to `Load`, the JSON shape, and the consumer module.
-- [ ] Parity: `ThemeNormalizer` unit-tested and `just parity` green.
+- [ ] Parity: `HTMLNormalizer` unit-tested and `just parity` green.
 - [ ] CLI contract: `inspect` and `export-html` fixtures validated against
   their closed schemas with the new field.
 - [ ] Export: the key picks the theme, `--theme` overrides it, and there
@@ -547,9 +565,9 @@ docz-site, and in a review.
   depends only on Phase 3's shared `appearance.ts` (the components
   redraw on a mode change), so it can run beside Phase 4.
 - #212 (the review page's layout) starts after Phase 5.
-- No new Go module. A TypeScript YAML parser for Phase 5 may be one
-  (Open Question 9). `yaml` is already in `ui/node_modules` through
-  orval, but not as a direct dependency.
+- No new Go module. Phase 5 needs a TypeScript YAML parser: `yaml` is
+  already in `ui/node_modules` through orval, and becomes a direct
+  dependency.
 
 <!--docz:dependencies:end-->
 
@@ -565,6 +583,8 @@ docz-site, and in a review.
   later page settings such as the mermaid mode.
 - c. Under `wiki:`, beside the MkDocs settings.
 
+> **Resolved 2026-11-01: (b).**
+
 ### 2. Which package checks the value against `pkg/theme.Names()`?
 
 - a. `pkg/doczcore/config` imports `pkg/theme`, which is stdlib-only, with
@@ -579,6 +599,8 @@ docz-site, and in a review.
 - c. `pkg/theme` gains a tiny `names` subpackage with no embeds, which
   `config` imports. This is like a, without the CSS.
 
+> **Resolved 2026-11-01: (a).**
+
 ### 3. What does an unknown theme name do?
 
 - a. It is a validation warning, and the value falls back to `paper`.
@@ -590,12 +612,16 @@ docz-site, and in a review.
 - c. It is a hard error for the CLI and a warning for docz-api, through a
   flag on `Validate`.
 
+> **Resolved 2026-11-01: (a).**
+
 ### 4. What does the review page do with a docz too old to report the theme?
 
 - a. Render in `paper` and go on. The field is additive and the page has
   a safe default.
 - b. Raise `SUPPORTED.minDocz` to the release that adds it, so an older
   docz is refused with both versions named, as for a schema mismatch.
+
+> **Resolved 2026-11-01: (a).**
 
 ### 5. How does docz-site learn the list of themes?
 
@@ -606,6 +632,8 @@ docz-site, and in a review.
   under `pkg/theme/tokens/`.
 - c. `serve.ts` accepts any value for which a token file exists in the
   built CSS.
+
+> **Resolved 2026-11-01: (a).**
 
 ### 6. What is the third theme called, and how does it get its fonts?
 
@@ -618,6 +646,8 @@ docz-site, and in a review.
 - c. Another name, for example `charcoal`, which describes the look
   rather than the project it came from. Fonts as in a.
 
+> **Resolved 2026-11-01: (c).** The theme is `charcoal`; fonts as in a.
+
 ### 7. Does docz-site adopt the themes' radii?
 
 - a. No. The site's wiped radius scale stays, and the radius tokens apply
@@ -627,6 +657,8 @@ docz-site, and in a review.
   theme's corners are the same on all three surfaces. This needs a design
   note in docz-site's DESIGN-0005 line.
 
+> **Resolved 2026-11-01: (a).**
+
 ### 8. How do the phases release?
 
 - a. Each phase is a `dont-release` PR, and Phase 6's is labelled `minor`.
@@ -635,6 +667,8 @@ docz-site, and in a review.
   their own (the key works for export and review), then each later
   phase is its own `minor`.
 - c. Every phase is a `minor`.
+
+> **Resolved 2026-11-01: (a).**
 
 ### 9. How are the TypeScript widget rules kept in step with `widgets.go`?
 
@@ -652,6 +686,8 @@ docz-site, and in a review.
   errors only. This is simplest, but an invalid block draws in the
   reader and fails on an export.
 
+> **Resolved 2026-11-01: (a).**
+
 ### 10. What happens to IMPL-0029?
 
 - a. Set it to `Cancelled`, with a line at its top pointing to this plan,
@@ -659,6 +695,8 @@ docz-site, and in a review.
 - b. Delete it, since it was never reviewed and this plan replaces it.
 - c. Keep it as the plan for Phase 5 alone, and drop Phase 5 from this
   plan.
+
+> **Resolved 2026-11-01: (a).**
 
 <!--docz:open-questions:end-->
 
